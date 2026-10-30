@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 /*
- *
  * EE to Debugger Interface Implementation
- *
  */
+
 #ifndef _eedbginterfaceimpl_h_
 #define _eedbginterfaceimpl_h_
 
@@ -79,13 +77,6 @@ public:
 
     void* GetObjectFromHandle(OBJECTHANDLE handle);
 
-    OBJECTHANDLE GetHandleFromObject(void *obj,
-                              bool fStrongNewRef,
-                              AppDomain *pAppDomain);
-
-    void DbgDestroyHandle(OBJECTHANDLE oh,
-                          bool fStrongNewRef);
-
     OBJECTHANDLE GetThreadException(Thread *pThread);
 
     bool IsThreadExceptionNull(Thread *pThread);
@@ -116,6 +107,8 @@ public:
 #endif
 
     BOOL IsManagedNativeCode(const BYTE *address);
+
+    BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip) DAC_UNEXPECTED();
 
     PCODE GetNativeCodeStartAddress(PCODE address) DAC_UNEXPECTED();
 
@@ -151,8 +144,6 @@ public:
     DWORD MethodDescIsStatic(MethodDesc *pFD);
 
     Module *MethodDescGetModule(MethodDesc *pFD);
-
-    COR_ILMETHOD* MethodDescGetILHeader(MethodDesc *pFD);
 
     MethodDesc *FindLoadedMethodRefOrDef(Module* pModule,
                                           mdToken memberRef);
@@ -277,9 +268,6 @@ public:
                            SIZE_T *pEEThreadDebuggerFilterContextOffset,
                            SIZE_T *pEEFrameNextOffset,
                            DWORD  *pEEIsManagedExceptionStateMask);
-
-    void DebuggerModifyingLogSwitch (int iNewLevel,
-                                     const WCHAR *pLogSwitchName);
 
     HRESULT SetIPFromSrcToDst(Thread *pThread,
                               SLOT addrStart,

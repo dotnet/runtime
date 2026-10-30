@@ -31,7 +31,9 @@
 #pragma optimize("tg", on)
 #endif
 
+#ifdef FEATURE_VARARGS
 void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ctx);
+#endif // FEATURE_VARARGS
 
 #include "gc_unwind_x86.inl"
 
@@ -712,6 +714,7 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     return false;
 }
 
+// FIXME-WASM: Add TARGET_WASM once we implement tail calls on Wasm.
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
 {
@@ -787,6 +790,9 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * p
             *(pRD->pCallerContext) = *(pRD->pCurrentContext);
             // Skip updating context registers for light unwind
             Thread::VirtualUnwindCallFrame(pRD->pCallerContext, NULL, pCodeInfo);
+#if defined(TARGET_ARM64)
+            pRD->CallerContextSpForPacSign = 0;
+#endif // TARGET_ARM64
 #endif
         }
         else
@@ -794,7 +800,13 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * p
             // We need to make a copy here (instead of switching the pointers), in order to preserve the current context
             *(pRD->pCallerContext) = *(pRD->pCurrentContext);
             *(pRD->pCallerContextPointers) = *(pRD->pCurrentContextPointers);
-            Thread::VirtualUnwindCallFrame(pRD->pCallerContext, pRD->pCallerContextPointers, pCodeInfo);
+#if defined(TARGET_ARM64)
+            pRD->CallerContextSpForPacSign = 0;
+#endif // TARGET_ARM64
+            Thread::VirtualUnwindCallFrame(pRD->pCallerContext,
+                                           pRD->pCallerContextPointers,
+                                           pCodeInfo
+                                           ARM64_ARG(&pRD->CallerContextSpForPacSign));
         }
 
         pRD->IsCallerContextValid = TRUE;
@@ -811,9 +823,7 @@ size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    // Don't add usage of this field.  This is only temporary.
-    // See ExInfo::InitializeCrawlFrame() for more information.
-    if (!pRD->IsCallerSPValid)
+    if (!pRD->IsCallerContextValid)
     {
         ExecutionManager::GetDefaultCodeManager()->EnsureCallerContextIsValid(pRD, NULL);
     }
@@ -881,7 +891,6 @@ void EECodeManager::LightUnwindStackFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo
     {
         SyncRegDisplayToCurrentContext(pRD);
         pRD->IsCallerContextValid = FALSE;
-        pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
     }
 #else
     PORTABILITY_ASSERT("EECodeManager::LightUnwindStackFrame is not implemented on this platform.");
@@ -960,6 +969,7 @@ void EECodeManager::UnwindStackFrame(T_CONTEXT  *pContext)
     Thread::VirtualUnwindCallFrame(pContext, NULL, &codeInfo);
 }
 
+#ifdef FEATURE_VARARGS
 /* report args in 'msig' to the GC.
    'argsStart' is start of the stack-based arguments
    'varArgSig' describes the arguments
@@ -1005,6 +1015,7 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
         }
     }
 }
+#endif // FEATURE_VARARGS
 
 #ifndef DACCESS_COMPILE
 FCIMPL1(void, GCReporting::Register, GCFrame* frame)
@@ -1157,7 +1168,15 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         // Filters are the only funclet that run during the 1st pass, and must have
         // both the leaf and the parent frame reported.  In order to avoid double
         // reporting of the untracked variables, do not report them for the filter.
-        flags |= NoReportUntracked;
+        // Wasm R2R does not have fully interruptible reporting, so the aborted
+        // parent frame cannot report its roots. Report the always-live untracked
+        // slots from the filter instead.
+#ifdef TARGET_WASM
+        if (!ExecutionManager::IsVirtualIP(pCodeInfo->GetCodeAddress()))
+#endif // TARGET_WASM
+        {
+            flags |= NoReportUntracked;
+        }
     }
 
     bool reportScratchSlots;
@@ -1197,6 +1216,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         return true;
     }
 
+#ifdef FEATURE_VARARGS
     if (gcInfoDecoder.GetIsVarArg())
     {
         MethodDesc* pMD = pCodeInfo->GetMethodDesc();
@@ -1255,6 +1275,9 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
         promoteVarArgs(prevSP, varArgSig, pCtx);
     }
+#else // !FEATURE_VARARGS
+    _ASSERTE(!gcInfoDecoder.GetIsVarArg());
+#endif // FEATURE_VARARGS
 
     return true;
 
@@ -1637,7 +1660,7 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind))
+bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet))
 {
     CONTRACTL{
         NOTHROW;
@@ -1657,6 +1680,7 @@ bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(R
     }
 
     *returnKind = info.returnKind;
+    *hasAsyncRet = info.isAsync;
     return true;
 #else // !USE_GC_INFO_DECODER
 
@@ -1708,17 +1732,23 @@ EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletTo
 EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
 
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
+#else
+typedef TADDR HandlerFn;
+DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP);
+DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP);
+#endif // TARGET_WASM
 
 static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 {
 #ifdef TARGET_ARM
     return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
+#elif defined(TARGET_WASM)
+    return (TADDR)ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP((TADDR)pfnHandler);
 #else
     return (UINT_PTR)pfnHandler;
 #endif
 }
 
-#endif // TARGET_WASM
 
 // Call catch, finally or filter funclet.
 // Return value:
@@ -1728,15 +1758,25 @@ static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
 {
     DWORD_PTR dwResult = 0;
-#ifdef TARGET_WASM
-    _ASSERTE(!"CallFunclet for WASM not implemented yet");
-#else
     HandlerFn* pfnHandler = (HandlerFn*)pHandler;
 
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
     UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
 
+#ifdef TARGET_WASM
+    TADDR wasmFramePointer = GetFP(pRD->pCurrentContext);
+    _ASSERTE(wasmFramePointer != 0);
+    TADDR handlerFnIndex = CastHandlerFn(pfnHandler);
+    if (throwable != NULL)
+    {
+        dwResult = CallFuncletWithThrowable(handlerFnIndex, wasmFramePointer, OBJECTREFToObject(throwable), pFuncletCallerSP);
+    }
+    else
+    {
+        dwResult = CallFuncletWithoutThrowable(handlerFnIndex, wasmFramePointer, pFuncletCallerSP);
+    }
+#else
     if (isFilterFunclet)
     {
         // For invoking IL filter funclet, we pass the CallerSP to the funclet using which
@@ -1772,7 +1812,8 @@ void EECodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool f
 
     if (uAbortAddr)
     {
-        STRESS_LOG2(LF_EH, LL_INFO10, "Thread abort in progress, resuming under control: IP=%p, SP=%p\n", dwResumePC, GetSP(pContext));
+        STRESS_LOG2(LF_EH, LL_INFO10, "Thread abort in progress, resuming under control: IP=%p, SP=%p\n",
+                (void*)dwResumePC, (void*)GetSP(pContext));
 
         // The dwResumePC is passed to the THROW_CONTROL_FOR_THREAD_FUNCTION ASM helper so that
         // it can establish it as its return address and native stack unwinding can work properly.
@@ -1794,7 +1835,8 @@ void EECodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool f
     }
     else
     {
-        STRESS_LOG2(LF_EH, LL_INFO100, "Resuming after exception at IP=%p, SP=%p\n", GetIP(pContext), GetSP(pContext));
+        STRESS_LOG2(LF_EH, LL_INFO100, "Resuming after exception at IP=%p, SP=%p\n", (void*)GetIP(pContext),
+                    (void*)GetSP(pContext));
     }
 
     ClrRestoreNonvolatileContext(pContext, targetSSP);
@@ -1899,6 +1941,7 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
 #else
     // For WASM, create the TransitionBlock in C++ and call the worker directly
     TransitionBlock transitionBlock{};
+    transitionBlock.m_StackPointer = 0;
     transitionBlock.m_ReturnAddress = (TADDR)&CallInterpreterFuncletWorker;
     return CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, &transitionBlock);
 #endif
@@ -1908,41 +1951,7 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
 {
     TADDR resumeSP = GetSP(pContext);
     TADDR resumeIP = GetIP(pContext);
-#ifdef TARGET_WASM
-    throw ResumeAfterCatchException(resumeSP, resumeIP);
-#else
-    Thread *pThread = GetThread();
-    InterpreterFrame * pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
-
-    ClrCaptureContext(pContext);
-
-    TADDR targetSP = pInterpreterFrame->GetInterpExecMethodSP();
-
-    // We are resuming in interpreter frame. So we need to skip all native, JIT and AOT generated frames until we reach
-    // the resumeSP
-    do
-    {
-        if (ExecutionManager::IsManagedCode(GetIP(pContext)))
-        {
-            // JIT / AOT generated managed code
-            Thread::VirtualUnwindCallFrame(pContext);
-        }
-        else
-        {
-#ifdef TARGET_UNIX
-            PAL_VirtualUnwind(pContext);
-#else
-            Thread::VirtualUnwindCallFrame(pContext);
-#endif
-        }
-    }
-    while (GetSP(pContext) != targetSP);
-
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
-#endif    
-    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
-#endif // TARGET_WASM
+    ThrowResumeAfterCatchException(resumeSP, resumeIP);
 }
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
@@ -2103,6 +2112,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     pFrame = pFrame->pParent;
     if (pFrame != NULL)
     {
+        // The parent frame's IP points past the call instruction (the resumption point).
         SetIP(pContext, (TADDR)pFrame->ip);
         SetSP(pContext, dac_cast<TADDR>(pFrame));
         SetFP(pContext, (TADDR)pFrame->pStack);
@@ -2110,7 +2120,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     else
     {
         // This indicates that there are no more interpreter frames to unwind in the current InterpExecMethod
-        // The stack walker will not find any code manager for the address InterpreterFrame::DummyCallerIP (0) 
+        // The stack walker will not find any code manager for the address InterpreterFrame::DummyCallerIP (0)
         // and move on to the next explicit frame which is the InterpreterFrame.
         // The SP is set to the address of the InterpreterFrame. For the case of interpreted exception handling
         // funclets, this matches the pExInfo->m_csfEHClause.SP that the CallFunclet sets.
@@ -2146,7 +2156,6 @@ bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
 
     SyncRegDisplayToCurrentContext(pRD);
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;
 
     return true;
 }
@@ -2302,7 +2311,9 @@ OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
 {
     PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
     TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
-    return *dac_cast<PTR_OBJECTREF>(baseStackSlot);
+    // Read the slot as a raw pointer: interpreter stack slots are not viewed through checked
+    // OBJECTREFs (see LOCAL_VAR_OBJREF in interpexec.cpp).
+    return ObjectToOBJECTREF(*dac_cast<PTR_PTR_Object>(baseStackSlot));
 }
 
 PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,

@@ -368,8 +368,7 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP can be implemented as
         performance needs require.
 
-    7.  `ComCallPreStub`/ `COMToCLRDispatchHelper` /`GenericComCallStub` - not
-        necessary for non-Windows platforms at this time
+    7.  `ComCallPreStub` - not necessary for non-Windows platforms at this time
 
     8.  `TheUMEntryPrestub`/ `UMThunkStub` - used to enter the runtime from
         non-managed code through entrypoints generated from the
@@ -401,10 +400,8 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         for ReadyToRun pre-compiled pinvoke calls, so that they do not cause GC
         starvation
 
-    15. `VarargPInvokeStub`/ `GenericPInvokeCalliHelper` Used to support calli
-        pinvokes. It is expected that C\# 8.0 will increase use of this feature.
-        Today use of this feature on Unix requires hand-written IL. On Windows
-        this feature is commonly used by C++/CLI
+    15. `VarargPInvokeStub` – Used to support vararg pinvokes, which are commonly
+        used by C++/CLI. Not necessary for non-Windows platforms at this time.
 
 #### cgencpu.h
 

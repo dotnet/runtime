@@ -21,13 +21,13 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         /// <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
         /// </summary>
-        public GcInfo(NativeReader imageReader, int offset)
+        public GcInfo(NativeReader imageReader, int offset, int version)
         {
             Offset = offset;
 
             CodeLength = (int)imageReader.DecodeUnsignedGc(ref offset);
 
-            Header = InfoHdrDecoder.DecodeHeader(imageReader, ref offset, CodeLength);
+            Header = InfoHdrDecoder.DecodeHeader(imageReader, ref offset, CodeLength, version);
 
             NoGCRegions = new NoGcRegionTable(imageReader, Header, ref offset);
 

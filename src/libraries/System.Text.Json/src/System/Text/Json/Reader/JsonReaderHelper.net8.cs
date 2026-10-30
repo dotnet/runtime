@@ -21,5 +21,20 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfQuoteOrAnyControlOrBackSlash(this ReadOnlySpan<byte> span) =>
             span.IndexOfAny(s_controlQuoteBackslash);
+
+        /// <summary>JSON insignificant whitespace: space (0x20), tab (0x09), CR (0x0D), and LF (0x0A).</summary>
+        /// <remarks>https://tools.ietf.org/html/rfc8259#section-2</remarks>
+        private static readonly SearchValues<byte> s_whiteSpace = SearchValues.Create(" \t\r\n"u8);
+
+        /// <summary>
+        /// Returns the index of the first byte that is not JSON insignificant whitespace,
+        /// or the length of the span if every byte is whitespace.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfFirstNonWhiteSpace(this ReadOnlySpan<byte> span)
+        {
+            int index = span.IndexOfAnyExcept(s_whiteSpace);
+            return index < 0 ? span.Length : index;
+        }
     }
 }

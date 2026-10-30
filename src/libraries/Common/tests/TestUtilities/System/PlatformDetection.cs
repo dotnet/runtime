@@ -25,6 +25,7 @@ namespace System
 
         private static readonly Lazy<bool> s_IsInHelix = new Lazy<bool>(() => Environment.GetEnvironmentVariables().Keys.Cast<string>().Any(key => key.StartsWith("HELIX")));
         public static bool IsInHelix => s_IsInHelix.Value;
+        public static bool IsNotInHelix => !IsInHelix;
 
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
@@ -42,6 +43,7 @@ namespace System
         public static bool IsNotCoreClrInterpreter => !IsCoreClrInterpreter;
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+        public static bool IsOpenBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
         public static bool IsNotAndroid => !IsAndroid;
         public static bool IsAndroidX86 => IsAndroid && IsX86Process;
@@ -63,7 +65,7 @@ namespace System
         public static bool IsAppleMobile => IsMacCatalyst || IsiOS || IstvOS;
         public static bool IsNotAppleMobile => !IsAppleMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
-        public static bool IsBsdLike => IsApplePlatform || IsFreeBSD || IsNetBSD;
+        public static bool IsBsdLike => IsApplePlatform || IsFreeBSD || IsNetBSD || IsOpenBSD;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -83,6 +85,10 @@ namespace System
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
+
+        // Test expectation for floating-point operations, not a platform-wide guarantee.
+        // Bitcasts and other explicitly bit-preserving operations should still be tested exactly.
+        public static bool IsNaNPayloadPreservationExpected => !IsRiscV64Process && !IsWasm;
 
         private static volatile int s_isPrivilegedProcess = -1;
         public static bool IsPrivilegedProcess
@@ -173,7 +179,7 @@ namespace System
         private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);
         public static bool IsBinaryFormatterSupported => s_isBinaryFormatterSupported.Value;
 
-        public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
+        public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS && !IsWasi;
 
         public static bool IsLinqSpeedOptimized => !IsLinqSizeOptimized;
         public static bool IsLinqSizeOptimized => s_linqIsSizeOptimized.Value;
@@ -253,7 +259,7 @@ namespace System
         public static bool IsInvokingFinalizersSupported => !IsNativeAot;
         public static bool IsTypeEquivalenceSupported => !IsNativeAot && !IsMonoRuntime && IsWindows;
 
-        public static bool IsMetadataUpdateSupported => !IsNativeAot;
+        public static bool IsMetadataUpdateSupported => !IsBuiltWithAggressiveTrimming;
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit
@@ -267,13 +273,14 @@ namespace System
 
         public static bool IsAssemblyLoadingSupported => !IsNativeAot;
         public static bool IsNonBundledAssemblyLoadingSupported => IsAssemblyLoadingSupported && !IsMonoAOT;
-        public static bool IsMethodBodySupported => !IsNativeAot;
+        public static bool IsMethodBodySupported => !IsBuiltWithAggressiveTrimming;
         public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);
         public static bool HasHostExecutable => HasAssemblyFiles; // single-file don't have a host
         public static bool IsSingleFile => !HasAssemblyFiles;
 
         public static bool IsReadyToRunCompiled => Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
+        public static bool IsWasmReadyToRun => IsWasm && IsReadyToRunCompiled;
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
@@ -329,7 +336,7 @@ namespace System
         public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
 
         // Changed to `true` when trimming
-        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot || IsAppleMobile;
+        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot || IsAppleMobile || IsWasi;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
         public static bool IsTrimmedWithILLink => IsBuiltWithAggressiveTrimming && !IsNativeAot;
 
@@ -383,6 +390,8 @@ namespace System
         private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(GetTls13Support);
         private static readonly Lazy<bool> s_sendsCAListByDefault = new Lazy<bool>(GetSendsCAListByDefault);
         private static readonly Lazy<bool> s_supportsSha3 = new Lazy<bool>(GetSupportsSha3);
+        private static readonly Lazy<bool> s_isTlsSupported = new Lazy<bool>(GetIsTlsSupported);
+        private static readonly Lazy<bool> s_isMD5Supported = new Lazy<bool>(GetIsMD5Supported);
 
         public static bool SupportsTls10 => s_supportsTls10.Value;
         public static bool SupportsTls11 => s_supportsTls11.Value;
@@ -392,6 +401,10 @@ namespace System
         public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows && SendsCAListByDefault);
         public static bool SupportsSha3 => s_supportsSha3.Value;
         public static bool DoesNotSupportSha3 => !s_supportsSha3.Value;
+
+        // Whether System.Net.Security (SslStream) is usable in the current process.
+        public static bool IsTlsSupported => s_isTlsSupported.Value;
+        public static bool IsMD5Supported => s_isMD5Supported.Value;
 
         private static readonly Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
 
@@ -819,6 +832,39 @@ namespace System
             }
 
             return false;
+        }
+
+        private static bool GetIsTlsSupported()
+        {
+#if NET
+            // Probe rather than check the platform, so that platforms which only support TLS
+            // through an optional runtime feature report the capability correctly.
+            try
+            {
+                _ = new System.Net.Security.SslClientAuthenticationOptions();
+                return true;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return false;
+            }
+#else
+            return true;
+#endif
+        }
+
+        private static bool GetIsMD5Supported()
+        {
+            try
+            {
+                using System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create();
+                md5.ComputeHash(Array.Empty<byte>());
+                return true;
+            }
+            catch (Exception ex) when (ex is PlatformNotSupportedException or System.Security.Cryptography.CryptographicException)
+            {
+                return false;
+            }
         }
 
         private static bool DetermineBinaryFormatterSupport()

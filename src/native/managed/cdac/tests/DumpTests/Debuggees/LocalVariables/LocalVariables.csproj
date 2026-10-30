@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DumpTypes>Full</DumpTypes>
+    <DumpTypes>Heap</DumpTypes>
     <!-- local variables don't display correctly in R2R dumps -->
     <R2RModes>Jit</R2RModes>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

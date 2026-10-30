@@ -60,7 +60,7 @@ parameters:
 
 # Renovate version used in the container image tag.
 - name: renovateVersion
-  default: 43
+  default: 44
   type: number
 
 # Pool configuration for SDL analysis.
@@ -68,7 +68,7 @@ parameters:
   type: object
   default:
     name: NetCore1ESPool-Internal
-    image: 1es-windows-2022
+    image: windows.vs2026.amd64
     os: windows
 
 resources:
@@ -81,6 +81,8 @@ resources:
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
+    settings:
+      networkIsolationPolicy: Permissive
     pool: ${{ parameters.pool }}
     sdl:
       sourceAnalysisPool: ${{ parameters.sdlPool }}

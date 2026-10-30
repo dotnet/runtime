@@ -40,8 +40,8 @@ RegMeta::RegMeta() :
 #ifdef FEATURE_METADATA_INTERNAL_APIS
     m_pInternalImport(NULL),
 #endif
-    m_pSemReadWrite(NULL),
-    m_fOwnSem(false),
+    m_pReadWriteLock(NULL),
+    m_fOwnLock(false),
     m_bRemap(false),
     m_bSaveOptimized(false),
     m_hasOptimizedRefToDef(false),
@@ -95,7 +95,7 @@ RegMeta::~RegMeta()
             {   // Do nothing on error
             }
             m_pInternalImport = NULL;
-            m_fOwnSem = false;
+            m_fOwnLock = false;
         }
 #endif //FEATURE_METADATA_INTERNAL_APIS
 
@@ -108,8 +108,8 @@ RegMeta::~RegMeta()
         m_pFreeThreadedMarshaler = NULL;
     }
 
-    if (m_pSemReadWrite && m_fOwnSem)
-        delete m_pSemReadWrite;
+    if (m_pReadWriteLock && m_fOwnLock)
+        DestroyMDReadWriteLock(m_pReadWriteLock);
 
     // If this RegMeta is a wrapper on an external StgDB, release it.
     if (IsOfExternalStgDB(m_OpenFlags))
@@ -246,12 +246,10 @@ RegMeta::CreateNewMD()
 
     if (IsThreadSafetyOn())
     {
-        m_pSemReadWrite = new (nothrow) UTSemReadWrite();
-        IfNullGo(m_pSemReadWrite);
-        IfFailGo(m_pSemReadWrite->Init());
-        m_fOwnSem = true;
+        IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+        m_fOwnLock = true;
 
-        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+        INDEBUG(m_pStgdb->m_MiniMd.Debug_EnableLockCheck();)
     }
 
 ErrExit:
@@ -292,12 +290,10 @@ RegMeta::CreateNewPortablePdbMD()
 
     if (IsThreadSafetyOn())
     {
-        m_pSemReadWrite = new (nothrow) UTSemReadWrite();
-        IfNullGo(m_pSemReadWrite);
-        IfFailGo(m_pSemReadWrite->Init());
-        m_fOwnSem = true;
+        IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+        m_fOwnLock = true;
 
-        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+        INDEBUG(m_pStgdb->m_MiniMd.Debug_EnableLockCheck();)
     }
 
 ErrExit:
@@ -349,12 +345,13 @@ HRESULT RegMeta::OpenExistingMD(
 
     if (IsThreadSafetyOn())
     {
-        m_pSemReadWrite = new (nothrow) UTSemReadWrite();
-        IfNullGo(m_pSemReadWrite);
-        IfFailGo(m_pSemReadWrite->Init());
-        m_fOwnSem = true;
+        if (m_pReadWriteLock == NULL)
+        {
+            IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+            m_fOwnLock = true;
+        }
 
-        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+        INDEBUG(m_pStgdb->m_MiniMd.Debug_EnableLockCheck();)
     }
 
     if (!IsOfReOpen(dwOpenFlags))
@@ -368,60 +365,6 @@ ErrExit:
 
     return hr;
 } //RegMeta::OpenExistingMD
-
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-HRESULT RegMeta::OpenExistingMD(
-    IMDCustomDataSource* pDataSource,   // Name of database.
-    ULONG       dwOpenFlags)                // Flags to control open.
-{
-    HRESULT     hr = NOERROR;
-
-    m_OpenFlags = dwOpenFlags;
-
-    if (!IsOfReOpen(dwOpenFlags))
-    {
-        // Allocate our m_pStgdb, if we should.
-        _ASSERTE(m_pStgdb == NULL);
-        IfNullGo(m_pStgdb = new (nothrow)CLiteWeightStgdbRW);
-    }
-
-    IfFailGo(m_pStgdb->OpenForRead(
-        pDataSource,
-        m_OpenFlags));
-
-    if (m_pStgdb->m_MiniMd.m_Schema.m_major == METAMODEL_MAJOR_VER_V1_0 &&
-        m_pStgdb->m_MiniMd.m_Schema.m_minor == METAMODEL_MINOR_VER_V1_0)
-        m_OptionValue.m_MetadataVersion = MDVersion1;
-
-    else
-        m_OptionValue.m_MetadataVersion = MDVersion2;
-
-
-
-    IfFailGo(m_pStgdb->m_MiniMd.SetOption(&m_OptionValue));
-
-    if (IsThreadSafetyOn())
-    {
-        m_pSemReadWrite = new (nothrow)UTSemReadWrite();
-        IfNullGo(m_pSemReadWrite);
-        IfFailGo(m_pSemReadWrite->Init());
-        m_fOwnSem = true;
-
-        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
-    }
-
-    if (!IsOfReOpen(dwOpenFlags))
-    {
-        // There must always be a Global Module class and its the first entry in
-        // the TypeDef table.
-        m_tdModule = TokenFromRid(1, mdtTypeDef);
-    }
-
-ErrExit:
-
-    return hr;
-} //RegMeta::OpenExistingMD
-#endif // FEATURE_METADATA_CUSTOM_DATA_SOURCE
 
 #ifdef FEATURE_METADATA_INTERNAL_APIS
 
@@ -501,7 +444,7 @@ HRESULT RegMeta::SetCachedInternalInterface(IUnknown *pUnk)
     {
         // Internal interface is going away before the public interface. Take ownership on the
         // reader writer lock.
-        m_fOwnSem = true;
+        m_fOwnLock = true;
         m_pInternalImport = NULL;
     }
     return hr;
@@ -530,12 +473,17 @@ RegMeta::QueryInterface(
 
     if (riid == IID_IUnknown)
     {
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
         *ppUnk = (IUnknown *)(IMetaDataImport2 *)this;
+#else
+        *ppUnk = static_cast<IUnknown *>(static_cast<IMDCommon *>(this));
+#endif
     }
     else if (riid == IID_IMDCommon)
     {
         *ppUnk = (IMDCommon *)this;
     }
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
     else if (riid == IID_IMetaDataImport)
     {
         *ppUnk = (IMetaDataImport2 *)this;
@@ -548,6 +496,8 @@ RegMeta::QueryInterface(
     {
         *ppUnk = (IMetaDataAssemblyImport *)this;
     }
+#endif
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
     else if (riid == IID_IMetaDataTables)
     {
         *ppUnk = static_cast<IMetaDataTables *>(this);
@@ -561,8 +511,9 @@ RegMeta::QueryInterface(
     {
         *ppUnk = static_cast<IMetaDataInfo *>(this);
     }
+#endif
 
-#ifdef FEATURE_METADATA_EMIT
+#if defined(FEATURE_METADATA_EMIT) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
     else if (riid == IID_IMetaDataEmit)
     {
         *ppUnk = (IMetaDataEmit2 *)this;
@@ -589,7 +540,7 @@ RegMeta::QueryInterface(
         *ppUnk = (IMetaDataAssemblyEmit *)this;
         fIsInterfaceRW = true;
     }
-#endif //FEATURE_METADATA_EMIT
+#endif // FEATURE_METADATA_EMIT && FEATURE_METADATA_PUBLIC_INTERFACES
 
 
 #ifdef FEATURE_METADATA_EMIT_ALL
@@ -607,20 +558,13 @@ RegMeta::QueryInterface(
     else if (riid == IID_IMDInternalEmit)
     {
         *ppUnk = static_cast<IMDInternalEmit *>(this);
+        fIsInterfaceRW = true;
     }
     else if (riid == IID_IGetIMDInternalImport)
     {
         *ppUnk = static_cast<IGetIMDInternalImport *>(this);
     }
 #endif //FEATURE_METADATA_INTERNAL_APIS
-
-#if defined(FEATURE_METADATA_EMIT) && defined(FEATURE_METADATA_INTERNAL_APIS)
-    else if (riid == IID_IMetaDataEmitHelper)
-    {
-        *ppUnk = (IMetaDataEmitHelper *)this;
-        fIsInterfaceRW = true;
-    }
-#endif //FEATURE_METADATA_EMIT && FEATURE_METADATA_INTERNAL_APIS
 
 #ifdef FEATURE_METADATA_IN_VM
 #ifdef FEATURE_COMINTEROP
@@ -636,7 +580,9 @@ RegMeta::QueryInterface(
                 if (m_pFreeThreadedMarshaler == NULL)
                 {
                     // First time! Create the FreeThreadedMarshaler
-                    IfFailGo(CoCreateFreeThreadedMarshaler((IUnknown *)(IMetaDataEmit2 *)this, &m_pFreeThreadedMarshaler));
+                    IfFailGo(CoCreateFreeThreadedMarshaler(
+                        (IUnknown *)(IMetaDataEmit2 *)this,
+                        &m_pFreeThreadedMarshaler));
                 }
             }
 
@@ -722,6 +668,7 @@ ErrExit:
 //          - The file is not NT PE file (e.g. it is NT OBJ = .obj file produced by managed C++).
 //    E_INVALIDARG       - NULL was passed as an argument value.
 //
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 HRESULT
 RegMeta::GetFileMapping(
     const void ** ppvData,
@@ -783,12 +730,13 @@ ErrExit:
 
     return hr;
 } // RegMeta::GetFileMapping
+#endif
 
 
 //------------------------------------------------------------------------------
 // Metadata dump
 //
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
 
 #define STRING_BUFFER_LEN 1024
 #define ENUM_BUFFER_SIZE 10
@@ -1329,7 +1277,7 @@ int DumpMD(UINT_PTR iMD)
     return DumpMD_impl(pMD);
 }
 
-#endif //_DEBUG
+#endif // _DEBUG && FEATURE_METADATA_PUBLIC_INTERFACES
 
 //*****************************************************************************
 // Using the existing RegMeta and reopen with another chuck of memory. Make sure that all stgdb
@@ -1390,6 +1338,7 @@ ErrExit:
             // of the APIs were ever called then we can safely delete.
             CLiteWeightStgdbRW* pStgdb = m_pStgdbFreeList;
             m_pStgdbFreeList = m_pStgdbFreeList->m_pNextStgdb;
+            INDEBUG(lockHolder.Debug_DetachMiniMd();)
             delete pStgdb;
         }
 
@@ -1442,19 +1391,7 @@ HRESULT RegMeta::GetVersionString(      // S_OK or error.
     _ASSERTE(pVer != NULL);
     HRESULT hr;
     LOCKREAD();
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    if (m_pStgdb->m_pvMd != NULL)
-    {
-#endif
-        *pVer = reinterpret_cast<const char*>(reinterpret_cast<const STORAGESIGNATURE*>(m_pStgdb->m_pvMd)->pVersion);
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    }
-    else
-    {
-        //This emptry string matches the fallback behavior we have in other places that query the version string.
-        *pVer = "";
-    }
-#endif
+    *pVer = reinterpret_cast<const char*>(reinterpret_cast<const STORAGESIGNATURE*>(m_pStgdb->m_pvMd)->pVersion);
     hr = S_OK;
  ErrExit:
     return hr;
@@ -1472,7 +1409,11 @@ HRESULT RegMeta::GetIMDInternalImport(
     MDInternalRW *pInternalRW = NULL;
     bool          isLockedForWrite = false;
     IUnknown     *pIUnkInternal = NULL;
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
     IUnknown     *pThis = (IMetaDataImport2*)this;
+#else
+    IUnknown     *pThis = static_cast<IUnknown *>(static_cast<IMDCommon *>(this));
+#endif
 
     pIUnkInternal = this->GetCachedInternalInterface(TRUE);
     if (pIUnkInternal)
@@ -1486,7 +1427,7 @@ HRESULT RegMeta::GetIMDInternalImport(
     if (this->IsThreadSafetyOn())
     {
         _ASSERTE( this->GetReaderWriterLock() );
-        IfFailGo(this->GetReaderWriterLock()->LockWrite());
+        IfFailGo(AcquireMDWriteLock(this->GetReaderWriterLock() COMMA_INDEBUG(this->GetMiniMd())));
         isLockedForWrite = true;
     }
 
@@ -1515,7 +1456,7 @@ HRESULT RegMeta::GetIMDInternalImport(
 
 ErrExit:
     if (isLockedForWrite == true)
-        this->GetReaderWriterLock()->UnlockWrite();
+        ReleaseMDWriteLock(this->GetReaderWriterLock() COMMA_INDEBUG(this->GetMiniMd()));
     if (pIUnkInternal)
         pIUnkInternal->Release();
     if (pInternalRW)
@@ -1528,4 +1469,3 @@ ErrExit:
     return hr;
 }
 #endif //FEATURE_METADATA_INTERNAL_APIS
-

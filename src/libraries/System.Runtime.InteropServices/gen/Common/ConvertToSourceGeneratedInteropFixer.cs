@@ -30,7 +30,7 @@ namespace Microsoft.Interop.Analyzers
             yield return new ConvertToSourceGeneratedInteropFix(CreateFixForSelectedOptions(node, options), options);
         }
 
-        protected abstract Func<DocumentEditor, CancellationToken, Task> CreateFixForSelectedOptions(SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions);
+        protected abstract Func<SolutionEditor, DocumentId, CancellationToken, Task> CreateFixForSelectedOptions(SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions);
 
         protected abstract string GetDiagnosticTitle(ImmutableDictionary<string, Option> selectedOptions);
 
@@ -103,11 +103,10 @@ namespace Microsoft.Interop.Analyzers
             return CombineOptions(fixAllOptions, ParseOptionsFromDiagnostic(diagnostic));
         }
 
-        private static async Task<Solution> ApplyActionAndEnableUnsafe(Solution solution, DocumentId documentId, Func<DocumentEditor, CancellationToken, Task> documentBasedFix, CancellationToken ct)
+        private static async Task<Solution> ApplyActionAndEnableUnsafe(Solution solution, DocumentId documentId, Func<SolutionEditor, DocumentId, CancellationToken, Task> solutionBasedFix, CancellationToken ct)
         {
             var editor = new SolutionEditor(solution);
-            var docEditor = await editor.GetDocumentEditorAsync(documentId, ct).ConfigureAwait(false);
-            await documentBasedFix(docEditor, ct).ConfigureAwait(false);
+            await solutionBasedFix(editor, documentId, ct).ConfigureAwait(false);
 
             var docProjectId = documentId.ProjectId;
             var updatedSolution = editor.GetChangedSolution();
@@ -148,11 +147,9 @@ namespace Microsoft.Interop.Analyzers
                                 GetDiagnosticTitle(fix.SelectedOptions),
                                 async ct =>
                                 {
-                                    DocumentEditor editor = await DocumentEditor.CreateAsync(doc, ct).ConfigureAwait(false);
-
-                                    await fix.ApplyFix(editor, ct).ConfigureAwait(false);
-
-                                    return editor.GetChangedDocument();
+                                    var solutionEditor = new SolutionEditor(doc.Project.Solution);
+                                    await fix.ApplyFix(solutionEditor, doc.Id, ct).ConfigureAwait(false);
+                                    return solutionEditor.GetChangedSolution();
                                 },
                                 Option.CreateEquivalenceKeyFromOptions(BaseEquivalenceKey, fix.SelectedOptions)),
                             diagnostic);
@@ -161,7 +158,7 @@ namespace Microsoft.Interop.Analyzers
             }
         }
 
-        protected record struct ConvertToSourceGeneratedInteropFix(Func<DocumentEditor, CancellationToken, Task> ApplyFix, ImmutableDictionary<string, Option> SelectedOptions);
+        protected record struct ConvertToSourceGeneratedInteropFix(Func<SolutionEditor, DocumentId, CancellationToken, Task> ApplyFix, ImmutableDictionary<string, Option> SelectedOptions);
 
         private sealed class CustomFixAllProvider : FixAllProvider
         {
@@ -196,14 +193,13 @@ namespace Microsoft.Interop.Analyzers
                                 continue;
                             }
                             DocumentId documentId = solutionEditor.OriginalSolution.GetDocumentId(diagnostic.Location.SourceTree)!;
-                            DocumentEditor editor = await solutionEditor.GetDocumentEditorAsync(documentId, ct).ConfigureAwait(false);
                             SyntaxNode root = await diagnostic.Location.SourceTree.GetRootAsync(ct).ConfigureAwait(false);
 
                             SyntaxNode node = root.FindNode(diagnostic.Location.SourceSpan);
 
-                            var documentBasedFix = codeFixProvider.CreateFixForSelectedOptions(node, codeFixProvider.GetOptionsForIndividualFix(options, diagnostic));
+                            var solutionBasedFix = codeFixProvider.CreateFixForSelectedOptions(node, codeFixProvider.GetOptionsForIndividualFix(options, diagnostic));
 
-                            await documentBasedFix(editor, ct).ConfigureAwait(false);
+                            await solutionBasedFix(solutionEditor, documentId, ct).ConfigureAwait(false);
 
                             // Record this project as a project we need to allow unsafe blocks in.
                             projectsToAddUnsafe.Add(solutionEditor.OriginalSolution.GetDocument(documentId).Project);

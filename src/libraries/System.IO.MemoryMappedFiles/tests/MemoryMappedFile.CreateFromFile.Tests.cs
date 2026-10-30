@@ -743,8 +743,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test exceptional behavior when trying to create a map for a non-shared file that's currently in use.
         /// </summary>
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "the emscripten implementation ignores FileShare.None")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void FileInUse_CreateFromFile_FailsWithExistingNoShareFile()
         {
             // Already opened with a FileStream
@@ -1206,6 +1205,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(1)]
         [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks fifo")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "mkfifo is not supported on Apple mobile platforms")]
         public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();
@@ -1226,6 +1226,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(1)]
         [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks fifo")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "mkfifo is not supported on Apple mobile platforms")]
         public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();

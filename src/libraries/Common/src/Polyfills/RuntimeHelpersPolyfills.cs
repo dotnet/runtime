@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices;
@@ -18,13 +19,14 @@ internal static class RuntimeHelpersPolyfills
                 RuntimeHelpers.EnsureSufficientExecutionStack();
                 return true;
             }
-            catch
+            catch (InsufficientExecutionStackException)
             {
                 return false;
             }
         }
 
-        public static object GetUninitializedObject(Type type)
+        public static object GetUninitializedObject(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
         {
 #pragma warning disable SYSLIB0050 // FormatterServices.GetUninitializedObject is obsolete
             return System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);

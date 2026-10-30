@@ -10,6 +10,7 @@ using Internal.TypeSystem;
 using Internal.NativeFormat;
 
 using VirtualInvokeTableEntry = Internal.Runtime.VirtualInvokeTableEntry;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -76,21 +77,20 @@ namespace ILCompiler.DependencyAnalysis
             return declaringMethodForSlot;
         }
 
-        public static void GetVirtualInvokeMapDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddVirtualInvokeMapDependencies(IDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
             if (NeedsVirtualInvokeInfo(factory, method))
             {
-                dependencies ??= new DependencyList();
 
                 dependencies.Add(
                     factory.NecessaryTypeSymbol(method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)),
                     "Reflection virtual invoke owning type");
 
-                MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                MethodDesc methodDefinition = method.GetMethodDefinition();
+                MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(methodDefinition);
                 if (method.HasInstantiation)
                 {
-                    // FindSlotDefiningMethod might uninstantiate. We might want to fix the method not to do that.
-                    if (slotDefiningMethod.IsMethodDefinition)
+                    if (method != methodDefinition)
                         slotDefiningMethod = factory.TypeSystemContext.GetInstantiatedMethod(slotDefiningMethod, method.Instantiation);
                     dependencies.Add(factory.GVMDependencies(slotDefiningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "GVM callable reflectable method");
                 }

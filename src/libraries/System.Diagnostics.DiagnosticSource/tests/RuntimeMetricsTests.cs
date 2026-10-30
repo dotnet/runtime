@@ -324,6 +324,26 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
+        [Fact]
+        public void ThreadPoolQueueLengthIsUpDownCounter()
+        {
+            using MeterListener listener = new();
+            Instrument? instrument = null;
+
+            listener.InstrumentPublished = (inst, l) =>
+            {
+                if (inst.Meter.Name == "System.Runtime" && inst.Name == "dotnet.thread_pool.queue.length")
+                {
+                    instrument = inst;
+                }
+            };
+
+            listener.Start();
+
+            Assert.NotNull(instrument);
+            Assert.IsType<ObservableUpDownCounter<long>>(instrument);
+        }
+
         private sealed class RuntimeMeterException() : Exception { }
 
         private sealed class InstrumentRecorderException() : Exception { }

@@ -842,6 +842,7 @@ namespace System.Threading.Tasks.Test
         public bool Is64;
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Parallel.For/ForEach use TaskReplicator, which throws PlatformNotSupportedException on single-threaded platforms.
     public sealed class ParallelState
     {
         [Fact]

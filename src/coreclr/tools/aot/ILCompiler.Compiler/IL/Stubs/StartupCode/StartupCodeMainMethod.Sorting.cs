@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.TypeSystem;
-using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs.StartupCode
 {
@@ -12,9 +11,7 @@ namespace Internal.IL.Stubs.StartupCode
 
         protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
-            // Should be a singleton
-            Debug.Assert(this == other);
-            return 0;
+            return comparer.Compare(OwningType, other.OwningType);
         }
 
         private partial class MainMethodWrapper
@@ -23,9 +20,7 @@ namespace Internal.IL.Stubs.StartupCode
 
             protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
             {
-                // Should be a singleton
-                Debug.Assert(this == other);
-                return 0;
+                return comparer.Compare(OwningType, other.OwningType);
             }
         }
     }

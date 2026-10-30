@@ -68,8 +68,8 @@
     <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
     <Compile Include="System\Net\DelegatedStream.cs" />
-    <Compile Include="$(CommonPath)\System\Net\ReadWriteAdapter.cs"
-             Link="Common\System\Net\ReadWriteAdapter.cs" />
+    <Compile Include="$(CommonPath)System\ReadWriteAdapter.cs"
+             Link="Common\System\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
@@ -106,6 +106,8 @@
     <Compile Include="System\Net\Mail\NetEventSource.Mail.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SslClientAuthenticationOptionsExtensions.cs"
+             Link="Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

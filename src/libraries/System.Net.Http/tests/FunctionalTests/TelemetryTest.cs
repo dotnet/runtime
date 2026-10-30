@@ -1039,6 +1039,83 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), useSsl.ToString()).DisposeAsync();
         }
 
+        [OuterLoop("Disposes the handler to force the connection closed.")]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task EventSource_ConnectTunnel_LogsBothTransportAndTunnelConnections()
+        {
+            if (UseVersion.Major == 3)
+            {
+                return; // HTTP/3 (QUIC) cannot be tunneled through an HTTP CONNECT proxy.
+            }
+
+            await RemoteExecutor.Invoke(static async (string useVersionString) =>
+            {
+                Version version = Version.Parse(useVersionString);
+                using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                long stampedConnectionId = -1;
+                Version requestVersion = null;
+
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                {
+                    using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();
+
+                    await GetFactoryForVersion(version).CreateClientAndServerAsync(
+                        async uri =>
+                        {
+                            using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
+                            handler.Proxy = new WebProxy(proxyServer.Uri);
+                            using HttpClient client = CreateHttpClient(handler, useVersionString);
+
+                            using var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                            {
+                                Version = version,
+                                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                            };
+                            (await client.SendAsync(request)).Dispose();
+
+                            Assert.NotNull(request.ConnectionId);
+                            stampedConnectionId = request.ConnectionId.Value;
+                            requestVersion = request.Version;
+                            // Disposing the handler (end of this scope) closes the tunnel connection, emitting
+                            // ConnectionClosed while the listener is still capturing.
+                        },
+                        server => server.HandleRequestAsync(),
+                        // HTTPS origin forces an HTTP/1 CONNECT tunnel through the proxy.
+                        options: new GenericLoopbackOptions() { UseSsl = true });
+                });
+
+                EventWrittenEventArgs[] established = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionEstablished").ToArray();
+                EventWrittenEventArgs[] closed = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionClosed").ToArray();
+
+                // A CONNECT tunnel uses two connection objects over one transport: the HTTP/1.1 connection to the proxy
+                // that carries the CONNECT (the tunnel) and the connection negotiated with the origin over it (the inner
+                // connection) that serves the request. Both report their lifecycle, so two ConnectionEstablished and two
+                // ConnectionClosed events are logged, with distinct ids.
+                Assert.Equal(2, established.Length);
+                Assert.Equal(2, closed.Length);
+
+                long[] establishedIds = established.Select(e => (long)e.Payload[2]).ToArray();
+                Assert.Equal(2, establishedIds.Distinct().Count());
+                Assert.Equal(establishedIds.OrderBy(id => id).ToArray(), closed.Select(e => (long)e.Payload[2]).OrderBy(id => id).ToArray());
+
+                // The inner connection served the request: it carries the id stamped on the request, at the negotiated
+                // end-to-end version (e.g. HTTP/2).
+                EventWrittenEventArgs innerEstablished = Assert.Single(established, e => (long)e.Payload[2] == stampedConnectionId);
+                Assert.Equal((byte)requestVersion.Major, (byte)innerEstablished.Payload[0]); // versionMajor
+                Assert.Equal((byte)requestVersion.Minor, (byte)innerEstablished.Payload[1]); // versionMinor
+
+                // The other is the tunnel's transport connection to the proxy, always logged as HTTP/1.1.
+                EventWrittenEventArgs tunnelEstablished = Assert.Single(established, e => (long)e.Payload[2] != stampedConnectionId);
+                Assert.Equal((byte)1, (byte)tunnelEstablished.Payload[0]); // versionMajor
+                Assert.Equal((byte)1, (byte)tunnelEstablished.Payload[1]); // versionMinor
+
+                // The request itself uses the negotiated end-to-end version (e.g. HTTP/2).
+                Assert.Equal(version, requestVersion);
+            }, UseVersion.ToString()).DisposeAsync();
+        }
+
         protected static async Task WaitForEventCountersAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
         {
             DateTime startTime = DateTime.UtcNow;

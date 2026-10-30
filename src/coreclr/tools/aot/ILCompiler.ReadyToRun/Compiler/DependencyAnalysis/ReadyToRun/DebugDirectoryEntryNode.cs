@@ -244,11 +244,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             public int ChecksumSize => 16;
 
-            public void EmitChecksum(ReadOnlySpan<byte> outputBlob, Span<byte> checksumLocation)
+            public void EmitChecksum(Stream outputStream, Span<byte> checksumLocation)
             {
                 Debug.Assert(checksumLocation.Length == ChecksumSize);
-                // Take the first 16 bytes of the SHA256 hash as the RSDS checksum.
-                SHA256.HashData(outputBlob)[0..ChecksumSize].CopyTo(checksumLocation);
+                // Take the first 16 bytes of the SHA256 hash of the image as the RSDS checksum.
+                Span<byte> hash = stackalloc byte[SHA256.HashSizeInBytes];
+                SHA256.HashData(outputStream, hash);
+                hash[0..ChecksumSize].CopyTo(checksumLocation);
             }
 
             public override bool InterestingForDynamicDependencyAnalysis => false;
@@ -269,9 +271,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 sb.Append($"__RSDSChecksum");
             }
 
-            public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => [];
-            public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => [];
-            public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];
+            public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+            public override void AddStaticDependencies(DependencySink sink, NodeFactory context) { }
+            public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
             protected override string GetName(NodeFactory context)
             {
                 return "RSDSChecksum";

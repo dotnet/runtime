@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -120,7 +122,7 @@ namespace Internal.IL.Stubs
             return base.ComputeHashCode() ^ _targetSignature.GetHashCode();
         }
 
-        public override ReadOnlySpan<byte> Name => "DynamicInvoke"u8;
+        public override Utf8Span Name => "DynamicInvoke"u8;
 
         public override string DiagnosticName => "DynamicInvoke";
 

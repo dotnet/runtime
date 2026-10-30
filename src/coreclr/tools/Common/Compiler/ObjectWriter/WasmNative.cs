@@ -72,10 +72,36 @@ namespace ILCompiler.ObjectWriter
         Count = 0x05 // Not actually part of the spec; used for counting kinds
     }
 
+    /// <summary>
+    /// WebAssembly export descriptor kinds per the specification.
+    /// </summary>
+    internal enum WasmExportKind : byte
+    {
+        Function = 0x00,
+        Table = 0x01,
+        Memory = 0x02,
+        Global = 0x03,
+    }
+
+    internal sealed class WasmFunctionImportType : WasmImportType
+    {
+        private readonly int _typeIndex;
+
+        public WasmFunctionImportType(int typeIndex) : base(WasmExternalKind.Function)
+        {
+            _typeIndex = typeIndex;
+        }
+
+        public override int Encode(Span<byte> buffer) => DwarfHelper.WriteULEB128(buffer, (ulong)_typeIndex);
+        public override int EncodeSize() => (int)DwarfHelper.SizeOfULEB128((ulong)_typeIndex);
+        public override int EncodeRelocationCount() => 0;
+        public override int EncodeRelocations(Span<Relocation> buffer) => 0;
+    }
+
     public class WasmGlobalImportType : WasmImportType
     {
-        WasmValueType _valueType;
-        WasmMutabilityType _mutability;
+        private readonly WasmValueType _valueType;
+        private readonly WasmMutabilityType _mutability;
 
         public WasmGlobalImportType(WasmValueType valueType, WasmMutabilityType mutability) : base (WasmExternalKind.Global)
         {
@@ -95,17 +121,37 @@ namespace ILCompiler.ObjectWriter
         public override int EncodeRelocations(Span<Relocation> buffer) => 0;
     }
 
+    public class WasmTableImportType : WasmImportType
+    {
+        public WasmTableImportType() : base (WasmExternalKind.Table)
+        {
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = 0;
+            buffer[pos++] = (byte)0x70; // element type: funcref
+            buffer[pos++] = (byte)0; // table limits: flags (0 = min-only, 1 = min+max)
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), 1); // Requires 1 table entry
+            return pos;
+        }
+
+        public override int EncodeSize() => 2 + (int)DwarfHelper.SizeOfULEB128(1); // The 2 is the element type and table limit flags
+        public override int EncodeRelocationCount() => 0;
+        public override int EncodeRelocations(Span<Relocation> buffer) => 0;
+    }
+
     public enum WasmLimitType : byte
     {
         HasMin = 0x00,
         HasMinAndMax = 0x01
     }
-  
+
     public class WasmMemoryImportType : WasmImportType
     {
-        WasmLimitType _limitType;
-        uint _min;
-        uint? _max;
+        private readonly WasmLimitType _limitType;
+        private readonly uint _min;
+        private readonly uint? _max;
 
         public WasmMemoryImportType(WasmLimitType limitType, uint min, uint? max = null) : base(WasmExternalKind.Memory)
         {
@@ -141,6 +187,30 @@ namespace ILCompiler.ObjectWriter
             return (int)size;
         }
 
+        public override int EncodeRelocationCount() => 0;
+        public override int EncodeRelocations(Span<Relocation> buffer) => 0;
+    }
+
+    public class WasmTagImportType : WasmImportType
+    {
+        // Exception tag attribute: 0 means an exception tag.
+        private const byte ExceptionAttribute = 0x00;
+
+        private readonly int _typeIndex;
+
+        public WasmTagImportType(int typeIndex) : base(WasmExternalKind.Tag)
+        {
+            _typeIndex = typeIndex;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            buffer[0] = ExceptionAttribute;
+
+            return 1 + DwarfHelper.WriteULEB128(buffer.Slice(1), (ulong)_typeIndex);
+        }
+
+        public override int EncodeSize() => 1 + (int)DwarfHelper.SizeOfULEB128((ulong)_typeIndex);
         public override int EncodeRelocationCount() => 0;
         public override int EncodeRelocations(Span<Relocation> buffer) => 0;
     }

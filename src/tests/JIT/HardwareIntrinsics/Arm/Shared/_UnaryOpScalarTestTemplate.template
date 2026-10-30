@@ -69,7 +69,7 @@ namespace {Namespace}
 
             public DataTable({RetBaseType}[] outArray, int alignment)
             {
-                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
+                int sizeOfoutArray = outArray.Length * sizeof({RetBaseType});
                 if ((alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfoutArray)
                 {
                     throw new ArgumentException("Invalid value of alignment");
@@ -116,7 +116,7 @@ namespace {Namespace}
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+        private static readonly int RetElementCount = sizeof({RetVectorType}<{RetBaseType}>) / sizeof({RetBaseType});
 
         private static {Op1BaseType} _data;
 
@@ -227,7 +227,7 @@ namespace {Namespace}
         private void ValidateResult({Op1BaseType} data, void* result, [CallerMemberName] string method = "")
         {
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)sizeof({RetVectorType}<{RetBaseType}>));
             ValidateResult(data, outArray, method);
         }
 

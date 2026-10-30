@@ -13,6 +13,8 @@
 #include "../gc/env/gcenv.ee.h"
 #include "threadsuspend.h"
 #include "interoplibinterface.h"
+#include "exinfo.h"
+#include "externalmemoryhandle.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -52,14 +54,14 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
         g_pDebugInterface->SuspendForGarbageCollectionCompleted();
 }
 
-void GCToEEInterface::RestartEE(bool bFinishedGC)
+void GCToEEInterface::RestartEE(bool bUnused)
 {
     WRAPPER_NO_CONTRACT;
 
     if (g_pDebugInterface)
         g_pDebugInterface->ResumeForGarbageCollectionStarted();
 
-    ThreadSuspend::RestartEE(bFinishedGC, TRUE);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 }
 
 VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
@@ -199,10 +201,23 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
-    while (pGCFrame != GCFRAME_TOP)
+    while (pGCFrame != NULL)
     {
         pGCFrame->GcScanRoots(fn, sc);
         pGCFrame = pGCFrame->PtrNextFrame();
+    }
+
+    // Scan the ExInfo chain for exception objects held by direct pointer.
+    // Superseded ExInfo objects may live in logically dead parts of the stack
+    // that the normal GC stackwalk skips (e.g., when one exception dispatch
+    // supersedes a previous one). We keep them alive for post-mortem debugging
+    // and SOS. This mirrors NativeAOT's GcScanRootsWorker (thread.cpp:569-573).
+    PTR_ExInfo pExInfo = pThread->GetExceptionState()->GetCurrentExceptionTracker();
+    while (pExInfo != NULL)
+    {
+        PTR_PTR_Object pRef = dac_cast<PTR_PTR_Object>(&pExInfo->m_exception);
+        fn(pRef, sc, 0);
+        pExInfo = pExInfo->GetPreviousExceptionTracker();
     }
 }
 
@@ -298,7 +313,9 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
             ScanStackRoots(pThread, fn, sc);
             ScanTailCallArgBufferRoots(pThread, fn, sc);
+#ifdef FEATURE_MULTITHREADING
             ScanThreadStaticRoots(pThread, fn, sc);
+#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_EVENT_TRACE
             sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -319,6 +336,18 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
         {
             SystemDomain::EnumAllStaticGCRefs(fn, sc);
         }
+    }
+
+    // In server GC, we can be scanning GC roots from multiple GC threads concurrently.
+    // It's unsafe for us to scan unpinned roots from multiple threads concurrently
+    // as this could lead to invalid relocations during compaction.
+    // As a result, we will only scan these roots on one context to ensure they are scanned exactly once.
+    if (GCHeapUtilities::ShouldScanUnpinnedRoots(sc))
+    {
+        // We are going to scan over possible byref values located not on any given thread's stack.
+        // Ensure that we don't try to check the stack limits of any particular thread while scanning these roots.
+        sc->thread_under_crawl = nullptr;
+        ExternalMemoryHandle::GCScanRoots(fn, sc);
     }
 }
 
@@ -408,6 +437,22 @@ void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* arg
 #endif // FEATURE_JAVAMARSHAL
 }
 
+bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_JAVAMARSHAL
+    return Interop::IsGCBridgeActive();
+#else
+    return false;
+#endif // FEATURE_JAVAMARSHAL
+}
+
 void GCToEEInterface::SyncBlockCacheDemote(int max_gen)
 {
     CONTRACTL
@@ -465,33 +510,22 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
     }
     CONTRACTL_END;
 
-    if (GCHeapUtilities::UseThreadAllocationContexts())
+    Thread * pThread = NULL;
+    while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
     {
-        Thread * pThread = NULL;
-        while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+        ee_alloc_context* palloc_context = pThread->GetEEAllocContext();
+        if (palloc_context != nullptr)
         {
-            ee_alloc_context* palloc_context = pThread->GetEEAllocContext();
-            if (palloc_context != nullptr)
+            gc_alloc_context* ac = &palloc_context->m_GCAllocContext;
+            fn(ac, param);
+            // The GC may zero the alloc_ptr and alloc_limit fields of AC during enumeration and we need to keep
+            // m_CombinedLimit up-to-date. Note that the GC has multiple threads running this enumeration concurrently
+            // with no synchronization. If you need to change this code think carefully about how that concurrency
+            // may affect the results.
+            if (ac->alloc_limit == 0 && palloc_context->m_CombinedLimit != 0)
             {
-                gc_alloc_context* ac = &palloc_context->m_GCAllocContext;
-                fn(ac, param);
-                // The GC may zero the alloc_ptr and alloc_limit fields of AC during enumeration and we need to keep
-                // m_CombinedLimit up-to-date. Note that the GC has multiple threads running this enumeration concurrently
-                // with no synchronization. If you need to change this code think carefully about how that concurrency
-                // may affect the results.
-                if (ac->alloc_limit == 0 && palloc_context->m_CombinedLimit != 0)
-                {
-                    palloc_context->m_CombinedLimit = 0;
-                }
+                palloc_context->m_CombinedLimit = 0;
             }
-        }
-    }
-    else
-    {
-        fn(&g_global_alloc_context.m_GCAllocContext, param);
-        if (g_global_alloc_context.m_GCAllocContext.alloc_limit == 0 && g_global_alloc_context.m_CombinedLimit != 0)
-        {
-            g_global_alloc_context.m_CombinedLimit = 0;
         }
     }
 }
@@ -649,7 +683,9 @@ void GcScanRootsForProfilerAndETW(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
         ScanStackRoots(pThread, fn, sc);
         ScanTailCallArgBufferRoots(pThread, fn, sc);
+#ifdef FEATURE_MULTITHREADING
         ScanThreadStaticRoots(pThread, fn, sc);
+#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_EVENT_TRACE
         sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -822,7 +858,9 @@ void GCProfileWalkHeap(bool etwOnly)
 
 void WalkFReachableObjects(bool isCritical, void* objectID)
 {
-	(&g_profControlBlock)->FinalizeableObjectQueued(isCritical, (ObjectID)objectID);
+#if defined(PROFILING_SUPPORTED)
+    (&g_profControlBlock)->FinalizeableObjectQueued(isCritical, (ObjectID)objectID);
+#endif // PROFILING_SUPPORTED
 }
 
 static fq_walk_fn g_FQWalkFn = &WalkFReachableObjects;
@@ -862,7 +900,7 @@ void GCToEEInterface::DiagUpdateGenerationBounds()
 
 void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent)
 {
-#ifdef GC_PROFILING
+#if defined(GC_PROFILING) || defined(PERFTRACING_DISABLE_THREADS)
     // We were only doing generation bounds and GC finish callback for non concurrent GCs so
     // I am keeping that behavior to not break profilers. But if BasicGC monitoring is enabled
     // we will do these for all GCs.
@@ -870,7 +908,9 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
     {
         GCProfileWalkHeap(false);
     }
+#endif // defined(GC_PROFILING) || defined(PERFTRACING_DISABLE_THREADS)
 
+#ifdef GC_PROFILING
     if (CORProfilerTrackBasicGC() || (!fConcurrent && CORProfilerTrackGC()))
     {
         DiagUpdateGenerationBounds();
@@ -1062,7 +1102,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         {
             assert(!args->is_runtime_suspended &&
                 "if runtime was suspended in patching routines then it was in running state at beginning");
-            ThreadSuspend::RestartEE(FALSE, TRUE);
+            ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
         }
         return; // unlike other branches we have already done cleanup so bailing out here
 
@@ -1163,7 +1203,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     {
         assert(!args->is_runtime_suspended &&
             "if runtime was suspended in patching routines then it was in running state at beginning");
-        ThreadSuspend::RestartEE(FALSE, TRUE);
+        ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
     }
 }
 
@@ -1440,6 +1480,7 @@ bool GCToEEInterface::WasCurrentThreadCreatedByGC()
     return !!::IsGCSpecialThread();
 }
 
+#ifdef FEATURE_MULTITHREADING
 struct SuspendableThreadStubArguments
 {
     void* Argument;
@@ -1544,7 +1585,7 @@ namespace
         args.Thread->StartThread();
 
         // Wait for the thread to be in its main loop
-        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE);
+        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE, false);
         args.ThreadStartedEvent.CloseEvent();
         _ASSERTE(res == WAIT_OBJECT_0);
 
@@ -1568,7 +1609,7 @@ namespace
         ThreadStubArguments args;
         args.Argument = argument;
         args.ThreadStart = threadStart;
-        args.Thread = INVALID_HANDLE_VALUE;
+        args.Thread = NULL;
 #ifdef __APPLE__
         args.name = name;
 #endif //__APPLE__
@@ -1601,14 +1642,14 @@ namespace
         };
 
         args.Thread = Thread::CreateUtilityThread(Thread::StackSize_Medium, threadStub, &args, name);
-        if (args.Thread == INVALID_HANDLE_VALUE)
+        if (args.Thread == NULL)
         {
             args.ThreadStartedEvent.CloseEvent();
             return false;
         }
 
         // Wait for the thread to be in its main loop
-        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE);
+        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE, false);
         args.ThreadStartedEvent.CloseEvent();
         _ASSERTE(res == WAIT_OBJECT_0);
 
@@ -1616,9 +1657,11 @@ namespace
         return true;
     }
 } // anonymous namespace
+#endif // FEATURE_MULTITHREADING
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
+#ifdef FEATURE_MULTITHREADING
     InlineSString<MaxThreadNameSize> wideName;
     const WCHAR* namePtr = nullptr;
     EX_TRY
@@ -1645,6 +1688,11 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     {
         return CreateNonSuspendableThread(threadStart, arg, namePtr);
     }
+#else
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();
+    return false;
+#endif // FEATURE_MULTITHREADING
 }
 
 void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)

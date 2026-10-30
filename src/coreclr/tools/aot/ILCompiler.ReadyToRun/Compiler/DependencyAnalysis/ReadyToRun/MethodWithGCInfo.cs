@@ -10,10 +10,11 @@ using Internal.Pgo;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, IMethodCodeNodeWithTypeSignature
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
@@ -24,6 +25,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private FrameInfo[] _coldFrameInfos;
         private byte[] _gcInfo;
         private ObjectData _ehInfo;
+        private FuncletKind[] _funcletKinds;
         private byte[] _debugLocInfos;
         private byte[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
@@ -91,6 +93,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public MethodDesc Method => _method;
+
+        public bool IsJitHelper { get; set; }
 
         public List<ISymbolNode> Fixups => _fixups;
 
@@ -261,26 +265,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return writer.ToArray();
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencyList = new DependencyList(new DependencyListEntry[] { new DependencyListEntry(GCInfoNode, "Unwind & GC info") });
+            sink.Add(GCInfoNode, "Unwind & GC info");
 
             if (this.ColdCodeNode != null)
             {
-                dependencyList.Add(this.ColdCodeNode, "cold");
+                sink.Add(this.ColdCodeNode, "cold");
             }
 
             foreach (ISymbolNode node in _fixups)
             {
-                dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
+                sink.Add(node, "classMustBeLoadedBeforeCodeIsRun");
             }
 
             if (_nonRelocationDependencies != null)
             {
-                dependencyList.AddRange(_nonRelocationDependencies);
+                foreach (DependencyListEntry dependency in _nonRelocationDependencies)
+                {
+                    sink.Add(dependency);
+                }
             }
-
-            return dependencyList;
         }
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;
@@ -288,6 +293,43 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.GetMangledMethodName(_method));
+        }
+
+        public void AddRuntimeDeterminedStaticDependencies(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod)
+        {
+            if (_nonRelocationDependencies is not null)
+            {
+                foreach (DependencyListEntry dependency in _nonRelocationDependencies)
+                {
+                    AddRuntimeDeterminedDependency(sink, factory, concreteMethod, dependency.Node);
+                }
+            }
+
+            if (_methodCode.Relocs is not null)
+            {
+                foreach (Relocation relocation in _methodCode.Relocs)
+                {
+                    AddRuntimeDeterminedDependency(sink, factory, concreteMethod, relocation.Target);
+                }
+            }
+        }
+
+        public void AddRuntimeDeterminedConditionalDependencies(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod)
+        {
+        }
+
+        private static void AddRuntimeDeterminedDependency(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod, object dependency)
+        {
+            if (dependency is INodeWithRuntimeDeterminedDependencies runtimeDeterminedDependency)
+            {
+                runtimeDeterminedDependency.AddDependencies(
+                    sink,
+                    factory,
+                    concreteMethod.OwningType.Instantiation,
+                    concreteMethod.Instantiation,
+                    isConcreteInstantiation: !concreteMethod.IsSharedByGenericInstantiations,
+                    otherReasonNode: null);
+            }
         }
 
         protected override string GetName(NodeFactory factory)
@@ -381,10 +423,46 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _debugEHClauseInfos = debugEHClauseInfos;
         }
 
+        public FuncletKind[] GetFuncletKinds() => _funcletKinds ?? [];
+
+        public void InitializeFuncletKinds(FuncletKind[] funcletKinds)
+        {
+            Debug.Assert(_funcletKinds is null);
+            _funcletKinds = funcletKinds;
+        }
+
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             MethodWithGCInfo otherNode = (MethodWithGCInfo)other;
+            MethodDesc methodLayoutAnchor = GetMethodLayoutAnchor(_method, out int methodLayoutRank);
+            MethodDesc otherLayoutAnchor = GetMethodLayoutAnchor(otherNode._method, out int otherLayoutRank);
+
+            int result = comparer.Compare(methodLayoutAnchor, otherLayoutAnchor);
+            if (result != 0)
+            {
+                return result;
+            }
+
+            result = methodLayoutRank.CompareTo(otherLayoutRank);
+            if (result != 0)
+            {
+                return result;
+            }
+
             return comparer.Compare(_method, otherNode._method);
+
+            static MethodDesc GetMethodLayoutAnchor(MethodDesc method, out int layoutRank)
+            {
+                if (method is AsyncResumptionStub resumptionStub)
+                {
+                    Debug.Assert(resumptionStub.TargetMethod is not AsyncResumptionStub);
+                    layoutRank = 1;
+                    return resumptionStub.TargetMethod;
+                }
+
+                layoutRank = 0;
+                return method;
+            }
         }
 
         public void InitializeInliningInfo(MethodDesc[] inlinedMethods, NodeFactory factory)

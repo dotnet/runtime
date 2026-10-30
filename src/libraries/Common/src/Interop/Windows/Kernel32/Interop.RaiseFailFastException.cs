@@ -9,6 +9,7 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "RaiseFailFastException")]
         [DoesNotReturn]
         public static unsafe partial void RaiseFailFastException(IntPtr pExceptionRecord, IntPtr pContextRecord, uint dwFlags);

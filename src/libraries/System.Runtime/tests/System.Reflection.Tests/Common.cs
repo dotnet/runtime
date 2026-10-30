@@ -128,4 +128,10 @@ namespace System.Reflection.Tests
         public override PropertyInfo? SelectProperty(BindingFlags bindingAttr, PropertyInfo[] match, Type? returnType, Type[]? indexes, ParameterModifier[]? modifiers)
             => throw new NotImplementedException();
     }
+
+    public class ConvertStringToInt16Binder : ConvertStringToIntBinder
+    {
+        public override object ChangeType(object value, Type type, CultureInfo? culture)
+            => short.Parse((string)value);
+    }
 }

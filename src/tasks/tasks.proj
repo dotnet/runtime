@@ -12,7 +12,6 @@
     <ProjectReference Remove="Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <ProjectReference Remove="Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
     <ProjectReference Remove="MobileBuildTasks\MobileBuildTasks.csproj" />
-    <ProjectReference Remove="TestExclusionListTasks\TestExclusionListTasks.csproj" />
     <ProjectReference Remove="WasmAppBuilder\WasmAppBuilder.csproj" />
     <ProjectReference Remove="WasmBuildTasks\WasmBuildTasks.csproj" />
 

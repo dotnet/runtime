@@ -900,7 +900,7 @@ namespace System.Numerics.Tests
             if (fill == 0 && bytes1.Count > 1 && bytes1[bytes1.Count - 1] == 0)
                 bytes1.RemoveAt(bytes1.Count - 1);
 
-            while (bytes1.Count % nint.Size != 0)
+            while (bytes1.Count % 4 != 0)
             {
                 bytes1.Add(fill);
             }

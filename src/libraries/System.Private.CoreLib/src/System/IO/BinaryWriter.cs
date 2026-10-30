@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -174,7 +174,7 @@ namespace System.IO
         // advanced by two.
         // Note this method cannot handle surrogates properly in UTF-8.
         //
-        public virtual void Write(char ch)
+        public virtual unsafe void Write(char ch)
         {
             if (!Rune.TryCreate(ch, out Rune rune)) // optimistically assume UTF-8 code path (which uses Rune) will be hit
             {
@@ -241,14 +241,14 @@ namespace System.IO
         // Writes a double to this stream. The current position of the stream is
         // advanced by eight.
         //
-        public virtual void Write(double value)
+        public virtual unsafe void Write(double value)
         {
             Span<byte> buffer = stackalloc byte[sizeof(double)];
             BinaryPrimitives.WriteDoubleLittleEndian(buffer, value);
             OutStream.Write(buffer);
         }
 
-        public virtual void Write(decimal value)
+        public virtual unsafe void Write(decimal value)
         {
             Span<byte> buffer = stackalloc byte[sizeof(decimal)];
             decimal.GetBytes(value, buffer);
@@ -258,7 +258,7 @@ namespace System.IO
         // Writes a two-byte signed integer to this stream. The current position of
         // the stream is advanced by two.
         //
-        public virtual void Write(short value)
+        public virtual unsafe void Write(short value)
         {
             Span<byte> buffer = stackalloc byte[sizeof(short)];
             BinaryPrimitives.WriteInt16LittleEndian(buffer, value);
@@ -269,7 +269,7 @@ namespace System.IO
         // of the stream is advanced by two.
         //
         [CLSCompliant(false)]
-        public virtual void Write(ushort value)
+        public virtual unsafe void Write(ushort value)
         {
             Span<byte> buffer = stackalloc byte[sizeof(ushort)];
             BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
@@ -279,7 +279,7 @@ namespace System.IO
         // Writes a four-byte signed integer to this stream. The current position
         // of the stream is advanced by four.
         //
-        public virtual void Write(int value)
+        public virtual unsafe void Write(int value)
         {
             Span<byte> buffer = stackalloc byte[sizeof(int)];
             BinaryPrimitives.WriteInt32LittleEndian(buffer, value);
@@ -290,7 +290,7 @@ namespace System.IO
         // of the stream is advanced by four.
         //
         [CLSCompliant(false)]
-        public virtual void Write(uint value)
+        public virtual unsafe void Write(uint value)
         {
             Span<byte> buffer = stackalloc byte[sizeof(uint)];
             BinaryPrimitives.WriteUInt32LittleEndian(buffer, value);
@@ -300,7 +300,7 @@ namespace System.IO
         // Writes an eight-byte signed integer to this stream. The current position
         // of the stream is advanced by eight.
         //
-        public virtual void Write(long value)
+        public virtual unsafe void Write(long value)
         {
             Span<byte> buffer = stackalloc byte[sizeof(long)];
             BinaryPrimitives.WriteInt64LittleEndian(buffer, value);
@@ -311,7 +311,7 @@ namespace System.IO
         // position of the stream is advanced by eight.
         //
         [CLSCompliant(false)]
-        public virtual void Write(ulong value)
+        public virtual unsafe void Write(ulong value)
         {
             Span<byte> buffer = stackalloc byte[sizeof(ulong)];
             BinaryPrimitives.WriteUInt64LittleEndian(buffer, value);
@@ -321,7 +321,7 @@ namespace System.IO
         // Writes a float to this stream. The current position of the stream is
         // advanced by four.
         //
-        public virtual void Write(float value)
+        public virtual unsafe void Write(float value)
         {
             Span<byte> buffer = stackalloc byte[sizeof(float)];
             BinaryPrimitives.WriteSingleLittleEndian(buffer, value);
@@ -331,7 +331,7 @@ namespace System.IO
         // Writes a half to this stream. The current position of the stream is
         // advanced by two.
         //
-        public virtual void Write(Half value)
+        public virtual unsafe void Write(Half value)
         {
             Span<byte> buffer = stackalloc byte[sizeof(ushort) /* = sizeof(Half) */];
             BinaryPrimitives.WriteHalfLittleEndian(buffer, value);
@@ -343,7 +343,7 @@ namespace System.IO
         // an encoded unsigned integer with variable length, and then writes that many characters
         // to the stream.
         //
-        public virtual void Write(string value)
+        public virtual unsafe void Write(string value)
         {
             ArgumentNullException.ThrowIfNull(value);
 

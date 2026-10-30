@@ -102,8 +102,40 @@ internal static class ReflectionTest
         TestActivatingThingsInSignature.Run();
         TestArrayInitialize.Run();
         TestDelegateInvokeFromEvent.Run();
+        TestFrozenRuntimeTypes.Run();
 
         return 100;
+    }
+
+    class TestFrozenRuntimeTypes
+    {
+        public static void Run()
+        {
+            const int MaxRank = 32;
+            Type[] types = new Type[MaxRank * MaxRank];
+            for (int outerRank = 1; outerRank <= MaxRank; outerRank++)
+            {
+                for (int innerRank = 1; innerRank <= MaxRank; innerRank++)
+                {
+                    Type type = typeof(TestFrozenRuntimeTypes).MakeArrayType(innerRank).MakeArrayType(outerRank);
+                    types[(outerRank - 1) * MaxRank + innerRank - 1] = type;
+                }
+            }
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+
+            for (int outerRank = 1; outerRank <= MaxRank; outerRank++)
+            {
+                for (int innerRank = 1; innerRank <= MaxRank; innerRank++)
+                {
+                    Type type = types[(outerRank - 1) * MaxRank + innerRank - 1];
+                    Assert.Equal(outerRank, type.GetArrayRank());
+                    Assert.Equal(innerRank, type.GetElementType().GetArrayRank());
+                    Assert.Same(typeof(TestFrozenRuntimeTypes), type.GetElementType().GetElementType());
+                    Assert.Same(typeof(TestFrozenRuntimeTypes).MakeArrayType(innerRank).MakeArrayType(outerRank), type);
+                }
+            }
+        }
     }
 
     class TestReflectionInvoke
@@ -2322,25 +2354,41 @@ internal static class ReflectionTest
         abstract class Base
         {
             public virtual void VirtualMethod() { }
+            public virtual void VirtualMethodShared<T>() { }
+            public virtual void VirtualMethodUnshared<T>() { }
             public abstract void AbstractMethod();
+            public abstract void AbstractMethodShared<T>();
+            public abstract void AbstractMethodUnshared<T>();
         }
 
         class Derived : Base, IBar
         {
             public override void AbstractMethod() { }
+            public override void AbstractMethodShared<T>() { }
+            public override void AbstractMethodUnshared<T>() { }
             public override void VirtualMethod() { }
+            public override void VirtualMethodShared<T>() { }
+            public override void VirtualMethodUnshared<T>() { }
             void IFoo.InterfaceMethod() { }
+            void IFoo.InterfaceMethodShared<T>() { }
+            void IFoo.InterfaceMethodUnshared<T>() { }
         }
 
         interface IFoo
         {
             void InterfaceMethod();
+            void InterfaceMethodShared<T>();
+            void InterfaceMethodUnshared<T>();
             void DefaultInterfaceMethod() { }
+            void DefaultInterfaceMethodShared<T>() { }
+            void DefaultInterfaceMethodUnshared<T>() { }
         }
 
         interface IBar : IFoo
         {
             void IFoo.DefaultInterfaceMethod() { }
+            void IFoo.DefaultInterfaceMethodShared<T>() { }
+            void IFoo.DefaultInterfaceMethodUnshared<T>() { }
         }
 
         static Base s_baseInstance = new Derived();
@@ -2354,16 +2402,48 @@ internal static class ReflectionTest
             if (abstractMethod.GetMethodInfo().Name != nameof(Derived.AbstractMethod))
                 throw new Exception();
 
+            Action abstractMethodShared = s_baseInstance.AbstractMethodShared<object>;
+            if (abstractMethodShared.GetMethodInfo().Name != nameof(Derived.AbstractMethodShared))
+                throw new Exception();
+
+            Action abstractMethodUnshared = s_baseInstance.AbstractMethodUnshared<int>;
+            if (abstractMethodUnshared.GetMethodInfo().Name != nameof(Derived.AbstractMethodUnshared))
+                throw new Exception();
+
             Action virtualMethod = s_baseInstance.VirtualMethod;
             if (virtualMethod.GetMethodInfo().Name != nameof(Derived.VirtualMethod))
+                throw new Exception();
+
+            Action virtualMethodShared = s_baseInstance.VirtualMethodShared<object>;
+            if (virtualMethodShared.GetMethodInfo().Name != nameof(Derived.VirtualMethodShared))
+                throw new Exception();
+
+            Action virtualMethodUnshared = s_baseInstance.VirtualMethodUnshared<int>;
+            if (virtualMethodUnshared.GetMethodInfo().Name != nameof(Derived.VirtualMethodUnshared))
                 throw new Exception();
 
             Action interfaceMethod = s_ifooInstance.InterfaceMethod;
             if (!interfaceMethod.GetMethodInfo().Name.EndsWith("IFoo.InterfaceMethod"))
                 throw new Exception();
 
+            Action interfaceMethodShared = s_ifooInstance.InterfaceMethodShared<object>;
+            if (!interfaceMethodShared.GetMethodInfo().Name.EndsWith("IFoo.InterfaceMethodShared"))
+                throw new Exception();
+
+            Action interfaceMethodUnshared = s_ifooInstance.InterfaceMethodUnshared<int>;
+            if (!interfaceMethodUnshared.GetMethodInfo().Name.EndsWith("IFoo.InterfaceMethodUnshared"))
+                throw new Exception();
+
             Action defaultMethod = s_ifooInstance.DefaultInterfaceMethod;
             if (!defaultMethod.GetMethodInfo().Name.EndsWith("IFoo.DefaultInterfaceMethod"))
+                throw new Exception();
+
+            Action defaultMethodShared = s_ifooInstance.DefaultInterfaceMethodShared<object>;
+            if (!defaultMethodShared.GetMethodInfo().Name.EndsWith("IFoo.DefaultInterfaceMethodShared"))
+                throw new Exception();
+
+            Action defaultMethodUnshared = s_ifooInstance.DefaultInterfaceMethodUnshared<int>;
+            if (!defaultMethodUnshared.GetMethodInfo().Name.EndsWith("IFoo.DefaultInterfaceMethodUnshared"))
                 throw new Exception();
         }
     }

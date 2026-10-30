@@ -237,6 +237,7 @@ namespace System.IO.Pipelines
 
 #if NET
             [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+            [RuntimeAsyncMethodGeneration(false)]
 #endif
             static async ValueTask<ReadResult> Core(StreamPipeReader reader, int? minimumSize, CancellationTokenSource tokenSource, CancellationToken cancellationToken)
             {

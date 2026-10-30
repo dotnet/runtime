@@ -43,6 +43,11 @@
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
+#if HAVE_EPOLL
+#include <sys/epoll.h>
+#elif HAVE_KQUEUE
+#include <sys/event.h>
+#endif
 #if HAVE_STATFS_VFS // Linux
 #include <sys/vfs.h>
 #elif HAVE_STATFS_MOUNT // BSD
@@ -72,6 +77,10 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 
 #if defined(TARGET_SUNOS)
 #include <procfs.h>
+#endif
+
+#if defined(TARGET_WASI)
+#include <sys/random.h> // getentropy
 #endif
 
 #ifdef __linux__
@@ -198,8 +207,15 @@ c_static_assert(PAL_IN_DONT_FOLLOW == IN_DONT_FOLLOW);
 #if HAVE_IN_EXCL_UNLINK
 c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 #endif // HAVE_IN_EXCL_UNLINK
+c_static_assert(PAL_IN_MOVE_SELF == IN_MOVE_SELF);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
+
+// Validate that our UserFlags enum values match the platform, since
+// SystemNative_LChflags and SystemNative_FChflags pass them directly to the OS.
+#if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
+c_static_assert(PAL_UF_HIDDEN == UF_HIDDEN);
+#endif
 
 static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
@@ -231,7 +247,7 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 #endif
 
 #if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
-    dst->UserFlags = ((src->st_flags & UF_HIDDEN) == UF_HIDDEN) ? PAL_UF_HIDDEN : 0;
+    dst->UserFlags = (uint32_t)src->st_flags;
 #else
     dst->UserFlags = 0;
 #endif
@@ -299,7 +315,7 @@ static int32_t ConvertOpenFlags(int32_t flags)
             return -1;
     }
 
-    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC | PAL_O_NOFOLLOW))
+    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC | PAL_O_NOFOLLOW | PAL_O_DIRECTORY))
     {
         assert_msg(false, "Unknown Open flag", (int)flags);
         return -1;
@@ -319,18 +335,15 @@ static int32_t ConvertOpenFlags(int32_t flags)
         ret |= O_SYNC;
     if (flags & PAL_O_NOFOLLOW)
         ret |= O_NOFOLLOW;
+    if (flags & PAL_O_DIRECTORY)
+        ret |= O_DIRECTORY;
 
     assert(ret != -1);
     return ret;
 }
 
-intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
+static int32_t ConvertOpenFlagsAndAddDefaults(int32_t flags)
 {
-// these two ifdefs are for platforms where we dont have the open version of CLOEXEC and thus
-// must simulate it by doing a fcntl with the SETFFD version after the open instead
-#if !HAVE_O_CLOEXEC
-    int32_t old_flags = flags;
-#endif
     flags = ConvertOpenFlags(flags);
     if (flags == -1)
     {
@@ -338,14 +351,53 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
         return -1;
     }
 
-    int result;
-    while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
+    // Prevent terminal devices from becoming the controlling terminal of this process.
+    // WASM (browser/WASI) has no controlling terminals, and WASMFS's doOpen rejects any
+    // flag outside its known set (O_NOCTTY is not among them), so skip it there.
+#ifndef TARGET_WASM
+    flags |= O_NOCTTY;
+#endif
+    return flags;
+}
+
+static void SetCloseOnExecIfNeeded(int result, int32_t flags)
+{
 #if !HAVE_O_CLOEXEC
-    if (old_flags & PAL_O_CLOEXEC)
+    if (result >= 0 && (flags & PAL_O_CLOEXEC))
     {
         fcntl(result, F_SETFD, FD_CLOEXEC);
     }
+#else
+    (void)result;
+    (void)flags;
 #endif
+}
+
+intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
+{
+    int32_t nativeFlags = ConvertOpenFlagsAndAddDefaults(flags);
+    if (nativeFlags == -1)
+    {
+        return -1;
+    }
+
+    int result;
+    while ((result = open(path, nativeFlags, (mode_t)mode)) < 0 && errno == EINTR);
+    SetCloseOnExecIfNeeded(result, flags);
+    return result;
+}
+
+intptr_t SystemNative_OpenAt(intptr_t dirfd, const char* path, int32_t flags, int32_t mode)
+{
+    int32_t nativeFlags = ConvertOpenFlagsAndAddDefaults(flags);
+    if (nativeFlags == -1)
+    {
+        return -1;
+    }
+
+    int result;
+    while ((result = openat(ToFileDescriptor(dirfd), path, nativeFlags, (mode_t)mode)) < 0 && errno == EINTR);
+    SetCloseOnExecIfNeeded(result, flags);
     return result;
 }
 
@@ -377,6 +429,27 @@ int32_t SystemNative_Unlink(const char* path)
 {
     int32_t result;
     while ((result = unlink(path)) < 0 && errno == EINTR);
+    return result;
+}
+
+int32_t SystemNative_UnlinkAt(intptr_t dirfd, const char* path, int32_t flags)
+{
+    int nativeFlags;
+    switch (flags)
+    {
+        case 0:
+            nativeFlags = 0;
+            break;
+        case PAL_AT_REMOVEDIR:
+            nativeFlags = AT_REMOVEDIR;
+            break;
+        default:
+            errno = EINVAL;
+            return -1;
+    }
+
+    int32_t result;
+    while ((result = unlinkat(ToFileDescriptor(dirfd), path, nativeFlags)) < 0 && errno == EINTR);
     return result;
 }
 
@@ -747,6 +820,13 @@ int32_t SystemNative_MkDir(const char* path, int32_t mode)
     return result;
 }
 
+int32_t SystemNative_MkDirAt(intptr_t dirfd, const char* path, int32_t mode)
+{
+    int32_t result;
+    while ((result = mkdirat(ToFileDescriptor(dirfd), path, (mode_t)mode)) < 0 && errno == EINTR);
+    return result;
+}
+
 int32_t SystemNative_ChMod(const char* path, int32_t mode)
 {
 #if HAVE_CHMOD
@@ -897,6 +977,57 @@ int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
 #endif /* TARGET_WASI */
 }
 
+#if defined(TARGET_WASI)
+// wasi-libc provides neither mkstemp(s) nor mkdtemp, so emulate them the way libc does:
+// replace the trailing XXXXXX with random characters and try to create the entry exclusively,
+// retrying on name collisions.
+#define TEMP_NAME_RANDOM_CHARS 6
+#define TEMP_NAME_MAX_ATTEMPTS 100
+
+// Validates the template and returns a pointer to the first of the six 'X' characters that
+// precede a suffix of suffixLength characters. Returns NULL and sets errno on failure.
+static char* GetTempNameRandomChars(char* pathTemplate, int32_t suffixLength)
+{
+    size_t pathTemplateLength = strlen(pathTemplate);
+    if (suffixLength < 0 || pathTemplateLength < TEMP_NAME_RANDOM_CHARS || (size_t)suffixLength > pathTemplateLength - TEMP_NAME_RANDOM_CHARS)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    char* randomChars = pathTemplate + pathTemplateLength - (size_t)suffixLength - TEMP_NAME_RANDOM_CHARS;
+    for (int32_t i = 0; i < TEMP_NAME_RANDOM_CHARS; i++)
+    {
+        if (randomChars[i] != 'X')
+        {
+            errno = EINVAL;
+            return NULL;
+        }
+    }
+
+    return randomChars;
+}
+
+// Replaces the six characters at randomChars with random [A-Za-z0-9] characters.
+// Returns 0 on success, or -1 with errno set on failure.
+static int32_t FillTempNameRandomChars(char* randomChars)
+{
+    static const char s_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    uint8_t randomBytes[TEMP_NAME_RANDOM_CHARS];
+    if (getentropy(randomBytes, sizeof(randomBytes)) != 0)
+    {
+        return -1;
+    }
+
+    for (int32_t i = 0; i < TEMP_NAME_RANDOM_CHARS; i++)
+    {
+        randomChars[i] = s_chars[randomBytes[i] % (sizeof(s_chars) - 1)];
+    }
+
+    return 0;
+}
+#endif /* TARGET_WASI */
+
 char* SystemNative_MkdTemp(char* pathTemplate)
 {
 #if !defined(TARGET_WASI)
@@ -904,6 +1035,33 @@ char* SystemNative_MkdTemp(char* pathTemplate)
     while ((result = mkdtemp(pathTemplate)) == NULL && errno == EINTR);
     return result;
 #else /* TARGET_WASI */
+    char* randomChars = GetTempNameRandomChars(pathTemplate, 0);
+    if (randomChars == NULL)
+    {
+        return NULL;
+    }
+
+    for (int32_t attempt = 0; attempt < TEMP_NAME_MAX_ATTEMPTS; attempt++)
+    {
+        if (FillTempNameRandomChars(randomChars) != 0)
+        {
+            return NULL;
+        }
+
+        int result;
+        while ((result = mkdir(pathTemplate, 0700)) < 0 && errno == EINTR);
+        if (result == 0)
+        {
+            return pathTemplate;
+        }
+
+        if (errno != EEXIST)
+        {
+            return NULL;
+        }
+    }
+
+    errno = EEXIST;
     return NULL;
 #endif /* TARGET_WASI */
 }
@@ -947,8 +1105,28 @@ intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
     {
         pathTemplate[firstSuffixIndex] = firstSuffixChar;
     }
-#elif TARGET_WASI
-    assert_msg(false, "Not supported on WASI", 0);
+#elif defined(TARGET_WASI)
+    char* randomChars = GetTempNameRandomChars(pathTemplate, suffixLength);
+    if (randomChars == NULL)
+    {
+        return -1;
+    }
+
+    for (int32_t attempt = 0; attempt < TEMP_NAME_MAX_ATTEMPTS; attempt++)
+    {
+        if (FillTempNameRandomChars(randomChars) != 0)
+        {
+            return -1;
+        }
+
+        while ((result = open(pathTemplate, O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, 0600)) < 0 && errno == EINTR);
+        if (result >= 0 || errno != EEXIST)
+        {
+            return result;
+        }
+    }
+
+    errno = EEXIST;
     result = -1;
 #else
 #error "Cannot find mkstemps nor mkstemp on this platform"
@@ -1558,6 +1736,13 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
         while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
     }
+#if defined(TARGET_WASI)
+    // WASI hosts are not required to support setting file times, so copying them is best effort.
+    if (ret != 0 && (errno == ENOSYS || errno == ENOTSUP))
+    {
+        ret = 0;
+    }
+#endif /* TARGET_WASI */
     // If we copied to a filesystem (eg EXFAT) that does not preserve POSIX ownership, all files appear
     // to be owned by root. If we aren't running as root, then we won't be an owner of our new file, and
     // attempting to copy metadata to it will fail with EPERM. We have copied successfully, we just can't
@@ -1567,8 +1752,8 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
         return -1;
     }
 
-#if HAVE_FCHMOD
-    // Copy permissions.
+#if HAVE_FCHMOD && !defined(TARGET_WASI)
+    // Copy permissions. WASI has no permission bits and wasi-libc's fchmod always fails with ENOSYS.
     // Even though managed code created the file with permissions matching those of the source file,
     // we need to copy permissions because the open permissions may be filtered by 'umask'.
     while ((ret = fchmod(outFd, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
@@ -1576,7 +1761,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     {
         return -1;
     }
-#endif /* HAVE_FCHMOD */
+#endif /* HAVE_FCHMOD && !defined(TARGET_WASI) */
 
     return 0;
 #endif // HAVE_FCOPYFILE
@@ -1725,7 +1910,7 @@ uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperati
     if (fsStatDevRes == -1) return 0;
 
     return FileSystemNameSupportsLocking(info.fsh_name);
-#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX)
     int statfsRes;
     struct statfs statfsArgs;
     // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
@@ -1735,7 +1920,7 @@ uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperati
 
 #if HAVE_STATFS_FSTYPENAME
     return FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
     unsigned int f_type = (unsigned int)statfsArgs.f_type;
     if (f_type == 0x6969 ||     // NFS_SUPER_MAGIC
         f_type == 0xFF534D42 || // CIFS_SUPER_MAGIC
@@ -1855,8 +2040,8 @@ int32_t SystemNative_ReadThreadInfo(int32_t pid, int32_t tid, ThreadInfo* thread
 
     lwpsinfo_t pr;
     int result = Common_Read(fd, &pr, sizeof(pr));
-    close(fd);
-    if (result < sizeof (pr))
+    close(ToFileDescriptor(fd));
+    if (result < (int)sizeof(pr))
     {
         errno = EIO;
         return -1;
@@ -1903,8 +2088,8 @@ int32_t SystemNative_ReadProcessInfo(int32_t pid, ProcessInfo* processInfo, uint
 
     psinfo_t pr;
     int result = Common_Read(fd, &pr, sizeof(pr));
-    close(fd);
-    if (result < sizeof (pr))
+    close(ToFileDescriptor(fd));
+    if (result < (int)sizeof(pr))
     {
         errno = EIO;
         return -1;
@@ -2164,4 +2349,425 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
 
     assert(count >= -1);
     return count;
+}
+
+#if HAVE_KQUEUE
+#if KEVENT_HAS_VOID_UDATA
+static void* GetKeventUdata(uintptr_t udata)
+{
+    return (void*)udata;
+}
+static uintptr_t GetHandleEventData(void* udata)
+{
+    return (uintptr_t)udata;
+}
+#else
+static intptr_t GetKeventUdata(uintptr_t udata)
+{
+    return (intptr_t)udata;
+}
+static uintptr_t GetHandleEventData(intptr_t udata)
+{
+    return (uintptr_t)udata;
+}
+#endif
+#if KEVENT_REQUIRES_INT_PARAMS
+static int GetKeventNchanges(int nchanges)
+{
+    return nchanges;
+}
+static int16_t GetKeventFilter(int16_t filter)
+{
+    return filter;
+}
+static uint16_t GetKeventFlags(uint16_t flags)
+{
+    return flags;
+}
+#else
+static size_t GetKeventNchanges(int nchanges)
+{
+    return (size_t)nchanges;
+}
+static int16_t GetKeventFilter(uint32_t filter)
+{
+    return (int16_t)filter;
+}
+static uint16_t GetKeventFlags(uint32_t flags)
+{
+    return (uint16_t)flags;
+}
+#endif
+#endif
+
+#if HAVE_EPOLL
+
+static const size_t HandleEventBufferElementSize = sizeof(struct epoll_event) > sizeof(HandleEvent) ? sizeof(struct epoll_event) : sizeof(HandleEvent);
+
+static int GetHandleEvents(uint32_t events)
+{
+    int asyncEvents = (((events & EPOLLIN) != 0) ? HandleEvents_READ : 0) | (((events & EPOLLOUT) != 0) ? HandleEvents_WRITE : 0) |
+                      (((events & EPOLLRDHUP) != 0) ? HandleEvents_READCLOSE : 0) |
+                      (((events & EPOLLHUP) != 0) ? HandleEvents_CLOSE : 0) | (((events & EPOLLERR) != 0) ? HandleEvents_ERROR : 0);
+
+    return asyncEvents;
+}
+
+static uint32_t GetEPollEvents(HandleEvents events)
+{
+    return (((events & HandleEvents_READ) != 0) ? EPOLLIN : 0) | (((events & HandleEvents_WRITE) != 0) ? EPOLLOUT : 0) |
+           (((events & HandleEvents_READCLOSE) != 0) ? EPOLLRDHUP : 0) | (((events & HandleEvents_CLOSE) != 0) ? EPOLLHUP : 0) |
+           (((events & HandleEvents_ERROR) != 0) ? EPOLLERR : 0);
+}
+
+static int32_t CreateHandleEventPortInner(int32_t* port)
+{
+    assert(port != NULL);
+
+    int epollFd = epoll_create1(EPOLL_CLOEXEC);
+    if (epollFd == -1)
+    {
+        *port = -1;
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    *port = epollFd;
+    return Error_SUCCESS;
+}
+
+static int32_t CloseHandleEventPortInner(int32_t port)
+{
+    int err = close(port);
+    return err == 0 || (err < 0 && errno == EINTR) ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+static int32_t TryChangeHandleEventRegistrationInner(
+    int32_t port, int32_t socket, HandleEvents currentEvents, HandleEvents newEvents, uintptr_t data)
+{
+    assert(currentEvents != newEvents);
+
+    int op = EPOLL_CTL_MOD;
+    if (currentEvents == HandleEvents_NONE)
+    {
+        op = EPOLL_CTL_ADD;
+    }
+    else if (newEvents == HandleEvents_NONE)
+    {
+        op = EPOLL_CTL_DEL;
+    }
+
+    struct epoll_event evt;
+    memset(&evt, 0, sizeof(struct epoll_event));
+    evt.events = GetEPollEvents(newEvents) | (unsigned int)EPOLLET;
+    evt.data.ptr = (void*)data;
+    int err = epoll_ctl(port, op, socket, &evt);
+    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+static void ConvertEventEPollToHandleEvent(HandleEvent* sae, struct epoll_event* epoll)
+{
+    assert(sae != NULL);
+    assert(epoll != NULL);
+
+    // epoll does not play well with disconnected connection-oriented sockets, frequently
+    // reporting spurious EPOLLHUP events. Fortunately, EPOLLHUP may be handled as an
+    // EPOLLIN | EPOLLOUT event: the usual processing for these events will recognize and
+    // handle the HUP condition.
+    uint32_t events = epoll->events;
+    if ((events & EPOLLHUP) != 0)
+    {
+        events = (events & ((uint32_t)~EPOLLHUP)) | EPOLLIN | EPOLLOUT;
+    }
+
+    memset(sae, 0, sizeof(HandleEvent));
+    sae->Data = (uintptr_t)epoll->data.ptr;
+    sae->Events = GetHandleEvents(events);
+}
+
+static int32_t WaitForHandleEventsInner(int32_t port, HandleEvent* buffer, int32_t* count)
+{
+    assert(buffer != NULL);
+    assert(count != NULL);
+    assert(*count >= 0);
+
+    struct epoll_event* events = (struct epoll_event*)buffer;
+    int numEvents;
+    while ((numEvents = epoll_wait(port, events, *count, -1)) < 0 && errno == EINTR);
+    if (numEvents == -1)
+    {
+        *count = 0;
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    // We should never see 0 events. Given an infinite timeout, epoll_wait will never return
+    // 0 events even if there are no file descriptors registered with the epoll fd. In
+    // that case, the wait will block until a file descriptor is added and an event occurs
+    // on the added file descriptor.
+    assert(numEvents != 0);
+    assert(numEvents <= *count);
+
+    if (sizeof(struct epoll_event) < sizeof(HandleEvent))
+    {
+        // Copy backwards to avoid overwriting earlier data.
+        for (int i = numEvents - 1; i >= 0; i--)
+        {
+            // This copy is made deliberately to avoid overwriting data.
+            struct epoll_event evt = events[i];
+            ConvertEventEPollToHandleEvent(&buffer[i], &evt);
+        }
+    }
+    else
+    {
+        // Copy forwards for better cache behavior
+        for (int i = 0; i < numEvents; i++)
+        {
+            // This copy is made deliberately to avoid overwriting data.
+            struct epoll_event evt = events[i];
+            ConvertEventEPollToHandleEvent(&buffer[i], &evt);
+        }
+    }
+
+    *count = numEvents;
+    return Error_SUCCESS;
+}
+
+#elif HAVE_KQUEUE
+
+c_static_assert(sizeof(HandleEvent) <= sizeof(struct kevent));
+static const size_t HandleEventBufferElementSize = sizeof(struct kevent);
+
+static HandleEvents GetHandleEvents(int16_t filter, uint16_t flags)
+{
+    int32_t events;
+    switch (filter)
+    {
+        case EVFILT_READ:
+            events = HandleEvents_READ;
+            if ((flags & EV_EOF) != 0)
+            {
+                events |= HandleEvents_READCLOSE;
+            }
+            break;
+
+        case EVFILT_WRITE:
+            events = HandleEvents_WRITE;
+
+            // kqueue does not play well with disconnected connection-oriented sockets, frequently
+            // reporting spurious EOF events. Fortunately, EOF may be handled as an EVFILT_READ |
+            // EVFILT_WRITE event: the usual processing for these events will recognize and
+            // handle the EOF condition.
+            if ((flags & EV_EOF) != 0)
+            {
+                events |= HandleEvents_READ;
+            }
+            break;
+
+        default:
+            assert_msg(0, "unexpected kqueue filter type", (int)filter);
+            return HandleEvents_NONE;
+    }
+
+    if ((flags & EV_ERROR) != 0)
+    {
+        events |= HandleEvents_ERROR;
+    }
+
+    return (HandleEvents)events;
+}
+
+static int32_t CreateHandleEventPortInner(int32_t* port)
+{
+    assert(port != NULL);
+
+    int kqueueFd = kqueue();
+    if (kqueueFd == -1)
+    {
+        *port = -1;
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    *port = kqueueFd;
+    return Error_SUCCESS;
+}
+
+static int32_t CloseHandleEventPortInner(int32_t port)
+{
+    int err = close(port);
+    return err == 0 || (err < 0 && errno == EINTR) ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+static int32_t TryChangeHandleEventRegistrationInner(
+    int32_t port, int32_t socket, HandleEvents currentEvents, HandleEvents newEvents, uintptr_t data)
+{
+    const uint16_t AddFlags = EV_ADD | EV_CLEAR;
+    const uint16_t RemoveFlags = EV_DELETE;
+
+    assert(currentEvents != newEvents);
+
+    int32_t changes = currentEvents ^ newEvents;
+    int8_t readChanged = (changes & HandleEvents_READ) != 0;
+    int8_t writeChanged = (changes & HandleEvents_WRITE) != 0;
+
+    struct kevent events[2];
+    int err;
+
+    int i = 0;
+    if (readChanged)
+    {
+        EV_SET(&events[i++],
+               (uint64_t)socket,
+               EVFILT_READ,
+               (newEvents & HandleEvents_READ) == 0 ? RemoveFlags : AddFlags,
+               0,
+               0,
+               GetKeventUdata(data));
+    }
+
+    if (writeChanged)
+    {
+        EV_SET(&events[i++],
+               (uint64_t)socket,
+               EVFILT_WRITE,
+               (newEvents & HandleEvents_WRITE) == 0 ? RemoveFlags : AddFlags,
+               0,
+               0,
+               GetKeventUdata(data));
+    }
+
+    while ((err = kevent(port, events, GetKeventNchanges(i), NULL, 0, NULL)) < 0 && errno == EINTR);
+    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+static int32_t WaitForHandleEventsInner(int32_t port, HandleEvent* buffer, int32_t* count)
+{
+    assert(buffer != NULL);
+    assert(count != NULL);
+    assert(*count >= 0);
+
+    struct kevent* events = (struct kevent*)buffer;
+    int numEvents;
+    while ((numEvents = kevent(port, NULL, 0, events, GetKeventNchanges(*count), NULL)) < 0 && errno == EINTR);
+    if (numEvents == -1)
+    {
+        *count = -1;
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    // We should never see 0 events. Given an infinite timeout, kevent will never return
+    // 0 events even if there are no file descriptors registered with the kqueue fd. In
+    // that case, the wait will block until a file descriptor is added and an event occurs
+    // on the added file descriptor.
+    assert(numEvents != 0);
+    assert(numEvents <= *count);
+
+    for (int i = 0; i < numEvents; i++)
+    {
+        // This copy is made deliberately to avoid overwriting data.
+        struct kevent evt = events[i];
+        memset(&buffer[i], 0, sizeof(HandleEvent));
+        buffer[i].Data = GetHandleEventData(evt.udata);
+        buffer[i].Events = GetHandleEvents(GetKeventFilter(evt.filter), GetKeventFlags(evt.flags));
+    }
+
+    *count = numEvents;
+    return Error_SUCCESS;
+}
+
+#else // !HAVE_KQUEUE !HAVE_EPOLL
+
+static const size_t HandleEventBufferElementSize = 0;
+
+static int32_t CloseHandleEventPortInner(int32_t port)
+{
+    return Error_ENOSYS;
+}
+static int32_t CreateHandleEventPortInner(int32_t* port)
+{
+    return Error_ENOSYS;
+}
+static int32_t TryChangeHandleEventRegistrationInner(
+    int32_t port, int32_t socket, HandleEvents currentEvents, HandleEvents newEvents,
+uintptr_t data)
+{
+    return Error_ENOSYS;
+}
+static int32_t WaitForHandleEventsInner(int32_t port, HandleEvent* buffer, int32_t* count)
+{
+    return Error_ENOSYS;
+}
+#endif  // !HAVE_KQUEUE !HAVE_EPOLL
+
+int32_t SystemNative_CreateHandleEventPort(intptr_t* port)
+{
+    if (port == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd;
+    int32_t error = CreateHandleEventPortInner(&fd);
+    *port = fd;
+    return error;
+}
+
+int32_t SystemNative_CloseHandleEventPort(intptr_t port)
+{
+    return CloseHandleEventPortInner(ToFileDescriptor(port));
+}
+
+int32_t SystemNative_CreateHandleEventBuffer(int32_t count, HandleEvent** buffer)
+{
+    if (buffer == NULL || count < 0)
+    {
+        return Error_EFAULT;
+    }
+
+    size_t bufferSize;
+    if (!multiply_s(HandleEventBufferElementSize, (size_t)count, &bufferSize) ||
+        (*buffer = (HandleEvent*)malloc(bufferSize)) == NULL)
+    {
+        return Error_ENOMEM;
+    }
+
+    return Error_SUCCESS;
+}
+
+int32_t SystemNative_FreeHandleEventBuffer(HandleEvent* buffer)
+{
+    free(buffer);
+    return Error_SUCCESS;
+}
+
+int32_t
+SystemNative_TryChangeHandleEventRegistration(intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data)
+{
+    int portFd = ToFileDescriptor(port);
+    int socketFd = ToFileDescriptor(socket);
+
+    const int32_t SupportedEvents = HandleEvents_READ | HandleEvents_WRITE | HandleEvents_READCLOSE | HandleEvents_CLOSE | HandleEvents_ERROR;
+
+    if ((currentEvents & ~SupportedEvents) != 0 || (newEvents & ~SupportedEvents) != 0)
+    {
+        return Error_EINVAL;
+    }
+
+    if (currentEvents == newEvents)
+    {
+        return Error_SUCCESS;
+    }
+
+    return TryChangeHandleEventRegistrationInner(
+        portFd, socketFd, (HandleEvents)currentEvents, (HandleEvents)newEvents, data);
+}
+
+int32_t SystemNative_WaitForHandleEvents(intptr_t port, HandleEvent* buffer, int32_t* count)
+{
+    if (buffer == NULL || count == NULL || *count < 0)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(port);
+
+    return WaitForHandleEventsInner(fd, buffer, count);
 }

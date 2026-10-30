@@ -44,7 +44,7 @@ namespace JIT.HardwareIntrinsics.General
     {
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int ElementCount = Unsafe.SizeOf<{VectorType}<{BaseType}>>() / sizeof({BaseType});
+        private static readonly int ElementCount = sizeof({VectorType}<{BaseType}>) / sizeof({BaseType});
 
         public bool Succeeded { get; set; } = true;
 

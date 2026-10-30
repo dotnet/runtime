@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -295,7 +295,7 @@ namespace System.Reflection
         }
 
         // This implementation of Escape has been copied from UriHelper from System.Private.Uri and adapted to match AssemblyName's requirements.
-        internal static string EscapeCodeBase(string? codebase)
+        internal static unsafe string EscapeCodeBase(string? codebase)
         {
             if (codebase == null)
                 return string.Empty;
@@ -324,7 +324,7 @@ namespace System.Reflection
         internal static void EscapeStringToBuilder(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb)
         {
             // Allocate enough stack space to hold any Rune's UTF8 encoding.
-            Span<byte> utf8Bytes = stackalloc byte[4];
+            Span<byte> utf8Bytes = [0, 0, 0, 0];
 
             while (!stringToEscape.IsEmpty)
             {

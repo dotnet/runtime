@@ -1006,5 +1006,21 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
 
             AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
         }
+
+        [Fact]
+        public void VerifyInMemoryDirectoryInfo_ParentPatternMatches()
+        {
+            string rootDir = "/Folder1";
+            string[] files = ["/Folder1/File1.txt", "/Folder2/File2.txt"];
+
+            var matcher = new Matcher();
+            matcher.AddInclude("../Folder2/**");
+
+            var result = matcher.Execute(new InMemoryDirectoryInfo(rootDir, files));
+
+            Assert.True(result.HasMatches);
+            Assert.Single(result.Files);
+            Assert.Equal("../Folder2/File2.txt", result.Files.First().Path);
+        }
     }
 }

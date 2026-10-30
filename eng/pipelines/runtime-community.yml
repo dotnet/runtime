@@ -65,7 +65,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
-            buildArgs: -s mono+libs+host+packs+libs.tests+clr.iltools+clr.packages -c $(_BuildConfig) /p:ArchiveTests=true
+            buildArgs: -s mono+libs+host.native+host.tools+host.pkg+packs+libs.tests+clr.iltools+clr.packages -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 180
             condition: >-
               or(

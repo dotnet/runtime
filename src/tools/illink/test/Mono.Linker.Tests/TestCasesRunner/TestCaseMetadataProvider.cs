@@ -102,6 +102,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             return tclo;
         }
 
+#if !ILTRIM
         public virtual void CustomizeTrimming(TrimmingDriver linker, TrimmingCustomizations customizations)
         {
             if (!_testCaseTypeDefinition.CustomAttributes.Any(a => a.AttributeType.IsTypeOf<SkipKeptItemsValidationAttribute>())
@@ -145,6 +146,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             return false;
         }
+#endif
 
         public virtual IEnumerable<SourceAndDestinationPair> GetResponseFiles()
         {

@@ -11,7 +11,6 @@ This can be used to ensure that applications do not exceed certain limits when i
 
 * Flexible rate-limiting primitives that can be applied to various scenarios.
 * Supports token bucket, fixed window, and sliding window strategies.
-*
 
 ## How to Use
 

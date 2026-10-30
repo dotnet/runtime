@@ -2,7 +2,7 @@
 #include "interp-internals.h"
 #include "interp-simd.h"
 
-#if HOST_BROWSER
+#if HOST_BROWSER || HOST_WASI
 #include <wasm_simd128.h>
 #endif
 
@@ -512,6 +512,13 @@ interp_v128_conditional_select (gpointer res, gpointer v1, gpointer v2, gpointer
 	*(v128_i8*)res = (*(v128_i8*)v2 & cond) | (*(v128_i8*)v3 & ~cond);
 }
 
+// MultiplyAddEstimate
+static void
+interp_v128_r4_multiply_add_estimate (gpointer res, gpointer v1, gpointer v2, gpointer v3)
+{
+	*(v128_r4*)res = (*(v128_r4*)v1 * *(v128_r4*)v2) + *(v128_r4*)v3;
+}
+
 // Create
 static void
 interp_v128_i1_create (gpointer res, gpointer v1)
@@ -611,6 +618,12 @@ interp_v128_i8_shuffle (gpointer res, gpointer v1, gpointer v2)
 // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/wasm_simd128.h
 // In this context V means Vector128 and P means void* pointer.
 #ifdef HOST_BROWSER
+#define HOST_WASM_SIMD 1
+#elif defined(HOST_WASI)
+#define HOST_WASM_SIMD 1
+#endif
+
+#if HOST_WASM_SIMD
 
 static v128_t
 _interp_wasm_simd_assert_not_reached (v128_t lhs, v128_t rhs) {
@@ -792,7 +805,11 @@ interp_packedsimd_load32x2_u (gpointer res, gpointer addr_of_addr) {
 static void
 interp_packedsimd_store (gpointer res, gpointer addr_of_addr, gpointer vec) {
 	// HACK: Result is unused because Store has a void return value
-	**(v128_t **)addr_of_addr = *(v128_t *)vec;
+	// wasm_v128_store stores through a packed struct, so an unaligned destination is well-defined.
+	//  Assigning through a v128_t* instead would claim 16-byte alignment we don't have: both
+	//  PackedSimd.Store and Vector128.StoreUnsafe accept arbitrarily aligned destinations.
+	//  This mirrors interp_packedsimd_load128, which already uses wasm_v128_load.
+	wasm_v128_store (*(void **)addr_of_addr, *(v128_t *)vec);
 }
 
 #define INDIRECT_STORE_LANE(lane_type) \
@@ -931,7 +948,7 @@ int interp_simd_p_ppp_wasm_opcode_table [] = {
 #undef INTERP_SIMD_INTRINSIC_P_PPP
 #define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c)
 
-#endif // HOST_BROWSER
+#endif // HOST_WASM_SIMD
 
 #undef INTERP_SIMD_INTRINSIC_P_P
 #define INTERP_SIMD_INTRINSIC_P_P(a,b,c) b,

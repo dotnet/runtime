@@ -137,7 +137,15 @@ namespace System.Security.Cryptography.Xml
             XmlReader valReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI!);
             _document = new XmlDocument();
             _document.PreserveWhitespace = true;
-            _document.Load(valReader);
+            long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+            if (maxDepth > 0)
+            {
+                Utils.LoadXmlDocumentWithMaxDepthCheck(_document, valReader, maxDepth);
+            }
+            else
+            {
+                _document.Load(valReader);
+            }
         }
 
         private void LoadXmlNodeListInput(XmlNodeList nodeList)
@@ -193,6 +201,11 @@ namespace System.Security.Cryptography.Xml
             if (type != typeof(XmlNodeList) && !type.IsSubclassOf(typeof(XmlNodeList)))
                 throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
             return (XmlNodeList)GetOutput();
+        }
+
+        internal override void ClearState()
+        {
+            _document = null;
         }
     }
 }

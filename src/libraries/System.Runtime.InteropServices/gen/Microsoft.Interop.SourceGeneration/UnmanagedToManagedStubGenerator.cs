@@ -1,13 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -16,7 +11,6 @@ namespace Microsoft.Interop
         private const string ReturnIdentifier = "__retVal";
 
         private readonly BoundGenerators _marshallers;
-
         private readonly StubIdentifierContext _context;
 
         public UnmanagedToManagedStubGenerator(
@@ -30,7 +24,6 @@ namespace Microsoft.Interop
 
             if (_marshallers.NativeReturnMarshaller.UsesNativeIdentifier)
             {
-                // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
                 _context = new DefaultIdentifierContext(ReturnIdentifier, $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}", MarshalDirection.UnmanagedToManaged);
             }
             else
@@ -39,73 +32,103 @@ namespace Microsoft.Interop
             }
         }
 
-        /// <summary>
-        /// Generate the method body of the unmanaged-to-managed ComWrappers-based method stub.
-        /// </summary>
-        /// <param name="methodToInvoke">Name of the method on the managed type to invoke</param>
-        /// <returns>Method body of the stub</returns>
-        /// <remarks>
-        /// The generated code assumes it will be in an unsafe context.
-        /// </remarks>
-        public BlockSyntax GenerateStubBody(ExpressionSyntax methodToInvoke)
+        /// <summary>Generates the braced body of an unmanaged-to-managed method stub.</summary>
+        /// <param name="methodToInvoke">The managed method access expression.</param>
+        /// <returns>The method body, which requires an unsafe context.</returns>
+        public string GenerateStubBodyForMethod(string methodToInvoke)
         {
             GeneratedStatements statements = GeneratedStatements.Create(
                 _marshallers,
                 StubCodeContext.DefaultNativeToManagedStub,
-                _context, methodToInvoke);
-            Debug.Assert(statements.CleanupCalleeAllocated.IsEmpty);
-
-            bool shouldInitializeVariables =
-                !statements.GuaranteedUnmarshal.IsEmpty
-                || !statements.CleanupCallerAllocated.IsEmpty
-                || !statements.ManagedExceptionCatchClauses.IsEmpty;
-            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
-
-            List<StatementSyntax> setupStatements =
-            [
-                .. declarations.Initializations,
-                .. declarations.Variables,
-                .. statements.Setup,
-            ];
-
-            List<StatementSyntax> tryStatements =
-            [
-                .. statements.GuaranteedUnmarshal,
-                .. statements.Unmarshal,
-                statements.InvokeStatement,
-                .. statements.NotifyForSuccessfulInvoke,
-                .. statements.Marshal,
-                .. statements.PinnedMarshal,
-            ];
-
-            List<StatementSyntax> allStatements = setupStatements;
-
-            SyntaxList<CatchClauseSyntax> catchClauses = List(statements.ManagedExceptionCatchClauses);
-
-            ImmutableArray<StatementSyntax> finallyStatements = statements.CleanupCallerAllocated;
-            if (finallyStatements.Length > 0)
-            {
-                allStatements.Add(
-                    TryStatement(Block(tryStatements), catchClauses, FinallyClause(Block(finallyStatements))));
-            }
-            else if (catchClauses.Count > 0)
-            {
-                allStatements.Add(
-                    TryStatement(Block(tryStatements), catchClauses, @finally: null));
-            }
-            else
-            {
-                allStatements.AddRange(tryStatements);
-            }
-
-            // Return
-            if (!_marshallers.IsUnmanagedVoidReturn)
-                allStatements.Add(ReturnStatement(IdentifierName(_context.GetIdentifiers(_marshallers.NativeReturnMarshaller.TypeInfo).native)));
-
-            return Block(allStatements);
+                _context,
+                methodToInvoke);
+            return BuildBodyFromStatements(statements);
         }
 
-        public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateAbiMethodSignatureData()
+        /// <summary>Generates a property accessor body.</summary>
+        /// <param name="propertyAccess">The managed property access expression.</param>
+        /// <param name="isSetter">True for a setter; false for a getter.</param>
+        /// <returns>The accessor body.</returns>
+        public string GenerateStubBodyForProperty(string propertyAccess, bool isSetter)
+        {
+            GeneratedStatements statements = GeneratedStatements.CreateForProperty(_marshallers, _context, propertyAccess, isSetter);
+            return BuildBodyFromStatements(statements);
+        }
+
+        /// <summary>Generates an indexer accessor using the marshalled index arguments.</summary>
+        /// <param name="instance">The managed target instance expression.</param>
+        /// <param name="isSetter">True for a setter; false for a getter.</param>
+        /// <returns>The accessor body.</returns>
+        public string GenerateStubBodyForIndexer(string instance, bool isSetter)
+        {
+            ImmutableArray<IBoundMarshallingGenerator> parameters = _marshallers.ManagedParameterMarshallers;
+            int indexCount = isSetter ? parameters.Length - 1 : parameters.Length;
+            var arguments = new string[indexCount];
+            for (int i = 0; i < indexCount; i++)
+            {
+                arguments[i] = parameters[i].AsManagedArgument(_context);
+            }
+            return GenerateStubBodyForProperty($"{instance}[{string.Join(", ", arguments)}]", isSetter);
+        }
+
+        private string BuildBodyFromStatements(GeneratedStatements statements)
+        {
+            Debug.Assert(statements.CleanupCalleeAllocated.Length == 0);
+            bool shouldInitializeVariables = statements.GuaranteedUnmarshal.Length != 0
+                || statements.CleanupCallerAllocated.Length != 0
+                || statements.ManagedExceptionCatchClauses.Length != 0;
+            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
+            var writer = new IndentedTextWriter();
+            using (writer.WriteBlock())
+            {
+                writer.Write(declarations.Initializations);
+                writer.Write(declarations.Variables);
+                writer.Write(statements.Setup);
+
+                bool needsTry = statements.ManagedExceptionCatchClauses.Length != 0 || statements.CleanupCallerAllocated.Length != 0;
+                if (needsTry)
+                {
+                    writer.WriteLine("try");
+                    using (writer.WriteBlock())
+                    {
+                        WriteTryStatements();
+                    }
+                    writer.Write(statements.ManagedExceptionCatchClauses);
+                    if (statements.CleanupCallerAllocated.Length != 0)
+                    {
+                        writer.WriteLine("finally");
+                        using (writer.WriteBlock())
+                        {
+                            writer.Write(statements.CleanupCallerAllocated);
+                        }
+                    }
+                }
+                else
+                {
+                    WriteTryStatements();
+                }
+
+                if (!_marshallers.IsUnmanagedVoidReturn)
+                {
+                    writer.WriteLine($"return {_context.GetIdentifiers(_marshallers.NativeReturnMarshaller.TypeInfo).native};");
+                }
+            }
+            return writer.ToString();
+
+            void WriteTryStatements()
+            {
+                writer.Write(statements.ErrorUnmarshalCapture);
+                writer.Write(statements.ErrorUnmarshal);
+                writer.Write(statements.GuaranteedUnmarshal);
+                writer.Write(statements.Unmarshal);
+                writer.Write(statements.InvokeStatement);
+                writer.Write(statements.NotifyForSuccessfulInvoke);
+                writer.Write(statements.Marshal);
+                writer.Write(statements.PinnedMarshal);
+            }
+        }
+
+        public GeneratedMethodSignature GenerateAbiMethodSignatureData()
         {
             return _marshallers.GenerateTargetMethodSignatureData(_context);
         }

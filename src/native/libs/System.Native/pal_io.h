@@ -183,6 +183,12 @@ enum
     PAL_O_NOFOLLOW = 0x0200, // Fails to open the target if it's a symlink, parent symlinks are allowed
     PAL_O_NONBLOCK_READ = 0x0400,  // Set O_NONBLOCK on the read end of a pipe
     PAL_O_NONBLOCK_WRITE = 0x0800, // Set O_NONBLOCK on the write end of a pipe
+    PAL_O_DIRECTORY = 0x1000, // Fails to open the target if it's not a directory
+};
+
+enum
+{
+    PAL_AT_REMOVEDIR = 0x0001, // Remove the entry as a directory
 };
 
 /**
@@ -343,6 +349,7 @@ typedef enum
     PAL_IN_ONLYDIR = 0x01000000,
     PAL_IN_DONT_FOLLOW = 0x02000000,
     PAL_IN_EXCL_UNLINK = 0x04000000,
+    PAL_IN_MOVE_SELF = 0x00000800,
     PAL_IN_ISDIR = 0x40000000,
 } NotifyEvents;
 
@@ -375,6 +382,13 @@ PALEXPORT int32_t SystemNative_LStat(const char* path, FileStatus* output);
 PALEXPORT intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode);
 
 /**
+ * Open or create a file or device relative to a directory descriptor. Implemented as shim to openat(2).
+ *
+ * Returns file descriptor or -1 for failure. Sets errno on failure.
+ */
+PALEXPORT intptr_t SystemNative_OpenAt(intptr_t dirfd, const char* path, int32_t flags, int32_t mode);
+
+/**
  * Close a file descriptor. Implemented as shim to open(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
@@ -394,6 +408,13 @@ PALEXPORT intptr_t SystemNative_Dup(intptr_t oldfd);
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
 PALEXPORT int32_t SystemNative_Unlink(const char* path);
+
+/**
+ * Delete an entry relative to a directory descriptor. Implemented as shim to unlinkat(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+PALEXPORT int32_t SystemNative_UnlinkAt(intptr_t dirfd, const char* path, int32_t flags);
 
 /**
  * Check if the system supports memfd_create(2). 
@@ -518,6 +539,13 @@ PALEXPORT int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNon
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
 PALEXPORT int32_t SystemNative_MkDir(const char* path, int32_t mode);
+
+/**
+ * Create a directory relative to a directory descriptor. Implemented as a shim to mkdirat(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno for failure.
+ */
+PALEXPORT int32_t SystemNative_MkDirAt(intptr_t dirfd, const char* path, int32_t mode);
 
 /**
  * Change permissions of a file. Implemented as a shim to chmod(2).
@@ -907,3 +935,38 @@ PALEXPORT int64_t SystemNative_ReadV(intptr_t fd, IOVector* vectors, int32_t vec
  * Returns the number of bytes written on success; otherwise, -1 is returned and errno is set.
  */
 PALEXPORT int64_t SystemNative_WriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount);
+
+/*
+ * Handle async events.
+ */
+typedef enum
+{
+    HandleEvents_NONE = 0x00,
+    HandleEvents_READ = 0x01,
+    HandleEvents_WRITE = 0x02,
+    HandleEvents_READCLOSE = 0x04,
+    HandleEvents_CLOSE = 0x08,
+    HandleEvents_ERROR = 0x10,
+    // Force the enum to use int32_t instead of uint32_t
+    HandleEvents__IGNORE_SIGNED = -1,
+} HandleEvents;
+
+typedef struct
+{
+    uintptr_t Data;      // User data for this event
+    int32_t Events;      // Event flags
+    uint32_t Padding;    // Pad out to 8-byte alignment
+} HandleEvent;
+
+PALEXPORT int32_t SystemNative_CreateHandleEventPort(intptr_t* port);
+
+PALEXPORT int32_t SystemNative_CloseHandleEventPort(intptr_t port);
+
+PALEXPORT int32_t SystemNative_CreateHandleEventBuffer(int32_t count, HandleEvent** buffer);
+
+PALEXPORT int32_t SystemNative_FreeHandleEventBuffer(HandleEvent* buffer);
+
+PALEXPORT int32_t SystemNative_TryChangeHandleEventRegistration(
+    intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
+
+PALEXPORT int32_t SystemNative_WaitForHandleEvents(intptr_t port, HandleEvent* buffer, int32_t* count);

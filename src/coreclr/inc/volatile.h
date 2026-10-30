@@ -100,7 +100,7 @@
 // Please do not use this macro outside of this file.  It is subject to change or removal without
 // notice.
 //
-#define VOLATILE_MEMORY_BARRIER() asm volatile ("" : : : "memory")
+#define VOLATILE_MEMORY_BARRIER() __atomic_signal_fence(__ATOMIC_SEQ_CST)
 #endif // HOST_ARM || HOST_ARM64
 
 #elif (defined(HOST_ARM) || defined(HOST_ARM64)) && _ISO_VOLATILE
@@ -211,6 +211,11 @@ T VolatileLoad(T const * pt)
 template<typename T>
 inline
 T VolatileLoadWithoutBarrier(T const * pt)
+#ifndef DACCESS_COMPILE
+    noexcept(noexcept(T(*(T volatile const*)pt)))
+#else
+    noexcept(noexcept(T(*pt)))
+#endif
 {
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
@@ -294,6 +299,11 @@ void VolatileStore(T* pt, T val)
 template<typename T>
 inline
 void VolatileStoreWithoutBarrier(T* pt, T val)
+#ifndef DACCESS_COMPILE
+    noexcept(noexcept(*(T volatile*)pt = val))
+#else
+    noexcept(noexcept(*pt = val))
+#endif
 {
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
@@ -385,6 +395,9 @@ public:
     // Loads the value of the volatile variable atomically without erecting the memory barrier.
     //
     inline T LoadWithoutBarrier() const
+#ifndef DACCESS_COMPILE
+        noexcept(noexcept(T((volatile T&)m_val)))
+#endif
     {
         STATIC_CONTRACT_SUPPORTS_DAC;
         return ((volatile T &)m_val);
@@ -405,6 +418,9 @@ public:
     // Stores a new value to the volatile variable atomically without erecting the memory barrier.
     //
     inline void StoreWithoutBarrier(const T& val) const
+#ifndef DACCESS_COMPILE
+        noexcept(noexcept(((volatile T&)m_val) = val))
+#endif
     {
         STATIC_CONTRACT_SUPPORTS_DAC;
         ((volatile T &)m_val) = val;

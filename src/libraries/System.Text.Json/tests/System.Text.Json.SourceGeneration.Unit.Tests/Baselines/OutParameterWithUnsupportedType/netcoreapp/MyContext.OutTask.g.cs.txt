@@ -34,6 +34,8 @@ namespace TestApp
                     ConstructorParameterMetadataInitializer = OutTaskCtorParamInit,
                     ConstructorAttributeProviderFactory = static () => typeof(global::TestApp.OutTask).GetConstructor(InstanceMemberBindingFlags, binder: null, new[] {typeof(string), typeof(global::System.Threading.Tasks.Task)}, modifiers: null),
                     SerializeHandler = OutTaskSerializeHandler,
+                    PolymorphismOptions = new global::System.Text.Json.Serialization.Metadata.JsonPolymorphismOptions(),
+                    TypeClassifierFactory = null,
                 };
                 
                 jsonTypeInfo = global::System.Text.Json.Serialization.Metadata.JsonMetadataServices.CreateObjectInfo<global::TestApp.OutTask>(options, objectInfo);

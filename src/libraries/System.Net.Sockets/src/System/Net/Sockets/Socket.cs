@@ -132,6 +132,7 @@ namespace System.Net.Sockets
             {
                 // Get properties like address family and blocking mode from the OS.
                 LoadSocketTypeFromHandle(handle, out _addressFamily, out _socketType, out _protocolType, out _willBlockInternal, out _isListening, out bool isSocket);
+                _willBlock = _willBlockInternal;
 
                 if (isSocket)
                 {
@@ -149,6 +150,11 @@ namespace System.Net.Sockets
                     }
 
                     Debug.Assert(bufferLength <= buffer.Length);
+
+                    if (_addressFamily == AddressFamily.Unknown)
+                    {
+                        _addressFamily = SocketAddressPal.GetAddressFamily(buffer.Slice(0, bufferLength));
+                    }
 
                     // Try to get the local end point.  That will in turn enable the remote
                     // end point to be retrieved on-demand when the property is accessed.
@@ -260,7 +266,8 @@ namespace System.Net.Sockets
         public static bool OSSupportsIPv4 => SocketProtocolSupportPal.OSSupportsIPv4;
         public static bool OSSupportsIPv6 => SocketProtocolSupportPal.OSSupportsIPv6;
         [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool OSSupportsIPv6DualMode => !OperatingSystem.IsWasi() && OSSupportsIPv6;
+        // OpenBSD does not support dual-mode (IPv4-mapped IPv6) sockets: setting IPV6_V6ONLY to 0 fails with EINVAL.
+        internal static bool OSSupportsIPv6DualMode => !OperatingSystem.IsWasi() && OSSupportsIPv6 && !OperatingSystem.IsOpenBSD();
         [UnsupportedOSPlatformGuard("wasi")]
         internal static bool OSSupportsThreads => !OperatingSystem.IsWasi();
         public static bool OSSupportsUnixDomainSockets => SocketProtocolSupportPal.OSSupportsUnixDomainSockets;
@@ -291,7 +298,7 @@ namespace System.Net.Sockets
         }
 
         // Gets the local end point.
-        public EndPoint? LocalEndPoint
+        public unsafe EndPoint? LocalEndPoint
         {
             get
             {
@@ -339,7 +346,7 @@ namespace System.Net.Sockets
         }
 
         // Gets the remote end point.
-        public EndPoint? RemoteEndPoint
+        public unsafe EndPoint? RemoteEndPoint
         {
             get
             {
@@ -1087,8 +1094,10 @@ namespace System.Net.Sockets
 
             Debug.Assert(!acceptedSocketHandle.IsInvalid);
 
-            Socket socket = CreateAcceptSocket(acceptedSocketHandle, _rightEndPoint.Create(socketAddress));
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, socket.RemoteEndPoint!, socket.LocalEndPoint);
+            // macOS can return accept() success with an empty remote sockaddr when the peer reset before accept.
+            EndPoint? remoteEndPoint = socketAddress.Size > 0 ? _rightEndPoint.Create(socketAddress) : null;
+            Socket socket = CreateAcceptSocket(acceptedSocketHandle, remoteEndPoint);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, remoteEndPoint, socket.LocalEndPoint);
             return socket;
         }
 
@@ -3105,7 +3114,12 @@ namespace System.Net.Sockets
 
             ArgumentNullException.ThrowIfNull(e);
             EndPoint? endPointSnapshot = e.RemoteEndPoint;
-            if (e._socketAddress == null)
+
+            // e._socketAddress is normally created once and reused on every subsequent call for this
+            // SocketAsyncEventArgs. If the instance is being reused across sockets of different address
+            // families (e.g. an IPv4 socket, then an IPv6 one), the previous buffer may be too small for
+            // this socket's family, so it needs to be replaced rather than reused as-is.
+            if (e._socketAddress == null || e._socketAddress.Buffer.Length < SocketAddress.GetMaximumAddressSize(AddressFamily))
             {
                 if (endPointSnapshot is DnsEndPoint)
                 {
@@ -3129,7 +3143,7 @@ namespace System.Net.Sockets
                 {
                     endPointSnapshot = s_IPEndPointIPv6;
                 }
-                e._socketAddress ??= new SocketAddress(AddressFamily);
+                e._socketAddress = new SocketAddress(AddressFamily);
             }
 
             // DualMode sockets may have updated the endPointSnapshot, and it has to have the same AddressFamily as

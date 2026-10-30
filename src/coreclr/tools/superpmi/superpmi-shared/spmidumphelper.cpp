@@ -245,7 +245,6 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(BBINSTR_IF_LOOPS);
     AddFlag(BBOPT);
     AddFlag(FRAMED);
-    AddFlag(PUBLISH_SECRET_PARAM);
     AddFlag(USE_PINVOKE_HELPERS);
     AddFlag(REVERSE_PINVOKE);
     AddFlag(TRACK_TRANSITIONS);
@@ -257,6 +256,9 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     //
     AddFlagNumeric(RELATIVE_CODE_RELOCS, 29);
     AddFlagNumeric(SOFTFP_ABI, 30);
+
+    AddFlag(USE_DISPATCH_HELPERS);
+    AddFlag(WASM_MANAGED_HELPER);
 
     // "Extra jit flag" support
     //
@@ -281,4 +283,3 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
 
     return s;
 }
-

@@ -80,8 +80,13 @@ namespace System.Diagnostics.Tests
             return filename;
         }
         
-        private static void SendSignal(PosixSignal signal, Process process)
+        private static void SendSignal(PosixSignal signal, Process process, bool entireProcessGroup = false)
         {
+            // Windows console control events are delivered to console process groups via
+            // GenerateConsoleCtrlEvent; this implementation cannot distinguish between
+            // signaling only the process and signaling its entire process group.
+            _ = entireProcessGroup;
+
             uint dwCtrlEvent = signal switch
             {
                 PosixSignal.SIGINT => Interop.Kernel32.CTRL_C_EVENT,
@@ -118,6 +123,11 @@ namespace System.Diagnostics.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Kill_EntireProcessTree_MinimalExceptions()
+        {
+            RemoteExecutor.Invoke(KillEntireProcessTreeMinimalExceptions).Dispose();
+        }
+
+        private static void KillEntireProcessTreeMinimalExceptions()
         {
             // This test validates that Kill(true) doesn't throw excessive exceptions internally
             // during process enumeration, which causes severe performance degradation with debugger attached.

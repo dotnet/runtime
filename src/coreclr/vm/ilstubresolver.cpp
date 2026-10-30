@@ -14,7 +14,7 @@
 // returns pointer to IL code
 BYTE* ILStubResolver::GetCodeInfo(unsigned* pCodeSize, unsigned* pStackSize, CorInfoOptions* pOptions, unsigned* pEHSize)
 {
-    CONTRACT(BYTE*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pCodeSize));
@@ -22,9 +22,8 @@ BYTE* ILStubResolver::GetCodeInfo(unsigned* pCodeSize, unsigned* pStackSize, Cor
         PRECONDITION(CheckPointer(pOptions));
         PRECONDITION(CheckPointer(pEHSize));
         PRECONDITION(CheckPointer(m_pCompileTimeState));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
     CORINFO_METHOD_INFO methodInfo;
@@ -35,10 +34,10 @@ BYTE* ILStubResolver::GetCodeInfo(unsigned* pCodeSize, unsigned* pStackSize, Cor
     *pOptions = methodInfo.options;
     *pEHSize = methodInfo.EHcount;
 
-    RETURN methodInfo.ILCode;
+    return methodInfo.ILCode;
 #else // DACCESS_COMPILE
     DacNotImpl();
-    RETURN NULL;
+    return NULL;
 #endif // DACCESS_COMPILE
 }
 
@@ -112,25 +111,62 @@ ILStubResolver::GetLocalSig()
         m_pCompileTimeState->m_ILHeader.cbLocalVarSig);
 }
 
-OBJECTHANDLE ILStubResolver::ConstructStringLiteral(mdToken token)
+STRINGREF* ILStubResolver::ConstructStringLiteral(mdToken token)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(FALSE);
-    return (OBJECTHANDLE)NULL;
+#ifdef DACCESS_COMPILE
+    DacNotImpl();
+    return NULL;
+#else // DACCESS_COMPILE
+    GCX_COOP();
+
+    STRINGREF* string = NULL;
+    STRINGREF strRef = GetStringLiteral(token);
+
+    GCPROTECT_BEGIN(strRef);
+
+    if (strRef != NULL)
+    {
+        string = GetDynamicMethod()->GetLoaderAllocator()->GetOrInternString(&strRef);
+    }
+
+    GCPROTECT_END();
+
+    return string;
+#endif // DACCESS_COMPILE
 }
 
 BOOL ILStubResolver::IsValidStringRef(mdToken metaTok)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(FALSE);
-    return FALSE;
+
+    if (TypeFromToken(metaTok) != mdtString)
+        return FALSE;
+
+    if (RidFromToken(metaTok) == 0)
+        return FALSE;
+
+    mdToken maxUserStringToken = m_pCompileTimeState->m_tokenLookupMap.GetMaxUserStringToken();
+
+    return metaTok >= TokenFromRid(1, mdtString) && metaTok <= maxUserStringToken;
 }
 
 STRINGREF ILStubResolver::GetStringLiteral(mdToken metaTok)
 {
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(FALSE);
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_COOPERATIVE;
+        PRECONDITION(IsValidStringRef(metaTok));
+    }
+    CONTRACTL_END;
+#ifndef DACCESS_COMPILE
+    return StringObject::NewString(m_pCompileTimeState->m_tokenLookupMap.LookupUserString(metaTok));
+#else
+    DacNotImpl();
     return NULL;
+#endif
 }
 
 void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
@@ -288,8 +324,7 @@ ILStubResolver::ILStubResolver() :
     m_pCompileTimeState(dac_cast<PTR_CompileTimeState>(ILNotYetGenerated)),
     m_pStubMD(dac_cast<PTR_MethodDesc>(nullptr)),
     m_pStubTargetMD(dac_cast<PTR_MethodDesc>(nullptr)),
-    m_jitFlags(),
-    m_loaderHeap(dac_cast<PTR_LoaderHeap>(nullptr))
+    m_jitFlags()
 {
     LIMITED_METHOD_CONTRACT;
 }
@@ -297,13 +332,13 @@ ILStubResolver::ILStubResolver() :
 bool ILStubResolver::IsCompiled()
 {
     LIMITED_METHOD_CONTRACT;
-    return (dac_cast<TADDR>(m_pCompileTimeState) == ILGeneratedAndFreed);
+    return dac_cast<TADDR>(m_pCompileTimeState) == ILGeneratedAndFreed;
 }
 
 bool ILStubResolver::IsILGenerated()
 {
     LIMITED_METHOD_CONTRACT;
-    return (dac_cast<TADDR>(m_pCompileTimeState) != ILNotYetGenerated);
+    return dac_cast<TADDR>(m_pCompileTimeState) != ILNotYetGenerated;
 }
 
 MethodDesc* ILStubResolver::GetStubMethodDesc()
@@ -326,12 +361,6 @@ COR_ILMETHOD_DECODER* ILStubResolver::GetILHeader()
 }
 
 #ifndef DACCESS_COMPILE
-void ILStubResolver::SetLoaderHeap(PTR_LoaderHeap pLoaderHeap)
-{
-    LIMITED_METHOD_CONTRACT;
-    m_loaderHeap = pLoaderHeap;
-}
-
 void ILStubResolver::SetTokenLookupMap(TokenLookupMap* pMap)
 {
     STANDARD_VM_CONTRACT;
@@ -396,23 +425,12 @@ COR_ILMETHOD_DECODER* ILStubResolver::AllocGeneratedIL(
     _ASSERTE(0 != cbCode);
 
     // Perform a single allocation for all needed memory
-    AllocMemHolder<BYTE> allocMemory;
-    NewArrayHolder<BYTE> newMemory;
-    BYTE* memory;
+    NewArrayHolder<BYTE> memory;
 
     S_SIZE_T toAlloc = (S_SIZE_T(sizeof(CompileTimeState)) + S_SIZE_T(cbCode) + S_SIZE_T(cbLocalSig));
     _ASSERTE(!toAlloc.IsOverflow());
 
-    if (UseLoaderHeap())
-    {
-        allocMemory = m_loaderHeap->AllocMem(toAlloc);
-        memory = allocMemory;
-    }
-    else
-    {
-        newMemory = new BYTE[toAlloc.Value()];
-        memory = newMemory;
-    }
+    memory = new BYTE[toAlloc.Value()];
 
     // Using placement new
     CompileTimeState* pNewCompileTimeState = new (memory) CompileTimeState{};
@@ -429,13 +447,12 @@ COR_ILMETHOD_DECODER* ILStubResolver::AllocGeneratedIL(
     CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
     (void*)pPrevCompileTimeState;
 
-    allocMemory.SuppressRelease();
-    newMemory.SuppressRelease();
+    memory.SuppressRelease();
     return pILHeader;
 
 } // ILStubResolver::AllocGeneratedIL
 
-COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl)
+COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl, CORJIT_FLAGS corJitFlags)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(!IsILGenerated());
@@ -461,7 +478,7 @@ COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl)
 
     // Store the token lookup map
     SetTokenLookupMap(sl->GetTokenLookupMap());
-    SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
+    SetJitFlags(corJitFlags);
 
     return pILHeader;
 }
@@ -483,11 +500,6 @@ COR_ILMETHOD_SECT_EH* ILStubResolver::AllocEHSect(size_t nClauses)
 }
 #endif // !DACCESS_COMPILE
 
-bool ILStubResolver::UseLoaderHeap()
-{
-    return m_loaderHeap != dac_cast<PTR_LoaderHeap>(nullptr);
-}
-
 void ILStubResolver::FreeCompileTimeState()
 {
     CONTRACTL
@@ -504,10 +516,7 @@ void ILStubResolver::FreeCompileTimeState()
         return;
     }
 
-    if (!UseLoaderHeap())
-    {
-        ClearCompileTimeState(ILGeneratedAndFreed);
-    }
+    ClearCompileTimeState(ILGeneratedAndFreed);
 
 }
 
@@ -521,7 +530,6 @@ ILStubResolver::ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(!UseLoaderHeap());
     }
     CONTRACTL_END;
 

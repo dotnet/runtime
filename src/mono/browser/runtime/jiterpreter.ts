@@ -289,6 +289,8 @@ function getTraceImports () {
         ["stelemr_tc", "stelemr", getRawCwrap("mono_jiterp_stelem_ref")],
         importDef("fma", getRawCwrap("fma")),
         importDef("fmaf", getRawCwrap("fmaf")),
+        importDef("scalbn", getRawCwrap("scalbn")),
+        importDef("scalbnf", getRawCwrap("scalbnf")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -446,6 +448,22 @@ function initialize_builder (builder: WasmBuilder) {
             "x": WasmValtype.f64,
             "y": WasmValtype.f64,
             "z": WasmValtype.f64,
+        },
+        WasmValtype.f64, true
+    );
+    builder.defineType(
+        "scalbnf",
+        {
+            "x": WasmValtype.f32,
+            "n": WasmValtype.i32,
+        },
+        WasmValtype.f32, true
+    );
+    builder.defineType(
+        "scalbn",
+        {
+            "x": WasmValtype.f64,
+            "n": WasmValtype.i32,
         },
         WasmValtype.f64, true
     );

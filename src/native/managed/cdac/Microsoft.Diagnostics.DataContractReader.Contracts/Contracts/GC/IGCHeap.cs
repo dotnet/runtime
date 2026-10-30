@@ -5,10 +5,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCHelpers;
 
 internal interface IGCHeap
 {
-    TargetPointer MarkArray { get; }
-    TargetPointer NextSweepObj { get; }
-    TargetPointer BackgroundMinSavedAddr { get; }
-    TargetPointer BackgroundMaxSavedAddr { get; }
+    TargetPointer? MarkArray { get; }
+    TargetPointer? NextSweepObj { get; }
+    TargetPointer? BackgroundMinSavedAddr { get; }
+    TargetPointer? BackgroundMaxSavedAddr { get; }
     TargetPointer AllocAllocated { get; }
     TargetPointer EphemeralHeapSegment { get; }
     TargetPointer CardTable { get; }
@@ -20,9 +20,9 @@ internal interface IGCHeap
 
     Data.OomHistory OomData { get; }
 
-    TargetPointer InternalRootArray { get; }
-    TargetNUInt InternalRootArrayIndex { get; }
-    bool HeapAnalyzeSuccess { get; }
+    TargetPointer? InternalRootArray { get; }
+    TargetNUInt? InternalRootArrayIndex { get; }
+    bool? HeapAnalyzeSuccess { get; }
 
     TargetPointer InterestingData { get; }
     TargetPointer CompactReasons { get; }

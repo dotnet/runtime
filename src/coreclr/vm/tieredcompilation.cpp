@@ -8,6 +8,7 @@
 
 
 #include "common.h"
+#include "CLREventBase.h"
 #include "excep.h"
 #include "log.h"
 #include "threadsuspend.h"
@@ -119,13 +120,7 @@ bool TieredCompilationManager::IsTieringDelayActive()
 
 void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMethodDesc)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
@@ -368,13 +363,7 @@ bool TieredCompilationManager::TryScheduleBackgroundWorkerWithoutGCTrigger_Locke
 
 void TieredCompilationManager::CreateBackgroundWorker()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(!IsLockOwnedByCurrentThread());
     _ASSERTE(s_isBackgroundWorkerRunning);
@@ -423,13 +412,7 @@ void TieredCompilationManager::CreateBackgroundWorker()
 
 DWORD WINAPI TieredCompilationManager::BackgroundWorkerBootstrapper0(LPVOID args)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(args != nullptr);
     Thread *thread = (Thread *)args;
@@ -470,13 +453,7 @@ void TieredCompilationManager::BackgroundWorkerBootstrapper1(LPVOID)
 
 void TieredCompilationManager::BackgroundWorkerStart()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(s_backgroundWorkAvailableEvent.IsValid());
 
@@ -500,14 +477,14 @@ void TieredCompilationManager::BackgroundWorkerStart()
         {
             do
             {
-                ClrSleepEx(delayMs, false);
+                minipal_sleep(delayMs);
             } while (!TryDeactivateTieringDelay());
         }
 
         // Don't want to perform background work as soon as it is scheduled if there is possibly more important work that could
         // be done. Some operating systems may also give a thread woken by a signal higher priority temporarily, which on a
         // CPU-limited environment may lead to rejitting a method as soon as it's promoted, effectively in the foreground.
-        ClrSleepEx(0, false);
+        minipal_sleep(0);
 
         if (IsTieringDelayActive())
         {
@@ -534,7 +511,7 @@ void TieredCompilationManager::BackgroundWorkerStart()
         }
 
         // Wait for the worker to be scheduled again
-        DWORD waitResult = s_backgroundWorkAvailableEvent.Wait(timeoutMs, false);
+        DWORD waitResult = s_backgroundWorkAvailableEvent.Wait(timeoutMs, false, false);
         if (waitResult == WAIT_OBJECT_0)
         {
             continue;
@@ -561,13 +538,7 @@ void TieredCompilationManager::BackgroundWorkerStart()
 
 bool TieredCompilationManager::TryDeactivateTieringDelay()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(GetThread() == s_backgroundWorkerThread);
 
@@ -652,13 +623,7 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
 
 void TieredCompilationManager::AsyncCompleteCallCounting()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     {
         LockHolder tieredCompilationLockHolder;
@@ -827,7 +792,7 @@ bool TieredCompilationManager::DoBackgroundWork(
         }
 
         int64_t beforeSleepTicks = currentTicks;
-        ClrSleepEx(0, false);
+        minipal_sleep(0);
 
         currentTicks = minipal_hires_ticks();
 
@@ -936,7 +901,7 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
         LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "TieredCompilationManager::CompileCodeVersion Method=0x%pM (%s::%s), code version id=0x%x, code ptr=0x%p\n",
             pMethod, pMethod->m_pszDebugClassName, pMethod->m_pszDebugMethodName,
             nativeCodeVersion.GetVersionId(),
-            pCode));
+              (void*)pCode));
 
         if (config->JitSwitchedToMinOpt())
         {
@@ -1049,6 +1014,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         case NativeCodeVersion::OptimizationTier0:
             if (g_pConfig->TieredCompilation_QuickJit())
             {
+#ifdef FEATURE_PGO
                 if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_InstrumentOnlyHotCode())
                 {
                     // If we plan to only instrument hot code we have to make an exception
@@ -1057,6 +1023,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
                     // if current method has loops and is eligible for OSR.
                     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS);
                 }
+#endif
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 break;
             }

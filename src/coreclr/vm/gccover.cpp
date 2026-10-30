@@ -20,17 +20,16 @@
 #pragma warning(disable:4663)
 
 #include "eeconfig.h"
-#include "utsem.h"
 #include "gccover.h"
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
-#include "cdacstress.h"
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM)
 #include "gcinfodecoder.h"
 #endif
 
 #include "disassembler.h"
+#include <minipal.h>
 
 /****************************************************************************/
 
@@ -203,7 +202,7 @@ void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
 FORCEINLINE void UpdateGCStressInstructionWithoutGC ()
 {
     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
-    ThreadSuspend::RestartEE(TRUE, TRUE);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 }
 
 #if defined(TARGET_X86)
@@ -487,8 +486,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
     // For prejitted code we have to remove the write-protect on the code page
     if (fZapped)
     {
-        DWORD oldProtect;
-        ClrVirtualProtect(codeStart, codeSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+        VMToOSInterface::ProtectMemory(codeStart, codeSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite);
         writeableOffset = 0;
     }
     else
@@ -878,7 +876,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     }
 
     _ASSERTE(sizeof(OBJECTREF) == sizeof(DWORD_PTR));
-    GCFrame gcFrame(pThread, (OBJECTREF*)protRegs, 2, TRUE);
+    GCFrame gcFrame(pThread, (OBJECTREF*)protRegs, 2, GC_CALL_INTERIOR);
 
     MethodDesc *pMD = nativeCodeVersion.GetMethodDesc();
     LOG((LF_GCROOTS, LL_EVERYTHING, "GCCOVER: Doing GC at method %s::%s offset 0x%x\n",
@@ -888,11 +886,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // Do the actual stress work
     //
 
-    CdacStress::MaybeVerify<cdac_on_instr>(pThread, regs);
-
-    // BUG(github #10318) - when not using allocation contexts, the alloc lock
-    // must be acquired here. Until fixed, this assert prevents random heap corruption.
-    assert(GCHeapUtilities::UseThreadAllocationContexts());
     GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
 
     // StressHeap can exit early w/o forcing a SuspendEE to trigger the instruction update
@@ -1105,12 +1098,11 @@ void GCCoverageInfo::SprinkleBreakpoints(
     // For prejitted code we have to remove the write-protect on the code page
     if (fZapped)
     {
-        DWORD oldProtect;
-        ClrVirtualProtect((BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+        VMToOSInterface::ProtectMemory((BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite);
 
         if (methodRegion.coldSize > 0)
         {
-            ClrVirtualProtect((BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+            VMToOSInterface::ProtectMemory((BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite);
         }
     }
 
@@ -1198,11 +1190,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // Do the actual stress work
     //
 
-    CdacStress::MaybeVerify<cdac_on_instr>(pThread, regs);
-
-    // BUG(github #10318)- when not using allocation contexts, the alloc lock
-    // must be acquired here. Until fixed, this assert prevents random heap corruption.
-    assert(GCHeapUtilities::UseThreadAllocationContexts());
     GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
 
     // StressHeap can exit early w/o forcing a SuspendEE to trigger the instruction update

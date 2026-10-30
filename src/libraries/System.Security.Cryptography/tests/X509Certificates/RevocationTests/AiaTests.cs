@@ -181,7 +181,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
         [PlatformSpecific(TestPlatforms.Linux)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void AiaIgnoresCertOverLimit()
@@ -215,6 +214,139 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     }
                 }
             }).Dispose();
+        }
+
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]
+        [Fact]
+        public static void AiaCompletionHasLimits()
+        {
+            const int IntermediateCount = 8;
+            int iteration = 0;
+
+            RetryHelper.Execute(
+                () =>
+                {
+                    iteration++;
+
+                    CertificateAuthority.BuildPrivatePki(
+                        PkiOptions.AllRevocation,
+                        out RevocationResponder responder,
+                        out CertificateAuthority root,
+                        out CertificateAuthority[] intermediates,
+                        out X509Certificate2 endEntity,
+                        intermediateAuthorityCount: IntermediateCount,
+                        pkiOptionsInSubject: false,
+                        testName: $"{nameof(AiaCompletionHasLimits)}_{iteration}");
+
+                    using (responder)
+                    using (root)
+                    using (endEntity)
+                    {
+                        try
+                        {
+                            using (ChainHolder holder = new ChainHolder())
+                            {
+                                // This test shows that we only download two certificates at a time.
+                                // This is a Windows black-box behavior that we're matching.
+                                // White-box suggests it's supposed to be 3, but maybe there's an off-by-one.
+                                // Windows also allow registry customization... but this test can't tolerate it.
+
+                                try
+                                {
+                                    X509Chain chain = holder.Chain;
+                                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                                    chain.ChainPolicy.VerificationFlags |=
+                                        X509VerificationFlags.AllowUnknownCertificateAuthority;
+                                    chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
+                                    chain.ChainPolicy.UrlRetrievalTimeout = DynamicRevocationTests.s_urlRetrievalLimit;
+                                    chain.ChainPolicy.ExtraStore.Add(intermediates[^2].CloneIssuerCert());
+
+                                    // EE, intermediate0 (AIA), intermediate1 (ExtraStore), intermediate2 (AIA).
+                                    AssertExtensions.TrueExpression(chain.Build(endEntity));
+
+                                    // Current Windows only allows 2, by black box testing, but 3 does seem to happen
+                                    // on some builds.  So, variant test for it being over-sized
+                                    if (chain.ChainElements.Count == 5)
+                                    {
+                                        // The ones described above, plus intermediate3(AIA).
+                                        AssertExtensions.HasFlag(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+
+                                        CloneIntoExtraStore(chain, 1);
+                                        CloneIntoExtraStore(chain, 3);
+                                        CloneIntoExtraStore(chain, 4);
+                                        holder.DisposeChainElements();
+
+                                        // Previous 5 plus intermediate4, intermediate5, and intermediate6.
+                                        AssertExtensions.TrueExpression(chain.Build(endEntity));
+                                        Assert.Equal(8, chain.ChainElements.Count);
+                                        AssertExtensions.HasFlag(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+
+                                        CloneIntoExtraStore(chain, 5);
+                                        CloneIntoExtraStore(chain, 6);
+                                        CloneIntoExtraStore(chain, 7);
+                                        holder.DisposeChainElements();
+                                    }
+                                    else
+                                    {
+                                        Assert.Equal(4, chain.ChainElements.Count);
+                                        AssertExtensions.HasFlag(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+
+                                        CloneIntoExtraStore(chain, 1);
+                                        CloneIntoExtraStore(chain, 3);
+                                        holder.DisposeChainElements();
+
+                                        // Previous 4 plus intermediate3 and intermediate4.
+                                        AssertExtensions.TrueExpression(chain.Build(endEntity));
+                                        Assert.Equal(6, chain.ChainElements.Count);
+                                        AssertExtensions.HasFlag(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+
+                                        CloneIntoExtraStore(chain, 4);
+                                        CloneIntoExtraStore(chain, 5);
+                                        holder.DisposeChainElements();
+
+                                        // Previous 6 plus intermediate5 and intermediate6.
+                                        AssertExtensions.TrueExpression(chain.Build(endEntity));
+                                        Assert.Equal(8, chain.ChainElements.Count);
+                                        AssertExtensions.HasFlag(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+
+                                        CloneIntoExtraStore(chain, 6);
+                                        CloneIntoExtraStore(chain, 7);
+                                        holder.DisposeChainElements();
+                                    }
+
+                                    // AIA fetches intermediate7 and root, chain finishes.
+                                    AssertExtensions.TrueExpression(chain.Build(endEntity));
+                                    Assert.Equal(10, chain.ChainElements.Count);
+                                    Assert.Equal(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
+                                }
+                                finally
+                                {
+                                    foreach (X509Certificate2 cert in holder.Chain.ChainPolicy.ExtraStore)
+                                    {
+                                        cert.Dispose();
+                                    }
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            if (intermediates is not null)
+                            {
+                                foreach (CertificateAuthority intermediate in intermediates)
+                                {
+                                    intermediate.Dispose();
+                                }
+                            }
+                        }
+                    }
+                });
+
+            static void CloneIntoExtraStore(X509Chain chain, int index)
+            {
+                ReadOnlySpan<byte> source = chain.ChainElements[index].Certificate.RawDataMemory.Span;
+                X509Certificate2 cert = X509CertificateLoader.LoadCertificate(source);
+                chain.ChainPolicy.ExtraStore.Add(cert);
+            }
         }
     }
 }

@@ -9,27 +9,25 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
-        /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <summary>Gets process infos for each process on the local machine.</summary>
+        /// <param name="builder">The builder to add found process infos to.</param>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        /// <param name="machineName">The target machine.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
+        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
         {
-            ThrowIfRemoteMachine(machineName);
-
             // Iterate through all process IDs to load information about each process
-            int[] pids = GetProcessIds(machineName);
-            var processes = new ArrayBuilder<ProcessInfo>(processNameFilter is null ? pids.Length : 0);
+            int[] pids = GetProcessIds();
+            if (processNameFilter is null)
+            {
+                builder = new ArrayBuilder<ProcessInfo>(pids.Length);
+            }
             foreach (int pid in pids)
             {
                 ProcessInfo? pi = CreateProcessInfo(pid, processNameFilter);
                 if (pi != null)
                 {
-                    processes.Add(pi);
+                    builder.Add(pi);
                 }
             }
-
-            return processes.ToArray();
         }
 
         /// <summary>Gets an array of module infos for the specified process.</summary>

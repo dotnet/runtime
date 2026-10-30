@@ -286,6 +286,12 @@ const EVP_CIPHER* CryptoNative_EvpAes128WrapPad(void)
     return EVP_aes_128_wrap_pad();
 }
 
+const EVP_CIPHER* CryptoNative_EvpAes128Wrap(void)
+{
+    // No error queue impact.
+    return EVP_aes_128_wrap();
+}
+
 const EVP_CIPHER* CryptoNative_EvpAes192Ecb(void)
 {
     // No error queue impact.
@@ -328,6 +334,12 @@ const EVP_CIPHER* CryptoNative_EvpAes192WrapPad(void)
     return EVP_aes_192_wrap_pad();
 }
 
+const EVP_CIPHER* CryptoNative_EvpAes192Wrap(void)
+{
+    // No error queue impact.
+    return EVP_aes_192_wrap();
+}
+
 const EVP_CIPHER* CryptoNative_EvpAes256Ecb(void)
 {
     // No error queue impact.
@@ -368,6 +380,12 @@ const EVP_CIPHER* CryptoNative_EvpAes256WrapPad(void)
 {
     // No error queue impact.
     return EVP_aes_256_wrap_pad();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes256Wrap(void)
+{
+    // No error queue impact.
+    return EVP_aes_256_wrap();
 }
 
 const EVP_CIPHER* CryptoNative_EvpDesEcb(void)

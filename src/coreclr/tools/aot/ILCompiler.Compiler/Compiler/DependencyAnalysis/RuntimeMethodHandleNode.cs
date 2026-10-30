@@ -6,6 +6,7 @@ using System.Diagnostics;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -18,6 +19,7 @@ namespace ILCompiler.DependencyAnalysis
         public RuntimeMethodHandleNode(MethodDesc targetMethod)
         {
             Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
+            Debug.Assert(!targetMethod.IsAsyncVariant());
 
             // IL is allowed to LDTOKEN an uninstantiated thing. Do not check IsRuntimeDetermined for the nonexact thing.
             Debug.Assert((targetMethod.HasInstantiation && targetMethod.IsMethodDefinition)
@@ -45,26 +47,21 @@ namespace ILCompiler.DependencyAnalysis
                 return ObjectNodeSection.DataSection;
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = null;
-
             if (!_targetMethod.IsMethodDefinition && !_targetMethod.OwningType.IsGenericDefinition
                 && _targetMethod.HasInstantiation && _targetMethod.IsVirtual)
             {
-                dependencies ??= new DependencyList();
+
                 MethodDesc canonMethod = _targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                dependencies.Add(factory.GVMDependencies(canonMethod), "GVM dependencies for runtime method handle");
+                sink.Add(factory.GVMDependencies(canonMethod), "GVM dependencies for runtime method handle");
 
                 // GVM analysis happens on canonical forms, but this is potentially injecting new genericness
                 // into the system. Ensure reflection analysis can still see this.
                 if (_targetMethod.IsAbstract)
-                    factory.MetadataManager.GetDependenciesDueToMethodCodePresence(ref dependencies, factory, canonMethod, methodIL: null);
+                    factory.MetadataManager.GetDependenciesDueToMethodCodePresence(sink, factory, canonMethod, methodIL: null);
             }
-
-            factory.MetadataManager.GetDependenciesDueToLdToken(ref dependencies, factory, _targetMethod);
-
-            return dependencies;
+            factory.MetadataManager.GetDependenciesDueToLdToken(sink, factory, _targetMethod);
         }
 
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
@@ -74,29 +71,20 @@ namespace ILCompiler.DependencyAnalysis
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
 
-            int flags = 0;
-
-            MethodDesc targetMethodForMetadata = _targetMethod.GetTypicalMethodDefinition();
-            if (targetMethodForMetadata.IsAsyncVariant())
-            {
-                targetMethodForMetadata = factory.TypeSystemContext.GetTargetOfAsyncVariantMethod(targetMethodForMetadata);
-                flags |= RuntimeMethodHandleConstants.IsAsyncVariant;
-            }
-
-            int handle = relocsOnly ? 0 : factory.MetadataManager.GetMetadataHandleForMethod(factory, targetMethodForMetadata);
+            int handle = relocsOnly ? 0 : factory.MetadataManager.GetMetadataHandleForMethod(factory, _targetMethod.GetTypicalMethodDefinition());
 
             objData.EmitPointerReloc(factory.MaximallyConstructableType(_targetMethod.OwningType));
             objData.EmitInt(handle);
 
             if (_targetMethod != _targetMethod.GetMethodDefinition())
             {
-                objData.EmitInt(_targetMethod.Instantiation.Length | flags);
+                objData.EmitInt(_targetMethod.Instantiation.Length);
                 foreach (TypeDesc instParam in _targetMethod.Instantiation)
                     objData.EmitPointerReloc(factory.NecessaryTypeSymbol(instParam));
             }
             else
             {
-                objData.EmitInt(0 | flags);
+                objData.EmitInt(0);
             }
 
             return objData.ToObjectData();

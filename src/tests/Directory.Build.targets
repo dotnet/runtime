@@ -12,6 +12,7 @@
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' == 'true' and '$(HasMergedInTests)' != 'true'">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(MonoAotIncompatible)' == 'true' and '$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'minifullaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</DisableProjectBuild>
     <SkipInferOutputType Condition="'$(TargetOS)' == 'android' and '$(TestBuildMode)' == 'nativeaot' and '$(OutputType)' != ''">true</SkipInferOutputType>
     <OutputType Condition="'$(SkipInferOutputType)' != 'true' and (('$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true') or ('$(RequiresProcessIsolation)' == 'true' and '$(CLRTestKind)' != 'SharedLibrary'))">Exe</OutputType>
 
@@ -115,6 +116,18 @@
   <PropertyGroup>
     <AutoUnifyAssemblyReferences>true</AutoUnifyAssemblyReferences>
   </PropertyGroup>
+
+  <Target Name="CopyInteropNativeRuntimeDependencies"
+    BeforeTargets="CopyAllNativeProjectReferenceBinaries"
+    Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
+    <Warning Text="Building C++/CLI tests requires a Visual Studio Dev Command Prompt" Condition="'$(VCToolsRedistDir)' == '' or '$(ExtensionSdkDir)' == ''" />
+    <ItemGroup Condition="'$(VCToolsRedistDir)' != '' and '$(ExtensionSdkDir)' != ''">
+      <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" />
+      <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/msvcp*d.dll" />
+      <InteropNativeRuntimeDependencies Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(TargetArchitecture)/ucrtbased.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(InteropNativeRuntimeDependencies)" DestinationFolder="$(OutputPath)" />
+  </Target>
 
   <!-- Project language -->
   <!-- TODO: This might just be the Language property -->
@@ -259,6 +272,11 @@
       <!-- Don't copy out-of-process test components to the merged wrapper output folder -->
       <MergedWrapperReferenceFolders Remove="@(OutOfProcessTestFolders)" />
       <!-- For merged project wrappers, include native libraries in all project references -->
+      <!-- Dynamic libraries only. On browser a static archive in a wrapper's output directory has
+           no consumer: only a corerun links one, and a merged wrapper never builds a corerun,
+           because the hook in Common/CLRTest.WasmCorerun.targets needs the project's own
+           @(CMakeProjectReference). Tests merged into a wrapper keep their native code unlinked and
+           gate on PlatformDetection.PlatformDoesNotSupportNativeTestAssets instead. -->
       <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" Condition="'@(MergedWrapperReferenceFolders)' != ''" />
     </ItemGroup>
     <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
@@ -270,6 +288,11 @@
 
   <!-- Build shell or command scripts whenever we copy native binaries -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.Execute.targets" />
+
+  <!-- WebAssembly cannot load native libraries at run time, so tests that call into their own
+       native code need a corerun with that code linked in. -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.WasmCorerun.targets"
+          Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'coreclr'" />
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
           Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
@@ -431,6 +454,9 @@
       <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).XHarnessNoRunner" Condition="'$(EmitXHarnessNoRunnerMarkerFile)' == 'true'">
         <Type>XHarnessNoRunner</Type>
       </MarkerFile>
+      <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).IlasmRoundTripIncompatible" Condition="'$(IlasmRoundTripIncompatible)' == 'true'">
+        <Type>IlasmRoundTripIncompatible</Type>
+      </MarkerFile>
       <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'">
         <Type>NoMonoAot</Type>
       </MarkerFile>
@@ -456,6 +482,14 @@
         Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true'"
         File="$(OutputPath)\$(AssemblyName).OutOfProcessTest"
         Lines="OutOfProcessTest"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true" />
+
+    <!-- Tests can opt in to preserving their pdbs in the Helix payload, which are otherwise stripped to reduce payload size.  -->
+    <WriteLinesToFile
+        Condition="'$(PreservePdbInHelixPayload)' == 'true'"
+        File="$(OutputPath)\$(AssemblyName).PreservePdb"
+        Lines="PreservePdb"
         Overwrite="true"
         WriteOnlyWhenDifferent="true" />
   </Target>
@@ -487,18 +521,25 @@
 
   <Target Name="GetRequiresProcessIsolation" Returns="@(ProjectRequiringProcessIsolation)">
     <ItemGroup Condition="'$(RequiresProcessIsolation)' == 'true'">
-      <ProjectRequiringProcessIsolation Include="$(MSBuildProjectFullPath)" />
+      <ProjectRequiringProcessIsolation Include="$(MSBuildProjectFullPath)">
+        <IsRunnable Condition="'$(GenerateRunScript)' == 'true' and '$(_WillCLRTestProjectBuild)' == 'true'">true</IsRunnable>
+      </ProjectRequiringProcessIsolation>
     </ItemGroup>
   </Target>
 
   <Target Name="DiscoverProcessIsolatedTestProjectReferences" BeforeTargets="AssignProjectConfiguration" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
-    <MSBuild Projects="@(ProjectReference)" Targets="GetRequiresProcessIsolation" SkipNonexistentTargets="true">
+    <ItemGroup>
+      <_ProjectReferenceFullPath Include="@(ProjectReference->'%(FullPath)')" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_ProjectReferenceFullPath)" Targets="GetRequiresProcessIsolation" SkipNonexistentTargets="true">
       <Output TaskParameter="TargetOutputs" ItemName="ReferencedProjectRequiringProcessIsolation" />
     </MSBuild>
 
     <ItemGroup>
-      <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" />
-      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" Private="False" />
+      <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation)" MatchOnMetadata="FullPath" />
+      <RunnableProjectRequiringProcessIsolation Include="@(ReferencedProjectRequiringProcessIsolation)" Condition="'%(ReferencedProjectRequiringProcessIsolation.IsRunnable)' == 'true'" />
+      <ProjectReference Include="@(RunnableProjectRequiringProcessIsolation->'%(FullPath)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" Private="False" />
     </ItemGroup>
   </Target>
 
@@ -517,6 +558,7 @@
   <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseBootstrap)' == 'true'" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
   <Import Project="$(RepoRoot)/src/tests/Common/mergedrunner.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
 
@@ -529,6 +571,17 @@
 
   <!-- RunOnly projects have a special build for dependent projects -->
   <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
+
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetOS)' == 'wasi'" />
+
+  <Target Name="SetNativeAotWasiSdkPath"
+          BeforeTargets="SetupOSSpecificProps"
+          DependsOnTargets="AcquireWasiSdk"
+          Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetOS)' == 'wasi'">
+    <PropertyGroup>
+      <WASI_SDK_PATH>$(RuntimeBuildWasiSdkPath)</WASI_SDK_PATH>
+    </PropertyGroup>
+  </Target>
 
   <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <!-- The test infra already sets up the environment for native compilation.
@@ -543,6 +596,12 @@
     <IlcGenerateWin32Resources Condition="'$(Language)' == 'IL'">false</IlcGenerateWin32Resources>
 
     <IlcTreatWarningsAsErrors>false</IlcTreatWarningsAsErrors>
+
+    <!-- Use the SDK's ILCompilerTargetsPath hook to import ILC targets in the correct order
+         (before ILLink), matching how the shipping SDK imports them. -->
+    <PublishAot>true</PublishAot>
+    <_IlcReferencedAsPackage>false</_IlcReferencedAsPackage>
+    <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>
 
     <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
@@ -570,12 +629,11 @@
     <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to set
          rpath so that the test can load its native library dependencies if there's any -->
     <LinkerArg Include="-Wl,-rpath,'@executable_path/..'" Condition="'$(SetIlcRPath)' != 'false' and ('$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true')" />
-    <LinkerArg Include="-Wl,-rpath,'$ORIGIN/..'" Condition="'$(SetIlcRPath)' != 'false' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetsAppleMobile)' != 'true'" />
+    <LinkerArg Include="-Wl,-rpath,'$ORIGIN/..'" Condition="'$(SetIlcRPath)' != 'false' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetsAppleMobile)' != 'true' and '$(TargetArchitecture)' != 'wasm'" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
 
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
   <Import Project="$(RepoRoot)eng/liveILLink.targets" />
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
@@ -587,6 +645,6 @@
 
   <Target Name="LinkNativeIfBuildAndRun"
           Condition="'$(_WillCLRTestProjectBuild)' == 'true' and '$(CLRTestKind)' == 'BuildAndRun'"
-          DependsOnTargets="ComputeResolvedFilesToPublishList;LinkNative" />
+          DependsOnTargets="ComputeResolvedFilesToPublishList;NativeCompile" />
 
 </Project>

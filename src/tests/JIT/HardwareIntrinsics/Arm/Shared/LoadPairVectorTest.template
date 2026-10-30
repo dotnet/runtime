@@ -66,8 +66,8 @@ namespace {Namespace}
 
             public DataTable({Op1BaseType}[] inArray, {RetBaseType}[] outArray, int alignment)
             {
-                int sizeOfinArray  = inArray.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
+                int sizeOfinArray  = inArray.Length * sizeof({Op1BaseType});
+                int sizeOfoutArray = outArray.Length * sizeof({RetBaseType});
 
                 if ((alignment != 16 && alignment != 32) || (alignment * 2) < sizeOfinArray || (alignment * 2) < sizeOfoutArray)
                 {
@@ -120,7 +120,7 @@ namespace {Namespace}
 
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
-        private static readonly int RetElementCount = Unsafe.SizeOf<({RetVectorType}<{RetBaseType}>,{RetVectorType}<{RetBaseType}>)>() / sizeof({RetBaseType});
+        private static readonly int RetElementCount = sizeof(({RetVectorType}<{RetBaseType}>,{RetVectorType}<{RetBaseType}>)) / sizeof({RetBaseType});
         private static readonly int Op1ElementCount = RetElementCount;
 
         private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
@@ -203,8 +203,8 @@ namespace {Namespace}
             {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)(Unsafe.SizeOf<{Op1BaseType}>() * Op1ElementCount));
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)(Unsafe.SizeOf<{RetBaseType}>() * RetElementCount));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)(sizeof({Op1BaseType}) * Op1ElementCount));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)(sizeof({RetBaseType}) * RetElementCount));
 
             ValidateResult(inArray, outArray, method);
         }

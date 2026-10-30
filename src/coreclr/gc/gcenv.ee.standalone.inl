@@ -30,10 +30,10 @@ inline void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     g_theGCToCLR->SuspendEE(reason);
 }
 
-inline void GCToEEInterface::RestartEE(bool bFinishedGC)
+inline void GCToEEInterface::RestartEE(bool bUnused)
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->RestartEE(bFinishedGC);
+    g_theGCToCLR->RestartEE(/* bUnused */ true);
 }
 
 inline void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
@@ -79,6 +79,17 @@ inline void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesAr
     {
         g_theGCToCLR->TriggerClientBridgeProcessing(args);
     }
+}
+
+inline bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+    assert(g_theGCToCLR != nullptr);
+    if (g_runtimeSupportedVersion.MajorVersion >= 5)
+    {
+        return g_theGCToCLR->IsClientBridgeProcessingActive();
+    }
+
+    return false;
 }
 
 inline void GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)

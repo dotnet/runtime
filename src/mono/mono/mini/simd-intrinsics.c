@@ -4951,8 +4951,8 @@ emit_arm64_intrinsics (
 				(arg0_type == MONO_TYPE_I8 ? OP_ARM64_SMULH : OP_ARM64_UMULH), 0, arg0_type, fsig, args);
 		case SN_ReverseElementBits:
 			return emit_simd_ins_for_sig (cfg, klass,
-				(is_64bit ? OP_XOP_I8_I8 : OP_XOP_I4_I4),
-				(is_64bit ? INTRINS_BITREVERSE_I64 : INTRINS_BITREVERSE_I32),
+				(arg0_i32 ? OP_XOP_I4_I4 : OP_XOP_I8_I8),
+				(arg0_i32 ? INTRINS_BITREVERSE_I32 : INTRINS_BITREVERSE_I64),
 				arg0_type, fsig, args);
 		case SN_Yield: {
 			MonoInst* ins;
@@ -4973,14 +4973,26 @@ emit_arm64_intrinsics (
 		case SN_ComputeCrc32C: {
 			IntrinsicId op = (IntrinsicId)0;
 			gboolean is_c = info->id == SN_ComputeCrc32C;
+			gboolean is_8byte_data = FALSE;
 			switch (get_underlying_type (fsig->params [1])) {
 			case MONO_TYPE_U1: op = is_c ? INTRINS_AARCH64_CRC32CB : INTRINS_AARCH64_CRC32B; break;
 			case MONO_TYPE_U2: op = is_c ? INTRINS_AARCH64_CRC32CH : INTRINS_AARCH64_CRC32H; break;
+#if TARGET_SIZEOF_VOID_P == 4
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_U4: op = is_c ? INTRINS_AARCH64_CRC32CW : INTRINS_AARCH64_CRC32W; break;
-			case MONO_TYPE_U8: op = is_c ? INTRINS_AARCH64_CRC32CX : INTRINS_AARCH64_CRC32X; break;
+#if TARGET_SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+				is_8byte_data = TRUE;
+				op = is_c ? INTRINS_AARCH64_CRC32CX : INTRINS_AARCH64_CRC32X;
+				break;
+#endif
+			case MONO_TYPE_U8: is_8byte_data = TRUE; op = is_c ? INTRINS_AARCH64_CRC32CX : INTRINS_AARCH64_CRC32X; break;
 			default: g_assert_not_reached (); break;
 			}
-			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_XOP_I4_I4_I8 : OP_XOP_I4_I4_I4, op, arg0_type, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass, is_8byte_data ? OP_XOP_I4_I4_I8 : OP_XOP_I4_I4_I4, op, arg0_type, fsig, args);
 		}
 		default:
 			g_assert_not_reached (); // if a new API is added we need to either implement it or change IsSupported to false
@@ -6823,16 +6835,16 @@ emit_wasm_supported_intrinsics (
 
 				switch (arg0_type) {
 				case MONO_TYPE_I1:
-						c0 = INTRINS_WASM_SUB_SAT_SIGNED_V16;
+						c0 = INTRINS_SSE_SSUB_SATI8;
 						break;
 				case MONO_TYPE_I2:
-						c0 = INTRINS_WASM_SUB_SAT_SIGNED_V8;
+						c0 = INTRINS_SSE_SSUB_SATI16;
 						break;
 				case MONO_TYPE_U1:
-						c0 = INTRINS_WASM_SUB_SAT_UNSIGNED_V16;
+						c0 = INTRINS_SSE_USUB_SATI8;
 						break;
 				case MONO_TYPE_U2:
-						c0 = INTRINS_WASM_SUB_SAT_UNSIGNED_V8;
+						c0 = INTRINS_SSE_USUB_SATI16;
 						break;
 				}
 

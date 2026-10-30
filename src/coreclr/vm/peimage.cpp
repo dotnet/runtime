@@ -26,18 +26,16 @@ PtrHashMap *PEImage::s_ijwFixupDataHash;
 /* static */
 void PEImage::Startup()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckStartup());
-        INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (CheckStartup())
-        RETURN;
+        return;
 
     s_hashLock.Init(CrstPEImage, (CrstFlags)(CRST_REENTRANCY|CRST_TAKEN_DURING_SHUTDOWN));
     LockOwner lock = { &s_hashLock, IsOwnerOfCrst };
@@ -49,7 +47,11 @@ void PEImage::Startup()
     s_ijwFixupDataHash = ::new PtrHashMap;
     s_ijwFixupDataHash->Init(CompareIJWDataBase, FALSE, &ijwLock);
 
-    RETURN;
+#ifdef TARGET_WASM
+    PEImageLayout::Startup();
+#endif // TARGET_WASM
+
+    _ASSERTE(CheckStartup());
 }
 
 /* static */
@@ -91,8 +93,14 @@ PEImage::~PEImage()
 
     if (m_pLayoutLock)
         delete m_pLayoutLock;
-    if(m_hFile!=INVALID_HANDLE_VALUE)
-        CloseHandle(m_hFile);
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
+    {
+        if (!VMToOSInterface::CloseFile(m_hFile))
+        {
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not close file (0x%08x)\n",
+                static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
+        }
+    }
 
     for (unsigned int i=0;i<ARRAY_SIZE(m_pLayouts);i++)
     {
@@ -117,21 +125,20 @@ BOOL PEImage::CompareIJWDataBase(UPTR base, UPTR mapping)
         MODE_ANY;
     } CONTRACTL_END;
 
-    return ((BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase());
+    return (BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase();
 }
 
-ULONG PEImage::Release()
+ULONG PEImage::Release() noexcept
 {
     CONTRACTL
     {
         DESTRUCTOR_CHECK;
         NOTHROW;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
-    CONTRACT_VIOLATION(FaultViolation|ThrowsViolation);
+    CONTRACT_VIOLATION(ThrowsViolation);
     COUNT_T result = 0;
     {
         // Use scoping to hold the hash lock
@@ -297,7 +304,6 @@ void PEImage::OpenMDImport()
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     if (m_pMDImport==NULL)
@@ -354,7 +360,6 @@ void PEImage::GetMVID(GUID *pMvid)
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -368,7 +373,7 @@ void PEImage::GetMVID(GUID *pMvid)
     if (pMeta == NULL)
         ThrowHR(COR_E_BADIMAGEFORMAT);
 
-    SafeComHolder<IMDInternalImport> pMDImport;
+    ReleaseHolderAnyMode<IMDInternalImport> pMDImport;
 
     IfFailThrow(GetMDInternalInterface((void *) pMeta,
                                        cMeta,
@@ -422,7 +427,6 @@ PEImage::IJWFixupData *PEImage::GetIJWData(void *pBase)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END
 
     // Take the IJW hash lock
@@ -439,7 +443,7 @@ PEImage::IJWFixupData *PEImage::GetIJWData(void *pBase)
     }
 
     // Return the new data
-    return (pData);
+    return pData;
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -549,7 +553,7 @@ PEImage::PEImage(const WCHAR* path):
     m_refCount(1),
     m_bInHashMap(FALSE),
     m_probeExtensionResult(),
-    m_hFile(INVALID_HANDLE_VALUE),
+    m_hFile(VMToOSInterface::InvalidFileHandle),
     m_dwPEKind(0),
     m_dwMachine(0),
     m_pMDImport(NULL)
@@ -711,11 +715,11 @@ PTR_PEImageLayout PEImage::CreateFlatLayout()
 /* static */
 PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
 {
-    CONTRACT(PTR_PEImage)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PEImageHolder pImage(new PEImage(NULL /*path*/));
     PTR_PEImageLayout pLayout = PEImageLayout::CreateFromByteArray(pImage, array, size);
@@ -723,20 +727,19 @@ PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
 
     SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
     pImage->SetLayout(IMAGE_FLAT,pLayout);
-    RETURN dac_cast<PTR_PEImage>(pImage.Extract());
+    return dac_cast<PTR_PEImage>(pImage.Detach());
 }
 
 #ifndef TARGET_UNIX
 /* static */
 PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
 {
-    CONTRACT(PTR_PEImage)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(hMod!=NULL);
-        POSTCONDITION(RETVAL->HasLoadedLayout());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     StackSString path;
     WszGetModuleFileName(hMod, path);
@@ -756,11 +759,12 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
     }
 
     _ASSERTE(pImage->m_pLayouts[IMAGE_FLAT] != NULL);
-    RETURN dac_cast<PTR_PEImage>(pImage.Extract());
+    _ASSERTE(pImage->HasLoadedLayout());
+    return dac_cast<PTR_PEImage>(pImage.Detach());
 }
 #endif // !TARGET_UNIX
 
-HANDLE PEImage::GetFileHandle()
+VMToOSInterface::MemoryMapHandle PEImage::GetFileHandle()
 {
     CONTRACTL
     {
@@ -769,14 +773,11 @@ HANDLE PEImage::GetFileHandle()
     }
     CONTRACTL_END;
 
-    if (m_hFile!=INVALID_HANDLE_VALUE)
-        return m_hFile;
-
-    HRESULT hr = TryOpenFile(/*takeLock*/ false);
-
-    if (m_hFile == INVALID_HANDLE_VALUE)
+    if (m_hFile == VMToOSInterface::InvalidFileHandle)
     {
-        EEFileLoadException::Throw(GetPathToLoad(), hr);
+        HRESULT hr = TryOpenFile(/* takeLock */ false);
+        if (FAILED(hr))
+            EEFileLoadException::Throw(GetPathToLoad(), hr);
     }
 
     return m_hFile;
@@ -790,29 +791,17 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
 
     SimpleWriteLockHolder lock(m_pLayoutLock, takeLock);
 
-    if (m_hFile != INVALID_HANDLE_VALUE)
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
         return S_OK;
 
     ErrorModeHolder mode{};
-    m_hFile = WszCreateFile((LPCWSTR)GetPathToLoad(),
-                          GENERIC_READ
-#if TARGET_WINDOWS
-                          // the file may have native code sections, make sure we are allowed to execute the file
-                          | GENERIC_EXECUTE
-#endif
-                          ,
-                          FILE_SHARE_READ|FILE_SHARE_DELETE,
-                          NULL,
-                          OPEN_EXISTING,
-                          FILE_ATTRIBUTE_NORMAL,
-                          NULL);
-    if (m_hFile != INVALID_HANDLE_VALUE)
-            return S_OK;
+    m_hFile = VMToOSInterface::OpenFile(
+        reinterpret_cast<const char16_t*>(static_cast<LPCWSTR>(GetPathToLoad())));
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
+        return S_OK;
 
-    if (GetLastError())
-        return HRESULT_FROM_WIN32(GetLastError());
-
-    return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+    HRESULT error = VMToOSInterface::GetLastMemoryMappingError();
+    return error != S_OK ? error : HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 }
 
 #endif // !DACCESS_COMPILE
@@ -824,7 +813,6 @@ BOOL PEImage::IsPtrInImage(PTR_CVOID data)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

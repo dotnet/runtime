@@ -3,12 +3,13 @@
 
 using System.Collections.Generic;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
 
 namespace System.Net.Security.Tests
 {
-    public class SslAuthenticationOptionsTests
+    public partial class SslAuthenticationOptionsTests
     {
         private readonly SslClientAuthenticationOptions _clientOptions = new SslClientAuthenticationOptions();
         private readonly SslServerAuthenticationOptions _serverOptions = new SslServerAuthenticationOptions();

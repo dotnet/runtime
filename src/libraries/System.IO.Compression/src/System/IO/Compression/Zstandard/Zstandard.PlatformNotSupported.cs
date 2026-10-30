@@ -1,35 +1,50 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.IO.Compression
 {
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
+    public sealed class ZstandardDecompressionOptions
+    {
+        public ZstandardDecompressionOptions() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public ZstandardDictionary? Dictionary { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
+        public int MaxWindowLog2 { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
+    }
+
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public sealed class ZstandardCompressionOptions
     {
         public ZstandardCompressionOptions() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public bool AppendChecksum { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
+        public int ChainLog2 { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
         public static int DefaultQuality => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
-        public static int DefaultWindowLog => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public static int DefaultWindowLog2 => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public ZstandardDictionary? Dictionary { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
         public bool EnableLongDistanceMatching { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
+        public int HashLog2 { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
+        public static int MaxChainLog2 => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public static int MaxHashLog2 => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public static int MaxQuality => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
-        public static int MaxWindowLog => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public static int MaxWindowLog2 => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public static int MinChainLog2 => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public static int MinHashLog2 => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public static int MinQuality => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
-        public static int MinWindowLog => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public static int MinWindowLog2 => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public int Quality { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
         public int TargetBlockSize { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
-        public int WindowLog { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
+        public int WindowLog2 { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
     }
 
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardDecoder : IDisposable
     {
         public ZstandardDecoder() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
-        public ZstandardDecoder(int maxWindowLog) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public ZstandardDecoder(int maxWindowLog2) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public ZstandardDecoder(ZstandardDecompressionOptions decompressionOptions) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public ZstandardDecoder(ZstandardDictionary dictionary) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
-        public ZstandardDecoder(ZstandardDictionary dictionary, int maxWindowLog) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public ZstandardDecoder(ZstandardDictionary dictionary, int maxWindowLog2) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public System.Buffers.OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public void Dispose() { }
         public void Reset() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
@@ -40,7 +55,6 @@ namespace System.IO.Compression
     }
 
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardDictionary : IDisposable
     {
         internal ZstandardDictionary() { }
@@ -48,19 +62,18 @@ namespace System.IO.Compression
         public static ZstandardDictionary Create(ReadOnlySpan<byte> buffer) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public static ZstandardDictionary Create(ReadOnlySpan<byte> buffer, int quality) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public void Dispose() { }
-        public static ZstandardDictionary Train(ReadOnlySpan<byte> samples, ReadOnlySpan<int> sampleLengths, int maxDictionarySize) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public static byte[] Train(ReadOnlySpan<byte> samples, ReadOnlySpan<int> sampleLengths, int maxDictionarySize) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
     }
 
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardEncoder : IDisposable
     {
         public ZstandardEncoder() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public ZstandardEncoder(int quality) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
-        public ZstandardEncoder(int quality, int windowLog) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public ZstandardEncoder(int quality, int windowLog2) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public ZstandardEncoder(ZstandardCompressionOptions compressionOptions) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public ZstandardEncoder(ZstandardDictionary dictionary) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
-        public ZstandardEncoder(ZstandardDictionary dictionary, int windowLog) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public ZstandardEncoder(ZstandardDictionary dictionary, int windowLog2) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public System.Buffers.OperationStatus Compress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public void Dispose() { }
         public System.Buffers.OperationStatus Flush(Span<byte> destination, out int bytesWritten) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
@@ -69,12 +82,11 @@ namespace System.IO.Compression
         public void SetPrefix(ReadOnlyMemory<byte> prefix) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public void SetSourceLength(long length) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary, int windowLog) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog2) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary, int windowLog2) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
     }
 
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed partial class ZstandardStream : Stream
     {
         public ZstandardStream(Stream stream, CompressionLevel compressionLevel) : base() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
@@ -84,6 +96,7 @@ namespace System.IO.Compression
         public ZstandardStream(Stream stream, CompressionMode mode, ZstandardDictionary dictionary, bool leaveOpen = false) : base() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public ZstandardStream(Stream stream, ZstandardCompressionOptions compressionOptions, bool leaveOpen = false) : base() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public ZstandardStream(Stream stream, ZstandardDecoder decoder, bool leaveOpen = false) : base() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public ZstandardStream(Stream stream, ZstandardDecompressionOptions decompressionOptions, bool leaveOpen = false) : base() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public ZstandardStream(Stream stream, ZstandardEncoder encoder, bool leaveOpen = false) : base() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public Stream BaseStream => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public override bool CanRead => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);

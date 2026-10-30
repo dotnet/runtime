@@ -282,6 +282,8 @@ export const mathIntrinsicTable: { [opcode: number]: [isUnary: boolean, isF32: b
     [MintOpcode.MINT_FLOORF]:   [true, true, WasmOpcode.f32_floor],
     [MintOpcode.MINT_ABS]:      [true, false, WasmOpcode.f64_abs],
     [MintOpcode.MINT_ABSF]:     [true, true, WasmOpcode.f32_abs],
+    [MintOpcode.MINT_TRUNC]:    [true, false, WasmOpcode.f64_trunc],
+    [MintOpcode.MINT_TRUNCF]:   [true, true, WasmOpcode.f32_trunc],
 
     [MintOpcode.MINT_ACOS]:     [true, false, "acos"],
     [MintOpcode.MINT_ACOSF]:    [true, true, "acosf"],
@@ -316,6 +318,8 @@ export const mathIntrinsicTable: { [opcode: number]: [isUnary: boolean, isF32: b
     [MintOpcode.MINT_MINF]:     [false, true, WasmOpcode.f32_min],
     [MintOpcode.MINT_MAX]:      [false, false, WasmOpcode.f64_max],
     [MintOpcode.MINT_MAXF]:     [false, true, WasmOpcode.f32_max],
+    [MintOpcode.MINT_COPYSIGN]: [false, false, WasmOpcode.f64_copysign],
+    [MintOpcode.MINT_COPYSIGNF]:[false, true, WasmOpcode.f32_copysign],
 
     [MintOpcode.MINT_ATAN2]:    [false, false, "atan2"],
     [MintOpcode.MINT_ATAN2F]:   [false, true, "atan2f"],

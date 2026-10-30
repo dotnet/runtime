@@ -97,6 +97,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly List<HeaderItem> _items = new List<HeaderItem>();
         private readonly ReadyToRunFlags _flags;
+
+        public ReadyToRunFlags Flags => _flags;
         private readonly Task<(bool canSkipValidation, string[] reasons)> _shouldAddSkipTypeValidationFlag;
 
         public ReadyToRunHeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipTypeValidation)
@@ -186,11 +188,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 builder.EmitInt((int)item.Id);
 
-                builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB);
+                // DelayLoadMethodCallThunks symbols are PCode, but the header entry encodes a data RVA.
+                // Remove the target code delta so the RVA does not include the ARM Thumb bit.
+                int rvaDelta = item.Id == ReadyToRunSectionType.DelayLoadMethodCallThunks ? -factory.Target.CodeDelta : 0;
+                builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB, rvaDelta);
 
                 // The header entry for the runtime functions table should not include the 4 byte 0xffffffff sentinel
-                // value in the covered range.
-                int delta = item.Id == ReadyToRunSectionType.RuntimeFunctions ? RuntimeFunctionsTableNode.SentinelSizeAdjustment : 0;
+                // value in the covered range. For WASM, also excludes the trailing min table index.
+                int delta = item.Id == ReadyToRunSectionType.RuntimeFunctions ? factory.RuntimeFunctionsTable.SentinelSizeAdjustment : 0;
                 builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_SYMBOL_SIZE, delta);
 
                 count++;

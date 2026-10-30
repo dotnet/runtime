@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.Text;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -90,7 +92,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
@@ -98,11 +100,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override ReadOnlySpan<byte> Namespace
+        public override Utf8Span Namespace
         {
             get
             {
-                return System.Text.Encoding.UTF8.GetBytes(_runtimeDeterminedDetailsType.Name)
+                return new Utf8Span(System.Text.Encoding.UTF8.GetBytes(_runtimeDeterminedDetailsType.Name))
                     .Append("_"u8, _rawCanonType.Namespace);
             }
         }
@@ -123,7 +125,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override MethodDesc GetMethod(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
+        public override MethodDesc GetMethod(Utf8Span name, MethodSignature signature, Instantiation substitution)
         {
             MethodDesc method = _rawCanonType.GetMethod(name, signature, substitution);
             if (method == null)
@@ -131,7 +133,7 @@ namespace Internal.TypeSystem
             return Context.GetMethodForRuntimeDeterminedType(method.GetTypicalMethodDefinition(), this);
         }
 
-        public override MethodDesc GetMethodWithEquivalentSignature(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
+        public override MethodDesc GetMethodWithEquivalentSignature(Utf8Span name, MethodSignature signature, Instantiation substitution)
         {
             MethodDesc method = _rawCanonType.GetMethodWithEquivalentSignature(name, signature, substitution);
             if (method == null)

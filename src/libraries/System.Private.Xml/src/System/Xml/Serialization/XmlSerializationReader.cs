@@ -163,6 +163,9 @@ namespace System.Xml.Serialization
             }
         }
 
+        internal bool HasUnknownNodeOrAttributeEvents =>
+            _events.OnUnknownNode is not null || _events.OnUnknownAttribute is not null;
+
         protected int ReaderCount
         {
             get { return 0; }
@@ -905,6 +908,11 @@ namespace System.Xml.Serialization
             if (wrapped)
             {
                 if (ReadNull()) return null;
+                if (!LocalAppContextSwitches.UseLegacyEmptyXmlElementDeserialization && _r.IsEmptyElement)
+                {
+                    _r.Skip();
+                    return null;
+                }
                 _r.ReadStartElement();
                 _r.MoveToContent();
                 if (_r.NodeType != XmlNodeType.EndElement)
@@ -1892,8 +1900,24 @@ namespace System.Xml.Serialization
         protected void ReadEndElement()
         {
             while (_r.NodeType == XmlNodeType.Whitespace) _r.Skip();
-            if (_r.NodeType == XmlNodeType.None) _r.Skip();
-            else _r.ReadEndElement();
+
+            if (LocalAppContextSwitches.UseXmlSerializerReadEndElementWorkaround)
+            {
+                if (_r.NodeType == XmlNodeType.None)
+                    return;
+
+                // Avoid forcing the reader to pull one more token after completing a top-level element.
+                // In fragment scenarios over streaming transports, additional data may not be immediately
+                // available even though deserialization of the current element is already complete.
+                if (_r.NodeType == XmlNodeType.EndElement && _r.Depth == 0)
+                    return;
+            }
+            else if (_r.NodeType == XmlNodeType.None)
+            {
+                _r.Skip();
+            }
+
+            _r.ReadEndElement();
         }
 
         private object ReadXmlNodes(bool elementCanBeType)
@@ -2073,6 +2097,7 @@ namespace System.Xml.Serialization
         private readonly Hashtable _createMethods = new Hashtable();
         private int _nextCreateMethodNumber;
         private int _nextIdNumber;
+        private bool _usedXmlListSeparators;
 
         internal Hashtable Enums => field ??= new Hashtable();
 
@@ -2329,6 +2354,19 @@ namespace System.Xml.Serialization
                 Writer.Write("string ");
                 Writer.Write(idName);
                 Writer.WriteLine(";");
+            }
+
+            if (_usedXmlListSeparators)
+            {
+                // Separator set used to split whitespace-separated [XmlText]/[XmlAttribute] list content.
+                // By default this is the four characters the XML spec defines as whitespace (#x20, #x9,
+                // #xA, #xD), matching the XSD list/NMTOKENS definition. The UseLegacyXmlListSeparation
+                // switch restores the legacy behavior of splitting on .NET's broader char.IsWhiteSpace()
+                // set, which String.Split does when the separator array is null. The switch is read once
+                // when this reader type loads, so a caller's opt-out is honored even by pre-generated
+                // serializers (rather than baking the build machine's switch value into the assembly).
+                Writer.WriteLine();
+                Writer.WriteLine("static readonly char[] xmlListSeparators = System.AppContext.TryGetSwitch(\"Switch.System.Xml.Serialization.UseLegacyXmlListSeparation\", out bool useLegacyXmlListSeparation) && useLegacyXmlListSeparation ? null : new char[] { ' ', '\\t', '\\n', '\\r' };");
             }
 
             Writer.WriteLine();
@@ -3851,8 +3889,15 @@ namespace System.Xml.Serialization
             {
                 if (attribute.IsList)
                 {
+                    _usedXmlListSeparators = true;
                     Writer.WriteLine("string listValues = Reader.Value;");
-                    Writer.WriteLine("string[] vals = listValues.Split(null);");
+                    // Split the whitespace-separated attribute list into its items. By default we split
+                    // on exactly the four characters the XML spec defines as whitespace (#x20, #x9, #xA,
+                    // #xD), matching the XSD list/NMTOKENS definition and letting items contain other
+                    // Unicode whitespace. The xmlListSeparators field (initialized from the
+                    // UseLegacyXmlListSeparation switch when this reader type loads) is null in the
+                    // legacy case, which makes String.Split fall back to its broader whitespace set.
+                    Writer.WriteLine("string[] vals = listValues.Split(xmlListSeparators);");
                     Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
                     Writer.Indent++;
 
@@ -4114,6 +4159,30 @@ namespace System.Xml.Serialization
             }
             else
             {
+                if (member.IsArrayLike && text.IsList)
+                {
+                    _usedXmlListSeparators = true;
+                    // The text content is a whitespace-separated list; split it and add each value to
+                    // the array-like member (mirrors [XmlAttribute] list handling). By default we split
+                    // on exactly the four characters the XML spec defines as whitespace (#x20, #x9, #xA,
+                    // #xD), matching the XSD list/NMTOKENS definition and letting items contain other
+                    // Unicode whitespace. The xmlListSeparators field (initialized from the
+                    // UseLegacyXmlListSeparation switch when this reader type loads) is null in the
+                    // legacy case, which makes String.Split fall back to its broader whitespace set.
+                    Writer.Write("string listValues = ");
+                    Writer.WriteLine(text.Mapping!.TypeDesc!.CollapseWhitespace ? "CollapseWhitespace(Reader.ReadString());" : "Reader.ReadString();");
+                    Writer.WriteLine("string[] vals = listValues.Split(xmlListSeparators, System.StringSplitOptions.RemoveEmptyEntries);");
+                    Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
+                    Writer.Indent++;
+                    WriteSourceBegin(member.ArraySource);
+                    Writer.Write("vals[i]");
+                    WriteSourceEnd(member.ArraySource);
+                    Writer.WriteLine(";");
+                    Writer.Indent--;
+                    Writer.WriteLine("}");
+                    return;
+                }
+
                 if (member.IsArrayLike)
                 {
                     WriteSourceBegin(member.ArraySource);
@@ -4539,6 +4608,29 @@ namespace System.Xml.Serialization
                 Writer.Write("})");
         }
 
+        // Emits code that walks the attributes on the current element and raises the
+        // UnknownNode/UnknownAttribute events for any non-namespace attribute. This mirrors the
+        // attribute handling that already happens for elements mapped to structs (via WriteAttributes),
+        // so that unknown attributes on elements mapped to primitives, arrays, and collections are
+        // surfaced consistently.
+        private void WriteHandleUnknownAttributes()
+        {
+            Writer.WriteLine("if (Reader.HasAttributes) {");
+            Writer.Indent++;
+            Writer.WriteLine("while (Reader.MoveToNextAttribute()) {");
+            Writer.Indent++;
+            Writer.WriteLine("if (!IsXmlnsAttribute(Reader.Name)) {");
+            Writer.Indent++;
+            Writer.WriteLine("UnknownNode(null);");
+            Writer.Indent--;
+            Writer.WriteLine("}");
+            Writer.Indent--;
+            Writer.WriteLine("}");
+            Writer.WriteLine("Reader.MoveToElement();");
+            Writer.Indent--;
+            Writer.WriteLine("}");
+        }
+
         private void WriteArray(string source, string? arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int fixupIndex)
         {
             if (arrayMapping.IsSoap)
@@ -4582,6 +4674,7 @@ namespace System.Xml.Serialization
             {
                 Writer.WriteLine("if (!ReadNull()) {");
                 Writer.Indent++;
+                WriteHandleUnknownAttributes();
 
                 MemberMapping memberMapping = new MemberMapping();
                 memberMapping.Elements = arrayMapping.Elements;
@@ -4685,7 +4778,13 @@ namespace System.Xml.Serialization
                     Writer.WriteLine(";");
                     Writer.Indent--;
                     Writer.WriteLine("}");
-                    Writer.Write("else ");
+                    Writer.WriteLine("else {");
+                    Writer.Indent++;
+                    WriteHandleUnknownAttributes();
+                }
+                else
+                {
+                    WriteHandleUnknownAttributes();
                 }
                 if (element.Default != null && element.Default != DBNull.Value && element.Mapping.TypeDesc!.IsValueType)
                 {
@@ -4764,6 +4863,11 @@ namespace System.Xml.Serialization
                 }
                 Writer.Indent--;
                 Writer.WriteLine("}");
+                if (element.IsNullable)
+                {
+                    Writer.Indent--;
+                    Writer.WriteLine("}");
+                }
             }
             else if (element.Mapping is StructMapping || (element.Mapping.IsSoap && element.Mapping is PrimitiveMapping))
             {

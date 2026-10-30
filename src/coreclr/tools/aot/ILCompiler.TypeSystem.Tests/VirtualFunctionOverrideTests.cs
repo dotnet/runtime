@@ -73,6 +73,40 @@ namespace TypeSystemTests
         }
 
         [Fact]
+        public void TestVariantInterfaceGenericMethodResolution()
+        {
+            DefType objectType = _context.GetWellKnownType(WellKnownType.Object);
+            MetadataType baseType = _testModule.GetType("GvmVariantInterface"u8, "GvmVariantBase"u8);
+            MetadataType derivedType = _testModule.GetType("GvmVariantInterface"u8, "GvmVariantDerived"u8);
+            MetadataType implementationType = _testModule.GetType("GvmVariantInterface"u8, "ClassWithVariantGvms"u8);
+
+            MetadataType inVariantType = _testModule.GetType("GvmVariantInterface"u8, "IInVariantGvm`1"u8);
+            MetadataType outVariantType = _testModule.GetType("GvmVariantInterface"u8, "IOutVariantGvm`1"u8);
+
+            MethodDesc inObjectMethod = inVariantType.MakeInstantiatedType(objectType).GetMethods().Single(m => m.GetName() == "Func");
+            MethodDesc inBaseMethod = inVariantType.MakeInstantiatedType(baseType).GetMethods().Single(m => m.GetName() == "Func");
+            MethodDesc inDerivedMethod = inVariantType.MakeInstantiatedType(derivedType).GetMethods().Single(m => m.GetName() == "Func");
+            MethodDesc outObjectMethod = outVariantType.MakeInstantiatedType(objectType).GetMethods().Single(m => m.GetName() == "Func");
+            MethodDesc outBaseMethod = outVariantType.MakeInstantiatedType(baseType).GetMethods().Single(m => m.GetName() == "Func");
+            MethodDesc outDerivedMethod = outVariantType.MakeInstantiatedType(derivedType).GetMethods().Single(m => m.GetName() == "Func");
+
+            MethodImplRecord[] methodImpls = implementationType.FindMethodsImplWithMatchingDeclName(inObjectMethod.Name);
+            Assert.NotNull(methodImpls);
+
+            MethodDesc inObjectImpl = methodImpls.Single(m => m.Decl.GetMethodDefinition() == inObjectMethod.GetMethodDefinition()).Body;
+            MethodDesc inBaseImpl = methodImpls.Single(m => m.Decl.GetMethodDefinition() == inBaseMethod.GetMethodDefinition()).Body;
+            MethodDesc outDerivedImpl = methodImpls.Single(m => m.Decl.GetMethodDefinition() == outDerivedMethod.GetMethodDefinition()).Body;
+            MethodDesc outBaseImpl = methodImpls.Single(m => m.Decl.GetMethodDefinition() == outBaseMethod.GetMethodDefinition()).Body;
+
+            Assert.Equal(inObjectImpl, implementationType.ResolveVariantInterfaceMethodToVirtualMethodOnType(inObjectMethod));
+            Assert.Equal(inBaseImpl, implementationType.ResolveVariantInterfaceMethodToVirtualMethodOnType(inBaseMethod));
+            Assert.Equal(inObjectImpl, implementationType.ResolveVariantInterfaceMethodToVirtualMethodOnType(inDerivedMethod));
+            Assert.Equal(outDerivedImpl, implementationType.ResolveVariantInterfaceMethodToVirtualMethodOnType(outObjectMethod));
+            Assert.Equal(outBaseImpl, implementationType.ResolveVariantInterfaceMethodToVirtualMethodOnType(outBaseMethod));
+            Assert.Equal(outDerivedImpl, implementationType.ResolveVariantInterfaceMethodToVirtualMethodOnType(outDerivedMethod));
+        }
+
+        [Fact]
         public void TestVirtualDispatchOnGenericType()
         {
             // Verifies that virtual dispatch to a non-generic method on a generic instantiation works

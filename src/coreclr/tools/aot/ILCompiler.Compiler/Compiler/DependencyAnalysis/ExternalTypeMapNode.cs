@@ -13,9 +13,9 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class ExternalTypeMapNode : SortableDependencyNode, IExternalTypeMapNode
     {
-        private readonly IEnumerable<KeyValuePair<string, (TypeDesc targetType, TypeDesc trimmingTargetType)>> _mapEntries;
+        private readonly IEnumerable<KeyValuePair<string, TypeMapMetadata.ExternalTypeMapEntry>> _mapEntries;
 
-        public ExternalTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<string, (TypeDesc targetType, TypeDesc trimmingTargetType)>> mapEntries)
+        public ExternalTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<string, TypeMapMetadata.ExternalTypeMapEntry>> mapEntries)
         {
             _mapEntries = mapEntries;
             TypeMapGroup = typeMapGroup;
@@ -31,36 +31,43 @@ namespace ILCompiler.DependencyAnalysis
 
         public TypeDesc TypeMapGroup { get; }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context)
         {
             foreach (var entry in _mapEntries)
             {
-                var (targetType, trimmingTargetType) = entry.Value;
+                TypeDesc targetType = entry.Value.Type;
+                TypeDesc trimmingTargetType = entry.Value.TrimmingType;
                 if (trimmingTargetType is not null)
                 {
-                    yield return new CombinedDependencyListEntry(
+                    IEETypeNode effectiveTrimTargetType = GetEffectiveTrimTargetType(context, trimmingTargetType);
+
+                    sink.Add(new CombinedDependencyListEntry(
                         context.MetadataTypeSymbol(targetType),
-                        context.NecessaryTypeSymbol(trimmingTargetType),
-                        "Type in external type map is cast target");
+                        effectiveTrimTargetType,
+                        "Type in external type map is cast target"));
+
+                    RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(sink, context, effectiveTrimTargetType, "External type map trim target that could be loaded at runtime");
                 }
             }
+
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             foreach (var entry in _mapEntries)
             {
-                var (targetType, trimmingTargetType) = entry.Value;
+                TypeDesc targetType = entry.Value.Type;
+                TypeDesc trimmingTargetType = entry.Value.TrimmingType;
                 if (trimmingTargetType is null)
                 {
-                    yield return new DependencyListEntry(
+                    sink.Add(
                         context.MetadataTypeSymbol(targetType),
                         "External type map entry target type");
                 }
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"External type map: {TypeMapGroup}";
 
         public override int ClassCode => -785190502;
@@ -75,10 +82,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             foreach (var entry in _mapEntries)
             {
-                var (targetType, trimmingTargetType) = entry.Value;
+                TypeDesc targetType = entry.Value.Type;
+                TypeDesc trimmingTargetType = entry.Value.TrimmingType;
 
                 if (trimmingTargetType is null
-                    || factory.NecessaryTypeSymbol(trimmingTargetType).Marked)
+                    || GetEffectiveTrimTargetType(factory, trimmingTargetType).Marked)
                 {
                     IEETypeNode targetNode = factory.MetadataTypeSymbol(targetType);
                     Debug.Assert(targetNode.Marked);
@@ -87,6 +95,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private static IEETypeNode GetEffectiveTrimTargetType(NodeFactory factory, TypeDesc trimmingTargetType)
+            => RuntimeConstructableTypeDependencies.GetEffectiveTrimTargetType(factory, trimmingTargetType, conditionConstructed: false);
+
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
             VertexHashtable typeMapHashTable = new();
@@ -94,13 +105,13 @@ namespace ILCompiler.DependencyAnalysis
             foreach ((string key, IEETypeNode valueNode) in GetMarkedEntries(factory))
             {
                 Vertex keyVertex = writer.GetStringConstant(key);
-                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, valueNode.Type);
+                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, valueNode.Type, null);
                 Vertex entry = writer.GetTuple(keyVertex, valueVertex);
                 typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), section.Place(entry));
             }
 
             Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
-            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup, null);
             Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
             return section.Place(tuple);
         }

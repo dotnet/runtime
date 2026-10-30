@@ -94,10 +94,10 @@ namespace System.IO.Pipelines.Tests
 
             _pipe.Reader.AdvanceTo(result.Buffer.End);
 
-            // Assert Pipe.MaxSegmentPoolSize pooled segments
+            // Assert Pipe.MaxSegmentPoolSize pooled segments. (reuse is FIFO)
             for (int i = 0; i < PipeOptions.Default.MaxSegmentPoolSize; i++)
             {
-                Assert.Same(oldSegments[i], newSegments[PipeOptions.Default.MaxSegmentPoolSize - i - 1]);
+                Assert.Same(oldSegments[i], newSegments[i]);
             }
 
             // The last segment shouldn't exist in the new list of segments at all (it should be new)

@@ -41,6 +41,12 @@ The .NET Foundation licenses this file to you under the MIT license.
     <UseSizeOptimizedLinq Condition="'$(UseSizeOptimizedLinq)' == ''">true</UseSizeOptimizedLinq>
   </PropertyGroup>
 
+  <!-- These formats encode function pointers as relative linear-memory addresses, not WASM table indices. -->
+  <PropertyGroup Condition="'$(_targetArchitecture)' == 'wasm'">
+    <IlcDehydrate Condition="'$(IlcDehydrate)' == ''">false</IlcDehydrate>
+    <StackTraceSupport Condition="'$(StackTraceSupport)' == ''">false</StackTraceSupport>
+  </PropertyGroup>
+
   <!-- Configure LINQ expressions -->
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.Linq.Expressions.CanEmitObjectArrayDelegate"
@@ -65,6 +71,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(_targetOS)' == 'win'">.exe</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(_targetOS)' != 'win'"></NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(_targetArchitecture)' == 'wasm'">.wasm</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared'">.dll</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">.dylib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(NativeLib)' == 'Shared'">.so</NativeBinaryExt>
@@ -82,6 +89,12 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</NativeBinary>
+    <NativeImportLibrary Condition="'$(NativeImportLibrary)' == '' and '$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared'">$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(LibFileExt)</NativeImportLibrary>
+    <_LinkNativeOutputs>$(NativeBinary)</_LinkNativeOutputs>
+    <_LinkNativeOutputs Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared' and '$(NativeImportLibrary)' != ''">$(NativeBinary);$(NativeImportLibrary)</_LinkNativeOutputs>
+    <NativeExecutableExt Condition="'$(NativeExecutableExt)' == '' and '$(_targetOS)' == 'win'">.exe</NativeExecutableExt>
+    <NativeExecutableExt Condition="'$(NativeExecutableExt)' == '' and '$(_targetArchitecture)' == 'wasm'">.wasm</NativeExecutableExt>
+    <NativeExecutableExt Condition="'$(NativeExecutableExt)' == ''"></NativeExecutableExt>
     <IlcExportUnmanagedEntrypoints Condition="'$(IlcExportUnmanagedEntrypoints)' == '' and '$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
     <ExportsFile Condition="$(ExportsFile) == '' and '$(BuildingFrameworkLibrary)' != 'true'">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 
@@ -100,7 +113,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <PropertyGroup Condition="'$(IlcCompileDependsOn)'=='' and '$(NativeCompilationDuringPublish)' != 'false'">
     <IlcCompileDependsOn Condition="'$(BuildingFrameworkLibrary)' != 'true'">Compile;ComputeIlcCompileInputs</IlcCompileDependsOn>
     <IlcCompileDependsOn Condition="'$(IlcMultiModule)' == 'true' and '$(BuildingFrameworkLibrary)' != 'true'">$(IlcCompileDependsOn);BuildFrameworkLib</IlcCompileDependsOn>
-    <IlcCompileDependsOn>$(IlcCompileDependsOn);SetupOSSpecificProps</IlcCompileDependsOn>
+    <IlcCompileDependsOn>$(IlcCompileDependsOn);ComputeAggregateExecutableInputs;SetupOSSpecificProps</IlcCompileDependsOn>
   </PropertyGroup>
 
   <ItemGroup Condition="$(IlcSystemModule) == ''">
@@ -119,7 +132,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   </ItemDefinitionGroup>
 
   <!-- The properties below need to be defined only after we've found the correct runtime package reference -->
-  <Target Name="SetupProperties" DependsOnTargets="$(IlcSetupPropertiesDependsOn)" BeforeTargets="Publish">
+  <Target Name="SetupProperties" DependsOnTargets="$(IlcSetupPropertiesDependsOn)">
     <ItemGroup>
       <_NETCoreAppFrameworkReference Include="@(ResolvedFrameworkReference)" Condition="'%(ResolvedFrameworkReference.RuntimePackName)' == 'Microsoft.NETCore.App.Runtime.NativeAOT.$(RuntimeIdentifier)'" />
     </ItemGroup>
@@ -156,7 +169,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
   </Target>
 
-  <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)" BeforeTargets="Publish">
+  <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
     <ItemGroup>
       <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true'" Include="@(IntermediateAssembly)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
@@ -166,6 +179,47 @@ The .NET Foundation licenses this file to you under the MIT license.
            _ComputeIlcCompileInputs). Fall back to DefaultFrameworkAssemblies directly. -->
       <IlcReference Condition="'$(NativeCompilationDuringPublish)' == 'false' or '$(BuildingFrameworkLibrary)' == 'true'" Include="@(DefaultFrameworkAssemblies)" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="ComputeAggregateExecutableInputs"
+          DependsOnTargets="ResolveReferences">
+
+    <ItemGroup>
+      <_AggregateExecutableReferencePath Include="@(ReferencePath)"
+                                   Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IncludeInAggregateExecutable)' == 'true'">
+        <AssemblyName>%(ReferencePath.Filename)</AssemblyName>
+        <SanitizedAssemblyName>__AggregateExeShim_$([System.Text.RegularExpressions.Regex]::Replace('%(ReferencePath.Filename)', '[^A-Za-z0-9_]', '_'))</SanitizedAssemblyName>
+        <AssemblyNameHash>$([MSBuild]::StableStringHash('%(ReferencePath.Filename)', 'Sha256'))</AssemblyNameHash>
+      </_AggregateExecutableReferencePath>
+      <_AggregateExecutableReferencePath>
+        <EntryPointSymbol>_AggregateExeMain_%(SanitizedAssemblyName)_%(AssemblyNameHash)</EntryPointSymbol>
+        <ShimLinkerSubsystem Condition="'%(_AggregateExecutableReferencePath.LinkerSubsystem)' != ''">%(_AggregateExecutableReferencePath.LinkerSubsystem)</ShimLinkerSubsystem>
+        <ShimLinkerSubsystem Condition="'%(_AggregateExecutableReferencePath.LinkerSubsystem)' == '' and '$(LinkerSubsystem)' != ''">$(LinkerSubsystem)</ShimLinkerSubsystem>
+        <ShimLinkerSubsystem Condition="'%(_AggregateExecutableReferencePath.LinkerSubsystem)' == '' and '$(LinkerSubsystem)' == ''">CONSOLE</ShimLinkerSubsystem>
+        <ShimSource>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.c</ShimSource>
+        <ShimObject>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe$(NativeObjectExt)</ShimObject>
+        <ShimCompileRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.cl.rsp</ShimCompileRspFile>
+        <ShimLinkRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.link.rsp</ShimLinkRspFile>
+        <ShimResourceFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.res</ShimResourceFile>
+        <ShimCompileLinkRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.rsp</ShimCompileLinkRspFile>
+        <ShimBinary>$(NativeOutputPath)%(AssemblyName)$(NativeExecutableExt)</ShimBinary>
+        <ShimSymbol>$(NativeOutputPath)%(AssemblyName)$(NativeSymbolExt)</ShimSymbol>
+      </_AggregateExecutableReferencePath>
+      <_AggregateExecutableShim Include="%(_AggregateExecutableReferencePath.ShimBinary)">
+        <RelativePath>%(_AggregateExecutableReferencePath.AssemblyName)$(NativeExecutableExt)</RelativePath>
+      </_AggregateExecutableShim>
+      <_AggregateExecutableShimSymbol Include="%(_AggregateExecutableReferencePath.ShimSymbol)" Condition="'$(NativeDebugSymbols)' == 'true'">
+        <RelativePath>%(_AggregateExecutableReferencePath.AssemblyName)$(NativeSymbolExt)</RelativePath>
+      </_AggregateExecutableShimSymbol>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_AggregateExecutable Condition="'$(NativeLib)' == 'Shared' and '@(_AggregateExecutableReferencePath)' != ''">true</_AggregateExecutable>
+    </PropertyGroup>
+
+    <Error Condition="'@(_AggregateExecutableReferencePath)' != '' and '$(OutputType)' != 'Library'" Text="IncludeInAggregateExecutable requires OutputType=Library." />
+    <Error Condition="'@(_AggregateExecutableReferencePath)' != '' and '$(NativeLib)' != 'Shared'" Text="IncludeInAggregateExecutable requires NativeLib=Shared." />
+    <Error Condition="'@(_AggregateExecutableReferencePath)' != '' and '$(EnablePreviewFeatures)' != 'true'" Text="IncludeInAggregateExecutable requires EnablePreviewFeatures=true." />
   </Target>
 
   <!--
@@ -215,9 +269,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(IlcSatelliteAssembly->'--satellite:%(Identity)')" />
       <IlcArg Include="@(MibcFile->'--mibc:%(Identity)')" />
       <IlcArg Condition="$(IlcGenerateMetadataLog) == 'true'" Include="--metadatalog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).metadata.csv" />
-      <!-- To the NativeAOT compiler, Android is just another linux -->
-      <IlcArg Condition="'$(_targetOS)' == 'android'" Include="--targetos:linux" />
-      <IlcArg Condition="'$(_targetOS)' != '' and '$(_targetOS)' != 'android'" Include="--targetos:$(_targetOS)" />
+      <IlcArg Condition="'$(_targetOS)' != ''" Include="--targetos:$(_targetOS)" />
       <IlcArg Condition="$(_targetArchitectureWithAbi) != ''" Include="--targetarch:$(_targetArchitectureWithAbi)" />
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
       <IlcArg Condition="$(IlcMultiModule) != 'true' and '$(IlcDehydrate)' != 'false' and ($(_targetOS) != 'win' or '$(OptimizationPreference)' == 'Size' or '$(IlcDehydrate)' == 'true')" Include="--dehydrate" />
@@ -234,8 +286,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="'$(NativeLib)' != ''" Include="--nativelib" />
       <IlcArg Condition="'$(CustomNativeMain)' == 'true'" Include="--splitinit" />
       <IlcArg Condition="'$(ExportsFile)' != ''" Include="--exportsfile:$(ExportsFile)" />
-      <IlcArg Condition="'$(_targetOS)' == 'win' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeDebugHeader,DATA" />
-      <IlcArg Condition="'$(_targetOS)' != 'win' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeDebugHeader" />
+      <IlcArg Condition="'$(_targetOS)' == 'win' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeContractDescriptor,DATA" />
+      <IlcArg Condition="'$(_targetOS)' != 'win' and '$(_targetArchitecture)' != 'wasm' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeContractDescriptor" />
       <IlcArg Condition="'$(_targetOS)' == 'freebsd' and '$(IsNativeExecutable)' == 'true'" Include="--export-dynamic-symbol:__progname;--export-dynamic-symbol:environ" />
       <IlcArg Condition="'$(IlcExportUnmanagedEntrypoints)' == 'true'" Include="--export-unmanaged-entrypoints" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
@@ -286,6 +338,8 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <!-- Export the managed entry point if building a native library in custom main mode -->
       <IlcArg Condition="'$(NativeLib)' == 'Shared' and '$(CustomNativeMain)' == 'true'" Include="--export-dynamic-symbol:__managed__Main" />
+      <IlcArg Condition="'@(_AggregateExecutableReferencePath)' != ''" Include="@(_AggregateExecutableReferencePath->'--aggregateexe:%(AssemblyName)=%(EntryPointSymbol)')" />
+      <IlcArg Condition="'@(_AggregateExecutableReferencePath)' != ''" Include="@(_AggregateExecutableReferencePath->'--export-dynamic-symbol:%(EntryPointSymbol)')" />
 
       <IlcArg Condition="'$(_InstrumentReachability)' == 'true'" Include="--reachabilityinstrument" />
       <IlcArg Condition="'$(_InstrumentReachability)' == 'true'" Include="--feature:Internal.Runtime.CompilerHelpers.ReachabilityInstrumentationSupport=true" />
@@ -317,7 +371,8 @@ The .NET Foundation licenses this file to you under the MIT license.
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.targets" Condition="'$(_targetOS)' == 'win'" />
-  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Unix.targets" Condition="'$(_targetOS)' != 'win'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Unix.targets" Condition="'$(_targetOS)' != 'win' and '$(_targetArchitecture)' != 'wasm'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Wasm.targets" Condition="'$(_targetArchitecture)' == 'wasm'" />
 
   <Target Name="MultiFileCopyNative"
       Inputs="@(NativeObjects)"
@@ -329,23 +384,25 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <Target Name="LinkNative"
       Inputs="$(NativeObject);@(NativeLibrary)"
-      Outputs="$(NativeBinary)"
+      Outputs="$(_LinkNativeOutputs)"
       DependsOnTargets="$(LinkNativeDependsOn)">
 
     <ItemGroup>
       <CustomLinkerArg Include="&quot;$(NativeObject)&quot;" />
       <CustomLinkerArg Include="-o &quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' != 'win'" />
       <CustomLinkerArg Include="/OUT:&quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' == 'win'" />
+      <CustomLinkerArg Include="/IMPLIB:&quot;$(NativeImportLibrary)&quot;" Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared' and '$(NativeImportLibrary)' != ''" />
       <CustomLinkerArg Include="/DEF:&quot;$(ExportsFile)&quot;" Condition="'$(_targetOS)' == 'win' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(_targetOS)' == 'win' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
       <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' != ''" />
       <CustomLinkerArg Include="-exported_symbols_list /dev/null" Condition="'$(OutputType)' == 'exe' and '$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' == ''" />
-      <CustomLinkerArg Include="-Wl,--version-script=&quot;$(ExportsFile)&quot;" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
-      <CustomLinkerArg Include="-Wl,--export-dynamic" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
+      <CustomLinkerArg Include="-Wl,--version-script=&quot;$(ExportsFile)&quot;" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm' and '$(ExportsFile)' != ''" />
+      <CustomLinkerArg Include="-Wl,--export-dynamic" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm' and '$(ExportsFile)' != ''" />
+      <CustomLinkerArg Include="-Wl,-u,DotNetRuntimeContractDescriptor" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm' and '$(DebuggerSupport)' != 'false'" />
       <CustomLinkerArg Include="-Wl,-dead_strip" Condition="'$(_IsApplePlatform)' == 'true'" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
-    <ItemGroup Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'">
+    <ItemGroup Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm'">
       <CustomLinkerArg Include="-Wl,--discard-all" />
       <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(LinkerFlavor)' == '' or '$(LinkerFlavor)' == 'bfd' or '$(LinkerFlavor)' == 'lld'" />
       <CustomLinkerArg Include="-Wl,-T,&quot;$(NativeIntermediateOutputPath)sections.ld&quot;" Condition="'$(LinkerFlavor)' == 'lld' and '$(_LinkerVersion)' &gt; '12'" />
@@ -365,7 +422,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <!-- write linker script for lld (13+) to retain the __modules section -->
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)sections.ld" Lines="OVERWRITE_SECTIONS { __modules : { KEEP(*(__modules)) } }" Overwrite="true" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(LinkerFlavor)' == 'lld' and '$(_LinkerVersion)' &gt; '12'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)sections.ld" Lines="OVERWRITE_SECTIONS { __modules : { KEEP(*(__modules)) } }" Overwrite="true" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm' and '$(LinkerFlavor)' == 'lld' and '$(_LinkerVersion)' &gt; '12'" />
 
     <Exec Command="&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ')"
       Condition="'$(_targetOS)' != 'win' and '$(NativeLib)' != 'Static'"
@@ -384,14 +441,15 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="chmod 644 &quot;$(NativeBinary)&quot;" Condition="'$(NativeLib)' == 'Shared' and !$([MSBuild]::IsOSPlatform('Windows'))" />
 
     <!-- strip symbols, see https://github.com/dotnet/runtime/blob/5d3288d/eng/native/functions.cmake#L374 -->
-    <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm'"
       Command="&quot;$(ObjCopyName)&quot; --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot;" />
-    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm'"
       Command="&quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;$(NativeBinary)&quot;" />
-    <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm'"
       Command="&quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
 
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' != 'Static'"
+      IgnoreStandardErrorWarningFormat="true"
       Command="
         dsymutil $(DsymUtilOptions) &quot;$(NativeBinary)&quot; &amp;&amp;
         strip -no_code_signature_warning -x &quot;$(NativeBinary)&quot;" />

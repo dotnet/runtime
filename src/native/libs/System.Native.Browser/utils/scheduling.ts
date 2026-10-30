@@ -12,6 +12,7 @@ export async function runBackgroundTimers(): Promise<void> {
         _ems_._SystemJS_ExecuteTimerCallback();
         _ems_._SystemJS_ExecuteBackgroundJobCallback();
         _ems_._SystemJS_ExecuteFinalizationCallback();
+        _ems_._SystemJS_ExecuteDiagnosticServerCallback();
     } catch (error: any) {
         // do not propagate ExitStatus exception
         if (!error || typeof error.status !== "number") {
@@ -36,6 +37,11 @@ export function abortBackgroundTimers(): void {
         globalThis.clearTimeout(_ems_.DOTNET.lastScheduledFinalizationId);
         _ems_.runtimeKeepalivePop();
         _ems_.DOTNET.lastScheduledFinalizationId = undefined;
+    }
+    if (_ems_.DOTNET.lastScheduledDiagnosticServerId) {
+        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledDiagnosticServerId);
+        _ems_.runtimeKeepalivePop();
+        _ems_.DOTNET.lastScheduledDiagnosticServerId = undefined;
     }
 }
 

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <minipal/types.h>
+
 #ifdef __APPLE__
 #include "../dbgutil/machoreader.h"
 #else
@@ -32,7 +34,7 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 
 extern const std::string GetFileName(const std::string& fileName);
 extern const std::string GetDirectory(const std::string& fileName);
-extern std::string FormatString(const char* format, ...);
+extern std::string FormatString(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 extern std::string ConvertString(const WCHAR* str);
 extern std::string FormatGuid(const GUID* guid);
 
@@ -40,7 +42,7 @@ class CrashInfo : public ICLRDataEnumMemoryRegionsCallback, public ICLRDataLoggi
 #ifdef __APPLE__
     public MachOReader
 #else
-    public ElfReader
+    public HostElfReader
 #endif
 {
 private:
@@ -60,6 +62,7 @@ private:
     siginfo_t m_siginfo;                            // signal info (if any)
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
     uint64_t m_runtimeBaseAddress;                  // base address of the runtime module
+    uint64_t m_contractDescriptorAddress;           // address of the runtime contract descriptor
 #ifdef __APPLE__
     vm_map_t m_task;                                // the mach task for the process
     std::set<MemoryRegion> m_allMemoryRegions;      // all memory regions on MacOS
@@ -121,6 +124,7 @@ public:
     inline const std::string& Name() const { return m_name; }
     inline const ModuleInfo* MainModule() const { return m_mainModule; }
     inline const uint64_t RuntimeBaseAddress() const { return m_runtimeBaseAddress; }
+    inline const uint64_t ContractDescriptorAddress() const { return m_contractDescriptorAddress; }
 
     inline const std::vector<ThreadInfo*>& Threads() const { return m_threads; }
     inline const std::set<ModuleRegion>& ModuleMappings() const { return m_moduleMappings; }
@@ -166,6 +170,6 @@ private:
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool PageCanBeRead(uint64_t start);
     bool PageMappedToPhysicalMemory(uint64_t start);
-    void Trace(const char* format, ...);
-    void TraceVerbose(const char* format, ...);
+    void Trace(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
+    void TraceVerbose(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
 };

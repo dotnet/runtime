@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -24,15 +25,27 @@ namespace System.IO.Pipelines
         private static readonly SendOrPostCallback s_syncContextExecuteWithoutExecutionContextCallback = ExecuteWithoutExecutionContext!;
         private static readonly Action<object?> s_scheduleWithExecutionContextCallback = ExecuteWithExecutionContext!;
 
-        // Mutable struct! Don't make this readonly
-        private BufferSegmentStack _bufferSegmentPool;
+        // Pool of reusable BufferSegment instances.
+        // We are using SPSC queue here to reduce interaction of reader and writer threads when
+        // acquiring/releasing the segments.
+        private readonly SingleProducerSingleConsumerQueue<BufferSegment> _bufferSegmentPool = new SingleProducerSingleConsumerQueue<BufferSegment>();
 
         private readonly DefaultPipeReader _reader;
         private readonly DefaultPipeWriter _writer;
 
         // The options instance
         private readonly PipeOptions _options;
-        private readonly object _sync = new object();
+
+        // This lock protects the shared state between the writer and reader (most of this class).
+        // On .NET 9+ use System.Threading.Lock, as a monitor lock here tends to inflate into Lock anyways.
+        // Older targets (netstandard2.0, .NET Framework) fall back to a plain object + Monitor.
+#if NET9_0_OR_GREATER
+        private readonly System.Threading.Lock _sync = new();
+        private System.Threading.Lock SyncObj => _sync;
+#else
+        private readonly object _sync = new();
+        private object SyncObj => _sync;
+#endif
 
         // Computed state from the options instance
         private bool UseSynchronizationContext => _options.UseSynchronizationContext;
@@ -42,9 +55,6 @@ namespace System.IO.Pipelines
 
         private PipeScheduler ReaderScheduler => _options.ReaderScheduler;
         private PipeScheduler WriterScheduler => _options.WriterScheduler;
-
-        // This sync objects protects the shared state between the writer and reader (most of this class)
-        private object SyncObj => _sync;
 
         // The number of bytes flushed but not consumed by the reader
         private long _unconsumedBytes;
@@ -96,8 +106,6 @@ namespace System.IO.Pipelines
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.options);
             }
-
-            _bufferSegmentPool = new BufferSegmentStack(options.InitialSegmentPoolSize);
 
             _operationState = default;
             _readerCompletion = default;
@@ -171,24 +179,44 @@ namespace System.IO.Pipelines
 
         private void AllocateWriteHeadSynchronized(int sizeHint)
         {
+            // Speculatively rent backing memory outside the lock.
+            //
+            // Reading _writingHeadMemory.Length can race with the reader (which sets
+            // _writingHeadMemory = default under the lock when writing is NOT active), but .Length
+            // reads a single int field, so it is atomic - stale at worst, never torn. It is only a
+            // hint; the authoritative decision is remade under the lock. The rented buffer is always
+            // consumed on non-exceptional paths: _writingHeadMemory.Length only shrinks between this
+            // read and the lock (the reader can only reduce it to zero, and this writer thread does
+            // not touch it in between), so "insufficient room" still holds under the lock. That is
+            // why no return path is needed - see the Debug.Assert(prerented is null) after the lock.
+            //
+            // Note we deliberately do NOT acquire a BufferSegment here. The segment pool is a
+            // single-producer/single-consumer queue, so an unused segment could not be safely
+            // returned from this thread. Segments are taken (GetOrCreateSegment) only under the
+            // lock, at the exact point we are certain to use them. Acquiring via SPSC is relatively
+            // cheap though.
+            object? prerented = null;
+            if (_writingHeadMemory.Length == 0 || _writingHeadMemory.Length < sizeHint)
+            {
+                prerented = RentMemoryUnsynchronized(sizeHint);
+            }
+
             lock (SyncObj)
             {
                 _operationState.BeginWrite();
 
-                if (_writingHead == null)
+                int bytesLeftInBuffer = _writingHeadMemory.Length;
+                if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
                 {
-                    // We need to allocate memory to write since nobody has written before
-                    BufferSegment newSegment = AllocateSegment(sizeHint);
+                    if (_writingHead is null)
+                    {
+                        BufferSegment newSegment = GetOrCreateSegment();
+                        AttachMemory(newSegment, ref prerented, sizeHint);
 
-                    // Set all the pointers
-                    _writingHead = _readHead = _readTail = newSegment;
-                    _lastExaminedIndex = 0;
-                }
-                else
-                {
-                    int bytesLeftInBuffer = _writingHeadMemory.Length;
-
-                    if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
+                        _writingHead = _readHead = _readTail = newSegment;
+                        _lastExaminedIndex = 0;
+                    }
+                    else
                     {
                         if (_writingHeadBytesBuffered > 0)
                         {
@@ -197,17 +225,19 @@ namespace System.IO.Pipelines
                             _writingHeadBytesBuffered = 0;
                         }
 
-                        if (_writingHead.Length == 0)
+                        if (_writingHead.End == 0)
                         {
-                            // If we got here that means Advance was called with 0 bytes or GetMemory was called again without any writes occurring
-                            // And, the newly requested memory size is greater than our unused segments internal memory buffer
-                            // So we should reuse the BufferSegment and replace the memory it's holding, this way ReadAsync will not receive a buffer with one segment being empty
+                            // Advance was called with 0 bytes, or GetMemory was called again without
+                            // any writes occurring, and the requested size is larger than the unused
+                            // head's buffer. Reuse the BufferSegment and swap out its memory so
+                            // ReadAsync will not observe an empty segment.
                             _writingHead.ResetMemory();
-                            RentMemory(_writingHead, sizeHint);
+                            AttachMemory(_writingHead, ref prerented, sizeHint);
                         }
                         else
                         {
-                            BufferSegment newSegment = AllocateSegment(sizeHint);
+                            BufferSegment newSegment = GetOrCreateSegment();
+                            AttachMemory(newSegment, ref prerented, sizeHint);
 
                             _writingHead.SetNext(newSegment);
                             _writingHead = newSegment;
@@ -215,11 +245,16 @@ namespace System.IO.Pipelines
                     }
                 }
             }
+
+            // On every non-exceptional path the speculative rent is consumed above (AttachMemory
+            // nulls it), because _writingHeadMemory.Length only shrinks between the off-lock read
+            // and the lock. If this fires, that invariant was violated.
+            Debug.Assert(prerented is null);
         }
 
         private BufferSegment AllocateSegment(int sizeHint)
         {
-            BufferSegment newSegment = CreateSegmentUnsynchronized();
+            BufferSegment newSegment = GetOrCreateSegment();
 
             RentMemory(newSegment, sizeHint);
 
@@ -256,6 +291,53 @@ namespace System.IO.Pipelines
             _writingHeadMemory = segment.AvailableMemory;
         }
 
+        // Rents backing memory without touching any shared writer state, so it is safe to call
+        // outside the lock. Returns either an IMemoryOwner<byte> (from the configured pool) or a
+        // byte[] (from the shared array pool); AttachMemory understands both.
+        private object RentMemoryUnsynchronized(int sizeHint)
+        {
+            MemoryPool<byte>? pool = null;
+            int maxSize = -1;
+
+            if (!_options.IsDefaultSharedMemoryPool)
+            {
+                pool = _options.Pool;
+                maxSize = pool.MaxBufferSize;
+            }
+
+            return sizeHint <= maxSize
+                ? pool!.Rent(GetSegmentSize(sizeHint, maxSize))
+                : ArrayPool<byte>.Shared.Rent(GetSegmentSize(sizeHint));
+        }
+
+        // Attaches memory to a segment and updates _writingHeadMemory. If memory was already rented
+        // outside the lock (prerented) it is attached and the reference is cleared; otherwise memory
+        // is rented here (race fallback). Must be called under the lock.
+        private void AttachMemory(BufferSegment segment, ref object? prerented, int sizeHint)
+        {
+            Debug.Assert(segment.MemoryOwner is null);
+
+            switch (prerented)
+            {
+                case IMemoryOwner<byte> owner:
+                    segment.SetOwnedMemory(owner);
+                    _writingHeadMemory = segment.AvailableMemory;
+                    prerented = null;
+                    break;
+                case byte[] array:
+                    segment.SetOwnedMemory(array);
+                    _writingHeadMemory = segment.AvailableMemory;
+                    prerented = null;
+                    break;
+                default:
+                    Debug.Assert(prerented is null);
+                    // Nothing pre-rented (the racy read saw enough room but the reader reset it
+                    // before we took the lock); rent under the lock.
+                    RentMemory(segment, sizeHint);
+                    break;
+            }
+        }
+
         private int GetSegmentSize(int sizeHint, int maxBufferSize = int.MaxValue)
         {
             // First we need to handle case where hint is smaller than minimum segment size
@@ -265,9 +347,9 @@ namespace System.IO.Pipelines
             return adjustedToMaximumSize;
         }
 
-        private BufferSegment CreateSegmentUnsynchronized()
+        private BufferSegment GetOrCreateSegment()
         {
-            if (_bufferSegmentPool.TryPop(out BufferSegment? segment))
+            if (_bufferSegmentPool.TryDequeue(out BufferSegment? segment))
             {
                 return segment;
             }
@@ -275,15 +357,17 @@ namespace System.IO.Pipelines
             return new BufferSegment();
         }
 
-        private void ReturnSegmentUnsynchronized(BufferSegment segment)
+        private void ReturnSegment(BufferSegment segment)
         {
             Debug.Assert(segment != _readHead, "Returning _readHead segment that's in use!");
             Debug.Assert(segment != _readTail, "Returning _readTail segment that's in use!");
             Debug.Assert(segment != _writingHead, "Returning _writingHead segment that's in use!");
 
+            // The check for the current pooled count may race with dequeing,
+            // but occasional overestimating is ok here.
             if (_bufferSegmentPool.Count < _options.MaxSegmentPoolSize)
             {
-                _bufferSegmentPool.Push(segment);
+                _bufferSegmentPool.Enqueue(segment);
             }
         }
 
@@ -335,20 +419,41 @@ namespace System.IO.Pipelines
 
         internal void Advance(int bytes)
         {
-            lock (SyncObj)
+            // While writing is active, the writer thread (us) exclusively owns _writingHead,
+            // _writingHeadMemory, _writingHeadBytesBuffered and _unflushedBytes: the reader
+            // only releases/observes them when writing is NOT active. So the bounds check and
+            // AdvanceCore need no lock in that state.
+            if (_operationState.IsWritingActive)
             {
                 if ((uint)bytes > (uint)_writingHeadMemory.Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
                 }
 
-                // If the reader is completed we no-op Advance but leave GetMemory and FlushAsync alone
-                if (_readerCompletion.IsCompleted)
+                // Best-effort no-op if the reader completed; this check is racy even under the
+                // lock (the reader can complete right after), and _state is a reference so the
+                // read is atomic thus a lock-free read is equivalent.
+                if (!_readerCompletion.IsCompleted)
                 {
-                    return;
+                    AdvanceCore(bytes);
                 }
+            }
+            else
+            {
+                // Cold path (e.g. Advance(0) with no prior GetMemory): use lock,
+                // to get exclusive access to the writing head.
+                lock (SyncObj)
+                {
+                    if ((uint)bytes > (uint)_writingHeadMemory.Length)
+                    {
+                        ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
+                    }
 
-                AdvanceCore(bytes);
+                    if (!_readerCompletion.IsCompleted)
+                    {
+                        AdvanceCore(bytes);
+                    }
+                }
             }
         }
 
@@ -474,81 +579,89 @@ namespace System.IO.Pipelines
 
             CompletionData completionData = default;
 
-            lock (SyncObj)
+            try
             {
-                var examinedEverything = false;
-                if (examinedSegment == _readTail)
+                lock (SyncObj)
                 {
-                    examinedEverything = examinedIndex == _readTailIndex;
-                }
-
-                if (examinedSegment != null && _lastExaminedIndex >= 0)
-                {
-                    // This can be negative resulting in _unconsumedBytes increasing, this should be safe because we've already checked that
-                    // examined >= consumed above, so we can't get into a state where we un-examine too much
-                    long examinedBytes = BufferSegment.GetLength(_lastExaminedIndex, examinedSegment, examinedIndex);
-                    long oldLength = _unconsumedBytes;
-
-                    _unconsumedBytes -= examinedBytes;
-
-                    // Store the absolute position
-                    _lastExaminedIndex = examinedSegment.RunningIndex + examinedIndex;
-
-                    Debug.Assert(_unconsumedBytes >= 0, "Length has gone negative");
-                    Debug.Assert(ResumeWriterThreshold >= 1, "ResumeWriterThreshold is less than 1");
-
-                    if (oldLength >= ResumeWriterThreshold &&
-                        _unconsumedBytes < ResumeWriterThreshold)
+                    var examinedEverything = false;
+                    if (examinedSegment == _readTail)
                     {
-                        // Should only release backpressure if we made forward progress
-                        Debug.Assert(examinedBytes > 0);
-                        _writerAwaitable.Complete(out completionData);
-                    }
-                }
-
-                if (consumedSegment != null)
-                {
-                    if (_readHead == null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_AdvanceToInvalidCursor();
-                        return;
+                        examinedEverything = examinedIndex == _readTailIndex;
                     }
 
-                    returnStart = _readHead;
-                    returnEnd = consumedSegment;
-
-                    void MoveReturnEndToNextBlock()
+                    if (examinedSegment != null && _lastExaminedIndex >= 0)
                     {
-                        BufferSegment? nextBlock = returnEnd!.NextSegment;
-                        if (_readTail == returnEnd)
+                        // This can be negative resulting in _unconsumedBytes increasing, this should be safe because we've already checked that
+                        // examined >= consumed above, so we can't get into a state where we un-examine too much
+                        long examinedBytes = BufferSegment.GetLength(_lastExaminedIndex, examinedSegment, examinedIndex);
+                        long oldLength = _unconsumedBytes;
+
+                        _unconsumedBytes -= examinedBytes;
+
+                        // Store the absolute position
+                        _lastExaminedIndex = examinedSegment.RunningIndex + examinedIndex;
+
+                        Debug.Assert(_unconsumedBytes >= 0, "Length has gone negative");
+                        Debug.Assert(ResumeWriterThreshold >= 1, "ResumeWriterThreshold is less than 1");
+
+                        if (oldLength >= ResumeWriterThreshold &&
+                            _unconsumedBytes < ResumeWriterThreshold)
                         {
-                            _readTail = nextBlock;
-                            _readTailIndex = 0;
+                            // Should only release backpressure if we made forward progress
+                            Debug.Assert(examinedBytes > 0);
+                            _writerAwaitable.Complete(out completionData);
+                        }
+                    }
+
+                    if (consumedSegment != null)
+                    {
+                        if (_readHead == null)
+                        {
+                            ThrowHelper.ThrowInvalidOperationException_AdvanceToInvalidCursor();
+                            return;
                         }
 
-                        _readHead = nextBlock;
-                        _readHeadIndex = 0;
+                        returnStart = _readHead;
+                        returnEnd = consumedSegment;
 
-                        returnEnd = nextBlock;
-                    }
-
-                    if (consumedIndex == returnEnd.Length)
-                    {
-                        // If the writing head isn't block we're about to return, then we can move to the next one
-                        // and return this block safely
-                        if (_writingHead != returnEnd)
+                        void MoveReturnEndToNextBlock()
                         {
-                            MoveReturnEndToNextBlock();
+                            BufferSegment? nextBlock = returnEnd!.NextSegment;
+                            if (_readTail == returnEnd)
+                            {
+                                _readTail = nextBlock;
+                                _readTailIndex = 0;
+                            }
+
+                            _readHead = nextBlock;
+                            _readHeadIndex = 0;
+
+                            returnEnd = nextBlock;
                         }
-                        // If the writing head is the same as the block to be returned, then we need to make sure
-                        // there's no pending write and that there's no buffered data for the writing head
-                        else if (_writingHeadBytesBuffered == 0 && !_operationState.IsWritingActive)
-                        {
-                            // Reset the writing head to null if it's the return block and we've consumed everything
-                            _writingHead = null;
-                            _writingHeadMemory = default;
 
-                            MoveReturnEndToNextBlock();
+                        if (consumedIndex == returnEnd.Length)
+                        {
+                            // If the writing head isn't block we're about to return, then we can move to the next one
+                            // and return this block safely
+                            if (_writingHead != returnEnd)
+                            {
+                                MoveReturnEndToNextBlock();
+                            }
+                            // If the writing head is the same as the block to be returned, then we need to make sure
+                            // there's no pending write and that there's no buffered data for the writing head
+                            else if (!_operationState.IsWritingActive && _writingHeadBytesBuffered == 0)
+                            {
+                                // Reset the writing head to null if it's the return block and we've consumed everything
+                                _writingHead = null;
+                                _writingHeadMemory = default;
+
+                                MoveReturnEndToNextBlock();
+                            }
+                            else
+                            {
+                                _readHead = consumedSegment;
+                                _readHeadIndex = consumedIndex;
+                            }
                         }
                         else
                         {
@@ -556,31 +669,29 @@ namespace System.IO.Pipelines
                             _readHeadIndex = consumedIndex;
                         }
                     }
-                    else
+
+                    // We reset the awaitable to not completed if we've examined everything the producer produced so far
+                    // but only if writer is not completed yet
+                    if (examinedEverything && !_writerCompletion.IsCompleted)
                     {
-                        _readHead = consumedSegment;
-                        _readHeadIndex = consumedIndex;
+                        Debug.Assert(_writerAwaitable.IsCompleted, "PipeWriter.FlushAsync isn't completed and will deadlock");
+
+                        _readerAwaitable.SetUncompleted();
                     }
+
+                    _operationState.EndRead();
                 }
-
-                // We reset the awaitable to not completed if we've examined everything the producer produced so far
-                // but only if writer is not completed yet
-                if (examinedEverything && !_writerCompletion.IsCompleted)
-                {
-                    Debug.Assert(_writerAwaitable.IsCompleted, "PipeWriter.FlushAsync isn't completed and will deadlock");
-
-                    _readerAwaitable.SetUncompleted();
-                }
-
+            }
+            finally
+            {
+                // outside the lock: reset and return the segments
                 while (returnStart != null && returnStart != returnEnd)
                 {
                     BufferSegment? next = returnStart.NextSegment;
                     returnStart.Reset();
-                    ReturnSegmentUnsynchronized(returnStart);
+                    ReturnSegment(returnStart);
                     returnStart = next;
                 }
-
-                _operationState.EndRead();
             }
 
             TrySchedule(WriterScheduler, completionData);

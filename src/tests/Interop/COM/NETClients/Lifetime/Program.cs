@@ -17,8 +17,14 @@ namespace NetClient
     public unsafe class Program
     {
         static delegate* unmanaged<int> GetAllocationCount;
+        static ITrackMyLifetimeTesting? s_agileInstance;
+        static Exception? s_callbackException;
+
+        [DllImport("COMNativeServer", EntryPoint = "InvokeCallbackOnNativeThread")]
+        private static extern int InvokeCallbackOnNativeThread(delegate* unmanaged<void> callback);
 
         // Initialize for all tests
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void Initialize()
         {
             var inst = new TrackMyLifetimeTesting();
@@ -42,6 +48,19 @@ namespace NetClient
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        static void InvokeObjectFromNativeThread()
+        {
+            try
+            {
+                s_agileInstance!.Method();
+            }
+            catch (Exception e)
+            {
+                s_callbackException = e;
             }
         }
 
@@ -85,36 +104,57 @@ namespace NetClient
             Assert.False(Marshal.AreComObjectsAvailableForCleanup());
         }
 
-        [Fact]
-        public static int TestEntryPoint()
+        static void Validate_COMServer_CallOnNativeThread()
         {
-            // RegFree COM and STA apartments are not supported on Windows Nano
-            if (Utilities.IsWindowsNanoServer)
+            Console.WriteLine($"Calling {nameof(Validate_COMServer_CallOnNativeThread)}...");
+
+            // Need agile instance since the object will be used on a different thread
+            // than the creating thread and we're on an STA thread.
+            s_agileInstance = CreateAgileInstance();
+            try
             {
-                return 100;
+                s_agileInstance.Method();
+
+                // Create a fresh native thread for each callback so the COM call runs before that thread
+                // has initialized the CLR's OLE TLS state.
+                for (int i = 0; i < 10; i++)
+                {
+                    s_callbackException = null;
+
+                    Marshal.ThrowExceptionForHR(InvokeCallbackOnNativeThread(&InvokeObjectFromNativeThread));
+
+                    Assert.True(s_callbackException is null, s_callbackException?.ToString());
+                }
+            }
+            finally
+            {
+                s_agileInstance = null;
             }
 
-            int result = 101;
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static ITrackMyLifetimeTesting CreateAgileInstance()
+                => new TrackMyLifetimeTesting().CreateAgileInstance();
+        }
 
-            // Run the test on a new STA thread since Nano Server doesn't support the STA
-            // and as a result, the main application thread can't be made STA with the STAThread attribute
+        const int TestFailed = 101;
+        const int TestPassed = 100;
+
+        static int RunOnSTAThread(Action action)
+        {
+            int result = TestFailed;
+
             Thread staThread = new Thread(() =>
             {
                 try
                 {
-                    // Initialization for all future tests
-                    Initialize();
-                    Assert.True(GetAllocationCount != null);
-
-                    Validate_COMServer_CleanUp();
-                    Validate_COMServer_DisableEagerCleanUp();
+                    action();
+                    result = TestPassed;
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine($"Test Failure: {e}");
-                    result = 101;
+                    result = TestFailed;
                 }
-                result = 100;
             });
 
             staThread.SetApartmentState(ApartmentState.STA);
@@ -122,6 +162,46 @@ namespace NetClient
             staThread.Join();
 
             return result;
+        }
+
+        [Fact]
+        public static int TestEntryPoint()
+        {
+            // RegFree COM and STA apartments are not supported on Windows Nano
+            if (Utilities.IsWindowsNanoServer)
+            {
+                return TestPassed;
+            }
+
+            // Run the test on a new STA thread since Nano Server doesn't support the STA
+            // and as a result, the main application thread can't be made STA with the STAThread attribute
+            int result = RunOnSTAThread(() =>
+            {
+                // Initialization for all future tests
+                Initialize();
+                ForceGC();
+                Assert.True(GetAllocationCount != null);
+
+                Validate_COMServer_CleanUp();
+                Validate_COMServer_CallOnNativeThread();
+            });
+            if (result != TestPassed)
+            {
+                return result;
+            }
+
+            return RunOnSTAThread(() =>
+            {
+                // Initialization for all future tests
+                Initialize();
+                ForceGC();
+                Assert.True(GetAllocationCount != null);
+
+                // Manipulating the eager cleanup state cannot be changed once set,
+                // so we need to run this test on a separate thread after the first
+                // test validates that cleanup is working as expected with eager cleanup enabled.
+                Validate_COMServer_DisableEagerCleanUp();
+            });
         }
     }
 }

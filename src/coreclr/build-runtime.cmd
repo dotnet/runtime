@@ -138,6 +138,7 @@ if [!__PassThroughArgs!]==[] (
 
 if /i "%1" == "-hostos"              (set __HostOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-arch"                (set __TargetArch=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-targetrid"           (set __TargetRid=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-outputrid"           (set __TargetRid=%2&shift&shift&goto Arg_Loop)
@@ -280,6 +281,9 @@ if "%__TargetOS%"=="android" (
 if "%__TargetOS%"=="browser" (
     set __CrossTarget=1
 )
+if "%__TargetOS%"=="wasi" (
+    set __CrossTarget=1
+)
 
 if %__CrossTarget% EQU 0 (
     call "%__RepoRootDir%\eng\native\version\copy_version_files.cmd"
@@ -298,9 +302,15 @@ set __IntermediatesEventingDir=%__ArtifactsIntermediatesDir%\Eventing\%__TargetA
 
 REM Find python and set it to the variable PYTHON
 set _C=-c "import sys; sys.stdout.write(sys.executable)"
-(py -3 %_C% || py -2 %_C% || python3 %_C% || python2 %_C% || python %_C%) > "%TEMP%\pythonlocation.txt" 2> NUL
+set __PythonLocation=
+for /f "delims=" %%i in ('py -3 %_C% 2^>NUL') do set "__PythonLocation=%%i"
+if NOT DEFINED __PythonLocation for /f "delims=" %%i in ('py -2 %_C% 2^>NUL') do set "__PythonLocation=%%i"
+if NOT DEFINED __PythonLocation for /f "delims=" %%i in ('python3 %_C% 2^>NUL') do set "__PythonLocation=%%i"
+if NOT DEFINED __PythonLocation for /f "delims=" %%i in ('python2 %_C% 2^>NUL') do set "__PythonLocation=%%i"
+if NOT DEFINED __PythonLocation for /f "delims=" %%i in ('python %_C% 2^>NUL') do set "__PythonLocation=%%i"
+if DEFINED __PythonLocation set "PYTHON=!__PythonLocation!"
+set __PythonLocation=
 set _C=
-set /p PYTHON=<"%TEMP%\pythonlocation.txt"
 
 if NOT DEFINED PYTHON (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Could not find a Python installation.
@@ -591,6 +601,7 @@ echo.
 echo.-? -h -help --help: view this message.
 echo -all: Builds all configurations and platforms.
 echo Build architecture: one of -x64, -x86, -arm, -arm64, -loongarch64, -riscv64 ^(default: -x64^).
+echo                     Can also be set with "-arch ^<value^>" ^(e.g. -arch arm64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo -component ^<name^> : specify this option one or more times to limit components built to those specified.
 echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi

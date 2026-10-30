@@ -48,87 +48,6 @@ namespace System
             HandleToInfo
         }
 
-        // Helper to build lists of MemberInfos. Special cased to avoid allocations for lists of one element.
-        internal struct ListBuilder<T> where T : class
-        {
-            private T[]? _items;
-            private T _item;
-            private int _count;
-            private int _capacity;
-
-            public ListBuilder(int capacity)
-            {
-                _items = null;
-                _item = null!;
-                _count = 0;
-                _capacity = capacity;
-            }
-
-            public T this[int index]
-            {
-                get
-                {
-                    Debug.Assert(index < Count);
-                    return (_items != null) ? _items[index] : _item;
-                }
-            }
-
-            public T[] ToArray()
-            {
-                if (_count == 0)
-                    return [];
-                if (_count == 1)
-                    return [_item];
-
-                Array.Resize(ref _items, _count);
-                _capacity = _count;
-                return _items!;
-            }
-
-            public void CopyTo(object[] array, int index)
-            {
-                if (_count == 0)
-                    return;
-
-                if (_count == 1)
-                {
-                    array[index] = _item;
-                    return;
-                }
-
-                Array.Copy(_items!, 0, array, index, _count);
-            }
-
-            public int Count => _count;
-
-            public void Add(T item)
-            {
-                if (_count == 0)
-                {
-                    _item = item;
-                }
-                else
-                {
-                    if (_count == 1)
-                    {
-                        if (_capacity < 2)
-                            _capacity = 4;
-                        _items = new T[_capacity];
-                        _items[0] = _item;
-                    }
-                    else if (_capacity == _count)
-                    {
-                        int newCapacity = 2 * _capacity;
-                        Array.Resize(ref _items, newCapacity);
-                        _capacity = newCapacity;
-                    }
-
-                    _items![_count] = item;
-                }
-                _count++;
-            }
-        }
-
         internal sealed class RuntimeTypeCache
         {
             private const int MAXNAMELEN = 1024;
@@ -150,7 +69,6 @@ namespace System
                 private readonly MdUtf8String m_name;
                 private readonly MemberListType m_listType;
 
-                [RequiresUnsafe]
                 public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
                     m_name = new MdUtf8String(pUtf8Name, cUtf8Name);
@@ -1809,7 +1727,7 @@ namespace System
 
         internal static MethodBase? GetMethodBase(RuntimeType? reflectedType, IRuntimeMethodInfo methodHandle)
         {
-            MethodBase? retval = GetMethodBase(reflectedType, methodHandle.Value);
+            MethodBase? retval = GetMethodBase(reflectedType, IRuntimeMethodInfo.GetValue(methodHandle));
             GC.KeepAlive(methodHandle);
             return retval;
         }
@@ -1857,7 +1775,7 @@ namespace System
                     for (int i = 0; i < methodBases.Length; i++)
                     {
                         IRuntimeMethodInfo rmi = (IRuntimeMethodInfo)methodBases[i];
-                        if (rmi.Value.Value == methodHandle.Value)
+                        if (IRuntimeMethodInfo.GetValue(rmi).Value == methodHandle.Value)
                             loaderAssuredCompatible = true;
                     }
 
@@ -2410,11 +2328,6 @@ namespace System
 #pragma warning restore CA1823
         private IntPtr m_cache;
         internal IntPtr m_handle;
-
-        internal static readonly RuntimeType ValueType = (RuntimeType)typeof(ValueType);
-
-        private static readonly RuntimeType ObjectType = (RuntimeType)typeof(object);
-        private static readonly RuntimeType StringType = (RuntimeType)typeof(string);
         #endregion
 
         #region Constructor
@@ -2422,6 +2335,22 @@ namespace System
         internal RuntimeType() { throw new NotSupportedException(); }
 
         #endregion
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode()
+        {
+            // CLSID types share the __ComObject handle, so preserve their identity hashes.
+            if (IsGenericCOMObjectImpl())
+                return RuntimeHelpers.GetHashCode(this);
+
+            // Fibonacci hashing moves the entropy in aligned handles into the high bits.
+#if TARGET_64BIT
+            return (int)(((ulong)(nuint)m_handle * 0x9E3779B97F4A7C15UL) >> 32);
+#else
+            uint hash = (uint)(nuint)m_handle * 0x9E3779B9U;
+            return (int)(hash ^ (hash >> 16));
+#endif
+        }
 
         #region Private\Internal Members
 
@@ -3330,7 +3259,7 @@ namespace System
             // pretty much everything is a subclass of object, even interfaces
             // notice that interfaces are really odd because they do not have a BaseType
             // yet IsSubclassOf(typeof(object)) returns true
-            if (rtType == ObjectType && rtType != this)
+            if (rtType == typeof(object) && rtType != this)
                 return true;
 
             return false;
@@ -3400,8 +3329,7 @@ namespace System
                 Guid result;
 #if FEATURE_COMINTEROP
                 Debug.Assert(OperatingSystem.IsWindows());
-                // The fully qualified name is needed since the RuntimeType has a TypeHandle property.
-                if (System.Runtime.CompilerServices.TypeHandle.AreSameType(th, System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<__ComObject>()))
+                if (IsGenericCOMObjectImpl())
                 {
                     GetComObjectGuidWorker(this, &result);
                 }
@@ -3415,8 +3343,8 @@ namespace System
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetGuid")]
-        [RequiresUnsafe]
         private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result);
 
 #if FEATURE_COMINTEROP
@@ -3428,6 +3356,7 @@ namespace System
             GetComObjectGuid(ObjectHandleOnStack.Create(ref type), result);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetComObjectGuid")]
         private static unsafe partial void GetComObjectGuid(ObjectHandleOnStack type, Guid* result);
 #endif // FEATURE_COMINTEROP
@@ -3591,6 +3520,30 @@ namespace System
         #endregion
 
         #region Generics
+
+        public override unsafe Type? GetNullableUnderlyingType()
+        {
+            TypeHandle th = GetNativeTypeHandle();
+            if (!th.IsTypeDesc)
+            {
+                MethodTable* pMT = th.AsMethodTable();
+                if (pMT->IsNullable)
+                {
+                    // The open generic Nullable<> is also classified as Nullable, and a constructed
+                    // Nullable<T> instantiated over a generic variable holds a TypeDesc (not a
+                    // MethodTable*) for its argument. Fall back to managed reflection in those cases.
+                    if (pMT->ContainsGenericVariables)
+                    {
+                        return GetGenericArguments()[0];
+                    }
+                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->NullableType.AsMethodTable());
+                    GC.KeepAlive(this);
+                    return result;
+                }
+            }
+            return null;
+        }
+
         internal RuntimeType[] GetGenericArgumentsInternal()
         {
             return GetRootElementType().TypeHandle.GetInstantiationInternal();
@@ -4101,7 +4054,8 @@ namespace System
         protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.CanCastTo(this, (RuntimeType)typeof(__ComObject));
 
         // We need to check the type handle values - not the instances - to determine if the runtime type is a generic ComObject.
-        internal bool IsGenericCOMObjectImpl() => TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool IsGenericCOMObjectImpl() => m_handle == RuntimeTypeHandle.ToIntPtr(typeof(__ComObject).TypeHandle);
 #else
         protected override bool IsCOMObjectImpl() => false;
 
@@ -4113,6 +4067,7 @@ namespace System
         #endregion
 
 #if FEATURE_COMINTEROP
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_InvokeDispMethod")]
         private static partial void InvokeDispMethod(
             ObjectHandleOnStack type,
@@ -4219,39 +4174,6 @@ namespace System
             }
 
             return ret;
-        }
-
-        [RequiresUnreferencedCode("The member might be removed")]
-        [UnmanagedCallersOnly]
-        private static unsafe void ForwardCallToInvokeMember(
-            RuntimeType* pRuntimeType,
-            string* pMemberName,
-            int flags,
-            object* pTarget,
-            object[]* pArgs,
-            bool[]* pArgsIsByRef,
-            int[]* pArgsWrapperTypes,
-            Type[]* pArgsTypes,
-            Type* pRetType,
-            object* pResult,
-            Exception* pException)
-        {
-            try
-            {
-                *pResult = pRuntimeType->ForwardCallToInvokeMember(
-                    *pMemberName,
-                    (BindingFlags)flags,
-                    *pTarget,
-                    *pArgs,
-                    *pArgsIsByRef,
-                    *pArgsWrapperTypes,
-                    *pArgsTypes,
-                    *pRetType);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
         }
 
         private static void WrapArgsForInvokeCall(object[] aArgs, int[] aArgsWrapperTypes)
@@ -4376,15 +4298,14 @@ namespace System
     #region Library
     internal readonly unsafe partial struct MdUtf8String
     {
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
-        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.
         private readonly int m_StringHeapByteLength;
 
-        [RequiresUnsafe]
         internal MdUtf8String(void* pStringHeap)
         {
             byte* pStringBytes = (byte*)pStringHeap;
@@ -4400,7 +4321,6 @@ namespace System
             m_pStringHeap = pStringBytes;
         }
 
-        [RequiresUnsafe]
         internal MdUtf8String(byte* pUtf8String, int cUtf8String)
         {
             m_pStringHeap = pUtf8String;

@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 
 namespace System
 {
@@ -13,13 +12,6 @@ namespace System
     public abstract partial class MulticastDelegate : Delegate
     {
         private Delegate[]? delegates;
-
-        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new SerializationException(SR.Serialization_DelegatesNotSupported);
-        }
 
         protected sealed override object? DynamicInvokeImpl(object?[]? args)
         {
@@ -94,7 +86,7 @@ namespace System
         //   Return, in order of invocation, the invocation list
         //   of a MulticastDelegate
         // </summary>
-        public sealed override Delegate[] GetInvocationList()
+        internal Delegate[] GetInvocationListImpl()
         {
             if (delegates != null)
                 return (Delegate[])delegates.Clone();
@@ -126,13 +118,13 @@ namespace System
         //   thing should have better been a simple System.Delegate class.
         //   Compiler generated delegates are always MulticastDelegates.
         // </summary>
-        protected sealed override Delegate CombineImpl(Delegate? follow)
+        internal Delegate CombineImplImpl(Delegate? follow)
         {
             if (follow == null)
                 return this;
 
             // Verify that the types are the same...
-            if (!InternalEqualTypes(this, follow))
+            if (!RuntimeHelpers.AreTypesEquivalent(this, follow))
                 throw new ArgumentException(SR.Arg_DlgtTypeMis);
 
             MulticastDelegate other = (MulticastDelegate)follow;
@@ -197,7 +189,7 @@ namespace System
             return -1;
         }
 
-        protected sealed override Delegate? RemoveImpl(Delegate value)
+        internal Delegate? RemoveImplImpl(Delegate? value)
         {
             if (value == null)
                 return this;
@@ -268,7 +260,7 @@ namespace System
             }
         }
 
-        internal override object? GetTarget()
+        internal sealed override object? GetTarget()
         {
             return delegates?.Length > 0 ? delegates[delegates.Length - 1].GetTarget() : base.GetTarget();
         }

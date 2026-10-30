@@ -1,0 +1,2 @@
+<Project Sdk="Microsoft.NET.Sdk">
+</Project>

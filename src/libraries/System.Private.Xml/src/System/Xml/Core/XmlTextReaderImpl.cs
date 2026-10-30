@@ -163,11 +163,12 @@ namespace System.Xml
         // attributes info
         private int _curAttrIndex = -1;
         private int _attrCount;
+        private int _attrBufferInvalidationIndex;
         private int _attrHashtable;
         private int _attrDuplWalkCount;
         private bool _attrNeedNamespaceLookup;
         private bool _fullAttrCleanup;
-        private NodeData[]? _attrDuplSortingArray;
+        private HashSet<NodeData>? _attrDuplSet;
 
         // name table
         private XmlNameTable _nameTable;
@@ -287,7 +288,7 @@ namespace System.Xml
         private const int NodesInitialSize = 8;
         private const int InitialParsingStatesDepth = 2;
         private const int MaxByteSequenceLen = 6;  // max bytes per character
-        private const int MaxAttrDuplWalkCount = 250;
+        private const int MaxAttrDuplWalkCount = 64;
         private const int MinWhitespaceLookahedCount = 4096;
 
         private const string XmlDeclarationBeginning = "<?xml";
@@ -3362,10 +3363,25 @@ namespace System.Xml
                 // the character buffer is full -> allocate a new one
                 if (_ps.charsUsed == _ps.chars.Length - 1)
                 {
-                    // invalidate node values kept in buffer - applies to attribute values only
-                    for (int i = 0; i < _attrCount; i++)
+                    if (LocalAppContextSwitches.DisableOptimizedXmlTextReaderAttributeBufferInvalidation)
                     {
-                        _nodes[_index + i + 1].OnBufferInvalidated();
+                        for (int i = 0; i < _attrCount; i++)
+                        {
+                            _nodes[_index + i + 1].OnBufferInvalidated();
+                        }
+                    }
+                    else
+                    {
+                        // invalidate node values kept in buffer - applies to attribute values only.
+                        // Attribute values below _attrBufferInvalidationIndex have already been materialized
+                        // into strings and no longer reference the buffer. The last attribute may still be in
+                        // the middle of being re-parsed and can have its buffer-backed value assigned after this
+                        // point, so it is intentionally left to be re-checked on the next buffer reload.
+                        for (int i = _attrBufferInvalidationIndex; i < _attrCount; i++)
+                        {
+                            _nodes[_index + i + 1].OnBufferInvalidated();
+                        }
+                        _attrBufferInvalidationIndex = Math.Max(_attrCount - 1, 0);
                     }
 
                     char[] newChars = new char[_ps.chars.Length * 2];
@@ -3399,10 +3415,25 @@ namespace System.Xml
                 int charsLen = _ps.chars.Length;
                 if (charsLen - _ps.charsUsed <= charsLen / 2)
                 {
-                    // invalidate node values kept in buffer - applies to attribute values only
-                    for (int i = 0; i < _attrCount; i++)
+                    if (LocalAppContextSwitches.DisableOptimizedXmlTextReaderAttributeBufferInvalidation)
                     {
-                        _nodes[_index + i + 1].OnBufferInvalidated();
+                        for (int i = 0; i < _attrCount; i++)
+                        {
+                            _nodes[_index + i + 1].OnBufferInvalidated();
+                        }
+                    }
+                    else
+                    {
+                        // invalidate node values kept in buffer - applies to attribute values only.
+                        // Attribute values below _attrBufferInvalidationIndex have already been materialized
+                        // into strings and no longer reference the buffer. The last attribute may still be in
+                        // the middle of being re-parsed and can have its buffer-backed value assigned after this
+                        // point, so it is intentionally left to be re-checked on the next buffer reload.
+                        for (int i = _attrBufferInvalidationIndex; i < _attrCount; i++)
+                        {
+                            _nodes[_index + i + 1].OnBufferInvalidated();
+                        }
+                        _attrBufferInvalidationIndex = Math.Max(_attrCount - 1, 0);
                     }
 
                     // move unparsed characters to front, unless the whole buffer contains unparsed characters
@@ -5017,22 +5048,15 @@ namespace System.Xml
             }
             else
             {
-                if (_attrDuplSortingArray == null || _attrDuplSortingArray.Length < _attrCount)
-                {
-                    _attrDuplSortingArray = new NodeData[_attrCount];
-                }
-                Array.Copy(_nodes, _index + 1, _attrDuplSortingArray, 0, _attrCount);
-                Array.Sort(_attrDuplSortingArray, 0, _attrCount);
+                _attrDuplSet ??= new HashSet<NodeData>(NodeData.AtomizedNameEqualityComparer.Instance);
+                _attrDuplSet.Clear();
 
-                NodeData attr1 = _attrDuplSortingArray[0];
-                for (int i = 1; i < _attrCount; i++)
+                for (int i = _index + 1; i < _index + 1 + _attrCount; i++)
                 {
-                    NodeData attr2 = _attrDuplSortingArray[i];
-                    if (Ref.Equal(attr1.localName, attr2.localName) && Ref.Equal(attr1.ns, attr2.ns))
+                    if (!_attrDuplSet.Add(_nodes[i]))
                     {
-                        Throw(SR.Xml_DupAttributeName, attr2.GetNameWPrefix(_nameTable), attr2.LineNo, attr2.LinePos);
+                        Throw(SR.Xml_DupAttributeName, _nodes[i].GetNameWPrefix(_nameTable), _nodes[i].LineNo, _nodes[i].LinePos);
                     }
-                    attr1 = attr2;
                 }
             }
         }
@@ -7841,6 +7865,7 @@ namespace System.Xml
 
             _curAttrIndex = -1;
             _attrCount = 0;
+            _attrBufferInvalidationIndex = 0;
             _attrHashtable = 0;
             _attrDuplWalkCount = 0;
         }

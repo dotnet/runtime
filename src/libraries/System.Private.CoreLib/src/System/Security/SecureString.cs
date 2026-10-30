@@ -23,7 +23,6 @@ namespace System.Security
         }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe SecureString(char* value, int length)
         {
             ArgumentNullException.ThrowIfNull(value);

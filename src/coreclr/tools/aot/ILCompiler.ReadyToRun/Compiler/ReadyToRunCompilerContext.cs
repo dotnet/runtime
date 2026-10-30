@@ -51,6 +51,7 @@ namespace ILCompiler
         private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
+        private DecimalFieldLayoutAlgorithm _decimalFieldLayoutAlgorithm;
         private TypeWithRepeatedFieldsFieldLayoutAlgorithm _typeWithRepeatedFieldsFieldLayoutAlgorithm;
         private RuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
 
@@ -58,13 +59,17 @@ namespace ILCompiler
             TargetDetails details,
             SharedGenericsMode genericsMode,
             bool bubbleIncludesCoreModule,
+            bool targetAllowsRuntimeCodeGeneration,
+            bool targetIsSingleThreaded,
             InstructionSetSupport instructionSetSupport,
             CompilerTypeSystemContext oldTypeSystemContext)
             : base(details, genericsMode)
         {
             BubbleIncludesCoreModule = bubbleIncludesCoreModule;
+            TargetAllowsRuntimeCodeGeneration = targetAllowsRuntimeCodeGeneration;
+            TargetIsSingleThreaded = targetIsSingleThreaded;
             InstructionSetSupport = instructionSetSupport;
-            _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
+            _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm(targetIsSingleThreaded);
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
             // There are a few types which require special layout algorithms and which could change based on hardware
@@ -86,6 +91,7 @@ namespace ILCompiler
 
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType);
             _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
+            _decimalFieldLayoutAlgorithm = new DecimalFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
             _typeWithRepeatedFieldsFieldLayoutAlgorithm = new TypeWithRepeatedFieldsFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
@@ -99,27 +105,17 @@ namespace ILCompiler
 
         public InstructionSetSupport InstructionSetSupport { get; }
 
-        public bool TargetAllowsRuntimeCodeGeneration
-        {
-            get
-            {
-#if FEATURE_DYNAMIC_CODE_COMPILED
-                if (Target.OperatingSystem is TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator)
-                {
-                    return false;
-                }
+        public bool TargetAllowsRuntimeCodeGeneration { get; }
 
-                if (Target.Architecture is TargetArchitecture.Wasm32)
-                {
-                    return false;
-                }
+        /// <summary>
+        /// When true, the target runtime has only one thread and lays out [ThreadStatic] fields as regular statics.
+        /// </summary>
+        public bool TargetIsSingleThreaded { get; }
 
-                return true;
-#else
-                return false;
-#endif
-            }
-        }
+        /// <summary>
+        /// Returns whether the target runtime treats the field as thread-static.
+        /// </summary>
+        public bool IsThreadStaticForTarget(FieldDesc field) => field.IsThreadStatic && !TargetIsSingleThreaded;
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
@@ -140,6 +136,10 @@ namespace ILCompiler
             else if (Int128FieldLayoutAlgorithm.IsIntegerType(type))
             {
                 return _int128FieldLayoutAlgorithm;
+            }
+            else if (DecimalFieldLayoutAlgorithm.IsDecimalFloatingPointType(type))
+            {
+                return _decimalFieldLayoutAlgorithm;
             }
             else if (type is TypeWithRepeatedFields)
             {
@@ -311,7 +311,10 @@ namespace ILCompiler
                 {
                     ByteCountUnaligned = layoutFromSimilarIntrinsicVector.ByteCountUnaligned,
                     ByteCountAlignment = layoutFromMetadata.ByteCountAlignment,
-                    FieldAlignment = layoutFromMetadata.FieldAlignment,
+                    // On wasm Vector<T> is passed as a v128 and must share its 16-byte alignment.
+                    FieldAlignment = type.Context.Target.Architecture == TargetArchitecture.Wasm32
+                        ? layoutFromSimilarIntrinsicVector.FieldAlignment
+                        : layoutFromMetadata.FieldAlignment,
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
                     LayoutAbiStable = true,
@@ -329,7 +332,7 @@ namespace ILCompiler
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             if (type.Context.Target.Architecture == TargetArchitecture.ARM64 &&
-                type.Instantiation[0].IsPrimitiveNumeric)
+                VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]))
             {
                 return type.InstanceFieldSize.AsInt switch
                 {
@@ -342,7 +345,7 @@ namespace ILCompiler
 
         public static bool IsVectorOfTType(DefType type)
         {
-            return type.IsIntrinsic && type.Namespace.SequenceEqual("System.Numerics"u8) && type.Name.SequenceEqual("Vector`1"u8);
+            return type.IsIntrinsic && type.Namespace == "System.Numerics"u8 && type.Name == "Vector`1"u8;
         }
     }
 }

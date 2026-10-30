@@ -17,6 +17,11 @@ public struct CLRDataModuleExtent
     public uint /* CLRDataModuleExtentType */ type;
 }
 
+public struct DacpGetModuleAddress
+{
+    public ClrDataAddress ModulePtr;
+}
+
 public struct DacpGetModuleData
 {
     public uint IsDynamic;
@@ -27,6 +32,40 @@ public struct DacpGetModuleData
     public ulong LoadedPESize;
     public ClrDataAddress InMemoryPdbAddress;
     public ulong InMemoryPdbSize;
+}
+
+public enum CLRDataByNameFlag : uint
+{
+    CLRDATA_BYNAME_CASE_SENSITIVE = 0,
+    CLRDATA_BYNAME_CASE_INSENSITIVE = 1
+}
+
+public enum CLRDataAddressType : uint
+{
+    CLRDATA_ADDRESS_UNRECOGNIZED = 0,
+    CLRDATA_ADDRESS_MANAGED_METHOD = 1,
+    CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB = 6,
+}
+
+[Flags]
+public enum CLRDataMethodCodeNotification : uint
+{
+    CLRDATA_METHNOTIFY_NONE      = 0x00000000,
+    CLRDATA_METHNOTIFY_GENERATED = 0x00000001,
+    CLRDATA_METHNOTIFY_DISCARDED = 0x00000002,
+}
+
+public unsafe struct EXCEPTION_RECORD64
+{
+    public const int ExceptionMaximumParameters = 15;
+
+    public uint ExceptionCode;
+    public uint ExceptionFlags;
+    public ulong ExceptionRecord;
+    public ulong ExceptionAddress;
+    public uint NumberParameters;
+    public uint _unusedAlignment;
+    public fixed ulong ExceptionInformation[ExceptionMaximumParameters];
 }
 
 [GeneratedComInterface]
@@ -169,7 +208,7 @@ public unsafe partial interface IXCLRDataProcess
     int SetDesiredExecutionState(uint state);
 
     [PreserveSig]
-    int GetAddressType(ClrDataAddress address, /*CLRDataAddressType*/ uint* type);
+    int GetAddressType(ClrDataAddress address, CLRDataAddressType* type);
 
     [PreserveSig]
     int GetRuntimeNameByAddress(
@@ -183,11 +222,11 @@ public unsafe partial interface IXCLRDataProcess
     [PreserveSig]
     int StartEnumAppDomains(ulong* handle);
     [PreserveSig]
-    int EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain);
+    int EnumAppDomain(ulong* handle, DacComNullableByRef<IXCLRDataAppDomain> appDomain);
     [PreserveSig]
     int EndEnumAppDomains(ulong handle);
     [PreserveSig]
-    int GetAppDomainByUniqueID(ulong id, /*IXCLRDataAppDomain*/ void** appDomain);
+    int GetAppDomainByUniqueID(ulong id, DacComNullableByRef<IXCLRDataAppDomain> appDomain);
 
     [PreserveSig]
     int StartEnumAssemblies(ulong* handle);
@@ -225,9 +264,9 @@ public unsafe partial interface IXCLRDataProcess
         ClrDataAddress* displacement);
 
     [PreserveSig]
-    int GetExceptionStateByExceptionRecord(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionState*/ void** exState);
+    int GetExceptionStateByExceptionRecord(EXCEPTION_RECORD64* record, DacComNullableByRef<IXCLRDataExceptionState> exState);
     [PreserveSig]
-    int TranslateExceptionRecordToNotification(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionNotification*/ void* notify);
+    int TranslateExceptionRecordToNotification(EXCEPTION_RECORD64* record, [MarshalUsing(typeof(UniqueComInterfaceMarshaller<IXCLRDataExceptionNotification>))] IXCLRDataExceptionNotification notify);
 
     [PreserveSig]
     int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
@@ -249,30 +288,30 @@ public unsafe partial interface IXCLRDataProcess
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[] tokens,
-        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags);
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[]? tokens,
+        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags);
     [PreserveSig]
     int SetTypeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[] tokens,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[]? tokens,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags,
         uint singleFlags);
     [PreserveSig]
     int GetCodeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef*/ uint[] tokens,
-        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags);
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef*/ uint[]? tokens,
+        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags);
     [PreserveSig]
     int SetCodeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef */ uint[] tokens,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef */ uint[]? tokens,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags,
         uint singleFlags);
     [PreserveSig]
     int GetOtherNotificationFlags(uint* flags);
@@ -335,6 +374,19 @@ public unsafe partial interface IXCLRDataProcess2 : IXCLRDataProcess
 }
 
 [GeneratedComInterface]
+[Guid("5c552ab6-fc09-4cb3-8e36-22fa03c798b9")]
+public unsafe partial interface IXCLRDataProcess3 : IXCLRDataProcess2
+{
+    [PreserveSig]
+    int GetFunctionTable(
+        ClrDataAddress tableAddress,
+        uint bufferSize,
+        byte* buffer,
+        uint* bytesNeeded,
+        uint* entries);
+}
+
+[GeneratedComInterface]
 [Guid("E59D8D22-ADA7-49a2-89B5-A415AFCFC95F")]
 public unsafe partial interface IXCLRDataStackWalk
 {
@@ -355,7 +407,7 @@ public unsafe partial interface IXCLRDataStackWalk
     int GetStackSizeSkipped(ulong* stackSizeSkipped);
 
     [PreserveSig]
-    int GetFrameType(/*CLRDataSimpleFrameType*/ uint* simpleType, /*CLRDataDetailedFrameType*/ uint* detailedType);
+    int GetFrameType(CLRDataSimpleFrameType* simpleType, CLRDataDetailedFrameType* detailedType);
 
     [PreserveSig]
     int GetFrame(DacComNullableByRef<IXCLRDataFrame> frame);
@@ -468,7 +520,7 @@ public unsafe partial interface IXCLRDataTask
     int SetDesiredExecutionState(uint state);
 
     [PreserveSig]
-    int CreateStackWalk(uint flags, DacComNullableByRef<IXCLRDataStackWalk> stackWalk);
+    int CreateStackWalk(CLRDataStackWalkFlag flags, DacComNullableByRef<IXCLRDataStackWalk> stackWalk);
 
     [PreserveSig]
     int GetOSThreadID(uint* id);
@@ -497,6 +549,13 @@ public enum ClrDataSourceType : uint
     CLRDATA_SOURCE_TYPE_INVALID = 0,
 }
 
+public enum CLRDataILOffsetMarker : uint
+{
+    CLRDATA_IL_OFFSET_NO_MAPPING = unchecked((uint)-1),
+    CLRDATA_IL_OFFSET_PROLOG = unchecked((uint)-2),
+    CLRDATA_IL_OFFSET_EPILOG = unchecked((uint)-3),
+}
+
 // CLRDATA_IL_ADDRESS_MAP
 public struct ClrDataILAddressMap
 {
@@ -504,6 +563,12 @@ public struct ClrDataILAddressMap
     public ClrDataAddress startAddress;
     public ClrDataAddress endAddress;
     public ClrDataSourceType type;
+}
+
+public struct ClrDataAddressRange
+{
+    public ClrDataAddress startAddress;
+    public ClrDataAddress endAddress;
 }
 
 [GeneratedComInterface]
@@ -553,7 +618,7 @@ public unsafe partial interface IXCLRDataMethodInstance
         uint ilOffset,
         uint rangesLen,
         uint* rangesNeeded,
-        /*CLRDATA_ADDRESS_RANGE* */ void* addressRanges);
+        [In, Out, MarshalUsing(CountElementName = nameof(rangesLen))] ClrDataAddressRange[]? addressRanges);
 
     [PreserveSig]
     int GetILAddressMap(
@@ -565,7 +630,7 @@ public unsafe partial interface IXCLRDataMethodInstance
     int StartEnumExtents(ulong* handle);
 
     [PreserveSig]
-    int EnumExtent(ulong* handle, /*CLRDATA_ADDRESS_RANGE*/ void* extent);
+    int EnumExtent(ulong* handle, ClrDataAddressRange* extent);
 
     [PreserveSig]
     int EndEnumExtents(ulong handle);
@@ -862,12 +927,17 @@ public unsafe partial interface IXCLRDataTypeInstance
         char* nameBuf);
 }
 
+public enum CLRDataMethodDefinitionExtentType : uint
+{
+    CLRDATA_METHDEF_IL,
+}
+
 public struct ClrDataMethodDefinitionExtent
 {
     public ClrDataAddress startAddress;
     public ClrDataAddress endAddress;
     public uint enCVersion;
-    public uint /* CLRDataMethodDefinitionExtentType */ type;
+    public CLRDataMethodDefinitionExtentType type;
 }
 
 [GeneratedComInterface]
@@ -921,12 +991,50 @@ public enum CLRDataGeneralRequest : uint
     CLRDATA_REQUEST_REVISION = 0xe0000000,
 }
 
+public enum CLRDataStackWalkRequest : uint
+{
+    CLRDATA_STACK_WALK_REQUEST_SET_FIRST_FRAME = 0xe1000000,
+}
+
+[Flags]
+public enum CLRDataStackWalkFlag : uint
+{
+    CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE = 0x8,
+}
+
+[Flags]
+public enum CLRDataStackSetContextFlag : uint
+{
+    CLRDATA_STACK_SET_UNWIND_CONTEXT = 0x00000000,
+    CLRDATA_STACK_SET_CURRENT_CONTEXT = 0x00000001,
+}
+
+public enum CLRDataSimpleFrameType : uint
+{
+    CLRDATA_SIMPFRAME_UNRECOGNIZED = 0x1,
+    CLRDATA_SIMPFRAME_MANAGED_METHOD = 0x2,
+    CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE = 0x8,
+}
+
+public enum CLRDataDetailedFrameType : uint
+{
+    CLRDATA_DETFRAME_UNRECOGNIZED = 0,
+    CLRDATA_DETFRAME_EXCEPTION_FILTER = 3,
+}
+
 [Flags]
 public enum CLRDataExceptionStateFlag : uint
 {
     CLRDATA_EXCEPTION_DEFAULT = 0,
     CLRDATA_EXCEPTION_NESTED = 0x1,
     CLRDATA_EXCEPTION_PARTIAL = 0x2,
+}
+
+[Flags]
+public enum CLRDataExceptionSameFlag : uint
+{
+    CLRDATA_EXSAME_SECOND_CHANCE = 0,
+    CLRDATA_EXSAME_FIRST_CHANCE = 0x1,
 }
 
 [GeneratedComInterface]
@@ -950,9 +1058,9 @@ public unsafe partial interface IXCLRDataExceptionState
     int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
 
     [PreserveSig]
-    int IsSameState(/*EXCEPTION_RECORD64*/ void* exRecord, uint contextSize, byte* cxRecord);
+    int IsSameState(EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord);
     [PreserveSig]
-    int IsSameState2(uint flags, /*EXCEPTION_RECORD64*/ void* exRecord, uint contextSize, byte* cxRecord);
+    int IsSameState2(uint flags, EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord);
     [PreserveSig]
     int GetTask(DacComNullableByRef<IXCLRDataTask> task);
 }
@@ -968,6 +1076,14 @@ public enum ClrDataValueFlag : uint
     IS_REFERENCE = 0x00000010,
     IS_POINTER = 0x00000020,
     IS_ENUM = 0x00000040,
+    ALL_KINDS = 0x0000007f,
+    IS_INHERITED = 0x00000080,
+    IS_LITERAL = 0x00000100,
+    FROM_INSTANCE = 0x00000200,
+    FROM_TASK_LOCAL = 0x00000400,
+    FROM_STATIC = 0x00000800,
+    ALL_LOCATIONS = 0x00000e00,
+    ALL_FIELDS = 0x00000eff,
 }
 
 public static class ClrDataVLocFlag
@@ -1049,9 +1165,9 @@ public unsafe partial interface IXCLRDataValue
     int GetString(uint bufLen, uint* strLen, char* str);
 
     [PreserveSig]
-    int GetArrayProperties(uint* rank, uint* totalElements, uint numDim, uint* dims, uint numBases, int* bases);
+    int GetArrayProperties(uint* rank, uint* totalElements, uint numDim, [Out, MarshalUsing(CountElementName = nameof(numDim))] uint[] dims, uint numBases, [Out, MarshalUsing(CountElementName = nameof(numBases))] int[] bases);
     [PreserveSig]
-    int GetArrayElement(uint numInd, int* indices, DacComNullableByRef<IXCLRDataValue> value);
+    int GetArrayElement(uint numInd, [In, MarshalUsing(CountElementName = nameof(numInd))] int[] indices, DacComNullableByRef<IXCLRDataValue> value);
 
     [PreserveSig]
     int EnumField2(
@@ -1088,17 +1204,17 @@ public unsafe partial interface IXCLRDataValue
 public unsafe partial interface IXCLRDataExceptionNotification
 {
     [PreserveSig]
-    int OnCodeGenerated(IXCLRDataMethodInstance* method);
+    int OnCodeGenerated(IXCLRDataMethodInstance? method);
     [PreserveSig]
-    int OnCodeDiscarded(IXCLRDataMethodInstance* method);
+    int OnCodeDiscarded(IXCLRDataMethodInstance? method);
     [PreserveSig]
     int OnProcessExecution(uint state);
     [PreserveSig]
     int OnTaskExecution(/*IXCLRDataTask*/ void* task, uint state);
     [PreserveSig]
-    int OnModuleLoaded(/*IXCLRDataModule*/ void* mod);
+    int OnModuleLoaded(IXCLRDataModule? mod);
     [PreserveSig]
-    int OnModuleUnloaded(/*IXCLRDataModule*/ void* mod);
+    int OnModuleUnloaded(IXCLRDataModule? mod);
     [PreserveSig]
     int OnTypeLoaded(/*IXCLRDataTypeInstance*/ void* typeInst);
     [PreserveSig]
@@ -1114,7 +1230,7 @@ public unsafe partial interface IXCLRDataExceptionNotification2 : IXCLRDataExcep
     [PreserveSig]
     int OnAppDomainUnloaded(/*IXCLRDataAppDomain*/ void* domain);
     [PreserveSig]
-    int OnException(/*IXCLRDataExceptionState*/ void* exception);
+    int OnException(IXCLRDataExceptionState? exception);
 }
 
 [GeneratedComInterface]
@@ -1130,7 +1246,7 @@ public unsafe partial interface IXCLRDataExceptionNotification3 : IXCLRDataExcep
 public unsafe partial interface IXCLRDataExceptionNotification4 : IXCLRDataExceptionNotification3
 {
     [PreserveSig]
-    int ExceptionCatcherEnter(IXCLRDataMethodInstance* catchingMethod, uint catcherNativeOffset);
+    int ExceptionCatcherEnter(IXCLRDataMethodInstance? catchingMethod, uint catcherNativeOffset);
 }
 
 [GeneratedComInterface]
@@ -1138,7 +1254,7 @@ public unsafe partial interface IXCLRDataExceptionNotification4 : IXCLRDataExcep
 public unsafe partial interface IXCLRDataExceptionNotification5 : IXCLRDataExceptionNotification4
 {
     [PreserveSig]
-    int OnCodeGenerated2(IXCLRDataMethodInstance* method, ClrDataAddress nativeCodeLocation);
+    int OnCodeGenerated2(IXCLRDataMethodInstance? method, ClrDataAddress nativeCodeLocation);
 }
 
 // IXCLRDataTarget3 extends ICLRDataTarget2 which extends ICLRDataTarget (defined in ICLRData.cs).

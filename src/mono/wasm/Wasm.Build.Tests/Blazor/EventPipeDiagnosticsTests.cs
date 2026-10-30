@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
@@ -17,10 +19,13 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.Blazor;
 
-[TestCategory("mono")]
 public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 {
     private static readonly string uploadPattern = "^[a-zA-Z0-9_]+\\.nettrace$";
+
+    // Generous enough for a slow CI machine, but far below the Helix work item budget so a stuck
+    // collection is reported as a test failure instead of killing the whole work item.
+    private static readonly TimeSpan s_traceCollectionTimeout = TimeSpan.FromMinutes(3);
 
     public EventPipeDiagnosticsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -28,35 +33,135 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
+
+    [Fact]
+    [TestCategory("native"), TestCategory("mono")]
+    public Task BlazorEventPipeTestWithCpuSamplesAOT() => BlazorEventPipeTestWithCpuSamplesCore(Configuration.Release, aot: true, readyToRun: false);
+
     [Theory]
     [InlineData(Configuration.Debug, false)]
     [InlineData(Configuration.Release, false)]
-    [InlineData(Configuration.Release, true)]
-    public async Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
+    public Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
+        => BlazorEventPipeTestWithCpuSamplesCore(config, aot, readyToRun: false);
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    [TestCategory("no-workload")]
+    public Task BlazorEventPipeTestWithCpuSamplesReadyToRun(Configuration config)
+        => BlazorEventPipeTestWithCpuSamplesCore(config, aot: false, readyToRun: true);
+
+    private async Task BlazorEventPipeTestWithCpuSamplesCore(Configuration config, bool aot, bool readyToRun)
     {
-        string extraProperties = @"
-                <WasmPerformanceInstrumentation>all,interval=0</WasmPerformanceInstrumentation>
+        string extraProperties = $@"
+                <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
                 <EnableDiagnostics>true</EnableDiagnostics>
                 <WasmDebugLevel>0</WasmDebugLevel>
+                <PublishReadyToRun>{(readyToRun ? "true" : "false")}</PublishReadyToRun>
+                <PublishTrimmed>false</PublishTrimmed>
                 <WBTDevServer>true</WBTDevServer>
             ";
+        if (readyToRun)
+            extraProperties += "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
 
-        ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp, "blazor_cpu_samples", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp,
+            readyToRun ? "blazor_cpu_samples_r2r" : "blazor_cpu_samples_interp",
+            extraProperties: extraProperties,
+            extraItems: $"""<WasmEnvironmentVariable Include="DOTNET_EventPipeThreadSamplingRate" Value="{int.MaxValue}" />""");
+
+        UpdateCounterPage(useCpuSamplingTarget: true);
+        if (readyToRun)
+            AddCpuSamplingScenarios();
+
+        string extraBuildArgs = readyToRun
+            ? $"{GetR2RBuildArgs(config)} -p:UsingBrowserRuntimeWorkload=false"
+            : string.Empty;
+        BlazorPublish(info, config, new PublishOptions(
+            UseCache: false,
+            AssertAppBundle: false,
+            ExtraMSBuildArgs: extraBuildArgs));
+
+        async Task CollectCpuSamplesTest(IPage page)
+        {
+            await SetupCounterPage(page, "cpuprofile.nettrace", "globalThis.getDotnetRuntime(0).collectCpuSamples({ durationSeconds: 5.0 })", uploadTrace: false);
+            await ClickAndCollect(page, Path.Combine(info.LogPath, "cpuprofile.nettrace"));
+        }
+
+        var runOptions = new BlazorRunOptions(
+            Configuration: config,
+            Test: CollectCpuSamplesTest,
+            TimeoutSeconds: 60,
+            CheckCounter: false);
+
+        await RunForPublishWithWebServer(runOptions);
+
+        bool sampledMethodFound = false;
+        bool readyToRunMethodFound = false;
+        bool reversePInvokeMethodFound = false;
+        using (var source = TraceLog.OpenOrConvert(ConvertTrace(info, "cpuprofile.nettrace")))
+        {
+            sampledMethodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName.StartsWith(
+                "BlazorBasicTestApp.Pages.Counter.CpuSamplingTarget(", StringComparison.Ordinal) &&
+                (!readyToRun || (stack.CodeAddress.Address & 0x80000000UL) != 0));
+            if (!sampledMethodFound)
+            {
+                foreach (var stack in source.CallStacks)
+                {
+                    _testOutput.WriteLine($"Stack: {stack.CodeAddress.FullMethodName}");
+                }
+            }
+
+            readyToRunMethodFound = source.CodeAddresses.Any(address => address.FullMethodName.StartsWith("System.Buffer.Memmove(", StringComparison.Ordinal));
+            if (readyToRun)
+            {
+                reversePInvokeMethodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName.StartsWith(
+                    "BlazorBasicTestApp.CpuSamplingScenarios.ReversePInvokeTarget(", StringComparison.Ordinal) &&
+                    (stack.CodeAddress.Address & 0x80000000UL) != 0);
+            }
+        }
+
+        Assert.True(sampledMethodFound, readyToRun
+            ? "The cpuprofile.nettrace should contain a Wasm virtual-IP stack frame for the R2R 'Counter.CpuSamplingTarget' method"
+            : "The cpuprofile.nettrace should contain stack frames for the 'Counter.CpuSamplingTarget' method");
+        if (readyToRun)
+            Assert.True(reversePInvokeMethodFound, "The cpuprofile.nettrace should contain a Wasm virtual-IP stack frame for the R2R reverse P/Invoke entry samplepoint");
+        if (BuildTestBase.IsCoreClrRuntime && !readyToRun)
+        {
+            Assert.True(readyToRunMethodFound, "The cpuprofile.nettrace should contain rundown information for the ReadyToRun 'System.Buffer.Memmove' method");
+        }
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(Configuration.Debug, false)]
+    [InlineData(Configuration.Release, false)]
+    public async Task BlazorEventPipeTestWithInterpPgo(Configuration config, bool aot)
+    {
+        // Interpreter block-count PGO: instrumentation is armed from startup by DOTNET_InterpPGO, the
+        // counters are collected into an EventPipe trace while the app runs, and dotnet-pgo turns that
+        // trace into an .mibc. R2R is forced off until https://github.com/dotnet/runtime/issues/130521.
+        string extraProperties = @"
+                <EnableDiagnostics>true</EnableDiagnostics>
+                <WasmDebugLevel>0</WasmDebugLevel>
+                <PublishReadyToRun>false</PublishReadyToRun>
+                <WBTDevServer>true</WBTDevServer>
+            ";
+        string extraItems = @"<WasmEnvironmentVariable Include=""DOTNET_InterpPGO"" Value=""1"" />";
+
+        ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp, "blazor_interp_pgo", extraProperties: extraProperties, extraItems: extraItems);
 
         UpdateCounterPage();
 
         BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
 
-        async Task CollectCpuSamplesTest(IPage page)
+        async Task CollectInterpPgoTest(IPage page)
         {
-            await SetupCounterPage(page, "cpuprofile.nettrace", "globalThis.getDotnetRuntime(0).collectCpuSamples({ durationSeconds: 5.0, skipDownload: true })");
+            await SetupCounterPage(page, "pgo.nettrace", "globalThis.getDotnetRuntime(0).collectPgoTrace({ durationSeconds: 5.0, skipDownload: true })");
             await ClickAndCollect(page);
         }
 
-        // Run the test using the custom handler
         await RunForBuildWithDotnetRun(new BlazorRunOptions(
             Configuration: config,
-            Test: CollectCpuSamplesTest,
+            Test: CollectInterpPgoTest,
             TimeoutSeconds: 60,
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
@@ -66,20 +171,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             }
         ));
 
-        var methodFound = false;
-        using (var source = TraceLog.OpenOrConvert(ConvertTrace(info, "cpuprofile.nettrace")))
-        {
-            methodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName == "BlazorBasicTestApp.Pages.Counter.IncrementCount()");
-            if (!methodFound)
-            {
-                foreach (var stack in source.CallStacks)
-                {
-                    _testOutput.WriteLine($"Stack: {stack.CodeAddress.FullMethodName}");
-                }
-            }
-        }
-
-        Assert.True(methodFound, "The cpuprofile.nettrace should contain stack frames for the 'Counter.IncrementCount' method");
+        ValidateInterpPgoTrace(info, config, "pgo.nettrace", "IncrementCount");
     }
 
     [Fact]
@@ -198,6 +290,42 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         }
     }
 
+    private void ValidateInterpPgoTrace(ProjectInfo info, Configuration config, string traceFileName, string expectedMethod)
+    {
+        string tracePath = Path.GetFullPath(Path.Combine(info.LogPath, traceFileName));
+        Assert.True(File.Exists(tracePath), $"PGO trace {tracePath} was not created");
+
+        // The untrimmed IL assemblies next to the app (bin/<Config>/<TFM>) share the MVID of the served
+        // webcil, so dotnet-pgo can resolve the block-count events against them.
+        string referenceDir = Path.Combine(_projectDir, "bin", config.ToString(), DefaultTargetFrameworkForBlazor);
+        Assert.True(Directory.Exists(referenceDir), $"Reference assembly directory {referenceDir} was not found");
+
+        // dotnet-pgo is deployed next to the test by the _AddDotnetPgoToTestPayload target.
+        string pgoTool = Path.Combine(AppContext.BaseDirectory, "dotnet-pgo", "dotnet-pgo.dll");
+        Assert.True(File.Exists(pgoTool), $"dotnet-pgo was not found at {pgoTool}");
+
+        string mibcPath = Path.Combine(info.LogPath, "pgo.mibc");
+
+        using (var createCmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
+        {
+            createCmd.ExecuteWithCapturedOutput(
+                $"exec \"{pgoTool}\" create-mibc --trace \"{tracePath}\" --reference \"{Path.Combine(referenceDir, "*.dll")}\" --output \"{mibcPath}\"")
+                .EnsureSuccessful();
+        }
+        Assert.True(File.Exists(mibcPath), $"dotnet-pgo did not produce {mibcPath}");
+
+        string dumpPath = Path.Combine(info.LogPath, "pgo.dump.txt");
+        using (var dumpCmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false).WithWorkingDirectory(_projectDir))
+        {
+            dumpCmd.ExecuteWithCapturedOutput($"exec \"{pgoTool}\" dump --input \"{mibcPath}\" --output \"{dumpPath}\"").EnsureSuccessful();
+        }
+        string dumpText = File.ReadAllText(dumpPath);
+        Assert.Contains(expectedMethod, dumpText);
+        // The method list alone can be populated by Jit method-start events; require actual block-count
+        // instrumentation so the test fails if no INTOP_PGO_COUNT probe ran or the counters weren't flushed.
+        Assert.Contains("BasicBlockIntCount", dumpText);
+    }
+
     private string ConvertTrace(ProjectInfo info, string fileName)
     {
         var traceFilePath = Path.GetFullPath(Path.Combine(info.LogPath, fileName));
@@ -265,9 +393,9 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         return dictionary;
     }
 
-    private void UpdateCounterPage()
+    private void UpdateCounterPage(bool useCpuSamplingTarget = false)
     {
-        UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string> {
+        var replacements = new Dictionary<string, string> {
                 {
                     @"currentCount++;",
                     """
@@ -283,13 +411,124 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                             Console.WriteLine(sb.ToString());
                         }
                     }
-                    currentCount++;
-                    """
+                    ${increment}
+                    """.Replace("${increment}", useCpuSamplingTarget ? "currentCount = CpuSamplingTarget(currentCount);" : "currentCount++;")
                 }
-            });
+            };
+
+        if (useCpuSamplingTarget)
+        {
+            replacements.Add(
+                @"private async Task IncrementCount()",
+                """
+                [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                private static int CpuSamplingTarget(int value)
+                {
+                    for (int i = 0; i < 100_000; i++)
+                    {
+                        value = unchecked((value * 31) + i);
+                    }
+                    return value;
+                }
+
+                private async Task IncrementCount()
+                """);
+        }
+
+        UpdateFile(Path.Combine("Pages", "Counter.razor"), replacements);
     }
 
-    private async Task SetupCounterPage(IPage page, string fileName, string traceCommand)
+    private void AddCpuSamplingScenarios()
+    {
+        UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string>
+        {
+            ["for (int i = 0; i < 100_000; i++)"] = """
+                BlazorBasicTestApp.CpuSamplingScenarios.Run(value);
+                for (int i = 0; i < 100_000; i++)
+                """
+        });
+        File.WriteAllText(Path.Combine(_projectDir, "CpuSamplingScenarios.cs"), """
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+
+            namespace BlazorBasicTestApp;
+
+            public static unsafe class CpuSamplingScenarios
+            {
+                private struct References
+                {
+                    public object First, Second, Third, Fourth;
+                }
+
+                private sealed class Holder
+                {
+                    public References Value;
+                }
+
+                public static void Run(int value)
+                {
+                    var marker = new object();
+                    var source = new Holder { Value = new References { First = marker, Second = marker, Third = marker, Fourth = marker } };
+                    var destination = new Holder();
+                    if (!ReferenceEquals(CopyReferences(destination, source, value != 0), marker) ||
+                        !ReferenceEquals(destination.Value.Second, marker) ||
+                        !ReferenceEquals(destination.Value.Third, marker))
+                        throw new Exception("NoGC reference copy failed");
+
+                    if (FinallyAndFilter() != 11)
+                        throw new Exception("Nested finally/filter failed");
+
+                    delegate* unmanaged<int, int> callback = &ReversePInvokeTarget;
+                    if (callback(value) != unchecked(value + 1))
+                        throw new Exception("Reverse P/Invoke callback failed");
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static object CopyReferences(Holder destination, Holder source, bool first)
+                {
+                    destination.Value = source.Value;
+                    if (first)
+                        return destination.Value.First;
+                    return destination.Value.Fourth;
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static int FinallyAndFilter()
+                {
+                    int state = 0;
+                    try
+                    {
+                        try
+                        {
+                            throw new InvalidOperationException();
+                        }
+                        finally
+                        {
+                            state++;
+                        }
+                    }
+                    catch (InvalidOperationException exception) when (Filter(exception, ref state))
+                    {
+                        return state;
+                    }
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static bool Filter(Exception exception, ref int state)
+                {
+                    state += 10;
+                    return exception is InvalidOperationException;
+                }
+
+                [UnmanagedCallersOnly]
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static int ReversePInvokeTarget(int value) => unchecked(value + 1);
+            }
+            """);
+    }
+
+    private async Task SetupCounterPage(IPage page, string fileName, string traceCommand, bool uploadTrace = true)
     {
         await Task.Delay(500);
         // Navigate to the Counter page
@@ -306,7 +545,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             const traces = await ${traceCommand};
 
             console.log(`Tracing done ${new Date().toISOString()}`);
-                    
+
+            if (!${uploadTrace}) {
+                console.log(`WASM EXIT 0`);
+                return;
+            }
+
             // concatenate the buffers into a single Uint8Array
             const concatenated = new Uint8Array(traces.reduce((acc, curr) => acc + curr.byteLength, 0));
             let offset = 0;
@@ -330,29 +574,76 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         };
         console.log(`globalThis.collectAndUpload method created ${new Date().toISOString()}`);
         """;
-        up = up.Replace("${traceCommand}", traceCommand).Replace("${filename}", fileName);
+        up = up.Replace("${traceCommand}", traceCommand)
+            .Replace("${filename}", fileName)
+            .Replace("${uploadTrace}", uploadTrace ? "true" : "false");
         await page.EvaluateAsync(up);
     }
 
-    private async Task ClickAndCollect(IPage page)
+    private async Task ClickAndCollect(IPage page, string? downloadPath = null)
     {
-        // Use void to prevent Playwright from awaiting the returned Promise,
-        // so tracing runs in parallel with button clicks below.
-        await page.EvaluateAsync(@"void (globalThis.donePromise = globalThis.collectAndUpload())");
-        _testOutput.WriteLine($"Installed script: {DateTime.Now.ToString("O")}");
+        // A runtime trap never rejects donePromise: the runtime catches it, reports it as a console
+        // error and exits non-zero, leaving the promise unsettled forever.
+        var runtimeFailed = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        string? lastConsoleError = null;
 
-        // Click the button a few times while tracing is running
-        for (int i = 0; i < 5; i++)
+        void OnPageError(object? sender, string error) => runtimeFailed.TrySetResult(error);
+        void OnConsoleMessage(object? sender, IConsoleMessage message)
         {
-            await page.Locator("text=\"Click me\"").ClickAsync();
-            await Task.Delay(10);
+            if (message.Type == "error")
+                lastConsoleError = message.Text;
+
+            Match exit = BrowserRunner.s_exitRegex.Match(message.Text);
+            if (exit.Success && exit.Groups["exitCode"].Value != "0")
+                runtimeFailed.TrySetResult(lastConsoleError ?? $"the app exited with code {exit.Groups["exitCode"].Value}");
         }
-        _testOutput.WriteLine($"Done clicking: {DateTime.Now.ToString("O")}");
 
-        var txt2 = await page.Locator("p[role='status']").InnerHTMLAsync();
-        Assert.NotEqual("Current count: 0", txt2);
+        page.PageError += OnPageError;
+        page.Console += OnConsoleMessage;
 
-        // Wait for trace collection and upload to complete
-        await page.EvaluateAsync(@"globalThis.donePromise");
+        try
+        {
+            Task<IDownload>? downloadTask = downloadPath is null ? null : page.WaitForDownloadAsync();
+
+            // Use void to prevent Playwright from awaiting the returned Promise,
+            // so tracing runs in parallel with button clicks below.
+            await page.EvaluateAsync(@"void (globalThis.donePromise = globalThis.collectAndUpload())");
+            _testOutput.WriteLine($"Installed script: {DateTime.Now.ToString("O")}");
+
+            // Click the button a few times while tracing is running
+            for (int i = 0; i < 5; i++)
+            {
+                await page.Locator("text=\"Click me\"").ClickAsync();
+                await Task.Delay(10);
+            }
+            _testOutput.WriteLine($"Done clicking: {DateTime.Now.ToString("O")}");
+
+            var txt2 = await page.Locator("p[role='status']").InnerHTMLAsync();
+            Assert.NotEqual("Current count: 0", txt2);
+
+            // Wait for trace collection and upload to complete. EvaluateAsync has no timeout of its
+            // own, unlike the Locator calls above, so bound it explicitly.
+            Task collected = page.EvaluateAsync(@"globalThis.donePromise");
+            Task finished = await Task.WhenAny(collected, runtimeFailed.Task, Task.Delay(s_traceCollectionTimeout));
+            if (finished != collected)
+            {
+                // Tearing down the page faults the pending evaluate; keep that from resurfacing as an
+                // unobserved task exception in a later test.
+                _ = collected.ContinueWith(static t => _ = t.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+
+                Assert.Fail(runtimeFailed.Task.IsCompleted
+                    ? $"The runtime failed while collecting the trace: {runtimeFailed.Task.Result}"
+                    : $"Trace collection did not complete within {s_traceCollectionTimeout.TotalSeconds}s.");
+            }
+
+            await collected;
+            if (downloadTask is not null && downloadPath is not null)
+                await (await downloadTask).SaveAsAsync(downloadPath);
+        }
+        finally
+        {
+            page.PageError -= OnPageError;
+            page.Console -= OnConsoleMessage;
+        }
     }
 }

@@ -63,6 +63,10 @@ if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
+if (CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
+    set(LIB_UNWINDER unwinder_wks)
+endif (CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
+
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
@@ -76,7 +80,6 @@ set(CORECLR_LIBRARIES
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
-    ceefgen
     corguids
     utilcode
     v3binder
@@ -105,6 +108,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
         kernel32.lib
+        ntdll.lib
         advapi32.lib
         ole32.lib
         oleaut32.lib
@@ -175,13 +179,26 @@ if(TARGET coreclr)
         $<TARGET_NAME_IF_EXISTS:coreclrpal>
         ${CLRJIT_STATIC}
         ${CLRINTERPRETER_STATIC}
+        vm_gc_wks
+        $<TARGET_NAME_IF_EXISTS:vm_gc_svr>
         cee_wks_core
         cee_wks
         ${FOUNDATION})
 endif()
 
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CORECLR_STATIC_CLRINTERPRETER_STATIC} cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CORECLR_STATIC_CLRINTERPRETER_STATIC} vm_gc_wks $<TARGET_NAME_IF_EXISTS:vm_gc_svr> cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
+
+if(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)
+    target_sources(coreclr_static PRIVATE $<TARGET_OBJECTS:inproccrashreport>)
+endif()
+
+if (TARGET cee_wks_gen)
+    add_library_clr(coreclr_gen_static
+        STATIC
+        $<TARGET_OBJECTS:cee_wks_gen>
+    )
+endif()
 
 if (CLR_CMAKE_HOST_ANDROID)
     target_link_libraries(coreclr PUBLIC log)
@@ -219,24 +236,41 @@ if(CLR_CMAKE_TARGET_WIN32)
         set(CLRDEBUGINFO_RESOURCE_NAME CLRDEBUGINFOWINDOWSARM64)
     endif(CLR_CMAKE_TARGET_ARCH_AMD64)
 
+    if(NOT CLR_DUMP_ENUMERATOR_PATH)
+        set(CLRDEBUGINFO_DEPENDENCIES mscordaccore mscordbi)
+        set(CLRDEBUGINFO_ARGUMENTS -dac $<TARGET_FILE:mscordaccore> -dbi $<TARGET_FILE:mscordbi>)
+
+        set(MINIDUMP_AUXILIARY_PROVIDER_PATH $<TARGET_FILE:mscordaccore>)
+        set(MINIDUMP_AUXILIARY_PROVIDER_NAME "mscordaccore.dll")
+    else()
+        set(CLRDEBUGINFO_ARGUMENTS -noNativeDacDbi)
+        file(TO_CMAKE_PATH "${CLR_DUMP_ENUMERATOR_PATH}" MINIDUMP_AUXILIARY_PROVIDER_PATH)
+        get_filename_component(MINIDUMP_AUXILIARY_PROVIDER_NAME "${CLR_DUMP_ENUMERATOR_PATH}" NAME)
+    endif()
+
     add_custom_target(
         clr_debug_resources
-        DEPENDS mscordaccore mscordbi
-        # make CLRDEBUGINFO resource
-        COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File "${CMAKE_CURRENT_SOURCE_DIR}/GenClrDebugResource.ps1" -dac $<TARGET_FILE:mscordaccore> -dbi $<TARGET_FILE:mscordbi> -out ${CLRDEBUGINFO_RESOURCE_PATH}
+        DEPENDS ${CLRDEBUGINFO_DEPENDENCIES}
+        BYPRODUCTS ${CLRDEBUGINFO_RESOURCE_PATH}
+        COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File "${CMAKE_CURRENT_SOURCE_DIR}/GenClrDebugResource.ps1" ${CLRDEBUGINFO_ARGUMENTS} -out ${CLRDEBUGINFO_RESOURCE_PATH}
     )
+    add_dependencies(coreclr clr_debug_resources)
+    add_dependencies(coreclr_static clr_debug_resources)
 
     configure_file(dump_helper_resource.rc.in ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource.rc)
 
-    set(EMBEDDED_MINIDUMP_AUXILIARY_PROVIDER $<TARGET_FILE:mscordaccore>)
+    set(EMBEDDED_MINIDUMP_AUXILIARY_PROVIDER "${MINIDUMP_AUXILIARY_PROVIDER_PATH}")
     configure_file(dump_helper_resource.rc.in ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource_embedded_minidump_provider.rc.gen)
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/dump_helper_resource_embedded_minidump_provider.rc INPUT ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource_embedded_minidump_provider.rc.gen)
 
+    set(CLRDEBUGINFO_RESOURCE_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource.rc)
+    foreach(CONFIGURATION IN LISTS CMAKE_CONFIGURATION_TYPES CMAKE_BUILD_TYPE)
+        list(APPEND CLRDEBUGINFO_RESOURCE_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/${CONFIGURATION}/dump_helper_resource_embedded_minidump_provider.rc)
+    endforeach()
+    set_source_files_properties(${CLRDEBUGINFO_RESOURCE_SOURCES} PROPERTIES OBJECT_DEPENDS ${CLRDEBUGINFO_RESOURCE_PATH})
+
     target_sources(coreclr PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource.rc)
     target_sources(coreclr_static PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/dump_helper_resource_embedded_minidump_provider.rc)
-
-    add_dependencies(coreclr clr_debug_resources)
-    add_dependencies(coreclr_static clr_debug_resources mscordaccore)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
@@ -244,10 +278,16 @@ if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
 else()
     install_clr(TARGETS coreclr_static DESTINATIONS . sharedFramework COMPONENT runtime)
+    if (TARGET coreclr_gen_static)
+        install_clr(TARGETS coreclr_gen_static DESTINATIONS . sharedFramework COMPONENT runtime)
+    endif()
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_ARCH_WASM)
     install_clr(TARGETS coreclr_static DESTINATIONS . COMPONENT runtime)
+    if (TARGET coreclr_gen_static)
+        install_clr(TARGETS coreclr_gen_static DESTINATIONS . COMPONENT runtime)
+    endif()
 endif(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_ARCH_WASM)
 
 # Enable profile guided optimization

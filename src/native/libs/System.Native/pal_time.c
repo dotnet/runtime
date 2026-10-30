@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_config.h"
+#include "pal_errno.h"
 #include "pal_time.h"
 #include "pal_utilities.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <utime.h>
 #include <time.h>
 #include <sys/stat.h>
@@ -17,10 +19,33 @@
 enum
 {
     MicroSecondsToNanoSeconds = 1000,   // 10^3
+    MillisecondsPerSecond = 1000,
+    MillisecondsToNanoSeconds = 1000000,
     SecondsToNanoSeconds = 1000000000,  // 10^9
     SecondsToTicks = 10000000,          // 10^7
     TicksToNanoSeconds = 100,           // 10^2
 };
+
+int32_t SystemNative_ThreadSleep(int32_t timeoutMilliseconds)
+{
+    assert(timeoutMilliseconds >= 0);
+
+    struct timespec requested;
+    requested.tv_sec = timeoutMilliseconds / MillisecondsPerSecond;
+    requested.tv_nsec = (timeoutMilliseconds % MillisecondsPerSecond) * MillisecondsToNanoSeconds;
+
+    struct timespec remaining = {0};
+    while (nanosleep(&requested, &remaining) != 0)
+    {
+        if (errno != EINTR)
+        {
+            return ConvertErrorPlatformToPal(errno);
+        }
+        requested = remaining;
+    }
+
+    return Error_SUCCESS;
+}
 
 int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
 {
@@ -32,7 +57,7 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
 
     updatedTimes[1].tv_sec = (time_t)times[1].tv_sec;
     updatedTimes[1].tv_nsec = (long)times[1].tv_nsec;
-    while (CheckInterrupted(result = utimensat(AT_FDCWD, path, updatedTimes, AT_SYMLINK_NOFOLLOW)));
+    while (CheckInterrupted(result = utimensat((int)AT_FDCWD, path, updatedTimes, AT_SYMLINK_NOFOLLOW)));
 #else
     struct timeval updatedTimes[2];
     updatedTimes[0].tv_sec = (long)times[0].tv_sec;
@@ -91,7 +116,7 @@ int64_t SystemNative_GetLowResolutionTimestamp(void)
 
 int64_t SystemNative_GetBootTimeTicks(void)
 {
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
     struct timespec ts;
 
     int result = clock_gettime(CLOCK_BOOTTIME, &ts);

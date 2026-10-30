@@ -61,6 +61,24 @@ namespace System.IO.Compression.Tests
             Assert.Throws<ObjectDisposedException>(() => z.CreateEntry("dirka")); //"Can't create after dispose"
         }
 
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task Verify_VersionMadeBy(bool async)
+        {
+            // The high byte identifies the host system: 0 on Windows, 3 on Unix.
+            int expectedHostSystem = OperatingSystem.IsWindows() ? 0 : 3;
+            // The low byte is the zip specification version;
+            const int DefaultZipVersion = 20;
+
+            ZipArchive archive = await CreateZipArchive(async, new MemoryStream(), ZipArchiveMode.Create, leaveOpen: false);
+            ZipArchiveEntry entry = archive.CreateEntry("file.txt");
+
+            Assert.Equal(expectedHostSystem, entry.VersionMadeBy >> 8);
+            Assert.Equal(DefaultZipVersion, entry.VersionMadeBy & 0xFF);
+
+            await DisposeZipArchive(async, archive);
+        }
+
         private static readonly string[] _folderNames = [ "small", "normal", "empty", "emptydir" ];
 
         public static IEnumerable<object[]> GetCreateNormal_Seekable_Data()

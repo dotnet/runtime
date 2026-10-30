@@ -86,6 +86,18 @@ CMiniMdRW::ApplyTableDelta(
         }
         IfNullGo(pRec);
         _ASSERTE(iRid == newRid);
+
+        // The record was appended: a lookup hash already built for this table
+        // (GenericBuildHashTable) does not cover it, and GenericFindWithHash
+        // searches only the hash - the record would be invisible to lookups
+        // (e.g. GetFieldRVA during ApplyEditAndContinue, which then fails the
+        // whole update). Invalidate the hash; the next lookup rebuilds it over
+        // the full table.
+        if (m_pLookUpHashes[ixTbl] != NULL)
+        {
+            delete m_pLookUpHashes[ixTbl];
+            m_pLookUpHashes[ixTbl] = NULL;
+        }
     }
     else
     {   // Updated record.

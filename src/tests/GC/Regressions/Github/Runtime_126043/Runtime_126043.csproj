@@ -6,6 +6,9 @@
     <Optimize>True</Optimize>
     <CLRTestPriority>1</CLRTestPriority>
 
+    <!-- Native AOT will only compile in the server GC if this is set -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+
     <CLRTestBatchPreCommands><![CDATA[
       $(CLRTestBatchPreCommands)
       set DOTNET_gcServer=1

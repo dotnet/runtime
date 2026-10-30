@@ -188,7 +188,7 @@ namespace System.Runtime.Serialization.Json
             {
                 if (_rootContract == null)
                 {
-                    _rootContract = DataContract.GetDataContract(_rootType);
+                    _rootContract = DataContract.GetDataContract((_serializationSurrogateProvider == null) ? _rootType : GetSurrogatedType(_serializationSurrogateProvider, _rootType));
                     CheckIfTypeIsReference(_rootContract);
                 }
                 return _rootContract;
@@ -570,9 +570,9 @@ namespace System.Runtime.Serialization.Json
             Type typeToCheck = knownType;
             while (CollectionDataContract.IsCollection(typeToCheck, out itemType))
             {
-                if (itemType.IsGenericType && (itemType.GetGenericTypeDefinition() == Globals.TypeOfKeyValue))
+                if (itemType.IsGenericType && (itemType.GetGenericTypeDefinition() == typeof(KeyValue<,>)))
                 {
-                    itemType = Globals.TypeOfKeyValuePair.MakeGenericType(itemType.GenericTypeArguments);
+                    itemType = typeof(System.Collections.Generic.KeyValuePair<,>).MakeGenericType(itemType.GenericTypeArguments);
                 }
                 this.knownTypeList!.Add(itemType);
                 typeToCheck = itemType;
@@ -653,6 +653,13 @@ namespace System.Runtime.Serialization.Json
             DataContract contract = DataContractSerializer.GetDataContract(declaredTypeContract, declaredType, objectType);
             CheckIfTypeIsReference(contract);
             return contract;
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal static Type GetSurrogatedType(ISerializationSurrogateProvider serializationSurrogateProvider, Type type)
+        {
+            return DataContractSurrogateCaller.GetDataContractType(serializationSurrogateProvider, DataContract.UnwrapNullableType(type));
         }
     }
 }

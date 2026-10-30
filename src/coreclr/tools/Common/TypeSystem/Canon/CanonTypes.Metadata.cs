@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 
 using Internal.NativeFormat;
+using Internal.Text;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -35,7 +36,7 @@ namespace Internal.TypeSystem
 
         public override bool IsModuleType => false;
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name)
         {
             return null;
         }
@@ -45,7 +46,7 @@ namespace Internal.TypeSystem
             return default(ClassLayoutMetadata);
         }
 
-        public override MetadataType GetNestedType(ReadOnlySpan<byte> name)
+        public override MetadataType GetNestedType(Utf8Span name)
         {
             return null;
         }

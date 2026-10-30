@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: ReadyToRunInfo.h
-//
-
 //
 // Runtime support for Ready to Run
 // ===========================================================================
@@ -29,6 +28,9 @@ class ReadyToRunCoreInfo
 private:
     PTR_ReadyToRunLoadedImage       m_pLayout;
     PTR_READYTORUN_CORE_HEADER      m_pCoreHeader;
+#ifdef TARGET_WASM
+    TADDR                           m_minVirtualIP = 0;
+#endif // TARGET_WASM
     Volatile<bool>                  m_fForbidLoadILBodyFixups;
     friend struct ::cdac_data<ReadyToRunCoreInfo>;
 
@@ -40,6 +42,15 @@ public:
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const;
     void ForbidProcessMoreILBodyFixups() { m_fForbidLoadILBodyFixups = true; }
     bool IsForbidProcessMoreILBodyFixups() { return m_fForbidLoadILBodyFixups; }
+#ifdef TARGET_WASM
+    bool MinVirtualIPSet() const { return m_minVirtualIP != 0; }
+    void SetMinVirtualIP(TADDR minVirtualIP) { m_minVirtualIP = minVirtualIP; }
+    TADDR GetMinVirtualIP() const
+    {
+        _ASSERTE(MinVirtualIPSet());
+        return m_minVirtualIP;
+    }
+#endif // TARGET_WASM
 
     PTR_ReadyToRunLoadedImage GetImage() const
     {
@@ -84,7 +95,6 @@ public:
 
     const static ReadyToRun_TypeGenericInfoMap EmptyInstance;
 
-    HRESULT IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport) const;
     HRESULT GetGenericArgumentCountNoThrow(mdTypeDef input, uint32_t *pCount, IMDInternalImport* pImport) const;
     bool IsGeneric(mdTypeDef input, IMDInternalImport* pImport) const;
     uint32_t GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport) const;
@@ -146,10 +156,19 @@ class ReadyToRunInfo
     PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
     DWORD                           m_nRuntimeFunctions;
 
+#ifdef TARGET_WASM
+    DWORD                           m_minFunctionTableIndex;
+    TADDR                           m_minVirtualIP = 0;
+#endif // TARGET_WASM
+
+#ifdef FEATURE_COLD_R2R_CODE
     PTR_ULONG                       m_pHotColdMap;
     DWORD                           m_nHotColdMap;
+#endif // FEATURE_COLD_R2R_CODE
 
+#ifndef TARGET_WASM
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDelayLoadMethodCallThunks;
+#endif // !TARGET_WASM
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDebugInfo;
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionExceptionInfo;
 
@@ -170,8 +189,10 @@ class ReadyToRunInfo
     Crst                            m_Crst;
     PtrHashMap                      m_entryPointToMethodDescMap;
 
+#ifdef FEATURE_INLINE_TRACKING
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
     PTR_PersistentInlineTrackingMapR2R m_pCrossModulePersistentInlineTrackingMap;
+#endif // FEATURE_INLINE_TRACKING
 
     NativeFormat::NativeHashtable   m_externalTypeMaps;
     NativeFormat::NativeHashtable   m_proxyTypeMaps;
@@ -198,13 +219,35 @@ public:
 
     PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
 
+#ifndef TARGET_WASM
     PTR_IMAGE_DATA_DIRECTORY GetDelayMethodCallThunksSection() const { return m_pSectionDelayLoadMethodCallThunks; }
+#endif // !TARGET_WASM
+
     PTR_IMAGE_DATA_DIRECTORY GetExceptionInfoSection() const { return m_pSectionExceptionInfo; }
 
     PTR_NativeImage GetNativeImage() const { return m_pNativeImage; }
 
     PTR_ReadyToRunLoadedImage GetImage() const { return m_pComposite->GetImage(); }
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const { return m_pComposite->FindSection(type); }
+
+    PTR_RUNTIME_FUNCTION GetRuntimeFunctions() const { return m_pRuntimeFunctions; }
+    DWORD GetRuntimeFunctionCount() const { return m_nRuntimeFunctions; }
+
+#ifdef TARGET_WASM
+    DWORD GetMinFunctionTableIndex() const { return m_minFunctionTableIndex; }
+    TADDR GetMinVirtualIP() const
+    {
+        _ASSERTE(m_minVirtualIP != 0);
+        return m_minVirtualIP;
+    }
+    PCODE R2RRelativeFunctionIndexToVirtualIP(DWORD r2rFunctionIndex) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(r2rFunctionIndex < m_nRuntimeFunctions);
+        return (PCODE)(GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[r2rFunctionIndex]));
+    }
+    void RegisterVirtualIPRange(Module* pModule);
+#endif // TARGET_WASM
 
     void RegisterResumptionStub(PCODE stubEntryPoint);
 
@@ -226,6 +269,26 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
+    }
+
+    // True when this image was compiled with the GC mode transition verification scaffolding.
+    //
+    // Only WebAssembly emits the scaffolding: the helper call at catch resumption points is
+    // inserted by the WebAssembly-only JIT path in fgwasm.cpp, and only the WebAssembly catch
+    // resumption path consumes this. On any other target the flag is inert even if set, so do not
+    // treat it as a general statement that the image's catch resumption points call
+    // READYTORUN_HELPER_ResumeAfterCatch. See the comment on t_gcModeSwitchPermitted in
+    // vm/threads.h.
+    BOOL VerifiesGCModeTransitions()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS;
+    }
+
+    BOOL HasStrippedILBodies()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_STRIPPED_IL_BODIES;
     }
 
     void DisableAllR2RCode()
@@ -326,6 +389,7 @@ public:
 
     static DWORD GetFieldBaseOffset(MethodTable * pMT);
 
+#ifdef FEATURE_INLINE_TRACKING
     PTR_PersistentInlineTrackingMapR2R GetInlineTrackingMap()
     {
         return m_pPersistentInlineTrackingMap;
@@ -363,16 +427,18 @@ public:
 
         return inlinersCount;
     }
-
+#endif // FEATURE_INLINE_TRACKING
 
     bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
     void DisableCustomAttributeFilter();
 
+    bool TryGetPrecachedExternalTypeMap(MethodTable* pGroupType, NativeFormat::NativeHashtable* pTypeMap, NativeFormat::NativeParser* pNamedEntries);
     bool HasPrecachedExternalTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey);
 
     bool CheckForUniqueExternalTypeMapKeys(MethodTable* pGroupType, ExternalTypeNameHash *pHash);
 
+    bool TryGetPrecachedProxyTypeMap(MethodTable* pGroupType, NativeFormat::NativeHashtable* pTypeMap, NativeFormat::NativeParser* pNamedEntries);
     bool HasPrecachedProxyTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key);
 
@@ -401,14 +467,23 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t CompositeInfo = offsetof(ReadyToRunInfo, m_pCompositeInfo);
     static constexpr size_t NumRuntimeFunctions = offsetof(ReadyToRunInfo, m_nRuntimeFunctions);
     static constexpr size_t RuntimeFunctions = offsetof(ReadyToRunInfo, m_pRuntimeFunctions);
+#ifdef FEATURE_COLD_R2R_CODE
     static constexpr size_t NumHotColdMap = offsetof(ReadyToRunInfo, m_nHotColdMap);
     static constexpr size_t HotColdMap = offsetof(ReadyToRunInfo, m_pHotColdMap);
+#endif // FEATURE_COLD_R2R_CODE
+#ifndef TARGET_WASM
     static constexpr size_t DelayLoadMethodCallThunks = offsetof(ReadyToRunInfo, m_pSectionDelayLoadMethodCallThunks);
+#endif // !TARGET_WASM
     static constexpr size_t DebugInfoSection = offsetof(ReadyToRunInfo, m_pSectionDebugInfo);
     static constexpr size_t ExceptionInfoSection = offsetof(ReadyToRunInfo, m_pSectionExceptionInfo);
+    static constexpr size_t ImportSections = offsetof(ReadyToRunInfo, m_pImportSections);
+    static constexpr size_t NumImportSections = offsetof(ReadyToRunInfo, m_nImportSections);
     static constexpr size_t EntryPointToMethodDescMap = offsetof(ReadyToRunInfo, m_entryPointToMethodDescMap);
     static constexpr size_t LoadedImageBase = offsetof(ReadyToRunInfo, m_pLoadedImageBase);
     static constexpr size_t Composite = offsetof(ReadyToRunInfo, m_pComposite);
+#ifdef TARGET_WASM
+    static constexpr size_t MinVirtualIP = offsetof(ReadyToRunInfo, m_minVirtualIP);
+#endif // TARGET_WASM
 };
 
 class DynamicHelpers
@@ -445,6 +520,14 @@ struct GenericDictionaryDynamicHelperStubData
     UINT32 SlotOffset;
     GenericHandleArgs *HandleArgs;
 };
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+struct GenericDictionaryDynamicHelperStubData_PortableEntryPoint
+{
+    PCODE HelperFunctionTableIndex;
+    GenericDictionaryDynamicHelperStubData stubData;
+};
+#endif
 
 class ReadyToRunLoadedImage
 {

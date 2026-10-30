@@ -67,11 +67,12 @@ namespace System
          * src/vm/ecall.cpp for instructions on how to add new overloads.
          */
 
+        /// <safety>The runtime FCall builds the string by copying from the supplied managed char array, whose length it reads safely; it takes no raw pointer and touches no caller-supplied unmanaged memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if MONO
         [DynamicDependency("Ctor(System.Char[])")]
 #endif
-        public extern String(char[]? value);
+        public extern safe String(char[]? value);
 
         private static string Ctor(char[]? value)
         {
@@ -88,11 +89,12 @@ namespace System
             return result;
         }
 
+        /// <safety>The runtime FCall validates the start index and length against the managed array's bounds before copying; it takes no raw pointer and touches no caller-supplied unmanaged memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if MONO
         [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
 #endif
-        public extern String(char[] value, int startIndex, int length);
+        public extern safe String(char[] value, int startIndex, int length);
 
         private static string Ctor(char[] value, int startIndex, int length)
         {
@@ -116,13 +118,11 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
 #if MONO
         [DynamicDependency("Ctor(System.Char*)")]
 #endif
         public extern unsafe String(char* value);
 
-        [RequiresUnsafe]
         private static unsafe string Ctor(char* ptr)
         {
             if (ptr == null)
@@ -144,13 +144,11 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
 #if MONO
         [DynamicDependency("Ctor(System.Char*,System.Int32,System.Int32)")]
 #endif
         public extern unsafe String(char* value, int startIndex, int length);
 
-        [RequiresUnsafe]
         private static unsafe string Ctor(char* ptr, int startIndex, int length)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(length);
@@ -180,13 +178,11 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
 #if MONO
         [DynamicDependency("Ctor(System.SByte*)")]
 #endif
         public extern unsafe String(sbyte* value);
 
-        [RequiresUnsafe]
         private static unsafe string Ctor(sbyte* value)
         {
             byte* pb = (byte*)value;
@@ -200,13 +196,11 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
 #if MONO
         [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32)")]
 #endif
         public extern unsafe String(sbyte* value, int startIndex, int length);
 
-        [RequiresUnsafe]
         private static unsafe string Ctor(sbyte* value, int startIndex, int length)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
@@ -230,7 +224,6 @@ namespace System
         }
 
         // Encoder for String..ctor(sbyte*) and String..ctor(sbyte*, int, int)
-        [RequiresUnsafe]
         private static unsafe string CreateStringForSByteConstructor(byte* pb, int numBytes)
         {
             Debug.Assert(numBytes >= 0);
@@ -259,13 +252,11 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
 #if MONO
         [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)")]
 #endif
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
 
-        [RequiresUnsafe]
         private static unsafe string Ctor(sbyte* value, int startIndex, int length, Encoding? enc)
         {
             if (enc == null)
@@ -291,11 +282,12 @@ namespace System
             return enc.GetString(new ReadOnlySpan<byte>(pStart, length));
         }
 
+        /// <safety>The runtime FCall builds the string from the character and count values alone; it takes no pointer and touches no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if MONO
         [DynamicDependency("Ctor(System.Char,System.Int32)")]
 #endif
-        public extern String(char c, int count);
+        public extern safe String(char c, int count);
 
         private static string Ctor(char c, int count)
         {
@@ -313,11 +305,12 @@ namespace System
             return result;
         }
 
+        /// <safety>The runtime FCall copies from the bounds-checked managed span; it takes no raw pointer and touches no caller-supplied unmanaged memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if MONO
         [DynamicDependency("Ctor(System.ReadOnlySpan{System.Char})")]
 #endif
-        public extern String(ReadOnlySpan<char> value);
+        public extern safe String(ReadOnlySpan<char> value);
 
         private static string Ctor(ReadOnlySpan<char> value)
         {
@@ -541,7 +534,6 @@ namespace System
 
         // Helper for encodings so they can talk to our buffer directly
         // stringLength must be the exact size we'll expect
-        [RequiresUnsafe]
         internal static unsafe string CreateStringFromEncoding(
             byte* bytes, int byteLength, Encoding encoding)
         {
@@ -624,10 +616,8 @@ namespace System
             return new StringRuneEnumerator(this);
         }
 
-        [RequiresUnsafe]
         internal static unsafe int wcslen(char* ptr) => SpanHelpers.IndexOfNullCharacter(ptr);
 
-        [RequiresUnsafe]
         internal static unsafe int strlen(byte* ptr) => SpanHelpers.IndexOfNullByte(ptr);
 
         //

@@ -389,7 +389,7 @@ namespace
         _ASSERTE(!Path::IsRelative(path));
 
         SString::Iterator lastPathSeparatorIter = path.End();
-        if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
+        if (path.FindBack(lastPathSeparatorIter, DIRECTORY_SEPARATOR_CHAR_A))
         {
             lastPathSeparatorIter++;
             path.Truncate(lastPathSeparatorIter);
@@ -728,7 +728,7 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Asse
 
 namespace
 {
-    NATIVE_LIBRARY_HANDLE LoadNativeLibrary(PInvokeMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
+    NativeLibraryHandleHolder LoadNativeLibrary(PInvokeMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
     {
         CONTRACTL
         {
@@ -739,15 +739,17 @@ namespace
 
         LPCUTF8 name = pMD->GetLibName();
         if ( !name || !*name )
-            return NULL;
+        {
+            return {};
+        }
 
         _ASSERTE( name != NULL );
         MAKE_WIDEPTR_FROMUTF8( wszLibName, name );
 
-        NativeLibraryHandleHolder hmod = LoadNativeLibraryViaDllImportResolver(pMD, wszLibName);
+        NativeLibraryHandleHolder hmod{ LoadNativeLibraryViaDllImportResolver(pMD, wszLibName) };
         if (hmod != NULL)
         {
-            return hmod.Extract();
+            return hmod;
         }
 
         AppDomain* pDomain = GetAppDomain();
@@ -756,13 +758,13 @@ namespace
         hmod = LoadNativeLibraryViaAssemblyLoadContext(pAssembly, wszLibName);
         if (hmod != NULL)
         {
-            return hmod.Extract();
+            return hmod;
         }
 
         hmod = pDomain->FindUnmanagedImageInCache(wszLibName);
         if (hmod != NULL)
         {
-            return hmod.Extract();
+            return hmod;
         }
 
         hmod = LoadNativeLibraryBySearch(pMD, pErrorTracker, wszLibName);
@@ -770,31 +772,25 @@ namespace
         {
             // If we have a handle add it to the cache.
             pDomain->AddUnmanagedImageToCache(wszLibName, hmod);
-            return hmod.Extract();
+            return hmod;
         }
 
         hmod = LoadNativeLibraryViaAssemblyLoadContextEvent(pAssembly, wszLibName);
-        if (hmod != NULL)
-        {
-            return hmod.Extract();
-        }
-
-        return hmod.Extract();
+        return hmod;
     }
 }
 
 NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(PInvokeMethodDesc * pMD)
 {
-    CONTRACT(NATIVE_LIBRARY_HANDLE)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pMD));
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LoadLibErrorTracker errorTracker;
-    NATIVE_LIBRARY_HANDLE hmod = LoadNativeLibrary(pMD, &errorTracker);
+    NativeLibraryHandleHolder hmod = LoadNativeLibrary(pMD, &errorTracker);
     if (hmod == NULL)
     {
         if (pMD->GetLibName() == NULL)
@@ -804,5 +800,5 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(PInvokeMethodDesc
         errorTracker.Throw(ssLibName);
     }
 
-    RETURN hmod;
+    return hmod.Detach();
 }

@@ -309,7 +309,9 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        public bool Contains(string name) => Contains(GetHeaderDescriptor(name));
+        public bool Contains(string name) =>
+            TryGetHeaderDescriptor(name, out HeaderDescriptor descriptor) &&
+            Contains(descriptor);
 
         public override string ToString()
         {
@@ -478,7 +480,9 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public bool Remove(string name) => Remove(GetHeaderDescriptor(name));
+        public bool Remove(string name) =>
+            TryGetHeaderDescriptor(name, out HeaderDescriptor descriptor) &&
+            Remove(descriptor);
 
         internal bool RemoveParsedValue(HeaderDescriptor descriptor, object value, bool removeAll = false)
         {

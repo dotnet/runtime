@@ -1,28 +1,12 @@
-# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.192.0/containers/dotnet/.devcontainer/base.Dockerfile
-# For details on dotnet specific container, see: https://github.com/microsoft/vscode-dev-containers/tree/main/containers/dotnet
+# See here for image contents: https://github.com/devcontainers/images/tree/main/src/dotnet
 
-ARG VARIANT="8.0-noble"
+ARG VARIANT="11.0-resolute"
 FROM mcr.microsoft.com/devcontainers/dotnet:${VARIANT}
 
-# Set up machine requirements to build the repo and the gh CLI
-RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends \
-        clang \
-        cmake \
-        cpio \
-        build-essential \
-        python3 \
-        curl \
-        git \
-        lldb \
-        llvm \
-        liblldb-dev \
-        libunwind8 \
-        libunwind8-dev \
-        gettext \
-        libicu-dev \
-        liblttng-ust-dev \
-        libssl-dev \
-        libkrb5-dev \
-        ninja-build \
-        tzdata
+SHELL [ "/bin/bash", "-c" ]
+
+# Set up machine requirements using the scripts from this checkout.
+COPY eng/common/native/install-dependencies.sh eng/common/native/init-os-and-arch.sh /tmp/runtime-dependencies/
+RUN bash /tmp/runtime-dependencies/install-dependencies.sh && \
+  rm /tmp/runtime-dependencies/{install-dependencies,init-os-and-arch}.sh && \
+  rmdir /tmp/runtime-dependencies

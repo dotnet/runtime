@@ -494,13 +494,32 @@ namespace System.Collections.Immutable.Tests
                 (b, v) => b.IndexOf(v),
                 (b, v, i) => b.IndexOf(v, i),
                 (b, v, i, c) => b.IndexOf(v, i, c),
-                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq));
+                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq),
+                "index");
             IndexOfTests.IndexOfTest(
                 seq => (IImmutableList<int>)ImmutableList.CreateRange(seq),
                 (b, v) => b.IndexOf(v),
                 (b, v, i) => b.IndexOf(v, i),
                 (b, v, i, c) => b.IndexOf(v, i, c),
-                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq));
+                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq),
+                "index");
+        }
+
+        [Fact]
+        public void IndexOfConsistentWithArray()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3, 4);
+            int[] array = new[] { 1, 2, 3, 4 };
+
+            Assert.Equal(-1, list.IndexOf(2, list.Count, 0));
+            Assert.Equal(-1, Array.IndexOf(array, 2, array.Length, 0));
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                int listResult = list.IndexOf(list[i], 0, list.Count);
+                int arrayResult = Array.IndexOf(array, array[i], 0, array.Length);
+                Assert.Equal(listResult, arrayResult);
+            }
         }
 
         [Fact]
@@ -747,6 +766,37 @@ namespace System.Collections.Immutable.Tests
 
             ImmutableList<int> populatedList = ImmutableList.Create(3, 2, 1);
             Assert.Equal(Enumerable.Range(1, 3), populatedList.Reverse());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(1000)]
+        public void ReverseEntireList(int count)
+        {
+            ImmutableList<int> list = ImmutableList.CreateRange(Enumerable.Range(0, count));
+            ImmutableList<int> reversed = list.Reverse();
+            Assert.Equal(Enumerable.Range(0, count).Reverse(), reversed);
+            Assert.Equal(reversed, list.Reverse(0, count));
+            Assert.Equal(list, reversed.Reverse());
+            Assert.Equal(Enumerable.Range(0, count), list);
+            Assert.Equal(count, reversed.Count);
+            VerifyBalanced(reversed);
+
+            for (int i = 0; i < count; i++)
+            {
+                Assert.Equal(count - i - 1, reversed[i]);
+            }
+
+            if (count <= 1)
+            {
+                Assert.Same(list, reversed);
+            }
         }
 
         [Fact]

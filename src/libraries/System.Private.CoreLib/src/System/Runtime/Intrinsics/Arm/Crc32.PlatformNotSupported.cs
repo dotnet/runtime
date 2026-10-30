@@ -80,5 +80,17 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A64: CRC32CW Wd, Wn, Wm</para>
         /// </summary>
         public static uint ComputeCrc32C(uint crc, uint data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  A32: CRC32W Rd, Rn, Rm</para>
+        ///   <para>  A64: CRC32X Wd, Wn, Xm</para>
+        /// </summary>
+        public static uint ComputeCrc32(uint crc, nuint data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  A32: CRC32CW Rd, Rn, Rm</para>
+        ///   <para>  A64: CRC32CX Wd, Wn, Xm</para>
+        /// </summary>
+        public static uint ComputeCrc32C(uint crc, nuint data) { throw new PlatformNotSupportedException(); }
     }
 }

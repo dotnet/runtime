@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
@@ -25,7 +24,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             LocalState.Equals(other.LocalState) && Context.Equals(other.Context);
 
         public override bool Equals(object? obj) => obj is LocalStateAndContext<TValue, TContext> other && Equals(other);
-        public override int GetHashCode() => HashUtils.Combine(LocalState, Context);
+
+        // Local dataflow states are mutable and should never be used as dictionary keys.
+        public override int GetHashCode() => throw new NotImplementedException();
     }
 
     public readonly struct LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> : ILattice<LocalStateAndContext<TValue, TContext>>

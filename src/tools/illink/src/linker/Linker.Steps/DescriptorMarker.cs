@@ -154,6 +154,14 @@ namespace Mono.Linker.Steps
             if (!required)
                 return;
 
+            // For types with preserve="all"/"methods"/"fields", the type becomes
+            // reflection-visible through its members via ApplyPreserveInfo. For explicit
+            // <method>/<field> children, ProcessMethod/ProcessField handle it. For
+            // preserve="nothing" (no members preserved), we schedule the type itself
+            // for reflection-visible treatment.
+            if (preserve is TypePreserve.Nothing)
+                _context.Annotations.MarkPendingReflectionVisibleType(type, GetMessageOriginForPosition(nav));
+
             _context.Annotations.Mark(type, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
 
             if (type.IsNested)
@@ -184,7 +192,10 @@ namespace Mono.Linker.Steps
             if (!_preservedMembers.Add(field))
                 LogDuplicatePreserve(field.FullName, nav);
 
-            _context.Annotations.Mark(field, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
+            var reason = new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation);
+            var origin = GetMessageOriginForPosition(nav);
+            _context.Annotations.MarkPendingReflectionVisibleField(field, origin);
+            _context.Annotations.Mark(field, reason, origin);
         }
 
         protected override void ProcessMethod(TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
@@ -201,7 +212,10 @@ namespace Mono.Linker.Steps
             }
             else
             {
-                _context.Annotations.Mark(method, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
+                var reason = new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation);
+                var origin = GetMessageOriginForPosition(nav);
+                _context.Annotations.MarkPendingReflectionVisibleMethod(method, origin);
+                _context.Annotations.Mark(method, reason, origin);
             }
         }
 

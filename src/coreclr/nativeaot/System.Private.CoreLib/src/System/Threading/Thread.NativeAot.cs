@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -13,6 +12,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
+    [DataContract]
     public sealed partial class Thread
     {
         // Extra bits used in _threadState
@@ -29,10 +29,10 @@ namespace System.Threading
 
         private volatile int _threadState = (int)ThreadState.Unstarted;
         private ThreadPriority _priority;
+        [DataContract]
         private ManagedThreadId _managedThreadId;
+        [DataContract]
         private string? _name;
-        private StartHelper? _startHelper;
-        private Exception? _startException;
 
         // Protects starting the thread and setting its priority
         private Lock _lock = new Lock(useTrivialWaits: true);
@@ -69,14 +69,6 @@ namespace System.Threading
         private static unsafe void RegisterThreadExitCallback()
         {
             RuntimeImports.RhSetThreadExitCallback(&OnThreadExit);
-        }
-
-        internal static ulong CurrentOSThreadId
-        {
-            get
-            {
-                return RuntimeImports.RhCurrentOSThreadId();
-            }
         }
 
         // Slow path executed once per thread
@@ -308,146 +300,7 @@ namespace System.Threading
             return millisecondsTimeout;
         }
 
-        /// <summary>
-        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. Currently, the value comes from
-        /// defaults in CoreCLR's Thread::InitializeYieldProcessorNormalized(). This value is supposed to be normalized to be
-        /// appropriate for the processor.
-        /// TODO: See issue https://github.com/dotnet/corert/issues/4430
-        /// </summary>
-        internal const int OptimalMaxSpinWaitsPerSpinIteration = 8;
-
-        // Max iterations to be done in RhSpinWait.
-        // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
-        private const int SpinWaitCoopThreshold = 1024;
-
-        internal static void SpinWaitInternal(int iterations)
-        {
-            Debug.Assert(iterations <= SpinWaitCoopThreshold);
-            if (iterations > 0)
-            {
-                RuntimeImports.RhSpinWait(iterations);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
-        private static void LongSpinWait(int iterations)
-        {
-            RuntimeImports.RhLongSpinWait(iterations);
-        }
-
-        public static void SpinWait(int iterations)
-        {
-            if (iterations > SpinWaitCoopThreshold)
-            {
-                LongSpinWait(iterations);
-            }
-            else
-            {
-                SpinWaitInternal(iterations);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
-        public static bool Yield() => RuntimeImports.RhYield();
-
-        private void StartCore()
-        {
-            using (_lock.EnterScope())
-            {
-                if (!GetThreadStateBit(ThreadState.Unstarted))
-                {
-                    throw new ThreadStateException(SR.ThreadState_AlreadyStarted);
-                }
-
-                bool waitingForThreadStart = false;
-                GCHandle<Thread> threadHandle = new GCHandle<Thread>(this);
-
-                try
-                {
-                    if (!CreateThread(threadHandle))
-                    {
-                        throw new OutOfMemoryException();
-                    }
-
-                    // Skip cleanup if any asynchronous exception happens while waiting for the thread start
-                    waitingForThreadStart = true;
-
-                    // Wait until the new thread either dies or reports itself as started
-                    while (GetThreadStateBit(ThreadState.Unstarted) && !JoinInternal(0))
-                    {
-                        Yield();
-                    }
-
-                    waitingForThreadStart = false;
-                }
-                finally
-                {
-                    Debug.Assert(!waitingForThreadStart, "Leaked threadHandle");
-                    if (!waitingForThreadStart)
-                    {
-                        threadHandle.Dispose();
-                    }
-                }
-
-                if (GetThreadStateBit(ThreadState.Unstarted))
-                {
-                    Exception? startException = _startException;
-                    _startException = null;
-
-                    throw new ThreadStartException(startException ?? new OutOfMemoryException());
-                }
-
-                Debug.Assert(_startException == null);
-            }
-        }
-
-        private static void StartThread(IntPtr parameter)
-        {
-            Thread thread = GCHandle<Thread>.FromIntPtr(parameter).Target;
-
-            try
-            {
-                t_currentThread = thread;
-                System.Threading.ManagedThreadId.SetForCurrentThread(thread._managedThreadId);
-                thread.InitializeComOnNewThread();
-            }
-            catch (Exception e)
-            {
-                thread._startException = e;
-
-#if TARGET_UNIX
-                // This should go away once OnThreadExit stops using t_currentThread to signal
-                // shutdown of the thread on Unix.
-                thread._stopped!.Set();
-#endif
-                // Terminate the current thread. The creator thread will throw a ThreadStartException.
-                return;
-            }
-
-            // Report success to the creator thread, which will free threadHandle
-            int state = thread.ClearThreadStateBit(ThreadState.Unstarted);
-            if ((state & (int)ThreadState.Background) == 0)
-            {
-                IncrementRunningForeground();
-            }
-
-            try
-            {
-                StartHelper? startHelper = thread._startHelper;
-                Debug.Assert(startHelper != null);
-                thread._startHelper = null;
-
-                startHelper.Run();
-            }
-            catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
-            {
-                // the handler returned "true" means the exception is now "handled" and we should gracefully exit.
-            }
-            finally
-            {
-                thread.SetThreadStateBit(ThreadState.Stopped);
-            }
-        }
+        partial void StartCore();
 
         private static void StopThread(Thread thread)
         {

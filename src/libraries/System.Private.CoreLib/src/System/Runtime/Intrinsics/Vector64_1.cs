@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -25,6 +25,7 @@ namespace System.Runtime.Intrinsics
     /// <summary>Represents a 64-bit vector of a specified numeric type that is suitable for low-level optimization of parallel algorithms.</summary>
     /// <typeparam name="T">The type of the elements in the vector.</typeparam>
     [Intrinsic]
+    [SuppressReadyToRunCanonicalRooting]
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(Vector64DebugView<>))]
     [StructLayout(LayoutKind.Sequential, Size = Vector64.Size)]
@@ -500,7 +501,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public override string ToString() => ToString("G", CultureInfo.InvariantCulture);
 
-        private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
+        private unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 
@@ -782,17 +783,14 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
         [Intrinsic]
-        [RequiresUnsafe]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Load(T* source) => Vector64.Load(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAligned(T*)" />
         [Intrinsic]
-        [RequiresUnsafe]
         static Vector64<T> ISimdVector<Vector64<T>, T>.LoadAligned(T* source) => Vector64.LoadAligned(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
         [Intrinsic]
-        [RequiresUnsafe]
         static Vector64<T> ISimdVector<Vector64<T>, T>.LoadAlignedNonTemporal(T* source) => Vector64.LoadAlignedNonTemporal(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
@@ -893,17 +891,14 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
         [Intrinsic]
-        [RequiresUnsafe]
         static void ISimdVector<Vector64<T>, T>.Store(Vector64<T> source, T* destination) => source.Store(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAligned(TSelf, T*)" />
         [Intrinsic]
-        [RequiresUnsafe]
         static void ISimdVector<Vector64<T>, T>.StoreAligned(Vector64<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
         [Intrinsic]
-        [RequiresUnsafe]
         static void ISimdVector<Vector64<T>, T>.StoreAlignedNonTemporal(Vector64<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />

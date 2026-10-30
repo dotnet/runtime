@@ -20,6 +20,8 @@ namespace System
         private const ulong MemmoveNativeThreshold = ulong.MaxValue;
 #elif TARGET_ARM
         private const nuint MemmoveNativeThreshold = 512;
+#elif TARGET_WASM && !MONO
+        private const nuint MemmoveNativeThreshold = 1024;
 #else
         private const nuint MemmoveNativeThreshold = 2048;
 #endif
@@ -262,7 +264,6 @@ namespace System
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        [RequiresUnsafe]
         private static unsafe partial void* memmove(void* dest, void* src, nuint len);
 #pragma warning restore CS3016
 #endif
@@ -486,7 +487,6 @@ namespace System
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memset")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        [RequiresUnsafe]
         private static unsafe partial void* memset(void* dest, int value, nuint len);
 #pragma warning restore CS3016
 #endif

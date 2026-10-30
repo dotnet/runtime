@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -57,7 +57,6 @@ namespace System
             /// Given a RuntimeType, returns information about how to create uninitialized instances
             /// of it via calli semantics.
             /// </summary>
-            [RequiresUnsafe]
             private static void GetCreateUninitializedInfo(
                 RuntimeType rt,
                 out delegate*<void*, object> pfnAllocator,
@@ -76,8 +75,8 @@ namespace System
                 vAllocatorFirstArg = vAllocatorFirstArgTemp;
             }
 
+            [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionSerialization_GetCreateUninitializedObjectInfo")]
-            [RequiresUnsafe]
             private static partial void GetCreateUninitializedInfo(
                 QCallTypeHandle type,
                 delegate*<void*, object>* ppfnAllocator,

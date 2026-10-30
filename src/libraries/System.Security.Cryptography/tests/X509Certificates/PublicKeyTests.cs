@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Tests;
-using Microsoft.Diagnostics.Runtime.Interop;
 using Test.Cryptography;
 using Xunit;
 

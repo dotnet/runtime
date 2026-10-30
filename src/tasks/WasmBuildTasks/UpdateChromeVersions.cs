@@ -22,7 +22,13 @@ public partial class UpdateChromeVersions : MBU.Task
 {
     private const string s_fetchReleasesUrl = "https://chromiumdash.appspot.com/fetch_releases?channel={0}&num=1";
     private const string s_snapshotBaseUrl = $"https://storage.googleapis.com/chromium-browser-snapshots";
+    private const string s_v8CanaryBaseUrl = "https://storage.googleapis.com/chromium-v8/official/canary";
     private const int s_versionCheckThresholdDays = 1;
+
+    // The V8 used for testing must support the standardized exnref exception-handling proposal.
+    // Chrome milestones can map to older V8 builds, so never downgrade the pinned V8 below this
+    // floor. See https://github.com/dotnet/runtime/issues/129849
+    private static readonly Version s_minV8Version = new(15, 1, 103);
 
     private static readonly HttpClient s_httpClient = new();
 
@@ -86,7 +92,7 @@ public partial class UpdateChromeVersions : MBU.Task
             }
             if (VersionsChanged)
             {
-                UpdateEnvVarsForPRFile(versions);
+                UpdateEnvVarsForPRFile(chromeVersionsXmlDoc, versions);
             }
             return !Log.HasLoggedErrors;
         }
@@ -97,24 +103,42 @@ public partial class UpdateChromeVersions : MBU.Task
         }
     }
 
-    private static bool AreVersionsChanged(XmlDocument xmlDoc, ChromeVersionSpec version, string baseUrl)
+    private bool AreVersionsChanged(XmlDocument xmlDoc, ChromeVersionSpec version, string baseUrl)
     {
-        if (string.Equals(version.os, "Linux", StringComparison.OrdinalIgnoreCase))
+        string nodePrefix = GetNodePrefix(version.os);
+
+        string existingChromeVersion = GetNodeValue(xmlDoc, $"{nodePrefix}_ChromeVersion");
+        if (IsVersionDowngrade(existingChromeVersion, version.version))
         {
-            string linuxChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, "linux_ChromeBaseSnapshotUrl");
-            string linuxV8Version = GetNodeValue(xmlDoc, "linux_V8Version");
-            return version.v8_version != linuxV8Version ||
-                baseUrl != linuxChromeBaseSnapshotUrl;
+            Log.LogMessage(MessageImportance.High,
+                $"Skipping {version.os}: candidate Chrome version {version.version} is older than existing {existingChromeVersion}.");
+            return false;
         }
-        else if (string.Equals(version.os, "Windows", StringComparison.OrdinalIgnoreCase))
-        {
-            string winChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, "win_ChromeBaseSnapshotUrl");
-            string winV8Version = GetNodeValue(xmlDoc, "win_V8Version");
-            return version.v8_version != winV8Version ||
-                baseUrl != winChromeBaseSnapshotUrl;
-        }
-        throw new Exception($"UpdateChromeVersions task was used with unknown OS: {version.os}");
+
+        string existingChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, $"{nodePrefix}_ChromeBaseSnapshotUrl");
+        string existingV8Version = GetNodeValue(xmlDoc, $"{nodePrefix}_V8Version");
+
+        bool chromeChanged = version.version != existingChromeVersion;
+        bool snapshotUrlChanged = baseUrl != existingChromeBaseSnapshotUrl;
+        // A V8 downgrade must not count as a change: we never lower the V8 version (see UpdateChromeVersionsFile).
+        bool v8Upgraded = version.v8_version != existingV8Version && !IsVersionDowngrade(existingV8Version, version.v8_version);
+
+        return chromeChanged || snapshotUrlChanged || v8Upgraded;
     }
+
+    private static string GetNodePrefix(string os) => os switch
+    {
+        _ when string.Equals(os, "Linux", StringComparison.OrdinalIgnoreCase) => "linux",
+        _ when string.Equals(os, "Windows", StringComparison.OrdinalIgnoreCase) => "win",
+        _ when string.Equals(os, "Mac", StringComparison.OrdinalIgnoreCase) => "macos",
+        _ => throw new Exception($"UpdateChromeVersions task was used with unknown OS: {os}")
+    };
+
+    // Returns true only when both values parse and the candidate is strictly older than the existing one.
+    private static bool IsVersionDowngrade(string existing, string candidate) =>
+        Version.TryParse(existing, out Version? existingVersion) &&
+        Version.TryParse(candidate, out Version? candidateVersion) &&
+        candidateVersion < existingVersion;
 
     private static string GetNodeValue(XmlDocument xmlDoc, string nodeName)
     {
@@ -124,40 +148,45 @@ public partial class UpdateChromeVersions : MBU.Task
 
     private bool UpdateChromeVersionsFile(XmlDocument xmlDoc, ChromeVersionSpec version, string baseUrl)
     {
-        if (string.Equals(version.os, "Linux", StringComparison.OrdinalIgnoreCase))
+        string nodePrefix = GetNodePrefix(version.os);
+
+        UpdateNodeValue(xmlDoc, $"{nodePrefix}_ChromeVersion", version.version);
+        UpdateNodeValue(xmlDoc, $"{nodePrefix}_ChromeRevision", version.branch_base_position);
+        UpdateNodeValue(xmlDoc, $"{nodePrefix}_ChromeBaseSnapshotUrl", baseUrl);
+
+        // Never downgrade the V8 version. V8 tracks the Chrome milestone, but a manually pinned
+        // (or otherwise higher) V8 version must not be reverted to an older one by the bot.
+        string existingV8Version = GetNodeValue(xmlDoc, $"{nodePrefix}_V8Version");
+        if (IsVersionDowngrade(existingV8Version, version.v8_version))
         {
-            UpdateNodeValue(xmlDoc, "linux_ChromeVersion", version.version);
-            UpdateNodeValue(xmlDoc, "linux_ChromeRevision", version.branch_base_position);
-            UpdateNodeValue(xmlDoc, "linux_ChromeBaseSnapshotUrl", baseUrl);
-            UpdateNodeValue(xmlDoc, "linux_V8Version", version.v8_version);
-        }
-        else if (string.Equals(version.os, "Windows", StringComparison.OrdinalIgnoreCase))
-        {
-            UpdateNodeValue(xmlDoc, "win_ChromeVersion", version.version);
-            UpdateNodeValue(xmlDoc, "win_ChromeRevision", version.branch_base_position);
-            UpdateNodeValue(xmlDoc, "win_ChromeBaseSnapshotUrl", baseUrl);
-            UpdateNodeValue(xmlDoc, "win_V8Version", version.v8_version);
+            Log.LogMessage(MessageImportance.High,
+                $"Keeping existing {version.os} V8 version {existingV8Version}: candidate {version.v8_version} is older.");
         }
         else
         {
-            throw new Exception($"UpdateChromeVersions task was used with unknown OS: {version.os}");
+            UpdateNodeValue(xmlDoc, $"{nodePrefix}_V8Version", version.v8_version);
         }
+
         xmlDoc.Save(ChromeVersionsPath);
         return true;
     }
 
-    private void UpdateEnvVarsForPRFile(List<ChromeVersionSpec> versions)
+    private void UpdateEnvVarsForPRFile(XmlDocument xmlDoc, List<ChromeVersionSpec> versions)
     {
         using StreamWriter writer = new StreamWriter(EnvVarsForPRPath);
         foreach (var version in versions)
         {
             if (string.Equals(version.os, "Linux", StringComparison.OrdinalIgnoreCase))
             {
-                writer.WriteLine($"CHROME_LINUX_VER={version.version}");
+                writer.WriteLine($"CHROME_LINUX_VER={GetNodeValue(xmlDoc, "linux_ChromeVersion")}");
             }
             else if (string.Equals(version.os, "Windows", StringComparison.OrdinalIgnoreCase))
             {
-                writer.WriteLine($"CHROME_WIN_VER={version.version}");
+                writer.WriteLine($"CHROME_WIN_VER={GetNodeValue(xmlDoc, "win_ChromeVersion")}");
+            }
+            else if (string.Equals(version.os, "Mac", StringComparison.OrdinalIgnoreCase))
+            {
+                writer.WriteLine($"CHROME_MAC_VER={GetNodeValue(xmlDoc, "macos_ChromeVersion")}");
             }
             else
             {
@@ -195,6 +224,29 @@ public partial class UpdateChromeVersions : MBU.Task
         }
 
         string foundV8Version = await FindV8VersionFromChromeVersion(foundRelease.version).ConfigureAwait(false);
+
+        // Never downgrade V8 below the exnref-capable floor, even if the Chrome milestone maps to an older build.
+        if (Version.TryParse(foundV8Version, out Version? candidateV8Version) && candidateV8Version < s_minV8Version)
+        {
+            string existingV8Version = GetExistingV8Version(osIdentifier);
+            Log.LogWarning($"Computed V8 version {foundV8Version} for {osIdentifier} is below the minimum " +
+                            $"exnref-capable version {s_minV8Version} — keeping the existing V8 version {existingV8Version}.");
+            foundV8Version = existingV8Version;
+            if (string.IsNullOrEmpty(foundV8Version))
+                throw new LogAsErrorException($"Computed V8 version for {osIdentifier} is below {s_minV8Version} and no existing version found in {ChromeVersionsPath}");
+        }
+        // Validate that a prebuilt V8 binary exists on the CDN that jsvu uses for downloading.
+        else if (!await IsV8BinaryAvailableAsync(osPrefix, foundV8Version).ConfigureAwait(false))
+        {
+            string v8BinaryUrl = GetV8BinaryUrl(osPrefix, foundV8Version);
+            Log.LogWarning($"V8 binary not available at {v8BinaryUrl} — keeping the existing V8 version for {osIdentifier}.");
+
+            // Fall back to the existing V8 version from BrowserVersions.props
+            foundV8Version = GetExistingV8Version(osIdentifier);
+            if (string.IsNullOrEmpty(foundV8Version))
+                throw new LogAsErrorException($"V8 binary for {osIdentifier} not available on CDN and no existing version found in {ChromeVersionsPath}");
+        }
+
         ChromeVersionSpec versionSpec = new(os: foundRelease.platform,
                                             channel: Channel,
                                             version: foundRelease.version,
@@ -235,6 +287,51 @@ public partial class UpdateChromeVersions : MBU.Task
             {
                 throw new LogAsErrorException($"Failed to parse chrome version '{chromeVersion}' to extract the milestone: {ex.Message}");
             }
+        }
+    }
+
+    private string GetExistingV8Version(string osIdentifier)
+    {
+        XmlDocument existingDoc = new XmlDocument();
+        existingDoc.Load(ChromeVersionsPath);
+        string existingV8VersionNodeName = string.Equals(osIdentifier, "linux", StringComparison.OrdinalIgnoreCase)
+            ? "linux_V8Version"
+            : string.Equals(osIdentifier, "windows", StringComparison.OrdinalIgnoreCase)
+                ? "win_V8Version"
+                : string.Equals(osIdentifier, "Mac", StringComparison.OrdinalIgnoreCase)
+                    ? "macos_V8Version"
+                    : throw new LogAsErrorException($"Unknown OS identifier '{osIdentifier}' for V8 version fallback");
+        return GetNodeValue(existingDoc, existingV8VersionNodeName);
+    }
+
+    private static string GetV8BinaryUrl(string osPrefix, string v8Version)
+    {
+        string jsvuPlatform = osPrefix switch
+        {
+            "Linux_x64" => "linux64",
+            "Win_x64" => "win32",
+            "Mac_Arm" => "mac-arm64",
+            _ => throw new ArgumentException($"Unknown OS prefix '{osPrefix}' for V8 binary URL")
+        };
+        return $"{s_v8CanaryBaseUrl}/v8-{jsvuPlatform}-rel-{v8Version}.zip";
+    }
+
+    private async Task<bool> IsV8BinaryAvailableAsync(string osPrefix, string v8Version)
+    {
+        string url = GetV8BinaryUrl(osPrefix, v8Version);
+        Log.LogMessage(MessageImportance.Low, $"Checking if V8 binary exists at {url} ...");
+        try
+        {
+            using HttpRequestMessage request = new(HttpMethod.Head, url);
+            using HttpResponseMessage response = await s_httpClient
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead)
+                .ConfigureAwait(false);
+            return response.StatusCode == HttpStatusCode.OK;
+        }
+        catch (HttpRequestException hre)
+        {
+            Log.LogWarning($"Failed to check V8 binary availability at {url}: {hre.Message}");
+            return false;
         }
     }
 

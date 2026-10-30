@@ -5,11 +5,12 @@ namespace System
 {
     public partial class BadImageFormatException
     {
-        internal BadImageFormatException(string? fileName, int hResult)
+        internal BadImageFormatException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
             HResult = hResult;
             _fileName = fileName;
+            _requestingAssemblyChain = requestingAssemblyChain;
             SetMessageField();
         }
     }

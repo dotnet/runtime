@@ -99,9 +99,15 @@ public sealed class Options
     public bool ClassList { get; set; }
 
     /// <summary>
-    /// Show MetaData (MDHEADER, HEX, CSV, UNREX, SCHEMA, RAW, HEAPS, VALIDATE).
+    /// Show MetaData.
     /// </summary>
-    public string? Metadata { get; set; }
+    public bool Metadata { get; set; }
+
+    /// <summary>
+    /// What to show with <see cref="Metadata"/> (MDHEADER, HEX, CSV, UNREX, SCHEMA, RAW, HEAPS, VALIDATE),
+    /// recognized by their first three characters.
+    /// </summary>
+    public string[] MetadataFilters { get; set; } = [];
 
     /// <summary>
     /// Output in HTML format.

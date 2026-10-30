@@ -83,7 +83,7 @@ EXTERN_C uint64_t QCALLTYPE EventPipeInternal_Enable(
     ep_char8_t *outputPathUTF8 = NULL;
     if (outputFile)
         outputPathUTF8 = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(outputFile));
-    EventPipeSessionID result = ep_enable (
+    EventPipeSessionID result = ep_init_session (
         outputPathUTF8,
         circularBufferSizeInMB,
         configProviders,
@@ -96,7 +96,7 @@ EXTERN_C uint64_t QCALLTYPE EventPipeInternal_Enable(
         nullptr);
     ep_rt_utf8_string_free (outputPathUTF8);
 
-    ep_start_streaming(result);
+    ep_start_session(result);
 
     if (configProviders) {
         for (uint32_t i = 0; i < numProviders; ++i)

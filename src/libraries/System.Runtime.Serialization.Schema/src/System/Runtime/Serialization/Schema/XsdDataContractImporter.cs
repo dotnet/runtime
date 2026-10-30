@@ -297,6 +297,42 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
+        private void CacheCollectionItemNullability(XmlSchemaSet schemas)
+        {
+            foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in DataContractSet.Contracts)
+            {
+                DataContract dataContract = pair.Value;
+                if (!dataContract.Is(DataContractType.CollectionDataContract) ||
+                    !TryGetCollectionItemElement(schemas, pair.Key, out XmlSchemaElement? itemElement))
+                {
+                    continue;
+                }
+
+                if (!DataContractSet.ProcessedContracts.TryGetValue(dataContract, out object? info) ||
+                    info is not ContractCodeDomInfo contractCodeDomInfo)
+                {
+                    contractCodeDomInfo = new ContractCodeDomInfo();
+                    DataContractSet.ProcessedContracts[dataContract] = contractCodeDomInfo;
+                }
+
+                contractCodeDomInfo.CollectionItemIsNullable = itemElement.IsNillable;
+            }
+        }
+
+        private static bool TryGetCollectionItemElement(XmlSchemaSet schemas, XmlQualifiedName typeName, [NotNullWhen(true)] out XmlSchemaElement? itemElement)
+        {
+            itemElement = null;
+
+            if (schemas.GlobalTypes[typeName] is not XmlSchemaComplexType { Particle: XmlSchemaSequence rootSequence } || rootSequence.Items.Count != 1)
+            {
+                return false;
+            }
+
+            itemElement = rootSequence.Items[0] as XmlSchemaElement;
+            return itemElement != null;
+        }
+
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         private IList<XmlQualifiedName>? InternalImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement>? elements)
         {
             DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
@@ -307,6 +343,8 @@ namespace System.Runtime.Serialization
                     elementTypeNames = DataContractSet.ImportSchemaSet(schemas, elements, ImportXmlDataType);
                 else
                     DataContractSet.ImportSchemaSet(schemas, typeNames, ImportXmlDataType);
+
+                CacheCollectionItemNullability(schemas);
 
                 CodeExporter codeExporter = new CodeExporter(DataContractSet, Options, CodeCompileUnit);
                 codeExporter.Export();

@@ -6,6 +6,10 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
+    // This class is called "FreeThreaded" for free threaded COM objects that are not apartment threaded.
+    // However, it is also valid for COM objects that are affinitized to an apartment but are currently on
+    // a thread with the correct apartment type. In that case, the COM object is not actually free threaded,
+    // but it is safe to call AddRef/Release/QueryInterface on it from the current thread.
     internal sealed unsafe class FreeThreadedStrategy : IIUnknownStrategy
     {
         public static readonly IIUnknownStrategy Instance = new FreeThreadedStrategy();

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Text;
 
@@ -117,7 +116,7 @@ namespace System.Formats.Asn1
         }
     }
 
-    internal sealed class IA5Encoding : RestrictedAsciiStringEncoding
+    internal sealed class IA5Encoding : RestrictedAsciiRangeEncoding
     {
         // T-REC-X.680-201508 sec 41, Table 8.
         // ISO International Register of Coded Character Sets to be used with Escape Sequences 001
@@ -133,7 +132,7 @@ namespace System.Formats.Asn1
         }
     }
 
-    internal sealed class VisibleStringEncoding : RestrictedAsciiStringEncoding
+    internal sealed class VisibleStringEncoding : RestrictedAsciiRangeEncoding
     {
         // T-REC-X.680-201508 sec 41, Table 8.
         // ISO International Register of Coded Character Sets to be used with Escape Sequences 006
@@ -145,7 +144,7 @@ namespace System.Formats.Asn1
         }
     }
 
-    internal sealed class NumericStringEncoding : RestrictedAsciiStringEncoding
+    internal sealed partial class NumericStringEncoding : RestrictedAsciiSetEncoding
     {
         // T-REC-X.680-201508 sec 41.2 (Table 9)
         // 0, 1, ... 9 + space
@@ -155,7 +154,7 @@ namespace System.Formats.Asn1
         }
     }
 
-    internal sealed class PrintableStringEncoding : RestrictedAsciiStringEncoding
+    internal sealed partial class PrintableStringEncoding : RestrictedAsciiSetEncoding
     {
         // T-REC-X.680-201508 sec 41.4
         internal PrintableStringEncoding()
@@ -215,11 +214,13 @@ namespace System.Formats.Asn1
                 return 0;
             }
 
+            bool[] isAllowed = _isAllowed;
+
             for (int i = 0; i < chars.Length; i++)
             {
                 char c = chars[i];
 
-                if ((uint)c >= (uint)_isAllowed.Length || !_isAllowed[c])
+                if ((uint)c >= (uint)isAllowed.Length || !isAllowed[c])
                 {
                     EncoderFallback.CreateFallbackBuffer().Fallback(c, i);
 
@@ -236,6 +237,38 @@ namespace System.Formats.Asn1
             return chars.Length;
         }
 
+        // Keep the position-aware scalar remainder separate from the zero-based path above.
+        // Routing common sub-vector inputs through this generalized loop measurably regresses them.
+        protected int GetBytesScalar(ReadOnlySpan<char> chars, Span<byte> bytes, bool write, int position)
+        {
+            if (chars.IsEmpty)
+            {
+                return 0;
+            }
+
+            bool[] isAllowed = _isAllowed;
+
+            for (; position < chars.Length; position++)
+            {
+                char c = chars[position];
+
+                if ((uint)c >= (uint)isAllowed.Length || !isAllowed[c])
+                {
+                    EncoderFallback.CreateFallbackBuffer().Fallback(c, position);
+
+                    Debug.Fail("Fallback should have thrown");
+                    throw new InvalidOperationException();
+                }
+
+                if (write)
+                {
+                    bytes[position] = (byte)c;
+                }
+            }
+
+            return chars.Length;
+        }
+
         protected override int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
         {
             if (bytes.IsEmpty)
@@ -243,11 +276,13 @@ namespace System.Formats.Asn1
                 return 0;
             }
 
+            bool[] isAllowed = _isAllowed;
+
             for (int i = 0; i < bytes.Length; i++)
             {
                 byte b = bytes[i];
 
-                if ((uint)b >= (uint)_isAllowed.Length || !_isAllowed[b])
+                if ((uint)b >= (uint)isAllowed.Length || !isAllowed[b])
                 {
                     DecoderFallback.CreateFallbackBuffer().Fallback(
                         new[] { b },
@@ -265,6 +300,40 @@ namespace System.Formats.Asn1
 
             return bytes.Length;
         }
+
+        // Keep the position-aware scalar remainder separate from the zero-based path above.
+        // Routing common sub-vector inputs through this generalized loop measurably regresses them.
+        protected int GetCharsScalar(ReadOnlySpan<byte> bytes, Span<char> chars, bool write, int position)
+        {
+            if (bytes.IsEmpty)
+            {
+                return 0;
+            }
+
+            bool[] isAllowed = _isAllowed;
+
+            for (; position < bytes.Length; position++)
+            {
+                byte b = bytes[position];
+
+                if ((uint)b >= (uint)isAllowed.Length || !isAllowed[b])
+                {
+                    DecoderFallback.CreateFallbackBuffer().Fallback(
+                        new[] { b },
+                        position);
+
+                    Debug.Fail("Fallback should have thrown");
+                    throw new InvalidOperationException();
+                }
+
+                if (write)
+                {
+                    chars[position] = (char)b;
+                }
+            }
+
+            return bytes.Length;
+        }
     }
 
     /// <summary>
@@ -273,87 +342,8 @@ namespace System.Formats.Asn1
     // T-REC-X.690-201508 sec 8.23.8 says to see ISO/IEC 10646:2003 section 13.1.
     // ISO/IEC 10646:2003 sec 13.1 says each character is represented by "two octets".
     // ISO/IEC 10646:2003 sec 6.3 says that when serialized as octets to use big endian.
-    internal sealed class BMPEncoding : SpanBasedEncoding
+    internal sealed partial class BMPEncoding : SpanBasedEncoding
     {
-        protected override int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
-        {
-            if (chars.IsEmpty)
-            {
-                return 0;
-            }
-
-            int writeIdx = 0;
-
-            for (int i = 0; i < chars.Length; i++)
-            {
-                char c = chars[i];
-
-                if (char.IsSurrogate(c))
-                {
-                    EncoderFallback.CreateFallbackBuffer().Fallback(c, i);
-
-                    Debug.Fail("Fallback should have thrown");
-                    throw new InvalidOperationException();
-                }
-
-                ushort val16 = c;
-
-                if (write)
-                {
-                    bytes[writeIdx + 1] = (byte)val16;
-                    bytes[writeIdx] = (byte)(val16 >> 8);
-                }
-
-                writeIdx += 2;
-            }
-
-            return writeIdx;
-        }
-
-        protected override int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
-        {
-            if (bytes.IsEmpty)
-            {
-                return 0;
-            }
-
-            if (bytes.Length % 2 != 0)
-            {
-                DecoderFallback.CreateFallbackBuffer().Fallback(
-                    bytes.Slice(bytes.Length - 1).ToArray(),
-                    bytes.Length - 1);
-
-                Debug.Fail("Fallback should have thrown");
-                throw new InvalidOperationException();
-            }
-
-            int writeIdx = 0;
-
-            for (int i = 0; i < bytes.Length; i += 2)
-            {
-                char c = (char)BinaryPrimitives.ReadInt16BigEndian(bytes.Slice(i));
-
-                if (char.IsSurrogate(c))
-                {
-                    DecoderFallback.CreateFallbackBuffer().Fallback(
-                        bytes.Slice(i, 2).ToArray(),
-                        i);
-
-                    Debug.Fail("Fallback should have thrown");
-                    throw new InvalidOperationException();
-                }
-
-                if (write)
-                {
-                    chars[writeIdx] = c;
-                }
-
-                writeIdx++;
-            }
-
-            return writeIdx;
-        }
-
         public override int GetMaxByteCount(int charCount)
         {
             checked

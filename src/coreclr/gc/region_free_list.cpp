@@ -1,8 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
 
 #ifdef USE_REGIONS
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 region_free_list::region_free_list() : num_free_regions (0),
                                        size_free_regions (0),
                                        size_committed_in_free_regions (0),
@@ -480,4 +490,7 @@ void region_free_list::sort_by_committed_and_age()
     }
     tail_free_region = prev;
 }
+
+} // namespace WKS/SVR
+
 #endif //USE_REGIONS

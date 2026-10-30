@@ -38,12 +38,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             }
             else
             {
-                var builder = ImmutableArray.CreateBuilder<MultiValue>();
+                var builder = ImmutableArray.CreateBuilder<MultiValue>(arguments.Length);
                 foreach (var argument in arguments)
                 {
                     builder.Add(argument.DeepCopy());
                 }
-                Arguments = builder.ToImmutableArray();
+                Arguments = builder.MoveToImmutable();
             }
             Operation = operation;
             OwningSymbol = owningSymbol;
@@ -60,7 +60,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             Debug.Assert(SymbolEqualityComparer.Default.Equals(OwningSymbol, other.OwningSymbol));
             Debug.Assert(Arguments.Length == other.Arguments.Length);
 
-            var argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue>();
+            var argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue>(Arguments.Length);
             for (int i = 0; i < Arguments.Length; i++)
             {
                 argumentsBuilder.Add(lattice.Meet(Arguments[i], other.Arguments[i]));
@@ -69,7 +69,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             return new TrimAnalysisMethodCallPattern(
                 CalledMethod,
                 lattice.Meet(Instance, other.Instance),
-                argumentsBuilder.ToImmutable(),
+                argumentsBuilder.MoveToImmutable(),
                 Operation,
                 OwningSymbol,
                 featureContextLattice.Meet(FeatureContext, other.FeatureContext));
@@ -78,12 +78,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         public void ReportDiagnostics(DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
         {
             Location location = Operation.Syntax.GetLocation();
-            if (context.EnableTrimAnalyzer &&
+            if (context.TrimAnalyzer is not null &&
                 !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
                 !FeatureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
             {
                 var typeNameResolver = new TypeNameResolver(context.Compilation);
-                TrimAnalysisVisitor.HandleCall(context, FeatureContext, typeNameResolver, Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, out var _);
+                TrimAnalysisVisitor.HandleCall(context.TrimAnalyzer, FeatureContext, typeNameResolver, Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, out var _);
             }
             // For Requires, make the location the reference to the method, not the entire invocation.
             // The parameters are not part of the issue, and including them in the location can be misleading.
@@ -92,7 +92,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 InvocationExpressionSyntax invocationSyntax => invocationSyntax.Expression.GetLocation(),
                 _ => location
             };
-            var diagnosticContext = new DiagnosticContext(location, reportDiagnostic);
+            var diagnosticContext = new DiagnosticContext(location, reportDiagnostic, context.Compilation);
             foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
             {
                 if (!requiresAnalyzer.IsIntrinsicallyHandled(CalledMethod, Instance, Arguments))

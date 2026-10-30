@@ -10,7 +10,9 @@ import GitHash from "consts:gitHash";
 export { SystemJS_RandomBytes } from "./crypto";
 export { SystemJS_GetLocaleInfo } from "./globalization-locale";
 export { SystemJS_RejectMainPromise, SystemJS_ResolveMainPromise, SystemJS_MarkAsyncMain, SystemJS_ConsoleClear } from "./main";
-export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob, SystemJS_ScheduleFinalization } from "./scheduling";
+export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob, SystemJS_ScheduleFinalization, SystemJS_ScheduleDiagnosticServer } from "./scheduling";
+export { ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send, ds_rt_browser_performance_measure } from "./diagnostics";
+
 
 export const gitHash = GitHash;
 export function dotnetInitializeModule(internals: InternalExchange): void {
@@ -26,6 +28,8 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     internals[InternalExchangeIndex.NativeBrowserExportsTable] = nativeBrowserExportsToTable({
         getWasmMemory,
         getWasmTable,
+        SystemJS_ScheduleDiagnosticServer: _ems_._SystemJS_ScheduleDiagnosticServer,
+        SystemJS_GetMethodName: (pMethodDesc: number) => _ems_._SystemJS_GetMethodName(pMethodDesc),
     });
     _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 
@@ -37,6 +41,8 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         return [
             map.getWasmMemory,
             map.getWasmTable,
+            map.SystemJS_ScheduleDiagnosticServer,
+            map.SystemJS_GetMethodName,
         ];
     }
 
@@ -48,6 +54,11 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         return _ems_.wasmTable;
     }
 
+    function asCallbackArray(callbacks: undefined | (() => any) | (() => any)[]): (() => any)[] {
+        if (!callbacks) return [];
+        return typeof callbacks === "function" ? [callbacks] : callbacks;
+    }
+
     function setupEmscripten() {
         _ems_.Module.preInit = [() => {
             if (_ems_.dotnetApi.getConfig) {
@@ -55,7 +66,12 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
                 _ems_.FS.createPath("/", virtualWorkingDirectory!, true, true);
                 _ems_.FS.chdir(virtualWorkingDirectory!);
             }
+            // SpecialFolder.CommonApplicationData maps to /usr/share
+            _ems_.FS.createPath("/", "usr/share", true, true);
+        }, ...asCallbackArray(_ems_.Module.preInit)];
 
+        // preInit runs before Emscripten assigns the native WASM exports.
+        _ems_.Module.preRun = [() => {
             const orig_funcs_on_exit = _ems_.___funcs_on_exit;
             // it would be better to use addOnExit(), but it's called too late.
             // this can't be async
@@ -71,7 +87,6 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
                     // silently ignore any error during shutdown
                 }
             };
-
-        }, ...(_ems_.Module.preInit || [])];
+        }, ...asCallbackArray(_ems_.Module.preRun)];
     }
 }

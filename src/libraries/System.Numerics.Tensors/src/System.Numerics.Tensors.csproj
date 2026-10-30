@@ -24,7 +24,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IAggregationOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IBinaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IBooleanUnaryOperator.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IIndexOfOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IIndexOfMinMaxOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IStatefulUnaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.ITernaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryInputBinaryOutput.cs" />

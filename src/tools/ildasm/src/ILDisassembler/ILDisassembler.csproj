@@ -8,8 +8,8 @@
     <IsShipping>false</IsShipping>
   </PropertyGroup>
 
-  <!-- 
-    This library uses System.Reflection.Metadata and System.Reflection.PortableExecutable 
+  <!--
+    This library uses System.Reflection.Metadata and System.Reflection.PortableExecutable
     which are inbox in the target framework, no additional packages needed.
   -->
 

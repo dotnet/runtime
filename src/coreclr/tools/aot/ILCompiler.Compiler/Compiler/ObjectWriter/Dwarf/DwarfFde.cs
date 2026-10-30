@@ -80,7 +80,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     case CFI_OPCODE.CFI_DEF_CFA_REGISTER:
                         cfiCode[cfiCodeOffset++] = DW_CFA_def_cfa_register;
-                        cfiCode[cfiCodeOffset++] = (byte)dwarfReg;
+                        cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)dwarfReg);
                         break;
 
                     case CFI_OPCODE.CFI_REL_OFFSET:
@@ -112,9 +112,13 @@ namespace ILCompiler.ObjectWriter
 
                     case CFI_OPCODE.CFI_DEF_CFA:
                         cfiCode[cfiCodeOffset++] = DW_CFA_def_cfa;
-                        cfiCode[cfiCodeOffset++] = (byte)dwarfReg;
+                        cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)dwarfReg);
                         cfaOffset = cfiOffset;
                         cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)cfaOffset);
+                        break;
+
+                    case CFI_OPCODE.CFI_NEGATE_RA_STATE:
+                        cfiCode[cfiCodeOffset++] = DW_CFA_AARCH64_negate_ra_state;
                         break;
                 }
             }

@@ -3,6 +3,7 @@ project(PALTESTSUITE)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(${PALTESTSUITE_SOURCE_DIR}/common)
+include_directories(${RUNTIME_DIR})
 
 # All test will link against these libraries:
 # pthread and m are part of the Android C library (bionic),
@@ -13,6 +14,7 @@ if(NOT CLR_CMAKE_TARGET_ANDROID)
 endif()
 
 list(APPEND COMMON_TEST_LIBRARIES coreclrpal)
+list(APPEND COMMON_TEST_LIBRARIES coreclrminipal)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
@@ -36,14 +38,6 @@ add_executable_clr(paltests
   EXCLUDE_FROM_ALL
   paltests.cpp
   common/palsuite.cpp
-  #composite/object_management/event/nonshared/event.cpp
-  #composite/object_management/event/nonshared/main.cpp
-  #composite/object_management/event/shared/event.cpp
-  #composite/object_management/event/shared/main.cpp
-  #composite/object_management/semaphore/nonshared/main.cpp
-  #composite/object_management/semaphore/nonshared/semaphore.cpp
-  #composite/object_management/semaphore/shared/main.cpp
-  #composite/object_management/semaphore/shared/semaphore.cpp
   c_runtime/atof/test1/test1.cpp
   c_runtime/atoi/test1/test1.cpp
   c_runtime/isalnum/test1/test1.cpp
@@ -101,7 +95,6 @@ add_executable_clr(paltests
   c_runtime/wcslen/test1/test1.cpp
   c_runtime/wcsncmp/test1/test1.cpp
   c_runtime/wcsncpy/test1/test1.cpp
-  c_runtime/wcspbrk/test1/test1.cpp
   c_runtime/wcsrchr/test1/test1.cpp
   c_runtime/wcsstr/test1/test1.cpp
   c_runtime/wcstod/test1/test1.cpp
@@ -113,10 +106,6 @@ add_executable_clr(paltests
   c_runtime/wcstoul/test5/test5.cpp
   c_runtime/wcstoul/test6/test6.cpp
   c_runtime/_alloca/test1/test1.cpp
-  c_runtime/_putenv/test1/test1.cpp
-  c_runtime/_putenv/test2/test2.cpp
-  c_runtime/_putenv/test3/test3.cpp
-  c_runtime/_putenv/test4/test4.cpp
   c_runtime/_rotl/test1/test1.cpp
   c_runtime/_rotr/test1/test1.cpp
   c_runtime/_vsnprintf_s/test1/test1.cpp
@@ -140,15 +129,7 @@ add_executable_clr(paltests
   c_runtime/_wcsnicmp/test1/test1.cpp
   c_runtime/_wtoi/test1/test1.cpp
   #debug_api/DebugBreak/test1/test1.cpp
-  debug_api/OutputDebugStringA/test1/helper.cpp
-  debug_api/OutputDebugStringA/test1/test1.cpp
   debug_api/OutputDebugStringW/test1/test1.cpp
-  #debug_api/WriteProcessMemory/test1/helper.cpp
-  #debug_api/WriteProcessMemory/test1/test1.cpp
-  #debug_api/WriteProcessMemory/test3/helper.cpp
-  #debug_api/WriteProcessMemory/test3/test3.cpp
-  #debug_api/WriteProcessMemory/test4/helper.cpp
-  #debug_api/WriteProcessMemory/test4/test4.cpp
   #exception_handling/pal_except/test1/test1.cpp
   #exception_handling/pal_except/test2/test2.cpp
   #exception_handling/pal_except/test3/test3.cpp
@@ -193,7 +174,6 @@ add_executable_clr(paltests
 #  filemapping_memmgt/GetProcAddress/test1/testlib.cpp
   filemapping_memmgt/GetProcAddress/test2/test2.cpp
 #  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
-  filemapping_memmgt/MapViewOfFile/test1/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test2/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test3/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test4/mapviewoffile.cpp
@@ -203,38 +183,6 @@ add_executable_clr(paltests
   filemapping_memmgt/ProbeMemory/test1/ProbeMemory.cpp
   filemapping_memmgt/UnmapViewOfFile/test1/UnmapViewOfFile.cpp
   filemapping_memmgt/UnmapViewOfFile/test2/unmapviewoffile.cpp
-  filemapping_memmgt/VirtualAlloc/test1/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test10/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test11/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test12/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test13/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test14/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test15/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test16/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test17/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test18/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test19/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test2/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test20/virtualalloc.cpp
-  filemapping_memmgt/VirtualAlloc/test21/virtualalloc.cpp
-  filemapping_memmgt/VirtualAlloc/test22/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test3/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test4/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test5/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test6/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test7/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test8/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test9/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualFree/test1/VirtualFree.cpp
-  filemapping_memmgt/VirtualFree/test2/VirtualFree.cpp
-  filemapping_memmgt/VirtualFree/test3/VirtualFree.cpp
-  filemapping_memmgt/VirtualProtect/test1/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test2/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test3/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test4/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test6/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test7/VirtualProtect.cpp
-  filemapping_memmgt/VirtualQuery/test1/VirtualQuery.cpp
   file_io/CreateFileA/test1/CreateFileA.cpp
   file_io/CreateFileW/test1/CreateFileW.cpp
   file_io/errorpathnotfound/test1/test1.cpp
@@ -253,7 +201,6 @@ add_executable_clr(paltests
   file_io/GetStdHandle/test1/GetStdHandle.cpp
   file_io/GetStdHandle/test2/GetStdHandle.cpp
   file_io/gettemppatha/test1/gettemppatha.cpp
-  file_io/GetTempPathW/test1/GetTempPathW.cpp
   file_io/ReadFile/test1/ReadFile.cpp
   file_io/ReadFile/test2/ReadFile.cpp
   file_io/ReadFile/test3/ReadFile.cpp
@@ -308,7 +255,6 @@ add_executable_clr(paltests
   miscellaneous/FormatMessageW/test6/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test1/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test2/test.cpp
-  miscellaneous/GetCommandLineW/test1/test.cpp
   miscellaneous/GetEnvironmentStringsW/test1/test.cpp
   miscellaneous/GetEnvironmentVariableA/test1/test.cpp
   miscellaneous/GetEnvironmentVariableA/test2/test.cpp
@@ -361,21 +307,11 @@ add_executable_clr(paltests
 #  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test2_neg/reg_unreg_libraryw_neg.cpp
   samples/test1/test.cpp
   samples/test2/test.cpp
-  threading/CreateProcessW/test1/childProcess.cpp
-  threading/CreateProcessW/test1/parentProcess.cpp
-  threading/CreateProcessW/test2/childprocess.cpp
-  threading/CreateProcessW/test2/parentprocess.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test1/CreateSemaphore.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test2/CreateSemaphore.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test3/createsemaphore.cpp
   threading/CreateThread/test1/test1.cpp
   threading/CreateThread/test2/test2.cpp
   threading/CreateThread/test3/test3.cpp
   threading/DuplicateHandle/test1/test1.cpp
-  threading/DuplicateHandle/test10/test10.cpp
   threading/DuplicateHandle/test12/test12.cpp
-  threading/DuplicateHandle/test2/test2.cpp
-  threading/DuplicateHandle/test3/test3.cpp
   threading/DuplicateHandle/test7/test7.cpp
   threading/DuplicateHandle/test8/test8.cpp
 #  threading/DuplicateHandle/test9/test9.cpp
@@ -383,48 +319,19 @@ add_executable_clr(paltests
   threading/ExitProcess/test2/test2.cpp
   threading/ExitProcess/test3/test3.cpp
   threading/ExitThread/test1/test1.cpp
-  threading/ExitThread/test2/childprocess.cpp
-  threading/ExitThread/test2/test2.cpp
   threading/GetCurrentProcess/test1/process.cpp
   threading/GetCurrentProcessId/test1/processId.cpp
   threading/GetCurrentThread/test1/thread.cpp
   threading/GetCurrentThread/test2/test2.cpp
   threading/GetCurrentThreadId/test1/threadId.cpp
-  threading/GetExitCodeProcess/test1/childProcess.cpp
-  threading/GetExitCodeProcess/test1/test1.cpp
-  threading/OpenEventW/test1/test1.cpp
-  threading/OpenEventW/test2/test2.cpp
-  threading/OpenEventW/test3/childprocess.cpp
-  threading/OpenEventW/test3/test3.cpp
-  threading/OpenEventW/test5/test5.cpp
-  threading/OpenProcess/test1/childProcess.cpp
-  threading/OpenProcess/test1/test1.cpp
   threading/QueryThreadCycleTime/test1/test1.cpp
-  threading/releasesemaphore/test1/test.cpp
-  threading/ResetEvent/test1/test1.cpp
-  threading/ResetEvent/test2/test2.cpp
-  threading/ResetEvent/test3/test3.cpp
-  threading/ResetEvent/test4/test4.cpp
   threading/ResumeThread/test1/test1.cpp
-  threading/SetEvent/test1/test1.cpp
-  threading/SetEvent/test2/test2.cpp
-  threading/SetEvent/test3/test3.cpp
-  threading/SetEvent/test4/test4.cpp
+  threading/RuntimeEvent/test1/test1.cpp
   threading/Sleep/test1/Sleep.cpp
   threading/Sleep/test2/sleep.cpp
-  threading/SleepEx/test1/test1.cpp
   threading/SwitchToThread/test1/test1.cpp
   threading/TerminateProcess/test1/TerminateProcess.cpp
   threading/ThreadPriority/test1/ThreadPriority.cpp
-  threading/WaitForMultipleObjects/test1/test1.cpp
-  threading/WaitForMultipleObjectsEx/test1/test1.cpp
-  threading/WaitForMultipleObjectsEx/test5/helper.cpp
-  threading/WaitForMultipleObjectsEx/test5/test5.cpp
-  threading/WaitForSingleObject/test1/test1.cpp
-  threading/WaitForSingleObject/WFSOProcessTest/ChildProcess.cpp
-  threading/WaitForSingleObject/WFSOProcessTest/WFSOProcessTest.cpp
-  threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp
-  threading/WaitForSingleObject/WFSOThreadTest/WFSOThreadTest.cpp
   threading/YieldProcessor/test1/test1.cpp
 )
 
@@ -434,6 +341,14 @@ target_link_libraries(paltests
   PUBLIC
   ${COMMON_TEST_LIBRARIES}
 )
+
+if(CLR_CMAKE_TARGET_OPENBSD)
+  # A few PAL tests (e.g. VirtualAlloc/VirtualProtect) deliberately request simultaneous
+  # W+X (PAGE_EXECUTE_READWRITE) mappings to exercise the PAL API. OpenBSD rejects those
+  # unless the binary carries the PT_OPENBSD_WXNEEDED note and runs from a wxallowed mount.
+  # The runtime itself never needs this (it uses W^X double-mapping), so scope it here.
+  target_link_options(paltests PRIVATE "-Wl,-z,wxneeded")
+endif(CLR_CMAKE_TARGET_OPENBSD)
 
 install (TARGETS paltests DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
 add_dependencies(paltests_install paltests)

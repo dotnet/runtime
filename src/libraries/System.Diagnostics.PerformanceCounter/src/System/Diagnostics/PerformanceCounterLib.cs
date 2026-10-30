@@ -1713,11 +1713,11 @@ namespace System.Diagnostics
         {
             if (_size == 4)
             {
-                return (long)MemoryMarshal.Read<uint>(data.Slice(_offset));
+                return (long)BitConverter.ToUInt32(data.Slice(_offset));
             }
             else if (_size == 8)
             {
-                return MemoryMarshal.Read<long>(data.Slice(_offset));
+                return BitConverter.ToInt64(data.Slice(_offset));
             }
 
             return -1;

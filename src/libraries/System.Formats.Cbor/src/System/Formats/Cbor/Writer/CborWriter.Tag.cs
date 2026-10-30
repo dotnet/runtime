@@ -142,8 +142,8 @@ namespace System.Formats.Cbor
             /// deconstructs a decimal value into its signed integral component and negative base-10 exponent
             public static void Deconstruct(decimal value, out decimal mantissa, out byte scale)
             {
-                Span<int> buf = stackalloc int[4];
-                CborHelpers.GetBitsFromDecimal(value, buf);
+                Span<int> buf = [0, 0, 0, 0];
+                decimal.GetBits(value, buf);
 
                 int flags = buf[3];
                 bool isNegative = (flags & SignMask) == SignMask;
@@ -154,8 +154,8 @@ namespace System.Formats.Cbor
             /// reconstructs a decimal value out of a signed integral component and a negative base-10 exponent
             private static decimal ReconstructFromNegativeScale(decimal mantissa, byte scale)
             {
-                Span<int> buf = stackalloc int[4];
-                CborHelpers.GetBitsFromDecimal(mantissa, buf);
+                Span<int> buf = [0, 0, 0, 0];
+                decimal.GetBits(mantissa, buf);
 
                 int flags = buf[3];
                 bool isNegative = (flags & SignMask) == SignMask;

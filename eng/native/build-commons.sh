@@ -7,7 +7,7 @@ initTargetDistroRid()
     local passedRootfsDir=""
 
     # Only pass ROOTFS_DIR if cross is specified and the target platform is not Darwin that doesn't use rootfs
-    if [[ "$__CrossBuild" == 1 && "$platform" != "darwin" ]]; then
+    if [[ "$__CrossBuild" == 1 && "$platform" != "darwin" && "$__TargetOS" != "openharmony" ]]; then
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
@@ -60,6 +60,18 @@ build_native()
     cmakeArgs="$6"
     message="$7"
 
+    # When sccache is enabled, use it as the compiler launcher.
+    # On macOS, CMake wraps PCH includes with -Xarch_<arch> which sccache
+    # cannot parse.  Use a thin wrapper that strips -Xarch_<arch> flags
+    # (safe in single-architecture builds) before forwarding to sccache.
+    if [[ "${USE_SCCACHE:-}" == "true" ]]; then
+        local __sccacheLauncher="sccache"
+        if [[ "$targetOS" == osx || "$targetOS" == maccatalyst ]]; then
+            __sccacheLauncher="$__RepoRootDir/eng/native/sccache-xarch-wrapper.sh"
+        fi
+        cmakeArgs="-DCMAKE_C_COMPILER_LAUNCHER=$__sccacheLauncher -DCMAKE_CXX_COMPILER_LAUNCHER=$__sccacheLauncher $cmakeArgs"
+    fi
+
     # All set to commence the build
     echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
 
@@ -101,7 +113,7 @@ build_native()
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
         # Keep in sync with $(AndroidApiLevelMin) in Directory.Build.props in the repository rooot
-        local ANDROID_API_LEVEL=21
+        local ANDROID_API_LEVEL=24
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
@@ -123,6 +135,38 @@ build_native()
             cmakeArgs="-DANDROID_ABI=armeabi-v7a $cmakeArgs"
         else
             echo "Error: Unknown Android architecture $hostArch."
+            exit 1
+        fi
+    elif [[ "$targetOS" == openharmony ]]; then
+        # OpenHarmony NDK-style toolchain. The OHOS NDK provides its
+        # own CMake toolchain file (ohos.toolchain.cmake) which sets CMAKE_SYSTEM_NAME=OHOS
+        # and selects the aarch64/arm/x86_64 openharmony clang wrappers + sysroot.
+        if [[ -z "$OHOS_NDK_HOME" ]]; then
+            echo "Error: You need to set the OHOS_NDK_HOME environment variable pointing to the OpenHarmony NDK root."
+            exit 1
+        fi
+
+        local ohosToolchainFile="$OHOS_NDK_HOME/native/build/cmake/ohos.toolchain.cmake"
+        if [[ ! -f "$ohosToolchainFile" ]]; then
+            echo "Error: OHOS CMake toolchain file not found at $ohosToolchainFile. Verify OHOS_NDK_HOME."
+            exit 1
+        fi
+
+        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ohosToolchainFile $cmakeArgs"
+        cmakeArgs="-DOHOS_NDK_HOME=$OHOS_NDK_HOME $cmakeArgs"
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
+
+        # Don't try to set CC/CXX in init-compiler.sh - it's handled in ohos.toolchain.cmake already
+        __Compiler="default"
+
+        if [[ "$hostArch" == arm64 ]]; then
+            cmakeArgs="-DOHOS_ARCH=arm64-v8a $cmakeArgs"
+        elif [[ "$hostArch" == arm ]]; then
+            cmakeArgs="-DOHOS_ARCH=armeabi-v7a $cmakeArgs"
+        elif [[ "$hostArch" == x64 ]]; then
+            cmakeArgs="-DOHOS_ARCH=x86_64 $cmakeArgs"
+        else
+            echo "Error: Unknown OHOS architecture $hostArch."
             exit 1
         fi
     elif [[ "$targetOS" == iossimulator ]]; then
@@ -263,6 +307,7 @@ usage()
     echo ""
     echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -riscv64, -s390x, -ppc64le, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
+    echo "-arch: target architecture (defaults to running architecture); alternative to the BuildArch flags above."
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
     echo "-ci: indicates if this is a CI build."
@@ -495,6 +540,16 @@ while :; do
             __TargetArch=ppc64le
             ;;
 
+        arch|-arch)
+            if [[ -n "$2" ]]; then
+                __TargetArch=$(echo "$2" | tr '[:upper:]' '[:lower:]')
+                shift
+            else
+                echo "ERROR: 'arch' requires a non-empty option argument"
+                exit 1
+            fi
+            ;;
+
         os|-os)
             if [[ -n "$2" ]]; then
                 __TargetOS=$(echo "$2" | tr '[:upper:]' '[:lower:]')
@@ -573,6 +628,9 @@ elif [[ "$__TargetOS" == osx || "$__TargetOS" == maccatalyst ]]; then
 elif [[ "$__TargetOS" == android ]]; then
     # nothing to do here
     true
+elif [[ "$__TargetOS" == openharmony ]]; then
+    # OpenHarmony uses its NDK toolchain, no rootfs required
+    true
 else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
 fi
@@ -581,8 +639,8 @@ fi
 if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
-    # Darwin that doesn't use rootfs
-    if [[ -z "$ROOTFS_DIR" && "$platform" != "darwin" ]]; then
+    # Darwin that doesn't use rootfs; OpenHarmony uses its NDK toolchain
+    if [[ -z "$ROOTFS_DIR" && "$platform" != "darwin" && "$__TargetOS" != "openharmony" ]]; then
         ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__TargetArch"
         export ROOTFS_DIR
     fi

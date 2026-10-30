@@ -47,7 +47,6 @@ namespace System.Runtime.InteropServices
         ///     <para>The behavior when <paramref name="ptr" /> is <see langword="null"/> and <paramref name="byteCount" /> is greater than <c>0</c> is undefined.</para>
         /// </remarks>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static void Clear(void* ptr, nuint byteCount)
         {
             SpanHelpers.ClearWithoutReferences(ref *(byte*)ptr, byteCount);
@@ -61,7 +60,6 @@ namespace System.Runtime.InteropServices
         /// <param name="destination">A pointer to the destination memory block where the data is to be copied.</param>
         /// <param name="byteCount">The size, in bytes, to be copied from the source location to the destination.</param>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static void Copy(void* source, void* destination, nuint byteCount)
         {
             SpanHelpers.Memmove(ref *(byte*)destination, ref *(byte*)source, byteCount);
@@ -75,7 +73,6 @@ namespace System.Runtime.InteropServices
         /// <param name="byteCount">The number of bytes to be set to <paramref name="value"/>.</param>
         /// <param name="value">The value to be set.</param>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static void Fill(void* ptr, nuint byteCount, byte value)
         {
             SpanHelpers.Fill(ref *(byte*)ptr, byteCount, value);

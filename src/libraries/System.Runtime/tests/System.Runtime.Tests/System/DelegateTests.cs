@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -58,7 +57,91 @@ namespace System.Tests
             TestStruct returnedStruct = testDelegate();
             Assert.Same(foo.structField.o1, returnedStruct.o1);
             Assert.Same(foo.structField.o2, returnedStruct.o2);
+            Assert.Same(foo, testDelegate.Target);
+            Assert.Equal(nameof(TestExtensionMethod.TestFunc), testDelegate.Method.Name);
+
+            StructReturningDelegate equivalentDelegate = foo.TestFunc;
+            Assert.Equal(testDelegate, equivalentDelegate);
+
+            TestClass other = new TestClass();
+            Assert.NotEqual(testDelegate, other.TestFunc);
         }
+
+        public static TheoryData<MethodInfo, object> ClosedStaticDelegate_NonReferenceFirstParameter_TestData => new()
+        {
+            { ((Func<int, object>)ClosedStaticInt).Method, 42 },
+            { ((Func<int, object>)ClosedStaticIdentity<int>).Method, 42 },
+            { ((Func<long, object>)ClosedStaticIdentity<long>).Method, 42L },
+            { ((Func<byte, object>)ClosedStaticIdentity<byte>).Method, (byte)42 },
+            { ((Func<char, object>)ClosedStaticIdentity<char>).Method, 'a' },
+            { ((Func<double, object>)ClosedStaticIdentity<double>).Method, 42.0 },
+            { ((Func<nint, object>)ClosedStaticIdentity<nint>).Method, (nint)42 },
+            { ((Func<IntEnum, object>)ClosedStaticIdentity<IntEnum>).Method, IntEnum.One },
+            { ((Func<TestStruct, object>)ClosedStaticIdentity<TestStruct>).Method, new TestStruct() },
+            { ((Func<int?, object>)ClosedStaticIdentity<int?>).Method, 42 },
+            { ((Func<int, object>)ClosedStaticStructIdentity<int>).Method, 42 },
+            { ((Func<int, object>)ClosedStaticGenericClass<int>.Identity).Method, 42 },
+            { typeof(DelegateTests).GetMethod(nameof(ClosedStaticPointer)), null },
+            { typeof(DelegateTests).GetMethod(nameof(ClosedStaticFunctionPointer)), null },
+            { typeof(DelegateTests).GetMethod(nameof(ClosedStaticByRef)), null },
+            { typeof(DelegateTests).GetMethod(nameof(ClosedStaticByRefLike)), null },
+            { typeof(DelegateTests).GetMethod(nameof(ClosedStaticTypedReference)), null },
+        };
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [MemberData(nameof(ClosedStaticDelegate_NonReferenceFirstParameter_TestData))]
+        public static void ClosedStaticDelegate_NonReferenceFirstParameter(MethodInfo method, object firstArgument)
+        {
+            foreach (object target in new[] { firstArgument, null })
+            {
+                Assert.Throws<ArgumentException>(() => method.CreateDelegate(typeof(Func<object>), target));
+                Assert.Throws<ArgumentException>(() => method.CreateDelegate<Func<object>>(target));
+                Assert.Throws<ArgumentException>(() => Delegate.CreateDelegate(typeof(Func<object>), target, method));
+                Assert.Throws<ArgumentException>(() => Delegate.CreateDelegate(typeof(Func<object>), target, method, throwOnBindFailure: true));
+                Assert.Null(Delegate.CreateDelegate(typeof(Func<object>), target, method, throwOnBindFailure: false));
+            }
+        }
+
+        public static TheoryData<MethodInfo, object> ClosedStaticDelegate_ReferenceFirstParameter_TestData => new()
+        {
+            { ((Func<object, object>)ClosedStaticObject).Method, new object() },
+            { ((Func<string, object>)ClosedStaticIdentity<string>).Method, "hello" },
+            { ((Func<object, object>)ClosedStaticIdentity<object>).Method, new object() },
+            { ((Func<IComparable, object>)ClosedStaticIdentity<IComparable>).Method, 42 },
+            { ((Func<TestClass, object>)ClosedStaticIdentity<TestClass>).Method, new TestClass() },
+            { ((Func<int[], object>)ClosedStaticIdentity<int[]>).Method, new int[] { 42 } },
+            { ((Func<string, object>)ClosedStaticGenericClass<string>.Identity).Method, "hello" },
+        };
+
+        [Theory]
+        [MemberData(nameof(ClosedStaticDelegate_ReferenceFirstParameter_TestData))]
+        public static void ClosedStaticDelegate_ReferenceFirstParameter(MethodInfo method, object firstArgument)
+        {
+            foreach (object target in new[] { firstArgument, null })
+            {
+                Assert.Same(target, ((Func<object>)method.CreateDelegate(typeof(Func<object>), target))());
+                Assert.Same(target, method.CreateDelegate<Func<object>>(target)());
+                Assert.Same(target, ((Func<object>)Delegate.CreateDelegate(typeof(Func<object>), target, method))());
+                Assert.Same(target, ((Func<object>)Delegate.CreateDelegate(typeof(Func<object>), target, method, throwOnBindFailure: true))());
+                Assert.Same(target, ((Func<object>)Delegate.CreateDelegate(typeof(Func<object>), target, method, throwOnBindFailure: false))());
+            }
+        }
+
+        private static object ClosedStaticInt(int value) => value;
+        private static object ClosedStaticObject(object value) => value;
+        private static object ClosedStaticIdentity<T>(T value) => value;
+        private static object ClosedStaticStructIdentity<T>(T value) where T : struct => value;
+
+        private static class ClosedStaticGenericClass<T>
+        {
+            public static object Identity(T value) => value;
+        }
+
+        public static object ClosedStaticPointer(int* value) => null;
+        public static object ClosedStaticFunctionPointer(delegate*<int> value) => null;
+        public static object ClosedStaticByRef(ref int value) => null;
+        public static object ClosedStaticByRefLike(Span<int> value) => null;
+        public static object ClosedStaticTypedReference(TypedReference value) => null;
 
         public class A { }
         public class B : A { }
@@ -315,7 +398,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_ValueTypeParameterWithExplicitValue()
         {
             Assert.Equal(
@@ -324,7 +406,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_DateTimeParameterWithMissingValue()
         {
             Assert.Equal(
@@ -333,7 +414,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DateTimeAndCustomConstantAttribute_DateTimeParameterWithMissingValue()
         {
             Assert.Equal(
@@ -342,7 +422,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_CustomConstantAndDateTimeAttribute_DateTimeParameterWithMissingValue()
         {
             Assert.Equal(
@@ -351,7 +430,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_CustomConstantAttribute_DateTimeParameterWithMissingValue()
         {
             Assert.Equal(
@@ -360,7 +438,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_DateTimeParameterWithExplicitValue()
         {
             Assert.Equal(
@@ -369,7 +446,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_DecimalParameterWithAttributeAndMissingValue()
         {
             Assert.Equal(
@@ -378,7 +454,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DecimalAndCustomConstantAttribute_DecimalParameterWithAttributeAndMissingValue()
         {
             Assert.Equal(
@@ -387,7 +462,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_CustomConstantAndDecimalAttribute_DecimalParameterWithAttributeAndMissingValue()
         {
             Assert.Equal(
@@ -396,7 +470,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_CustomConstantAttribute_DecimalParameterWithAttributeAndMissingValue()
         {
             Assert.Equal(
@@ -405,7 +478,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_DecimalParameterWithAttributeAndExplicitValue()
         {
             Assert.Equal(
@@ -414,7 +486,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_DecimalParameterWithMissingValue()
         {
             Assert.Equal(
@@ -423,7 +494,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_DecimalParameterWithExplicitValue()
         {
             Assert.Equal(
@@ -438,7 +508,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_NullableIntWithExplicitValue()
         {
             Assert.Equal(
@@ -501,6 +570,54 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void DifferentMethodForDerivedBase()
+        {
+            var d1 = (Action<Derived>)Delegate.CreateDelegate(typeof(Action<Derived>), typeof(Base).GetMethod("M")!);
+            var d2 = (Action<Derived>)Delegate.CreateDelegate(typeof(Action<Derived>), typeof(Derived).GetMethod("M")!);
+            Assert.False(d1.Equals(d2));
+            Assert.False(d1.Method.Equals(d2.Method));
+        }
+
+        [Fact]
+        public static void OpenDelegateToPrivateGenericBaseMethodDoesNotPolluteDerivedCache()
+        {
+            const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            MethodInfo method = typeof(PrivateGenericBase<string>).GetMethod("Secret", Flags);
+            Func<PrivateGenericDerived, int> openDelegate = method.CreateDelegate<Func<PrivateGenericDerived, int>>();
+
+            Assert.DoesNotContain(typeof(PrivateGenericDerived).GetMethods(Flags), m => m.Name == "Secret");
+            Assert.Equal(42, openDelegate(new PrivateGenericDerived()));
+            Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.DeclaringType);
+            Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.ReflectedType);
+            Assert.DoesNotContain(typeof(PrivateGenericDerived).GetMethods(Flags), m => m.Name == "Secret");
+
+            Func<int> closedDelegate = method.CreateDelegate<Func<int>>(new PrivateGenericDerived());
+            Assert.Equal(42, closedDelegate());
+            Assert.Equal(typeof(PrivateGenericBase<string>), closedDelegate.Method.ReflectedType);
+        }
+
+        private class PrivateGenericBase<T>
+        {
+            private int Secret() => 42;
+            public int PublicMethod() => 43;
+        }
+
+        private class PrivateGenericDerived : PrivateGenericBase<string> { }
+
+        [Fact]
+        public static void OpenDelegateToPublicGenericBaseMethodUsesBaseReflectedType()
+        {
+            MethodInfo method = typeof(PrivateGenericBase<string>).GetMethod(nameof(PrivateGenericBase<string>.PublicMethod));
+            Func<PrivateGenericDerived, int> openDelegate = method.CreateDelegate<Func<PrivateGenericDerived, int>>();
+            Func<int> closedDelegate = method.CreateDelegate<Func<int>>(new PrivateGenericDerived());
+
+            Assert.Equal(43, openDelegate(new PrivateGenericDerived()));
+            Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.DeclaringType);
+            Assert.Equal(closedDelegate.Method.ReflectedType, openDelegate.Method.ReflectedType);
+            Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.ReflectedType);
+        }
+
+        [Fact]
         public static void SameMethodObtainedViaDelegateAndReflectionAreSameForClass()
         {
             var m1 = ((MethodCallExpression)((Expression<Action>)(() => new Class().M())).Body).Method;
@@ -536,6 +653,60 @@ namespace System.Tests
             Assert.Equal(m1.MethodHandle.Value, m2.MethodHandle.Value);
         }
 
+        [Fact]
+        public static void DifferentOpenVirtualDelegates()
+        {
+            MethodInfo m1 = typeof(OpenVirtualClass).GetMethod(nameof(OpenVirtualClass.M1), BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo m2 = typeof(OpenVirtualClass).GetMethod(nameof(OpenVirtualClass.M2), BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Delegate a = m1.CreateDelegate<Action<OpenVirtualClass>>();
+            Delegate b = m2.CreateDelegate<Action<OpenVirtualClass>>();
+
+            Assert.False(a.Equals(b));
+
+            Assert.Equal(m1, a.Method);
+            Assert.Equal(m2, b.Method);
+        }
+
+        [Fact]
+        public static void OpenVirtualDelegates_InvokeResolvesOverride()
+        {
+            Func<object, string> toString = typeof(object).GetMethod(nameof(object.ToString)).CreateDelegate<Func<object, string>>();
+            Assert.Equal(nameof(OpenVirtualDerived), toString(new OpenVirtualDerived()));
+            Assert.Equal(typeof(Struct).ToString(), toString(new Struct()));
+            Assert.Equal(nameof(DayOfWeek.Monday), toString(DayOfWeek.Monday));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134707", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        public static void OpenVirtualDelegates_InterfaceMethod_InvokeResolvesImplementation()
+        {
+            Func<IOpenVirtual, int> interfaceMethod = typeof(IOpenVirtual).GetMethod(nameof(IOpenVirtual.M)).CreateDelegate<Func<IOpenVirtual, int>>();
+            Assert.Equal(1, interfaceMethod(new OpenVirtualDerived()));
+            Assert.Equal(2, interfaceMethod(new OpenVirtualStruct()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
+        public static void TypeEquivalentDelegatesPointingToSameMethod_AreEqualAndHaveSameHashCode()
+        {
+            // Get the type-equivalent delegate from System.TestEquivalentTypes.dll.
+            // Both types are compiled from TestEquivalentTypes/System.TestEquivalentTypes.cs.
+            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, System.TestEquivalentTypes", throwOnError: true)!;
+            Assert.False(typeof(EquivalentDelegate).Equals(otherDelegateType));
+            Assert.True(typeof(EquivalentDelegate).IsEquivalentTo(otherDelegateType));
+
+            MethodInfo methodInfo = typeof(DelegateTests).GetMethod(nameof(DelegateEquivalentTypeTargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            Delegate a = Delegate.CreateDelegate(typeof(EquivalentDelegate), methodInfo);
+            Delegate b = Delegate.CreateDelegate(otherDelegateType, methodInfo);
+
+            // Delegates of type-equivalent types pointing to the same method should be equal
+            // and must return the same hash code.
+            Assert.True(a.Equals(b));
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        }
+
+        private static void DelegateEquivalentTypeTargetMethod() { }
+
         class Class { internal void M() { } }
 
         struct Struct { internal void M() { } }
@@ -543,6 +714,23 @@ namespace System.Tests
         class ClassG { internal void M<Key, Value>() { } }
 
         struct StructG { internal void M<Key, Value>() { } }
+
+        class OpenVirtualClass
+        {
+            internal virtual void M1() { }
+            internal virtual void M2() { }
+        }
+
+        interface IOpenVirtual { int M(); }
+        class OpenVirtualDerived : IOpenVirtual
+        {
+            public int M() => 1;
+            public override string ToString() => nameof(OpenVirtualDerived);
+        }
+        struct OpenVirtualStruct : IOpenVirtual { public int M() => 2; }
+
+        class Base { public virtual void M() { } }
+        class Derived : Base { public override void M() { } }
 
         private delegate void IntIntDelegate(int expected, int actual);
         private delegate void IntIntDelegateWithDefault(int expected, int actual = 7);
@@ -1276,6 +1464,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(
                 () => Delegate.CreateDelegate(typeof(NullableIntToString), num, mi));
         }
+
         #endregion Tests
 
         #region Test Setup
@@ -1384,6 +1573,7 @@ namespace System.Tests
         public delegate int E(C c);
 
         delegate string NullableIntToString(ref int? obj);
+
         #endregion Test Setup
     }
 }

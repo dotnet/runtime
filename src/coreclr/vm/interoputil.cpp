@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #include "common.h"
 #include "vars.hpp"
 #include "excep.h"
@@ -270,7 +269,6 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pCultureObj));
     }
     CONTRACTL_END;
@@ -433,7 +431,6 @@ BOOL IsManagedObject(IUnknown *pIUnknown)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pIUnknown));
     }
     CONTRACTL_END;
@@ -731,7 +728,7 @@ ErrExit:
 //--------------------------------------------------------------------------------
 // Release helper, must be called in preemptive mode.  Only use this variant if
 // you already know you're in preemptive mode for other reasons.
-ULONG SafeReleasePreemp(IUnknown * pUnk, RCW * pRCW)
+ULONG SafeReleasePreemp(IUnknown * pUnk)
 {
     CONTRACTL {
         NOTHROW;
@@ -744,14 +741,14 @@ ULONG SafeReleasePreemp(IUnknown * pUnk, RCW * pRCW)
         return 0;
 
     // Message pump could happen, so arbitrary managed code could run.
-    CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+    CONTRACT_VIOLATION(ThrowsViolation);
 
     return pUnk->Release();
 }
 
 //--------------------------------------------------------------------------------
 // Release helper, enables and disables GC during call-outs
-ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW)
+ULONG SafeRelease(IUnknown* pUnk) noexcept
 {
     CONTRACTL {
         NOTHROW;
@@ -768,7 +765,7 @@ ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW)
     GCX_PREEMP_NO_DTOR_HAVE_THREAD(pThread);
 
     // Message pump could happen, so arbitrary managed code could run.
-    CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+    CONTRACT_VIOLATION(ThrowsViolation);
 
     res = pUnk->Release();
 
@@ -897,84 +894,6 @@ ReadBestFitCustomAttribute(Module* pModule, mdTypeDef cl, BOOL* BestFit, BOOL* T
             // index to end of data to skip description of named argument
             *ThrowOnUnmappableChar = pData[29] != 0;
     }
-}
-
-
-int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumWideChars, _Out_writes_bytes_opt_(cbAnsiBufferSize) LPSTR szAnsiString, int cbAnsiBufferSize, BOOL fBestFit, BOOL fThrowOnUnmappableChar)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-
-    if ((szWideString == 0) || (iNumWideChars == 0) || (szAnsiString == 0) || (cbAnsiBufferSize == 0))
-        return 0;
-
-    DWORD flags = 0;
-    int retval;
-
-    if (fBestFit == FALSE)
-        flags = WC_NO_BEST_FIT_CHARS;
-
-    if (fThrowOnUnmappableChar)
-    {
-        BOOL DefaultCharUsed = FALSE;
-        retval = WideCharToMultiByte(CP_ACP,
-                                    flags,
-                                    szWideString,
-                                    iNumWideChars,
-                                    szAnsiString,
-                                    cbAnsiBufferSize,
-                                    NULL,
-                                    &DefaultCharUsed);
-        DWORD lastError = GetLastError();
-
-        if (retval == 0)
-        {
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
-            COMPlusThrowHR(HRESULT_FROM_WIN32(lastError));
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
-        }
-
-        if (DefaultCharUsed)
-        {
-            struct HelperThrow
-            {
-                static void Throw()
-                {
-                    COMPlusThrow( kArgumentException, IDS_EE_MARSHAL_UNMAPPABLE_CHAR );
-                }
-            };
-
-            ENCLOSE_IN_EXCEPTION_HANDLER( HelperThrow::Throw );
-        }
-
-    }
-    else
-    {
-        retval = WideCharToMultiByte(CP_ACP,
-                                    flags,
-                                    szWideString,
-                                    iNumWideChars,
-                                    szAnsiString,
-                                    cbAnsiBufferSize,
-                                    NULL,
-                                    NULL);
-        DWORD lastError = GetLastError();
-
-        if (retval == 0)
-        {
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
-            COMPlusThrowHR(HRESULT_FROM_WIN32(lastError));
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
-        }
-    }
-
-    return retval;
 }
 
 namespace
@@ -1333,15 +1252,14 @@ void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)
 // has been aggregated
 ComCallWrapper* GetCCWFromIUnknown(IUnknown* pUnk, BOOL bEnableCustomization)
 {
-    CONTRACT (ComCallWrapper*)
+    CONTRACTL
     {
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pUnk));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ComCallWrapper* pWrap = MapIUnknownToWrapper(pUnk);
     if (pWrap != NULL)
@@ -1353,7 +1271,7 @@ ComCallWrapper* GetCCWFromIUnknown(IUnknown* pUnk, BOOL bEnableCustomization)
         }
     }
 
-    RETURN pWrap;
+    return pWrap;
 }
 
 HRESULT LoadRegTypeLib(_In_ REFGUID guid,
@@ -1584,29 +1502,6 @@ HRESULT SafeVariantChangeType(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
 }
 
 //--------------------------------------------------------------------------------
-HRESULT SafeVariantChangeTypeEx(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
-                          LCID lcid, unsigned short wFlags, VARTYPE vt)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pVarRes));
-        PRECONDITION(CheckPointer(pVarSrc));
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
-    _ASSERTE(GetModuleHandleA("oleaut32.dll") != NULL);
-    CONTRACT_VIOLATION(ThrowsViolation);
-
-    HRESULT hr = VariantChangeTypeEx (pVarRes, pVarSrc,lcid,wFlags,vt);
-
-    return hr;
-}
-
-//--------------------------------------------------------------------------------
 void SafeVariantInit(VARIANT* pVar)
 {
     CONTRACTL
@@ -1680,18 +1575,14 @@ BOOL IsIClassX(MethodTable *pMT, REFIID riid, ComMethodTable **ppComMT)
     // the IID's of the IClassX's against the specified IID.
     while (pMT != NULL)
     {
-        ComCallWrapperTemplate *pTemplate = ComCallWrapperTemplate::GetTemplate(pMT);
-        if (pTemplate->SupportsIClassX())
-        {
-            ComMethodTable *pComMT =
-                ComCallWrapperTemplate::SetupComMethodTableForClass(pMT, FALSE);
-            _ASSERTE(pComMT);
+        ComMethodTable *pComMT =
+            ComCallWrapperTemplate::SetupComMethodTableForClass(pMT, FALSE);
+        _ASSERTE(pComMT);
 
-            if (IsEqualIID(riid, pComMT->GetIID()))
-            {
-                *ppComMT = pComMT;
-                return TRUE;
-            }
+        if (IsEqualIID(riid, pComMT->GetIID()))
+        {
+            *ppComMT = pComMT;
+            return TRUE;
         }
 
         pMT = pMT->GetComPlusParentMethodTable();
@@ -1700,23 +1591,6 @@ BOOL IsIClassX(MethodTable *pMT, REFIID riid, ComMethodTable **ppComMT)
     return FALSE;
 }
 
-
-
-//---------------------------------------------------------------------------
-// Returns TRUE if we support IClassX (the auto-generated class interface)
-// for the given class.
-BOOL ClassSupportsIClassX(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return TRUE;
-}
 
 
 
@@ -1754,7 +1628,6 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!hndClass.IsNull());
         PRECONDITION(CheckPointer(pHndDefClass));
         PRECONDITION(!hndClass.GetMethodTable()->IsInterface());
@@ -1977,9 +1850,9 @@ HRESULT TryGetDefaultInterfaceForClass(TypeHandle hndClass, TypeHandle *pHndDefC
     return hr;
 }
 
-// Returns the default interface for a class if it's an explicit interface or the AutoDual
-// class interface. Sets *pbDispatch otherwise. This is the logic used by array marshaling
-// in code:OleVariant::MarshalInterfaceArrayComToOleHelper.
+// Returns the default interface for a class if it's an explicit interface.
+// Sets *pbDispatch for a generated class interface; a class MethodTable cannot
+// be passed to the managed typed interface array marshaler.
 MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch)
 {
     CONTRACTL
@@ -1999,7 +1872,6 @@ MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch)
     switch (DefItfType)
     {
         case DefaultInterfaceType_Explicit:
-        case DefaultInterfaceType_AutoDual:
         {
             return hndDefItfClass.GetMethodTable();
         }
@@ -2011,6 +1883,7 @@ MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch)
             return NULL;
         }
 
+        case DefaultInterfaceType_AutoDual:
         case DefaultInterfaceType_AutoDispatch:
         {
             *pbDispatch = TRUE;
@@ -2034,7 +1907,6 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMT));
     }
     CONTRACTL_END;
@@ -2206,7 +2078,6 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!InterfaceType.IsNull());
     }
     CONTRACTL_END;
@@ -2292,16 +2163,14 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
 
 //--------------------------------------------------------------------------------
 // Helper to get the GUID of a class interface.
-void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
+GUID GenerateClassItfGuid(TypeHandle InterfaceType)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!InterfaceType.IsNull());
-        PRECONDITION(CheckPointer(pGuid));
     }
     CONTRACTL_END;
 
@@ -2327,8 +2196,8 @@ void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
     szName = reinterpret_cast<LPWSTR>(rName.Ptr());
 
     // Generate guid from name.
-    CorGuidFromNameW(pGuid, szName, cchName);
-} // void GenerateClassItfGuid()
+    return CorGuidFromNameW(szName, cchName);
+} // GUID GenerateClassItfGuid()
 
 HRESULT TryGenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
 {
@@ -2351,7 +2220,7 @@ HRESULT TryGenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
     {
         EX_TRY
         {
-            GenerateClassItfGuid(InterfaceType, pGuid);
+            *pGuid = GenerateClassItfGuid(InterfaceType);
         }
         EX_CATCH
         {
@@ -2402,7 +2271,7 @@ HRESULT GetTypeLibGuidForAssembly(Assembly *pAssembly, GUID *pGuid)
         }
 
         // Turn into guid
-        CorGuidFromNameW(pGuid, (LPWSTR)rName.Ptr(), cbData/sizeof(WCHAR));
+        *pGuid = CorGuidFromNameW((LPWSTR)rName.Ptr(), cbData/sizeof(WCHAR));
 }
 
 ErrExit:
@@ -2957,44 +2826,34 @@ static void DoIUInvokeDispMethod(IDispatchEx* pDispEx, IDispatch* pDisp, DISPID 
     GCPROTECT_END();
 }
 
-
-FORCEINLINE void DispParamHolderRelease(VARIANT* value)
+struct DispParamHolderTraits final
 {
-    CONTRACTL
+    using Type = VARIANT*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
-    if (value)
-    {
-       if (V_VT(value) & VT_BYREF)
-       {
-           VariantHolder TmpVar;
-           OleVariant::ExtractContentsFromByrefVariant(value, &TmpVar);
-       }
+        if (value)
+        {
+            if (V_VT(value) & VT_BYREF)
+            {
+                VariantHolder TmpVar;
+                OleVariant::ExtractContentsFromByrefVariant(value, &TmpVar);
+            }
 
-       SafeVariantClear(value);
-    }
-}
-
-class DispParamHolder : public Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>
-{
-public:
-    DispParamHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(VARIANT* p)
-    {
-        WRAPPER_NO_CONTRACT;
-        Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>::operator=(p);
+            SafeVariantClear(value);
+        }
     }
 };
+
+using DispParamHolder = LifetimeHolder<DispParamHolderTraits>;
 
 //--------------------------------------------------------------------------------
 // This methods converts an IEnumVARIANT to a managed IEnumerator.
@@ -3055,10 +2914,10 @@ void IUInvokeDispMethod(
     DISPID              MemberID            = 0;
     ByrefArgumentInfo*  aByrefArgInfos      = NULL;
     BOOL                bSomeArgsAreByref   = FALSE;
-    SafeComHolder<IUnknown> pUnk            = NULL;
-    SafeComHolder<IDispatch> pDisp          = NULL;
-    SafeComHolder<IDispatchEx> pDispEx      = NULL;
-    VariantPtrHolder    pVarResult          = NULL;
+    ReleaseHolderAnyMode<IUnknown> pUnk;
+    ReleaseHolderAnyMode<IDispatch> pDisp;
+    ReleaseHolderAnyMode<IDispatchEx> pDispEx;
+    VariantPtrHolder    pVarResult;
     NewArrayHolder<DispParamHolder> params  = NULL;
 
     //
@@ -3153,17 +3012,17 @@ void IUInvokeDispMethod(
         // we will not correctly detect that the user did something wrong and will crash.
         // This is a known issue with no solution.
         // Our check here is best effort to catch the simple case where a user may make a mistake.
-        SafeComHolder<IUnknown> pInvokedMTUnknown = ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
+        ReleaseHolderAnyMode<IUnknown> pInvokedMTUnknown{ ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT) };
 
         // QI for IDispatch to catch the simple error case (COM object has no IDispatch but pInvokedMT is specified as a dispatch or dual interface)
-        SafeComHolder<IUnknown> pCanonicalDisp;
+        ReleaseHolderAnyMode<IUnknown> pCanonicalDisp;
         hr = SafeQueryInterface(pInvokedMTUnknown, IID_IDispatch, &pCanonicalDisp);
         if (FAILED(hr))
             COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
 
         _ASSERTE(IsDispatchBasedItf(pInvokedMT->GetComInterfaceType()));
         // Extract the IDispatch pointer that is associated with pInvokedMT specifically.
-        pDisp = (IDispatch*)pInvokedMTUnknown.Extract();
+        pDisp = (IDispatch*)pInvokedMTUnknown.Detach();
     }
     else
     {
@@ -3554,7 +3413,6 @@ static void GetComClassHelper(
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pRef));
         PRECONDITION(CheckPointer(pClassFactHash));
         PRECONDITION(CheckPointer(pClassFactInfo));
@@ -3614,7 +3472,6 @@ void GetComClassFromCLSID(REFCLSID clsid, _In_opt_z_ PCWSTR wszServer, OBJECTREF
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(pRef != NULL);
     }
     CONTRACTL_END;
@@ -3653,17 +3510,15 @@ void GetComClassFromCLSID(REFCLSID clsid, _In_opt_z_ PCWSTR wszServer, OBJECTREF
 // if not set one up
 ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
 {
-    CONTRACT (ClassFactoryBase*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pClassMT));
         PRECONDITION(pClassMT->IsComObjectType());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Work our way up the hierarchy until we find the first COM import type.
     while (!pClassMT->IsComImport())
@@ -3699,7 +3554,7 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
         pClsFac = pNewFactory.Extract();
     }
 
-    RETURN pClsFac;
+    return pClsFac;
 }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
@@ -3719,7 +3574,6 @@ void InitializeComInterop()
     }
     CONTRACTL_END;
 
-    ComCall::Init();
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG
@@ -3935,7 +3789,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
 
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
-    SafeComHolder<IUnknown> pUnk        = NULL;
+    ReleaseHolderAnyMode<IUnknown> pUnk;
     CHAR                szIID[MINIPAL_GUID_BUFFER_LEN];
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
@@ -3982,7 +3836,7 @@ VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, _In_z_ LPCSTR szMsg)
 
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
-    SafeComHolder<IUnknown> pUnk        = NULL;
+    ReleaseHolderAnyMode<IUnknown> pUnk;
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
 

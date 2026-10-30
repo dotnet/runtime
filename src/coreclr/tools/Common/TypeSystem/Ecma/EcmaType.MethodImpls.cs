@@ -4,6 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
+
+using Internal.Text;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Ecma
@@ -13,7 +16,7 @@ namespace Internal.TypeSystem.Ecma
     public sealed partial class EcmaType : MetadataType
     {
         // Virtual function related functionality
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> declName)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span declName)
         {
             MetadataReader metadataReader = _module.MetadataReader;
             ArrayBuilder<MethodImplRecord> foundRecords = default(ArrayBuilder<MethodImplRecord>);

@@ -69,58 +69,67 @@ public RCWData GetRCWData(TargetPointer rcw);
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `ComCallWrapper` | `Handle` | GC object handle (`m_ppThis`); dereference to get the managed object pointer |
-| `ComCallWrapper` | `SimpleWrapper` | Address of the associated `SimpleComCallWrapper` |
-| `ComCallWrapper` | `IPtr` | Base address of the COM interface pointer array |
-| `ComCallWrapper` | `Next` | Next wrapper in the linked chain (all-bits-set sentinel = end of list) |
-| `ComMethodTable` | `Flags` | Flags word; bit `0x10` (`LayoutComplete`) must be set for valid vtable |
-| `ComMethodTable` | `MethodTable` | Pointer to the managed `MethodTable` for this COM interface |
-| `SimpleComCallWrapper` | `OuterIUnknown` | Outer `IUnknown` pointer for aggregated CCWs (`m_pOuter`) |
-| `SimpleComCallWrapper` | `RefCount` | The wrapper refcount value (includes `CLEANUP_SENTINEL` bit) |
-| `SimpleComCallWrapper` | `Flags` | Bit flags for wrapper properties (aggregated, extends-COM, handle-weak, etc.) |
-| `SimpleComCallWrapper` | `MainWrapper` | Pointer back to the first (start) `ComCallWrapper` in the chain |
-| `SimpleComCallWrapper` | `VTablePtr` | Base address of the standard interface vtable pointer array (used for SCCW IP resolution) |
-| `RCWCleanupList` | `FirstBucket` | Head of the bucket linked list |
-| `RCW` | `NextCleanupBucket` | Next bucket in the cleanup list |
-| `RCW` | `NextRCW` | Next RCW in the same bucket |
-| `RCW` | `Flags` | Combined flags DWORD (contains marshaling type, aggregation, and containment bits) |
-| `RCW` | `CtxCookie` | COM context cookie for the RCW |
-| `RCW` | `CtxEntry` | Pointer to `CtxEntry` (bit 0 is a synchronization flag; must be masked off before use) |
-| `RCW` | `IdentityPointer` | Identity `IUnknown*` used to identify the underlying COM object |
-| `RCW` | `SyncBlockIndex` | Index into the sync block table; used to resolve the managed object (0 = no managed object) |
-| `RCW` | `VTablePtr` | Vtable pointer of the COM object |
-| `RCW` | `CreatorThread` | Pointer to the thread that created this RCW |
-| `RCW` | `RefCount` | Reference count of the RCW wrapper |
-| `RCW` | `UnknownPointer` | Primary `IUnknown*` pointer for the RCW; a sentinel value indicates disconnection |
-| `RCW` | `InterfaceEntries` | Offset of the inline interface entry cache array within the RCW struct |
-| `CtxEntry` | `STAThread` | STA thread pointer for the context entry |
-| `CtxEntry` | `CtxCookie` | Context cookie stored in the context entry; compared against the RCW's cookie to detect disconnection |
-| `InterfaceEntry` | `MethodTable` | MethodTable pointer for the cached COM interface |
-| `InterfaceEntry` | `Unknown` | `IUnknown*` pointer for the cached COM interface |
+<!-- BEGIN GENERATED: usage contract=BuiltInCOM version=c1 -->
+### Data descriptors used
 
-Global variables used:
-| Global Name | Type | Purpose |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `ComCallWrapper` | `Handle` | `pointer` | GC object handle (m_ppThis); dereference to get the managed object pointer |
+| `ComCallWrapper` | `IPtr` | `pointer` | Base address of the COM interface pointer array |
+| `ComCallWrapper` | `Next` | `pointer` | Next wrapper in the linked chain (all-bits-set sentinel = end of list) |
+| `ComCallWrapper` | `SimpleWrapper` | `pointer` | Address of the associated SimpleComCallWrapper |
+| `ComMethodTable` | *(type size)* | `uint32` | Size in bytes of the fixed ComMethodTable header immediately preceding its vtable |
+| `ComMethodTable` | `Flags` | `nuint` | Flags word; bit 0x10 (LayoutComplete) must be set for valid vtable |
+| `ComMethodTable` | `MethodTable` | `pointer` | Pointer to the managed MethodTable for this COM interface |
+| `CtxEntry` | `CtxCookie` | `pointer` | Context cookie stored in the context entry; compared against the RCW's cookie to detect disconnection |
+| `CtxEntry` | `STAThread` | `pointer` | STA thread pointer for the context entry |
+| `InterfaceEntry` | *(type size)* | `uint32` | Size in bytes of each entry in an RCW's inline interface cache |
+| `InterfaceEntry` | `MethodTable` | `pointer` | MethodTable pointer for the cached COM interface |
+| `InterfaceEntry` | `Unknown` | `pointer` | IUnknown* pointer for the cached COM interface |
+| `RCW` | `CreatorThread` | `pointer` | Pointer to the thread that created this RCW |
+| `RCW` | `CtxCookie` | `pointer` | COM context cookie for the RCW |
+| `RCW` | `CtxEntry` | `pointer` | Pointer to CtxEntry (bit 0 is a synchronization flag; must be masked off before use) |
+| `RCW` | `Flags` | `uint32` | Combined flags DWORD (contains marshaling type, aggregation, and containment bits) |
+| `RCW` | `IdentityPointer` | `pointer` | Identity IUnknown* used to identify the underlying COM object |
+| `RCW` | `InterfaceEntries` | `pointer` | Offset of the inline interface entry cache array within the RCW struct |
+| `RCW` | `NextCleanupBucket` | `pointer` | Next bucket in the cleanup list |
+| `RCW` | `NextRCW` | `pointer` | Next RCW in the same bucket |
+| `RCW` | `RefCount` | `uint32` | Reference count of the RCW wrapper |
+| `RCW` | `SyncBlockIndex` | `uint32` | Index into the sync block table; used to resolve the managed object (0 = no managed object) |
+| `RCW` | `UnknownPointer` | `pointer` | Primary IUnknown* pointer for the RCW; a sentinel value indicates disconnection |
+| `RCW` | `VTablePtr` | `pointer` | Vtable pointer of the COM object |
+| `RCWCleanupList` | `FirstBucket` | `pointer` | Head of the bucket linked list |
+| `SimpleComCallWrapper` | `Flags` | `uint32` | Bit flags for wrapper properties (aggregated, extends-COM, handle-weak, etc.) |
+| `SimpleComCallWrapper` | `MainWrapper` | `pointer` | Pointer back to the first (start) ComCallWrapper in the chain |
+| `SimpleComCallWrapper` | `OuterIUnknown` | `pointer` | Outer IUnknown pointer for aggregated CCWs (m_pOuter) |
+| `SimpleComCallWrapper` | `RefCount` | `int64` | The wrapper refcount value (includes CLEANUP_SENTINEL bit) |
+| `SimpleComCallWrapper` | `VTablePtr` | `pointer` | Base address of the standard interface vtable pointer array (used for SCCW IP resolution) |
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| `CCWNumInterfaces` | `uint` | Number of vtable pointer slots in each `ComCallWrapper` (`NumVtablePtrs = 5`) |
-| `CCWThisMask` | `nuint` | Alignment mask applied to a standard CCW IP to recover the `ComCallWrapper` pointer |
-| `TearOffAddRef` | pointer | Address of `Unknown_AddRef`; identifies standard CCW interface pointers |
-| `TearOffAddRefSimple` | pointer | Address of `Unknown_AddRefSpecial`; identifies `SimpleComCallWrapper` interface pointers |
-| `TearOffAddRefSimpleInner` | pointer | Address of `Unknown_AddRefInner`; identifies inner `SimpleComCallWrapper` interface pointers |
-| `RCWCleanupList` | `pointer` | Pointer to the global `g_pRCWCleanupList` instance |
-| `RCWInterfaceCacheSize` | `uint32` | Number of entries in the inline interface entry cache (`INTERFACE_ENTRY_CACHE_SIZE`) |
+| `CCWNumInterfaces` | `uint32` | Number of vtable pointer slots in each ComCallWrapper (NumVtablePtrs = 5) |
+| `CCWThisMask` | `pointer` | Alignment mask applied to a standard CCW IP to recover the ComCallWrapper pointer |
+| `RCWCleanupList` | `pointer` | Pointer to the global g_pRCWCleanupList instance |
+| `RCWInterfaceCacheSize` | `uint32` | Number of entries in the inline interface entry cache (INTERFACE_ENTRY_CACHE_SIZE) |
+| `TearOffAddRef` | `pointer` | Address of Unknown_AddRef; identifies standard CCW interface pointers |
+| `TearOffAddRefSimple` | `pointer` | Address of Unknown_AddRefSpecial; identifies SimpleComCallWrapper interface pointers |
+| `TearOffAddRefSimpleInner` | `pointer` | Address of Unknown_AddRefInner; identifies inner SimpleComCallWrapper interface pointers |
+
+### Contracts used
+
+| Contract Name |
+| --- |
+| `SyncBlock` |
+<!-- END GENERATED: usage contract=BuiltInCOM version=c1 -->
+
 
 ### Contract Constants:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `DisconnectedSentinel` | `ulong` | Sentinel value written to the unknown pointer when an RCW is disconnected | `0xBADF00D` |
 
-Contracts used:
-| Contract Name |
-| --- |
-| `SyncBlock` |
 
 ``` csharp
 

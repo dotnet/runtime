@@ -30,7 +30,7 @@ namespace System.Text.Json
                 _rentedBuffer = null!;
                 _topOfStack = 0;
 
-                if (toReturn != null)
+                if (toReturn is not null)
                 {
                     // The data in this rented buffer only conveys the positions and
                     // lengths of tokens in a document, but no content; so it does not
@@ -52,7 +52,7 @@ namespace System.Text.Json
 
             internal StackRow Pop()
             {
-                Debug.Assert(_rentedBuffer != null);
+                Debug.Assert(_rentedBuffer is not null);
                 Debug.Assert(_topOfStack <= _rentedBuffer!.Length - StackRow.Size);
 
                 StackRow row = MemoryMarshal.Read<StackRow>(_rentedBuffer.AsSpan(_topOfStack));

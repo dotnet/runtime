@@ -25,6 +25,7 @@ namespace LOHPin
          * */
  
         [ActiveIssue("https://github.com/dotnet/runtime/issues/46666", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -37,6 +37,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         }
 
         [Fact]
+        [TestCategory("mono")]
         public void NativeRelinkFailsWithInvariant()
         {
             Configuration config = Configuration.Release;

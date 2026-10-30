@@ -18,7 +18,7 @@ internal static class Program
 {
     internal static async Task<int> InnerAsync(int value)
     {
-        await Task.Delay(1);
+        await Task.Yield();
 
         // Crash while still inside Resume — t_current is set on this thread
         // and NextContinuation points to OuterAsync's continuation.

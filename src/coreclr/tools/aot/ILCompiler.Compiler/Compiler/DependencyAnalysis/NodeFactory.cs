@@ -11,7 +11,10 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
+using Internal.IL.Stubs;
+using Internal.JitInterface;
 using Internal.NativeFormat;
+using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -47,8 +50,6 @@ namespace ILCompiler.DependencyAnalysis
             TypeMapManager typeMapManager)
         {
             _target = context.Target;
-
-            InitialInterfaceDispatchStub = new AddressTakenExternFunctionSymbolNode(new Utf8String("RhpInitialDynamicInterfaceDispatch"u8));
 
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
@@ -109,11 +110,6 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
-        public ISymbolNode InitialInterfaceDispatchStub
-        {
-            get;
-        }
-
         public PreinitializationManager PreinitializationManager
         {
             get;
@@ -133,6 +129,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             get;
         }
+
+        protected virtual bool CanFold(MethodDesc method) => false;
 
         public TypeMapManager TypeMapManager
         {
@@ -275,13 +273,29 @@ namespace ILCompiler.DependencyAnalysis
                 return new FieldRvaDataNode(key);
             });
 
-            _externFunctionSymbols = new NodeCache<Utf8String, ExternFunctionSymbolNode>((Utf8String name) =>
+            _directPInvokes = new NodeCache<MethodDesc, ExternFunctionSymbolNode>((MethodDesc key) =>
             {
-                return new ExternFunctionSymbolNode(name);
+                LinkageMetadata linkage = InteropStubManager.GetLinkageMetadata(key);
+                Utf8String externName = linkage.Symbol;
+                if (externName.IsNull)
+                {
+                    // If metadata doesn't provide symbol name, mangle as a normal method.
+                    // We need to however mangle differently from the potential marshalling thunk;
+                    // this method is the raw P/invoke method so mangle as that.
+                    MethodDesc nativeTarget = key is PInvokeTargetNativeMethod
+                        ? key
+                        : new PInvokeTargetNativeMethod(key, key.Signature);
+                    externName = NameMangler.GetMangledMethodName(nativeTarget);
+                }
+                externName = NameMangler.NodeMangler.ExternMethod(externName, key);
+
+                return new ExternFunctionSymbolNode(externName, key.Signature, isUnmanagedCallersOnly: true, isAsyncCall: false, hasGenericContextArg: false,
+                    linkageMetadata: linkage);
             });
+
             _externIndirectFunctionSymbols = new NodeCache<Utf8String, ExternFunctionSymbolNode>((Utf8String name) =>
             {
-                return new ExternFunctionSymbolNode(name, isIndirection: true);
+                return new ExternFunctionSymbolNode(name, signature: null, false, false, false, new LinkageMetadata(name, isIndirection: true));
             });
             _externDataSymbols = new NodeCache<Utf8String, ExternDataSymbolNode>((Utf8String name) =>
             {
@@ -369,6 +383,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelegateTargetVirtualMethodNode(method, reflected: false);
             });
 
+            _reflectableVirtualMethodImpls = new NodeCache<(MethodDesc Declaration, MethodDesc Implementation), ReflectableVirtualMethodImplNode>(methods =>
+            {
+                return new ReflectableVirtualMethodImplNode(methods.Declaration, methods.Implementation);
+            });
+
             _reflectedDelegates = new NodeCache<TypeDesc, ReflectedDelegateNode>(type =>
             {
                 return new ReflectedDelegateNode(type);
@@ -430,6 +449,16 @@ namespace ILCompiler.DependencyAnalysis
                 return new InterfaceUseNode(type);
             });
 
+            _r2rHelpers = new NodeCache<ReadyToRunHelper, ISymbolNode>((ReadyToRunHelper id) =>
+            {
+                Utf8String name = KnownExternFunctions.GetName(id, TypeSystemContext.Target);
+                return new ExternFunctionSymbolNode(
+                    name,
+                    KnownExternFunctions.GetSignature(id, TypeSystemContext),
+                    isUnmanagedCallersOnly: false, isAsyncCall: false, hasGenericContextArg: false,
+                    linkageMetadata: new LinkageMetadata(name));
+            });
+
             _readyToRunHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelperNode);
 
             _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromDictionaryNode);
@@ -455,9 +484,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new FrozenRuntimeTypeNode(key, withMetadata: false);
             });
 
-            _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
+            _dispatchCells = new NodeCache<DispatchCellKey, DispatchCellNode>(callSiteCell =>
             {
-                return new InterfaceDispatchCellNode(callSiteCell.Target, callSiteCell.CallsiteId);
+                return new DispatchCellNode(callSiteCell.Target, callSiteCell.CallsiteId);
             });
 
             _interfaceDispatchMaps = new NodeCache<TypeDesc, InterfaceDispatchMapNode>((TypeDesc type) =>
@@ -502,12 +531,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _genericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
-                return new GenericCompositionNode(details, constructed: false);
+                return new GenericCompositionNode(details, metadataEnabled: false);
             });
 
-            _constructedGenericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
+            _metadataEnabledGenericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
-                return new GenericCompositionNode(details, constructed: true);
+                return new GenericCompositionNode(details, metadataEnabled: true);
             });
 
             _genericVariances = new NodeCache<GenericVarianceDetails, GenericVarianceNode>((GenericVarianceDetails details) =>
@@ -571,6 +600,16 @@ namespace ILCompiler.DependencyAnalysis
             _fieldsWithMetadata = new NodeCache<FieldDesc, FieldMetadataNode>(field =>
             {
                 return new FieldMetadataNode(field);
+            });
+
+            _propertiesWithMetadata = new NodeCache<PropertyPseudoDesc, PropertyMetadataNode>(property =>
+            {
+                return new PropertyMetadataNode(property);
+            });
+
+            _eventsWithMetadata = new NodeCache<EventPseudoDesc, EventMetadataNode>(@event =>
+            {
+                return new EventMetadataNode(@event);
             });
 
             _modulesWithMetadata = new NodeCache<ModuleDesc, ModuleMetadataNode>(module =>
@@ -812,6 +851,14 @@ namespace ILCompiler.DependencyAnalysis
                 return NecessaryTypeSymbol(type);
         }
 
+        public IEETypeNode MaximallyMetadataEnabledType(TypeDesc type)
+        {
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                return NecessaryTypeSymbol(type);
+            else
+                return MetadataTypeSymbol(type);
+        }
+
         private NodeCache<TypeDesc, IEETypeNode> _importedTypeSymbols;
 
         private IEETypeNode ImportedEETypeSymbol(TypeDesc type)
@@ -869,11 +916,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private NodeCache<DispatchCellKey, InterfaceDispatchCellNode> _interfaceDispatchCells;
+        private NodeCache<DispatchCellKey, DispatchCellNode> _dispatchCells;
 
-        public InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method, ISortableSymbolNode callSite = null)
+        public DispatchCellNode DispatchCell(MethodDesc method, ISortableSymbolNode callSite = null)
         {
-            return _interfaceDispatchCells.GetOrAdd(new DispatchCellKey(method, callSite));
+            return _dispatchCells.GetOrAdd(new DispatchCellKey(method, callSite));
         }
 
         private NodeCache<MethodDesc, RuntimeMethodHandleNode> _runtimeMethodHandles;
@@ -961,11 +1008,11 @@ namespace ILCompiler.DependencyAnalysis
             return _genericCompositions.GetOrAdd(details);
         }
 
-        private NodeCache<Instantiation, GenericCompositionNode> _constructedGenericCompositions;
+        private NodeCache<Instantiation, GenericCompositionNode> _metadataEnabledGenericCompositions;
 
-        internal ISymbolNode ConstructedGenericComposition(Instantiation details)
+        internal ISymbolNode MetadataEnabledGenericComposition(Instantiation details)
         {
-            return _constructedGenericCompositions.GetOrAdd(details);
+            return _metadataEnabledGenericCompositions.GetOrAdd(details);
         }
 
         private NodeCache<GenericVarianceDetails, GenericVarianceNode> _genericVariances;
@@ -975,18 +1022,17 @@ namespace ILCompiler.DependencyAnalysis
             return _genericVariances.GetOrAdd(details);
         }
 
-        private NodeCache<Utf8String, ExternFunctionSymbolNode> _externFunctionSymbols;
-
-        public ISortableSymbolNode ExternFunctionSymbol(Utf8String name)
-        {
-            return _externFunctionSymbols.GetOrAdd(name);
-        }
-
         private NodeCache<Utf8String, ExternFunctionSymbolNode> _externIndirectFunctionSymbols;
 
         public ISortableSymbolNode ExternIndirectFunctionSymbol(Utf8String name)
         {
             return _externIndirectFunctionSymbols.GetOrAdd(name);
+        }
+
+        private NodeCache<MethodDesc, ExternFunctionSymbolNode> _directPInvokes;
+        public ExternFunctionSymbolNode DirectPInvokeTarget(MethodDesc method)
+        {
+            return _directPInvokes.GetOrAdd(method);
         }
 
         private NodeCache<Utf8String, ExternDataSymbolNode> _externDataSymbols;
@@ -1138,7 +1184,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode FatAddressTakenFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
         {
-            if (!ObjectInterner.CanFold(method))
+            if (!CanFold(method))
                 return FatFunctionPointer(method, isUnboxingStub);
 
             return _fatAddressTakenFunctionPointers.GetOrAdd(new MethodKey(method, isUnboxingStub));
@@ -1204,7 +1250,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, AddressTakenMethodNode> _addressTakenMethods;
         public IMethodNode AddressTakenMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
-            if (unboxingStub || !ObjectInterner.CanFold(method))
+            if (unboxingStub || !CanFold(method))
                 return MethodEntrypoint(method, unboxingStub);
 
             return _addressTakenMethods.GetOrAdd(method);
@@ -1220,6 +1266,12 @@ namespace ILCompiler.DependencyAnalysis
         public DelegateTargetVirtualMethodNode DelegateTargetVirtualMethod(MethodDesc method)
         {
             return _delegateTargetMethods.GetOrAdd(method);
+        }
+
+        private NodeCache<(MethodDesc Declaration, MethodDesc Implementation), ReflectableVirtualMethodImplNode> _reflectableVirtualMethodImpls;
+        public ReflectableVirtualMethodImplNode ReflectableVirtualMethodImpl(MethodDesc declaration, MethodDesc implementation)
+        {
+            return _reflectableVirtualMethodImpls.GetOrAdd((declaration, implementation));
         }
 
         private ReflectedDelegateNode _unknownReflectedDelegate = new ReflectedDelegateNode(null);
@@ -1281,7 +1333,7 @@ namespace ILCompiler.DependencyAnalysis
             protected override bool CompareKeyToValue(MethodDesc key, ShadowConcreteMethodNode value) => key == value.Method;
             protected override bool CompareValueToValue(ShadowConcreteMethodNode value1, ShadowConcreteMethodNode value2) => value1.Method == value2.Method;
             protected override ShadowConcreteMethodNode CreateValueFromKey(MethodDesc key) =>
-                new ShadowConcreteMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                new ShadowConcreteMethodNode(key, (IMethodBodyNode)_factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(ShadowConcreteMethodNode value) => value.Method.GetHashCode();
         }
@@ -1299,7 +1351,7 @@ namespace ILCompiler.DependencyAnalysis
             protected override bool CompareKeyToValue(MethodDesc key, ShadowNonConcreteMethodNode value) => key == value.Method;
             protected override bool CompareValueToValue(ShadowNonConcreteMethodNode value1, ShadowNonConcreteMethodNode value2) => value1.Method == value2.Method;
             protected override ShadowNonConcreteMethodNode CreateValueFromKey(MethodDesc key) =>
-                new ShadowNonConcreteMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                new ShadowNonConcreteMethodNode(key, (IMethodBodyNode)_factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(ShadowNonConcreteMethodNode value) => value.Method.GetHashCode();
         }
@@ -1399,6 +1451,13 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceUses.GetOrAdd(type);
         }
 
+        private NodeCache<ReadyToRunHelper, ISymbolNode> _r2rHelpers;
+
+        public ISymbolNode ReadyToRunHelper(ReadyToRunHelper id)
+        {
+            return _r2rHelpers.GetOrAdd(id);
+        }
+
         private NodeCache<ReadyToRunHelperKey, ISymbolNode> _readyToRunHelpers;
 
         public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, object target)
@@ -1458,6 +1517,26 @@ namespace ILCompiler.DependencyAnalysis
             // in the dependency graph otherwise.
             Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _fieldsWithMetadata.GetOrAdd(field);
+        }
+
+        private NodeCache<PropertyPseudoDesc, PropertyMetadataNode> _propertiesWithMetadata;
+
+        internal PropertyMetadataNode PropertyMetadata(PropertyPseudoDesc property)
+        {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
+            return _propertiesWithMetadata.GetOrAdd(property);
+        }
+
+        private NodeCache<EventPseudoDesc, EventMetadataNode> _eventsWithMetadata;
+
+        internal EventMetadataNode EventMetadata(EventPseudoDesc @event)
+        {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
+            return _eventsWithMetadata.GetOrAdd(@event);
         }
 
         private NodeCache<ModuleDesc, ModuleMetadataNode> _modulesWithMetadata;
@@ -1537,7 +1616,7 @@ namespace ILCompiler.DependencyAnalysis
             byte[] stringBytes = new byte[stringBytesCount + 1];
             Encoding.UTF8.GetBytes(str, 0, str.Length, stringBytes, 0);
 
-            Utf8String symbolName = new Utf8String("__utf8str_" + NameMangler.GetMangledStringName(str));
+            Utf8String symbolName = Utf8String.Concat("__utf8str_"u8, NameMangler.GetMangledStringName(str).AsSpan());
 
             return ReadOnlyDataBlob(symbolName, stringBytes, 1);
         }
@@ -1582,9 +1661,17 @@ namespace ILCompiler.DependencyAnalysis
         // memory efficiency on lookup
         public WasmTypeNode WasmTypeNode(MethodDesc desc)
         {
-            // TODO-Wasm: Construct proper function type based on the passed in MethodDesc
-            // once we have defined lowering rules for signatures in NativeAOT.
-            throw new NotImplementedException("NAOT wasm type signature lowering not yet implemented");
+            return _wasmTypeNodes.GetOrAdd(WasmLowering.GetSignature(desc).FuncType);
+        }
+
+        public WasmTypeNode WasmTypeNode(INodeWithTypeSignature node)
+        {
+            return _wasmTypeNodes.GetOrAdd(WasmLowering.GetSignature(node).FuncType);
+        }
+
+        public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
+        {
+            return _wasmTypeNodes.GetOrAdd(WasmFuncType.FromCorInfoSignature(types));
         }
 
         /// <summary>
@@ -1619,8 +1706,6 @@ namespace ILCompiler.DependencyAnalysis
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
 
-        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode();
-
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
         public Dictionary<ISymbolNode, (Utf8String Name, bool Hidden)> NodeAliases = new Dictionary<ISymbolNode, (Utf8String, bool)>();
@@ -1641,7 +1726,6 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
-            graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             graph.AddRoot(ModuleInitializerList, "Module initializer list is always generated");
 
             if (_inlinedThreadStatics.IsComputed())
@@ -1670,7 +1754,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             public Vertex EncodeReferenceToMethod(NativeWriter writer, MethodDesc method)
                 => writer.GetUnsignedConstant(table.GetIndex(factory.MethodEntrypoint(method)));
-            public Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type)
+            public Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type, ModuleDesc module)
                 => writer.GetUnsignedConstant(table.GetIndex(factory.NecessaryTypeSymbol(type)));
         }
 

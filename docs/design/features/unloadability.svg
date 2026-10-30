@@ -131,19 +131,19 @@
 			<text x="41.12" y="516.21" class="st2" v:langID="1033"><v:paragraph v:horizAlign="1"/><v:tabList/>CustomAssemblyBinder</text>		</g>
 		<g id="shape11-39" v:mID="11" v:groupContext="shape" transform="translate(48.0507,-18.375)">
 			<title>Sheet.11</title>
-			<desc>DomainAssembly A</desc>
+			<desc>Assembly A</desc>
 			<v:textBlock v:margins="rect(4,4,4,4)"/>
 			<v:textRect cx="70.3125" cy="512.614" width="140.63" height="63"/>
 			<rect x="0" y="481.114" width="140.625" height="63" class="st6"/>
-			<text x="28.07" y="509.01" class="st2" v:langID="1033"><v:paragraph v:horizAlign="1"/><v:tabList/>DomainAssembly<v:newlineChar/><tspan
+			<text x="28.07" y="509.01" class="st2" v:langID="1033"><v:paragraph v:horizAlign="1"/><v:tabList/>Assembly<v:newlineChar/><tspan
 						x="66.84" dy="1.2em" class="st3">A</tspan></text>		</g>
 		<g id="shape12-43" v:mID="12" v:groupContext="shape" transform="translate(246.051,-18.375)">
 			<title>Sheet.12</title>
-			<desc>DomainAssembly B</desc>
+			<desc>Assembly B</desc>
 			<v:textBlock v:margins="rect(4,4,4,4)"/>
 			<v:textRect cx="70.3125" cy="512.614" width="140.63" height="63"/>
 			<rect x="0" y="481.114" width="140.625" height="63" class="st6"/>
-			<text x="28.07" y="509.01" class="st2" v:langID="1033"><v:paragraph v:horizAlign="1"/><v:tabList/>DomainAssembly<v:newlineChar/><tspan
+			<text x="28.07" y="509.01" class="st2" v:langID="1033"><v:paragraph v:horizAlign="1"/><v:tabList/>Assembly<v:newlineChar/><tspan
 						x="67.05" dy="1.2em" class="st3">B</tspan></text>		</g>
 		<g id="shape14-47" v:mID="14" v:groupContext="shape" v:layerMember="0" transform="translate(255.051,-463.875)">
 			<title>Dynamic connector</title>

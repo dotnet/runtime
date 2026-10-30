@@ -17,7 +17,6 @@ namespace System
         private static unsafe delegate*<object, bool> s_possiblyComObjectCallback;
         private static unsafe delegate*<object, out object?, IntPtr> s_objectToComWeakRefCallback;
 
-        [RequiresUnsafe]
         internal static unsafe void InitializeCallbacks(
             delegate*<IntPtr, object?, object?> comWeakRefToObject,
             delegate*<object, bool> possiblyComObject,

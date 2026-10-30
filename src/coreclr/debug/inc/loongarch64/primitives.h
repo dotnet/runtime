@@ -16,6 +16,11 @@
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
+// Floating point registers are stored in a SIMD-capable layout (FPR64/LSX/LASX) where each register
+// occupies four 64-bit slots. FPRegister64 spans that slot so Get64bitFPRegisters strides correctly;
+// FPFillR8 reads the scalar value from the first 64 bits.
+typedef struct { ULONGLONG slots[4]; } FPRegister64;
+
 #define MAX_INSTRUCTION_LENGTH 4
 
 // Given a return address retrieved during stackwalk,
@@ -89,10 +94,10 @@ inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID ip) {
     context->Pc = (DWORD64)ip;
 }
 
-inline LPVOID CORDbgGetSP(const DT_CONTEXT * context) {
+inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
-    return (LPVOID)(size_t)(context->Sp);
+    return (CORDB_ADDRESS)(context->Sp);
 }
 
 inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID esp) {
@@ -118,11 +123,8 @@ inline BOOL CompareControlRegisters(const DT_CONTEXT * pCtx1, const DT_CONTEXT *
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // TODO-LoongArch64: Sort out frame registers
-
     if ((pCtx1->Pc == pCtx2->Pc) &&
-        (pCtx1->Sp == pCtx2->Sp) &&
-        (pCtx1->Fp == pCtx2->Fp))
+        (pCtx1->Sp == pCtx2->Sp))
     {
         return TRUE;
     }

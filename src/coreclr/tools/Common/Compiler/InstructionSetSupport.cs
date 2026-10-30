@@ -20,17 +20,18 @@ namespace ILCompiler
         private readonly InstructionSetFlags _nonSpecifiableInstructionSets;
 
         public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, TargetArchitecture architecture) :
-            this(supportedInstructionSets, unsupportedInstructionSets, supportedInstructionSets, default(InstructionSetFlags), architecture)
+            this(supportedInstructionSets, unsupportedInstructionSets, supportedInstructionSets, default(InstructionSetFlags), architecture, isVectorTOptimistic: false)
         {
         }
 
-        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, InstructionSetFlags nonSpecifiableInstructionSets, TargetArchitecture architecture)
+        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, InstructionSetFlags nonSpecifiableInstructionSets, TargetArchitecture architecture, bool isVectorTOptimistic)
         {
             _supportedInstructionSets = supportedInstructionSets;
             _unsupportedInstructionSets = unsupportedInstructionSets;
             _optimisticInstructionSets = optimisticInstructionSets;
             _targetArchitecture = architecture;
             _nonSpecifiableInstructionSets = nonSpecifiableInstructionSets;
+            IsVectorTOptimistic = isVectorTOptimistic;
         }
 
         public bool IsInstructionSetSupported(InstructionSet instructionSet)
@@ -55,13 +56,15 @@ namespace ILCompiler
 
         public TargetArchitecture Architecture => _targetArchitecture;
 
+        public bool IsVectorTOptimistic { get; }
+
         public static string GetHardwareIntrinsicId(TargetArchitecture architecture, TypeDesc potentialTypeDesc)
         {
             if (!potentialTypeDesc.IsIntrinsic || !(potentialTypeDesc is MetadataType potentialType))
                 return "";
 
             // 64-bit ISA variants are not included in the mapping dictionary, so we use the containing type instead
-            if (potentialType.Name.SequenceEqual("X64"u8) || potentialType.Name.SequenceEqual("Arm64"u8))
+            if (potentialType.Name == "X64"u8 || potentialType.Name == "Arm64"u8)
             {
                 if (architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)
                     potentialType = potentialType.ContainingType;
@@ -79,12 +82,12 @@ namespace ILCompiler
 
             if (architecture is TargetArchitecture.X64 or TargetArchitecture.X86)
             {
-                if (!potentialType.Namespace.SequenceEqual("System.Runtime.Intrinsics.X86"u8))
+                if (potentialType.Namespace != "System.Runtime.Intrinsics.X86"u8)
                     return "";
             }
             else if (architecture is TargetArchitecture.ARM64 or TargetArchitecture.ARM)
             {
-                if (!potentialType.Namespace.SequenceEqual("System.Runtime.Intrinsics.Arm"u8))
+                if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm"u8)
                     return "";
             }
             else if (architecture is TargetArchitecture.LoongArch64)
@@ -93,6 +96,11 @@ namespace ILCompiler
             }
             else if (architecture is TargetArchitecture.RiscV64)
             {
+                return "";
+            }
+            else if (architecture is TargetArchitecture.Wasm32)
+            {
+                // TODO-WASM: return the correct intrinsic id once xplat intrinsics are implemented.
                 return "";
             }
             else
@@ -156,7 +164,7 @@ namespace ILCompiler
             }
             else if (_targetArchitecture == TargetArchitecture.Wasm32)
             {
-                return SimdVectorLength.None; // TODO-WASM-CQ: packed SIMD (128 bit vectors).
+                return SimdVectorLength.Vector128Bit;
             }
             else
             {

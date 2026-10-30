@@ -3,7 +3,6 @@
 
 using System;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using System.IO;
 
 namespace ILDisassembler;
@@ -11,10 +10,12 @@ namespace ILDisassembler;
 internal sealed class Program
 {
     private readonly IldasmRootCommand _command;
+    private readonly ParseResult _result;
 
-    public Program(IldasmRootCommand command)
+    public Program(IldasmRootCommand command, ParseResult result)
     {
         _command = command;
+        _result = result;
     }
 
     public int Run()
@@ -41,8 +42,8 @@ internal sealed class Program
         }
 
         string? outputFile = Get(_command.OutputFilePath);
+        string[] metadataFilters = Get(_command.MetadataFilters) ?? [];
 
-        // Build options from command line
         var options = new Options
         {
             ShowBytes = Get(_command.ShowBytes),
@@ -63,14 +64,14 @@ internal sealed class Program
             Item = Get(_command.Item),
             Stats = Get(_command.Stats),
             ClassList = Get(_command.ClassList),
-            Metadata = Get(_command.Metadata),
+            Metadata = Get(_command.Metadata) || metadataFilters.Length > 0,
+            MetadataFilters = metadataFilters,
             Html = Get(_command.Html),
             Rtf = Get(_command.Rtf),
             Utf8 = Get(_command.Utf8),
             Unicode = Get(_command.Unicode),
         };
 
-        // Handle --all shortcut
         if (Get(_command.All))
         {
             options.Headers = true;
@@ -114,12 +115,47 @@ internal sealed class Program
         }
     }
 
-    private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument)!;
+    private T Get<T>(Argument<T> argument) => _result.GetValue(argument)!;
 
-    private T Get<T>(Option<T> option) => _command.Result.GetValue(option)!;
+    private T Get<T>(Option<T> option) => _result.GetValue(option)!;
 
-    private static int Main(string[] args) =>
-        new IldasmRootCommand()
-            .Parse(args)
+    private static int Main(string[] args)
+    {
+        IldasmRootCommand command = new();
+        string[] normalizedArgs;
+        try
+        {
+            normalizedArgs = NativeCommandLine.Normalize(args, command);
+        }
+        catch (ArgumentException e)
+        {
+            Console.Error.WriteLine($"Error: {e.Message}");
+            return 1;
+        }
+
+        command.SetAction(result =>
+        {
+            if (result.GetValue(command.WaitForDebugger))
+            {
+                Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
+                Console.ReadLine();
+            }
+
+            try
+            {
+                return new Program(command, result).Run();
+            }
+            catch (Exception e)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Error.WriteLine("Error: " + e.Message);
+                Console.ResetColor();
+                return 1;
+            }
+        });
+
+        return command
+            .Parse(normalizedArgs)
             .Invoke();
+    }
 }

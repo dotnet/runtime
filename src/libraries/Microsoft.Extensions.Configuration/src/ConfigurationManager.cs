@@ -139,7 +139,7 @@ namespace Microsoft.Extensions.Configuration
 
             _changeTokenRegistrations.Clear();
 
-            var newProvidersList = new List<IConfigurationProvider>();
+            var newProvidersList = new List<IConfigurationProvider>(_sources.Count);
 
             foreach (IConfigurationSource source in _sources)
             {

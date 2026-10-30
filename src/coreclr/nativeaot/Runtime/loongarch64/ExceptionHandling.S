@@ -26,7 +26,6 @@
             st.d  $a1, $sp, 8
         .else
             PROLOG_STACK_ALLOC  0x58
-            .cfi_adjust_cfa_offset  0x58
             st.d  $a3, $sp, 0      // a3 is the SP and ra is the IP of the fault site
             st.d  $ra, $sp, 8
         .endif
@@ -50,7 +49,8 @@
         PROLOG_SAVE_REG       31,     0x60
         // } end PAL_LIMITED_CONTEXT
 
-        PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
+        // The CFA is $fp-based here, so no CFA adjustment
+        addi.d  $sp, $sp, -STACKSIZEOF_ExInfo
     .endm
 
 // -----------------------------------------------------------------------------
@@ -74,7 +74,8 @@
         .cfi_def_cfa_register  22 //fp
 
         .if \extraStackSize != 0
-            PROLOG_STACK_ALLOC \extraStackSize
+            // The CFA is $fp-based here, so no CFA adjustment
+            addi.d  $sp, $sp, -\extraStackSize
         .endif
     .endm
 
@@ -87,7 +88,8 @@
     .macro FREE_CALL_FUNCLET_FRAME extraStackSize
 
         .if \extraStackSize != 0
-            EPILOG_STACK_FREE \extraStackSize
+            // The CFA is $fp-based here, so no CFA adjustment
+            addi.d  $sp, $sp, \extraStackSize
         .endif
 
         EPILOG_RESTORE_REG_PAIR  23, 24, 0x10
@@ -303,6 +305,7 @@
     NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
+        ori  $r23, $a4, 0                               // Save ExKind
 
         GetThreadA2
 
@@ -355,7 +358,7 @@ LOCAL_LABEL(NotHijacked):
         st.b  $a3, $a1, OFFSETOF__ExInfo__m_passNumber   // pExInfo->m_passNumber = 1
         addi.w  $a3, $zero, -1
         st.w  $a3, $a1, OFFSETOF__ExInfo__m_idxCurClause // pExInfo->m_idxCurClause = MaxTryRegionIdx
-        st.b  $a4, $a1, OFFSETOF__ExInfo__m_kind         // pExInfo->m_kind = ExKind (from a4)
+        st.b  $r23, $a1, OFFSETOF__ExInfo__m_kind        // pExInfo->m_kind = ExKind
 
         // link the ExInfo into the thread's ExInfo chain
         ld.d  $a3, $a2, OFFSETOF__Thread__m_pExInfoStackHead

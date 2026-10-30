@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
@@ -43,8 +44,32 @@ public partial class ContractDescriptorSourceFileEmitter
     /// <remarks>The jsonDescriptor should not be C escaped</remarks>
     public void SetJsonDescriptor(string jsonDescriptor)
     {
-        var count = jsonDescriptor.Length; // return the length before escaping
-        var escaped = CStringEscape.Replace(jsonDescriptor, "\\$1");
+        int count = jsonDescriptor.Length; // return the length before escaping
+        string escaped = CStringEscape.Replace(jsonDescriptor, "\\$1");
+
+        // MSVC limits individual string literals to about 2048 bytes (error C2026).
+        // The C standard only guarantees 4095 characters per literal. To stay portable,
+        // we split long strings into adjacent literals ("chunk1" "chunk2") which are
+        // concatenated into a single contiguous string at compile time per the C standard.
+        const int MaxChunkSize = 2000;
+        if (escaped.Length > MaxChunkSize)
+        {
+            StringBuilder sb = new StringBuilder(escaped.Length + escaped.Length / MaxChunkSize * 4);
+            int offset = 0;
+            while (offset < escaped.Length)
+            {
+                if (offset > 0)
+                    sb.Append("\" \"");
+                int chunkEnd = Math.Min(offset + MaxChunkSize, escaped.Length);
+                // Don't split in the middle of a \" escape sequence
+                if (chunkEnd < escaped.Length && escaped[chunkEnd - 1] == '\\')
+                    chunkEnd--;
+                sb.Append(escaped, offset, chunkEnd - offset);
+                offset = chunkEnd;
+            }
+            escaped = sb.ToString();
+        }
+
         Elements[JsonDescriptorKey] = escaped;
         Elements[JsonDescriptorSizeKey] = count.ToString();
     }

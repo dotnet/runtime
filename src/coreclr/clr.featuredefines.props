@@ -1,13 +1,21 @@
 <Project>
     <PropertyGroup>
+        <FeatureMultithreading Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
+    </PropertyGroup>
+
+    <PropertyGroup>
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeaturePerfTracing>true</FeaturePerfTracing>
         <FeaturePortableEntryPoints>false</FeaturePortableEntryPoints>
         <FeaturePortableHelpers>false</FeaturePortableHelpers>
-        <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
+        <FeatureCorProfiler>true</FeatureCorProfiler>
         <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
         <FeaturePortableTimer>true</FeaturePortableTimer>
-        <FeatureMultithreading Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
+        <!--  OR '$(TargetsMobile)' == 'true' OR '$(TargetsLinuxBionic)' == 'true' -->
+        <FeatureCorProfiler>false</FeatureCorProfiler>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">
@@ -18,12 +26,10 @@
         <FeaturePortableEntryPoints>true</FeaturePortableEntryPoints>
         <FeaturePortableHelpers>true</FeaturePortableHelpers>
         <FeatureInterpreter>true</FeatureInterpreter>
-        
+
         <!-- single thread -->
         <FeaturePortableTimer Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableTimer>
         <FeaturePortableThreadPool Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableThreadPool>
-        <!-- until we implement ST event pipe for CoreCLR -->
-        <FeaturePerfTracing>false</FeaturePerfTracing>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -37,6 +43,7 @@
         <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
         <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
         <FeatureIjw>true</FeatureIjw>
+        <FeatureVarargs>true</FeatureVarargs>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsOSX)' == 'true' OR '$(TargetsMacCatalyst)' == 'true' OR '$(TargetsiOS)' == 'true' OR '$(TargetstvOS)' == 'true'">
@@ -51,20 +58,30 @@
         <FeatureInterpreter>true</FeatureInterpreter>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(FeatureDynamicCodeCompiled)' != 'true'">
+        <FeatureCachedInterfaceDispatch>true</FeatureCachedInterfaceDispatch>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="('$(Platform)' == 'x64' OR '$(Platform)' == 'arm64') AND ('$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked')">
+        <FeatureCachedInterfaceDispatch>true</FeatureCachedInterfaceDispatch>
+    </PropertyGroup>
+
     <PropertyGroup>
         <DefineConstants Condition="'$(FeatureJavaMarshal)' == 'true'">$(DefineConstants);FEATURE_JAVAMARSHAL</DefineConstants>
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
         <DefineConstants Condition="'$(FeatureIjw)' == 'true'">$(DefineConstants);FEATURE_IJW</DefineConstants>
+        <DefineConstants Condition="'$(FeatureVarargs)' == 'true'">$(DefineConstants);FEATURE_VARARGS</DefineConstants>
         <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureInterpreter)' == 'true'">$(DefineConstants);FEATURE_INTERPRETER</DefineConstants>
         <DefineConstants Condition="'$(FeatureDynamicCodeCompiled)' == 'true'">$(DefineConstants);FEATURE_DYNAMIC_CODE_COMPILED</DefineConstants>
+        <DefineConstants Condition="'$(FeatureCachedInterfaceDispatch)' == 'true'">$(DefineConstants);FEATURE_CACHED_INTERFACE_DISPATCH</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableEntryPoints)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_ENTRYPOINTS</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableHelpers)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_HELPERS</DefineConstants>
-        <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
+        <DefineConstants Condition="'$(FeatureCorProfiler)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
     </PropertyGroup>
 </Project>

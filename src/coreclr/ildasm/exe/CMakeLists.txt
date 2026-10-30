@@ -4,8 +4,7 @@ add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 add_definitions(-D_FEATURE_NO_HOST)
 add_definitions(-D__ILDASM__)
-
-add_definitions(-DFEATURE_CORECLR)
+add_definitions(-DSELF_NO_HOST)
 
 include_directories(..)
 
@@ -58,10 +57,15 @@ add_executable_clr(ildasm
     ${ILDASM_RESOURCES}
 )
 
+if(CLR_CMAKE_TARGET_OSX)
+    set_macos_bundle_identifier(ildasm com.microsoft.dotnet.ildasm)
+endif()
+
 set(ILDASM_LINK_LIBRARIES
-    mdcompiler_wks
-    mdruntime_wks
-    mdruntimerw_wks
+    # Use the hostless _ppdb metadata flavor (SELF_NO_HOST) rather than the
+    # contract-enabled _wks flavor that coreclr links.
+    # libraries that have circular references
+    $<LINK_GROUP:RESCAN,mdcompiler_ppdb,mdruntime_ppdb,mdruntimerw_ppdb>
     utilcodestaticnohost
     corguids
 )

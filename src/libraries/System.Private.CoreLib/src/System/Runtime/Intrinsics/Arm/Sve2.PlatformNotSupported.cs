@@ -8,24 +8,28 @@ using System.Numerics;
 
 namespace System.Runtime.Intrinsics.Arm
 {
-    /// <summary>
-    /// This class provides access to the ARM SVE hardware instructions via intrinsics
+    /// <summary>Provides access to the ARM SVE2 hardware instructions via intrinsics
     /// </summary>
-    [Intrinsic]
     [CLSCompliant(false)]
     [Experimental(Experimentals.ArmSveDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract class Sve2 : Sve
     {
         internal Sve2() { }
 
-        public static new bool IsSupported { get => IsSupported; }
+        /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+        /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+        /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
+        public static new bool IsSupported { [Intrinsic] get => false; }
 
-        [Intrinsic]
+        /// <summary>Provides access to the ARM SVE2 hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         public new abstract class Arm64 : Sve.Arm64
         {
             internal Arm64() { }
 
-            public static new bool IsSupported { get => IsSupported; }
+            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
+            public static new bool IsSupported { [Intrinsic] get { return false; } }
         }
 
 
@@ -1230,6 +1234,672 @@ namespace System.Runtime.Intrinsics.Arm
         ///   HISTSEG Zresult.B, Zop1.B, Zop2.B
         /// </summary>
         public static Vector<byte> CountMatchingElementsIn128BitSegments(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than
+
+        /// <summary>
+        /// svbool_t svwhilegt_b8[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGT Presult.B, Wop1, Wop2
+        /// </summary>
+        public static Vector<byte> CreateWhileGreaterThanMaskByte(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilegt_b8[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGT Presult.B, Xop1, Xop2
+        /// </summary>
+        public static Vector<byte> CreateWhileGreaterThanMaskByte(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b8[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHI Presult.B, Wop1, Wop2
+        /// </summary>
+        public static Vector<byte> CreateWhileGreaterThanMaskByte(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b8[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHI Presult.B, Xop1, Xop2
+        /// </summary>
+        public static Vector<byte> CreateWhileGreaterThanMaskByte(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than
+
+        /// <summary>
+        /// svbool_t svwhilegt_b64[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGT Presult.D, Wop1, Wop2
+        /// </summary>
+        public static Vector<double> CreateWhileGreaterThanMaskDouble(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilegt_b64[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGT Presult.D, Xop1, Xop2
+        /// </summary>
+        public static Vector<double> CreateWhileGreaterThanMaskDouble(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b64[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHI Presult.D, Wop1, Wop2
+        /// </summary>
+        public static Vector<double> CreateWhileGreaterThanMaskDouble(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b64[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHI Presult.D, Xop1, Xop2
+        /// </summary>
+        public static Vector<double> CreateWhileGreaterThanMaskDouble(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than
+
+        /// <summary>
+        /// svbool_t svwhilegt_b16[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGT Presult.H, Wop1, Wop2
+        /// </summary>
+        public static Vector<short> CreateWhileGreaterThanMaskInt16(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilegt_b16[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGT Presult.H, Xop1, Xop2
+        /// </summary>
+        public static Vector<short> CreateWhileGreaterThanMaskInt16(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b16[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHI Presult.H, Wop1, Wop2
+        /// </summary>
+        public static Vector<short> CreateWhileGreaterThanMaskInt16(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b16[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHI Presult.H, Xop1, Xop2
+        /// </summary>
+        public static Vector<short> CreateWhileGreaterThanMaskInt16(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than
+
+        /// <summary>
+        /// svbool_t svwhilegt_b32[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGT Presult.S, Wop1, Wop2
+        /// </summary>
+        public static Vector<int> CreateWhileGreaterThanMaskInt32(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilegt_b32[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGT Presult.S, Xop1, Xop2
+        /// </summary>
+        public static Vector<int> CreateWhileGreaterThanMaskInt32(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b32[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHI Presult.S, Wop1, Wop2
+        /// </summary>
+        public static Vector<int> CreateWhileGreaterThanMaskInt32(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b32[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHI Presult.S, Xop1, Xop2
+        /// </summary>
+        public static Vector<int> CreateWhileGreaterThanMaskInt32(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than
+
+        /// <summary>
+        /// svbool_t svwhilegt_b64[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGT Presult.D, Wop1, Wop2
+        /// </summary>
+        public static Vector<long> CreateWhileGreaterThanMaskInt64(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilegt_b64[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGT Presult.D, Xop1, Xop2
+        /// </summary>
+        public static Vector<long> CreateWhileGreaterThanMaskInt64(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b64[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHI Presult.D, Wop1, Wop2
+        /// </summary>
+        public static Vector<long> CreateWhileGreaterThanMaskInt64(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b64[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHI Presult.D, Xop1, Xop2
+        /// </summary>
+        public static Vector<long> CreateWhileGreaterThanMaskInt64(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than
+
+        /// <summary>
+        /// svbool_t svwhilegt_b8[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGT Presult.B, Wop1, Wop2
+        /// </summary>
+        public static Vector<sbyte> CreateWhileGreaterThanMaskSByte(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilegt_b8[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGT Presult.B, Xop1, Xop2
+        /// </summary>
+        public static Vector<sbyte> CreateWhileGreaterThanMaskSByte(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b8[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHI Presult.B, Wop1, Wop2
+        /// </summary>
+        public static Vector<sbyte> CreateWhileGreaterThanMaskSByte(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b8[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHI Presult.B, Xop1, Xop2
+        /// </summary>
+        public static Vector<sbyte> CreateWhileGreaterThanMaskSByte(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than
+
+        /// <summary>
+        /// svbool_t svwhilegt_b32[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGT Presult.S, Wop1, Wop2
+        /// </summary>
+        public static Vector<float> CreateWhileGreaterThanMaskSingle(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilegt_b32[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGT Presult.S, Xop1, Xop2
+        /// </summary>
+        public static Vector<float> CreateWhileGreaterThanMaskSingle(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b32[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHI Presult.S, Wop1, Wop2
+        /// </summary>
+        public static Vector<float> CreateWhileGreaterThanMaskSingle(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b32[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHI Presult.S, Xop1, Xop2
+        /// </summary>
+        public static Vector<float> CreateWhileGreaterThanMaskSingle(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than
+
+        /// <summary>
+        /// svbool_t svwhilegt_b16[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGT Presult.H, Wop1, Wop2
+        /// </summary>
+        public static Vector<ushort> CreateWhileGreaterThanMaskUInt16(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilegt_b16[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGT Presult.H, Xop1, Xop2
+        /// </summary>
+        public static Vector<ushort> CreateWhileGreaterThanMaskUInt16(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b16[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHI Presult.H, Wop1, Wop2
+        /// </summary>
+        public static Vector<ushort> CreateWhileGreaterThanMaskUInt16(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b16[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHI Presult.H, Xop1, Xop2
+        /// </summary>
+        public static Vector<ushort> CreateWhileGreaterThanMaskUInt16(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than
+
+        /// <summary>
+        /// svbool_t svwhilegt_b32[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGT Presult.S, Wop1, Wop2
+        /// </summary>
+        public static Vector<uint> CreateWhileGreaterThanMaskUInt32(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilegt_b32[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGT Presult.S, Xop1, Xop2
+        /// </summary>
+        public static Vector<uint> CreateWhileGreaterThanMaskUInt32(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b32[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHI Presult.S, Wop1, Wop2
+        /// </summary>
+        public static Vector<uint> CreateWhileGreaterThanMaskUInt32(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b32[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHI Presult.S, Xop1, Xop2
+        /// </summary>
+        public static Vector<uint> CreateWhileGreaterThanMaskUInt32(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than
+
+        /// <summary>
+        /// svbool_t svwhilegt_b64[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGT Presult.D, Wop1, Wop2
+        /// </summary>
+        public static Vector<ulong> CreateWhileGreaterThanMaskUInt64(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilegt_b64[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGT Presult.D, Xop1, Xop2
+        /// </summary>
+        public static Vector<ulong> CreateWhileGreaterThanMaskUInt64(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b64[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHI Presult.D, Wop1, Wop2
+        /// </summary>
+        public static Vector<ulong> CreateWhileGreaterThanMaskUInt64(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehi_b64[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHI Presult.D, Xop1, Xop2
+        /// </summary>
+        public static Vector<ulong> CreateWhileGreaterThanMaskUInt64(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilege_b8[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGE Presult.B, Wop1, Wop2
+        /// </summary>
+        public static Vector<byte> CreateWhileGreaterThanOrEqualMaskByte(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilege_b8[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGE Presult.B, Xop1, Xop2
+        /// </summary>
+        public static Vector<byte> CreateWhileGreaterThanOrEqualMaskByte(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b8[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHS Presult.B, Wop1, Wop2
+        /// </summary>
+        public static Vector<byte> CreateWhileGreaterThanOrEqualMaskByte(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b8[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHS Presult.B, Xop1, Xop2
+        /// </summary>
+        public static Vector<byte> CreateWhileGreaterThanOrEqualMaskByte(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilege_b64[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGE Presult.D, Wop1, Wop2
+        /// </summary>
+        public static Vector<double> CreateWhileGreaterThanOrEqualMaskDouble(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilege_b64[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGE Presult.D, Xop1, Xop2
+        /// </summary>
+        public static Vector<double> CreateWhileGreaterThanOrEqualMaskDouble(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b64[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHS Presult.D, Wop1, Wop2
+        /// </summary>
+        public static Vector<double> CreateWhileGreaterThanOrEqualMaskDouble(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b64[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHS Presult.D, Xop1, Xop2
+        /// </summary>
+        public static Vector<double> CreateWhileGreaterThanOrEqualMaskDouble(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilege_b16[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGE Presult.H, Wop1, Wop2
+        /// </summary>
+        public static Vector<short> CreateWhileGreaterThanOrEqualMaskInt16(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilege_b16[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGE Presult.H, Xop1, Xop2
+        /// </summary>
+        public static Vector<short> CreateWhileGreaterThanOrEqualMaskInt16(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b16[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHS Presult.H, Wop1, Wop2
+        /// </summary>
+        public static Vector<short> CreateWhileGreaterThanOrEqualMaskInt16(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b16[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHS Presult.H, Xop1, Xop2
+        /// </summary>
+        public static Vector<short> CreateWhileGreaterThanOrEqualMaskInt16(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilege_b32[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGE Presult.S, Wop1, Wop2
+        /// </summary>
+        public static Vector<int> CreateWhileGreaterThanOrEqualMaskInt32(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilege_b32[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGE Presult.S, Xop1, Xop2
+        /// </summary>
+        public static Vector<int> CreateWhileGreaterThanOrEqualMaskInt32(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b32[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHS Presult.S, Wop1, Wop2
+        /// </summary>
+        public static Vector<int> CreateWhileGreaterThanOrEqualMaskInt32(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b32[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHS Presult.S, Xop1, Xop2
+        /// </summary>
+        public static Vector<int> CreateWhileGreaterThanOrEqualMaskInt32(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilege_b64[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGE Presult.D, Wop1, Wop2
+        /// </summary>
+        public static Vector<long> CreateWhileGreaterThanOrEqualMaskInt64(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilege_b64[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGE Presult.D, Xop1, Xop2
+        /// </summary>
+        public static Vector<long> CreateWhileGreaterThanOrEqualMaskInt64(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b64[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHS Presult.D, Wop1, Wop2
+        /// </summary>
+        public static Vector<long> CreateWhileGreaterThanOrEqualMaskInt64(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b64[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHS Presult.D, Xop1, Xop2
+        /// </summary>
+        public static Vector<long> CreateWhileGreaterThanOrEqualMaskInt64(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilege_b8[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGE Presult.B, Wop1, Wop2
+        /// </summary>
+        public static Vector<sbyte> CreateWhileGreaterThanOrEqualMaskSByte(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilege_b8[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGE Presult.B, Xop1, Xop2
+        /// </summary>
+        public static Vector<sbyte> CreateWhileGreaterThanOrEqualMaskSByte(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b8[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHS Presult.B, Wop1, Wop2
+        /// </summary>
+        public static Vector<sbyte> CreateWhileGreaterThanOrEqualMaskSByte(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b8[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHS Presult.B, Xop1, Xop2
+        /// </summary>
+        public static Vector<sbyte> CreateWhileGreaterThanOrEqualMaskSByte(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilege_b32[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGE Presult.S, Wop1, Wop2
+        /// </summary>
+        public static Vector<float> CreateWhileGreaterThanOrEqualMaskSingle(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilege_b32[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGE Presult.S, Xop1, Xop2
+        /// </summary>
+        public static Vector<float> CreateWhileGreaterThanOrEqualMaskSingle(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b32[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHS Presult.S, Wop1, Wop2
+        /// </summary>
+        public static Vector<float> CreateWhileGreaterThanOrEqualMaskSingle(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b32[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHS Presult.S, Xop1, Xop2
+        /// </summary>
+        public static Vector<float> CreateWhileGreaterThanOrEqualMaskSingle(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilege_b16[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGE Presult.H, Wop1, Wop2
+        /// </summary>
+        public static Vector<ushort> CreateWhileGreaterThanOrEqualMaskUInt16(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilege_b16[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGE Presult.H, Xop1, Xop2
+        /// </summary>
+        public static Vector<ushort> CreateWhileGreaterThanOrEqualMaskUInt16(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b16[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHS Presult.H, Wop1, Wop2
+        /// </summary>
+        public static Vector<ushort> CreateWhileGreaterThanOrEqualMaskUInt16(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b16[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHS Presult.H, Xop1, Xop2
+        /// </summary>
+        public static Vector<ushort> CreateWhileGreaterThanOrEqualMaskUInt16(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilege_b32[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGE Presult.S, Wop1, Wop2
+        /// </summary>
+        public static Vector<uint> CreateWhileGreaterThanOrEqualMaskUInt32(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilege_b32[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGE Presult.S, Xop1, Xop2
+        /// </summary>
+        public static Vector<uint> CreateWhileGreaterThanOrEqualMaskUInt32(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b32[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHS Presult.S, Wop1, Wop2
+        /// </summary>
+        public static Vector<uint> CreateWhileGreaterThanOrEqualMaskUInt32(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b32[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHS Presult.S, Xop1, Xop2
+        /// </summary>
+        public static Vector<uint> CreateWhileGreaterThanOrEqualMaskUInt32(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While decrementing scalar is greater than or equal to
+
+        /// <summary>
+        /// svbool_t svwhilege_b64[_s32](int32_t op1, int32_t op2)
+        ///   WHILEGE Presult.D, Wop1, Wop2
+        /// </summary>
+        public static Vector<ulong> CreateWhileGreaterThanOrEqualMaskUInt64(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilege_b64[_s64](int64_t op1, int64_t op2)
+        ///   WHILEGE Presult.D, Xop1, Xop2
+        /// </summary>
+        public static Vector<ulong> CreateWhileGreaterThanOrEqualMaskUInt64(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b64[_u32](uint32_t op1, uint32_t op2)
+        ///   WHILEHS Presult.D, Wop1, Wop2
+        /// </summary>
+        public static Vector<ulong> CreateWhileGreaterThanOrEqualMaskUInt64(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilehs_b64[_u64](uint64_t op1, uint64_t op2)
+        ///   WHILEHS Presult.D, Xop1, Xop2
+        /// </summary>
+        public static Vector<ulong> CreateWhileGreaterThanOrEqualMaskUInt64(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While free of read-after-write conflicts
+
+        /// <summary>
+        /// svbool_t svwhilerw[_u8](const uint8_t *op1, const uint8_t *op2)
+        ///   WHILERW Presult.B, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<byte> CreateWhileReadAfterWriteMaskByte(byte* left, byte* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilerw[_f64](const float64_t *op1, const float64_t *op2)
+        ///   WHILERW Presult.D, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<double> CreateWhileReadAfterWriteMaskDouble(double* left, double* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilerw[_s16](const int16_t *op1, const int16_t *op2)
+        ///   WHILERW Presult.H, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<short> CreateWhileReadAfterWriteMaskInt16(short* left, short* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilerw[_s32](const int32_t *op1, const int32_t *op2)
+        ///   WHILERW Presult.S, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<int> CreateWhileReadAfterWriteMaskInt32(int* left, int* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilerw[_s64](const int64_t *op1, const int64_t *op2)
+        ///   WHILERW Presult.D, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<long> CreateWhileReadAfterWriteMaskInt64(long* left, long* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilerw[_s8](const int8_t *op1, const int8_t *op2)
+        ///   WHILERW Presult.B, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<sbyte> CreateWhileReadAfterWriteMaskSByte(sbyte* left, sbyte* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilerw[_f32](const float32_t *op1, const float32_t *op2)
+        ///   WHILERW Presult.S, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<float> CreateWhileReadAfterWriteMaskSingle(float* left, float* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilerw[_u16](const uint16_t *op1, const uint16_t *op2)
+        ///   WHILERW Presult.H, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<ushort> CreateWhileReadAfterWriteMaskUInt16(ushort* left, ushort* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilerw[_u32](const uint32_t *op1, const uint32_t *op2)
+        ///   WHILERW Presult.S, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<uint> CreateWhileReadAfterWriteMaskUInt32(uint* left, uint* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilerw[_u64](const uint64_t *op1, const uint64_t *op2)
+        ///   WHILERW Presult.D, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<ulong> CreateWhileReadAfterWriteMaskUInt64(ulong* left, ulong* right) { throw new PlatformNotSupportedException(); }
+
+
+        // While free of write-after-read conflicts
+
+        /// <summary>
+        /// svbool_t svwhilewr[_u8](const uint8_t *op1, const uint8_t *op2)
+        ///   WHILEWR Presult.B, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<byte> CreateWhileWriteAfterReadMaskByte(byte* left, byte* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilewr[_f64](const float64_t *op1, const float64_t *op2)
+        ///   WHILEWR Presult.D, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<double> CreateWhileWriteAfterReadMaskDouble(double* left, double* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilewr[_s16](const int16_t *op1, const int16_t *op2)
+        ///   WHILEWR Presult.H, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<short> CreateWhileWriteAfterReadMaskInt16(short* left, short* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilewr[_s32](const int32_t *op1, const int32_t *op2)
+        ///   WHILEWR Presult.S, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<int> CreateWhileWriteAfterReadMaskInt32(int* left, int* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilewr[_s64](const int64_t *op1, const int64_t *op2)
+        ///   WHILEWR Presult.D, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<long> CreateWhileWriteAfterReadMaskInt64(long* left, long* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilewr[_s8](const int8_t *op1, const int8_t *op2)
+        ///   WHILEWR Presult.B, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<sbyte> CreateWhileWriteAfterReadMaskSByte(sbyte* left, sbyte* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilewr[_f32](const float32_t *op1, const float32_t *op2)
+        ///   WHILEWR Presult.S, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<float> CreateWhileWriteAfterReadMaskSingle(float* left, float* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilewr[_u16](const uint16_t *op1, const uint16_t *op2)
+        ///   WHILEWR Presult.H, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<ushort> CreateWhileWriteAfterReadMaskUInt16(ushort* left, ushort* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilewr[_u32](const uint32_t *op1, const uint32_t *op2)
+        ///   WHILEWR Presult.S, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<uint> CreateWhileWriteAfterReadMaskUInt32(uint* left, uint* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svwhilewr[_u64](const uint64_t *op1, const uint64_t *op2)
+        ///   WHILEWR Presult.D, Xop1, Xop2
+        /// </summary>
+        public static unsafe Vector<ulong> CreateWhileWriteAfterReadMaskUInt64(ulong* left, ulong* right) { throw new PlatformNotSupportedException(); }
 
 
         // Complex dot product
@@ -3569,6 +4239,126 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<uint> ReciprocalSqrtEstimate(Vector<uint> value) { throw new PlatformNotSupportedException(); }
 
 
+        // Saturating extract narrow (bottom)
+
+        /// <summary>
+        /// svint8_t svqxtnb[_s16](svint16_t op)
+        ///   SQXTNB Zresult.B, Zop.H
+        /// </summary>
+        public static Vector<sbyte> SaturatingExtractNarrowingLower(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqxtnb[_s32](svint32_t op)
+        ///   SQXTNB Zresult.H, Zop.S
+        /// </summary>
+        public static Vector<short> SaturatingExtractNarrowingLower(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqxtnb[_s64](svint64_t op)
+        ///   SQXTNB Zresult.S, Zop.D
+        /// </summary>
+        public static Vector<int> SaturatingExtractNarrowingLower(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint8_t svqxtnb[_u16](svuint16_t op)
+        ///   UQXTNB Zresult.B, Zop.H
+        /// </summary>
+        public static Vector<byte> SaturatingExtractNarrowingLower(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqxtnb[_u32](svuint32_t op)
+        ///   UQXTNB Zresult.H, Zop.S
+        /// </summary>
+        public static Vector<ushort> SaturatingExtractNarrowingLower(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqxtnb[_u64](svuint64_t op)
+        ///   UQXTNB Zresult.S, Zop.D
+        /// </summary>
+        public static Vector<uint> SaturatingExtractNarrowingLower(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating extract narrow (top)
+
+        /// <summary>
+        /// svint8_t svqxtnt[_s16](svint8_t even, svint16_t op)
+        ///   SQXTNT Ztied.B, Zop.H
+        /// </summary>
+        public static Vector<sbyte> SaturatingExtractNarrowingUpper(Vector<sbyte> even, Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqxtnt[_s32](svint16_t even, svint32_t op)
+        ///   SQXTNT Ztied.H, Zop.S
+        /// </summary>
+        public static Vector<short> SaturatingExtractNarrowingUpper(Vector<short> even, Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqxtnt[_s64](svint32_t even, svint64_t op)
+        ///   SQXTNT Ztied.S, Zop.D
+        /// </summary>
+        public static Vector<int> SaturatingExtractNarrowingUpper(Vector<int> even, Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint8_t svqxtnt[_u16](svuint8_t even, svuint16_t op)
+        ///   UQXTNT Ztied.B, Zop.H
+        /// </summary>
+        public static Vector<byte> SaturatingExtractNarrowingUpper(Vector<byte> even, Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqxtnt[_u32](svuint16_t even, svuint32_t op)
+        ///   UQXTNT Ztied.H, Zop.S
+        /// </summary>
+        public static Vector<ushort> SaturatingExtractNarrowingUpper(Vector<ushort> even, Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqxtnt[_u64](svuint32_t even, svuint64_t op)
+        ///   UQXTNT Ztied.S, Zop.D
+        /// </summary>
+        public static Vector<uint> SaturatingExtractNarrowingUpper(Vector<uint> even, Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating extract unsigned narrow (bottom)
+
+        /// <summary>
+        /// svuint8_t svqxtunb[_s16](svint16_t op)
+        ///   SQXTUNB Zresult.B, Zop.H
+        /// </summary>
+        public static Vector<byte> SaturatingExtractUnsignedNarrowingLower(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqxtunb[_s32](svint32_t op)
+        ///   SQXTUNB Zresult.H, Zop.S
+        /// </summary>
+        public static Vector<ushort> SaturatingExtractUnsignedNarrowingLower(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqxtunb[_s64](svint64_t op)
+        ///   SQXTUNB Zresult.S, Zop.D
+        /// </summary>
+        public static Vector<uint> SaturatingExtractUnsignedNarrowingLower(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating extract unsigned narrow (top)
+
+        /// <summary>
+        /// svuint8_t svqxtunt[_s16](svuint8_t even, svint16_t op)
+        ///   SQXTUNT Ztied.B, Zop.H
+        /// </summary>
+        public static Vector<byte> SaturatingExtractUnsignedNarrowingUpper(Vector<byte> even, Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqxtunt[_s32](svuint16_t even, svint32_t op)
+        ///   SQXTUNT Ztied.H, Zop.S
+        /// </summary>
+        public static Vector<ushort> SaturatingExtractUnsignedNarrowingUpper(Vector<ushort> even, Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqxtunt[_s64](svuint32_t even, svint64_t op)
+        ///   SQXTUNT Ztied.S, Zop.D
+        /// </summary>
+        public static Vector<uint> SaturatingExtractUnsignedNarrowingUpper(Vector<uint> even, Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+
         // Truncate to 16 bits and store, non-temporal
 
         // <summary>
@@ -3601,28 +4391,24 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1h_scatter_[s64]index[_s64](svbool_t pg, int16_t *base, svint64_t indices, svint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter16BitNarrowingNonTemporal(Vector<long> mask, short* address, Vector<long> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[u64]index[_s64](svbool_t pg, int16_t *base, svuint64_t indices, svint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter16BitNarrowingNonTemporal(Vector<long> mask, short* address, Vector<ulong> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[s64]index[_u64](svbool_t pg, uint16_t *base, svint64_t indices, svuint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter16BitNarrowingNonTemporal(Vector<ulong> mask, ushort* address, Vector<long> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[u64]index[_u64](svbool_t pg, uint16_t *base, svuint64_t indices, svuint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter16BitNarrowingNonTemporal(Vector<ulong> mask, ushort* address, Vector<ulong> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
@@ -3632,42 +4418,36 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1h_scatter_[u32]offset[_s32](svbool_t pg, int16_t *base, svuint32_t offsets, svint32_t data)
         ///   STNT1H Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<int> mask, short* address, Vector<uint> offsets, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[s64]offset[_s64](svbool_t pg, int16_t *base, svint64_t offsets, svint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, short* address, Vector<long> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[u64]offset[_s64](svbool_t pg, int16_t *base, svuint64_t offsets, svint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, short* address, Vector<ulong> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[u32]offset[_u32](svbool_t pg, uint16_t *base, svuint32_t offsets, svuint32_t data)
         ///   STNT1H Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<uint> mask, ushort* address, Vector<uint> offsets, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[s64]offset[_u64](svbool_t pg, uint16_t *base, svint64_t offsets, svuint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, ushort* address, Vector<long> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[u64]offset[_u64](svbool_t pg, uint16_t *base, svuint64_t offsets, svuint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, ushort* address, Vector<ulong> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
@@ -3689,28 +4469,24 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1w_scatter_[s64]index[_s64](svbool_t pg, int32_t *base, svint64_t indices, svint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter32BitNarrowingNonTemporal(Vector<long> mask, int* address, Vector<long> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1w_scatter_[u64]index[_s64](svbool_t pg, int32_t *base, svuint64_t indices, svint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter32BitNarrowingNonTemporal(Vector<long> mask, int* address, Vector<ulong> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1w_scatter_[s64]index[_u64](svbool_t pg, uint32_t *base, svint64_t indices, svuint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter32BitNarrowingNonTemporal(Vector<ulong> mask, uint* address, Vector<long> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1w_scatter_[u64]index[_u64](svbool_t pg, uint32_t *base, svuint64_t indices, svuint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter32BitNarrowingNonTemporal(Vector<ulong> mask, uint* address, Vector<ulong> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
@@ -3720,28 +4496,24 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1w_scatter_[s64]offset[_s64](svbool_t pg, int32_t *base, svint64_t offsets, svint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter32BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, int* address, Vector<long> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1w_scatter_[u64]offset[_s64](svbool_t pg, int32_t *base, svuint64_t offsets, svint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter32BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, int* address, Vector<ulong> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1w_scatter_[s64]offset[_u64](svbool_t pg, uint32_t *base, svint64_t offsets, svuint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter32BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, uint* address, Vector<long> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1w_scatter_[u64]offset[_u64](svbool_t pg, uint32_t *base, svuint64_t offsets, svuint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter32BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, uint* address, Vector<ulong> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
@@ -3780,42 +4552,36 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1b_scatter_[u32]offset[_s32](svbool_t pg, int8_t *base, svuint32_t offsets, svint32_t data)
         ///   STNT1B Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<int> mask, sbyte* address, Vector<uint> offsets, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1b_scatter_[s64]offset[_s64](svbool_t pg, int8_t *base, svint64_t offsets, svint64_t data)
         ///   STNT1B Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, sbyte* address, Vector<long> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1b_scatter_[u64]offset[_s64](svbool_t pg, int8_t *base, svuint64_t offsets, svint64_t data)
         ///   STNT1B Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, sbyte* address, Vector<ulong> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1b_scatter_[u32]offset[_u32](svbool_t pg, uint8_t *base, svuint32_t offsets, svuint32_t data)
         ///   STNT1B Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<uint> mask, byte* address, Vector<uint> offsets, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1b_scatter_[s64]offset[_u64](svbool_t pg, uint8_t *base, svint64_t offsets, svuint64_t data)
         ///   STNT1B Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, byte* address, Vector<long> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1b_scatter_[u64]offset[_u64](svbool_t pg, uint8_t *base, svuint64_t offsets, svuint64_t data)
         ///   STNT1B Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, byte* address, Vector<ulong> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
@@ -3864,42 +4630,36 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1_scatter_[s64]index[_f64](svbool_t pg, float64_t *base, svint64_t indices, svfloat64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<double> mask, double* address, Vector<long> indices, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u64]index[_f64](svbool_t pg, float64_t *base, svuint64_t indices, svfloat64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<double> mask, double* address, Vector<ulong> indices, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[s64]index[_s64](svbool_t pg, int64_t *base, svint64_t indices, svint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<long> mask, long* address, Vector<long> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u64]index[_s64](svbool_t pg, int64_t *base, svuint64_t indices, svint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<long> mask, long* address, Vector<ulong> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[s64]index[_u64](svbool_t pg, uint64_t *base, svint64_t indices, svuint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<ulong> mask, ulong* address, Vector<long> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u64]index[_u64](svbool_t pg, uint64_t *base, svuint64_t indices, svuint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<ulong> mask, ulong* address, Vector<ulong> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
@@ -3909,63 +4669,54 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1_scatter_[s64]offset[_f64](svbool_t pg, float64_t *base, svint64_t offsets, svfloat64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<double> mask, double* address, Vector<long> offsets, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u64]offset[_f64](svbool_t pg, float64_t *base, svuint64_t offsets, svfloat64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<double> mask, double* address, Vector<ulong> offsets, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u32]offset[_s32](svbool_t pg, int32_t *base, svuint32_t offsets, svint32_t data)
         ///   STNT1W Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<int> mask, int* address, Vector<uint> offsets, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[s64]offset[_s64](svbool_t pg, int64_t *base, svint64_t offsets, svint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<long> mask, long* address, Vector<long> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u64]offset[_s64](svbool_t pg, int64_t *base, svuint64_t offsets, svint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<long> mask, long* address, Vector<ulong> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u32]offset[_f32](svbool_t pg, float32_t *base, svuint32_t offsets, svfloat32_t data)
         ///   STNT1W Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<float> mask, float* address, Vector<uint> offsets, Vector<float> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u32]offset[_u32](svbool_t pg, uint32_t *base, svuint32_t offsets, svuint32_t data)
         ///   STNT1W Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<uint> mask, uint* address, Vector<uint> offsets, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[s64]offset[_u64](svbool_t pg, uint64_t *base, svint64_t offsets, svuint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<ulong> mask, ulong* address, Vector<long> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u64]offset[_u64](svbool_t pg, uint64_t *base, svuint64_t offsets, svuint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<ulong> mask, ulong* address, Vector<ulong> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 

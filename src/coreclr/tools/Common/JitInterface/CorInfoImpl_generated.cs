@@ -21,6 +21,7 @@ namespace Internal.JitInterface
             static ICorJitInfoCallbacks()
             {
                 s_callbacks.isIntrinsic = &_isIntrinsic;
+                s_callbacks.canValueClassInstancePointerEscape = &_canValueClassInstancePointerEscape;
                 s_callbacks.notifyMethodInfoUsage = &_notifyMethodInfoUsage;
                 s_callbacks.getMethodAttribs = &_getMethodAttribs;
                 s_callbacks.setMethodAttribs = &_setMethodAttribs;
@@ -37,8 +38,6 @@ namespace Internal.JitInterface
                 s_callbacks.getMethodClass = &_getMethodClass;
                 s_callbacks.getMethodVTableOffset = &_getMethodVTableOffset;
                 s_callbacks.resolveVirtualMethod = &_resolveVirtualMethod;
-                s_callbacks.getUnboxedEntry = &_getUnboxedEntry;
-                s_callbacks.getInstantiatedEntry = &_getInstantiatedEntry;
                 s_callbacks.getAsyncOtherVariant = &_getAsyncOtherVariant;
                 s_callbacks.getDefaultComparerClass = &_getDefaultComparerClass;
                 s_callbacks.getDefaultEqualityComparerClass = &_getDefaultEqualityComparerClass;
@@ -48,7 +47,6 @@ namespace Internal.JitInterface
                 s_callbacks.getUnmanagedCallConv = &_getUnmanagedCallConv;
                 s_callbacks.pInvokeMarshalingRequired = &_pInvokeMarshalingRequired;
                 s_callbacks.satisfiesMethodConstraints = &_satisfiesMethodConstraints;
-                s_callbacks.methodMustBeLoadedBeforeCodeIsRun = &_methodMustBeLoadedBeforeCodeIsRun;
                 s_callbacks.getGSCookie = &_getGSCookie;
                 s_callbacks.setPatchpointInfo = &_setPatchpointInfo;
                 s_callbacks.getOSRInfo = &_getOSRInfo;
@@ -64,6 +62,8 @@ namespace Internal.JitInterface
                 s_callbacks.getMethodInstantiationArgument = &_getMethodInstantiationArgument;
                 s_callbacks.printClassName = &_printClassName;
                 s_callbacks.isValueClass = &_isValueClass;
+                s_callbacks.isByRefLike = &_isByRefLike;
+                s_callbacks.isSharedInst = &_isSharedInst;
                 s_callbacks.getClassAttribs = &_getClassAttribs;
                 s_callbacks.getClassAssemblyName = &_getClassAssemblyName;
                 s_callbacks.LongLifetimeMalloc = &_LongLifetimeMalloc;
@@ -95,7 +95,6 @@ namespace Internal.JitInterface
                 s_callbacks.getReadyToRunHelper = &_getReadyToRunHelper;
                 s_callbacks.getReadyToRunDelegateCtorHelper = &_getReadyToRunDelegateCtorHelper;
                 s_callbacks.initClass = &_initClass;
-                s_callbacks.classMustBeLoadedBeforeCodeIsRun = &_classMustBeLoadedBeforeCodeIsRun;
                 s_callbacks.getBuiltinClass = &_getBuiltinClass;
                 s_callbacks.getTypeForPrimitiveValueClass = &_getTypeForPrimitiveValueClass;
                 s_callbacks.getTypeForPrimitiveNumericClass = &_getTypeForPrimitiveNumericClass;
@@ -142,6 +141,8 @@ namespace Internal.JitInterface
                 s_callbacks.runWithSPMIErrorTrap = &_runWithSPMIErrorTrap;
                 s_callbacks.getEEInfo = &_getEEInfo;
                 s_callbacks.getAsyncInfo = &_getAsyncInfo;
+                s_callbacks.getAwaitReturnCall = &_getAwaitReturnCall;
+                s_callbacks.getAwaitAwaiterInContinuationCall = &_getAwaitAwaiterInContinuationCall;
                 s_callbacks.getMethodDefFromMethod = &_getMethodDefFromMethod;
                 s_callbacks.printMethodName = &_printMethodName;
                 s_callbacks.getMethodNameFromMetadata = &_getMethodNameFromMetadata;
@@ -150,6 +151,8 @@ namespace Internal.JitInterface
                 s_callbacks.getSwiftLowering = &_getSwiftLowering;
                 s_callbacks.getFpStructLowering = &_getFpStructLowering;
                 s_callbacks.getWasmLowering = &_getWasmLowering;
+                s_callbacks.getAddressAlignment = &_getAddressAlignment;
+                s_callbacks.getWasmWellKnownGlobals = &_getWasmWellKnownGlobals;
                 s_callbacks.getThreadTLSIndex = &_getThreadTLSIndex;
                 s_callbacks.getAddrOfCaptureThreadGlobal = &_getAddrOfCaptureThreadGlobal;
                 s_callbacks.getHelperFtn = &_getHelperFtn;
@@ -162,7 +165,6 @@ namespace Internal.JitInterface
                 s_callbacks.embedGenericHandle = &_embedGenericHandle;
                 s_callbacks.getLocationOfThisType = &_getLocationOfThisType;
                 s_callbacks.getAddressOfPInvokeTarget = &_getAddressOfPInvokeTarget;
-                s_callbacks.GetCookieForPInvokeCalliSig = &_GetCookieForPInvokeCalliSig;
                 s_callbacks.GetCookieForInterpreterCalliSig = &_GetCookieForInterpreterCalliSig;
                 s_callbacks.getJustMyCodeHandle = &_getJustMyCodeHandle;
                 s_callbacks.GetProfilingHandle = &_GetProfilingHandle;
@@ -194,6 +196,7 @@ namespace Internal.JitInterface
                 s_callbacks.getPgoInstrumentationResults = &_getPgoInstrumentationResults;
                 s_callbacks.allocPgoInstrumentationBySchema = &_allocPgoInstrumentationBySchema;
                 s_callbacks.recordCallSite = &_recordCallSite;
+                s_callbacks.recordWasmManagedCallSig = &_recordWasmManagedCallSig;
                 s_callbacks.recordRelocation = &_recordRelocation;
                 s_callbacks.getRelocTypeHint = &_getRelocTypeHint;
                 s_callbacks.getExpectedTargetArchitecture = &_getExpectedTargetArchitecture;
@@ -203,6 +206,7 @@ namespace Internal.JitInterface
             }
 
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> isIntrinsic;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> canValueClassInstancePointerEscape;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> notifyMethodInfoUsage;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint> getMethodAttribs;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CorInfoMethodRuntimeFlags, void> setMethodAttribs;
@@ -219,8 +223,6 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CLASS_STRUCT_*> getMethodClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint*, uint*, bool*, void> getMethodVTableOffset;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_DEVIRTUALIZATION_INFO*, byte> resolveVirtualMethod;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, bool*, CORINFO_METHOD_STRUCT_*> getUnboxedEntry;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_**, CORINFO_CLASS_STRUCT_**, CORINFO_METHOD_STRUCT_*> getInstantiatedEntry;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, bool*, CORINFO_METHOD_STRUCT_*> getAsyncOtherVariant;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*> getDefaultComparerClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*> getDefaultEqualityComparerClass;
@@ -230,7 +232,6 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, bool*, CorInfoCallConvExtension> getUnmanagedCallConv;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, byte> pInvokeMarshalingRequired;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*, byte> satisfiesMethodConstraints;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, void> methodMustBeLoadedBeforeCodeIsRun;
             public delegate* unmanaged<IntPtr, IntPtr*, IntPtr*, IntPtr**, void> getGSCookie;
             public delegate* unmanaged<IntPtr, IntPtr*, PatchpointInfo*, void> setPatchpointInfo;
             public delegate* unmanaged<IntPtr, IntPtr*, uint*, PatchpointInfo*> getOSRInfo;
@@ -246,6 +247,8 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint, CORINFO_CLASS_STRUCT_*> getMethodInstantiationArgument;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte*, nuint, nuint*, nuint> printClassName;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte> isValueClass;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte> isByRefLike;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte> isSharedInst;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint> getClassAttribs;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte*> getClassAssemblyName;
             public delegate* unmanaged<IntPtr, IntPtr*, nuint, void*> LongLifetimeMalloc;
@@ -277,7 +280,6 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CorInfoHelpFunc, CORINFO_METHOD_STRUCT_*, CORINFO_CONST_LOOKUP*, byte> getReadyToRunHelper;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_LOOKUP*, void> getReadyToRunDelegateCtorHelper;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_CONTEXT_STRUCT*, CorInfoInitClassResult> initClass;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void> classMustBeLoadedBeforeCodeIsRun;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoClassId, CORINFO_CLASS_STRUCT_*> getBuiltinClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType> getTypeForPrimitiveValueClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType> getTypeForPrimitiveNumericClass;
@@ -324,6 +326,8 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, void*, void*, byte> runWithSPMIErrorTrap;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_EE_INFO*, void> getEEInfo;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_ASYNC_INFO*, void> getAsyncInfo;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CONTEXT_STRUCT**, CORINFO_LOOKUP*, CORINFO_METHOD_STRUCT_*> getAwaitReturnCall;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_CONTEXT_STRUCT**, CORINFO_LOOKUP*, CORINFO_METHOD_STRUCT_*> getAwaitAwaiterInContinuationCall;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, mdToken> getMethodDefFromMethod;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, nuint, nuint*, nuint> printMethodName;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte**, byte**, byte**, nuint, byte*> getMethodNameFromMetadata;
@@ -332,6 +336,8 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_SWIFT_LOWERING*, void> getSwiftLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_FPSTRUCT_LOWERING*, void> getFpStructLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoWasmType> getWasmLowering;
+            public delegate* unmanaged<IntPtr, IntPtr*, void*, uint> getAddressAlignment;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_WASM_WELLKNOWN_GLOBALS*, void> getWasmWellKnownGlobals;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, uint> getThreadTLSIndex;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, int*> getAddrOfCaptureThreadGlobal;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, CORINFO_METHOD_STRUCT_**, void> getHelperFtn;
@@ -344,7 +350,6 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void> embedGenericHandle;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_LOOKUP_KIND*, void> getLocationOfThisType;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CONST_LOOKUP*, void> getAddressOfPInvokeTarget;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, void**, void*> GetCookieForPInvokeCalliSig;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, void*> GetCookieForInterpreterCalliSig;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_JUST_MY_CODE_HANDLE_**, CORINFO_JUST_MY_CODE_HANDLE_*> getJustMyCodeHandle;
             public delegate* unmanaged<IntPtr, IntPtr*, bool*, void**, bool*, void> GetProfilingHandle;
@@ -362,7 +367,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, nuint, bool*, nuint, CORINFO_CLASS_STRUCT_*> getContinuationType;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, CORINFO_METHOD_STRUCT_*> getAsyncResumptionStub;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, byte> convertPInvokeCalliToCall;
-            public delegate* unmanaged<IntPtr, IntPtr*, InstructionSet, byte, byte> notifyInstructionSetUsage;
+            public delegate* unmanaged<IntPtr, IntPtr*, InstructionSet, byte, byte, byte> notifyInstructionSetUsage;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CONST_LOOKUP*, void> updateEntryPointForTailCall;
             public delegate* unmanaged<IntPtr, IntPtr*, AllocMemArgs*, void> allocMem;
             public delegate* unmanaged<IntPtr, IntPtr*, byte, byte, uint, void> reserveUnwindInfo;
@@ -376,6 +381,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema**, uint*, byte**, PgoSource*, bool*, HRESULT> getPgoInstrumentationResults;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema*, uint, byte**, HRESULT> allocPgoInstrumentationBySchema;
             public delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void> recordCallSite;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, void> recordWasmManagedCallSig;
             public delegate* unmanaged<IntPtr, IntPtr*, void*, void*, void*, CorInfoReloc, int, void> recordRelocation;
             public delegate* unmanaged<IntPtr, IntPtr*, void*, CorInfoReloc> getRelocTypeHint;
             public delegate* unmanaged<IntPtr, IntPtr*, uint> getExpectedTargetArchitecture;
@@ -396,6 +402,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.isIntrinsic(ftn) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static byte _canValueClassInstancePointerEscape(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.canValueClassInstancePointerEscape(ftn) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -638,36 +659,6 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static CORINFO_METHOD_STRUCT_* _getUnboxedEntry(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, bool* requiresInstMethodTableArg)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                return _this.getUnboxedEntry(ftn, ref *requiresInstMethodTableArg);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-                return default;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static CORINFO_METHOD_STRUCT_* _getInstantiatedEntry(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_STRUCT_** methodArg, CORINFO_CLASS_STRUCT_** classArg)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                return _this.getInstantiatedEntry(ftn, methodArg, classArg);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-                return default;
-            }
-        }
-
-        [UnmanagedCallersOnly]
         private static CORINFO_METHOD_STRUCT_* _getAsyncOtherVariant(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, bool* variantIsThunk)
         {
             var _this = GetThis(thisHandle);
@@ -798,20 +789,6 @@ namespace Internal.JitInterface
             {
                 *ppException = _this.AllocException(ex);
                 return default;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static void _methodMustBeLoadedBeforeCodeIsRun(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                _this.methodMustBeLoadedBeforeCodeIsRun(method);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
             }
         }
 
@@ -1027,6 +1004,36 @@ namespace Internal.JitInterface
             try
             {
                 return _this.isValueClass(cls) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static byte _isByRefLike(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.isByRefLike(cls) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static byte _isSharedInst(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.isSharedInst(cls) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -1495,20 +1502,6 @@ namespace Internal.JitInterface
             {
                 *ppException = _this.AllocException(ex);
                 return default;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static void _classMustBeLoadedBeforeCodeIsRun(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                _this.classMustBeLoadedBeforeCodeIsRun(cls);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
             }
         }
 
@@ -2190,6 +2183,36 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
+        private static CORINFO_METHOD_STRUCT_* _getAwaitReturnCall(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONTEXT_STRUCT** contextHandle, CORINFO_LOOKUP* instArg)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getAwaitReturnCall(callerHandle, contextHandle, ref *instArg);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static CORINFO_METHOD_STRUCT_* _getAwaitAwaiterInContinuationCall(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_RESOLVED_TOKEN* pResolvedToken, byte isUnsafe, CORINFO_CONTEXT_STRUCT** contextHandle, CORINFO_LOOKUP* instArg)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getAwaitAwaiterInContinuationCall(callerHandle, ref *pResolvedToken, isUnsafe != 0, contextHandle, ref *instArg);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
         private static mdToken _getMethodDefFromMethod(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* hMethod)
         {
             var _this = GetThis(thisHandle);
@@ -2304,6 +2327,35 @@ namespace Internal.JitInterface
             {
                 *ppException = _this.AllocException(ex);
                 return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static uint _getAddressAlignment(IntPtr thisHandle, IntPtr* ppException, void* address)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getAddressAlignment(address);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void _getWasmWellKnownGlobals(IntPtr thisHandle, IntPtr* ppException, CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.getWasmWellKnownGlobals(ref *pWellKnownGlobalsOut);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
             }
         }
 
@@ -2478,21 +2530,6 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static void* _GetCookieForPInvokeCalliSig(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                return _this.GetCookieForPInvokeCalliSig(szMetaSig, ref *ppIndirection);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-                return default;
             }
         }
 
@@ -2749,12 +2786,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte _notifyInstructionSetUsage(IntPtr thisHandle, IntPtr* ppException, InstructionSet instructionSet, byte supportEnabled)
+        private static byte _notifyInstructionSetUsage(IntPtr thisHandle, IntPtr* ppException, InstructionSet instructionSet, byte supportEnabled, byte preserveNegativeDependency)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.notifyInstructionSetUsage(instructionSet, supportEnabled != 0) ? (byte)1 : (byte)0;
+                return _this.notifyInstructionSetUsage(instructionSet, supportEnabled != 0, preserveNegativeDependency != 0) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2943,6 +2980,20 @@ namespace Internal.JitInterface
             try
             {
                 _this.recordCallSite(instrOffset, callSig, methodHandle);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void _recordWasmManagedCallSig(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* callSig)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.recordWasmManagedCallSig(callSig);
             }
             catch (Exception ex)
             {

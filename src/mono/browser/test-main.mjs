@@ -263,6 +263,7 @@ function configureRuntime(dotnet, runArgs) {
             dumpThreadsOnNonZeroExit: true,
             loadAllSatelliteResources: true,
             jsThreadBlockingMode: "ThrowWhenBlockingWait",
+            pthreadPoolInitialSize: 15,
         });
 
     if (ENVIRONMENT_IS_NODE) {
@@ -270,10 +271,8 @@ function configureRuntime(dotnet, runArgs) {
 
         const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
         if (modulesToLoad) {
-            dotnet.withModuleConfig({
-                onConfigLoaded: async (config) => {
-                    await loadNodeModules(config, modulesToLoad)
-                }
+            dotnet.withConfigLoaded(async (config) => {
+                await loadNodeModules(config, modulesToLoad)
             })
         }
     }

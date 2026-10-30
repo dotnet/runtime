@@ -33,9 +33,15 @@ public class Program
     [Fact]
     public static int TestEntryPoint()
     {
+        string assemblyPath = Assembly.GetExecutingAssembly().Location;
+        if (assemblyPath.Length == 0)
+        {
+            return 100;
+        }
+
         var currentALC = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
         var alc = new TestALC(currentALC);
-        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "StaticsUnloaded.dll"));
+        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(assemblyPath), "StaticsUnloaded.dll"));
 
         var accessor = (IStaticTest)Activator.CreateInstance(a.GetType("StaticTest"));
         accessor.SetStatic(12759, 548739, 5468, 8518, 9995);
@@ -68,6 +74,12 @@ public class Program
             return 14;
         if (val5Obj != obj5)
             return 15;
+
+        if (!PlatformDetection.IsMultithreadingSupported)
+        {
+            GC.KeepAlive(accessor);
+            return 100;
+        }
 
         int otherThreadResult = 0;
         Thread t = new ((ThreadStart)delegate {

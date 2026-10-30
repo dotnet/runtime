@@ -5,8 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Mono.Linker.Tests.Extensions;
-using NUnit.Framework;
+using Xunit.Sdk;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -14,7 +15,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
     {
         partial void IgnoreTest(string reason)
         {
-            Assert.Ignore(reason);
+            throw new SkipTestException(reason);
         }
 
         private partial IEnumerable<string>? GetAdditionalDefines() => null;
@@ -29,10 +30,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 if (e.InnerException != null)
                 {
-                    if (e.InnerException is AssertionException
-                    || e.InnerException is SuccessException
-                    || e.InnerException is IgnoreException
-                    || e.InnerException is InconclusiveException)
+                    if (e.InnerException is XunitException)
                         throw e.InnerException;
                 }
 

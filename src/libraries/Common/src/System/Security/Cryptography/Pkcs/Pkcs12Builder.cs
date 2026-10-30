@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -145,7 +145,7 @@ namespace System.Security.Cryptography.Pkcs
                 iterationCount);
         }
 
-        public void SealWithMac(
+        public unsafe void SealWithMac(
             ReadOnlySpan<char> password,
             HashAlgorithmName hashAlgorithm,
             int iterationCount)

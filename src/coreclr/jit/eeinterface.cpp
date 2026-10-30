@@ -92,11 +92,10 @@ void Compiler::eePrintCorInfoType(StringPrinter* printer, CorInfoType corInfoTyp
 {
     static const char* preciseVarTypeMap[CORINFO_TYPE_COUNT] = {// see the definition of enum CorInfoType in file
                                                                 // inc/corinfo.h
-                                                                "<UNDEF>", "void",       "bool",   "char",  "sbyte",
-                                                                "byte",    "short",      "ushort", "int",   "uint",
-                                                                "long",    "ulong",      "nint",   "nuint", "float",
-                                                                "double",  "string",     "ptr",    "byref", "struct",
-                                                                "class",   "typedbyref", "var"};
+                                                                "<UNDEF>", "void",  "bool",   "char",   "sbyte",
+                                                                "byte",    "short", "ushort", "int",    "uint",
+                                                                "long",    "ulong", "nint",   "nuint",  "float",
+                                                                "double",  "ptr",   "byref",  "struct", "class"};
 
     const char* corInfoTypeName = "CORINFO_TYPE_INVALID";
     if (corInfoType >= 0 && corInfoType < CORINFO_TYPE_COUNT)
@@ -239,6 +238,10 @@ void AppendCorInfoTypeWithModModifiers(StringPrinter* printer, CorInfoTypeWithMo
     {
         printer->Append("COPY_WITH_HELPER__");
     }
+    if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) == CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT)
+    {
+        printer->Append("SECRET_STUB_ARGUMENT__");
+    }
 }
 
 //------------------------------------------------------------------------
@@ -325,7 +328,9 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
             CorInfoTypeWithMod   argTypeWithMod = info.compCompHnd->getArgType(sig, argLst, &vcClsHnd);
             AppendCorInfoTypeWithModModifiers(printer, argTypeWithMod);
 
-            var_types type = JitType2PreciseVarType(strip(argTypeWithMod));
+            // The VM can report CORINFO_TYPE_UNDEF for types it cannot classify; print them as <UNDEF>.
+            CorInfoType argType = strip(argTypeWithMod);
+            var_types   type    = (argType == CORINFO_TYPE_UNDEF) ? TYP_UNDEF : JitType2PreciseVarType(argType);
             switch (type)
             {
                 case TYP_REF:
@@ -353,7 +358,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
 
         if (includeReturnType)
         {
-            var_types retType = JitType2PreciseVarType(sig->retType);
+            var_types retType = (sig->retType == CORINFO_TYPE_UNDEF) ? TYP_UNDEF : JitType2PreciseVarType(sig->retType);
             if (retType != TYP_VOID)
             {
                 printer->Append(':');
@@ -441,7 +446,8 @@ const char* Compiler::eeGetMethodFullName(
     bool                 success = eeRunFunctorWithSPMIErrorTrap([&]() {
         clsHnd = info.compCompHnd->getMethodClass(hnd);
         CORINFO_SIG_INFO sig;
-        eeGetMethodSig(hnd, &sig);
+        // Not eeGetMethodSig: its asserts reject open generic methods, whose types are CORINFO_TYPE_UNDEF.
+        info.compCompHnd->getMethodSig(hnd, &sig);
         eePrintMethod(&p, clsHnd, hnd, &sig,
                                       /* includeAssembly */ false,
                                       /* includeClass */ true,

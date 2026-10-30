@@ -27,6 +27,18 @@ typedef DPTR(M128A)  PTR_M128A;
 //
 static ULONG64 MemoryRead64(PULONG64 addr)
 {
+#ifdef DACCESS_COMPILE
+    // DacInstantiateTypeByAddress (see dacfn.cpp) preserves the "special" target
+    // addresses 0 and (TADDR)-1 by returning a NULL host pointer *without* throwing,
+    // even when the read is supposed to throw on failure. dac_cast<>::operator* would
+    // then dereference that NULL and fault inside the DAC itself. Such addresses can
+    // never be a valid location to read from while unwinding, so honor the read's
+    // throw-on-failure contract here and let the stackwalk abort cleanly.
+    if ((TADDR)addr == 0 || (TADDR)addr == (TADDR)-1)
+    {
+        DacError(HRESULT_FROM_WIN32(ERROR_READ_FAULT));
+    }
+#endif // DACCESS_COMPILE
     return *dac_cast<PTR_ULONG64>((TADDR)addr);
 }
 
@@ -49,6 +61,15 @@ static ULONG64 MemoryRead64(PULONG64 addr)
 //
 static M128A MemoryRead128(PM128A addr)
 {
+#ifdef DACCESS_COMPILE
+    // See the note in MemoryRead64: guard against the DAC's non-throwing special-address
+    // fast-path so a 0 / (TADDR)-1 read address aborts the stackwalk instead of faulting
+    // inside the DAC.
+    if ((TADDR)addr == 0 || (TADDR)addr == (TADDR)-1)
+    {
+        DacError(HRESULT_FROM_WIN32(ERROR_READ_FAULT));
+    }
+#endif // DACCESS_COMPILE
     return *dac_cast<PTR_M128A>((TADDR)addr);
 }
 

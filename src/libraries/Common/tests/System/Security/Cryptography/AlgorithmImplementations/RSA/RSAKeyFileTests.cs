@@ -2,22 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.Encryption.RC2.Tests;
+using System.Security.Cryptography.Tests;
 using System.Text;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class RSAKeyFileTests
+    public abstract class RSAKeyFileTests
     {
-        public static bool Supports384BitPrivateKeyAndRC2 { get; } = RSAFactory.Supports384PrivateKey && RC2Factory.IsSupported;
-        public static bool SupportsLargeExponent { get; } = RSAFactory.SupportsLargeExponent;
+        protected abstract RSAProvider RSAFactory { get; }
+
+        public bool Supports384BitPrivateKeyAndRC2 => RSAFactory.Supports384PrivateKey && RC2Factory.IsSupported;
+        public bool SupportsLargeExponent => RSAFactory.SupportsLargeExponent;
 
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public static void UseAfterDispose(bool importKey)
+        public void UseAfterDispose(bool importKey)
         {
             RSA rsa = importKey ? RSAFactory.Create(TestData.RSA2048Params) : RSAFactory.Create(1024);
             byte[] pkcs1Public;
@@ -73,9 +77,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Throws<ObjectDisposedException>(() => rsa.ImportEncryptedPkcs8PrivateKey(pwBytes, pkcs8EncryptedPrivate, out _));
         }
 
-        [ConditionalFact(typeof(RSAKeyFileTests), nameof(SupportsLargeExponent))]
-        public static void ReadWriteBigExponentPrivatePkcs1()
+        [ConditionalFact]
+        public void ReadWriteBigExponentPrivatePkcs1()
         {
+            SkipTestException.ThrowUnless(SupportsLargeExponent);
+
             ReadWriteBase64PrivatePkcs1(
                 @"
 MIIEpQIBAAKCAQEAr4HBy9ggP2JKU57WYIF1NyOTooN9SJDkihne02lzEVYglo1r
@@ -108,7 +114,7 @@ CE5b4bVi7nbp+SyaseWurZ0pGmM35N6FveZ6DXK05Vrc8gf3paUiXhU=",
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
-        public static void ReadWriteDiminishedDPPrivatePkcs1()
+        public void ReadWriteDiminishedDPPrivatePkcs1()
         {
             ReadWriteBase64PrivatePkcs1(
                 @"
@@ -122,9 +128,11 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==",
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
-        public static void ReadWritePublicPkcs1()
+        [ConditionalFact]
+        public void ReadWritePublicPkcs1()
         {
+            SkipTestException.ThrowUnless(RSAFactory.Supports16384);
+
             ReadWriteBase64PublicPkcs1(
                 @"
 MIIICgKCCAEAmyxwX6kQNx+LSMao1StC1p5rKCEwcBjzI136An3B/BjthgezAOuu
@@ -173,9 +181,11 @@ t4Ru7LOzqUULk+Y3+gSNHX34/+Jw+VCq5hHlolNkpw+thqvba8lMvzMCAwEAAQ==",
                 TestData.RSA16384Params);
         }
 
-        [ConditionalFact(typeof(RSAKeyFileTests), nameof(SupportsLargeExponent))]
-        public static void ReadWriteSubjectPublicKeyInfo()
+        [ConditionalFact]
+        public void ReadWriteSubjectPublicKeyInfo()
         {
+            SkipTestException.ThrowUnless(SupportsLargeExponent);
+
             ReadWriteBase64SubjectPublicKeyInfo(
                 @"
 MIIBJDANBgkqhkiG9w0BAQEFAAOCAREAMIIBDAKCAQEAr4HBy9ggP2JKU57WYIF1
@@ -189,7 +199,7 @@ RwIFAgAABEE=",
         }
 
         [Fact]
-        public static void ReadWriteSubjectPublicKeyInfo_DiminishedDPKey()
+        public void ReadWriteSubjectPublicKeyInfo_DiminishedDPKey()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
                 @"
@@ -198,9 +208,11 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==",
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
-        public static void ReadWriteRsa16384SubjectPublicKeyInfo()
+        [ConditionalFact]
+        public void ReadWriteRsa16384SubjectPublicKeyInfo()
         {
+            SkipTestException.ThrowUnless(RSAFactory.Supports16384);
+
             ReadWriteBase64SubjectPublicKeyInfo(
                 @"
 MIIIIjANBgkqhkiG9w0BAQEFAAOCCA8AMIIICgKCCAEAmyxwX6kQNx+LSMao1StC
@@ -250,9 +262,11 @@ rAigcwt6noH/hX5ZO5X869SV1WvLOvhCt4Ru7LOzqUULk+Y3+gSNHX34/+Jw+VCq
                 TestData.RSA16384Params);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
-        public static void ReadWrite16384Pkcs8()
+        [ConditionalFact]
+        public void ReadWrite16384Pkcs8()
         {
+            SkipTestException.ThrowUnless(RSAFactory.Supports16384);
+
             ReadWriteBase64Pkcs8(
                 @"
 MIIkQgIBADANBgkqhkiG9w0BAQEFAASCJCwwgiQoAgEAAoIIAQCbLHBfqRA3H4tI
@@ -453,7 +467,7 @@ xBdaeIJFmTymL1LOru69mA9gwhuFFQ==",
         }
 
         [Fact]
-        public static void ReadWriteDiminishedDPPkcs8()
+        public void ReadWriteDiminishedDPPkcs8()
         {
             ReadWriteBase64Pkcs8(
                 @"
@@ -469,7 +483,7 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
         }
 
         [Fact]
-        public static void ReadEncryptedDiminishedDP()
+        public void ReadEncryptedDiminishedDP()
         {
             // PBES1: PbeWithMD5AndDESCBC
             const string base64 = @"
@@ -494,7 +508,7 @@ YMSYHxE=";
         }
 
         [Fact]
-        public static void ReadEncryptedRsa1032()
+        public void ReadEncryptedRsa1032()
         {
             // PBES2: PBKDF2 + aes192
             const string base64 = @"
@@ -525,9 +539,11 @@ rBZc";
                 TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
-        public static void ReadEncryptedRsa16384()
+        [ConditionalFact]
+        public void ReadEncryptedRsa16384()
         {
+            SkipTestException.ThrowUnless(RSAFactory.Supports16384);
+
             // PBES2: PBKDF2 + des (single DES, not 3DES).
             const string base64 = @"
 MIIkizA9BgkqhkiG9w0BBQ0wMDAbBgkqhkiG9w0BBQwwDgQI63upT8JPNNcCAggA
@@ -737,7 +753,7 @@ pgCJTk846cb+AizgZMeOsYpTOgu2UL6cQiLtsYNz7WpDK3iS7Agj9EoL2ao7QxA=";
         }
 
         [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
-        public static void ReadPbes2Rc2EncryptedDiminishedDP()
+        public void ReadPbes2Rc2EncryptedDiminishedDP()
         {
             // PBES2: PBKDF2 + RC2-128
             const string base64 = @"
@@ -763,7 +779,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
         }
 
         [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
-        public static void ReadPbes2Rc2EncryptedDiminishedDP_PasswordBytes()
+        public void ReadPbes2Rc2EncryptedDiminishedDP_PasswordBytes()
         {
             // PBES2: PBKDF2 + RC2-128
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test key.")]
@@ -791,7 +807,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
-        public static void ReadEncryptedDiminishedDP_EmptyPassword()
+        public void ReadEncryptedDiminishedDP_EmptyPassword()
         {
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test key.")]
             const string base64 = @"
@@ -816,7 +832,7 @@ Dmw2pL/LzHORugcg9BxRkur91lenPNcLAvnke76tMGvSGkA82I9NpBDcGRK4cPie
         }
 
         [Fact]
-        public static void ReadEncryptedDiminishedDP_EmptyPasswordBytes()
+        public void ReadEncryptedDiminishedDP_EmptyPasswordBytes()
         {
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test key.")]
             const string base64 = @"
@@ -840,9 +856,11 @@ Dmw2pL/LzHORugcg9BxRkur91lenPNcLAvnke76tMGvSGkA82I9NpBDcGRK4cPie
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(typeof(RSAKeyFileTests), nameof(Supports384BitPrivateKeyAndRC2))]
-        public static void ReadPbes1Rc2EncryptedRsa384()
+        [ConditionalFact]
+        public void ReadPbes1Rc2EncryptedRsa384()
         {
+            SkipTestException.ThrowUnless(Supports384BitPrivateKeyAndRC2);
+
             // PbeWithSha1AndRC2CBC
             const string base64 = @"
 MIIBMTAbBgkqhkiG9w0BBQswDgQIboOZHKKNEM8CAggABIIBEKOc+r+d5gI+TK7V
@@ -864,7 +882,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
-        public static void NoFuzzyRSAPublicKey()
+        public void NoFuzzyRSAPublicKey()
         {
             using (RSA key = RSAFactory.Create())
             {
@@ -907,7 +925,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
-        public static void NoFuzzySubjectPublicKeyInfo()
+        public void NoFuzzySubjectPublicKeyInfo()
         {
             using (RSA key = RSAFactory.Create())
             {
@@ -950,7 +968,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
-        public static void NoFuzzyRSAPrivateKey()
+        public void NoFuzzyRSAPrivateKey()
         {
             using (RSA key = RSAFactory.Create())
             {
@@ -993,7 +1011,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
-        public static void NoFuzzyPkcs8()
+        public void NoFuzzyPkcs8()
         {
             using (RSA key = RSAFactory.Create())
             {
@@ -1037,7 +1055,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
-        public static void NoFuzzyEncryptedPkcs8()
+        public void NoFuzzyEncryptedPkcs8()
         {
             using (RSA key = RSAFactory.Create())
             {
@@ -1074,7 +1092,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
-        public static void NoPrivKeyFromPublicOnly()
+        public void NoPrivKeyFromPublicOnly()
         {
             using (RSA key = RSAFactory.Create())
             {
@@ -1114,7 +1132,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
-        public static void BadPbeParameters()
+        public void BadPbeParameters()
         {
             using (RSA key = RSAFactory.Create())
             {
@@ -1236,7 +1254,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
-        public static void DecryptPkcs12WithBytes()
+        public void DecryptPkcs12WithBytes()
         {
             using (RSA key = RSAFactory.Create())
             {
@@ -1257,7 +1275,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
-        public static void DecryptPkcs12PbeTooManyIterations()
+        public void DecryptPkcs12PbeTooManyIterations()
         {
             // pbeWithSHAAnd3-KeyTripleDES-CBC with 600,001 iterations
             byte[] high3DesIterationKey = Convert.FromBase64String(@"
@@ -1294,7 +1312,7 @@ gms2YM+honjUS1sXk1zdm/8=");
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
-        public static void ReadWriteRsa2048EncryptedPkcs8_Pbes2HighIterations()
+        public void ReadWriteRsa2048EncryptedPkcs8_Pbes2HighIterations()
         {
             // pkcs5PBES2 hmacWithSHA256 aes128-CBC with 600,001 iterations
             ReadBase64EncryptedPkcs8(@"
@@ -1330,7 +1348,7 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
                 TestData.RSA2048Params);
         }
 
-        private static void ReadBase64EncryptedPkcs8(
+        private void ReadBase64EncryptedPkcs8(
             string base64EncPkcs8,
             string password,
             PbeParameters pbeParameters,
@@ -1347,7 +1365,7 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
                 isEncrypted: true);
         }
 
-        private static void ReadBase64EncryptedPkcs8(
+        private void ReadBase64EncryptedPkcs8(
             string base64EncPkcs8,
             byte[] passwordBytes,
             PbeParameters pbeParameters,
@@ -1364,7 +1382,7 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
                 isEncrypted: true);
         }
 
-        private static void ReadWriteBase64PublicPkcs1(
+        private void ReadWriteBase64PublicPkcs1(
             string base64PublicPkcs1,
             in RSAParameters expected)
         {
@@ -1384,7 +1402,7 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
                     rsa.TryExportRSAPublicKey(destination, out written));
         }
 
-        private static void ReadWriteBase64SubjectPublicKeyInfo(
+        private void ReadWriteBase64SubjectPublicKeyInfo(
             string base64SubjectPublicKeyInfo,
             in RSAParameters expected)
         {
@@ -1404,7 +1422,7 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
                     rsa.TryExportSubjectPublicKeyInfo(destination, out written));
         }
 
-        private static void ReadWriteBase64PrivatePkcs1(
+        private void ReadWriteBase64PrivatePkcs1(
             string base64PrivatePkcs1,
             in RSAParameters expected)
         {
@@ -1418,7 +1436,7 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
                     rsa.TryExportRSAPrivateKey(destination, out written));
         }
 
-        private static void ReadWriteBase64Pkcs8(string base64Pkcs8, in RSAParameters expected)
+        private void ReadWriteBase64Pkcs8(string base64Pkcs8, in RSAParameters expected)
         {
             ReadWriteKey(
                 base64Pkcs8,
@@ -1430,7 +1448,7 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
                     rsa.TryExportPkcs8PrivateKey(destination, out written));
         }
 
-        private static void ReadWriteKey(
+        private void ReadWriteKey(
             string base64,
             in RSAParameters expected,
             ReadKeyAction readAction,

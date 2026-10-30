@@ -143,6 +143,7 @@ NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
         END_PROLOGUE
 
         mov     rbx, rdi
+        mov     r12, r8                                             // Save ExKind
         INLINE_GETTHREAD
         mov     rdi, rbx
 
@@ -161,7 +162,7 @@ NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
         mov     [rsi + OFFSETOF__ExInfo__m_exception], rdx          // init the exception object to null
         mov     byte ptr [rsi + OFFSETOF__ExInfo__m_passNumber], 1  // init to the first pass
         mov     dword ptr [rsi + OFFSETOF__ExInfo__m_idxCurClause], 0xFFFFFFFF
-        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_kind], r8b      // ExKind (from r8b)
+        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_kind], r12b     // ExKind
 
         // link the ExInfo into the thread's ExInfo chain
         mov     rdx, [rax + OFFSETOF__Thread__m_pExInfoStackHead]
@@ -463,6 +464,21 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
         call    qword ptr [rsp + locArg0]                            // handler funclet address
 
 ALTERNATE_ENTRY RhpCallFinallyFunclet2
+
+        mov     rsi, [rsp + locArg1]                                 // rsi <- regdisplay
+
+        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pRbx]
+        mov     [rax]                            , rbx
+        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pRbp]
+        mov     [rax]                            , rbp
+        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR12]
+        mov     [rax]                            , r12
+        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR13]
+        mov     [rax]                            , r13
+        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR14]
+        mov     [rax]                            , r14
+        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR15]
+        mov     [rax]                            , r15
 
         mov     rax, [rsp + locThread]                               // rax <- Thread*
    lock or      dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc

@@ -55,17 +55,23 @@ public sealed partial class WebcilReader : IDisposable
         InputPath = inputPath;
     }
 
+    // V0 header is 28 bytes, V1 adds a 4-byte TableBase field (32 bytes total)
+    private const int V0HeaderSize = 28;
+    private const int V1HeaderSize = 32;
+
     private unsafe bool ReadHeader()
     {
-        WebcilHeader header;
-        var buffer = new byte[Marshal.SizeOf<WebcilHeader>()];
+        // Read the V0 portion of the header first (28 bytes)
+        WebcilHeader header = default;
+        var buffer = new byte[V0HeaderSize];
         if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
         {
             return false;
         }
         fixed (byte* p = buffer)
         {
-            header = *(WebcilHeader*)p;
+            // Copy V0 fields only (28 bytes) into the 32-byte struct
+            Buffer.MemoryCopy(p, &header, Marshal.SizeOf<WebcilHeader>(), V0HeaderSize);
         }
         if (!BitConverter.IsLittleEndian)
         {
@@ -79,10 +85,28 @@ public sealed partial class WebcilReader : IDisposable
             header.PeDebugSize = BinaryPrimitives.ReverseEndianness(header.PeDebugSize);
         }
         if (header.Id != WebcilConstants.WEBCIL_MAGIC
-            || header.VersionMajor != WebcilConstants.WC_VERSION_MAJOR
+            || (header.VersionMajor != 0 && header.VersionMajor != 1)
             || header.VersionMinor != WebcilConstants.WC_VERSION_MINOR)
         {
             return false;
+        }
+        if (header.VersionMajor >= 1)
+        {
+            // V1 has an additional TableBase field
+            var extra = new byte[V1HeaderSize - V0HeaderSize];
+            if (_stream.Read(extra, 0, extra.Length) != extra.Length)
+            {
+                return false;
+            }
+            header.TableBase = BitConverter.ToUInt32(extra, 0);
+            if (!BitConverter.IsLittleEndian)
+            {
+                header.TableBase = BinaryPrimitives.ReverseEndianness(header.TableBase);
+            }
+        }
+        else
+        {
+            header.TableBase = uint.MaxValue;
         }
         _header = header;
         return true;
@@ -353,7 +377,10 @@ public sealed partial class WebcilReader : IDisposable
         throw new BadImageFormatException("RVA not found in any section", nameof(_stream));
     }
 
-    private static long SectionDirectoryOffset => Marshal.SizeOf<WebcilHeader>();
+    // V0 header is 28 bytes (no TableBase), V1 is 32 bytes
+    private long SectionDirectoryOffset => _header.VersionMajor >= 1
+        ? V1HeaderSize
+        : V0HeaderSize;
 
     private unsafe ImmutableArray<WebcilSectionHeader> ReadSections()
     {
@@ -394,7 +421,125 @@ public sealed partial class WebcilReader : IDisposable
 
     public void Dispose()
     {
+        // The provider owns a memory-mapped section over _stream; leaving it to the finalizer keeps the file
+        // mapped inside long-lived MSBuild task hosts and later writers fail with "user-mapped section open".
+        _metadataReaderProvider?.Dispose();
+        _metadataReaderProvider = null;
         _stream.Dispose();
+    }
+
+    /// <summary>
+    /// Reads payloadSize and (for ReadyToRun images) tableSize from data segment 0 of a
+    /// webcil-in-wasm image, without instantiating it. tableSize &gt; 0 indicates an R2R image.
+    /// The webcil payload lives in a later data segment, so only the small size header is read.
+    /// All multi-byte integers in the wasm binary format are little-endian. See docs/design/mono/webcil.md.
+    /// </summary>
+    public static bool TryReadWebcilInWasmSizes(string path, out int payloadSize, out int tableSize, out string? failureReason)
+    {
+        using var fs = File.OpenRead(path);
+        return TryReadWebcilInWasmSizes(fs, out payloadSize, out tableSize, out failureReason);
+    }
+
+    /// <summary>
+    /// Stream overload of <see cref="TryReadWebcilInWasmSizes(string,out int,out int,out string)"/>.
+    /// The stream must be readable and seekable.
+    /// </summary>
+    public static bool TryReadWebcilInWasmSizes(Stream stream, out int payloadSize, out int tableSize, out string? failureReason)
+    {
+        payloadSize = 0;
+        tableSize = 0;
+        failureReason = null;
+        try
+        {
+            using var reader = new WebcilSizesModuleReader(stream);
+            if (!reader.IsWasmModule)
+            {
+                failureReason = "not a WebAssembly module (missing '\\0asm' magic)";
+                return false;
+            }
+            if (!reader.Visit() || !reader.HasSizes)
+            {
+                failureReason = reader.FailureReason ?? "no webcil size header found in the data section";
+                return false;
+            }
+            payloadSize = reader.PayloadSize;
+            tableSize = reader.TableSize;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            failureReason = ex.Message;
+            return false;
+        }
+    }
+
+    private static bool TryFill(Stream stream, byte[] buffer, int count)
+    {
+        int read = 0;
+        while (read < count)
+        {
+            int r = stream.Read(buffer, read, count - read);
+            if (r == 0)
+                return false;
+            read += r;
+        }
+        return true;
+    }
+
+    private static uint ReadUInt32LE(byte[] bytes, int offset)
+        => (uint)(bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24));
+
+    private sealed class WebcilSizesModuleReader : WasmModuleReader
+    {
+        internal bool HasSizes { get; private set; }
+        internal int PayloadSize { get; private set; }
+        internal int TableSize { get; private set; }
+        internal string? FailureReason { get; private set; }
+
+        public WebcilSizesModuleReader(Stream stream) : base(stream)
+        {
+        }
+
+        protected override bool VisitSection(Section sec, out bool shouldStop)
+        {
+            shouldStop = false;
+            if (sec != Section.Data)
+                return true;
+            shouldStop = true;
+
+            uint numSegments = ReadULEB128();
+            if (numSegments < 1)
+            {
+                FailureReason = "data section has no segments";
+                return false;
+            }
+
+            // Segment 0 holds payloadSize (u32) followed, for R2R images, by tableSize (u32).
+            if (!TryReadPassiveDataSegment(out long length, out long start))
+            {
+                FailureReason = "data segment 0 is not a passive segment";
+                return false;
+            }
+            if (length < 4)
+            {
+                FailureReason = "data segment 0 is too small to hold a payload size";
+                return false;
+            }
+
+            int want = length >= 8 ? 8 : 4;
+            byte[] sizes = new byte[8];
+            BaseStream.Seek(start, SeekOrigin.Begin);
+            if (!TryFill(BaseStream, sizes, want))
+            {
+                FailureReason = "data segment 0 was truncated before the sizes could be read";
+                return false;
+            }
+
+            PayloadSize = (int)ReadUInt32LE(sizes, 0);
+            TableSize = want == 8 ? (int)ReadUInt32LE(sizes, 4) : 0;
+            HasSizes = true;
+            return true;
+        }
     }
 
     private bool TryReadWasmWrapper(out long webcilInWasmOffset)
@@ -434,7 +579,7 @@ public sealed partial class WebcilReader : IDisposable
             if (!TryReadPassiveDataSegment (out long _, out long _))
                 return false;
 
-            if (!TryReadPassiveDataSegment (out long _, out long segmentStart))
+            if (!TryReadDataSegment (allowActive: true, out long _, out long segmentStart))
                 return false;
 
             HasWebcil = true;

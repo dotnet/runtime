@@ -18,7 +18,10 @@ namespace System.IO.Compression
 
         protected override int ValidQuality => 3;
         protected override int ValidWindowLog => 10;
-
+        protected override int MinQuality => 0;
+        protected override int MaxQuality => 11;
+        protected override int MinWindowLog => 10;
+        protected override int MaxWindowLog => 24;
         protected override int InvalidQualityTooLow => -1;
         protected override int InvalidQualityTooHigh => 12;
         protected override int InvalidWindowLogTooLow => 9;

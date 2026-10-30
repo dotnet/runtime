@@ -166,7 +166,7 @@ private :
     void Init(IUnknown* pUnk, BOOL bIsFreeThreaded, Thread *pThread DEBUGARG(RCW *pRCW));
 
     // Release the interface pointer held by the IUnkEntry.
-    VOID ReleaseInterface(RCW *pRCW);
+    VOID ReleaseInterface();
 
     // Free the IUnknown entry. ReleaseInterface must have been called.
     VOID Free();

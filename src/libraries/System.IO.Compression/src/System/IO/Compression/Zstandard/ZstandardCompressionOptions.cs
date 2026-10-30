@@ -5,7 +5,6 @@ namespace System.IO.Compression
 {
     /// <summary>Provides compression options to be used with Zstandard compression.</summary>
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardCompressionOptions
     {
         /// <summary>Gets the default compression quality level.</summary>
@@ -17,14 +16,26 @@ namespace System.IO.Compression
         /// <summary>Gets the maximum compression quality level.</summary>
         public static int MaxQuality => ZstandardUtils.Quality_Max;
 
-        /// <summary>Gets the default window size to use for Zstandard compression.</summary>
-        public static int DefaultWindowLog => ZstandardUtils.WindowLog_Default;
+        /// <summary>Gets the default base-2 logarithm of the window size to use for Zstandard compression.</summary>
+        public static int DefaultWindowLog2 => ZstandardUtils.WindowLog_Default;
 
-        /// <summary>Gets the minimum window size to use for Zstandard compression.</summary>
-        public static int MinWindowLog => ZstandardUtils.WindowLog_Min;
+        /// <summary>Gets the minimum base-2 logarithm of the window size to use for Zstandard compression.</summary>
+        public static int MinWindowLog2 => ZstandardUtils.WindowLog_Min;
 
-        /// <summary>Gets the maximum window size to use for Zstandard compression.</summary>
-        public static int MaxWindowLog => ZstandardUtils.WindowLog_Max;
+        /// <summary>Gets the maximum base-2 logarithm of the window size to use for Zstandard compression.</summary>
+        public static int MaxWindowLog2 => ZstandardUtils.WindowLog_Max;
+
+        /// <summary>Gets the minimum base-2 logarithm of the hash table size to use for Zstandard compression.</summary>
+        public static int MinHashLog2 => ZstandardUtils.HashLog_Min;
+
+        /// <summary>Gets the maximum base-2 logarithm of the hash table size to use for Zstandard compression.</summary>
+        public static int MaxHashLog2 => ZstandardUtils.HashLog_Max;
+
+        /// <summary>Gets the minimum base-2 logarithm of the chain table size to use for Zstandard compression.</summary>
+        public static int MinChainLog2 => ZstandardUtils.ChainLog_Min;
+
+        /// <summary>Gets the maximum base-2 logarithm of the chain table size to use for Zstandard compression.</summary>
+        public static int MaxChainLog2 => ZstandardUtils.ChainLog_Max;
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardCompressionOptions"/> class.</summary>
         public ZstandardCompressionOptions()
@@ -56,16 +67,16 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Gets or sets the window size to use for Zstandard compression.</summary>
-        /// <value>The window size for compression, expressed as base 2 logarithm.</value>
+        /// <summary>Gets or sets the base-2 logarithm of the window size to use for Zstandard compression.</summary>
+        /// <value>The base-2 logarithm of the window size for compression.</value>
         /// <remarks>
         /// The window size determines how much data the compressor can reference for finding matches.
         /// Larger window sizes can improve compression ratios for large files but require more memory.
-        /// The valid range is from <see cref="MinWindowLog"/> to <see cref="MaxWindowLog"/>.
+        /// The valid range is from <see cref="MinWindowLog2"/> to <see cref="MaxWindowLog2"/>.
         /// Value 0 indicates the implementation-defined default window size.
         /// </remarks>
-        /// <exception cref="ArgumentOutOfRangeException">The value is not 0 and is not between <see cref="MinWindowLog"/> and <see cref="MaxWindowLog"/>.</exception>
-        public int WindowLog
+        /// <exception cref="ArgumentOutOfRangeException">The value is not 0 and is not between <see cref="MinWindowLog2"/> and <see cref="MaxWindowLog2"/>.</exception>
+        public int WindowLog2
         {
             get;
             set
@@ -108,5 +119,47 @@ namespace System.IO.Compression
         /// <value><see langword="true"/> if long-distance matching is enabled; otherwise, <see langword="false"/>.</value>
         /// <remarks>Setting this property to <see langword="true" /> might improve compression ratios for large files at the cost of higher memory usage.</remarks>
         public bool EnableLongDistanceMatching { get; set; }
+
+        /// <summary>Gets or sets the base-2 logarithm of the initial probe (hash) table size to use for Zstandard compression.</summary>
+        /// <value>The base-2 logarithm of the hash table size. The valid range is from <see cref="MinHashLog2"/> to <see cref="MaxHashLog2"/>.</value>
+        /// <remarks>
+        /// Value 0 indicates the implementation-defined default hash table size derived from <see cref="Quality"/>.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">The value is not 0 and is not between <see cref="MinHashLog2"/> and <see cref="MaxHashLog2"/>.</exception>
+        public int HashLog2
+        {
+            get;
+            set
+            {
+                if (value != 0)
+                {
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZstandardUtils.HashLog_Min, nameof(value));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZstandardUtils.HashLog_Max, nameof(value));
+                }
+
+                field = value;
+            }
+        }
+
+        /// <summary>Gets or sets the base-2 logarithm of the multi-probe search (chain) table size to use for Zstandard compression.</summary>
+        /// <value>The base-2 logarithm of the chain table size. The valid range is from <see cref="MinChainLog2"/> to <see cref="MaxChainLog2"/>.</value>
+        /// <remarks>
+        /// Value 0 indicates the implementation-defined default chain table size derived from <see cref="Quality"/>.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">The value is not 0 and is not between <see cref="MinChainLog2"/> and <see cref="MaxChainLog2"/>.</exception>
+        public int ChainLog2
+        {
+            get;
+            set
+            {
+                if (value != 0)
+                {
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZstandardUtils.ChainLog_Min, nameof(value));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZstandardUtils.ChainLog_Max, nameof(value));
+                }
+
+                field = value;
+            }
+        }
     }
 }

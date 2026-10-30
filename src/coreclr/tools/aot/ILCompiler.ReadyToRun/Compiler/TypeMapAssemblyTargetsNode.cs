@@ -5,18 +5,25 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.NativeFormat;
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.ReadyToRun
 {
     internal class TypeMapAssemblyTargetsNode : ObjectNode, ISymbolDefinitionNode
     {
-        private TypeMapMetadata _assemblyTypeMaps;
-        private ImportReferenceProvider _importReferenceProvider;
+        private readonly TypeMapMetadata _assemblyTypeMaps;
+        private readonly ImportReferenceProvider _importReferenceProvider;
 
         public TypeMapAssemblyTargetsNode(TypeMapMetadata assemblyTypeMaps, ImportReferenceProvider importReferenceProvider)
         {
             _assemblyTypeMaps = assemblyTypeMaps;
             _importReferenceProvider = importReferenceProvider;
+        }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            TypeMapAssemblyTargetsNode otherNode = (TypeMapAssemblyTargetsNode)other;
+            return comparer.Compare(_assemblyTypeMaps.AssociatedModule, otherNode._assemblyTypeMaps.AssociatedModule);
         }
 
         public override bool IsShareable => false;
@@ -27,9 +34,8 @@ namespace ILCompiler.ReadyToRun
 
         public int Offset => 0;
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = [];
             foreach (var map in _assemblyTypeMaps.Maps)
             {
                 // Skip groups where assembly target attributes were present but all failed to resolve
@@ -41,13 +47,12 @@ namespace ILCompiler.ReadyToRun
                     continue;
 
                 var groupType = map.Key;
-                dependencies.Add(new DependencyListEntry(_importReferenceProvider.GetImportToType(groupType), "Type Map Assembly Target"));
+                sink.Add(new DependencyListEntry(_importReferenceProvider.GetImportToType(groupType, _assemblyTypeMaps.AssociatedModule), "Type Map Assembly Target"));
                 foreach (var targetModule in map.Value.TargetModules)
                 {
-                    dependencies.Add(new DependencyListEntry(_importReferenceProvider.GetImportToModule(targetModule), "Type Map Assembly Target"));
+                    sink.Add(new DependencyListEntry(_importReferenceProvider.GetImportToModule(targetModule), "Type Map Assembly Target"));
                 }
             }
-            return dependencies;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -72,7 +77,7 @@ namespace ILCompiler.ReadyToRun
                     continue;
 
                 var groupType = map.Key;
-                Vertex groupTypeVertex = _importReferenceProvider.EncodeReferenceToType(writer, groupType);
+                Vertex groupTypeVertex = _importReferenceProvider.EncodeReferenceToType(writer, groupType, _assemblyTypeMaps.AssociatedModule);
                 VertexSequence modules = new();
                 foreach (var targetModule in map.Value.TargetModules)
                 {
@@ -87,7 +92,12 @@ namespace ILCompiler.ReadyToRun
             return builder.ToObjectData();
         }
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
-        protected override string GetName(NodeFactory context) => "Type Map Assembly Targets Tables";
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb) => sb.Append(nameMangler.CompilationUnitPrefix).Append("__TypeMapAssemblyTargets"u8);
+        protected override string GetName(NodeFactory context) => $"Type Map Assembly Targets Tables ({_assemblyTypeMaps.AssociatedModule.Assembly.GetName().Name})";
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.CompilationUnitPrefix)
+              .Append("__TypeMapAssemblyTargets__"u8)
+              .Append(_assemblyTypeMaps.AssociatedModule.Assembly.GetName().Name);
+        }
     }
 }

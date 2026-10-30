@@ -105,7 +105,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory] // Delegates to Partitioning_Default, which skips (SkipTestException) when multithreading is unavailable.
         [OuterLoop]
         [MemberData(nameof(PartitioningData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void Partitioning_Default_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
@@ -129,7 +129,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory] // Delegates to Partitioning_Striped, which skips (SkipTestException) when multithreading is unavailable.
         [OuterLoop]
         [MemberData(nameof(PartitioningData), new int[] { /* Sources.OuterLoopCount */ })]
         public static void Partitioning_Striped_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int partitions)

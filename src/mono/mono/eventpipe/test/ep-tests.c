@@ -218,7 +218,7 @@ test_enable_disable (void)
 
 	test_location = 1;
 
-	session_id = ep_enable (
+	session_id = ep_init_session (
 		TEST_FILE,
 		1,
 		current_provider_config,
@@ -237,7 +237,7 @@ test_enable_disable (void)
 
 	test_location = 2;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	if (!ep_enabled ()) {
 		result = FAILED ("event pipe disabled");
@@ -342,7 +342,7 @@ test_enable_disable_default_provider_config (void)
 
 	EventPipeSessionID session_id = 0;
 
-	session_id = ep_enable_2 (
+	session_id = ep_init_session_2 (
 		TEST_FILE,
 		1,
 		NULL,
@@ -351,7 +351,8 @@ test_enable_disable_default_provider_config (void)
 		false,
 		NULL,
 		NULL,
-		NULL);
+		NULL,
+		EP_BUFFERING_MODE_DROP);
 
 	if (!session_id) {
 		result = FAILED ("Failed to enable session");
@@ -365,7 +366,7 @@ test_enable_disable_default_provider_config (void)
 
 	test_location = 3;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	if (!ep_enabled ()) {
 		result = FAILED ("event pipe disabled");
@@ -391,7 +392,7 @@ test_enable_disable_multiple_default_provider_config (void)
 	EventPipeSessionID session_id_1 = 0;
 	EventPipeSessionID session_id_2 = 0;
 
-	session_id_1 = ep_enable_2 (
+	session_id_1 = ep_init_session_2 (
 		TEST_FILE,
 		1,
 		NULL,
@@ -400,7 +401,8 @@ test_enable_disable_multiple_default_provider_config (void)
 		false,
 		NULL,
 		NULL,
-		NULL);
+		NULL,
+		EP_BUFFERING_MODE_DROP);
 
 	if (!session_id_1) {
 		result = FAILED ("Failed to enable session");
@@ -414,7 +416,7 @@ test_enable_disable_multiple_default_provider_config (void)
 
 	test_location = 3;
 
-	ep_start_streaming (session_id_1);
+	ep_start_session (session_id_1);
 
 	if (!ep_enabled ()) {
 		result = FAILED ("event pipe disabled");
@@ -423,7 +425,7 @@ test_enable_disable_multiple_default_provider_config (void)
 
 	test_location = 4;
 
-	session_id_2 = ep_enable_2 (
+	session_id_2 = ep_init_session_2 (
 		TEST_FILE_2,
 		1,
 		NULL,
@@ -432,7 +434,8 @@ test_enable_disable_multiple_default_provider_config (void)
 		false,
 		NULL,
 		NULL,
-		NULL);
+		NULL,
+		EP_BUFFERING_MODE_DROP);
 
 	if (!session_id_2) {
 		result = FAILED ("Failed to enable session");
@@ -446,7 +449,7 @@ test_enable_disable_multiple_default_provider_config (void)
 
 	test_location = 6;
 
-	ep_start_streaming (session_id_2);
+	ep_start_session (session_id_2);
 
 	if (!ep_enabled ()) {
 		result = FAILED ("event pipe disabled");
@@ -473,7 +476,7 @@ test_enable_disable_provider_config (void)
 	const ep_char8_t *provider_config = TEST_PROVIDER_NAME ":1:0:";
 	EventPipeSessionID session_id = 0;
 
-	session_id = ep_enable_2 (
+	session_id = ep_init_session_2 (
 		TEST_FILE,
 		1,
 		provider_config,
@@ -482,7 +485,8 @@ test_enable_disable_provider_config (void)
 		false,
 		NULL,
 		NULL,
-		NULL);
+		NULL,
+		EP_BUFFERING_MODE_DROP);
 
 	if (!session_id) {
 		result = FAILED ("Failed to enable session");
@@ -513,7 +517,7 @@ test_enable_disable_provider_config (void)
 
 	test_location = 7;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	if (!ep_enabled ()) {
 		result = FAILED ("event pipe disabled");
@@ -554,7 +558,7 @@ test_enable_disable_provider_parse_default_config (void)
 
 	EventPipeSessionID session_id = 0;
 
-	session_id = ep_enable_2 (
+	session_id = ep_init_session_2 (
 		TEST_FILE,
 		1,
 		provider_config,
@@ -563,7 +567,8 @@ test_enable_disable_provider_parse_default_config (void)
 		false,
 		NULL,
 		NULL,
-		NULL);
+		NULL,
+		EP_BUFFERING_MODE_DROP);
 
 	if (!session_id) {
 		result = FAILED ("Failed to enable session");
@@ -577,7 +582,7 @@ test_enable_disable_provider_parse_default_config (void)
 
 	test_location = 3;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	if (!ep_enabled ()) {
 		result = FAILED ("event pipe disabled");
@@ -626,7 +631,7 @@ test_create_delete_provider_with_callback (void)
 
 	test_location = 1;
 
-	session_id = ep_enable (
+	session_id = ep_init_session (
 		TEST_FILE,
 		1,
 		current_provider_config,
@@ -645,7 +650,7 @@ test_create_delete_provider_with_callback (void)
 
 	test_location = 2;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	test_provider = ep_create_provider (TEST_PROVIDER_NAME, provider_callback, &provider_callback_data);
 	ep_raise_error_if_nok (test_provider != NULL);
@@ -728,7 +733,7 @@ test_session_start_streaming (void)
 
 	test_location = 1;
 
-	session_id = ep_enable (
+	session_id = ep_init_session (
 		TEST_FILE,
 		1,
 		current_provider_config,
@@ -747,7 +752,7 @@ test_session_start_streaming (void)
 
 	test_location = 2;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 ep_on_exit:
 	ep_disable (session_id);
@@ -770,7 +775,7 @@ test_session_write_event (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	bool write_result = false;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -787,19 +792,19 @@ test_session_write_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, NULL, NULL);
+	session_id = ep_init_session (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
 	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
-	ep_raise_error_if_nok (write_result == true);
+	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
 
 ep_on_exit:
 	ep_disable (session_id);
@@ -823,7 +828,7 @@ test_session_write_event_seq_point (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	bool write_result = false;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -840,19 +845,19 @@ test_session_write_event_seq_point (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+	session_id = ep_init_session (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
 	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
-	ep_raise_error_if_nok (write_result == true);
+	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
 
 	test_location = 5;
 
@@ -880,7 +885,7 @@ test_session_write_wait_get_next_event (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	bool write_result = false;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -897,19 +902,19 @@ test_session_write_wait_get_next_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+	session_id = ep_init_session (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
 	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
-	ep_raise_error_if_nok (write_result == true);
+	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
 
 	test_location = 5;
 
@@ -945,7 +950,7 @@ test_session_write_get_next_event (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	bool write_result = false;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -962,12 +967,12 @@ test_session_write_get_next_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+	session_id = ep_init_session (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	// Starts as signaled.
 	// TODO: Is this expected behavior, just a way to notify observer that we are up and running?
@@ -981,7 +986,7 @@ test_session_write_get_next_event (void)
 	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
-	ep_raise_error_if_nok (write_result == true);
+	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
 
 	test_location = 6;
 
@@ -1022,7 +1027,7 @@ test_session_write_suspend_event (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	bool write_result = false;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -1039,19 +1044,19 @@ test_session_write_suspend_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+	session_id = ep_init_session (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
 	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
-	ep_raise_error_if_nok (write_result == true);
+	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
 
 	test_location = 5;
 
@@ -1099,12 +1104,12 @@ test_write_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+	session_id = ep_init_session (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventData data[1];
 	ep_event_data_init (&data[0], 0, 0, 0);
@@ -1150,12 +1155,12 @@ test_write_get_next_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+	session_id = ep_init_session (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventData data[1];
 	ep_event_data_init (&data[0], 0, 0, 0);
@@ -1210,7 +1215,7 @@ test_write_wait_get_next_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+	session_id = ep_init_session (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	session = ep_get_session (session_id);
@@ -1218,7 +1223,7 @@ test_write_wait_get_next_event (void)
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	// Starts as signaled.
 	// TODO: Is this expected behavior, just a way to notify observer that we are up and running?
@@ -1290,12 +1295,12 @@ test_write_event_perf (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
+	session_id = ep_init_session (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4, false, NULL, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventData data[1];
 	ep_event_data_init (&data[0], 0, 0, 0);

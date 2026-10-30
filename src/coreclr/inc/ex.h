@@ -184,7 +184,7 @@ class Exception
 
  public:
     Exception() {LIMITED_METHOD_DAC_CONTRACT; m_innerException = NULL;}
-    virtual ~Exception() {LIMITED_METHOD_DAC_CONTRACT; if (m_innerException != NULL) Exception::Delete(m_innerException); }
+    virtual ~Exception() noexcept {LIMITED_METHOD_DAC_CONTRACT; if (m_innerException != NULL) Exception::Delete(m_innerException); }
 #ifdef DACCESS_COMPILE
     void * operator new(size_t size);
     void operator delete(void* ptr);
@@ -232,7 +232,7 @@ class Exception
 
         HandlerState();
 
-        void CleanupTry();
+        void CleanupTry() noexcept;
         void SetupCatch(INDEBUG_COMMA(_In_z_ const char * szFile) int lineNum);
         void SucceedCatch();
 
@@ -258,10 +258,10 @@ class Exception
     // Preallocated exceptions:  If there is a preallocated instance of some
     //  subclass of Exception, override this function and return a correct
     //  value.  The default implementation returns constant FALSE
-    virtual BOOL IsPreallocatedException();
+    virtual BOOL IsPreallocatedException() noexcept;
     BOOL IsPreallocatedOOMException();
 
-    static void Delete(Exception* pvMemory);
+    static void Delete(Exception* pvMemory) noexcept;
 
 protected:
 
@@ -281,85 +281,18 @@ protected:
     virtual Exception *DomainBoundCloneHelper() { return CloneHelper(); }
 };
 
-#if 1
-
-inline void Exception__Delete(Exception* pvMemory)
+struct ExceptionTraits final
 {
-  Exception::Delete(pvMemory);
-}
-
-using ExceptionHolder = SpecializedWrapper<Exception, Exception__Delete>;
-#else
-
-//------------------------------------------------------------------------------
-// class ExceptionHolder
-//
-// This is a very lightweight holder class for use inside the EX_TRY family
-//  of macros.  It is based on the standard Holder classes, but has been
-//  highly specialized for this one function, so that extra code can be
-//  removed, and the resulting code can be simple enough for all of the
-//  non-exceptional-case code to be inlined.
-class ExceptionHolder
-{
-private:
-    Exception *m_value;
-    BOOL      m_acquired;
-
-public:
-    FORCEINLINE ExceptionHolder(Exception *pException = NULL, BOOL take = TRUE)
-      : m_value(pException)
+    using Type = Exception*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept
     {
-        m_acquired = pException && take;
+        STATIC_CONTRACT_WRAPPER;
+        Exception::Delete(value);
     }
-
-    FORCEINLINE ~ExceptionHolder()
-    {
-        if (m_acquired)
-        {
-            Exception::Delete(m_value);
-        }
-    }
-
-    Exception* operator->() { return m_value; }
-
-    void operator=(Exception *p)
-    {
-        Release();
-        m_value = p;
-        Acquire();
-    }
-
-    BOOL IsNull() { return m_value == NULL; }
-
-    operator Exception*() { return m_value; }
-
-    Exception* GetValue() { return m_value; }
-
-    void SuppressRelease() { m_acquired = FALSE; }
-
-private:
-    void Acquire()
-    {
-        _ASSERTE(!m_acquired);
-
-        if (!IsNull())
-        {
-            m_acquired = TRUE;
-        }
-    }
-    void Release()
-    {
-        if (m_acquired)
-        {
-            _ASSERTE(!IsNull());
-            Exception::Delete(m_value);
-            m_acquired = FALSE;
-        }
-    }
-
 };
 
-#endif
+using ExceptionHolder = LifetimeHolder<ExceptionTraits>;
 
 // ---------------------------------------------------------------------------
 // HRException class.  Implements exception API for exceptions generated from HRESULTs
@@ -590,7 +523,7 @@ class OutOfMemoryException : public Exception
 
     virtual Exception *Clone();
 
-    virtual BOOL IsPreallocatedException() { return bIsPreallocated; }
+    virtual BOOL IsPreallocatedException() noexcept { return bIsPreallocated; }
 };
 
 template <typename STATETYPE>
@@ -613,7 +546,7 @@ public:
 #endif
     }
 
-    DEBUG_NOINLINE ~CAutoTryCleanup()
+    DEBUG_NOINLINE ~CAutoTryCleanup() noexcept
     {
         WRAPPER_NO_CONTRACT;
 
@@ -750,8 +683,6 @@ void ExThrowTrap(const char *fcn, const char *file, int line, const char *szType
 
 #define EX_THROW(_type, _args)                                                          \
     {                                                                                   \
-        FAULT_NOT_FATAL();                                                              \
-                                                                                        \
         _type * ___pExForExThrow =  new _type _args ;                                   \
                 /* don't embed file names in retail to save space and avoid IP */       \
                 /* a findstr /n will allow you to locate it in a pinch */               \
@@ -768,6 +699,7 @@ void ExThrowTrap(const char *fcn, const char *file, int line, const char *szType
 // every place we call EX_THROW_WITH_INNER.
 //--------------------------------------------------------------------------------
 Exception *ExThrowWithInnerHelper(Exception *inner);
+Exception *GetExceptionFromCxxException();
 
 // This macro will set the m_innerException into the newly created exception
 // The passed in _type has to be derived from CLRException. You cannot put OOM
@@ -776,8 +708,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 //
 #define EX_THROW_WITH_INNER(_type, _args, _inner)                                       \
     {                                                                                   \
-        FAULT_NOT_FATAL();                                                              \
-                                                                                        \
         Exception *_inner2 = ExThrowWithInnerHelper(_inner);                            \
         _type *___pExForExThrow =  new _type _args ;                                    \
         ___pExForExThrow->SetInnerException(_inner2);                                   \
@@ -818,11 +748,11 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #define EX_CATCH_IMPL_EX(DerivedExceptionClass)                                         \
                 }                                                                       \
             }                                                                           \
-            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                     \
+            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::exception&)                     \
             {                                                                           \
                 __state.SetCaughtCxx();                                                 \
-                __state.m_pExceptionPtr = Exception::GetOOMException();                 \
-                ThrowOutOfMemory();                                                     \
+                __state.m_pExceptionPtr = GetExceptionFromCxxException();                 \
+                PAL_CPP_THROW(Exception *, __state.m_pExceptionPtr);                    \
             }                                                                           \
             PAL_CPP_CATCH_DERIVED (DerivedExceptionClass, __pExceptionRaw)              \
             {                                                                           \
@@ -859,11 +789,11 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #define EX_CATCH_IMPL_CPP_ONLY                                                      \
                 }                                                                   \
             }                                                                       \
-            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                 \
+            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::exception&)                 \
             {                                                                       \
                 __state.SetCaughtCxx();                                             \
-                __state.m_pExceptionPtr = Exception::GetOOMException();             \
-                ThrowOutOfMemory();                                                 \
+                __state.m_pExceptionPtr = GetExceptionFromCxxException();             \
+                PAL_CPP_THROW(Exception *, __state.m_pExceptionPtr);                \
             }                                                                       \
             PAL_CPP_ENDTRY                                                          \
         }                                                                           \
@@ -934,13 +864,13 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 
 #define EX_RETHROW                                                                      \
         {                                                                               \
-            __pException.SuppressRelease();                                             \
+            __pException.Detach();                                                      \
             PAL_CPP_RETHROW;                                                            \
         }                                                                               \
 
  // Define a copy of GET_EXCEPTION() that will not be redefined by clrex.h
-#define GET_EXCEPTION() (__pException == NULL ? &__defaultException : __pException.GetValue())
-#define EXTRACT_EXCEPTION() (__pException.Extract())
+#define GET_EXCEPTION() (__pException == NULL ? &__defaultException : static_cast<Exception*>(__pException))
+#define EXTRACT_EXCEPTION() (__pException.Detach())
 
 
 //==============================================================================
@@ -1187,7 +1117,7 @@ inline Exception::HandlerState::HandlerState()
 #endif
 }
 
-inline void Exception::HandlerState::CleanupTry()
+inline void Exception::HandlerState::CleanupTry() noexcept
 {
     LIMITED_METHOD_DAC_CONTRACT;
 }

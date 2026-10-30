@@ -10,6 +10,7 @@
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
+#include "NativePrimitiveDecoder.h"
 #include "Crst.h"
 #include "rhbinder.h"
 #include "RuntimeInstance.h"
@@ -24,14 +25,8 @@
 #include "MethodTable.h"
 
 #include "CommonMacros.inl"
-#include "slist.inl"
 #include "MethodTable.inl"
 #include "../../inc/clrversion.h"
-
-#ifdef  FEATURE_GC_STRESS
-enum HijackType { htLoop, htCallsite };
-bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht);
-#endif // FEATURE_GC_STRESS
 
 #include "shash.inl"
 
@@ -40,7 +35,7 @@ uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE] = { 0 };
 
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {
-    return m_pThreadStore;
+    return ThreadStore::s_pThreadStore;
 }
 
 FCIMPL1(uint8_t *, RhGetCrashInfoBuffer, int32_t* pcbMaxSize)
@@ -50,7 +45,7 @@ FCIMPL1(uint8_t *, RhGetCrashInfoBuffer, int32_t* pcbMaxSize)
 }
 FCIMPLEND
 
-#if TARGET_UNIX
+#if TARGET_UNIX || TARGET_WASM
 #include "PalCreateDump.h"
 FCIMPL1(void, RhCreateCrashDumpIfEnabled, PEXCEPTION_RECORD pExceptionRecord)
 {
@@ -154,7 +149,7 @@ PTR_uint8_t RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID Co
             uint8_t flags = *pData++;
 
             if ((flags & (uint8_t)AssociatedDataFlags::HasUnboxingStubTarget) != 0)
-                return pData + *dac_cast<PTR_int32_t>(pData);
+                return pData + NativePrimitiveDecoder::PeekInt32(pData);
         }
     }
 
@@ -180,7 +175,6 @@ RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
 #ifndef DACCESS_COMPILE
 
 RuntimeInstance::RuntimeInstance() :
-    m_pThreadStore(NULL),
     m_CodeManager(NULL),
     m_conservativeStackReportingEnabled(false),
     m_pUnboxingStubsRegion(NULL)
@@ -189,10 +183,10 @@ RuntimeInstance::RuntimeInstance() :
 
 RuntimeInstance::~RuntimeInstance()
 {
-    if (NULL != m_pThreadStore)
+    if (NULL != ThreadStore::s_pThreadStore)
     {
-        delete m_pThreadStore;
-        m_pThreadStore = NULL;
+        delete ThreadStore::s_pThreadStore;
+        ThreadStore::s_pThreadStore = NULL;
     }
 }
 
@@ -268,7 +262,7 @@ bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
         return false;
 
     pEntry->m_pTypeManager = pTypeManager;
-    m_TypeManagerList.PushHeadInterlocked(pEntry);
+    m_TypeManagerList.InsertHead(pEntry);
 
     return true;
 }
@@ -290,7 +284,7 @@ FCIMPL1(void*, RhpRegisterOsModule, HANDLE hOsModule)
 
     pEntry->m_osModule = hOsModule;
     RuntimeInstance *pRuntimeInstance = GetRuntimeInstance();
-    pRuntimeInstance->GetOsModuleList()->PushHeadInterlocked(pEntry);
+    pRuntimeInstance->GetOsModuleList()->InsertHead(pEntry);
 
     return hOsModule; // Return non-null on success
 }
@@ -315,11 +309,11 @@ bool RuntimeInstance::Initialize(HANDLE hPalInstance)
     pThreadStore.SuppressRelease();
     pRuntimeInstance.SuppressRelease();
 
-    pRuntimeInstance->m_pThreadStore = pThreadStore;
     pRuntimeInstance->m_hPalInstance = hPalInstance;
 
     ASSERT_MSG(g_pTheRuntimeInstance == NULL, "multi-instances are not supported");
     g_pTheRuntimeInstance = pRuntimeInstance;
+    ThreadStore::s_pThreadStore = pThreadStore;
 
     return true;
 }
@@ -329,48 +323,14 @@ void RuntimeInstance::Destroy()
     delete this;
 }
 
-bool RuntimeInstance::ShouldHijackLoopForGcStress(uintptr_t CallsiteIP)
+EXTERN_C void* g_pDispatchCache;
+void* g_pDispatchCache;
+
+FCIMPL1(void, RhpRegisterDispatchCache, void* pCache)
 {
-#ifdef FEATURE_GC_STRESS
-    return ShouldHijackForGcStress(CallsiteIP, htLoop);
-#else // FEATURE_GC_STRESS
-    UNREFERENCED_PARAMETER(CallsiteIP);
-    return false;
-#endif // FEATURE_GC_STRESS
-}
-
-bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
-{
-#ifdef FEATURE_GC_STRESS
-    return ShouldHijackForGcStress(CallsiteIP, htCallsite);
-#else // FEATURE_GC_STRESS
-    UNREFERENCED_PARAMETER(CallsiteIP);
-    return false;
-#endif // FEATURE_GC_STRESS
-}
-
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-EXTERN_C void F_CALL_CONV RhpInitialDynamicInterfaceDispatch();
-
-FCIMPL2(void *, RhNewInterfaceDispatchCell, MethodTable * pInterface, int32_t slotNumber)
-{
-    InterfaceDispatchCell * pCell = new (nothrow) InterfaceDispatchCell[2];
-    if (pCell == NULL)
-        return NULL;
-
-    // Due to the synchronization mechanism used to update this indirection cell we must ensure the cell's alignment is twice that of a pointer.
-    // Fortunately, Windows heap guarantees this alignment.
-    ASSERT(IS_ALIGNED(pCell, 2 * POINTER_SIZE));
-    ASSERT(IS_ALIGNED(pInterface, (InterfaceDispatchCell::IDC_CachePointerMask + 1)));
-
-    pCell[0].m_pStub = (uintptr_t)&RhpInitialDynamicInterfaceDispatch;
-    pCell[0].m_pCache = ((uintptr_t)pInterface) | InterfaceDispatchCell::IDC_CachePointerIsInterfacePointerOrMetadataToken;
-    pCell[1].m_pStub = 0;
-    pCell[1].m_pCache = (uintptr_t)slotNumber;
-
-    return pCell;
+    ASSERT(g_pDispatchCache == NULL);
+    g_pDispatchCache = pCache;
 }
 FCIMPLEND
-#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #endif // DACCESS_COMPILE

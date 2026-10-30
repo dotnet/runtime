@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -205,7 +205,7 @@ namespace System.Globalization
         /// \u4f00\u302a\ud800\udc00\u4f01, this method would return the indices:
         /// 0, 2, 4.
         /// </summary>
-        public static int[] ParseCombiningCharacters(string str)
+        public static unsafe int[] ParseCombiningCharacters(string str)
         {
             if (str is null)
             {

@@ -7,8 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 
 
 
@@ -74,13 +72,6 @@ namespace Build.Tasks
             set;
         }
 
-        [Output]
-        public ITaskItem[] SatelliteAssemblies
-        {
-            get;
-            set;
-        }
-
         /// <summary>
         /// CoreCLR runtime pack files (apphost, native assets, managed assemblies replaced by NativeAOT equivalents)
         /// that should be removed from the publish output and replaced with NativeAOT runtime pack assemblies.
@@ -95,7 +86,6 @@ namespace Build.Tasks
         public override bool Execute()
         {
             var runtimePackFilesToSkipPublish = new List<ITaskItem>();
-            var satelliteAssemblies = new List<ITaskItem>();
             var nativeAotFrameworkAssembliesToUse = new Dictionary<string, ITaskItem>();
 
             foreach (ITaskItem taskItem in SdkAssemblies)
@@ -159,44 +149,9 @@ namespace Build.Tasks
                     runtimePackFilesToSkipPublish.Add(taskItem);
                     continue;
                 }
-
-                // Only classify files that the SDK has identified as managed runtime assemblies.
-                // Other files (e.g. Content items that happen to be managed assemblies) should be
-                // left alone and allowed to be published as-is.
-                if (!taskItem.GetMetadata("PostprocessAssembly").Equals("true", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                // Check if this is a satellite assembly by reading its culture metadata.
-                // Non-managed files are silently skipped as a safety measure.
-                try
-                {
-                    using (FileStream moduleStream = File.OpenRead(itemSpec))
-                    using (var module = new PEReader(moduleStream))
-                    {
-                        if (module.HasMetadata)
-                        {
-                            MetadataReader moduleMetadataReader = module.GetMetadataReader();
-                            if (moduleMetadataReader.IsAssembly)
-                            {
-                                string culture = moduleMetadataReader.GetString(moduleMetadataReader.GetAssemblyDefinition().Culture);
-
-                                if (culture != "" && !culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    satelliteAssemblies.Add(taskItem);
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (BadImageFormatException)
-                {
-                }
             }
 
             RuntimePackFilesToSkipPublish = runtimePackFilesToSkipPublish.ToArray();
-            SatelliteAssemblies = satelliteAssemblies.ToArray();
 
             return true;
 

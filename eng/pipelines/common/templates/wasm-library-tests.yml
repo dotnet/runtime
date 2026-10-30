@@ -9,6 +9,8 @@ parameters:
   scenarios: ['WasmTestOnChrome']
   shouldContinueOnError: false
   shouldRunSmokeOnly: false
+  useHelixMonitor: false
+  runOnlyOnChromeVersionUpdate: false
 
 jobs:
 
@@ -87,10 +89,16 @@ jobs:
       #     - then run only if it would not have run on default pipelines (based
       #       on path changes)
       #     - else run based on path changes
-      condition: >-
-        or(
-          eq(variables['alwaysRunVar'], true),
-          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+      ${{ if eq(parameters.runOnlyOnChromeVersionUpdate, true) }}:
+        condition: >-
+          or(
+            eq(variables['alwaysRunVar'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true))
+      ${{ else }}:
+        condition: >-
+          or(
+            eq(variables['alwaysRunVar'], true),
+            eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
@@ -99,3 +107,4 @@ jobs:
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArguments }}
             scenarios: ${{ parameters.scenarios }}
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}

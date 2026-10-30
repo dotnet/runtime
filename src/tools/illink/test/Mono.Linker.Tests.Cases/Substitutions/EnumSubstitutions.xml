@@ -1,0 +1,10 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.Substitutions.EnumSubstitutions">
+      <field name="FieldByName" value="ByName" />
+      <field name="FieldByNumber" value="2" />
+      <method signature="Mono.Linker.Tests.Cases.Substitutions.EnumSubstitutions/SubstitutionValue MethodByName()" body="stub" value="ByName" />
+      <method signature="Mono.Linker.Tests.Cases.Substitutions.EnumSubstitutions/SubstitutionValue MethodByNumber()" body="stub" value="2" />
+    </type>
+  </assembly>
+</linker>

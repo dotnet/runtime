@@ -29,7 +29,9 @@ namespace TestApp
                 var info = new global::System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<global::System.Collections.Generic.Dictionary<string, int>>
                 {
                     ObjectCreator = () => new global::System.Collections.Generic.Dictionary<string, int>(),
-                    SerializeHandler = DictionaryStringInt32SerializeHandler
+                    SerializeHandler = DictionaryStringInt32SerializeHandler,
+                    PolymorphismOptions = new global::System.Text.Json.Serialization.Metadata.JsonPolymorphismOptions(),
+                    TypeClassifierFactory = null,
                 };
                 
                 jsonTypeInfo = global::System.Text.Json.Serialization.Metadata.JsonMetadataServices.CreateDictionaryInfo<global::System.Collections.Generic.Dictionary<string, int>, string, int>(options, info);

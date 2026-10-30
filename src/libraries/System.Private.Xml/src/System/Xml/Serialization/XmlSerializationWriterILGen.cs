@@ -1476,6 +1476,10 @@ namespace System.Xml.Serialization
         {
             TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc!;
 
+            // When the member is an array-like value serialized as XML text (e.g. [XmlText] string[]),
+            // its items are written as a single whitespace-separated list so that the value round-trips.
+            bool isListText = text != null && text.IsList && elements.Length == 0;
+
             if (arrayTypeDesc.IsEnumerable)
             {
                 LocalBuilder eLoc = ilg.DeclareLocal(typeof(IEnumerator), "e");
@@ -1514,6 +1518,14 @@ namespace System.Xml.Serialization
                 ilg.ConvertValue(getEnumeratorMethod.ReturnType, typeof(IEnumerator));
                 ilg.Stloc(eLoc);
 
+                LocalBuilder? sepLoc = null;
+                if (isListText)
+                {
+                    sepLoc = ilg.DeclareOrGetLocal(typeof(bool), $"{arrayName}NeedsSep");
+                    ilg.Ldc(false);
+                    ilg.Stloc(sepLoc);
+                }
+
                 ilg.Ldloc(eLoc);
                 ilg.Load(null);
                 ilg.If(Cmp.NotEqualTo);
@@ -1521,6 +1533,15 @@ namespace System.Xml.Serialization
                 string arrayNamePlusA = $"{(arrayName).Replace(arrayTypeDesc.Name, "")}a{arrayElementTypeDesc.Name}";
                 string arrayNamePlusI = $"{(arrayName).Replace(arrayTypeDesc.Name, "")}i{arrayElementTypeDesc.Name}";
                 WriteLocalDecl(arrayNamePlusI, "e.Current", arrayElementTypeDesc.Type!);
+                if (isListText)
+                {
+                    ilg.Ldloc(sepLoc!);
+                    ilg.If();
+                    WriteListSeparatorSpace();
+                    ilg.EndIf();
+                    ilg.Ldc(true);
+                    ilg.Stloc(sepLoc!);
+                }
                 WriteElements(new SourceInfo(arrayNamePlusI, null, null, arrayElementTypeDesc.Type, ilg), $"{choiceName}i", elements, text, choice, arrayNamePlusA, true, true);
 
                 ilg.WhileBeginCondition(); // while (e.MoveNext())
@@ -1555,10 +1576,32 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
+                    if (isListText)
+                    {
+                        ilg.Ldloc(localI);
+                        ilg.Ldc(0);
+                        ilg.If(Cmp.NotEqualTo);
+                        WriteListSeparatorSpace();
+                        ilg.EndIf();
+                    }
                     WriteElements(new SourceInfo(ReflectionAwareILGen.GetStringForArrayMember(arrayName, iPlusArrayName), null, null, arrayElementTypeDesc.Type, ilg), null, elements, text, choice, arrayNamePlusA, true, arrayElementTypeDesc.IsNullable);
                 }
                 ilg.EndFor();
             }
+        }
+
+        // Emits a call to WriteValue(" ") used to separate values of an array-like member
+        // that is serialized as a single whitespace-separated XML text list.
+        private void WriteListSeparatorSpace()
+        {
+            MethodInfo XmlSerializationWriter_WriteValue = typeof(XmlSerializationWriter).GetMethod(
+                "WriteValue",
+                CodeGenerator.InstanceBindingFlags,
+                new Type[] { typeof(string) }
+                )!;
+            ilg.Ldarg(0);
+            ilg.Ldstr(" ");
+            ilg.Call(XmlSerializationWriter_WriteValue);
         }
 
         private void WriteElements(SourceInfo source, string? enumSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, string arrayName, bool writeAccessors, bool isNullable)

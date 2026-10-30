@@ -49,7 +49,7 @@ namespace System
                 return false;
             if (!thisInfo->Handle.Equals(thatInfo->Handle))
                 return false;
-            if (thisInfo->_numGenericArgsAndFlag != thatInfo->_numGenericArgsAndFlag)
+            if (thisInfo->NumGenericArgs != thatInfo->NumGenericArgs)
                 return false;
 
             RuntimeTypeHandle* thisFirstArg = &thisInfo->FirstArgument;
@@ -115,6 +115,20 @@ namespace System
         {
             return (MethodHandleInfo*)_value;
         }
+
+        internal readonly unsafe IntPtr ResolveGenericVirtualMethodTarget(object target)
+        {
+            MethodHandleInfo* info = ToMethodHandleInfo();
+            void* methodInstantiation = info->NumGenericArgs != 0 ? (MethodTable*)&info->FirstArgument : null;
+
+            return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
+                new RuntimeTypeHandle(target.GetMethodTable()),
+                info->DeclaringType,
+                info->Handle,
+                isAsyncVariant: false,
+                methodInstantiation,
+                isMethodInstantiationDataRelative: false);
+        }
     }
 
     [CLSCompliant(false)]
@@ -123,19 +137,7 @@ namespace System
     {
         public RuntimeTypeHandle DeclaringType;
         public MethodHandle Handle;
-        internal int _numGenericArgsAndFlag;
+        public int NumGenericArgs;
         public RuntimeTypeHandle FirstArgument;
-
-        public int NumGenericArgs
-        {
-            get => _numGenericArgsAndFlag & ~RuntimeMethodHandleConstants.IsAsyncVariant;
-            set => _numGenericArgsAndFlag = (_numGenericArgsAndFlag & RuntimeMethodHandleConstants.IsAsyncVariant) | value;
-        }
-
-        public bool IsAsyncVariant
-        {
-            get => (_numGenericArgsAndFlag & RuntimeMethodHandleConstants.IsAsyncVariant) != 0;
-            set => _numGenericArgsAndFlag = value ? _numGenericArgsAndFlag | RuntimeMethodHandleConstants.IsAsyncVariant : _numGenericArgsAndFlag & ~RuntimeMethodHandleConstants.IsAsyncVariant;
-        }
     }
 }

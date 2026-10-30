@@ -46,11 +46,18 @@ struct InterpMethod
     bool initLocals;
     bool unmanagedCallersOnly;
     bool publishSecretStubParam;
+    int32_t codeSize; // size in int32_t slots
+
+    // Maps Continuation.State (suspension-point index) to the byte offset of the matching
+    // INTOP_HANDLE_CONTINUATION_RESUME opcode from InterpByteCodeStart.
+    int32_t numSuspensionPoints;
+    int32_t* suspensionPointIPOffsets;
 
 #ifdef INTERPRETER_COMPILER_INTERNAL
     InterpMethod(
         CORINFO_METHOD_HANDLE methodHnd, int32_t argsSize, int32_t allocaSize,
-        void** pDataItems, bool initLocals, bool unmanagedCallersOnly, bool publishSecretStubParam
+        void** pDataItems, bool initLocals, bool unmanagedCallersOnly,
+        bool publishSecretStubParam, int32_t codeSize
     )
     {
 #if DEBUG
@@ -63,6 +70,9 @@ struct InterpMethod
         this->initLocals = initLocals;
         this->unmanagedCallersOnly = unmanagedCallersOnly;
         this->publishSecretStubParam = publishSecretStubParam;
+        this->codeSize = codeSize;
+        this->numSuspensionPoints = 0;
+        this->suspensionPointIPOffsets = NULL;
         pCallStub = NULL;
     }
 #endif
@@ -205,16 +215,19 @@ struct InterpAsyncSuspendData
     InterpIntervalMapEntry* zeroedLocalsIntervals; // This will be used for the locals we need to keep live.
     InterpIntervalMapEntry* liveLocalsIntervals; // Following the end of this struct is the array of InterpIntervalMapEntry for live locals
     CorInfoContinuationFlags flags;
-    int32_t offsetIntoContinuationTypeForExecutionContext;
     int32_t keepAliveOffset; // Only needed if we have a generic context to keep alive
     InterpByteCodeStart* methodStartIP;
     COMPILER_SHARED_TYPE(CORINFO_CLASS_HANDLE, DPTR(MethodTable), asyncMethodReturnType);
     int32_t asyncMethodReturnTypePrimitiveSize; // 0 if not primitive, otherwise size in bytes
     int32_t continuationArgOffset;
+    int32_t returnValueContinuationDataSize; // Aligned size of the return value in continuation data (0 if void). Live locals start after this offset.
+    int32_t returnValueVarStackOffset; // Interpreter stack offset of the return value var (valid only when returnValueContinuationDataSize > 0)
 
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), captureSyncContextMethod);
-    COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreExecutionContextMethod);
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreContextsOnSuspensionMethod);
+
+    // Written into Continuation.State at suspend; matches the JIT encoding.
+    int32_t suspensionPointIndex;
 };
 
 #endif

@@ -82,12 +82,23 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = STRING_LENGTH(gss_ntlm_o
     PER_FUNCTION_BLOCK(GSS_C_NT_USER_NAME) \
     PER_FUNCTION_BLOCK(GSS_C_NT_HOSTBASED_SERVICE)
 
+// Functions that may be absent from the GSSAPI implementation. Unlike FOR_ALL_GSS_FUNCTIONS,
+// a missing symbol leaves the indirection pointer NULL instead of aborting the process, and
+// callers must check availability before use.
+#if HAVE_GSS_GET_NAME_ATTRIBUTE
+#define FOR_ALL_OPTIONAL_GSS_FUNCTIONS \
+    PER_FUNCTION_BLOCK(gss_get_name_attribute)
+#else
+#define FOR_ALL_OPTIONAL_GSS_FUNCTIONS
+#endif
+
 // define indirection pointers for all functions, like
 // static TYPEOF(gss_accept_sec_context)* gss_accept_sec_context_ptr;
 #define PER_FUNCTION_BLOCK(fn) \
 static TYPEOF(fn)* fn##_ptr;
 
 FOR_ALL_GSS_FUNCTIONS
+FOR_ALL_OPTIONAL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
 static void* volatile s_gssLib = NULL;
@@ -112,6 +123,9 @@ static void* volatile s_gssLib = NULL;
 #define gss_wrap(...)                       gss_wrap_ptr(__VA_ARGS__)
 #define gss_get_mic(...)                    gss_get_mic_ptr(__VA_ARGS__)
 #define gss_verify_mic(...)                 gss_verify_mic_ptr(__VA_ARGS__)
+#if HAVE_GSS_GET_NAME_ATTRIBUTE
+#define gss_get_name_attribute(...)         gss_get_name_attribute_ptr(__VA_ARGS__)
+#endif
 
 #define GSS_C_NT_USER_NAME                  (*GSS_C_NT_USER_NAME_ptr)
 #define GSS_C_NT_HOSTBASED_SERVICE          (*GSS_C_NT_HOSTBASED_SERVICE_ptr)
@@ -122,7 +136,7 @@ static void* volatile s_gssLib = NULL;
 static int32_t ensure_gss_shim_initialized(void)
 {
     void* lib = dlopen(gss_lib_name, RTLD_LAZY);
-    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
+    if (lib == NULL) { return -1; }
 
     // check is someone else has opened and published s_gssLib already
     if (!pal_atomic_cas_ptr(&s_gssLib, lib, NULL))
@@ -130,20 +144,38 @@ static int32_t ensure_gss_shim_initialized(void)
         dlclose(lib);
     }
 
-    // initialize indirection pointers for all functions, like:
-    //   gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(s_gssLib, "gss_accept_sec_context");
-    //   if (gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", gss_lib_name, dlerror()); return -1; }
+    // initialize indirection pointers for all functions
 #define PER_FUNCTION_BLOCK(fn) \
     fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn); \
-    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); abort(); }
 
     FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
+
+    // Optional functions are allowed to be missing; leave the pointer NULL and let
+    // callers degrade gracefully.
+#if HAVE_GSS_GET_NAME_ATTRIBUTE
+#define PER_FUNCTION_BLOCK(fn) \
+    fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn);
+
+    FOR_ALL_OPTIONAL_GSS_FUNCTIONS
+#undef PER_FUNCTION_BLOCK
+#endif
 
     return 0;
 }
 
 #endif // GSS_SHIM
+
+#if HAVE_GSS_GET_NAME_ATTRIBUTE
+// Reports whether gss_get_name_attribute can be called. When the GSS shim is in use the
+// symbol is resolved lazily and may be absent from the loaded library.
+#if defined(GSS_SHIM)
+#define HAS_GSS_GET_NAME_ATTRIBUTE() (gss_get_name_attribute_ptr != NULL)
+#else
+#define HAS_GSS_GET_NAME_ATTRIBUTE() (1)
+#endif
+#endif
 
 // transfers ownership of the underlying data from gssBuffer to PAL_GssBuffer
 static void NetSecurityNative_MoveBuffer(gss_buffer_t gssBuffer, PAL_GssBuffer* targetBuffer)
@@ -244,7 +276,20 @@ uint32_t NetSecurityNative_ImportPrincipalName(uint32_t* minorStatus,
     // Principal name will usually be in the form SERVICE/HOST. But SPNEGO protocol prefers
     // GSS_C_NT_HOSTBASED_SERVICE format. That format uses '@' separator instead of '/' between
     // service name and host name. So convert input string into that format.
+    //
+    // If the input contains both '/' and '@' (e.g. SERVICE/HOST@REALM), it is a fully
+    // qualified Kerberos principal name with an explicit realm. Import it directly as
+    // GSS_KRB5_NT_PRINCIPAL_NAME so the realm hint is respected.
     char* ptrSlash = (char*)memchr(inputName, '/', inputNameLen);
+    char* ptrAt = (char*)memchr(inputName, '@', inputNameLen);
+    if (ptrSlash != NULL && ptrAt != NULL)
+    {
+        static gss_OID_desc gss_krb5_nt_principal_name_desc =
+            {10, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01"};
+        GssBuffer inputNameBuffer = {.length = inputNameLen, .value = inputName};
+        return gss_import_name(minorStatus, &inputNameBuffer, &gss_krb5_nt_principal_name_desc, outputName);
+    }
+
     char* inputNameCopy = NULL;
     if (ptrSlash != NULL)
     {
@@ -327,6 +372,18 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
 // Note: claimantCredHandle can be null
 // Note: *contextHandle is null only in the first call and non-null in the subsequent calls
 
+    // Guard against a malformed channel binding token size. A negative value would be cast to a
+    // huge size_t below and cause gss_init_sec_context to read past the buffer.
+    if (cbtSize < 0)
+    {
+        *minorStatus = 0;
+        outBuffer->length = 0;
+        outBuffer->data = NULL;
+        *retFlags = 0;
+        *isNtlmUsed = 0;
+        return GSS_S_BAD_BINDINGS;
+    }
+
 #if HAVE_GSS_SPNEGO_MECHANISM
     gss_OID krbMech = GSS_KRB5_MECHANISM;
     gss_OID desiredMech;
@@ -394,6 +451,8 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
 uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
                                             GssCredId* acceptorCredHandle,
                                             GssCtxId** contextHandle,
+                                            void* cbt,
+                                            int32_t cbtSize,
                                             uint8_t* inputBytes,
                                             uint32_t inputLength,
                                             PAL_GssBuffer* outBuffer,
@@ -405,18 +464,40 @@ uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
     assert(contextHandle != NULL);
     assert(inputBytes != NULL || inputLength == 0);
     assert(outBuffer != NULL);
+    assert(retFlags != NULL);
     assert(isNtlmUsed != NULL);
+    assert(cbt != NULL || cbtSize == 0);
     // Note: *contextHandle is null only in the first call and non-null in the subsequent calls
+
+    // Guard against a malformed channel binding token size. A negative value would be cast to a
+    // huge size_t below and cause gss_accept_sec_context to read past the buffer.
+    if (cbtSize < 0)
+    {
+        *minorStatus = 0;
+        outBuffer->length = 0;
+        outBuffer->data = NULL;
+        *retFlags = 0;
+        *isNtlmUsed = 0;
+        return GSS_S_BAD_BINDINGS;
+    }
 
     GssBuffer inputToken = {.length = inputLength, .value = inputBytes};
     GssBuffer gssBuffer = {.length = 0, .value = NULL};
+
+    struct gss_channel_bindings_struct gssCbt;
+    if (cbt != NULL)
+    {
+        memset(&gssCbt, 0, sizeof(struct gss_channel_bindings_struct));
+        gssCbt.application_data.length = (size_t)cbtSize;
+        gssCbt.application_data.value = cbt;
+    }
 
     gss_OID mechType = GSS_C_NO_OID;
     uint32_t majorStatus = gss_accept_sec_context(minorStatus,
                                                   contextHandle,
                                                   acceptorCredHandle,
                                                   &inputToken,
-                                                  GSS_C_NO_CHANNEL_BINDINGS,
+                                                  (cbt != NULL) ? &gssCbt : GSS_C_NO_CHANNEL_BINDINGS,
                                                   NULL,
                                                   &mechType,
                                                   &gssBuffer,
@@ -479,6 +560,103 @@ uint32_t NetSecurityNative_GetUser(uint32_t* minorStatus,
     }
 
     return majorStatus;
+}
+
+uint32_t NetSecurityNative_GetNameAttribute(uint32_t* minorStatus,
+                                            GssCtxId* contextHandle,
+                                            const char* attributeName,
+                                            uint32_t attributeNameLen,
+                                            int32_t* isAvailable,
+                                            int32_t* isAuthenticated,
+                                            PAL_GssBuffer* outBuffer)
+{
+    assert(minorStatus != NULL);
+    assert(contextHandle != NULL);
+    assert(attributeName != NULL);
+    assert(isAvailable != NULL);
+    assert(isAuthenticated != NULL);
+    assert(outBuffer != NULL);
+
+    *minorStatus = 0;
+    *isAvailable = 0;
+    *isAuthenticated = 0;
+    outBuffer->length = 0;
+    outBuffer->data = NULL;
+
+#if !HAVE_GSS_GET_NAME_ATTRIBUTE
+    (void)contextHandle;
+    (void)attributeName;
+    (void)attributeNameLen;
+    return GSS_S_COMPLETE;
+#else
+    if (!HAS_GSS_GET_NAME_ATTRIBUTE())
+    {
+        return GSS_S_COMPLETE;
+    }
+
+    gss_name_t srcName = GSS_C_NO_NAME;
+    uint32_t majorStatus =
+        gss_inquire_context(minorStatus, contextHandle, &srcName, NULL, NULL, NULL, NULL, NULL, NULL);
+
+    if (majorStatus == GSS_S_COMPLETE)
+    {
+        GssBuffer attribute = {.length = attributeNameLen, .value = CONST_CAST(void*, attributeName)};
+        GssBuffer value = {.length = 0, .value = NULL};
+        GssBuffer displayValue = {.length = 0, .value = NULL};
+        int authenticated = 0;
+        int complete = 0;
+        int more = -1;
+        uint32_t ignoredMinor;
+
+        majorStatus = gss_get_name_attribute(
+            minorStatus, srcName, &attribute, &authenticated, &complete, &value, &displayValue, &more);
+
+        if (majorStatus == GSS_S_COMPLETE)
+        {
+            if (complete != 0)
+            {
+                *isAvailable = 1;
+                *isAuthenticated = authenticated != 0 ? 1 : 0;
+
+                // Only the first value is returned. The attributes consumed by this shim are
+                // single-valued, and a mechanism reporting more of them is not something the
+                // caller can act on.
+                NetSecurityNative_MoveBuffer(&value, outBuffer);
+                value.length = 0;
+                value.value = NULL;
+            }
+        }
+        else if (majorStatus == GSS_S_UNAVAILABLE)
+        {
+            // The attribute is not present on this name. Absence is expected, for example
+            // when the KDC issued no PAC, so report it as success with no value.
+            *minorStatus = 0;
+            majorStatus = GSS_S_COMPLETE;
+        }
+
+        gss_release_buffer(&ignoredMinor, &value);
+        gss_release_buffer(&ignoredMinor, &displayValue);
+    }
+
+    if (srcName != GSS_C_NO_NAME)
+    {
+        uint32_t ignoredMinor;
+        gss_release_name(&ignoredMinor, &srcName);
+    }
+
+    return majorStatus;
+#endif
+}
+
+int32_t NetSecurityNative_IsGetNameAttributeSupported(void)
+{
+#if HAVE_GSS_GET_NAME_ATTRIBUTE && defined(GSS_SHIM)
+    return HAS_GSS_GET_NAME_ATTRIBUTE() ? 1 : 0;
+#elif HAVE_GSS_GET_NAME_ATTRIBUTE
+    return 1;
+#else
+    return 0;
+#endif
 }
 
 uint32_t NetSecurityNative_ReleaseCred(uint32_t* minorStatus, GssCredId** credHandle)

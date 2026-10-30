@@ -13,16 +13,6 @@ namespace System.IO
 {
     internal readonly unsafe struct SharedMemoryId
     {
-        private const string UserUnscopedRuntimeTempDirectoryName = ".dotnet";
-
-        private const string UserScopedRuntimeTempDirectoryName = ".dotnet-uid";
-
-        private const string SharedMemoryGlobalDirectoryName = "global";
-
-        private const string SharedMemorySessionDirectoryName = "session";
-
-        private static int SessionId { get; } = Interop.Sys.GetSid(Environment.ProcessId);
-
         public SharedMemoryId(string name, bool isUserScope)
         {
             if (name.StartsWith("Global\\", StringComparison.Ordinal))
@@ -54,30 +44,6 @@ namespace System.IO
         public bool IsSessionScope { get; }
         public bool IsUserScope { get; }
         public uint Uid { get; }
-
-        internal readonly string GetRuntimeTempDirectoryName()
-        {
-            if (IsUserScope)
-            {
-                return $"{UserScopedRuntimeTempDirectoryName}{Uid}";
-            }
-            else
-            {
-                return UserUnscopedRuntimeTempDirectoryName;
-            }
-        }
-
-        internal readonly string GetSessionDirectoryName()
-        {
-            if (IsSessionScope)
-            {
-                return $"{SharedMemorySessionDirectoryName}{SessionId}";
-            }
-            else
-            {
-                return SharedMemoryGlobalDirectoryName;
-            }
-        }
     }
 
     internal enum SharedMemoryType : byte
@@ -128,7 +94,6 @@ namespace System.IO
         private readonly nuint _sharedDataTotalByteCount;
         private int _referenceCount = 1;
 
-        [RequiresUnsafe]
         public SharedMemoryProcessDataHeader(SharedMemoryId id, SafeFileHandle fileHandle, SharedMemorySharedDataHeader* sharedDataHeader, nuint sharedDataTotalByteCount)
         {
             _id = id;
@@ -154,9 +119,11 @@ namespace System.IO
             bool createIfNotExist,
             bool acquireLockIfCreated,
             out bool created,
-            out AutoReleaseFileLock creationDeletionLockFileHandle)
+            out AutoReleaseFileLock creationDeletionLockFileHandle,
+            out SafeFileHandle runtimeDirectoryHandle)
         {
             created = false;
+            runtimeDirectoryHandle = new SafeFileHandle();
 
             // If we don't create the shared memory file, the caller won't need to hold the creation/deletion lock file handle.
             // Return a placeholder to simplify the caller's logic and allow them to always dispose of the handle
@@ -176,24 +143,37 @@ namespace System.IO
                 return processDataHeader;
             }
 
-            using AutoReleaseFileLock creationDeletionLock = SharedMemoryManager<TSharedMemoryProcessData>.Instance.AcquireCreationDeletionLockForId(id);
+            using AutoReleaseFileLock creationDeletionLock =
+                SharedMemoryManager<TSharedMemoryProcessData>.Instance.AcquireCreationDeletionLockForId(id, out runtimeDirectoryHandle);
 
-            string sessionDirectory = Path.Combine(
-                SharedMemoryHelpers.SharedFilesPath,
-                id.GetRuntimeTempDirectoryName(),
-                SharedMemoryManager<TSharedMemoryProcessData>.SharedMemorySharedMemoryDirectoryName,
-                id.GetSessionDirectoryName()
-            );
+            string sessionDirectoryName = SharedMemoryHelpers.GetSessionDirectoryName(id);
+            string sessionDirectoryPath = Path.Combine(
+                SharedMemoryHelpers.GetSharedFilesSystemPath(id),
+                SharedMemoryHelpers.GetRuntimeDirectoryName(id),
+                SharedMemoryHelpers.SharedMemorySharedMemoryDirectoryName,
+                sessionDirectoryName);
+            using SafeFileHandle sessionDirectoryHandle = SharedMemoryHelpers.EnsureDirectoryExists(
+                creationDeletionLock.FileHandle,
+                sessionDirectoryName,
+                sessionDirectoryPath,
+                id,
+                createIfNotExist);
 
-            if (!SharedMemoryHelpers.EnsureDirectoryExists(sessionDirectory, id, isGlobalLockAcquired: true, createIfNotExist))
+            if (sessionDirectoryHandle.IsInvalid)
             {
                 Debug.Assert(!createIfNotExist);
                 return null;
             }
 
-            string sharedMemoryFilePath = Path.Combine(sessionDirectory, id.Name);
+            string sharedMemoryFilePath = Path.Combine(sessionDirectoryPath, id.Name);
 
-            SafeFileHandle fileHandle = SharedMemoryHelpers.CreateOrOpenFile(sharedMemoryFilePath, id, createIfNotExist, out bool createdFile);
+            SafeFileHandle fileHandle = SharedMemoryHelpers.CreateOrOpenFile(
+                sessionDirectoryHandle,
+                id.Name,
+                sharedMemoryFilePath,
+                id,
+                createIfNotExist,
+                out bool createdFile);
             if (fileHandle.IsInvalid)
             {
                 return null;
@@ -332,7 +312,8 @@ namespace System.IO
             SharedMemoryManager<TSharedMemoryProcessData>.Instance.VerifyCreationDeletionProcessLockIsLocked();
             SharedMemoryManager<TSharedMemoryProcessData>.Instance.RemoveProcessDataHeader(this);
 
-            using AutoReleaseFileLock autoReleaseFileLock = SharedMemoryManager<TSharedMemoryProcessData>.Instance.AcquireCreationDeletionLockForId(_id);
+            using AutoReleaseFileLock autoReleaseFileLock =
+                SharedMemoryManager<TSharedMemoryProcessData>.Instance.AcquireCreationDeletionLockForId(_id, out _);
 
             bool releaseSharedData = false;
 
@@ -346,7 +327,7 @@ namespace System.IO
                     releaseSharedData = true;
                 }
             }
-            catch (Exception)
+            catch
             {
                 // Ignore the error, just don't release shared data.
             }
@@ -358,20 +339,31 @@ namespace System.IO
 
             if (releaseSharedData)
             {
-                string sessionDirectoryPath = Path.Combine(
-                    SharedMemoryHelpers.SharedFilesPath,
-                    _id.GetRuntimeTempDirectoryName(),
-                    SharedMemoryManager<TSharedMemoryProcessData>.SharedMemorySharedMemoryDirectoryName,
-                    _id.GetSessionDirectoryName()
-                );
-
-                string sharedMemoryFilePath = Path.Combine(sessionDirectoryPath, _id.Name);
-
                 // Directly call the underlying functions here as this is best-effort.
                 // If we fail to delete, we don't want an exception.
-                Interop.Sys.Unlink(sharedMemoryFilePath);
+                string sessionDirectoryName = SharedMemoryHelpers.GetSessionDirectoryName(_id);
+                string sessionDirectoryPath = Path.Combine(
+                    SharedMemoryHelpers.GetSharedFilesSystemPath(_id),
+                    SharedMemoryHelpers.GetRuntimeDirectoryName(_id),
+                    SharedMemoryHelpers.SharedMemorySharedMemoryDirectoryName,
+                    sessionDirectoryName);
+                using (SafeFileHandle sessionDirectoryHandle = SharedMemoryHelpers.EnsureDirectoryExists(
+                    autoReleaseFileLock.FileHandle,
+                    sessionDirectoryName,
+                    sessionDirectoryPath,
+                    _id,
+                    createIfNotExist: false))
+                {
+                    if (!sessionDirectoryHandle.IsInvalid)
+                    {
+                        Interop.Sys.UnlinkAt(sessionDirectoryHandle, _id.Name, Interop.Sys.UnlinkAtFlags.None);
+                    }
+                }
 
-                Interop.Sys.RmDir(sessionDirectoryPath);
+                Interop.Sys.UnlinkAt(
+                    autoReleaseFileLock.FileHandle,
+                    sessionDirectoryName,
+                    Interop.Sys.UnlinkAtFlags.AT_REMOVEDIR);
             }
         }
     }
@@ -380,271 +372,388 @@ namespace System.IO
     {
         private const UnixFileMode PermissionsMask_OwnerUser_ReadWrite = UnixFileMode.UserRead | UnixFileMode.UserWrite;
         private const UnixFileMode PermissionsMask_OwnerUser_ReadWriteExecute = PermissionsMask_OwnerUser_ReadWrite | UnixFileMode.UserExecute;
-        private const UnixFileMode PermissionsMask_NonOwnerUsers_Write = UnixFileMode.GroupWrite | UnixFileMode.OtherWrite;
         private const UnixFileMode PermissionsMask_AllUsers_ReadWrite = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.OtherRead | UnixFileMode.OtherWrite;
         private const UnixFileMode PermissionsMask_AllUsers_ReadWriteExecute = PermissionsMask_AllUsers_ReadWrite | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
-        private const UnixFileMode PermissionsMask_Sticky = UnixFileMode.StickyBit;
 
-        private const string SharedMemoryUniqueTempNameTemplate = ".dotnet.XXXXXX";
+        private const int TransientRetryCount = 10;
+
+        internal const string SharedMemorySharedMemoryDirectoryName = "shm";
+
+        private const string RuntimeTempDirectoryName = ".dotnet";
+
+        private const string UserRuntimeTempDirectoryName = ".dotnet-uid";
+
+        private const string SharedMemoryGlobalDirectoryName = "global";
+
+        private const string SharedMemorySessionDirectoryName = "session";
 
         // See https://developer.apple.com/documentation/Foundation/FileManager/containerURL(forSecurityApplicationGroupIdentifier:)#App-Groups-in-macOS for details on this path.
-        private const string ApplicationContainerBasePathSuffix = "/Library/Group Containers/";
+        private const string ApplicationContainerBasePathSuffix = "Library/Group Containers/";
 
-        public static string SharedFilesPath { get; } = InitalizeSharedFilesPath();
+        private static string? ApplicationContainerPath { get; } =
+            OperatingSystem.IsApplePlatform() ? GetApplicationContainerPath() : null;
+
+        private static string SharedFilesPath { get; } = InitalizeSharedFilesPath();
         private static string InitalizeSharedFilesPath()
         {
             if (OperatingSystem.IsApplePlatform())
             {
-                string? applicationGroupId = Environment.GetEnvironmentVariable("DOTNET_SHARED_MEMORY_APPLICATION_GROUP_ID");
-                if (applicationGroupId is not null)
-                {
-                    string sharedFilesPath = Path.Combine(
-                        PersistedFiles.GetHomeDirectoryFromPasswd(),
-                        ApplicationContainerBasePathSuffix,
-                        applicationGroupId
-                    );
-
-                    if (File.Exists(sharedFilesPath))
-                    {
-                        // If the path exists and is a file, throw an exception.
-                        // If it's a directory, or does not exist, callers can correctly handle it.
-                        throw new DirectoryNotFoundException();
-                    }
-
-                    return sharedFilesPath;
-                }
+                return ApplicationContainerPath ?? "/tmp/";
             }
 
             return "/tmp/";
         }
 
-        internal static SafeFileHandle CreateOrOpenFile(string sharedMemoryFilePath, SharedMemoryId id, bool createIfNotExist, out bool createdFile)
+        private static string? GetApplicationContainerPath()
         {
-            SafeFileHandle fd = Interop.Sys.Open(sharedMemoryFilePath, Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC, 0);
-            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-            if (!fd.IsInvalid)
+            string? applicationGroupId = Environment.GetEnvironmentVariable("DOTNET_SANDBOX_APPLICATION_GROUP_ID");
+            if (!string.IsNullOrEmpty(applicationGroupId))
             {
-                if (id.IsUserScope)
+                string sharedFilesPath = Path.Combine(
+                    PersistedFiles.GetHomeDirectoryFromPasswd(),
+                    ApplicationContainerBasePathSuffix,
+                    applicationGroupId
+                );
+
+                if (File.Exists(sharedFilesPath))
                 {
-                    if (Interop.Sys.FStat(fd, out Interop.Sys.FileStatus fileStatus) != 0)
-                    {
-                        error = Interop.Sys.GetLastErrorInfo();
-                        fd.Dispose();
-                        throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
-                    }
-
-                    if (fileStatus.Uid != id.Uid)
-                    {
-                        fd.Dispose();
-                        throw new IOException(SR.Format(SR.IO_SharedMemory_FileNotOwnedByUid, sharedMemoryFilePath, id.Uid));
-                    }
-
-                    if ((fileStatus.Mode & (int)PermissionsMask_AllUsers_ReadWriteExecute) != (int)PermissionsMask_OwnerUser_ReadWrite)
-                    {
-                        fd.Dispose();
-                        throw new IOException(SR.Format(SR.IO_SharedMemory_FilePermissionsIncorrect, sharedMemoryFilePath, PermissionsMask_OwnerUser_ReadWrite));
-                    }
+                    // If the path exists and is a file, throw an exception.
+                    // If it's a directory, or does not exist, callers can correctly handle it.
+                    throw new DirectoryNotFoundException();
                 }
-                createdFile = false;
-                return fd;
+
+                return sharedFilesPath;
             }
-
-            if (error.Error != Interop.Error.ENOENT)
-            {
-                throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
-            }
-
-            if (!createIfNotExist)
-            {
-                createdFile = false;
-                return fd;
-            }
-
-            fd.Dispose();
-
-            UnixFileMode permissionsMask = id.IsUserScope
-                ? PermissionsMask_OwnerUser_ReadWrite
-                : PermissionsMask_AllUsers_ReadWrite;
-
-            fd = Interop.Sys.Open(
-                sharedMemoryFilePath,
-                Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC | Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL,
-                (int)permissionsMask);
-
-            if (fd.IsInvalid)
-            {
-                error = Interop.Sys.GetLastErrorInfo();
-                throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
-            }
-
-            int result = Interop.Sys.FChMod(fd, (int)permissionsMask);
-
-            if (result != 0)
-            {
-                error = Interop.Sys.GetLastErrorInfo();
-                fd.Dispose();
-                Interop.Sys.Unlink(sharedMemoryFilePath);
-                throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
-            }
-
-            createdFile = true;
-            return fd;
+            return null;
         }
 
-        internal static bool EnsureDirectoryExists(string directoryPath, SharedMemoryId id, bool isGlobalLockAcquired, bool createIfNotExist = true, bool isSystemDirectory = false)
+        private static string UserSpecificSharedFilesPath { get; } = InitalizeUserSpecificSharedFilesPath();
+
+        private static string InitalizeUserSpecificSharedFilesPath()
         {
-            UnixFileMode permissionsMask = id.IsUserScope
-                ? PermissionsMask_OwnerUser_ReadWriteExecute
-                : PermissionsMask_AllUsers_ReadWriteExecute;
-
-            int statResult = Interop.Sys.Stat(directoryPath, out Interop.Sys.FileStatus fileStatus);
-
-            if (statResult != 0 && Interop.Sys.GetLastError() == Interop.Error.ENOENT)
+            if (OperatingSystem.IsApplePlatform())
             {
+                // On apple platforms, TMPDIR points to the user-specific temporary directory.
+                // For compat, we will still check the application container path first as that path
+                // is also user-specific.
+                string? path = ApplicationContainerPath ?? Environment.GetEnvironmentVariable("TMPDIR");
+                if (path is not null)
+                {
+                    if (ApplicationContainerPath is not null)
+                    {
+                        // An Apple application-group container is already user-specific, so both global-scoped and
+                        // user-scoped mutexes would otherwise use the same .dotnet directory and conflict. Give
+                        // user-scoped mutexes a parallel directory to preserve the distinction between the scopes.
+#pragma warning disable CA1416 // Validate platform compatibility. This file is only included on Unix platforms.
+                        // The application-group container is owned by the current user, so this directory can be
+                        // created directly without validating each component.
+                        Directory.CreateDirectory(
+                            Path.Combine(ApplicationContainerPath, UserRuntimeTempDirectoryName),
+                            PermissionsMask_OwnerUser_ReadWriteExecute);
+#pragma warning restore CA1416 // Validate platform compatibility
+                    }
+
+                    return path;
+                }
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                // XDG_RUNTIME_DIR is the user-specific, cleared on reboot, runtime files directory for systems
+                // that follow the XDG Base Directory Specification
+                // https://specifications.freedesktop.org/basedir
+                // For Linux platforms that follow the XDG specification, we will use it.
+                string? xdgRuntimeDir = Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR");
+                if (!string.IsNullOrEmpty(xdgRuntimeDir))
+                {
+                    return xdgRuntimeDir;
+                }
+            }
+
+            // Fallback to storing data in the home directory.
+            // The home directory is expected to be owned by the user and only accessible by the user.
+            // If it is not, then that was a choice by the user.
+            string userFeatureDirectory = PersistedFiles.GetUserFeatureDirectory("Runtime", "SharedMemory");
+
+#pragma warning disable CA1416 // Validate platform compatibility. This file is only included on Unix platforms.
+            // This is not a system-created directory, so we need to guarantee that it exists.
+            // Default permissions are fine as we are under the user's home directory.
+            Directory.CreateDirectory(userFeatureDirectory, PermissionsMask_OwnerUser_ReadWriteExecute);
+
+            return userFeatureDirectory;
+#pragma warning restore CA1416 // Validate platform compatibility
+        }
+
+        public static SafeFileHandle OpenSharedFilesSystemDirectory(SharedMemoryId id)
+        {
+            string directoryPath = GetSharedFilesSystemPath(id);
+            int transientRetryCount = 0;
+
+            while (true)
+            {
+                SafeFileHandle directoryHandle = Interop.Sys.Open(
+                    directoryPath,
+                    Interop.Sys.OpenFlags.O_RDONLY | Interop.Sys.OpenFlags.O_CLOEXEC | Interop.Sys.OpenFlags.O_NOFOLLOW | Interop.Sys.OpenFlags.O_DIRECTORY,
+                    0);
+
+                if (!directoryHandle.IsInvalid)
+                {
+                    return directoryHandle;
+                }
+
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                directoryHandle.Dispose();
+                if ((error.Error == Interop.Error.ENOENT || error.Error == Interop.Error.EACCES) &&
+                    RetryOnTransientPermissionFailure(ref transientRetryCount))
+                {
+                    continue;
+                }
+
+                throw Interop.GetExceptionForIoErrno(error, directoryPath);
+            }
+        }
+
+        internal static string GetSharedFilesSystemPath(SharedMemoryId id)
+        {
+            return id.IsUserScope ? UserSpecificSharedFilesPath : SharedFilesPath;
+        }
+
+        internal static string GetRuntimeDirectoryName(SharedMemoryId id)
+        {
+            return id.IsUserScope && ApplicationContainerPath is not null
+                ? UserRuntimeTempDirectoryName
+                : RuntimeTempDirectoryName;
+        }
+
+        private static int SessionId { get; } = Interop.Sys.GetSid(Environment.ProcessId);
+
+        public static string GetSessionDirectoryName(SharedMemoryId id)
+        {
+            return id.IsSessionScope ? $"{SharedMemorySessionDirectoryName}{SessionId}" : SharedMemoryGlobalDirectoryName;
+        }
+
+        internal static SafeFileHandle CreateOrOpenFile(
+            SafeFileHandle directoryHandle,
+            string fileName,
+            string filePathForError,
+            SharedMemoryId id,
+            bool createIfNotExist,
+            out bool createdFile)
+        {
+            int transientRetryCount = 0;
+
+            while (true)
+            {
+                SafeFileHandle fd = Interop.Sys.OpenAt(directoryHandle, fileName, Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_NOFOLLOW | Interop.Sys.OpenFlags.O_CLOEXEC, 0);
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                if (!fd.IsInvalid)
+                {
+                    if (id.IsUserScope)
+                    {
+                        if (Interop.Sys.FStat(fd, out Interop.Sys.FileStatus fileStatus) != 0)
+                        {
+                            error = Interop.Sys.GetLastErrorInfo();
+                            fd.Dispose();
+                            throw Interop.GetExceptionForIoErrno(error, filePathForError);
+                        }
+
+                        if (fileStatus.Uid != id.Uid)
+                        {
+                            fd.Dispose();
+                            throw new IOException(SR.Format(SR.IO_SharedMemory_FileNotOwnedByUid, filePathForError, id.Uid));
+                        }
+
+                        if ((fileStatus.Mode & (int)PermissionsMask_AllUsers_ReadWriteExecute) != (int)PermissionsMask_OwnerUser_ReadWrite)
+                        {
+                            fd.Dispose();
+
+                            // Another process may have created this file and not yet applied the final mode via fchmod.
+                            // Retry briefly in case this open races with that transient window.
+                            if (transientRetryCount < TransientRetryCount)
+                            {
+                                transientRetryCount++;
+                                Thread.Sleep(1);
+                                continue;
+                            }
+
+                            throw new IOException(SR.Format(SR.IO_SharedMemory_FilePermissionsIncorrect, filePathForError, PermissionsMask_OwnerUser_ReadWrite));
+                        }
+                    }
+                    createdFile = false;
+                    return fd;
+                }
+
+                if (error.Error == Interop.Error.EACCES && transientRetryCount < TransientRetryCount)
+                {
+                    // During creation, the mode passed to O_CREAT is filtered by process umask. Retry briefly in case
+                    // another process is still in the window between creating the file and fixing its permissions.
+                    transientRetryCount++;
+                    Thread.Sleep(1);
+                    continue;
+                }
+
+                if (error.Error != Interop.Error.ENOENT)
+                {
+                    throw Interop.GetExceptionForIoErrno(error, filePathForError);
+                }
+
                 if (!createIfNotExist)
                 {
-                    // The directory does not exist and we are not allowed to create it.
-                    return false;
+                    createdFile = false;
+                    return fd;
                 }
 
-                // The path does not exist, create the directory. The permissions mask passed to mkdir() is filtered by the process'
-                // permissions umask, so mkdir() may not set all of the requested permissions. We need to use chmod() to set the proper
-                // permissions. That creates a race when there is no global lock acquired when creating the directory. Another user's
-                // process may create the directory and this user's process may try to use it before the other process sets the full
-                // permissions. In that case, create a temporary directory first, set the permissions, and rename it to the actual
-                // directory name.
+                fd.Dispose();
 
-                if (isGlobalLockAcquired)
+                UnixFileMode permissionsMask = id.IsUserScope
+                    ? PermissionsMask_OwnerUser_ReadWrite
+                    : PermissionsMask_AllUsers_ReadWrite;
+
+                fd = Interop.Sys.OpenAt(
+                    directoryHandle,
+                    fileName,
+                    Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_NOFOLLOW | Interop.Sys.OpenFlags.O_CLOEXEC | Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL,
+                    (int)permissionsMask);
+
+                if (fd.IsInvalid)
                 {
-#pragma warning disable CA1416 // Validate platform compatibility. This file is only included on Unix platforms.
-                    Directory.CreateDirectory(directoryPath, permissionsMask);
-#pragma warning restore CA1416 // Validate platform compatibility
-
-                    try
+                    error = Interop.Sys.GetLastErrorInfo();
+                    fd.Dispose();
+                    if (error.Error == Interop.Error.EEXIST && transientRetryCount < TransientRetryCount)
                     {
-                        FileSystem.SetUnixFileMode(directoryPath, permissionsMask);
+                        // Another process created the file between our ENOENT check and our O_CREAT|O_EXCL attempt.
+                        // Retry opening the existing file.
+                        transientRetryCount++;
+                        continue;
                     }
-                    catch (Exception)
+                    throw Interop.GetExceptionForIoErrno(error, filePathForError);
+                }
+
+                // The mode passed to open(..., O_CREAT|O_EXCL, permissionsMask) is filtered by process umask, so the
+                // created file may not have the requested access. Set the exact mode explicitly.
+                int result = Interop.Sys.FChMod(fd, (int)permissionsMask);
+
+                if (result != 0)
+                {
+                    error = Interop.Sys.GetLastErrorInfo();
+                    fd.Dispose();
+                    Interop.Sys.UnlinkAt(directoryHandle, fileName, Interop.Sys.UnlinkAtFlags.None);
+                    throw Interop.GetExceptionForIoErrno(error, filePathForError);
+                }
+
+                createdFile = true;
+                return fd;
+            }
+        }
+
+        internal static SafeFileHandle EnsureDirectoryExists(
+            SafeFileHandle parentDirectoryHandle,
+            string directoryName,
+            string directoryPathForError,
+            SharedMemoryId id,
+            bool createIfNotExist = true)
+        {
+            int transientRetryCount = 0;
+            while (true)
+            {
+                UnixFileMode permissionsMask = id.IsUserScope
+                    ? PermissionsMask_OwnerUser_ReadWriteExecute
+                    : PermissionsMask_AllUsers_ReadWriteExecute;
+
+                SafeFileHandle directoryHandle = Interop.Sys.OpenAt(
+                    parentDirectoryHandle,
+                    directoryName,
+                    Interop.Sys.OpenFlags.O_RDONLY | Interop.Sys.OpenFlags.O_CLOEXEC | Interop.Sys.OpenFlags.O_NOFOLLOW | Interop.Sys.OpenFlags.O_DIRECTORY,
+                    0);
+
+                if (directoryHandle.IsInvalid)
+                {
+                    Interop.ErrorInfo openError = Interop.Sys.GetLastErrorInfo();
+                    directoryHandle.Dispose();
+
+                    if (openError.Error == Interop.Error.ENOENT)
                     {
-                        Directory.Delete(directoryPath);
-                        throw;
+                        if (!createIfNotExist)
+                        {
+                            // The directory does not exist and we are not allowed to create it.
+                            return new SafeFileHandle();
+                        }
+
+                        if (Interop.Sys.MkDirAt(parentDirectoryHandle, directoryName, (int)permissionsMask) == 0)
+                        {
+                            directoryHandle = Interop.Sys.OpenAt(
+                                parentDirectoryHandle,
+                                directoryName,
+                                Interop.Sys.OpenFlags.O_RDONLY | Interop.Sys.OpenFlags.O_CLOEXEC | Interop.Sys.OpenFlags.O_NOFOLLOW | Interop.Sys.OpenFlags.O_DIRECTORY,
+                                0);
+
+                            if (directoryHandle.IsInvalid)
+                            {
+                                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                                directoryHandle.Dispose();
+                                Interop.Sys.UnlinkAt(parentDirectoryHandle, directoryName, Interop.Sys.UnlinkAtFlags.AT_REMOVEDIR);
+                                throw Interop.GetExceptionForIoErrno(error, directoryPathForError);
+                            }
+
+                            if (Interop.Sys.FChMod(directoryHandle, (int)permissionsMask) != 0)
+                            {
+                                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                                directoryHandle.Dispose();
+                                Interop.Sys.UnlinkAt(parentDirectoryHandle, directoryName, Interop.Sys.UnlinkAtFlags.AT_REMOVEDIR);
+                                throw Interop.GetExceptionForIoErrno(error, directoryPathForError);
+                            }
+
+                            return directoryHandle;
+                        }
+
+                        Interop.ErrorInfo mkdirError = Interop.Sys.GetLastErrorInfo();
+                        if (mkdirError.Error != Interop.Error.EEXIST)
+                        {
+                            throw Interop.GetExceptionForIoErrno(mkdirError, directoryPathForError);
+                        }
+
+                        if (RetryOnTransientPermissionFailure(ref transientRetryCount))
+                        {
+                            // If we have two threads or processes racing to create this directory,
+                            // the first one may have created it but not yet set the correct permissions.
+                            // Retry briefly to let the other process finish setting permissions.
+                            // We will not set permissions when we are not the creator of the directory.
+                            continue;
+                        }
+
+                        throw Interop.GetExceptionForIoErrno(mkdirError, directoryPathForError);
                     }
 
-                    return true;
-                }
-
-                string tempPath = Path.Combine(SharedFilesPath, SharedMemoryUniqueTempNameTemplate);
-
-                unsafe
-                {
-                    byte* tempPathPtr = Utf8StringMarshaller.ConvertToUnmanaged(tempPath);
-                    if (Interop.Sys.MkdTemp(tempPathPtr) == null)
+                    if ((openError.Error == Interop.Error.ENOENT || openError.Error == Interop.Error.EACCES) &&
+                        RetryOnTransientPermissionFailure(ref transientRetryCount))
                     {
-                        Utf8StringMarshaller.Free(tempPathPtr);
-                        Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                        throw Interop.GetExceptionForIoErrno(error, tempPath);
+                        // While another process is creating this path, openat() can temporarily fail with ENOENT before the
+                        // directory appears, or with EACCES before the creating process has finished normalizing directory
+                        // permissions for cross-user access.
+                        continue;
                     }
-                    // Convert the path back to get the substituted path.
-                    tempPath = Utf8StringMarshaller.ConvertToManaged(tempPathPtr)!;
-                    Utf8StringMarshaller.Free(tempPathPtr);
-                }
 
-                try
-                {
-                    FileSystem.SetUnixFileMode(tempPath, permissionsMask);
-                }
-                catch (Exception)
-                {
-                    Directory.Delete(tempPath);
-                    throw;
-                }
-
-                if (Interop.Sys.Rename(tempPath, directoryPath) == 0)
-                {
-                    return true;
-                }
-
-                // Another process may have beaten us to it. Delete the temp directory and continue to check the requested directory to
-                // see if it meets our needs.
-                Directory.Delete(tempPath);
-                statResult = Interop.Sys.Stat(directoryPath, out fileStatus);
-            }
-
-            // If the path exists, check that it's a directory
-            if (statResult != 0 || (fileStatus.Mode & Interop.Sys.FileTypes.S_IFDIR) == 0)
-            {
-                if (statResult != 0)
-                {
-                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                    if (error.Error != Interop.Error.ENOENT)
+                    if (openError.Error is Interop.Error.ELOOP or Interop.Error.ENOTDIR)
                     {
-                        throw Interop.GetExceptionForIoErrno(error, directoryPath);
+                        // If the path exists, check that it's a directory.
+                        throw new IOException(SR.Format(SR.IO_SharedMemory_PathExistsButNotDirectory, directoryPathForError));
                     }
-                }
-                else
-                {
-                    throw new IOException(SR.Format(SR.IO_SharedMemory_PathExistsButNotDirectory, directoryPath));
-                }
-            }
 
-            if (isSystemDirectory)
-            {
-                // For system directories (such as TEMP_DIRECTORY_PATH), require sufficient permissions only for the
-                // owner user. For instance, "docker run --mount ..." to mount /tmp to some directory on the host mounts the
-                // destination directory with the same permissions as the source directory, which may not include some permissions for
-                // other users. In the docker container, other user permissions are typically not relevant and relaxing the permissions
-                // requirement allows for that scenario to work without having to work around it by first giving sufficient permissions
-                // for all users.
-                //
-                // If the directory is being used for user-scoped shared memory data, also ensure that either it has the sticky bit or
-                // it's owned by the current user and without write access for other users.
-
-                permissionsMask = PermissionsMask_OwnerUser_ReadWriteExecute;
-                if ((fileStatus.Mode & (int)permissionsMask) == (int)permissionsMask
-                    && (
-                        !id.IsUserScope ||
-                        (fileStatus.Mode & (int)PermissionsMask_Sticky) == (int)PermissionsMask_Sticky ||
-                        (fileStatus.Uid == id.Uid && (fileStatus.Mode & (int)PermissionsMask_NonOwnerUsers_Write) == 0)
-                    ))
-                {
-                    return true;
+                    throw Interop.GetExceptionForIoErrno(openError, directoryPathForError);
                 }
 
-                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryPermissionsIncorrect, directoryPath, fileStatus.Uid, Convert.ToString(fileStatus.Mode, 8)));
+                return directoryHandle;
             }
+        }
 
-            // For non-system directories (such as SharedFilesPath/UserUnscopedRuntimeTempDirectoryName),
-            // require the sufficient permissions and try to update them if requested to create the directory, so that
-            // shared memory files may be shared according to its scope.
-
-            // For user-scoped directories, verify the owner UID
-            if (id.IsUserScope && fileStatus.Uid != id.Uid)
+        private static bool RetryOnTransientPermissionFailure(ref int transientRetryCount)
+        {
+            if (transientRetryCount >= TransientRetryCount)
             {
-                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryNotOwnedByUid, directoryPath, id.Uid));
+                return false;
             }
 
-            // Verify the permissions, or try to change them if possible
-            if ((fileStatus.Mode & (int)PermissionsMask_AllUsers_ReadWriteExecute) == (int)permissionsMask
-                || (createIfNotExist && Interop.Sys.ChMod(directoryPath, (int)permissionsMask) == 0))
-            {
-                return true;
-            }
-
-            // We were not able to verify or set the necessary permissions. For user-scoped directories, this is treated as a failure
-            // since other users aren't sufficiently restricted in permissions.
-            if (id.IsUserScope)
-            {
-                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryPermissionsIncorrectUserScope, directoryPath, Convert.ToString(fileStatus.Mode, 8)));
-            }
-
-
-            // For user-unscoped directories, as a last resort, check that at least the owner user has full access.
-            permissionsMask = PermissionsMask_OwnerUser_ReadWriteExecute;
-            if ((fileStatus.Mode & (int)permissionsMask) != (int)permissionsMask)
-            {
-                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryOwnerPermissionsIncorrect, directoryPath, Convert.ToString(fileStatus.Mode, 8)));
-            }
-
+            transientRetryCount++;
+            Thread.Sleep(1);
             return true;
         }
 
@@ -708,7 +817,6 @@ namespace System.IO
             }
         }
 
-        [RequiresUnsafe]
         public void* Pointer => (void*)addr;
     }
 
@@ -737,11 +845,10 @@ namespace System.IO
     {
         internal static SharedMemoryManager<TSharedMemoryProcessData> Instance { get; } = new SharedMemoryManager<TSharedMemoryProcessData>();
 
-        internal const string SharedMemorySharedMemoryDirectoryName = "shm";
 
         private readonly LowLevelLock _creationDeletionProcessLock = new();
-        private SafeFileHandle? _creationDeletionLockFileHandle;
-        private readonly Dictionary<uint, SafeFileHandle> _uidToFileHandleMap = [];
+        private (SafeFileHandle RuntimeDirectoryHandle, SafeFileHandle SharedMemoryDirectoryHandle)? _creationDeletionDirectoryHandles;
+        private readonly Dictionary<uint, (SafeFileHandle RuntimeDirectoryHandle, SafeFileHandle SharedMemoryDirectoryHandle)> _uidToDirectoryHandlesMap = [];
 
         public WaitSubsystem.LockHolder AcquireCreationDeletionProcessLock()
         {
@@ -753,55 +860,76 @@ namespace System.IO
             _creationDeletionProcessLock.VerifyIsLocked();
         }
 
-        public AutoReleaseFileLock AcquireCreationDeletionLockForId(SharedMemoryId id)
+        public void VerifyCreationDeletionProcessLockIsNotLocked()
+        {
+            _creationDeletionProcessLock.VerifyIsNotLocked();
+        }
+
+        public AutoReleaseFileLock AcquireCreationDeletionLockForId(
+            SharedMemoryId id,
+            out SafeFileHandle runtimeDirectoryHandle)
         {
             _creationDeletionProcessLock.VerifyIsLocked();
-            SafeFileHandle? fd = id.IsUserScope ? GetUserScopeCreationDeletionLockFileHandle(id.Uid) : _creationDeletionLockFileHandle;
-            if (fd is null)
+            (SafeFileHandle RuntimeDirectoryHandle, SafeFileHandle SharedMemoryDirectoryHandle)? directoryHandles =
+                id.IsUserScope ? GetUserScopeDirectoryHandles(id.Uid) : _creationDeletionDirectoryHandles;
+            if (directoryHandles is null)
             {
-                if (!SharedMemoryHelpers.EnsureDirectoryExists(SharedMemoryHelpers.SharedFilesPath, id, isGlobalLockAcquired: false, createIfNotExist: false, isSystemDirectory: true))
+                using SafeFileHandle systemDirectoryHandle = SharedMemoryHelpers.OpenSharedFilesSystemDirectory(id);
+                string runtimeDirectoryName = SharedMemoryHelpers.GetRuntimeDirectoryName(id);
+                string runtimeDirectoryPath = Path.Combine(
+                    SharedMemoryHelpers.GetSharedFilesSystemPath(id),
+                    runtimeDirectoryName);
+                SafeFileHandle newRuntimeDirectoryHandle = SharedMemoryHelpers.EnsureDirectoryExists(
+                    systemDirectoryHandle,
+                    runtimeDirectoryName,
+                    runtimeDirectoryPath,
+                    id);
+
+                SafeFileHandle sharedMemoryDirectoryHandle;
+                try
                 {
-                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                    throw Interop.GetExceptionForIoErrno(error, SharedMemoryHelpers.SharedFilesPath);
+                    sharedMemoryDirectoryHandle = SharedMemoryHelpers.EnsureDirectoryExists(
+                        newRuntimeDirectoryHandle,
+                        SharedMemoryHelpers.SharedMemorySharedMemoryDirectoryName,
+                        Path.Combine(runtimeDirectoryPath, SharedMemoryHelpers.SharedMemorySharedMemoryDirectoryName),
+                        id);
                 }
-                string runtimeTempDirectory = Path.Combine(
-                    SharedMemoryHelpers.SharedFilesPath,
-                    id.GetRuntimeTempDirectoryName());
-
-                SharedMemoryHelpers.EnsureDirectoryExists(runtimeTempDirectory, id, isGlobalLockAcquired: false);
-
-                string sharedMemoryDirectory = Path.Combine(
-                    runtimeTempDirectory,
-                    SharedMemorySharedMemoryDirectoryName);
-
-                SharedMemoryHelpers.EnsureDirectoryExists(sharedMemoryDirectory, id, isGlobalLockAcquired: false);
-
-                fd = Interop.Sys.Open(sharedMemoryDirectory, Interop.Sys.OpenFlags.O_RDONLY, 0);
-                if (fd.IsInvalid)
+                catch
                 {
-                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                    fd.Dispose();
-                    throw Interop.GetExceptionForIoErrno(error, sharedMemoryDirectory);
+                    newRuntimeDirectoryHandle.Dispose();
+                    throw;
                 }
+
+                (SafeFileHandle RuntimeDirectoryHandle, SafeFileHandle SharedMemoryDirectoryHandle) newDirectoryHandles =
+                    (newRuntimeDirectoryHandle, sharedMemoryDirectoryHandle);
+                directoryHandles = newDirectoryHandles;
 
                 if (id.IsUserScope)
                 {
-                    _uidToFileHandleMap.Add(id.Uid, fd);
+                    _uidToDirectoryHandlesMap.Add(id.Uid, newDirectoryHandles);
                 }
                 else
                 {
-                    _creationDeletionLockFileHandle = fd;
+                    _creationDeletionDirectoryHandles = newDirectoryHandles;
                 }
             }
 
-            bool acquired = SharedMemoryHelpers.TryAcquireFileLock(fd, nonBlocking: false, exclusive: true);
+            (SafeFileHandle RuntimeDirectoryHandle, SafeFileHandle SharedMemoryDirectoryHandle) handles = directoryHandles.Value;
+            bool acquired = SharedMemoryHelpers.TryAcquireFileLock(
+                handles.SharedMemoryDirectoryHandle,
+                nonBlocking: false,
+                exclusive: true);
             Debug.Assert(acquired);
-            return new AutoReleaseFileLock(fd);
+            runtimeDirectoryHandle = handles.RuntimeDirectoryHandle;
+            return new AutoReleaseFileLock(handles.SharedMemoryDirectoryHandle);
 
-            SafeFileHandle? GetUserScopeCreationDeletionLockFileHandle(uint uid)
+            (SafeFileHandle RuntimeDirectoryHandle, SafeFileHandle SharedMemoryDirectoryHandle)? GetUserScopeDirectoryHandles(uint uid)
             {
-                _uidToFileHandleMap.TryGetValue(uid, out SafeFileHandle? fileHandle);
-                return fileHandle;
+                return _uidToDirectoryHandlesMap.TryGetValue(
+                    uid,
+                    out (SafeFileHandle RuntimeDirectoryHandle, SafeFileHandle SharedMemoryDirectoryHandle) handles)
+                    ? handles
+                    : null;
             }
         }
 

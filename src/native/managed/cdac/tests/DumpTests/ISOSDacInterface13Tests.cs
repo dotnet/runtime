@@ -3,8 +3,9 @@
 
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
-using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
+using static Microsoft.Diagnostics.DataContractReader.TestInfrastructure.TestHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
@@ -15,14 +16,13 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class ISOSDacInterface13Tests : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
-    protected override string DumpType => "full";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     public unsafe void GetLoaderAllocatorHeapNames_MatchExpectedOrder(TestConfiguration config)
     {
         InitializeDumpTest(config);
-        ISOSDacInterface13 sosDac = (ISOSDacInterface13)new SOSDacImpl(Target, legacyObj: null);
+        ISOSDacInterface13 sosDac = (ISOSDacInterface13)new SOSDacImpl(Target, legacyObj: null, new());
 
         int heapCount;
         int hr = sosDac.GetLoaderAllocatorHeapNames(0, null, &heapCount);
@@ -50,7 +50,6 @@ public class ISOSDacInterface13Tests : DumpTestBase
             "LowFrequencyHeap",
             "HighFrequencyHeap",
             "StaticsHeap",
-            "StubHeap",
             "ExecutableHeap",
             "FixupPrecodeHeap",
             "NewStubPrecodeHeap",

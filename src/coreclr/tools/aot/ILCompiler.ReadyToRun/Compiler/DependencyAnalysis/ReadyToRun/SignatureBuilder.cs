@@ -526,11 +526,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 Instantiation instantiation = method.Method.Instantiation;
                 EmitUInt((uint)instantiation.Length);
-                SignatureContext methodInstantiationsContext;
-                if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UpdateContext) != 0)
-                    methodInstantiationsContext = context;
-                else
-                    methodInstantiationsContext = context.OuterContext;
+
+                // The runtime decoder (ZapSig::DecodeMethod) always uses pOrigModule
+                // (the module from before any UpdateContext) for method instantiation
+                // type arguments. Match that by always using the OuterContext here.
+                SignatureContext methodInstantiationsContext = context.OuterContext;
 
                 for (int typeParamIndex = 0; typeParamIndex < instantiation.Length; typeParamIndex++)
                 {
@@ -601,7 +601,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _builder.ToObjectData();
         }
 
-        public SignatureContext EmitFixup(NodeFactory factory, ReadyToRunFixupKind fixupKind, IEcmaModule targetModule, SignatureContext outerContext)
+        public SignatureContext EmitFixup(NodeFactory factory, ReadyToRunFixupKind fixupKind, IEcmaModule targetModule, SignatureContext outerContext, bool hasStableToken = false)
         {
             if (targetModule == outerContext.LocalContext)
             {
@@ -611,7 +611,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 EmitByte((byte)(fixupKind | ReadyToRunFixupKind.ModuleOverride));
-                if (!(targetModule is Internal.TypeSystem.Ecma.MutableModule) && !factory.CompilationModuleGroup.VersionsWithModule((ModuleDesc)targetModule))
+                if (!hasStableToken && !(targetModule is Internal.TypeSystem.Ecma.MutableModule) && !factory.CompilationModuleGroup.VersionsWithModule((ModuleDesc)targetModule))
                 {
                     throw new InternalCompilerErrorException("Attempt to use token from a module not within the version bubble");
                 }

@@ -46,7 +46,7 @@ CordbClass::CordbClass(CordbModule *m, mdTypeDef classMetadataToken)
     HANDLED:
         CordbModule*            m_module; // Assigned w/o AddRef()
         FieldData *m_fields;              // Deleted in ~CordbClass
-        CordbHangingFieldTable  m_hangingFieldsStatic; // by value, ~CHashTableAndData frees
+        CordbHangingFieldTable  m_hangingFieldsStatic; // by value, owns its storage
 */
 
 
@@ -154,7 +154,7 @@ HRESULT CordbClass::GetStaticFieldValue(mdFieldDef fieldDef,
 
 
         // Lookup the field given its metadata token.
-        FieldData *pFieldData;
+        const FieldData *pFieldData;
 
         hr = GetFieldInfo(fieldDef, &pFieldData);
 
@@ -220,7 +220,7 @@ HRESULT CordbClass::GetStaticFieldValue(mdFieldDef fieldDef,
 //   Else some other failure.
 /* static */
 HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
-                                         FieldData * pFieldData,
+                                         const FieldData * pFieldData,
                                          BOOL fEnCHangingField,
                                          const Instantiation * pInst,
                                          ICorDebugFrame * pFrame,
@@ -245,9 +245,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
         {
             EX_TRY
             {
-                IfFailThrow(pProcess->GetDAC()->GetCollectibleTypeStaticAddress(pFieldData->m_vmFieldDesc,
-                                                                                      pModule->GetAppDomain()->GetADToken(),
-                                                                                      &pRmtStaticValue));
+                IfFailThrow(pProcess->GetDAC()->GetCollectibleTypeStaticAddress(pFieldData->m_vmFieldDesc, &pRmtStaticValue));
             }
             EX_CATCH_HRESULT(hr);
             if(FAILED(hr))
@@ -347,6 +345,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
                                       remoteValue,
                                       MemoryRange(NULL, 0),
                                       NULL,
+                                      VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                                       &pValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -786,15 +785,18 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
         // full info load level
         if(desiredLoadLevel == FullInfo)
         {
-            VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
-            VMPTR_DomainAssembly vmDomainAssembly = m_pModule->GetRuntimeDomainAssembly();
-            if (!vmDomainAssembly.IsNull())
-            {
-                DomainAssemblyInfo info;
-                IfFailThrow(pDac->GetDomainAssemblyData(vmDomainAssembly, &info));
-                vmAppDomain = info.vmAppDomain;
-            }
-            IfFailThrow(pDac->GetClassInfo(vmAppDomain, vmTypeHandle, &m_classInfo));
+            CallbackAccumulator<FieldData> acc;
+
+            HRESULT hrEnum = pDac->EnumerateClassFields(vmTypeHandle,
+                                                        &m_classInfo.m_objectSize,
+                                                        &CallbackAccumulator<FieldData>::PushCallback,
+                                                        &acc);
+            if (SUCCEEDED(hrEnum) && FAILED(acc.hrError))
+                hrEnum = acc.hrError;
+            IfFailThrow(hrEnum);
+
+            int fieldCount = (int)acc.items.Size();
+            m_classInfo.m_fieldList.Init(fieldCount > 0 ? &acc.items[0] : NULL, fieldCount);
 
             BOOL fGotUnallocatedStatic = GotUnallocatedStatic(&m_classInfo.m_fieldList);
 
@@ -845,7 +847,7 @@ BOOL CordbClass::GotUnallocatedStatic(DacDbiArrayList<FieldData> * pFieldList)
  *
  */
 HRESULT FieldData::GetFieldSignature(CordbModule *pModule,
-                                                  SigParser *pSigParser)
+                                                  SigParser *pSigParser) const
 {
     CONTRACTL
     {
@@ -947,7 +949,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
                         fieldToken,
                         ELEMENT_TYPE_MAX,
                         classToken,
-                        m_pModule->GetRuntimeDomainAssembly());
+                        m_pModule->GetRuntimeAssembly());
     }
     else
     {
@@ -974,7 +976,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
                                                                     // This is used only for log messages, and could
                                                                     // be removed.
                         classToken,                                 // metadata token for the class
-                        m_pModule->GetRuntimeDomainAssembly());         // Domain file for the class
+                        m_pModule->GetRuntimeAssembly());           // assembly for the class
     }
 } // CordbClass::InitFieldData
 
@@ -987,15 +989,14 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
 //            fieldToken    - token for the EnC field
 //     output: pointer to an initialized instance of FieldData that has been added to the appropriate table
 //     in our cache
-FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
+const FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
                                            CordbObjectValue * pObject,
                                            mdFieldDef         fieldToken)
 {
     EnCHangingFieldInfo encField;
     mdTypeDef           metadataToken;
-    FieldData           fieldData,
-                      * pInfo = NULL;
-    BOOL                fDacStatic;
+    FieldData           fieldData;
+    const FieldData *   pInfo = NULL;
     CordbProcess *      pProcess = GetModule()->GetProcess();
 
     _ASSERTE(pProcess != NULL);
@@ -1003,10 +1004,10 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
     InitEnCFieldInfo(&encField, fStatic, pObject, fieldToken, metadataToken);
 
     // Go get this particular field.
-    IfFailThrow(pProcess->GetDAC()->GetEnCHangingFieldInfo(&encField, &fieldData, &fDacStatic));
-    _ASSERTE(fStatic == fDacStatic);
+    IfFailThrow(pProcess->GetDAC()->GetEnCHangingFieldInfo(&encField, &fieldData));
+    _ASSERTE((fStatic != 0) == fieldData.m_fFldIsStatic);
 
-    // Save the field results in our cache and get a stable pointer to the data
+    // Cache the field data and return a borrowed pointer that may be invalidated by subsequent cache mutations.
     if (fStatic)
     {
         pInfo = m_hangingFieldsStatic.AddFieldInfo(&fieldData);
@@ -1045,7 +1046,7 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
 //   S_OK on success, failure code otherwise.
 //-----------------------------------------------------------------------------
 HRESULT CordbClass::GetEnCHangingField(mdFieldDef fldToken,
-                                      FieldData **ppFieldData,
+                                       const FieldData **ppFieldData,
                                        CordbObjectValue * pObject)
 {
     FAIL_IF_NEUTERED(this);
@@ -1064,7 +1065,7 @@ HRESULT CordbClass::GetEnCHangingField(mdFieldDef fldToken,
     BOOL fStatic = (pObject == NULL);
 
     // Look for cached field information
-    FieldData *pInfo = NULL;
+    const FieldData *pInfo = NULL;
     if (fStatic)
     {
         // Static fields should _NOT_ be cleared, since they stick around.  Thus
@@ -1113,7 +1114,7 @@ HRESULT CordbClass::GetEnCHangingField(mdFieldDef fldToken,
 // Returns:
 //   S_OK on success. else failure.
 //-----------------------------------------------------------------------------
-HRESULT CordbClass::GetFieldInfo(mdFieldDef fldToken, FieldData **ppFieldData)
+HRESULT CordbClass::GetFieldInfo(mdFieldDef fldToken, const FieldData **ppFieldData)
 {
     INTERNAL_SYNC_API_ENTRY(GetProcess());
 
@@ -1149,7 +1150,7 @@ HRESULT CordbClass::SearchFieldInfo(
     DacDbiArrayList<FieldData> * pFieldList,
     mdTypeDef classToken,
     mdFieldDef fldToken,
-    FieldData **ppFieldData
+    const FieldData **ppFieldData
 )
 {
     unsigned int i;

@@ -67,6 +67,14 @@ inline bool isPow2(T i)
     return (i > 0 && ((i - 1) & i) == 0);
 }
 
+// return true if abs(arg) is a power of 2
+template <typename T>
+inline bool isAbsPow2(T i)
+{
+    static_assert(std::numeric_limits<T>::is_signed);
+    return (i == std::numeric_limits<T>::min()) || isPow2(std::abs(i));
+}
+
 template <typename T>
 constexpr bool AreContiguous(T val1, T val2)
 {
@@ -860,8 +868,6 @@ public:
 
     static double infinite_double();
 
-    static float infinite_float();
-
     static bool isAllBitsSet(float val);
 
     static bool isAllBitsSet(double val);
@@ -884,33 +890,17 @@ public:
 
     static double maximum(double val1, double val2);
 
-    static double maximumMagnitude(double val1, double val2);
-
-    static double maximumMagnitudeNumber(double val1, double val2);
-
     static double maximumNumber(double val1, double val2);
 
     static float maximum(float val1, float val2);
-
-    static float maximumMagnitude(float val1, float val2);
-
-    static float maximumMagnitudeNumber(float val1, float val2);
 
     static float maximumNumber(float val1, float val2);
 
     static double minimum(double val1, double val2);
 
-    static double minimumMagnitude(double val1, double val2);
-
-    static double minimumMagnitudeNumber(double val1, double val2);
-
     static double minimumNumber(double val1, double val2);
 
     static float minimum(float val1, float val2);
-
-    static float minimumMagnitude(float val1, float val2);
-
-    static float minimumMagnitudeNumber(float val1, float val2);
 
     static float minimumNumber(float val1, float val2);
 

@@ -82,7 +82,7 @@ namespace Test.Cryptography
             }
         }
 
-        internal static byte[] ConvertDerToNonDerBer(byte[] derBytes)
+        internal static byte[] ConvertDerToNonDerBer(ReadOnlySpan<byte> derBytes)
         {
             // Convert a valid DER encoding to BER by making the length octets of the first value non-minimal.
             byte[] berBytes = new byte[derBytes.Length + 1];
@@ -101,7 +101,7 @@ namespace Test.Cryptography
             }
 
             // Copy the tag
-            derBytes.AsSpan(0, index + 1).CopyTo(berBytes);
+            derBytes.Slice(0, index + 1).CopyTo(berBytes);
 
             // Advance to the length
             index++;
@@ -112,7 +112,7 @@ namespace Test.Cryptography
                 // Short form, so just make it long form by adding the length length
                 berBytes[index] = 0x80 | 1;
 
-                derBytes.AsSpan(index).CopyTo(berBytes.AsSpan(index + 1));
+                derBytes.Slice(index).CopyTo(berBytes.AsSpan(index + 1));
             }
             else
             {
@@ -126,7 +126,7 @@ namespace Test.Cryptography
                 berBytes[index] = lengthLength;
                 berBytes[index + 1] = 0x00;
 
-                derBytes.AsSpan(index + 1).CopyTo(berBytes.AsSpan(index + 2));
+                derBytes.Slice(index + 1).CopyTo(berBytes.AsSpan(index + 2));
             }
 
             return berBytes;

@@ -8,12 +8,17 @@
     <TestCaseBuildOutputRoot>$(ArtifactsBinDir)Mono.Linker.Tests.Cases\$(Configuration)\$(TargetFramework)</TestCaseBuildOutputRoot>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' != 'Release'">
+    <DefineConstants>$(DefineConstants);UNSAFE_MIGRATION</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <CompilerVisibleProperty Include="TestCaseBuildOutputRoot" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)Common\tests\SourceGenerators\LiveReferencePack.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\tests\SourceGenerators\GlobalOptionsOnlyProvider.cs" />
     <Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*" />
   </ItemGroup>
 

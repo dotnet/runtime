@@ -189,10 +189,12 @@ namespace System.Threading.RateLimiting.Test
             using var lease = limiter.AttemptAcquire(1);
             var wait = limiter.AcquireAsync(1);
 
+            SetElapsedTimeSinceWindowStart(limiter, TimeSpan.FromSeconds(0));
+
             var failedLease = await limiter.AcquireAsync(1);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
-            Assert.Equal(TimeSpan.FromMilliseconds(2), timeSpan);
+            Assert.Equal(TimeSpan.FromMilliseconds(1), timeSpan);
         }
 
         [Fact]
@@ -724,6 +726,8 @@ namespace System.Threading.RateLimiting.Test
 
             using var lease = limiter.AttemptAcquire(2);
 
+            SetElapsedTimeSinceWindowStart(limiter, TimeSpan.FromSeconds(0));
+
             var failedLease = await limiter.AcquireAsync(2);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter.Name, out var metadata));
@@ -753,6 +757,8 @@ namespace System.Threading.RateLimiting.Test
             var wait = limiter.AcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
+            SetElapsedTimeSinceWindowStart(limiter, TimeSpan.FromSeconds(0));
+
             var failedLease = await limiter.AcquireAsync(2);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
@@ -774,6 +780,8 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new FixedWindowRateLimiter(options);
 
             using var lease = limiter.AttemptAcquire(2);
+
+            SetElapsedTimeSinceWindowStart(limiter, TimeSpan.FromSeconds(0));
 
             var failedLease = await limiter.AcquireAsync(3);
             Assert.False(failedLease.IsAcquired);
@@ -1008,6 +1016,54 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
+        public async Task RetryAfterWithPartiallyElapsedWindow()
+        {
+            var options = new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                Window = TimeSpan.FromSeconds(20),
+                AutoReplenishment = false
+            };
+            var limiter = new FixedWindowRateLimiter(options);
+
+            using var lease = limiter.AttemptAcquire(1);
+
+            // 5 seconds have elapsed in a 20-second window
+            SetElapsedTimeSinceWindowStart(limiter, TimeSpan.FromSeconds(5));
+
+            var failedLease = await limiter.AcquireAsync(1);
+            Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
+            Assert.Equal(TimeSpan.FromSeconds(15), timeSpan); // 20 - 5 = 15
+        }
+
+        [Fact]
+        public async Task RetryAfterClampsToZeroWhenWindowExpired()
+        {
+            var options = new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                Window = TimeSpan.FromSeconds(20),
+                AutoReplenishment = false
+            };
+            var limiter = new FixedWindowRateLimiter(options);
+
+            using var lease = limiter.AttemptAcquire(1);
+
+            // 25 seconds have elapsed (window expired but not replenished yet), extreme example for clarity
+            SetElapsedTimeSinceWindowStart(limiter, TimeSpan.FromSeconds(25));
+
+            var failedLease = await limiter.AcquireAsync(1);
+            Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
+            Assert.Equal(TimeSpan.Zero, timeSpan); // Clamped to zero, not negative
+        }
+
+        [Fact]
         public override async Task CanFillQueueWithNewestFirstAfterCancelingQueuedRequestWithAnotherQueuedRequest()
         {
             var limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
@@ -1237,6 +1293,18 @@ namespace System.Threading.RateLimiting.Test
             var internalTick = typeof(FixedWindowRateLimiter).GetField("_lastReplenishmentTick", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
             var currentTick = (long)internalTick.GetValue(limiter);
             replenishInternalMethod.Invoke(limiter, new object[] { currentTick + addMilliseconds * (long)(TimeSpan.TicksPerMillisecond / TickFrequency) });
+        }
+
+        /// <summary>
+        /// Function that replaces the _getElapsedTime function in FixedWindowRateLimiter to return a specified TimeSpan. Used for testing the RetryAfter metadata on failed leases.
+        /// </summary>
+        /// <param name="limiter"></param>
+        /// <param name="elapsedTimeSinceWindowStart"></param>
+        static internal void SetElapsedTimeSinceWindowStart(FixedWindowRateLimiter limiter, TimeSpan elapsedTimeSinceWindowStart)
+        {
+            var _getElapsedTimeField = typeof(FixedWindowRateLimiter).GetField("_getElapsedTime", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
+            Func<long?, TimeSpan?> overrideFunc = (_) => elapsedTimeSinceWindowStart;
+            _getElapsedTimeField.SetValue(limiter, overrideFunc);
         }
     }
 }

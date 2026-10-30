@@ -1,6 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
 
 // static
 
@@ -60,29 +69,6 @@ void gc_heap::switch_one_quantum()
     enable_preemptive ();
     GCToOSInterface::Sleep (1);
     disable_preemptive (true);
-}
-
-void gc_heap::reset_ww_by_chunk (uint8_t* start_address, size_t total_reset_size)
-{
-    size_t reset_size = 0;
-    size_t remaining_reset_size = 0;
-    size_t next_reset_size = 0;
-
-    while (reset_size != total_reset_size)
-    {
-        remaining_reset_size = total_reset_size - reset_size;
-        next_reset_size = ((remaining_reset_size >= ww_reset_quantum) ?
-            ww_reset_quantum : remaining_reset_size);
-        if (next_reset_size)
-        {
-            reset_write_watch_for_gc_heap(start_address, next_reset_size);
-            reset_size += next_reset_size;
-
-            switch_one_quantum();
-        }
-    }
-
-    assert (reset_size == total_reset_size);
 }
 
 // This does a Sleep(1) for every reset ww_reset_quantum bytes of reset
@@ -221,47 +207,6 @@ void gc_heap::concurrent_print_time_delta (const char* msg)
 }
 
 #ifdef BACKGROUND_GC
-inline
-BOOL gc_heap::background_marked (uint8_t* o)
-{
-    return mark_array_marked (o);
-}
-
-inline
-BOOL gc_heap::background_mark1 (uint8_t* o)
-{
-    BOOL to_mark = !mark_array_marked (o);
-
-    dprintf (3, ("b*%zx*b(%d)", (size_t)o, (to_mark ? 1 : 0)));
-    if (to_mark)
-    {
-        mark_array_set_marked (o);
-        dprintf (4, ("n*%zx*n", (size_t)o));
-        return TRUE;
-    }
-    else
-        return FALSE;
-}
-
-// TODO: we could consider filtering out NULL's here instead of going to
-// look for it on other heaps
-inline
-BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
-{
-    BOOL marked = FALSE;
-    if ((o >= low) && (o < high))
-        marked = background_mark1 (o);
-#ifdef MULTIPLE_HEAPS
-    else if (o)
-    {
-        gc_heap* hp = heap_of (o);
-        assert (hp);
-        if ((o >= hp->background_saved_lowest_address) && (o < hp->background_saved_highest_address))
-            marked = background_mark1 (o);
-    }
-#endif //MULTIPLE_HEAPS
-    return marked;
-}
 
 #ifdef USE_REGIONS
 void gc_heap::set_background_overflow_p (uint8_t* oo)
@@ -544,16 +489,22 @@ void gc_heap::background_promote (Object** ppObject, ScanContext* sc, uint32_t f
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-    if (!is_in_find_object_range (o))
-    {
-        return;
-    }
-
 #ifdef DEBUG_DestroyedHandleValue
     // we can race with destroy handle during concurrent scan
     if (o == (uint8_t*)DEBUG_DestroyedHandleValue)
         return;
 #endif //DEBUG_DestroyedHandleValue
+
+    if (!is_in_find_object_range (o))
+    {
+#ifdef _DEBUG
+        if ((o != NULL) && !(flags & GC_CALL_INTERIOR))
+        {
+            ((CObjectHeader*)o)->Validate();
+        }
+#endif //_DEBUG
+        return;
+    }
 
     HEAP_FROM_THREAD;
 
@@ -1560,7 +1511,12 @@ BOOL gc_heap::commit_new_mark_array (uint32_t* new_mark_array_addr)
         }
     }
 
-#if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
+#ifndef USE_REGIONS
+    // Re-commit the mark array for the expansion segment created during a compacting GC
+    // that has not yet been threaded onto its generation list (see new_heap_segment and
+    // issue #123490). The generation-list walk above cannot reach it, so without this it
+    // would keep a stale heap_segment_flags_ma_committed while its pages on the new array
+    // stay uncommitted, and a later BGC's pinning scan would read an uncommitted page.
     if (new_heap_segment)
     {
         if (!commit_mark_array_with_check (new_heap_segment, new_mark_array_addr))
@@ -1568,7 +1524,7 @@ BOOL gc_heap::commit_new_mark_array (uint32_t* new_mark_array_addr)
             return FALSE;
         }
     }
-#endif //MULTIPLE_HEAPS && !USE_REGIONS
+#endif //!USE_REGIONS
 
     return TRUE;
 }
@@ -2050,7 +2006,7 @@ void gc_heap::background_mark_phase ()
         bgc_uoh_current_size[loh_generation - uoh_start_generation],
         bgc_uoh_current_size[poh_generation - uoh_start_generation]));
 
-#if defined(FEATURE_BASICFREEZE) && !defined(USE_REGIONS)
+#ifndef USE_REGIONS
     if (ro_segments_in_range)
     {
         dprintf (2, ("nonconcurrent marking in range ro segments"));
@@ -2058,7 +2014,7 @@ void gc_heap::background_mark_phase ()
         //concurrent_print_time_delta ("nonconcurrent marking in range ro segments");
         concurrent_print_time_delta ("NRRO");
     }
-#endif //FEATURE_BASICFREEZE && !USE_REGIONS
+#endif //!USE_REGIONS
 
     dprintf (2, ("nonconcurrent marking stack roots"));
     GCScan::GcScanRoots(background_promote,
@@ -2102,19 +2058,17 @@ void gc_heap::background_mark_phase ()
 
 #ifdef FEATURE_JAVAMARSHAL
 
-    // FIXME Any reason this code should be different for BGC ? Otherwise extract it to some common method ?
-
 #ifdef MULTIPLE_HEAPS
     dprintf(3, ("Joining for short weak handle scan"));
-    gc_t_join.join(this, gc_join_bridge_processing);
-    if (gc_t_join.joined())
+    bgc_t_join.join(this, gc_join_bridge_processing);
+    if (bgc_t_join.joined())
     {
 #endif //MULTIPLE_HEAPS
         global_bridge_list = GCScan::GcProcessBridgeObjects (max_generation, max_generation, &sc, &num_global_bridge_objs);
 
 #ifdef MULTIPLE_HEAPS
         dprintf (3, ("Starting all gc thread after bridge processing"));
-        gc_t_join.restart();
+        bgc_t_join.restart();
     }
 #endif //MULTIPLE_HEAPS
 
@@ -2694,7 +2648,6 @@ void gc_heap::background_grow_c_mark_list()
     dprintf (2, ("stack copy buffer overflow"));
     uint8_t** new_c_mark_list = 0;
     {
-        FAULT_NOT_FATAL();
         if (c_mark_list_length >= (SIZE_T_MAX / (2 * sizeof (uint8_t*))))
         {
             should_drain_p = TRUE;
@@ -2720,7 +2673,7 @@ void gc_heap::background_grow_c_mark_list()
         assert (new_c_mark_list);
         memcpy (new_c_mark_list, c_mark_list, c_mark_list_length*sizeof(uint8_t*));
         c_mark_list_length = c_mark_list_length*2;
-        dprintf (5555, ("h%d replacing mark list at %Ix with %Ix", heap_number, (size_t)c_mark_list, (size_t)new_c_mark_list));
+        dprintf (5555, ("h%d replacing mark list at %zx with %zx", heap_number, (size_t)c_mark_list, (size_t)new_c_mark_list));
         delete[] c_mark_list;
         c_mark_list = new_c_mark_list;
     }
@@ -2743,6 +2696,12 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
 
     if (!is_in_find_object_range (o))
     {
+#ifdef _DEBUG
+        if ((o != NULL) && !(flags & GC_CALL_INTERIOR))
+        {
+            ((CObjectHeader*)o)->Validate();
+        }
+#endif //_DEBUG
         return;
     }
 
@@ -2806,7 +2765,7 @@ void gc_heap::add_to_bgc_th_creation_history (size_t gc_index, size_t count_crea
 {
     if ((count_created != 0) || (count_created_th_existed != 0) || (count_creation_failed != 0))
     {
-        dprintf (6666, ("ADDING to BGC th hist entry%d gc index %Id, created %d, %d th existed, %d failed",
+        dprintf (6666, ("ADDING to BGC th hist entry%d gc index %zd, created %zu, %zu th existed, %zu failed",
             bgc_th_creation_hist_index, gc_index, count_created, count_created_th_existed, count_creation_failed));
 
         bgc_thread_creation_history* current_hist = &bgc_th_creation_hist[bgc_th_creation_hist_index];
@@ -3145,10 +3104,10 @@ void gc_heap::bgc_thread_function()
 
             // this is the case where we have more background GC threads than heaps
             // - wait until we're told to continue...
-            dprintf (6666, ("BGC%Id h%d going idle (%d heaps), idle count is now %d",
+            dprintf (6666, ("BGC%zd h%d going idle (%d heaps), idle count is now %d",
                 VolatileLoadWithoutBarrier (&settings.gc_index), heap_number, n_heaps, VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_bgc_thread_count)));
             bgc_idle_thread_event.Wait(INFINITE, FALSE);
-            dprintf (6666, ("BGC%Id h%d woke from idle (%d heaps), idle count is now %d",
+            dprintf (6666, ("BGC%zd h%d woke from idle (%d heaps), idle count is now %d",
                 VolatileLoadWithoutBarrier (&settings.gc_index), heap_number, n_heaps, VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_bgc_thread_count)));
             continue;
         }
@@ -3455,7 +3414,6 @@ void gc_heap::process_background_segment_end (heap_segment* seg,
     bgc_verify_mark_array_cleared (seg);
 }
 
-inline
 BOOL gc_heap::fgc_should_consider_object (uint8_t* o,
                                           heap_segment* seg,
                                           BOOL consider_bgc_mark_p,
@@ -3798,9 +3756,7 @@ void gc_heap::background_sweep()
     current_sweep_pos = 0;
 #endif //DOUBLY_LINKED_FL
 
-#ifdef FEATURE_BASICFREEZE
     sweep_ro_segments();
-#endif //FEATURE_BASICFREEZE
 
     dprintf (3, ("lh state: planning"));
 
@@ -4136,8 +4092,6 @@ void gc_heap::background_sweep()
                 seg->flags |= heap_segment_flags_swept;
                 current_sweep_pos = end;
             }
-
-            verify_soh_segment_list();
 
 #ifdef DOUBLY_LINKED_FL
             while (next_seg && heap_segment_background_allocated (next_seg) == 0)
@@ -4601,3 +4555,5 @@ size_t gc_heap::get_mark_array_size (heap_segment* seg)
 }
 
 #endif //USE_REGIONS
+
+} // namespace WKS/SVR

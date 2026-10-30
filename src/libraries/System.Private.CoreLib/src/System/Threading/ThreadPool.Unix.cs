@@ -82,6 +82,7 @@ namespace System.Threading
             PortableThreadPool.ThreadPoolInstance.ReportThreadStatus(isWorking);
         }
 
+#if FEATURE_MULTITHREADING
         internal static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -90,13 +91,12 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
             return PortableThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
         }
+#endif
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
-        [RequiresUnsafe]
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
 

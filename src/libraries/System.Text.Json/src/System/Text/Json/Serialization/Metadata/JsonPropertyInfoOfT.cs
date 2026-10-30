@@ -132,7 +132,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             get
             {
-                Debug.Assert(_typedEffectiveConverter != null);
+                Debug.Assert(_typedEffectiveConverter is not null);
                 return _typedEffectiveConverter;
             }
         }
@@ -187,7 +187,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // If a reference cycle is detected, treat value as null.
                 value = default!;
-                Debug.Assert(value == null);
+                Debug.Assert(value is null);
             }
 
             if (IgnoreDefaultValuesOnWrite)
@@ -260,7 +260,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return true;
             }
 
-            if (value == null)
+            if (value is null)
             {
                 success = true;
             }
@@ -305,7 +305,7 @@ namespace System.Text.Json.Serialization.Metadata
                 success = true;
                 state.Current.MarkPropertyAsRead(this);
             }
-            else if (EffectiveConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+            else if (EffectiveConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling is null)
             {
                 // CanUseDirectReadOrWrite == false when using streams
                 Debug.Assert(!state.IsContinuation);
@@ -379,7 +379,7 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 // Optimize for internal converters by avoiding the extra call to TryRead.
-                if (EffectiveConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+                if (EffectiveConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling is null)
                 {
                     // CanUseDirectReadOrWrite == false when using streams
                     Debug.Assert(!state.IsContinuation);

@@ -14,17 +14,45 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private OverlappedValueTaskSource? _reusableOverlappedValueTaskSource; // reusable OverlappedValueTaskSource that is currently NOT being used
+        private ManualResetEvent? _reusableSyncWaitEvent; // reusable event for sync-over-async I/O
 
         // Rent the reusable OverlappedValueTaskSource, or create a new one to use if we couldn't get one (which
         // should only happen on first use or if the SafeFileHandle is being used concurrently).
         internal OverlappedValueTaskSource GetOverlappedValueTaskSource() =>
             Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null) ?? new OverlappedValueTaskSource(this);
 
+        // Rent the reusable ManualResetEvent for sync-over-async I/O, or create a new one.
+        // The returned event is guaranteed to be in non-signaled state.
+        internal ManualResetEvent RentSyncWaitEvent()
+        {
+            ManualResetEvent? mre = Interlocked.Exchange(ref _reusableSyncWaitEvent, null);
+            if (mre is not null)
+            {
+                mre.Reset();
+                return mre;
+            }
+
+            return new ManualResetEvent(false);
+        }
+
+        internal void ReturnSyncWaitEvent(ManualResetEvent waitEvent)
+        {
+            if (Interlocked.CompareExchange(ref _reusableSyncWaitEvent, waitEvent, null) is not null)
+            {
+                waitEvent.Dispose();
+            }
+            else if (IsClosed)
+            {
+                Interlocked.Exchange(ref _reusableSyncWaitEvent, null)?.Dispose();
+            }
+        }
+
         protected override bool ReleaseHandle()
         {
             bool result = Interop.Kernel32.CloseHandle(handle);
 
             Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null)?.Dispose();
+            Interlocked.Exchange(ref _reusableSyncWaitEvent, null)?.Dispose();
 
             return result;
         }

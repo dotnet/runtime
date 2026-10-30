@@ -7,24 +7,24 @@ using Xunit;
 namespace System.Security.Cryptography.EcDsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class ECDsaFactoryTests
+    public abstract class ECDsaFactoryTests : ECDsaTestsBase
     {
         [Fact]
-        public static void ECDsaCreateDefault_Equals_SameInstance()
+        public void ECDsaCreateDefault_Equals_SameInstance()
         {
             using ECDsa ecdsa = ECDsaFactory.Create();
             AssertExtensions.TrueExpression(ecdsa.Equals(ecdsa));
         }
 
         [Fact]
-        public static void ECDsaCreateKeySize_Equals_SameInstance()
+        public void ECDsaCreateKeySize_Equals_SameInstance()
         {
             using ECDsa ecdsa = ECDsaFactory.Create(256);
             AssertExtensions.TrueExpression(ecdsa.Equals(ecdsa));
         }
 
         [Fact]
-        public static void ECDsaCreateKeySize_Equals_DifferentInstance_FalseForSameKeyMaterial()
+        public void ECDsaCreateKeySize_Equals_DifferentInstance_FalseForSameKeyMaterial()
         {
             using ECDsa ecdsa1 = ECDsaFactory.Create();
             using ECDsa ecdsa2 = ECDsaFactory.Create();
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
 #if NET
         [Fact]
-        public static void ECDsaCreateCurve_Equals_SameInstance()
+        public void ECDsaCreateCurve_Equals_SameInstance()
         {
             using ECDsa ecdsa = ECDsaFactory.Create(ECCurve.NamedCurves.nistP256);
             AssertExtensions.TrueExpression(ecdsa.Equals(ecdsa));

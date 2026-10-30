@@ -374,7 +374,7 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
     m_SafePointIndex = m_NumSafePoints;
 #endif
 
-    if (slimHeader)
+    if (slimHeader || !GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES)
     {
         m_NumInterruptibleRanges = 0;
     }
@@ -736,6 +736,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
 {
 
     unsigned executionAborted = (inputFlags & ExecutionAborted);
+    bool reportUntrackedOnly = false;
 
     // In order to make ARM more x86-like we only ever report the leaf frame
     // of any given function. We accomplish this by having the stackwalker
@@ -776,6 +777,12 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
             m_Reader.DecodeVarLengthUnsigned( GcInfoEncoding::INTERRUPTIBLE_RANGE_DELTA1_ENCBASE );
             m_Reader.DecodeVarLengthUnsigned( GcInfoEncoding::INTERRUPTIBLE_RANGE_DELTA2_ENCBASE );
         }
+    }
+    else if constexpr (!GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES)
+    {
+        // Outside of safe points only untracked slots can be reported. Report them for aborted
+        // frames too: an aborted funclet shares them with parent frames that are skipped.
+        reportUntrackedOnly = true;
     }
     else
     {
@@ -828,6 +835,9 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
 
 
     slotDecoder.DecodeSlotTable(m_Reader);
+
+    if (reportUntrackedOnly)
+        goto ReportUntracked;
 
     {
         UINT32 numSlots = slotDecoder.GetNumTracked();
@@ -1584,8 +1594,10 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
     {
-        // Scratch registers cannot be reported for non-leaf frames
-        _ASSERTE(flags & ActiveStackFrame);
+        // Scratch registers cannot be reported for non-leaf frames.
+        // DECODE_NO_VALIDATION is used by the gcinfodumper for display purposes,
+        // which intentionally reports scratch registers at all offsets including safe points.
+        _ASSERTE((flags & ActiveStackFrame) || (m_Flags & DECODE_NO_VALIDATION));
     }
 
     LOG((LF_GCROOTS, LL_INFO1000, /* Part Two */
@@ -1692,8 +1704,10 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
     {
-        // Scratch registers cannot be reported for non-leaf frames
-        _ASSERTE(flags & ActiveStackFrame);
+        // Scratch registers cannot be reported for non-leaf frames.
+        // DECODE_NO_VALIDATION is used by the gcinfodumper for display purposes,
+        // which intentionally reports scratch registers at all offsets including safe points.
+        _ASSERTE((flags & ActiveStackFrame) || (m_Flags & DECODE_NO_VALIDATION));
     }
 
     LOG((LF_GCROOTS, LL_INFO1000, /* Part Two */
@@ -1795,8 +1809,10 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
     {
-        // Scratch registers cannot be reported for non-leaf frames
-        _ASSERTE(flags & ActiveStackFrame);
+        // Scratch registers cannot be reported for non-leaf frames.
+        // DECODE_NO_VALIDATION is used by the gcinfodumper for display purposes,
+        // which intentionally reports scratch registers at all offsets including safe points.
+        _ASSERTE((flags & ActiveStackFrame) || (m_Flags & DECODE_NO_VALIDATION));
     }
 
     LOG((LF_GCROOTS, LL_INFO1000, /* Part Two */
@@ -1880,7 +1896,7 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
     }
     else if (regNum < 22)
     {
-        return (OBJECTREF*)*(DWORD64**)(&pRD->volatileCurrContextPointers.A0 + (regNum - 4));//A0=4.
+        return (OBJECTREF*)*(DWORD64**)(&pRD->volatileCurrContextPointers.A0 + (regNum - 4)); // A0=4.
     }
 
     return (OBJECTREF*)*(DWORD64**)(&pRD->pCurrentContextPointers->S0 + (regNum-23));
@@ -1894,7 +1910,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratc
     return (regNum <= 21 && ((regNum >= 4) || (regNum == 1)));
 }
 
-template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRegisterToGC(
+template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRegisterToGC( // LOONGARCH64
                                 int             regNum,
                                 unsigned        gcFlags,
                                 PREGDISPLAY     pRD,
@@ -1935,8 +1951,10 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
     {
-        // Scratch registers cannot be reported for non-leaf frames
-        _ASSERTE(flags & ActiveStackFrame);
+        // Scratch registers cannot be reported for non-leaf frames.
+        // DECODE_NO_VALIDATION is used by the gcinfodumper for display purposes,
+        // which intentionally reports scratch registers at all offsets including safe points.
+        _ASSERTE((flags & ActiveStackFrame) || (m_Flags & DECODE_NO_VALIDATION));
     }
 
     LOG((LF_GCROOTS, LL_INFO1000, /* Part Two */
@@ -2059,8 +2077,10 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
     {
-        // Scratch registers cannot be reported for non-leaf frames
-        _ASSERTE(flags & ActiveStackFrame);
+        // Scratch registers cannot be reported for non-leaf frames.
+        // DECODE_NO_VALIDATION is used by the gcinfodumper for display purposes,
+        // which intentionally reports scratch registers at all offsets including safe points.
+        _ASSERTE((flags & ActiveStackFrame) || (m_Flags & DECODE_NO_VALIDATION));
     }
 
     LOG((LF_GCROOTS, LL_INFO1000, /* Part Two */
@@ -2142,9 +2162,9 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
         _ASSERTE(fp);
         pObjRef = (OBJECTREF*)(fp + spOffset);
     }
-    InterpMethodContextFrame* pFrame = (InterpMethodContextFrame*)GetSP(pRD->pCurrentContext);
+    PTR_InterpMethodContextFrame pFrame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pRD->pCurrentContext));
     _ASSERTE(pFrame->pStack == (int8_t *)GetFP(pRD->pCurrentContext));
-    InterpMethodContextFrame* pFrameCallee = pFrame->pNext;
+    PTR_InterpMethodContextFrame pFrameCallee = pFrame->pNext;
 
     // If the stack slot is in a callee's frame, then we do not actually need to report it. This should ONLY happen if the
     // stack slot is in the argument area of the caller. As a double check, we validate in the caller of this function that
@@ -2165,7 +2185,6 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
     return pObjRef;
 }
 #endif
-
 
 template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::GetStackSlot(
                         INT32           spOffset,
@@ -2188,6 +2207,20 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
         _ASSERTE( GC_FRAMEREG_REL == spBase );
         _ASSERTE( NO_STACK_BASE_REGISTER != m_StackBaseRegister );
 
+#ifdef TARGET_WASM
+        // Wasm is a bit strange and when we do SetStackBaseRegister(REG_FPBASE)
+        //  what that actually does is set it to REG_NA, which currently has the value 2.
+        _ASSERTE( 2 == m_StackBaseRegister );
+#ifdef FEATURE_NATIVEAOT
+        TADDR pFrameReg = pRD->GetFP();
+#else
+        TADDR pFrameReg = (TADDR)pRD->pCurrentContext->InterpreterFP;
+#endif
+
+        pObjRef = (OBJECTREF*)(pFrameReg + spOffset);
+
+#else // TARGET_WASM
+
         SIZE_T * pFrameReg = (SIZE_T*) GetRegisterSlot(m_StackBaseRegister, pRD);
 
 #if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
@@ -2201,6 +2234,7 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
 #endif // TARGET_UNIX && !FEATURE_NATIVEAOT
 
         pObjRef = (OBJECTREF*)(*pFrameReg + spOffset);
+#endif // !TARGET_WASM
     }
 
     return pObjRef;
@@ -2274,10 +2308,8 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportSt
     pCallBack(hCallBack, pObjRef, gcFlags DAC_ARG(DacSlotLocation(GetStackReg(spBase), spOffset, true)));
 }
 
-#ifndef TARGET_WASM
 // Instantiate the decoder so other files can use it
 template class TGcInfoDecoder<TargetGcInfoEncoding>;
-#endif // !TARGET_WASM
 
 #ifdef FEATURE_INTERPRETER
 template class TGcInfoDecoder<InterpreterGcInfoEncoding>;

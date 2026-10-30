@@ -181,6 +181,7 @@ namespace System.Net.Mail
         public string? PickupDirectoryLocation { get { throw null; } set { } }
         public int Port { get { throw null; } set { } }
         public System.Net.ServicePoint ServicePoint { get { throw null; } }
+        public System.Net.Security.SslClientAuthenticationOptions SslOptions { get { throw null; } set { } }
         public string? TargetName { get { throw null; } set { } }
         public int Timeout { get { throw null; } set { } }
         public bool UseDefaultCredentials { get { throw null; } set { } }
@@ -383,6 +384,14 @@ namespace System.Net.Mime
             public const string RichText = "text/richtext";
             public const string Rtf = "text/rtf";
             public const string Xml = "text/xml";
+        }
+        public static partial class Video
+        {
+            public const string Mp4 = "video/mp4";
+            public const string Mpeg = "video/mpeg";
+            public const string Ogg = "video/ogg";
+            public const string QuickTime = "video/quicktime";
+            public const string WebM = "video/webm";
         }
     }
     public static partial class MediaTypeMap

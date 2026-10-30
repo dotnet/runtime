@@ -12,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32)]
         internal static partial int RegFlushKey(SafeRegistryHandle hKey);
     }

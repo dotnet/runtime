@@ -221,6 +221,13 @@ browse.VC.db
 **/.vscode/**
 !**/.vscode/c_cpp_properties.json
 
+# C# Dev Kit language server caches
+*.lscache
+
+# Dump files
+*.dmp
+*.dump
+
 ### MonoDevelop ###
 *.userprefs
 
@@ -294,6 +301,7 @@ config.ps1
 
 # VS debug support files
 launchSettings.json
+!src/mono/wasm/templates/**/launchSettings.json
 
 # Snapcraft files
 .snapcraft
@@ -373,3 +381,6 @@ test:.cs
 *.tempLog.xml
 *.testResults.xml
 *.testStats.csv
+
+# Copilot CLI local configuration
+.github/copilot/settings.local.json

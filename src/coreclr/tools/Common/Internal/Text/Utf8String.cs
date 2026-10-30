@@ -29,6 +29,8 @@ namespace Internal.Text
             _value = Encoding.UTF8.GetBytes(s);
         }
 
+        public static implicit operator Utf8Span(Utf8String s) => s._value;
+
         public int Length => _value.Length;
 
         public ReadOnlySpan<byte> AsSpan() => _value;

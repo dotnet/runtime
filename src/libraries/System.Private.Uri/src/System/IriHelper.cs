@@ -73,7 +73,7 @@ namespace System
         // escaped characters that should be unescaped in the context of the specified Uri component.
         public static void EscapeUnescapeIri(ref ValueStringBuilder dest, scoped ReadOnlySpan<char> span, bool isQuery)
         {
-            Span<byte> maxUtf8EncodedSpan = stackalloc byte[4];
+            Span<byte> maxUtf8EncodedSpan = [0, 0, 0, 0];
 
             for (int i = 0; (uint)i < (uint)span.Length; i++)
             {

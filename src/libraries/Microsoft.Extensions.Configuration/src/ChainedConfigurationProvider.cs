@@ -38,11 +38,11 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">When this method returns, contains the value.</param>
-        /// <returns><see langword="true"/> if a value for the specified key was found, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the chained configuration has a non-<see langword="null"/> value for the specified key, otherwise <see langword="false"/>.</returns>
         public bool TryGet(string key, out string? value)
         {
             value = _config[key];
-            return !string.IsNullOrEmpty(value);
+            return value is not null;
         }
 
         /// <summary>

@@ -22,7 +22,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/debug.h"
 #include "pal/thread.hpp"
 #include "pal/utils.h"
-#include "pal/virtual.h"
+#include <minipal/ospagesize.h>
 
 #if HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
@@ -42,6 +42,16 @@ extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #endif
 
+#if defined(XSTATE_SUPPORTED) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(__APPLE__)
+static inline bool IsValidSveVectorLengthInBytes(DWORD vectorLengthInBytes)
+{
+    return (vectorLengthInBytes >= 16) && (vectorLengthInBytes <= 256) &&
+           ((vectorLengthInBytes & (vectorLengthInBytes - 1)) == 0);
+}
+
+static const CONTEXT_SVE_STATE_HEADER *GetArm64SveStateHeader(const CONTEXT *context);
+#endif
+
 #if !HAVE_MACH_EXCEPTIONS
 
 #ifndef __GLIBC__
@@ -54,6 +64,10 @@ typedef int __ptrace_request;
 #if HAVE_MACHINE_NPX_H
 #include <machine/npx.h>
 #endif  // HAVE_MACHINE_NPX_H
+
+#ifdef __OpenBSD__
+#include <sys/ptrace.h>
+#endif  // __OpenBSD__
 
 #if HAVE_PT_REGS
 #include <asm/ptrace.h>
@@ -399,8 +413,8 @@ bool Xstate_IsAvx512Supported()
 
 bool Xstate_IsApxSupported()
 {
-#if defined(HAVE_MACH_EXCEPTIONS)
-    // TODO-xarch-apx: I assume OSX will never support APX
+#if !defined(HOST_AMD64) || defined(TARGET_OSX)
+    // APX is AMD64 only and not supported on macOS.
     return false;
 #else
     static int Xstate_ApxSupported = -1;
@@ -499,7 +513,7 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
 #if HAVE_PT_REGS
 #define ASSIGN_REG(reg) MCREG_##reg(registers.uc_mcontext) = PTREG_##reg(ptrace_registers);
 #elif HAVE_BSD_REGS_T
-#define ASSIGN_REG(reg) MCREG_##reg(registers.uc_mcontext) = BSDREG_##reg(ptrace_registers);
+#define ASSIGN_REG(reg) MCREG_##reg(MCONTEXT_FROM_NATIVE(&registers)) = BSDREG_##reg(ptrace_registers);
 #else
 #define ASSIGN_REG(reg)
 	ASSERT("Don't know how to get the context of another process on this platform!");
@@ -698,10 +712,15 @@ Parameters :
 Return value :
     None
 
+Notes:
+    On ARM64, if lpContext->ContextFlags has CONTEXT_XSTATE, and
+    lpContext->XStateFeaturesMask has XSTATE_MASK_ARM64_SVE, the caller
+    is responsible for ensuring the native_context_t has enough space
+    allocated to store the relevant SVE header and register data.
 --*/
 void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 {
-#define ASSIGN_REG(reg) MCREG_##reg(native->uc_mcontext) = lpContext->reg;
+#define ASSIGN_REG(reg) MCREG_##reg(MCONTEXT_FROM_NATIVE(native)) = lpContext->reg;
     if ((lpContext->ContextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
         ASSIGN_CONTROL_REGS
@@ -878,45 +897,55 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 dest = FPREG_Xstate_Hi16Zmm(native, &size);
                 _ASSERT(size == (sizeof(M512) * 16));
                 memcpy_s(dest, sizeof(M512) * 16, &lpContext->Zmm16, sizeof(M512) * 16);
-
-#ifndef TARGET_OSX
-                // TODO-xarch-apx: I suppose OSX will not support APX.
-                if (FPREG_HasApxRegisters(native))
-                {
-                    _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX);
-
-                    dest = FPREG_Xstate_Egpr(native, &size);
-                    _ASSERT(size == (sizeof(DWORD64) * 16));
-                    memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->R16, sizeof(DWORD64) * 16);
-                }
-#endif //  !TARGET_OSX
             }
+#ifndef TARGET_OSX
+            // APX xstate handling is compiled only for non-macOS targets.
+            if (FPREG_HasApxRegisters(native))
+            {
+                _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX);
+
+                dest = FPREG_Xstate_Egpr(native, &size);
+                _ASSERT(size == (sizeof(DWORD64) * 16));
+                memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->R16, sizeof(DWORD64) * 16);
+            }
+#endif //  !TARGET_OSX
         }
 #elif defined(HOST_ARM64)
-        if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
+        if((lpContext->XStateFeaturesMask & XSTATE_MASK_ARM64_SVE) == XSTATE_MASK_ARM64_SVE)
         {
-            //TODO-SVE: This only handles vector lengths of 128bits.
-            if (CONTEXT_GetSveLengthFromOS() == 16)
+            const CONTEXT_SVE_STATE_HEADER *sveStateHeader = GetArm64SveStateHeader(lpContext);
+
+            // The native signal frame should have space allocated for SVE state, provided by the caller.
+            _ASSERTE(sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)));
+            // The VL should have been initialized in the SVE header matching the signal frame.
+            _ASSERTE((sveStateHeader != nullptr) && (sveStateHeader->VectorLengthInBytes == sve->vl));
+
+            const uint16_t vectorQuadwordCount = sve_vq_from_vl(sve->vl);
+            uint8_t *nativeSveBytes = reinterpret_cast<uint8_t *>(sve);
+
+            const uint8_t *contextZRegisters = reinterpret_cast<const uint8_t *>(sveStateHeader + 1);
+            for (int i = 0; i < 32; i++)
             {
-                _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_ARM64_SVE) == XSTATE_MASK_ARM64_SVE);
-
-                uint16_t vq = sve_vq_from_vl(lpContext->Vl);
-
-                // Vector length should not have changed.
-                _ASSERTE(lpContext->Vl == sve->vl);
-
-                //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
-                *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq)) = lpContext->Ffr;
-
-                //TODO-SVE: Copy SVE registers once they are >128bits
-                //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
-
-                for (int i = 0; i < 16; i++)
-                {
-                    //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
-                    *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i)) = lpContext->P[i];
-                }
+                uint8_t *nativeZRegister =
+                    nativeSveBytes + SVE_SIG_ZREG_OFFSET(vectorQuadwordCount, i);
+                memcpy(nativeZRegister, contextZRegisters + (i * sve->vl), sve->vl);
+                _ASSERTE(memcmp(nativeZRegister, &lpContext->V[i], sizeof(NEON128)) == 0);
             }
+
+            const SIZE_T predicateRegisterSize = SVE_SIG_PREG_SIZE(vectorQuadwordCount);
+            const uint8_t *contextPredicateRegisters = contextZRegisters + (32 * sve->vl);
+            for (int i = 0; i < 16; i++)
+            {
+                memcpy(nativeSveBytes + SVE_SIG_PREG_OFFSET(vectorQuadwordCount, i),
+                    contextPredicateRegisters + (i * predicateRegisterSize),
+                    predicateRegisterSize);
+            }
+
+            const uint8_t *contextFirstFaultRegister =
+                contextPredicateRegisters + (16 * predicateRegisterSize);
+            memcpy(nativeSveBytes + SVE_SIG_FFR_OFFSET(vectorQuadwordCount),
+                contextFirstFaultRegister,
+                predicateRegisterSize);
         }
 #endif //HOST_AMD64
     }
@@ -1014,6 +1043,23 @@ void _GetNativeSigSimdContext(uint8_t *data, uint32_t size, fpsimd_context **fp_
         *sve_ptr = sve;
     }
 }
+
+#if defined(XSTATE_SUPPORTED)
+static const CONTEXT_SVE_STATE_HEADER *GetArm64SveStateHeader(const CONTEXT *context)
+{
+    if (((context->ContextFlags & CONTEXT_XSTATE) != CONTEXT_XSTATE) ||
+        ((context->XStateFeaturesMask & XSTATE_MASK_ARM64_SVE) == 0))
+    {
+        return nullptr;
+    }
+
+    const CONTEXT_SVE_STATE_HEADER *sveStateHeader =
+        reinterpret_cast<const CONTEXT_SVE_STATE_HEADER *>(context + 1);
+    _ASSERTE(IsValidSveVectorLengthInBytes(sveStateHeader->VectorLengthInBytes));
+
+    return sveStateHeader;
+}
+#endif // XSTATE_SUPPORTED
 #endif // HOST_64BIT && HOST_ARM64 && !TARGET_FREEBSD && !__APPLE__
 
 /*++
@@ -1037,7 +1083,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 {
     lpContext->ContextFlags = contextFlags;
 
-#define ASSIGN_REG(reg) lpContext->reg = MCREG_##reg(native->uc_mcontext);
+#define ASSIGN_REG(reg) lpContext->reg = MCREG_##reg(MCONTEXT_FROM_NATIVE(native));
     if ((contextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
         ASSIGN_CONTROL_REGS
@@ -1254,28 +1300,36 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #elif defined(HOST_ARM64)
         if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
         {
-            //TODO-SVE: This only handles vector lengths of 128bits.
-            if (CONTEXT_GetSveLengthFromOS() == 16)
+            const CONTEXT_SVE_STATE_HEADER *sveStateHeader = GetArm64SveStateHeader(lpContext);
+
+            // The VL should have been initialized in the SVE header matching the signal frame.
+            _ASSERTE((sveStateHeader != nullptr) && (sveStateHeader->VectorLengthInBytes == sve->vl));
+
+            const uint16_t vectorQuadwordCount = sve_vq_from_vl(sve->vl);
+            const uint8_t *nativeSveBytes = reinterpret_cast<const uint8_t *>(sve);
+            uint8_t *contextZRegisters = reinterpret_cast<uint8_t *>(lpContext + 1) + sizeof(*sveStateHeader);
+
+            for (int i = 0; i < 32; i++)
             {
-                _ASSERTE((sve->vl > 0) && (sve->vl % 16 == 0));
-                lpContext->Vl  = sve->vl;
-
-                uint16_t vq = sve_vq_from_vl(sve->vl);
-
-                lpContext->XStateFeaturesMask |= XSTATE_MASK_ARM64_SVE;
-
-                //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
-                lpContext->Ffr = *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq));
-
-                //TODO-SVE: Copy SVE registers once they are >128bits
-                //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
-
-                for (int i = 0; i < 16; i++)
-                {
-                    //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
-                    lpContext->P[i] = *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i));
-                }
+                const uint8_t *nativeZRegister =
+                    nativeSveBytes + SVE_SIG_ZREG_OFFSET(vectorQuadwordCount, i);
+                memcpy(contextZRegisters + (i * sve->vl), nativeZRegister, sve->vl);
+                _ASSERTE(memcmp(&lpContext->V[i], nativeZRegister, sizeof(NEON128)) == 0);
             }
+
+            const SIZE_T predicateRegisterSize = sve->vl / 8;
+            uint8_t *contextPredicateRegisters = contextZRegisters + (32 * sve->vl);
+            for (int i = 0; i < 16; i++)
+            {
+                memcpy(contextPredicateRegisters + (i * predicateRegisterSize),
+                       nativeSveBytes + SVE_SIG_PREG_OFFSET(vectorQuadwordCount, i),
+                       predicateRegisterSize);
+            }
+
+            uint8_t *contextFirstFaultRegister = contextPredicateRegisters + (16 * predicateRegisterSize);
+            memcpy(contextFirstFaultRegister,
+                   nativeSveBytes + SVE_SIG_FFR_OFFSET(vectorQuadwordCount),
+                   predicateRegisterSize);
         }
 #endif // HOST_AMD64
         else
@@ -1308,7 +1362,7 @@ Return value :
 LPVOID GetNativeContextPC(const native_context_t *context)
 {
 #ifdef HOST_AMD64
-    return (LPVOID)MCREG_Rip(context->uc_mcontext);
+    return (LPVOID)MCREG_Rip(MCONTEXT_FROM_NATIVE(context));
 #elif defined(HOST_X86)
     return (LPVOID) MCREG_Eip(context->uc_mcontext);
 #elif defined(HOST_S390X)
@@ -1336,7 +1390,7 @@ Return value :
 LPVOID GetNativeContextSP(const native_context_t *context)
 {
 #ifdef HOST_AMD64
-    return (LPVOID)MCREG_Rsp(context->uc_mcontext);
+    return (LPVOID)MCREG_Rsp(MCONTEXT_FROM_NATIVE(context));
 #elif defined(HOST_X86)
     return (LPVOID) MCREG_Esp(context->uc_mcontext);
 #elif defined(HOST_S390X)
@@ -2166,7 +2220,7 @@ DBG_FlushInstructionCache(
     //
     // As a workaround, we call __builtin___clear_cache on each page separately.
 
-    const SIZE_T pageSize = GetVirtualPageSize();
+    const SIZE_T pageSize = minipal_getpagesize();
     UINT_PTR begin = (UINT_PTR)lpBaseAddress;
     const UINT_PTR end = begin + dwSize;
 

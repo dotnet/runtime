@@ -12,33 +12,27 @@ namespace System.Diagnostics
         internal static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
         internal static int s_cachedSerializationSwitch;
 
-        internal static string? FindProgramInPath(string program)
-        {
-            string? pathEnvVar = System.Environment.GetEnvironmentVariable("PATH");
-            if (pathEnvVar is not null)
-            {
-                StringParser pathParser = new(pathEnvVar, Path.PathSeparator, skipEmpty: true);
-                while (pathParser.MoveNext())
-                {
-                    string subPath = pathParser.ExtractCurrent();
-                    string path = Path.Combine(subPath, program);
-                    // On Unix, we need to verify the file has execute permissions.
-                    // On Windows, any file that exists is considered executable.
-                    if (IsExecutable(path))
-                    {
-                        return path;
-                    }
-                }
-            }
+        internal static bool PlatformSupportsProcessStartAndKill
+            => !((OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS());
 
-            return null;
-        }
+        internal static bool PlatformSupportsConsole
+            => !(OperatingSystem.IsAndroid() || OperatingSystem.IsMacCatalyst());
 
         internal static Win32Exception CreateExceptionForErrorStartingProcess(string errorMessage, int errorCode, string fileName, string? workingDirectory)
         {
             string directoryForException = string.IsNullOrEmpty(workingDirectory) ? Directory.GetCurrentDirectory() : workingDirectory;
             string msg = SR.Format(SR.ErrorStartingProcess, fileName, directoryForException, errorMessage);
             return new Win32Exception(errorCode, msg);
+        }
+
+        internal static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
+
+            return (int)totalMilliseconds;
         }
     }
 }

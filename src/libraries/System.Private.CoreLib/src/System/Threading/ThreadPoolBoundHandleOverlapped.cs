@@ -33,7 +33,6 @@ namespace System.Threading
             _nativeOverlapped->OffsetHigh = 0;
         }
 
-        [RequiresUnsafe]
         private static void CompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
             ThreadPoolBoundHandleOverlapped overlapped = (ThreadPoolBoundHandleOverlapped)Unpack(nativeOverlapped);

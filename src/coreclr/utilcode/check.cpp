@@ -49,45 +49,25 @@ template<> AutoCleanupContractViolationHolder<mask>::AutoCleanupContractViolatio
     SPECIALIZE_CONTRACT_VIOLATION_HOLDER(mask);                                 \
     SPECIALIZE_AUTO_CLEANUP_CONTRACT_VIOLATION_HOLDER(mask)
 
-// There is a special case that requires 0... Why??? Who knows, let's fix that case.
-
-SPECIALIZED_VIOLATION(0);
 
 // Basic Specializations
-
 SPECIALIZED_VIOLATION(AllViolation);
 SPECIALIZED_VIOLATION(ThrowsViolation);
 SPECIALIZED_VIOLATION(GCViolation);
 SPECIALIZED_VIOLATION(ModeViolation);
-SPECIALIZED_VIOLATION(FaultViolation);
-SPECIALIZED_VIOLATION(FaultNotFatal);
-SPECIALIZED_VIOLATION(TakesLockViolation);
 SPECIALIZED_VIOLATION(LoadsTypeViolation);
+SPECIALIZED_VIOLATION(TakesLockViolation);
 
 // Other Specializations used by the RUNTIME, if you get a compile time error you need
 // to add the specific specialization that you are using here.
 
 SPECIALIZED_VIOLATION(ThrowsViolation|GCViolation);
+SPECIALIZED_VIOLATION(ThrowsViolation|GCViolation|ModeViolation);
+SPECIALIZED_VIOLATION(ThrowsViolation|GCViolation|LoadsTypeViolation|TakesLockViolation);
 SPECIALIZED_VIOLATION(ThrowsViolation|GCViolation|TakesLockViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|ModeViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultNotFatal);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|TakesLockViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation|TakesLockViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation|GCViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation|GCViolation|TakesLockViolation|LoadsTypeViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation|GCViolation|ModeViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation|GCViolation|ModeViolation|FaultNotFatal);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation|GCViolation|ModeViolation|FaultNotFatal|TakesLockViolation);
-SPECIALIZED_VIOLATION(GCViolation|FaultViolation);
-SPECIALIZED_VIOLATION(GCViolation|FaultNotFatal|ModeViolation);
-SPECIALIZED_VIOLATION(GCViolation|FaultNotFatal|TakesLockViolation);
-SPECIALIZED_VIOLATION(GCViolation|FaultNotFatal|TakesLockViolation|ModeViolation);
 SPECIALIZED_VIOLATION(GCViolation|ModeViolation);
-SPECIALIZED_VIOLATION(FaultViolation|FaultNotFatal);
-SPECIALIZED_VIOLATION(FaultNotFatal|TakesLockViolation);
-
-
+SPECIALIZED_VIOLATION(GCViolation|ModeViolation|TakesLockViolation);
+SPECIALIZED_VIOLATION(GCViolation|TakesLockViolation);
 
 #undef SPECIALIZED_VIOLATION
 #undef SPECIALIZE_AUTO_CLEANUP_CONTRACT_VIOLATION_HOLDER
@@ -108,7 +88,6 @@ void CHECK::Trigger(LPCSTR reason)
 
     EX_TRY
     {
-        FAULT_NOT_FATAL();
         pMessage = new StackSString();
 
         pMessage->AppendASCII(reason);
@@ -165,7 +144,6 @@ void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line)
     {
         EX_TRY
         {
-            FAULT_NOT_FATAL();
             // Try to build a stack of condition failures
 
             StackSString context;
@@ -219,7 +197,7 @@ LPCSTR CHECK::FormatMessage(LPCSTR messageFormat, ...)
     {
         // This path is only run in debug.  TakesLockViolation suppresses
         // problems with SString below.
-        CONTRACT_VIOLATION(FaultNotFatal|TakesLockViolation);
+        CONTRACT_VIOLATION(TakesLockViolation);
 
         EX_TRY
         {

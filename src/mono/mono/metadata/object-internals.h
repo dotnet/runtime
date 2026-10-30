@@ -723,6 +723,9 @@ typedef struct {
 	void (*get_exception_stats)(guint32 *exception_count);
 	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
 	gpointer (*get_ftnptr)(MonoMethod *method, gboolean need_unbox, MonoError *error);
+	// Returns the start address of the method's already-present native code (JIT, AOT or interpreter), or NULL if
+	// the method has not been compiled/prepared.
+	gpointer (*get_method_code_start)(MonoMethod *method);
 	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
 	gboolean (*interp_sufficient_stack)(gsize size);
 	void (*init_class) (MonoClass *klass);

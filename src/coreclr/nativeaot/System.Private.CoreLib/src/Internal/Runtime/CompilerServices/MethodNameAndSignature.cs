@@ -55,6 +55,19 @@ namespace Internal.Runtime.CompilerServices
                 && thisMethod.Name.Equals(otherMethod.Name);
         }
 
+        public bool ReturnTypeHasInstantiation
+        {
+            get
+            {
+                Method method = Reader.GetMethod(Handle);
+                Handle returnType = method.Signature.GetMethodSignature(Reader).ReturnType;
+                if (returnType.HandleType != HandleType.TypeSpecification)
+                    return false;
+                Handle inner = returnType.ToTypeSpecificationHandle(Reader).GetTypeSpecification(Reader).Signature;
+                return inner.HandleType == HandleType.TypeInstantiationSignature;
+            }
+        }
+
         public override int GetHashCode()
         {
             Method method = Reader.GetMethod(Handle);

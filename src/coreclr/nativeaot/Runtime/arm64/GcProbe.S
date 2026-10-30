@@ -4,13 +4,16 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-#define PROBE_FRAME_SIZE 0xD0  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, lr, m_pThread, m_Flags) +
-                               // 10 * 8 for callee saved registers +
-                               // 1 * 8  for caller SP +
-                               // 3 * 8  for int returns (x0, x1, x2) +
-                               // 4 * 16 for FP/HFA/HVA returns
+.arch_extension pauth
 
-// See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves return registers
+#define PROBE_FRAME_SIZE 0x140  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, lr, m_pThread, m_Flags) +
+                                // 10 * 8 for callee saved registers +
+                                // 1 * 8  for caller SP +
+                                // 8 * 8  for int return/argument regs (x0..x7) +
+                                // 1 * 8  for padding (16-byte alignment for q regs) +
+                                // 8 * 16 for FP argument registers (q0..q7)
+
+// See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves return/argument registers
 // and accepts the register bitmask
 // Call this macro first in the method (no further prolog instructions can be added after this).
 //
@@ -37,13 +40,14 @@
 
     // Slot at [sp, #0x70] is reserved for caller sp
 
-    // Save the integer return registers, x2 might contain an objectref (async continuation)
+    // Save the integer return/argument registers
     stp         x0, x1,   [sp, #0x78]
-    str         x2,       [sp, #0x88]
+    stp         x2, x3,   [sp, #0x88]
+    stp         x4, x5,   [sp, #0x98]
+    stp         x6, x7,   [sp, #0xA8]
 
-    // Save the FP/HFA/HVA return registers
-    stp         q0, q1,   [sp, #0x90]
-    stp         q2, q3,   [sp, #0xB0]
+    // Save the FP argument registers
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 0xC0
 
     // Perform the rest of the PInvokeTransitionFrame initialization.
     //   str         \threadReg,[sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]       // Thread * (unused by stackwalker)
@@ -65,13 +69,14 @@
 //
 .macro POP_PROBE_FRAME
 
-    // Restore the integer return registers
+    // Restore the integer return/argument registers
     ldp         x0, x1,   [sp, #0x78]
-    ldr         x2,       [sp, #0x88]
+    ldp         x2, x3,   [sp, #0x88]
+    ldp         x4, x5,   [sp, #0x98]
+    ldp         x6, x7,   [sp, #0xA8]
 
-    // Restore the FP/HFA/HVA return registers
-    ldp         q0, q1,   [sp, #0x90]
-    ldp         q2, q3,   [sp, #0xB0]
+    // Restore the FP argument registers
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 0xC0
 
     // Restore callee saved registers
     EPILOG_RESTORE_REG_PAIR x19, x20, 0x20
@@ -91,32 +96,64 @@
 //  All registers correct for return to the original return address.
 //
 // Register state on exit:
-//  x4: thread pointer
-//  x0, x1, x2: preserved
+//  x9: thread pointer
+//  x0-x7, q0-q7 preserved, x10 trashed
 //
 .macro FixupHijackedCallstack
 
-    // Store thread pointer temporarily in x3, then move it to x4
-    // x4 <- GetThread()
+    // x9 <- GetThread()
 
 #ifdef FEATURE_EMULATED_TLS
-    GETTHREAD_ETLS_3
+    // Save x0-x7 and q0-q7 around RhpGetThread call (it trashes all scratch registers)
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -0xD0
+    stp         x0, x1, [sp, #0x10]
+    stp         x2, x3, [sp, #0x20]
+    stp         x4, x5, [sp, #0x30]
+    stp         x6, x7, [sp, #0x40]
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 0x50
+
+    bl C_FUNC(RhpGetThread)
+    mov x9, x0
+
+    ldp         q6, q7, [sp, #0xB0]
+    ldp         q4, q5, [sp, #0x90]
+    ldp         q2, q3, [sp, #0x70]
+    ldp         q0, q1, [sp, #0x50]
+    ldp         x0, x1, [sp, #0x10]
+    ldp         x2, x3, [sp, #0x20]
+    ldp         x4, x5, [sp, #0x30]
+    ldp         x6, x7, [sp, #0x40]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0xD0
 #else
-    INLINE_GETTHREAD x3
+    // INLINE_GETTHREAD makes blr calls that trash volatile FP registers.
+    // Save and restore q0-q7 around the call.
+    sub         sp, sp, #0x80
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 0
+
+    INLINE_GETTHREAD x9
+
+    ldp         q6, q7, [sp, #0x60]
+    ldp         q4, q5, [sp, #0x40]
+    ldp         q2, q3, [sp, #0x20]
+    ldp         q0, q1, [sp, #0x00]
+    add         sp, sp, #0x80
 #endif
 
-    mov         x4, x3
-
     //
-    // Fix the stack by restoring the original return address
+    // Fix the stack by restoring and authenticating the original return address.
     //
-    ldr         lr, [x4, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    ldr         lr, [x9, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    ldr         x16, [x9, #OFFSETOF__Thread__m_pSpForPacSign]
+    cbz         x16, 1f
+    autia       lr, x16
 
+1:
     //
     // Clear hijack state
     //
-    // Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
-    stp         xzr, xzr, [x4, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+    // Clear m_ppvHijackedReturnAddressLocation, m_pvHijackedReturnAddress, and m_pSpForPacSign
+    stp         xzr, xzr, [x9, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+    str         xzr, [x9, #OFFSETOF__Thread__m_pSpForPacSign]
 .endm
 
 //
@@ -125,12 +162,12 @@
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 3
-    tbnz        x3, #TrapThreadsFlags_TrapThreads_Bit, LOCAL_LABEL(WaitForGC)
+    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 10
+    tbnz        x10, #TrapThreadsFlags_TrapThreads_Bit, LOCAL_LABEL(WaitForGC)
     ret
 
 LOCAL_LABEL(WaitForGC):
-    mov         x12, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2
+    mov         x12, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2 + PTFF_SAVE_X3 + PTFF_SAVE_X4 + PTFF_SAVE_X5 + PTFF_SAVE_X6 + PTFF_SAVE_X7
     movk        x12, PTFF_THREAD_HIJACK_HI, lsl #32
     b           C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack
@@ -138,9 +175,9 @@ NESTED_END RhpGcProbeHijack
 .global C_FUNC(RhpThrowHwEx)
 
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
-    PUSH_PROBE_FRAME x4, x3, x12
+    PUSH_PROBE_FRAME x9, x10, x12
 
-    ldr         x0, [x4, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
+    ldr         x0, [x9, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
     bl          C_FUNC(RhpWaitForGC2)
 
     POP_PROBE_FRAME
@@ -149,30 +186,9 @@ NESTED_END RhpWaitForGC
 
 .global C_FUNC(RhpGcPoll2)
 
-LEAF_ENTRY RhpGcPoll
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 0
-    cbnz    w0, LOCAL_LABEL(RhpGcPoll_Rare) // TrapThreadsFlags_None = 0
-    ret
-LOCAL_LABEL(RhpGcPoll_Rare):
-    b C_FUNC(RhpGcPollRare)
-LEAF_END RhpGcPoll
-
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
     PUSH_COOP_PINVOKE_FRAME x0
     bl C_FUNC(RhpGcPoll2)
     POP_COOP_PINVOKE_FRAME
     ret
 NESTED_END RhpGcPollRare
-
-
-#ifdef FEATURE_GC_STRESS
-
-//
-// GC Stress Hijack targets
-//
-LEAF_ENTRY RhpGcStressHijack, _TEXT
-    // NYI
-    EMIT_BREAKPOINT
-LEAF_END RhpGcStressHijack, _TEXT
-
-#endif  // FEATURE_GC_STRESS

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <AssemblyName>ReferencedClassLib</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\ReferencedClassLib\ReferencedClassLib.cs" Link="ReferencedClassLib.cs" />
+    <EmbeddedResource Include="..\ReferencedClassLib\ReferencedStrings*.resx" Link="%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

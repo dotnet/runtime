@@ -6,10 +6,7 @@
 // Licensed under the Apache 2.0 License. See LICENSE: https://github.com/open-telemetry/opentelemetry-dotnet/blob/805dd6b4abfa18ef2706d04c30d0ed28dbc2955e/LICENSE.TXT
 // Copyright The OpenTelemetry Authors
 
-#if NET
 using System.Numerics;
-#endif
-using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Metrics
 {
@@ -255,7 +252,7 @@ namespace System.Diagnostics.Metrics
 
                 if (exp == 0)
                 {
-                    exp -= LeadingZero64(fraction - 1) - 12 /* 64 - fraction width */;
+                    exp -= BitOperations.LeadingZeroCount((ulong)(fraction - 1)) - 12 /* 64 - fraction width */;
                 }
                 else if (fraction == 0)
                 {
@@ -265,82 +262,5 @@ namespace System.Diagnostics.Metrics
                 return (exp - 1023 /* exponent bias */) >> -Scale;
             }
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LeadingZero64(long value)
-        {
-#if NET
-        return BitOperations.LeadingZeroCount((ulong)value);
-#else
-            unchecked
-            {
-                var high32 = (int)(value >> 32);
-
-                if (high32 != 0)
-                {
-                    return LeadingZero32(high32);
-                }
-
-                return LeadingZero32((int)value) + 32;
-            }
-#endif
-        }
-
-#if !NET
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LeadingZero32(int value)
-        {
-            unchecked
-            {
-                var high16 = (short)(value >> 16);
-
-                if (high16 != 0)
-                {
-                    return LeadingZero16(high16);
-                }
-
-                return LeadingZero16((short)value) + 16;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LeadingZero16(short value)
-        {
-            unchecked
-            {
-                var high8 = (byte)(value >> 8);
-
-                if (high8 != 0)
-                {
-                    return LeadingZero8(high8);
-                }
-
-                return LeadingZero8((byte)value) + 8;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LeadingZero8(byte value) => LeadingZeroLookupTable[value];
-
-        private static ReadOnlySpan<byte> LeadingZeroLookupTable =>
-        [
-            8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
-            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        ];
-#endif // !NET
     }
 }

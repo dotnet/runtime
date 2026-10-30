@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
@@ -54,22 +55,33 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public void Kill()
         {
-            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }
 
             EnsureState(State.HaveId);
 
+            SignalCore(PosixSignal.SIGKILL);
+        }
+
+        private bool SignalCore(PosixSignal signal)
+        {
             // Check if we know the process has exited. This avoids us targeting another
             // process that has a recycled PID. This only checks our internal state, the Kill call below
             // actively checks if the process is still alive.
             if (GetHasExited(refresh: false))
             {
-                return;
+                return false;
             }
 
-            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
+            int signalNumber = Interop.Sys.GetPlatformSignalNumber(signal);
+            if (signalNumber == 0)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            int killResult = Interop.Sys.Kill(_processId, signalNumber);
             if (killResult != 0)
             {
                 Interop.Error error = Interop.Sys.GetLastError();
@@ -77,11 +89,13 @@ namespace System.Diagnostics
                 // Don't throw if the process has exited.
                 if (error == Interop.Error.ESRCH)
                 {
-                    return;
+                    return false;
                 }
 
                 throw new Win32Exception(); // same exception as on Windows
             }
+
+            return true;
         }
 
         private bool GetHasExited(bool refresh)
@@ -96,11 +110,67 @@ namespace System.Diagnostics
 
         private void KillTree(ref List<Exception>? exceptions)
         {
+            // First, stop and collect the entire process tree before killing any process.
+            // This is necessary because killing a parent process may cause children with
+            // PR_SET_PDEATHSIG (KillOnParentExit) to be killed by the kernel immediately,
+            // making it impossible to discover their descendants afterward.
+            List<Process> stoppedProcesses = [];
+            try
+            {
+                StopTree(ref exceptions, stoppedProcesses);
+            }
+            catch (Exception ex)
+            {
+                (exceptions ??= new List<Exception>()).Add(ex);
+            }
+            finally
+            {
+                // Kill all stopped processes even if StopTree threw partway through.
+                // stoppedProcesses is in depth-first pre-order, so walking it backwards kills
+                // descendants before their ancestors. Killing a parent first would reparent its
+                // still-stopped children. When a reparented process exits, macOS can orphan the
+                // process group without correctly accounting for the reparenting. If the group
+                // still has stopped members, the kernel then sends SIGHUP and SIGCONT to every
+                // process in it, including unrelated processes that share the group (such as the
+                // caller and its ancestors).
+                for (int i = stoppedProcesses.Count - 1; i >= 0; i--)
+                {
+                    Process process = stoppedProcesses[i];
+                    int killResult = Interop.Sys.Kill(process._processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
+                    if (killResult != 0)
+                    {
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                        // Ignore 'process no longer exists' error.
+                        if (errorInfo.Error != Interop.Error.ESRCH)
+                        {
+                            (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
+                        }
+                    }
+
+                    if (process != this)
+                    {
+                        process.Dispose();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Recursively stops all processes in the tree (depth-first) and collects them into a flat list.
+        /// Stopping (SIGSTOP) before enumerating children ensures we can discover the entire tree
+        /// before any kill signals cause cascading terminations.
+        /// </summary>
+        /// <returns>
+        /// <see langword="true"/> if the process was successfully stopped and added to
+        /// <paramref name="stoppedProcesses"/>; <see langword="false"/> if the process had already
+        /// exited or could not be stopped, in which case the caller is responsible for disposing it.
+        /// </returns>
+        private bool StopTree(ref List<Exception>? exceptions, List<Process> stoppedProcesses)
+        {
             // If the process has exited, we can no longer determine its children.
-            // If we know the process has exited, stop already.
             if (GetHasExited(refresh: false))
             {
-                return;
+                return false;
             }
 
             // Stop the process, so it won't start additional children.
@@ -108,33 +178,27 @@ namespace System.Diagnostics
             int stopResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSIGSTOP());
             if (stopResult != 0)
             {
-                Interop.Error error = Interop.Sys.GetLastError();
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 // Ignore 'process no longer exists' error.
-                if (error != Interop.Error.ESRCH)
+                if (errorInfo.Error != Interop.Error.ESRCH)
                 {
-                    (exceptions ??= new List<Exception>()).Add(new Win32Exception());
+                    (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
                 }
-                return;
+                return false;
             }
+
+            stoppedProcesses.Add(this);
 
             List<Process> children = GetChildProcesses();
-
-            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
-            if (killResult != 0)
+            foreach (Process childProcess in children)
             {
-                Interop.Error error = Interop.Sys.GetLastError();
-                // Ignore 'process no longer exists' error.
-                if (error != Interop.Error.ESRCH)
+                if (!childProcess.StopTree(ref exceptions, stoppedProcesses))
                 {
-                    (exceptions ??= new List<Exception>()).Add(new Win32Exception());
+                    childProcess.Dispose();
                 }
             }
 
-            foreach (Process childProcess in children)
-            {
-                childProcess.KillTree(ref exceptions);
-                childProcess.Dispose();
-            }
+            return true;
         }
 
         /// <summary>Discards any information about the associated process.</summary>
@@ -223,12 +287,23 @@ namespace System.Diagnostics
         /// <summary>Checks whether the process has exited and updates state accordingly.</summary>
         private void UpdateHasExited()
         {
-            int? exitCode;
-            _exited = GetWaitState().GetExited(out exitCode, refresh: true);
-            if (_exited && exitCode != null)
+            ProcessExitStatus? exitStatus;
+            _exited = GetWaitState().GetExited(out exitStatus, refresh: true);
+            if (_exited && exitStatus is not null)
             {
-                _exitCode = exitCode.Value;
+                _exitCode = exitStatus.ExitCode;
             }
+        }
+
+        private bool TryGetExitStatus([NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            if (GetWaitState().GetExited(out exitStatus, refresh: false) && exitStatus is not null)
+            {
+                return true;
+            }
+
+            exitStatus = null;
+            return false;
         }
 
         /// <summary>Gets the time that the associated process exited.</summary>
@@ -352,20 +427,35 @@ namespace System.Diagnostics
             }
 
             EnsureState(State.HaveNonExitedId | State.IsLocal);
-            return new SafeProcessHandle(_processId, GetSafeWaitHandle());
+            // GetWaitState() ensures _waitStateHolder is initialized.
+            // IncrementRefCount() creates the Holder reference that is passed to SafeProcessHandle.
+            GetWaitState();
+            return new SafeProcessHandle(_waitStateHolder!.IncrementRefCount());
         }
 
-        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles)
         {
-            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
+            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, out ProcessWaitState.Holder? waitStateHolder);
+            return SetProcessHandle(startedProcess, waitStateHolder!);
+        }
+
+        private bool StartCoreWithCallback(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, Func<UnixProcessStartArguments, int> callback)
+        {
+            SafeProcessHandle startedProcess = SafeProcessHandle.StartWithCallback(startInfo, stdinHandle, stdoutHandle, stderrHandle, callback, out ProcessWaitState.Holder? waitStateHolder);
+            return SetProcessHandle(startedProcess, waitStateHolder!);
+        }
+
+        private bool SetProcessHandle(SafeProcessHandle startedProcess, ProcessWaitState.Holder waitStateHolder)
+        {
             Debug.Assert(!startedProcess.IsInvalid);
 
-            _waitStateHolder = waitStateHolder;
+            // SafeProcessHandle has its own copy of the wait state holder, so we need to increment the ref count for our copy.
+            _waitStateHolder = waitStateHolder.IncrementRefCount();
+
             SetProcessHandle(startedProcess);
             SetProcessId(startedProcess.ProcessId);
             return true;
         }
-
 
         /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
         private ProcessWaitState.Holder? _waitStateHolder;
@@ -434,14 +524,5 @@ namespace System.Diagnostics
 
         private static bool WaitForInputIdleCore(int _ /*milliseconds*/) => throw new InvalidOperationException(SR.InputIdleUnknownError);
 
-        /// <summary>Gets the friendly name of the process.</summary>
-        public string ProcessName
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.ProcessName;
-            }
-        }
     }
 }

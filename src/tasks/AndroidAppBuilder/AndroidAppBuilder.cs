@@ -39,6 +39,11 @@ public class AndroidAppBuilderTask : Task
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
+    /// Additional native source files to compile alongside monodroid.c
+    /// </summary>
+    public ITaskItem[] ExtraNativeSources { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// Prefer FullAOT mode for Emulator over JIT
     /// </summary>
     public bool ForceAOT { get; set; }
@@ -108,6 +113,18 @@ public class AndroidAppBuilderTask : Task
 
     public bool ForceInterpreter { get; set; }
 
+    /// <summary>
+    /// Path to a network_security_config.xml file to include in the APK.
+    /// When set, enables custom trust anchors and certificate pinning via Android's network security config.
+    /// </summary>
+    public string? NetworkSecurityConfig { get; set; }
+
+    /// <summary>
+    /// Optional path to a resources directory containing additional files for the network security config
+    /// (e.g., res/raw/ with certificate files referenced by the config).
+    /// </summary>
+    public string? NetworkSecurityConfigResourcesDir { get; set; }
+
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
 
@@ -140,7 +157,10 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.IsLibraryMode = IsLibraryMode;
         apkBuilder.NativeDependencies = NativeDependencies;
         apkBuilder.ExtraLinkerArguments = ExtraLinkerArguments;
+        apkBuilder.ExtraNativeSources = ExtraNativeSources;
         apkBuilder.RuntimeFlavor = RuntimeFlavor;
+        apkBuilder.NetworkSecurityConfig = NetworkSecurityConfig;
+        apkBuilder.NetworkSecurityConfigResourcesDir = NetworkSecurityConfigResourcesDir;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(RuntimeIdentifier, MainLibraryFileName, RuntimeHeaders);
 
         return true;

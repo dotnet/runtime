@@ -131,7 +131,6 @@ namespace System.Reflection
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetTypeHelper(char* pTypeName, RuntimeAssembly* pRequestingAssembly, bool throwOnError, bool requireAssemblyQualifiedName, IntPtr unsafeAccessorMethod, RuntimeType* pResult, Exception* pException)
         {
             try
@@ -198,6 +197,7 @@ namespace System.Reflection
             return assembly;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "UnsafeAccessors_ResolveGenericParamToTypeHandle")]
         private static partial IntPtr ResolveGenericParamToTypeHandle(IntPtr unsafeAccessorMethod, [MarshalAs(UnmanagedType.Bool)] bool isMethodParam, uint paramIndex);
 

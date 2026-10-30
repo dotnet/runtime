@@ -57,6 +57,8 @@ jobs:
       agentOs: Ubuntu
     ${{ if eq(parameters.osGroup, 'freebsd') }}:
       agentOs: FreeBSD
+    ${{ if eq(parameters.osGroup, 'openbsd') }}:
+      agentOs: OpenBSD
     ${{ if in(parameters.osGroup, 'osx', 'ios') }}:
       agentOs: MacOS
     ${{ if eq(parameters.osGroup, 'windows') }}:
@@ -101,6 +103,9 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
+    - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
+      - template: /eng/pipelines/common/select-xcode.yml
+
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
 

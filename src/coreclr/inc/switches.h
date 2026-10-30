@@ -12,9 +12,6 @@
 
 #define GC_CONFIG_DRIVEN
 
-// define this to test data safety for the DAC. See code:DataTest::TestDataSafety.
-#define TEST_DATA_CONSISTENCY
-
 #if !defined(STRESS_LOG) && !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 #define STRESS_LOG
 #endif
@@ -54,9 +51,8 @@
 #endif // FEATURE_TIERED_COMPILATION
 
 #if defined(HOST_UNIX)
-    // In PAL we have a mechanism that reserves memory on start up that is
-    // close to libcoreclr and intercepts calls to VirtualAlloc to serve back
-    // from this area.
+    // Minipal reserves memory near libcoreclr during startup and serves executable
+    // memory allocations from that pool.
     #define USE_LAZY_PREFERRED_RANGE       0
 #else
     // On Windows we lazily try to reserve memory close to coreclr.dll.
@@ -85,6 +81,10 @@
 
 #if defined(STRESS_HEAP) && defined(_DEBUG) && defined(FEATURE_HIJACK)
 #define HAVE_GCCOVER
+#endif
+
+#if defined(_DEBUG)
+#define CDAC_STRESS
 #endif
 
 // Some platforms may see spurious AVs when GcCoverage is enabled because of races.
@@ -118,9 +118,9 @@
 
 #endif // _DEBUG
 
-// MUST NEVER CHECK IN WITH THIS ENABLED.
-// This is just for convenience in doing performance investigations in a checked-out enlistment.
-// #define FEATURE_ENABLE_NO_RANGE_CHECKS
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_REJIT) || defined(FEATURE_CODE_VERSIONING)
+#define FEATURE_INLINE_TRACKING
+#endif
 
 // This controls whether a compilation-timing feature that relies on Windows APIs, if available, else direct
 // hardware instructions (rdtsc), for accessing high-resolution hardware timers is enabled. This is disabled
@@ -132,12 +132,6 @@
 // statistics. Also see comments on FEATURE_JIT_TIMER.
 #define FEATURE_JIT_METHOD_PERF
 
-
-#ifndef FEATURE_USE_ASM_GC_WRITE_BARRIERS
-// If we're not using assembly write barriers, then this turns on a performance measurement
-// mode that gathers and prints statistics about # of GC write barriers invokes.
-// #define FEATURE_COUNT_GC_WRITE_BARRIERS
-#endif
 
 // Enables a mode in which GC is completely conservative in stacks and registers: all stack slots and registers
 // are treated as potential pinned interior pointers. When enabled, the runtime flag DOTNET_GCCONSERVATIVE

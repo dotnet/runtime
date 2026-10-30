@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // --------------------------------------------------------------------------------
 // PEImageLayout.h
-//
-
 // --------------------------------------------------------------------------------
-
 
 #ifndef PEIMAGELAYOUT_H_
 #define PEIMAGELAYOUT_H_
@@ -17,6 +15,7 @@
 #include "clrtypes.h"
 #include "pedecoder.h"
 #include "holder.h"
+#include "minipal.h"
 #ifdef FEATURE_WEBCIL
 #include "webcildecoder.h"
 #endif
@@ -57,6 +56,10 @@ public:
 
 public:
 #ifndef DACCESS_COMPILE
+#ifdef TARGET_WASM
+    // One-time initialization of the lock guarding webcil relocation de-duplication.
+    static void Startup();
+#endif // TARGET_WASM
     static PEImageLayout* CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size);
 #ifndef TARGET_UNIX
     static PEImageLayout* CreateFromHMODULE(HMODULE hModule,PEImage* pOwner);
@@ -68,13 +71,16 @@ public:
 #endif
     PEImageLayout();
     virtual ~PEImageLayout();
-    static BOOL CompareBase(UPTR path, UPTR mapping);
 
     // Refcount above images.
     void AddRef();
     ULONG Release();
 
     void ApplyBaseRelocations(bool relocationMustWriteCopy);
+
+#ifdef FEATURE_WEBCIL
+    SSIZE_T GetTableBaseOffset() const;
+#endif
 
     // ------------------------------------------------------------
     // Format query
@@ -227,7 +233,7 @@ protected:
     // Protected forwarding helpers for subclass access to PEDecoder protected members
     IMAGE_NT_HEADERS* FindNTHeaders() const { return m_peDecoder.FindNTHeaders(); }
     IMAGE_SECTION_HEADER* RvaToSection(RVA rva) const { return m_peDecoder.RvaToSection(rva); }
-    void SetRelocated() { m_peDecoder.SetRelocated(); }
+    void SetRelocated();
 
 private:
     Volatile<LONG> m_refCount;
@@ -257,6 +263,26 @@ struct cdac_data<PEImageLayout>
 
 typedef ReleaseHolder<PEImageLayout> PEImageLayoutHolder;
 
+struct PEImagePart
+{
+    SIZE_T m_value;
+
+    static PEImagePart Allocated(void* address)
+    {
+        return { reinterpret_cast<SIZE_T>(address) + 1 };
+    }
+
+    static PEImagePart Mapped(void* address)
+    {
+        return { reinterpret_cast<SIZE_T>(address) };
+    }
+
+    bool IsEmpty() const { return m_value == 0; }
+    bool IsAllocated() const { return (m_value & 1) != 0; }
+    void* GetAddress() const { return reinterpret_cast<void*>(m_value & ~1); }
+    void Clear() { m_value = 0; }
+};
+
 // A simple layout where data stays the same as in the input (file or a byte array)
 class FlatImageLayout : public PEImageLayout
 {
@@ -266,17 +292,19 @@ public:
 #ifndef DACCESS_COMPILE
     FlatImageLayout(PEImage* pOwner);
     FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size);
-    void* LoadImageByCopyingParts(SIZE_T* m_imageParts) const;
-#if TARGET_WINDOWS
-    void* LoadImageByMappingParts(SIZE_T* m_imageParts) const;
+    void* LoadImageByCopyingParts(PEImagePart* imageParts) const;
+#if !defined(TARGET_WASM)
+    void* LoadImageByMappingParts(PEImagePart* imageParts) const;
 #endif
 #endif
 
 private:
-    // Handles for the mapped image.
-    // These will be null if the image data is not mapped by the runtime (for example, provided via an external assembly probe).
-    CLRMapViewHolder m_FileView;
-    HandleHolder m_FileMap;
+#ifdef TARGET_WASM
+    NewArrayHolder<BYTE> m_wasmData;
+#else
+    VMToOSInterface::MemoryMappedViewHolder m_fileView;
+    VMToOSInterface::MemoryMappingHolder m_fileMapping;
+#endif // TARGET_WASM
 };
 
 // ConvertedImageView is for the case when we construct a loaded
@@ -293,25 +321,20 @@ public:
 #endif
 private:
     PT_RUNTIME_FUNCTION m_pExceptionDir;
-    SIZE_T              m_imageParts[MAX_PARTS];
+    PEImagePart         m_imageParts[MAX_PARTS];
 };
 
-// LoadedImageLayout is for the case when we construct a loaded layout directly
+#ifdef TARGET_WINDOWS
+// LoadedImageLayout uses the Windows loader directly.
 class LoadedImageLayout: public PEImageLayout
 {
     VPTR_VTABLE_CLASS(LoadedImageLayout,PEImageLayout)
 protected:
-#ifndef TARGET_UNIX
     HINSTANCE m_Module;
-#else
-    PALPEFileHolder m_LoadedFile;
-#endif
 public:
 #ifndef DACCESS_COMPILE
     LoadedImageLayout(PEImage* pOwner, HRESULT* returnDontThrow);
-#if !defined(TARGET_UNIX)
     LoadedImageLayout(PEImage* pOwner, HMODULE hModule);
-#endif // !TARGET_UNIX
     ~LoadedImageLayout();
 #endif // !DACCESS_COMPILE
 };
@@ -328,6 +351,6 @@ class NativeImageLayout : public PEImageLayout
     NativeImageLayout(LPCWSTR fullPath);
 #endif
 };
+#endif // TARGET_WINDOWS
 
 #endif  // PEIMAGELAYOUT_H_
-

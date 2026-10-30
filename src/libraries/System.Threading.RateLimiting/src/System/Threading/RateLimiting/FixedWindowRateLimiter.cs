@@ -22,6 +22,13 @@ namespace System.Threading.RateLimiting
         private long _failedLeasesCount;
         private long _successfulLeasesCount;
 
+        /// <summary>
+        /// Function to calculate elapsed time from a given tick value.
+        /// Defaults to <see cref="RateLimiterHelper.GetElapsedTime(long?)"/>.
+        /// In tests, this field can be reassigned via reflection to inject custom time behavior without modifying the public API.
+        /// </summary>
+        private readonly Func<long?, TimeSpan?> _getElapsedTime = RateLimiterHelper.GetElapsedTime;
+
         private readonly Timer? _renewTimer;
         private readonly FixedWindowRateLimiterOptions _options;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
@@ -83,12 +90,13 @@ namespace System.Threading.RateLimiting
         public override RateLimiterStatistics? GetStatistics()
         {
             ThrowIfDisposed();
+            // Volatile.Read avoids torn reads of a long on 32bit systems.
             return new RateLimiterStatistics()
             {
                 CurrentAvailablePermits = _permitCount,
                 CurrentQueuedCount = _queueCount,
-                TotalFailedLeases = Interlocked.Read(ref _failedLeasesCount),
-                TotalSuccessfulLeases = Interlocked.Read(ref _successfulLeasesCount),
+                TotalFailedLeases = Volatile.Read(ref _failedLeasesCount),
+                TotalSuccessfulLeases = Volatile.Read(ref _successfulLeasesCount),
             };
         }
 
@@ -114,7 +122,7 @@ namespace System.Threading.RateLimiting
                 }
 
                 Interlocked.Increment(ref _failedLeasesCount);
-                return CreateFailedWindowLease(permitCount);
+                return CreateFailedWindowLease();
             }
 
             lock (Lock)
@@ -125,7 +133,7 @@ namespace System.Threading.RateLimiting
                 }
 
                 Interlocked.Increment(ref _failedLeasesCount);
-                return CreateFailedWindowLease(permitCount);
+                return CreateFailedWindowLease();
             }
         }
 
@@ -193,7 +201,7 @@ namespace System.Threading.RateLimiting
                     {
                         Interlocked.Increment(ref _failedLeasesCount);
                         // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst
-                        return new ValueTask<RateLimitLease>(CreateFailedWindowLease(permitCount));
+                        return new ValueTask<RateLimitLease>(CreateFailedWindowLease());
                     }
                 }
 
@@ -206,13 +214,19 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private FixedWindowLease CreateFailedWindowLease(int permitCount)
+        private FixedWindowLease CreateFailedWindowLease()
         {
-            int replenishAmount = permitCount - _permitCount + _queueCount;
-            // can't have 0 replenish window, that would mean it should be a successful lease
-            int replenishWindow = Math.Max(replenishAmount / _options.PermitLimit, 1);
+            // Volatile.Read avoids torn reads of a long on 32bit systems.
+            long lastReplenishmentTick = Volatile.Read(ref _lastReplenishmentTick);
+            TimeSpan? remainingTime = _options.Window - _getElapsedTime(lastReplenishmentTick);
 
-            return new FixedWindowLease(false, TimeSpan.FromTicks(_options.Window.Ticks * replenishWindow));
+            // Clamp to zero if negative (window expired but not yet replenished)
+            if (remainingTime < TimeSpan.Zero)
+            {
+                remainingTime = TimeSpan.Zero;
+            }
+
+            return new FixedWindowLease(false, remainingTime);
         }
 
         private bool TryLeaseUnsynchronized(int permitCount, [NotNullWhen(true)] out RateLimitLease? lease)
@@ -292,7 +306,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                _lastReplenishmentTick = nowTicks;
+                Volatile.Write(ref _lastReplenishmentTick, nowTicks);
 
                 int availablePermitCounters = _permitCount;
 

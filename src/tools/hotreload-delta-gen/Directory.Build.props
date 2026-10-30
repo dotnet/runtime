@@ -1,0 +1,17 @@
+<Project>
+  <Import Project="..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>Latest</LangVersion>
+    <SlnGenSolutionFolder>tools\hotreload-delta-gen\</SlnGenSolutionFolder>
+    <IsShipping>false</IsShipping>
+
+    <!--
+      This code was imported from https://github.com/dotnet/hotreload-utils which did not
+      enforce runtime's strict analyzer rules. Suppress analyzer warnings-as-errors for now.
+    -->
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+</Project>

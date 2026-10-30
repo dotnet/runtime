@@ -21,6 +21,7 @@ namespace System.Net.Security
         private readonly bool _isServer;
         private readonly TokenImpersonationLevel _requiredImpersonationLevel;
         private readonly ProtectionLevel _requiredProtectionLevel;
+        private readonly bool _requiredMutualAuthentication;
         private readonly ExtendedProtectionPolicy? _extendedProtectionPolicy;
         private readonly bool _isSecureConnection;
         private bool _isDisposed;
@@ -31,7 +32,12 @@ namespace System.Net.Security
         /// for client-side authentication session.
         /// </summary>
         /// <param name="clientOptions">The property bag for the authentication options.</param>
-        public NegotiateAuthentication(NegotiateAuthenticationClientOptions clientOptions)
+        public NegotiateAuthentication(NegotiateAuthenticationClientOptions clientOptions) :
+            this(clientOptions, enforceMutualAuthentication: true)
+        {
+        }
+
+        internal NegotiateAuthentication(NegotiateAuthenticationClientOptions clientOptions, bool enforceMutualAuthentication)
         {
             ArgumentNullException.ThrowIfNull(clientOptions);
 
@@ -39,6 +45,7 @@ namespace System.Net.Security
             _requestedPackage = clientOptions.Package;
             _requiredImpersonationLevel = TokenImpersonationLevel.None;
             _requiredProtectionLevel = clientOptions.RequiredProtectionLevel;
+            _requiredMutualAuthentication = enforceMutualAuthentication && clientOptions.RequireMutualAuthentication;
             _pal = NegotiateAuthenticationPal.Create(clientOptions);
         }
 
@@ -50,6 +57,12 @@ namespace System.Net.Security
         public NegotiateAuthentication(NegotiateAuthenticationServerOptions serverOptions)
         {
             ArgumentNullException.ThrowIfNull(serverOptions);
+
+            if (serverOptions.Policy?.PolicyEnforcement == PolicyEnforcement.Always &&
+                !ExtendedProtectionPolicy.OSSupportsExtendedProtection)
+            {
+                throw new PlatformNotSupportedException(SR.net_extprotection_not_supported);
+            }
 
             _isServer = true;
             _requestedPackage = serverOptions.Package;
@@ -78,9 +91,22 @@ namespace System.Net.Security
         }
 
         /// <summary>
-        /// Indicates whether authentication was successfully completed and the session
-        /// was established.
+        /// Gets a value that indicates whether the authentication exchange has completed.
         /// </summary>
+        /// <value>
+        /// <see langword="true" /> if the authentication exchange has completed; otherwise, <see langword="false" />.
+        /// </value>
+        /// <remarks>
+        /// This property indicates whether the authentication exchange has completed, not whether authentication
+        /// succeeded. A <see langword="true" /> value can be returned after either successful authentication or a
+        /// terminal authentication failure.
+        ///
+        /// To determine whether authentication actually succeeded, inspect the <see cref="NegotiateAuthenticationStatusCode" />
+        /// returned by the most recent call to <see cref="GetOutgoingBlob(ReadOnlySpan{byte}, out NegotiateAuthenticationStatusCode)" />
+        /// or <see cref="GetOutgoingBlob(string, out NegotiateAuthenticationStatusCode)" />. The status is
+        /// <see cref="NegotiateAuthenticationStatusCode.Completed" /> on success; any other value indicates that
+        /// authentication didn't complete successfully.
+        /// </remarks>
         public bool IsAuthenticated => _isDisposed ? false : _pal.IsAuthenticated;
 
         /// <summary>
@@ -111,7 +137,10 @@ namespace System.Net.Security
         /// <summary>
         /// Indicates whether both server and client have been authenticated.
         /// </summary>
-        public bool IsMutuallyAuthenticated => _isDisposed ? false : _pal.IsMutuallyAuthenticated;
+        public bool IsMutuallyAuthenticated =>
+            !_isDisposed &&
+            !string.Equals(Package, NegotiationInfoClass.NTLM) &&
+            _pal.IsMutuallyAuthenticated;
 
         /// <summary>
         /// Indicates whether the local side of the authentication is representing
@@ -141,7 +170,7 @@ namespace System.Net.Security
         /// </summary>
         /// <remarks>
         /// For server-side of the authentication the property returns the target name
-        /// specified by the client after successful authentication (see <see cref="IsAuthenticated" />).
+        /// specified by the client after authentication completes successfully.
         ///
         /// For client-side of the authentication the property returns the target name
         /// specified in <see cref="NegotiateAuthenticationClientOptions.TargetName" />.
@@ -229,6 +258,10 @@ namespace System.Net.Security
                 {
                     statusCode = NegotiateAuthenticationStatusCode.SecurityQosFailed;
                 }
+                else if (_requiredMutualAuthentication && !IsMutuallyAuthenticated)
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.SecurityQosFailed;
+                }
             }
 
             return blob;
@@ -253,20 +286,39 @@ namespace System.Net.Security
         /// </remarks>
         public string? GetOutgoingBlob(string? incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
         {
-            byte[]? decodedIncomingBlob = null;
-            if (!string.IsNullOrEmpty(incomingBlob))
+            byte[]? rentedBuffer = null;
+            try
             {
-                decodedIncomingBlob = Convert.FromBase64String(incomingBlob);
-            }
-            byte[]? decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, out statusCode);
+                ReadOnlySpan<byte> decodedIncomingBlob = default;
+                if (!string.IsNullOrEmpty(incomingBlob))
+                {
+                    rentedBuffer = ArrayPool<byte>.Shared.Rent((incomingBlob.Length / 4) * 3);
+                    if (!Convert.TryFromBase64String(incomingBlob, rentedBuffer, out int decodedLength))
+                    {
+                        statusCode = NegotiateAuthenticationStatusCode.InvalidToken;
+                        return null;
+                    }
 
-            string? outgoingBlob = null;
-            if (decodedOutgoingBlob != null && decodedOutgoingBlob.Length > 0)
+                    decodedIncomingBlob = rentedBuffer.AsSpan(0, decodedLength);
+                }
+
+                byte[]? decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, out statusCode);
+
+                string? outgoingBlob = null;
+                if (decodedOutgoingBlob != null && decodedOutgoingBlob.Length > 0)
+                {
+                    outgoingBlob = Convert.ToBase64String(decodedOutgoingBlob);
+                }
+
+                return outgoingBlob;
+            }
+            finally
             {
-                outgoingBlob = Convert.ToBase64String(decodedOutgoingBlob);
+                if (rentedBuffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBuffer, clearArray: true);
+                }
             }
-
-            return outgoingBlob;
         }
 
         /// <summary>

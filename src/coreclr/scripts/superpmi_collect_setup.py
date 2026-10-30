@@ -44,7 +44,7 @@ from jitutil import run_command, copy_directory, copy_files, set_pipeline_variab
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (nativeaot, crossgen2, pmi, run, run_tiered, run_pgo, run_pgo_optrepeat)")
-parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks, aspnet2)")
+parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks, aspnet2, aspire)")
 parser.add_argument("-payload_directory", required=True, help="Path to payload directory to create: subdirectories are created for the correlation payload as well as the per-partition work items")
 parser.add_argument("-source_directory", required=True, help="Path to source directory")
 parser.add_argument("-core_root_directory", required=True, help="Path to Core_Root directory")
@@ -55,6 +55,8 @@ parser.add_argument("-mch_file_tag", help="Tag to be used to mch files")
 parser.add_argument("-input_directory", help="Directory containing assemblies which SuperPMI will use for collection (for pmi/crossgen2 collections)")
 parser.add_argument("-max_size", help="Max size of each partition in MB (for pmi/crossgen2 collections)")
 parser.add_argument("-public_queues", action="store_true", help="Whether to set up for public queues (or internal ones, if not specified)")
+parser.add_argument("-target_os", help="Target OS for cross-targeting crossgen2 collections (e.g., 'browser' for wasm). Defaults to the host platform.")
+parser.add_argument("-target_arch", help="Target architecture for cross-targeting crossgen2 collections (e.g., 'wasm'). Defaults to the host architecture.")
 
 is_windows = platform.system() == "Windows"
 
@@ -278,6 +280,18 @@ def setup_args(args):
                         "public_queues",
                         lambda unused: True,
                         "Whether to use public queues (or, if not specified, internal queues)")
+
+    coreclr_args.verify(args,
+                        "target_os",
+                        lambda unused: True,
+                        "Unable to set target_os",
+                        modify_arg=lambda target_os: target_os if target_os else coreclr_args.platform)
+
+    coreclr_args.verify(args,
+                        "target_arch",
+                        lambda unused: True,
+                        "Unable to set target_arch",
+                        modify_arg=lambda target_arch: target_arch if target_arch else coreclr_args.arch)
     return coreclr_args
 
 
@@ -387,6 +401,50 @@ def partition_files(src_directory, dst_directory, max_size, exclude_directories=
         index += 1
 
 
+def stage_runtime_pack_assemblies(runtime_pack_rid_directory, dst_directory):
+    """ Stage the managed assemblies of a CoreCLR runtime pack into a single flat directory.
+
+    In a CoreCLR runtime pack the shared framework libraries live under `lib/<tfm>` while
+    `System.Private.CoreLib.dll` lives under `native`. crossgen2 wants them all in one
+    place, both as the set of assemblies to compile and as the reference set.
+
+    Args:
+        runtime_pack_rid_directory (string): Path to the runtime pack `runtimes/<rid>` directory.
+        dst_directory (string): Directory to stage the assemblies into.
+
+    Returns:
+        string: The staging directory, i.e. `dst_directory`.
+    """
+
+    lib_directory = os.path.join(runtime_pack_rid_directory, "lib")
+    if not os.path.isdir(lib_directory):
+        raise RuntimeError("Cannot find runtime pack lib directory " + lib_directory)
+
+    # Require a single target framework rather than guessing which assembly set to use.
+    tfm_directories = [os.path.join(lib_directory, name) for name in sorted(os.listdir(lib_directory))
+                       if os.path.isdir(os.path.join(lib_directory, name))]
+    if len(tfm_directories) == 0:
+        raise RuntimeError("Cannot find a target framework directory under " + lib_directory)
+
+    if len(tfm_directories) > 1:
+        raise RuntimeError("Expected one target framework directory under {0}; found: {1}".format(
+            lib_directory, ", ".join(os.path.basename(path) for path in tfm_directories)))
+    tfm_directory = tfm_directories[0]
+
+    corelib_path = os.path.join(runtime_pack_rid_directory, "native", "System.Private.CoreLib.dll")
+    if not os.path.isfile(corelib_path):
+        raise RuntimeError("Cannot find System.Private.CoreLib.dll at " + corelib_path)
+
+    os.makedirs(dst_directory, exist_ok=True)
+
+    assemblies = [os.path.join(tfm_directory, name) for name in sorted(os.listdir(tfm_directory))
+                  if name.endswith(".dll") and os.path.isfile(os.path.join(tfm_directory, name))]
+    copy_files(tfm_directory, dst_directory, assemblies)
+    copy_files(os.path.dirname(corelib_path), dst_directory, [corelib_path])
+
+    return dst_directory
+
+
 def setup_benchmark(workitem_directory, arch):
     """ Perform setup of microbenchmarks/realworld
 
@@ -425,6 +483,11 @@ def main(main_args):
     coreclr_args = setup_args(main_args)
     source_directory = coreclr_args.source_directory
 
+    # A cross-target collection runs the tools on the host but compiles for a different
+    # OS/architecture (e.g. crossgen2 on windows/x64 producing browser/wasm code).
+    is_cross_target_collection = (coreclr_args.target_os != coreclr_args.platform) or \
+                                 (coreclr_args.target_arch != coreclr_args.arch)
+
     # If the payload directory doesn't already exist (it probably shouldn't) then create it.
     if not os.path.isdir(coreclr_args.payload_directory):
         os.makedirs(coreclr_args.payload_directory)
@@ -444,6 +507,10 @@ def main(main_args):
     # Workitem directories
     # input_artifacts is only used for pmi/crossgen2/nativeaot collections.
     input_artifacts = ""
+
+    # Name of the folder in the correlation payload holding the crossgen2 reference
+    # assemblies; only set for cross-target crossgen2 collections.
+    crossgen2_reference_dir_name = ""
 
     arch = coreclr_args.arch
     platform_name = coreclr_args.platform.lower()
@@ -465,7 +532,7 @@ def main(main_args):
                 helix_queue = "azurelinux.3.amd64.open"
         elif platform_name == "osx":
             if arch == "arm64": # public osx_arm64
-                helix_queue = "OSX.15.Arm64.Open"
+                helix_queue = "OSX.26.Arm64.Open"
             else: # public osx_x64
                 helix_queue = "OSX.15.Amd64.Open"
     else:
@@ -483,7 +550,7 @@ def main(main_args):
                 helix_queue = "azurelinux.3.amd64"
         elif platform_name == "osx":
             if arch == "arm64": # internal osx_arm64
-                helix_queue = "OSX.15.Arm64"
+                helix_queue = "OSX.26.Arm64"
             else: # internal osx_x64
                 helix_queue = "OSX.15.Amd64"
 
@@ -511,6 +578,16 @@ def main(main_args):
       jitname = determine_jit_name(coreclr_args.platform, coreclr_args.platform, coreclr_args.arch, coreclr_args.arch)
       print('Copying checked {} -> {}'.format(jitname, core_root_dst_directory))
       copy_files(coreclr_args.core_root_directory, core_root_dst_directory, [os.path.join(coreclr_args.core_root_directory, jitname)])
+    elif coreclr_args.collection_type == "crossgen2" and is_cross_target_collection:
+      # For a cross-target crossgen2 collection (e.g. browser/wasm), use the release
+      # Core_Root for the host (crossgen2 itself) and overlay the checked cross-targeting
+      # JIT so that SPMI collections include JIT asserts. The assemblies crossgen2
+      # consumes are the release target-built ones staged below.
+      print('Copying {} -> {}'.format(coreclr_args.release_core_root_directory, core_root_dst_directory))
+      copy_directory(coreclr_args.release_core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
+      jitname = determine_jit_name(coreclr_args.platform, coreclr_args.target_os, coreclr_args.arch, coreclr_args.target_arch)
+      print('Copying checked {} -> {}'.format(jitname, core_root_dst_directory))
+      copy_files(coreclr_args.core_root_directory, core_root_dst_directory, [os.path.join(coreclr_args.core_root_directory, jitname)])
     else:
       print('Copying {} -> {}'.format(coreclr_args.core_root_directory, core_root_dst_directory))
       copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
@@ -518,8 +595,8 @@ def main(main_args):
     if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
         # Setup benchmarks
         setup_benchmark(workitem_payload_directory, arch)
-    elif coreclr_args.collection_name == "aspnet2":
-        # Nothing to prepare for aspnet2, its script is fully self-contained.
+    elif coreclr_args.collection_name == "aspnet2" or coreclr_args.collection_name == "aspire":
+        # Nothing to prepare for aspnet2/aspire, their scripts are fully self-contained.
         # Just make sure workitem_payload_directory folder exists:
         os.makedirs(workitem_payload_directory, exist_ok=True)
     else:
@@ -629,6 +706,27 @@ def main(main_args):
             if coreclr_args.collection_type != "nativeaot":
                 raise RuntimeError("Collection 'smoke_tests' is only available for 'nativeaot' collections.")
 
+        if coreclr_args.collection_type == "crossgen2" and is_cross_target_collection:
+            # A cross-target crossgen2 collection compiles assemblies built for the target,
+            # not the host Core_Root. The YAML routes InputDirectory to the target's CoreCLR
+            # runtime pack `runtimes/<rid>` directory; flatten its managed assemblies
+            # (lib/<tfm>/*.dll plus native/System.Private.CoreLib.dll) into a single
+            # directory to partition over.
+            staged_assemblies_directory = os.path.join(workitem_payload_directory, "target_assemblies")
+            print('Staging target assemblies from {} -> {}'.format(coreclr_args.input_directory, staged_assemblies_directory))
+            stage_runtime_pack_assemblies(coreclr_args.input_directory, staged_assemblies_directory)
+            coreclr_args.input_directory = staged_assemblies_directory
+
+            # crossgen2 also has to resolve references against the target's assemblies
+            # rather than the host Core_Root, so stage a full copy into the correlation
+            # payload, which every Helix work item sees. superpmi-collect.proj turns
+            # `Crossgen2ReferenceDirName` into superpmi.py's -crossgen2_reference_directory.
+            crossgen2_reference_dir_name = "crossgen2References"
+            crossgen2_reference_directory = os.path.join(core_root_dst_directory, crossgen2_reference_dir_name)
+            print('Copying {} -> {}'.format(staged_assemblies_directory, crossgen2_reference_directory))
+            copy_directory(staged_assemblies_directory, crossgen2_reference_directory, verbose_output=False,
+                           match_func=lambda path: path.endswith(".dll"))
+
         partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directories,
                         exclude_files)
 
@@ -642,6 +740,9 @@ def main(main_args):
     set_pipeline_variable("Queue", helix_queue)
     set_pipeline_variable("HelixSourcePrefix", helix_source_prefix)
     set_pipeline_variable("MchFileTag", coreclr_args.mch_file_tag)
+    set_pipeline_variable("TargetOS", coreclr_args.target_os)
+    set_pipeline_variable("TargetArchitecture", coreclr_args.target_arch)
+    set_pipeline_variable("Crossgen2ReferenceDirName", crossgen2_reference_dir_name)
 
 
 ################################################################################

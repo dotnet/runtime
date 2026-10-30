@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// THREADS.CPP
-//
-
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "frames.h"
 #include "threads.h"
@@ -30,7 +27,6 @@
 #include "wrappers.h"
 
 #include "appdomain.inl"
-#include "vmholder.h"
 #include "exceptmacros.h"
 #include "minipal/time.h"
 #include "minipal/thread.h"
@@ -52,9 +48,7 @@
 #include <versionhelpers.h>
 #endif
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #include "exinfo.h"
 
@@ -128,6 +122,12 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size)
 #if defined (_DEBUG_IMPL)
 thread_local int t_ForbidGCLoaderUseCount;
 #endif
+
+// See the declaration in threads.h. Transitions are permitted by default; only the WebAssembly
+// restore-context unwind clears this.
+#ifdef _DEBUG
+thread_local bool t_gcModeSwitchPermitted = true;
+#endif // _DEBUG
 
 uint64_t Thread::dead_threads_non_alloc_bytes = 0;
 
@@ -367,7 +367,9 @@ void SetThread(Thread* t)
     if (t != NULL)
     {
         _ASSERTE(origThread == NULL);
+#ifdef FEATURE_MULTITHREADING
         InitializeCurrentThreadsStaticData(t);
+#endif // FEATURE_MULTITHREADING
         EnsureTlsDestructionMonitor();
         t->InitRuntimeThreadLocals();
     }
@@ -389,6 +391,10 @@ void SetThread(Thread* t)
         {
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into signal-safe map due to out of memory."));
         }
+
+        // Native threads may enter with the GC activation signal blocked.
+        // Unmask it on CLR attachment so GC can interrupt managed execution.
+        PAL_UnmaskActivationSignal();
 #endif // TARGET_UNIX && !TARGET_WASM
     }
     else
@@ -403,6 +409,7 @@ void SetThread(Thread* t)
     }
 }
 
+#ifdef FEATURE_MULTITHREADING
 extern INT32 MapFromNTPriority(INT32 NTPriority);
 
 BOOL Thread::SetThreadPriority(
@@ -456,6 +463,7 @@ int Thread::GetThreadPriority()
 
     return nRetVal;
 }
+#endif // FEATURE_MULTITHREADING
 
 void Thread::ChooseThreadCPUGroupAffinity()
 {
@@ -525,6 +533,7 @@ void Thread::ClearThreadCPUGroupAffinity()
 #endif // !TARGET_UNIX
 }
 
+#ifdef FEATURE_MULTITHREADING
 DWORD Thread::StartThread()
 {
     CONTRACTL
@@ -544,6 +553,7 @@ DWORD Thread::StartThread()
     DWORD dwRetVal = ClrResumeThread(GetThreadHandle());
     return dwRetVal;
 }
+#endif // FEATURE_MULTITHREADING
 
 // Class static data:
 LONG    Thread::m_DebugWillSyncCount = -1;
@@ -597,15 +607,17 @@ typedef StateHolder<DoNothing, EnsurePreemptive> EnsurePreemptiveModeIfException
 
 Thread* SetupThread()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     Thread* pThread;
     if ((pThread = GetThreadNULLOk()) != NULL)
         return pThread;
+
+#ifndef TARGET_APPLE
+    // Disable the check on Apple platforms
+    // See https://github.com/dotnet/runtime/issues/134571
+    CheckThreadStateNotDestroyed();
+#endif
 
     // For interop debugging, we must mark that we're in a can't-stop region
     // b.c we may take Crsts here that may block the helper thread.
@@ -623,6 +635,7 @@ Thread* SetupThread()
     }
 #endif
 
+#ifdef FEATURE_MULTITHREADING
     // Normally, HasStarted is called from the thread's entrypoint to introduce it to
     // the runtime.  But sometimes that thread is used for DLL_THREAD_ATTACH notifications
     // that call into managed code.  In that case, a call to SetupThread here must
@@ -657,6 +670,8 @@ Thread* SetupThread()
             return fStatus ? pThread : NULL;
         }
     }
+
+#endif // FEATURE_MULTITHREADING
 
     // First time we've seen this thread in the runtime:
     pThread = new Thread();
@@ -790,11 +805,14 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
 //
 // When there is, complete the setup with code:Thread::HasStarted()
 //-------------------------------------------------------------------------
+#ifdef FEATURE_MULTITHREADING
 Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -834,9 +852,10 @@ void DestroyThread(Thread *th)
         th->UnmarkThreadForAbort();
     }
 
-    th->SetThreadState(Thread::TS_ReportDead);
+    th->SetThreadState(Thread::TS_Stopped);
     th->OnThreadTerminate(FALSE);
 }
+#endif // FEATURE_MULTITHREADING
 
 //-------------------------------------------------------------------------
 // Public function: DetachThread()
@@ -899,10 +918,9 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     while (m_dwThreadHandleBeingUsed > 0)
     {
         // Another thread is using the handle now.
-        // We can not call __SwitchToThread since we can not go back to host.
-        ClrSleepEx(10, FALSE);
+        minipal_sleep(10);
     }
-    if (m_WeOwnThreadHandle && m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
+    if (m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
     {
         m_ThreadHandleForClose = hThread;
     }
@@ -912,7 +930,7 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     // We need to make sure that TLS are touched last here.
     SetThread(NULL);
 
-    SetThreadState((Thread::ThreadState)(Thread::TS_Detached | Thread::TS_ReportDead));
+    SetThreadState((Thread::ThreadState)(Thread::TS_Detached | Thread::TS_Stopped));
     // Do not touch Thread object any more.  It may be destroyed.
 
     // These detached threads will be cleaned up by finalizer thread.
@@ -923,8 +941,21 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     // but the thread is blocked.
     // We do not consider blocked finalizer thread to be something to be robust against in general.
     // Blocking on a finalizer thread is a bug in the user code that can cause all sorts of problems.
+#ifndef TARGET_WASI
+    // On WASI there is no dedicated finalizer thread. The native
+    // FinalizerThread::EnableFinalization sets a flag that the managed
+    // WasiEventLoop drains between poll iterations via
+    // WasiFinalizer_Schedule / WasiFinalizer_TryClearPending /
+    // WasiFinalizer_RunWorker (see WasiFinalizerScheduler.cs). Calling
+    // EnableFinalization from DetachThread runs at process exit from a
+    // C++ TLS destructor, after the EBR thread record for this thread
+    // has already been marked detached; the flag set is safe (just a
+    // volatile store) but no managed drain will ever observe it, so the
+    // call is skipped — the process is exiting and there is no other
+    // thread that could observe leftover detached-thread state.
     if (g_fEEStarted)
         FinalizerThread::EnableFinalization();
+#endif // !TARGET_WASI
 
     return S_OK;
 }
@@ -948,6 +979,14 @@ DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
+#ifdef TARGET_X86
+extern "C" void STDCALL JIT_PatchedWriteBarrierGroup_End();
+#else
+extern "C" void STDCALL JIT_WriteBarrier_End();
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+extern "C" void STDCALL JIT_CheckedWriteBarrier_End();
+#endif
+#endif // TARGET_X86
 
 static void* s_barrierCopy = NULL;
 
@@ -1022,20 +1061,137 @@ static void SetIlsIndex(DWORD tlsIndex)
 #pragma optimize("", on)
 #endif
 
-void InitThreadManagerPerfMapData()
+#ifndef FEATURE_PORTABLE_HELPERS
+template <typename TAction>
+static void ReportCopiedWriteBarrier(TAction action, PCODE address, size_t size, const char* name, LPCWSTR nameW)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-#ifdef FEATURE_PERFMAP
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(IsIPInWriteBarrierCodeCopy(address));
+    _ASSERTE(size != 0);
+    action(address, size, name, nameW);
+}
+
+template <typename TAction>
+static void EnumerateCopiedWriteBarriers(TAction action)
+{
+    LIMITED_METHOD_CONTRACT;
+
     if (IsWriteBarrierCopyEnabled())
     {
-        size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
-        PerfMap::LogStubs(__FUNCTION__, "JIT_CopiedWriteBarriers", (PCODE)s_barrierCopy, writeBarrierSize, PerfMapStubType::Individual);
+#ifdef TARGET_X86
+        struct WriteBarrierEntry
+        {
+            PCODE Address;
+            const char* Name;
+            LPCWSTR NameW;
+        };
+
+        // Use the configured helper targets as the source of truth for which register-specific
+        // barriers execute from the private copy.
+#define X86_WRITE_BARRIER_REGISTER(reg) \
+        { VolatileLoad(&hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_ASSIGN_REF_##reg].pfnHelper), "WriteBarrier" #reg, W("WriteBarrier" #reg) },
+
+        WriteBarrierEntry writeBarriers[] =
+        {
+            ENUM_X86_WRITE_BARRIER_REGISTERS()
+        };
+
+#undef X86_WRITE_BARRIER_REGISTER
+
+        // The helper enumeration order is independent of the assembly layout. Sort by address so
+        // each barrier can be sized to the beginning of the next barrier.
+        for (size_t i = 1; i < ARRAY_SIZE(writeBarriers); i++)
+        {
+            WriteBarrierEntry current = writeBarriers[i];
+            size_t j = i;
+            while (j > 0 && writeBarriers[j - 1].Address > current.Address)
+            {
+                writeBarriers[j] = writeBarriers[j - 1];
+                j--;
+            }
+            writeBarriers[j] = current;
+        }
+
+        // The final barrier ends at the explicit end of the patched write-barrier group.
+        PCODE writeBarrierGroupEnd = reinterpret_cast<PCODE>(
+            GetWriteBarrierCodeLocation((void*)JIT_PatchedWriteBarrierGroup_End));
+        for (size_t i = 0; i < ARRAY_SIZE(writeBarriers); i++)
+        {
+            // Event tracing reports a start address and byte count, so end is exclusive.
+            PCODE end = i + 1 < ARRAY_SIZE(writeBarriers) ? writeBarriers[i + 1].Address : writeBarrierGroupEnd;
+            _ASSERTE(writeBarriers[i].Address < end);
+            ReportCopiedWriteBarrier(
+                action,
+                writeBarriers[i].Address,
+                end - writeBarriers[i].Address,
+                writeBarriers[i].Name,
+                writeBarriers[i].NameW);
+        }
+#else
+        // The configured helper target identifies the executable copy; the assembly end label
+        // provides the exact size without inspecting the copied instructions.
+        PCODE writeBarrier = VolatileLoad(&hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_ASSIGN_REF].pfnHelper);
+        ReportCopiedWriteBarrier(
+            action,
+            writeBarrier,
+            (BYTE*)JIT_WriteBarrier_End - (BYTE*)JIT_WriteBarrier,
+            "WriteBarrier",
+            W("WriteBarrier"));
+
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        PCODE checkedWriteBarrier = VolatileLoad(&hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_CHECKED_ASSIGN_REF].pfnHelper);
+        // Some targets use a checked helper outside the copied region. Report it only when the
+        // configured helper actually points into the copy.
+        if (IsIPInWriteBarrierCodeCopy(checkedWriteBarrier))
+        {
+            ReportCopiedWriteBarrier(
+                action,
+                checkedWriteBarrier,
+                (BYTE*)JIT_CheckedWriteBarrier_End - (BYTE*)JIT_CheckedWriteBarrier,
+                "CheckedWriteBarrier",
+                W("CheckedWriteBarrier"));
+        }
+#endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_X86
     }
-#endif
+}
+
+void ReportCopiedWriteBarriersToPerfMap()
+{
+    WRAPPER_NO_CONTRACT;
+
+    EnumerateCopiedWriteBarriers([](PCODE address, size_t size, const char* name, LPCWSTR)
+    {
+        PerfMap::LogStubs("WriteBarrier", name, address, size, PerfMapStubType::Individual);
+    });
+}
+
+#ifdef FEATURE_EVENT_TRACE
+void ReportCopiedWriteBarriersToEventTracing(DWORD eventOptions)
+{
+    WRAPPER_NO_CONTRACT;
+
+    EnumerateCopiedWriteBarriers([eventOptions](PCODE address, size_t size, const char*, LPCWSTR name)
+    {
+        _ASSERTE(FitsInU4(size));
+        ETW::MethodLog::SendCopiedWriteBarrierEvent(address, static_cast<ULONG>(size), name, eventOptions);
+    });
+}
+#endif // FEATURE_EVENT_TRACE
+#endif // !FEATURE_PORTABLE_HELPERS
+
+void InitThreadManagerTracingData()
+{
+    STANDARD_VM_CONTRACT;
+#ifndef FEATURE_PORTABLE_HELPERS
+    ReportCopiedWriteBarriersToPerfMap();
+
+#ifdef FEATURE_EVENT_TRACE
+    ReportCopiedWriteBarriersToEventTracing(
+        ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
+#endif // FEATURE_EVENT_TRACE
+#endif // !FEATURE_PORTABLE_HELPERS
 }
 
 //---------------------------------------------------------------------------
@@ -1044,25 +1200,26 @@ void InitThreadManagerPerfMapData()
 //---------------------------------------------------------------------------
 void InitThreadManager()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifndef FEATURE_PORTABLE_HELPERS
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
-    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
+    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)minipal_getpagesize());
 
     if (IsWriteBarrierCopyEnabled())
     {
         s_barrierCopy = ExecutableAllocator::Instance()->Reserve(g_SystemInfo.dwAllocationGranularity);
-        ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true);
         if (s_barrierCopy == NULL)
         {
             _ASSERTE(!"Allocation of GC barrier code page failed");
+            COMPlusThrowWin32();
+        }
+
+        if (ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true) == NULL)
+        {
+            _ASSERTE(!"Commit of GC barrier code page failed");
             COMPlusThrowWin32();
         }
 
@@ -1071,10 +1228,6 @@ void InitThreadManager()
             ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
             memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
         }
-#ifdef FEATURE_PERFMAP
-        // We would log the to the perfmap here, but its not yet initialized
-#endif
-
         // Store the JIT_WriteBarrier copy location to a global variable so that helpers
         // can jump to it.
 #ifdef TARGET_X86
@@ -1082,8 +1235,7 @@ void InitThreadManager()
 
 #define X86_WRITE_BARRIER_REGISTER(reg) \
     SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_##reg, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg)); \
-    SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), "JIT_WriteBarrier" #reg); \
-    ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), W("@WriteBarrier" #reg));
+    SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), "JIT_WriteBarrier" #reg);
 
         ENUM_X86_WRITE_BARRIER_REGISTERS()
 
@@ -1094,7 +1246,6 @@ void InitThreadManager()
 #endif // TARGET_X86
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
         SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), "JIT_WriteBarrier");
-        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), W("@WriteBarrier"));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
@@ -1104,17 +1255,12 @@ void InitThreadManager()
 #if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
         SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), "JIT_CheckedWriteBarrier");
-        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
-        SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), "JIT_ByRefWriteBarrier");
-        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
-        // On AMD64 the Checked/ByRef variants of the helpers jump through an indirection
-        // to the patched barrier, but are not part of the patched set of helpers.
+        // On AMD64 the Checked variant of the helper jumps through an indirection
+        // to the patched barrier, but is not part of the patched set of helpers.
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, (void*)JIT_CheckedWriteBarrier);
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, (void*)JIT_ByRefWriteBarrier);
 #endif // TARGET_AMD64
 
     }
@@ -1183,14 +1329,16 @@ static  DWORD dwHashCodeSeed = 123456789;
 //--------------------------------------------------------------------
 Thread::Thread()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
     m_pFrame                = FRAME_TOP;
-    m_pGCFrame              = GCFRAME_TOP;
+    m_pGCFrame              = NULL;
 
     m_fPreemptiveGCDisabled = 0;
 
@@ -1214,7 +1362,6 @@ Thread::Thread()
     m_ThreadHandle = INVALID_HANDLE_VALUE;
     m_ThreadHandleForClose = INVALID_HANDLE_VALUE;
     m_ThreadHandleForResume = INVALID_HANDLE_VALUE;
-    m_WeOwnThreadHandle = FALSE;
 
 #ifdef _DEBUG
     m_ThreadId = UNINITIALIZED_THREADID;
@@ -1232,6 +1379,7 @@ Thread::Thread()
     m_ExternalRefCount = 1;
     m_State = TS_Unstarted;
     m_StateNC = TSNC_Unknown;
+    m_DebuggerControlledThreadState = DCTS_None;
 
     // It can't be a LongWeakHandle because we zero stuff out of the exposed
     // object as it is finalized.  At that point, calls to GetCurrentThread()
@@ -1248,6 +1396,8 @@ Thread::Thread()
 
     m_debuggerFilterContext = NULL;
     m_fInteropDebuggingHijacked = FALSE;
+
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
     m_profilerCallbackState = 0;
 
     for (int i = 0; i < MAX_NOTIFICATION_PROFILERS + 1; ++i)
@@ -1256,6 +1406,7 @@ Thread::Thread()
     }
 
     m_pProfilerFilterContext = NULL;
+#endif // PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA
 
     m_CacheStackBase = 0;
     m_CacheStackLimit = 0;
@@ -1288,11 +1439,9 @@ Thread::Thread()
     m_fHasDeadThreadBeenConsideredForGCTrigger = false;
     m_TraceCallCount = 0;
     m_ThrewControlForThread = 0;
-    m_ThreadTasks = (ThreadTasks)0;
 
-    // The state and the tasks must be 32-bit aligned for atomicity to be guaranteed.
+    // The state must be 32-bit aligned for atomicity to be guaranteed.
     _ASSERTE((((size_t) &m_State) & 3) == 0);
-    _ASSERTE((((size_t) &m_ThreadTasks) & 3) == 0);
 
     // On all callbacks, call the trap code, which we now have
     // wired to cause a GC.  Thus we will do a GC on all Transition Frame Transitions (and more).
@@ -1330,7 +1479,9 @@ Thread::Thread()
 
     m_dwAVInRuntimeImplOkayCount = 0;
 
+#ifdef FEATURE_MULTITHREADING
     m_pExceptionDuringStartup = NULL;
+#endif // FEATURE_MULTITHREADING
 
 #ifdef HAVE_GCCOVER
     m_pbDestCode = NULL;
@@ -1350,7 +1501,11 @@ Thread::Thread()
     m_sfEstablisherOfActualHandlerFrame.Clear();
 
     // Do not expose thread until it is fully constructed
+#ifdef FEATURE_MULTITHREADING
     g_pThinLockThreadIdDispenser->NewId(this, this->m_ThreadId);
+#else
+    m_ThreadId = 1;
+#endif // FEATURE_MULTITHREADING
 
     //
     // DO NOT ADD ADDITIONAL CONSTRUCTION AFTER THIS POINT.
@@ -1387,11 +1542,12 @@ Thread::Thread()
     m_HijackHasAsyncRet = false;
 #endif
 
-    m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
     m_hasPendingActivation = false;
 
+#ifdef FEATURE_MULTITHREADING
     m_ThreadLocalDataPtr = NULL;
+#endif // FEATURE_MULTITHREADING
 
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
@@ -1489,7 +1645,6 @@ void Thread::InitThread()
             _ASSERTE(hDup != INVALID_HANDLE_VALUE);
 
             SetThreadHandle(hDup);
-            m_WeOwnThreadHandle = TRUE;
         }
         else
         {
@@ -1511,8 +1666,6 @@ void Thread::InitThread()
 #ifndef TARGET_UNIX
     (void) _controlfp_s( NULL, _RC_NEAR, _RC_CHOP|_RC_UP|_RC_DOWN|_RC_NEAR );
 
-    m_pTEB = (struct _NT_TIB*)NtCurrentTeb();
-
 #endif // !TARGET_UNIX
 
     if (m_CacheStackBase == 0)
@@ -1533,18 +1686,29 @@ BOOL Thread::AllocHandles()
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(!m_DebugSuspendEvent.IsValid());
+#ifdef TARGET_UNIX
+    _ASSERTE(!m_ThreadExitedEvent.IsValid());
+#endif // TARGET_UNIX
 
     BOOL fOK = TRUE;
     EX_TRY {
         // create a manual reset event for getting the thread to a safe point
         m_DebugSuspendEvent.CreateManualEvent(FALSE);
+#ifdef TARGET_UNIX
+        m_ThreadExitedEvent.CreateManualEvent(FALSE);
+#endif // TARGET_UNIX
     }
     EX_CATCH {
         fOK = FALSE;
 
-        if (!m_DebugSuspendEvent.IsValid()) {
+        if (m_DebugSuspendEvent.IsValid()) {
             m_DebugSuspendEvent.CloseEvent();
         }
+#ifdef TARGET_UNIX
+        if (m_ThreadExitedEvent.IsValid()) {
+            m_ThreadExitedEvent.CloseEvent();
+        }
+#endif // TARGET_UNIX
 
         RethrowTerminalExceptions();
     }
@@ -1553,6 +1717,7 @@ BOOL Thread::AllocHandles()
     return fOK;
 }
 
+#ifdef FEATURE_MULTITHREADING
 //--------------------------------------------------------------------
 // This is the alternate path to SetupThread/InitThread.  If we created
 // an unstarted thread, we have SetupUnstartedThread/HasStarted.
@@ -1622,8 +1787,7 @@ BOOL Thread::HasStarted()
     {
         if (__pException != NULL)
         {
-            __pException.SuppressRelease();
-            m_pExceptionDuringStartup = __pException;
+            m_pExceptionDuringStartup = __pException.Detach();
         }
         res = FALSE;
     }
@@ -1730,6 +1894,7 @@ OBJECTREF Thread::GetExceptionDuringStartup()
 
     return throwable;
 }
+#endif // FEATURE_MULTITHREADING
 
 #ifndef TARGET_UNIX
 BOOL RevertIfImpersonated(BOOL *bReverted, HANDLE *phToken)
@@ -1765,6 +1930,7 @@ void UndoRevert(BOOL bReverted, HANDLE hToken)
 #endif // !TARGET_UNIX
 
 
+#ifdef FEATURE_MULTITHREADING
 // We don't want ::CreateThread() calls scattered throughout the source.  So gather
 // them all here.
 
@@ -1800,6 +1966,7 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
 
     return bRet;
 }
+#endif // FEATURE_MULTITHREADING
 
 void Thread::InitializationForManagedThreadInNative(_In_ Thread* pThread)
 {
@@ -1841,6 +2008,7 @@ void Thread::CleanUpForManagedThreadInNative(_In_ Thread* pThread)
 #endif // FEATURE_OBJCMARSHAL
 }
 
+#ifdef FEATURE_MULTITHREADING
 HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName, DWORD flags, DWORD* pThreadId)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1873,7 +2041,7 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     DWORD threadId;
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
-    if (hThread != INVALID_HANDLE_VALUE)
+    if (hThread != NULL)
     {
         SetThreadName(hThread, pName);
 
@@ -1884,38 +2052,12 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     return hThread;
 }
 
-// Represent the value of DEFAULT_STACK_SIZE as passed in the property bag to the host during construction
-static unsigned long s_defaultStackSizeProperty = 0;
-
-void ParseDefaultStackSize(LPCWSTR valueStr)
-{
-    if (valueStr)
-    {
-        LPWSTR end;
-        errno = 0;
-        unsigned long value = u16_strtoul(valueStr, &end, 16); // Base 16 without a prefix
-
-        if ((errno == ERANGE)     // Parsed value doesn't fit in an unsigned long
-            || (valueStr == end)  // No characters parsed
-            || (end == nullptr)   // Unexpected condition (should never happen)
-            || (end[0] != 0))     // Unprocessed terminal characters
-        {
-            ThrowHR(E_INVALIDARG);
-        }
-        else
-        {
-            s_defaultStackSizeProperty = value;
-        }
-    }
-}
-
 SIZE_T GetDefaultStackSizeSetting()
 {
     static DWORD s_defaultStackSizeEnv = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_DefaultStackSize);
     static DWORD s_defaultStackSizeProp = Configuration::GetKnobDWORDValue(W("System.Threading.DefaultStackSize"), 0);
 
-    uint64_t value = s_defaultStackSizeEnv ? s_defaultStackSizeEnv
-        : (s_defaultStackSizeProperty ? s_defaultStackSizeProperty : s_defaultStackSizeProp);
+    uint64_t value = s_defaultStackSizeEnv ? s_defaultStackSizeEnv : s_defaultStackSizeProp;
 
     SIZE_T minStack = 0x10000;     // 64K - Somewhat arbitrary minimum thread stack size
     SIZE_T maxStack = 0x80000000;  //  2G - Somewhat arbitrary maximum thread stack size
@@ -1952,11 +2094,11 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     }
 
 #ifndef TARGET_UNIX // the PAL does its own adjustments as necessary
-    if (sizeToCommitOrReserve != 0 && sizeToCommitOrReserve <= GetOsPageSize())
+    if (sizeToCommitOrReserve != 0 && sizeToCommitOrReserve <= minipal_getpagesize())
     {
         // On Windows, passing a value that is <= one page size bizarrely causes the OS to use the default stack size instead of
         // a minimum, which is undesirable. This adjustment fixes that issue to use a minimum stack size (typically 64 KB).
-        sizeToCommitOrReserve = GetOsPageSize() + 1;
+        sizeToCommitOrReserve = minipal_getpagesize() + 1;
     }
 #endif // !TARGET_UNIX
 
@@ -1985,7 +2127,6 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     _ASSERTE(!m_fPreemptiveGCDisabled);     // leave in preemptive until HasStarted.
 
     SetThreadHandle(h);
-    m_WeOwnThreadHandle = TRUE;
 
     // Before we do the resume, we need to take note of the new ThreadId.  This
     // is necessary because -- before the thread starts executing at KickofThread --
@@ -2006,6 +2147,7 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
 
     return TRUE;
 }
+#endif // FEATURE_MULTITHREADING
 
 //
 // #threadDestruction
@@ -2119,7 +2261,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
         }
         // Can not assert like this.  We have already removed the Unstarted bit.
         //_ASSERTE (IsUnstarted() || h != INVALID_HANDLE_VALUE);
-        if (h != INVALID_HANDLE_VALUE && m_WeOwnThreadHandle)
+        if (h != INVALID_HANDLE_VALUE)
         {
             ::CloseHandle(h);
             SetThreadHandle(INVALID_HANDLE_VALUE);
@@ -2224,6 +2366,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
 //--------------------------------------------------------------------
 Thread::~Thread()
 {
+#ifdef FEATURE_MULTITHREADING
     CONTRACTL {
         NOTHROW;
         GC_TRIGGERS;
@@ -2262,8 +2405,8 @@ Thread::~Thread()
 
     // Normally we shouldn't get here with a valid thread handle; however if SetupThread
     // failed (due to an OOM for example) then we need to CloseHandle the thread
-    // handle if we own it.
-    if (m_WeOwnThreadHandle && (GetThreadHandle() != INVALID_HANDLE_VALUE))
+    // handle.
+    if (GetThreadHandle() != INVALID_HANDLE_VALUE)
     {
         CloseHandle(GetThreadHandle());
     }
@@ -2272,6 +2415,13 @@ Thread::~Thread()
     {
         m_DebugSuspendEvent.CloseEvent();
     }
+
+#ifdef TARGET_UNIX
+    if (m_ThreadExitedEvent.IsValid())
+    {
+        m_ThreadExitedEvent.CloseEvent();
+    }
+#endif // TARGET_UNIX
 
     if (m_OSContext)
         delete m_OSContext;
@@ -2316,6 +2466,7 @@ Thread::~Thread()
 
     // Wait for another thread to leave its loop in DeadlockAwareLock::TryBeginEnterLock
     CrstHolder lock(&g_DeadlockAwareCrst);
+#endif // FEATURE_MULTITHREADING
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -2565,11 +2716,13 @@ void Thread::CooperativeCleanup()
     // Clear any outstanding stale EH state that maybe still active on the thread.
     ExInfo::PopTrackers((void*)-1);
 
+#ifdef FEATURE_MULTITHREADING
     if (m_ThreadLocalDataPtr != NULL)
     {
         FreeThreadStaticData(this);
         m_ThreadLocalDataPtr = NULL;
     }
+#endif // FEATURE_MULTITHREADING
 
     if (GCHeapUtilities::IsGCHeapInitialized())
     {
@@ -2599,14 +2752,13 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     }
     CONTRACTL_END;
 
-    // #ReportDeadOnThreadTerminate
-    // Caller should have put the TS_ReportDead bit on by now.
+    // #StoppedOnThreadTerminate
+    // Caller should have put the TS_Stopped bit on by now.
     // We don't want any windows after the exit event but before the thread is marked dead.
     // If a debugger attached during such a window (or even took a dump at the exit event),
     // then it may not realize the thread is dead.
     // So ensure we mark the thread as dead before we send the tool notifications.
-    // The TS_ReportDead bit will cause the debugger to view this as TS_Dead.
-    _ASSERTE(HasThreadState(TS_ReportDead));
+    _ASSERTE(HasThreadState(TS_Stopped));
 
     // Should not use OSThreadId:
     // OSThreadId may change for the current thread is the thread is blocked and rescheduled
@@ -2664,8 +2816,10 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         // Destroy the LastThrown handle (and anything that violates the above assert).
         SafeSetThrowables(NULL);
 
+#ifdef FEATURE_MULTITHREADING
         // Free loader allocator structures related to this thread
         FreeLoaderAllocatorHandlesForTLSData(this);
+#endif // FEATURE_MULTITHREADING
     }
 
     // We switch a thread to dead when it has finished doing useful work.  But it
@@ -2799,38 +2953,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     }
 }
 
-// Helper functions to check for duplicate handles. we only do this check if
-// a waitfor multiple fails.
-int __cdecl compareHandles( const void *arg1, const void *arg2 )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HANDLE h1 = *(HANDLE*)arg1;
-    HANDLE h2 = *(HANDLE*)arg2;
-    return  (h1 == h2) ? 0 : ((h1 < h2) ? -1 : 1);
-}
-
-BOOL CheckForDuplicateHandles(int countHandles, HANDLE *handles)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    qsort(handles,countHandles,sizeof(HANDLE),compareHandles);
-    for (int i=1; i < countHandles; i++)
-    {
-        if (handles[i-1] == handles[i])
-            return TRUE;
-    }
-    return FALSE;
-}
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 //--------------------------------------------------------------------
@@ -2898,28 +3020,25 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
 
 DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout, WaitMode mode)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
+#ifdef TARGET_WINDOWS
     return DoAppropriateAptStateWait(numWaiters, pHandles, FALSE, timeout, mode);
+#else
+    _ASSERTE(!"Reentrant waits are only supported on Windows");
+    return WAIT_FAILED;
+#endif
 }
 
 DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef TARGET_UNIX
-    return WaitForSingleObjectEx(handle, timeout, mode == WaitMode_Alertable);
+    _ASSERTE(handle == GetThreadHandle());
+    return m_ThreadExitedEvent.Wait(timeout, (mode & WaitMode_Alertable) != 0);
 #else
+
     ULONGLONG dwStart = 0, dwEnd;
     if (timeout != INFINITE)
     {
@@ -2953,6 +3072,7 @@ DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mo
 }
 
 
+#ifdef TARGET_WINDOWS
 //--------------------------------------------------------------------
 // Do appropriate wait based on apartment state (STA or MTA)
 DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll,
@@ -2975,6 +3095,7 @@ DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL b
 
     return WaitForMultipleObjectsEx(numWaiters, pHandles, bWaitAll, timeout, alertable);
 }
+#endif // TARGET_WINDOWS
 
 #ifdef TARGET_WINDOWS
 // This is the callback from the OS, when we queue an APC to interrupt a waiting thread.
@@ -3019,7 +3140,7 @@ void Thread::UserInterrupt(ThreadInterruptMode mode)
     InterlockedOr(&m_UserInterrupt, mode);
 
     if (HasValidThreadHandle() &&
-        HasThreadState (TS_Interruptible))
+        HasThreadState (TS_WaitSleepJoin))
     {
         HANDLE handle = GetThreadHandle();
         if (handle != INVALID_HANDLE_VALUE)
@@ -3033,9 +3154,11 @@ void Thread::UserInterrupt(ThreadInterruptMode mode)
 // Correspondence between an EE Thread and an exposed System.Thread:
 OBJECTREF Thread::GetExposedObject()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -3248,12 +3371,12 @@ OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable)
 }
 
 //
-// This is a nice wrapper for SetThrowable and SetLastThrownObject, which catches any exceptions caused by not
-// being able to create the handle for the throwable, and sets the throwable to the preallocated out of memory
-// exception instead. It also updates the last thrown object, which is always updated when the throwable is
-// updated.
+// This is a nice wrapper for updating the last thrown object handle, which catches any exceptions caused by not
+// being able to create the handle for the throwable, and falls back to the preallocated out of memory exception
+// for the last thrown object instead. The throwable itself is stored directly in ExInfo::m_exception by managed
+// EH code, so this helper only updates the last thrown object state.
 //
-OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags),
+OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable,
                                     BOOL isUnhandled)
 {
     CONTRACTL
@@ -3269,11 +3392,8 @@ OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptio
 
     EX_TRY
     {
-        // Try to set the throwable.
-        SetThrowable(throwable DEBUG_ARG(stecFlags));
-
-        // Now, if the last thrown object is different, go ahead and update it. This makes sure that we re-throw
-        // the right object when we rethrow.
+        // The exception object is stored directly in ExInfo::m_exception by managed EH code,
+        // so we only need to update the last thrown object handle here.
         if (LastThrownObject() != throwable)
         {
             SetLastThrownObject(throwable);
@@ -3286,12 +3406,9 @@ OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptio
     }
     EX_CATCH
     {
-        // If either set didn't work, then set both throwables to the preallocated OOM exception, and return that
-        // object instead of the original throwable.
+        // If we can't create a handle, set the last thrown object to the preallocated OOM exception.
         ret = CLRException::GetPreallocatedOutOfMemoryException();
 
-        // Neither of these will throw because we're setting with a preallocated exception.
-        SetThrowable(ret DEBUG_ARG(stecFlags));
         SetLastThrownObject(ret, isUnhandled);
     }
     EX_END_CATCH
@@ -3320,25 +3437,6 @@ void Thread::SyncManagedExceptionState(bool fIsDebuggerThread)
     }
 }
 
-void Thread::SetLastThrownObjectHandle(OBJECTHANDLE h)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (m_LastThrownObjectHandle != NULL &&
-        !CLRException::IsPreallocatedExceptionHandle(m_LastThrownObjectHandle))
-    {
-        DestroyHandle(m_LastThrownObjectHandle);
-    }
-
-    m_LastThrownObjectHandle = h;
-}
-
 //
 // Create a duplicate handle of the current throwable and set the last thrown object to that. This ensures that the
 // last thrown object and the current throwable have handles that are in the same app domain.
@@ -3353,22 +3451,17 @@ void Thread::SafeUpdateLastThrownObject(void)
     }
     CONTRACTL_END;
 
-    OBJECTHANDLE hThrowable = GetThrowableAsHandle();
+    OBJECTREF throwable = GetExceptionState()->GetThrowable();
 
-    if (hThrowable != NULL)
+    if (throwable != NULL)
     {
         EX_TRY
         {
-            IGCHandleManager *pHandleTable = GCHandleUtilities::GetGCHandleManager();
-
-            // Creating a duplicate handle here ensures that the AD of the last thrown object
-            // matches the domain of the current throwable.
-            OBJECTHANDLE duplicateHandle = pHandleTable->CreateDuplicateHandle(hThrowable);
-            SetLastThrownObjectHandle(duplicateHandle);
+            SetLastThrownObject(throwable);
         }
         EX_CATCH
         {
-            // If we can't create a duplicate handle, we set both throwables to the preallocated OOM exception.
+            // If we can't create a handle, set the last thrown object to the preallocated OOM exception.
             SafeSetThrowables(CLRException::GetPreallocatedOutOfMemoryException());
         }
         EX_END_CATCH
@@ -3500,11 +3593,7 @@ public:
 
 void Thread::PrepareApartmentAndContext()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef TARGET_UNIX
     m_OSThreadId = ::PAL_GetCurrentOSThreadId();
@@ -3675,7 +3764,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -3829,6 +3917,10 @@ ThreadStore::ThreadStore()
     }
     CONTRACTL_END;
 
+#ifndef FEATURE_MULTITHREADING
+    m_pThread = nullptr;
+#endif // !FEATURE_MULTITHREADING
+
     m_TerminationEvent.CreateManualEvent(FALSE);
     _ASSERTE(m_TerminationEvent.IsValid());
 }
@@ -3836,15 +3928,13 @@ ThreadStore::ThreadStore()
 
 void ThreadStore::InitThreadStore()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     s_pThreadStore = new ThreadStore;
 
+#ifdef FEATURE_MULTITHREADING
     g_pThinLockThreadIdDispenser = new IdDispenser();
+#endif // FEATURE_MULTITHREADING
 
     s_pWaitForStackCrawlEvent = new CLREvent();
     s_pWaitForStackCrawlEvent->CreateManualEvent(FALSE);
@@ -3879,7 +3969,7 @@ DEBUG_NOINLINE void ThreadStore::Enter()
     m_Crst.Enter();
 }
 
-DEBUG_NOINLINE void ThreadStore::Leave()
+DEBUG_NOINLINE void ThreadStore::Leave() noexcept
 {
     CONTRACTL {
         NOTHROW;
@@ -3900,7 +3990,7 @@ void ThreadStore::LockThreadStore()
     ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
 }
 
-void ThreadStore::UnlockThreadStore()
+void ThreadStore::UnlockThreadStore() noexcept
 {
     WRAPPER_NO_CONTRACT;
 
@@ -3925,7 +4015,12 @@ void ThreadStore::AddThread(Thread *newThread)
 
     ThreadStoreLockHolder TSLockHolder(!lockHeld);
 
+#ifdef FEATURE_MULTITHREADING
     s_pThreadStore->m_ThreadList.InsertTail(newThread);
+#else
+    _ASSERTE(s_pThreadStore->m_pThread == nullptr);
+    s_pThreadStore->m_pThread = newThread;
+#endif // FEATURE_MULTITHREADING
 
     s_pThreadStore->m_ThreadCount++;
 
@@ -3968,7 +4063,6 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     CONTRACTL_END;
 
     BOOL    found;
-    Thread *ret;
 
 #if 0 // This assert is not valid when failing to create background GC thread.
       // Main GC thread holds the TS lock.
@@ -3978,9 +4072,14 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     _ASSERTE(s_pThreadStore->m_Crst.GetEnterCount() > 0 ||
              IsAtProcessExit());
     _ASSERTE(s_pThreadStore->DbgFindThread(target));
-    ret = s_pThreadStore->m_ThreadList.FindAndRemove(target);
-    _ASSERTE(ret && ret == target);
-    found = (ret != NULL);
+#ifdef FEATURE_MULTITHREADING
+    found = s_pThreadStore->m_ThreadList.FindAndRemove(target);
+#else
+    found = s_pThreadStore->m_pThread == target;
+    if (found)
+        s_pThreadStore->m_pThread = nullptr;
+#endif // FEATURE_MULTITHREADING
+    _ASSERTE(found);
 
     if (found)
     {
@@ -4160,9 +4259,11 @@ bool ThreadStore::ShouldTriggerGCForDeadThreads()
 
 void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -4274,7 +4375,7 @@ void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
 // Access the list of threads.  You must be inside a critical section, otherwise
 // the "cursor" thread might disappear underneath you.  Pass in NULL for the
 // cursor to begin at the start of the list.
-Thread *ThreadStore::GetAllThreadList(Thread *cursor, ULONG mask, ULONG bits)
+Thread *ThreadStore::GetAllThreadList(Thread *cursor)
 {
     CONTRACTL {
         NOTHROW;
@@ -4287,15 +4388,26 @@ Thread *ThreadStore::GetAllThreadList(Thread *cursor, ULONG mask, ULONG bits)
     _ASSERTE((s_pThreadStore->m_Crst.GetEnterCount() > 0) || IsAtProcessExit());
 #endif
 
-    while (TRUE)
+#ifdef FEATURE_MULTITHREADING
+    return cursor
+        ? s_pThreadStore->m_ThreadList.GetNext(cursor)
+        : s_pThreadStore->m_ThreadList.GetHead();
+#else
+    return cursor == NULL ? s_pThreadStore->m_pThread : NULL;
+#endif // FEATURE_MULTITHREADING
+}
+
+Thread *ThreadStore::GetAllThreadList(Thread *cursor, ULONG mask, ULONG bits)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+    SUPPORTS_DAC;
+
+    while ((cursor = GetAllThreadList(cursor)) != NULL)
     {
-        cursor = (cursor
-                  ? s_pThreadStore->m_ThreadList.GetNext(cursor)
-                  : s_pThreadStore->m_ThreadList.GetHead());
-
-        if (cursor == NULL)
-            break;
-
         if ((cursor->m_State & mask) == bits)
             return cursor;
     }
@@ -4315,33 +4427,6 @@ Thread *ThreadStore::GetThreadList(Thread *cursor)
     return GetAllThreadList(cursor, (Thread::TS_Unstarted | Thread::TS_Dead), 0);
 }
 
-//---------------------------------------------------------------------------------------
-//
-// Grab a consistent snapshot of the thread's state, for reporting purposes only.
-//
-// Return Value:
-//    the current state of the thread
-//
-
-Thread::ThreadState Thread::GetSnapshotState()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    ThreadState res = m_State;
-
-    if (res & TS_ReportDead)
-    {
-        res = (ThreadState) (res | TS_Dead);
-    }
-
-    return res;
-}
-
 #ifndef DACCESS_COMPILE
 
 BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, DWORD *pStatus)
@@ -4356,7 +4441,7 @@ BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, D
     BOOL fLoop = TRUE;
     EX_TRY
     {
-        *pStatus = pEvent->Wait(timeout, fAlertable);
+        *pStatus = pEvent->Wait(timeout, fAlertable, false);
         fLoop = FALSE;
     }
     EX_CATCH
@@ -4372,11 +4457,7 @@ BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, D
 // wait before tearing down the EE.
 void ThreadStore::WaitForOtherThreads()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     CHECK_ONE_STORE();
 
@@ -4392,7 +4473,7 @@ void ThreadStore::WaitForOtherThreads()
     {
         TSLockHolder.Release();
 
-        pCurThread->SetThreadState(Thread::TS_ReportDead);
+        pCurThread->SetThreadState(Thread::TS_Stopped);
 
         DWORD ret = WAIT_OBJECT_0;
         while (CLREventWaitWithTry(&m_TerminationEvent, INFINITE, TRUE, &ret))
@@ -4530,7 +4611,7 @@ void Thread::HandleThreadInterrupt ()
     }
     if ((m_UserInterrupt & TI_Interrupt) != 0)
     {
-        ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
+        ResetThreadState ((ThreadState)(TS_Interrupted | TS_WaitSleepJoin));
         InterlockedAnd (&m_UserInterrupt, ~TI_Interrupt);
 
         COMPlusThrow(kThreadInterruptedException);
@@ -4538,7 +4619,7 @@ void Thread::HandleThreadInterrupt ()
 }
 
 #ifdef _DEBUG
-#define MAXSTACKBYTES (2 * GetOsPageSize())
+#define MAXSTACKBYTES (2 * minipal_getpagesize())
 void CleanStackForFastGCStress ()
 {
     CONTRACTL {
@@ -4710,7 +4791,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
     {
         MEMORY_BASIC_INFORMATION mbi;
 
-        if (ClrVirtualQuery(getStackHash, &mbi, sizeof(mbi)))
+        if (VirtualQuery(getStackHash, &mbi, sizeof(mbi)))
         {
             moduleBase = (size_t)mbi.AllocationBase;
             moduleTop = (size_t)mbi.BaseAddress + mbi.RegionSize;
@@ -4718,7 +4799,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
         else
         {
             // way bad error, probably just assert and exit
-            _ASSERTE (!"ClrVirtualQuery failed");
+            _ASSERTE (!"VirtualQuery failed");
             moduleBase = 0;
             moduleTop = 0;
         }
@@ -4915,7 +4996,6 @@ BOOL Thread::UniqueStack(void* stackStart)
         else
         {
             fUnique = TRUE;
-            FAULT_NOT_FATAL();
             UniqueStackHelper(stackTraceHash, stackTrace);
         }
 #ifdef _DEBUG
@@ -4973,7 +5053,7 @@ void * Thread::GetStackLowerBound()
    MEMORY_BASIC_INFORMATION lowerBoundMemInfo;
     SIZE_T dwRes;
 
-    dwRes = ClrVirtualQuery((const void *)&lowerBoundMemInfo, &lowerBoundMemInfo, sizeof(MEMORY_BASIC_INFORMATION));
+    dwRes = VirtualQuery((const void *)&lowerBoundMemInfo, &lowerBoundMemInfo, sizeof(MEMORY_BASIC_INFORMATION));
 
     if (sizeof(MEMORY_BASIC_INFORMATION) == dwRes)
     {
@@ -5114,7 +5194,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
         INDEBUG(EXTRA_PAGES += 1);
 
         int ThreadGuardPages = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadGuardPages, EXTRA_PAGES);
-        uGuardSize += (ThreadGuardPages * GetOsPageSize());
+        uGuardSize += (ThreadGuardPages * minipal_getpagesize());
 
         LOG((LF_EH, LL_INFO10000, "STACKOVERFLOW: setting thread stack guarantee to 0x%x\n", uGuardSize));
 
@@ -5155,14 +5235,14 @@ UINT_PTR Thread::GetLastNormalStackAddress(UINT_PTR StackLimit)
     UINT_PTR cbStackGuarantee = GetStackGuarantee();
 
     // Here we take the "hard guard region size", the "stack guarantee" and the "fault page" and add them
-    // all together.  Note that the "fault page" is the reason for the extra GetOsPageSize() below.  The OS
+    // all together.  Note that the "fault page" is the reason for the extra minipal_getpagesize() below.  The OS
     // will guarantee us a certain amount of stack remaining after a stack overflow.  This is called the
     // "stack guarantee".  But to do this, it has to fault on the page before that region as the app is
     // allowed to fault at the very end of that page.  So, as a result, the last normal stack address is
     // one page sooner.
     return StackLimit + (cbStackGuarantee
 #ifndef TARGET_UNIX
-            + GetOsPageSize()
+            + minipal_getpagesize()
 #endif // !TARGET_UNIX
             + HARD_GUARD_REGION_SIZE);
 }
@@ -5226,7 +5306,7 @@ static void DebugLogMBIFlags(UINT uState, UINT uProtect)
 #endif // !TARGET_UNIX
 }
 
-
+#ifndef TARGET_UNIX
 static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 {
     CONTRACTL
@@ -5244,11 +5324,11 @@ static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 
     while (uStartOfThisRegion < uHighAddress)
     {
-        SIZE_T res = ClrVirtualQuery((const void *)uStartOfThisRegion, &meminfo, sizeof(meminfo));
+        SIZE_T res = VirtualQuery((const void *)uStartOfThisRegion, &meminfo, sizeof(meminfo));
 
         if (sizeof(meminfo) != res)
         {
-            LOG((LF_EH, LL_INFO1000, "VirtualQuery failed on %p\n", uStartOfThisRegion));
+            LOG((LF_EH, LL_INFO1000, "VirtualQuery failed on %p\n", (void*)uStartOfThisRegion));
             break;
         }
 
@@ -5261,7 +5341,8 @@ static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 
         UINT_PTR uRegionSize = uStartOfNextRegion - uStartOfThisRegion;
 
-        LOG((LF_EH, LL_INFO1000, "0x%p -> 0x%p (%d pg)  ", uStartOfThisRegion, uStartOfNextRegion - 1, uRegionSize / GetOsPageSize()));
+        LOG((LF_EH, LL_INFO1000, "%p -> %p (%d pg)  ", (void*)uStartOfThisRegion,
+             (void*)(uStartOfNextRegion - 1), (int)(uRegionSize / minipal_getpagesize())));
         DebugLogMBIFlags(meminfo.State, meminfo.Protect);
         LOG((LF_EH, LL_INFO1000, "\n"));
 
@@ -5299,14 +5380,17 @@ void Thread::DebugLogStackMBIs()
     UINT_PTR uStackSize         = uStackBase - uStackLimit;
 
     LOG((LF_EH, LL_INFO1000, "----------------------------------------------------------------------\n"));
-    LOG((LF_EH, LL_INFO1000, "Stack Snapshot 0x%p -> 0x%p (%d pg)\n", uStackLimit, uStackBase, uStackSize / GetOsPageSize()));
+    LOG((LF_EH, LL_INFO1000, "Stack Snapshot %p -> %p (%d pg)\n", (void*)uStackLimit,
+         (void*)uStackBase, (int)(uStackSize / minipal_getpagesize())));
     if (pThread)
     {
-        LOG((LF_EH, LL_INFO1000, "Last normal addr: 0x%p\n", pThread->GetLastNormalStackAddress()));
+        LOG((LF_EH, LL_INFO1000, "Last normal addr: %p\n",
+             (void*)pThread->GetLastNormalStackAddress()));
     }
 
     DebugLogStackRegionMBIs(uStackLimit, uStackBase);
 }
+#endif // !TARGET_UNIX
 #endif // _DEBUG
 
 NOINLINE void AllocateSomeStack(){
@@ -5490,8 +5574,8 @@ BOOL Thread::MarkPageAsGuard(UINT_PTR uGuardPageBase)
 
     DWORD flOldProtect;
 
-    ClrVirtualProtect((LPVOID)uGuardPageBase, 1,
-                      (PAGE_READWRITE | PAGE_GUARD), &flOldProtect);
+    VirtualProtect((LPVOID)uGuardPageBase, 1,
+                   (PAGE_READWRITE | PAGE_GUARD), &flOldProtect);
 
     // Intentionally ignore return value -- if it failed, we'll find out below
     // and keep moving up the stack until we either succeed or we hit the guard
@@ -5504,7 +5588,7 @@ BOOL Thread::MarkPageAsGuard(UINT_PTR uGuardPageBase)
     MEMORY_BASIC_INFORMATION meminfo;
     SIZE_T dwRes;
 
-    dwRes = ClrVirtualQuery((const void *)uGuardPageBase, &meminfo, sizeof(meminfo));
+    dwRes = VirtualQuery((const void *)uGuardPageBase, &meminfo, sizeof(meminfo));
 
     return ((sizeof(meminfo) == dwRes) && (meminfo.Protect & PAGE_GUARD));
 }
@@ -5554,13 +5638,13 @@ VOID Thread::RestoreGuardPage()
     // to change the size of the guard region, we'll just go ahead and protect the next page down from where we are
     // now. The guard page will get pushed forward again, just like normal, until the next stack overflow.
         approxStackPointer   = (UINT_PTR)GetCurrentSP();
-        guardPageBase        = (UINT_PTR)ALIGN_DOWN(approxStackPointer, GetOsPageSize()) - GetOsPageSize();
+        guardPageBase        = (UINT_PTR)ALIGN_DOWN(approxStackPointer, minipal_getpagesize()) - minipal_getpagesize();
 
         // OS uses soft guard page to update the stack info in TEB.  If our guard page is not beyond the current stack, the TEB
         // will not be updated, and then OS's check of stack during exception will fail.
         if (approxStackPointer >= guardPageBase)
         {
-            guardPageBase -= GetOsPageSize();
+            guardPageBase -= minipal_getpagesize();
         }
     // If we're currently "too close" to the page we want to mark as a guard then the call to VirtualProtect to set
     // PAGE_GUARD will fail, but it won't return an error. Therefore, we protect the page, then query it to make
@@ -5590,7 +5674,7 @@ VOID Thread::RestoreGuardPage()
             }
             else
             {
-                guardPageBase -= GetOsPageSize();
+                guardPageBase -= minipal_getpagesize();
             }
         }
     }
@@ -5971,7 +6055,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
     // which may swallow managed exceptions.  The debugger needs this in order to send a
     // CatchHandlerFound (CHF) notification.
-    DebuggerU2MCatchHandlerFrame catchFrame(false /* catchesAllExceptions */);
+    DebuggerU2MCatchHandlerFrame catchFrame;
 
     TryParam param(pCallState);
     param.pFrame = &catchFrame;
@@ -6048,6 +6132,7 @@ void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
 //
 //+----------------------------------------------------------------------------
 
+#ifdef FEATURE_MULTITHREADING
 LPVOID Thread::GetStaticFieldAddress(FieldDesc *pFD)
 {
     CONTRACTL {
@@ -6092,9 +6177,11 @@ LPVOID Thread::GetStaticFieldAddress(FieldDesc *pFD)
 
     return result;
 }
+#endif // FEATURE_MULTITHREADING
 
 #endif // #ifndef DACCESS_COMPILE
 
+#ifdef FEATURE_MULTITHREADING
  //+----------------------------------------------------------------------------
 //
 //  Method:     Thread::GetStaticFieldAddrNoCreate   private
@@ -6153,6 +6240,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
 
     return result;
 }
+#endif // FEATURE_MULTITHREADING
 
 #ifndef DACCESS_COMPILE
 
@@ -6164,12 +6252,12 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
 // frame's ExceptionUnwind method.  It will return the first
 // Frame that is above pvLimitSP.
 //
-Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP)
+Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP) noexcept
 {
     CONTRACTL
     {
         NOTHROW;
-        DISABLED(GC_TRIGGERS);  // due to UnwindFrameChain from NOTRIGGER areas
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStartFrame));
         PRECONDITION(CheckPointer(pvLimitSP));
@@ -6246,30 +6334,7 @@ NOINLINE void Thread::OnIncrementCountOverflow(UINT32 *threadLocalCount, UINT64 
     InterlockedExchangeAdd64((LONGLONG *)overflowCount, (LONGLONG)UINT32_MAX + 1);
 }
 
-UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(overflowCount != nullptr);
-
-    // enumerate all threads, summing their local counts.
-    ThreadStoreLockHolder tsl;
-
-    UINT64 total = GetOverflowCount(overflowCount);
-
-    Thread *pThread = NULL;
-    while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
-    {
-        total += *GetThreadLocalCountRef(pThread, threadLocalCountOffset);
-    }
-
-    return total;
-}
-
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
 DeadlockAwareLock::DeadlockAwareLock(const char *description)
   : m_pHoldingThread(NULL)
 #ifdef _DEBUG
@@ -6472,7 +6537,7 @@ void DeadlockAwareLock::LeaveLock()
 
     m_pHoldingThread = NULL;
 }
-
+#endif // FEATURE_MULTITHREADING || _DEBUG
 
 #ifdef _DEBUG
 
@@ -6631,7 +6696,7 @@ InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -6639,6 +6704,13 @@ InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
     if (m_pInterpThreadContext == nullptr)
     {
         m_pInterpThreadContext = new InterpThreadContext();
+
+#ifdef DEBUGGING_SUPPORTED
+        if (CORDebuggerAttached() && g_pDebugInterface != NULL)
+        {
+            g_pDebugInterface->SendCreateThreadAtInterpreterEntry(this);
+        }
+#endif // DEBUGGING_SUPPORTED
     }
 
     return m_pInterpThreadContext;
@@ -6747,6 +6819,7 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         {
             bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
 
+            INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pPFrame);
             INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
             INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
@@ -6754,12 +6827,16 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
             UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         }
         EX_CATCH
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-            _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
+            // ohThrowable can be NULL when we've caught the ResumeAfterCatchException
+            if (ohThrowable != NULL)
+            {
+                StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
+            }
             EX_RETHROW;
         }
         EX_END_CATCH
@@ -6825,7 +6902,7 @@ PTR_GCFrame Thread::GetGCFrame()
     {
         void* curSP;
         curSP = (void *)GetCurrentSP();
-        _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
+        _ASSERTE((m_pGCFrame == NULL) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
     }
 #endif
 
@@ -6840,10 +6917,6 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
 
     DAC_ENUM_DTHIS();
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
-    }
 
     if (m_debuggerFilterContext.IsValid())
     {
@@ -6854,8 +6927,10 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     m_ExceptionState.EnumChainMemoryRegions(flags);
 
+#ifdef FEATURE_MULTITHREADING
     if (GetThreadLocalDataPtr() != NULL)
         EnumThreadMemoryRegions(GetThreadLocalDataPtr(), flags);
+#endif // FEATURE_MULTITHREADING
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
@@ -6931,11 +7006,6 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         DacGetThreadContext(this, &context);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
-    }
-
     FillRegDisplay(&regDisp, &context);
     frameIter.Init(this, NULL, &regDisp, 0);
     while (frameIter.IsValid())
@@ -6995,8 +7065,8 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         DacEnumCodeForStackwalk(callEnd);
 
         // To stackwalk through funceval frames, we need to be sure to preserve the
-        // DebuggerModule's m_pRuntimeDomainAssembly.  This is the only case that doesn't use the current
-        // vmDomainAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
+        // DebuggerModule's m_pRuntimeAssembly.  This is the only case that doesn't use the current
+        // vmAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
         // code mimics that function.
         // Allow failure, since we want to continue attempting to walk the stack regardless of the outcome.
         EX_TRY
@@ -7044,7 +7114,12 @@ ThreadStore::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         // ignore exceptions during enumeration.
         EX_TRY
         {
-            Thread* thread       = s_pThreadStore->m_ThreadList.GetHead();
+            Thread* thread       =
+#ifdef FEATURE_MULTITHREADING
+                s_pThreadStore->m_ThreadList.GetHead();
+#else
+                s_pThreadStore->m_pThread;
+#endif // FEATURE_MULTITHREADING
             LONG    dwNumThreads = s_pThreadStore->m_ThreadCount;
 
             for (LONG i = 0; (i < dwNumThreads) && (thread != NULL); i++)
@@ -7054,7 +7129,11 @@ ThreadStore::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
                 CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED(
                     thread->EnumMemoryRegions(flags);
                 );
+#ifdef FEATURE_MULTITHREADING
                 thread = s_pThreadStore->m_ThreadList.GetNext(thread);
+#else
+                thread = NULL;
+#endif // FEATURE_MULTITHREADING
             }
         }
         EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED

@@ -1092,6 +1092,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
         public void Connect_Parallel_Success()
         {
             using PortBlocker portBlocker = new PortBlocker(() =>
@@ -1125,29 +1126,15 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
         public void Connect_Parallel_Fails()
         {
-            using PortBlocker portBlocker = new PortBlocker(() =>
-            {
-                Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-                socket.DualMode = false;
-                socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
-                return socket;
-            });
-            Socket a = portBlocker.MainSocket;
-            // the port blocker did not call Socket.Bind so we called bind() but we did not update properties on Socket
-            Socket b = new Socket(portBlocker.SecondarySocket.SafeHandle);
-
-            // do NOT a.Listen(1);
-            // do NOT b.Listen(1);
-            // Do NOT a.AcceptAsync();
-            // Do NOT b.AcceptAsync();
-
             var mres = new ManualResetEventSlim();
             SocketAsyncEventArgs saea = new SocketAsyncEventArgs();
-            saea.RemoteEndPoint = new DnsEndPoint("localhost", portBlocker.Port);
+            // A bound but non-listening port can time out instead of refusing connections on macOS.
+            saea.RemoteEndPoint = new DnsEndPoint("localhost", DualModeBase.UnusedPort);
             saea.Completed += (_, _) => mres.Set();
-            if (Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel))
+            if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, saea, ConnectAlgorithm.Parallel))
             {
                 Assert.True(mres.Wait(TestSettings.PassingTestLongTimeout), "Completed did not get called in time");
             }
@@ -1160,6 +1147,8 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127986", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
         public void Connect_Parallel_FailsOver(bool preferIPv6)
         {
             using PortBlocker portBlocker = new PortBlocker(() =>
@@ -1186,22 +1175,48 @@ namespace System.Net.Sockets.Tests
             saea.RemoteEndPoint = new DnsEndPoint("localhost", portBlocker.Port);
             saea.Completed += (_, _) => mres.Set();
 
-            if (Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel))
+            bool pending = Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel);
+            if (pending)
             {
-                mres.Wait(TestSettings.PassingTestTimeout);
+                Assert.True(mres.Wait(TestSettings.PassingTestTimeout), "Completed did not get called in time");
             }
             // we should see attempt to both sockets
-            Assert.NotNull(saea.ConnectSocket);
-            Assert.True(saea.ConnectSocket.Connected);
-            if (preferIPv6)
+            if (saea.ConnectSocket is null)
             {
-                Assert.Equal(AddressFamily.InterNetworkV6, saea.ConnectSocket.AddressFamily);
-                Assert.Equal(a.LocalEndPoint, saea.ConnectSocket.RemoteEndPoint);
+                var socketException = new SocketException((int)saea.SocketError);
+
+                Assert.Fail(
+                    $"Connect failed with {socketException.GetType().Name}: {socketException.Message} " +
+                    $"(SocketError: {saea.SocketError}, pending: {pending}). " +
+                    $"localhost resolution: {GetLocalhostResolution()}. " +
+                    $"IPv6 endpoint: {a.LocalEndPoint}; IPv4 endpoint: {b.LocalEndPoint}; preferIPv6: {preferIPv6}.");
             }
-            else
+
+            Assert.True(saea.ConnectSocket.Connected);
+            AddressFamily expectedAddressFamily = preferIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
+            EndPoint expectedRemoteEndPoint = preferIPv6 ? a.LocalEndPoint : b.LocalEndPoint;
+            if (saea.ConnectSocket.AddressFamily != expectedAddressFamily ||
+                !Equals(saea.ConnectSocket.RemoteEndPoint, expectedRemoteEndPoint))
             {
-                Assert.Equal(AddressFamily.InterNetwork, saea.ConnectSocket.AddressFamily);
-                Assert.Equal(b.LocalEndPoint, saea.ConnectSocket.RemoteEndPoint);
+                Assert.Fail(
+                    $"Expected {expectedAddressFamily} connected to {expectedRemoteEndPoint}, but got " +
+                    $"{saea.ConnectSocket.AddressFamily} with local endpoint {saea.ConnectSocket.LocalEndPoint} " +
+                    $"and remote endpoint {saea.ConnectSocket.RemoteEndPoint}. " +
+                    $"IPv6 endpoint: {a.LocalEndPoint}; IPv4 endpoint: {b.LocalEndPoint}. " +
+                    $"localhost resolution: {GetLocalhostResolution()}. preferIPv6: {preferIPv6}.");
+            }
+
+            static string GetLocalhostResolution()
+            {
+                try
+                {
+                    return string.Join(", ", Dns.GetHostAddresses("localhost").Select(
+                        static address => $"{address} ({address.AddressFamily})"));
+                }
+                catch (SocketException exception)
+                {
+                    return $"{exception.GetType().Name}: {exception.Message} (SocketError: {exception.SocketErrorCode})";
+                }
             }
         }
     }

@@ -79,9 +79,12 @@ private:
     void PerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic);
 #endif
     void MarkUseDef(GenTreeLclVarCommon* tree);
+    template <typename TOccurrence>
+    void MarkUseDef(const TOccurrence& occurrence);
 
     void                 InterBlockLocalVarLiveness();
     void                 DoLiveVarAnalysis();
+    void                 MarkMustInitAndEHVars(VARSET_VALARG_TP finallyVars, VARSET_VALARG_TP exceptVars);
     bool                 PerBlockAnalysis(BasicBlock* block, bool keepAliveThis);
     void                 ComputeLife(VARSET_TP& tp,
                                      GenTree*   startNode,
@@ -107,7 +110,7 @@ private:
                                          bool* pStoreRemoved DEBUGARG(bool* treeModf));
 
     void ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP keepAliveVars);
-    bool IsTrackedRetBufferAddress(LIR::Range& range, GenTree* node);
+    bool IsTrackedCallDefinition(LIR::Range& range, GenTree* node);
     bool TryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block);
     bool TryRemoveNonLocalLIR(GenTree* node, LIR::Range* blockRange);
     bool CanUncontainOrRemoveOperands(GenTree* node);
@@ -157,26 +160,6 @@ void Liveness<TLiveness>::Init()
     JITDUMP("In Liveness::Init\n");
 
     SelectTrackedLocals();
-
-    // We mark a lcl as must-init in a first pass of local variable
-    // liveness (Liveness1), then assertion prop eliminates the
-    // uninit-use of a variable Vk, asserting it will be init'ed to
-    // null.  Then, in a second local-var liveness (Liveness2), the
-    // variable Vk is no longer live on entry to the method, since its
-    // uses have been replaced via constant propagation.
-    //
-    // This leads to a bug: since Vk is no longer live on entry, the
-    // register allocator sees Vk and an argument Vj as having
-    // disjoint lifetimes, and allocates them to the same register.
-    // But Vk is still marked "must-init", and this initialization (of
-    // the register) trashes the value in Vj.
-    //
-    // Therefore, initialize must-init to false for all variables in
-    // each liveness phase.
-    for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; ++lclNum)
-    {
-        m_compiler->lvaTable[lclNum].lvMustInit = false;
-    }
 
     for (BasicBlock* const block : m_compiler->Blocks())
     {
@@ -424,124 +407,41 @@ void Liveness<TLiveness>::SelectTrackedLocals()
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
         // Start by assuming that the variable will be tracked.
-        varDsc->lvTracked = 1;
+        bool isTracked = true;
         INDEBUG(varDsc->lvTrackedWithoutIndex = 0);
 
         if (varDsc->lvRefCnt(m_compiler->lvaRefCountState) == 0)
         {
             // Zero ref count, make this untracked.
-            varDsc->lvTracked = 0;
+            isTracked = false;
             varDsc->setLvRefCntWtd(0, m_compiler->lvaRefCountState);
         }
 
-#if !defined(TARGET_64BIT)
-        if (varTypeIsLong(varDsc) && varDsc->lvPromoted)
-        {
-            varDsc->lvTracked = 0;
-        }
-#endif // !defined(TARGET_64BIT)
-
-        // Variables that are address-exposed, and all struct locals, are never enregistered, or tracked.
-        // (The struct may be promoted, and its field variables enregistered/tracked, or the VM may "normalize"
-        // its type so that its not seen by the JIT as a struct.)
-        // Pinned variables may not be tracked (a condition of the GCInfo representation)
-        // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
-        // references when using the general GC encoding.
+        // Variables that are address-exposed are not tracked except for special cases.
         if (!TLiveness::TrackAddressExposedLocals && varDsc->IsAddressExposed())
         {
-            varDsc->lvTracked = 0;
-            assert(varDsc->lvType != TYP_STRUCT || varDsc->lvDoNotEnregister); // For structs, should have set this when
-                                                                               // we set m_addrExposed.
+            isTracked = false;
         }
-        if (varTypeIsStruct(varDsc))
+
+        // Liveness for promoted structs are tracked more precisely for their fields.
+        if (varDsc->lvPromoted)
         {
-            // Promoted structs will never be considered for enregistration anyway,
-            // and the DoNotEnregister flag was used to indicate whether promotion was
-            // independent or dependent.
-            if (varDsc->lvPromoted)
-            {
-                varDsc->lvTracked = 0;
-            }
-            else if (!varDsc->IsEnregisterableType())
-            {
-                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NotRegSizeStruct));
-            }
-            else if (varDsc->lvType == TYP_STRUCT)
-            {
-                if (!varDsc->lvRegStruct && !m_compiler->compEnregStructLocals())
-                {
-                    m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::DontEnregStructs));
-                }
-                else if (varDsc->lvIsMultiRegArgOrRet())
-                {
-                    // Prolog and return generators do not support SIMD<->general register moves.
-                    m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
-                }
-#if defined(TARGET_ARM)
-                else if (varDsc->lvIsParam)
-                {
-                    // On arm we prespill all struct args,
-                    // TODO-Arm-CQ: keep them in registers, it will need a fix
-                    // to "On the ARM we will spill any incoming struct args" logic in codegencommon.
-                    m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
-                }
-#endif // TARGET_ARM
-            }
+            isTracked = false;
         }
-        if (varDsc->lvIsStructField &&
-            (m_compiler->lvaGetParentPromotionType(lclNum) != Compiler::PROMOTION_TYPE_INDEPENDENT))
-        {
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::DepField));
-        }
+
+        // Pinned variables are never tracked since they effectively have
+        // invisible uses by the runtime that we currently do not reason about.
+        // For example, the nulling of these will look like dead stores, but
+        // these are actually observed by GC and important to keep.
+        // Furthermore, x86 GC encoding does not support enregistering these.
         if (varDsc->lvPinned)
         {
-            varDsc->lvTracked = 0;
-#ifdef JIT32_GCENCODER
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
-#endif
-        }
-        if (!m_compiler->compEnregLocals())
-        {
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
+            isTracked = false;
         }
 
-        var_types type = genActualType(varDsc->TypeGet());
+        varDsc->lvTracked = isTracked;
 
-        switch (type)
-        {
-            case TYP_FLOAT:
-            case TYP_DOUBLE:
-            case TYP_INT:
-            case TYP_LONG:
-            case TYP_REF:
-            case TYP_BYREF:
-#ifdef FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
-#ifdef TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif // TARGET_XARCH
-#ifdef FEATURE_MASKED_HW_INTRINSICS
-            case TYP_MASK:
-#endif // FEATURE_MASKED_HW_INTRINSICS
-#endif // FEATURE_SIMD
-            case TYP_STRUCT:
-                break;
-
-            case TYP_UNDEF:
-            case TYP_UNKNOWN:
-                noway_assert(!"lvType not set correctly");
-                varDsc->lvType = TYP_INT;
-
-                FALLTHROUGH;
-
-            default:
-                varDsc->lvTracked = 0;
-        }
-
-        if (varDsc->lvTracked)
+        if (isTracked)
         {
             trackedCandidates[trackedCandidateCount++] = lclNum;
         }
@@ -676,10 +576,10 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
                     GenTree* qmark = m_compiler->fgGetTopLevelQmark(stmt->GetRootNode(), &dst);
                     if (qmark == nullptr)
                     {
-                        for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                        {
-                            MarkUseDef(lcl);
-                        }
+                        stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                            MarkUseDef(occurrence);
+                            return GenTree::VisitResult::Continue;
+                        });
                     }
                     else
                     {
@@ -693,16 +593,16 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
                         // handle qmarks very precisely here -- last uses may
                         // not be marked as such due to interference with other
                         // qmark arms.
-                        for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                        {
-                            bool isUse = (lcl->gtFlags & GTF_VAR_DEF) == 0;
+                        stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                            bool isUse = (occurrence.GetFlags() & GTF_VAR_DEF) == 0;
                             // We can still handle the pure def at the top level.
-                            bool conditional = lcl != dst;
+                            bool conditional = occurrence.GetNode() != dst;
                             if (isUse || !conditional)
                             {
-                                MarkUseDef(lcl);
+                                MarkUseDef(occurrence);
                             }
-                        }
+                            return GenTree::VisitResult::Continue;
+                        });
                     }
                 }
             }
@@ -710,10 +610,10 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
             {
                 for (Statement* stmt : block->Statements())
                 {
-                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                    {
-                        MarkUseDef(lcl);
-                    }
+                    stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                        MarkUseDef(occurrence);
+                        return GenTree::VisitResult::Continue;
+                    });
                 }
             }
         }
@@ -845,9 +745,9 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
         case GT_LCL_ADDR:
             if (TLiveness::IsLIR)
             {
-                // If this is a definition of a retbuf then we process it as
-                // part of the GT_CALL node.
-                if (IsTrackedRetBufferAddress(LIR::AsRange(m_compiler->compCurBB), tree))
+                // If this is a call definition then we process it as part of
+                // the GT_CALL node.
+                if (IsTrackedCallDefinition(LIR::AsRange(m_compiler->compCurBB), tree))
                 {
                     break;
                 }
@@ -916,7 +816,7 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
                 bool modHeap = true;
                 if (call->IsHelperCall())
                 {
-                    CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+                    CorInfoHelpFunc helpFunc = call->GetHelperNum();
 
                     if (!Compiler::s_helperCallProperties.MutatesHeap(helpFunc) &&
                         !Compiler::s_helperCallProperties.MayRunCctor(helpFunc))
@@ -964,7 +864,7 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
                 MarkUseDef(lcl);
                 return GenTree::VisitResult::Continue;
             };
-            call->VisitLocalDefNodes(m_compiler, visitDef);
+            call->VisitPhysicalLocalDefNodes(m_compiler, visitDef);
             break;
         }
 
@@ -1021,9 +921,17 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsi
 template <typename TLiveness>
 void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
 {
+    MarkUseDef(LocalOccurrence(tree));
+}
+
+template <typename TLiveness>
+template <typename TOccurrence>
+void Liveness<TLiveness>::MarkUseDef(const TOccurrence& occurrence)
+{
+    GenTree* tree = occurrence.GetNode();
     assert((tree->OperIsLocal() && !tree->OperIs(GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR));
 
-    const unsigned   lclNum = tree->GetLclNum();
+    const unsigned   lclNum = occurrence.GetLclNum();
     LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
 
     // We should never encounter a reference to a lclVar that has a zero refCnt.
@@ -1034,8 +942,8 @@ void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
         varDsc->setLvRefCnt(1);
     }
 
-    const bool isDef     = ((tree->gtFlags & GTF_VAR_DEF) != 0);
-    const bool isFullDef = isDef && ((tree->gtFlags & GTF_VAR_USEASG) == 0);
+    const bool isDef     = ((occurrence.GetFlags() & GTF_VAR_DEF) != 0);
+    const bool isFullDef = isDef && ((occurrence.GetFlags() & GTF_VAR_USEASG) == 0);
     const bool isUse     = TLiveness::SsaLiveness ? !isFullDef : !isDef;
 
     if (varDsc->lvTracked)
@@ -1174,60 +1082,7 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
         }
     }
 
-    if (!TLiveness::IsEarly)
-    {
-        LclVarDsc* varDsc;
-        unsigned   varNum;
-
-        for (varNum = 0, varDsc = m_compiler->lvaTable; varNum < m_compiler->lvaCount; varNum++, varDsc++)
-        {
-            // Ignore the variable if it's not tracked
-
-            if (!varDsc->lvTracked)
-            {
-                continue;
-            }
-
-            // Fields of dependently promoted structs may be tracked. We shouldn't set lvMustInit on them since
-            // the whole parent struct will be initialized; however, lvLiveInOutOfHndlr should be set on them
-            // as appropriate.
-
-            bool fieldOfDependentlyPromotedStruct = m_compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc);
-
-            // Un-init locals may need auto-initialization. Note that the
-            // liveness of such locals will bubble to the top (fgFirstBB)
-            // in fgInterBlockLocalVarLiveness()
-
-            if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget &&
-                VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
-                (m_compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet())) && !fieldOfDependentlyPromotedStruct)
-            {
-                varDsc->lvMustInit = true;
-            }
-
-            // Mark all variables that are live on entry to an exception handler
-            // or on exit from a filter handler or finally.
-
-            bool isFinallyVar = VarSetOps::IsMember(m_compiler, finallyVars, varDsc->lvVarIndex);
-            if (isFinallyVar || VarSetOps::IsMember(m_compiler, exceptVars, varDsc->lvVarIndex))
-            {
-                // Mark the variable appropriately.
-                m_compiler->lvaSetVarLiveInOutOfHandler(varNum);
-
-                // Mark all pointer variables live on exit from a 'finally' block as
-                // 'explicitly initialized' (must-init) for GC-ref types.
-
-                if (isFinallyVar)
-                {
-                    // Set lvMustInit only if we have a non-arg, GC pointer.
-                    if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && varTypeIsGC(varDsc->TypeGet()))
-                    {
-                        varDsc->lvMustInit = true;
-                    }
-                }
-            }
-        }
-    }
+    MarkMustInitAndEHVars(finallyVars, exceptVars);
 
     /*-------------------------------------------------------------------------
      * Now fill in liveness info within each basic block - Backward DataFlow
@@ -1457,15 +1312,16 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
         }
     } while (changed && dfsTree->HasCycle());
 
-    // Now that we create throw helper blocks after lower,
-    // we don't need to search for them and set up liveness
-    // during lower.
-    assert(!m_compiler->fgRngChkThrowAdded);
-
-#ifdef DEBUG
-    // Double-check that no unreachable throw helper blocks exist.
-    if (m_compiler->fgBBcount != dfsTree->GetPostOrderCount())
+    // If we had unremovable blocks that are not in the DFS tree then make
+    // the 'keepAlive' set live in them. This would normally not be
+    // necessary assuming those blocks are actually unreachable; however,
+    // in LIR, throw helpers fall into this category because we do not introduce flow
+    // to them until codegen. Fix that up here.
+    //
+    if (TLiveness::IsLIR && (m_compiler->fgBBcount != dfsTree->GetPostOrderCount()))
     {
+        JITDUMP("Checking for throw helpers...\n");
+
         for (BasicBlock* block : m_compiler->Blocks())
         {
             if (dfsTree->Contains(block))
@@ -1473,16 +1329,99 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
                 continue;
             }
 
-            assert(!block->HasFlag(BBF_THROW_HELPER));
+            if (!block->HasFlag(BBF_THROW_HELPER))
+            {
+                continue;
+            }
+
+            JITDUMP(FMT_BB " is a throw helper, computing liveness\n", block->bbNum);
+
+            // We know throw helpers do not impact global liveness, so we just
+            // recompute within the block itself.
+            //
+            m_compiler->fgSetThrowHelpBlockLiveness(block);
+
+            // Mark last uses in the throw helper block's IR.
+            //
+            VARSET_TP keepAliveVars(VarSetOps::MakeEmpty(m_compiler));
+            VARSET_TP life(VarSetOps::MakeCopy(m_compiler, block->bbLiveOut));
+            ComputeLifeLIR(life, block, keepAliveVars);
+            assert(VarSetOps::Equal(m_compiler, life, block->bbLiveIn));
         }
     }
 
+#ifdef DEBUG
     if (m_compiler->verbose)
     {
         printf("\nBB liveness after DoLiveVarAnalysis():\n\n");
         m_compiler->fgDispBBLiveness();
     }
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// MarkMustInitAndEHVars:
+//   Set lvLiveInOutOfHandler / IsLiveInOutOfHandler() state and lvMustInit
+//   for variables based on liveness results.
+//
+// Arguments:
+//    finallyVars - Locals live into finally blocks
+//    exceptVars  - Locals live into catch handlers
+//
+template <typename TLiveness>
+void Liveness<TLiveness>::MarkMustInitAndEHVars(VARSET_VALARG_TP finallyVars, VARSET_VALARG_TP exceptVars)
+{
+    for (unsigned varNum = 0; varNum < m_compiler->lvaCount; varNum++)
+    {
+        LclVarDsc* varDsc            = m_compiler->lvaGetDesc(varNum);
+        varDsc->lvLiveInOutOfHandler = false;
+        varDsc->lvMustInit           = false;
+
+        if (!varDsc->lvTracked)
+        {
+            continue;
+        }
+
+        // Fields of dependently promoted structs may be tracked. We shouldn't set lvMustInit on them since
+        // the whole parent struct will be initialized; however, lvLiveInOutOfHandler should be set on them
+        // as appropriate.
+
+        bool fieldOfDependentlyPromotedStruct = m_compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc);
+
+        // Un-init locals may need auto-initialization. Note that the
+        // liveness of such locals will bubble to the top (fgFirstBB)
+        // in fgInterBlockLocalVarLiveness()
+
+        if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget &&
+            VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
+            (m_compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet())) && !fieldOfDependentlyPromotedStruct)
+        {
+            varDsc->lvMustInit = true;
+        }
+
+        // Mark all variables that are live on entry to an exception handler
+        // or on exit from a filter handler or finally.
+
+        bool isFinallyVar = VarSetOps::IsMember(m_compiler, finallyVars, varDsc->lvVarIndex);
+        if (isFinallyVar || VarSetOps::IsMember(m_compiler, exceptVars, varDsc->lvVarIndex))
+        {
+            // Mark the variable appropriately.
+            varDsc->lvLiveInOutOfHandler = true;
+            assert(!varDsc->lvPromoted);
+
+            // Mark all pointer variables live on exit from a 'finally' block as
+            // 'explicitly initialized' (must-init) for GC-ref types.
+
+            if (isFinallyVar)
+            {
+                // Set lvMustInit only if we have a non-arg, GC pointer.
+                if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && varTypeIsGC(varDsc->TypeGet()))
+                {
+                    varDsc->lvMustInit = true;
+                }
+            }
+        }
+    }
 }
 
 template <typename TLiveness>
@@ -1616,6 +1555,14 @@ void Compiler::fgSetThrowHelpBlockLiveness(BasicBlock* block)
         unsigned thisVarIndex = lvaGetDesc(info.compThisArg)->lvVarIndex;
         VarSetOps::AddElemD(this, block->bbLiveOut, thisVarIndex);
     }
+
+#ifdef TARGET_WASM
+    LclVarDsc* wasmSpVarDsc = lvaGetDesc(lvaWasmSpArg);
+    if (wasmSpVarDsc->lvTracked)
+    {
+        VarSetOps::AddElemD(this, block->bbLiveOut, wasmSpVarDsc->lvVarIndex);
+    }
+#endif // TARGET_WASM
 
     if (block->HasPotentialEHSuccs(this))
     {
@@ -1827,18 +1774,18 @@ GenTreeLclVarCommon* Liveness<TLiveness>::ComputeLifeCall(VARSET_TP&       life,
 
     GenTreeLclVarCommon* partialDef = nullptr;
 
-    auto visitDef = [&](const LocalDef& def) {
-        if (!def.IsEntire)
+    auto visitDef = [&](GenTreeLclVarCommon* def) {
+        if ((def->gtFlags & GTF_VAR_USEASG) != 0)
         {
             assert(partialDef == nullptr);
-            partialDef = def.Def;
+            partialDef = def;
         }
 
-        ComputeLifeLocal(life, keepAliveVars, def.Def);
+        ComputeLifeLocal(life, keepAliveVars, def);
         return GenTree::VisitResult::Continue;
     };
 
-    call->VisitLocalDefs(m_compiler, visitDef);
+    call->VisitPhysicalLocalDefNodes(m_compiler, visitDef);
 
     return partialDef;
 }
@@ -2432,12 +2379,11 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                 }
                 else
                 {
-                    // For LCL_ADDRs that are defined by being passed as a
-                    // retbuf we will handle them when we get to the call. We
-                    // cannot consider them to be defined at the point of the
-                    // LCL_ADDR since there may be uses between the LCL_ADDR
-                    // and call.
-                    if (IsTrackedRetBufferAddress(blockRange, node))
+                    // For LCL_ADDRs that are definitions for the call we will
+                    // handle them when we get to the call. We cannot consider
+                    // them to be defined at the point of the LCL_ADDR since
+                    // there may be uses between the LCL_ADDR and call.
+                    if (IsTrackedCallDefinition(blockRange, node))
                     {
                         break;
                     }
@@ -2452,6 +2398,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 
                             if (TryRemoveDeadStoreLIR(store, node->AsLclVarCommon(), block))
                             {
+
                                 JITDUMP("Removing dead LclVar address:\n");
                                 DISPNODE(node);
                                 blockRange.Remove(node);
@@ -2462,6 +2409,24 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                                 if (data->isIndir())
                                 {
                                     Lowering::TransformUnusedIndirection(data->AsIndir(), m_compiler, block);
+                                }
+                                else if (data->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                                {
+                                    // The unused lcl_var or lcl_field on the rhs of a removed block store may be a
+                                    // struct which cannot always be loaded onto the Wasm evaluation stack or into
+                                    // native registers, so we need to make sure to remove the node. In some cases the
+                                    // node is after us in the iteration order and will be automatically removed, but we
+                                    // may have already iterated over it without removing it, so it's necessary to clean
+                                    // up here.
+                                    JITDUMP("Removing dead store data:\n");
+                                    DISPNODE(data);
+                                    if (next == data)
+                                    {
+                                        next = data->gtPrev;
+                                    }
+                                    assert(end != data);
+                                    blockRange.Delete(m_compiler, block, data);
+                                    // fgStmtRemoved was already set by TryRemoveDeadStoreLIR
                                 }
                             }
                         }
@@ -2537,6 +2502,9 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_JTRUE:
             case GT_RETURN:
             case GT_RETURN_SUSPEND:
+            case GT_PATCHPOINT:
+            case GT_PATCHPOINT_FORCED:
+            case GT_NONLOCAL_JMP:
             case GT_SWITCH:
             case GT_RETFILT:
             case GT_START_NONGC:
@@ -2617,15 +2585,15 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 }
 
 //---------------------------------------------------------------------
-// IsTrackedRetBufferAddress - given a LCL_ADDR node, check if it is the
-// return buffer definition of a call.
+// IsTrackedCallDefinition - given a LCL_ADDR node, check if it is an
+// extra definition of a call.
 //
 // Arguments
 //    range - the block range containing the LCL_ADDR
 //    node  - the LCL_ADDR
 //
 template <typename TLiveness>
-bool Liveness<TLiveness>::IsTrackedRetBufferAddress(LIR::Range& range, GenTree* node)
+bool Liveness<TLiveness>::IsTrackedCallDefinition(LIR::Range& range, GenTree* node)
 {
     assert(node->OperIs(GT_LCL_ADDR));
     if ((node->gtFlags & GTF_VAR_DEF) == 0)
@@ -2652,7 +2620,11 @@ bool Liveness<TLiveness>::IsTrackedRetBufferAddress(LIR::Range& range, GenTree* 
 
         if (curNode->IsCall())
         {
-            return m_compiler->gtCallGetDefinedRetBufLclAddr(curNode->AsCall()) == node;
+            auto visit = [=](GenTree* callDef) {
+                return node == callDef ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+            };
+
+            return curNode->VisitPhysicalLocalDefNodes(m_compiler, visit) == GenTree::VisitResult::Abort;
         }
     } while (curNode->OperIs(GT_FIELD_LIST) || curNode->OperIsPutArg());
 

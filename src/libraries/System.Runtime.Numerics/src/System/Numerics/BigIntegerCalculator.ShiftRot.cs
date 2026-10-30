@@ -38,7 +38,7 @@ namespace System.Numerics
             }
         }
 
-        public static void RotateLeft(Span<nuint> bits, int digitShift, int smallShift)
+        private static void RotateLeft(Span<nuint> bits, int digitShift, int smallShift)
         {
             Debug.Assert(bits.Length > 0);
 
@@ -53,7 +53,7 @@ namespace System.Numerics
             SwapUpperAndLower(bits, bits.Length - digitShift);
         }
 
-        public static void RotateRight(Span<nuint> bits, int digitShift, int smallShift)
+        private static void RotateRight(Span<nuint> bits, int digitShift, int smallShift)
         {
             Debug.Assert(bits.Length > 0);
 
@@ -68,7 +68,7 @@ namespace System.Numerics
             SwapUpperAndLower(bits, digitShift);
         }
 
-        private static void SwapUpperAndLower(Span<nuint> bits, int lowerLength)
+        public static void SwapUpperAndLower(Span<nuint> bits, int lowerLength)
         {
             Debug.Assert(lowerLength > 0);
             Debug.Assert(lowerLength < bits.Length);
@@ -82,6 +82,44 @@ namespace System.Numerics
 
             int tmpLength = Math.Min(lowerLength, upperLength);
             Span<nuint> tmp = BigInteger.RentedBuffer.Create(tmpLength, out BigInteger.RentedBuffer tmpBuffer);
+
+            if (upperLength < lowerLength)
+            {
+                upper.CopyTo(tmp);
+                lower.CopyTo(lowerDst);
+                tmp.CopyTo(bits);
+            }
+            else
+            {
+                lower.CopyTo(tmp);
+                upper.CopyTo(bits);
+                tmp.CopyTo(lowerDst);
+            }
+
+            tmpBuffer.Dispose();
+        }
+
+        // 32-bit word digit-swap for the partial-limb edge case on 64-bit.
+        // When the rotation ring has an odd number of 32-bit words, the digit-swap
+        // boundary may fall mid-nuint, so the swap must operate at uint granularity.
+
+        public static void SwapUpperAndLower(Span<uint> bits, int lowerLength)
+        {
+            Debug.Assert(lowerLength > 0);
+            Debug.Assert(lowerLength < bits.Length);
+
+            int upperLength = bits.Length - lowerLength;
+
+            Span<uint> lower = bits.Slice(0, lowerLength);
+            Span<uint> upper = bits.Slice(lowerLength);
+
+            Span<uint> lowerDst = bits.Slice(upperLength);
+
+            int tmpLength = Math.Min(lowerLength, upperLength);
+            int wordsPerLimb = nint.Size / sizeof(uint);
+            int nuintCount = (tmpLength + wordsPerLimb - 1) / wordsPerLimb;
+            Span<nuint> tmpNuint = BigInteger.RentedBuffer.Create(nuintCount, out BigInteger.RentedBuffer tmpBuffer);
+            Span<uint> tmp = MemoryMarshal.Cast<nuint, uint>(tmpNuint).Slice(0, tmpLength);
 
             if (upperLength < lowerLength)
             {
@@ -173,76 +211,5 @@ namespace System.Numerics
             }
         }
 
-        public static void RightShiftSelf(Span<nuint> bits, int shift, out nuint carry)
-        {
-            Debug.Assert((uint)shift < BitsPerLimb);
-
-            carry = 0;
-            if (shift == 0 || bits.IsEmpty)
-            {
-                return;
-            }
-
-            int back = BitsPerLimb - shift;
-
-            if (Vector128.IsHardwareAccelerated)
-            {
-                carry = bits[0] << back;
-
-                ref nuint start = ref MemoryMarshal.GetReference(bits);
-                int offset = 0;
-
-                while (Vector512.IsHardwareAccelerated && bits.Length - offset >= Vector512<nuint>.Count + 1)
-                {
-                    Vector512<nuint> current = Vector512.LoadUnsafe(ref start, (nuint)offset) >> shift;
-                    Vector512<nuint> carries = Vector512.LoadUnsafe(ref start, (nuint)(offset + 1)) << back;
-
-                    Vector512<nuint> newValue = current | carries;
-
-                    Vector512.StoreUnsafe(newValue, ref start, (nuint)offset);
-                    offset += Vector512<nuint>.Count;
-                }
-
-                while (Vector256.IsHardwareAccelerated && bits.Length - offset >= Vector256<nuint>.Count + 1)
-                {
-                    Vector256<nuint> current = Vector256.LoadUnsafe(ref start, (nuint)offset) >> shift;
-                    Vector256<nuint> carries = Vector256.LoadUnsafe(ref start, (nuint)(offset + 1)) << back;
-
-                    Vector256<nuint> newValue = current | carries;
-
-                    Vector256.StoreUnsafe(newValue, ref start, (nuint)offset);
-                    offset += Vector256<nuint>.Count;
-                }
-
-                while (Vector128.IsHardwareAccelerated && bits.Length - offset >= Vector128<nuint>.Count + 1)
-                {
-                    Vector128<nuint> current = Vector128.LoadUnsafe(ref start, (nuint)offset) >> shift;
-                    Vector128<nuint> carries = Vector128.LoadUnsafe(ref start, (nuint)(offset + 1)) << back;
-
-                    Vector128<nuint> newValue = current | carries;
-
-                    Vector128.StoreUnsafe(newValue, ref start, (nuint)offset);
-                    offset += Vector128<nuint>.Count;
-                }
-
-                nuint carry2 = 0;
-                for (int i = bits.Length - 1; i >= offset; i--)
-                {
-                    nuint value = carry2 | bits[i] >> shift;
-                    carry2 = bits[i] << back;
-                    bits[i] = value;
-                }
-            }
-            else
-            {
-                carry = 0;
-                for (int i = bits.Length - 1; i >= 0; i--)
-                {
-                    nuint value = carry | bits[i] >> shift;
-                    carry = bits[i] << back;
-                    bits[i] = value;
-                }
-            }
-        }
     }
 }

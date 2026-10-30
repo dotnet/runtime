@@ -86,7 +86,34 @@ namespace System.Security.Cryptography
         }
     }
 
-#if !NETSTANDARD2_1_OR_GREATER
+#if !NET11_0_OR_GREATER && (NET || NETSTANDARD)
+    internal static class CryptographicOperationsExtensions
+    {
+        extension(CryptographicOperations)
+        {
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            internal static bool FixedTimeEquals(ReadOnlySpan<byte> left, byte right)
+            {
+                // NoOptimization because we want this method to be exactly as non-short-circuiting
+                // as written.
+                //
+                // NoInlining because the NoOptimization would get lost if the method got inlined.
+
+                int length = left.Length;
+                int accum = 0;
+
+                for (int i = 0; i < length; i++)
+                {
+                    accum |= left[i] - right;
+                }
+
+                return accum == 0;
+            }
+        }
+    }
+#endif
+
+#if NETFRAMEWORK || NETSTANDARD2_0
     internal static class CryptographicOperations
     {
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -118,6 +145,27 @@ namespace System.Security.Cryptography
 
             return accum == 0;
         }
+
+#if NETFRAMEWORK
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        internal static bool FixedTimeEquals(ReadOnlySpan<byte> left, byte right)
+        {
+            // NoOptimization because we want this method to be exactly as non-short-circuiting
+            // as written.
+            //
+            // NoInlining because the NoOptimization would get lost if the method got inlined.
+
+            int length = left.Length;
+            int accum = 0;
+
+            for (int i = 0; i < length; i++)
+            {
+                accum |= left[i] - right;
+            }
+
+            return accum == 0;
+        }
+#endif
     }
 #endif
 }

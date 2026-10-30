@@ -209,6 +209,13 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
         if (m_c1->OperIs(GT_LCL_VAR) && m_c2->OperIs(GT_LCL_VAR) &&
             m_c1->AsLclVarCommon()->GetLclNum() == m_c2->AsLclVarCommon()->GetLclNum())
         {
+            // The folded comparisons below are signed (e.g. "c1 <= 0", "c1 >= 0"), so
+            // bail if either input has GTF_UNSIGNED.
+            if (m_testInfo1.GetTestOp()->IsUnsigned() || m_testInfo2.GetTestOp()->IsUnsigned())
+            {
+                return false;
+            }
+
             if ((m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_EQ)) ||
                 (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_LT)))
             {
@@ -271,6 +278,13 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
         if (m_c1->OperIs(GT_LCL_VAR) && m_c2->OperIs(GT_LCL_VAR) &&
             m_c1->AsLclVarCommon()->GetLclNum() == m_c2->AsLclVarCommon()->GetLclNum())
         {
+            // The folded comparisons below are signed (e.g. "c1 > 0", "c1 < 0"), so
+            // bail if either input has GTF_UNSIGNED.
+            if (m_testInfo1.GetTestOp()->IsUnsigned() || m_testInfo2.GetTestOp()->IsUnsigned())
+            {
+                return false;
+            }
+
             if ((m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_NE)) ||
                 (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_GE)))
             {
@@ -448,23 +462,30 @@ static bool GetIntersection(var_types  type,
     }
 
     // Convert to a canonical form with GT_GE or GT_LE (inclusive).
-    auto normalize = [](genTreeOps* cmp, ssize_t* cns) {
+    auto normalize = [](genTreeOps* cmp, ssize_t* cns) -> bool {
         if (*cmp == GT_GT)
         {
             // "X > cns" -> "X >= cns + 1"
+            if (*cns == SSIZE_T_MAX)
+            {
+                return false;
+            }
             *cns = *cns + 1;
             *cmp = GT_GE;
         }
         if (*cmp == GT_LT)
         {
             // "X < cns" -> "X <= cns - 1"
+            // cns is non-negative (checked above), so cns - 1 >= -1 and cannot underflow.
             *cns = *cns - 1;
             *cmp = GT_LE;
         }
-        // whether these overflow or not is checked below.
+        return true;
     };
-    normalize(&cmp1, &cns1);
-    normalize(&cmp2, &cns2);
+    if (!normalize(&cmp1, &cns1) || !normalize(&cmp2, &cns2))
+    {
+        return false;
+    }
 
     if (cmp1 == cmp2)
     {
@@ -512,7 +533,7 @@ static bool GetIntersection(var_types  type,
 //
 bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cnsNode, genTreeOps* cmp)
 {
-    if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT) && !tree->IsUnsigned())
+    if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT))
     {
         GenTree* op1 = tree->gtGetOp1();
         GenTree* op2 = tree->gtGetOp2();
@@ -563,10 +584,10 @@ bool FoldNeverNegativeRangeTest(
     GenTreeIntCon* cns1Node;
     genTreeOps     cmp1Op;
 
-    // First cmp has to be "X >= 0" (or "0 <= X")
+    // First cmp has to be signed "X >= 0" (or "0 <= X")
     // TODO: handle "X < NN && X >= 0" (where the 2nd comparison is the lower bound)
     // It seems to be a rare case, so we don't handle it for now.
-    if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op))
+    if (cmp1->IsUnsigned() || !IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op))
     {
         return false;
     }
@@ -612,9 +633,10 @@ bool FoldNeverNegativeRangeTest(
         return false;
     }
 
-    if ((upperBound->gtFlags & GTF_SIDE_EFFECT) != 0)
+    if ((upperBound->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
     {
-        // We can't fold "X >= 0 && X < NN" to "X u< NN" if NN has side effects.
+        // The fold makes NN evaluate unconditionally, so it must be safe to speculate.
+        // GTF_ORDER_SIDEEFF covers e.g. "a[X]" whose bounds check was removed via "X >= 0".
         return false;
     }
 
@@ -658,11 +680,11 @@ bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTre
     genTreeOps     cmp1Op;
     genTreeOps     cmp2Op;
 
-    // Make sure both conditions are constant range checks, e.g. "X > CNS"
-    if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op) ||
+    // Make sure both conditions are constant range checks with matching signedness, e.g. "X > CNS".
+    if ((cmp1->IsUnsigned() != cmp2->IsUnsigned()) || !IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op) ||
         !IsConstantRangeTest(cmp2, &var2Node, &cns2Node, &cmp2Op))
     {
-        // Give FoldNeverNegativeRangeTest a try if both conditions are not constant range checks.
+        // Give FoldNeverNegativeRangeTest a try when the constant range fold does not apply.
         return FoldNeverNegativeRangeTest(comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed);
     }
 
@@ -979,8 +1001,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     }
 
     // Ensure there are no additional side effects.
-    if ((cond1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0 ||
-        (cond2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+    if ((cond1->gtFlags & GTF_OBS_EFFECT) != 0 || (cond2->gtFlags & GTF_OBS_EFFECT) != 0)
     {
         return false;
     }
@@ -1053,11 +1074,38 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     // Update the flow.
     FlowEdge* const removedEdge  = m_b1->GetTrueEdge();
     FlowEdge* const retainedEdge = m_b1->GetFalseEdge();
+
+    // Will need to re-adjust the likelihoods of the outgoing edges of the combined b1+b2 block
+    const weight_t    removedEdgeLikelihood = removedEdge->getLikelihood();
+    const weight_t    fallthroughLikelihood = retainedEdge->getLikelihood();
+    BasicBlock* const b1RemovedTarget       = removedEdge->getDestinationBlock();
+
+    // Need to repair b2's profile as b1->b2 flow will be unconditional.
+    // "fgCompactBlock" will end up using b2's new profile weight
+    // Don't decrement the removed-edge-target's weight because the same control flow still
+    // reaches that block.
+    if (m_b2->hasProfileWeight())
+    {
+        m_b2->increaseBBProfileWeight(removedEdge->getLikelyWeight());
+    }
+
     m_compiler->fgRemoveRefPred(removedEdge);
     m_b1->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
 
-    // Repair profile.
-    m_compiler->fgRepairProfileCondToUncond(m_b1, retainedEdge, removedEdge);
+    // The combined b1+b2 block reuses b2's edges, and their likelihoods must be prorated
+    // based on likelihood of b1->b2 (fallthrough) control flow.
+    // The edge to shared target (b1RemovedTarget) must also take into account b1->shared
+    // edge likelihood
+    FlowEdge* const b2Edges[] = {m_b2->GetTrueEdge(), m_b2->GetFalseEdge()};
+    for (FlowEdge* const b2Edge : b2Edges)
+    {
+        weight_t combined = fallthroughLikelihood * b2Edge->getLikelihood();
+        if (b2Edge->getDestinationBlock() == b1RemovedTarget)
+        {
+            combined += removedEdgeLikelihood;
+        }
+        b2Edge->setLikelihood(min(1.0, combined));
+    }
 
     // Fixup flags.
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
@@ -1234,8 +1282,8 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         }
         else
         {
-            // We originally reached B2's true target via
-            // B1 false OR B1 true B2 false.
+            // We originally reached B2's true target only via
+            // B1 false, then B2 true.
             //
             // We will now reach via B1 true.
             // Modify flow for true side of B1
@@ -1243,8 +1291,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
             m_compiler->fgRedirectEdge(m_b1->TrueEdgeRef(), m_b2->GetTrueTarget());
             origB1TrueEdge->setHeuristicBased(origB2TrueEdge->isHeuristicBased());
 
-            newB1TrueLikelihood =
-                (1.0 - origB1TrueLikelihood) + origB1TrueLikelihood * origB2FalseEdge->getLikelihood();
+            newB1TrueLikelihood = (1.0 - origB1TrueLikelihood) * origB2TrueEdge->getLikelihood();
         }
 
         // Fix B1 true edge likelihood
@@ -1409,12 +1456,12 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
         return nullptr;
     }
 
-    ssize_t ival2 = opr2->AsIntCon()->gtIconVal;
+    ssize_t ival2 = opr2->AsIntCon()->IconValue();
 
     // Is the value a boolean?
-    // We can either have a boolean expression (marked GTF_BOOLEAN) or a constant 0/1.
+    // Currently we only recognize constant 0/1.
 
-    if (opr1->OperIs(GT_CNS_INT) && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
+    if (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1))
     {
         pOptTest->isBool = true;
     }
@@ -1427,7 +1474,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
         if (pOptTest->isBool)
         {
             m_compiler->gtReverseCond(cond);
-            opr2->AsIntCon()->gtIconVal = 0;
+            opr2->AsIntCon()->SetIconValue(0);
         }
         else
         {
@@ -1659,7 +1706,8 @@ PhaseStatus Compiler::optOptimizeBools()
                 // trigger or not
                 // else if ((compOpportunisticallyDependsOn(InstructionSet_APX) || JitConfig.JitEnableApxIfConv()) &&
                 // optBoolsDsc.optOptimizeCompareChainCondBlock())
-                else if (JitConfig.EnableApxConditionalChaining() && !optSwitchDetectAndConvert(b1, true, &ccmpVec) &&
+                else if (canUseApxEvexEncoding() && JitConfig.EnableApxConditionalChaining() &&
+                         !optSwitchDetectAndConvert(b1, true, &ccmpVec) &&
                          optBoolsDsc.optOptimizeCompareChainCondBlock())
                 {
                     // The optimization will have merged b1 and b2. Retry the loop so that

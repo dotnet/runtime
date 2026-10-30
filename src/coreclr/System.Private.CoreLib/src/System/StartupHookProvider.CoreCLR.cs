@@ -14,7 +14,6 @@ namespace System
     internal static partial class StartupHookProvider
     {
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void ManagedStartup(char* pDiagnosticStartupHooks, Exception* pException)
         {
             try

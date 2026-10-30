@@ -36,7 +36,6 @@ struct ContinuationLayoutKeyHashTableHelper
     static void            DeleteEntry(EEHashEntry_t *pEntry, AllocationHeap heap);
     static BOOL            CompareKeys(EEHashEntry_t *pEntry, ContinuationLayoutKey key);
     static DWORD           Hash(ContinuationLayoutKey key);
-    static void            ReplaceKey(EEHashEntry_t *pEntry, ContinuationLayoutKey newKey);
 };
 
 typedef EEHashTable<ContinuationLayoutKey, ContinuationLayoutKeyHashTableHelper, FALSE> ContinuationLayoutHashTable;

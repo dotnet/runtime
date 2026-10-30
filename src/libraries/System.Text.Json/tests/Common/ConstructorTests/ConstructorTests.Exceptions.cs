@@ -92,8 +92,10 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
-        public async Task RandomReferenceMetadataNotSupported()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task NonMetadataPropertyWithLeadingDollarSignIsAccepted(bool allowOutOfOrderMetadata)
         {
             string json = """{"Name":"Jet","$random":10}""";
 
@@ -103,12 +105,14 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal("Jet", employee.Name);
 
-            // Metadata not supported with preserve ref feature on.
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve,
+                AllowOutOfOrderMetadataProperties = allowOutOfOrderMetadata
+            };
 
-            var options = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
-
-            JsonException ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Employee>(json, options));
-            Assert.Equal("$['$random']", ex.Path);
+            employee = await Serializer.DeserializeWrapper<Employee>(json, options);
+            Assert.Equal("Jet", employee.Name);
         }
 
         [Fact]
@@ -350,5 +354,31 @@ namespace System.Text.Json.Serialization.Tests
                 UnsupportedDictionary = unsupportedDictionary;
             }
         }
+
+        [Fact]
+        public async Task ParameterizedConstructor_ExceptionMessage_ReportsPropertyType()
+        {
+            // Regression test: classes with parameterized constructors should report the
+            // property type (System.String), not the declaring class type, in the JsonException message.
+            // https://github.com/dotnet/runtime/pull/126575
+            JsonException e;
+
+            e = await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<ParameterizedClass_WithStringProperty>("""{"Text":{}}"""));
+            Assert.Contains("System.String", e.Message);
+            Assert.DoesNotContain(nameof(ParameterizedClass_WithStringProperty), e.Message);
+
+            e = await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<ParameterizedRecord_WithStringProperty>("""{"Text":{}}"""));
+            Assert.Contains("System.String", e.Message);
+            Assert.DoesNotContain(nameof(ParameterizedRecord_WithStringProperty), e.Message);
+        }
+
+        public class ParameterizedClass_WithStringProperty(string text)
+        {
+            public string Text { get; set; } = text;
+        }
+
+        public record ParameterizedRecord_WithStringProperty(string Text);
     }
 }

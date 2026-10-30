@@ -21,6 +21,15 @@ bool WrapICorJitInfo::isIntrinsic(
     return temp;
 }
 
+bool WrapICorJitInfo::canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    API_ENTER(canValueClassInstancePointerEscape);
+    bool temp = wrapHnd->canValueClassInstancePointerEscape(ftn);
+    API_LEAVE(canValueClassInstancePointerEscape);
+    return temp;
+}
+
 bool WrapICorJitInfo::notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -181,27 +190,6 @@ bool WrapICorJitInfo::resolveVirtualMethod(
     return temp;
 }
 
-CORINFO_METHOD_HANDLE WrapICorJitInfo::getUnboxedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg)
-{
-    API_ENTER(getUnboxedEntry);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getUnboxedEntry(ftn, requiresInstMethodTableArg);
-    API_LEAVE(getUnboxedEntry);
-    return temp;
-}
-
-CORINFO_METHOD_HANDLE WrapICorJitInfo::getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg)
-{
-    API_ENTER(getInstantiatedEntry);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getInstantiatedEntry(ftn, methodArg, classArg);
-    API_LEAVE(getInstantiatedEntry);
-    return temp;
-}
-
 CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncOtherVariant(
           CORINFO_METHOD_HANDLE ftn,
           bool* variantIsThunk)
@@ -287,14 +275,6 @@ bool WrapICorJitInfo::satisfiesMethodConstraints(
     bool temp = wrapHnd->satisfiesMethodConstraints(parent, method);
     API_LEAVE(satisfiesMethodConstraints);
     return temp;
-}
-
-void WrapICorJitInfo::methodMustBeLoadedBeforeCodeIsRun(
-          CORINFO_METHOD_HANDLE method)
-{
-    API_ENTER(methodMustBeLoadedBeforeCodeIsRun);
-    wrapHnd->methodMustBeLoadedBeforeCodeIsRun(method);
-    API_LEAVE(methodMustBeLoadedBeforeCodeIsRun);
 }
 
 void WrapICorJitInfo::getGSCookie(
@@ -444,6 +424,24 @@ bool WrapICorJitInfo::isValueClass(
     API_ENTER(isValueClass);
     bool temp = wrapHnd->isValueClass(cls);
     API_LEAVE(isValueClass);
+    return temp;
+}
+
+bool WrapICorJitInfo::isByRefLike(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isByRefLike);
+    bool temp = wrapHnd->isByRefLike(cls);
+    API_LEAVE(isByRefLike);
+    return temp;
+}
+
+bool WrapICorJitInfo::isSharedInst(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isSharedInst);
+    bool temp = wrapHnd->isSharedInst(cls);
+    API_LEAVE(isSharedInst);
     return temp;
 }
 
@@ -746,14 +744,6 @@ CorInfoInitClassResult WrapICorJitInfo::initClass(
     CorInfoInitClassResult temp = wrapHnd->initClass(field, method, context);
     API_LEAVE(initClass);
     return temp;
-}
-
-void WrapICorJitInfo::classMustBeLoadedBeforeCodeIsRun(
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(classMustBeLoadedBeforeCodeIsRun);
-    wrapHnd->classMustBeLoadedBeforeCodeIsRun(cls);
-    API_LEAVE(classMustBeLoadedBeforeCodeIsRun);
 }
 
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getBuiltinClass(
@@ -1200,6 +1190,30 @@ void WrapICorJitInfo::getAsyncInfo(
     API_LEAVE(getAsyncInfo);
 }
 
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAwaitReturnCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    API_ENTER(getAwaitReturnCall);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAwaitReturnCall(callerHandle, contextHandle, instArg);
+    API_LEAVE(getAwaitReturnCall);
+    return temp;
+}
+
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    API_ENTER(getAwaitAwaiterInContinuationCall);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+    API_LEAVE(getAwaitAwaiterInContinuationCall);
+    return temp;
+}
+
 mdMethodDef WrapICorJitInfo::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -1278,6 +1292,23 @@ CorInfoWasmType WrapICorJitInfo::getWasmLowering(
     CorInfoWasmType temp = wrapHnd->getWasmLowering(structHnd);
     API_LEAVE(getWasmLowering);
     return temp;
+}
+
+uint32_t WrapICorJitInfo::getAddressAlignment(
+          void* address)
+{
+    API_ENTER(getAddressAlignment);
+    uint32_t temp = wrapHnd->getAddressAlignment(address);
+    API_LEAVE(getAddressAlignment);
+    return temp;
+}
+
+void WrapICorJitInfo::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    API_ENTER(getWasmWellKnownGlobals);
+    wrapHnd->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
+    API_LEAVE(getWasmWellKnownGlobals);
 }
 
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
@@ -1395,16 +1426,6 @@ void WrapICorJitInfo::getAddressOfPInvokeTarget(
     API_ENTER(getAddressOfPInvokeTarget);
     wrapHnd->getAddressOfPInvokeTarget(method, pLookup);
     API_LEAVE(getAddressOfPInvokeTarget);
-}
-
-void* WrapICorJitInfo::GetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig,
-          void** ppIndirection)
-{
-    API_ENTER(GetCookieForPInvokeCalliSig);
-    void* temp = wrapHnd->GetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
-    API_LEAVE(GetCookieForPInvokeCalliSig);
-    return temp;
 }
 
 void* WrapICorJitInfo::GetCookieForInterpreterCalliSig(
@@ -1588,10 +1609,11 @@ bool WrapICorJitInfo::convertPInvokeCalliToCall(
 
 bool WrapICorJitInfo::notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
-          bool supportEnabled)
+          bool supportEnabled,
+          bool preserveNegativeDependency)
 {
     API_ENTER(notifyInstructionSetUsage);
-    bool temp = wrapHnd->notifyInstructionSetUsage(instructionSet, supportEnabled);
+    bool temp = wrapHnd->notifyInstructionSetUsage(instructionSet, supportEnabled, preserveNegativeDependency);
     API_LEAVE(notifyInstructionSetUsage);
     return temp;
 }
@@ -1726,6 +1748,14 @@ void WrapICorJitInfo::recordCallSite(
     API_ENTER(recordCallSite);
     wrapHnd->recordCallSite(instrOffset, callSig, methodHandle);
     API_LEAVE(recordCallSite);
+}
+
+void WrapICorJitInfo::recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig)
+{
+    API_ENTER(recordWasmManagedCallSig);
+    wrapHnd->recordWasmManagedCallSig(callSig);
+    API_LEAVE(recordWasmManagedCallSig);
 }
 
 void WrapICorJitInfo::recordRelocation(

@@ -1,11 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ===========================================================================
-// File: JITinterface.H
-//
-// ===========================================================================
-
 #ifndef JITINTERFACE_H
 #define JITINTERFACE_H
 
@@ -15,7 +10,7 @@
 // TODO: Set this value to 0 for Wasm
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT (1024 - 1)
 #elif defined (TARGET_UNIX)
-#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)
+#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((minipal_getpagesize() / 2) - 1)
 #else
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
 #endif
@@ -39,7 +34,6 @@ enum SignatureKind
     SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE,
 };
 
-class Stub;
 class MethodDesc;
 class NativeCodeVersion;
 class FieldDesc;
@@ -91,8 +85,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                           BOOL mayUsePrecompiledPInvokeMethods = TRUE);
 
 // These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
-EXTERN_C FCDECL2(void, JIT_Patchpoint, int* counter, int ilOffset);
-EXTERN_C FCDECL1(void, JIT_PatchpointForced, int ilOffset);
+EXTERN_C FCDECL2(PCODE, JIT_Patchpoint, int* counter, int ilOffset);
+EXTERN_C FCDECL1(PCODE, JIT_PatchpointForced, int ilOffset);
 
 //
 // JIT HELPER ALIASING FOR PORTABILITY.
@@ -100,19 +94,16 @@ EXTERN_C FCDECL1(void, JIT_PatchpointForced, int ilOffset);
 // The portable helper is used if the platform does not provide optimized implementation.
 //
 
-EXTERN_C FCDECL0(void, JIT_PollGC);
+EXTERN_C FCDECL0(void, RhpGcPoll);
 
-#ifndef JIT_GetGCStaticBase
-#define JIT_GetGCStaticBase NULL
-#else
-EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-#endif
+#ifdef TARGET_WASM
+// WASM EventPipe CPU-sampling samplepoint helper (defined in vm/wasm/helpers.cpp).
+EXTERN_C void JIT_WasmProfSamplepoint(uintptr_t callersStackPointer, PCODE portableEntryPointContext);
+#endif // TARGET_WASM
 
-#ifndef JIT_GetNonGCStaticBase
-#define JIT_GetNonGCStaticBase NULL
-#else
-EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-#endif
+#ifdef FEATURE_IJW
+EXTERN_C FCDECL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField);
+#endif // FEATURE_IJW
 
 #ifndef JIT_GetGCStaticBaseNoCtor
 #define JIT_GetGCStaticBaseNoCtor JIT_GetGCStaticBaseNoCtor_Portable
@@ -125,18 +116,6 @@ EXTERN_C FCDECL1(void*, JIT_GetGCStaticBaseNoCtor_Portable, MethodTable *pMT);
 #endif
 EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBaseNoCtor, MethodTable *pMT);
 EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable *pMT);
-
-#ifndef JIT_GetDynamicGCStaticBase
-#define JIT_GetDynamicGCStaticBase NULL
-#else
-EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-#endif
-
-#ifndef JIT_GetDynamicNonGCStaticBase
-#define JIT_GetDynamicNonGCStaticBase NULL
-#else
-EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-#endif
 
 #ifndef JIT_GetDynamicGCStaticBaseNoCtor
 #define JIT_GetDynamicGCStaticBaseNoCtor JIT_GetDynamicGCStaticBaseNoCtor_Portable
@@ -161,13 +140,6 @@ EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size);
 #endif
 
-#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
-EXTERN_C FCDECL1(Object*, RhpNewFast_UP, MethodTable* pMT);
-EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, MethodTable* pMT, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast_UP, MethodTable* pMT, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhNewString_UP, MethodTable* pMT, INT_PTR stringLength);
-#endif
-
 EXTERN_C FCDECL1(Object*, RhpNew, MethodTable* pMT);
 EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR size);
 EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, MethodTable* pMT);
@@ -179,20 +151,13 @@ EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase_Helper, MethodTable *pMT);
 EXTERN_C void DoJITFailFast();
 EXTERN_C FCDECL0(void, JIT_FailFast);
 
-FCDECL0(int, JIT_GetCurrentManagedThreadId);
-
 EXTERN_C void ReversePInvokeBadTransition();
 
-#if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
-// Extra argument for the classification of the checked barriers.
-extern "C" FCDECL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, CheckedWriteBarrierKinds kind);
-#else
 // Regular checked write barrier.
-extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
+extern "C" FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 
 #ifdef TARGET_ARM64
 #define RhpCheckedAssignRef RhpCheckedAssignRefArm64
-#define RhpByRefAssignRef RhpByRefAssignRefArm64
 #define RhpAssignRef RhpAssignRefArm64
 #elif defined (TARGET_LOONGARCH64)
 #define RhpAssignRef RhpAssignRefLoongArch64
@@ -200,35 +165,101 @@ extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 #define RhpAssignRef RhpAssignRefRiscV64
 #endif // TARGET_*
 
-#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
+extern "C" FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
 
-extern "C" FCDECL2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 
-extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
+// Math helpers implemented in runtime/MathHelpers.cpp
+EXTERN_C FCDECL1_D(uint64_t, RhpDbl2ULng, double val);
+EXTERN_C FCDECL1_D(int64_t, RhpDbl2Lng, double val);
+EXTERN_C FCDECL2_DD(double, Rhp_fmod, double x, double y);
+EXTERN_C FCDECL2_FF(float, Rhp_fmodf, float x, float y);
 
-// ARM64 JIT_WriteBarrier uses special ABI and thus is not callable directly
-// Copied write barriers must be called at a different location
-extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
+EXTERN_C FCDECL1_D(double, Rhp_acos, double x);
+EXTERN_C FCDECL1_F(float, Rhp_acosf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_acosh, double x);
+EXTERN_C FCDECL1_F(float, Rhp_acoshf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_asin, double x);
+EXTERN_C FCDECL1_F(float, Rhp_asinf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_asinh, double x);
+EXTERN_C FCDECL1_F(float, Rhp_asinhf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_atan, double x);
+EXTERN_C FCDECL1_F(float, Rhp_atanf, float x);
+EXTERN_C FCDECL2_DD(double, Rhp_atan2, double y, double x);
+EXTERN_C FCDECL2_FF(float, Rhp_atan2f, float y, float x);
+EXTERN_C FCDECL1_D(double, Rhp_atanh, double x);
+EXTERN_C FCDECL1_F(float, Rhp_atanhf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_cbrt, double x);
+EXTERN_C FCDECL1_F(float, Rhp_cbrtf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_ceil, double x);
+EXTERN_C FCDECL1_F(float, Rhp_ceilf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_cos, double x);
+EXTERN_C FCDECL1_F(float, Rhp_cosf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_cosh, double x);
+EXTERN_C FCDECL1_F(float, Rhp_coshf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_exp, double x);
+EXTERN_C FCDECL1_F(float, Rhp_expf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_floor, double x);
+EXTERN_C FCDECL1_F(float, Rhp_floorf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_log, double x);
+EXTERN_C FCDECL1_F(float, Rhp_logf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_log2, double x);
+EXTERN_C FCDECL1_F(float, Rhp_log2f, float x);
+EXTERN_C FCDECL1_D(double, Rhp_log10, double x);
+EXTERN_C FCDECL1_F(float, Rhp_log10f, float x);
+EXTERN_C FCDECL2_DD(double, Rhp_pow, double x, double y);
+EXTERN_C FCDECL2_FF(float, Rhp_powf, float x, float y);
+EXTERN_C FCDECL1_D(double, Rhp_sin, double x);
+EXTERN_C FCDECL1_F(float, Rhp_sinf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_sinh, double x);
+EXTERN_C FCDECL1_F(float, Rhp_sinhf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_sqrt, double x);
+EXTERN_C FCDECL1_F(float, Rhp_sqrtf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_tan, double x);
+EXTERN_C FCDECL1_F(float, Rhp_tanf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_tanh, double x);
+EXTERN_C FCDECL1_F(float, Rhp_tanhf, float x);
+EXTERN_C FCDECL3_DDD(double, Rhp_fma, double x, double y, double z);
+EXTERN_C FCDECL3_FFF(float, Rhp_fmaf, float x, float y, float z);
+EXTERN_C FCDECL2_DI(double, Rhp_modf, double x, double* intptr);
+EXTERN_C FCDECL2_FI(float, Rhp_modff, float x, float* intptr);
+EXTERN_C FCDECL3_DII(void, Rhp_sincos, double x, double* pSin, double* pCos);
+EXTERN_C FCDECL3_FII(void, Rhp_sincosf, float x, float* pSin, float* pCos);
 
-#define WriteBarrier_Helper JIT_WriteBarrier_Callable
+#ifdef TARGET_32BIT
+EXTERN_C FCDECL2_LL(int64_t, DivInt64Internal, int64_t i, int64_t j);
+EXTERN_C FCDECL2_LL(uint64_t, DivUInt64Internal, uint64_t i, uint64_t j);
+EXTERN_C FCDECL2_LL(int64_t, ModInt64Internal, int64_t i, int64_t j);
+EXTERN_C FCDECL2_LL(uint64_t, ModUInt64Internal, uint64_t i, uint64_t j);
+EXTERN_C FCDECL2(int32_t, DivInt32Internal, int32_t i, int32_t j);
+EXTERN_C FCDECL2(uint32_t, DivUInt32Internal, uint32_t i, uint32_t j);
+EXTERN_C FCDECL2(int32_t, ModInt32Internal, int32_t i, int32_t j);
+EXTERN_C FCDECL2(uint32_t, ModUInt32Internal, uint32_t i, uint32_t j);
 
-EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
+EXTERN_C FCDECL1_L(double, RhpLng2Dbl, int64_t val);
+EXTERN_C FCDECL1_L(double, RhpULng2Dbl, uint64_t val);
+EXTERN_C FCDECL1_L(float, RhpLng2Flt, int64_t val);
+EXTERN_C FCDECL1_L(float, RhpULng2Flt, uint64_t val);
 
-#ifndef HOST_64BIT
+EXTERN_C FCDECL2_LL(int64_t, RhpLMul, int64_t val1, int64_t val2);
+
 #ifdef TARGET_X86
-// JIThelp.asm
-EXTERN_C void STDCALL JIT_LLsh();
-EXTERN_C void STDCALL JIT_LRsh();
-EXTERN_C void STDCALL JIT_LRsz();
+EXTERN_C void STDCALL RhpLLsh();
+EXTERN_C void STDCALL RhpLRsh();
+EXTERN_C void STDCALL RhpLRsz();
+#ifdef TARGET_WINDOWS
+EXTERN_C FCDECL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor);
+EXTERN_C FCDECL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor);
+EXTERN_C FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor);
+EXTERN_C FCDECL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor);
+#endif // TARGET_WINDOWS
 #else // TARGET_X86
-EXTERN_C FCDECL2_VV(UINT64, JIT_LLsh, UINT64 num, int shift);
-EXTERN_C FCDECL2_VV(INT64, JIT_LRsh, INT64 num, int shift);
-EXTERN_C FCDECL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift);
+EXTERN_C FCDECL2(uint64_t, RhpLLsh, uint64_t num, int32_t shift);
+EXTERN_C FCDECL2(int64_t, RhpLRsh, int64_t num, int32_t shift);
+EXTERN_C FCDECL2(uint64_t, RhpLRsz, uint64_t num, int32_t shift);
 #endif // !TARGET_X86
-#endif // !HOST_64BIT
+#endif // TARGET_32BIT
 
 #ifdef TARGET_X86
 
@@ -266,16 +297,16 @@ void ValidateWriteBarrierHelpers();
 
 extern "C"
 {
-    void STDCALL JIT_ByRefWriteBarrier();      // JIThelp.asm/JIThelp.s
-
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
     void STDCALL JIT_TailCall();                    // JIThelp.asm
 #endif // defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 
+#ifdef PROFILING_SUPPORTED
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
+#endif // PROFILING_SUPPORTED
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     // TODO: implement stack probing for other architectures https://github.com/dotnet/runtime/issues/13519
-    void STDCALL JIT_StackProbe();
+    void STDCALL RhpStackProbe();
 #endif // !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 };
 
@@ -310,6 +341,7 @@ class CEEInfo : public ICorJitInfo
     void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
 
     void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
+
 public:
 #include "icorjitinfoimpl_generated.h"
     uint32_t getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);
@@ -370,11 +402,12 @@ public:
                                       TypeHandle typeHnd = TypeHandle() /* optional in */,
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
-    CEEInfo(MethodDesc * fd = NULL)
+    CEEInfo(MethodDesc * fd, PrepareCodeConfig *config)
         : m_pJitHandles(nullptr)
         , m_pMethodBeingCompiled(fd)
         , m_transientDetails(NULL)
         , m_pThread(GetThreadNULLOk())
+        , m_pPrepareCodeConfig(config)
         , m_hMethodForSecurity_Key(NULL)
         , m_pMethodForSecurity_Value(NULL)
 #if defined(FEATURE_GDBJIT)
@@ -419,6 +452,12 @@ public:
                                                    MethodDesc * pTemplateMD /* for method-based slots */,
                                                    MethodDesc * pCallerMD,
                                                    CORINFO_LOOKUP *pResultLookup);
+    void FinishComputeRuntimeLookup(
+        SigBuilder& sig,
+        MethodDesc* pCallerMD,
+        CORINFO_LOOKUP* pResultLookup);
+
+    void ComputeRuntimeLookupForAwaitCall(MethodDesc* pCallerMD, MethodDesc* pTypicalAwaitMD, CORINFO_LOOKUP* lookup);
 
 #if defined(FEATURE_GDBJIT)
     CalledMethod * GetCalledMethods() { return m_pCalledMethods; }
@@ -426,12 +465,12 @@ public:
 
     // Add/Remove/Find transient method details.
     void AddTransientMethodDetails(TransientMethodDetails details);
-    TransientMethodDetails RemoveTransientMethodDetails(MethodDesc* pMD);
     bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
 
 protected:
     COR_ILMETHOD_DECODER* getMethodInfoWorker(
         MethodDesc* ftn,
+        MethodDesc* ilFtn,
         COR_ILMETHOD_DECODER* header,
         CORINFO_METHOD_INFO* methInfo,
         CORINFO_CONTEXT_HANDLE exactContext = NULL);
@@ -441,6 +480,7 @@ protected:
     MethodDesc*             m_pMethodBeingCompiled; // Top-level method being compiled
     SArray<TransientMethodDetails, FALSE>* m_transientDetails;   // Transient details for dynamic codegen scenarios.
     Thread *                m_pThread;              // Cached current thread for faster JIT-EE transitions
+    PrepareCodeConfig*      m_pPrepareCodeConfig;
     CORJIT_FLAGS            m_jitFlags;
 
     CORINFO_METHOD_HANDLE getMethodBeingCompiled()
@@ -495,6 +535,19 @@ public:
 
         if (m_pNativeVarInfo != NULL)
             freeArrayInternal(m_pNativeVarInfo);
+
+#ifdef FEATURE_PGO
+        if (m_foundPgoData != NULL)
+        {
+            ComputedPgoData* current = m_foundPgoData;
+            while (current != NULL)
+            {
+                ComputedPgoData* next = current->m_next;
+                delete current;
+                current = next;
+            }
+        }
+#endif
     }
 
     virtual void ResetForJitRetry()
@@ -544,6 +597,8 @@ public:
     }
 
     // ICorDebugInfo stuff.
+    void getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
+                 bool *extendOthers) override final;
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
@@ -589,6 +644,22 @@ public:
     CORINFO_METHOD_INFO* getMethodInfoInternal();
     CORJIT_FLAGS* getJitFlagsInternal();
 
+    HRESULT allocPgoInstrumentationBySchema(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema* pSchema, /* IN/OUT */
+            uint32_t countSchemaItems, /* IN */
+            uint8_t** pInstrumentationData /* OUT */
+            ) override;
+
+    HRESULT getPgoInstrumentationResults(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema** pSchema, /* OUT */
+            uint32_t* pCountSchemaItems, /* OUT */
+            uint8_t**pInstrumentationData, /* OUT */
+            PgoSource *pPgoSource, /* OUT */
+            bool* pDynamicPgo /* OUT */
+            ) override;
+
 protected:
 
     template <typename TCodeHeader>
@@ -620,6 +691,24 @@ protected:
     HeapList*               m_pCodeHeap;
     COR_ILMETHOD_DECODER*   m_ILHeader;     // the code header to use. This may have been generated due to dynamic IL generation.
     CORINFO_METHOD_INFO     m_MethodInfo;
+
+#ifdef FEATURE_PGO
+    // PGO data
+    struct ComputedPgoData
+    {
+        ComputedPgoData(MethodDesc* pMD) : m_pMD(pMD) {}
+
+        ComputedPgoData* m_next = nullptr;
+        MethodDesc *m_pMD;
+        NewArrayHolder<BYTE> m_allocatedData;
+        PgoInstrumentationSchema* m_schema = nullptr;
+        UINT32 m_cSchemaElems;
+        BYTE *m_pInstrumentationData = nullptr;
+        HRESULT m_hr = E_NOTIMPL;
+        PgoSource m_pgoSource = PgoSource::Unknown;
+    };
+    ComputedPgoData*        m_foundPgoData = nullptr;
+#endif
 
 #if defined(_DEBUG)
     ULONG                   m_codeSize;     // Code size requested via allocMem
@@ -689,22 +778,6 @@ public:
             uint32_t  unwindSize,            /* IN */
             uint8_t * pUnwindBlock,          /* IN */
             CorJitFuncKind funcKind       /* IN */
-            ) override;
-
-    HRESULT allocPgoInstrumentationBySchema(
-            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
-            PgoInstrumentationSchema* pSchema, /* IN/OUT */
-            uint32_t countSchemaItems, /* IN */
-            uint8_t** pInstrumentationData /* OUT */
-            ) override;
-
-    HRESULT getPgoInstrumentationResults(
-            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
-            PgoInstrumentationSchema** pSchema, /* OUT */
-            uint32_t* pCountSchemaItems, /* OUT */
-            uint8_t**pInstrumentationData, /* OUT */
-            PgoSource *pPgoSource, /* OUT */
-            bool* pDynamicPgo /* OUT */
             ) override;
 
     void recordCallSite(
@@ -867,18 +940,6 @@ public:
         if (m_pPatchpointInfoFromJit != NULL)
             freeArrayInternal(m_pPatchpointInfoFromJit);
 #endif
-#ifdef FEATURE_PGO
-        if (m_foundPgoData != NULL)
-        {
-            ComputedPgoData* current = m_foundPgoData;
-            while (current != NULL)
-            {
-                ComputedPgoData* next = current->m_next;
-                delete current;
-                current = next;
-            }
-        }
-#endif
     }
 
     // Override of CEEInfo::GetProfilingHandle.  The first time this is called for a
@@ -898,24 +959,6 @@ public:
     virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
 
 protected :
-
-#ifdef FEATURE_PGO
-    // PGO data
-    struct ComputedPgoData
-    {
-        ComputedPgoData(MethodDesc* pMD) : m_pMD(pMD) {}
-
-        ComputedPgoData* m_next = nullptr;
-        MethodDesc *m_pMD;
-        NewArrayHolder<BYTE> m_allocatedData;
-        PgoInstrumentationSchema* m_schema = nullptr;
-        UINT32 m_cSchemaElems;
-        BYTE *m_pInstrumentationData = nullptr;
-        HRESULT m_hr = E_NOTIMPL;
-        PgoSource m_pgoSource = PgoSource::Unknown;
-    };
-    ComputedPgoData*        m_foundPgoData = nullptr;
-#endif
 
     TADDR                   m_moduleBase;       // Base for unwind Infos
     ULONG                   m_totalUnwindSize;  // Total reserved unwind space
@@ -974,7 +1017,7 @@ public:
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
-    
+
     virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
 };
 #endif // FEATURE_INTERPRETER
@@ -1011,7 +1054,7 @@ struct VMAUXILIARYSYMBOLDEF
     PTR_CSTR name;
 };
 
-#define MAX_AUXILIARY_SYMBOLS 7
+#define MAX_AUXILIARY_SYMBOLS 17
 
 #if defined(DACCESS_COMPILE)
 

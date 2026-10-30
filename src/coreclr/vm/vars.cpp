@@ -68,8 +68,10 @@ GPTR_IMPL(MethodTable,      g_pWeakReferenceOfTClass);
 
 #ifdef DACCESS_COMPILE
 GPTR_IMPL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+GPTR_IMPL(EEClass,          g_singletonContinuationEEClass);
 #else
 GVAL_IMPL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+GVAL_IMPL(Volatile<EEClass*>, g_singletonContinuationEEClass);
 #endif
 
 #ifdef FEATURE_COMINTEROP
@@ -98,6 +100,10 @@ GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 GARY_IMPL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
 #endif // FEATURE_COMWRAPPERS
 
+#ifdef FEATURE_OBJCMARSHAL
+GVAL_IMPL_INIT(OBJECTHANDLE, g_ObjectiveCTrackingInfoTable, NULL);
+#endif // FEATURE_OBJCMARSHAL
+
 #ifdef FEATURE_INTEROP_DEBUGGING
 GVAL_IMPL_INIT(DWORD, g_debuggerWordTLSIndex, TLS_OUT_OF_INDEXES);
 #endif
@@ -112,15 +118,17 @@ GPTR_IMPL(MethodTable,      g_pEHClass);
 GPTR_IMPL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_IMPL(MethodTable,      g_pStackFrameIteratorClass);
 
+GPTR_IMPL(MethodDesc,       g_pEnvironmentCallEntryPointMethodDesc);
+
 GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
 
 #ifndef DACCESS_COMPILE
 
-// <TODO> @TODO - PROMOTE. </TODO>
 OBJECTHANDLE         g_pPreallocatedOutOfMemoryException;
 OBJECTHANDLE         g_pPreallocatedStackOverflowException;
 OBJECTHANDLE         g_pPreallocatedExecutionEngineException;
-OBJECTHANDLE         g_pPreallocatedSentinelObject;
+
+OBJECTREF            g_pPreallocatedSentinelObject = NULL;
 
 //
 //
@@ -160,9 +168,9 @@ GVAL_IMPL_INIT(DWORD, g_externalMethodFixupTraceActiveCount, 0);
 
 #endif // DEBUGGING_SUPPORTED
 
-#if defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
+#ifdef PROFILING_SUPPORTED_DATA
 GVAL_IMPL(ProfControlBlock, g_profControlBlock);
-#endif // defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
+#endif // PROFILING_SUPPORTED_DATA
 
 #ifndef DACCESS_COMPILE
 
@@ -244,11 +252,14 @@ void OBJECTREF_EnumMemoryRegions(OBJECTREF ref)
 //
 // We need the following to be the compiler's notion of volatile.
 //
+#ifdef FEATURE_READONLY_GS_COOKIE
 extern "C" RAW_KEYWORD(volatile) const GSCookie s_gsCookie = 0;
+#else
+extern "C" RAW_KEYWORD(volatile) GSCookie s_gsCookie = 0;
+#endif
 
 #else
 __GlobalVal< GSCookie > s_gsCookie(&DacGlobals::dac__s_gsCookie);
 #endif //!DACCESS_COMPILE
 
 //==============================================================================
-

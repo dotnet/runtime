@@ -132,6 +132,14 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/KerberosPacLogonInfoFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send KerberosPacLogonInfoFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/NrbfDecoderFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send NrbfDecoderFuzzer to OneFuzz
@@ -151,6 +159,14 @@ extends:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/SearchValuesStringFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send SearchValuesStringFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/SslStreamClientHelloFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send SslStreamClientHelloFuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:
@@ -196,7 +212,23 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/WebSocketFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send WebSocketFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/ZipArchiveFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send ZipArchiveFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/ZipEncryptionStreamFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send ZipEncryptionStreamFuzzer to OneFuzz
 # ONEFUZZ_TASK_WORKAROUND_END

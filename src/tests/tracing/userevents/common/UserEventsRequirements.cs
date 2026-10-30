@@ -30,34 +30,33 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static bool IsTracefsMounted()
         {
-            ProcessStartInfo checkTracefsStartInfo = new();
-            checkTracefsStartInfo.FileName = "sudo";
-            checkTracefsStartInfo.Arguments = $"-n test -d {TracefsPath}";
-            checkTracefsStartInfo.UseShellExecute = false;
+            ProcessStartInfo checkTracefsStartInfo = new("sudo", ["-n", "test", "-d", TracefsPath]);
+            checkTracefsStartInfo.InheritedHandles = [];
             checkTracefsStartInfo.RedirectStandardOutput = true;
             checkTracefsStartInfo.RedirectStandardError = true;
 
-            using Process checkTracefs = new() { StartInfo = checkTracefsStartInfo };
-            checkTracefs.OutputDataReceived += (_, e) =>
+            using Process process = Process.Start(checkTracefsStartInfo)!;
+            foreach (ProcessOutputLine line in process.ReadAllLines())
             {
-                if (!string.IsNullOrEmpty(e.Data))
+                if (string.IsNullOrEmpty(line.Content))
                 {
-                    Console.WriteLine($"[tracefs-check] {e.Data}");
+                    continue;
                 }
-            };
-            checkTracefs.ErrorDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    Console.Error.WriteLine($"[tracefs-check] {e.Data}");
-                }
-            };
 
-            checkTracefs.Start();
-            checkTracefs.BeginOutputReadLine();
-            checkTracefs.BeginErrorReadLine();
-            checkTracefs.WaitForExit();
-            if (checkTracefs.ExitCode == 0)
+                if (line.StandardError)
+                {
+                    Console.Error.WriteLine($"[tracefs-check] {line.Content}");
+                }
+                else
+                {
+                    Console.WriteLine($"[tracefs-check] {line.Content}");
+                }
+            }
+
+            // A process can close its std handles but keep running.
+            ProcessExitStatus status = process.WaitForExitStatus();
+
+            if (status.ExitCode == 0)
             {
                 return true;
             }
@@ -68,34 +67,33 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static bool IsUserEventsDataAvailable()
         {
-            ProcessStartInfo checkUserEventsDataStartInfo = new();
-            checkUserEventsDataStartInfo.FileName = "sudo";
-            checkUserEventsDataStartInfo.Arguments = $"-n test -e {UserEventsDataPath}";
-            checkUserEventsDataStartInfo.UseShellExecute = false;
+            ProcessStartInfo checkUserEventsDataStartInfo = new("sudo", ["-n", "test", "-e", UserEventsDataPath]);
+            checkUserEventsDataStartInfo.InheritedHandles = [];
             checkUserEventsDataStartInfo.RedirectStandardOutput = true;
             checkUserEventsDataStartInfo.RedirectStandardError = true;
 
-            using Process checkUserEventsData = new() { StartInfo = checkUserEventsDataStartInfo };
-            checkUserEventsData.OutputDataReceived += (_, e) =>
+            using Process process = Process.Start(checkUserEventsDataStartInfo)!;
+            foreach (ProcessOutputLine line in process.ReadAllLines())
             {
-                if (!string.IsNullOrEmpty(e.Data))
+                if (string.IsNullOrEmpty(line.Content))
                 {
-                    Console.WriteLine($"[user-events-check] {e.Data}");
+                    continue;
                 }
-            };
-            checkUserEventsData.ErrorDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    Console.Error.WriteLine($"[user-events-check] {e.Data}");
-                }
-            };
 
-            checkUserEventsData.Start();
-            checkUserEventsData.BeginOutputReadLine();
-            checkUserEventsData.BeginErrorReadLine();
-            checkUserEventsData.WaitForExit();
-            if (checkUserEventsData.ExitCode == 0)
+                if (line.StandardError)
+                {
+                    Console.Error.WriteLine($"[user-events-check] {line.Content}");
+                }
+                else
+                {
+                    Console.WriteLine($"[user-events-check] {line.Content}");
+                }
+            }
+
+            // A process can close its std handles but keep running.
+            ProcessExitStatus status = process.WaitForExitStatus();
+
+            if (status.ExitCode == 0)
             {
                 return true;
             }
@@ -106,34 +104,15 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static bool IsGlibcAtLeast(Version minVersion)
         {
-            ProcessStartInfo lddStartInfo = new();
-            lddStartInfo.FileName = "ldd";
-            lddStartInfo.Arguments = "--version";
-            lddStartInfo.UseShellExecute = false;
+            ProcessStartInfo lddStartInfo = new("ldd", ["--version"]);
+            lddStartInfo.InheritedHandles = [];
             lddStartInfo.RedirectStandardOutput = true;
             lddStartInfo.RedirectStandardError = true;
 
-            using Process lddProcess = new() { StartInfo = lddStartInfo };
-            string? detectedVersionLine = null;
-
-            lddProcess.OutputDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data) && detectedVersionLine is null)
-                {
-                    detectedVersionLine = e.Data;
-                }
-            };
-            lddProcess.ErrorDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    Console.Error.WriteLine($"[ldd] {e.Data}");
-                }
-            };
-
+            ProcessTextOutput result;
             try
             {
-                lddProcess.Start();
+                result = Process.RunAndCaptureText(lddStartInfo);
             }
             catch (Exception ex)
             {
@@ -141,13 +120,29 @@ namespace Tracing.UserEvents.Tests.Common
                 return false;
             }
 
-            lddProcess.BeginOutputReadLine();
-            lddProcess.BeginErrorReadLine();
-            lddProcess.WaitForExit();
-
-            if (lddProcess.ExitCode != 0)
+            foreach (string rawLine in result.StandardError.Split('\n'))
             {
-                Console.WriteLine($"'ldd --version' exited with code {lddProcess.ExitCode}.");
+                string line = rawLine.TrimEnd('\r');
+                if (!string.IsNullOrEmpty(line))
+                {
+                    Console.Error.WriteLine($"[ldd] {line}");
+                }
+            }
+
+            string? detectedVersionLine = null;
+            foreach (string rawLine in result.StandardOutput.Split('\n'))
+            {
+                string line = rawLine.TrimEnd('\r');
+                if (!string.IsNullOrEmpty(line))
+                {
+                    detectedVersionLine = line;
+                    break;
+                }
+            }
+
+            if (result.ExitStatus.ExitCode != 0)
+            {
+                Console.WriteLine($"'ldd --version' exited with code {result.ExitStatus.ExitCode}.");
                 return false;
             }
 

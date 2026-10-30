@@ -71,10 +71,13 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
     // out-of-order destruction of the contract object, resulting in very odd crashes later.
     //
 #if 0
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 #endif // 0
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -139,68 +142,6 @@ void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStruc
 }
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
-// Helper for VM->managed calls with simple signatures.
-void* DispatchCallSimple(
-    SIZE_T *pSrc,
-    DWORD numStackSlotsToCopy,
-    PCODE pTargetAddress,
-    BOOL fCriticalCall)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-#ifdef DEBUGGING_SUPPORTED
-    if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall((const BYTE *)pTargetAddress);
-#endif // DEBUGGING_SUPPORTED
-
-    CallDescrData callDescrData;
-
-#ifdef CALLDESCR_ARGREGS
-    callDescrData.pSrc = pSrc + NUM_ARGUMENT_REGISTERS;
-    callDescrData.numStackSlots = numStackSlotsToCopy;
-    callDescrData.pArgumentRegisters = (ArgumentRegisters *)pSrc;
-#else
-    callDescrData.pSrc = pSrc;
-    callDescrData.numStackSlots = numStackSlotsToCopy;
-#endif
-
-#ifdef CALLDESCR_RETBUFFARGREG
-    UINT64 retBuffArgPlaceholder = 0;
-    callDescrData.pRetBuffArg = &retBuffArgPlaceholder;
-#endif
-
-#ifdef CALLDESCR_FPARGREGS
-    callDescrData.pFloatArgumentRegisters = NULL;
-#endif
-#ifdef CALLDESCR_REGTYPEMAP
-    callDescrData.dwRegTypeMap = 0;
-#endif
-    callDescrData.fpReturnSize = 0;
-    callDescrData.pTarget = pTargetAddress;
-
-#ifdef TARGET_WASM
-    static_assert(2*sizeof(ARGHOLDER_TYPE) == INTERP_STACK_SLOT_SIZE);
-    callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE)*2;
-    callDescrData.hasRetBuff = false;
-    LPVOID pOrigSrc = callDescrData.pSrc;
-    callDescrData.pSrc = (LPVOID)_alloca(callDescrData.nArgsSize);
-    for (int i = 0; i < numStackSlotsToCopy; i++)
-    {
-        ((ARGHOLDER_TYPE*)callDescrData.pSrc)[i*2] = ((ARGHOLDER_TYPE*)pOrigSrc)[i];
-    }
-#endif // TARGET_WASM
-
-    CallDescrWorkerWithHandler(&callDescrData, fCriticalCall);
-
-    return *(void **)(&callDescrData.returnValue);
-}
-
 #ifdef CALLDESCR_REGTYPEMAP
 //*******************************************************************************
 void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap)
@@ -248,7 +189,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_COOPERATIVE;
         PRECONDITION(GetAppDomain()->CheckCanExecuteManagedCode(m_pMD));
         PRECONDITION(m_pMD->CheckActivated());          // EnsureActive will trigger, so we must already be activated
@@ -282,9 +222,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         GCX_FORBID();
 
         //
-        // All types must already be loaded. This macro also sets up a FAULT_FORBID region which is
-        // also required for critical calls since we cannot inject any failure points between the
-        // caller of MethodDesc::CallDescr and the actual transition to managed code.
+        // All types must already be loaded.
         //
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
@@ -401,6 +339,15 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 argDest.CopyStructToRegisters(pSrc, th.AsMethodTable()->GetNumInstanceFieldBytes(), 0);
             }
             else
+#elif defined(TARGET_ARM64)
+            if (argDest.IsHFA())
+            {
+                // An HFA/HVA struct argument is enregistered with each field in its own
+                // floating-point/vector register. Expand the packed struct data into the
+                // register slots instead of copying it verbatim.
+                argDest.CopyHFAStructToRegister(pSrc, stackSize);
+            }
+            else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if (argDest.IsStructPassedInRegs())
             {
@@ -454,6 +401,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
                         if (m_argIt.IsArgPassedByRef())
                         {
+                            _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsHeapPointer(pSrc));
                             *(PVOID*)pDest = pSrc;
                         }
                         else
@@ -497,6 +445,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 #ifdef TARGET_WASM
     callDescrData.nArgsSize = nStackBytes;
     callDescrData.hasRetBuff = false;
+    callDescrData.pTransitionBlock = (TransitionBlock*)pTransitionBlock;
     _ASSERTE(!m_argIt.HasRetBuffArg());
 #endif // TARGET_WASM
 
@@ -559,11 +508,22 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     GCPROTECT_BEGIN (ref);
 
-    MethodDesc *pMD = pMT->GetDefaultConstructor();
+    PCODE ctorCode;
+    {
+        GCX_PREEMP();
+        MethodDesc *pMD = pMT->GetDefaultConstructor();
+        ctorCode = pMD->GetSingleCallableAddrOfCode();
+    }
 
     UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
 
-    defaultCtorInvoker.InvokeThrowing(&ref, pMD->GetSingleCallableAddrOfCode());
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // CallDefaultConstructor invokes the ctor via the function pointer, so its portable entrypoint
+    // must resolve to real code if possible.
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(ctorCode);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    defaultCtorInvoker.InvokeThrowing(&ref, ctorCode);
 
     GCPROTECT_END ();
 }

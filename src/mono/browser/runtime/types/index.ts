@@ -60,6 +60,14 @@ export interface DotnetHostBuilder {
      */
     withApplicationCulture(applicationCulture?: string): DotnetHostBuilder;
     /**
+     * Sets a callback that is invoked after each resource finishes downloading.
+     */
+    withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder;
+    /**
+     * Sets a callback that is invoked after the runtime configuration is loaded.
+     */
+    withConfigLoaded(callback?: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder;
+    /**
      * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
      * from a custom source, such as an external CDN.
      */
@@ -220,7 +228,6 @@ export interface Assets {
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
 
-    jsModuleWorker?: JsAsset[];
     jsModuleDiagnostics?: JsAsset[];
     jsModuleNative: JsAsset[];
     jsModuleRuntime: JsAsset[];
@@ -292,6 +299,7 @@ export type JsAsset = Asset & {
 
 export type SymbolsAsset = Asset & {
     name: string; // actually URL
+    hash?: string | null | "";
     cache?: RequestCache;
 }
 
@@ -400,10 +408,6 @@ export type SingleAssetBehaviors =
      */
     | "js-module-dotnet"
     /**
-     * The javascript module for threads.
-     */
-    | "js-module-threads"
-    /**
      * The javascript module for diagnostic server and client.
      */
     | "js-module-diagnostics"
@@ -475,10 +479,6 @@ export const enum GlobalizationMode {
 
 export type DotnetModuleConfig = {
     config?: MonoConfig,
-    onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
-    onDotnetReady?: () => void | Promise<void>;
-    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
-
     imports?: any;
     exports?: string[];
 } & Partial<EmscriptenModule>
@@ -703,7 +703,7 @@ export type DiagnosticsAPIType = {
 export type DiagnosticCommandProviderV2 = {
     keywords: [ number, number ],
     logLevel: number,
-    provider_name: string,
+    providerName: string,
     arguments: string|null
 }
 

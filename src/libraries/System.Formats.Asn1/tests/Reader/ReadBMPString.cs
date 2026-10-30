@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -33,6 +36,16 @@ namespace System.Formats.Asn1.Tests.Reader
 
     public abstract class ReadBMPStringBase
     {
+        public static IEnumerable<object[]> VectorBoundaryLengths
+        {
+            get
+            {
+                yield return new object[] { Vector<ushort>.Count - 1 };
+                yield return new object[] { Vector<ushort>.Count };
+                yield return new object[] { Vector<ushort>.Count + 1 };
+            }
+        }
+
         internal abstract AsnReaderWrapper CreateWrapper(
             ReadOnlyMemory<byte> data,
             AsnEncodingRules ruleSet,
@@ -144,6 +157,74 @@ namespace System.Formats.Asn1.Tests.Reader
                     "Dr. & Mrs. Smith\u2010Jones \uFE60 children",
                 },
             };
+
+        [Theory]
+        [MemberData(nameof(VectorBoundaryLengths))]
+        public void ReadBMPString_DoesNotAccessOutsideBounds(int charCount)
+        {
+            int payloadLength = charCount * sizeof(ushort);
+            AssertExtensions.LessThan(payloadLength, 128);
+
+            using BoundedMemory<byte> encoded = BoundedMemory.Allocate<byte>(payloadLength + 2);
+            using BoundedMemory<char> destination = BoundedMemory.Allocate<char>(charCount);
+
+            encoded.Span[0] = (byte)UniversalTagNumber.BMPString;
+            encoded.Span[1] = (byte)payloadLength;
+
+            for (int i = 0; i < charCount; i++)
+            {
+                char value = i % 2 == 0 ? '\uD7FF' : '\uE000';
+                int byteIndex = 2 + (i * sizeof(ushort));
+                encoded.Span[byteIndex] = (byte)(value >> 8);
+                encoded.Span[byteIndex + 1] = (byte)value;
+            }
+
+            encoded.MakeReadonly();
+
+            AsnReaderWrapper reader = CreateWrapper(encoded.Memory, AsnEncodingRules.DER);
+            Assert.True(reader.TryCopyBMPString(destination.Span, out int charsWritten));
+            Assert.Equal(charCount, charsWritten);
+
+            for (int i = 0; i < charsWritten; i++)
+            {
+                Assert.Equal(i % 2 == 0 ? '\uD7FF' : '\uE000', destination.Span[i]);
+            }
+        }
+
+        [Theory]
+        [InlineData(true, '\uD800')]
+        [InlineData(true, '\uDFFF')]
+        [InlineData(false, '\uD800')]
+        [InlineData(false, '\uDFFF')]
+        public void ReadBMPString_InvalidSurrogateInVectorOrTail(bool invalidInVector, char invalidValue)
+        {
+            int invalidIndex = invalidInVector ? 1 : Vector<ushort>.Count;
+            int charCount = Vector<ushort>.Count + 1;
+            int payloadLength = charCount * sizeof(ushort);
+            AssertExtensions.LessThan(payloadLength, 128);
+
+            byte[] encoded = new byte[payloadLength + 2];
+            encoded[0] = (byte)UniversalTagNumber.BMPString;
+            encoded[1] = (byte)payloadLength;
+
+            for (int i = 2; i < encoded.Length; i += sizeof(ushort))
+            {
+                encoded[i] = 0;
+                encoded[i + 1] = (byte)'A';
+            }
+
+            encoded[2 + (invalidIndex * sizeof(ushort))] = (byte)(invalidValue >> 8);
+            encoded[3 + (invalidIndex * sizeof(ushort))] = (byte)invalidValue;
+
+            AsnContentException exception = Assert.Throws<AsnContentException>(
+                () => AsnDecoder.ReadCharacterString(
+                    encoded,
+                    AsnEncodingRules.DER,
+                    UniversalTagNumber.BMPString,
+                    out _));
+            DecoderFallbackException fallback = Assert.IsType<DecoderFallbackException>(exception.InnerException);
+            Assert.Equal(invalidIndex * sizeof(ushort), fallback.Index);
+        }
 
         [Theory]
         [MemberData(nameof(ValidEncodingData))]

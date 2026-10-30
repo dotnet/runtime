@@ -266,6 +266,7 @@ class Diff:
             "-spmi_location", self.spmi_location,
             "-error_limit", "100",
             "--summary_as_json",
+            "-full_ir_checks",
             "-log_level", "debug",
             "-log_file", log_file] + self.create_jit_options_args())
 
@@ -369,6 +370,10 @@ class Diff:
         if self.coreclr_args.diff_jit_options is not None:
             for v in self.coreclr_args.diff_jit_options.split(';'):
                 options += "-diff_jit_option", v
+
+        # The wasm jit is a cross-target altjit; superpmi must be told to load it as one.
+        if self.arch_name == "wasm":
+            options += ["--altjit"]
 
         return options
 

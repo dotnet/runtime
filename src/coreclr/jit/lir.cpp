@@ -1630,6 +1630,12 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         // Verify that the node is allowed in LIR.
         assert(node->OperIsLIR());
 
+        if (node->isContained())
+        {
+            assert(node->canBeContained());
+            assert(!node->IsUnusedValue());
+        }
+
         // Some nodes should never be marked unused, as they must be contained in the backend.
         // These may be marked as unused during dead code elimination traversal, but they *must* be subsequently
         // removed.

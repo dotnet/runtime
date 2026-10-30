@@ -313,7 +313,9 @@ load_cattr_value (MonoImage *image, MonoType *t, MonoObject **out_obj, const cha
 {
 	int type = t->type;
 	guint32 slen;
-	MonoClass *tklass = m_type_data_get_klass (t);
+	MonoClass *tklass = NULL;
+	if (type != MONO_TYPE_GENERICINST)
+		tklass = m_type_data_get_klass (t);
 
 	if (out_obj)
 		*out_obj = NULL;
@@ -858,7 +860,7 @@ load_cattr_value_boxed (MonoDomain *domain, MonoImage *image, MonoType *t, const
 		gpointer val = load_cattr_value (image, t, &obj, p, boundp, end, error);
 		if (!is_ok (error))
 			return NULL;
-		g_assert (!val);
+		g_assert ((!val) || (val && t->type == MONO_TYPE_GENERICINST));
 		return obj;
 	} else {
 		void *val = load_cattr_value (image, t, NULL, p, boundp, end, error);

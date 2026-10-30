@@ -24,6 +24,9 @@ namespace System.Formats.Tar
         private const string GnuMagic = "ustar ";
         private const string GnuVersion = " \0";
 
+        // Maximum allowed size for metadata sections (PAX extended attributes, GNU LongPath/LongLink).
+        private const int MaxMetadataBlockSize = 1024 * 1024;
+
         // Names of PAX extended attributes commonly found fields
         internal const string PaxEaName = "path";
         internal const string PaxEaLinkName = "linkpath";
@@ -38,6 +41,12 @@ namespace System.Formats.Tar
         internal const string PaxEaSize = "size";
         internal const string PaxEaDevMajor = "devmajor";
         internal const string PaxEaDevMinor = "devminor";
+
+        // Names of GNU sparse extended attributes (used with GNU sparse format 1.0 encoded via PAX)
+        private const string PaxEaGnuSparseName = "GNU.sparse.name";
+        private const string PaxEaGnuSparseRealSize = "GNU.sparse.realsize";
+        private const string PaxEaGnuSparseMajor = "GNU.sparse.major";
+        private const string PaxEaGnuSparseMinor = "GNU.sparse.minor";
 
         internal Stream? _dataStream;
         internal long _dataOffset;
@@ -77,6 +86,21 @@ namespace System.Formats.Tar
         private Dictionary<string, string>? _ea;
         internal Dictionary<string, string> ExtendedAttributes => _ea ??= new Dictionary<string, string>();
 
+        // When a GNU sparse 1.0 PAX entry is read, the real (expanded) file size is stored here.
+        // This is separate from _size which holds the archive data size and is used for data stream reading.
+        internal long _gnuSparseRealSize;
+
+        // Set to true when GNU.sparse.major=1 is present in the PAX extended attributes,
+        // indicating this is a GNU sparse format 1.0 entry whose data section contains an
+        // embedded sparse map followed by the packed data segments.
+        internal bool _isGnuSparse10;
+
+        // When _isGnuSparse10 is true, this wraps _dataStream and presents the expanded virtual
+        // file content. _dataStream remains the raw (condensed) stream so that TarWriter can
+        // round-trip the original sparse data and AdvanceDataStreamIfNeeded works without
+        // special-casing.
+        internal GnuSparseStream? _gnuSparseDataStream;
+
         // GNU attributes
 
         internal DateTimeOffset _aTime;
@@ -106,6 +130,9 @@ namespace System.Formats.Tar
             _checksum = other._checksum;
             _linkName = other._linkName;
             _dataStream = other._dataStream;
+            _gnuSparseRealSize = other._gnuSparseRealSize;
+            _isGnuSparse10 = other._isGnuSparse10;
+            _gnuSparseDataStream = other._gnuSparseDataStream;
         }
 
         internal void AddExtendedAttributes(IEnumerable<KeyValuePair<string, string>> existing)
@@ -118,19 +145,22 @@ namespace System.Formats.Tar
             {
                 KeyValuePair<string, string> kvp = enumerator.Current;
 
-                int index = kvp.Key.AsSpan().IndexOfAny('=', '\n');
-                if (index >= 0)
-                {
-                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, kvp.Key, kvp.Key[index] == '\n' ? "\\n" : kvp.Key[index]));
-                }
-                if (kvp.Value.Contains('\n'))
-                {
-                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedValueChar, kvp.Key, "\\n"));
-                }
-
+                ValidateExtendedAttribute(kvp);
                 _ea ??= new Dictionary<string, string>();
-
                 _ea.Add(kvp.Key, kvp.Value);
+            }
+        }
+
+        private static void ValidateExtendedAttribute(KeyValuePair<string, string> extendedAttribute)
+        {
+            int index = extendedAttribute.Key.AsSpan().IndexOfAny('=', '\n');
+            if (index >= 0)
+            {
+                throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, extendedAttribute.Key, extendedAttribute.Key[index] == '\n' ? "\\n" : extendedAttribute.Key[index]));
+            }
+            if (extendedAttribute.Value.Contains('\n'))
+            {
+                throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedValueChar, extendedAttribute.Key, "\\n"));
             }
         }
 
@@ -186,7 +216,10 @@ namespace System.Formats.Tar
         // Only updates if the format is PAX and the ExtendedAttributes dictionary has been initialized.
         // Uses the same logic as CollectExtendedAttributesFromStandardFieldsIfNeeded to determine
         // whether to add or remove the attribute.
-        internal void SyncNumericExtendedAttribute(string key, int value, int maxNonextendedValue)
+        // Unix uid_t and gid_t are unsigned: a negative value represents an id larger than int.MaxValue.
+        internal static long UidGidAsUnsigned(int value) => unchecked((uint)value);
+
+        internal void SyncNumericExtendedAttribute(string key, long value, int maxNonextendedValue)
         {
             if (_format == TarEntryFormat.Pax && _ea is not null)
             {
@@ -236,8 +269,8 @@ namespace System.Formats.Tar
             }
 
             AddOrRemoveNumericField(ea, PaxEaSize, _size, Octal12ByteFieldMaxValue, removeIfUnneeded);
-            AddOrRemoveNumericField(ea, PaxEaUid, _uid, Octal8ByteFieldMaxValue, removeIfUnneeded);
-            AddOrRemoveNumericField(ea, PaxEaGid, _gid, Octal8ByteFieldMaxValue, removeIfUnneeded);
+            AddOrRemoveNumericField(ea, PaxEaUid, UidGidAsUnsigned(_uid), Octal8ByteFieldMaxValue, removeIfUnneeded);
+            AddOrRemoveNumericField(ea, PaxEaGid, UidGidAsUnsigned(_gid), Octal8ByteFieldMaxValue, removeIfUnneeded);
             AddOrRemoveNumericField(ea, PaxEaDevMajor, _devMajor, Octal8ByteFieldMaxValue, removeIfUnneeded);
             AddOrRemoveNumericField(ea, PaxEaDevMinor, _devMinor, Octal8ByteFieldMaxValue, removeIfUnneeded);
 

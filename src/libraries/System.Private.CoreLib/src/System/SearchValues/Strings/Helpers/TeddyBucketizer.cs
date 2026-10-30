@@ -72,7 +72,7 @@ namespace System.Buffers
             return (Vector512.Create(low), Vector512.Create(high));
         }
 
-        public static string[][] Bucketize(ReadOnlySpan<string> values, int bucketCount, int n)
+        public static unsafe string[][] Bucketize(ReadOnlySpan<string> values, int bucketCount, int n)
         {
             Debug.Assert(bucketCount == 8, "This may change if we end up supporting the 'fat Teddy' variant.");
             Debug.Assert(values.Length > bucketCount, "Should be using a non-bucketized implementation.");

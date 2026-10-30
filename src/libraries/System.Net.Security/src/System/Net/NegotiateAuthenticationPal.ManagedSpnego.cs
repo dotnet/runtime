@@ -182,7 +182,19 @@ namespace System.Net
                                                 mechBlob = null;
                                                 _optimisticMechanism?.Dispose();
                                                 _optimisticMechanism = null;
-                                                if (statusCode != NegotiateAuthenticationStatusCode.Unsupported)
+
+                                                // When an optimistic mechanism (e.g. Kerberos) is unavailable, fall
+                                                // back to the next offered mechanism (NTLM) instead of failing the
+                                                // whole exchange. NTLM is always the last mechanism, so a fallback is
+                                                // only attempted when another mechanism follows. A missing Kerberos
+                                                // KDC/TGT is reported by the GSS-API as UnknownCredentials
+                                                // (GSS_S_NO_CRED) - on MIT krb5 (Linux) as well as Heimdal (OpenBSD) -
+                                                // so that status is also treated as recoverable.
+                                                bool canFallBackToNextMechanism = packageAndOid.Key != NegotiationInfoClass.NTLM;
+                                                bool isRecoverableOptimisticFailure =
+                                                    statusCode == NegotiateAuthenticationStatusCode.Unsupported ||
+                                                    statusCode == NegotiateAuthenticationStatusCode.UnknownCredentials;
+                                                if (!canFallBackToNextMechanism || !isRecoverableOptimisticFailure)
                                                 {
                                                     return null;
                                                 }

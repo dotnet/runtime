@@ -2235,12 +2235,12 @@ namespace System.Numerics.Tests
         [Fact]
         public static void TryConvertToCheckedDecimalTest()
         {
-            Assert.Equal(-79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<Complex>(-79228162514264333195497439231.0));
+            Assert.Equal(-79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateChecked<Complex>(-79228162514264333195497439231.0));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<Complex>(-1.0));
             Assert.Equal(-0.0m, NumberBaseHelper<decimal>.CreateChecked<Complex>(-0.0));
             Assert.Equal(+0.0m, NumberBaseHelper<decimal>.CreateChecked<Complex>(+0.0));
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateChecked<Complex>(+1.0));
-            Assert.Equal(+79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<Complex>(+79228162514264333195497439231.0));
+            Assert.Equal(+79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateChecked<Complex>(+79228162514264333195497439231.0));
         }
 
         [Fact]

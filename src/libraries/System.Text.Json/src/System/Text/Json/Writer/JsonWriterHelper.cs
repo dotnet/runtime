@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Text.Encodings.Web;
 using System.Text.Unicode;
 
 namespace System.Text.Json
@@ -40,8 +39,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateNewLine(string value)
         {
-            if (value is null)
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             if (value is not JsonConstants.NewLineLineFeed and not JsonConstants.NewLineCarriageReturnLineFeed)
                 ThrowHelper.ThrowArgumentOutOfRangeException_NewLine(nameof(value));
@@ -213,7 +211,7 @@ namespace System.Text.Json
                 val = utf8FormattedNumber[i];
             }
 
-            if (val == 'e' || val == 'E')
+            if (val is (byte)'e' or (byte)'E')
             {
                 i++;
 
@@ -224,7 +222,7 @@ namespace System.Text.Json
 
                 val = utf8FormattedNumber[i];
 
-                if (val == '+' || val == '-')
+                if (val is (byte)'+' or (byte)'-')
                 {
                     i++;
                 }
@@ -302,9 +300,9 @@ namespace System.Text.Json
 
         internal delegate T WriteCallback<T>(ReadOnlySpan<byte> serializedValue);
 
-        internal static T WriteString<T>(ReadOnlySpan<byte> utf8Value, WriteCallback<T> writeCallback)
+        internal static unsafe T WriteString<T>(ReadOnlySpan<byte> utf8Value, WriteCallback<T> writeCallback)
         {
-            int firstByteToEscape = JsonWriterHelper.NeedsEscaping(utf8Value, JavaScriptEncoder.Default);
+            int firstByteToEscape = JsonWriterHelper.NeedsEscaping(utf8Value, encoder: null);
 
             if (firstByteToEscape == -1)
             {
@@ -325,7 +323,7 @@ namespace System.Text.Json
                 }
                 finally
                 {
-                    if (rented != null)
+                    if (rented is not null)
                     {
                         ArrayPool<byte>.Shared.Return(rented);
                     }
@@ -353,14 +351,14 @@ namespace System.Text.Json
                     }
 
                     escapedValue[0] = JsonConstants.Quote;
-                    JsonWriterHelper.EscapeString(utf8Value, escapedValue.Slice(1), firstByteToEscape, JavaScriptEncoder.Default, out int written);
+                    JsonWriterHelper.EscapeString(utf8Value, escapedValue.Slice(1), firstByteToEscape, encoder: null, out int written);
                     escapedValue[1 + written] = JsonConstants.Quote;
 
                     return writeCallback(escapedValue.Slice(0, written + 2));
                 }
                 finally
                 {
-                    if (rented != null)
+                    if (rented is not null)
                     {
                         ArrayPool<byte>.Shared.Return(rented);
                     }

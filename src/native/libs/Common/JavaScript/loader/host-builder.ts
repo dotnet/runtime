@@ -4,6 +4,7 @@
 import type { DotnetHostBuilder, LoaderConfig, RuntimeAPI, LoadBootResourceCallback, DotnetModuleConfig } from "./types";
 
 import { Module, dotnetApi } from "./cross-module";
+import { extractLegacyModuleCallbacks, loaderCallbacks } from "./callbacks";
 import { loaderConfig, mergeLoaderConfig, validateLoaderConfig } from "./config";
 import { createRuntime } from "./run";
 import { exit } from "./exit";
@@ -91,6 +92,18 @@ export class HostBuilder implements DotnetHostBuilder {
         });
         return this;
     }
+    withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder {
+        loaderCallbacks.downloadResourceProgress = callback;
+        return this;
+    }
+    withConfigLoaded(callback?: (config: LoaderConfig) => void | Promise<void>): DotnetHostBuilder {
+        loaderCallbacks.configLoaded = callback;
+        return this;
+    }
+    withDotnetReady(callback?: () => void | Promise<void>): DotnetHostBuilder {
+        loaderCallbacks.dotnetReady = callback;
+        return this;
+    }
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {
         setLoadBootResourceCallback(loadBootResource);
         return this;
@@ -98,14 +111,14 @@ export class HostBuilder implements DotnetHostBuilder {
 
     // internal
     withModuleConfig(moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
-        Object.assign(Module, moduleConfig);
+        Object.assign(Module, extractLegacyModuleCallbacks(moduleConfig));
         return this;
     }
 
-    async download(): Promise<void> {
+    async download(httpCacheOnly?: boolean): Promise<void> {
         try {
             validateLoaderConfig();
-            return createRuntime(true);
+            return createRuntime(true, httpCacheOnly ?? false);
         } catch (err) {
             exit(1, err);
             throw err;

@@ -8,7 +8,7 @@
 //
 // METHODDESC_REGISTER: UMEntryThunkData*
 //
-NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
+NESTED_ENTRY TheUMEntryPrestub, _TEXT, NoHandler
     PUSH_ARGUMENT_REGISTERS
     // +8 for alignment
     alloc_stack (SIZEOF_MAX_FP_ARG_SPILL + 8)

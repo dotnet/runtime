@@ -18,13 +18,6 @@
 #include "dbgtransportmanager.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 
-#if defined(TARGET_UNIX) || defined(__ANDROID__)
-// Local (in-process) debugging is not supported for UNIX and Android.
-#define SUPPORT_LOCAL_DEBUGGING 0
-#else
-#define SUPPORT_LOCAL_DEBUGGING 1
-#endif
-
 //-----------------------------------------------------------------------------
 // SxS Versioning story for Mscordbi (ICorDebug + friends)
 //-----------------------------------------------------------------------------
@@ -65,6 +58,32 @@
 
 //********** Locals. **********************************************************
 
+#if defined(MSCORDBI_LINKS_PRIVATE_PAL) && defined(HOST_UNIX)
+
+#include <pthread.h>
+
+// Defined later in this file. The DLL_PROCESS_ATTACH path stands up this binary's private PAL.
+BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
+
+static BOOL s_universalDbiInitSucceeded = FALSE;
+
+static void UniversalDbiInitOnce()
+{
+    s_universalDbiInitSucceeded = DbgDllMain(NULL, DLL_PROCESS_ATTACH, NULL);
+}
+
+// The universal DBI does not export DllMain, so the Unix PAL loader never runs the
+// DLL_PROCESS_ATTACH path that stands up this binary's private PAL. Each public export
+// initializes it on first use through this helper instead.
+// PAL_InitializeDLL is itself idempotent, but the same attach path also performs one-time
+// transport setup.
+HRESULT EnsureUniversalDbiInitialized()
+{
+    static pthread_once_t s_initOnce = PTHREAD_ONCE_INIT;
+    pthread_once(&s_initOnce, UniversalDbiInitOnce);
+    return s_universalDbiInitSucceeded ? S_OK : E_FAIL;
+}
+#endif // MSCORDBI_LINKS_PRIVATE_PAL && HOST_UNIX
 
 //********** Code. ************************************************************
 
@@ -114,6 +133,13 @@ STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
 //    Callers will need to call *ppCordb->DebugActiveProcess(pid).
 STDAPI DLLEXPORT CoreCLRCreateCordbObject3(int iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, LPCWSTR dacModulePath, HMODULE hmodTargetCLR, IUnknown** ppCordb)
 {
+#if defined(MSCORDBI_LINKS_PRIVATE_PAL) && defined(HOST_UNIX)
+    HRESULT hrInit = EnsureUniversalDbiInitialized();
+    if (FAILED(hrInit))
+    {
+        return hrInit;
+    }
+#endif
     if (ppCordb == NULL)
     {
         return E_INVALIDARG;
@@ -227,7 +253,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
                 WszGetModuleFileName(hInstance, rcFile);
                 LOG((LF_CORDB, LL_INFO10000,
                     "DI::DbgDllMain: load right side support from file '%s'\n",
-                     rcFile.GetUnicode()));
+                     rcFile.GetUTF8()));
             }
 #endif
 
@@ -430,79 +456,3 @@ STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe,
     _ASSERTE(!"GetRequestedRuntimeInfo not impl");
     return E_NOTIMPL;
 }
-
-#ifdef TARGET_ARM
-BOOL
-DbiGetThreadContext(HANDLE hThread,
-    DT_CONTEXT *lpContext)
-{
-    // if we aren't local debugging this isn't going to work
-#if !defined(HOST_ARM) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
-    _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
-    return FALSE;
-#else
-    BOOL res = FALSE;
-    if (((ULONG)lpContext) & ~0x10)
-    {
-        CONTEXT *ctx = (CONTEXT*)_aligned_malloc(sizeof(CONTEXT), 16);
-        if (ctx)
-        {
-            ctx->ContextFlags = lpContext->ContextFlags;
-            if (::GetThreadContext(hThread, ctx))
-            {
-                *lpContext = *(DT_CONTEXT*)ctx;
-                res = TRUE;
-            }
-
-            _aligned_free(ctx);
-        }
-        else
-        {
-            // malloc does not set the last error, but the caller of GetThreadContext
-            // will expect it to be set on failure.
-            SetLastError(ERROR_OUTOFMEMORY);
-        }
-    }
-    else
-    {
-        res = ::GetThreadContext(hThread, (CONTEXT*)lpContext);
-    }
-
-    return res;
-#endif
-}
-
-BOOL
-DbiSetThreadContext(HANDLE hThread,
-    const DT_CONTEXT *lpContext)
-{
-#if !defined(HOST_ARM) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
-    _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
-    return FALSE;
-#else
-    BOOL res = FALSE;
-    if (((ULONG)lpContext) & ~0x10)
-    {
-        CONTEXT *ctx = (CONTEXT*)_aligned_malloc(sizeof(CONTEXT), 16);
-        if (ctx)
-        {
-            *ctx = *(CONTEXT*)lpContext;
-            res = ::SetThreadContext(hThread, ctx);
-            _aligned_free(ctx);
-        }
-        else
-        {
-            // malloc does not set the last error, but the caller of SetThreadContext
-            // will expect it to be set on failure.
-            SetLastError(ERROR_OUTOFMEMORY);
-        }
-    }
-    else
-    {
-        res = ::SetThreadContext(hThread, (CONTEXT*)lpContext);
-    }
-
-    return res;
-#endif
-}
-#endif

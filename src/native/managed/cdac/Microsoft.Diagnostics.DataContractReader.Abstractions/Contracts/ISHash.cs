@@ -12,11 +12,10 @@ public interface ITraits<TKey, TEntry>
     bool Equals(TKey left, TKey right);
     uint Hash(TKey key);
     bool IsNull(TEntry entry);
-    TEntry Null();
     bool IsDeleted(TEntry entry);
 }
 
-public interface ISHash<TKey, TEntry> where TEntry : IData<TEntry>
+public interface ISHash<TKey, TEntry> where TEntry : class, IData<TEntry>
 {
 
 }
@@ -24,8 +23,8 @@ public interface ISHash<TKey, TEntry> where TEntry : IData<TEntry>
 public interface ISHash : IContract
 {
     static string IContract.Name { get; } = nameof(SHash);
-    public TEntry LookupSHash<TKey, TEntry>(ISHash<TKey, TEntry> hashTable, TKey key) where TEntry : IData<TEntry> => throw new NotImplementedException();
-    public ISHash<TKey, TEntry> CreateSHash<TKey, TEntry>(Target target, TargetPointer address, Target.TypeInfo type, ITraits<TKey, TEntry> traits) where TEntry : IData<TEntry> => throw new NotImplementedException();
+    public TEntry? LookupSHash<TKey, TEntry>(ISHash<TKey, TEntry> hashTable, TKey key) where TEntry : class, IData<TEntry> => throw new NotImplementedException();
+    public ISHash<TKey, TEntry> CreateSHash<TKey, TEntry>(Target target, TargetPointer address, Target.TypeInfo type, ITraits<TKey, TEntry> traits) where TEntry : class, IData<TEntry> => throw new NotImplementedException();
 }
 
 public readonly struct SHash : ISHash

@@ -9,6 +9,10 @@ success &= RunTest(DeadCodeElimination.Run);
 success &= RunTest(FeatureSwitches.Run);
 success &= RunTest(ILLinkDescriptor.Run);
 success &= RunTest(DependencyInjectionPattern.Run);
+if (!OperatingSystem.IsWasi())
+{
+    success &= RunTest(UnmanagedCallersOnlyAssociatedSourceType.Run);
+}
 
 return success ? 100 : 1;
 

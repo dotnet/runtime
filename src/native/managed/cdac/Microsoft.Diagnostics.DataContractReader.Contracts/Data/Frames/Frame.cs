@@ -3,20 +3,14 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class Frame : IData<Frame>
+[CdacType(nameof(DataType.Frame))]
+internal sealed partial class Frame : IData<Frame>
 {
-    static Frame IData<Frame>.Create(Target target, TargetPointer address)
-        => new Frame(target, address);
+    [Field] public partial TargetPointer Next { get; }
+    [CustomInit(nameof(InitIdentifier))] public partial TargetPointer Identifier { get; }
 
-    public Frame(Target target, TargetPointer address)
+    private partial TargetPointer InitIdentifier(Target target, TargetPointer address)
     {
-        Address = address;
-        Target.TypeInfo type = target.GetTypeInfo(DataType.Frame);
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        Identifier = target.ReadPointer(address);
+        return target.ReadPointer(address);
     }
-
-    public TargetPointer Address { get; init; }
-    public TargetPointer Identifier { get; init; }
-    public TargetPointer Next { get; init; }
 }

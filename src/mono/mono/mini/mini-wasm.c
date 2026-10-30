@@ -453,7 +453,7 @@ G_BEGIN_DECLS
 #ifdef DISABLE_THREADS
 EMSCRIPTEN_KEEPALIVE void mono_wasm_execute_timer (void);
 EMSCRIPTEN_KEEPALIVE void mono_background_exec (void);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_ds_exec (void);
+EMSCRIPTEN_KEEPALIVE void SystemJS_ExecuteDiagnosticServerCallback (void);
 extern void SystemJS_ScheduleTimerImpl (int shortestDueTimeMs);
 #else
 extern void SystemJS_ScheduleSynchronizationContext(MonoNativeThreadId target_thread);

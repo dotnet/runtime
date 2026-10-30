@@ -57,10 +57,6 @@ library_mode_init (void)
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
 #endif
 
-#if HYBRID_GLOBALIZATION
-    setenv ("DOTNET_SYSTEM_GLOBALIZATION_HYBRID", "1", TRUE);
-#endif
-
 #if ENABLE_RUNTIME_LOGGING && !USE_NATIVE_AOT
     setenv ("MONO_LOG_LEVEL", "debug", TRUE);
     setenv ("MONO_LOG_MASK", "all", TRUE);

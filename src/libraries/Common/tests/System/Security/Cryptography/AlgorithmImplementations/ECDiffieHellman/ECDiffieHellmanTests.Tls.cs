@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         private static readonly byte[] s_emptySeed = new byte[64];
 
         [Fact]
-        public static void TlsDerivation_OtherKeyRequired()
+        public void TlsDerivation_OtherKeyRequired()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             {
@@ -23,9 +23,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(MismatchedKeysizes))]
-        public static void TlsDerivation_SameSizeOtherKeyRequired(int aliceSize, int bobSize)
+        [Fact]
+        public void TlsDerivation_SameSizeOtherKeyRequired() => ForEachMismatchedKeySize(TlsDerivation_SameSizeOtherKeyRequiredImpl);
+
+        private void TlsDerivation_SameSizeOtherKeyRequiredImpl(int aliceSize, int bobSize)
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(aliceSize))
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create(bobSize))
@@ -37,7 +38,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void TlsRequiresLabel()
+        public void TlsRequiresLabel()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             using (ECDiffieHellmanPublicKey publicKey = ecdh.PublicKey)
@@ -48,7 +49,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void TlsRequiresSeed()
+        public void TlsRequiresSeed()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             using (ECDiffieHellmanPublicKey publicKey = ecdh.PublicKey)
@@ -62,7 +63,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         [InlineData(0)]
         [InlineData(63)]
         [InlineData(65)]
-        public static void TlsRequiresSeed64(int seedSize)
+        public void TlsRequiresSeed64(int seedSize)
         {
             byte[] seed = new byte[seedSize];
 
@@ -74,9 +75,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(EveryKeysize))]
-        public static void SymmetricDerivation_TlsPrf(int keySize)
+        [Fact]
+        public void SymmetricDerivation_TlsPrf() => ForEachKeySize(SymmetricDerivation_TlsPrfImpl);
+
+        private void SymmetricDerivation_TlsPrfImpl(int keySize)
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(keySize))
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create(keySize))
@@ -91,7 +93,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void TlsPrfDerivationIsStable()
+        public void TlsPrfDerivationIsStable()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create())
@@ -104,9 +106,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(EveryKeysize))]
-        public static void TlsPrfOutputIs48Bytes(int keySize)
+        [Fact]
+        public void TlsPrfOutputIs48Bytes() => ForEachKeySize(TlsPrfOutputIs48BytesImpl);
+
+        private void TlsPrfOutputIs48BytesImpl(int keySize)
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(keySize))
             using (ECDiffieHellmanPublicKey publicKey = ecdh.PublicKey)
@@ -118,7 +121,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void TlsPrfVariesOnOtherKey()
+        public void TlsPrfVariesOnOtherKey()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create())
@@ -135,7 +138,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void TlsPrfVariesOnLabel()
+        public void TlsPrfVariesOnLabel()
         {
             byte[] aliceLabel = s_fourByteLabel;
             byte[] bobLabel = new byte[5];
@@ -153,7 +156,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void TlsPrfVariesOnSeed()
+        public void TlsPrfVariesOnSeed()
         {
             byte[] aliceSeed = s_emptySeed;
             byte[] bobSeed = new byte[64];
@@ -189,10 +192,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             };
         }
 
-#if NET
         [Theory]
         [MemberData(nameof(TlsDerivationTestCases))]
-        public static void TlsDerivation_KnownResults(string labelText, string answerHex)
+        public void TlsDerivation_KnownResults(string labelText, string answerHex)
         {
             byte[] label = Encoding.ASCII.GetBytes(labelText);
             byte[] output;
@@ -207,6 +209,5 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
             Assert.Equal(answerHex, output.ByteArrayToHex());
         }
-#endif
     }
 }

@@ -445,7 +445,7 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void SpanWriteAndReadBigEndianHeterogeneousStruct()
         {
-            Span<byte> spanBE = new byte[Unsafe.SizeOf<TestStruct>()];
+            Span<byte> spanBE = new byte[sizeof(TestStruct)];
 
             WriteInt16BigEndian(spanBE, s_testStruct.S0);
             WriteInt32BigEndian(spanBE.Slice(2), s_testStruct.I0);
@@ -582,7 +582,7 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void SpanWriteAndReadLittleEndianHeterogeneousStruct()
         {
-            Span<byte> spanLE = new byte[Unsafe.SizeOf<TestStruct>()];
+            Span<byte> spanLE = new byte[sizeof(TestStruct)];
 
             WriteInt16LittleEndian(spanLE, s_testStruct.S0);
             WriteInt32LittleEndian(spanLE.Slice(2), s_testStruct.I0);
@@ -719,7 +719,7 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void ReadingStructFieldByFieldOrReadAndReverseEndianness()
         {
-            Span<byte> spanBE = new byte[Unsafe.SizeOf<TestHelpers.TestStructExplicit>()];
+            Span<byte> spanBE = new byte[sizeof(TestHelpers.TestStructExplicit)];
 
             var testExplicitStruct = new TestHelpers.TestStructExplicit
             {

@@ -10,7 +10,6 @@
 
 #define FAIL 0
 #define SUCCESS 1
-#define UNSUPPORTED_API_LEVEL  2
 #define INSUFFICIENT_BUFFER -1
 
 extern JavaVM* gJvm;
@@ -95,15 +94,6 @@ extern jmethodID g_SSLParametersGetProtocols;
 extern jmethodID g_SSLParametersSetApplicationProtocols;
 extern jmethodID g_SSLParametersSetServerNames;
 
-// com/android/org/conscrypt/OpenSSLEngineImpl
-extern jclass    g_ConscryptOpenSSLEngineImplClass;
-extern jfieldID  g_ConscryptOpenSSLEngineImplSslParametersField;
-extern jfieldID  g_ConscryptOpenSSLEngineImplHandshakeSessionField;
-
-// com/android/org/conscrypt/SSLParametersImpl
-extern jclass    g_ConscryptSSLParametersImplClass;
-extern jmethodID g_ConscryptSSLParametersImplSetUseSni;
-
 // javax/net/ssl/SSLContext
 extern jclass    g_sslCtxClass;
 extern jmethodID g_sslCtxGetDefaultMethod;
@@ -150,14 +140,14 @@ extern jmethodID g_CertPathBuilderBuild;
 extern jclass    g_CertPathValidatorClass;
 extern jmethodID g_CertPathValidatorGetInstance;
 extern jmethodID g_CertPathValidatorValidate;
-extern jmethodID g_CertPathValidatorGetRevocationChecker; // only in API level 24+
+extern jmethodID g_CertPathValidatorGetRevocationChecker;
 
 // java/security/cert/CertPathValidatorException
 extern jclass    g_CertPathValidatorExceptionClass;
 extern jmethodID g_CertPathValidatorExceptionGetIndex;
 extern jmethodID g_CertPathValidatorExceptionGetReason;
 
-// java/security/cert/CertPathValidatorException$BasicReason - only in API level 24+
+// java/security/cert/CertPathValidatorException$BasicReason
 extern jclass    g_CertPathExceptionBasicReasonClass;
 
 // java/security/cert/CertStore
@@ -171,25 +161,25 @@ extern jmethodID g_CollectionCertStoreParametersCtor;
 // java/security/cert/PKIXBuilderParameters
 extern jclass    g_PKIXBuilderParametersClass;
 extern jmethodID g_PKIXBuilderParametersCtor;
+extern jmethodID g_PKIXBuilderParametersCtorFromTrustAnchors;
 extern jmethodID g_PKIXBuilderParametersAddCertStore;
 extern jmethodID g_PKIXBuilderParametersAddCertPathChecker;
 extern jmethodID g_PKIXBuilderParametersSetDate;
 extern jmethodID g_PKIXBuilderParametersSetRevocationEnabled;
-extern jmethodID g_PKIXBuilderParametersSetTrustAnchors;
 
 // java/security/cert/PKIXCertPathBuilderResult
 extern jclass    g_PKIXCertPathBuilderResultClass;
 extern jmethodID g_PKIXCertPathBuilderResultGetCertPath;
 extern jmethodID g_PKIXCertPathBuilderResultGetTrustAnchor;
 
-// java/security/cert/PKIXReason - only in API level 24+
+// java/security/cert/PKIXReason
 extern jclass    g_PKIXReasonClass;
 
-// java/security/cert/PKIXRevocationChecker - only in API level 24+
+// java/security/cert/PKIXRevocationChecker
 extern jclass    g_PKIXRevocationCheckerClass;
 extern jmethodID g_PKIXRevocationCheckerSetOptions;
 
-// java/security/cert/PKIXRevocationChecker$Option - only in API level 24+
+// java/security/cert/PKIXRevocationChecker$Option
 extern jclass    g_PKIXRevocationCheckerOptionClass;
 extern jfieldID  g_PKIXRevocationCheckerOptionOnlyEndEntity;
 
@@ -244,7 +234,9 @@ extern jmethodID g_KeyStoreAliases;
 extern jmethodID g_KeyStoreContainsAlias;
 extern jmethodID g_KeyStoreDeleteEntry;
 extern jmethodID g_KeyStoreGetCertificate;
+extern jmethodID g_KeyStoreGetCertificateAlias;
 extern jmethodID g_KeyStoreGetEntry;
+extern jmethodID g_KeyStoreIsCertificateEntry;
 extern jmethodID g_KeyStoreLoad;
 extern jmethodID g_KeyStoreSetCertificateEntry;
 extern jmethodID g_KeyStoreSetKeyEntry;
@@ -253,6 +245,10 @@ extern jmethodID g_KeyStoreSetKeyEntry;
 extern jclass    g_PrivateKeyEntryClass;
 extern jmethodID g_PrivateKeyEntryGetCertificate;
 extern jmethodID g_PrivateKeyEntryGetPrivateKey;
+
+// java/security/Key
+extern jclass    g_KeyClass;
+extern jmethodID g_KeyGetEncoded;
 
 // java/security/KeyStore$TrustedCertificateEntry
 extern jclass    g_TrustedCertificateEntryClass;
@@ -488,7 +484,6 @@ extern jmethodID g_SSLSessionGetProtocol;
 extern jclass    g_SSLEngineResult;
 extern jmethodID g_SSLEngineResultGetStatus;
 extern jmethodID g_SSLEngineResultGetHandshakeStatus;
-extern bool      g_SSLEngineResultStatusLegacyOrder;
 extern jmethodID g_SSLEngineResultBytesConsumed;
 
 // javax/crypto/KeyAgreement
@@ -500,6 +495,16 @@ extern jmethodID g_KeyAgreementGenerateSecret;
 
 // javax/net/ssl/TrustManager
 extern jclass g_TrustManager;
+
+// javax/net/ssl/TrustManagerFactory
+extern jclass    g_TrustManagerFactory;
+extern jmethodID g_TrustManagerFactoryGetInstance;
+extern jmethodID g_TrustManagerFactoryGetDefaultAlgorithm;
+extern jmethodID g_TrustManagerFactoryInit;
+extern jmethodID g_TrustManagerFactoryGetTrustManagers;
+
+// javax/net/ssl/X509TrustManager
+extern jclass g_X509TrustManager;
 
 // net/dot/android/crypto/DotnetProxyTrustManager
 extern jclass    g_DotnetProxyTrustManager;
@@ -608,8 +613,6 @@ JNIEnv* GetJNIEnv(void);
 // The function must be called from the embedder's `JNI_OnLoad` function prior to using any
 // APIs in this library.
 jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved);
-
-int GetEnumAsInt(JNIEnv *env, jobject enumObj) ARGS_NON_NULL_ALL;
 
 void* xmalloc (size_t size) __mallocfunc __BIONIC_ALLOC_SIZE(1) __wur;
 void* xcalloc (size_t nmemb, size_t size) __mallocfunc __BIONIC_ALLOC_SIZE(1,2) __wur;

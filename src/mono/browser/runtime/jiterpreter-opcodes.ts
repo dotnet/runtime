@@ -81,11 +81,8 @@ export const enum WasmOpcode {
     if_,
     else_,
 
-    try_ = 0x06,
-    catch_,
-    catch_all = 0x19,
-    throw_ = 0x08,
-    rethrow_ = 0x09,
+    throw_ref = 0x0a,
+    try_table = 0x1f,
 
     end = 0x0b,
     br,

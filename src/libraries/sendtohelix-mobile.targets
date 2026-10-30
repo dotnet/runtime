@@ -34,6 +34,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+    <!-- ASP.NET Core development certificate generation can block Apple Helix work items before XHarness starts. -->
+    <HelixPreCommand Include="export DOTNET_GENERATE_ASPNET_CERTIFICATE=false" />
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
@@ -127,6 +129,13 @@
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+      <XHarnessAppBundleToTest Update="@(XHarnessAppBundleToTest)"
+                              Condition="$([System.String]::Copy('%(Filename)').StartsWith('iOS.InProcCrashReport.'))">
+        <ExpectedExitCode>100</ExpectedExitCode>
+      </XHarnessAppBundleToTest>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetOS)' == 'android'">
       <_apks Include="$(TestArchiveTestsRoot)**/*.apk" />
       <XHarnessApkToTest Include="@(_apks)">
@@ -137,6 +146,11 @@
         <AndroidPackageName>net.dot.%(Filename)</AndroidPackageName>
         <!-- The android sample returns 42 so it should be considered by xharness as a success -->
         <ExpectedExitCode>42</ExpectedExitCode>
+      </XHarnessApkToTest>
+      <XHarnessApkToTest Update="@(XHarnessApkToTest)"
+                        Condition="$([System.String]::Copy('%(Filename)').StartsWith('Android.Device_Emulator.InProcCrashReport.'))">
+        <ExpectedExitCode>100</ExpectedExitCode>
+        <DeviceOutputPath>/sdcard/Android/data/%(AndroidPackageName)/files/inproccrashreport.zip</DeviceOutputPath>
       </XHarnessApkToTest>
     </ItemGroup>
   </Target>

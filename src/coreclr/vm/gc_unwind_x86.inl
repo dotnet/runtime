@@ -219,6 +219,7 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     infoPtr->ebpFrame        = header.ebpFrame;
     infoPtr->interruptible   = header.interruptible;
     infoPtr->returnKind      = (ReturnKind) header.returnKind;
+    infoPtr->isAsync         = header.isAsync;
 
     infoPtr->prologSize      = header.prologSize;
     infoPtr->epilogSize      = header.epilogSize;
@@ -555,7 +556,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(MethodDesc* pMD, hdrInfo * info)
                         info->localloc +
                         info->genericsContext + // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
                         ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
-                        (pMD->RequiresAsyncContextSaveAndRestore() ? 2 : 0) + // Does this method save async contexts?
+                        (pMD->RequiresAsyncContextSaveAndRestore() ? 4 : 0) + // Does this method save indicator + thread + async contexts?
                         1; // for ebpFrame
     return position * sizeof(TADDR);
 }
@@ -2250,13 +2251,13 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
             }
             else
             {
-                // In .NET 5.0 and later JIT emits a call to JIT_StackProbe helper.
+                // In .NET 5.0 and later JIT emits a call to RhpStackProbe helper.
 
                 if (pushedStubParam)
                 {
                     // lea eax, [esp-size+4]
                     offset = SKIP_LEA_EAX_ESP(-size + 4, base, offset);
-                    // call JIT_StackProbe
+                    // call RhpStackProbe
                     offset = SKIP_HELPER_CALL(base, offset);
                     // pop eax
                     offset = SKIP_POP_REG(base, offset);
@@ -2267,7 +2268,7 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
                 {
                     // lea eax, [esp-size]
                     offset = SKIP_LEA_EAX_ESP(-size, base, offset);
-                    // call JIT_StackProbe
+                    // call RhpStackProbe
                     offset = SKIP_HELPER_CALL(base, offset);
                     // mov esp, eax
                     return SKIP_MOV_REG_REG(base, offset);
@@ -3082,10 +3083,14 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     }
 #endif
 
-    /* Are we in the prolog or epilog of the method? */
+    /* Are we in the prolog or epilog of the method, or is this a
+     * non-interruptible method that will not resume execution at this offset?
+     * In either case, GC slots may not be initialized at the current offset
+     * and we can simply skip all reporting. */
 
     if (info.prologOffs != hdrInfo::NOT_IN_PROLOG ||
-        info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
+        info.epilogOffs != hdrInfo::NOT_IN_EPILOG ||
+        ((flags & ExecutionAborted) && !info.interruptible))
     {
 
 #if !DUMP_PTR_REFS
@@ -3630,10 +3635,10 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
        do not contain ANY arguments except 'this' (even if they
        were statically declared */
 
-    if (info.varargs) {
-#ifdef FEATURE_NATIVEAOT
-        PORTABILITY_ASSERT("EnumGCRefs: VarArgs");
+#if !defined(FEATURE_VARARGS)
+    _ASSERTE(!info.varargs);
 #else
+    if (info.varargs) {
         LOG((LF_GCINFO, LL_INFO100, "Reporting incoming vararg GC refs\n"));
 
         PTR_BYTE argsStart;
@@ -3654,8 +3659,8 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
         PTR_VASigCookie varArgSig = *PTR_PTR_VASigCookie(argsStart);
 
         promoteVarArgs(argsStart, varArgSig, pCtx);
-#endif
     }
+#endif // FEATURE_VARARGS
 
     return true;
 }

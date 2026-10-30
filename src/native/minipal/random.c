@@ -141,6 +141,35 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
     }
 #endif
 
+#if HAVE_GETENTROPY
+    // getentropy() is available on platforms like WASI (via wasi-libc, backed by
+    // __wasi_random_get()) and other libc implementations. Used as a fallback when
+    // getrandom() is not available or fails.
+    {
+        int32_t offset = 0;
+        while (offset < bufferLength)
+        {
+            // getentropy() is limited to 256 bytes per call
+            size_t chunk = (size_t)(bufferLength - offset);
+            if (chunk > 256)
+            {
+                chunk = 256;
+            }
+            if (getentropy(buffer + offset, chunk) < 0)
+            {
+                break; // fallback to /dev/urandom
+            }
+
+            offset += (int32_t)chunk;
+        }
+
+        if (offset == bufferLength)
+        {
+            return 0;
+        }
+    }
+#endif
+
     // Fallback to /dev/urandom
     static volatile int rand_des = -1;
     static bool sMissingDevURandom;

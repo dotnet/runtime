@@ -3,36 +3,23 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ExceptionInfo : IData<ExceptionInfo>
+[CdacType(nameof(DataType.ExceptionInfo))]
+internal sealed partial class ExceptionInfo : IData<ExceptionInfo>
 {
-    static ExceptionInfo IData<ExceptionInfo>.Create(Target target, TargetPointer address)
-        => new ExceptionInfo(target, address);
+    [Field] public partial TargetPointer PreviousNestedInfo { get; }
+    [Field] public partial TargetPointer ThrownObject { get; }
+    [Field] public partial uint ExceptionFlags { get; }
+    [Field] public partial TargetPointer StackLowBound { get; }
+    [Field] public partial TargetPointer StackHighBound { get; }
+    [Field] public partial TargetPointer ExceptionRecord { get; }
+    [Field] public partial TargetPointer ContextRecord { get; }
 
-    public ExceptionInfo(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ExceptionInfo);
-
-        PreviousNestedInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PreviousNestedInfo)].Offset);
-        ThrownObjectHandle = target.ReadPointer(address + (ulong)type.Fields[nameof(ThrownObjectHandle)].Offset);
-        ExceptionFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(ExceptionFlags)].Offset);
-        StackLowBound = target.ReadPointer(address + (ulong)type.Fields[nameof(StackLowBound)].Offset);
-        StackHighBound = target.ReadPointer(address + (ulong)type.Fields[nameof(StackHighBound)].Offset);
-        if (type.Fields.ContainsKey(nameof(ExceptionWatsonBucketTrackerBuckets)))
-            ExceptionWatsonBucketTrackerBuckets = target.ReadPointer(address + (ulong)type.Fields[nameof(ExceptionWatsonBucketTrackerBuckets)].Offset);
-        PassNumber = target.Read<byte>(address + (ulong)type.Fields[nameof(PassNumber)].Offset);
-        CSFEHClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEHClause)].Offset);
-        CSFEnclosingClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEnclosingClause)].Offset);
-        CallerOfActualHandlerFrame = target.ReadPointer(address + (ulong)type.Fields[nameof(CallerOfActualHandlerFrame)].Offset);
-    }
-
-    public TargetPointer PreviousNestedInfo { get; }
-    public TargetPointer ThrownObjectHandle { get; }
-    public uint ExceptionFlags { get; }
-    public TargetPointer StackLowBound { get; }
-    public TargetPointer StackHighBound { get; }
-    public TargetPointer ExceptionWatsonBucketTrackerBuckets { get; }
-    public byte PassNumber { get; }
-    public TargetPointer CSFEHClause { get; }
-    public TargetPointer CSFEnclosingClause { get; }
-    public TargetPointer CallerOfActualHandlerFrame { get; }
+    // Only present on Windows platforms
+    [Field] public partial TargetPointer? ExceptionWatsonBucketTrackerBuckets { get; }
+    [Field] public partial byte PassNumber { get; }
+    [Field] public partial TargetPointer CSFEHClause { get; }
+    [Field] public partial TargetPointer CSFEnclosingClause { get; }
+    [Field] public partial TargetPointer CallerOfActualHandlerFrame { get; }
+    [Field] public partial uint ClauseForCatchHandlerStartPC { get; }
+    [Field] public partial uint ClauseForCatchHandlerEndPC { get; }
 }

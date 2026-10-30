@@ -10,6 +10,7 @@ using TestLibrary;
 public class Test_Collect1
 {
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint()
     {

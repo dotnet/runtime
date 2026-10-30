@@ -4,7 +4,6 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Reflection;
 
 namespace TestLibrary
 {
@@ -30,7 +29,7 @@ namespace TestLibrary
 
         public static bool IsSimulator => RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator") || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
 
-        public static bool IsBuiltInComEnabled => IsWindows && !Utilities.IsCoreClrInterpreter
+        public static bool IsBuiltInComEnabled => IsWindows && IsCoreCLR && !Utilities.IsCoreClrInterpreter
                                             && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
                                                 ? isEnabled
                                                 : true);
@@ -72,6 +71,7 @@ namespace TestLibrary
         public static bool IsExceptionInteropSupported => IsWindows && !Utilities.IsNativeAot && !Utilities.IsMonoRuntime && !Utilities.IsCoreClrInterpreter;
 
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+        public static bool IsCoreCLR => !IsMonoRuntime && Utilities.IsNotNativeAot;
 
         static string _variant = Environment.GetEnvironmentVariable("DOTNET_RUNTIME_VARIANT");
 
@@ -97,52 +97,31 @@ namespace TestLibrary
         }
 
         // These platforms have not had their infrastructure updated to support native test assets.
+        // WebAssembly has no dynamic loading, so a test only gets its native assets when the build
+        // produced a test-specific corerun with them linked in; the run script tells us when that
+        // happened.
         public static bool PlatformDoesNotSupportNativeTestAssets =>
-            OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsAndroid() || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi();
+            OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsAndroid()
+            || ((OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) && !s_nativeTestAssetsLinked);
+
+        private static readonly bool s_nativeTestAssetsLinked = IsEnvironmentVariableTrue("__TestNativeAssetsLinked");
         public static bool IsAppleMobile => OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst();
 
         // wasm properties
         public static bool IsBrowser => OperatingSystem.IsBrowser();
         public static bool IsWasi => OperatingSystem.IsWasi();
         public static bool IsWasm => IsBrowser || IsWasi;
+        public static bool IsReadyToRunCompiled => Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
+        public static bool IsWasmReadyToRun => IsWasm && IsReadyToRunCompiled;
+
+        // CoreCLR on WebAssembly (FEATURE_PORTABLE_ENTRYPOINTS) cannot create native-callable entrypoints at run time,
+        // e.g. for Marshal.GetFunctionPointerForDelegate or a delegate passed to a P/Invoke.
+        public static bool IsDynamicEntrypointSupported => !(IsWasm && IsCoreCLR);
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
+        public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
 
-        // TODO-WASM: https://github.com/dotnet/runtime/issues/124748
-        // this is compiled with 11.0.0-preview.1.26104.118\ref
-        // which doesn't have the RuntimeFeature.IsMultithreadingSupported API yet.
-        // after we update to a newer ref, we should use RuntimeFeature.IsMultithreadingSupported directly.
-        // public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
-        public static bool IsMultithreadingSupported { get; } = GetIsMultithreadingSupported();
-
-        private static bool GetIsMultithreadingSupported()
-        {
-            if (!IsWasm)
-                return true;
-
-            try
-            {
-                Type runtimeFeatureType = typeof(System.Runtime.CompilerServices.RuntimeFeature);
-
-                PropertyInfo isMultithreadingSupportedProperty = runtimeFeatureType.GetProperty("IsMultithreadingSupported", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                if (isMultithreadingSupportedProperty != null)
-                {
-                    return (bool)isMultithreadingSupportedProperty.GetValue(null);
-                }
-            }
-            catch
-            {
-                // if any of the reflection calls fail, assume multithreading is not supported.
-            }
-            return false;
-        }
-
-        private static bool IsEnvironmentVariableTrue(string variableName)
-        {
-            if (!IsBrowser)
-                return false;
-
-            return Environment.GetEnvironmentVariable(variableName) is "true";
-        }
+        private static bool IsEnvironmentVariableTrue(string variableName) =>
+            Environment.GetEnvironmentVariable(variableName) is "true";
 
         public static bool IsUsingSynthesizedPgoData => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CrossGen2SynthesizePgo"));
     }

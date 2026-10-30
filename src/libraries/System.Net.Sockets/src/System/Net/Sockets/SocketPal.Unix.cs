@@ -770,6 +770,26 @@ namespace System.Net.Sockets
         public static bool TryCompleteReceiveFrom(SafeSocketHandle socket, IList<ArraySegment<byte>> buffers, SocketFlags flags, Span<byte> socketAddress, out int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode) =>
             TryCompleteReceiveFrom(socket, default(Span<byte>), buffers, flags, socketAddress, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode);
 
+        // WASI sockets don't support MSG_PEEK, so a zero-byte receive checks readiness with a non-blocking poll instead.
+        private static unsafe bool TryCompleteZeroByteReceiveWasi(SafeSocketHandle socket, out SocketError errorCode)
+        {
+            Interop.Error err = Interop.Sys.Poll(socket, Interop.PollEvents.POLLIN, timeout: 0, out Interop.PollEvents events);
+            if (err != Interop.Error.SUCCESS)
+            {
+                // wasi-libc can't poll a TCP socket that isn't connected; a zero-length receive reports the real error (ENOTCONN).
+                byte buffer;
+                if (SysReceive(socket, SocketFlags.None, new Span<byte>(&buffer, 0), out Interop.Error receiveErr) < 0)
+                {
+                    err = receiveErr;
+                }
+                errorCode = GetSocketErrorForErrorCode(err);
+                return true;
+            }
+
+            errorCode = SocketError.Success;
+            return events != Interop.PollEvents.POLLNONE;
+        }
+
         public static unsafe bool TryCompleteReceive(SafeSocketHandle socket, Span<byte> buffer, SocketFlags flags, out int bytesReceived, out SocketError errorCode)
         {
             try
@@ -784,6 +804,12 @@ namespace System.Net.Sockets
                 }
                 else if (buffer.Length == 0)
                 {
+                    if (OperatingSystem.IsWasi() && flags == SocketFlags.None)
+                    {
+                        bytesReceived = 0;
+                        return TryCompleteZeroByteReceiveWasi(socket, out errorCode);
+                    }
+
                     // Special case a receive of 0 bytes into a single buffer.  A common pattern is to ReceiveAsync 0 bytes in order
                     // to be asynchronously notified when data is available, without needing to dedicate a buffer.  Some platforms (e.g. macOS),
                     // however complete a 0-byte read successfully when data isn't available, as the request can logically be satisfied
@@ -852,6 +878,14 @@ namespace System.Net.Sockets
                 }
                 else if (buffer.Length == 0)
                 {
+                    if (OperatingSystem.IsWasi() && flags == SocketFlags.None && socketAddress.Length == 0)
+                    {
+                        receivedSocketAddressLength = 0;
+                        bytesReceived = 0;
+                        receivedFlags = SocketFlags.None;
+                        return TryCompleteZeroByteReceiveWasi(socket, out errorCode);
+                    }
+
                     // Special case a receive of 0 bytes into a single buffer.  A common pattern is to ReceiveAsync 0 bytes in order
                     // to be asynchronously notified when data is available, without needing to dedicate a buffer.  Some platforms (e.g. macOS),
                     // however complete a 0-byte read successfully when data isn't available, as the request can logically be satisfied
@@ -1484,7 +1518,7 @@ namespace System.Net.Sockets
                 }
             }
 
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             // macOS fails to even query it if socket is not actively listening.
             // To provide consistent platform experience we will track if
             // it was ret and we will use it later as needed.
@@ -1625,7 +1659,7 @@ namespace System.Net.Sockets
             int optLen = sizeof(int);
             Interop.Error err = Interop.Sys.GetSockOpt(handle, optionLevel, optionName, (byte*)&value, &optLen);
 
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             // macOS fails to even query it if socket is not actively listening.
             // To provide consistent platform experience we will track if
             // it was set and we will use it later as needed.
@@ -1832,7 +1866,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private static SocketError SelectViaSelect(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
+        private static unsafe SocketError SelectViaSelect(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
         {
             const int MaxStackAllocCount = 20;      // this is just arbitrary limit 3x 20 -> 60 e.g. close to 64 we have in some other places
             Span<int> readFDs = checkRead?.Count > MaxStackAllocCount ? new int[checkRead.Count] : stackalloc int[checkRead?.Count ?? 0];

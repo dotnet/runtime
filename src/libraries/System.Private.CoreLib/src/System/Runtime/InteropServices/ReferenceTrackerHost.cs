@@ -9,15 +9,23 @@ using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
-    internal static class ReferenceTrackerHost
+    internal readonly unsafe struct ReferenceTrackerHost
     {
         [FixedAddressValueType]
-        private static readonly unsafe IntPtr s_globalHostServices = (IntPtr)Unsafe.AsPointer(in HostServices.Vftbl);
+        private static readonly ReferenceTrackerHost s_instance =
+            new((IReferenceTrackerHostVftbl*)Unsafe.AsPointer(in HostServices.Vftbl));
+
+        private readonly IReferenceTrackerHostVftbl* _vftbl;
+
+        private ReferenceTrackerHost(IReferenceTrackerHostVftbl* vftbl)
+        {
+            _vftbl = vftbl;
+        }
 
         // Called when an IReferenceTracker instance is found.
-        public static unsafe void SetReferenceTrackerHost(IntPtr trackerManager)
+        public static void SetReferenceTrackerHost(IntPtr trackerManager)
         {
-            IReferenceTrackerManager.SetReferenceTrackerHost(trackerManager, (IntPtr)Unsafe.AsPointer(in s_globalHostServices));
+            IReferenceTrackerManager.SetReferenceTrackerHost(trackerManager, (IntPtr)Unsafe.AsPointer(in s_instance));
         }
 
 #pragma warning disable IDE0060, CS3016
@@ -75,7 +83,6 @@ namespace System.Runtime.InteropServices
 
 #pragma warning disable IDE0060, CS3016
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-        [RequiresUnsafe]
         internal static unsafe int IReferenceTrackerHost_GetTrackerTarget(IntPtr pThis, IntPtr punk, IntPtr* ppNewReference)
 #pragma warning restore IDE0060, CS3016
         {
@@ -135,7 +142,6 @@ namespace System.Runtime.InteropServices
 
 #pragma warning disable CS3016
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-        [RequiresUnsafe]
         internal static unsafe int IReferenceTrackerHost_QueryInterface(IntPtr pThis, Guid* guid, IntPtr* ppObject)
 #pragma warning restore CS3016
         {

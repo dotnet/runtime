@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible and others -->
+    <!-- Needed for others -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- This test provides no interesting scenarios for GCStress -->
-    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- TODO: Re-enable when browser OOP host actions can run configuration variants and import their results.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
     <DefineConstants>$(DefineConstants);IS_TESTER_APP</DefineConstants>

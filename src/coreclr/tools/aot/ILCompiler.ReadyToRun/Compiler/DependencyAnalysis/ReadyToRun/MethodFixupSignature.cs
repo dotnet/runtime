@@ -13,6 +13,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
 using ILCompiler.ReadyToRun.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -21,6 +22,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly ReadyToRunFixupKind _fixupKind;
 
         private readonly MethodWithToken _method;
+
+        private byte[] _gcRefMap;
+
+        internal bool EmitGCRefMap { get; set; }
+
+        public override int Offset => _gcRefMap?.Length ?? 0;
 
         public MethodFixupSignature(
             ReadyToRunFixupKind fixupKind,
@@ -51,29 +58,78 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool NeedsInstantiationArg => _method.ConstrainedType?.IsCanonicalSubtype(CanonicalFormKind.Any) ?? false;
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        internal byte[] GetGCRefMap(NodeFactory factory)
         {
-            DependencyList list = base.ComputeNonRelocationBasedDependencies(factory);
+            if (_gcRefMap is null)
+            {
+                GCRefMapBuilder builder = new GCRefMapBuilder(factory.Target, relocsOnly: false);
+                builder.GetCallRefMap(Method, IsUnboxingStub || IsInstantiatingStub);
+                _gcRefMap = builder.Builder.ToObjectData().Data;
+            }
+            return _gcRefMap;
+        }
+
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
+        {
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
+            MethodDesc canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
                 !Method.IsAbstract &&
                 !Method.HasInstantiation &&
-                Method.GetCanonMethodTarget(CanonicalFormKind.Specific) is var canonMethod &&
                 !factory.CompilationModuleGroup.VersionsWithMethodBody(canonMethod) &&
                 factory.CompilationModuleGroup.CrossModuleCompileable(canonMethod) &&
                 factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
             {
-                list = list ?? new DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList();
                 try
                 {
                     factory.DetectGenericCycles(_method.Method, canonMethod);
-                    list.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
+                    sink.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
                 }
                 catch (TypeSystemException)
                 {
                 }
             }
 
-            return list;
+            // For generic virtual method calls, create a virtual dependency node that will
+            // dynamically discover implementations on types as they are added to the graph.
+            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
+                Method.IsVirtual &&
+                Method.HasInstantiation &&
+                !Method.IsFinal &&
+                !Method.IsGenericMethodDefinition &&
+                !Method.OwningType.IsGenericDefinition &&
+                (Method.OwningType.IsInterface || !Method.OwningType.IsSealed()))
+            {
+                // Because methods with generic parameters are already compiled in their canonical form, we are only interested in finding
+                // instantiations of virtual methods that have at least one non-canonical argument (aka a valuetype).
+                if (HasNonCanonicalInstantiationArguments(canonMethod) && !factory.CanBeInGenericCycle(Method))
+                {
+                    sink.Add(factory.GVMDependencies(Method), "Virtual dispatch dependency");
+                }
+            }
+
+            // For non-GVM virtual method calls, mark the virtual slot as used so that
+            // conditional dependencies on InheritedVirtualMethodsNode can trigger compilation
+            // of concrete implementations.
+            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
+                Method.IsVirtual &&
+                !Method.HasInstantiation &&
+                !Method.IsFinal &&
+                !Method.OwningType.IsGenericDefinition)
+            {
+                sink.Add(factory.VirtualMethodUse(canonMethod), "Non-GVM virtual slot use");
+            }
+        }
+
+        private static bool HasNonCanonicalInstantiationArguments(MethodDesc canonMethod)
+        {
+            TypeDesc canonType = canonMethod.Context.CanonType;
+            foreach (TypeDesc arg in canonMethod.Instantiation)
+            {
+                if (arg != canonType)
+                    return true;
+            }
+            return false;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -85,12 +141,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder(factory, relocsOnly);
+            if (EmitGCRefMap)
+            {
+                foreach (byte value in GetGCRefMap(factory))
+                {
+                    dataBuilder.EmitByte(value);
+                }
+            }
+
+            // Keep the symbol at the fixup opcode so plain signature consumers do not mistake
+            // the preceding GCRefMap for a fixup.
             dataBuilder.AddSymbol(this);
 
-            // Optimize some of the fixups into a more compact form
+            // Optimize some of the fixups into a more compact form.
+            // The compact token forms cannot carry signature flags, so instantiating and unboxing
+            // stubs must use the full method signature.
             ReadyToRunFixupKind fixupKind = _fixupKind;
             bool optimized = false;
-            if (_method.Method.IsPrimaryMethodDesc() && !IsInstantiatingStub
+            if (_method.Method.IsPrimaryMethodDesc() && !IsInstantiatingStub && !_method.Unboxing
                 && _method.ConstrainedType == null && fixupKind == ReadyToRunFixupKind.MethodEntry)
             {
                 if (!_method.Method.HasInstantiation && !_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)

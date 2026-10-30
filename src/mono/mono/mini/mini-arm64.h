@@ -270,6 +270,7 @@ typedef struct {
 	gboolean sign;
 	gboolean gsharedvt;
 	gboolean hfa;
+	gboolean swift_error_in_reg;
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	/* ArgSwiftVtypeLoweredRet */
 	ArgStorage struct_storage [4];

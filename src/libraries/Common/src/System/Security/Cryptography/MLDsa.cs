@@ -1310,7 +1310,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="algorithm" /> is <see langword="null" />
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occured generating the ML-DSA key.
+        ///   An error occurred generating the ML-DSA key.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-DSA. Callers can use the <see cref="IsSupported" /> property
@@ -2150,6 +2150,7 @@ namespace System.Security.Cryptography
 
             while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
             {
+                size = buffer.Length;
                 CryptoPool.Return(buffer);
                 size = checked(size * 2);
                 buffer = CryptoPool.Rent(size);
@@ -2333,7 +2334,5 @@ namespace System.Security.Cryptography
             insufficientCollisionResistance = hashLambda < Algorithm.LambdaCollisionStrength;
             return hashAlgorithmIdentifier;
         }
-
-        private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
     }
 }

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace JitTest_Directed_StructPromote_FldSeqsInPromotedCpBlk;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -24,6 +26,7 @@ using Xunit;
 
 public class FldSeqsInPromotedCpBlk
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

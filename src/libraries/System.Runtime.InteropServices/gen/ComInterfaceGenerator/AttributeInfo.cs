@@ -4,27 +4,17 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
     /// <summary>
     /// Provides the info necessary for copying an attribute from user code to generated code.
     /// </summary>
-    internal sealed record AttributeInfo(ManagedTypeInfo Type, SequenceEqualImmutableArray<string> Arguments)
+    internal sealed record AttributeInfo(string Type, SequenceEqualImmutableArray<string> Arguments)
     {
-        internal AttributeSyntax GenerateSyntax()
-        {
-            return Attribute((NameSyntax)Type.Syntax, AttributeArgumentList(SeparatedList(Arguments.Select(arg => AttributeArgument(ParseExpression(arg))))));
-        }
-        internal AttributeListSyntax GenerateAttributeList()
-        {
-            return AttributeList(SingletonSeparatedList(GenerateSyntax()));
-        }
         internal static AttributeInfo From(AttributeData attribute)
         {
-            var type = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(attribute.AttributeClass);
+            var type = attribute.AttributeClass.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             var args = attribute.ConstructorArguments.Select(ca => ca.ToCSharpString());
             return new(type, args.ToSequenceEqualImmutableArray());
         }

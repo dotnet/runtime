@@ -11,6 +11,7 @@ using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Authentication.ExtendedProtection;
+using System.Security.Claims;
 using System.Security.Principal;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -40,20 +41,21 @@ namespace System.Net
             {
                 return new UnixNegotiateAuthenticationPal(clientOptions);
             }
-            catch (Interop.NetSecurityNative.GssApiException gex)
+            catch (Exception ex) when (ex is Interop.NetSecurityNative.GssApiException or TypeInitializationException)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
-                NegotiateAuthenticationStatusCode statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
-                if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+                NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+
+                if (ex is Interop.NetSecurityNative.GssApiException gex)
                 {
-                    statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
+                    if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                    {
+                        statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    }
                 }
+
                 return new UnsupportedNegotiateAuthenticationPal(clientOptions, statusCode);
-            }
-            catch (EntryPointNotFoundException)
-            {
-                // GSSAPI shim may not be available on some platforms (Linux Bionic)
-                return new UnsupportedNegotiateAuthenticationPal(clientOptions);
             }
         }
 
@@ -63,20 +65,21 @@ namespace System.Net
             {
                 return new UnixNegotiateAuthenticationPal(serverOptions);
             }
-            catch (Interop.NetSecurityNative.GssApiException gex)
+            catch (Exception ex) when (ex is Interop.NetSecurityNative.GssApiException or TypeInitializationException)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
-                NegotiateAuthenticationStatusCode statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
-                if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+
+                NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+
+                if (ex is Interop.NetSecurityNative.GssApiException gex)
                 {
-                    statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
+                    if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                    {
+                        statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    }
                 }
                 return new UnsupportedNegotiateAuthenticationPal(serverOptions, statusCode);
-            }
-            catch (EntryPointNotFoundException)
-            {
-                // GSSAPI shim may not be available on some platforms (Linux Bionic)
-                return new UnsupportedNegotiateAuthenticationPal(serverOptions);
             }
         }
 
@@ -94,6 +97,14 @@ namespace System.Net
             private string? _spn;
             private ChannelBinding? _channelBinding;
             private readonly Interop.NetSecurityNative.PackageType _packageType;
+            private IIdentity? _remoteIdentity;
+
+            // GSSAPI name attribute holding the KERB_VALIDATION_INFO buffer of the Kerberos PAC.
+            private static ReadOnlySpan<byte> PacLogonInfoAttribute => "urn:mspac:logon-info"u8;
+
+            // Matches the issuer WindowsIdentity uses for the equivalent claims so that code
+            // examining them does not have to special case the platform.
+            private const string PacClaimIssuer = "AD AUTHORITY";
 
             public override bool IsAuthenticated => _isAuthenticated;
 
@@ -122,7 +133,11 @@ namespace System.Net
             {
                 get
                 {
-                    IIdentity? result;
+                    if (_remoteIdentity is not null)
+                    {
+                        return _remoteIdentity;
+                    }
+
                     string? name = _isServer ? null : TargetName;
                     string protocol = Package;
 
@@ -142,10 +157,90 @@ namespace System.Net
                     }
 
                     // On the client we don't have access to the remote side identity.
-                    result = new GenericIdentity(name ?? string.Empty, protocol);
+                    GenericIdentity result = new GenericIdentity(name ?? string.Empty, protocol);
+
+                    if (_isServer)
+                    {
+                        AddPacClaims(result);
+                    }
+
+                    _remoteIdentity = result;
                     return result;
                 }
             }
+
+            /// <summary>
+            /// Adds the SID claims describing the client to <paramref name="identity"/>, if the
+            /// Kerberos PAC is available and describes them.
+            /// </summary>
+            /// <remarks>
+            /// The PAC is an optional Microsoft extension to Kerberos and carries the group
+            /// membership only when issued by a KDC that models it, in practice Active Directory
+            /// or Samba. It is absent for NTLM, for KDCs that do not issue one, and for accounts
+            /// configured to suppress it, so having no claims to add is an expected outcome and
+            /// not an error.
+            /// </remarks>
+            private void AddPacClaims(GenericIdentity identity)
+            {
+                // NTLM never carries a PAC, so avoid the interop call entirely.
+                if (Package == NegotiationInfoClass.NTLM)
+                {
+                    return;
+                }
+
+                byte[]? logonInfo;
+                bool isAuthenticated;
+
+                try
+                {
+                    logonInfo = GssGetNameAttribute(_securityContext!, PacLogonInfoAttribute, out isAuthenticated);
+                }
+                catch (Interop.NetSecurityNative.GssApiException ex)
+                {
+                    // The identity is still usable without the PAC, so a failure to retrieve it
+                    // must not fail the caller.
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Failed to retrieve the PAC logon information: {ex}");
+                    return;
+                }
+
+                if (logonInfo is null)
+                {
+                    return;
+                }
+
+                // An unauthenticated attribute is one the mechanism could not verify. Populating
+                // an identity from it would let an attacker choose the claims.
+                if (!isAuthenticated)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Ignoring an unauthenticated PAC logon information attribute.");
+                    return;
+                }
+
+                KerberosPacLogonInfo? pac = KerberosPacLogonInfo.Decode(logonInfo);
+                if (pac is null)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Failed to decode the PAC logon information.");
+                    return;
+                }
+
+                if (pac.UserSid is not null)
+                {
+                    identity.AddClaim(CreateClaim(ClaimTypes.PrimarySid, pac.UserSid, identity));
+                }
+
+                if (pac.PrimaryGroupSid is not null)
+                {
+                    identity.AddClaim(CreateClaim(ClaimTypes.PrimaryGroupSid, pac.PrimaryGroupSid, identity));
+                }
+
+                foreach (string groupSid in pac.GroupSids)
+                {
+                    identity.AddClaim(CreateClaim(ClaimTypes.GroupSid, groupSid, identity));
+                }
+            }
+
+            private static Claim CreateClaim(string type, string value, ClaimsIdentity subject) =>
+                new Claim(type, value, ClaimValueTypes.String, PacClaimIssuer, PacClaimIssuer, subject);
 
             public override System.Security.Principal.TokenImpersonationLevel ImpersonationLevel
             {
@@ -279,13 +374,12 @@ namespace System.Net
                 }
                 else
                 {
-                    // TODO: We don't currently check channel bindings.
-
                     // Server session.
                     statusCode = AcceptSecurityContext(
                         _credentialsHandle,
                         ref _securityContext,
                         incomingBlob,
+                        _channelBinding,
                         ref _tokenBuffer,
                         out resultBlobLength,
                         ref _contextFlags);
@@ -506,6 +600,44 @@ namespace System.Net
                 }
             }
 
+            /// <summary>
+            /// Retrieves a GSSAPI name attribute of the peer principal, returning null when the
+            /// attribute is not present or name attributes are unsupported by the mechanism.
+            /// </summary>
+            private static unsafe byte[]? GssGetNameAttribute(SafeGssContextHandle context, ReadOnlySpan<byte> attributeName, out bool isAuthenticated)
+            {
+                Interop.NetSecurityNative.GssBuffer token = default(Interop.NetSecurityNative.GssBuffer);
+                isAuthenticated = false;
+
+                try
+                {
+                    Interop.NetSecurityNative.Status status;
+                    bool isAvailable;
+
+                    fixed (byte* attributeNamePtr = attributeName)
+                    {
+                        status = Interop.NetSecurityNative.GetNameAttribute(out var minorStatus,
+                                                                           context,
+                                                                           attributeNamePtr,
+                                                                           (uint)attributeName.Length,
+                                                                           out isAvailable,
+                                                                           out isAuthenticated,
+                                                                           ref token);
+
+                        if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
+                        {
+                            throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+                        }
+                    }
+
+                    return isAvailable ? token.ToByteArray() : null;
+                }
+                finally
+                {
+                    token.Dispose();
+                }
+            }
+
             private static string GssGetUser(SafeGssContextHandle context)
             {
                 Interop.NetSecurityNative.GssBuffer token = default(Interop.NetSecurityNative.GssBuffer);
@@ -538,7 +670,7 @@ namespace System.Net
                 }
             }
 
-            private unsafe NegotiateAuthenticationStatusCode InitializeSecurityContext(
+            private NegotiateAuthenticationStatusCode InitializeSecurityContext(
                 ref SafeGssCredHandle credentialsHandle,
                 ref SafeGssContextHandle? contextHandle,
                 ref SafeGssNameHandle? targetNameHandle,
@@ -580,18 +712,11 @@ namespace System.Net
 
                     if (channelBinding != null)
                     {
-                        // If a TLS channel binding token (cbt) is available then get the pointer
-                        // to the application specific data.
-                        int appDataOffset = sizeof(SecChannelBindings);
-                        Debug.Assert(appDataOffset < channelBinding.Size);
-                        IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
-                        int cbtAppDataSize = channelBinding.Size - appDataOffset;
                         status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
                                                                         credentialsHandle,
                                                                         ref contextHandle,
                                                                         _packageType,
-                                                                        cbtAppData,
-                                                                        cbtAppDataSize,
+                                                                        channelBinding,
                                                                         targetNameHandle,
                                                                         (uint)requestedContextFlags,
                                                                         incomingBlob,
@@ -668,9 +793,8 @@ namespace System.Net
             private NegotiateAuthenticationStatusCode AcceptSecurityContext(
                 SafeGssCredHandle credentialsHandle,
                 ref SafeGssContextHandle? contextHandle,
-                //ContextFlagsPal requestedContextFlags,
                 ReadOnlySpan<byte> incomingBlob,
-                //ChannelBinding? channelBinding,
+                ChannelBinding? channelBinding,
                 ref byte[]? resultBlob,
                 out int resultBlobLength,
                 ref Interop.NetSecurityNative.GssFlags contextFlags)
@@ -682,9 +806,11 @@ namespace System.Net
                 {
                     Interop.NetSecurityNative.Status status;
                     Interop.NetSecurityNative.Status minorStatus;
+
                     status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
                                                                         credentialsHandle,
                                                                         ref contextHandle,
+                                                                        channelBinding,
                                                                         incomingBlob,
                                                                         ref token,
                                                                         out uint outputFlags,
@@ -758,6 +884,14 @@ namespace System.Net
                     case Interop.NetSecurityNative.Status.GSS_S_BAD_MECH:
                     case Interop.NetSecurityNative.Status.GSS_S_UNAVAILABLE:
                         return NegotiateAuthenticationStatusCode.Unsupported;
+                    case Interop.NetSecurityNative.Status.GSS_S_FAILURE:
+                        // KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN - server principal is unknown in the KDC
+                        // This is the same error code value in both MIT and Heimdal Kerberos (com_err base for "krb5" table)
+                        if ((uint)exception.MinorStatus == 0x96C73A07u)
+                        {
+                            return NegotiateAuthenticationStatusCode.TargetUnknown;
+                        }
+                        return NegotiateAuthenticationStatusCode.GenericFailure;
                     case Interop.NetSecurityNative.Status.GSS_S_NO_CONTEXT:
                     default:
                         return NegotiateAuthenticationStatusCode.GenericFailure;

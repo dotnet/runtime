@@ -14,6 +14,7 @@ using ILLink.Shared.TrimAnalysis;
 using Internal.TypeSystem;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 
 #nullable enable
 #pragma warning disable IDE0060
@@ -22,15 +23,25 @@ namespace ILCompiler.Dataflow
 {
     public class ReflectionMarker
     {
-        private DependencyList _dependencies = new DependencyList();
+        private readonly IDependencySink _dependencies;
+        private readonly DependencyList? _dependencyList;
         private readonly Logger _logger;
         private readonly MetadataType? _typeHierarchyDataFlowOrigin;
         private readonly bool _enabled;
+        private readonly bool _suppressTrimAnalysisWarnings;
+        private readonly bool _suppressAotAnalysisWarnings;
 
         public NodeFactory Factory { get; }
         public FlowAnnotations Annotations { get; }
-        public DependencyList Dependencies { get => _dependencies; }
-        public List<INodeWithRuntimeDeterminedDependencies> RuntimeDeterminedDependencies { get; } = new List<INodeWithRuntimeDeterminedDependencies>();
+        public DependencyList Dependencies
+        {
+            get
+            {
+                Debug.Assert(_dependencyList is not null);
+                return _dependencyList;
+            }
+        }
+        public List<(MethodDesc OwningMethod, INodeWithRuntimeDeterminedDependencies Dependency)> RuntimeDeterminedDependencies { get; } = new List<(MethodDesc, INodeWithRuntimeDeterminedDependencies)>();
 
         internal enum AccessKind
         {
@@ -39,13 +50,32 @@ namespace ILCompiler.Dataflow
             TokenAccess
         }
 
-        public ReflectionMarker(Logger logger, NodeFactory factory, FlowAnnotations annotations, MetadataType? typeHierarchyDataFlowOrigin, bool enabled)
+        public ReflectionMarker(
+            Logger logger,
+            NodeFactory factory,
+            FlowAnnotations annotations,
+            MetadataType? typeHierarchyDataFlowOrigin,
+            bool enabled,
+            bool suppressTrimAnalysisWarnings = false,
+            bool suppressAotAnalysisWarnings = false,
+            IDependencySink? dependencySink = null)
         {
             _logger = logger;
             Factory = factory;
             Annotations = annotations;
             _typeHierarchyDataFlowOrigin = typeHierarchyDataFlowOrigin;
             _enabled = enabled;
+            _suppressTrimAnalysisWarnings = suppressTrimAnalysisWarnings;
+            _suppressAotAnalysisWarnings = suppressAotAnalysisWarnings;
+            if (dependencySink is null)
+            {
+                _dependencyList = new DependencyList();
+                _dependencies = _dependencyList;
+            }
+            else
+            {
+                _dependencies = dependencySink;
+            }
         }
 
         internal void MarkTypeForDynamicallyAccessedMembers(in MessageOrigin origin, TypeDesc typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, TypeSystemEntity reason, bool declaredOnly = false)
@@ -90,7 +120,7 @@ namespace ILCompiler.Dataflow
 
             List<ModuleDesc> referencedModules = new();
             TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
-                referencedModules, needsAssemblyName, out bool failedBecauseNotFullyQualified);
+                referencedModules, needsAssemblyName, fallbackToCoreLib: true, out bool failedBecauseNotFullyQualified);
             if (foundType == null)
             {
                 if (failedBecauseNotFullyQualified)
@@ -104,12 +134,15 @@ namespace ILCompiler.Dataflow
             if (_enabled)
             {
                 string displayName = reason.GetDisplayName();
+                // Also add module metadata in case this reference was through a type forward
+                // TODO-ILTRIM: add handling of type forwards
+#if !ILTRIM
                 foreach (ModuleDesc referencedModule in referencedModules)
                 {
-                    // Also add module metadata in case this reference was through a type forward
                     if (Factory.MetadataManager.CanGenerateMetadata(referencedModule.GetGlobalModuleType()))
                         _dependencies.Add(Factory.ModuleMetadata(referencedModule), displayName);
                 }
+#endif
 
                 MarkType(diagnosticContext.Origin, foundType, displayName);
             }
@@ -118,11 +151,11 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
-        internal bool TryResolveTypeNameAndMark(ModuleDesc assembly, string typeName, in DiagnosticContext diagnosticContext, string reason, [NotNullWhen(true)] out TypeDesc? type)
+        internal bool TryResolveTypeNameAndMark(ModuleDesc assembly, string typeName, in DiagnosticContext diagnosticContext, string reason, bool fallbackToCoreLib, [NotNullWhen(true)] out TypeDesc? type)
         {
             List<ModuleDesc> referencedModules = new();
             TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, assembly, assembly.Context,
-                referencedModules, needsAssemblyName: false, out _);
+                referencedModules, needsAssemblyName: false, fallbackToCoreLib, out _);
             if (foundType == null)
             {
                 type = default;
@@ -131,12 +164,15 @@ namespace ILCompiler.Dataflow
 
             if (_enabled)
             {
+                // Also add module metadata in case this reference was through a type forward
+                // TODO-ILTRIM: add handling of type forwards
+#if !ILTRIM
                 foreach (ModuleDesc referencedModule in referencedModules)
                 {
-                    // Also add module metadata in case this reference was through a type forward
                     if (Factory.MetadataManager.CanGenerateMetadata(referencedModule.GetGlobalModuleType()))
                         _dependencies.Add(Factory.ModuleMetadata(referencedModule), reason);
                 }
+#endif
 
                 MarkType(diagnosticContext.Origin, foundType, reason);
             }
@@ -158,7 +194,7 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, Factory, type, reason);
+            RootingHelpers.TryAddDependenciesForReflectedType(_dependencies, Factory, type, reason);
         }
 
         internal void MarkMethod(in MessageOrigin origin, MethodDesc method, TypeSystemEntity reason, AccessKind accessKind = AccessKind.Unspecified)
@@ -176,7 +212,7 @@ namespace ILCompiler.Dataflow
 
             CheckAndWarnOnReflectionAccess(origin, method, accessKind);
 
-            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, Factory, method, reason);
+            RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, Factory, method, reason);
         }
 
         internal void MarkField(in MessageOrigin origin, FieldDesc field, string reason, AccessKind accessKind = AccessKind.Unspecified)
@@ -186,7 +222,7 @@ namespace ILCompiler.Dataflow
 
             CheckAndWarnOnReflectionAccess(origin, field, accessKind);
 
-            RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, Factory, field, reason);
+            RootingHelpers.TryAddDependenciesForReflectedField(_dependencies, Factory, field, reason);
         }
 
         internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, TypeSystemEntity reason, AccessKind accessKind = AccessKind.Unspecified)
@@ -292,7 +328,8 @@ namespace ILCompiler.Dataflow
             // This is because reflection access is actually problematic on all members which are in a "requires" scope
             // so for example even instance methods. See for example https://github.com/dotnet/linker/issues/3140 - it's possible
             // to call a method on a "null" instance via reflection.
-            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute) &&
+            if (!_suppressTrimAnalysisWarnings &&
+                _logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute) &&
                 ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, requiresAttribute.Value);
 
@@ -300,12 +337,14 @@ namespace ILCompiler.Dataflow
                 ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, requiresAttribute.Value);
 
-            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute) &&
+            if (!_suppressAotAnalysisWarnings &&
+                _logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute) &&
                 ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, requiresAttribute.Value);
 
             // Below is about accessing DAM annotated members, so only RUC is applicable as a suppression scope
-            if (_logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
+            if (_suppressTrimAnalysisWarnings ||
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
                 return;
 
             bool isReflectionAccessCoveredByDAM = Annotations.ShouldWarnWhenAccessedForReflection(entity);

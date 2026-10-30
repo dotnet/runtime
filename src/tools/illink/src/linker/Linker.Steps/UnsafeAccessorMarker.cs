@@ -89,7 +89,7 @@ namespace Mono.Linker.Steps
                 {
                     if (attr.HasConstructorArguments && attr.ConstructorArguments[0].Value is string typeName)
                     {
-                        if (!_context.TypeNameResolver.TryResolveTypeName(method.Module.Assembly, typeName, out _, out System.Collections.Generic.List<TypeNameResolver.TypeResolutionRecord>? records))
+                        if (!_context.TypeNameResolver.TryResolveTypeName(method.Module.Assembly, typeName, fallbackToCoreLib: true, out _, out System.Collections.Generic.List<TypeNameResolver.TypeResolutionRecord>? records))
                             return; // We can't find the target type, so there's nothing to rewrite.
 
                         foreach (var typeResolutionRecord in records)
@@ -106,7 +106,7 @@ namespace Mono.Linker.Steps
                 {
                     if (attr.HasConstructorArguments && attr.ConstructorArguments[0].Value is string typeName)
                     {
-                        if (!_context.TypeNameResolver.TryResolveTypeName(method.Module.Assembly, typeName, out _, out System.Collections.Generic.List<TypeNameResolver.TypeResolutionRecord>? records))
+                        if (!_context.TypeNameResolver.TryResolveTypeName(method.Module.Assembly, typeName, fallbackToCoreLib: true, out _, out System.Collections.Generic.List<TypeNameResolver.TypeResolutionRecord>? records))
                             return; // We can't find the target type, so there's nothing to rewrite.
 
                         foreach (var typeResolutionRecord in records)

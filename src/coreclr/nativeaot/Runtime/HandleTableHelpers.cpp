@@ -11,13 +11,13 @@
 
 FCIMPL2(OBJECTHANDLE, RhpHandleAlloc, Object *pObject, int type)
 {
-    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleOfType(pObject, (HandleType)type);
+    return GCHandleUtilities::GetGlobalHandleStore()->CreateHandleOfType(pObject, (HandleType)type);
 }
 FCIMPLEND
 
 FCIMPL2(OBJECTHANDLE, RhpHandleAllocDependent, Object *pPrimary, Object *pSecondary)
 {
-    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateDependentHandle(pPrimary, pSecondary);
+    return GCHandleUtilities::GetGlobalHandleStore()->CreateDependentHandle(pPrimary, pSecondary);
 }
 FCIMPLEND
 
@@ -36,14 +36,14 @@ FCIMPLEND
 FCIMPL2(Object *, RhHandleGetDependent, OBJECTHANDLE handle, Object **ppSecondary)
 {
     Object *pPrimary = ObjectFromHandle(handle);
-    *ppSecondary = (pPrimary != NULL) ? GetDependentHandleSecondary(handle) : NULL;
+    *ppSecondary = (pPrimary != NULL) ? GCHandleUtilities::GetGCHandleManager()->GetDependentHandleSecondary(handle) : NULL;
     return pPrimary;
 }
 FCIMPLEND
 
 FCIMPL2(void, RhHandleSetDependentSecondary, OBJECTHANDLE handle, Object *pSecondary)
 {
-    SetDependentHandleSecondary(handle, pSecondary);
+    GCHandleUtilities::GetGCHandleManager()->SetDependentHandleSecondary(handle, pSecondary);
 }
 FCIMPLEND
 
@@ -67,7 +67,7 @@ FCIMPLEND
 
 FCIMPL2(OBJECTHANDLE, RhpHandleAllocCrossReference, Object *pPrimary, void *pContext)
 {
-    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleWithExtraInfo(pPrimary, HNDTYPE_CROSSREFERENCE, pContext);
+    return GCHandleUtilities::GetGlobalHandleStore()->CreateHandleWithExtraInfo(pPrimary, HNDTYPE_CROSSREFERENCE, pContext);
 }
 FCIMPLEND
 

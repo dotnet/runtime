@@ -686,6 +686,67 @@ namespace LibraryImportGenerator.UnitTests
             }
         }
 
+        [Theory]
+        [InlineData("StringMarshalling.Utf16")]
+        [InlineData("StringMarshalling.Utf8")]
+        public async Task ForwardedTypesWithStringMarshalling_InnerDllImportHasCharSet(string stringMarshalling)
+        {
+            bool expectCharSetUnicode = stringMarshalling == "StringMarshalling.Utf16";
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", StringMarshalling = {{stringMarshalling}})]
+                    public static partial string Method(string s, int i);
+                }
+                """;
+
+            var test = new InnerDllImportCharSetTest(expectCharSetUnicode)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+
+            await test.RunAsync();
+        }
+
+        class InnerDllImportCharSetTest : VerifyCS.Test
+        {
+            private readonly bool _expectCharSetUnicode;
+
+            public InnerDllImportCharSetTest(bool expectCharSetUnicode)
+                : base(referenceAncillaryInterop: false)
+            {
+                _expectCharSetUnicode = expectCharSetUnicode;
+            }
+
+            protected override void VerifyFinalCompilation(Compilation compilation)
+            {
+                SyntaxTree generatedCode = compilation.SyntaxTrees.Last();
+                var localFunctions = generatedCode.GetRoot()
+                    .DescendantNodes().OfType<LocalFunctionStatementSyntax>()
+                    .ToList();
+
+                LocalFunctionStatementSyntax innerDllImport = Assert.Single(localFunctions);
+                AttributeSyntax dllImportAttr = innerDllImport.AttributeLists
+                    .SelectMany(al => al.Attributes)
+                    .Single(a => a.Name.ToString().EndsWith("DllImportAttribute") || a.Name.ToString() == "DllImport");
+
+                AttributeArgumentSyntax? charSetArgument = dllImportAttr.ArgumentList!.Arguments
+                    .SingleOrDefault(a => a.NameEquals?.Name.Identifier.Text == nameof(DllImportAttribute.CharSet));
+
+                if (_expectCharSetUnicode)
+                {
+                    Assert.NotNull(charSetArgument);
+                    Assert.EndsWith($"{nameof(CharSet)}.{nameof(CharSet.Unicode)}", charSetArgument.Expression.ToString());
+                }
+                else
+                {
+                    Assert.Null(charSetArgument);
+                }
+            }
+        }
+
         public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()
         {
             yield break;

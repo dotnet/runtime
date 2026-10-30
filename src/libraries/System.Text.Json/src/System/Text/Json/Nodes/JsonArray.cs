@@ -162,14 +162,7 @@ namespace System.Text.Json.Nodes
         {
             List<JsonNode?> list = new(items.Length);
 
-#if NET
             list.AddRange(items);
-#else
-            foreach (JsonNode? item in items)
-            {
-                list.Add(item);
-            }
-#endif
 
             for (int i = 0; i < list.Count; i++)
             {
@@ -238,11 +231,11 @@ namespace System.Text.Json.Nodes
             List[index] = value;
         }
 
-        internal override void GetPath(ref ValueStringBuilder path, JsonNode? child)
+        internal override unsafe void GetPath(ref ValueStringBuilder path, JsonNode? child)
         {
             Parent?.GetPath(ref path, this);
 
-            if (child != null)
+            if (child is not null)
             {
                 int index = List.IndexOf(child);
                 Debug.Assert(index >= 0);
@@ -316,10 +309,19 @@ namespace System.Text.Json.Nodes
                     list = new();
                 }
 
-                // Ensure _jsonElement is written to after _list
-                _list = list;
-                Interlocked.MemoryBarrier();
-                _jsonElement = null;
+                // Ensure only one list instance is published using CompareExchange
+                List<JsonNode?>? exchangedList = Interlocked.CompareExchange(ref _list, list, null);
+                if (exchangedList is null)
+                {
+                    // We won the race and published our list
+                    // Ensure _jsonElement is written to after _list
+                    _jsonElement = null;
+                }
+                else
+                {
+                    // Another thread published a list first
+                    list = exchangedList;
+                }
             }
 
             return list;
@@ -335,7 +337,7 @@ namespace System.Text.Json.Nodes
             // however the order of read/write operations guarantees that that's only
             // possible if the value of _list is non-null.
             jsonElement = _jsonElement;
-            Interlocked.MemoryBarrier();
+            Volatile.ReadBarrier();
             list = _list;
         }
 
@@ -380,7 +382,7 @@ namespace System.Text.Json.Nodes
                 {
                     get
                     {
-                        if (Value == null)
+                        if (Value is null)
                         {
                             return $"null";
                         }

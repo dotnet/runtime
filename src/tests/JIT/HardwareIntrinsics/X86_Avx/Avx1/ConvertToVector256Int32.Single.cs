@@ -88,8 +88,8 @@ namespace JIT.HardwareIntrinsics.X86._Avx512F.handwritten
     {
         private static readonly int LargestVectorSize = 64;
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector256<Single>>() / sizeof(Single);
-        private static readonly int RetElementCount = Unsafe.SizeOf<Vector512<Double>>() / sizeof(Double);
+        private static readonly int Op1ElementCount = sizeof(Vector256<Single>) / sizeof(Single);
+        private static readonly int RetElementCount = sizeof(Vector512<Double>) / sizeof(Double);
 
         private static Single[] _data = new Single[Op1ElementCount];
 
@@ -104,7 +104,7 @@ namespace JIT.HardwareIntrinsics.X86._Avx512F.handwritten
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)(random.NextDouble()); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _clsVar), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector256<Single>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _clsVar), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)sizeof(Vector256<Single>));
         }
 
         public SimpleUnaryOpTest__ConvertToVector512DoubleSingle()
@@ -114,7 +114,7 @@ namespace JIT.HardwareIntrinsics.X86._Avx512F.handwritten
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)(random.NextDouble()); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _fld), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector256<Single>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _fld), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)sizeof(Vector256<Single>));
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)(random.NextDouble()); }
             _dataTable = new SimpleUnaryOpTest__DataTable<Double, Single>(_data, new Double[RetElementCount], LargestVectorSize);
@@ -261,7 +261,7 @@ namespace JIT.HardwareIntrinsics.X86._Avx512F.handwritten
             Double[] outArray = new Double[RetElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<Single, byte>(ref inArray[0]), firstOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector512<Double>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)sizeof(Vector512<Double>));
 
             ValidateResult(inArray, outArray, method);
         }
@@ -271,8 +271,8 @@ namespace JIT.HardwareIntrinsics.X86._Avx512F.handwritten
             Single[] inArray = new Single[Op1ElementCount];
             Double[] outArray = new Double[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector256<Single>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector512<Double>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)sizeof(Vector256<Single>));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)sizeof(Vector512<Double>));
 
             ValidateResult(inArray, outArray, method);
         }

@@ -77,7 +77,6 @@ namespace Internal.Reflection.Core.Execution
         // Other
         //==============================================================================================
         public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
-        public abstract void GetEnumInfo(RuntimeTypeHandle typeHandle, out string[] names, out object[] values, out bool isFlags);
         public abstract IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker);
         public abstract MethodInfo GetDelegateMethod(Delegate del);
         public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
@@ -90,16 +89,16 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         // Non-public methods
         //==============================================================================================
-        internal MethodBaseInvoker GetMethodInvoker(RuntimeTypeInfo declaringType, QMethodDefinition methodHandle, RuntimeTypeInfo[] genericMethodTypeArguments, MemberInfo exceptionPertainant, out Exception exception)
+        internal MethodBaseInvoker GetMethodInvoker(RuntimeTypeInfo declaringType, QMethodDefinition methodHandle, RuntimeTypeInfo[] genericMethodTypeArguments, MemberInfo exceptionPertainant, int parameterCount, out Exception exception)
         {
             exception = null;
 
             if (declaringType.ContainsGenericParameters)
-                return new OpenMethodInvoker();
+                return new OpenMethodInvoker(parameterCount);
             for (int i = 0; i < genericMethodTypeArguments.Length; i++)
             {
                 if (genericMethodTypeArguments[i].ContainsGenericParameters)
-                    return new OpenMethodInvoker();
+                    return new OpenMethodInvoker(parameterCount);
             }
 
             RuntimeTypeHandle typeDefinitionHandle = declaringType.TypeHandle;

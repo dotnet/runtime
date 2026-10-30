@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Interop
 {
@@ -111,14 +110,21 @@ namespace Microsoft.Interop
         ManagedTypeInfo EntryPointType,
         CustomTypeMarshallers Marshallers) : MarshallingInfo;
 
+    public sealed record IidParameterIndexNativeMarshallingInfo(
+        ManagedTypeInfo EntryPointType,
+        CustomTypeMarshallers Marshallers,
+        TypePositionInfo IidParameterIndexInfo) : NativeMarshallingAttributeInfo(EntryPointType, Marshallers)
+    {
+        public override IEnumerable<TypePositionInfo> ElementDependencies => [IidParameterIndexInfo];
+    }
+
     /// <summary>
     /// Custom type marshalling via MarshalUsingAttribute or NativeMarshallingAttribute for a linear collection
     /// </summary>
     public sealed record NativeLinearCollectionMarshallingInfo(
         ManagedTypeInfo EntryPointType,
         CustomTypeMarshallers Marshallers,
-        CountInfo ElementCountInfo,
-        ManagedTypeInfo PlaceholderTypeParameter) : NativeMarshallingAttributeInfo(
+        CountInfo ElementCountInfo) : NativeMarshallingAttributeInfo(
             EntryPointType,
             Marshallers)
     {
@@ -169,7 +175,7 @@ namespace Microsoft.Interop
                 SpecialType.System_UInt32 => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsHResultMarshaller}<uint>", unmanagedReturnType),
                 SpecialType.System_Single => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsNaNMarshaller}<float>", unmanagedReturnType),
                 SpecialType.System_Double => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsNaNMarshaller}<double>", unmanagedReturnType),
-                _ => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsDefaultMarshaller}<{MarshallerHelpers.GetCompatibleGenericTypeParameterSyntax(SyntaxFactory.ParseTypeName(unmanagedReturnType.FullTypeName))}>", unmanagedReturnType),
+                _ => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsDefaultMarshaller}<{MarshallerHelpers.GetCompatibleGenericTypeParameter(unmanagedReturnType)}>", unmanagedReturnType),
             };
 
             static NativeMarshallingAttributeInfo CreateWellKnownComExceptionMarshallingData(string marshallerName, ManagedTypeInfo unmanagedType)

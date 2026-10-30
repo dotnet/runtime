@@ -353,6 +353,11 @@ namespace Internal.Metadata.NativeFormat.Writer
                 section.Place(rec);
             }
 
+            foreach (var rec in records)
+            {
+                rec.PlaceHashtables(section);
+            }
+
             writer.Save(stream);
 
             if (LogWriter != null)
@@ -534,6 +539,10 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal abstract void Visit(IRecordVisitor visitor);
 
+        internal virtual void PlaceHashtables(Section section)
+        {
+        }
+
         public override string ToString()
         {
             return "[@TODO:" + this.GetType().ToString() + "]";
@@ -616,15 +625,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (includeHandleValue)
                 str += string.Format("({0})", Handle.ToString());
 
-            if (this.ParentScopeOrNamespace != null)
-            {
-                var pns = this.ParentScopeOrNamespace as NamespaceDefinition;
-                if (pns != null)
-                {
-                    if (!string.IsNullOrEmpty(pns.ToString(false)))
-                        str = pns.ToString(false) + '.' + str;
-                }
-            }
             return str;
         }
     }
@@ -651,25 +651,21 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (includeHandleValue)
                 str += string.Format("({0})", Handle.ToString());
 
-            if (this.ParentScopeOrNamespace != null)
-            {
-                var pns = this.ParentScopeOrNamespace as NamespaceReference;
-                if (pns != null)
-                {
-                    if (!string.IsNullOrEmpty(pns.ToString(false)))
-                        str = pns.ToString(false) + '.' + str;
-                }
-                else
-                {
-                    //str = ParentScopeOrNamespace.ToString() + " : " + str;
-                }
-            }
             return str;
         }
     }
 
     public partial class TypeDefinition
     {
+        internal int GetLookupHashCode()
+        {
+            Debug.Assert(NamespaceOrEnclosingType is NamespaceDefinition);
+            NamespaceDefinition namespaceDefinition = (NamespaceDefinition)NamespaceOrEnclosingType;
+            return VersionResilientHashCode.NameHashCode(
+                VersionResilientHashCode.NameHashCode((namespaceDefinition.Name?.Value).AsSpan()),
+                VersionResilientHashCode.NameHashCode(Name.Value.AsSpan()));
+        }
+
         public override string ToString()
         {
             return ToString(false);
@@ -677,16 +673,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString(bool includeHandleValue)
         {
             string str;
-            if (this.EnclosingType != null)
+            if (this.NamespaceOrEnclosingType is TypeDefinition enclosingType)
             {
-                str = this.EnclosingType.ToString(false) + "+" + Name.Value;
+                str = enclosingType.ToString(false) + "+" + Name.Value;
                 if (includeHandleValue)
                     str += string.Format(" ({0:x})", Handle._value);
                 return str;
             }
-            else if (this.NamespaceDefinition != null && this.NamespaceDefinition.Name != null)
+            else if (this.NamespaceOrEnclosingType is NamespaceDefinition namespaceDefinition && namespaceDefinition.Name != null)
             {
-                str = this.NamespaceDefinition.ToString(false) + "." + Name.Value;
+                str = namespaceDefinition.ToString(false) + "." + Name.Value;
                 if (includeHandleValue)
                     str += string.Format(" ({0:x})", Handle._value);
                 return str;
@@ -707,10 +703,10 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString(bool includeHandleValue)
         {
             string s = "";
-            if (ParentNamespaceOrType is NamespaceReference)
-                s += ParentNamespaceOrType.ToString(false) + ".";
-            if (ParentNamespaceOrType is TypeReference)
-                s += ParentNamespaceOrType.ToString(false) + "+";
+            if (NamespaceOrEnclosingType is NamespaceReference)
+                s += NamespaceOrEnclosingType.ToString(false) + ".";
+            if (NamespaceOrEnclosingType is TypeReference)
+                s += NamespaceOrEnclosingType.ToString(false) + "+";
             s += TypeName.Value;
             if (includeHandleValue)
                 s += string.Format(" ({0:x})", Handle._value);
@@ -720,9 +716,16 @@ namespace Internal.Metadata.NativeFormat.Writer
 
     public partial class TypeForwarder
     {
+        internal int GetLookupHashCode()
+        {
+            return VersionResilientHashCode.NameHashCode(
+                VersionResilientHashCode.NameHashCode((Namespace.Name?.Value).AsSpan()),
+                VersionResilientHashCode.NameHashCode(Name.Value.AsSpan()));
+        }
+
         public override string ToString()
         {
-            return this.Name.Value + " -> " + this.Scope.Name.Value;
+            return this.Name.Value + " -> " + this.Namespace.Scope.Name.Value;
         }
     }
 

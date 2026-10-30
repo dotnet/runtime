@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Xunit;
@@ -10,6 +11,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public static partial class JsonSourceGenerationOptionsTests
     {
         [Fact]
+        [RequiresUnreferencedCode("AssertOptionsEqual uses reflection to enumerate JsonSerializerOptions properties.")]
         public static void ContextWithGeneralSerializerDefaults_GeneratesExpectedOptions()
         {
             JsonSerializerOptions expected = new(JsonSerializerDefaults.General) { TypeInfoResolver = ContextWithGeneralSerializerDefaults.Default };
@@ -24,6 +26,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         { }
 
         [Fact]
+        [RequiresUnreferencedCode("AssertOptionsEqual uses reflection to enumerate JsonSerializerOptions properties.")]
         public static void ContextWithWebSerializerDefaults_GeneratesExpectedOptions()
         {
             JsonSerializerOptions expected = new(JsonSerializerDefaults.Web) { TypeInfoResolver = ContextWithWebSerializerDefaults.Default };
@@ -38,6 +41,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         { }
 
         [Fact]
+        [RequiresUnreferencedCode("AssertOptionsEqual uses reflection to enumerate JsonSerializerOptions properties.")]
         public static void ContextWithStrictSerializerDefaults_GeneratesExpectedOptions()
         {
             JsonSerializerOptions expected = new(JsonSerializerDefaults.Strict) { TypeInfoResolver = ContextWithStrictSerializerDefaults.Default };
@@ -52,6 +56,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         { }
 
         [Fact]
+        [RequiresUnreferencedCode("AssertOptionsEqual uses reflection to enumerate JsonSerializerOptions properties.")]
         public static void ContextWithWebDefaultsAndOverriddenPropertyNamingPolicy_GeneratesExpectedOptions()
         {
             JsonSerializerOptions expected = new(JsonSerializerDefaults.Web)
@@ -71,6 +76,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         { }
 
         [Fact]
+        [RequiresUnreferencedCode("AssertOptionsEqual uses reflection to enumerate JsonSerializerOptions properties.")]
         public static void ContextWithAllOptionsSet_GeneratesExpectedOptions()
         {
             JsonSerializerOptions expected = new(JsonSerializerDefaults.Web)

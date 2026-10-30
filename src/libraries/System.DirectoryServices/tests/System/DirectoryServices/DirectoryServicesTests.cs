@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Sdk;
-using System.Reflection;
 
 namespace System.DirectoryServices.Tests
 {
@@ -18,7 +18,9 @@ namespace System.DirectoryServices.Tests
         [Fact]
         public void TestGetAllTypes()
         {
+#pragma warning disable IL2026 // Test validates Assembly.GetTypes in an untrimmed test build.
             Type[] allTypes = typeof(DirectoryEntry).Assembly.GetTypes();
+#pragma warning restore IL2026
             Assert.Contains(typeof(DirectoryEntry), allTypes);
         }
 

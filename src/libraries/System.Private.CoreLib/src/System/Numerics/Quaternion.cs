@@ -33,6 +33,7 @@ namespace System.Numerics
         /// <param name="z">The value to assign to the Z component of the quaternion.</param>
         /// <param name="w">The value to assign to the W component of the quaternion.</param>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Quaternion(float x, float y, float z, float w)
         {
             this = Create(x, y, z, w);
@@ -42,6 +43,7 @@ namespace System.Numerics
         /// <param name="vectorPart">The vector part of the quaternion.</param>
         /// <param name="scalarPart">The rotation part of the quaternion.</param>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Quaternion(Vector3 vectorPart, float scalarPart)
         {
             this = Create(vectorPart, scalarPart);
@@ -52,6 +54,7 @@ namespace System.Numerics
         public static Quaternion Zero
         {
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => default;
         }
 
@@ -60,7 +63,8 @@ namespace System.Numerics
         public static Quaternion Identity
         {
             [Intrinsic]
-            get => Create(0.0f, 0.0f, 0.0f, 1.0f);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f).AsQuaternion();
         }
 
         /// <summary>Gets or sets the element at the specified index.</summary>
@@ -70,6 +74,7 @@ namespace System.Numerics
         public float this[int index]
         {
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             readonly get => this.AsVector128().GetElement(index);
 
             [Intrinsic]
@@ -83,7 +88,12 @@ namespace System.Numerics
         /// <summary>Gets a value that indicates whether the current instance is the identity quaternion.</summary>
         /// <value><see langword="true" /> if the current instance is the identity quaternion; otherwise, <see langword="false" />.</value>
         /// <altmember cref="Identity" />
-        public readonly bool IsIdentity => this == Identity;
+        public readonly bool IsIdentity
+        {
+            [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => this.AsVector128() == Vector128.Create(0.0f, 0.0f, 0.0f, 1.0f);
+        }
 
         /// <summary>Adds each element in one quaternion with its corresponding element in a second quaternion.</summary>
         /// <param name="value1">The first quaternion.</param>
@@ -99,7 +109,8 @@ namespace System.Numerics
         /// <param name="value2">The divisor.</param>
         /// <returns>The quaternion that results from dividing <paramref name="value1" /> by <paramref name="value2" />.</returns>
         /// <remarks>The <see cref="op_Division" /> method defines the division operation for <see cref="Quaternion" /> objects.</remarks>
-        public static Quaternion operator /(Quaternion value1, Quaternion value2) => value1 * Inverse(value2);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion operator /(Quaternion value1, Quaternion value2) => Concatenate(Inverse(value2.AsVector128()), value1.AsVector128()).AsQuaternion();
 
         /// <summary>Returns a value that indicates whether two quaternions are equal.</summary>
         /// <param name="value1">The first quaternion to compare.</param>
@@ -116,7 +127,8 @@ namespace System.Numerics
         /// <param name="value2">The second quaternion to compare.</param>
         /// <returns><see langword="true" /> if <paramref name="value1" /> and <paramref name="value2" /> are not equal; otherwise, <see langword="false" />.</returns>
         [Intrinsic]
-        public static bool operator !=(Quaternion value1, Quaternion value2) => !(value1 == value2);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(Quaternion value1, Quaternion value2) => value1.AsVector128() != value2.AsVector128();
 
         /// <summary>Returns the quaternion that results from multiplying two quaternions together.</summary>
         /// <param name="value1">The first quaternion.</param>
@@ -124,20 +136,7 @@ namespace System.Numerics
         /// <returns>The product quaternion.</returns>
         /// <remarks>The <see cref="Quaternion.op_Multiply" /> method defines the operation of the multiplication operator for <see cref="Quaternion" /> objects.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Quaternion operator *(Quaternion value1, Quaternion value2)
-        {
-            // This implementation is based on the DirectX Math Library XMQuaternionMultiply method
-            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMisc.inl
-
-            Vector128<float> left = value1.AsVector128();
-            Vector128<float> right = value2.AsVector128();
-
-            Vector128<float> result = right * left.GetElement(3);
-            result = Vector128.MultiplyAddEstimate(Vector128.Shuffle(right, Vector128.Create(3, 2, 1, 0)) * left.GetElement(0), Vector128.Create(+1.0f, -1.0f, +1.0f, -1.0f), result);
-            result = Vector128.MultiplyAddEstimate(Vector128.Shuffle(right, Vector128.Create(2, 3, 0, 1)) * left.GetElement(1), Vector128.Create(+1.0f, +1.0f, -1.0f, -1.0f), result);
-            result = Vector128.MultiplyAddEstimate(Vector128.Shuffle(right, Vector128.Create(1, 0, 3, 2)) * left.GetElement(2), Vector128.Create(-1.0f, +1.0f, +1.0f, -1.0f), result);
-            return result.AsQuaternion();
-        }
+        public static Quaternion operator *(Quaternion value1, Quaternion value2) => Concatenate(value2, value1);
 
         /// <summary>Returns the quaternion that results from scaling all the components of a specified quaternion by a scalar factor.</summary>
         /// <param name="value1">The source quaternion.</param>
@@ -170,25 +169,42 @@ namespace System.Numerics
         /// <param name="value2">The second quaternion.</param>
         /// <returns>The quaternion that contains the summed values of <paramref name="value1" /> and <paramref name="value2" />.</returns>
         [Intrinsic]
-        public static Quaternion Add(Quaternion value1, Quaternion value2) => value1 + value2;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion Add(Quaternion value1, Quaternion value2) => (value1.AsVector128() + value2.AsVector128()).AsQuaternion();
 
         /// <summary>Concatenates two quaternions.</summary>
         /// <param name="value1">The first quaternion rotation in the series.</param>
         /// <param name="value2">The second quaternion rotation in the series.</param>
         /// <returns>A new quaternion representing the concatenation of the <paramref name="value1" /> rotation followed by the <paramref name="value2" /> rotation.</returns>
-        public static Quaternion Concatenate(Quaternion value1, Quaternion value2) => value2 * value1;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion Concatenate(Quaternion value1, Quaternion value2) => Concatenate(value1.AsVector128(), value2.AsVector128()).AsQuaternion();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> Concatenate(Vector128<float> value1, Vector128<float> value2)
+        {
+            // This implementation is based on the DirectX Math Library XMQuaternionMultiply method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMisc.inl
+
+            Vector128<float> result = value1 * value2.GetElement(3);
+            result = Vector128.MultiplyAddEstimate(Vector128.Shuffle(value1, Vector128.Create(3, 2, 1, 0)) * value2.GetElement(0), Vector128.Create(+1.0f, -1.0f, +1.0f, -1.0f), result);
+            result = Vector128.MultiplyAddEstimate(Vector128.Shuffle(value1, Vector128.Create(2, 3, 0, 1)) * value2.GetElement(1), Vector128.Create(+1.0f, +1.0f, -1.0f, -1.0f), result);
+            result = Vector128.MultiplyAddEstimate(Vector128.Shuffle(value1, Vector128.Create(1, 0, 3, 2)) * value2.GetElement(2), Vector128.Create(-1.0f, +1.0f, +1.0f, -1.0f), result);
+            return result;
+        }
 
         /// <summary>Returns the conjugate of a specified quaternion.</summary>
         /// <param name="value">The quaternion.</param>
         /// <returns>A new quaternion that is the conjugate of <see langword="value" />.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Quaternion Conjugate(Quaternion value)
+        public static Quaternion Conjugate(Quaternion value) => Conjugate(value.AsVector128()).AsQuaternion();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> Conjugate(Vector128<float> value)
         {
             // This implementation is based on the DirectX Math Library XMQuaternionConjugate method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMisc.inl
 
-            return (value.AsVector128() * Vector128.Create(-1.0f, -1.0f, -1.0f, 1.0f)).AsQuaternion();
+            return value * Vector128.Create(-1.0f, -1.0f, -1.0f, 1.0f);
         }
 
         /// <summary>Creates a <see cref="Quaternion" /> from the specified components.</summary>
@@ -196,8 +212,9 @@ namespace System.Numerics
         /// <param name="y">The value to assign to the Y component of the quaternion.</param>
         /// <param name="z">The value to assign to the Z component of the quaternion.</param>
         /// <param name="w">The value to assign to the W component of the quaternion.</param>
-        /// <returns>A <see cref="Quaternion" /> created from the specified components.</returns>>
+        /// <returns>A <see cref="Quaternion" /> created from the specified components.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion Create(float x, float y, float z, float w) => Vector128.Create(x, y, z, w).AsQuaternion();
 
         /// <summary>Creates a <see cref="Quaternion" /> from the specified vector and rotation parts.</summary>
@@ -205,6 +222,7 @@ namespace System.Numerics
         /// <param name="scalarPart">The rotation part of the quaternion.</param>
         /// <returns>A <see cref="Quaternion" /> created from the specified vector and rotation parts.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion Create(Vector3 vectorPart, float scalarPart) => Vector4.Create(vectorPart, scalarPart).AsQuaternion();
 
         /// <summary>Creates a quaternion from a unit vector and an angle to rotate around the vector.</summary>
@@ -213,64 +231,69 @@ namespace System.Numerics
         /// <returns>The newly created quaternion.</returns>
         /// <remarks><paramref name="axis" /> vector must be normalized before calling this method or the resulting <see cref="Quaternion" /> will be incorrect.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Quaternion CreateFromAxisAngle(Vector3 axis, float angle)
+        public static Quaternion CreateFromAxisAngle(Vector3 axis, float angle) => CreateFromAxisAngle(axis.AsVector128Unsafe(), angle).AsQuaternion();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> CreateFromAxisAngle(Vector128<float> axis, float angle)
         {
             // This implementation is based on the DirectX Math Library XMQuaternionRotationNormal method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMisc.inl
 
             (float s, float c) = float.SinCos(angle * 0.5f);
-            return (Vector4.Create(axis, 1) * Vector4.Create(Vector3.Create(s), c)).AsQuaternion();
+            return (axis * Vector128.Create(s)).WithElement(3, c);
         }
 
         /// <summary>Creates a quaternion from the specified rotation matrix.</summary>
         /// <param name="matrix">The rotation matrix.</param>
         /// <returns>The newly created quaternion.</returns>
-        public static Quaternion CreateFromRotationMatrix(Matrix4x4 matrix)
-        {
-            float trace = matrix.M11 + matrix.M22 + matrix.M33;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion CreateFromRotationMatrix(Matrix4x4 matrix) => CreateFromRotationMatrix(in matrix.AsROImpl()).AsQuaternion();
 
-            Quaternion q = default;
+        internal static Vector128<float> CreateFromRotationMatrix(in Matrix4x4.Impl matrix)
+        {
+            float trace = matrix.X.GetElement(0) + matrix.Y.GetElement(1) + matrix.Z.GetElement(2);
+
+            Vector128<float> q = default;
 
             if (trace > 0.0f)
             {
                 float s = float.Sqrt(trace + 1.0f);
-                q.W = s * 0.5f;
-                s = 0.5f / s;
-                q.X = (matrix.M23 - matrix.M32) * s;
-                q.Y = (matrix.M31 - matrix.M13) * s;
-                q.Z = (matrix.M12 - matrix.M21) * s;
+                float invS = 0.5f / s;
+                q = q.WithElement(0, (matrix.Y.GetElement(2) - matrix.Z.GetElement(1)) * invS);
+                q = q.WithElement(1, (matrix.Z.GetElement(0) - matrix.X.GetElement(2)) * invS);
+                q = q.WithElement(2, (matrix.X.GetElement(1) - matrix.Y.GetElement(0)) * invS);
+                q = q.WithElement(3, s * 0.5f);
             }
             else
             {
-                if (matrix.M11 >= matrix.M22 && matrix.M11 >= matrix.M33)
+                if (matrix.X.GetElement(0) >= matrix.Y.GetElement(1) && matrix.X.GetElement(0) >= matrix.Z.GetElement(2))
                 {
-                    float s = float.Sqrt(1.0f + matrix.M11 - matrix.M22 - matrix.M33);
+                    float s = float.Sqrt(1.0f + matrix.X.GetElement(0) - matrix.Y.GetElement(1) - matrix.Z.GetElement(2));
                     float invS = 0.5f / s;
-                    q.X = 0.5f * s;
-                    q.Y = (matrix.M12 + matrix.M21) * invS;
-                    q.Z = (matrix.M13 + matrix.M31) * invS;
-                    q.W = (matrix.M23 - matrix.M32) * invS;
+                    q = q.WithElement(0, 0.5f * s);
+                    q = q.WithElement(1, (matrix.X.GetElement(1) + matrix.Y.GetElement(0)) * invS);
+                    q = q.WithElement(2, (matrix.X.GetElement(2) + matrix.Z.GetElement(0)) * invS);
+                    q = q.WithElement(3, (matrix.Y.GetElement(2) - matrix.Z.GetElement(1)) * invS);
                 }
-                else if (matrix.M22 > matrix.M33)
+                else if (matrix.Y.GetElement(1) > matrix.Z.GetElement(2))
                 {
-                    float s = float.Sqrt(1.0f + matrix.M22 - matrix.M11 - matrix.M33);
+                    float s = float.Sqrt(1.0f + matrix.Y.GetElement(1) - matrix.X.GetElement(0) - matrix.Z.GetElement(2));
                     float invS = 0.5f / s;
-                    q.X = (matrix.M21 + matrix.M12) * invS;
-                    q.Y = 0.5f * s;
-                    q.Z = (matrix.M32 + matrix.M23) * invS;
-                    q.W = (matrix.M31 - matrix.M13) * invS;
+                    q = q.WithElement(0, (matrix.Y.GetElement(0) + matrix.X.GetElement(1)) * invS);
+                    q = q.WithElement(1, 0.5f * s);
+                    q = q.WithElement(2, (matrix.Z.GetElement(1) + matrix.Y.GetElement(2)) * invS);
+                    q = q.WithElement(3, (matrix.Z.GetElement(0) - matrix.X.GetElement(2)) * invS);
                 }
                 else
                 {
-                    float s = float.Sqrt(1.0f + matrix.M33 - matrix.M11 - matrix.M22);
+                    float s = float.Sqrt(1.0f + matrix.Z.GetElement(2) - matrix.X.GetElement(0) - matrix.Y.GetElement(1));
                     float invS = 0.5f / s;
-                    q.X = (matrix.M31 + matrix.M13) * invS;
-                    q.Y = (matrix.M32 + matrix.M23) * invS;
-                    q.Z = 0.5f * s;
-                    q.W = (matrix.M12 - matrix.M21) * invS;
+                    q = q.WithElement(0, (matrix.Z.GetElement(0) + matrix.X.GetElement(2)) * invS);
+                    q = q.WithElement(1, (matrix.Z.GetElement(1) + matrix.Y.GetElement(2)) * invS);
+                    q = q.WithElement(2, 0.5f * s);
+                    q = q.WithElement(3, (matrix.X.GetElement(1) - matrix.Y.GetElement(0)) * invS);
                 }
             }
-
             return q;
         }
 
@@ -301,6 +324,7 @@ namespace System.Numerics
         /// <param name="value1">The dividend.</param>
         /// <param name="value2">The divisor.</param>
         /// <returns>The quaternion that results from dividing <paramref name="value1" /> by <paramref name="value2" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion Divide(Quaternion value1, Quaternion value2) => value1 / value2;
 
         /// <summary>Calculates the dot product of two quaternions.</summary>
@@ -314,9 +338,12 @@ namespace System.Numerics
         /// <summary>Returns the inverse of a quaternion.</summary>
         /// <param name="value">The quaternion.</param>
         /// <returns>The inverted quaternion.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion Inverse(Quaternion value) => Inverse(value.AsVector128()).AsQuaternion();
+
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Quaternion Inverse(Quaternion value)
+        internal static Vector128<float> Inverse(Vector128<float> value)
         {
             // This implementation is based on the DirectX Math Library XMQuaternionInverse method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMisc.inl
@@ -327,11 +354,11 @@ namespace System.Numerics
             // q   = ( -------------   ------------- )
             //       (  a^2 + |v|^2  ,  a^2 + |v|^2  )
 
-            Vector128<float> lengthSquared = Vector128.Create(value.LengthSquared());
+            Vector128<float> lengthSquared = Vector128.Create(Vector128.LengthSquared(value));
             return Vector128.AndNot(
-                (Conjugate(value).AsVector128() / lengthSquared),
+                (Conjugate(value) / lengthSquared),
                 Vector128.LessThanOrEqual(lengthSquared, Vector128.Create(Epsilon))
-            ).AsQuaternion();
+            );
         }
 
         /// <summary>Performs a linear interpolation between two quaternions based on a value that specifies the weighting of the second quaternion.</summary>
@@ -339,45 +366,50 @@ namespace System.Numerics
         /// <param name="quaternion2">The second quaternion.</param>
         /// <param name="amount">The relative weight of <paramref name="quaternion2" /> in the interpolation.</param>
         /// <returns>The interpolated quaternion.</returns>
-        public static Quaternion Lerp(Quaternion quaternion1, Quaternion quaternion2, float amount)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion Lerp(Quaternion quaternion1, Quaternion quaternion2, float amount) => Lerp(quaternion1.AsVector128(), quaternion2.AsVector128(), Vector128.Create(amount)).AsQuaternion();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> Lerp(Vector128<float> quaternion1, Vector128<float> quaternion2, Vector128<float> amount)
         {
-            Vector128<float> q2 = quaternion2.AsVector128();
-
-            q2 = Vector128.ConditionalSelect(
-                Vector128.GreaterThanOrEqual(Vector128.Create(Dot(quaternion1, quaternion2)), Vector128<float>.Zero),
-                 q2,
-                -q2
+            Vector128<float> temp = Vector128.ConditionalSelect(
+                Vector128.IsPositive(Vector128.Create(Vector128.Dot(quaternion1, quaternion2))),
+                +quaternion2,
+                -quaternion2
             );
-
-            Vector128<float> result = Vector128.MultiplyAddEstimate(quaternion1.AsVector128(), Vector128.Create(1.0f - amount), q2 * amount);
-            return Normalize(result.AsQuaternion());
+            return Vector128.Normalize(
+                Vector128.MultiplyAddEstimate(quaternion1, Vector128<float>.One - amount, temp * amount)
+            );
         }
 
         /// <summary>Returns the quaternion that results from multiplying two quaternions together.</summary>
         /// <param name="value1">The first quaternion.</param>
         /// <param name="value2">The second quaternion.</param>
         /// <returns>The product quaternion.</returns>
-        public static Quaternion Multiply(Quaternion value1, Quaternion value2) => value1 * value2;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion Multiply(Quaternion value1, Quaternion value2) => Concatenate(value2, value1);
 
         /// <summary>Returns the quaternion that results from scaling all the components of a specified quaternion by a scalar factor.</summary>
         /// <param name="value1">The source quaternion.</param>
         /// <param name="value2">The scalar value.</param>
         /// <returns>The scaled quaternion.</returns>
         [Intrinsic]
-        public static Quaternion Multiply(Quaternion value1, float value2) => value1 * value2;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion Multiply(Quaternion value1, float value2) => (value1.AsVector128() * Vector128.Create(value2)).AsQuaternion();
 
         /// <summary>Reverses the sign of each component of the quaternion.</summary>
         /// <param name="value">The quaternion to negate.</param>
         /// <returns>The negated quaternion.</returns>
         [Intrinsic]
-        public static Quaternion Negate(Quaternion value) => -value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion Negate(Quaternion value) => (-value.AsVector128()).AsQuaternion();
 
         /// <summary>Divides each component of a specified <see cref="Quaternion" /> by its length.</summary>
         /// <param name="value">The quaternion to normalize.</param>
         /// <returns>The normalized quaternion.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Quaternion Normalize(Quaternion value) => (value.AsVector128() / value.Length()).AsQuaternion();
+        public static Quaternion Normalize(Quaternion value) => Vector128.Normalize(value.AsVector128()).AsQuaternion();
 
         /// <summary>Interpolates between two quaternions, using spherical linear interpolation.</summary>
         /// <param name="quaternion1">The first quaternion.</param>
@@ -391,7 +423,7 @@ namespace System.Numerics
             float cosOmega = Dot(quaternion1, quaternion2);
             float sign = 1.0f;
 
-            if (cosOmega < 0.0f)
+            if (float.IsNegative(cosOmega))
             {
                 cosOmega = -cosOmega;
                 sign = -1.0f;
@@ -422,7 +454,8 @@ namespace System.Numerics
         /// <param name="value2">The second quaternion.</param>
         /// <returns>The quaternion containing the values that result from subtracting each element in <paramref name="value2" /> from its corresponding element in <paramref name="value1" />.</returns>
         [Intrinsic]
-        public static Quaternion Subtract(Quaternion value1, Quaternion value2) => value1 - value2;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion Subtract(Quaternion value1, Quaternion value2) => (value1.AsVector128() - value2.AsVector128()).AsQuaternion();
 
         /// <summary>Returns a value that indicates whether this instance and a specified object are equal.</summary>
         /// <param name="obj">The object to compare with the current instance.</param>
@@ -434,6 +467,7 @@ namespace System.Numerics
         /// <param name="other">The other quaternion.</param>
         /// <returns><see langword="true" /> if the two quaternions are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two quaternions are equal if each of their corresponding components is equal.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Quaternion other) => this.AsVector128().Equals(other.AsVector128());
 
@@ -444,12 +478,14 @@ namespace System.Numerics
         /// <summary>Calculates the length of the quaternion.</summary>
         /// <returns>The computed length of the quaternion.</returns>
         [Intrinsic]
-        public readonly float Length() => float.Sqrt(LengthSquared());
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly float Length() => Vector128.Length(this.AsVector128());
 
         /// <summary>Calculates the squared length of the quaternion.</summary>
         /// <returns>The length squared of the quaternion.</returns>
         [Intrinsic]
-        public readonly float LengthSquared() => Dot(this, this);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly float LengthSquared() => Vector128.LengthSquared(this.AsVector128());
 
         /// <summary>Returns a string that represents this quaternion.</summary>
         /// <returns>The string representation of this quaternion.</returns>

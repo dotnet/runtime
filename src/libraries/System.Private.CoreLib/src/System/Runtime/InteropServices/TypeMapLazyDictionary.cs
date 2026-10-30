@@ -72,14 +72,18 @@ namespace System.Runtime.InteropServices
         // See assemblynative.hpp for native version.
         public unsafe struct ProcessAttributesCallbackArg
         {
+            /// <safety>Holds only a pointer value addressing a native UTF-8 string; reading or writing the field never dereferences it, so field access alone cannot read or write that memory (any dereference requires an unsafe context).</safety>
             public void* Utf8String1;
+            /// <safety>Holds only a pointer value addressing a native UTF-8 string; reading or writing the field never dereferences it, so field access alone cannot read or write that memory (any dereference requires an unsafe context).</safety>
             public void* Utf8String2;
             public int StringLen1;
             public int StringLen2;
         }
 
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributes")]
-        [RequiresUnsafe]
         private static unsafe partial void ProcessAttributes(
             QCallAssembly assembly,
             QCallTypeHandle groupType,
@@ -89,9 +93,15 @@ namespace System.Runtime.InteropServices
             delegate* unmanaged<CallbackContext*, Interop.BOOL> newPrecachedProxyTypeMap,
             CallbackContext* context);
 
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry", StringMarshalling = StringMarshalling.Utf8)]
         private static unsafe partial IntPtr FindPrecachedExternalTypeMapEntry(QCallModule module, QCallTypeHandle groupType, string key);
 
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry")]
         private static unsafe partial IntPtr FindPrecachedProxyTypeMapEntry(QCallModule module, QCallTypeHandle groupType, QCallTypeHandle type);
 
@@ -134,7 +144,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL NewPrecachedExternalTypeMap(CallbackContext* context)
         {
             Debug.Assert(context != null);
@@ -153,7 +162,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL NewPrecachedProxyTypeMap(CallbackContext* context)
         {
             Debug.Assert(context != null);
@@ -172,7 +180,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL NewExternalTypeEntry(CallbackContext* context, ProcessAttributesCallbackArg* arg)
         {
             Debug.Assert(context != null);
@@ -200,7 +207,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL NewProxyTypeEntry(CallbackContext* context, ProcessAttributesCallbackArg* arg)
         {
             Debug.Assert(context != null);
@@ -239,7 +245,6 @@ namespace System.Runtime.InteropServices
             return Interop.BOOL.TRUE; // Continue processing.
         }
 
-        [RequiresUnsafe]
         private static unsafe CallbackContext CreateMaps(
             RuntimeType groupType,
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newExternalTypeEntry,
@@ -363,7 +368,7 @@ namespace System.Runtime.InteropServices
 
         private unsafe struct TypeNameUtf8
         {
-            [RequiresUnsafe]
+            /// <safety>Reads or stores only a pointer value addressing a native UTF-8 type name; it never dereferences the pointed-to memory, so accessing the property cannot itself read or write that memory (any dereference requires an unsafe context).</safety>
             public required void* Utf8TypeName { get; init; }
             public required int Utf8TypeNameLen { get; init; }
         }
@@ -414,8 +419,14 @@ namespace System.Runtime.InteropServices
             protected override bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, string key, [NotNullWhen(true)] out Type? type)
             {
                 IntPtr handle = FindPrecachedExternalTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), key);
-                type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
-                return type != null;
+                if (handle == IntPtr.Zero)
+                {
+                    type = null;
+                    return false;
+                }
+
+                type = RuntimeTypeHandle.GetRuntimeTypeFromHandle(handle);
+                return true;
             }
 
             protected override bool TryGetOrLoadType(string key, [NotNullWhen(true)] out Type? type)
@@ -489,8 +500,13 @@ namespace System.Runtime.InteropServices
             {
                 RuntimeType rtKey = (RuntimeType)key;
                 IntPtr handle = FindPrecachedProxyTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), new QCallTypeHandle(ref rtKey));
-                type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
-                return type != null;
+                if (handle == IntPtr.Zero)
+                {
+                    type = null;
+                    return false;
+                }
+                type = RuntimeTypeHandle.GetRuntimeTypeFromHandle(handle);
+                return true;
             }
 
             protected override bool TryGetOrLoadType(Type key, [NotNullWhen(true)] out Type? type)

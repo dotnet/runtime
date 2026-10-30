@@ -16,7 +16,12 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         {
             foreach (var stackFrame in new StackTrace(1).GetFrames().Take(2))
             {
-                if (SkippedTests.Contains(stackFrame.GetMethod().Name))
+#if NET
+                var methodName = DiagnosticMethodInfo.Create(stackFrame)?.Name;
+#else
+                var methodName = stackFrame.GetMethod()?.Name;
+#endif
+                if (SkippedTests.Contains(methodName))
                 {
                     // We skip tests by returning MEDI service provider that we know passes the test
                     return serviceCollection.BuildServiceProvider();

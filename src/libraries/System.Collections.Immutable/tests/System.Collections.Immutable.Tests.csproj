@@ -9,6 +9,9 @@
          Suppress the NU1511 warning in the whole project as putting it on a P2P doesn't work: https://github.com/NuGet/Home/issues/14121 -->
     <NoWarn>$(NoWarn);NU1511</NoWarn>
     <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +29,7 @@
     <Compile Include="..\src\Validation\Requires.cs" Link="Validation\Requires.cs" />
     <Compile Include="BadHasher.cs" />
     <Compile Include="BinaryTreeProxy.cs" />
+    <Compile Include="CopyToTrackingCollection.cs" />
     <Compile Include="EverythingEqual.cs" />
     <Compile Include="Frozen\FrozenFromKnownValuesTests.cs" />
     <Compile Include="Frozen\KeyAnalyzerTests.cs" />

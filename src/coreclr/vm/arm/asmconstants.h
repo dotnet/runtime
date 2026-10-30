@@ -125,9 +125,6 @@ ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)
 #define ASM__VTABLE_SLOTS_PER_CHUNK_LOG2 3
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK_LOG2 == VTABLE_SLOTS_PER_CHUNK_LOG2)
 
-#define VASigCookie__pPInvokeILStub 0x4
-ASMCONSTANTS_C_ASSERT(VASigCookie__pPInvokeILStub == offsetof(VASigCookie, pPInvokeILStub))
-
 #define CONTEXT_Pc 0x040
 ASMCONSTANTS_C_ASSERT(CONTEXT_Pc == offsetof(T_CONTEXT,Pc))
 
@@ -211,11 +208,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLoc
 #endif
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
 
-#ifdef TARGET_UNIX
-#define OFFSETOF__Thread__m_pInterpThreadContext 0x630
-#else // TARGET_UNIX
-#define OFFSETOF__Thread__m_pInterpThreadContext 0x0
-#endif // TARGET_UNIX
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x1c
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
 
 #define OFFSETOF__InterpThreadContext__pStackPointer 0x8

@@ -87,7 +87,7 @@ void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, MulticoreJitCode
             MulticoreJitTrace((
                 "%p %p %d %d StoredMethodCode",
                 pMD,
-                codeInfo.GetEntryPoint(),
+                (void*)codeInfo.GetEntryPoint(),
                 (int)codeInfo.WasTier0(),
                 (int)codeInfo.JitSwitchedToOptimized()));
         }
@@ -145,7 +145,7 @@ MulticoreJitCodeInfo MulticoreJitCodeStorage::QueryAndRemoveMethodCode(MethodDes
                 MulticoreJitTrace((
                     "%p %p %d %d QueryAndRemoveMethodCode",
                     pMethod,
-                    codeInfo.GetEntryPoint(),
+                    (void*)codeInfo.GetEntryPoint(),
                     (int)codeInfo.WasTier0(),
                     (int)codeInfo.JitSwitchedToOptimized()));
             }
@@ -426,7 +426,7 @@ bool MulticoreJitManager::ModuleHasNoCode(Module * pModule)
 }
 
 
-// We only support default load context, non dynamic module, non domain neutral (needed for dependency)
+// We only support default load context, non dynamic module (needed for dependency)
 bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit)
 {
     CONTRACTL
@@ -1019,12 +1019,7 @@ void MulticoreJitProfilePlayer::TraceSummary()
 
 HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 {
-    CONTRACTL
-    {
-        THROWS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     HRESULT hr = S_OK;
 
@@ -1127,9 +1122,12 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     unsigned nSize = m_nFileSize;
 
-    MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
-        nSize,
-        GetAppDomain()->GetFriendlyName()));
+    {
+        MAKE_UTF8PTR_FROMWIDE(pFriendlyName, GetAppDomain()->GetFriendlyName());
+        MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
+            nSize,
+            pFriendlyName));
+    }
 
     while ((SUCCEEDED(hr)) && (nSize > sizeof(unsigned)))
     {
@@ -1329,7 +1327,6 @@ HRESULT MulticoreJitProfilePlayer::JITThreadProc(Thread * pThread)
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1365,7 +1362,6 @@ DWORD WINAPI MulticoreJitProfilePlayer::StaticJITThreadProc(void *args)
         GC_TRIGGERS;
         MODE_ANY;
         ENTRY_POINT;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 

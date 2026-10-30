@@ -32,15 +32,15 @@ namespace System.Net.Quic.Tests
 
         public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
         public static bool IsNotArm32CoreClrStressTest => !(CoreClrConfigurationDetection.IsStressTest && PlatformDetection.IsArmProcess);
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/123216")]
-        public static bool IsNotAzureLinux3VM => !PlatformDetection.IsAzureLinux || PlatformDetection.IsInContainer;
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/133373")]
+        public static bool IsNotOSXMono => !(PlatformDetection.IsOSX && PlatformDetection.IsMonoRuntime);
 
         public static bool IsIPv6Available => Configuration.Sockets.IsIPv6LoopbackAvailable;
 
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
-        public readonly X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
-        public readonly X509Certificate2 ClientCertificate = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate();
+        public readonly X509Certificate2 ServerCertificate = QuicTestCollection.GetServerCertificate();
+        public readonly X509Certificate2 ClientCertificate = QuicTestCollection.GetClientCertificate();
 
         public ITestOutputHelper _output;
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
@@ -98,7 +98,7 @@ namespace System.Net.Quic.Tests
             return new SslServerAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ServerCertificate = ServerCertificate
+                ServerCertificateContext = QuicTestCollection.ServerCertificateContext
             };
         }
 
@@ -213,7 +213,7 @@ namespace System.Net.Quic.Tests
             }
 
             QuicConnection clientConnection = null;
-            ValueTask<QuicConnection> serverTask = listener.AcceptConnectionAsync();
+            Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
             try
             {
                 while (retry > 0)
@@ -251,6 +251,10 @@ namespace System.Net.Quic.Tests
                 if (clientConnection is not null)
                 {
                     await clientConnection.DisposeAsync();
+                }
+                if (serverTask.IsCompleted)
+                {
+                    _output.WriteLine($"Server {(serverTask.IsCompletedSuccessfully ? "succeeded" : "failed with " + serverTask.Exception)}");
                 }
                 throw;
             }

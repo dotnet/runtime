@@ -24,6 +24,9 @@ public:
 bool isIntrinsic(
           CORINFO_METHOD_HANDLE ftn) override;
 
+bool canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn) override;
+
 bool notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn) override;
 
@@ -95,15 +98,6 @@ void getMethodVTableOffset(
 bool resolveVirtualMethod(
           CORINFO_DEVIRTUALIZATION_INFO* info) override;
 
-CORINFO_METHOD_HANDLE getUnboxedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg) override;
-
-CORINFO_METHOD_HANDLE getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg) override;
-
 CORINFO_METHOD_HANDLE getAsyncOtherVariant(
           CORINFO_METHOD_HANDLE ftn,
           bool* variantIsThunk) override;
@@ -136,9 +130,6 @@ bool pInvokeMarshalingRequired(
 
 bool satisfiesMethodConstraints(
           CORINFO_CLASS_HANDLE parent,
-          CORINFO_METHOD_HANDLE method) override;
-
-void methodMustBeLoadedBeforeCodeIsRun(
           CORINFO_METHOD_HANDLE method) override;
 
 void getGSCookie(
@@ -204,6 +195,12 @@ size_t printClassName(
           size_t* pRequiredBufferSize) override;
 
 bool isValueClass(
+          CORINFO_CLASS_HANDLE cls) override;
+
+bool isByRefLike(
+          CORINFO_CLASS_HANDLE cls) override;
+
+bool isSharedInst(
           CORINFO_CLASS_HANDLE cls) override;
 
 uint32_t getClassAttribs(
@@ -322,9 +319,6 @@ CorInfoInitClassResult initClass(
           CORINFO_FIELD_HANDLE field,
           CORINFO_METHOD_HANDLE method,
           CORINFO_CONTEXT_HANDLE context) override;
-
-void classMustBeLoadedBeforeCodeIsRun(
-          CORINFO_CLASS_HANDLE cls) override;
 
 CORINFO_CLASS_HANDLE getBuiltinClass(
           CorInfoClassId classId) override;
@@ -507,6 +501,18 @@ void getEEInfo(
 void getAsyncInfo(
           CORINFO_ASYNC_INFO* pAsyncInfoOut) override;
 
+CORINFO_METHOD_HANDLE getAwaitReturnCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg) override;
+
+CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg) override;
+
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
 
@@ -540,6 +546,12 @@ void getFpStructLowering(
 
 CorInfoWasmType getWasmLowering(
           CORINFO_CLASS_HANDLE structHnd) override;
+
+uint32_t getAddressAlignment(
+          void* address) override;
+
+void getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut) override;
 
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
@@ -591,10 +603,6 @@ void getLocationOfThisType(
 void getAddressOfPInvokeTarget(
           CORINFO_METHOD_HANDLE method,
           CORINFO_CONST_LOOKUP* pLookup) override;
-
-void* GetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig,
-          void** ppIndirection) override;
 
 void* GetCookieForInterpreterCalliSig(
           CORINFO_SIG_INFO* szMetaSig) override;
@@ -678,7 +686,8 @@ bool convertPInvokeCalliToCall(
 
 bool notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
-          bool supportEnabled) override;
+          bool supportEnabled,
+          bool preserveNegativeDependency) override;
 
 void updateEntryPointForTailCall(
           CORINFO_CONST_LOOKUP* entryPoint) override;
@@ -741,6 +750,9 @@ void recordCallSite(
           uint32_t instrOffset,
           CORINFO_SIG_INFO* callSig,
           CORINFO_METHOD_HANDLE methodHandle) override;
+
+void recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig) override;
 
 void recordRelocation(
           void* location,

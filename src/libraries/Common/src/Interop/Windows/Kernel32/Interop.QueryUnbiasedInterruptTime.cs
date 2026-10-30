@@ -15,6 +15,7 @@ internal static partial class Interop
         // We take a ulong* (rather than a out ulong) to avoid the pinning overhead.
         // We don't set last error since we don't need the extended error info.
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         [SuppressGCTransition]
         internal static unsafe partial BOOL QueryUnbiasedInterruptTime(ulong* unbiasedTime);

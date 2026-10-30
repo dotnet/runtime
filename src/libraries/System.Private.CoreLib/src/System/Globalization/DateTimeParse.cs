@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -634,7 +634,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
             {
                 case TokenType.NumberToken:
                 case TokenType.YearNumberToken:
-                    if (raw.numCount == 3 || tokenValue == -1)
+                    if (raw.numCount == DateTimeRawInfo.MaxBufferLength || tokenValue == -1)
                     {
                         result.SetBadDateTimeFailure();
                         LexTraceExit("0010", dps);
@@ -928,6 +928,13 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                     }
                     else
                     {
+                        if (raw.numCount == DateTimeRawInfo.MaxBufferLength)
+                        {
+                            result.SetBadDateTimeFailure();
+                            LexTraceExit("0105 (Not enough space in the raw info buffer when parsing Hebrew numbers)", dps);
+                            return false;
+                        }
+
                         // This is a day number
                         dtok.num = tokenValue;
                         raw.AddNumber(dtok.num);
@@ -3852,26 +3859,45 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
 
         private static bool MatchAbbreviatedTimeMark(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref TM result)
         {
-            // NOTENOTE : the assumption here is that abbreviated time mark is the first
-            // character of the AM/PM designator.  If this invariant changes, we have to
-            // change the code below.
             if (str.GetNext())
             {
                 string amDesignator = dtfi.AMDesignator;
-                if (amDesignator.Length > 0 && str.GetChar() == amDesignator[0])
+                if (MatchesDesignator(ref str, amDesignator))
                 {
                     result = TM.AM;
                     return true;
                 }
 
                 string pmDesignator = dtfi.PMDesignator;
-                if (pmDesignator.Length > 0 && str.GetChar() == pmDesignator[0])
+                if (MatchesDesignator(ref str, pmDesignator))
                 {
                     result = TM.PM;
                     return true;
                 }
             }
             return false;
+
+            static bool MatchesDesignator(ref __DTString str, string designator)
+            {
+                if (designator.Length == 0 || str.GetChar() != designator[0])
+                {
+                    return false;
+                }
+
+                if (char.IsHighSurrogate(designator[0]) &&
+                    designator.Length > 1 &&
+                    char.IsLowSurrogate(designator[1]))
+                {
+                    if (str.Index + 1 >= str.Length || str.Value[str.Index + 1] != designator[1])
+                    {
+                        return false;
+                    }
+
+                    str.Advance(1);
+                }
+
+                return true;
+            }
         }
 
         /*=================================CheckNewValue==================================
@@ -5171,7 +5197,11 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 second = (int)(s1 * 10 + s2);
             }
 
-            double fraction;
+            // The "O" format always has exactly 7 fractional-second digits, which is the same precision
+            // as DateTime's ticks (TimeSpan.TicksPerSecond == 10_000_000), so the integer value formed
+            // by the seven digits is exactly the sub-second tick count. Compute it directly instead of
+            // going through a double divide/multiply/Math.Round round-trip.
+            int fractionTicks;
             {
                 uint f1 = (uint)(source[20] - '0');
                 uint f2 = (uint)(source[21] - '0');
@@ -5187,12 +5217,12 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                     return false;
                 }
 
-                fraction = (f1 * 1000000 + f2 * 100000 + f3 * 10000 + f4 * 1000 + f5 * 100 + f6 * 10 + f7) / 10000000.0;
+                fractionTicks = (int)(f1 * 1000000 + f2 * 100000 + f3 * 10000 + f4 * 1000 + f5 * 100 + f6 * 10 + f7);
             }
 
             // Per ISO 8601, 24:00:00 represents the end of a calendar day
             // (the same instant as the next day's 00:00:00), but only when minute, second, and fraction are all zero
-            if (hour == 24 && (minute != 0 || second != 0 || fraction != 0))
+            if (hour == 24 && (minute != 0 || second != 0 || fractionTicks != 0))
             {
                 result.SetBadDateTimeFailure();
                 return false;
@@ -5204,7 +5234,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 return false;
             }
 
-            if (!dateTime.TryAddTicks((long)Math.Round(fraction * TimeSpan.TicksPerSecond), out result.parsedDate))
+            if (!dateTime.TryAddTicks(fractionTicks, out result.parsedDate))
             {
                 result.SetBadDateTimeFailure();
                 return false;
@@ -6102,6 +6132,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
     //
     internal struct DateTimeRawInfo
     {
+        internal const int MaxBufferLength = 3;
         private InlineArray3<int> num;
         internal int numCount;
         internal int month;
@@ -6124,7 +6155,15 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
 
         internal void AddNumber(int value)
         {
+            if (numCount >= MaxBufferLength)
+            {
+                ThrowNumberBufferOverflow();
+            }
+
             num[numCount++] = value;
+
+            [DoesNotReturn]
+            static void ThrowNumberBufferOverflow() => throw new InvalidOperationException(SR.InvalidOperation_DateTimeParsing);
         }
 
         internal int GetNumber(int index)

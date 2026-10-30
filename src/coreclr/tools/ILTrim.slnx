@@ -1,0 +1,23 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="../../tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj" />
+  <Project Path="../../tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj" />
+  <Project Path="../../tools/illink/test/Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj" />
+  <Project Path="../../tools/illink/test/Mono.Linker.Tests.Cases/Mono.Linker.Tests.Cases.csproj" />
+  <Project Path="ILTrim.Core/ILTrim.Core.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="ILTrim.Tests/ILTrim.Tests.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="ILTrim/ILTrim.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="ILVerification/ILVerification.csproj" />
+</Solution>

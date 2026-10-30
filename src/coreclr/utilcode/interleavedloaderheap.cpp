@@ -6,8 +6,9 @@
 #include "loaderheap_shared.h"
 #include "ex.h"
 #include "pedecoder.h"
-#define DONOT_DEFINE_ETW_CALLBACK
+#ifndef SELF_NO_HOST
 #include "eventtracebase.h"
+#endif // !SELF_NO_HOST
 
 #ifndef DACCESS_COMPILE
 
@@ -43,13 +44,12 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
-    _ASSERTE((GetStubCodePageSize() % GetOsPageSize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
+    _ASSERTE((GetStubCodePageSize() % minipal_getpagesize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
 }
 
 UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
@@ -58,7 +58,7 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
     {
         DESTRUCTOR_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -74,13 +74,15 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
         pVirtualAddress = pSearch->pVirtualAddress;
         pNext = pSearch->pNext;
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         if (m_pConfig->Template != NULL)
         {
             ExecutableAllocator::Instance()->FreeThunksFromTemplate(pVirtualAddress, GetStubCodePageSize());
         }
         else
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         {
-            ExecutableAllocator::Instance()->Release(pVirtualAddress);
+            ExecutableAllocator::Instance()->Release(pVirtualAddress, pSearch->dwVirtualSize);
         }
 
         delete pSearch;
@@ -142,7 +144,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -151,9 +153,10 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     size_t dwSizeToReserve;
 
     // Round to page size again
-    dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
+    dwSizeToCommit = ALIGN_UP(dwSizeToCommit, minipal_getpagesize());
 
-    ReservedMemoryHolder pData = NULL;
+    ReservedMemoryHolder pDataHolder;
+    BYTE* pData = NULL;
 
     // Figure out how much to reserve
     dwSizeToReserve = dwSizeToCommit;
@@ -175,6 +178,9 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         _ASSERTE(!"Unable to reserve memory range for a loaderheap");
         return FALSE;
     }
+
+    // Own the reserved memory for automatic cleanup on the error paths below.
+    pDataHolder = ReservedMemoryBlock{ pData, dwSizeToReserve };
 
     // When the user passes in the reserved memory, the commit size is 0 and is adjusted to be the sizeof(LoaderHeap).
     // If for some reason this is not true then we just catch this via an assertion and the dev who changed code
@@ -214,7 +220,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     m_dwTotalAlloc += dwSizeToCommit;
 
     pNewBlock.SuppressRelease();
-    pData.SuppressRelease();
+    pDataHolder.Detach();
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
     pNewBlock->pVirtualAddress  = pData;
@@ -233,13 +239,22 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     return TRUE;
 }
 
-void ReleaseAllocatedThunks(BYTE* thunks)
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+struct ThunkMemoryTraits final
 {
-    ExecutableAllocator::Instance()->FreeThunksFromTemplate(thunks, GetStubCodePageSize());
-}
-
-using ThunkMemoryHolder = SpecializedWrapper<BYTE, ReleaseAllocatedThunks>;
-
+    using Type = BYTE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (value != NULL)
+        {
+            ExecutableAllocator::Instance()->FreeThunksFromTemplate(value, GetStubCodePageSize());
+        }
+    }
+};
+using ThunkMemoryHolder = LifetimeHolder<ThunkMemoryTraits>;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 // Get some more committed pages - either commit some more in the current reserved region, or, if it
 // has run out, reserve another set of pages.
@@ -252,17 +267,21 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (m_pConfig->Template != NULL)
     {
-        ThunkMemoryHolder newAllocatedThunks = (BYTE*)ExecutableAllocator::Instance()->AllocateThunksFromTemplate(m_pConfig->Template, GetStubCodePageSize(), m_pConfig->DataPageGenerator);
+        BYTE* newAllocatedThunks = (BYTE*)ExecutableAllocator::Instance()->AllocateThunksFromTemplate(m_pConfig->Template, GetStubCodePageSize(), m_pConfig->DataPageGenerator);
         if (newAllocatedThunks == NULL)
         {
             return FALSE;
         }
+
+        // Own the allocated thunks for automatic cleanup on the error paths below.
+        ThunkMemoryHolder thunksHolder(newAllocatedThunks);
 
         NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
         if (pNewBlock == NULL)
@@ -271,7 +290,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         }
 
         size_t dwSizeToReserve = GetStubCodePageSize() * 2;
-    
+
         // Record reserved range in range list, if one is specified
         // Do this AFTER the commit - otherwise we'll have bogus ranges included.
         if (m_pRangeList != NULL)
@@ -283,20 +302,20 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
                 return FALSE;
             }
         }
-    
+
         m_dwTotalAlloc += dwSizeToReserve;
-    
+
         pNewBlock.SuppressRelease();
-        newAllocatedThunks.SuppressRelease();
-    
+        thunksHolder.Detach();
+
         pNewBlock->dwVirtualSize    = dwSizeToReserve;
         pNewBlock->pVirtualAddress  = newAllocatedThunks;
         pNewBlock->pNext            = m_pFirstBlock;
         pNewBlock->m_fReleaseMemory = TRUE;
-    
+
         // Add to the linked list
         m_pFirstBlock = pNewBlock;
-    
+
         m_pAllocPtr = (BYTE*)newAllocatedThunks;
         m_pPtrToEndOfCommittedRegion = m_pAllocPtr + GetStubCodePageSize();
         m_pEndReservedRegion = m_pAllocPtr + dwSizeToReserve; // For consistency with the non-template path m_pEndReservedRegion is after the end of the data area
@@ -304,6 +323,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         return TRUE;
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // From here, all work is only for the dynamically allocated InterleavedLoaderHeap path
 
@@ -363,35 +383,6 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     return UnlockedReservePages(dwMinSize);
 }
 
-#ifdef _DEBUG
-static DWORD ShouldInjectFault()
-{
-    static DWORD fInjectFault = 99;
-
-    if (fInjectFault == 99)
-        fInjectFault = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault) != 0);
-    return fInjectFault;
-}
-
-#define SHOULD_INJECT_FAULT(return_statement)   \
-    do {                                        \
-        if (ShouldInjectFault() & 0x1)          \
-        {                                       \
-            char *a = new (nothrow) char;       \
-            if (a == NULL)                      \
-            {                                   \
-                return_statement;               \
-            }                                   \
-            delete a;                           \
-        }                                       \
-    } while (FALSE)
-
-#else
-
-#define SHOULD_INJECT_FAULT(return_statement) do { (void)((void *)0); } while (FALSE)
-
-#endif
-
 void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
                                             COMMA_INDEBUG(_In_ const char *szFile)
                                             COMMA_INDEBUG(int  lineNum)
@@ -402,7 +393,7 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
     {
         INSTANCE_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -410,7 +401,6 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
     // define Backout(NULL) be a legal NOP.
     if (pMem == NULL)
     {
-        return;
     }
 
     size_t dwSize = m_dwGranularity;
@@ -449,26 +439,18 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
                                                           INDEBUG(_In_ const char *szFile)
                                                           COMMA_INDEBUG(int  lineNum))
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         NOTHROW;
-
-        // Macro syntax can't handle this INJECT_FAULT expression - we'll use a precondition instead
-        //INJECT_FAULT( do{ if (*pdwExtra) {*pdwExtra = 0} RETURN NULL; } while(0) );
-
+        GC_NOTRIGGER;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     size_t dwRequestedSize = m_dwGranularity;
     size_t alignment = 1;
 
-    STATIC_CONTRACT_FAULT;
-
-    SHOULD_INJECT_FAULT(RETURN NULL);
-
     void *pResult;
 
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     _ASSERTE(m_dwGranularity >= sizeof(InterleavedStubFreeListNode));
 
@@ -486,7 +468,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
         {
             if (!GetMoreCommittedPages(dwRequestedSize))
             {
-                RETURN NULL;
+                return NULL;
             }
         }
 
@@ -523,7 +505,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
     EtwAllocRequest(this, pResult, dwRequestedSize);
 #endif //_DEBUG
 
-    RETURN pResult;
+    return pResult;
 }
 
 void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
@@ -533,7 +515,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
     CONTRACTL
     {
         THROWS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -551,10 +533,13 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
 void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size), void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
     pConfig->StubSize = (uint32_t)stubSize;
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     pConfig->Template = ExecutableAllocator::Instance()->CreateTemplate(templateInImage, GetStubCodePageSize(), codePageGenerator);
+#else // FEATURE_PORTABLE_ENTRYPOINTS
+    pConfig->Template = nullptr;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     pConfig->CodePageGenerator = codePageGenerator;
     pConfig->DataPageGenerator = dataPageGenerator;
 }
 
 #endif // #ifndef DACCESS_COMPILE
-

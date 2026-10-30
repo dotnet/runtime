@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -208,8 +209,11 @@ namespace System
         }
 
         /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
-        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
-            new Rune(this).TryEncodeToUtf8(utf8Destination, out bytesWritten);
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        {
+            Rune rune = Rune.TryCreate(this, out Rune value) ? value : Rune.ReplacementChar;
+            return rune.TryEncodeToUtf8(utf8Destination, out bytesWritten);
+        }
 
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString(m_value);
 
@@ -529,6 +533,14 @@ namespace System
         // Converts a character to upper-case for invariant culture.
         public static char ToUpperInvariant(char c) => TextInfo.ToUpperInvariant(c);
 
+        /// <summary>
+        /// Converts a character to uppercase using the casing rules used by
+        /// <see cref="StringComparison.OrdinalIgnoreCase"/> comparisons.
+        /// </summary>
+        /// <param name="c">The character to convert.</param>
+        /// <returns>The uppercase equivalent of <paramref name="c"/>.</returns>
+        public static char ToUpperOrdinal(char c) => TextInfo.ToUpperOrdinal(c);
+
         /*===================================ToLower====================================
         **
         ==============================================================================*/
@@ -557,6 +569,13 @@ namespace System
 
         // Converts a character to lower-case for invariant culture.
         public static char ToLowerInvariant(char c) => TextInfo.ToLowerInvariant(c);
+
+        /// <summary>
+        /// Converts a character to lowercase using ordinal (simple, one-to-one) casing rules.
+        /// </summary>
+        /// <param name="c">The character to convert.</param>
+        /// <returns>The lowercase equivalent of <paramref name="c"/>.</returns>
+        public static char ToLowerOrdinal(char c) => TextInfo.ToLowerOrdinal(c);
 
         //
         // IConvertible implementation
@@ -1214,6 +1233,9 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         static char IBinaryInteger<char>.LeadingZeroCount(char value) => (char)(BitOperations.LeadingZeroCount(value) - 16);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        static char IBinaryInteger<char>.Log10(char value) => (char)uint.Log10(value);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         static char IBinaryInteger<char>.PopCount(char value) => (char)BitOperations.PopCount(value);
 
@@ -1251,24 +1273,15 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(char))
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(char));
-
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<char>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = (char)BinaryPrimitives.ReadUInt16BigEndian(source.Slice(source.Length - sizeof(char)));
                 }
                 else
                 {
                     // We only have 1-byte so read it directly
-                    result = (char)sourceRef;
+                    result = (char)source[0];
                 }
             }
 
@@ -1301,22 +1314,15 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(char))
                 {
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<char>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = (char)BinaryPrimitives.ReadUInt16LittleEndian(source);
                 }
                 else
                 {
                     // We only have 1-byte so read it directly
-                    result = (char)sourceRef;
+                    result = (char)source[0];
                 }
             }
 
@@ -1560,6 +1566,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<char>.TryConvertFromChecked<TOther>(TOther value, out char result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1622,6 +1629,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<char>.TryConvertFromSaturating<TOther>(TOther value, out char result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1685,6 +1693,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<char>.TryConvertFromTruncating<TOther>(TOther value, out char result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1748,6 +1757,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<char>.TryConvertToChecked<TOther>(char value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1822,6 +1832,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<char>.TryConvertToSaturating<TOther>(char value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1896,6 +1907,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<char>.TryConvertToTruncating<TOther>(char value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1972,6 +1984,45 @@ namespace System
 
         static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
+        static bool INumberBase<char>.TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
+        {
+            if (TryParse(s, out result))
+            {
+                charsConsumed = 1;
+                return true;
+            }
+
+            charsConsumed = 0;
+            return false;
+        }
+
+        static bool INumberBase<char>.TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
+        {
+            if (TryParse(s, out result))
+            {
+                charsConsumed = 1;
+                return true;
+            }
+
+            charsConsumed = 0;
+            return false;
+        }
+
+        static bool INumberBase<char>.TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out char result, out int bytesConsumed)
+        {
+            if (Rune.DecodeFromUtf8(utf8Text, out Rune rune, out bytesConsumed) != Buffers.OperationStatus.Done ||
+                bytesConsumed != utf8Text.Length ||
+                !rune.IsBmp)
+            {
+                result = '\0';
+                bytesConsumed = 0;
+                return false;
+            }
+
+            result = (char)rune.Value;
+            return true;
+        }
+
         //
         // IParsable
         //
@@ -2031,6 +2082,8 @@ namespace System
         //
         // IUtfChar
         //
+
+        static bool IUtfChar<char>.IsUtf8 => false;
 
         static char IUtfChar<char>.CastFrom(byte value) => (char)value;
         static char IUtfChar<char>.CastFrom(char value) => value;

@@ -1222,6 +1222,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(" (METHOD_ENTRY)");
                     break;
 
+                case ReadyToRunFixupKind.MethodEntry_ReadyToRun:
+                    ParseMethod(builder);
+                    builder.Append(" (METHOD_ENTRY_READYTORUN)");
+                    break;
+
                 case ReadyToRunFixupKind.MethodEntry_DefToken:
                     uint methodDefToken = ParseMethodDefToken(builder, owningTypeOverride: null);
                     builder.Append(" (METHOD_ENTRY");
@@ -1372,6 +1377,35 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append($" (RESUMPTION_STUB RVA[0x{stubRVA:X}])");
                     break;
 
+                case ReadyToRunFixupKind.InjectStringThunks:
+                    builder.Append(" (INJECT_STRING_THUNKS");
+                    while (true)
+                    {
+                        int strStart = Offset;
+                        while (_image[Offset] != 0)
+                            SkipBytes(1);
+                        int strLen = Offset - strStart;
+                        SkipBytes(1); // skip null terminator
+
+                        if (strLen == 0)
+                            break;
+
+                        string lookupString = System.Text.Encoding.UTF8.GetString(_image, strStart, strLen);
+                        uint thunkRVA = BitConverter.ToUInt32(_image, Offset);
+                        SkipBytes(4);
+                        builder.Append($" \"{lookupString}\"->RVA[0x{thunkRVA:X}]");
+                    }
+                    builder.Append(')');
+                    break;
+
+                case ReadyToRunFixupKind.StoreMultiCallableAddrOfCode:
+                    uint targetCodeRVA = BitConverter.ToUInt32(_image, Offset);
+                    SkipBytes(4);
+                    uint storeLocationRVA = BitConverter.ToUInt32(_image, Offset);
+                    SkipBytes(4);
+                    builder.Append($" (STORE_MULTI_CALLABLE_ADDR_OF_CODE Target:RVA[0x{targetCodeRVA:X}] Location:RVA[0x{storeLocationRVA:X}])");
+                    break;
+
                 case ReadyToRunFixupKind.Check_VirtualFunctionOverride:
                 case ReadyToRunFixupKind.Verify_VirtualFunctionOverride:
                     ReadyToRunVirtualFunctionOverrideFlags flags = (ReadyToRunVirtualFunctionOverrideFlags)ReadUInt();
@@ -1427,7 +1461,18 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 case ReadyToRunFixupKind.DeclaringTypeHandle:
-                    ParseType(builder);
+                    if (_contextReader.DeclaringTypeHandleFixupUsesMethodSignature)
+                    {
+                        ParseMethod(builder);
+                    }
+                    else
+                    {
+                        // Images predating R2R version 27 encode the declaring type followed by the type
+                        // named by the token.
+                        ParseType(builder);
+                        builder.Append(" of ");
+                        ParseType(builder);
+                    }
                     builder.Append(" (DECLARING_TYPE_HANDLE)");
                     break;
 
@@ -1723,6 +1768,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("BULK_WRITE_BARRIER");
                     break;
 
+                case ReadyToRunHelper.BulkWriteBarrierSmall:
+                    builder.Append("BULK_WRITE_BARRIER_SMALL");
+                    break;
+
                 // Array helpers
                 case ReadyToRunHelper.Stelem_Ref:
                     builder.Append("STELEM_REF");
@@ -1757,8 +1806,16 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("PINVOKE_END");
                     break;
 
+                case ReadyToRunHelper.ResumeAfterCatch:
+                    builder.Append("RESUME_AFTER_CATCH");
+                    break;
+
                 case ReadyToRunHelper.GCPoll:
                     builder.Append("GCPOLL");
+                    break;
+
+                case ReadyToRunHelper.WasmProfSamplepoint:
+                    builder.Append("WASM_PROF_SAMPLEPOINT");
                     break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:
@@ -2064,6 +2121,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
                 case ReadyToRunHelper.InitInstClass:
                     builder.Append("INIT_INST_CLASS");
+                    break;
+                case ReadyToRunHelper.R2RToInterpreter:
+                    builder.Append("R2R_TO_INTERPRETER");
                     break;
 
                 default:

@@ -49,45 +49,8 @@ ISOSDacInterface* / IXCLRDataProcess (COM-style API surface)
 | `Microsoft.Diagnostics.DataContractReader.Legacy` | `SOSDacImpl` — bridges `ISOSDacInterface*` COM APIs to contracts |
 | `Microsoft.Diagnostics.DataContractReader` | Contract/data descriptor parsing and `Target` construction |
 | `mscordaccore_universal` | Entry point that wires everything together |
+| `mscordaccore_enummemory` | Dump enumerator entrypoint; produces `mscordaccore` |
 | `tests` | Unit tests with mock memory infrastructure |
-
-## GC Stress Verification (GCSTRESS_CDAC)
-
-The cDAC includes a GC stress verification mode that compares the cDAC's stack reference
-enumeration against the runtime's own GC root scanning at every GC stress instruction-level
-trigger point.
-
-### How it works
-
-When `DOTNET_CdacStress` is set, at each configured stress point:
-1. The cDAC is loaded in-process and enumerates stack GC references via `GetStackReferences`
-2. The runtime enumerates the same references via `StackWalkFrames` + `GcStackCrawlCallBack`
-3. The tool compares the two sets and reports mismatches
-
-### Usage
-
-```bash
-DOTNET_CdacStress=0x11 DOTNET_CdacStressLogFile=results.txt corerun test.dll
-```
-
-Configuration variables:
-- `DOTNET_CdacStress=0x11` — Enable alloc-point cDAC verification (see [StressTests README](tests/StressTests/README.md) for all flags)
-- `DOTNET_CdacStressFailFast=1` — Assert on mismatch (default: log and continue)
-- `DOTNET_CdacStressLogFile=<path>` — Write detailed results to a log file
-
-### Files
-
-| File | Location | Purpose |
-|------|----------|---------|
-| `cdacstress.h/cpp` | `src/coreclr/vm/` | In-process cDAC loading and comparison |
-| `RunStressTests.ps1` | `src/native/managed/cdac/tests/StressTests/` | Build and test script |
-| `known-issues.md` | `src/native/managed/cdac/tests/StressTests/` | Documented gaps |
-
-### Known limitations
-
-See [tests/StressTests/known-issues.md](tests/StressTests/known-issues.md) for the full list.
-Key gaps include explicit frame GC root scanning (ScanFrameRoots) for stub frames.
-Current pass rate: ~99.5%.
 
 ## Contract specifications
 
@@ -119,7 +82,7 @@ Use the `dotnet.sh` (or `dotnet.cmd`) script in the repo root:
 
 ```bash
 ./dotnet.sh build /t:Test \
-  src/native/managed/cdac/tests/Microsoft.Diagnostics.DataContractReader.Tests.csproj \
+  src/native/managed/cdac/tests/UnitTests/Microsoft.Diagnostics.DataContractReader.Tests.csproj \
   -c Debug -p:RuntimeConfiguration=Debug -p:LibrariesConfiguration=Release
 ```
 
@@ -182,10 +145,9 @@ with the legacy DAC or with the cDAC enabled.
 
 `SOSDacImpl` has `#if DEBUG` cross-validation that compares cDAC results against the legacy
 DAC. To enable this, build the cDAC in Debug configuration while everything else can be
-Release. Note that some legacy calls must run outside `#if DEBUG` when their results are
-used functionally (not just for validation) — see the
-[Legacy project README](Microsoft.Diagnostics.DataContractReader.Legacy/README.md) for
-details.
+Release. Some stateful validation paths keep a legacy enumeration or child object in sync
+with its cDAC counterpart so later calls can be compared. Release cDAC builds retain the
+fallback interface only to preserve its required lifetime and never invoke it.
 
 At runtime, the DAC checks the `ENABLE_CDAC` config knob
 ([daccess.cpp](/src/coreclr/debug/daccess/daccess.cpp)). When set to `1`, it looks up the
@@ -200,9 +162,11 @@ Build from the runtime repo root:
 ./build.sh clr+clr.hosts+libs+tools.cdac -c Debug -lc Release
 ```
 
-The debug build of the runtime (`-rc Debug`, which is the default when `-c Debug` is used)
-is required for the brittle DAC to delegate to the cDAC. Release build of the libraries
-(`-lc Release`) is highly recommended for a faster inner loop.
+A Debug runtime is not required: when the cDAC is enabled, the legacy DAC can delegate to
+it in Debug, Checked and Release runtime builds on the platforms that support it. The
+`#if DEBUG` cross-validation still requires the legacy DAC to match the runtime build; the
+testhost produced by the command above has both from the same build. Release build of the
+libraries (`-lc Release`) is highly recommended for a faster inner loop.
 
 Once the initial build is done, shorter incremental rebuilds can be done with:
 
@@ -233,9 +197,10 @@ to set `DOTNET_ENABLE_CDAC=1` on each test process.
 ### CI pipeline
 
 The `runtime-diagnostics.yml` pipeline runs the SOS tests automatically on every PR that
-touches `src/native/managed/cdac/**` or `src/coreclr/debug/runtimeinfo/**`. It runs the
-tests twice — once with `-useCdac` (cDAC path) and once without (legacy DAC path) — on
-Windows x64.
+touches `src/native/managed/cdac/**` or `src/coreclr/debug/runtimeinfo/**`. The SOSTests
+stage builds a Release runtime and the cDAC for each platform in `sosPlatforms` (Windows
+x64, x86 and arm64, Linux x64 and arm64, macOS x64 and arm64), and SOS.Tests covers both
+the legacy DAC and the cDAC configurations.
 
 > **Note:** The runtime and diagnostics repos must be on the same major version. CLRMD
 > validates the DAC binary version against the runtime, so a cross-major-version mismatch

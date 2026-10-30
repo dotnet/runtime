@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "Servers.h"
+#include <thread>
 
 namespace
 {
@@ -153,6 +154,20 @@ namespace
 
         return S_OK;
     }
+}
+
+extern "C" HRESULT STDMETHODCALLTYPE InvokeCallbackOnNativeThread(void (STDMETHODCALLTYPE* callback)())
+{
+    if (callback == nullptr)
+        return E_POINTER;
+
+    std::thread worker([callback]()
+    {
+        callback();
+    });
+
+    worker.join();
+    return S_OK;
 }
 
 STDAPI DllRegisterServer(void)

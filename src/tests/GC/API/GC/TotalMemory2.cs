@@ -8,6 +8,7 @@ using Xunit;
 
 public class Test_TotalMemory2
 {
+    [SkipOnCoreClr("This test is failing under GC stress variations. See https://github.com/dotnet/runtime/issues/63860.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint()
     {

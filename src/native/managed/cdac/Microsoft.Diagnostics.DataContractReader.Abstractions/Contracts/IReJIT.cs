@@ -9,7 +9,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public enum RejitState
 {
     Requested,
-    Active
+    Active,
+    Unknown,
 }
 
 public interface IReJIT : IContract
@@ -19,6 +20,8 @@ public interface IReJIT : IContract
     bool IsEnabled() => throw new NotImplementedException();
 
     RejitState GetRejitState(ILCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
+
+    bool IsDeoptimized(ILCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 
     TargetNUInt GetRejitId(ILCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 }

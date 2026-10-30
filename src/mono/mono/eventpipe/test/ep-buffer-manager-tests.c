@@ -10,6 +10,7 @@
 #include <eventpipe/ep-session.h>
 #include <eventpipe/ep-buffer-manager.h>
 #include <eventpipe/ep-file.h>
+#include <eventpipe/ep-thread.h>
 #include <eglib/test/test.h>
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
@@ -66,8 +67,9 @@ buffer_manager_fini (
 
 static
 RESULT
-buffer_manager_init (
+buffer_manager_init_mode (
 	EventPipeSerializationFormat format,
+	EventPipeBufferingMode buffering_mode,
 	EventPipeBufferManager **buffer_manager,
 	ep_rt_thread_handle_t *thread_handle,
 	EventPipeThread **thread,
@@ -96,15 +98,17 @@ buffer_manager_init (
 			1,
 			TEST_FILE,
 			NULL,
-			EP_SESSION_TYPE_FILE,
+			(buffering_mode == EP_BUFFERING_MODE_BLOCK) ? EP_SESSION_TYPE_FILESTREAM : EP_SESSION_TYPE_FILE,
 			format,
+			0,
 			false,
 			1,
 			current_provider_config,
 			1,
 			NULL,
 			NULL,
-			0);
+			0,
+			buffering_mode);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (*session != NULL);
@@ -150,6 +154,20 @@ ep_on_error:
 }
 
 static
+RESULT
+buffer_manager_init (
+	EventPipeSerializationFormat format,
+	EventPipeBufferManager **buffer_manager,
+	ep_rt_thread_handle_t *thread_handle,
+	EventPipeThread **thread,
+	EventPipeSession **session,
+	EventPipeProvider **provider,
+	EventPipeEvent **ep_event)
+{
+	return buffer_manager_init_mode (format, EP_BUFFERING_MODE_DROP, buffer_manager, thread_handle, thread, session, provider, ep_event);
+}
+
+static
 bool
 write_events (
 	EventPipeBufferManager *buffer_manager,
@@ -161,15 +179,25 @@ write_events (
 {
 	bool result = true;
 	uint32_t i = 0;
+
+	// ep_buffer_manager_write_event asserts the calling thread has published this session's index
+	// (the production write path sets it before writing); mirror that here so the assert holds.
+	EventPipeThread *current_thread = ep_thread_get_or_create ();
+	if (current_thread)
+		ep_thread_set_session_use_in_progress (current_thread, ep_session_get_index (session) | EP_SESSION_USE_WRITE_BUFFER_IN_USE);
+
 	for (; i < event_count; ++i) {
 		EventPipeEventPayload payload;
 		ep_event_payload_init (&payload, (uint8_t *)TEST_EVENT_DATA, ARRAY_SIZE (TEST_EVENT_DATA));
-		result = ep_buffer_manager_write_event (buffer_manager, thread, session, ep_event, &payload, NULL, NULL, thread, NULL);
+		result = ep_buffer_manager_write_event (buffer_manager, thread, session, ep_event, &payload, NULL, NULL, thread, NULL) == EP_WRITE_EVENT_RESULT_WRITTEN;
 		ep_event_payload_fini (&payload);
 
 		if (!result)
 			break;
 	}
+
+	if (current_thread)
+		ep_thread_set_session_use_in_progress (current_thread, UINT32_MAX);
 
 	if (events_written)
 		*events_written = i;
@@ -581,6 +609,89 @@ ep_on_error:
 }
 
 static RESULT
+test_buffer_manager_block_mode_abort_and_disable (void)
+{
+	RESULT result = NULL;
+	uint32_t test_location = 0;
+	EventPipeBufferManager *buffer_manager = NULL;
+	ep_rt_thread_handle_t thread_handle;
+	EventPipeThread *thread = NULL;
+	EventPipeSession *session = NULL;
+	EventPipeProvider *provider = NULL;
+	EventPipeEvent *ep_event = NULL;
+	EventPipeThread *current_thread = NULL;
+	bool use_in_progress_set = false;
+	bool observed_blocked = false;
+	uint32_t i = 0;
+
+	result = buffer_manager_init_mode (EP_SERIALIZATION_FORMAT_NETTRACE_V4, EP_BUFFERING_MODE_BLOCK, &buffer_manager, &thread_handle, &thread, &session, &provider, &ep_event);
+
+	ep_raise_error_if_nok (result == NULL);
+
+	test_location = 1;
+
+	ep_raise_error_if_nok (buffer_manager != NULL && session != NULL);
+
+	test_location = 2;
+
+	ep_raise_error_if_nok (ep_buffer_manager_get_buffering_mode (buffer_manager) == EP_BUFFERING_MODE_BLOCK);
+
+	test_location = 3;
+
+	// Publish this session's index, as a real producer does, so ep_buffer_manager_write_event's assert holds.
+	current_thread = ep_thread_get_or_create ();
+	ep_raise_error_if_nok (current_thread != NULL);
+	ep_thread_set_session_use_in_progress (current_thread, ep_session_get_index (session) | EP_SESSION_USE_WRITE_BUFFER_IN_USE);
+	use_in_progress_set = true;
+
+	test_location = 4;
+
+	// Fill the buffer pool. In Block mode a full buffer reports BLOCKED (park-and-retry) rather than
+	// dropping, so the producer never loses the event.
+	for (i = 0; i < 1000 * 1000; ++i) {
+		EventPipeEventPayload payload;
+		ep_event_payload_init (&payload, (uint8_t *)TEST_EVENT_DATA, ARRAY_SIZE (TEST_EVENT_DATA));
+		EventPipeWriteEventResult write_result = ep_buffer_manager_write_event (buffer_manager, thread_handle, session, ep_event, &payload, NULL, NULL, thread_handle, NULL);
+		ep_event_payload_fini (&payload);
+		if (write_result == EP_WRITE_EVENT_RESULT_BLOCKED) {
+			observed_blocked = true;
+			break;
+		}
+	}
+
+	ep_raise_error_if_nok (observed_blocked);
+
+	test_location = 5;
+
+	// Abort the blocked writers (the teardown step): the flag is raised so a parked producer gives up.
+	ep_buffer_manager_abort_blocked_writers (buffer_manager);
+	ep_raise_error_if_nok (ep_buffer_manager_is_aborting (buffer_manager));
+
+	test_location = 6;
+
+	// With abort raised, a write on the still-full buffer now drops (gives up) instead of parking.
+	{
+		EventPipeEventPayload payload;
+		ep_event_payload_init (&payload, (uint8_t *)TEST_EVENT_DATA, ARRAY_SIZE (TEST_EVENT_DATA));
+		EventPipeWriteEventResult write_result = ep_buffer_manager_write_event (buffer_manager, thread_handle, session, ep_event, &payload, NULL, NULL, thread_handle, NULL);
+		ep_event_payload_fini (&payload);
+		ep_raise_error_if_nok (write_result != EP_WRITE_EVENT_RESULT_BLOCKED);
+	}
+
+ep_on_exit:
+	if (use_in_progress_set && current_thread != NULL)
+		ep_thread_set_session_use_in_progress (current_thread, UINT32_MAX);
+	// buffer_manager_fini -> ep_session_dec_ref exercises tearing down a Block-mode session.
+	buffer_manager_fini (buffer_manager, thread, session, provider, ep_event);
+	return result;
+
+ep_on_error:
+	if (!result)
+		result = FAILED ("Failed at test location=%i", test_location);
+	ep_exit_error_handler ();
+}
+
+static RESULT
 test_buffer_manager_teardown (void)
 {
 #ifdef _CRTDBG_MAP_ALLOC
@@ -608,6 +719,7 @@ static Test ep_buffer_manager_tests [] = {
 	{"test_buffer_manager_write_events_to_file_v3", test_buffer_manager_write_events_to_file_v3},
 	{"test_buffer_manager_write_events_to_file_v4", test_buffer_manager_write_events_to_file_v4},
 	{"test_buffer_manager_oom", test_buffer_manager_oom},
+	{"test_buffer_manager_block_mode_abort_and_disable", test_buffer_manager_block_mode_abort_and_disable},
 #ifdef TEST_PERF
 	{"test_buffer_manager_perf", test_buffer_manager_perf},
 #endif

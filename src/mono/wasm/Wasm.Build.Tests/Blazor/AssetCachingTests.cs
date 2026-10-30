@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,7 +15,7 @@ namespace Wasm.Build.Tests.Blazor;
 public class AssetCachingTests : BlazorWasmTestBase
 {
     public AssetCachingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-        : base(output, buildContext)
+        : base(output, buildContext, DefaultTargetFrameworkForBlazorTemplate)
     {
     }
 
@@ -29,7 +30,12 @@ public class AssetCachingTests : BlazorWasmTestBase
             appendUnicodeToPath: false
         );
 
-        (string projectDir, string output) = BlazorPublish(project, Configuration.Release, new PublishOptions(AssertAppBundle: false));
+        (string projectDir, string output) = BlazorPublish(
+            project,
+            Configuration.Release,
+            new PublishOptions(
+                TargetFramework: DefaultTargetFrameworkForBlazorTemplate,
+                AssertAppBundle: false));
 
         var counterLoaded = new TaskCompletionSource();
 
@@ -45,7 +51,7 @@ public class AssetCachingTests : BlazorWasmTestBase
                 var baseUrl = page.Url;
 
                 await page.GotoAsync($"{baseUrl}counter");
-                await counterLoaded.Task;
+                await counterLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30));
 
                 using var requestLogClient = new BlazorWebWasmLogClient(baseUrl);
                 var firstLoadRequestLogs = await requestLogClient.GetRequestLogsAsync();
@@ -60,7 +66,7 @@ public class AssetCachingTests : BlazorWasmTestBase
 
                 // Perform browser navigation to cause resource reload.
                 await page.ReloadAsync();
-                await counterLoaded.Task;
+                await counterLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30));
 
                 var secondLoadRequestLogs = await requestLogClient.GetRequestLogsAsync();
                 var secondLoadWasmRequests = secondLoadRequestLogs.Where(log => log.Path.EndsWith(".wasm"));

@@ -84,5 +84,10 @@ namespace System.Security.Cryptography.Xml
         {
             return _cXml!.GetDigestedBytes(hash);
         }
+
+        internal override void ClearState()
+        {
+            _cXml = null;
+        }
     }
 }

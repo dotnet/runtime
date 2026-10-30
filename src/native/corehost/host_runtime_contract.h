@@ -19,9 +19,11 @@
 #define HOST_PROPERTY_BUNDLE_PROBE "BUNDLE_PROBE"
 #define HOST_PROPERTY_BUNDLE_EXTRACTION_PATH "BUNDLE_EXTRACTION_PATH"
 #define HOST_PROPERTY_ENTRY_ASSEMBLY_NAME "ENTRY_ASSEMBLY_NAME"
+#define HOST_PROPERTY_ARGV0 "ARGV0"
 #define HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES "NATIVE_DLL_SEARCH_DIRECTORIES"
 #define HOST_PROPERTY_PINVOKE_OVERRIDE "PINVOKE_OVERRIDE"
 #define HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS "PLATFORM_RESOURCE_ROOTS"
+#define HOST_PROPERTY_SYSTEM_CORELIB_DIRECTORY "SYSTEM_CORELIB_DIRECTORY"
 #define HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES "TRUSTED_PLATFORM_ASSEMBLIES"
 
 // Context passed to get_native_code_data callback
@@ -82,5 +84,20 @@ struct host_runtime_contract
     bool(HOST_CONTRACT_CALLTYPE* get_native_code_data)(
        const struct host_runtime_contract_native_code_context* context,
        /*out*/ struct host_runtime_contract_native_code_data* data);
+
+    // Get the simple names of the host-resolved assemblies.
+    // Returned names are owned by the host and valid for the lifetime of the process.
+    bool(HOST_CONTRACT_CALLTYPE* get_assembly_names)(
+        /*out*/ const char* const** names,
+        /*out*/ size_t* count,
+        void* contract_context);
+
+    // Resolve an assembly simple name to its path components.
+    // On success, returned strings are owned by the host and valid for the lifetime of the process.
+    bool(HOST_CONTRACT_CALLTYPE* resolve_assembly_to_path)(
+        const char* simple_name,
+        /*out*/ const char** directory,
+        /*out*/ const char** file_name,
+        void* contract_context);
 };
 #endif // __HOST_RUNTIME_CONTRACT_H__

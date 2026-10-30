@@ -116,6 +116,7 @@
 //     boxing this describes this feature.
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "vars.hpp"
 #include "log.h"
@@ -144,10 +145,10 @@
 #include "cordbpriv.h"
 #include "comdelegate.h"
 #include "appdomain.hpp"
+#include "externalmemoryhandle.h"
 #include "eventtrace.h"
 #include "corhost.h"
 #include "binder.h"
-#include "olevariant.h"
 #include "comcallablewrapper.h"
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
@@ -165,6 +166,7 @@
 #include "cdacplatformmetadata.hpp"
 #include "minipal/time.h"
 #include "minipal/random.h"
+#include <minipal.h>
 
 #ifdef FEATURE_INTERPRETER
 #include "callstubgenerator.h"
@@ -176,6 +178,10 @@
 
 #include "stringarraylist.h"
 #include "stubhelpers.h"
+#include "pregeneratedstringthunks.h"
+#ifdef TARGET_WASM
+#include "wasm/helpers.hpp"
+#endif
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -191,9 +197,7 @@
 #include "profilinghelper.h"
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #include "diagnosticserveradapter.h"
 #include "eventpipeadapter.h"
@@ -207,6 +211,10 @@
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "crashreportstackwalker.h"
+#endif // FEATURE_INPROC_CRASHREPORT
+
 #include "genanalysis.h"
 
 #ifdef HAVE_GCCOVER
@@ -217,6 +225,10 @@ HRESULT EEStartup();
 
 
 static void InitializeGarbageCollector();
+
+#ifdef TARGET_APPLE
+static void InitThreadStateKey();
+#endif
 
 #ifdef DEBUGGING_SUPPORTED
 static void InitializeDebugger(void);
@@ -465,32 +477,35 @@ void InitGSCookie()
 
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
-    // The GS cookie is stored in a read only data segment
+#ifdef FEATURE_READONLY_GS_COOKIE
+#ifdef TARGET_WINDOWS
     DWORD oldProtection;
-    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
+    if (!VirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
     {
         ThrowLastError();
     }
 
-#ifdef TARGET_UNIX
-    // PAL layer is unable to extract old protection for regions that were not allocated using VirtualAlloc
-    oldProtection = PAGE_READONLY;
-#endif // TARGET_UNIX
-
-#ifndef TARGET_UNIX
     // The GSCookie cannot be in a writeable page
     assert(((oldProtection & (PAGE_READWRITE|PAGE_WRITECOPY|PAGE_EXECUTE_READWRITE|
                               PAGE_EXECUTE_WRITECOPY|PAGE_WRITECOMBINE)) == 0));
+#else // TARGET_WINDOWS
+    if (!VMToOSInterface::ProtectMemory((LPVOID)pGSCookiePtr, sizeof(GSCookie), VMToOSInterface::MemoryProtection::ReadWrite))
+    {
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+    }
+#endif // TARGET_WINDOWS
+#endif // FEATURE_READONLY_GS_COOKIE
 
+#ifdef TARGET_WINDOWS
     // Forces VC cookie to be initialized.
     void * pf = &__security_check_cookie;
     pf = NULL;
 
     GSCookie val = (GSCookie)(__security_cookie ^ minipal_hires_ticks());
-#else // !TARGET_UNIX
+#else // TARGET_WINDOWS
     GSCookie val;
     minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&val, sizeof(val));
-#endif // !TARGET_UNIX
+#endif // TARGET_WINDOWS
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie
@@ -502,10 +517,20 @@ void InitGSCookie()
         val ++;
     *pGSCookiePtr = val;
 
-    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), oldProtection, &oldProtection))
+#ifdef FEATURE_READONLY_GS_COOKIE
+#ifdef TARGET_WINDOWS
+    DWORD currentProtection;
+    if (!VirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), oldProtection, &currentProtection))
     {
         ThrowLastError();
     }
+#else // TARGET_WINDOWS
+    if (!VMToOSInterface::ProtectMemory((LPVOID)pGSCookiePtr, sizeof(GSCookie), VMToOSInterface::MemoryProtection::ReadOnly))
+    {
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+    }
+#endif // TARGET_WINDOWS
+#endif // FEATURE_READONLY_GS_COOKIE
 }
 
 Volatile<BOOL> g_bIsGarbageCollectorFullyInitialized = FALSE;
@@ -646,6 +671,14 @@ void EEStartupHelper()
 
         PendingTypeLoadTable::Init();
 
+#if defined(TARGET_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
+        if (!VMToOSInterface::InitializeExecutableMemoryAllocator(
+                CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InitialExecMemoryPercent)))
+        {
+            IfFailGo(E_OUTOFMEMORY);
+        }
+#endif // TARGET_UNIX && FEATURE_DYNAMIC_CODE_COMPILED
+
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
         if (g_pConfig != NULL)
@@ -659,7 +692,9 @@ void EEStartupHelper()
         InitCallStubGenerator();
 #endif // FEATURE_INTERPRETER
 
+#ifdef FEATURE_INLINE_TRACKING
         JITInlineTrackingMap::StaticInitialize();
+#endif // FEATURE_INLINE_TRACKING
         MethodDescBackpatchInfoTracker::StaticInitialize();
 
 #ifdef FEATURE_CODE_VERSIONING
@@ -668,11 +703,21 @@ void EEStartupHelper()
 
 #ifdef FEATURE_TIERED_COMPILATION
         TieredCompilationManager::StaticInitialize();
-        CallCountingManager::StaticInitialize();
+        CallCountingStub::StaticInitialize();
 #endif // FEATURE_TIERED_COMPILATION
 
         OnStackReplacementManager::StaticInitialize();
         MethodTable::InitMethodDataCache();
+
+        InitializePregeneratedStringThunkHash();
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        InitializePendingThunkResolutionLock();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+#ifdef TARGET_WASM
+        InitializeWasmThunkCaches();
+#endif // TARGET_WASM
 
 #ifdef TARGET_UNIX
         ExecutableAllocator::InitPreferredRange();
@@ -690,6 +735,10 @@ void EEStartupHelper()
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");
 
+#ifdef TARGET_APPLE
+        InitThreadStateKey();
+#endif
+
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
         EventPipeAdapter::Initialize();
@@ -699,9 +748,13 @@ void EEStartupHelper()
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
 
-#ifdef HOST_ANDROID
+#if defined(HOST_ANDROID) || defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
         PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
-#endif // HOST_ANDROID
+#endif
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+        CrashReportConfigure();
+#endif // FEATURE_INPROC_CRASHREPORT
 
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {
@@ -709,7 +762,7 @@ void EEStartupHelper()
             unsigned level = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
             unsigned bytesPerThread = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
             unsigned totalBytes = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
-            CLRConfigStringHolder logFilename = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogFilename);
+            CLRConfigStringHolder logFilename(CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogFilename));
             StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase(), logFilename);
             g_pStressLog = &StressLog::theLog;
         }
@@ -743,9 +796,7 @@ void EEStartupHelper()
         InitializeLogging();
 #endif
 
-#ifdef FEATURE_PERFMAP
-        InitThreadManagerPerfMapData();
-#endif
+        InitThreadManagerTracingData();
 
 #ifdef FEATURE_PGO
         PgoManager::Initialize();
@@ -756,8 +807,6 @@ void EEStartupHelper()
 #ifndef TARGET_UNIX
         IfFailGoLog(EnsureRtlFunctions());
 #endif // !TARGET_UNIX
-
-        UnwindInfoTable::Initialize();
 
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
@@ -775,7 +824,7 @@ void EEStartupHelper()
         _ASSERTE(NULL != g_pConfig);
         if (g_pConfig->StartupDelayMS())
         {
-            ClrSleepEx(g_pConfig->StartupDelayMS(), FALSE);
+            minipal_sleep(g_pConfig->StartupDelayMS());
         }
 #endif
 
@@ -826,6 +875,8 @@ void EEStartupHelper()
         g_pEEShutDownEvent = new CLREvent();
         g_pEEShutDownEvent->CreateManualEvent(FALSE);
 
+        ExecutionManager::Init();
+
         VirtualCallStubManager::InitStatic();
 
         // Setup the domains. Threads are started in a default domain.
@@ -834,8 +885,6 @@ void EEStartupHelper()
         SystemDomain::Attach();
 
         COMDelegate::Init();
-
-        ExecutionManager::Init();
 
 #ifdef FEATURE_PERFMAP
         PerfMap::SignalDependenciesReady();
@@ -890,6 +939,8 @@ void EEStartupHelper()
 
         // Set up the sync block
         SyncBlockCache::Start();
+
+        ExternalMemoryHandle::Init();
 
         // This isn't done as part of InitializeGarbageCollector() above because it
         // requires write barriers to have been set up on x86, which happens as part
@@ -960,17 +1011,16 @@ void EEStartupHelper()
         // This should be done before assemblies/modules are loaded into it (i.e. SystemDomain::Init)
         // and after its OK to switch GC modes and synchronize for sending events to the debugger.
         // @dbgtodo  synchronization: this can probably be simplified in V3
-        LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain 0x%x\n",
+        LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain %p\n",
              SystemDomain::System()->DefaultDomain()));
         SystemDomain::System()->PublishAppDomainAndInformDebugger(SystemDomain::System()->DefaultDomain());
 #endif
 
 #ifdef HAVE_GCCOVER
         MethodDesc::Init();
-        if (CdacStress::IsEnabled())
-        {
-            CdacStress::Initialize();
-        }
+#endif
+#ifdef CDAC_STRESS
+        CdacStressPolicy::Initialize();
 #endif
 
         Assembly::Initialize();
@@ -992,19 +1042,30 @@ void EEStartupHelper()
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
+#ifdef FEATURE_MULTITHREADING
         InitializeThreadStaticData();
+#else
+        {
+            // There is only one thread, so publish its managed Thread object for Thread.CurrentThread.
+            GCX_COOP();
+            g_pThreadClass->CheckRunClassInitThrowing();
+            FieldDesc* pCurrentThreadField = CoreLibBinder::GetField(FIELD__THREAD__CURRENT_THREAD);
+            OBJECTREF exposedThread = GetThread()->GetExposedObject();
+            pCurrentThreadField->SetStaticOBJECTREF(exposedThread);
+        }
+#endif // FEATURE_MULTITHREADING
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
-        // align up to GetOsPageSize(), with a maximum of 1 MB
-        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, GetOsPageSize()), (DWORD)(1024 * 1024));
+        // align up to minipal_getpagesize(), with a maximum of 1 MB
+        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, minipal_getpagesize()), (DWORD)(1024 * 1024));
         // allocate the buffer. this is never touched while the process is running, so it doesn't
         // contribute to the process' working set. it is needed only as a "shadow" for a mini-metadata
         // buffer that will be set up and reported / updated in the Watson process (the
         // DacStreamsManager class coordinates this)
-        g_MiniMetaDataBuffAddress = (TADDR) ClrVirtualAlloc(NULL,
-                                                g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
+        g_MiniMetaDataBuffAddress = (TADDR) VMToOSInterface::AllocateMemory(NULL,
+                                                g_MiniMetaDataBuffMaxSize, VMToOSInterface::MemoryProtection::ReadWrite);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
         g_fEEStarted = TRUE;
@@ -1093,7 +1154,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 
 // EEStartup is responsible for all the one time initialization of the runtime.  Some of the highlights of
 // what it does include
-//     * Creates the default and shared, appdomains.
+//     * Creates the global AppDomain
 //     * Loads System.Private.CoreLib and loads up the fundamental types (System.Object ...)
 //
 // see code:EEStartup#TableOfContents for more on the runtime in general.
@@ -1165,7 +1226,7 @@ void WaitForEndOfShutdown()
         pThread->SetThreadStateNC(Thread::TSNC_BlockedForShutdown);
     }
 
-    for (;;) g_pEEShutDownEvent->Wait(INFINITE, TRUE);
+    for (;;) g_pEEShutDownEvent->Wait(INFINITE, TRUE, false);
 }
 
 // ---------------------------------------------------------------------------
@@ -1184,7 +1245,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     } CONTRACTL_END;
 
     // Used later for a callback.
-    CEEInfo ceeInf;
+    CEEInfo ceeInf(nullptr, nullptr);
 
 #ifdef FEATURE_PGO
     EX_TRY
@@ -1252,8 +1313,8 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // Indicate the EE is the shut down phase.
         InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Start);
 
-#ifdef HAVE_GCCOVER
-        CdacStress::Shutdown();
+#ifdef CDAC_STRESS
+        CdacStressPolicy::Shutdown();
 #endif
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)
@@ -1660,13 +1721,18 @@ static void RuntimeThreadShutdown(void* thread)
             GCX_COOP_NO_DTOR_END();
         }
 
+#ifdef TARGET_UNIX
+        pThread->SetThreadExited();
+#endif // TARGET_UNIX
         pThread->DetachThread(TRUE);
     }
+#ifdef FEATURE_MULTITHREADING
     else
     {
         // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
         AssertThreadStaticDataFreed();
     }
+#endif // FEATURE_MULTITHREADING
 
     ThreadDetaching();
 }
@@ -1681,6 +1747,11 @@ static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 #define FLS_STATE_INVOKED 2
 
 static PLATFORM_THREAD_LOCAL byte t_flsState;
+
+static bool HasThreadStateBeenDestroyed()
+{
+    return t_flsState == FLS_STATE_INVOKED;
+}
 
 // This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
 // it means that the thread itself is destroyed.
@@ -1711,27 +1782,12 @@ void InitFlsSlot()
 }
 
 // Register the thread with OS to be notified when thread is about to be destroyed
-// It fails fast if a different thread was already registered with the current fiber.
 // Parameters:
 //  thread        - thread to attach
 static void OsAttachThread(void* thread)
 {
     _ASSERTE(g_flsIndex != FLS_OUT_OF_INDEXES);
-
-    if (t_flsState == FLS_STATE_INVOKED)
-    {
-        // Managed C++ may run managed code in DllMain (e.g. during DLL_PROCESS_DETACH to run global destructors). This is
-        // not supported and unreliable. Historically, it happened to work most of the time. For backward compatibility,
-        // suppress this assert in release builds if we have encountered any mixed mode binaries.
-        if (Module::HasAnyIJWBeenLoaded())
-        {
-            _ASSERTE(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
-        }
-        else
-        {
-            _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
-        }
-    }
+    _ASSERTE(t_flsState == FLS_STATE_CLEAR);
 
     t_flsState = FLS_STATE_ARMED;
 
@@ -1776,6 +1832,54 @@ void EnsureTlsDestructionMonitor()
 }
 
 #else
+#ifdef TARGET_APPLE
+static pthread_key_t g_threadStateKey;
+static byte g_threadStateDestroyedMarker;
+
+static void SetThreadStateDestroyed()
+{
+    if (pthread_setspecific(g_threadStateKey, &g_threadStateDestroyedMarker) != 0)
+    {
+        _ASSERTE_ALL_BUILDS(!"Failed to preserve the destroyed runtime thread state.");
+    }
+}
+
+// POSIX clears a key before invoking its destructor, and key destructor order is unspecified.
+// Restore the marker so managed re-entry from later destructors can observe the destroyed state.
+static void ThreadStateKeyDestructor(void* state)
+{
+    if (state == &g_threadStateDestroyedMarker)
+    {
+        SetThreadStateDestroyed();
+    }
+}
+
+static void InitThreadStateKey()
+{
+    if (pthread_key_create(&g_threadStateKey, ThreadStateKeyDestructor) != 0)
+    {
+        COMPlusThrowOM();
+    }
+}
+
+static bool HasThreadStateBeenDestroyed()
+{
+    return pthread_getspecific(g_threadStateKey) == &g_threadStateDestroyedMarker;
+}
+#else
+static PLATFORM_THREAD_LOCAL bool t_threadStateDestroyed;
+
+static bool HasThreadStateBeenDestroyed()
+{
+    return t_threadStateDestroyed;
+}
+
+static void SetThreadStateDestroyed()
+{
+    t_threadStateDestroyed = true;
+}
+#endif
+
 struct TlsDestructionMonitor
 {
     bool m_activated = false;
@@ -1791,6 +1895,8 @@ struct TlsDestructionMonitor
         {
             RuntimeThreadShutdown(GetThreadNULLOk());
         }
+
+        SetThreadStateDestroyed();
     }
 };
 
@@ -1804,6 +1910,26 @@ void EnsureTlsDestructionMonitor()
 }
 
 #endif
+
+void CheckThreadStateNotDestroyed()
+{
+    if (!HasThreadStateBeenDestroyed())
+    {
+        return;
+    }
+
+    // Managed C++ may run managed code in DllMain (e.g. during DLL_PROCESS_DETACH to run global destructors). This is
+    // not supported and unreliable. Historically, it happened to work most of the time. For backward compatibility,
+    // suppress this assert in release builds if we have encountered any mixed mode binaries.
+    if (Module::HasAnyIJWBeenLoaded())
+    {
+        _ASSERTE(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
+    }
+    else
+    {
+        _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
+    }
+}
 
 #ifdef DEBUGGING_SUPPORTED
 //
@@ -1985,7 +2111,6 @@ void ContractRegressionCheckInner()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         LOADS_TYPE(CLASS_LOAD_BEGIN);
         CANNOT_TAKE_LOCK;
     }
@@ -2019,13 +2144,11 @@ void ContractRegressionCheck()
         // B#564831 (which left a huge swath of contracts silently disabled for over six months)
         PERMANENT_CONTRACT_VIOLATION(ThrowsViolation
                                    | GCViolation
-                                   | FaultViolation
                                    | LoadsTypeViolation
                                    | TakesLockViolation
                                    , ReasonContractInfrastructure
                                     );
         {
-            FAULT_NOT_FATAL();
             ContractRegressionCheckInner();
         }
     }
@@ -2041,4 +2164,3 @@ void ContractRegressionCheck()
 }
 
 #endif // ENABLE_CONTRACTS_IMPL
-

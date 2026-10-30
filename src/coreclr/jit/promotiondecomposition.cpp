@@ -178,6 +178,15 @@ public:
     }
 
     //------------------------------------------------------------------------
+    // Reverse:
+    //   Reverse the order of the planned copies.
+    //
+    void Reverse()
+    {
+        m_entries.Reverse();
+    }
+
+    //------------------------------------------------------------------------
     // Finalize:
     //   Create IR to perform the full decomposed struct copy as specified by
     //   the entries that were added to the decomposition plan. Add the
@@ -1125,7 +1134,7 @@ private:
             if ((fullOffs != 0) || (m_addrBaseOffsFldSeq != nullptr))
             {
                 GenTreeIntCon* offsetNode = comp->gtNewIconNode(fullOffs, TYP_I_IMPL);
-                offsetNode->gtFieldSeq    = m_addrBaseOffsFldSeq;
+                offsetNode->SetFieldSeq(m_addrBaseOffsFldSeq);
 
                 var_types addrType = varTypeIsGC(addrUse) ? TYP_BYREF : TYP_I_IMPL;
                 addrUse            = comp->gtNewOperNode(GT_ADD, addrType, addrUse, offsetNode);
@@ -1159,12 +1168,19 @@ private:
         //
         GenTreeFlags GetIndirFlags(var_types type)
         {
-            if (genTypeSize(type) == 1)
+            GenTreeFlags flags = m_indirFlags;
+            if (!varTypeIsGC(type))
             {
-                return m_indirFlags & ~GTF_IND_UNALIGNED;
+                // These accesses are pieces of a whole struct copy, so they do not need to be atomic.
+                flags |= GTF_IND_ALLOW_NON_ATOMIC;
             }
 
-            return m_indirFlags;
+            if (genTypeSize(type) == 1)
+            {
+                flags &= ~GTF_IND_UNALIGNED;
+            }
+
+            return flags;
         }
     };
 
@@ -1257,7 +1273,7 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
 
                 if (fldSeq != nullptr)
                 {
-                    *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
+                    *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->GetFieldSeq());
                 }
 
                 *addr = op1;
@@ -1269,7 +1285,7 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
 
                 if (fldSeq != nullptr)
                 {
-                    *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
+                    *fldSeq = m_fieldSeqStore->Append(intCon->GetFieldSeq(), *fldSeq);
                 }
 
                 *addr = op2;
@@ -1295,6 +1311,44 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
             break;
         }
     }
+}
+
+//------------------------------------------------------------------------
+// gtPeelFieldAddrs: Peel any chain of instance GT_FIELD_ADDR nodes off the
+// specified address and return the underlying base node.
+//
+// Arguments:
+//   addr - The address node.
+//
+// Returns:
+//   The first node along the chain that is not an instance GT_FIELD_ADDR.
+//   For example, given FIELD_ADDR(FIELD_ADDR(LCL_VAR this, a), b), returns
+//   the LCL_VAR.
+//
+// Remarks:
+//   Static field addresses (where `IsInstance()` is false) are not peeled,
+//   since they carry a runtime helper call rather than a simple
+//   constant-offset addend.
+//
+GenTree* Compiler::gtPeelFieldAddrs(GenTree* addr) const
+{
+    while (addr->OperIs(GT_FIELD_ADDR) && addr->AsFieldAddr()->IsInstance())
+    {
+        addr = addr->AsFieldAddr()->GetFldObj();
+    }
+    return addr;
+}
+
+//------------------------------------------------------------------------
+// gtPeelFieldAddrs (const overload): see the non-const variant above.
+//
+// GenTreeFieldAddr::GetFldObj() returns a mutable GenTree* even from a const
+// receiver, so we localize the const_cast here rather than asking every
+// const-correct caller to perform one at the use site.
+//
+const GenTree* Compiler::gtPeelFieldAddrs(const GenTree* addr) const
+{
+    return gtPeelFieldAddrs(const_cast<GenTree*>(addr));
 }
 
 // HandleStructStore:
@@ -1725,5 +1779,13 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                     LastUseString(srcLcl, srcRep));
             srcRep++;
         }
+    }
+
+    if ((dstLcl != nullptr) && (srcLcl != nullptr) && (dstLcl->GetLclNum() == srcLcl->GetLclNum()) &&
+        (dstBaseOffs > srcBaseOffs) && (dstBaseOffs - srcBaseOffs < srcLcl->GetLayout(m_compiler)->GetSize()))
+    {
+        // Copy overlapping slices from high to low so stores do not overwrite later sources.
+        JITDUMP("  Reversing copy order for overlapping slices of the same local\n");
+        plan->Reverse();
     }
 }

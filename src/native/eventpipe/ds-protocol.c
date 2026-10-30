@@ -276,13 +276,14 @@ ipc_message_flatten (
 
 	bool result = true;
 	uint8_t *buffer = NULL;
+	uint16_t remaining_len = 0;
 
-	uint16_t total_len = 0;
-	EP_ASSERT (UINT16_MAX >= sizeof (DiagnosticsIpcHeader) + payload_len);
-	total_len += sizeof (DiagnosticsIpcHeader) + payload_len;
+	size_t total_len = (size_t)sizeof (DiagnosticsIpcHeader) + (size_t)payload_len;
+	EP_ASSERT (total_len <= UINT16_MAX);
+	ep_raise_error_if_nok (total_len <= UINT16_MAX);
 
-	uint16_t remaining_len = total_len;
-	message->size = total_len;
+	remaining_len = (uint16_t)total_len;
+	message->size = (uint16_t)total_len;
 
 	buffer = ep_rt_byte_array_alloc (message->size);
 	ep_raise_error_if_nok (buffer != NULL);

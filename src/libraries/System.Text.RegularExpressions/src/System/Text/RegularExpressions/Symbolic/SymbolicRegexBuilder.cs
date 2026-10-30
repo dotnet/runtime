@@ -103,6 +103,14 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly Dictionary<(SymbolicRegexNode<TSet>, uint), SymbolicRegexNode<TSet>> _pruneLowerPriorityThanNullabilityCache = new();
 
         /// <summary>
+        /// Cache for <see cref="SymbolicRegexNode{TSet}.StripEffects(SymbolicRegexBuilder{TSet})"/> keyed by the node
+        /// to strip. The value is the stripped node. This cache is essential for avoiding exponential blowup when
+        /// stripping effects from derivatives of deeply nested loop patterns (e.g. ((a)*)*), where the derivative
+        /// tree is a DAG with shared sub-trees that would otherwise be traversed repeatedly.
+        /// </summary>
+        internal readonly Dictionary<SymbolicRegexNode<TSet>, SymbolicRegexNode<TSet>> _stripEffectsCache = new();
+
+        /// <summary>
         /// Cache for <see cref="SymbolicRegexNode{TSet}.Subsumes(SymbolicRegexBuilder{TSet}, SymbolicRegexNode{TSet}, int)"/> keyed by:
         ///  -The node R potentially subsuming S
         ///  -The node S potentially being subsumed by R

@@ -23,6 +23,7 @@ export function collectGcDump (options?:DiagnosticCommandOptions):Promise<Uint8A
             // stop 500ms after last GC message on this session, there will be more messages after that
             if (stopDelayedAfterLastMessage) {
                 clearTimeout(stopDelayedAfterLastMessage);
+                Module.runtimeKeepalivePop();
             }
             stopDelayedAfterLastMessage = Module.safeSetTimeout(() => {
                 stopSent = true;

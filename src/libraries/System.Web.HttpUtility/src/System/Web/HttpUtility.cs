@@ -95,34 +95,23 @@ namespace System.Web
 
             while (namePos <= queryLength)
             {
-                int valuePos = -1, valueEnd = -1;
-                for (int q = namePos; q < queryLength; q++)
+                int valueEnd = query.IndexOf('&', namePos);
+                if (valueEnd < 0)
                 {
-                    if (valuePos == -1 && query[q] == '=')
-                    {
-                        valuePos = q + 1;
-                    }
-                    else if (query[q] == '&')
-                    {
-                        valueEnd = q;
-                        break;
-                    }
+                    valueEnd = queryLength;
                 }
 
+                int valuePos = query.AsSpan(namePos, valueEnd - namePos).IndexOf('=');
                 string? name;
-                if (valuePos == -1)
+                if (valuePos < 0)
                 {
                     name = null;
                     valuePos = namePos;
                 }
                 else
                 {
-                    name = UrlDecode(query.AsSpan(namePos, valuePos - namePos - 1), encoding);
-                }
-
-                if (valueEnd < 0)
-                {
-                    valueEnd = query.Length;
+                    name = UrlDecode(query.AsSpan(namePos, valuePos), encoding);
+                    valuePos += namePos + 1;
                 }
 
                 namePos = valueEnd + 1;
@@ -193,7 +182,7 @@ namespace System.Web
         public static byte[]? UrlDecodeToBytes(string? str) => UrlDecodeToBytes(str, Encoding.UTF8);
 
         [return: NotNullIfNotNull(nameof(str))]
-        public static byte[]? UrlDecodeToBytes(string? str, Encoding e)
+        public static unsafe byte[]? UrlDecodeToBytes(string? str, Encoding e)
         {
             const int StackallocThreshold = 512;
             if (str == null)

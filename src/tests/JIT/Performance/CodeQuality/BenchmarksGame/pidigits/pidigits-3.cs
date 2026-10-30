@@ -35,6 +35,8 @@ namespace BenchmarksGame
         StringBuilder strBuf = new StringBuilder(40), lastBuf = null;
         int n;
 
+        public pidigits() { }
+
         pidigits(int n)
         {
             this.n = n;

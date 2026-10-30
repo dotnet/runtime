@@ -16,6 +16,7 @@ import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
+import { extractLegacyModuleCallbacks } from "./callbacks";
 
 
 export class HostBuilder implements DotnetHostBuilder {
@@ -24,7 +25,7 @@ export class HostBuilder implements DotnetHostBuilder {
     // internal
     withModuleConfig (moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
         try {
-            deep_merge_module(emscriptenModule, moduleConfig);
+            deep_merge_module(emscriptenModule, extractLegacyModuleCallbacks(moduleConfig));
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -215,6 +216,36 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    withDownloadResourceProgress (callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder {
+        try {
+            loaderHelpers.callbacks.downloadResourceProgress = callback;
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withConfigLoaded (callback?: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder {
+        try {
+            loaderHelpers.callbacks.configLoaded = callback;
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withDotnetReady (callback?: () => void | Promise<void>): DotnetHostBuilder {
+        try {
+            loaderHelpers.callbacks.dotnetReady = callback;
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
     withResourceLoader (loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {
         try {
             loaderHelpers.loadBootResource = loadBootResource;
@@ -308,7 +339,7 @@ async function prepareEmscripten (moduleFactory: DotnetModuleConfig | ((api: Run
         throw new Error("Can't use moduleFactory callback of createDotnetRuntime function.");
     }
 
-    await detect_features_and_polyfill(emscriptenModule);
+    await detect_features_and_polyfill();
 }
 
 export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI | EmscriptenModuleInternal> {
@@ -324,9 +355,7 @@ export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((ap
 
     registerEmscriptenExitHandlers();
 
-    return emscriptenModule.ENVIRONMENT_IS_PTHREAD
-        ? createEmscriptenWorker()
-        : createEmscriptenMain();
+    return createEmscriptenMain();
 }
 
 let jsModuleRuntimePromise: Promise<RuntimeModuleExportsInternal>;
@@ -451,19 +480,36 @@ async function createEmscriptenWorker (): Promise<EmscriptenModuleInternal> {
     await loaderHelpers.afterConfigLoaded.promise;
 
     prepareAssetsWorker();
-
-    setTimeout(async () => {
-        try {
-            // load subset which is on JS heap rather than in WASM linear memory
-            await mono_download_assets();
-        } catch (err) {
-            mono_exit(1, err);
-        }
-    }, 0);
-
     const promises = importModules();
     const es6Modules = await Promise.all(promises);
+    (globalThis as any).name = "em-pthread";
     await initializeModules(es6Modules as any);
 
+    if (loaderHelpers.config.exitOnUnhandledError) {
+        installUnhandledErrorHandler();
+    }
+    registerEmscriptenExitHandlers();
+    if (ENVIRONMENT_IS_WEB && loaderHelpers.config.forwardConsole && typeof globalThis.WebSocket != "undefined") {
+        setup_proxy_console("main", globalThis.console, globalThis.location.origin);
+    }
+
+    await detect_features_and_polyfill();
+
+    await mono_download_assets();
+
+    const CMD_LOAD = 1; // emscripten/src/lib/libpthread.js CMD_LOAD
+    self.dispatchEvent(new MessageEvent("message", {
+        data: {
+            cmd: CMD_LOAD,
+            handlers: emscriptenModule.handlers,
+            wasmMemory: emscriptenModule.wasmMemory,
+            wasmModule: emscriptenModule.wasmModule
+        }
+    }));
+
     return emscriptenModule;
+}
+
+if (ENVIRONMENT_IS_WORKER) {
+    void createEmscriptenWorker().catch((err) => mono_exit(1, err));
 }

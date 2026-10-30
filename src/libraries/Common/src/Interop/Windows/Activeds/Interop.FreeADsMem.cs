@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Activeds
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Activeds)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool FreeADsMem(IntPtr pVoid);

@@ -29,7 +29,6 @@ BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pCo
 // General purpose functions for use on an IP in jitted code.
 bool IsIPInProlog(EECodeInfo *pCodeInfo);
 bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSafeToInjectThreadAbort);
-
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 
 // Enums
@@ -45,7 +44,7 @@ enum LFH {
 // Windows uses 64kB as the null-reference area
 #define NULL_AREA_SIZE   (64 * 1024)
 #else // !TARGET_UNIX
-#define NULL_AREA_SIZE   GetOsPageSize()
+#define NULL_AREA_SIZE   minipal_getpagesize()
 #endif // !TARGET_UNIX
 
 class IJitManager;
@@ -105,13 +104,11 @@ void TerminateExceptionHandling();
 // Prototypes
 EXTERN_C VOID STDCALL ResetCurrentContext();
 
-void UnwindFrameChain(Thread *pThread, LPVOID pvLimitSP);
+void UnwindFrameChain(Thread *pThread, LPVOID pvLimitSP) noexcept;
 DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
-DWORD ComputeEnclosingHandlerNestingLevel(IJitManager *pIJM, const METHODTOKEN& mdTok, SIZE_T offsNat);
 BOOL IsException(MethodTable *pMT);
 BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable);
 BOOL IsExceptionOfType(RuntimeExceptionKind reKind, Exception *pException);
-BOOL IsUncatchable(OBJECTREF *pThrowable);
 VOID FixupOnRethrow(Thread *pCurThread, EXCEPTION_POINTERS *pExceptionPointers);
 BOOL UpdateCurrentThrowable(PEXCEPTION_RECORD pExceptionRecord);
 BOOL IsStackOverflowException(Thread* pThread, EXCEPTION_RECORD* pExceptionRecord);
@@ -144,16 +141,14 @@ BOOL InstallUnhandledExceptionFilter();
 // thing in the .text section. Reason for opting out of this approach was that BBT can move code
 // within a section, no matter where it was located - and for this case, we need the UEF code
 // at the right location to ensure that we can check the memory protection of its following
-// section so that shouldnt affect UEF's memory protection. For details, read the comment in
-// ClrVirtualProtect.
+// section so that shouldnt affect UEF's memory protection.
 //
 // Keeping UEF in its own section helps prevent code movement as BBT does not reorder
 // sections. As per my understanding of the linker, ".text" section always comes first,
 // followed by other "executable" sections (like our UEF section) and then ".data", etc.
 // The order of user defined executable sections is typically defined by the linker
 // in terms of which section it sees first. So, if there is another custom executable
-// section that comes after UEF section, it can affect the UEF section and we will
-// assert about it in ClrVirtualProtect.
+// section that comes after UEF section, it can affect the UEF section.
 #define CLR_UEF_SECTION_NAME ".CLR_UEF"
 #endif //!defined(TARGET_UNIX)
 LONG __stdcall COMUnhandledExceptionFilter(EXCEPTION_POINTERS *pExceptionInfo);
@@ -213,7 +208,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind);
 // in our .resources file.
 //==========================================================================
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wszResourceName, Exception * pInnerException = NULL);
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wszResourceName);
 
 //==========================================================================
 // Throw a decorated runtime exception.
@@ -239,13 +234,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
                                           LPCWSTR wszArg6 = NULL);
 
 #ifdef FEATURE_COMINTEROP
-
-enum tagGetErrorInfo
-{
-    kGetErrorInfo
-};
-
-VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo);
 
 //==========================================================================
 // Throw a runtime exception based on an HResult, check for error info
@@ -296,7 +284,6 @@ ULONG GetExceptionMessage(OBJECTREF throwable,
 void GetExceptionMessage(OBJECTREF throwable, SString &result);
 STRINGREF GetExceptionMessage(OBJECTREF throwable);
 HRESULT GetExceptionHResult(OBJECTREF throwable);
-DWORD GetExceptionXCode(OBJECTREF throwable);
 
 void ExceptionPreserveStackTrace(OBJECTREF throwable);
 
@@ -616,9 +603,7 @@ bool IsGcMarker(T_CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord);
 
 bool ShouldHandleManagedFault(
                         EXCEPTION_RECORD*               pExceptionRecord,
-                        T_CONTEXT*                      pContext,
-                        EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
-                        Thread*                         pThread);
+                        T_CONTEXT*                      pContext);
 
 void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, T_CONTEXT* pContext);
 
@@ -638,11 +623,6 @@ inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 }
 
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);
-
-// See implementation for detailed comments in excep.cpp
-LONG ReflectionInvocationExceptionFilter(
-    EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
-    PVOID               pParam);
 
 #ifndef DACCESS_COMPILE
 // exception filter invoked for unhandled exceptions on the entry point thread (thread 0)

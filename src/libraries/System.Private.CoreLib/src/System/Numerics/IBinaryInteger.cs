@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime;
+
 namespace System.Numerics
 {
     /// <summary>Defines an integer type that is represented in a base-2 format.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
+    [SuppressReadyToRunCanonicalRooting]
     public interface IBinaryInteger<TSelf>
         : IBinaryNumber<TSelf>,
           IShiftOperators<TSelf, int, TSelf>
@@ -258,6 +261,35 @@ namespace System.Numerics
             }
 
             return remainder;
+        }
+
+        /// <summary>Computes the integer logarithm base 10 of a value.</summary>
+        /// <param name="value">The value whose integer logarithm base 10 is to be computed.</param>
+        /// <returns>The integer logarithm base 10 of <paramref name="value" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value" /> is negative.</exception>
+        /// <remarks>The result of computing the integer logarithm base 10 of zero is zero.</remarks>
+        static virtual TSelf Log10(TSelf value)
+        {
+            if (!typeof(TSelf).IsValueType)
+            {
+                ArgumentNullException.ThrowIfNull(value);
+            }
+
+            if (TSelf.IsNegative(value))
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+
+            TSelf ten = TSelf.CreateChecked(10);
+            TSelf result = TSelf.Zero;
+
+            while (value >= ten)
+            {
+                value /= ten;
+                result++;
+            }
+
+            return result;
         }
 
         /// <summary>Computes the number of leading zero bits in a value.</summary>

@@ -71,6 +71,7 @@ namespace System.Security.Cryptography.Xml
                     transform.BaseURI = baseUri;
                     transform.LoadInput(currentInput!);
                     currentInput = transform.GetOutput();
+                    transform.ClearState();
                 }
                 else
                 {
@@ -84,10 +85,20 @@ namespace System.Security.Cryptography.Xml
                             XmlDocument doc = new XmlDocument();
                             doc.PreserveWhitespace = true;
                             XmlReader valReader = Utils.PreProcessStreamInput(currentInputStream, resolver, baseUri);
-                            doc.Load(valReader);
+                            long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+                            if (maxDepth > 0)
+                            {
+                                Utils.LoadXmlDocumentWithMaxDepthCheck(doc, valReader, maxDepth);
+                            }
+                            else
+                            {
+                                doc.Load(valReader);
+                            }
+
                             transform.LoadInput(doc);
                             currentInputStream.Close();
                             currentInput = transform.GetOutput();
+                            transform.ClearState();
                             continue;
                         }
                         else
@@ -103,6 +114,7 @@ namespace System.Security.Cryptography.Xml
                             MemoryStream ms = new MemoryStream(c14n.GetBytes());
                             transform.LoadInput(ms);
                             currentInput = transform.GetOutput();
+                            transform.ClearState();
                             ms.Close();
                             continue;
                         }
@@ -119,6 +131,7 @@ namespace System.Security.Cryptography.Xml
                             MemoryStream ms = new MemoryStream(c14n.GetBytes());
                             transform.LoadInput(ms);
                             currentInput = transform.GetOutput();
+                            transform.ClearState();
                             ms.Close();
                             continue;
                         }
@@ -178,6 +191,10 @@ namespace System.Security.Cryptography.Xml
 
             XmlNodeList? transformNodes = value.SelectNodes("ds:Transform", nsm);
             if (transformNodes!.Count == 0)
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Transforms");
+
+            int maxTransforms = LocalAppContextSwitches.MaxTransformsPerChain;
+            if (maxTransforms > 0 && transformNodes.Count > maxTransforms)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Transforms");
 
             _transforms.Clear();

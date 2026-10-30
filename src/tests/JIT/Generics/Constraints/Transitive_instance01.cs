@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_Constraints_Transitive_instance01;
+
 using System;
 using Xunit;
 
@@ -48,6 +50,7 @@ public class Test_Transitive_instance01
 
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -38,3 +38,14 @@ Some libraries are under more active development than others. Depending on the l
 Some libraries are included in the .NET SDK as part of the runtime's [shared framework](https://learn.microsoft.com/dotnet/standard/glossary#shared-framework). Other libraries are deployed as out-of-band (OOB) NuGet packages and need to be installed separately.
 
 For more information, see the [Runtime libraries overview](https://learn.microsoft.com/dotnet/standard/runtime-libraries-overview).
+
+## Building and testing
+
+Library tests are driven by `dotnet build /t:test <TestProject>.csproj` (not `dotnet test`), and many useful flags are not visible from `--help`. For up-front baseline build requirements (mandatory under CCA, probe-and-fall-back under CLI), see [`.github/copilot-instructions.md`](../../.github/copilot-instructions.md). See the workflow docs for the rest:
+
+- [Building libraries](../../docs/workflow/building/libraries/README.md)
+- [Testing libraries](../../docs/workflow/testing/libraries/testing.md) — includes inner-loop iteration flags such as `/p:testnobuild=true`, `/p:XunitMethodName=...`, `/p:XUnitOptions=...`, and `/p:Outerloop=true`
+- [Filtering tests](../../docs/workflow/testing/libraries/filtering-tests.md)
+- [Testing on WebAssembly](../../docs/workflow/testing/libraries/testing-wasm.md) · [Android](../../docs/workflow/testing/libraries/testing-android.md) · [Apple platforms](../../docs/workflow/testing/libraries/testing-apple.md)
+
+For changes to `System.Private.CoreLib`, also rebuild the `libs.pretest` subset so the new CoreLib is copied into the testhost before running tests.

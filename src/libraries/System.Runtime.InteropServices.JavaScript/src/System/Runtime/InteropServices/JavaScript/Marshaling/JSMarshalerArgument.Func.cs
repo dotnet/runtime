@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 JSObject = holder;
             }
 
-            public void InvokeJS()
+            public unsafe void InvokeJS()
             {
                 // JSObject (held by this lambda) would be collected by GC after the lambda is collected
                 // and would also allow the JS function to be collected
@@ -48,7 +48,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg1Marshaler = arg1Marshaler;
             }
 
-            public void InvokeJS(T arg1)
+            public unsafe void InvokeJS(T arg1)
             {
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[3];
@@ -85,7 +85,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg2Marshaler = arg2Marshaler;
             }
 
-            public void InvokeJS(T1 arg1, T2 arg2)
+            public unsafe void InvokeJS(T1 arg1, T2 arg2)
             {
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
@@ -127,7 +127,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg3Marshaler = arg3Marshaler;
             }
 
-            public void InvokeJS(T1 arg1, T2 arg2, T3 arg3)
+            public unsafe void InvokeJS(T1 arg1, T2 arg2, T3 arg3)
             {
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[5];
@@ -252,7 +252,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ResMarshaler = resMarshaler;
             }
 
-            public TResult InvokeJS()
+            public unsafe TResult InvokeJS()
             {
 
                 // JSObject (held by this lambda) would be collected by GC after the lambda is collected
@@ -292,7 +292,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ResMarshaler = resMarshaler;
             }
 
-            public TResult InvokeJS(T arg1)
+            public unsafe TResult InvokeJS(T arg1)
             {
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[3];
@@ -333,7 +333,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ResMarshaler = resMarshaler;
             }
 
-            public TResult InvokeJS(T1 arg1, T2 arg2)
+            public unsafe TResult InvokeJS(T1 arg1, T2 arg2)
             {
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
@@ -379,7 +379,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ResMarshaler = resMarshaler;
             }
 
-            public TResult InvokeJS(T1 arg1, T2 arg2, T3 arg3)
+            public unsafe TResult InvokeJS(T1 arg1, T2 arg2, T3 arg3)
             {
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[5];

@@ -290,6 +290,7 @@ namespace System.Runtime
             }
         }
 
+#if !TARGET_WASM
         [RuntimeExport("RhGetCurrentThreadStackTrace")]
         [MethodImpl(MethodImplOptions.NoInlining)] // Ensures that the RhGetCurrentThreadStackTrace frame is always present
         public static unsafe int RhGetCurrentThreadStackTrace(IntPtr[] outputBuffer)
@@ -342,5 +343,6 @@ namespace System.Runtime
 
             return success ? (int)nFrames : -(int)nFrames;
         }
+#endif // !TARGET_WASM
     }
 }

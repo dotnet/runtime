@@ -140,7 +140,7 @@ LiveProcDataTarget::ReadVirtual(
     {
         // Calculate bytes to read and don't let read cross
         // a page boundary.
-        readSize = GetOsPageSize() - (ULONG32)(address & (GetOsPageSize() - 1));
+        readSize = minipal_getpagesize() - (ULONG32)(address & (minipal_getpagesize() - 1));
         readSize = min(request, readSize);
 
         if (!ReadProcessMemory(m_process, (PVOID)(ULONG_PTR)address,

@@ -3,7 +3,7 @@
 
 import type { CharPtr, VoidPtr } from "../types";
 import { dotnetApi } from "../utils/cross-module";
-import { getU16Local, isSharedArrayBuffer, setU16Local, viewOrCopy, zeroRegion } from "./memory";
+import { getU16Local, arrayBufferNeedsCopy, setU16Local, viewOrCopy, zeroRegion } from "./memory";
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 let textDecoderUtf16: TextDecoder | undefined = undefined;
@@ -22,7 +22,8 @@ export function stringsInit(): void {
             }
             const originalUTF8DecoderDecode = _ems_.UTF8Decoder.decode;
             _ems_.UTF8Decoder.decode = function (input: Uint8Array): string {
-                const view = isSharedArrayBuffer(input.buffer) ? input.slice() : input;
+                const needsCopy = arrayBufferNeedsCopy(input.buffer);
+                const view = needsCopy ? input.slice() : input;
                 return originalUTF8DecoderDecode.call(this, view);
             };
         }
@@ -75,7 +76,7 @@ export function utf16ToString(startPtr: number, endPtr: number): string {
     endPtr = endPtr >>> 0;
     if (textDecoderUtf16) {
         const subArray = viewOrCopy(dotnetApi.localHeapViewU8(), startPtr as any, endPtr as any);
-        // SharedArrayBuffer, we must make a copy of the array first.
+        // SharedArrayBuffer or resizable, we must make a copy of the array first.
         // See https://github.com/whatwg/encoding/issues/172
         return textDecoderUtf16.decode(subArray);
     } else {

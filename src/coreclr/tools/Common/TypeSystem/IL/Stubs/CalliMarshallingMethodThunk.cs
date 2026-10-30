@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
@@ -57,20 +59,13 @@ namespace Internal.IL.Stubs
             {
                 if (_signature == null)
                 {
-                    // Prepend fnptr argument to the signature
-                    TypeDesc[] parameterTypes = new TypeDesc[_targetSignature.Length + 1];
-
-                    for (int i = 0; i < _targetSignature.Length; i++)
-                        parameterTypes[i] = _targetSignature[i];
-                    parameterTypes[parameterTypes.Length - 1] = Context.GetWellKnownType(WellKnownType.IntPtr);
-
-                    _signature = new MethodSignature(MethodSignatureFlags.Static, 0, _targetSignature.ReturnType, parameterTypes);
+                    _signature = CreateSignatureWithSecretStubArgument(_targetSignature, MethodSignatureFlags.Static);
                 }
                 return _signature;
             }
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {

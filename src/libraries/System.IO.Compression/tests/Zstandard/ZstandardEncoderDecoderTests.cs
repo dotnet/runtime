@@ -15,7 +15,10 @@ namespace System.IO.Compression
 
         protected override int ValidQuality => 3;
         protected override int ValidWindowLog => 10;
-
+        protected override int MinQuality => 1;
+        protected override int MaxQuality => 22;
+        protected override int MinWindowLog => 10;
+        protected override int MaxWindowLog => Environment.Is64BitProcess ? 31 : 30;
         protected override int InvalidQualityTooLow => -(1 << 17) - 1;
         protected override int InvalidQualityTooHigh => 23;
         protected override int InvalidWindowLogTooLow => 9;
@@ -112,10 +115,10 @@ namespace System.IO.Compression
         {
             using ZstandardDictionary dictionary = ZstandardDictionary.Create(new byte[] { 0x01, 0x02, 0x03, 0x04 }, quality: 3);
 
-            Assert.Throws<ArgumentOutOfRangeException>("maxWindowLog", () => new ZstandardDecoder(maxWindowLog: 8));
-            Assert.Throws<ArgumentOutOfRangeException>("maxWindowLog", () => new ZstandardDecoder(maxWindowLog: 33));
-            Assert.Throws<ArgumentOutOfRangeException>("maxWindowLog", () => new ZstandardDecoder(dictionary, maxWindowLog: 8));
-            Assert.Throws<ArgumentOutOfRangeException>("maxWindowLog", () => new ZstandardDecoder(dictionary, maxWindowLog: 33));
+            Assert.Throws<ArgumentOutOfRangeException>("maxWindowLog2", () => new ZstandardDecoder(maxWindowLog2: 8));
+            Assert.Throws<ArgumentOutOfRangeException>("maxWindowLog2", () => new ZstandardDecoder(maxWindowLog2: 33));
+            Assert.Throws<ArgumentOutOfRangeException>("maxWindowLog2", () => new ZstandardDecoder(dictionary, maxWindowLog2: 8));
+            Assert.Throws<ArgumentOutOfRangeException>("maxWindowLog2", () => new ZstandardDecoder(dictionary, maxWindowLog2: 33));
         }
 
         [Fact]
@@ -402,25 +405,36 @@ namespace System.IO.Compression
             Assert.Throws<InvalidOperationException>(() => encoder.SetPrefix(prefix));
         }
 
-        [Fact]
-        public void SetPrefix_AfterReset_SetsSuccessfully()
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void SetPrefix_AfterReset_SetsSuccessfully(bool useDictionary, bool emptyPrefix)
         {
-            using ZstandardEncoder encoder = new();
-            var input = ZstandardTestUtils.CreateTestData(100);
-            byte[] output = new byte[1000];
+            byte[] input = new byte[1024];
+            new Random(42).NextBytes(input);
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(input);
+            using ZstandardEncoder encoder = useDictionary ? new(dictionary) : new();
+            using ZstandardDecoder decoder = useDictionary ? new(dictionary) : new();
+
+            byte[] expectedCompressed = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
+            using ZstandardEncoder freshEncoder = useDictionary ? new(dictionary) : new();
+            Assert.Equal(OperationStatus.Done, freshEncoder.Compress(input, expectedCompressed, out int consumed, out int expectedWritten, isFinalBlock: true));
+            Assert.Equal(input.Length, consumed);
+            Assert.Equal(!useDictionary, ZstandardDecoder.TryDecompress(expectedCompressed.AsSpan(0, expectedWritten), new byte[input.Length], out _));
 
             // First compression cycle
-            byte[] firstPrefix = { 0x01, 0x02, 0x03 };
+            byte[] firstPrefix = input.AsSpan(0, input.Length / 2).ToArray();
             encoder.SetPrefix(firstPrefix);
-            encoder.Compress(input, output, out _, out _, isFinalBlock: true);
-            encoder.Flush(output, out _);
+            using ZstandardDecoder decoderWithoutPrefix = new();
+            TestRoundTrip(input, encoder, decoderWithoutPrefix, shouldFail: true);
 
             // Reset and set new prefix
             encoder.Reset();
-            byte[] secondPrefix = { 0x04, 0x05, 0x06 };
+            byte[] secondPrefix = emptyPrefix ? Array.Empty<byte>() : input.AsSpan(input.Length / 2).ToArray();
             encoder.SetPrefix(secondPrefix); // Should not throw
 
-            using ZstandardDecoder decoder = new();
             decoder.SetPrefix(secondPrefix);
 
             TestRoundTrip(input, encoder, decoder);
@@ -429,9 +443,42 @@ namespace System.IO.Compression
             decoder.Reset();
             encoder.Reset();
 
-            decoder.SetPrefix(Memory<byte>.Empty);
+            AssertResetRoundTrip();
 
-            TestRoundTrip(input, encoder, decoder);
+            // Reset must also clear a prefix that has not been used yet.
+            encoder.Reset();
+            decoder.Reset();
+            encoder.SetPrefix(secondPrefix);
+            decoder.SetPrefix(secondPrefix);
+            encoder.Reset();
+            decoder.Reset();
+
+            AssertResetRoundTrip();
+
+            if (!useDictionary)
+            {
+                encoder.Reset();
+                decoder.Reset();
+                encoder.SetPrefix(secondPrefix);
+                decoder.SetPrefix(secondPrefix);
+                decoder.Reset();
+
+                TestRoundTrip(input, encoder, decoder, shouldFail: !emptyPrefix);
+            }
+
+            void AssertResetRoundTrip()
+            {
+                byte[] compressed = new byte[expectedCompressed.Length];
+                Assert.Equal(OperationStatus.Done, encoder.Compress(input, compressed, out int bytesConsumed, out int bytesWritten, isFinalBlock: true));
+                Assert.Equal(input.Length, bytesConsumed);
+                Assert.Equal(expectedCompressed.AsSpan(0, expectedWritten), compressed.AsSpan(0, bytesWritten));
+
+                byte[] decompressed = new byte[input.Length];
+                Assert.Equal(OperationStatus.Done, decoder.Decompress(expectedCompressed.AsSpan(0, expectedWritten), decompressed, out bytesConsumed, out bytesWritten));
+                Assert.Equal(expectedWritten, bytesConsumed);
+                Assert.Equal(input.Length, bytesWritten);
+                Assert.Equal(input, decompressed);
+            }
         }
 
         [Fact]
@@ -510,7 +557,7 @@ namespace System.IO.Compression
             // by default, decoder will not allow windows larger than 27 to protect against memory DOS attacks
             int largeWindowLog = 28; // 256 MB window
 
-            using ZstandardEncoder encoder = new(quality: 3, windowLog: largeWindowLog);
+            using ZstandardEncoder encoder = new(quality: 3, windowLog2: largeWindowLog);
 
             // perform in two steps so that the encoder does not know the size upfront
             OperationStatus result = encoder.Compress(input, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
@@ -526,10 +573,10 @@ namespace System.IO.Compression
             using ZstandardDecoder decoder = new();
 
             var ex = Assert.Throws<IOException>(() => decoder.Decompress(output.AsSpan(0, compressedSize), decompressed, out _, out _));
-            Assert.Contains("maxWindowLog", ex.Message);
+            Assert.Contains("maxWindowLog2", ex.Message);
 
-            // now try with increased maxWindowLog
-            using ZstandardDecoder adjustedDecoder = new(maxWindowLog: largeWindowLog);
+            // now try with increased maxWindowLog2
+            using ZstandardDecoder adjustedDecoder = new(maxWindowLog2: largeWindowLog);
             var decompressResult = adjustedDecoder.Decompress(output.AsSpan(0, compressedSize), decompressed, out bytesConsumed, out bytesWritten);
             Assert.Equal(OperationStatus.Done, decompressResult);
             Assert.Equal(input.Length, bytesWritten);
@@ -572,6 +619,52 @@ namespace System.IO.Compression
                 Assert.Equal(input.Length, bytesWrittenDec);
                 Assert.Equal(input, decompressed);
             }
+        }
+
+        [Fact]
+        public void Decoder_Ctor_DecompressionOptions_Null_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("decompressionOptions", () => new ZstandardDecoder((ZstandardDecompressionOptions)null!));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void Decoder_Ctor_DecompressionOptions_Succeeds(int maxWindowLog2)
+        {
+            ZstandardDecompressionOptions options = new() { MaxWindowLog2 = maxWindowLog2 };
+            using ZstandardDecoder decoder = new(options);
+
+            byte[] testData = ZstandardTestUtils.CreateTestData(100);
+            byte[] compressed = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
+            Assert.True(ZstandardEncoder.TryCompress(testData, compressed, out int compressedLength));
+
+            byte[] decompressed = new byte[testData.Length];
+            OperationStatus status = decoder.Decompress(compressed.AsSpan(0, compressedLength), decompressed, out _, out int bytesWritten);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(testData, decompressed.AsSpan(0, bytesWritten).ToArray());
+        }
+
+        [Fact]
+        public void Decoder_Ctor_DecompressionOptions_WithDictionary_RoundTrips()
+        {
+            byte[] dictionaryData = ZstandardTestUtils.CreateSampleDictionary();
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData);
+
+            byte[] testData = ZstandardTestUtils.CreateTestData(500);
+
+            // Compress with dictionary
+            using ZstandardEncoder encoder = new(dictionary);
+            byte[] compressed = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
+            Assert.Equal(OperationStatus.Done, encoder.Compress(testData, compressed, out _, out int compressedLength, isFinalBlock: true));
+
+            // Decompress with ZstandardDecompressionOptions containing the dictionary
+            ZstandardDecompressionOptions options = new() { Dictionary = dictionary };
+            using ZstandardDecoder decoder = new(options);
+            byte[] decompressed = new byte[testData.Length];
+            OperationStatus status = decoder.Decompress(compressed.AsSpan(0, compressedLength), decompressed, out _, out int bytesWritten);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(testData, decompressed.AsSpan(0, bytesWritten).ToArray());
         }
     }
 }

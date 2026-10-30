@@ -6,6 +6,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 using Xunit;
 
 namespace Precise
@@ -16,7 +17,7 @@ namespace Precise
         {
             RuntimeHelpers.RunClassConstructor(typeof(test).TypeHandle);
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static int TestEntryPoint()
         {

@@ -3,6 +3,7 @@
 // ===========================================================================
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "finalizerthread.h"
 #include "threadsuspend.h"
@@ -34,6 +35,8 @@ CLREvent * FinalizerThread::hEventFinalizerToShutDown = NULL;
 
 HANDLE FinalizerThread::MHandles[kHandleCount];
 
+MethodDesc* g_pGCRunFinalizersMethodDesc = nullptr;
+
 bool FinalizerThread::IsCurrentThreadFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
@@ -41,11 +44,27 @@ bool FinalizerThread::IsCurrentThreadFinalizer()
     return GetThreadNULLOk() == g_pFinalizerThread;
 }
 
+#if defined(TARGET_BROWSER) || defined(TARGET_WASI)
+
 #ifdef TARGET_BROWSER
-
+// Browser provides this in its JS host (libSystem.Native.Browser scheduling.ts);
+// it queues a microtask that pumps SystemJS_ExecuteFinalizationCallback.
 extern "C" void SystemJS_ScheduleFinalization();
+#endif
 
-extern "C" void SystemJS_ExecuteFinalizationCallback()
+#ifdef TARGET_WASI
+// WASI has no host event loop; the equivalent of SystemJS_ScheduleFinalization
+// is a pure-native flag-set, drained from managed code via the QCall below.
+extern "C" void WasiFinalizer_Schedule();
+#endif
+
+// Runs one FinalizerThreadWorkerIteration on the current thread. Body is
+// identical on browser and WASI; the surrounding entry-point shape differs:
+//   - Browser: raw wasm export invoked from a JS microtask after
+//     SystemJS_ScheduleFinalization enqueued it. Not a QCall.
+//   - WASI: QCall invoked from managed WasiEventLoop after
+//     WasiFinalizer_TryClearPending observes the flag.
+static void RunFinalizerIterationOnCurrentThread()
 {
     CONTRACTL
     {
@@ -63,7 +82,71 @@ extern "C" void SystemJS_ExecuteFinalizationCallback()
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 }
 
-#endif // TARGET_BROWSER
+#ifdef TARGET_BROWSER
+extern "C" void SystemJS_ExecuteFinalizationCallback()
+{
+    RunFinalizerIterationOnCurrentThread();
+}
+#else // TARGET_WASI
+extern "C" void QCALLTYPE WasiFinalizer_RunWorker(QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+    RunFinalizerIterationOnCurrentThread();
+    END_QCALL;
+}
+#endif
+
+#endif // TARGET_BROWSER || TARGET_WASI
+
+#ifdef TARGET_WASI
+
+#ifdef FEATURE_WASM_MANAGED_THREADS
+// The WASI finalizer design below is single-threaded by construction: there is
+// no separate finalizer thread, and finalization is drained synchronously on the
+// main thread via a plain (non-atomic-swap) pending flag. If managed threads are
+// ever enabled on WASI this is unsound and needs a real finalizer thread, so fail
+// the build loudly rather than silently running the single-threaded path.
+#error "TARGET_WASI finalizer path assumes a single-threaded runtime; FEATURE_WASM_MANAGED_THREADS requires a real finalizer thread implementation."
+#endif // FEATURE_WASM_MANAGED_THREADS
+
+// On WASI there is no separate finalizer thread and no JS event loop to defer
+// work to. EnableFinalization runs inside the GC, so it cannot safely cross
+// back into managed code (queueing into ThreadPool itself is a managed
+// allocation/lock-protected operation that re-enters the GC).
+//
+// Pure-native flag: WasiFinalizer_Schedule sets it from inside the GC, and
+// the managed WasiEventLoop polling loop drains it via WasiFinalizer_TryClearPending
+// at a safe point and then calls WasiFinalizer_RunWorker (the QCall exposing
+// the real FinalizerThreadWorkerIteration; same body as browser's
+// SystemJS_ExecuteFinalizationCallback, exported under a WASI-specific name).
+static Volatile<bool> s_finalizationPending = false;
+
+extern "C" void WasiFinalizer_Schedule()
+{
+    // Called from inside the GC. Setting an atomic flag is the only thing
+    // we can safely do here — no allocation, no managed callback, no locks.
+    s_finalizationPending = true;
+}
+
+extern "C" CLR_BOOL QCALLTYPE WasiFinalizer_TryClearPending(QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    CLR_BOOL pending = FALSE;
+
+    BEGIN_QCALL;
+
+    // Volatile load + clear. Single-threaded WASI: no atomic swap needed.
+    pending = s_finalizationPending ? TRUE : FALSE;
+    if (pending)
+    {
+        s_finalizationPending = false;
+    }
+    END_QCALL;
+    return pending;
+}
+
+#endif // TARGET_WASI
 
 void FinalizerThread::EnableFinalization()
 {
@@ -71,13 +154,20 @@ void FinalizerThread::EnableFinalization()
 
 #ifndef TARGET_WASM
     hEventFinalizer->Set();
-#else  // !TARGET_WASM
-#ifdef TARGET_BROWSER
+#elif defined(TARGET_BROWSER)
+    // Defer finalization to the host's JS event loop. Running it inline from
+    // here is unsafe: EnableFinalization is called from inside the GC, while
+    // FinalizerThreadWorkerIteration declares GC_TRIGGERS + MODE_COOPERATIVE
+    // and re-enters preemptive mode via EnablePreemptiveGC(). Re-entering the
+    // GC, transitioning thread modes from inside a collection, and the risk
+    // of unbounded recursion through finalizer-triggered allocations all make
+    // synchronous execution wrong here.
     SystemJS_ScheduleFinalization();
-#else
-    // WASI is not implemented yet
-#endif // TARGET_BROWSER
-#endif // !TARGET_WASM
+#else // TARGET_WASI
+    // Same constraints as browser; WASI sets a native flag observed by the
+    // managed WasiEventLoop polling loop. See WasiFinalizer_Schedule above.
+    WasiFinalizer_Schedule();
+#endif
 }
 
 namespace
@@ -234,7 +324,7 @@ Again:
         //       regular not re-arming finalizables.
         GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
         GetFinalizerThread()->EnablePreemptiveGC();
-        ClrSleepEx(1, false);
+        minipal_sleep(1);
         GetFinalizerThread()->DisablePreemptiveGC();
         GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
     }
@@ -291,12 +381,13 @@ void FinalizerThread::FinalizeAllObjects()
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     FireEtwGCFinalizersBegin_V1(GetClrInstanceId());
+    if (g_pGCRunFinalizersMethodDesc == nullptr)
+    {
+        g_pGCRunFinalizersMethodDesc = CoreLibBinder::GetMethod(METHOD__GC__RUN_FINALIZERS);
+    }
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__GC__RUN_FINALIZERS);
-    DECLARE_ARGHOLDER_ARRAY(args, 0);
-
-    uint32_t count;
-    CALL_MANAGED_METHOD(count, uint32_t, args);
+    UnmanagedCallersOnlyCaller runFinalizers(METHOD__GC__RUN_FINALIZERS);
+    uint32_t count = runFinalizers.InvokeDirect_Ret<uint32_t>();
 
     FireEtwGCFinalizersEnd_V1(count, GetClrInstanceId());
 }
@@ -313,8 +404,12 @@ void FinalizerThread::RaiseShutdownEvents()
     {
         // This wait must be alertable to handle cases where the current
         // thread's context is needed (i.e. RCW cleanup)
-        hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
+        hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE, false);
     }
+#else // TARGET_WASM
+    // No dedicated finalizer thread on WASM. Like every other CoreCLR
+    // target, finalizers queued at process exit are not pumped and
+    // leak by design.
 #endif // !TARGET_WASM
 }
 
@@ -326,7 +421,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
     //     all events together (infinite wait)
 
     //give a chance to the finalizer event (2s)
-    switch (event->Wait(2000, FALSE))
+    switch (event->Wait(2000, FALSE, false))
     {
     case (WAIT_OBJECT_0):
         return;
@@ -366,20 +461,26 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             cEventsForWait--;
         }
 
-        switch (WaitForMultipleObjectsEx(
-            cEventsForWait,                           // # objects to wait on
-            &(MHandles[uiEventIndexOffsetForWait]),   // array of objects to wait on
-            FALSE,          // bWaitAll == FALSE, so wait for first signal
-#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-            LINUX_HEAP_DUMP_TIME_OUT,
+        DWORD waitResult;
+#ifdef TARGET_WINDOWS
+        waitResult = WaitForMultipleObjectsEx(
+            cEventsForWait,
+            &(MHandles[uiEventIndexOffsetForWait]),
+            FALSE,
+            INFINITE,
+            FALSE);
 #else
-            INFINITE,       // timeout
+        _ASSERTE(cEventsForWait == 1);
+        waitResult = event->Wait(
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
+            LINUX_HEAP_DUMP_TIME_OUT
+#else
+            INFINITE
 #endif
-            FALSE)          // alertable
+            );
+#endif
 
-            // Adjust the returned array index for the offset we used, so the return
-            // value is relative to entire MHandles array
-            + uiEventIndexOffsetForWait)
+        switch (waitResult + uiEventIndexOffsetForWait)
         {
         case (WAIT_OBJECT_0 + kLowMemoryNotification):
             //short on memory GC immediately
@@ -387,7 +488,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             GCHeapUtilities::GetGCHeap()->GarbageCollect(0, true);
             GetFinalizerThread()->EnablePreemptiveGC();
             //wait only on the event for 2s
-            switch (event->Wait(2000, FALSE))
+            switch (event->Wait(2000, FALSE, false))
             {
             case (WAIT_OBJECT_0):
                 return;
@@ -521,11 +622,13 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
         }
     }
 
+#ifdef FEATURE_MULTITHREADING
     if (!s_PriorityBoosted)
     {
         if (GetFinalizerThread()->SetThreadPriority(THREAD_PRIORITY_HIGHEST))
             s_PriorityBoosted = true;
     }
+#endif // FEATURE_MULTITHREADING
 
     // The Finalizer thread is started very early in EE startup. We deferred
     // some initialization until a point we are sure the EE is up and running. At
@@ -562,6 +665,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
 #endif // !TARGET_WASM
 }
 
+#ifdef FEATURE_MULTITHREADING
 DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 {
     CONTRACTL
@@ -609,22 +713,37 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
         {
             GetFinalizerThread()->SetBackground(TRUE);
 
-            while (!fQuitFinalizer)
+            HRESULT startupStatus;
             {
-                ManagedThreadBase::KickOff(FinalizerThreadWorker, NULL);
-
-                // If we came out on an exception, then we probably lost the signal that
-                // there are objects in the queue ready to finalize.  The safest thing is
-                // to reenable finalization.
-                if (!fQuitFinalizer)
-                    EnableFinalization();
+                GCX_PREEMP();
+                // EEStartup creates this thread while holding the startup lock, so this waits
+                // for startup to finish without initiating loading on the finalizer thread.
+                startupStatus = EnsureEEStarted();
             }
 
-            AppDomain::RaiseExitProcessEvent();
+            if (SUCCEEDED(startupStatus))
+            {
+                while (!fQuitFinalizer)
+                {
+                    ManagedThreadBase::KickOff(FinalizerThreadWorker, NULL);
 
-            // We have been asked to quit, so must be shutting down
-            _ASSERTE(g_fEEShutDown);
-            _ASSERTE(GetFinalizerThread()->PreemptiveGCDisabled());
+                    // If we came out on an exception, then we probably lost the signal that
+                    // there are objects in the queue ready to finalize.  The safest thing is
+                    // to reenable finalization.
+                    if (!fQuitFinalizer)
+                        EnableFinalization();
+                }
+
+                AppDomain::RaiseExitProcessEvent();
+
+                // We have been asked to quit, so must be shutting down
+                _ASSERTE(g_fEEShutDown);
+                _ASSERTE(GetFinalizerThread()->PreemptiveGCDisabled());
+            }
+            else
+            {
+                LOG((LF_GC, LL_ERROR, "Finalizer thread skipping managed execution because EnsureEEStarted failed: 0x%08x\n", startupStatus));
+            }
 
             hEventFinalizerToShutDown->Set();
         }
@@ -642,11 +761,12 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     // since doing so will cause OLE32 to CoUninitialize.
     while (1)
     {
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+        minipal_sleep(INFINITE);
     }
 
     return 0;
 }
+#endif // FEATURE_MULTITHREADING
 
 void FinalizerThread::FinalizerThreadCreate()
 {
@@ -656,7 +776,7 @@ void FinalizerThread::FinalizerThreadCreate()
         MODE_ANY;
     } CONTRACTL_END;
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
 #ifndef TARGET_UNIX
     MHandles[kLowMemoryNotification] =
         CreateMemoryResourceNotification(LowMemoryResourceNotification);
@@ -694,10 +814,10 @@ void FinalizerThread::FinalizerThreadCreate()
         // and the moment we execute the test below.
         _ASSERTE(dwRet == 1 || dwRet == 2);
     }
-#else // !TARGET_WASM
+#else // FEATURE_MULTITHREADING
     // capture the current (single) thread as the finalizer thread
     g_pFinalizerThread = PTR_Thread(GetThread());
-#endif // !TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 }
 
 static int g_fullGcCountSeenByFinalization;
@@ -715,7 +835,7 @@ void FinalizerThread::WaitForFinalizerThreadStart()
     // this should be only called during EE startup
     _ASSERTE(!g_fEEStarted);
 
-    hEventFinalizerDone->Wait(INFINITE,FALSE);
+    hEventFinalizerDone->Wait(INFINITE, FALSE, false);
     hEventFinalizerDone->Reset();
 }
 
@@ -761,7 +881,7 @@ void FinalizerThread::FinalizerThreadWait()
         //----------------------------------------------------
 
         DWORD status;
-        status = hEventFinalizerDone->Wait(INFINITE,TRUE);
+        status = hEventFinalizerDone->Wait(INFINITE, TRUE, false);
 
         // we use unsigned math here as the collection counts, which are size_t internally,
         // can in theory overflow an int and wrap around.
@@ -776,5 +896,26 @@ void FinalizerThread::FinalizerThreadWait()
 
         _ASSERTE(status == WAIT_OBJECT_0);
     }
+#else // TARGET_WASM
+    // No separate finalizer thread on WASM. Drain synchronously on the
+    // calling thread so GC.WaitForPendingFinalizers() actually waits.
+    // The re-entry guard covers a user finalizer that calls
+    // WaitForPendingFinalizers itself; the non-WASM branch above uses
+    // IsCurrentThreadFinalizer() for the same purpose.
+    static thread_local bool s_inDrain = false;
+    if (s_inDrain)
+    {
+        return;
+    }
+    s_inDrain = true;
+
+    INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+    {
+        GCX_COOP();
+        ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
+    }
+    UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+
+    s_inDrain = false;
 #endif // !TARGET_WASM
 }

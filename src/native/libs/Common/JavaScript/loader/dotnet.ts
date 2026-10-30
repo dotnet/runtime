@@ -11,12 +11,12 @@
 import type { DotnetHostBuilder } from "./types";
 
 import { HostBuilder } from "./host-builder";
-import { initPolyfillsAsync } from "./polyfills";
+import { initPolyfillsEarly } from "./polyfills";
 import { exit } from "./exit";
 import { dotnetInitializeModule } from ".";
 
 dotnetInitializeModule();
-await initPolyfillsAsync();
+await initPolyfillsEarly();
 
 export const dotnet: DotnetHostBuilder | undefined = new HostBuilder() as DotnetHostBuilder;
 export { exit };

@@ -10,6 +10,9 @@
 #include "gcrefmap.h"
 #include "threads.h"
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
 
 FCIMPL0(void*, TailCallHelp::GetTailCallArgBuffer)
 {
@@ -18,7 +21,7 @@ FCIMPL0(void*, TailCallHelp::GetTailCallArgBuffer)
 }
 FCIMPLEND
 
-extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size)
+extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -39,7 +42,15 @@ FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr
 
     Thread* thread = GetThread();
 
-    *retAddr = thread->GetReturnAddress(retAddrSlot);
+    void* retAddrFromSlot = thread->GetReturnAddress(retAddrSlot);
+
+#if defined(TARGET_ARM64)
+    // We strip the return address here as it's only used for comparison and
+    // not being used to branch execution to.
+    retAddrFromSlot = PacStripPtr(retAddrFromSlot);
+#endif // TARGET_ARM64
+    *retAddr = retAddrFromSlot;
+
     return thread->GetTailCallTls();
 }
 FCIMPLEND
@@ -107,7 +118,7 @@ MethodDesc* TailCallHelp::GetOrLoadTailCallDispatcherMD()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -282,7 +293,8 @@ bool TailCallHelp::GenerateGCDescriptor(
         TypeHandle tyHnd = val.TyHnd;
         if (tyHnd.IsValueType())
         {
-            if (!tyHnd.GetMethodTable()->ContainsGCPointers())
+            // Byref-like structs (e.g. Span<T>) have no GC series but can contain byref fields.
+            if (!tyHnd.GetMethodTable()->ContainsGCPointers() && !tyHnd.GetMethodTable()->IsByRefLike())
             {
 #ifndef TARGET_X86
                 // The generic instantiation arg is right after this pointer

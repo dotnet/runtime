@@ -7,6 +7,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     internal static class TestData
     {
+        private static readonly object s_duplicateAttributePfxLoadLock = new();
+
         internal const string PlaceholderPw = "Placeholder";
 
         public static byte[] MsCertificate = (
@@ -4742,7 +4744,11 @@ YvvL0LiXzFyomg==
         //
         // Note that this test cannot be built by Pkcs12Builder, because that type
         // always unifies attribute sets.
-        internal static readonly byte[] DuplicateAttributesPfx = (
+        // Do not hand out the raw bytes for this certificate. Since it has named keys, if they are loaded in a
+        // non-ephemeral keyset then there is a Windows race when loading the PFX where two certificates will share the
+        // private keys, and disposing one certificate will remove the keys out from the other one. We need to only
+        // allow access to this PFX under a serial lock so multiple unit tests don't try to load this at the same time.
+        private static readonly byte[] DuplicateAttributesPfx = (
             "308207760201033082076F06092A864886F70D010701A08207600482075C3082" +
             "07583082043006092A864886F70D010701A08204210482041D30820419308204" +
             "15060B2A864886F70D010C0A0102A08202A6308202A2301C060A2A864886F70D" +
@@ -4804,6 +4810,14 @@ YvvL0LiXzFyomg==
             "0053006F0066007400770061007200650020004B00650079002000530074006F" +
             "0072006100670065002000500072006F00760069006400650072").HexToByteArray();
 
+        internal static TRet WithDuplicateAttributesPfx<TState, TRet>(TState state, Func<byte[], TState, TRet> callback)
+        {
+            lock (s_duplicateAttributePfxLoadLock)
+            {
+                return callback(DuplicateAttributesPfx, state);
+            }
+        }
+
         // Uses Placeholder
         internal static readonly byte[] SChannelPfx = (
             "3082062A020103308205E606092A864886F70D010701A08205D7048205D33082" +
@@ -4856,5 +4870,36 @@ YvvL0LiXzFyomg==
             "EE10774B5501BDEBDE4A61D0A3B22C9B0F303B301F300706052B0E03021A0414" +
             "95BAC18221F16265AFDD6688C9FA59BE80616F830414C3365AE07D90C0CD656F" +
             "15661D39D56F307AB983020207D0").HexToByteArray();
+
+        internal const string LegacyRsaPkcs12PaddedCertificatePem =
+            """
+            -----BEGIN CERTIFICATE-----
+            MIIBvjCCASegAwIBAgIBATANBgkqhkiG9w0BAQsFADAlMSMwIQYDVQQDExpQa2NzMTJFeHBvcnRS
+            ZXByby1UZXN0T25seTAeFw0yMDAxMDEwMDAwMDBaFw00MDAxMDEwMDAwMDBaMCUxIzAhBgNVBAMT
+            GlBrY3MxMkV4cG9ydFJlcHJvLVRlc3RPbmx5MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCr
+            OOwD4mhdx6QCwSmWkgdAJEgaBVn64rDsnHDQ/9W1WJPiIw4e8/+C00Fgue2hDzYHmVsaidpZCNr2
+            wpNDpAylORdst6DTlPHXjPLQHllHG6NrM8WLf1S8quwcswC9NHMFSMht6doHPef1yTsVUmvFpOEI
+            TgVqOqPM+OE+Npi9LQIDAQABMA0GCSqGSIb3DQEBCwUAA4GBACvoLLXwHzxHr7ZgphHx4Irl4qHq
+            w5/fbxSJXu33VycoLhFfrbaQpLiFwBvSx99Hn3N6zSWOrrR5A5vWIxZnNG0cUWJ6SB2y+XEsoW6h
+            Fslbtd+uNllx4WFtMFjFW9b6m/pWZp4tkKUmlX54E+pK1OEpXGuJUm33QTJN4EZMulXN
+            -----END CERTIFICATE-----
+            """;
+
+        // Not all RSA keys reproduce the export size issue. This CSP blob was produced with trial-and-error until a
+        // blob that reproduces the export padding was found.
+        internal static byte[] LegacyRsaPkcs12PaddedRsaCspBlob = Convert.FromBase64String(
+            """
+            BwIAAACkAABSU0EyAAQAAAEAAQAtvZg2PuH4zKM6agVOCOGkxWtSFTvJ9ec9B9rpbchIBXM0vQCz
+            HOyqvFR/i8Uza6MbR1ke0PKM1/GU06C3bBc5pQykQ5PC9toIWdqJGluZBzYPoe25YEHTgv/zHg4j
+            4pNYtdX/0HCc7LDi+lkFGkgkQAeSlinBAqTHXWjiA+w4q3/9yw7nRsKAkRolCKsHN7noVHWZjSZy
+            L6tg1pxrpa39RRGK7pSBkMeIJuOezFZOadtYBTnzxyDW3tt9tjobqtZT8yrOq1YNNNiD+wEVyDHq
+            I15URjORTRan72wfeGP82BnYCpFkcQrj/UfSWV1+XLdumlMNcZAH6uv79iqTVTHMTTipnere9Tw5
+            12X3bFFIRgpNlLCA35WfxQ4w+k5sZy2U1QmRHCBME1QceZOPA6zIGN/p6XZy3sAxW8rNc9JjlmF4
+            yggynMTCwzN5nqYoWvbXGoU/6DNVyzRnEaZRB2To94vF5Tmh7gypt6dRZqWgNYUFC+FCSZc1DBVa
+            W5gQvUZbf4I/gnvQenwFud6TsHgdHYoRy6rCwqpaKLqmzfOJY2Rn5jVGpdc8VkRBmGF33XkJZwDs
+            GQP6fUTRlkJ1bTcMua/9ay8GdDSGEnS2Jt7XgtocZbAc0dMA7CfvmLDIPDy1Hq4tJZTHgCTZ6P4y
+            ZWVQnkt3ZFZrmZx6J/IuUcMl+AZKRCazA+tvXYTtBep2n35ObTfWtxkjXZeCUHhTkfmO3DE8w6VS
+            r63tw8BuoEb2E5PKEgemxQ+DaKp/tIAkLAA=
+            """);
     }
 }

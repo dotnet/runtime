@@ -16,11 +16,12 @@ namespace Internal.Runtime.TypeLoader
 {
     public sealed partial class TypeLoaderEnvironment
     {
-        internal class GenericMethodEntry
+        internal sealed class GenericMethodEntry
         {
             private int? _hashCode;
             public bool _isRegisteredSuccessfully;
             public bool _isAsyncVariant;
+            public bool _isReturnDroppingAsyncThunk;
             public IntPtr _methodDictionary;
             public RuntimeTypeHandle _declaringTypeHandle;
             public MethodNameAndSignature _methodNameAndSignature;
@@ -42,12 +43,15 @@ namespace Internal.Runtime.TypeLoader
                 return base.Equals(obj);
             }
 
-            public virtual bool IsEqualToEntryByComponentsComparison(GenericMethodEntry other)
+            public bool IsEqualToEntryByComponentsComparison(GenericMethodEntry other)
             {
                 if (!other._declaringTypeHandle.Equals(_declaringTypeHandle))
                     return false;
 
                 if (_isAsyncVariant != other._isAsyncVariant)
+                    return false;
+
+                if (_isReturnDroppingAsyncThunk != other._isReturnDroppingAsyncThunk)
                     return false;
 
                 if (!other._methodNameAndSignature.Equals(_methodNameAndSignature))
@@ -126,21 +130,15 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        internal abstract class GenericMethodLookupData
+        internal readonly struct GenericMethodLookupData
         {
-            internal abstract int LookupHashCode();
-            internal abstract bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, TypeManagerHandle moduleHandle);
-            internal abstract bool MatchGenericMethodEntry(GenericMethodEntry entry);
-        }
-        internal class MethodDescBasedGenericMethodLookup : GenericMethodLookupData
-        {
-            protected InstantiatedMethod _methodToLookup;
+            private readonly InstantiatedMethod _methodToLookup;
 
-            internal MethodDescBasedGenericMethodLookup(InstantiatedMethod methodToLookup) { _methodToLookup = methodToLookup; }
+            internal GenericMethodLookupData(InstantiatedMethod methodToLookup) { _methodToLookup = methodToLookup; }
 
-            internal override int LookupHashCode() { return _methodToLookup.GetHashCode(); }
+            internal int LookupHashCode() { return _methodToLookup.GetHashCode(); }
 
-            internal override bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, TypeManagerHandle moduleHandle)
+            internal bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, TypeManagerHandle moduleHandle)
             {
                 //
                 // Entries read from the hashtable are loaded as GenericMethodDescs, and compared to the input.
@@ -157,22 +155,25 @@ namespace Internal.Runtime.TypeLoader
 
                 int flagsAndToken = (int)entryParser.GetUnsigned();
                 bool isAsyncVariant = (flagsAndToken & GenericMethodsHashtableConstants.IsAsyncVariant) != 0;
+                bool isReturnDroppingAsyncThunk = (flagsAndToken & GenericMethodsHashtableConstants.IsReturnDroppingAsyncThunk) != 0;
                 if (_methodToLookup.AsyncVariant != isAsyncVariant)
                     return false;
+                if (_methodToLookup.ReturnDroppingAsyncThunk != isReturnDroppingAsyncThunk)
+                    return false;
 
-                int token = ((int)HandleType.Method << 25) | (flagsAndToken & ~GenericMethodsHashtableConstants.IsAsyncVariant);
+                int token = ((int)HandleType.Method << 25) | (flagsAndToken & ~(GenericMethodsHashtableConstants.IsAsyncVariant | GenericMethodsHashtableConstants.IsReturnDroppingAsyncThunk));
 
                 MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.GetMethodNameAndSignatureFromToken(moduleHandle, (uint)token);
                 if (!_methodToLookup.NameAndSignature.Equals(nameAndSignature))
                     return false;
 
-                RuntimeTypeHandle[] parsedArgsHandles = GetTypeSequence(ref externalReferencesLookup, ref entryParser);
-                if (parsedArgsHandles.Length != _methodToLookup.Instantiation.Length)
+                if (entryParser.GetSequenceCount() != _methodToLookup.Instantiation.Length)
                     return false;
 
                 for (int i = 0; i < _methodToLookup.Instantiation.Length; i++)
                 {
-                    TypeDesc leftType = context.ResolveRuntimeTypeHandle(parsedArgsHandles[i]);
+                    RuntimeTypeHandle parsedArgHandle = externalReferencesLookup.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                    TypeDesc leftType = context.ResolveRuntimeTypeHandle(parsedArgHandle);
                     TypeDesc rightType = _methodToLookup.Instantiation[i];
                     if (leftType != rightType)
                         return false;
@@ -181,7 +182,7 @@ namespace Internal.Runtime.TypeLoader
                 return true;
             }
 
-            internal override bool MatchGenericMethodEntry(GenericMethodEntry entry)
+            internal bool MatchGenericMethodEntry(GenericMethodEntry entry)
             {
                 TypeSystemContext context = _methodToLookup.Context;
 
@@ -190,6 +191,9 @@ namespace Internal.Runtime.TypeLoader
                     return false;
 
                 if (_methodToLookup.AsyncVariant != entry._isAsyncVariant)
+                    return false;
+
+                if (_methodToLookup.ReturnDroppingAsyncThunk != entry._isReturnDroppingAsyncThunk)
                     return false;
 
                 if (!_methodToLookup.NameAndSignature.Equals(entry._methodNameAndSignature))
@@ -251,7 +255,7 @@ namespace Internal.Runtime.TypeLoader
             NativeHashtable hashtable;
             ExternalReferencesTable externalReferencesLookup;
 
-            MethodDescBasedGenericMethodLookup lookupData = new MethodDescBasedGenericMethodLookup(method);
+            GenericMethodLookupData lookupData = new GenericMethodLookupData(method);
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
@@ -300,7 +304,7 @@ namespace Internal.Runtime.TypeLoader
             if (!method.UnboxingStub && method.OwningType.IsValueType && !IsStaticMethodSignature(method.NameAndSignature))
             {
                 // Make it an unboxing stub, note the first parameter which is true
-                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, method.AsyncVariant, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
+                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, method.AsyncVariant, method.ReturnDroppingAsyncThunk, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
             }
 
             // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictionary
@@ -314,7 +318,7 @@ namespace Internal.Runtime.TypeLoader
 
             methodPointer = templateMethod.FunctionPointer;
 
-            if (!TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(method), out dictionaryPointer))
+            if (!TryLookupGenericMethodDictionary(new GenericMethodLookupData(method), out dictionaryPointer))
             {
                 using (_typeLoaderLock.EnterScope())
                 {
@@ -441,7 +445,7 @@ namespace Internal.Runtime.TypeLoader
                     int flagsAndToken = (int)entryParser.GetUnsigned();
                     isAsyncVariant = (flagsAndToken & GenericMethodsHashtableConstants.IsAsyncVariant) != 0;
 
-                    int token = ((int)HandleType.Method << 25) | (flagsAndToken & ~GenericMethodsHashtableConstants.IsAsyncVariant);
+                    int token = ((int)HandleType.Method << 25) | (flagsAndToken & ~(GenericMethodsHashtableConstants.IsAsyncVariant | GenericMethodsHashtableConstants.IsReturnDroppingAsyncThunk));
 
                     nameAndSignature = new MethodNameAndSignature(module.MetadataReader, token.AsHandle().ToMethodHandle(module.MetadataReader));
 

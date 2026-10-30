@@ -66,7 +66,7 @@ export function commandGcHeapDump (options:DiagnosticCommandOptions) {
                     // GC_KEYWORD                            0x0000001
                 ],
                 logLevel: 5,
-                provider_name: "Microsoft-Windows-DotNETRuntime",
+                providerName: "Microsoft-Windows-DotNETRuntime",
                 arguments: null
             },
             ...options.extraProviders || [],
@@ -89,7 +89,7 @@ export function commandCounters (options:DiagnosticCommandOptions) {
             {
                 keywords: [0, Keywords.GCHandle],
                 logLevel: 4,
-                provider_name: "System.Diagnostics.Metrics",
+                providerName: "System.Diagnostics.Metrics",
                 arguments: `SessionId=SHARED;Metrics=System.Runtime;RefreshInterval=${options.intervalSeconds || 1};MaxTimeSeries=1000;MaxHistograms=10;ClientId=${uuidv4()};`,
             },
             ...options.extraProviders || [],
@@ -109,7 +109,7 @@ export function commandSampleProfiler (options:DiagnosticCommandOptions) {
                     0x0000_0000,
                 ],
                 logLevel: 4,
-                provider_name: "Microsoft-DotNETCore-SampleProfiler",
+                providerName: "Microsoft-DotNETCore-SampleProfiler",
                 arguments: null
             },
             ...options.extraProviders || [],
@@ -130,7 +130,7 @@ function commandCollectTracing2 (payload2:PayloadV2) {
     for (const provider of payload2.providers) {
         message.push(...serializeUint64(provider.keywords));
         message.push(...serializeUint32(provider.logLevel));
-        message.push(...serializeString(provider.provider_name));
+        message.push(...serializeString(provider.providerName));
         message.push(...serializeString(provider.arguments));
     }
     return Uint8Array.from(message);
@@ -199,7 +199,7 @@ const enum Keywords {
     Exception = 0x8000,
     //
     // Summary:
-    //     Log events associated with the threadpoo, and other threading events.
+    //     Log events associated with the threadpool, and other threading events.
     Threading = 0x10000,
     //
     // Summary:
@@ -259,7 +259,7 @@ const enum Keywords {
     //     This suppresses NGEN events on V4.0 (where you have NGEN PDBs), but not on V2.0
     //     (which does not know about this bit and also does not have NGEN PDBS).
     // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
-    SupressNGen = 0x40000,
+    SuppressNGen = 0x40000,
     //
     // Summary:
     //     TODO document
@@ -427,7 +427,7 @@ function computeCollectTracing2PayloadByteLength (payload2:PayloadV2) {
     for (const provider of payload2.providers) {
         len += 8; // keywords
         len += 4; // level
-        len += computeStringByteLength(provider.provider_name);
+        len += computeStringByteLength(provider.providerName);
         len += computeStringByteLength(provider.arguments);
     }
     return len;
@@ -436,7 +436,7 @@ function computeCollectTracing2PayloadByteLength (payload2:PayloadV2) {
 type ProviderV2 ={
     keywords: [ number, Keywords ],
     logLevel: number,
-    provider_name: string,
+    providerName: string,
     arguments: string|null
 }
 

@@ -102,4 +102,51 @@ public class DispatchTesting : Server.Contract.IDispatchTesting
         objRef = objIn;
         return ret;
     }
+
+    public int Sum_IntArray_SafeArray(int[] d)
+    {
+        int sum = 0;
+        foreach (int val in d)
+        {
+            sum += val;
+        }
+
+        return sum;
+    }
+
+    [DispId(1000)]
+    public string GetDispIdAsString()
+    {
+        return "1000";
+    }
+
+    [DispId(1001)]
+    public string GetDispIdAsString2()
+    {
+        return "1001";
+    }
+
+    public void ModifyStaticVariantArray(
+        [In, Out, MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] ref object[] values)
+    {
+        values[0] = 7;
+    }
+
+    public object CreateUnrelatedArrayElement()
+    {
+        return new UnrelatedArrayElement();
+    }
+
+    public bool AcceptExpectedArray(
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_UNKNOWN)] ExpectedArrayElement[] values)
+    {
+        return values[0] is ExpectedArrayElement;
+    }
+
+    private int _propertySetterRegressionTest;
+    public int PropertySetterRegressionTest
+    {
+        get => _propertySetterRegressionTest;
+        set => _propertySetterRegressionTest = value;
+    }
 }

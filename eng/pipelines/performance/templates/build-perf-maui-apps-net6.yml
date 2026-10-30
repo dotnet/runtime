@@ -180,47 +180,47 @@ steps:
     displayName: Build MAUI Blazor MacCatalyst
     workingDirectory: $(Build.SourcesDirectory)/MauiBlazorTesting
 
-  - task: PublishBuildArtifacts@1
+  - task: PublishPipelineArtifact@1
     displayName: 'Publish MauiAndroid binlog'
     condition: always()
     inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
-      artifactName:  ${{ parameters.artifactName }}
+      targetPath: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
+      artifactName:  ${{ parameters.artifactName }}_MauiAndroidBinlog_Attempt$(System.JobAttempt)
 
-  - task: PublishBuildArtifacts@1
+  - task: PublishPipelineArtifact@1
     displayName: 'Publish MauiiOS binlog'
     condition: always()
     inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiiOS.binlog
-      artifactName:  ${{ parameters.artifactName }}
+      targetPath: $(Build.SourcesDirectory)/MauiTesting/MauiiOS.binlog
+      artifactName:  ${{ parameters.artifactName }}_MauiiOSBinlog_Attempt$(System.JobAttempt)
 
-  - task: PublishBuildArtifacts@1
+  - task: PublishPipelineArtifact@1
     displayName: 'Publish MauiMacCatalyst binlog'
     condition: always()
     inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog
-      artifactName:  ${{ parameters.artifactName }}
+      targetPath: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog
+      artifactName:  ${{ parameters.artifactName }}_MauiMacCatalystBinlog_Attempt$(System.JobAttempt)
 
-  - task: PublishBuildArtifacts@1
+  - task: PublishPipelineArtifact@1
     displayName: 'Publish MauiBlazoriOS binlog'
     condition: always()
     inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazoriOS.binlog
-      artifactName:  ${{ parameters.artifactName }}
+      targetPath: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazoriOS.binlog
+      artifactName:  ${{ parameters.artifactName }}_MauiBlazoriOSBinlog_Attempt$(System.JobAttempt)
 
-  - task: PublishBuildArtifacts@1
+  - task: PublishPipelineArtifact@1
     displayName: 'Publish MauiBlazorMacCatalyst binlog'
     condition: always()
     inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorMacCatalyst.binlog
-      artifactName:  ${{ parameters.artifactName }}
+      targetPath: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorMacCatalyst.binlog
+      artifactName:  ${{ parameters.artifactName }}_MauiBlazorMacCatalystBinlog_Attempt$(System.JobAttempt)
 
-  - task: PublishBuildArtifacts@1
+  - task: PublishPipelineArtifact@1
     displayName: 'Publish MauiiOSPodcast binlog'
     condition: always()
     inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile/MauiiOSPodcast.binlog
-      artifactName:  ${{ parameters.artifactName }}
+      targetPath: $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile/MauiiOSPodcast.binlog
+      artifactName:  ${{ parameters.artifactName }}_MauiiOSPodcastBinlog_Attempt$(System.JobAttempt)
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:

@@ -110,7 +110,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void ReleaseAllData(__ComObject* pComObject, Exception* pException)
         {
             try
@@ -138,21 +137,6 @@ namespace System
 
             // If we don't then we need to create one.
             return CreateEventProvider(t);
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:Value passed to parameter cannot be statically determined", Justification = "The runtime passes a RuntimeType describing the COM event provider. The dynamic constructor access requirements are enforced by runtime callsite semantics.")]
-        [UnmanagedCallersOnly]
-        [RequiresUnsafe]
-        private static unsafe void GetEventProvider(__ComObject* pComObject, RuntimeType* pProviderType, object* pResult, Exception* pException)
-        {
-            try
-            {
-                *pResult = pComObject->GetEventProvider(*pProviderType);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
         }
 
         private object CreateEventProvider(
@@ -233,24 +217,6 @@ namespace System
             }
             else if (interfaceType.Equals(typeof(IEnumerator).TypeHandle))
             {
-                object? enumVariantImpl = GetData(typeof(IEnumeratorOverEnumVARIANTImpl));
-                if (enumVariantImpl is null)
-                {
-                    IntPtr enumVariantPtr = IntPtr.Zero;
-                    try
-                    {   IEnumVARIANT enumVariant = (IEnumVARIANT)this;
-                        enumVariantPtr = Marshal.GetIUnknownForObject(enumVariant);
-                        enumVariantImpl = (IEnumerator)EnumeratorToEnumVariantMarshaler.GetInstance(null).MarshalNativeToManaged(enumVariantPtr);
-                    }
-                    finally
-                    {
-                        if (enumVariantPtr != IntPtr.Zero)
-                        {
-                            Marshal.Release(enumVariantPtr);
-                        }
-                    }
-                    SetData(typeof(IEnumeratorOverEnumVARIANTImpl), enumVariantImpl);
-                }
                 return typeof(IEnumeratorOverEnumVARIANTImpl).TypeHandle;
             }
 
@@ -329,24 +295,25 @@ namespace System
         [DynamicInterfaceCastableImplementation]
         private interface IEnumeratorOverEnumVARIANTImpl : IEnumerator
         {
+            private static IEnumerator GetEnumerator(__ComObject obj) =>
+                ComDataHelpers.GetOrCreateManagedViewFromComData<IEnumVARIANT, EnumeratorViewOfEnumVariant>(
+                    obj, static enumVariant => new EnumeratorViewOfEnumVariant(enumVariant));
+
             bool IEnumerator.MoveNext()
             {
-                __ComObject co = (__ComObject)this;
-                return ((IEnumerator)co.GetData(typeof(IEnumeratorOverEnumVARIANTImpl))!).MoveNext();
+                return GetEnumerator((__ComObject)this).MoveNext();
             }
 
             void IEnumerator.Reset()
             {
-                __ComObject co = (__ComObject)this;
-                ((IEnumerator)co.GetData(typeof(IEnumeratorOverEnumVARIANTImpl))!).Reset();
+                GetEnumerator((__ComObject)this).Reset();
             }
 
             object IEnumerator.Current
             {
                 get
                 {
-                    __ComObject co = (__ComObject)this;
-                    return ((IEnumerator)co.GetData(typeof(IEnumeratorOverEnumVARIANTImpl))!).Current;
+                    return GetEnumerator((__ComObject)this).Current;
                 }
             }
         }

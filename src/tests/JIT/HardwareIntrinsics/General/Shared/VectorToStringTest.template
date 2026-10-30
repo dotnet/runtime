@@ -22,7 +22,7 @@ namespace JIT.HardwareIntrinsics.General
         [Fact]
         public unsafe static void {Method}{BaseType}()
         {
-            int size = Unsafe.SizeOf<{VectorType}<{BaseType}>>() / sizeof({BaseType});
+            int size = sizeof({VectorType}<{BaseType}>) / sizeof({BaseType});
             {BaseType}[] values = new {BaseType}[size];
 
             for (int i = 0; i < size; i++)

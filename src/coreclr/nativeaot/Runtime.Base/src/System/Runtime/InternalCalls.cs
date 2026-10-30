@@ -14,23 +14,6 @@ using Internal.Runtime;
 
 namespace System.Runtime
 {
-    internal enum DispatchCellType
-    {
-        InterfaceAndSlot = 0x0,
-        MetadataToken = 0x1,
-        VTableOffset = 0x2,
-    }
-
-    internal unsafe struct DispatchCellInfo
-    {
-        public DispatchCellType CellType;
-        public MethodTable* InterfaceType;
-        public ushort InterfaceSlot;
-        public byte HasCache;
-        public uint MetadataToken;
-        public uint VTableOffset;
-    }
-
     // Constants used with RhpGetClasslibFunction, to indicate which classlib function
     // we are interested in.
     // Note: make sure you change the def in ICodeManager.h if you change this!
@@ -40,7 +23,7 @@ namespace System.Runtime
         FailFast = 1,
         ThreadEntryPoint = 2,
         AppendExceptionStackFrame = 3,
-        // unused = 4,
+        ResolveDispatch = 4,
         GetSystemArrayEEType = 5,
         OnFirstChance = 6,
         OnUnhandledException = 7,
@@ -121,10 +104,6 @@ namespace System.Runtime
         internal static extern unsafe object RhpNewFastMisalign(MethodTable * pEEType);
 #endif // FEATURE_64BIT_ALIGNMENT
 
-        [RuntimeImport(RuntimeLibrary, "RhpAssignRef")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpAssignRef(ref object? address, object? obj);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpGcSafeZeroMemory")]
         internal static extern unsafe ref byte RhpGcSafeZeroMemory(ref byte dmem, nuint size);
@@ -133,15 +112,8 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
         internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
 
-#if FEATURE_GC_STRESS
-        //
-        // internal calls for GC stress
-        //
-        [RuntimeImport(RuntimeLibrary, "RhpInitializeGcStress")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpInitializeGcStress();
-#endif // FEATURE_GC_STRESS
-
+        // WASM omits the native EH enumerator and StackFrameIterator implementation.
+#if !TARGET_WASM
         [RuntimeImport(RuntimeLibrary, "RhpEHEnumInitFromStackFrameIterator")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpEHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, out EH.MethodRegionInfo pMethodRegionInfo, void* pEHEnum);
@@ -149,18 +121,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpEHEnumNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
-
-        [RuntimeImport(RuntimeLibrary, "RhpGetDispatchCellInfo")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpGetDispatchCellInfo(IntPtr pCell, out DispatchCellInfo newCellInfo);
-
-        [RuntimeImport(RuntimeLibrary, "RhpSearchDispatchCellCache")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhpSearchDispatchCellCache(IntPtr pCell, MethodTable* pInstanceType);
-
-        [RuntimeImport(RuntimeLibrary, "RhpUpdateDispatchCellCache")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhpUpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, MethodTable* pInstanceType, ref DispatchCellInfo newCellInfo);
+#endif // !TARGET_WASM
 
         [RuntimeImport(RuntimeLibrary, "RhpGetClasslibFunctionFromCodeAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -174,6 +135,8 @@ namespace System.Runtime
         // StackFrameIterator
         //
 
+        // WASM does not have the native register context required by this iterator.
+#if !TARGET_WASM
         [RuntimeImport(RuntimeLibrary, "RhpSfiInit")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, bool instructionFault, bool* fIsExceptionIntercepted);
@@ -181,6 +144,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpSfiNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted);
+#endif // !TARGET_WASM
 
         //
         // Miscellaneous helpers.
@@ -231,10 +195,6 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
 #endif
-
-        [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhCurrentNativeThreadId();
 
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls

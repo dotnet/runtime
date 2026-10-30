@@ -133,39 +133,39 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
             switch( i )
             {
             case REGISTER_INSTRUCTION_POINTER:
-                regBuffer[iRegister++] = m_rd->PC; break;
+                regBuffer[iRegister++] = m_context.Rip; break;
             case REGISTER_STACK_POINTER:
-                regBuffer[iRegister++] = m_rd->SP; break;
+                regBuffer[iRegister++] = m_context.Rsp; break;
             case REGISTER_AMD64_RBP:
-                regBuffer[iRegister++] = m_rd->Rbp; break;
+                regBuffer[iRegister++] = m_context.Rbp; break;
             case REGISTER_AMD64_RAX:
-                regBuffer[iRegister++] = m_rd->Rax; break;
+                regBuffer[iRegister++] = m_context.Rax; break;
             case REGISTER_AMD64_RBX:
-                regBuffer[iRegister++] = m_rd->Rbx; break;
+                regBuffer[iRegister++] = m_context.Rbx; break;
             case REGISTER_AMD64_RCX:
-                regBuffer[iRegister++] = m_rd->Rcx; break;
+                regBuffer[iRegister++] = m_context.Rcx; break;
             case REGISTER_AMD64_RDX:
-                regBuffer[iRegister++] = m_rd->Rdx; break;
+                regBuffer[iRegister++] = m_context.Rdx; break;
             case REGISTER_AMD64_RSI:
-                regBuffer[iRegister++] = m_rd->Rsi; break;
+                regBuffer[iRegister++] = m_context.Rsi; break;
             case REGISTER_AMD64_RDI:
-                regBuffer[iRegister++] = m_rd->Rdi; break;
+                regBuffer[iRegister++] = m_context.Rdi; break;
             case REGISTER_AMD64_R8:
-                regBuffer[iRegister++] = m_rd->R8;  break;
+                regBuffer[iRegister++] = m_context.R8;  break;
             case REGISTER_AMD64_R9:
-                regBuffer[iRegister++] = m_rd->R9;  break;
+                regBuffer[iRegister++] = m_context.R9;  break;
             case REGISTER_AMD64_R10:
-                regBuffer[iRegister++] = m_rd->R10; break;
+                regBuffer[iRegister++] = m_context.R10; break;
             case REGISTER_AMD64_R11:
-                regBuffer[iRegister++] = m_rd->R11; break;
+                regBuffer[iRegister++] = m_context.R11; break;
             case REGISTER_AMD64_R12:
-                regBuffer[iRegister++] = m_rd->R12; break;
+                regBuffer[iRegister++] = m_context.R12; break;
             case REGISTER_AMD64_R13:
-                regBuffer[iRegister++] = m_rd->R13; break;
+                regBuffer[iRegister++] = m_context.R13; break;
             case REGISTER_AMD64_R14:
-                regBuffer[iRegister++] = m_rd->R14; break;
+                regBuffer[iRegister++] = m_context.R14; break;
             case REGISTER_AMD64_R15:
-                regBuffer[iRegister++] = m_rd->R15; break;
+                regBuffer[iRegister++] = m_context.R15; break;
 
             case    REGISTER_AMD64_XMM0:
             case    REGISTER_AMD64_XMM1:
@@ -214,40 +214,4 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
 
     // Defer to adapter for v1.0 interface
     return GetRegistersAdapter(maskCount, mask, regCount, regBuffer);
-}
-
-
-// This is just a convenience function to convert a regdisplay into a Context.
-// Since a context has more info than a regdisplay, the conversion isn't perfect
-// and the context can't be fully accurate.
-void CordbRegisterSet::InternalCopyRDToContext(DT_CONTEXT *pInputContext)
-{
-    INTERNAL_SYNC_API_ENTRY(GetProcess());
-    _ASSERTE(pInputContext);
-
-    if((pInputContext->ContextFlags & DT_CONTEXT_INTEGER)==DT_CONTEXT_INTEGER)
-    {
-        pInputContext->Rax = m_rd->Rax;
-        pInputContext->Rbx = m_rd->Rbx;
-        pInputContext->Rcx = m_rd->Rcx;
-        pInputContext->Rdx = m_rd->Rdx;
-        pInputContext->Rbp = m_rd->Rbp;
-        pInputContext->Rsi = m_rd->Rsi;
-        pInputContext->Rdi = m_rd->Rdi;
-        pInputContext->R8  = m_rd->R8;
-        pInputContext->R9  = m_rd->R9;
-        pInputContext->R10 = m_rd->R10;
-        pInputContext->R11 = m_rd->R11;
-        pInputContext->R12 = m_rd->R12;
-        pInputContext->R13 = m_rd->R13;
-        pInputContext->R14 = m_rd->R14;
-        pInputContext->R15 = m_rd->R15;
-    }
-
-
-    if((pInputContext->ContextFlags & DT_CONTEXT_CONTROL)==DT_CONTEXT_CONTROL)
-    {
-        pInputContext->Rip = m_rd->PC;
-        pInputContext->Rsp = m_rd->SP;
-    }
 }

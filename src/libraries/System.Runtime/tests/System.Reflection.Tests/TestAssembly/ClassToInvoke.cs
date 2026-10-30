@@ -26,5 +26,8 @@ namespace System.Reflection.TestAssembly
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static int CallMe_AvoidTailcall() => 42;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Assembly InvokeDelegate(Func<Assembly> del) => del();
     }
 }

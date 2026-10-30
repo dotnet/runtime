@@ -22,7 +22,8 @@ namespace System.Net.Mail
         {
             if (count > _buffer.Length - _offset)
             {
-                byte[] newBuffer = new byte[((_buffer.Length * 2) > (_buffer.Length + count)) ? (_buffer.Length * 2) : (_buffer.Length + count)];
+                // Use uint arithmetic to avoid overflow; the allocation will throw if the size is too large.
+                byte[] newBuffer = new byte[Math.Max((uint)_buffer.Length + (uint)count, Math.Min((uint)Array.MaxLength, 2 * (uint)_buffer.Length))];
                 Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _offset);
                 _buffer = newBuffer;
             }

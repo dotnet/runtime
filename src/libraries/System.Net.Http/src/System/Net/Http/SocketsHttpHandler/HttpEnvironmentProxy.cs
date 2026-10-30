@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+
 namespace System.Net.Http
 {
     internal sealed class HttpEnvironmentProxyCredentials : ICredentials
@@ -95,9 +97,10 @@ namespace System.Net.Http
         private const string EnvNoProxyUC = "NO_PROXY";
         private const string EnvCGI = "GATEWAY_INTERFACE"; // Running in a CGI environment.
 
-        private readonly Uri? _httpProxyUri;       // String URI for HTTP requests
-        private readonly Uri? _httpsProxyUri;      // String URI for HTTPS requests
-        private readonly string[]? _bypass;        // list of domains not to proxy
+        private readonly Uri? _httpProxyUri;                  // String URI for HTTP requests
+        private readonly Uri? _httpsProxyUri;                 // String URI for HTTPS requests
+        private readonly List<string>? _bypass;               // list of domains or IP addresses not to proxy
+        private readonly List<IPNetwork>? _bypassNetworks;    // list of subnet ranges not to proxy
         private ICredentials? _credentials;
 
         private HttpEnvironmentProxy(Uri? httpProxy, Uri? httpsProxy, string? bypassList)
@@ -106,7 +109,23 @@ namespace System.Net.Http
             _httpsProxyUri = httpsProxy;
 
             _credentials = HttpEnvironmentProxyCredentials.TryCreate(httpProxy, httpsProxy);
-            _bypass = bypassList?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+            if (bypassList != null)
+            {
+                foreach (string entry in bypassList.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    if (IPNetwork.TryParse(entry, out IPNetwork networkEntry))
+                    {
+                        _bypassNetworks ??= new List<IPNetwork>();
+                        _bypassNetworks.Add(networkEntry);
+                    }
+                    else
+                    {
+                        _bypass ??= new List<string>();
+                        _bypass.Add(entry);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -115,7 +134,7 @@ namespace System.Net.Http
         /// Example expected inputs: contoso.com, contoso.com:8080, http://contoso.com/, user@contoso.com.
         /// </summary>
         /// <returns><see langword="null"/> if parsing fails.</returns>
-        private static Uri? GetUriFromString(string? value)
+        private static unsafe Uri? GetUriFromString(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -279,6 +298,18 @@ namespace System.Net.Http
                     }
                 }
             }
+
+            if (_bypassNetworks != null && IPAddress.TryParse(input.Host, out IPAddress? ip))
+            {
+                foreach (IPNetwork network in _bypassNetworks)
+                {
+                    if (network.Contains(ip))
+                    {
+                        return true;
+                    }
+                }
+            }
+
             return false;
         }
 

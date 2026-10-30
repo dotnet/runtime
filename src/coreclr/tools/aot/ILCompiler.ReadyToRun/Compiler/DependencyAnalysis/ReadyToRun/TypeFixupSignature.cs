@@ -11,6 +11,7 @@ using Internal.TypeSystem.Interop;
 using Internal.ReadyToRunConstants;
 using Internal.CorConstants;
 using Internal.JitInterface;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -46,7 +47,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 IEcmaModule targetModule = factory.SignatureContext.GetTargetModule(_typeDesc);
-                SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupKind, targetModule, factory.SignatureContext);
+                // The global module type has a fixed token even outside the version bubble.
+                bool hasStableToken = fixupKind == ReadyToRunFixupKind.TypeHandle && _typeDesc is EcmaType { IsModuleType: true };
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupKind, targetModule, factory.SignatureContext, hasStableToken);
                 if ((fixupKind == ReadyToRunFixupKind.Check_TypeLayout) ||
                     (fixupKind == ReadyToRunFixupKind.Verify_TypeLayout))
                 {
@@ -77,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             int pointerSize = type.Context.Target.PointerSize;
             int size = defType.InstanceFieldSize.AsInt;
-            int alignment = Internal.JitInterface.CorInfoImpl.GetClassAlignmentRequirementStatic(defType);
+            int alignment = CompilerTypeSystemContext.GetClassAlignmentRequirementStatic(defType);
             ReadyToRunTypeLayoutFlags flags = ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment | ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout;
             if (alignment == pointerSize)
             {
@@ -201,26 +204,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_typeDesc, otherNode._typeDesc);
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
-
             if (_typeDesc.HasInstantiation &&
                 !_typeDesc.IsGenericDefinition &&
                 (factory.CompilationCurrentPhase == 0) &&
                 factory.CompilationModuleGroup.VersionsWithType(_typeDesc))
             {
-                dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
+                sink.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
             }
+
+            factory.AddVirtualMethodDiscoveryDependencies(sink, _typeDesc);
 
             if (_fixupKind == ReadyToRunFixupKind.TypeHandle)
             {
-                AddDependenciesForAsyncStateMachineBox(ref dependencies, factory, _typeDesc);
+                AddDependenciesForAsyncStateMachineBox(sink, factory, _typeDesc);
             }
-            return dependencies;
         }
 
-        public static void AddDependenciesForAsyncStateMachineBox(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public static void AddDependenciesForAsyncStateMachineBox(DependencySink dependencies, NodeFactory factory, TypeDesc type)
         {
             ReadyToRunCompilerContext context = (ReadyToRunCompilerContext)type.Context;
             // If adding a typehandle to the AsyncStateMachineBox, pre-compile the most commonly used methods.
@@ -228,9 +230,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // simple examples of async will get compiled
             if (factory.OptimizationFlags.OptimizeAsyncMethods && type.GetTypeDefinition() == context.AsyncStateMachineBoxType && !type.IsGenericDefinition && factory.CompilationCurrentPhase <= 7)
             {
-                if (dependencies == null)
-                    dependencies = new DependencyList();
-
                 // This is the async state machine box, compile the cctor, and the MoveNext method.
                 foreach (MethodDesc method in type.ConvertToCanonForm(CanonicalFormKind.Specific).GetAllMethods())
                 {

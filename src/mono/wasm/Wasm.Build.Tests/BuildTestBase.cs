@@ -26,16 +26,19 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        private const int TargetMajorVersion = 11; /* net11 */
+        private const int TargetMajorVersion = 12; /* net12 */
         public static readonly string DefaultTargetFramework = $"net{TargetMajorVersion}.0";
         public static readonly string PreviousTargetFramework = $"net{TargetMajorVersion - 1}.0";
         public static readonly string Previous2TargetFramework = $"net{TargetMajorVersion - 2}.0";
         public static readonly string DefaultTargetFrameworkForBlazor = DefaultTargetFramework;
-        public static readonly string DefaultTargetFrameworkForBlazorTemplate = $"net{Environment.Version.Major}.0";
+        public static readonly string DefaultTargetFrameworkForBlazorTemplate =
+            EnvironmentVariables.BlazorTemplateTargetFramework ?? $"net{Environment.Version.Major}.0";
         private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly string s_unicodeChars = "\u9FC0\u8712\u679B\u906B\u486B\u7149";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
+        private static bool s_xharnessToolRestored;
+        private static readonly object s_xharnessRestoreLock = new();
         protected readonly ITestOutputHelper _testOutput;
         protected string _logPath;
         protected bool _enablePerTestCleanup = false;
@@ -115,6 +118,64 @@ namespace Wasm.Build.Tests
             _testOutput = new TestOutputWrapper(output);
             _logPath = s_buildEnv.LogRootPath; // FIXME:
             _providerOfBaseType = providerBase;
+        }
+
+        /// <summary>
+        /// Ensures the xharness CLI is available as a local dotnet tool by running
+        /// <c>dotnet tool restore</c> if needed.  This is a no-op when
+        /// <c>XHARNESS_CLI_PATH</c> is set (CI provides the tool externally).
+        /// </summary>
+        protected static void EnsureXHarnessAvailable()
+        {
+            if (!string.IsNullOrEmpty(EnvironmentVariables.XHarnessCliPath))
+                return;
+
+            if (s_xharnessToolRestored)
+                return;
+
+            lock (s_xharnessRestoreLock)
+            {
+                if (s_xharnessToolRestored)
+                    return;
+
+                // Find repo root by walking up to NuGet.config
+                DirectoryInfo? repoRoot = new(AppContext.BaseDirectory);
+                while (repoRoot is not null && !File.Exists(Path.Combine(repoRoot.FullName, "NuGet.config")))
+                    repoRoot = repoRoot.Parent;
+
+                if (repoRoot is null)
+                    throw new InvalidOperationException("Could not find repo root (directory containing NuGet.config) to restore xharness tool");
+
+                Console.WriteLine($"[xharness] Restoring dotnet tools from {repoRoot.FullName} using {s_buildEnv.DotNet}");
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = s_buildEnv.DotNet,
+                    Arguments = "tool restore",
+                    WorkingDirectory = repoRoot.FullName,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false
+                };
+                psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
+
+                using var process = Process.Start(psi)
+                    ?? throw new InvalidOperationException("Failed to start 'dotnet tool restore' process");
+
+                var stdoutTask = process.StandardOutput.ReadToEndAsync();
+                var stderrTask = process.StandardError.ReadToEndAsync();
+                process.WaitForExit();
+
+                string stdout = stdoutTask.Result;
+                string stderr = stderrTask.Result;
+
+                if (process.ExitCode != 0)
+                    throw new InvalidOperationException(
+                        $"'dotnet tool restore' failed with exit code {process.ExitCode}.\nStdout: {stdout}\nStderr: {stderr}");
+
+                Console.WriteLine($"[xharness] Tool restore completed successfully");
+                s_xharnessToolRestored = true;
+            }
         }
 
         public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, Configuration config = Configuration.Undefined)
@@ -240,6 +301,12 @@ namespace Wasm.Build.Tests
             if (Directory.Exists(dir))
                 Directory.Delete(dir, recursive: true);
             Directory.CreateDirectory(dir);
+
+            // Create an empty global.json so the SDK resolver doesn't walk up
+            // to the repo root's global.json which may contain relative "paths"
+            // entries that don't apply in the test directory.
+            File.WriteAllText(Path.Combine(dir, "global.json"), "{}");
+
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
             if (UseWBTOverridePackTargets)
@@ -318,6 +385,30 @@ namespace Wasm.Build.Tests
             => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.9-preview.2.2"" />
                 <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.9-preview.2.2"" />
                 <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.56\st\*.a"" />";
+
+        // Use the in-build crossgen2 when the test leg provides it. Composite builds also need the
+        // wasm-aware task shim until the base SDK supports wasm R2R output naming.
+        internal static string GetR2RBuildArgs(Configuration config, bool composite = false)
+        {
+            string? baseDir = EnvironmentVariables.BaseDir;
+            if (string.IsNullOrEmpty(baseDir))
+                return string.Empty;
+
+            string hostArch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+            string crossgenDir = Path.Combine(baseDir, "coreclr", $"browser.wasm.{config}", hostArch, "crossgen2");
+            string shimDir = Path.Combine(baseDir, "Crossgen2Tasks", config.ToString());
+            string shimProps = Path.Combine(shimDir, "Microsoft.NET.CrossGen.props");
+            string shimTargets = Path.Combine(shimDir, "Microsoft.NET.CrossGen.targets");
+
+            var args = new List<string>();
+            if (Directory.Exists(crossgenDir))
+                args.Add($"-p:Crossgen2InBuildDir=\"{crossgenDir}\"");
+            if (composite && File.Exists(shimProps))
+                args.Add($"-p:Crossgen2SdkOverridePropsPath=\"{shimProps}\"");
+            if (composite && File.Exists(shimTargets))
+                args.Add($"-p:Crossgen2SdkOverrideTargetsPath=\"{shimTargets}\"");
+            return string.Join(" ", args);
+        }
 
         protected static string s_mainReturns42 = @"
             public class TestClass {

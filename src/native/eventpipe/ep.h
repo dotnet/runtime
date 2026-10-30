@@ -128,6 +128,8 @@ typedef struct EventPipeSessionOptions {
 	uint64_t rundown_keyword;
 	bool stackwalk_requested;
 	int user_events_data_fd;
+	// Buffering mode for the session: DROP (lossy, the default) or BLOCK (non-lossy).
+	EventPipeBufferingMode buffering_mode;
 } EventPipeSessionOptions;
 
 void
@@ -144,7 +146,8 @@ ep_session_options_init (
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data,
-	int user_events_data_fd);
+	int user_events_data_fd,
+	EventPipeBufferingMode buffering_mode);
 
 void
 ep_session_options_fini (EventPipeSessionOptions* options);
@@ -165,7 +168,7 @@ ep_requires_lock_not_held (void);
 #endif
 
 EventPipeSessionID
-ep_enable (
+ep_init_session (
 	const ep_char8_t *output_path,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
@@ -178,7 +181,7 @@ ep_enable (
 	void *callback_additional_data);
 
 EventPipeSessionID
-ep_enable_2 (
+ep_init_session_2 (
 	const ep_char8_t *output_path,
 	uint32_t circular_buffer_size_in_mb,
 	const ep_char8_t *providers,
@@ -187,10 +190,11 @@ ep_enable_2 (
 	uint64_t rundown_keyword,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data);
+	void *callback_additional_data,
+	EventPipeBufferingMode buffering_mode);
 
 EventPipeSessionID
-ep_enable_3 (
+ep_init_session_3 (
 	const EventPipeSessionOptions *options
 );
 
@@ -203,8 +207,14 @@ ep_get_session (EventPipeSessionID session_id);
 bool
 ep_is_session_enabled (EventPipeSessionID session_id);
 
+// Returns whether ep_event would be written by the current thread. If the thread is scoped to a single
+// session (e.g. during rundown or an end-of-session flush), only that session's mask is consulted, so the
+// caller emits exactly what routes to that session; otherwise falls back to global enablement.
+bool
+ep_event_is_enabled_for_current_thread (EventPipeEvent *ep_event);
+
 void
-ep_start_streaming (EventPipeSessionID session_id);
+ep_start_session (EventPipeSessionID session_id);
 
 bool
 ep_enabled (void);

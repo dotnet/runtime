@@ -6,7 +6,10 @@ if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
 endif()
 
-if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+# Brotli is excluded on browser to keep the download size down (the browser has its own Brotli
+# support). WASI apps relink the native runtime with a P/Invoke table generated from the app's
+# trimmed assemblies, so Brotli is only linked into apps that use it.
+if(NOT CLR_CMAKE_TARGET_BROWSER)
     if (CLR_CMAKE_USE_SYSTEM_BROTLI)
         find_library(BROTLIDEC brotlidec REQUIRED)
         find_library(BROTLIENC brotlienc REQUIRED)
@@ -83,7 +86,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             target_link_libraries(System.IO.Compression.Native PRIVATE libzstd_static)
         endif()
 
-        if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI AND NOT CLR_CMAKE_USE_SYSTEM_ZSTD)
+        if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_APPLE_MOBILE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI AND NOT CLR_CMAKE_USE_SYSTEM_ZSTD)
             set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/System.IO.Compression.Native_unixexports.src)
             set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/System.IO.Compression.Native.exports)
             generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
@@ -127,7 +130,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         ${NATIVE_LIBS_EXTRA}
     )
 
-    if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    if (NOT CLR_CMAKE_TARGET_BROWSER)
         target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
 
@@ -180,7 +183,7 @@ else ()
         target_link_libraries(System.IO.Compression.Native PUBLIC ${BROTLI_LIBRARIES})
     endif ()
 
-    if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+    if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_APPLE_MOBILE AND NOT CLR_CMAKE_TARGET_ANDROID)
         set(NATIVECOMPRESSION_SOURCES ${NATIVECOMPRESSION_SOURCES} entrypoints.c)
     endif ()
 
@@ -250,6 +253,10 @@ else ()
     endif()
 
 endif ()
+
+if (TARGET System.IO.Compression.Native)
+    target_link_libraries(System.IO.Compression.Native PRIVATE minipal)
+endif()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 

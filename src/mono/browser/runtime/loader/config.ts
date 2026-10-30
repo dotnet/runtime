@@ -70,9 +70,6 @@ function deep_merge_resources (target: Assets, source: Assets): Assets {
     if (providedResources.pdb !== undefined) {
         providedResources.pdb = [...(target.pdb || []), ...(providedResources.pdb || [])];
     }
-    if (providedResources.jsModuleWorker !== undefined) {
-        providedResources.jsModuleWorker = [...(target.jsModuleWorker || []), ...(providedResources.jsModuleWorker || [])];
-    }
     if (providedResources.jsModuleNative !== undefined) {
         providedResources.jsModuleNative = [...(target.jsModuleNative || []), ...(providedResources.jsModuleNative || [])];
     }
@@ -129,7 +126,6 @@ export function normalizeConfig () {
     config.resources = config.resources || {
         assembly: [],
         jsModuleNative: [],
-        jsModuleWorker: [],
         jsModuleRuntime: [],
         wasmNative: [],
         vfs: [],
@@ -162,9 +158,6 @@ export function normalizeConfig () {
                     break;
                 case "dotnetwasm":
                     toMerge.wasmNative = [asset as WasmAsset];
-                    break;
-                case "js-module-threads":
-                    toMerge.jsModuleWorker = [asset as JsAsset];
                     break;
                 case "js-module-runtime":
                     toMerge.jsModuleRuntime = [asset as JsAsset];
@@ -201,7 +194,7 @@ export function normalizeConfig () {
     if (WasmEnableThreads) {
 
         if (!Number.isInteger(config.pthreadPoolInitialSize)) {
-            config.pthreadPoolInitialSize = 5;
+            config.pthreadPoolInitialSize = 7;
         }
         if (!Number.isInteger(config.pthreadPoolUnusedSize)) {
             config.pthreadPoolUnusedSize = 1;
@@ -247,14 +240,11 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
         await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterConfigLoaded);
         await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config]);
 
-        if (module.onConfigLoaded) {
-            try {
-                await module.onConfigLoaded(loaderHelpers.config, exportedRuntimeAPI);
-                normalizeConfig();
-            } catch (err: any) {
-                mono_log_error("onConfigLoaded() failed", err);
-                throw err;
-            }
+        try {
+            await loaderHelpers.callbacks.configLoaded?.(loaderHelpers.config, exportedRuntimeAPI);
+        } catch (err: any) {
+            mono_log_error("onConfigLoaded() failed", err);
+            throw err;
         }
 
         normalizeConfig();
@@ -275,4 +265,3 @@ export function isDebuggingSupported (): boolean {
 
     return loaderHelpers.isChromium || loaderHelpers.isFirefox;
 }
-

@@ -50,7 +50,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ true })]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, /* simd */ true })]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ false })]
-        [TestCategory("native")]
+        [TestCategory("native"), TestCategory("mono")]
         public async Task PublishSIMD_AOT(Configuration config, bool aot, bool simd)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "simd_publish");
@@ -65,6 +65,54 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, m => m.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>"));
             Assert.Contains(result.TestOutput, m => m.Contains("Hello, World!"));
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [TestCategory("coreclr")]
+        public async Task PublishRelaxedSimdCoreClr(bool relaxedSimd)
+        {
+            Configuration config = Configuration.Debug;
+            string relaxedSimdValue = relaxedSimd.ToString().ToLowerInvariant();
+            string extraProperties = $"<WasmEnableRelaxedSimd>{relaxedSimdValue}</WasmEnableRelaxedSimd>";
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                $"relaxed_simd_{relaxedSimdValue}",
+                extraProperties: extraProperties);
+            UpdateFile(
+                Path.Combine("Common", "Program.cs"),
+                GetCoreClrRelaxedSimdProgramText(relaxedSimdValue));
+            ReplaceMainJsWithMinimalRunMain();
+
+            PublishProject(info, config, isNativeBuild: relaxedSimd);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42));
+            string expectedOutput = $"RelaxedSimd config: {(relaxedSimd ? "true" : "<null>")}";
+            Assert.Contains(result.TestOutput, message => message.Contains(expectedOutput));
+        }
+
+        private static string GetCoreClrRelaxedSimdProgramText(string expectedConfigValue) => $$"""
+            using System;
+
+            public class TestClass
+            {
+                public static int Main()
+                {
+                    string configuredValue = AppContext.GetData(
+                        "System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported") as string;
+                    Console.WriteLine($"TestOutput -> RelaxedSimd config: {configuredValue ?? "<null>"}");
+
+                    return configuredValue == {{(expectedConfigValue == "true" ? "\"true\"" : "null")}}
+                        ? 42
+                        : 1;
+                }
+            }
+            """;
 
         private static string s_simdProgramText = @"
             using System;

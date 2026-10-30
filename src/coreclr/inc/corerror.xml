@@ -1797,12 +1797,6 @@
 	<Comment> Trying to shutdown out of order. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131c16">
-	<SymbolicName>CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS</SymbolicName>
-	<Message>"Debugging fiber mode managed process is not supported."</Message>
-	<Comment> For Whidbey, we don't support debugging fiber mode managed process </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131c17">
 	<SymbolicName>CORDBG_E_MUST_BE_IN_CREATE_PROCESS</SymbolicName>
 	<Message>"Must be in context of CreateProcess callback to perform requested operation."</Message>

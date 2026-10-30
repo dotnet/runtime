@@ -8,7 +8,6 @@
 
 #include "holder.h"
 
-#define _T(s) L##s
 #include "RhConfig.h"
 
 #include "gcenv.h"
@@ -18,7 +17,7 @@
 #include "thread.h"
 #include "threadstore.h"
 
-#include "nativecontext.h"
+#include "NativeContext.h"
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 #include <versionhelpers.h>
@@ -220,8 +219,15 @@ UInt32_BOOL PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t 
     success = ((*newThunksOut) != NULL);
 
 cleanup:
-    CloseHandle(hMap);
-    CloseHandle(hFile);
+    if (hMap != NULL)
+    {
+        CloseHandle(hMap);
+    }
+
+    if (hFile != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(hFile);
+    }
 
     return success;
 #endif
@@ -253,7 +259,7 @@ uint32_t PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t 
 {
     if (!allowReentrantWait)
     {
-        return WaitForMultipleObjectsEx(handleCount, pHandles, FALSE, timeout, alertable);
+        return WaitForMultipleObjectsEx(handleCount, pHandles, false, timeout, alertable);
     }
     else
     {
@@ -281,19 +287,9 @@ HANDLE PalCreateLowMemoryResourceNotification()
     return CreateMemoryResourceNotification(LowMemoryResourceNotification);
 }
 
-void PalSleep(uint32_t milliseconds)
-{
-    return Sleep(milliseconds);
-}
-
 UInt32_BOOL PalSwitchToThread()
 {
     return SwitchToThread();
-}
-
-HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName)
-{
-    return CreateEventW(pEventAttributes, manualReset, initialState, pName);
 }
 
 UInt32_BOOL PalAreShadowStacksEnabled()
@@ -915,14 +911,15 @@ bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ vo
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
-HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
 {
-    // The runtime is not designed to be unloadable today. Use GET_MODULE_HANDLE_EX_FLAG_PIN to prevent
-    // the module from ever unloading.
+    // The runtime is not designed to be unloadable today.
+    DWORD flags = GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+        (pinModule ? GET_MODULE_HANDLE_EX_FLAG_PIN : GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT);
 
     HMODULE module;
     if (!GetModuleHandleExW(
-        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
+        flags,
         (LPCWSTR)pointer,
         &module))
     {
@@ -947,8 +944,12 @@ char* PalCopyTCharAsChar(const TCHAR* toCopy)
         return nullptr;
 
     char* converted = new (nothrow) char[len];
-    int written = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, converted, len, nullptr, nullptr);
-    assert(len == written);
+
+    if (converted != nullptr)
+    {
+        int written = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, converted, len, nullptr, nullptr);
+        assert(len == written);
+    }
     return converted;
 }
 
@@ -1031,11 +1032,6 @@ uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint
     return res;
 }
 
-UInt32_BOOL PalCloseHandle(HANDLE arg1)
-{
-    return ::CloseHandle(arg1);
-}
-
 uint32_t PalGetCurrentProcessId()
 {
     return static_cast<uint32_t>(::GetCurrentProcessId());
@@ -1044,19 +1040,4 @@ uint32_t PalGetCurrentProcessId()
 uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize)
 {
     return ::GetEnvironmentVariableW(lpName, lpBuffer, nSize);
-}
-
-UInt32_BOOL PalResetEvent(HANDLE arg1)
-{
-    return ::ResetEvent(arg1);
-}
-
-UInt32_BOOL PalSetEvent(HANDLE arg1)
-{
-    return ::SetEvent(arg1);
-}
-
-uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3)
-{
-    return ::WaitForSingleObjectEx(arg1, arg2, arg3);
 }

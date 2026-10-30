@@ -17,7 +17,6 @@
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Primitives.cs" />
-    <Compile Include="$(NativeFormatCommonPath)\NativeFormatWriter.Primitives.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Metadata.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
     <Compile Include="$(AotCommonPath)\Internal\Runtime\MethodTable.cs">
@@ -53,6 +52,10 @@
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\SR.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Runtime\CompilerServices\IntrinsicAttribute.cs">
       <Link>IntrinsicAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Runtime\CompilerServices\AnalysisCharacteristicAttribute.cs" />
+    <Compile Include="$(CompilerCommonPath)\Internal\Text\Utf8Span.cs">
+      <Link>Internal\Text\Utf8Span.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\ArrayType.Canon.cs">
       <Link>Internal\TypeSystem\ArrayType.Canon.cs</Link>
@@ -116,6 +119,9 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\CastingHelper.cs">
       <Link>Internal\TypeSystem\CastingHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\CastingHelper.Canon.cs">
+      <Link>Internal\TypeSystem\CastingHelper.Canon.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\DefType.cs">
       <Link>Internal\TypeSystem\DefType.cs</Link>
@@ -250,12 +256,10 @@
     <Compile Include="Internal\TypeSystem\AssemblyNameInfo.Dummy.cs" />
     <Compile Include="Internal\TypeSystem\ArrayMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\CanonTypes.Runtime.cs" />
-    <Compile Include="Internal\TypeSystem\DefType.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\ExceptionTypeNameFormatter.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\InstantiatedMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\MethodDesc.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\MethodForInstantiatedType.Runtime.cs" />
-    <Compile Include="Internal\TypeSystem\NoMetadataMethodDesc.cs" />
     <Compile Include="Internal\TypeSystem\RuntimeGenericParameterDesc.cs" />
     <Compile Include="Internal\TypeSystem\RuntimeMethodDesc.Canon.cs" />
     <Compile Include="Internal\TypeSystem\RuntimeMethodDesc.cs" />

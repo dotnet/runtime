@@ -220,7 +220,7 @@ namespace System.Diagnostics
                 noBOMwithFallback.EncoderFallback = EncoderFallback.ReplacementFallback;
                 noBOMwithFallback.DecoderFallback = DecoderFallback.ReplacementFallback;
 
-                // To support multiple appdomains/instances tracing to the same file,
+                // To support multiple instances tracing to the same file,
                 // we will try to open the given file for append but if we encounter
                 // IO errors, we will prefix the file name with a unique GUID value
                 // and try one more time

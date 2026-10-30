@@ -46,7 +46,7 @@ else()
 
     generate_exports_file(${SPMI_COLLECTOR_EXPORTS} ${SPMI_COLLECTOR_EXPORTS_FINAL_FILE})
 
-    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_OPENBSD OR CLR_CMAKE_TARGET_SUNOS)
         # This is required to force using our own PAL, not one that we are loaded with.
         add_link_options(LINKER:-Bsymbolic)
     endif()

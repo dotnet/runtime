@@ -52,13 +52,6 @@ namespace BINDER_SPACE
 
         void OnDestructPerEntryCleanupAction(const SimpleNameToFileNameMapEntry & e)
         {
-            if (e.m_wszILFileName == nullptr)
-            {
-                // Don't delete simple name here since it's a filename only entry and will be cleaned up
-                // by the SimpleName -> FileName entry which reuses the same filename pointer.
-                return;
-            }
-
             if (e.m_wszSimpleName != nullptr)
             {
                 delete [] e.m_wszSimpleName;
@@ -84,18 +77,16 @@ namespace BINDER_SPACE
         ~ApplicationContext();
         HRESULT Init();
 
-        inline SString &GetApplicationName();
-
         HRESULT SetupBindingPaths(/* in */ SString &sTrustedPlatformAssemblies,
                                   /* in */ SString &sPlatformResourceRoots,
-                                  /* in */ SString &sAppPaths,
-                                  /* in */ BOOL     fAcquireLock);
+                                  /* in */ SString &sAppPaths);
 
         // Getters/Setter
         inline ExecutionContext *GetExecutionContext();
         inline FailureCache *GetFailureCache();
         inline HRESULT AddToFailureCache(SString &assemblyNameOrPath,
-                                         HRESULT  hrBindResult);
+                                         HRESULT  hrBindResult,
+                                         LPCWSTR  diagnosticInfo);
         inline StringArrayList *GetAppPaths();
         inline SimpleNameToFileNameMap *GetTpaList();
         inline StringArrayList *GetPlatformResourceRoots();
@@ -108,7 +99,6 @@ namespace BINDER_SPACE
 
     private:
         Volatile<LONG>     m_cVersion;
-        SString            m_applicationName;
         ExecutionContext  *m_pExecutionContext;
         FailureCache      *m_pFailureCache;
         CRITSEC_COOKIE     m_contextCS;

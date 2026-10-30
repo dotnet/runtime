@@ -741,7 +741,7 @@ namespace System.Security.Cryptography
             writer.WriteOctetString(fieldElement.AsSpan(start));
         }
 
-        private static void WriteUncompressedBasePoint(in ECParameters ecParameters, AsnWriter writer)
+        private static unsafe void WriteUncompressedBasePoint(in ECParameters ecParameters, AsnWriter writer)
         {
             int basePointLength = ecParameters.Curve.G.X!.Length * 2 + 1;
 
@@ -769,7 +769,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void WriteUncompressedPublicKey(in ECParameters ecParameters, AsnWriter writer)
+        private static unsafe void WriteUncompressedPublicKey(in ECParameters ecParameters, AsnWriter writer)
         {
             int publicKeyLength = ecParameters.Q.X!.Length * 2 + 1;
 

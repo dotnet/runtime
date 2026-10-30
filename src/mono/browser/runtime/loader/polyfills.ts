@@ -3,7 +3,6 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import type { DotnetModuleInternal } from "../types/internal";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, ENVIRONMENT_IS_WEB, mono_assert } from "./globals";
 
 let node_fs: any | undefined = undefined;
@@ -34,7 +33,23 @@ export function verifyEnvironment () {
     }
 }
 
-export async function detect_features_and_polyfill (module: DotnetModuleInternal): Promise<void> {
+export async function detect_features_and_polyfill (): Promise<void> {
+    if (ENVIRONMENT_IS_SHELL) {
+        if (typeof globalThis.atob !== "function") {
+            const b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+            globalThis.atob = (input) => {
+                const str = String(input).replace(/=+$/, "");
+                let output = "";
+                for (let bc = 0, bs = 0, i = 0; i < str.length; i++) {
+                    const c = b64.indexOf(str.charAt(i));
+                    if (c === -1) continue;
+                    bs = bc % 4 ? bs * 64 + c : c;
+                    if (bc++ % 4) output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)));
+                }
+                return output;
+            };
+        }
+    }
     if (ENVIRONMENT_IS_NODE) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
@@ -65,8 +80,6 @@ export async function detect_features_and_polyfill (module: DotnetModuleInternal
     loaderHelpers.out = console.log;
     // eslint-disable-next-line no-console
     loaderHelpers.err = console.error;
-    loaderHelpers.onDownloadResourceProgress = module.onDownloadResourceProgress;
-
     if (ENVIRONMENT_IS_WEB && globalThis.navigator) {
         const navigator: any = globalThis.navigator;
         const brands = navigator.userAgentData && navigator.userAgentData.brands;

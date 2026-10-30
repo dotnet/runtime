@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 #include <stddef.h>
 #include <sys/mman.h>
@@ -58,7 +57,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 
 #ifdef TARGET_FREEBSD
     int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
     int fd = memfd_create("doublemapper", MFD_CLOEXEC);
 #else
     int fd = -1;
@@ -102,6 +101,8 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     // Clip the maximum double mapped memory size to 1/4 of the virtual address space limit.
     // When such a limit is set, GC reserves 1/2 of it, so we need to leave something
     // for the rest of the process.
+#ifdef RLIMIT_AS
+    // OpenBSD has no address-space rlimit (RLIMIT_AS), so this clipping is skipped there.
     struct rlimit virtualAddressSpaceLimit;
     if ((getrlimit(RLIMIT_AS, &virtualAddressSpaceLimit) == 0) && (virtualAddressSpaceLimit.rlim_cur != RLIM_INFINITY))
     {
@@ -111,8 +112,10 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
             maxDoubleMappedMemorySize = virtualAddressSpaceLimit.rlim_cur;
         }
     }
+#endif // RLIMIT_AS
 
     // Clip the maximum double mapped memory size to the file size limit
+#ifdef RLIMIT_FSIZE
     struct rlimit fileSizeLimit;
     if ((getrlimit(RLIMIT_FSIZE, &fileSizeLimit) == 0) && (fileSizeLimit.rlim_cur != RLIM_INFINITY))
     {
@@ -121,11 +124,37 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
             maxDoubleMappedMemorySize = fileSizeLimit.rlim_cur;
         }
     }
+#endif // RLIMIT_FSIZE
 
     if (ftruncate(fd, maxDoubleMappedMemorySize) == -1)
     {
         close(fd);
         return false;
+    }
+
+    // Verify that the backing file can actually be mapped both writable and executable.
+    // Some sandboxes allow creating the file, but deny making its mappings executable
+    // later, which would otherwise surface as a failure in the middle of the runtime
+    // startup. Detect that here so that the allocator can fall back to the non-W^X path.
+    {
+        size_t pageSize = (size_t)sysconf(_SC_PAGE_SIZE);
+        void* pRW = mmap(NULL, pageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        void* pRX = mmap(NULL, pageSize, PROT_NONE, MAP_SHARED, fd, 0);
+        bool canDoubleMap = (pRW != MAP_FAILED) && (pRX != MAP_FAILED) &&
+            (mprotect(pRX, pageSize, PROT_READ | PROT_EXEC) == 0);
+        if (pRX != MAP_FAILED)
+        {
+            munmap(pRX, pageSize);
+        }
+        if (pRW != MAP_FAILED)
+        {
+            munmap(pRW, pageSize);
+        }
+        if (!canDoubleMap)
+        {
+            close(fd);
+            return false;
+        }
     }
 
     *pMaxExecutableCodeSize = maxDoubleMappedMemorySize;
@@ -146,10 +175,8 @@ void VMToOSInterface::DestroyDoubleMemoryMapper(void *mapperHandle)
 #endif
 }
 
-extern "C" void* PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(const void* lpBeginAddress, const void* lpEndAddress, size_t dwSize, int fStoreAllocationInfo);
-
 #ifdef TARGET_APPLE
-bool IsMapJitFlagNeeded()
+bool VMToOSInterface::IsMapJitFlagNeeded()
 {
     static volatile int isMapJitFlagNeeded = -1;
 
@@ -192,7 +219,7 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
         rangeEnd = (void*)SIZE_MAX;
     }
 
-    void* result = PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(rangeStart, rangeEnd, size, 0 /* fStoreAllocationInfo */);
+    void* result = VMToOSInterface::ReserveMemoryFromExecutableAllocatorWithinRange(rangeStart, rangeEnd, size);
 #ifndef TARGET_APPLE
     int mmapFlags = MAP_SHARED;
 #ifdef TARGET_HAIKU
@@ -408,7 +435,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
 
 #ifdef TARGET_FREEBSD
         int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
         int fd = memfd_create("doublemapper-template", MFD_CLOEXEC);
 #else
         int fd = -1;
@@ -463,7 +490,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
         return __atomic_load_n(&s_pThunkData, __ATOMIC_ACQUIRE);
     }
 }
-#endif
+#endif // !TARGET_APPLE
 
 bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
 {
@@ -476,7 +503,7 @@ bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
 
 void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
 {
-#ifdef TARGET_APPLE
+#if defined(TARGET_APPLE)
     return pImageTemplate;
 #elif defined(TARGET_X86)
     return NULL; // X86 doesn't support high performance relative addressing, which makes the template system not work
@@ -524,7 +551,7 @@ void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize,
 
 void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStartSpecification, void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
-#ifdef TARGET_APPLE
+#if defined(TARGET_APPLE)
     vm_address_t addr, taddr;
     vm_prot_t prot, max_prot;
     kern_return_t ret;
@@ -547,11 +574,13 @@ void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templa
         dataPageGenerator(((uint8_t*) addr) + templateSize, templateSize);
     }
 
+    // Shared executable aliases can hang Rosetta's AOT translation cache.
+    boolean_t copy = minipal_detect_rosetta() ? TRUE : FALSE;
     do
     {
         ret = vm_remap(
             mach_task_self(), &addr, templateSize, 0, VM_FLAGS_FIXED | VM_FLAGS_OVERWRITE,
-            mach_task_self(), (vm_address_t)pTemplate, FALSE, &prot, &max_prot, VM_INHERIT_SHARE);
+            mach_task_self(), (vm_address_t)pTemplate, copy, &prot, &max_prot, VM_INHERIT_SHARE);
     } while (ret == KERN_ABORTED);
 
     if (ret != KERN_SUCCESS)

@@ -7,8 +7,16 @@ namespace Microsoft.NET.WebAssembly.Webcil;
 
 internal static class WebcilConstants
 {
-    public const int WC_VERSION_MAJOR = 0;
+    public const int WC_VERSION_MAJOR = 1;
     public const int WC_VERSION_MINOR = 0;
+
+    /// <summary>
+    /// Value of the <c>webcilVersion</c> global exported by a self-installing WebAssembly wrapper, whose
+    /// payload (and function table, if any) are active segments placed at host-supplied base globals.
+    /// A version 1 payload is always wrapped this way; the passive version 0 wrapper is only produced
+    /// for version 0 payloads.
+    /// </summary>
+    public const int WASM_WRAPPER_VERSION_SELF_INSTALLING = 2;
 
     /// <summary>
     /// 'WbIL' magic bytes interpreted as a little-endian uint32.
@@ -40,6 +48,8 @@ public struct WebcilHeader
     public uint PeDebugRva;
     public uint PeDebugSize;
     // 28 bytes
+    public uint TableBase;
+    // 32 bytes
 }
 
 /// <summary>

@@ -101,7 +101,6 @@ namespace System
         // Please do not edit unless intentional.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static unsafe void MemoryCopy(void* source, void* destination, long destinationSizeInBytes, long sourceBytesToCopy)
         {
             if (sourceBytesToCopy > destinationSizeInBytes)
@@ -116,7 +115,6 @@ namespace System
         // Please do not edit unless intentional.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static unsafe void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy)
         {
             if (sourceBytesToCopy > destinationSizeInBytes)

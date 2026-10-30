@@ -190,7 +190,7 @@ namespace System.Text.Json
             return reader.TrySkipPartial(reader.CurrentDepth);
         }
 
-        public static bool TryLookupUtf8Key<TValue>(
+        public static unsafe bool TryLookupUtf8Key<TValue>(
             this Dictionary<string, TValue> dictionary,
             ReadOnlySpan<byte> utf8Key,
             [MaybeNullWhen(false)] out TValue result)
@@ -212,7 +212,7 @@ namespace System.Text.Json
 
             bool success = spanLookup.TryGetValue(decodedKey, out result);
 
-            if (rentedBuffer != null)
+            if (rentedBuffer is not null)
             {
                 decodedKey.Clear();
                 ArrayPool<char>.Shared.Return(rentedBuffer);
@@ -223,6 +223,54 @@ namespace System.Text.Json
             string key = Encoding.UTF8.GetString(utf8Key);
             return dictionary.TryGetValue(key, out result);
 #endif
+        }
+
+        public static bool TryLookupUtf8Key<TValue>(
+            this Dictionary<byte[], TValue> dictionary,
+            ReadOnlySpan<byte> utf8Key,
+            [MaybeNullWhen(false)] out TValue result)
+        {
+            Debug.Assert(dictionary.Comparer is ByteArrayOrdinalComparer);
+#if NET
+            Dictionary<byte[], TValue>.AlternateLookup<ReadOnlySpan<byte>> spanLookup =
+                dictionary.GetAlternateLookup<ReadOnlySpan<byte>>();
+
+            return spanLookup.TryGetValue(utf8Key, out result);
+#else
+            return dictionary.TryGetValue(utf8Key.ToArray(), out result);
+#endif
+        }
+
+        /// <summary>Compares byte arrays using ordinal equality.</summary>
+        internal sealed class ByteArrayOrdinalComparer :
+#if NET
+            IAlternateEqualityComparer<ReadOnlySpan<byte>, byte[]>,
+#endif
+            IEqualityComparer<byte[]>
+        {
+            public static readonly ByteArrayOrdinalComparer Instance = new();
+
+            public bool Equals(byte[]? left, byte[]? right) =>
+                ReferenceEquals(left, right) ||
+                (left is not null && right is not null && left.AsSpan().SequenceEqual(right));
+
+            public int GetHashCode(byte[] value) => ComputeHashCode(value);
+
+#if NET
+            byte[] IAlternateEqualityComparer<ReadOnlySpan<byte>, byte[]>.Create(ReadOnlySpan<byte> span) =>
+                span.ToArray();
+
+            bool IAlternateEqualityComparer<ReadOnlySpan<byte>, byte[]>.Equals(
+                ReadOnlySpan<byte> span,
+                byte[] target) =>
+                span.SequenceEqual(target);
+
+            int IAlternateEqualityComparer<ReadOnlySpan<byte>, byte[]>.GetHashCode(ReadOnlySpan<byte> span) =>
+                ComputeHashCode(span);
+#endif
+
+            private static int ComputeHashCode(ReadOnlySpan<byte> value) =>
+                Marvin.ComputeHash32(value, Marvin.DefaultSeed);
         }
 
         /// <summary>
@@ -288,11 +336,9 @@ namespace System.Text.Json
                 out ReadOnlySpan<byte> rightFractional,
                 out int rightExponent);
 
-            int nDigits;
             if (leftIsNegative != rightIsNegative ||
                 leftExponent != rightExponent ||
-                (nDigits = (leftIntegral.Length + leftFractional.Length)) !=
-                            rightIntegral.Length + rightFractional.Length)
+                leftIntegral.Length + leftFractional.Length != rightIntegral.Length + rightFractional.Length)
             {
                 return false;
             }
@@ -472,43 +518,14 @@ namespace System.Text.Json
 
                 static int IndexOfLastLeadingZero(ReadOnlySpan<byte> span)
                 {
-#if NET
                     int firstNonZero = span.IndexOfAnyExcept((byte)'0');
                     return firstNonZero < 0 ? span.Length - 1 : firstNonZero - 1;
-#else
-                    for (int i = 0; i < span.Length; i++)
-                    {
-                        if (span[i] != '0')
-                        {
-                            return i - 1;
-                        }
-                    }
-
-                    return span.Length - 1;
-#endif
                 }
 
                 static int IndexOfFirstTrailingZero(ReadOnlySpan<byte> span)
                 {
-#if NET
                     int lastNonZero = span.LastIndexOfAnyExcept((byte)'0');
                     return lastNonZero == span.Length - 1 ? -1 : lastNonZero + 1;
-#else
-                    if (span.IsEmpty)
-                    {
-                        return -1;
-                    }
-
-                    for (int i = span.Length - 1; i >= 0; i--)
-                    {
-                        if (span[i] != '0')
-                        {
-                            return i == span.Length - 1 ? -1 : i + 1;
-                        }
-                    }
-
-                    return 0;
-#endif
                 }
             }
         }

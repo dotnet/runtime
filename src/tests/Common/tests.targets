@@ -52,13 +52,34 @@
 
   <Target Name="RunSingleMergedTest">
     <Exec Command="chmod +x $(TestWrapperScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(OS)' != 'Windows_NT'" />
+    <!-- Remove any stale results file so the Copy below only picks up results from this run;
+         a crashing runner never writes one, and would otherwise copy a prior run's results. -->
+    <Delete Files="$(TestResultsXmlFile)" />
     <Exec Command="$(TestWrapperScript) &gt; $(RedirectOutputToFile) 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" ContinueOnError="ErrorAndContinue">
       <Output TaskParameter="ExitCode" PropertyName="MergedTestExitCode" />
     </Exec>
-    <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" Condition="'$(MergedTestExitCode)' == '0'" />
+    <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" Condition="Exists('$(TestResultsXmlFile)')" />
+    <WriteLinesToFile File="$(TestResultsCopyTo).crashed" Lines="ExitCode=$(MergedTestExitCode);Script=$(TestWrapperScript)" Overwrite="true" Condition="'$(MergedTestExitCode)' != '0'" />
   </Target>
 
   <Target Name="RunMergedTests" DependsOnTargets="PrepareTestsToRun">
+    <ItemGroup>
+      <_StaleCrashedMarkers Include="$(__LogsDir)\*.crashed" />
+      <_StaleTestRunXmls Include="$(__LogsDir)\*.testRun.xml" />
+    </ItemGroup>
+    <Delete Files="@(_StaleCrashedMarkers)" />
+    <Delete Files="@(_StaleTestRunXmls)" />
+
+    <PropertyGroup Condition="'$(RunnerFilter)' != ''">
+      <_NormalizedRunnerFilter>$([System.String]::new('$(RunnerFilter)').Replace('/','.').Replace('\','.').ToLowerInvariant())</_NormalizedRunnerFilter>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(RunnerFilter)' != ''">
+      <MergedTestWrapperScripts Remove="@(MergedTestWrapperScripts)" Condition="!$([System.String]::new('%(MergedTestWrapperScripts.RelativeResultsPath)').Replace('/','.').Replace('\','.').ToLowerInvariant().Contains('$(_NormalizedRunnerFilter)'))" />
+    </ItemGroup>
+
+    <Message Text="Runner filter '$(RunnerFilter)' matched @(MergedTestWrapperScripts->Count()) runner(s)" Importance="high" Condition="'$(RunnerFilter)' != ''" />
+    <Error Text="RunnerFilter '$(RunnerFilter)' did not match any merged test runners; no tests will be executed." Condition="'$(RunnerFilter)' != '' and '@(MergedTestWrapperScripts)' == ''" />
+
     <ItemGroup>
       <_ProjectsToBuild Include="$(MSBuildThisFileFullPath)">
         <AdditionalProperties>TestWrapperScript=%(MergedTestWrapperScripts.Identity);RedirectOutputToFile=%(MergedTestWrapperScripts.RedirectOutputToFile);TestResultsXmlFile=%(MergedTestWrapperScripts.TestResultsXmlFile);TestResultsCopyTo=%(MergedTestWrapperScripts.TestResultsCopyTo)</AdditionalProperties>
@@ -220,7 +241,7 @@
       <_Crossgen2InCoreRootTime>$([System.IO.File]::GetLastWriteTime('$(_Crossgen2DstPath)').Ticks)</_Crossgen2InCoreRootTime>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'@(_IlCg2DoneFiles)' != ''">
       <_StaleIlCg2DoneFile Include="@(_IlCg2DoneFiles)"
           Condition="$([System.IO.File]::GetLastWriteTime('%(Identity)').Ticks) &lt; $(_Crossgen2InCoreRootTime)" />
     </ItemGroup>

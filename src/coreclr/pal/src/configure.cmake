@@ -7,6 +7,7 @@ include(CheckIncludeFiles)
 include(CheckStructHasMember)
 include(CheckTypeSize)
 include(CheckLibraryExists)
+include(CMakePushCheckState)
 
 if(CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD)
   set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
@@ -100,10 +101,11 @@ elseif (HAVE_PTHREAD_IN_LIBC)
   set(PTHREAD_LIBRARY c)
 endif()
 
-check_library_exists(${PTHREAD_LIBRARY} pthread_attr_get_np "" HAVE_PTHREAD_ATTR_GET_NP)
-check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETATTR_NP)
-check_library_exists(${PTHREAD_LIBRARY} pthread_getcpuclockid "" HAVE_PTHREAD_GETCPUCLOCKID)
-check_library_exists(${PTHREAD_LIBRARY} pthread_getaffinity_np "" HAVE_PTHREAD_GETAFFINITY_NP)
+if (PTHREAD_LIBRARY)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_attr_get_np "" HAVE_PTHREAD_ATTR_GET_NP)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETATTR_NP)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_getcpuclockid "" HAVE_PTHREAD_GETCPUCLOCKID)
+endif()
 
 check_function_exists(fsync HAVE_FSYNC)
 check_function_exists(futimes HAVE_FUTIMES)
@@ -116,7 +118,6 @@ endif()
 check_function_exists(sysconf HAVE_SYSCONF)
 check_function_exists(gmtime_r HAVE_GMTIME_R)
 check_function_exists(poll HAVE_POLL)
-check_function_exists(statvfs HAVE_STATVFS)
 check_function_exists(thread_self HAVE_THREAD_SELF)
 check_function_exists(_lwp_self HAVE__LWP_SELF)
 check_function_exists(pthread_mach_thread_np HAVE_MACH_THREADS)
@@ -136,11 +137,12 @@ int main(int argc, char **argv) {
 }" HAVE_SIGALTSTACK)
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
 check_function_exists(vm_read HAVE_VM_READ)
-check_function_exists(directio HAVE_DIRECTIO)
-check_function_exists(semget HAS_SYSV_SEMAPHORES)
-check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
-check_function_exists(pipe2 HAVE_PIPE2)
+
+cmake_push_check_state()
+list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+check_symbol_exists(pipe2 unistd.h HAVE_PIPE2)
+cmake_pop_check_state()
 
 check_cxx_source_compiles("
 #include <pthread_np.h>
@@ -168,15 +170,8 @@ else()
 endif()
 check_type_size(ucontext_t UCONTEXT_T)
 set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILES pthread.h)
-check_type_size(pthread_rwlock_t PTHREAD_RWLOCK_T)
-set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILE procfs.h)
-check_type_size(prwatch_t PRWATCH_T)
-set(CMAKE_EXTRA_INCLUDE_FILE)
 check_type_size(off_t SIZEOF_OFF_T)
 
-check_cxx_symbol_exists(SYS_yield sys/syscall.h HAVE_YIELD_SYSCALL)
 check_cxx_symbol_exists(INFTIM poll.h HAVE_INFTIM)
 check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
@@ -201,117 +196,6 @@ int main(void) {
   }
   exit(0);
 }" REALPATH_SUPPORTS_NONEXISTENT_FILES)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <unistd.h>
-
-int main(void) {
-    int fd, numFDs;
-    fd_set readFDs, writeFDs, exceptFDs;
-    struct timeval time = { 0 };
-    char * filename = NULL;
-
-    filename = (char *)malloc(L_tmpnam * sizeof(char)); /* ok to leak this at exit */
-    if (NULL == filename) {
-      exit(0);
-    }
-
-    /* On some platforms (e.g. HP-UX) the multithreading c-runtime does not
-       support the tmpnam(NULL) semantics, and it returns NULL. Therefore
-       we need to use the tmpnam(pbuffer) version.
-    */
-    if (NULL == tmpnam(filename)) {
-      exit(0);
-    }
-    if (mkfifo(filename, S_IRWXU) != 0) {
-      if (unlink(filename) != 0) {
-        exit(0);
-      }
-      if (mkfifo(filename, S_IRWXU) != 0) {
-        exit(0);
-      }
-    }
-    fd = open(filename, O_RDWR | O_NONBLOCK);
-    if (fd == -1) {
-      exit(0);
-    }
-
-    FD_ZERO(&readFDs);
-    FD_ZERO(&writeFDs);
-    FD_ZERO(&exceptFDs);
-    FD_SET(fd, &readFDs);
-    numFDs = select(fd + 1, &readFDs, &writeFDs, &exceptFDs, &time);
-
-    close(fd);
-    unlink(filename);
-
-    /* numFDs is zero if select() works correctly */
-    exit(numFD==0);
-}" HAVE_BROKEN_FIFO_SELECT)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/event.h>
-#include <sys/time.h>
-#include <sys/stat.h>
-
-int main(void)
-{
-  int ikq;
-  int iRet;
-  int fd;
-  struct kevent ke, keChangeList;
-  struct timespec ts = { 0, 0 };
-
-  char * filename = NULL;
-
-  filename = (char *)malloc(L_tmpnam * sizeof(char)); /* ok to leak this at exit */
-  if (NULL == filename)
-  {
-    exit(1);
-  }
-
-  /* On some platforms (e.g. HP-UX) the multithreading c-runtime does not
-     support the tmpnam(NULL) semantics, and it returns NULL. Therefore
-     we need to use the tmpnam(pbuffer) version.
-  */
-  if (NULL == tmpnam(filename)) {
-    exit(0);
-  }
-  if (mkfifo(filename, S_IRWXU) != 0) {
-    if (unlink(filename) != 0) {
-      exit(0);
-    }
-    if (mkfifo(filename, S_IRWXU) != 0) {
-      exit(0);
-    }
-  }
-  fd = open(filename, O_RDWR | O_NONBLOCK);
-  if (fd == -1) {
-    exit(0);
-  }
-
-  EV_SET(&keChangeList, fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, NULL);
-  ikq = kqueue();
-  iRet = kevent(ikq, &keChangeList, 1, &ke, 1, &ts);
-
-  close(fd);
-  unlink(filename);
-
-  /* iRet is zero is kevent() works correctly */
-  return(iRet==0);
-}" HAVE_BROKEN_FIFO_KEVENT)
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 check_cxx_source_runs("
 #include <stdio.h>
@@ -336,39 +220,13 @@ int main(void)
 
   exit(-1 == max_priority || -1 == min_priority);
 }" HAVE_SCHED_GET_PRIORITY)
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timeval tv;
-  ret = gettimeofday(&tv, NULL);
-
-  exit(ret);
-}" HAVE_WORKING_GETTIMEOFDAY)
-
-set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_REALTIME, &ts);
-
-  exit(ret);
-}" HAVE_WORKING_CLOCK_GETTIME)
 set(CMAKE_REQUIRED_LIBRARIES)
 
 
 
-check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+if (PTHREAD_LIBRARY)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+endif()
 
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
 check_cxx_source_runs("
@@ -386,46 +244,6 @@ int main()
 }" HAVE_CLOCK_THREAD_CPUTIME)
 set(CMAKE_REQUIRED_LIBRARIES)
 
-check_cxx_source_runs("
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#ifndef MAP_ANON
-#define MAP_ANON MAP_ANONYMOUS
-#endif
-
-void *handle_signal(int signal) {
-  /* If we reach this, we've crashed due to mmap honoring
-  PROT_NONE. */
-  _exit(1);
-}
-
-int main(void) {
-  int *ptr;
-  struct sigaction action;
-
-  ptr = (int *) mmap(NULL, getpagesize(), PROT_NONE,
-                     MAP_ANON | MAP_PRIVATE, -1, 0);
-  if (ptr == (int *) MAP_FAILED) {
-    exit(0);
-  }
-  action.sa_handler = &handle_signal;
-  action.sa_flags = 0;
-  sigemptyset(&action.sa_mask);
-  if (sigaction(SIGBUS, &action, NULL) != 0) {
-    exit(0);
-  }
-  if (sigaction(SIGSEGV, &action, NULL) != 0) {
-    exit(0);
-  }
-  /* This will drop us into the signal handler if PROT_NONE
-     is honored. */
-  *ptr = 123;
-  exit(0);
-}" MMAP_ANON_IGNORES_PROTECTION)
 check_cxx_source_runs("
 #include <stdio.h>
 #include <unistd.h>
@@ -531,9 +349,6 @@ int main(void) {
 }" HAVE_PROCFS_STAT)
 set(CMAKE_REQUIRED_LIBRARIES)
 
-set(SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING 1)
-set(ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS 1)
-
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   list(INSERT CMAKE_REQUIRED_INCLUDES 0 ${CLR_SRC_NATIVE_DIR}/external/libunwind/include ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include)
 endif()
@@ -599,6 +414,8 @@ elseif(CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD)
     set(BSD_REGS_STYLE "((reg).r_##rr)")
   elseif(CLR_CMAKE_HOST_ARCH_ARM64)
     set(BSD_REGS_STYLE "((reg).rr)")
+  elseif(CLR_CMAKE_HOST_ARCH_POWERPC64)
+    set(BSD_REGS_STYLE "((reg).fixreg[rr])")
   else()
     message(FATAL_ERROR "Unknown architecture")
   endif()
@@ -615,6 +432,8 @@ elseif(CLR_CMAKE_TARGET_HAIKU)
   # Haiku does not have ptrace.
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 elseif(CLR_CMAKE_TARGET_BROWSER)
+  set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
+elseif(CLR_CMAKE_TARGET_WASI)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 else() # Anything else is Linux
   # LTTNG is not available on Android, so don't error out
@@ -649,7 +468,7 @@ check_prototype_definition(
     statfs
     "int statfs(const char *path, struct statfs *buf)"
     0
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_NON_LEGACY_STATFS)
 
 configure_file(${CMAKE_CURRENT_LIST_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

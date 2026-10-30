@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 void gc_heap::add_to_history_per_heap()
 {
 #if defined(GC_HISTORY) && defined(BACKGROUND_GC)
@@ -532,13 +542,14 @@ void gc_heap::descr_generations (const char* msg)
 
         size_t idx = VolatileLoadWithoutBarrier (&settings.gc_index);
 
-        dprintf (REGIONS_LOG, ("[%s] GC#%5Id [%s] heap %Idmb (F: %Idmb %d%%) commit size: %Idmb, %0.3f min, %d,%d new in plan, %d in threading",
+        dprintf (REGIONS_LOG, ("[%s] GC#%5zd [%s] heap %zdmb (F: %zdmb %d%%) commit size: %zdmb, %0.3f min, %d,%d new in plan, %d in threading",
             msg, idx, (settings.promotion ? "PM" : "NPM"), alloc_size, frag_size,
             (int)((double)frag_size * 100.0 / (double)alloc_size),
             commit_size,
             (double)elapsed_time_so_far / (double)1000000 / (double)60,
             total_new_gen0_regions_in_plns, total_new_regions_in_prr, total_new_regions_in_threading));
 
+#if defined(BGC_SERVO_TUNING) && defined(SIMPLE_DPRINTF)
         size_t total_gen_size_mb[loh_generation + 1] = { 0, 0, 0, 0 };
         size_t total_gen_fragmentation_mb[loh_generation + 1] = { 0, 0, 0, 0 };
         for (int i = 0; i < (loh_generation + 1); i++)
@@ -548,18 +559,17 @@ void gc_heap::descr_generations (const char* msg)
         }
 
         int bgcs = VolatileLoadWithoutBarrier (&current_bgc_state);
-#ifdef SIMPLE_DPRINTF
-        dprintf (REGIONS_LOG, ("[%s] GC#%Id (bgcs: %d, %s) g0: %Idmb (f: %Idmb %d%%), g1: %Idmb (f: %Idmb %d%%), g2: %Idmb (f: %Idmb %d%%), g3: %Idmb (f: %Idmb %d%%)",
+        dprintf (REGIONS_LOG, ("[%s] GC#%zd (bgcs: %d, %s) g0: %zdmb (f: %zdmb %d%%), g1: %zdmb (f: %zdmb %d%%), g2: %zdmb (f: %zdmb %d%%), g3: %zdmb (f: %zdmb %d%%)",
             msg, idx, bgcs, str_bgc_state[bgcs],
             total_gen_size_mb[0], total_gen_fragmentation_mb[0], (total_gen_size_mb[0] ? (int)((double)total_gen_fragmentation_mb[0] * 100.0 / (double)total_gen_size_mb[0]) : 0),
             total_gen_size_mb[1], total_gen_fragmentation_mb[1], (total_gen_size_mb[1] ? (int)((double)total_gen_fragmentation_mb[1] * 100.0 / (double)total_gen_size_mb[1]) : 0),
             total_gen_size_mb[2], total_gen_fragmentation_mb[2], (total_gen_size_mb[2] ? (int)((double)total_gen_fragmentation_mb[2] * 100.0 / (double)total_gen_size_mb[2]) : 0),
             total_gen_size_mb[3], total_gen_fragmentation_mb[3], (total_gen_size_mb[3] ? (int)((double)total_gen_fragmentation_mb[3] * 100.0 / (double)total_gen_size_mb[3]) : 0)));
-#endif //SIMPLE_DPRINTF
+#endif //BGC_SERVO_TUNING && SIMPLE_DPRINTF
         // print every 20 GCs so it's easy to see if we are making progress.
         if ((idx % 20) == 0)
         {
-            dprintf (1, ("[%5s] GC#%5Id total heap size: %Idmb (F: %Idmb %d%%) commit size: %Idmb, %0.3f min, %d,%d new in plan, %d in threading\n",
+            dprintf (1, ("[%5s] GC#%5zd total heap size: %zdmb (F: %zdmb %d%%) commit size: %zdmb, %0.3f min, %d,%d new in plan, %d in threading\n",
                 msg, idx, alloc_size, frag_size,
                 (int)((double)frag_size * 100.0 / (double)alloc_size),
                 commit_size,
@@ -1633,8 +1643,8 @@ void gc_heap::record_interesting_info_per_heap()
             (interesting_mechanism_bits_per_heap[i])++;
     }
 
-    //         h#  | GC  | gen | C   | EX  | NF  | BF  | ML  | DM  || PreS | PostS | Merge | Conv | Pre | Post | PrPo | PreP | PostP |
-    cprintf (("%2d | %6d | %1d | %1s | %2s | %2s | %2s | %2s | %2s || %5Id | %5Id | %5Id | %5Id | %5Id | %5Id | %5Id | %5Id | %5Id |",
+    //         h#  | GC   | gen | C   | EX  | NF  | BF  | ML  | DM  || PreS | PostS | Merge | Conv | Pre | Post | PrPo | PreP | PostP |
+    cprintf (("%2d | %6zu | %1d | %1s | %2s | %2s | %2s | %2s | %2s || %5zu | %5zu | %5zu | %5zu | %5zu | %5zu | %5zu | %5zu | %5zu |",
             heap_number,
             (size_t)settings.gc_index,
             settings.condemned_generation,
@@ -1759,29 +1769,4 @@ void gc_heap::walk_heap (walk_fn fn, void* context, int gen_number, BOOL walk_la
 #endif //MULTIPLE_HEAPS
 }
 
-#ifdef FEATURE_BASICFREEZE
-void gc_heap::walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef)
-{
-    uint8_t *o = heap_segment_mem(seg);
-
-    int alignment = get_alignment_constant(TRUE);
-
-    while (o < heap_segment_allocated(seg))
-    {
-        pfnMethodTable(pvContext, o);
-
-        if (contain_pointers (o))
-        {
-            go_through_object_nostart (method_table (o), o, size(o), oo,
-                   {
-                       if (*oo)
-                           pfnObjRef(pvContext, oo);
-                   }
-            );
-        }
-
-        o += Align(size(o), alignment);
-    }
-}
-
-#endif //FEATURE_BASICFREEZE
+} // namespace WKS/SVR

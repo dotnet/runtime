@@ -4,6 +4,11 @@
 
 // If the nullable type has a null value, Value throws a System.InvalidOperationException
 
+namespace JitTest_Directed_nullabletypes_value;
+
+using JitTest_Directed_nullabletypes_invokecommon;
+using Xunit;
+
 #pragma warning disable 0168, 0649
 
 using System;
@@ -94,8 +99,9 @@ class NullableTest3
     }
 }
 
-class NullableTests
+public class NullableTests
 {
+    [Fact]
     public static void Run()
     {
         NullableTest1.Run();
@@ -103,4 +109,3 @@ class NullableTests
     }
 }
 //</Code>
-

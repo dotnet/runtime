@@ -5,6 +5,7 @@
 #include <cassert>
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <error_codes.h>
 #include <pal.h>
 #include <trace.h>
@@ -24,7 +25,6 @@
 #include "runtime_config.h"
 #include "sdk_info.h"
 #include "sdk_resolver.h"
-#include "roll_fwd_on_no_candidate_fx_option.h"
 #include "bundle/info.h"
 #include "install_info.h"
 
@@ -62,6 +62,70 @@ namespace
             hostpolicy_contract->unload();
 
         g_context_initializing_cv.notify_all();
+    }
+
+    // Try to load and invoke the AOT-ed SDK from the resolved SDK directory.
+    // Returns true if the AOT entry point was found and invoked, with the result in exit_code.
+    // Returns false if the AOT library is not available or cannot be used.
+    bool try_invoke_aot_sdk(
+        const host_startup_info_t& host_info,
+        const pal::string_t& sdk_dir,
+        const pal::string_t& sdk_root,
+        int argc,
+        const pal::char_t* argv[],
+        int* exit_code)
+    {
+        pal::string_t sdk_aot_path(sdk_dir);
+        append_path(&sdk_aot_path, LIB_FILE_NAME_X("dotnet-aot"));
+        if (!pal::file_exists(sdk_aot_path))
+            return false;
+
+        trace::verbose(_X("Found AOT-ed SDK [%s]"), sdk_aot_path.c_str());
+
+        pal::dll_t aot_dll = nullptr;
+        if (!pal::load_library(&sdk_aot_path, &aot_dll))
+            return false;
+
+        // See docs/design/features/sharedfx-lookup.md#sdk-search
+        typedef int (__stdcall *dotnet_execute_fn)(
+            const pal::char_t* host_path,
+            const pal::char_t* dotnet_root,
+            const pal::char_t* sdk_dir,
+            const pal::char_t* hostfxr_path,
+            int argc,
+            const pal::char_t** argv);
+
+        auto dotnet_execute = reinterpret_cast<dotnet_execute_fn>(pal::get_symbol(aot_dll, "dotnet_execute"));
+        if (dotnet_execute == nullptr)
+        {
+            trace::info(_X("AOT-ed SDK [%s] does not contain 'dotnet_execute' entry point."), sdk_aot_path.c_str());
+            pal::unload_library(aot_dll);
+            return false;
+        }
+
+        pal::string_t hostfxr_path;
+        if (!pal::get_own_module_path(&hostfxr_path))
+        {
+            trace::info(_X("Failed to determine hostfxr path."));
+            pal::unload_library(aot_dll);
+            return false;
+        }
+
+        const pal::char_t* dotnet_root = sdk_root.empty()
+            ? host_info.dotnet_root.c_str()
+            : sdk_root.c_str();
+
+        trace::info(_X("Using AOT-ed SDK=[%s]"), sdk_aot_path.c_str());
+
+        *exit_code = dotnet_execute(
+            host_info.host_path.c_str(),
+            dotnet_root,
+            sdk_dir.c_str(),
+            hostfxr_path.c_str(),
+            argc - 1, // skip 'dotnet' (first argument)
+            argv + 1);
+
+        return true;
     }
 }
 
@@ -272,7 +336,7 @@ namespace
         fx_definition_t& app,
         const pal::string_t& app_candidate,
         pal::string_t& runtime_config,
-        const runtime_config_t::settings_t& override_settings)
+        const std::optional<roll_forward_option>& override_roll_forward)
     {
         // Check for the runtimeconfig.json file specified at the command line
         if (!runtime_config.empty() && !pal::fullpath(&runtime_config))
@@ -294,7 +358,7 @@ namespace
             get_runtime_config_paths_from_arg(runtime_config, &config_file, &dev_config_file);
         }
 
-        app.parse_runtime_config(config_file, dev_config_file, override_settings);
+        app.parse_runtime_config(config_file, dev_config_file, override_roll_forward);
         if (!app.get_runtime_config().is_valid())
         {
             trace::error(_X("Invalid runtimeconfig.json [%s] [%s]"), app.get_runtime_config().get_path().c_str(), app.get_runtime_config().get_dev_path().c_str());
@@ -311,27 +375,8 @@ namespace
             return host_mode_t::apphost;
         }
 
-        if (coreclr_exists_in_dir(host_info.dotnet_root))
-        {
-            // Detect between standalone apphost or legacy split mode (specifying --depsfile and --runtimeconfig)
-
-            pal::string_t deps_in_dotnet_root = host_info.dotnet_root;
-            pal::string_t deps_filename = host_info.get_app_name() + _X(".deps.json");
-            append_path(&deps_in_dotnet_root, deps_filename.c_str());
-            bool deps_exists = pal::file_exists(deps_in_dotnet_root);
-
-            trace::info(_X("Detecting mode... CoreCLR present in dotnet root [%s] and checking if [%s] file present=[%d]"),
-                host_info.dotnet_root.c_str(), deps_filename.c_str(), deps_exists);
-
-            // Name of runtimeconfig file; since no path is included here the check is in the current working directory
-            pal::string_t config_in_cwd = host_info.get_app_name() + _X(".runtimeconfig.json");
-
-            return (deps_exists || !pal::file_exists(config_in_cwd)) && pal::file_exists(host_info.app_path) ? host_mode_t::apphost : host_mode_t::split_fx;
-        }
-
         if (pal::file_exists(host_info.app_path))
         {
-            // Framework-dependent apphost
             return host_mode_t::apphost;
         }
 
@@ -384,20 +429,7 @@ namespace
             return StatusCode::InvalidArgFailure;
         }
 
-        runtime_config_t::settings_t override_settings;
-
-        // `Roll forward` is set to Minor (2) (roll_forward_option::Minor) by default.
-        // For backward compatibility there are two settings:
-        //  - rollForward (the new one) which has more possible values
-        //  - rollForwardOnNoCandidateFx (the old one) with only 0-Off, 1-Minor, 2-Major
-        // It can be changed through:
-        // 1. Command line argument --roll-forward or --roll-forward-on-no-candidate-fx
-        // 2. DOTNET_ROLL_FORWARD env var.
-        // 3. Runtimeconfig json file ('rollForward' or 'rollForwardOnNoCandidateFx' property in "framework" section).
-        // 4. Runtimeconfig json file ('rollForward' or 'rollForwardOnNoCandidateFx' property in a "runtimeOptions" section).
-        // 5. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var.
-        // The conflicts will be resolved by following the priority rank described above (from 1 to 5, lower number wins over higher number).
-        // The env var condition is verified in the config file processing
+        std::optional<roll_forward_option> override_roll_forward;
 
         pal::string_t roll_forward = command_line::get_option_value(opts, known_options::roll_forward, _X(""));
         if (roll_forward.length() > 0)
@@ -409,29 +441,14 @@ namespace
                 return StatusCode::InvalidArgFailure;
             }
 
-            override_settings.set_roll_forward(val);
-        }
-
-        pal::string_t roll_fwd_on_no_candidate_fx = command_line::get_option_value(opts, known_options::roll_forward_on_no_candidate_fx, _X(""));
-        if (roll_fwd_on_no_candidate_fx.length() > 0)
-        {
-            if (override_settings.has_roll_forward)
-            {
-                trace::error(_X("It's invalid to use both '%s' and '%s' command line options."),
-                    command_line::get_option_name(known_options::roll_forward),
-                    command_line::get_option_name(known_options::roll_forward_on_no_candidate_fx));
-                return StatusCode::InvalidArgFailure;
-            }
-
-            auto val = static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str()));
-            override_settings.set_roll_forward(roll_fwd_on_no_candidate_fx_to_roll_forward(val));
+            override_roll_forward = val;
         }
 
         // Read config
         fx_definition_vector_t fx_definitions;
         auto app = new fx_definition_t();
         fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
-        int rc = read_config(*app, app_candidate, runtime_config, override_settings);
+        int rc = read_config(*app, app_candidate, runtime_config, override_roll_forward);
         if (rc != StatusCode::Success)
             return rc;
 
@@ -445,7 +462,7 @@ namespace
             pal::string_t fx_version_specified = command_line::get_option_value(opts, known_options::fx_version, _X(""));
             if (fx_version_specified.length() > 0)
             {
-                // This will also set roll forward defaults on the ref
+                // This also disables roll forward for the framework reference.
                 app_config.set_fx_version(fx_version_specified);
             }
 
@@ -458,19 +475,10 @@ namespace
                 pal::getenv(_X("DOTNET_ADDITIONAL_DEPS"), &additional_deps_serialized);
             }
 
-            // If invoking using FX dotnet.exe, use own directory.
-            if (mode == host_mode_t::split_fx)
+            rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_roll_forward, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : host_info.host_path.c_str());
+            if (rc != StatusCode::Success)
             {
-                auto fx = new fx_definition_t(app_config.get_frameworks()[0].get_fx_name(), host_info.dotnet_root, pal::string_t(), pal::string_t());
-                fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
-            }
-            else
-            {
-                rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_settings, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : host_info.host_path.c_str());
-                if (rc != StatusCode::Success)
-                {
-                    return rc;
-                }
+                return rc;
             }
         }
 
@@ -608,19 +616,19 @@ namespace
         auto app = new fx_definition_t();
         fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
 
-        const runtime_config_t::settings_t override_settings;
-        int rc = read_config(*app, host_info.app_path, runtime_config_path, override_settings);
+        const std::optional<roll_forward_option> override_roll_forward;
+        int rc = read_config(*app, host_info.app_path, runtime_config_path, override_roll_forward);
         if (rc != StatusCode::Success)
             return rc;
 
-        const runtime_config_t app_config = app->get_runtime_config();
+        const runtime_config_t& app_config = app->get_runtime_config();
         if (!app_config.get_is_framework_dependent())
         {
             trace::error(_X("Initialization for self-contained components is not supported"));
             return StatusCode::InvalidConfigFile;
         }
 
-        rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_settings, app_config, fx_definitions, host_info.host_path.c_str());
+        rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_roll_forward, app_config, fx_definitions, host_info.host_path.c_str());
         if (rc != StatusCode::Success)
             return rc;
 
@@ -650,12 +658,12 @@ namespace
     {
         // Read config
         fx_definition_t app;
-        const runtime_config_t::settings_t override_settings;
-        int rc = read_config(app, host_info.app_path, runtime_config_path, override_settings);
+        const std::optional<roll_forward_option> override_roll_forward;
+        int rc = read_config(app, host_info.app_path, runtime_config_path, override_roll_forward);
         if (rc != StatusCode::Success)
             return rc;
 
-        const runtime_config_t app_config = app.get_runtime_config();
+        const runtime_config_t& app_config = app.get_runtime_config();
         if (!app_config.get_is_framework_dependent())
         {
             trace::error(_X("Initialization for self-contained components is not supported"));
@@ -1116,6 +1124,18 @@ int fx_muxer_t::handle_cli(
         resolver.print_resolution_error(host_info.dotnet_root, _X("      "));
 
         return StatusCode::SdkResolveFailure;
+    }
+
+    // Try to use the AOT-ed SDK if available in the resolved SDK directory
+    int aot_exit_code;
+    if (try_invoke_aot_sdk(host_info, sdk_dotnet, sdk_root, argc, argv, &aot_exit_code))
+    {
+        if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
+        {
+            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file(), aot_exit_code == 0 /*skip_sdk_info_output*/);
+        }
+
+        return aot_exit_code;
     }
 
     append_path(&sdk_dotnet, SDK_DOTNET_DLL);

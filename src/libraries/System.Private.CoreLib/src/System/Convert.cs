@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -2294,7 +2294,7 @@ namespace System
 
         private static void ThrowInvalidBase() => throw new ArgumentException(SR.Arg_InvalidBase);
 
-        private static string ToOctalString(ulong value)
+        private static unsafe string ToOctalString(ulong value)
         {
             Span<char> chars = stackalloc char[22]; // max length of a ulong in octal
 

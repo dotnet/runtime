@@ -1915,7 +1915,7 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { "&o5", (decimal)5 };
             yield return new object[] { " &o5", (decimal)5 };
             yield return new object[] { "&o0", (decimal)0 };
-            yield return new object[] { 1.1.ToString(), (decimal)1.1 };
+            yield return new object[] { 1.1.ToString(), 1.1m };
             yield return new object[] { "18446744073709551616", 18446744073709551616.0m };
         }
 

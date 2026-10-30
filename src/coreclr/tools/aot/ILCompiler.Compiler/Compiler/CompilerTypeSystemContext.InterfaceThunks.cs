@@ -3,6 +3,7 @@
 
 using System;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.IL;
 using Internal.IL.Stubs;
@@ -137,8 +138,7 @@ namespace ILCompiler
             }
             protected override DefaultInterfaceMethodImplementationInstantiationThunk CreateValueFromKey(DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey key)
             {
-                TypeDesc owningTypeOfThunks = ((CompilerTypeSystemContext)key.TargetMethod.Context).GeneratedAssembly.GetGlobalModuleType();
-                return new DefaultInterfaceMethodImplementationInstantiationThunk(owningTypeOfThunks, key.TargetMethod, key.InterfaceIndex, key.UseContextFromRuntime);
+                return new DefaultInterfaceMethodImplementationInstantiationThunk(key.TargetMethod, key.InterfaceIndex, key.UseContextFromRuntime);
             }
         }
         private DefaultInterfaceMethodImplementationInstantiationThunkHashtable _dimThunkHashtable = new DefaultInterfaceMethodImplementationInstantiationThunkHashtable();
@@ -165,17 +165,16 @@ namespace ILCompiler
         private sealed partial class DefaultInterfaceMethodImplementationInstantiationThunk : ILStubMethod, IPrefixMangledMethod
         {
             private readonly MethodDesc _targetMethod;
-            private readonly TypeDesc _owningType;
             private readonly int _interfaceIndex;
             private readonly bool _useContextFromRuntime;
             private readonly byte[] _prefix;
+            private MethodSignature _signature;
 
-            public DefaultInterfaceMethodImplementationInstantiationThunk(TypeDesc owningType, MethodDesc targetMethod, int interfaceIndex, bool useContextFromRuntime)
+            public DefaultInterfaceMethodImplementationInstantiationThunk(MethodDesc targetMethod, int interfaceIndex, bool useContextFromRuntime)
             {
                 Debug.Assert(targetMethod.OwningType.IsInterface);
                 Debug.Assert(!targetMethod.Signature.IsStatic);
 
-                _owningType = owningType;
                 _targetMethod = targetMethod;
                 _interfaceIndex = interfaceIndex;
                 _useContextFromRuntime = useContextFromRuntime;
@@ -186,17 +185,33 @@ namespace ILCompiler
 
             public override TypeSystemContext Context => _targetMethod.Context;
 
-            public override TypeDesc OwningType => _owningType;
+            public override TypeDesc OwningType => Context.GetWellKnownType(WellKnownType.Object);
 
             public int InterfaceIndex => _interfaceIndex;
 
             public bool UseContextFromRuntime => _useContextFromRuntime;
 
-            public override MethodSignature Signature => _targetMethod.Signature;
+            public override MethodSignature Signature
+            {
+                get
+                {
+                    if (_signature == null)
+                    {
+                        MethodSignature signature = _targetMethod.Signature;
+                        if (_useContextFromRuntime)
+                        {
+                            signature = CreateSignatureWithSecretStubArgument(signature, signature.Flags);
+                        }
+                        _signature = signature;
+                    }
+
+                    return _signature;
+                }
+            }
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override ReadOnlySpan<byte> Name
+            public override Utf8Span Name
             {
                 get
                 {
@@ -226,7 +241,6 @@ namespace ILCompiler
 
                 FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8);
                 MethodDesc getOrdinalInterfaceMethod = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetOrdinalInterface"u8);
-                MethodDesc getCurrentContext = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetCurrentSharedThunkContext"u8);
 
                 // Load "this"
                 codeStream.EmitLdArg(0);
@@ -234,7 +248,7 @@ namespace ILCompiler
                 // Load the instantiating argument.
                 if (_useContextFromRuntime)
                 {
-                    codeStream.Emit(ILOpcode.call, emit.NewToken(getCurrentContext));
+                    codeStream.EmitLdArg(Signature.Length);
                 }
                 else
                 {

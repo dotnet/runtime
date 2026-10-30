@@ -781,6 +781,253 @@ namespace System.Text.Json.Serialization.Tests
             List<int> result = JsonSerializer.Deserialize<List<int>>(ref reader);
             Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], result);
         }
+
+        [Fact]
+        public static void ReaderPreservesPositionInfo()
+        {
+            var utf8 = """
+                    [
+                        42
+                    ]
+                    """u8.ToArray();
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8);
+
+                reader.Read();
+                reader.Read();
+
+                JsonSerializer.Deserialize<string>(ref reader);
+            });
+
+            Assert.Equal(1, ex.LineNumber);
+            Assert.Equal(6, ex.BytePositionInLine);
+        }
+
+        [Theory]
+        [InlineData("[  42]", typeof(string), 0, 5)]
+        [InlineData("[true]", typeof(string), 0, 5)]
+        [InlineData("[false]", typeof(string), 0, 6)]
+        [InlineData("[null]", typeof(int), 0, 5)]
+        [InlineData("[\"hello\"]", typeof(int), 0, 8)]
+        [InlineData("[{\"key\":1}]", typeof(string), 0, 2)]
+        [InlineData("[[1,2]]", typeof(string), 0, 2)]
+        public static void ReaderPreservesPositionInfoSingleLineTokens(
+            string json, Type deserializeType, long expectedLine, long expectedBytePosition)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
+                reader.Read();
+                reader.Read();
+
+                JsonSerializer.Deserialize(ref reader, deserializeType);
+            });
+
+            Assert.Equal(expectedLine, ex.LineNumber);
+            Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+        }
+
+        [Fact]
+        public static void ReaderPreservesPositionInfoNoneTokenType()
+        {
+            byte[] utf8 = "42"u8.ToArray();
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
+
+                JsonSerializer.Deserialize<string>(ref reader);
+            });
+
+            Assert.Equal(0, ex.LineNumber);
+            Assert.Equal(2, ex.BytePositionInLine);
+        }
+
+        [Fact]
+        public static void ReaderPreservesPositionInfoPropertyNameTokenType()
+        {
+            byte[] utf8 = "{\"val\": 42}"u8.ToArray();
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
+                reader.Read();
+                reader.Read();
+                Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+
+                JsonSerializer.Deserialize<string>(ref reader);
+            });
+
+            Assert.Equal(0, ex.LineNumber);
+            Assert.Equal(10, ex.BytePositionInLine);
+        }
+
+        [Fact]
+        public static void ReaderPreservesPositionInfoPropertyNameMultiLine()
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes("{\n  \"val\":\n  42\n}");
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
+                reader.Read();
+                reader.Read();
+                Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+
+                JsonSerializer.Deserialize<string>(ref reader);
+            });
+
+            Assert.Equal(2, ex.LineNumber);
+            Assert.Equal(4, ex.BytePositionInLine);
+        }
+
+        [Theory]
+        [InlineData("[1234]", 2, typeof(string), 0, 5)]
+        [InlineData("[true]", 3, typeof(string), 0, 5)]
+        [InlineData("[\"hello\"]", 4, typeof(int), 0, 8)]
+        [InlineData("[{\"key\":1}]", 5, typeof(string), 0, 2)]
+        public static void ReaderPreservesPositionInfoMultiSegment(string json, int splitAt, Type deserializeType, long expectedLine, long expectedBytePosition)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+            ReadOnlySequence<byte> sequence = JsonTestHelper.CreateSegments(utf8, splitAt);
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(sequence, isFinalBlock: true, state: default);
+                reader.Read();
+                reader.Read();
+
+                JsonSerializer.Deserialize(ref reader, deserializeType);
+            });
+
+            Assert.Equal(expectedLine, ex.LineNumber);
+            Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+        }
+
+        [Fact]
+        public static void ReaderPreservesPositionInfoMultiByteUtf8String()
+        {
+            // "😀葛🀄" occupies 11 bytes in UTF-8 (4 + 3 + 4),
+            // so the closing quote sits at byte index 13 and BytePositionInLine after the token is 14.
+            byte[] utf8 = Encoding.UTF8.GetBytes("[\"😀葛🀄\"]");
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
+                reader.Read();
+                reader.Read();
+                Assert.Equal(JsonTokenType.String, reader.TokenType);
+
+                JsonSerializer.Deserialize<int>(ref reader);
+            });
+
+            Assert.Equal(0, ex.LineNumber);
+            Assert.Equal(14, ex.BytePositionInLine);
+        }
+
+        [Theory]
+        [InlineData("[\n  {\"key\":1}\n]", typeof(string), 1, 3)]
+        [InlineData("[\n  [1, 2]\n]", typeof(string), 1, 3)]
+        public static void ReaderPreservesPositionInfoMultiLineContainer(
+            string json, Type deserializeType, long expectedLine, long expectedBytePosition)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
+                reader.Read();
+                reader.Read();
+                Assert.True(reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray);
+
+                JsonSerializer.Deserialize(ref reader, deserializeType);
+            });
+
+            Assert.Equal(expectedLine, ex.LineNumber);
+            Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+        }
+
+        [Theory]
+        [InlineData("[ /* comment */ 42 ]", typeof(string), 0, 18)]
+        [InlineData("[ // comment\n42 ]", typeof(string), 1, 2)]
+        [InlineData("[ /* comment */ true ]", typeof(int), 0, 20)]
+        [InlineData("[ /* comment */ false ]", typeof(int), 0, 21)]
+        [InlineData("[ /* comment */ null ]", typeof(int), 0, 20)]
+        [InlineData("[ /* comment */ \"hello\" ]", typeof(int), 0, 23)]
+        [InlineData("[ /* comment */ {\"key\":1} ]", typeof(string), 0, 17)]
+        [InlineData("[ /* comment */ [1,2] ]", typeof(string), 0, 17)]
+        [InlineData("[ /*\nmultiline\ncomment\n*/ 42 ]", typeof(string), 3, 5)]
+        [InlineData("[ /*\n*/ 42 ]", typeof(string), 1, 5)]
+        [InlineData("[ /*\nmultiline\n*/ {\"key\":1} ]", typeof(string), 2, 4)]
+        [InlineData("[ /*\nmultiline\n*/ [1,2] ]", typeof(string), 2, 4)]
+        [InlineData("[ /*\nmultiline\n*/ \"hello\" ]", typeof(int), 2, 10)]
+        public static void ReaderPreservesPositionInfoWithSkippedComments(
+            string json, Type deserializeType, long expectedLine, long expectedBytePosition)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+            var options = new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip };
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: new JsonReaderState(options));
+                reader.Read();
+                reader.Read();
+
+                JsonSerializer.Deserialize(ref reader, deserializeType);
+            });
+
+            Assert.Equal(expectedLine, ex.LineNumber);
+            Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+        }
+
+        [Theory]
+        [InlineData("{\"val\": /* comment */ 42}", 0, 24)]
+        [InlineData("{\"val\": // comment\n42}", 1, 2)]
+        [InlineData("{\"val\":\n/* comment */\n42}", 2, 2)]
+        [InlineData("{\"val\": /* comment */ {\"k\":1}}", 0, 23)]
+        public static void ReaderPreservesPositionInfoPropertyNameWithSkippedComments(
+            string json, long expectedLine, long expectedBytePosition)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+            var options = new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip };
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: new JsonReaderState(options));
+                reader.Read();
+                reader.Read();
+                Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+
+                JsonSerializer.Deserialize<string>(ref reader);
+            });
+
+            Assert.Equal(expectedLine, ex.LineNumber);
+            Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+        }
+
+        [Theory]
+        [InlineData("/* comment */ 42", 0, 16)]
+        [InlineData("/*\ncomment\n*/ 42", 2, 5)]
+        public static void ReaderPreservesPositionInfoWithCommentBeforeNoneToken(
+            string json, long expectedLine, long expectedBytePosition)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+            var options = new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip };
+
+            JsonException ex = Assert.Throws<JsonException>(() =>
+            {
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: new JsonReaderState(options));
+
+                JsonSerializer.Deserialize<string>(ref reader);
+            });
+
+            Assert.Equal(expectedLine, ex.LineNumber);
+            Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+        }
     }
 
     // From https://github.com/dotnet/runtime/issues/882

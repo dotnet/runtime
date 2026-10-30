@@ -8,6 +8,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -17,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// with the class constructor context if the type has a class constructor that
     /// needs to be triggered before the type members can be accessed.
     /// </summary>
-    public class NonGCStaticsNode : DehydratableObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
+    public class NonGCStaticsNode : DehydratableObjectNode, ISymbolDefinitionNode, ISortableSymbolNode, IObjectNodeWithAlignment
     {
         private readonly MetadataType _type;
         private readonly PreinitializationManager _preinitializationManager;
@@ -143,34 +144,37 @@ namespace ILCompiler.DependencyAnalysis
             return target.PointerSize;
         }
 
+        public int GetAlignment(NodeFactory factory)
+        {
+            // The non-GC static region is aligned to the largest static field's alignment, which
+            // can be smaller than the pointer size for byte-packed layouts. When a cctor context
+            // is prefixed, the region additionally needs pointer alignment for that context.
+            // Keep this in sync with the alignment applied in GetDehydratableData.
+            int fieldAlignment = _type.NonGCStaticFieldAlignment.AsInt;
+            return HasCCtorContext ? Math.Max(fieldAlignment, GetClassConstructorContextAlignment(factory.Target)) : fieldAlignment;
+        }
+
         public override bool HasConditionalStaticDependencies => _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             // If we have a type loader template for this type, we need to keep track of the generated
             // bases in the type info hashtable. The type symbol node does such accounting.
-            return new CombinedDependencyListEntry[]
-            {
+            sink.Add(
                 new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
                     factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
-                    "Keeping track of template-constructable type static bases"),
-            };
+                    "Keeping track of template-constructable type static bases"));
         }
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencyList = new DependencyList();
-
             if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
             {
-                dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
+                sink.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
-
-            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, _type.Module);
-
-            return dependencyList;
+            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(sink, factory, _type.Module);
         }
 
         private static bool IsNonGcStaticField(FieldDesc field)
@@ -184,9 +188,8 @@ namespace ILCompiler.DependencyAnalysis
             // by System.Runtime.CompilerServices.StaticClassConstructionContext struct.
             if (HasCCtorContext)
             {
-                int alignmentRequired = Math.Max(_type.NonGCStaticFieldAlignment.AsInt, GetClassConstructorContextAlignment(_type.Context.Target));
                 int classConstructorContextStorageSize = GetClassConstructorContextStorageSize(factory.Target, _type);
-                builder.RequireInitialAlignment(alignmentRequired);
+                builder.RequireInitialAlignment(GetAlignment(factory));
 
                 Debug.Assert(classConstructorContextStorageSize >= GetClassConstructorContextSize(_type.Context.Target));
 
@@ -211,7 +214,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                builder.RequireInitialAlignment(_type.NonGCStaticFieldAlignment.AsInt);
+                builder.RequireInitialAlignment(GetAlignment(factory));
             }
 
             if (_preinitializationManager.IsPreinitialized(_type))

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Text;
 
@@ -31,7 +30,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // not be the canonical scope representing the assembly. We need to look up the assembly
                 // by name to ensure we get the right one.
 
-                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceChain.DefiningScope;
+                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceDefinition.Scope;
                 RuntimeAssemblyName runtimeAssemblyName = scopeDefinitionHandle.ToRuntimeAssemblyName(_reader);
 
                 return RuntimeAssemblyInfo.GetRuntimeAssembly(runtimeAssemblyName);
@@ -50,7 +49,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // Otherwise fall back to attributes
                 foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
                 {
-                    if (cah.IsCustomAttributeOfType(_reader, ["System", "Runtime", "CompilerServices"], "IsByRefLikeAttribute"))
+                    if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.CompilerServices", "IsByRefLikeAttribute"))
                         return true;
                 }
                 return false;
@@ -68,7 +67,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // Following age-old CLR tradition, we search for the custom attribute using a name-based search. Since this makes it harder
                 // to be sure we won't run into custom attribute constructors that comply with the GuidAttribute(String) signature,
                 // we'll check that it does and silently skip the CA if it doesn't match the expected pattern.
-                if (cah.IsCustomAttributeOfType(_reader, ["System", "Runtime", "InteropServices"], "GuidAttribute"))
+                if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.InteropServices", "GuidAttribute"))
                 {
                     CustomAttribute ca = cah.GetCustomAttribute(_reader);
                     HandleCollection.Enumerator fahEnumerator = ca.FixedArguments.GetEnumerator();
@@ -107,7 +106,13 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                return NamespaceChain.NameSpace.EscapeTypeNameIdentifier();
+                string ns = _lazyNamespace;
+                if (ns is null)
+                {
+                    ns = NamespaceDefinition.Name.GetStringOrNull(_reader).EscapeTypeNameIdentifier() ?? string.Empty;
+                    _lazyNamespace = ns;
+                }
+                return ns.Length == 0 ? null : ns;
             }
         }
 
@@ -167,10 +172,10 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             get
             {
                 RuntimeTypeInfo? declaringType = null;
-                TypeDefinitionHandle enclosingTypeDefHandle = _typeDefinition.EnclosingType;
-                if (!enclosingTypeDefHandle.IsNil)
+                Handle namespaceOrEnclosingType = _typeDefinition.NamespaceOrEnclosingType;
+                if (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
                 {
-                    declaringType = enclosingTypeDefHandle.ResolveTypeDefinition(_reader);
+                    declaringType = namespaceOrEnclosingType.ToTypeDefinitionHandle(_reader).ResolveTypeDefinition(_reader);
                 }
                 return declaringType;
             }
@@ -180,8 +185,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                NamespaceChain namespaceChain = NamespaceChain;
-                ScopeDefinitionHandle scopeDefinitionHandle = namespaceChain.DefiningScope;
+                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceDefinition.Scope;
                 return scopeDefinitionHandle.ToRuntimeAssemblyName(_reader).FullName;
             }
         }
@@ -197,7 +201,66 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.CustomAttributes);
+        internal sealed override MetadataReader GetMetadataReader() => _reader;
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _typeDefinition.CustomAttributes;
+
+        public sealed override Type? GetNullableUnderlyingType()
+        {
+            return (this.ToType() == typeof(Nullable<>)) ? RuntimeGenericTypeParameters[0].ToType() : null;
+        }
+
+        internal sealed override void GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags)
+        {
+            Debug.Assert(IsActualEnum);
+
+            // Count the number of static fields. The single instance field may or may not have metadata,
+            // so using `_typeDefinition.Fields.Count - 1` is not reliable.
+            int staticFieldCount = 0;
+            foreach (FieldHandle fieldHandle in _typeDefinition.Fields)
+            {
+                Field field = fieldHandle.GetField(_reader);
+                if (0 != (field.Flags & FieldAttributes.Static))
+                    staticFieldCount++;
+            }
+
+            unsortedNames = new string[staticFieldCount];
+            unsortedValues = new object[staticFieldCount];
+
+            int i = 0;
+            foreach (FieldHandle fieldHandle in _typeDefinition.Fields)
+            {
+                Field field = fieldHandle.GetField(_reader);
+                if (0 != (field.Flags & FieldAttributes.Static))
+                {
+                    unsortedNames[i] = field.Name.GetString(_reader);
+                    Handle handle = field.DefaultValue;
+                    unsortedValues[i] = handle.HandleType switch
+                    {
+                        HandleType.ConstantSByteValue => (object)(byte)handle.ToConstantSByteValueHandle(_reader).GetConstantSByteValue(_reader).Value,
+                        HandleType.ConstantByteValue => handle.ToConstantByteValueHandle(_reader).GetConstantByteValue(_reader).Value,
+                        HandleType.ConstantInt16Value => (ushort)handle.ToConstantInt16ValueHandle(_reader).GetConstantInt16Value(_reader).Value,
+                        HandleType.ConstantUInt16Value => handle.ToConstantUInt16ValueHandle(_reader).GetConstantUInt16Value(_reader).Value,
+                        HandleType.ConstantInt32Value => (uint)handle.ToConstantInt32ValueHandle(_reader).GetConstantInt32Value(_reader).Value,
+                        HandleType.ConstantUInt32Value => handle.ToConstantUInt32ValueHandle(_reader).GetConstantUInt32Value(_reader).Value,
+                        HandleType.ConstantInt64Value => (ulong)handle.ToConstantInt64ValueHandle(_reader).GetConstantInt64Value(_reader).Value,
+                        HandleType.ConstantUInt64Value => handle.ToConstantUInt64ValueHandle(_reader).GetConstantUInt64Value(_reader).Value,
+                        _ => throw new InvalidOperationException(),
+                    };
+                    i++;
+                }
+            }
+
+            isFlags = false;
+            foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
+            {
+                if (cah.IsCustomAttributeOfType(_reader, "System", "FlagsAttribute"))
+                {
+                    isFlags = true;
+                    break;
+                }
+            }
+        }
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {
@@ -311,14 +374,21 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         private readonly TypeDefinitionHandle _typeDefinitionHandle;
         private readonly TypeDefinition _typeDefinition;
 
-        private NamespaceChain NamespaceChain
+        private NamespaceDefinition NamespaceDefinition
         {
             get
             {
-                return _lazyNamespaceChain ??= new NamespaceChain(_reader, _typeDefinition.NamespaceDefinition);
+                Handle namespaceOrEnclosingType = _typeDefinition.NamespaceOrEnclosingType;
+                while (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
+                {
+                    TypeDefinition typeDefinition = namespaceOrEnclosingType.ToTypeDefinitionHandle(_reader).GetTypeDefinition(_reader);
+                    namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
+                }
+
+                return namespaceOrEnclosingType.ToNamespaceDefinitionHandle(_reader).GetNamespaceDefinition(_reader);
             }
         }
 
-        private volatile NamespaceChain _lazyNamespaceChain;
+        private volatile string _lazyNamespace;
     }
 }

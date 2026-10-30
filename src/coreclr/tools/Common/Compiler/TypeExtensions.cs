@@ -29,7 +29,11 @@ namespace ILCompiler
         /// </summary>
         public static DefType GetClosestDefType(this TypeDesc type)
         {
+#if ILTRIM
+            return type.IsArray ? type.Context.GetWellKnownType(WellKnownType.Array) : (DefType)type;
+#else
             return ((CompilerTypeSystemContext)type.Context).GetClosestDefType(type);
+#endif
         }
 
         /// <summary>

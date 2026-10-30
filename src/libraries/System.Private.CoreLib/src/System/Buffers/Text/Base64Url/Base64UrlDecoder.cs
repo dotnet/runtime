@@ -3,11 +3,13 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 #endif
 using static System.Buffers.Text.Base64Helper;
@@ -22,7 +24,7 @@ namespace System.Buffers.Text
         private const int MaxStackallocThreshold = 256;
 
         /// <summary>
-        /// Returns the maximum length (in bytes) of the result if you were to decode base 64 encoded text from a span of size <paramref name="base64Length"/>.
+        /// Returns the maximum length (in bytes) of the result if you were to decode Base64Url-encoded text from a span of size <paramref name="base64Length"/>.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="base64Length"/> is less than 0.
         /// </exception>
@@ -53,7 +55,7 @@ namespace System.Buffers.Text
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="bytesConsumed">When this method returns, contains the number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
-        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow,
+        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to decode; <see langword="false"/> when more data may follow,
         /// such as when calling in a loop. Calls with <see langword="false"/> should be followed up with another call where this parameter is <see langword="true"/> call. The default is <see langword="true" />.</param>
         /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         /// <remarks>
@@ -70,7 +72,7 @@ namespace System.Buffers.Text
         /// Decodes the span of UTF-8 encoded text in Base64Url into binary data, in-place.
         /// The decoded binary output is smaller than the text data contained in the input (the operation deflates the data).
         /// </summary>
-        /// <param name="buffer">The input span which contains the base 64 text data that needs to be decoded.</param>
+        /// <param name="buffer">The input span which contains the Base64Url text data that needs to be decoded.</param>
         /// <returns>The number of bytes written into <paramref name="buffer"/>. This can be used to slice the output for subsequent calls, if necessary.</returns>
         /// <exception cref="FormatException"><paramref name="buffer"/> contains an invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
@@ -102,7 +104,7 @@ namespace System.Buffers.Text
         /// <param name="source">The input span which contains UTF-8 encoded text in Base64Url that needs to be decoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <returns>The number of bytes written into <paramref name="destination"/>. This can be used to slice the output for subsequent calls, if necessary.</returns>
-        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the encoded output.</exception>
+        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the decoded output.</exception>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
         /// <remarks>
@@ -156,10 +158,10 @@ namespace System.Buffers.Text
         /// Decodes the span of UTF-8 encoded text represented as Base64Url into binary data.
         /// </summary>
         /// <param name="source">The input span which contains UTF-8 encoded text in Base64Url that needs to be decoded.</param>
-        /// <returns>>A byte array which contains the result of the decoding operation.</returns>
+        /// <returns>A byte array which contains the result of the decoding operation.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
-        public static byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
+        public static unsafe byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
         {
             int upperBound = GetMaxDecodedLength(source.Length);
             byte[]? rented = null;
@@ -187,7 +189,7 @@ namespace System.Buffers.Text
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="charsConsumed">When this method returns, contains the number of input chars consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
-        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow,
+        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to decode; <see langword="false"/> when more data may follow,
         /// such as when calling in a loop. Calls with <see langword="false"/> should be followed up with another call where this parameter is <see langword="true"/> call. The default is <see langword="true" />.</param>
         /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         /// <remarks>
@@ -208,7 +210,7 @@ namespace System.Buffers.Text
         /// <param name="source">The input span which contains ASCII chars in Base64Url that needs to be decoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <returns>The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</returns>
-        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the encoded output.</exception>
+        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the decoded output.</exception>
         /// <exception cref="FormatException"><paramref name="source"/> contains a invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
         public static int DecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination)
@@ -257,7 +259,7 @@ namespace System.Buffers.Text
         /// <returns>A byte array which contains the result of the decoding operation.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains a invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
-        public static byte[] DecodeFromChars(ReadOnlySpan<char> source)
+        public static unsafe byte[] DecodeFromChars(ReadOnlySpan<char> source)
         {
             int upperBound = GetMaxDecodedLength(source.Length);
             byte[]? rented = null;
@@ -375,6 +377,7 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public bool TryDecode128Core(
                 Vector128<byte> str,
                 Vector128<byte> hiNibbles,
@@ -445,36 +448,30 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe bool TryLoadVector512(byte* src, byte* srcStart, int sourceLength, out Vector512<sbyte> str) =>
                 default(Base64DecoderByte).TryLoadVector512(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(Avx2))]
-            [RequiresUnsafe]
             public unsafe bool TryLoadAvxVector256(byte* src, byte* srcStart, int sourceLength, out Vector256<sbyte> str) =>
                 default(Base64DecoderByte).TryLoadAvxVector256(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe bool TryLoadVector128(byte* src, byte* srcStart, int sourceLength, out Vector128<byte> str) =>
                 default(Base64DecoderByte).TryLoadVector128(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-            [RequiresUnsafe]
             public unsafe bool TryLoadArmVector128x4(byte* src, byte* srcStart, int sourceLength,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4) =>
                 default(Base64DecoderByte).TryLoadArmVector128x4(src, srcStart, sourceLength, out str1, out str2, out str3, out str4);
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe int DecodeFourElements(byte* source, ref sbyte decodingMap) =>
                 default(Base64DecoderByte).DecodeFourElements(source, ref decodingMap);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe int DecodeRemaining(byte* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3) =>
                 default(Base64DecoderByte).DecodeRemaining(srcEnd, ref decodingMap, remaining, out t2, out t3);
 
@@ -482,6 +479,7 @@ namespace System.Buffers.Text
             public int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<byte> span) => default(Base64DecoderByte).IndexOfAnyExceptWhiteSpace(span);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [SuppressReadyToRunCanonicalRooting]
             public OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> utf8, Span<byte> bytes,
                 ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : IBase64Decoder<byte> =>
                 DecodeWithWhiteSpaceBlockwise(decoder, utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
@@ -525,6 +523,7 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public bool TryDecode128Core(Vector128<byte> str, Vector128<byte> hiNibbles, Vector128<byte> maskSlashOrUnderscore, Vector128<byte> mask8F,
                 Vector128<byte> lutLow, Vector128<byte> lutHigh, Vector128<sbyte> lutShift, Vector128<byte> shiftForUnderscore, out Vector128<byte> result) =>
                 default(Base64UrlDecoderByte).TryDecode128Core(str, hiNibbles, maskSlashOrUnderscore, mask8F, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);
@@ -536,36 +535,30 @@ namespace System.Buffers.Text
                 default(Base64UrlDecoderByte).TryDecode256Core(str, hiNibbles, maskSlashOrUnderscore, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe bool TryLoadVector512(ushort* src, ushort* srcStart, int sourceLength, out Vector512<sbyte> str) =>
                 default(Base64DecoderChar).TryLoadVector512(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(Avx2))]
-            [RequiresUnsafe]
             public unsafe bool TryLoadAvxVector256(ushort* src, ushort* srcStart, int sourceLength, out Vector256<sbyte> str) =>
                 default(Base64DecoderChar).TryLoadAvxVector256(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe bool TryLoadVector128(ushort* src, ushort* srcStart, int sourceLength, out Vector128<byte> str) =>
                 default(Base64DecoderChar).TryLoadVector128(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-            [RequiresUnsafe]
             public unsafe bool TryLoadArmVector128x4(ushort* src, ushort* srcStart, int sourceLength,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4) =>
                 default(Base64DecoderChar).TryLoadArmVector128x4(src, srcStart, sourceLength, out str1, out str2, out str3, out str4);
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe int DecodeFourElements(ushort* source, ref sbyte decodingMap) =>
                 default(Base64DecoderChar).DecodeFourElements(source, ref decodingMap);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [RequiresUnsafe]
             public unsafe int DecodeRemaining(ushort* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3) =>
                 default(Base64DecoderChar).DecodeRemaining(srcEnd, ref decodingMap, remaining, out t2, out t3);
 
@@ -573,6 +566,7 @@ namespace System.Buffers.Text
             public int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<ushort> span) => default(Base64DecoderChar).IndexOfAnyExceptWhiteSpace(span);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [SuppressReadyToRunCanonicalRooting]
             public OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source, Span<byte> bytes,
                 ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : IBase64Decoder<ushort> =>
                 DecodeWithWhiteSpaceBlockwise(decoder, source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);

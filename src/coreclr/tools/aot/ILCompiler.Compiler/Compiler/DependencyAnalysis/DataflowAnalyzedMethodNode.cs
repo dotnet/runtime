@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
     public class DataflowAnalyzedMethodNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MethodIL _methodIL;
-        private List<INodeWithRuntimeDeterminedDependencies> _runtimeDependencies;
+        private List<(MethodDesc OwningMethod, INodeWithRuntimeDeterminedDependencies Dependency)> _runtimeDependencies;
 
         public DataflowAnalyzedMethodNode(MethodIL methodIL)
         {
@@ -28,43 +28,49 @@ namespace ILCompiler.DependencyAnalysis
             _methodIL = methodIL;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
             try
             {
-                return Dataflow.ReflectionMethodBodyScanner.ScanAndProcessReturnValue(factory, mdManager.FlowAnnotations, mdManager.Logger, _methodIL, out _runtimeDependencies);
+                foreach (DependencyListEntry dependency in Dataflow.ReflectionMethodBodyScanner.ScanAndProcessReturnValue(factory, mdManager.FlowAnnotations, mdManager.Logger, _methodIL, out _runtimeDependencies))
+                {
+                    sink.Add(dependency);
+                }
             }
             catch (TypeSystemException)
             {
                 // Something wrong with the input - missing references, etc.
                 // The method body likely won't compile either, so we don't care.
-                _runtimeDependencies = new List<INodeWithRuntimeDeterminedDependencies>();
-                return Array.Empty<DependencyListEntry>();
+                _runtimeDependencies = new List<(MethodDesc, INodeWithRuntimeDeterminedDependencies)>();
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory)
         {
-            MethodDesc analyzedMethod = _methodIL.OwningMethod;
-
-            // Look for any generic specialization of this method. If any are found, specialize any dataflow dependencies.
+            // Look for any generic specialization of this method or its compiler-generated callees (local methods, lambdas).
+            // If any are found, specialize the dataflow dependencies that originated from that method.
             for (int i = firstNode; i < markedNodes.Count; i++)
             {
                 if (markedNodes[i] is not IMethodBodyNode methodBody)
                     continue;
 
                 MethodDesc method = methodBody.Method;
-                if (method.GetTypicalMethodDefinition() != analyzedMethod)
-                    continue;
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
 
-                // Instantiate all runtime dependencies for the found generic specialization
+                // Instantiate runtime dependencies whose owning method matches this method body's typical definition
                 foreach (var n in _runtimeDependencies)
                 {
-                    foreach (var d in n.InstantiateDependencies(factory, method.OwningType.Instantiation, method.Instantiation, isConcreteInstantiation: !method.IsSharedByGenericInstantiations))
-                    {
-                        yield return new CombinedDependencyListEntry(d.Node, null, d.Reason);
-                    }
+                    if (n.OwningMethod != typicalMethod)
+                        continue;
+
+                    n.Dependency.AddDependencies(
+                        sink,
+                        factory,
+                        method.OwningType.Instantiation,
+                        method.Instantiation,
+                        isConcreteInstantiation: !method.IsSharedByGenericInstantiations,
+                        otherReasonNode: null);
                 }
             }
         }
@@ -78,6 +84,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => _runtimeDependencies.Count > 0;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
     }
 }

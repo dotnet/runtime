@@ -28,7 +28,7 @@
 
 #include "daccess.h"
 
-GPTR_IMPL(MethodTable, g_pFreeObjectEEType);
+GPTR_IMPL(MethodTable, g_pFreeObjectMethodTable);
 
 #ifndef DACCESS_COMPILE
 
@@ -52,7 +52,7 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     FireEtwGCSuspendEEEnd_V1(GetClrInstanceId());
 }
 
-void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
+void GCToEEInterface::RestartEE(bool /* bUnused */)
 {
     FireEtwGCRestartEEBegin_V1(GetClrInstanceId());
 
@@ -71,8 +71,6 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
     GetThreadStore()->ResumeAllThreads(true);
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(FALSE);
     GetThreadStore()->UnlockThreadStore();
-
-    FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 }
 
 void GCToEEInterface::GcStartWork(int condemned, int /*max_gen*/)
@@ -539,6 +537,7 @@ bool GCToEEInterface::WasCurrentThreadCreatedByGC()
     return ThreadStore::RawGetCurrentThread()->IsGCSpecial();
 }
 
+#ifdef FEATURE_MULTITHREADING
 struct ThreadStubArguments
 {
     void (*m_pRealStartRoutine)(void*);
@@ -568,7 +567,9 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
             delete threadStubArgs;
             return false;
         }
-        strcpy(name_copy, name);
+
+        memcpy(name_copy, name, name_length);
+        name_copy[name_length] = '\0';
         threadStubArgs->m_name = name_copy;
     }
 
@@ -582,6 +583,8 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
             PalSetCurrentThreadName(pStartContext->m_name);
             auto realStartRoutine = pStartContext->m_pRealStartRoutine;
             void* realContext = pStartContext->m_pRealContext;
+
+            delete[] pStartContext->m_name;
             delete pStartContext;
 
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
@@ -600,9 +603,11 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
 
     return true;
 }
+#endif // FEATURE_MULTITHREADING
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
+#ifdef FEATURE_MULTITHREADING
     if (!is_suspendable)
         return CreateNonSuspendableThread(threadStart, arg, name);
 
@@ -650,11 +655,14 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
         return false;
     }
 
-    uint32_t res = threadStubArgs.m_ThreadStartedEvent.Wait(INFINITE, FALSE);
+    uint32_t res = threadStubArgs.m_ThreadStartedEvent.Wait(INFINITE, FALSE, false);
     threadStubArgs.m_ThreadStartedEvent.CloseEvent();
     ASSERT(res == WAIT_OBJECT_0);
 
     return true;
+#else
+    return false;
+#endif // FEATURE_MULTITHREADING
 }
 
 // NativeAOT does not use async pinned handles
@@ -720,8 +728,8 @@ void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint
 
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
-    assert(g_pFreeObjectEEType != nullptr);
-    return (MethodTable*)g_pFreeObjectEEType;
+    assert(g_pFreeObjectMethodTable != nullptr);
+    return (MethodTable*)g_pFreeObjectMethodTable;
 }
 
 bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value)
@@ -797,22 +805,37 @@ uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
 
 bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
-    UNREFERENCED_PARAMETER(privateKey);
-    UNREFERENCED_PARAMETER(publicKey);
-    UNREFERENCED_PARAMETER(value);
+    if (g_pRhConfig->ReadStringConfigValue(privateKey, value))
+    {
+        return true;
+    }
+
+    if (publicKey)
+    {
+        return g_pRhConfig->ReadKnobStringValue(publicKey, value);
+    }
 
     return false;
 }
 
 void GCToEEInterface::FreeStringConfigValue(const char* value)
 {
-    delete[] value;
+    g_pRhConfig->FreeStringConfigValue(value);
 }
 
 void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
 {
 #ifdef FEATURE_JAVAMARSHAL
     JavaMarshalNative::TriggerClientBridgeProcessing(args);
+#endif
+}
+
+bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+#ifdef FEATURE_JAVAMARSHAL
+    return JavaMarshalNative::IsGCBridgeActive();
+#else
+    return false;
 #endif
 }
 

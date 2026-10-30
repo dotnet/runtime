@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <PropertyGroup>
+    <TargetFramework Condition="'$(WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK)' == ''">net12.0</TargetFramework>
+    <TargetFramework Condition="'$(WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK)' != ''">$(WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK)</TargetFramework>
+    <StaticWebAssetBasePath>client1</StaticWebAssetBasePath>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="11.0.0-preview.4.26211.102" />
+  </ItemGroup>
+</Project>

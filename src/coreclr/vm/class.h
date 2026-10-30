@@ -27,7 +27,7 @@
 /*
  *  Include Files
  */
-#include "eecontract.h"
+#include <contract.h>
 #include "argslot.h"
 #include "vars.hpp"
 #include "cor.h"
@@ -77,7 +77,7 @@ class   MethodDescChunk;
 class   MethodTable;
 class   Module;
 class   Object;
-class   Stub;
+enum class AsyncMethodFlags;
 class   Substitution;
 class   SystemDomain;
 class   TypeHandle;
@@ -364,6 +364,9 @@ class EEClassLayoutInfo
             e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT = 0x10,
             // Type type recursively has a field which is an Int128
             e_IS_OR_HAS_INT128_FIELD          = 0x20,
+            // The type recursively has a field which is a decimal floating-point type
+            // (Decimal32/Decimal64/Decimal128).
+            e_IS_OR_HAS_DECIMAL_FIELD         = 0x40,
         };
 
         LayoutType m_LayoutType;
@@ -418,6 +421,12 @@ class EEClassLayoutInfo
             return (m_bFlags & e_IS_OR_HAS_INT128_FIELD) == e_IS_OR_HAS_INT128_FIELD;
         }
 
+        BOOL IsDecimalFloatingPointOrHasDecimalFloatingPointFields() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_bFlags & e_IS_OR_HAS_DECIMAL_FIELD) == e_IS_OR_HAS_DECIMAL_FIELD;
+        }
+
         BYTE GetAlignmentRequirement() const
         {
             LIMITED_METHOD_CONTRACT;
@@ -449,6 +458,13 @@ class EEClassLayoutInfo
             LIMITED_METHOD_CONTRACT;
             m_bFlags = hasInt128Field ? (m_bFlags | e_IS_OR_HAS_INT128_FIELD)
                                        : (m_bFlags & ~e_IS_OR_HAS_INT128_FIELD);
+        }
+
+        void SetIsDecimalFloatingPointOrHasDecimalFloatingPointFields(BOOL hasDecimalField)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = hasDecimalField ? (m_bFlags | e_IS_OR_HAS_DECIMAL_FIELD)
+                                       : (m_bFlags & ~e_IS_OR_HAS_DECIMAL_FIELD);
         }
 
         void SetHasExplicitSize(BOOL hasExplicitSize)
@@ -533,9 +549,19 @@ class EEClassLayoutInfo
             Align8 = 0x4,
             AutoLayout = 0x8,
             Int128 = 0x10,
+            DecimalFloatingPoint = 0x20,
         };
 
         static NestedFieldFlags GetNestedFieldFlags(Module* pModule, FieldDesc *pFD, ULONG cFields, CorNativeLinkType nlType, MethodTable** pByValueClassCache);
+
+        friend struct ::cdac_data<EEClassLayoutInfo>;
+};
+
+template<> struct cdac_data<EEClassLayoutInfo>
+{
+    static constexpr size_t LayoutType = offsetof(EEClassLayoutInfo, m_LayoutType);
+    static constexpr size_t AlignmentRequirement = offsetof(EEClassLayoutInfo, m_ManagedLargestAlignmentRequirementOfAllMembers);
+    static constexpr size_t Flags = offsetof(EEClassLayoutInfo, m_bFlags);
 };
 
 //
@@ -612,6 +638,7 @@ class EEClassOptionalFields
     // for MethodTableBuilder and NativeImageDumper, which need raw field-level access.
     friend class EEClass;
     friend class MethodTableBuilder;
+    friend struct ::cdac_data<EEClassOptionalFields>;
 
     //
     // GENERICS RELATED FIELDS.
@@ -792,6 +819,9 @@ private:
         mdMethodDef methodDef,
         DWORD dwImplFlags,
         DWORD dwMemberAttrs,
+        AsyncMethodFlags asyncFlags,
+        PCCOR_SIGNATURE pAsyncSig,
+        DWORD cbAsyncSig,
         MethodDesc** ppNewMD);
 public:
     // Add a new field to an already loaded type for EnC
@@ -1371,6 +1401,9 @@ public:
     // Only accurate on non-auto layout types
     BOOL IsInt128OrHasInt128Fields();
 
+    // Only accurate on non-auto layout types
+    BOOL IsDecimalFloatingPointOrHasDecimalFloatingPointFields();
+
     static void GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL *pfThrowOnUnmappableChar);
 
     /*
@@ -1411,14 +1444,18 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef DACCESS_COMPILE
         return m_pGuidInfo;
+#else
+        return VolatileLoad(&m_pGuidInfo);
+#endif
     }
 
     inline void SetGuidInfo(GuidInfo* pGuidInfo)
     {
         WRAPPER_NO_CONTRACT;
         #ifndef DACCESS_COMPILE
-        m_pGuidInfo = pGuidInfo;
+        VolatileStore(&m_pGuidInfo, pGuidInfo);
         #endif // DACCESS_COMPILE
     }
 
@@ -1514,7 +1551,7 @@ public:
     {
         SUPPORTS_DAC;
         WRAPPER_NO_CONTRACT;
-        return HasOptionalFields() ? GetOptionalFields()->m_pDictLayout : NULL;
+        return HasOptionalFields() ? VolatileLoad(&GetOptionalFields()->m_pDictLayout) : NULL;
     }
 
     void SetDictionaryLayout(PTR_DictionaryLayout pLayout)
@@ -1522,7 +1559,7 @@ public:
         SUPPORTS_DAC;
         WRAPPER_NO_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_pDictLayout = pLayout;
+        VolatileStore(&GetOptionalFields()->m_pDictLayout, pLayout);
     }
 
 #ifndef DACCESS_COMPILE
@@ -1780,6 +1817,16 @@ template<> struct cdac_data<EEClass>
     static constexpr size_t NumStaticFields = offsetof(EEClass, m_NumStaticFields);
     static constexpr size_t NumThreadStaticFields = offsetof(EEClass, m_NumThreadStaticFields);
     static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
+    static constexpr size_t BaseSizePadding = offsetof(EEClass, m_cbBaseSizePadding);
+    static constexpr size_t OptionalFields = offsetof(EEClass, m_rpOptionalFields);
+    static constexpr size_t VMFlags = offsetof(EEClass, m_VMFlags);
+};
+
+template<> struct cdac_data<EEClassOptionalFields>
+{
+#if defined(UNIX_AMD64_ABI)
+    static constexpr size_t EightByteRegistersInfo = offsetof(EEClassOptionalFields, m_eightByteRegistersInfo);
+#endif // UNIX_AMD64_ABI
 };
 
 // --------------------------------------------------------------------------------------------
@@ -1854,27 +1901,23 @@ public:
 #endif // !DACCESS_COMPILE
 };
 
-class UMThunkMarshInfo;
+template<> struct cdac_data<LayoutEEClass>
+{
+    static constexpr size_t LayoutInfo = offsetof(LayoutEEClass, m_LayoutInfo);
+};
 
-#ifdef FEATURE_COMINTEROP
-struct CLRToCOMCallInfo;
-#endif // FEATURE_COMINTEROP
+class UMThunkMarshInfo;
 
 class DelegateEEClass : public EEClass
 {
 public:
     DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
-    PTR_Stub                         m_pStaticCallStub;
-    PTR_Stub                         m_pInstRetBuffCallStub;
+    PCODE                            m_pStaticCallStub;
+    PCODE                            m_pInstRetBuffCallStub;
     PTR_MethodDesc                   m_pInvokeMethod;
     PCODE                            m_pMultiCastInvokeStub;
-    PCODE                            m_pWrapperDelegateInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
     Volatile<PCODE>                  m_pMarshalStub;
-
-#ifdef FEATURE_COMINTEROP
-    CLRToCOMCallInfo *m_pCLRToCOMCallInfo;
-#endif // FEATURE_COMINTEROP
 
     PTR_MethodDesc GetInvokeMethod()
     {
@@ -1887,9 +1930,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         // Note: Memory allocated on loader heap is zero filled
     }
-
-    // We need a LoaderHeap that lives at least as long as the DelegateEEClass, but ideally no longer
-    LoaderHeap *GetStubHeap();
 #endif // !DACCESS_COMPILE
 
 };
@@ -1948,6 +1988,14 @@ inline BOOL EEClass::IsInt128OrHasInt128Fields()
     return HasLayout() && GetLayoutInfo()->IsInt128OrHasInt128Fields();
 }
 
+inline BOOL EEClass::IsDecimalFloatingPointOrHasDecimalFloatingPointFields()
+{
+    // As with IsInt128OrHasInt128Fields, this doesn't detect fields on auto layout types,
+    // but that's sufficient for the interop scenarios where it is used.
+    LIMITED_METHOD_CONTRACT;
+    return HasLayout() && GetLayoutInfo()->IsDecimalFloatingPointOrHasDecimalFloatingPointFields();
+}
+
 //==========================================================================
 // These routines manage the prestub (a bootstrapping stub that all
 // FunctionDesc's are initialized with.)
@@ -1956,6 +2004,10 @@ VOID InitPreStubManager();
 
 EXTERN_C void STDCALL ThePreStub();
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+extern const TADDR g_cdacThePreStub;
+#endif
+
 inline PCODE GetPreStubEntryPoint()
 {
     return GetEEFuncEntryPoint(ThePreStub);
@@ -1963,7 +2015,9 @@ inline PCODE GetPreStubEntryPoint()
 
 PCODE TheUMThunkPreStub();
 
+#ifdef FEATURE_VARARGS
 PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg);
+#endif // FEATURE_VARARGS
 
 
 

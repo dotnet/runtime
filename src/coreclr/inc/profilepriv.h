@@ -158,10 +158,11 @@ struct StoredProfilerNode
 {
     CLSID guid;
     SString path;
-    SLink m_Link;
+    // Next pointer for SList linkage.
+    DPTR(StoredProfilerNode) m_pNext;
 };
 
-typedef SList<StoredProfilerNode, true> STOREDPROFILERLIST;
+typedef SList<StoredProfilerNode> STOREDPROFILERLIST;
 // ---------------------------------------------------------------------------------------
 // Global struct that lets the EE see the load status of the profiler, and provides a
 // pointer (pProfInterface) through which profiler calls can be made
@@ -191,10 +192,8 @@ private:
         // This is the dirty read
         if (pProfilerInfo->pProfInterface.Load() != NULL)
         {
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
             // Now indicate we are accessing the profiler
             EvacuationCounterHolder evacuationCounter(pProfilerInfo);
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
 
             if ((callbackType == ProfilerCallbackType::Active && IsProfilerPresent(pProfilerInfo))
                 || (callbackType == ProfilerCallbackType::ActiveOrInitializing && IsProfilerPresentOrInitializing(pProfilerInfo)))

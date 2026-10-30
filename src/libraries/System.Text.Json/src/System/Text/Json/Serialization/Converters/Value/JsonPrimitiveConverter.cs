@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -34,7 +34,11 @@ namespace System.Text.Json.Serialization.Converters
         {
             Debug.Assert(schemaType is JsonSchemaType.Integer or JsonSchemaType.Number);
             Debug.Assert(!isIeeeFloatingPoint || schemaType is JsonSchemaType.Number);
-#if NET
+#if NET11_0_OR_GREATER
+            Debug.Assert(isIeeeFloatingPoint == (typeof(T) == typeof(double) || typeof(T) == typeof(float) || typeof(T) == typeof(Half) ||
+                typeof(T) == typeof(System.Numerics.BFloat16) || typeof(T) == typeof(System.Numerics.Decimal32) ||
+                typeof(T) == typeof(System.Numerics.Decimal64) || typeof(T) == typeof(System.Numerics.Decimal128)));
+#elif NET
             Debug.Assert(isIeeeFloatingPoint == (typeof(T) == typeof(double) || typeof(T) == typeof(float) || typeof(T) == typeof(Half)));
 #endif
             string? pattern = null;
@@ -64,5 +68,10 @@ namespace System.Text.Json.Serialization.Converters
 
             return new JsonSchema { Type = schemaType, Pattern = pattern };
         }
+
+        private protected static JsonValueType GetSupportedJsonValueTypesForNumericType(JsonNumberHandling numberHandling) =>
+            (numberHandling & JsonNumberHandling.AllowReadingFromString) != 0
+                ? JsonValueType.Number | JsonValueType.String
+                : JsonValueType.Number;
     }
 }

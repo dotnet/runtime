@@ -32,7 +32,7 @@ usage()
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
   echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
-  echo "                                  linux-musl, linux-bionic, tizen, or haiku."
+  echo "                                  linux-musl, linux-bionic, openharmony, tizen, or haiku."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --targetrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -72,8 +72,8 @@ usage()
 
   echo "Libraries settings:"
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net11.0 or net481."
-  echo "                             [Default: net11.0]"
+  echo "  --framework (-f)           Build framework: net12.0 or net481."
+  echo "                             [Default: net12.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -86,7 +86,7 @@ usage()
   echo "  --gcc                      Optional argument to build using gcc in PATH (default)."
   echo "  --gccx.y                   Optional argument to build using gcc version x.y."
   echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
-  echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
+  echo "  --keepnativesymbols        Optional argument: set to keep native symbols/debuginfo in generated binaries."
   echo "  --ninja                    Optional argument: use Ninja instead of Make (default: true, use --ninja false to disable)."
   echo "  --pgoinstrument            Optional argument: build PGO-instrumented runtime"
   echo "  --fsanitize                Optional argument: Specify native sanitizers to instrument the native build with. Supported values are: 'address'."
@@ -146,8 +146,9 @@ initDistroRid()
     local isCrossBuild="$3"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
-    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
-        passedRootfsDir=${ROOTFS_DIR}
+    # OpenHarmony uses its NDK toolchain, so no rootfs is required either.
+    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "openharmony" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
+        passedRootfsDir=${ROOTFS_DIR:-}
     fi
     initDistroRidGlobal "${targetOs}" "${targetArch}" "${passedRootfsDir}"
 }
@@ -166,7 +167,7 @@ bootstrap=0
 bootstrapConfig='Debug'
 dynamiccodecompiled=""
 
-source $scriptroot/common/native/init-os-and-arch.sh
+source "$scriptroot"/common/native/init-os-and-arch.sh
 
 hostArch=$arch
 
@@ -175,7 +176,7 @@ useNinja=true
 
 # Check if an action is passed in
 declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
-actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
+actInt=($(LC_ALL=C comm -12 <(printf '%s\n' "${actions[@]/#/-}" | LC_ALL=C sort) <(printf '%s\n' "${@/#--/-}" | LC_ALL=C sort)))
 firstArgumentChecked=0
 
 while [[ $# -gt 0 ]]; do
@@ -310,6 +311,8 @@ while [[ $# -gt 0 ]]; do
           os="linux"
           __PortableTargetOS=linux-musl
           ;;
+        openharmony)
+          os="openharmony" ;;
         haiku)
           os="haiku" ;;
         *)
@@ -464,7 +467,7 @@ while [[ $# -gt 0 ]]; do
 
      -clang*)
       compiler="${opt/#-/}" # -clang-9 => clang-9 or clang-9 => (unchanged)
-      arguments+=("/p:Compiler=$compiler" "/p:CppCompilerAndLinker=$compiler")
+      arguments+=("/p:CppCompilerAndLinker=$compiler")
       shift 1
       ;;
 
@@ -479,7 +482,7 @@ while [[ $# -gt 0 ]]; do
 
      -gcc*)
       compiler="${opt/#-/}" # -gcc-9 => gcc-9 or gcc-9 => (unchanged)
-      arguments+=("/p:Compiler=$compiler" "/p:CppCompilerAndLinker=$compiler")
+      arguments+=("/p:CppCompilerAndLinker=$compiler")
       shift 1
       ;;
 
@@ -506,15 +509,8 @@ while [[ $# -gt 0 ]]; do
       ;;
 
      -keepnativesymbols)
-      if [ -z ${2+x} ]; then
-        echo "No value for keepNativeSymbols is supplied. See help (--help) for supported values." 1>&2
-        exit 1
-      fi
-      passedKeepNativeSymbols="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-      if [ "$passedKeepNativeSymbols" = true ]; then
-        arguments+=("/p:KeepNativeSymbols=true")
-      fi
-      shift 2
+      arguments+=("/p:KeepNativeSymbols=true")
+      shift 1
       ;;
 
 
@@ -651,7 +647,7 @@ if [[ "$bootstrap" == "1" ]]; then
   done
 
   # Set a different path for prebuilt usage tracking for the bootstrap build.
-  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap /p:TrackPrebuiltUsageReportFile=$scriptroot/../artifacts/log/bootstrap-prebuilt-usage.xml -bl:$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog
+  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap /p:TrackPrebuiltUsageReportFile="$scriptroot/../artifacts/log/bootstrap-prebuilt-usage.xml" -bl:"$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog"
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   echo "Cleaning up artifacts from bootstrap build..."

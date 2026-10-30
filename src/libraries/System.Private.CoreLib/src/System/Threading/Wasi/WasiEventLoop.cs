@@ -3,9 +3,9 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using WasiPollWorld.wit.imports.wasi.io.v0_2_0;
-using Pollable = WasiPollWorld.wit.imports.wasi.io.v0_2_0.IPoll.Pollable;
-using MonotonicClockInterop = WasiPollWorld.wit.imports.wasi.clocks.v0_2_0.MonotonicClockInterop;
+using WasiPollWorld.wit.Imports.wasi.io.v0_2_8;
+using Pollable = WasiPollWorld.wit.Imports.wasi.io.v0_2_8.IPollImports.Pollable;
+using MonotonicClockInterop = WasiPollWorld.wit.Imports.wasi.clocks.v0_2_8.IMonotonicClockImports;
 
 namespace System.Threading
 {
@@ -56,20 +56,23 @@ namespace System.Threading
                 s_mainTask = mainTask;
                 while (!mainTask.IsCompleted)
                 {
+#if FEATURE_PERFTRACING && CORECLR && !FEATURE_MULTITHREADING
+                    // Before Dispatch, which can block in wasi:io/poll, so the pump's timer is registered first.
+                    WasiEventPipeJobs.Pump();
+#endif
                     ThreadPoolWorkQueue.Dispatch();
+                    WasiFinalizerScheduler.DrainIfPending();
                 }
             }
             finally
             {
                 s_mainTask = null;
             }
-            var exception = mainTask.Exception;
-            if (exception is not null)
-            {
-                throw exception;
-            }
 
-            return mainTask.Result;
+            // The pump loop above guarantees the task is completed, so GetResult() never
+            // reaches the blocking (PNSE-throwing) wait. It propagates with await semantics:
+            // the original exception for faults and TaskCanceledException for cancellation.
+            return mainTask.GetAwaiter().GetResult();
         }
 
         internal static void PollWasiEventLoopUntilResolvedVoid(Task mainTask)
@@ -79,7 +82,12 @@ namespace System.Threading
                 s_mainTask = mainTask;
                 while (!mainTask.IsCompleted)
                 {
+#if FEATURE_PERFTRACING && CORECLR && !FEATURE_MULTITHREADING
+                    // Before Dispatch, which can block in wasi:io/poll, so the pump's timer is registered first.
+                    WasiEventPipeJobs.Pump();
+#endif
                     ThreadPoolWorkQueue.Dispatch();
+                    WasiFinalizerScheduler.DrainIfPending();
                 }
             }
             finally
@@ -87,11 +95,10 @@ namespace System.Threading
                 s_mainTask = null;
             }
 
-            var exception = mainTask.Exception;
-            if (exception is not null)
-            {
-                throw exception;
-            }
+            // The pump loop above guarantees the task is completed, so GetResult() never
+            // reaches the blocking (PNSE-throwing) wait. It propagates with await semantics:
+            // the original exception for faults and TaskCanceledException for cancellation.
+            mainTask.GetAwaiter().GetResult();
         }
 
         internal static void ScheduleCheck()
@@ -108,8 +115,11 @@ namespace System.Threading
             s_checkScheduled = false;
 
             var holders = new List<PollableHolder>(s_pollables.Count);
-            var hooks = new List<PollHook>(s_pollables.Count);
-            var pending = new List<Pollable>(s_pollables.Count);
+            // One entry per subscribed pollable, used to map ready indexes back to their hook.
+            var hooks = new List<PollHook>(s_hooks.Count);
+            // Each live hook once, regardless of how many pollables it subscribed this round.
+            var activeHooks = new List<PollHook>(s_hooks.Count);
+            var pending = new List<Pollable>(s_pollables.Count + s_hooks.Count);
             for (int i = 0; i < s_pollables.Count; i++)
             {
                 var holder = s_pollables[i];
@@ -124,6 +134,7 @@ namespace System.Threading
                 var hook = s_hooks[i];
                 if (!hook.isDisposed)
                 {
+                    activeHooks.Add(hook);
                     var handles = hook.BeforePollHook(hook.State);
                     for (int h = 0; h < handles.Count; h++)
                     {
@@ -153,7 +164,7 @@ namespace System.Threading
 
                 // this could block, this is blocking WASI API call
                 // FIXME: this will also block soft-debugger ability to pause the execution. Solutions: A) upgrade to WASIp3 B) register debugger connection's pollable
-                var readyIndexes = PollInterop.Poll(pending);
+                var readyIndexes = IPollImports.Poll(pending);
 
                 var holdersCount = holders.Count;
                 for (int i = 0; i < readyIndexes.Length; i++)
@@ -181,9 +192,9 @@ namespace System.Threading
                 }
             }
 
-            for (int i = 0; i < hooks.Count; i++)
+            for (int i = 0; i < activeHooks.Count; i++)
             {
-                PollHook hook = hooks[i];
+                PollHook hook = activeHooks[i];
                 if (!hook.isDisposed)
                 {
                     s_hooks.Add(hook);

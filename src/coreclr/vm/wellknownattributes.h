@@ -38,6 +38,8 @@ enum class WellKnownAttribute : DWORD
     UnsafeAccessorAttribute,
     UnsafeAccessorTypeAttribute,
     ExtendedLayoutAttribute,
+    UnscopedRef,
+    RefSafetyRules,
 
     CountOfWellKnownAttributes
 };
@@ -145,6 +147,12 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
         case WellKnownAttribute::ExtendedLayoutAttribute:
             ret = "System.Runtime.InteropServices.ExtendedLayoutAttribute";
             break;
+        case WellKnownAttribute::UnscopedRef:
+            ret = "System.Diagnostics.CodeAnalysis.UnscopedRefAttribute";
+            break;
+        case WellKnownAttribute::RefSafetyRules:
+            ret = "System.Runtime.CompilerServices.RefSafetyRulesAttribute";
+            break;
         case WellKnownAttribute::CountOfWellKnownAttributes:
         default:
             ret = nullptr;
@@ -163,6 +171,7 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
         attribute == WellKnownAttribute::ThreadStatic
         || attribute == WellKnownAttribute::ParamArray
         || attribute == WellKnownAttribute::DefaultMember
+        || attribute == WellKnownAttribute::UnscopedRef
         || strncmp(prefix, ret, ARRAY_SIZE(prefix) - 1) == 0;
     _ASSERTE(readyToRunAware);
 #endif // _DEBUG

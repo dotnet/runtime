@@ -1,0 +1,38 @@
+parameters:
+  - name: platforms
+    type: object
+  - name: testBuildArgs
+    type: string
+
+jobs:
+# Build CoreCLR + libraries for wasm, build the wasm HardwareIntrinsics tests,
+# and run them in Helix with ReadyToRun (crossgen2 at Helix time).
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    platforms: ${{ parameters.platforms }}
+    variables:
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+    jobParameters:
+      testGroup: outerloop
+      nameSuffix: CoreCLR
+      buildArgs: -s clr+libs+packs -c $(_BuildConfig) /p:TestAssemblies=false
+      timeoutInMinutes: 180
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testBuildArgs: ${{ parameters.testBuildArgs }}
+            testRunNamePrefixSuffix: CoreCLR_R2R
+            # The CoreCLR interpreter does not implement Wasm SIMD; ReadyToRun code does.
+            readyToRun: true
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          parameters:
+            testGroup: outerloop

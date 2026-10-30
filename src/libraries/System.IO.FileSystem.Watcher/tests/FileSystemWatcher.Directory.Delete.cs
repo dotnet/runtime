@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public class Directory_Delete_Tests : FileSystemWatcherTest
     {
         [Fact]
@@ -99,6 +98,18 @@ namespace System.IO.Tests
                 ExpectEvent(watcher, WatcherChangeTypes.Deleted, action, cleanup, dirName);
                 Assert.True(invoker.BeginInvoke_Called);
             }
+        }
+
+        [Fact]
+        public void FileSystemWatcher_WatchedDirectory_Delete()
+        {
+            string dir = CreateTestDirectory(TestDirectory, "watched");
+            using var watcher = new FileSystemWatcher(dir);
+
+            Action action = () => Directory.Delete(dir, recursive: true);
+            Action cleanup = () => Directory.CreateDirectory(dir);
+
+            ExpectError(watcher, action, cleanup);
         }
     }
 }

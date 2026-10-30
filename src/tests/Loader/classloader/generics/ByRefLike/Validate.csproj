@@ -1,4 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- https://github.com/dotnet/runtime/issues/90427  -->
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <!-- Needed for MonoAotIncompatible: keeps this project out of the merged test runner so the
+         MonoAotIncompatible exclusion of InvalidCSharp.ilproj under minifullaot/llvmfullaot does not
+         leave this source referencing a type that was not built. Mirrors ValidateNegative.csproj. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Validate.cs" />
     <Compile Include="GenericTypeSubstitution.cs" />

@@ -4,9 +4,6 @@
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DefineConstants>FEATURE_GC_STRESS;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
     <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
@@ -35,9 +32,6 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\DispatchResolve.cs">
       <Link>Runtime.Base\src\System\Runtime\DispatchResolve.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\GCStress.cs">
-      <Link>Runtime.Base\src\System\Runtime\GCStress.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\__Finalizer.cs">
       <Link>Runtime.Base\src\System\Runtime\__Finalizer.cs</Link>
@@ -94,6 +88,9 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DehydratedData.cs">
       <Link>Internal\Runtime\DehydratedData.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DispatchCell.cs">
+      <Link>Internal\Runtime\DispatchCell.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>
@@ -213,6 +210,7 @@
       <Link>Common\System\Runtime\InteropServices\IDynamicInterfaceCastable.cs</Link>
     </Compile>
     <Compile Include="..\..\System.Private.CoreLib\src\System\Runtime\CompilerServices\AnalysisCharacteristicAttribute.cs" />
+    <Compile Include="Internal\Runtime\Dispatch.cs" />
     <Compile Include="Internal\Runtime\MethodTable.Runtime.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastCache.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
@@ -221,6 +219,7 @@
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionHandling.cs" />
     <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
+    <Compile Include="System\Diagnostics\DebuggerHiddenAttribute.cs" />
     <Compile Include="System\Diagnostics\DebuggerStepThroughAttribute.cs" />
     <Compile Include="System\Diagnostics\StackTraceHiddenAttribute.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DoesNotReturnIfAttribute.cs" />
@@ -230,6 +229,7 @@
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Runtime\RuntimeHelpers.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
+    <Compile Include="System\Threading\Volatile.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\Buffer.cs" />
     <Compile Include="System\SpanHelpers.cs" />

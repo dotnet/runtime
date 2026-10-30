@@ -89,20 +89,25 @@ internal static partial class Interop
             }
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal static partial SafeCloseIcmpHandle IcmpCreateFile();
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal static partial SafeCloseIcmpHandle Icmp6CreateFile();
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IcmpCloseHandle(IntPtr handle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal static partial uint IcmpSendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
             uint ipAddress, SafeLocalAllocHandle data, ushort dataSize, ref IP_OPTION_INFORMATION options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal static unsafe partial uint Icmp6SendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
             Span<byte> sourceSocketAddress, Span<byte> destSocketAddress, SafeLocalAllocHandle data, ushort dataSize, ref IP_OPTION_INFORMATION options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
