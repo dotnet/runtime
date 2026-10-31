@@ -250,6 +250,45 @@ namespace System.Runtime.Loader
         }
 
         /// <summary>
+        /// The name of this context in the runtime's diagnostics: binder tracing events and InvalidCastException messages.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="ToString"/> is virtual, so an override is user code that may return null or throw. Neither may
+        /// break the operation being described, so both fall back to the text the base <see cref="ToString"/> produces.
+        /// </remarks>
+        internal string GetNameForDiagnostics()
+        {
+            try
+            {
+                if (ToString() is string name)
+                {
+                    return name;
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return $"\"{Name}\" {GetType()} #{_id}";
+        }
+
+        /// <summary>
+        /// Called by the runtime to get the name of a context for diagnostics
+        /// </summary>
+        [UnmanagedCallersOnly]
+        private static unsafe void CallGetNameForDiagnostics(object* pAssemblyLoadContext, string* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = ((AssemblyLoadContext)(*pAssemblyLoadContext)).GetNameForDiagnostics();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        /// <summary>
         /// Called by the runtime to make sure the default ALC is initialized
         /// </summary>
         [UnmanagedCallersOnly]

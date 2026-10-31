@@ -66,6 +66,19 @@ static void Call_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I3
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid);
 }
 
+static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_CallGetNameForDiagnostics_I32_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_CallGetNameForDiagnostics_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
+{
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_CallGetNameForDiagnostics_I32_I32_I32_RetVoid)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "CallGetNameForDiagnostics", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_CallGetNameForDiagnostics_I32_I32_I32_RetVoid);
+    }
+
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_CallGetNameForDiagnostics_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_CallGetNameForDiagnostics_I32_I32_I32_RetVoid);
+}
+
 static MethodDesc* MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid(void * arg0, void * arg1)
 {
@@ -1021,6 +1034,7 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 1361004804, "CallClassConstructor#3:System.Private.CoreLib:System.Runtime.CompilerServices:InitHelpers", { &MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid } },
     { 3858976135, "CallDefaultConstructor#3:System.Private.CoreLib:System.Runtime.CompilerServices:RuntimeHelpers", { &MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid } },
     { 3962535319, "CallEntryPoint#5:System.Private.CoreLib:System:Environment", { &MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid } },
+    { 2000595016, "CallGetNameForDiagnostics#3:System.Private.CoreLib:System.Runtime.Loader:AssemblyLoadContext", { &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_CallGetNameForDiagnostics_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_CallGetNameForDiagnostics_I32_I32_I32_RetVoid } },
     { 1821934012, "CallStartupHook#2:System.Private.CoreLib:System:StartupHookProvider", { &MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid } },
     { 2915047114, "CallToString#3:System.Private.CoreLib:System.Runtime.CompilerServices:RuntimeHelpers", { &MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid } },
     { 4077371982, "Callback#7:System.Private.CoreLib:System.Diagnostics.Tracing:EventPipeEventProvider", { &MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid } },
