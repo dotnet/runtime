@@ -11,6 +11,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Serialization;
+using System.Collections.Generic;
 
 namespace System.Collections
 {
@@ -28,6 +29,9 @@ namespace System.Collections
         private const int BitsPerInt32 = 32;
         /// <summary>sizeof(byte) * 8</summary>
         private const int BitsPerByte = 8;
+
+        /// <summary>Buffer size in bytes used for stack allocation.</summary>
+        private const int StackBufferSizeInBytes = 256;
 
         /// <summary>The array of bytes used to store bits.</summary>
         /// <remarks>
@@ -324,6 +328,215 @@ namespace System.Collections
         public BitArray(ReadOnlySpan<int> values)
         {
             _array = CreateArray(values, out _bitLength);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that contains bit values
+        /// copied from the specified collection of 32-bit integers.
+        /// </summary>
+        /// <param name="values">An enumerable collection of integers containing the values to copy, where each integer represents 32 consecutive bits.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is null.</exception>
+        /// <exception cref="ArgumentException">The length of <paramref name="values"/> in bits is greater than <see cref="int.MaxValue"/>.</exception>
+        /// <remarks>
+        /// The first element in <paramref name="values"/> represents bits 0 through 31, the second element represents
+        /// bits 32 through 63, and so on. The least significant bit of each integer represents the lowest index value:
+        /// "<paramref name="values"/>[0] &amp; 1" represents bit 0, "<paramref name="values"/>[0] &amp; 2" represents bit 1,
+        /// "<paramref name="values"/>[0] &amp; 4" represents bit 2, and so on.
+        ///
+        /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="values"/>.
+        /// </remarks>
+        public BitArray(IEnumerable<int> values)
+        {
+            ArgumentNullException.ThrowIfNull(values);
+
+            _array = CreateArray(values, out _bitLength);
+        }
+
+        private static byte[] CreateArray(IEnumerable<int> values, out int bitLength)
+        {
+            if (values is int[] valuesArray)
+                return CreateArray(valuesArray, out bitLength);
+
+            if (values is List<int> valuesList)
+                return CreateArray(CollectionsMarshal.AsSpan(valuesList), out bitLength);
+
+            int count = IEnumerableCount(values);
+
+            if (count == -1)
+                return CreateArrayFromUnknownSizeIEnumerable(values, out bitLength);
+
+            if (count > int.MaxValue / BitsPerInt32)
+                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
+
+            bitLength = count * BitsPerInt32;
+            byte[] array = AllocateByteArray(bitLength);
+            Span<int> intSpan = MemoryMarshal.Cast<byte, int>(array);
+
+            int index = 0;
+            foreach (int value in values)
+            {
+                intSpan[index++] = ReverseIfBE(value);
+            }
+            return array;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that contains bit values
+        /// copied from the specified collection of bytes.
+        /// </summary>
+        /// <param name="values">An enumerable collection of bytes containing the values to copy, where each byte represents eight consecutive bits</param>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is null.</exception>
+        /// <exception cref="ArgumentException">The length of <paramref name="values"/> in bits is greater than <see cref="int.MaxValue"/>.</exception>
+        /// <remarks>
+        /// The first element in <paramref name="values"/> represents bits 0 through 7, the second element represents
+        /// bits 8 through 15, and so on. The least significant bit of each byte represents the lowest index value:
+        /// "<paramref name="values"/>[0] &amp; 1" represents bit 0, "<paramref name="values"/>[0] &amp; 2" represents bit 1,
+        /// "<paramref name="values"/>[0] &amp; 4" represents bit 2, and so on.
+        ///
+        /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="values"/>.
+        /// </remarks>
+        public BitArray(IEnumerable<byte> values)
+        {
+            ArgumentNullException.ThrowIfNull(values);
+
+            _array = CreateArray(values, out _bitLength);
+        }
+
+        private static byte[] CreateArray(IEnumerable<byte> values, out int bitLength)
+        {
+            if (values is byte[] valuesArray)
+                return CreateArray(valuesArray, out bitLength);
+
+            if (values is List<byte> valuesList)
+                return CreateArray(CollectionsMarshal.AsSpan(valuesList), out bitLength);
+
+            int count = IEnumerableCount(values);
+
+            if (count == -1)
+                return CreateArrayFromUnknownSizeIEnumerable(values, out bitLength);
+
+            if (count > int.MaxValue / BitsPerByte)
+                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(values));
+
+            bitLength = count * BitsPerByte;
+            byte[] array = AllocateByteArray(bitLength);
+
+            int index = 0;
+            foreach (byte value in values)
+            {
+                array[index++] = value;
+            }
+
+            return array;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that contains bit values
+        /// copied from the specified collection of Boolean values.
+        /// </summary>
+        /// <param name="values">An enumerable collection of Boolean values to copy, where each value represents a single bit.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is null.</exception>
+        /// <remarks>
+        /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="values"/>.
+        /// </remarks>
+        public BitArray(IEnumerable<bool> values)
+        {
+            ArgumentNullException.ThrowIfNull(values);
+
+            _array = CreateArray(values, out _bitLength);
+        }
+
+        private static byte[] CreateArray(IEnumerable<bool> values, out int bitLength)
+        {
+            if (values is bool[] valuesArray)
+                return CreateArray(valuesArray, out bitLength);
+
+            if (values is List<bool> valuesList)
+                return CreateArray(CollectionsMarshal.AsSpan(valuesList), out bitLength);
+
+            int count = IEnumerableCount(values);
+
+            if (count == -1)
+            {
+                using ValueListBuilder<byte> valueList = new ValueListBuilder<byte>(stackalloc byte[StackBufferSizeInBytes]);
+                using IEnumerator<bool> enumerator = values.GetEnumerator();
+
+                byte bit = 0;
+                byte value = 0;
+                bitLength = 0;
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.Current)
+                        value |= (byte)(1 << bit);
+
+                    bitLength++;
+
+                    if (++bit != BitsPerByte)
+                        continue;
+
+                    valueList.Append(value);
+                    value = 0;
+                    bit = 0;
+                }
+                if (bit != 0)
+                    valueList.Append(value);
+
+                byte[] array = AllocateByteArray(bitLength);
+                valueList.AsSpan().CopyTo(array);
+                return array;
+            }
+            else
+            {
+                bitLength = count;
+                byte[] array = AllocateByteArray(bitLength);
+                using IEnumerator<bool> enumerator = values.GetEnumerator();
+
+                int index = 0;
+                byte bit = 0;
+                byte value = 0;
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.Current)
+                        value |= (byte)(1 << bit);
+
+                    if (++bit != BitsPerByte)
+                        continue;
+
+                    array[index++] = value;
+                    value = 0;
+                    bit = 0;
+                }
+                if (bit != 0)
+                    array[index] = value;
+
+                return array;
+            }
+        }
+
+        private static byte[] CreateArrayFromUnknownSizeIEnumerable<T>(IEnumerable<T> values, out int bitLength)
+            where T : unmanaged
+        {
+            using ValueListBuilder<T> valueList = new ValueListBuilder<T>(stackalloc T[StackBufferSizeInBytes / sizeof(T)]);
+            foreach (T value in values)
+                valueList.Append(value);
+
+            ReadOnlySpan<T> span = valueList.AsSpan();
+
+            if (typeof(T) == typeof(int))
+                return CreateArray(MemoryMarshal.Cast<T, int>(span), out bitLength);
+
+            if (typeof(T) == typeof(byte))
+                return CreateArray(MemoryMarshal.Cast<T, byte>(span), out bitLength);
+
+            throw new InvalidOperationException();
+        }
+
+        private static int IEnumerableCount<T>(IEnumerable<T> values)
+        {
+            return (values as ICollection<T>)?.Count
+                ?? (values as IReadOnlyCollection<T>)?.Count
+                ?? (values as ICollection)?.Count
+                ?? -1;
         }
 
         private static byte[] CreateArray(ReadOnlySpan<int> values, out int bitLength)
