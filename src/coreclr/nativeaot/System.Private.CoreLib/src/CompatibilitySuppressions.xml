@@ -15,10 +15,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Metadata.NativeFormat.AssemblyHashAlgorithm</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.ByReferenceSignature</Target>
   </Suppression>
   <Suppression>

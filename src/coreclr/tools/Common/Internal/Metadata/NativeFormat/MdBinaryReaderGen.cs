@@ -42,14 +42,6 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out AssemblyHashAlgorithm value)
-        {
-            uint ivalue;
-            offset = reader.DecodeUnsigned(offset, out ivalue);
-            value = (AssemblyHashAlgorithm)ivalue;
-            return offset;
-        } // Read
-
         public static uint Read(this NativeReader reader, uint offset, out CallingConventions value)
         {
             uint ivalue;

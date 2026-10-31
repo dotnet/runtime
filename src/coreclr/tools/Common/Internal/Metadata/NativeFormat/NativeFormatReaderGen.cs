@@ -2418,7 +2418,6 @@ namespace Internal.Metadata.NativeFormat
             NativeReader streamReader = reader._streamReader;
             offset = streamReader.Read(offset, out _flags);
             offset = streamReader.Read(offset, out _name);
-            offset = streamReader.Read(offset, out _hashAlgorithm);
             offset = streamReader.Read(offset, out _majorVersion);
             offset = streamReader.Read(offset, out _minorVersion);
             offset = streamReader.Read(offset, out _buildNumber);
@@ -2442,9 +2441,6 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantStringValueHandle Name => _name;
         private readonly ConstantStringValueHandle _name;
-
-        public AssemblyHashAlgorithm HashAlgorithm => _hashAlgorithm;
-        private readonly AssemblyHashAlgorithm _hashAlgorithm;
 
         public ushort MajorVersion => _majorVersion;
         private readonly ushort _majorVersion;

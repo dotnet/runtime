@@ -50,11 +50,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.WriteUnsigned((uint)value);
         } // Write
 
-        public static void Write(this NativeWriter writer, AssemblyHashAlgorithm value)
-        {
-            writer.WriteUnsigned((uint)value);
-        } // Write
-
         public static void Write(this NativeWriter writer, CallingConventions value)
         {
             writer.WriteUnsigned((uint)value);

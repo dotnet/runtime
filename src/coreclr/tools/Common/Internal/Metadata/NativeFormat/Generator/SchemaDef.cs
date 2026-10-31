@@ -198,7 +198,6 @@ internal sealed class SchemaDef
     public static readonly EnumType[] EnumTypes = new EnumType[]
     {
         new EnumType("AssemblyFlags", "uint"),
-        new EnumType("AssemblyHashAlgorithm", "uint"),
         new EnumType("CallingConventions", "ushort"),
         new EnumType("ConstantTypeCode", "byte"),
         new EnumType("SignatureCallingConvention", "byte"),
@@ -233,17 +232,6 @@ internal sealed class SchemaDef
                 new MemberDef(name: "PublicKey", value: "0x1", comment: "The assembly reference holds the full (unhashed) public key."),
                 new MemberDef(name: "Retargetable", value: "0x100", comment: "The implementation of this assembly used at runtime is not expected to match the version seen at compile time."),
                 new MemberDef(name: "ContentTypeMask", value: "0x00000e00", comment: "Content type mask. Masked bits correspond to values of System.Reflection.AssemblyContentType"),
-            }
-        ),
-        // AssemblyHashAlgorithm - as defined in ECMA
-        new RecordDef(
-            name: "AssemblyHashAlgorithm",
-            baseTypeName: "uint",
-            flags: RecordDefFlags.Enum,
-            members: new MemberDef[] {
-                new MemberDef(name: "None", value: "0x0"),
-                new MemberDef(name: "Reserved", value: "0x8003"),
-                new MemberDef(name: "SHA1", value: "0x8004"),
             }
         ),
         new RecordDef(
@@ -421,7 +409,6 @@ internal sealed class SchemaDef
             members: new MemberDef[] {
                 new MemberDef("Flags", "AssemblyFlags", MemberDefFlags.Compare),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
-                new MemberDef("HashAlgorithm", "AssemblyHashAlgorithm", MemberDefFlags.Compare),
                 new MemberDef("MajorVersion", "ushort", MemberDefFlags.Compare),
                 new MemberDef("MinorVersion", "ushort", MemberDefFlags.Compare),
                 new MemberDef("BuildNumber", "ushort", MemberDefFlags.Compare),
