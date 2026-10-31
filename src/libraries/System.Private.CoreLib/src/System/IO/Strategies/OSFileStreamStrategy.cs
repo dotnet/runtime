@@ -79,7 +79,12 @@ namespace System.IO.Strategies
         // in case of concurrent incomplete reads, there can be multiple threads trying to update the position
         // at the same time. That is why we are using Interlocked here.
         internal void OnIncompleteOperation(int expectedBytesTransferred, int actualBytesTransferred)
-            => Interlocked.Add(ref _filePosition, actualBytesTransferred - expectedBytesTransferred);
+        {
+            if (expectedBytesTransferred != actualBytesTransferred)
+            {
+                Interlocked.Add(ref _filePosition, actualBytesTransferred - expectedBytesTransferred);
+            }
+        }
 
         /// <summary>Gets or sets the position within the current stream</summary>
         public sealed override long Position
