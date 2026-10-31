@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 public record Location(SourceSpan Span, SourceText Source)
 {

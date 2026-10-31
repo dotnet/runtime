@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using Xunit;
 
-namespace ILAssembler.Tests.GeneratedCases
+namespace Microsoft.DotNet.ILAssembler.Tests.GeneratedCases
 {
     /// <summary>
     /// A generated method with nested <c>{ }</c> blocks that declare locals, and what the assembler must produce for

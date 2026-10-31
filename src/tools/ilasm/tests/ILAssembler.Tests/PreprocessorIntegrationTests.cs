@@ -11,7 +11,7 @@ using System.Reflection.PortableExecutable;
 using Antlr4.Runtime;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class PreprocessorIntegrationTests
     {
