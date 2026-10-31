@@ -14,7 +14,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         protected override ECDiffieHellman CreateKey() => ECDiffieHellmanFactory.Create();
         protected override void Exercise(ECDiffieHellman key) => key.Exercise();
-        protected override bool CanDeriveNewPublicKey => ECDiffieHellmanFactory.CanDeriveNewPublicKey;
         protected override bool SupportsExplicitCurves =>
             ECDiffieHellmanFactory.ExplicitCurvesSupported || ECDiffieHellmanProvider.ExplicitCurvesSupportFailOnUseOnly;
         protected override bool IsCurveSupported(Oid oid) => ECDiffieHellmanFactory.IsCurveValid(oid);

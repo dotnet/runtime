@@ -16,9 +16,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         internal bool ECDsa224Available =>
             ECDiffieHellmanFactory.IsCurveValid(new Oid(ECDSA_P224_OID_VALUE));
 
-        internal bool CanDeriveNewPublicKey =>
-            ECDiffieHellmanFactory.CanDeriveNewPublicKey;
-
         [Theory]
         [MemberData(nameof(TestCurvesFull))]
         public void TestNamedCurves(CurveDef curveDef)
@@ -403,11 +400,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ImportFromPrivateOnlyKey()
         {
-            SkipTestException.ThrowUnless(ECDiffieHellmanFactory.CanDeriveNewPublicKey);
-
             byte[] expectedX = "00d45615ed5d37fde699610a62cd43ba76bedd8f85ed31005fe00d6450fbbd101291abd96d4945a8b57bc73b3fe9f4671105309ec9b6879d0551d930dac8ba45d255".HexToByteArray();
             byte[] expectedY = "01425332844e592b440c0027972ad1526431c06732df19cd46a242172d4dd67c2c8c99dfc22e49949a56cf90c6473635ce82f25b33682fb19bc33bd910ed8ce3a7fa".HexToByteArray();
 
@@ -421,8 +416,12 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             {
                 ecdh.ImportParameters(limitedPrivateParameters);
+                ECParameters exportedPublicParameters = ecdh.ExportParameters(false);
                 ECParameters exportedParameters = ecdh.ExportParameters(true);
 
+                Assert.Equal(expectedX, exportedPublicParameters.Q.X);
+                Assert.Equal(expectedY, exportedPublicParameters.Q.Y);
+                Assert.Null(exportedPublicParameters.D);
                 Assert.Equal(expectedX, exportedParameters.Q.X);
                 Assert.Equal(expectedY, exportedParameters.Q.Y);
                 Assert.Equal(limitedPrivateParameters.D, exportedParameters.D);

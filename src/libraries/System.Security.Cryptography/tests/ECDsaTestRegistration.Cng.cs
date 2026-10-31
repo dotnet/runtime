@@ -36,13 +36,11 @@ namespace System.Security.Cryptography.EcDsa.Tests
     public sealed class ECDsaImportExportTests_Cng : ECDsaImportExportTests
     {
         protected override ECDsaProvider ECDsaFactory { get; } = ECDsaCngProvider.Instance;
-        protected override bool CanDeriveNewPublicKey { get; } = EcDiffieHellman.Tests.ECDiffieHellmanCngProvider.Instance.CanDeriveNewPublicKey;
     }
 
     public sealed class ECDsaKeyFileTests_Cng : ECDsaKeyFileTests
     {
         protected override ECDsaProvider ECDsaFactory { get; } = ECDsaCngProvider.Instance;
-        protected override bool CanDeriveNewPublicKey { get; } = EcDiffieHellman.Tests.ECDiffieHellmanCngProvider.Instance.CanDeriveNewPublicKey;
     }
 
     public sealed class ECDsaXml_Cng : ECDsaXml
