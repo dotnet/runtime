@@ -184,7 +184,14 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (isUsingWorkloads && buildOutput is not null)
         {
             // In no-workload case, the path would be from a restored nuget
-            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? DefaultTargetFramework, buildOptions.RuntimeType);
+            bool usesBootstrapBlazorTargetFramework =
+                buildOptions.TargetFramework == BuildTestBase.DefaultTargetFrameworkForBlazorTemplate &&
+                buildOptions.TargetFramework != BuildTestBase.DefaultTargetFramework;
+            ProjectProviderBase.AssertRuntimePackPath(
+                buildOutput,
+                buildOptions.TargetFramework,
+                buildOptions.RuntimeType,
+                compatibleTargetFramework: usesBootstrapBlazorTargetFramework ? BuildTestBase.DefaultTargetFramework : null);
         }
 
         // Capture the runtime-pack root the build actually used so downstream asserts (e.g. ICU
@@ -197,7 +204,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         }
         else if (string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir))
         {
-            AssertBuildBundle(config, buildOptions, isUsingWorkloads, isNativeBuild);
+            AssertBuildBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, runtimePackDir);
         }
         else
         {
@@ -219,7 +226,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     ///   obj/{config}/{tfm}/webcil/                   → assembly .wasm files (webcil-converted)
     ///   obj/{config}/{tfm}/wasm/for-build/           → native assets only when native build (AOT/relink)
     /// </summary>
-    private void AssertBuildBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild)
+    private void AssertBuildBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild, string? runtimePackDir)
     {
         EnsureProjectDirIsSet();
 
@@ -303,7 +310,11 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         // --- Native file comparison against runtime pack ---
         if (isUsingWorkloads)
         {
-            string runtimeNativeDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(tfm, buildOptions.RuntimeType);
+            string runtimeNativeDir = Path.Combine(
+                runtimePackDir ?? BuildTestBase.s_buildEnv.GetRuntimePackDir(tfm, buildOptions.RuntimeType),
+                "runtimes",
+                BuildEnvironment.DefaultRuntimeIdentifier,
+                "native");
             foreach (string nativeFilename in nativeFiles)
             {
                 string actualPath = Path.Combine(nativeDir, nativeFilename);

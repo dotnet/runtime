@@ -54,7 +54,7 @@ namespace Internal.IL
     public abstract partial class MethodILScope
     {
         /// <summary>
-        /// Gets the method whose body this <see cref=""/> represents.
+        /// Gets the method whose body this <see cref="MethodILScope"/> represents.
         /// </summary>
         public abstract MethodDesc OwningMethod { get; }
 

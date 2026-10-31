@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 32
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MAJOR_VERSION 33
+#define READYTORUN_MINOR_VERSION 0x0001
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 26
+#define MINIMUM_READYTORUN_MAJOR_VERSION 33
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -82,6 +82,10 @@
 // method's ReadyToRun entry point and fixups.
 // R2R Version 31.1 adds READYTORUN_FLAG_SINGLE_THREADED, which records that the image lays out [ThreadStatic] fields as regular statics
 // for a runtime built without FEATURE_MULTITHREADING.
+// R2R Version 33 requires contextual THIS_REF/THIS_BYREF tokens in instance-call
+// GCRefMaps, moves VASIG_COOKIE from 5 to 7, and prefixes map-bearing import
+// signatures with their GCRefMaps.
+// R2R Version 33.1 adds READYTORUN_HELPER_WasmProfSamplepoint (used on WebAssembly)
 
 struct READYTORUN_CORE_HEADER
 {
@@ -183,6 +187,7 @@ enum class ReadyToRunImportSectionFlags : uint16_t
     None  = 0x0000,
     Eager = 0x0001, // Fixups must be resolved at module load time before any code in the module runs.
     PCode = 0x0004, // Section contains pointers to code
+    GCRefMap = 0x0008, // Each signature is prefixed by its argument GC reference map.
 };
 
 // All values in this enum should within a nibble (4 bits).
@@ -528,6 +533,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_InitClass                 = 0x116,
     READYTORUN_HELPER_InitInstClass             = 0x117,
     READYTORUN_HELPER_R2RToInterpreter          = 0x118,
+    READYTORUN_HELPER_WasmProfSamplepoint       = 0x119,
 };
 
 #include "readytoruninstructionset.h"

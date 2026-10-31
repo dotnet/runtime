@@ -347,9 +347,17 @@ namespace System.Net.Security
         /// validation logic.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Must be called only after <see cref="TlsBufferSession.Handshake"/> returned
         /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/> and before
         /// <see cref="SetRemoteCertificateValidationResult"/> is called.
+        /// </para>
+        /// <para>
+        /// Any <see cref="SslCertificateTrust"/> associated with the session's certificate
+        /// context is used for chain validation unless a custom chain policy is specified by
+        /// <see cref="SslClientAuthenticationOptions.CertificateChainPolicy"/> or
+        /// <see cref="SslServerAuthenticationOptions.CertificateChainPolicy"/>.
+        /// </para>
         /// </remarks>
         public SslPolicyErrors AcceptWithDefaultValidation()
         {
@@ -384,7 +392,7 @@ namespace System.Net.Security
                     ref _connectionInfo,
                     _externalPendingCert,
                     chain,
-                    trust: null,
+                    trust: SessionCertificateContext?.Trust,
                     ref alertToken,
                     ref sslPolicyErrors,
                     out _,
@@ -1009,6 +1017,13 @@ namespace System.Net.Security
                 {
                     EnsureCredentialsAcquired();
 
+                    // Resuming after CertificateRequested: SecureTransport does not stop again, so the
+                    // CredentialsNeeded path below never runs; install the certificate here.
+                    if (isCredentialResume && _securityContext is not null && _options.CertificateContext is not null)
+                    {
+                        SslStreamPal.TryUpdateClintCertificate(ActiveCredentialsRef(), _securityContext, _options);
+                    }
+
                     string hostName = TargetHostNameHelper.NormalizeHostName(_options.TargetHost);
                     token = SslStreamPal.InitializeSecurityContext(
                         ref ActiveCredentialsRef(),
@@ -1017,6 +1032,27 @@ namespace System.Net.Security
                         input,
                         out bytesConsumed,
                         _options);
+
+                    // Certificate configured before the handshake: SecureTransport still stops at
+                    // CertificateRequest, so install it here and continue.
+                    if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded &&
+                        _options.CertificateContext is not null &&
+                        SslStreamPal.TryUpdateClintCertificate(ActiveCredentialsRef(), _securityContext, _options))
+                    {
+                        if (token.Size > 0)
+                        {
+                            Debug.Assert(token.Payload != null);
+                            AppendPending(new ReadOnlySpan<byte>(token.Payload, 0, token.Size));
+                        }
+                        token.ReleasePayload();
+                        token = SslStreamPal.InitializeSecurityContext(
+                            ref ActiveCredentialsRef(),
+                            ref _securityContext,
+                            hostName,
+                            ReadOnlySpan<byte>.Empty,
+                            out _,
+                            _options);
+                    }
                 }
 
                 // Stage any handshake bytes the PAL produced.

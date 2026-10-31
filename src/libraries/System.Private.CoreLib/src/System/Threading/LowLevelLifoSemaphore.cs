@@ -101,35 +101,7 @@ namespace System.Threading
                 }
             }
 
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-
             return WaitSlow(timeoutMs);
-        }
-
-        private bool WaitSlow(int timeoutMs)
-        {
-            int spinsRemaining = Environment.IsSingleProcessor ? 0 : _maxSpinCount;
-
-            uint iteration = 0;
-            while (spinsRemaining > 0)
-            {
-                spinsRemaining -= Backoff.Exponential(iteration++);
-
-                Counts counts = _separated._counts;
-                if (counts.SignalCount != 0)
-                {
-                    Counts newCounts = counts;
-                    newCounts.DecrementSignalCount();
-                    Counts countsBeforeUpdate = _separated._counts.InterlockedCompareExchange(newCounts, counts);
-                    if (countsBeforeUpdate == counts)
-                    {
-                        // we've consumed a signal
-                        return true;
-                    }
-                }
-            }
-
-            return WaitNoSpin(timeoutMs);
         }
 
         public bool WaitNoSpin(int timeoutMs)

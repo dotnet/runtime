@@ -6286,7 +6286,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
         }
 
         // Generate guid from name.
-        CorGuidFromNameW(pGuid, szName, cchName);
+        *pGuid = CorGuidFromNameW(szName, cchName);
 
         // Remeber we generated the guid from the type name.
         bGenerated = TRUE;

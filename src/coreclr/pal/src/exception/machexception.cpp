@@ -26,7 +26,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/utils.h"
 #include "pal/context.h"
 #include "pal/process.h"
-#include "pal/virtual.h"
 #include "pal/map.hpp"
 #include "pal/environ.h"
 
@@ -852,10 +851,10 @@ HijackFaultingThread(
         // Allocate the minimal stack necessary for handling stack overflow
         int stackOverflowStackSize = 15 * 4096;
         // Align the size to virtual page size and add one virtual page as a stack guard
-        stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
+        stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, minipal_getpagesize()) + minipal_getpagesize();
         void* stackOverflowHandlerStack = mmap(NULL, stackOverflowStackSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 
-        if ((stackOverflowHandlerStack == MAP_FAILED) || mprotect((void*)stackOverflowHandlerStack, GetVirtualPageSize(), PROT_NONE) != 0)
+        if ((stackOverflowHandlerStack == MAP_FAILED) || mprotect((void*)stackOverflowHandlerStack, minipal_getpagesize(), PROT_NONE) != 0)
         {
             // We are out of memory or we've failed to protect the guard page, so resort to just printing a stack overflow message and abort
             write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
