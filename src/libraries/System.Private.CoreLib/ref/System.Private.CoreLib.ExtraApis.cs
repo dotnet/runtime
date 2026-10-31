@@ -49,9 +49,13 @@ namespace System.Threading
         public bool IsReadReady(out int observedSequenceNumber) { throw null; }
         public bool IsWriteReady(out int observedSequenceNumber) { throw null; }
         public System.Threading.UnixHandleAsyncContext.AsyncResult StartAsyncRead(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public int StartAsyncReadAsInt(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.UnixHandleAsyncContext.AsyncResult StartAsyncWrite(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public int StartAsyncWriteAsInt(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.UnixHandleAsyncContext.SyncResult Read(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
+        public int ReadAsInt(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
         public System.Threading.UnixHandleAsyncContext.SyncResult Write(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
+        public int WriteAsInt(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
         public bool AbortAndDispose() { throw null; }
         public enum AsyncResult
         {
@@ -77,6 +81,12 @@ namespace System.Threading
             protected internal abstract void OnCompleted(System.Threading.UnixHandleAsyncContext.OnCompletedResult result);
             protected virtual void ExecuteThreadPoolWorkItem() { }
             void System.Threading.IThreadPoolWorkItem.Execute() { }
+        }
+        public sealed class DelegateOperation : System.Threading.UnixHandleAsyncContext.Operation
+        {
+            public DelegateOperation(System.Func<System.Runtime.InteropServices.SafeHandle, bool> tryComplete, System.Action<int> onCompleted) { }
+            protected internal override bool TryCompleteOperation(System.Runtime.InteropServices.SafeHandle handle) { throw null; }
+            protected internal override void OnCompleted(System.Threading.UnixHandleAsyncContext.OnCompletedResult result) { }
         }
     }
 }

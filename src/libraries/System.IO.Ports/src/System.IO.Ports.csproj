@@ -23,6 +23,8 @@ System.IO.Ports.SerialPort</PackageDescription>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
+    <!-- TODO: Remove NetCoreAppCurrent once it is updated to net12.0. -->
+    <UseUnixAsyncContext Condition="'$(TargetPlatformIdentifier)' == 'unix' and ($([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) or $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net12.0')))">true</UseUnixAsyncContext>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
@@ -140,6 +142,17 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
              Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseUnixAsyncContext)' == 'true'">
+    <Compile Include="$(CommonPath)System\Threading\UnixHandleAsyncContextUnsafeAccess.cs"
+             Link="Common\System\Threading\UnixHandleAsyncContextUnsafeAccess.cs" />
+    <Compile Include="System\IO\Ports\SafeSerialDeviceHandle.UnixAsyncContext.cs" />
+    <Compile Include="System\IO\Ports\SerialStream.UnixAsyncContext.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(UseUnixAsyncContext)' != 'true'">
+    <Compile Include="System\IO\Ports\SerialStream.UnixPollLoop.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
