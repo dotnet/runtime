@@ -106,7 +106,7 @@ namespace System.Reflection.Emit
             return new SignatureHelper(mod, intCall, returnType, null, null);
         }
 
-        internal static SignatureHelper GetMethodSigHelper(DynamicScope scope, Type functionPointerType)
+        internal static SignatureHelper GetMethodSigHelper(DynamicScope? scope, Type functionPointerType)
         {
             Debug.Assert(functionPointerType.IsFunctionPointer);
 
@@ -147,8 +147,25 @@ namespace System.Reflection.Emit
 
             SignatureHelper sig = new(null, callConv);
             sig.m_returnType = retType;
-            sig.AddDynamicArgument(scope, retType, retTypeModReqs, retTypeModOpts, false);
-            sig.AddArguments(scope, paramTypes, paramModReqs, paramModOpts);
+
+            // No scope means no tokens: write the module-independent shape the runtime itself produces
+            // (SigPointer::ConvertToInternalExactlyOne). A RuntimeType carries no custom modifiers.
+            if (scope == null)
+            {
+                // Only the default and unmanaged conventions are written here; a vararg or instance pointer, which
+                // MakeFunctionPointerType can't rebuild, would load as another type.
+                if (retType.MakeFunctionPointerType(paramTypes, functionPointerType.IsUnmanagedFunctionPointer) != functionPointerType)
+                    throw new NotSupportedException(SR.Format(SR.NotSupported_FunctionPointerSignature, functionPointerType));
+
+                sig.AddOneArgTypeHelper(retType);
+                sig.AddArguments(paramTypes, null, null);
+            }
+            else
+            {
+                sig.AddDynamicArgument(scope, retType, retTypeModReqs, retTypeModOpts, false);
+                sig.AddArguments(scope, paramTypes, paramModReqs, paramModOpts);
+            }
+
             return sig;
         }
 
@@ -475,8 +492,11 @@ namespace System.Reflection.Emit
             }
             else if (clsArgument.IsFunctionPointer)
             {
-                if (scope == null)
-                    throw new NotSupportedException(SR.NotSupported_FunctionPointerSignature);
+                // Without a scope, this encoding writes class and value types as process-local type handles and drops
+                // modifiers. A module's signature can't hold the handles and a type other than a RuntimeType may carry
+                // modifiers, so neither is encoded without a scope.
+                if (scope == null && (m_module != null || clsArgument is not RuntimeType))
+                    throw new NotSupportedException(SR.Format(SR.NotSupported_FunctionPointerSignature, clsArgument));
 
                 AddData((int)CorElementType.ELEMENT_TYPE_FNPTR);
                 SignatureHelper sig = GetMethodSigHelper(scope, clsArgument);

@@ -4481,7 +4481,7 @@
     <value>'{0}' is not a valid calling convention type.</value>
   </data>
   <data name="NotSupported_FunctionPointerSignature">
-    <value>Function pointer signature can only be encoded by dynamic ILGenerator.</value>
+    <value>This signature cannot encode function pointer type '{0}': it has a module, the type is not a runtime type, or its calling convention is vararg or instance.</value>
   </data>
   <data name="Argument_FunctionPointersInvalid">
     <value>Function pointer types are not valid.</value>
