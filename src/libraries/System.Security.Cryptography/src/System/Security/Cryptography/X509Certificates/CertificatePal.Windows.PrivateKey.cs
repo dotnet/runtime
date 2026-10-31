@@ -94,8 +94,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         public MLKem? GetMLKemPrivateKey()
         {
-            // MLKem is not supported on Windows.
-            return null;
+            return GetPrivateKey<MLKem>(
+                _ =>
+                {
+                    Debug.Fail("CryptoApi does not support ML-KEM.");
+                    throw new PlatformNotSupportedException();
+                },
+                cngKey => new MLKemCng(cngKey, transferOwnership: true)
+            );
         }
 
         public SlhDsa? GetSlhDsaPrivateKey()
@@ -194,10 +200,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public ICertificatePal CopyWithPrivateKey(MLDsa privateKey) => CertificateHelpers.CopyWithPrivateKey(this, privateKey);
 
-        public ICertificatePal CopyWithPrivateKey(MLKem privateKey)
-        {
-            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
-        }
+        public ICertificatePal CopyWithPrivateKey(MLKem privateKey) => CertificateHelpers.CopyWithPrivateKey(this, privateKey);
 
         public ICertificatePal CopyWithPrivateKey(SlhDsa privateKey)
         {
