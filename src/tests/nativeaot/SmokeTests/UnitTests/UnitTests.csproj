@@ -15,9 +15,6 @@
     <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
 
     <Features>$(Features);runtime-async=on</Features>
-
-    <!-- TODO-NativeAOT-WASM: enable this -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <ItemGroup>

@@ -82,8 +82,8 @@ namespace System.DirectoryServices.Protocols
                 // Set the network timeout option to honor the Timeout property
                 var timeout = new LDAP_TIMEVAL()
                 {
-                    tv_sec = (int)(_connectionTimeOut.Ticks / TimeSpan.TicksPerSecond),
-                    tv_usec = (int)((_connectionTimeOut.Ticks % TimeSpan.TicksPerSecond) / TimeSpan.TicksPerMicrosecond) // Convert 100ns ticks to microseconds
+                    tv_sec = new CLong((int)(_connectionTimeOut.Ticks / TimeSpan.TicksPerSecond)),
+                    tv_usec = new CLong((int)((_connectionTimeOut.Ticks % TimeSpan.TicksPerSecond) / TimeSpan.TicksPerMicrosecond)) // Convert 100ns ticks to microseconds
                 };
 
                 int timeoutResult = LdapPal.SetTimevalOption(_ldapHandle, LdapOption.LDAP_OPT_NETWORK_TIMEOUT, ref timeout);

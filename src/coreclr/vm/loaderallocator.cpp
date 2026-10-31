@@ -36,6 +36,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 
     // initialize all members up front to NULL so that short-circuit failure won't cause invalid values
     m_InitialReservedMemForLoaderHeaps = NULL;
+    m_InitialReservedMemForLoaderHeapsSize = 0;
     m_pLowFrequencyHeap = NULL;
     m_pHighFrequencyHeap = NULL;
     m_pExecutableHeap = NULL;
@@ -1159,6 +1160,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     BYTE * initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
     m_InitialReservedMemForLoaderHeaps = initReservedMem;
+    m_InitialReservedMemForLoaderHeapsSize = dwTotalReserveMemSize;
 
     if (initReservedMem == NULL)
         COMPlusThrowOM();
@@ -1472,7 +1474,7 @@ void LoaderAllocator::Terminate()
 
     if (m_InitialReservedMemForLoaderHeaps)
     {
-        ExecutableAllocator::Instance()->Release(m_InitialReservedMemForLoaderHeaps);
+        ExecutableAllocator::Instance()->Release(m_InitialReservedMemForLoaderHeaps, m_InitialReservedMemForLoaderHeapsSize);
         m_InitialReservedMemForLoaderHeaps=NULL;
     }
 

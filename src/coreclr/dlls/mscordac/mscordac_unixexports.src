@@ -39,7 +39,6 @@ nativeStringResourceTable_mscorrc
 #PAL__wcstoui64
 #PAL_wcstoul
 #PAL_wcstod
-#PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange
 #PAL_VirtualUnwindOutOfProc
 #PAL_wcslen
 #PAL_wcsncmp
@@ -100,10 +99,6 @@ nativeStringResourceTable_mscorrc
 #SetThreadDescription
 #SwitchToThread
 #TerminateProcess
-#VirtualAlloc
-#VirtualFree
-#VirtualProtect
-#VirtualQuery
 #UnmapViewOfFile
 #WideCharToMultiByte
 #WriteFile

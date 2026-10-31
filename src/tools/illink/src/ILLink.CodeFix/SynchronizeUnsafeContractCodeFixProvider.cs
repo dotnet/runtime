@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
@@ -38,10 +38,11 @@ namespace ILLink.CodeFix
         public const string UnsafeCannotExplicitlyImplementSafeDiagnosticId = "CS9366";
 
         // The keys are deliberately independent of the member being fixed, so that "fix all occurrences"
-        // groups every use of the same action rather than one group per member name.
-        private const string RemoveEquivalenceKey = nameof(SynchronizeUnsafeContractCodeFixProvider) + ".Remove";
+        // groups every use of the same action rather than one group per member name. Removing 'unsafe' and
+        // replacing it with 'safe' (for extern members, which must keep a marker) are the same narrowing edit, so
+        // they share a key and one fix-all pass applies whichever each member needs.
+        private const string NarrowEquivalenceKey = nameof(SynchronizeUnsafeContractCodeFixProvider) + ".Narrow";
         private const string AddToBaseEquivalenceKey = nameof(SynchronizeUnsafeContractCodeFixProvider) + ".AddToBase";
-        private const string ReplaceWithSafeEquivalenceKey = nameof(SynchronizeUnsafeContractCodeFixProvider) + ".ReplaceWithSafe";
 
         private static LocalizableString RemoveTitle =>
             new LocalizableResourceString(
@@ -68,7 +69,7 @@ namespace ILLink.CodeFix
                 UnsafeCannotExplicitlyImplementSafeDiagnosticId,
             ];
 
-        public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+        public override FixAllProvider GetFixAllProvider() => UnsafeMigrationFixAllProvider.Instance;
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -95,7 +96,7 @@ namespace ILLink.CodeFix
                                 context.Document,
                                 derivedDeclaration,
                                 cancellationToken),
-                            ReplaceWithSafeEquivalenceKey),
+                            NarrowEquivalenceKey),
                         diagnostic);
                 }
             }
@@ -108,7 +109,7 @@ namespace ILLink.CodeFix
                             context.Document,
                             derivedDeclaration,
                             cancellationToken),
-                        RemoveEquivalenceKey),
+                        NarrowEquivalenceKey),
                     diagnostic);
             }
 

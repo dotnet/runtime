@@ -1767,6 +1767,11 @@ void EEJitManager::SetCpuInfo()
                 CPUCompileFlags.Set(InstructionSet_SveAes);
             }
 
+            if (((cpuFeatures & ARM64IntrinsicConstants_SvePmull128) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SvePmull128))
+            {
+                CPUCompileFlags.Set(InstructionSet_SvePmull128);
+            }
+
             if (((cpuFeatures & ARM64IntrinsicConstants_SveSha3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SveSha3))
             {
                 CPUCompileFlags.Set(InstructionSet_SveSha3);
@@ -2641,7 +2646,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     _ASSERTE(heapSize >= initialRequestSize);
 
-    // We do not need to memset this memory, since ClrVirtualAlloc() guarantees that the memory is zero.
+    // We do not need to memset this memory, since VirtualAlloc() guarantees that the memory is zero.
     // Furthermore, if we avoid writing to it, these pages don't come into our working set
 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
