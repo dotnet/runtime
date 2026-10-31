@@ -1932,11 +1932,24 @@ void emitter::emitInsSve_Mov(instruction   ins,
     switch (ins)
     {
         case INS_sve_mov:
-            if (isPredicateRegister(dstReg))
+            if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
             {
                 assert((opt == INS_OPTS_SCALABLE_B) || insOptsNone(opt));
                 opt  = INS_OPTS_SCALABLE_B;
                 attr = EA_SCALABLE;
+            }
+            else if (isVectorRegister(dstReg) && isVectorRegister(srcReg))
+            {
+                assert(insOptsNone(opt) || insOptsScalable(opt));
+                opt = INS_OPTS_SCALABLE_D;
+            }
+            else if (isVectorRegister(dstReg) && isGeneralRegisterOrSP(srcReg))
+            {
+                assert(insOptsScalable(opt));
+            }
+            else
+            {
+                unreached();
             }
             break;
 

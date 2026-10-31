@@ -5671,6 +5671,11 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
 
     unsigned naturalMul = 0;
 #ifdef TARGET_ARM64
+    if (varTypeHasUnknownSize(type))
+    {
+        // TODO-SVE: Implement SVE addressing modes
+        return false;
+    }
     // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
     //
     //   *(ulong*)(data + index * 8); - can be optimized
