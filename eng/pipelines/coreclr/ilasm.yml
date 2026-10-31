@@ -12,9 +12,12 @@ pr:
     - src/coreclr/ilasm/*
     - src/coreclr/ildasm/*
     - src/tools/ilasm/*
+    - src/tools/ildasm/*
     - src/coreclr/.nuget/Microsoft.NETCore.ILAsm/*
+    - src/coreclr/.nuget/Microsoft.NETCore.ILDAsm/*
     - src/coreclr/.nuget/package-rids.props
     - src/tasks/installer.tasks/*
+    - eng/NativeAotToolPackage.targets
     - eng/Subsets.props
 
 schedules:
@@ -56,7 +59,7 @@ extends:
               - windows_x64
               jobParameters:
                 nameSuffix: ILAsm
-                buildArgs: -s tools.ilasm -c $(_BuildConfig) -pack -test
+                buildArgs: -s tools.iltools -c $(_BuildConfig) -pack -test
                 timeoutInMinutes: 120
                 enablePublishTestResults: true
                 testResultsFormat: 'xunit'

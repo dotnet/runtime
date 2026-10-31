@@ -29,9 +29,14 @@
     <ItemGroup>
       <_NativeAotToolPackageFile Include="@(PublishItemsOutputGroupOutputs->'%(OutputPath)')">
         <PackagePath>runtimes/$(PackageTargetRuntime)/native/%(PublishItemsOutputGroupOutputs.TargetPath)</PackagePath>
+        <!-- NuGet treats a PackagePath without the file's extension as a folder, which would nest extensionless Unix executables in a folder of their own name. -->
+        <PackageFolder>runtimes/$(PackageTargetRuntime)/native/$([System.IO.Path]::GetDirectoryName('%(PublishItemsOutputGroupOutputs.TargetPath)'))</PackageFolder>
         <IsSymbolFile Condition="'%(Extension)' == '.pdb' or '%(Extension)' == '.dbg' or '%(Extension)' == '.dwarf'">true</IsSymbolFile>
       </_NativeAotToolPackageFile>
-      <Content Include="@(_NativeAotToolPackageFile)" Pack="true" Condition="'%(_NativeAotToolPackageFile.IsSymbolFile)' != 'true'" />
+      <Content Include="@(_NativeAotToolPackageFile)"
+               Pack="true"
+               PackagePath="%(_NativeAotToolPackageFile.PackageFolder)"
+               Condition="'%(_NativeAotToolPackageFile.IsSymbolFile)' != 'true'" />
       <_TargetPathsToSymbols Include="@(_NativeAotToolPackageFile)"
                              Condition="'%(_NativeAotToolPackageFile.IsSymbolFile)' == 'true'"
                              FinalOutputPath="%(_NativeAotToolPackageFile.Identity)"
