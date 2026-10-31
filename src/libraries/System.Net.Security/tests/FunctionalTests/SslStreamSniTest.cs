@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Test.Common;
 using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -215,6 +216,97 @@ namespace System.Net.Security.Tests
 
             Assert.Equal(string.Empty, server.TargetHostName);
             Assert.Equal(target, client.TargetHostName);
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        [InlineData("192.0.2.1", null, null, "192.0.2.1", true)]
+        [InlineData("192.0.2.1", null, null, "192.0.2.2", false)]
+        [InlineData("192.0.2.1", "192.0.2.2", null, "192.0.2.1", true)]
+        [InlineData("192.0.2.1", "192.0.2.2", null, "192.0.2.2", true)]
+        [InlineData("192.0.2.1", "192.0.2.2", null, "192.0.2.3", false)]
+        [InlineData("192.0.2.1", null, "example.test", "192.0.2.1", false)]
+        [InlineData("192.0.2.1", "192.0.2.2", "example.test", "192.0.2.1", false)]
+        [InlineData("192.0.2.1", "192.0.2.2", "example.test", "192.0.2.2", true)]
+        [InlineData("192.0.2.1", null, "192.0.2.1", "192.0.2.1", true)]
+        [InlineData("other.test", null, "192.0.2.1", "192.0.2.1", true)]
+        [InlineData("192.0.2.1", null, "*.0.2.1", "192.0.2.1", false)]
+        [InlineData("*.0.2.1", null, null, "192.0.2.1", false)]
+        [InlineData("2001:db8::1", null, null, "2001:db8::1", true)]
+        [InlineData("2001:db8::1", null, null, "2001:db8::2", false)]
+        [InlineData("2001:db8::1", "2001:db8::2", null, "2001:db8::1", true)]
+        [InlineData("2001:db8::1", "2001:db8::2", null, "2001:db8::2", true)]
+        [InlineData("2001:db8::1", "2001:db8::2", null, "2001:db8::3", false)]
+        [InlineData("2001:db8::1", null, "example.test", "2001:db8::1", false)]
+        [InlineData("2001:db8::1", "2001:db8::2", "example.test", "2001:db8::1", false)]
+        [InlineData("2001:db8::1", "2001:db8::2", "example.test", "2001:db8::2", true)]
+        [InlineData("2001:db8::1", null, "2001:db8::1", "2001:db8::1", true)]
+        [InlineData("other.test", null, "2001:db8::1", "2001:db8::1", true)]
+        public async Task SslStream_IpLiteral_CertificateNameValidation(
+            string commonName, string? sanAddress, string? sanDnsName, string targetHost, bool expectNameMatch)
+        {
+            using RSA key = RSA.Create(2048);
+            CertificateRequest request = new CertificateRequest(
+                $"CN={commonName}", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+            if (sanAddress is not null || sanDnsName is not null)
+            {
+                SubjectAlternativeNameBuilder san = new SubjectAlternativeNameBuilder();
+
+                if (sanDnsName is not null)
+                {
+                    san.AddDnsName(sanDnsName);
+                }
+
+                if (sanAddress is not null)
+                {
+                    san.AddIpAddress(IPAddress.Parse(sanAddress));
+                }
+
+                request.CertificateExtensions.Add(san.Build());
+            }
+
+            using X509Certificate2 certificate = request.CreateSelfSigned(
+                DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+            using X509Certificate2 serverCertificate = X509CertificateLoader.LoadPkcs12(
+                certificate.Export(X509ContentType.Pkcs12), (string?)null);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                SslPolicyErrors? observedErrors = null;
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = targetHost,
+                    AllowTlsResume = false,
+                    CertificateChainPolicy = new X509ChainPolicy
+                    {
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { certificate },
+                        RevocationMode = X509RevocationMode.NoCheck,
+                    },
+                    RemoteCertificateValidationCallback = (sender, remoteCertificate, chain, errors) =>
+                    {
+                        observedErrors = errors;
+                        return true;
+                    },
+                };
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCertificate,
+                    AllowTlsResume = false,
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(clientOptions),
+                    server.AuthenticateAsServerAsync(serverOptions));
+
+                Assert.Equal(
+                    expectNameMatch ? SslPolicyErrors.None : SslPolicyErrors.RemoteCertificateNameMismatch,
+                    observedErrors);
+                await TestHelper.PingPong(client, server);
+            }
         }
 
         [Theory]
