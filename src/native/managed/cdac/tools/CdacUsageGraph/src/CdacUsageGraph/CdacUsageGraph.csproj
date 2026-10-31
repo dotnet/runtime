@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsShipping>false</IsShipping>
-    <IsPackable>true</IsPackable>
+    <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>Microsoft.Diagnostics.DataContractReader.UsageGraph</AssemblyName>
     <!-- The tool lives under src/native/managed/cdac, whose Directory.Build.props marks assemblies
