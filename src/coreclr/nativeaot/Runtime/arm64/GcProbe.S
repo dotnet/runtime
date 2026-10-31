@@ -115,10 +115,7 @@
     bl C_FUNC(RhpGetThread)
     mov x9, x0
 
-    ldp         q6, q7, [sp, #0xB0]
-    ldp         q4, q5, [sp, #0x90]
-    ldp         q2, q3, [sp, #0x70]
-    ldp         q0, q1, [sp, #0x50]
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 0x50
     ldp         x0, x1, [sp, #0x10]
     ldp         x2, x3, [sp, #0x20]
     ldp         x4, x5, [sp, #0x30]
@@ -128,15 +125,14 @@
     // INLINE_GETTHREAD makes blr calls that trash volatile FP registers.
     // Save and restore q0-q7 around the call.
     sub         sp, sp, #0x80
+    .cfi_adjust_cfa_offset 0x80
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, 0
 
     INLINE_GETTHREAD x9
 
-    ldp         q6, q7, [sp, #0x60]
-    ldp         q4, q5, [sp, #0x40]
-    ldp         q2, q3, [sp, #0x20]
-    ldp         q0, q1, [sp, #0x00]
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 0
     add         sp, sp, #0x80
+    .cfi_adjust_cfa_offset -0x80
 #endif
 
     //
