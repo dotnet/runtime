@@ -1,9 +1,10 @@
 # When to Set `<RequiresProcessIsolation>true</RequiresProcessIsolation>`
 
 `RequiresProcessIsolation` prevents a test project from being merged into a shared
-test runner process. When set, the test is built as a standalone executable and
-executed in its own process. A test project must set this property when any of the
-rules below apply.
+test runner process. Runnable tests are built as standalone executables and executed
+in their own processes. When set on a shared-library project, it excludes that library
+from merged runner output folders. A runnable test project must set this property when
+any of the rules below apply.
 
 ## Rules
 
@@ -57,7 +58,10 @@ The test is skipped during SuperPMI collection runs. The skip check is per-proce
 
 ### 9. Project sets `<IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>`
 
-The test is skipped during IL round-trip validation runs. The skip check is per-process.
+`IlasmRoundTripIncompatible` skips the test during IL round-trip validation runs. Runnable
+tests need process isolation because their skip checks are per-process. Shared-library
+projects do not need process isolation; merged runners skip their marked assemblies
+individually.
 
 ### 10. Project sets `<UnloadabilityIncompatible>true</UnloadabilityIncompatible>`
 

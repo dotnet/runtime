@@ -8,6 +8,7 @@
          For offline builds we still set OfficialBuildId but we need to build all the packages for a single
          leg only, so we also take DotNetBuildSourceOnly into account. -->
     <BuildingAnOfficialBuildLeg Condition="'$(BuildingAnOfficialBuildLeg)' == '' and '$(OfficialBuildId)' != '' and '$(DotNetBuildSourceOnly)' != 'true'">true</BuildingAnOfficialBuildLeg>
+    <RunILLinkInBuild Condition="'$(RunILLinkInBuild)' == '' and '$(BuildingAnOfficialBuildLeg)' == 'true'">true</RunILLinkInBuild>
     <!-- When doing a source build, we want to build the various text-only manifests in
          all cases, rather than ordinarily where we build them during mobile or wasm
          build legs. This makes the manifests available on source-only builds. -->
@@ -15,6 +16,7 @@
     <!-- Propagate the configuration and platform to project references. When building in VS, this defaults to true.
          Explicitly setting it to false ensures projects are built in the corresponding configuration both in VS and on the command line. -->
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
+    <EnableSourceLink Condition="'$(ROSLYN_CACHE_PATH)' != ''">false</EnableSourceLink>
   </PropertyGroup>
 
   <!-- We don't have RepoRoot or RepositoryEngineeringDir available at this point -->
@@ -68,7 +70,7 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>11.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>12.0</NetCoreAppCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
@@ -78,7 +80,7 @@
     <NetCurrent>$(NetCoreAppCurrent)</NetCurrent>
 
     <!-- The previous supported .NET version. -->
-    <NetCoreAppPrevious />
+    <NetCoreAppPrevious>net11.0</NetCoreAppPrevious>
     <NetCoreAppPrevious Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious>
     <!-- TODO: Replace NetCoreAppPrevious with NetPrevious in this repo -->
     <NetPrevious>$(NetCoreAppPrevious)</NetPrevious>
@@ -90,6 +92,7 @@
     <NetMinimum>$(NetCoreAppMinimum)</NetMinimum>
 
     <NetCoreAppToolCurrentVersion>11.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppToolCurrentVersion Condition="'$(DotNetBuildSourceOnly)' == 'true'">$([MSBuild]::GetTargetFrameworkVersion('$(BundledNETCoreAppTargetFramework)'))</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
     <!-- TODO: Replace NetCoreAppToolCurrent with BundledNETCoreAppTargetFramework in this repo -->
@@ -102,8 +105,8 @@
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
     <NetFrameworkCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
 
-    <ApiCompatNetCoreAppBaselineVersion>10.0.0</ApiCompatNetCoreAppBaselineVersion>
-    <ApiCompatNetCoreAppBaselineTFM>net10.0</ApiCompatNetCoreAppBaselineTFM>
+    <ApiCompatNetCoreAppBaselineVersion>11.0.0-rc.1.26425.128</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineTFM>net11.0</ApiCompatNetCoreAppBaselineTFM>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
@@ -135,6 +138,7 @@
     <BrowserProjectRoot>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'browser'))</BrowserProjectRoot>
     <WasmProjectRoot>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm'))</WasmProjectRoot>
     <WasiProjectRoot>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasi'))</WasiProjectRoot>
+    <WasmPInvokeModulesPropsPath Condition="'$(WasmPInvokeModulesPropsPath)' == ''">$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', 'wasm', 'WasmPInvokeModules.props'))</WasmPInvokeModulesPropsPath>
 
     <CoreclrRuntimeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</CoreclrRuntimeBinDir>
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(TasksConfiguration)', 'net'))</AppleAppBuilderDir>
@@ -218,12 +222,19 @@
     <!-- Runtime doesn't support Arcade-driven target framework filtering. -->
     <NoTargetFrameworkFiltering>true</NoTargetFrameworkFiltering>
 
-    <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrAllJitsCommunitySubset;ClrILToolsSubset;ClrNativeAotSubset;ClrSpmiSubset;ClrCrossComponentsSubset;ClrDebugSubset;HostArchitecture;PgoInstrument;NativeOptimizationDataSupported;CMakeArgs;CxxStandardLibrary;CxxStandardLibraryStatic;CxxAbiLibrary</NativeBuildPartitionPropertiesToRemove>
+    <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrAllJitsCommunitySubset;ClrILToolsSubset;ClrNativeAotSubset;ClrSpmiSubset;ClrCrossComponentsSubset;ClrDebugSubset;HostArchitecture;PgoInstrument;NativeOptimizationDataSupported;CMakeArgs;ClrCrossComponentsBuild;CxxStandardLibrary;CxxStandardLibraryStatic;CxxAbiLibrary</NativeBuildPartitionPropertiesToRemove>
     <UseSystemZlib Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android'">true</UseSystemZlib>
   </PropertyGroup>
 
   <!-- RepositoryEngineeringDir isn't set when Installer tests import this file. -->
   <Import Project="$(RepositoryEngineeringDir)native\naming.props" />
+
+  <PropertyGroup>
+    <!-- These properties must be initialized before Subsets.props selects host tool projects. -->
+    <BuildHostTools Condition="'$(DotNetBuildFromVMR)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'">true</BuildHostTools>
+    <BuildHostILTools Condition="'$(BuildHostTools)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))">true</BuildHostILTools>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)Subsets.props" />
 
   <PropertyGroup>

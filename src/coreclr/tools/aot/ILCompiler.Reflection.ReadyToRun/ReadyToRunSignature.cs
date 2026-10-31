@@ -1222,6 +1222,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(" (METHOD_ENTRY)");
                     break;
 
+                case ReadyToRunFixupKind.MethodEntry_ReadyToRun:
+                    ParseMethod(builder);
+                    builder.Append(" (METHOD_ENTRY_READYTORUN)");
+                    break;
+
                 case ReadyToRunFixupKind.MethodEntry_DefToken:
                     uint methodDefToken = ParseMethodDefToken(builder, owningTypeOverride: null);
                     builder.Append(" (METHOD_ENTRY");
@@ -1763,6 +1768,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("BULK_WRITE_BARRIER");
                     break;
 
+                case ReadyToRunHelper.BulkWriteBarrierSmall:
+                    builder.Append("BULK_WRITE_BARRIER_SMALL");
+                    break;
+
                 // Array helpers
                 case ReadyToRunHelper.Stelem_Ref:
                     builder.Append("STELEM_REF");
@@ -1797,8 +1806,16 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("PINVOKE_END");
                     break;
 
+                case ReadyToRunHelper.ResumeAfterCatch:
+                    builder.Append("RESUME_AFTER_CATCH");
+                    break;
+
                 case ReadyToRunHelper.GCPoll:
                     builder.Append("GCPOLL");
+                    break;
+
+                case ReadyToRunHelper.WasmProfSamplepoint:
+                    builder.Append("WASM_PROF_SAMPLEPOINT");
                     break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:

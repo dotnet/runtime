@@ -15,7 +15,7 @@ namespace Tracing.Tests.NonLossyBlockEnv
     {
         private NonLossyBlockEnvEventSource() {}
         public static NonLossyBlockEnvEventSource Log = new NonLossyBlockEnvEventSource();
-        public void BlockEnvEvent() { WriteEvent(1, "BlockEnvEvent"); }
+        public void BlockEnvEvent() { WriteEvent(1); }
     }
 
     // Validates the DOTNET_EventPipeBufferingMode startup-session opt-in (env-var path in
@@ -192,7 +192,7 @@ namespace Tracing.Tests.NonLossyBlockEnv
             }
             psi.ArgumentList.Add("tracee");
 
-            psi.UseShellExecute = false;
+            psi.InheritedHandles = [];
             psi.RedirectStandardOutput = true;
             psi.RedirectStandardError = true;
 
@@ -202,26 +202,41 @@ namespace Tracing.Tests.NonLossyBlockEnv
             psi.Environment["DOTNET_EventPipeCircularMB"] = CircularMB.ToString();
             psi.Environment["DOTNET_EventPipeBufferingMode"] = bufferingMode;
             psi.Environment["DOTNET_EventPipeOutputStreaming"] = outputStreaming;
+            psi.Environment["DOTNET_EventPipeRundown"] = "0";
 
             Console.WriteLine($"Launching tracee: {psi.FileName} {string.Join(" ", psi.ArgumentList)}");
             Console.WriteLine($"  DOTNET_EventPipeBufferingMode={bufferingMode} DOTNET_EventPipeOutputStreaming={outputStreaming} DOTNET_EventPipeCircularMB={CircularMB}");
 
-            using Process process = Process.Start(psi)
-                ?? throw new InvalidOperationException("Failed to start tracee process.");
-            process.OutputDataReceived += (_, e) => { if (!string.IsNullOrEmpty(e.Data)) Console.WriteLine($"[tracee][stdout] {e.Data}"); };
-            process.ErrorDataReceived += (_, e) => { if (!string.IsNullOrEmpty(e.Data)) Console.WriteLine($"[tracee][stderr] {e.Data}"); };
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-
-            if (!process.WaitForExit(TraceeExitTimeoutMs))
+            using Process process = Process.Start(psi)!;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            TimeSpan timeout = TimeSpan.FromMilliseconds(TraceeExitTimeoutMs);
+            try
+            {
+                foreach (ProcessOutputLine line in process.ReadAllLines(timeout))
+                {
+                    if (!string.IsNullOrEmpty(line.Content))
+                    {
+                        Console.WriteLine($"[tracee][{(line.StandardError ? "stderr" : "stdout")}] {line.Content}");
+                    }
+                }
+            }
+            catch (TimeoutException)
             {
                 Console.WriteLine($"Tracee did not exit within {TraceeExitTimeoutMs}ms; killing it.");
                 process.Kill(entireProcessTree: true);
-                process.WaitForExit();
+                process.WaitForExitStatus();
                 return -1;
             }
-            process.WaitForExit(); // ensure async output is flushed
-            return process.ExitCode;
+
+            TimeSpan remaining = TimeSpan.FromMilliseconds(Math.Max(0, (timeout - stopwatch.Elapsed).TotalMilliseconds));
+            if (!process.TryWaitForExitStatus(remaining, out ProcessExitStatus status))
+            {
+                Console.WriteLine($"Tracee did not exit within {TraceeExitTimeoutMs}ms; killing it.");
+                process.Kill(entireProcessTree: true);
+                process.WaitForExitStatus();
+                return -1;
+            }
+            return status.ExitCode;
         }
 
         private static string CreateTraceDirectory()

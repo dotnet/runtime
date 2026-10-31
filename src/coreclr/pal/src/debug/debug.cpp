@@ -2,23 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     debug.c
 
 Abstract:
-
     Implementation of Win32 debugging API functions.
-
-Revision History:
-
-
-
 --*/
-
 
 #include "pal/dbgmsg.h"
 SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do this first
@@ -34,8 +23,8 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include "pal/environ.h"
 #include "pal/module.h"
 #include "pal/stackstring.hpp"
-#include "pal/virtual.h"
 #include "pal/utils.h"
+#include <minipal/ospagesize.h>
 
 #include <signal.h>
 #include <unistd.h>
@@ -76,12 +65,6 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 using namespace CorUnix;
 
 extern "C" void DBG_DebugBreak_End();
-
-#if HAVE_PROCFS_CTL
-#define CTL_ATTACH      "attach"
-#define CTL_DETACH      "detach"
-#define CTL_WAIT        "wait"
-#endif   // HAVE_PROCFS_CTL
 
 /* ------------------- Constant definitions ----------------------------------*/
 
@@ -365,7 +348,7 @@ DebugBreakCommand()
            variables in the child process, but if we do that we can't check
            for errors. putenv/setenv can fail when out of memory */
 
-        if (!EnvironPutenv (pid_buf, FALSE) || !EnvironPutenv (exe_buf, FALSE))
+        if (!EnvironPutenv (pid_buf) || !EnvironPutenv (exe_buf))
         {
             goto FAILED;
         }
@@ -634,7 +617,7 @@ PAL_ProbeMemory(
         }
 
         // Round to the beginning of the next page
-        pBuffer = PVOID(ALIGN_DOWN((SIZE_T)pBuffer, GetVirtualPageSize()) + GetVirtualPageSize());
+        pBuffer = PVOID(ALIGN_DOWN((SIZE_T)pBuffer, minipal_getpagesize()) + minipal_getpagesize());
     }
 
     close(fds[0]);

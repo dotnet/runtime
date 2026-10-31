@@ -1,0 +1,15 @@
+<Project TreatAsLocalProperty="TargetOS;TargetArchitecture">
+  <PropertyGroup>
+    <!-- Reset TargetOS/TargetArchitecture so they default to the host: these tests only drive MSBuild
+         and run on the host, they are never built for a mobile target. -->
+    <TargetOS />
+    <TargetArchitecture />
+  </PropertyGroup>
+
+  <!-- Imports the repo defaults directly, skipping the src/mono conventions in between: those are
+       tuned for the native and mobile build output, and these are ordinary managed tests that want the
+       standard artifacts/bin/<project>/<config>/<tfm> layout. src/mono/wasm/Wasm.Build.Tests skips the
+       src/mono conventions the same way, only it redirects to the src/libraries ones instead of the
+       repo defaults. -->
+  <Import Project="..\..\..\..\..\Directory.Build.props" />
+</Project>

@@ -514,9 +514,20 @@ void CryptoNative_SslSetAcceptMovingWriteBuffer(SSL* ssl)
     SSL_set_mode(ssl, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 }
 
-int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode)
+int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode, int32_t processPeer)
 {
     ERR_clear_error();
+    if (processPeer)
+    {
+        // Start processing peer-initiated renegotiation and post-handshake messages.
+        // Skip this when only flushing our initial request, so sending the request
+        // cannot also consume the peer's entire answer.
+        // Preserve errno so the last error reflects SSL_do_handshake rather than SSL_peek.
+        int peekErrno = errno;
+        SSL_peek(ssl, NULL, 0);
+        errno = peekErrno;
+    }
+
     int32_t ret = SSL_do_handshake(ssl);
     // See CryptoNative_SslWrite: preserve errno across SSL_get_error.
     int savedErrno = errno;
@@ -556,7 +567,12 @@ int32_t CryptoNative_SslHandshake(
 
     // this peek ensures that the SSL handshake state machine starts processing
     // renegotiation and post-handshake client cert requests
+    // Guard errno the same way CryptoNative_SslDoHandshake does: this shim is also
+    // P/Invoked with SetLastError=true, so save/restore errno around SSL_peek so the
+    // last error reflects the SSL_do_handshake attempt rather than the peek.
+    int peekErrno = errno;
     SSL_peek(ssl, NULL, 0);
+    errno = peekErrno;
 
     int32_t result = SSL_do_handshake(ssl);
     *errorCode = (result == 1) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
@@ -856,6 +872,11 @@ int32_t CryptoNative_SslSetSession(SSL* ssl, SSL_SESSION* session)
 void CryptoNative_SslSessionFree(SSL_SESSION* session)
 {
     SSL_SESSION_free(session);
+}
+
+int32_t CryptoNative_SslSessionUpRef(SSL_SESSION* session)
+{
+    return SSL_SESSION_up_ref(session);
 }
 
 const char* CryptoNative_SslSessionGetHostname(SSL_SESSION* session)

@@ -79,6 +79,10 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool ContainsGCPointers(ITypeHandle typeHandle);
     // True if the MethodTable represents a byref-like value type (Span<T>, ReadOnlySpan<T>, any ref struct).
     public virtual bool IsByRefLike(ITypeHandle typeHandle);
+    // True if the type is a compiler-generated inline array buffer type (EEClass::IsInlineArray):
+    // its single declared instance field is repeated across the whole GetNumInstanceFieldBytes
+    // span, one element per (field size) bytes, rather than declared once per element.
+    public virtual bool IsInlineArray(ITypeHandle typeHandle);
     // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
     // to 4, 8, or 16. Returns false otherwise (including on targets that don't
     // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
@@ -86,6 +90,11 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(ITypeHandle typeHandle);
+    // Returns the alignment requirement of a type. Mirrors
+    // CEEInfo::getClassAlignmentRequirementStatic in src/coreclr/vm/jitinterface.cpp. The result is
+    // unclamped -- callers such as ArgIterator apply their own clamping. This is optional
+    // functionality; runtimes that don't support it return the target pointer size.
+    public virtual int GetClassAlignmentRequirement(ITypeHandle typeHandle);
     // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
     // (used to decide how a struct is passed in registers), or false if the type has no such
     // classification (not applicable, or the runtime was not built with UNIX_AMD64_ABI).
@@ -556,6 +565,10 @@ static class RuntimeTypeSystem_1_Helpers
 | `EEClass` | `NumStaticFields` | `uint16` | Count of static fields of the EEClass |
 | `EEClass` | `NumThreadStaticFields` | `uint16` | Count of threadstatic fields of the EEClass |
 | `EEClass` | `OptionalFields` | `pointer` | Pointer to the `EEClassOptionalFields` for this type, or null if it has none |
+| `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass` and its `LayoutInfo` may be read. Bit `0x10000` (`VMFLAG_INLINE_ARRAY`) indicates the type is a compiler-generated inline array buffer whose single declared instance field is repeated across the whole array |
+| `EEClassLayoutInfo` | `AlignmentRequirement` | `uint8` | Largest alignment requirement of all members of the type |
+| `EEClassLayoutInfo` | `Flags` | `uint8` | Layout flags. Bit `0x01` (`e_BLITTABLE`) indicates the type is blittable |
+| `EEClassLayoutInfo` | `LayoutType` | `uint8` | Layout kind: `Auto` (0), `Sequential` (1), `Explicit` (2), `CStruct` (3), `CUnion` (4) |
 | `EEClassOptionalFields` | `EightByteRegistersInfo` | `SystemVEightByteRegistersInfo` | Inline `SystemVEightByteRegistersInfo` describing the SystemV AMD64 register-passing classification (only populated on UNIX_AMD64_ABI builds) |
 | `EEImplMethodDesc` | *(type size)* | `uint32` | Base size for mcEEImpl classification |
 | `FCallMethodDesc` | *(type size)* | `uint32` | Base size for mcFCall classification |
@@ -574,18 +587,9 @@ static class RuntimeTypeSystem_1_Helpers
 | `InstantiatedMethodDesc` | `Flags2` | `uint16` | Flags for the InstantiatedMethodDesc |
 | `InstantiatedMethodDesc` | `NumGenericArgs` | `uint16` | How many generic args the method has |
 | `InstantiatedMethodDesc` | `PerInstInfo` | `pointer` | The pointer to the method's type arguments |
+| `LayoutEEClass` | `LayoutInfo` | `EEClassLayoutInfo` | Inline `EEClassLayoutInfo` for a type with layout. Only the offset is used - the reader constructs an `EEClassLayoutInfo` at that offset from the `EEClass` address. Only valid when `EEClass.VMFlags` has `VMFLAG_HASLAYOUT` |
 | `LoaderAllocator` | `CreationNumber` | `uint64` | Monotonically-increasing creation number assigned to each collectible LoaderAllocator. |
-| `LoaderAllocator` | `DynamicHelpersStubHeap` | `pointer` | Dynamic-helper stub heap (optional, present when ReadyToRun dynamic-helper stubs are enabled) |
-| `LoaderAllocator` | `ExecutableHeap` | `pointer` | Executable-code heap |
-| `LoaderAllocator` | `FixupPrecodeHeap` | `pointer` | Fixup-precode heap (optional, present when fixup precodes are supported) |
-| `LoaderAllocator` | `HighFrequencyHeap` | `pointer` | High-frequency allocation heap |
 | `LoaderAllocator` | `IsCollectible` | `uint8` | Non-zero if the LoaderAllocator is collectible. |
-| `LoaderAllocator` | `LowFrequencyHeap` | `pointer` | Low-frequency allocation heap |
-| `LoaderAllocator` | `NewStubPrecodeHeap` | `pointer` | New-stub-precode heap (optional, absent with portable entry points) |
-| `LoaderAllocator` | `ObjectHandle` | `ObjectHandle` | Handle to the managed loader allocator object |
-| `LoaderAllocator` | `ReferenceCount` | `uint32` | Reference count of the loader allocator |
-| `LoaderAllocator` | `StaticsHeap` | `pointer` | Heap containing statics-related allocations |
-| `LoaderAllocator` | `VirtualCallStubManager` | `pointer` | Pointer to the virtual-call stub manager |
 | `MethodDesc` | *(type size)* | `uint32` | Base size for mcIL classification |
 | `MethodDesc` | `ChunkIndex` | `uint8` | Offset of this MethodDesc relative to the end of its containing MethodDescChunk - in multiples of MethodDescAlignment |
 | `MethodDesc` | `CodeData` | `pointer` | Pointer to per-method code data containing entry-point and code-versioning state |
@@ -608,6 +612,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `MethodTable` | `AuxiliaryData` | `pointer` | Pointer to the AuxiliaryData of a method table |
 | `MethodTable` | `BaseSize` | `uint32` | BaseSize of a MethodTable |
 | `MethodTable` | `EEClassOrCanonMT` | `pointer` | Path to both EEClass and canonical MethodTable of a MethodTable |
+| `MethodTable` | `InterfaceMap` | `pointer` | Optional pointer to the array of interface MethodTable pointers used for contextual virtual argument-map lookup |
 | `MethodTable` | `Module` | `pointer` | Module for MethodTable |
 | `MethodTable` | `MTFlags` | `uint32` | One of the flags fields on MethodTable |
 | `MethodTable` | `MTFlags2` | `uint32` | One of the flags fields on MethodTable |
@@ -621,7 +626,6 @@ static class RuntimeTypeSystem_1_Helpers
 | `NativeCodeSlot` | *(type size)* | `uint32` | Size of the native code slot, added when HasNativeCodeSlot flag is set |
 | `NonVtableSlot` | *(type size)* | `uint32` | Size of the non-vtable slot, added when HasNonVtableSlot flag is set |
 | `Object` | *(type size)* | `uint32` | Size in bytes of the fixed Object portion through its MethodTable pointer |
-| `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `ParamTypeDesc` | `TypeArg` | `pointer` | Associated type argument |
 | `PInvokeMethodDesc` | *(type size)* | `uint32` | Base size for mcPInvoke classification |
 | `Signature` | `SignatureLength` | `uint32` | Length in bytes of the raw signature blob. |
@@ -634,9 +638,9 @@ static class RuntimeTypeSystem_1_Helpers
 | `SystemVEightByteRegistersInfo` | `EightByteSize0` | `uint8` | Byte size of the first eightbyte |
 | `SystemVEightByteRegistersInfo` | `EightByteSize1` | `uint8` | Byte size of the second eightbyte |
 | `SystemVEightByteRegistersInfo` | `NumEightBytes` | `uint8` | Number of eightbyte slots used to pass the value type in registers (0 if not passed in registers) |
-| `ThreadStaticsInfo` | *(type size)* | `uint32` | Size in bytes of the thread-statics information stored immediately before MethodTable auxiliary data |
-| `ThreadStaticsInfo` | `GCTlsIndex` | `pointer` | Pointer to GC thread local storage index |
-| `ThreadStaticsInfo` | `NonGCTlsIndex` | `pointer` | Pointer to non-GC thread local storage index |
+| `ThreadStaticsInfo` | *(type size)* | `uint32` | Size in bytes of the thread-statics information stored immediately before MethodTable auxiliary data (optional; absent on runtimes built without multithreading support) |
+| `ThreadStaticsInfo` | `GCTlsIndex` | `pointer` | Pointer to GC thread local storage index (optional; absent on runtimes built without multithreading support) |
+| `ThreadStaticsInfo` | `NonGCTlsIndex` | `pointer` | Pointer to non-GC thread local storage index (optional; absent on runtimes built without multithreading support) |
 | `TypedByRef` | `Data` | `pointer` | Managed pointer (the byref) stored in a System.TypedReference value |
 | `TypedByRef` | `Type` | `pointer` | Raw TypeHandle pointer of the referent type |
 | `TypeDesc` | `TypeAndFlags` | `uint32` | The lower 8 bits are the CorElementType of the TypeDesc, the upper 24 bits are reserved for flags |
@@ -655,7 +659,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `CoreLib` | `pointer` | Pointer to the CoreLibBinder data containing well-known core library type handles |
 | `ExceptionMethodTable` | `pointer` | A pointer to the address of the System.Exception MethodTable (g_pExceptionClass) |
 | `FieldOffsetBigRVA` | `uint32` | Sentinel value of FieldDesc::DWord2 indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (FieldDefinition.GetRelativeVirtualAddress). |
-| `FieldOffsetDynamicRVA` | `uint32` | Sentinel FieldDesc offset for an EnC-added RVA field whose enclosing type is not yet loaded |
+| `FieldOffsetDynamicRVA` | `uint32` | Sentinel FieldDesc offset for token-backed RVA field data, including Reflection.Emit fields and EnC-added fields whose enclosing type was not yet loaded when the field was added |
 | `FreeObjectMethodTable` | `pointer` | A pointer to the address of a MethodTable used by the GC to indicate reclaimed memory |
 | `MethodDescAlignment` | `uint64` | MethodDescChunk trailing data is allocated in multiples of this constant.  The size (in bytes) of each MethodDesc (or subclass) instance is a multiple of this constant. |
 | `MethodDescTokenRemainderBitCount` | `uint8` | Number of bits in the token remainder in MethodDesc |
@@ -816,6 +820,8 @@ static class RuntimeTypeSystem_1_Helpers
 
     public bool IsByRefLike(ITypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsByRefLike;
 
+    public bool IsInlineArray(ITypeHandle typeHandle) => typeHandle.IsMethodTable() && GetClassData(typeHandle).IsInlineArray;
+
     // Mirrors MethodTable::GetHFAType in src/coreclr/vm/class.cpp. Pseudocode:
     //
     //   TryGetHFAElementSize(th):
@@ -846,6 +852,25 @@ static class RuntimeTypeSystem_1_Helpers
     public bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize) { ... }
 
     public bool RequiresAlign8(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+
+    // Mirrors CEEInfo::getClassAlignmentRequirementStatic in src/coreclr/vm/jitinterface.cpp.
+    //   result = target pointer size
+    //   if the type is a MethodTable and has an EEClass:
+    //     if EEClass.VMFlags has VMFLAG_HASLAYOUT:
+    //       // LayoutEEClass derives from EEClass, so its layout info lives at a fixed offset from
+    //       // the same address. Reading it without the HasLayout check interprets unrelated memory.
+    //       layoutInfo = EEClassLayoutInfo at (eeClass + offsetof(LayoutEEClass, LayoutInfo))
+    //       if layoutInfo.LayoutType == Sequential or layoutInfo.Flags has e_BLITTABLE:
+    //         result = layoutInfo.AlignmentRequirement
+    //   // FEATURE_64BIT_ALIGNMENT (ARM, WASM). RequiresAlign8 is only set on targets with that
+    //   // requirement, so this is a no-op elsewhere.
+    //   if result < 8 and RequiresAlign8(typeHandle): result = 8
+    //   return result
+    //
+    // Note: the native implementation also handles the native (marshalled) value type view via
+    // TypeHandle::IsNativeValueType. That is a marshalling-only concept that is not reachable from
+    // the managed argument layout this contract serves, so it is not mirrored here.
+    public int GetClassAlignmentRequirement(ITypeHandle typeHandle) { ... }
 
     public bool IsCanonicalMethodTable(ITypeHandle typeHandle)
         => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].IsCanonMT;
@@ -995,7 +1020,9 @@ static class RuntimeTypeSystem_1_Helpers
 
     public TargetPointer GetGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        // Also covers non-MethodTable handles, and runtimes without multithreading support,
+        // where [ThreadStatic] fields are regular statics and ThreadStaticsInfo is absent.
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         MethodTable_1 methodTable = _methodTables[typeHandle.Address];
         TargetPointer threadStaticsInfoSize = target.GetTypeInfo(DataType.ThreadStaticsInfo).Size;
@@ -1008,7 +1035,7 @@ static class RuntimeTypeSystem_1_Helpers
 
     public TargetPointer GetNonGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         MethodTable_1 methodTable = _methodTables[typeHandle.Address];
         TargetPointer threadStaticsInfoSize = target.GetTypeInfo(DataType.ThreadStaticsInfo).Size;
@@ -1493,7 +1520,7 @@ The contract depends on the following other contracts
 | PlatformMetadata |
 | ReJIT |
 | ExecutionManager |
-| PrecodeStubs |
+| PrecodeStubs (when advertised) |
 
 And the following enumeration definitions
 
@@ -1966,8 +1993,9 @@ Determining if a method supports multiple code versions:
         MethodDesc md = _methodDescs[methodDesc.Address];
         if (md.IsEligibleForTieredCompilation)
             return true;
-        // MethodDesc::IsEligibleForReJIT
-        if (_target.Contracts.ReJIT.IsEnabled())
+        // MethodDesc::IsEligibleForReJIT. The ReJIT contract is advertised only with PROFILING_SUPPORTED;
+        // targets without it (wasm) also lack FEATURE_REJIT, so nothing is ReJIT-eligible.
+        if (_target.Contracts.TryGetContract(out IReJIT reJit) && reJit.IsEnabled())
         {
             if (!md.IsIL)
                 return false;
@@ -2296,23 +2324,6 @@ Getting a MethodDesc for a certain slot in a MethodTable
         }
     }
 
-    private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)
-    {
-        // Standard path, ask ExecutionManager for the MethodDesc
-        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-        if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
-        {
-            TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
-            return methodDescPtr;
-        }
-
-        // Stub path, read address as a Precode and get the MethodDesc from it
-        {
-            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
-            return methodDescPtr;
-        }
-    }
-
     public IEnumerable<TargetPointer> GetIntroducedMethodDescs(ITypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
@@ -2387,7 +2398,7 @@ Getting a MethodDesc for a certain slot in a MethodTable
             return TargetPointer.Null;
         }
 
-        return GetMethodDescForEntrypoint(pCode);
+        return _target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(pCode);
     }
 ```
 

@@ -19,6 +19,7 @@ namespace Wasm.Build.Tests
         internal static readonly string? ChromePathForTests        = Environment.GetEnvironmentVariable("CHROME_PATH_FOR_TESTS");
         internal static readonly string? FirefoxPathForTests       = Environment.GetEnvironmentVariable("FIREFOX_PATH_FOR_TESTS");
         internal static readonly string? V8PathForTests            = Environment.GetEnvironmentVariable("V8_PATH_FOR_TESTS");
+        internal static readonly string? BlazorTemplateTargetFramework = Environment.GetEnvironmentVariable("WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK");
         internal static readonly bool    IsRunningOnCI             = Environment.GetEnvironmentVariable("IS_RUNNING_ON_CI") is "true";
         internal static readonly bool    ShowBuildOutput           = IsRunningOnCI || Environment.GetEnvironmentVariable("SHOW_BUILD_OUTPUT") is not null;
         internal static readonly bool UseWebcil                    = Environment.GetEnvironmentVariable("USE_WEBCIL_FOR_TESTS") is "true";
@@ -28,5 +29,6 @@ namespace Wasm.Build.Tests
         internal static readonly string? WasiSdkPath               = Environment.GetEnvironmentVariable("WASI_SDK_PATH");
         internal static readonly bool WorkloadsTestPreviousVersions = Environment.GetEnvironmentVariable("WORKLOADS_TEST_PREVIOUS_VERSIONS") is "true";
         internal static readonly string? RuntimeFlavor = Environment.GetEnvironmentVariable("RUNTIME_FLAVOR_FOR_TESTS");
+        internal static readonly string? BaseDir = Environment.GetEnvironmentVariable("BASE_DIR");
     }
 }

@@ -20,6 +20,7 @@ import argparse
 import asyncio
 import csv
 import datetime
+import glob
 import html
 import json
 import locale
@@ -310,6 +311,8 @@ collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set
 collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossgen2 on a set of directories or assemblies.")
 collect_parser.add_argument("--nativeaot", action="store_true", help="Run nativeaot on a set of directories or 'ilc.rsps' files.")
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
+collect_parser.add_argument("-crossgen2_reference_directory", help="Directory containing the assemblies crossgen2 should resolve references against. Optional; defaults to the Core_Root directory. Used for cross-target crossgen2 collections, where the assemblies being compiled are built for the target and not for the host.")
+collect_parser.add_argument("--crossgen2_composite", action="store_true", help="Run crossgen2 in composite mode: compile all the assemblies in one invocation, with the whole reference set in the version bubble, so cross-assembly generic instantiations are compiled as well. Slower, but collects many more method contexts.")
 collect_parser.add_argument("-ilc_rsps", dest="ilc_rsps", nargs="+", default=[], help="For --nativeaot only. A list of 'ilc.rsp' files.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
@@ -340,7 +343,7 @@ replay_common_parser = argparse.ArgumentParser(add_help=False)
 # NOTE: When adding arguments here, also make sure that they are set when collect does its replay:
 # see the "collect" case in setup_args.
 replay_common_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
-replay_common_parser.add_argument("-filter", nargs='+', help=filter_help)
+replay_common_parser.add_argument("-filter", "-f", nargs='+', help=filter_help)
 replay_common_parser.add_argument("-product_location", help=product_location_help)
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
@@ -348,6 +351,7 @@ replay_common_parser.add_argument("-private_store", action="append", help=privat
 replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 replay_common_parser.add_argument("--produce_repro", action="store_true", help=produce_repro_help)
 replay_common_parser.add_argument("-details", help="Specify full path to details file or folder")
+replay_common_parser.add_argument("-no_ir_checks", action="store_true", help="Disable the phase IR checks in every JIT that is invoked.")
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -376,6 +380,7 @@ asm_diff_parser.add_argument("-tag", help="Specify a word to add to the director
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, one for each metric.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a '.diff' file from 'base' and 'diff' folders if there were any differences.")
+asm_diff_parser.add_argument("-full_ir_checks", action="store_true", help="Run the phase IR checks in the base JIT as well. By default they are only run in the diff JIT, since the base JIT is already validated.")
 
 # subparser for throughput
 throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
@@ -403,7 +408,7 @@ upload_private_parser.add_argument("--skip_cleanup", action="store_true", help=s
 # subparser for download
 download_parser = subparsers.add_parser("download", description=download_description, parents=[core_root_parser, target_parser])
 
-download_parser.add_argument("-filter", nargs='+', help=filter_help)
+download_parser.add_argument("-filter", "-f", nargs='+', help=filter_help)
 download_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 download_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 download_parser.add_argument("--force_download", action="store_true", help=force_download_help)
@@ -570,6 +575,85 @@ def decode_clrjit_build_string(clrjit_path):
 ################################################################################
 # Helper classes
 ################################################################################
+
+def get_assembly_simple_name(filename):
+    """ Get the assembly simple name crossgen2 will key a module by, i.e. the file name
+        without its directory or extension, lowercased for comparison.
+
+    Args:
+        filename (str) : path to the assembly
+
+    Returns:
+        The lowercased simple name.
+    """
+
+    return os.path.splitext(os.path.basename(filename))[0].lower()
+
+
+def is_managed_assembly(filename):
+    """ Determine if a file is a managed assembly by looking for a non-empty CLI header
+        in its PE data directory. Used to keep native binaries out of the crossgen2
+        composite input set, which crossgen2 refuses to load.
+
+    Args:
+        filename (str) : path to the file to check
+
+    Returns:
+        True if the file is a managed assembly, False otherwise (including if it
+        can't be read or isn't a PE file at all).
+    """
+
+    try:
+        with open(filename, "rb") as file_handle:
+            if file_handle.read(2) != b"MZ":
+                return False
+
+            file_handle.seek(0x3C)
+            pe_header_offset_bytes = file_handle.read(4)
+            if len(pe_header_offset_bytes) != 4:
+                return False
+            pe_header_offset = int.from_bytes(pe_header_offset_bytes, "little")
+
+            file_handle.seek(pe_header_offset)
+            if file_handle.read(4) != b"PE\0\0":
+                return False
+
+            # Skip the COFF header (20 bytes) to reach the optional header.
+            optional_header_offset = pe_header_offset + 4 + 20
+            file_handle.seek(optional_header_offset)
+            magic_bytes = file_handle.read(2)
+            if len(magic_bytes) != 2:
+                return False
+            magic = int.from_bytes(magic_bytes, "little")
+            if magic == 0x10B:      # PE32
+                data_directory_offset = optional_header_offset + 96
+            elif magic == 0x20B:    # PE32+
+                data_directory_offset = optional_header_offset + 112
+            else:
+                return False
+
+            # The CLI header is data directory entry 14; each entry is 8 bytes.
+            file_handle.seek(data_directory_offset + 14 * 8)
+            cli_header_entry = file_handle.read(8)
+            # Require a complete entry with a nonzero CLI header RVA (first 4 bytes) and size (last 4 bytes).
+            return len(cli_header_entry) == 8 and \
+                int.from_bytes(cli_header_entry[:4], "little") != 0 and \
+                int.from_bytes(cli_header_entry[4:], "little") != 0
+    except OSError:
+        return False
+
+
+def get_crossgen2_reference_assemblies(reference_directory):
+    """ Get managed composite inputs, filtering out native binaries and rejecting an empty result. """
+
+    candidates = []
+    for extension in [".dll", ".exe"]:
+        candidates += glob.glob(os.path.join(reference_directory, "*" + extension))
+    assemblies = [path for path in sorted(candidates) if is_managed_assembly(path)]
+    if not assemblies:
+        raise RuntimeError("No managed assemblies found in crossgen2 reference directory: " + reference_directory)
+    return assemblies
+
 
 class AsyncSubprocessHelper:
     """ Class to help with async multiprocessing tasks.
@@ -1046,11 +1130,22 @@ class SuperPMICollect:
             if self.coreclr_args.crossgen2 is True:
                 logging.debug("Starting collection using crossgen2")
 
-                async def run_crossgen2(print_prefix, assembly, self):
-                    """ Run crossgen2 over all dlls
+                async def run_crossgen2(print_prefix, input_assemblies, self):
+                    """ Run crossgen2 over a set of assemblies.
+
+                        In the default (non-composite) mode `input_assemblies` holds a single
+                        assembly and each assembly is compiled in its own version bubble. In
+                        composite mode it holds the partition's positional input assemblies,
+                        which root eligible methods. The rest of the framework is passed as
+                        -u unrooted composite inputs in the same compilation and version bubble,
+                        not independently rooted, but able to contribute compiled methods and
+                        generic instantiations as dependencies.
                     """
 
-                    root_crossgen2_output_filename = make_safe_filename("crossgen2_" + assembly) + ".out.dll"
+                    is_composite = self.coreclr_args.crossgen2_composite
+                    output_tag = "composite" if is_composite else input_assemblies[0]
+
+                    root_crossgen2_output_filename = make_safe_filename("crossgen2_" + output_tag) + ".out.dll"
                     crossgen2_output_assembly_filename = os.path.join(self.temp_location, root_crossgen2_output_filename)
                     try:
                         if os.path.exists(crossgen2_output_assembly_filename):
@@ -1063,18 +1158,27 @@ class SuperPMICollect:
                         else:
                             raise ose
 
-                    root_output_filename = make_safe_filename("crossgen2_" + assembly + "_")
+                    root_output_filename = make_safe_filename("crossgen2_" + output_tag + "_")
 
                     # Create a temporary response file to put all the arguments to crossgen2 (otherwise the path length limit could be exceeded):
                     #
-                    # <dll to compile>
+                    # <dll to compile>                 /// one line per input assembly
                     # -o:<output dll>
-                    # -r:<Core_Root>\System.*.dll
-                    # -r:<Core_Root>\Microsoft.*.dll
-                    # -r:<Core_Root>\System.Private.CoreLib.dll
-                    # -r:<Core_Root>\netstandard.dll
+                    # --composite                      /// composite mode only
+                    # -O                               /// composite mode only
+                    # -u:"<reference_dir>\<other>.dll" /// composite mode only, for each unrooted input
+                    # -r:<reference_dir>\System.*.dll
+                    # -r:<reference_dir>\Microsoft.*.dll
+                    # -r:<reference_dir>\mscorlib.dll   /// System.*.dll above includes CoreLib
+                    # -r:<reference_dir>\netstandard.dll
                     # --jitpath:<self.collection_shim_name>
                     # --codegenopt:<option>=<value>   /// for each member of dotnet_env
+                    #
+                    # where <reference_dir> is Core_Root unless -crossgen2_reference_directory
+                    # was passed, which cross-target collections use to resolve references
+                    # against target-built assemblies instead of the host's.
+                    # Positional input paths remain unquoted, matching RunReadyToRunCompiler.
+                    # Response-file lines are individual tokens; -u values use its quoting convention.
                     #
                     # invoke with:
                     #
@@ -1085,27 +1189,45 @@ class SuperPMICollect:
                     # 2. "dotnet" on PATH
                     # 3. corerun in Core_Root
 
+                    reference_directory = self.coreclr_args.crossgen2_reference_directory or self.core_root
+                    reference_assemblies = get_crossgen2_reference_assemblies(reference_directory) if is_composite else []
+
                     rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
                     with open(rsp_file_handle, "w") as rsp_write_handle:
-                        rsp_write_handle.write(assembly + "\n")
+                        for input_assembly in input_assemblies:
+                            rsp_write_handle.write(input_assembly + "\n")
                         rsp_write_handle.write("-o:" + crossgen2_output_assembly_filename + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "System.*.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "Microsoft.*.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "mscorlib.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
+                        if is_composite:
+                            # Positional inputs root eligible methods in this partition. The
+                            # rest of the framework joins the same compilation and version
+                            # bubble as -u unrooted composite inputs, contributing methods and
+                            # generic instantiations as dependencies without independent rooting.
+                            rsp_write_handle.write("--composite" + "\n")
+                            # Composite mode does not infer optimization from assembly attributes.
+                            rsp_write_handle.write("-O" + "\n")
+                            # crossgen2 keys modules by assembly simple name, so exclude by
+                            # simple name rather than file name: a rooted `Foo.exe` and a
+                            # reference `Foo.dll` are the same module to it, and loading both
+                            # is a hard failure rather than a skip.
+                            rooted = set(get_assembly_simple_name(a) for a in input_assemblies)
+                            for reference_assembly in reference_assemblies:
+                                if get_assembly_simple_name(reference_assembly) in rooted:
+                                    continue
+                                rsp_write_handle.write('-u:"' + reference_assembly + '"\n')
+                        rsp_write_handle.write("-r:" + os.path.join(reference_directory, "System.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(reference_directory, "Microsoft.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(reference_directory, "mscorlib.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(reference_directory, "netstandard.dll") + "\n")
                         rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
                         # If we are cross-compiling (target != host), tell crossgen2 explicitly which
                         # OS/architecture to generate code for. For wasm targets, also pass the wasm
-                        # object format and the crossgen2 codegen option that's required by the wasm
-                        # cross-compiling JIT (mirroring src/coreclr/crossgen-corelib.proj).
+                        # object format.
                         if self.coreclr_args.target_arch != self.coreclr_args.arch or self.coreclr_args.target_os != self.coreclr_args.host_os:
                             rsp_write_handle.write("--targetarch:" + self.coreclr_args.target_arch + "\n")
                             rsp_write_handle.write("--targetos:" + self.coreclr_args.target_os + "\n")
                         if self.coreclr_args.target_arch == "wasm":
                             rsp_write_handle.write("--obj-format:wasm" + "\n")
-                            # FIXME: Remove JitWasmNyiToR2RUnsupported once wasm codegen covers all cases
-                            rsp_write_handle.write("--codegenopt:JitWasmNyiToR2RUnsupported=1" + "\n")
                         for var, value in dotnet_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
@@ -1125,8 +1247,9 @@ class SuperPMICollect:
                         stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
                         stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
 
-                        proc = await asyncio.create_subprocess_shell(
-                            command_string,
+                        # Avoid shell splitting when the crossgen2 or response-file path contains spaces.
+                        proc = await asyncio.create_subprocess_exec(
+                            *command,
                             stdout=stdout_file_handle,
                             stderr=stderr_file_handle)
 
@@ -1173,7 +1296,33 @@ class SuperPMICollect:
                 # the "--parallelism:1" switch, and allowing coarse-grained (per-assembly) parallelism here.
                 # It turns out this works better anyway, as there is a lot of non-parallel time between
                 # crossgen2 parallel compilations.
-                helper = AsyncSubprocessHelper(assemblies, verbose=True)
+                # Composite mode compiles all of a work item's assemblies in one invocation
+                # so they share a version bubble; per-assembly parallelism is traded for the
+                # extra cross-assembly coverage, and parallelism across work items remains.
+                if self.coreclr_args.crossgen2_composite:
+                    # crossgen2 parses composite inputs into a dictionary keyed by assembly
+                    # simple name and throws on the first collision, so catch it here with a
+                    # message that names the culprits instead of letting the compile abort.
+                    # Partition payloads preserve directory structure precisely because
+                    # duplicate file names across directories are expected for some
+                    # collections (see copy_files in jitutil.py).
+                    simple_names = {}
+                    for assembly in assemblies:
+                        simple_names.setdefault(get_assembly_simple_name(assembly), []).append(assembly)
+                    duplicates = {name: paths for name, paths in simple_names.items() if len(paths) > 1}
+                    if len(duplicates) > 0:
+                        for name, paths in duplicates.items():
+                            logging.error("Duplicate assembly simple name '%s':", name)
+                            for path in paths:
+                                logging.error("  %s", path)
+                        raise RuntimeError(
+                            "Composite crossgen2 collection requires unique assembly simple names; found {} duplicate(s)".format(len(duplicates)))
+
+                    crossgen2_work_items = [assemblies]
+                else:
+                    crossgen2_work_items = [[assembly] for assembly in assemblies]
+
+                helper = AsyncSubprocessHelper(crossgen2_work_items, verbose=True)
                 helper.run_to_completion(run_crossgen2, self)
 
                 os.environ.clear()
@@ -1763,6 +1912,11 @@ class SuperPMIReplay:
                 for o in self.coreclr_args.jitoption:
                     repro_flags += "-jitoption", o
 
+            if self.coreclr_args.no_ir_checks:
+                # This changes what the JIT does, so it has to be part of the repro command
+                # line as well.
+                repro_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+
             common_flags += repro_flags
 
             # For each MCH file that we are going to replay, do the replay and replay post-processing.
@@ -2208,6 +2362,20 @@ class SuperPMIReplayAsmDiffs:
                 diff_option_flags += "-jit2option", o
                 diff_option_flags_for_diff_artifact += "-jitoption", o
 
+        # The base JIT is already validated, so the phase IR checks are turned off for it by
+        # default and left on for the diff JIT, which is the one under test. -full_ir_checks
+        # turns them back on for the base JIT, and -no_ir_checks turns them off everywhere.
+        #
+        # The diff artifact runs compare the base and diff JitDumps textually, so the checks
+        # have to be configured identically there. That rules out the asymmetric default, but
+        # -no_ir_checks applies to both JITs and can be passed along.
+        if not self.coreclr_args.full_ir_checks:
+            base_option_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+        if self.coreclr_args.no_ir_checks:
+            diff_option_flags += [ "-jit2option", "force", "JitEnablePhaseChecks=0" ]
+            base_option_flags_for_diff_artifact += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+            diff_option_flags_for_diff_artifact += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+
         if self.coreclr_args.altjit:
             altjit_asm_diffs_flags += [
                 "-jitoption", "force", "AltJit=*",
@@ -2290,17 +2458,6 @@ class SuperPMIReplayAsmDiffs:
                     # that both Release compilers can interpret). However, we rarely or never compare
                     # two Release compilers, so this is safest.
                     flags += [ "-ignoreStoredConfig" ]
-
-                    # `-ignoreStoredConfig` drops any codegenopt the collection recorded into the
-                    # MCH stored config. For wasm we need to re-supply
-                    # `JitWasmNyiToR2RUnsupported=1` (set by crossgen-corelib.proj during collection)
-                    # so that unimplemented opcodes turn into R2R-unsupported skips rather than
-                    # asserts. FIXME: remove once wasm codegen covers all cases.
-                    if self.coreclr_args.target_arch == "wasm":
-                        flags += [
-                            "-jitoption", "force", "JitWasmNyiToR2RUnsupported=1",
-                            "-jit2option", "force", "JitWasmNyiToR2RUnsupported=1"
-                        ]
 
                 # Change the working directory to the Core_Root we will call SuperPMI from.
                 # This is done to allow libcoredistools to be loaded correctly on unix
@@ -3101,6 +3258,12 @@ class SuperPMIReplayThroughputDiff:
             for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
 
+        # Both JITs have to be configured the same way here, since this measures the base
+        # against the diff.
+        if self.coreclr_args.no_ir_checks:
+            base_option_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+            diff_option_flags += [ "-jit2option", "force", "JitEnablePhaseChecks=0" ]
+
         base_jit_build_string_decoded = decode_clrjit_build_string(self.base_jit_path)
         diff_jit_build_string_decoded = decode_clrjit_build_string(self.diff_jit_path)
 
@@ -3456,6 +3619,12 @@ class SuperPMIReplayMetricDiff:
         if self.coreclr_args.jitoption:
             for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
+
+        # Both JITs have to be configured the same way here, since this compares metrics
+        # from the base against the diff.
+        if self.coreclr_args.no_ir_checks:
+            base_option_flags += [ "-jitoption", "force", "JitEnablePhaseChecks=0" ]
+            diff_option_flags += [ "-jit2option", "force", "JitEnablePhaseChecks=0" ]
 
         metric_diffs = []
 
@@ -5220,6 +5389,11 @@ def setup_args(args):
         verify_jit_ee_version_arg()
 
         coreclr_args.verify(args,
+                            "no_ir_checks",
+                            lambda unused: True,
+                            "Unable to set no_ir_checks.")
+
+        coreclr_args.verify(args,
                             "force_download",
                             lambda unused: True,
                             "Unable to set force_download")
@@ -5366,6 +5540,11 @@ def setup_args(args):
                             "Unable to set details")
 
         coreclr_args.verify(args,
+                            "no_ir_checks",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set no_ir_checks.")
+
+        coreclr_args.verify(args,
                             "collection_command",
                             lambda unused: True,
                             "Unable to set collection_command.")
@@ -5385,6 +5564,17 @@ def setup_args(args):
                             "crossgen2",
                             lambda unused: True,
                             "Unable to set crossgen2")
+
+        coreclr_args.verify(args,
+                            "crossgen2_reference_directory",
+                            lambda directory: directory is None or os.path.isdir(directory),
+                            "crossgen2_reference_directory doesn't exist",
+                            modify_arg=lambda directory: None if directory is None else os.path.abspath(directory))
+
+        coreclr_args.verify(args,
+                            "crossgen2_composite",
+                            lambda unused: True,
+                            "Unable to set crossgen2_composite")
 
         coreclr_args.verify(args,
                             "nativeaot",
@@ -5507,6 +5697,10 @@ def setup_args(args):
 
         if ((args.pmi is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
             print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
+            sys.exit(1)
+
+        if (args.crossgen2_composite is True) and (args.crossgen2 is False):
+            print("`--crossgen2_composite` requires `--crossgen2`")
             sys.exit(1)
 
         if ((args.nativeaot is True)) and (len(args.ilc_rsps) == 0):
@@ -5694,6 +5888,15 @@ def setup_args(args):
                             "git_diff",
                             lambda unused: True,
                             "Unable to set git_diff.")
+
+        coreclr_args.verify(args,
+                            "full_ir_checks",
+                            lambda unused: True,
+                            "Unable to set full_ir_checks.")
+
+        if coreclr_args.full_ir_checks and coreclr_args.no_ir_checks:
+            print("Warning: both -full_ir_checks and -no_ir_checks were specified; ignoring -no_ir_checks.")
+            coreclr_args.no_ir_checks = False
 
         process_base_jit_path_arg(coreclr_args)
 

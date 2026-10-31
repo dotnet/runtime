@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
@@ -40,7 +40,7 @@ namespace ILLink.CodeFix
         public override ImmutableArray<string> FixableDiagnosticIds =>
             [PartialMemberUnsafeDifferenceDiagnosticId, PartialMemberSafeDifferenceDiagnosticId];
 
-        public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+        public override FixAllProvider GetFixAllProvider() => UnsafeMigrationFixAllProvider.Instance;
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {

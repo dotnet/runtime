@@ -98,24 +98,25 @@ struct CachedIndirectionCellBlockListNode
 
 BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     return GenerateDispatchStubCellEntrySlot(pLoaderAllocator, ownerType, pMD->GetSlot(), pResolver);
 }
 
 BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     VirtualCallStubManager * pMgr = pLoaderAllocator->GetVirtualCallStubManager();
+
+    // A declaration map can protect dictionary dispatch cells even without an import map.
+    MethodTable* pOwnerMT = ownerType.GetMethodTable();
+    MethodDesc* pMethod = pOwnerMT->GetMethodDescForSlot(methodSlot);
+    pMethod->PrepareForUseAsAVirtualCallTargetOfANativeImage();
+    PTR_BYTE declarationMap = pMethod->GetGCRefMap();
+    pMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(
+        pMethod, pOwnerMT, FALSE, pMethod->GetMethodInstantiation(), TRUE);
+    pMethod->PrepareForUseAsAVirtualCallTargetOfANativeImage(declarationMap);
 
     DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(ownerType, methodSlot);
 
@@ -555,6 +556,7 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
         initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
         m_initialReservedMemForHeaps = (BYTE *) initReservedMem;
+        m_initialReservedMemForHeapsSize = dwTotalReserveMemSize;
 
         if (initReservedMem == NULL)
             COMPlusThrowOM();
@@ -689,22 +691,26 @@ VirtualCallStubManager::~VirtualCallStubManager()
     // Go through each cache entry and if the cache element there is in
     // the cache entry heap of the manager being deleted, then we just
     // set the cache entry to empty.
-#ifdef CHAIN_LOOKUP
-    // Serialize cache chain unlinking against concurrent insert/promote writers.
-    CrstHolder lh(g_resolveCache->GetWriteLock());
-#endif
-    DispatchCache::Iterator it(g_resolveCache);
-    while (it.IsValid())
     {
-        // Using UnlinkEntry performs an implicit call to Next (see comment for UnlinkEntry).
-        // Thus, we need to avoid calling Next when we delete an entry so
-        // that we don't accidentally skip entries.
-        while (it.IsValid() && cache_entry_rangeList.IsInRange((TADDR)it.Entry()))
+#ifdef CHAIN_LOOKUP
+        // Serialize cache chain unlinking against concurrent insert/promote writers.
+        CrstHolder lh(g_resolveCache->GetWriteLock());
+#endif
+        DispatchCache::Iterator it(g_resolveCache);
+        while (it.IsValid())
         {
-            it.UnlinkEntry();
+            // Using UnlinkEntry performs an implicit call to Next (see comment for UnlinkEntry).
+            // Thus, we need to avoid calling Next when we delete an entry so
+            // that we don't accidentally skip entries.
+            while (it.IsValid() && cache_entry_rangeList.IsInRange((TADDR)it.Entry()))
+            {
+                it.UnlinkEntry();
+            }
+            it.Next();
         }
-        it.Next();
     }
+    // CrstStubDispatchCache must be released before deleting the loader heaps below, because
+    // freeing their memory takes CrstExecutableAllocatorLock, which is at the same lock level.
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
@@ -753,7 +759,7 @@ VirtualCallStubManager::~VirtualCallStubManager()
     // This was the block reserved by Init for the heaps.
     // For the collectible case, the VSD logic does not allocate the memory.
     if (m_initialReservedMemForHeaps && !m_loaderAllocator->IsCollectible())
-        ClrVirtualFree (m_initialReservedMemForHeaps, 0, MEM_RELEASE);
+        ExecutableAllocator::Instance()->Release(m_initialReservedMemForHeaps, m_initialReservedMemForHeapsSize);
 
     // Free critical section
     m_indCellLock.Destroy();
@@ -938,11 +944,6 @@ BOOL VirtualCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     // Forwarded to from RangeSectionStubManager
     return FALSE;
 }
-
-/* for use by debugger.
-*/
-
-extern "C" void STDCALL StubDispatchFixupPatchLabel();
 
 BOOL VirtualCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *trace)
 {
@@ -1164,6 +1165,7 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(target != NULL);
     } CONTRACTL_END;
 
@@ -2315,6 +2317,7 @@ VirtualCallStubManager::Resolver(
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(TypeHandle(pMT).CheckFullyLoaded());
     } CONTRACTL_END;
@@ -2476,6 +2479,26 @@ VirtualCallStubManager::Resolver(
             CONSISTENCY_CHECK((!implSlot.IsNull() || pMT->IsInterface()) && "Valid method implementation was not found.");
             COMPlusThrow(kEntryPointNotFoundException);
         }
+    }
+
+    // Typed tokens identify the call declaration without a hierarchy search. Its contextual
+    // receiver map also protects the implementation's method-entry transitions.
+    pMD = implSlot.GetMethodDesc();
+    if (pMD != nullptr)
+    {
+        PTR_BYTE declarationMap = nullptr;
+        if (token.IsTypedToken())
+        {
+            MethodTable* pDeclarationMT = GetTypeFromToken(token);
+            // A missing slot would make GetMethodDescForSlot_NoThrow enumerate definitions.
+            if (pDeclarationMT->GetCanonicalMethodTable()->GetSlot(token.GetSlotNumber()) != 0)
+            {
+                MethodDesc* pDeclaration = pDeclarationMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
+                if (pDeclaration != nullptr)
+                    declarationMap = pDeclaration->GetGCRefMap();
+            }
+        }
+        pMD->PrepareForUseAsAVirtualCallTargetOfANativeImage(declarationMap);
     }
 
     *ppTarget = implSlot.GetTarget();
@@ -2914,6 +2937,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
@@ -3058,6 +3082,7 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(addrOfResolver != NULL);
     } CONTRACTL_END;
 
@@ -4237,42 +4262,6 @@ BOOL VirtualCallStubManagerManager::DoTraceStub(
 
     return pMgr->DoTraceStub(stubStartAddress, trace);
 }
-
-#ifndef DACCESS_COMPILE
-#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-/////////////////////////////////////////////////////////////////////////////////////////////
-MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
-                    PCODE stubStartAddress,
-                    MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END
-
-    if (pMT == NULL)
-        return NULL;
-
-    StubCodeBlockKind sk = STUB_CODE_BLOCK_UNKNOWN;
-
-    // Find the owning manager.
-    VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(stubStartAddress,  &sk);
-    if (pMgr == NULL)
-        return NULL;
-
-    // Do the full resolve
-    DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, stubStartAddress, sk));
-
-    PCODE target = (PCODE)NULL;
-    // TODO: passing NULL as protectedObj here can lead to incorrect behavior for IDynamicInterfaceCastable objects
-    VirtualCallStubManager::Resolver(pMT, token, NULL, &target, TRUE /* throwOnConflict */);
-
-    return NonVirtualEntry2MethodDesc(target);
-}
-#endif // FEATURE_VIRTUAL_STUB_DISPATCH
-#endif
 
 #ifdef DACCESS_COMPILE
 void VirtualCallStubManagerManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)

@@ -32,7 +32,7 @@ usage()
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
   echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
-  echo "                                  linux-musl, linux-bionic, tizen, or haiku."
+  echo "                                  linux-musl, linux-bionic, openharmony, tizen, or haiku."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --targetrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -72,8 +72,8 @@ usage()
 
   echo "Libraries settings:"
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net11.0 or net481."
-  echo "                             [Default: net11.0]"
+  echo "  --framework (-f)           Build framework: net12.0 or net481."
+  echo "                             [Default: net12.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -146,8 +146,9 @@ initDistroRid()
     local isCrossBuild="$3"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
-    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
-        passedRootfsDir=${ROOTFS_DIR}
+    # OpenHarmony uses its NDK toolchain, so no rootfs is required either.
+    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "openharmony" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
+        passedRootfsDir=${ROOTFS_DIR:-}
     fi
     initDistroRidGlobal "${targetOs}" "${targetArch}" "${passedRootfsDir}"
 }
@@ -166,7 +167,7 @@ bootstrap=0
 bootstrapConfig='Debug'
 dynamiccodecompiled=""
 
-source $scriptroot/common/native/init-os-and-arch.sh
+source "$scriptroot"/common/native/init-os-and-arch.sh
 
 hostArch=$arch
 
@@ -310,6 +311,8 @@ while [[ $# -gt 0 ]]; do
           os="linux"
           __PortableTargetOS=linux-musl
           ;;
+        openharmony)
+          os="openharmony" ;;
         haiku)
           os="haiku" ;;
         *)
@@ -644,7 +647,7 @@ if [[ "$bootstrap" == "1" ]]; then
   done
 
   # Set a different path for prebuilt usage tracking for the bootstrap build.
-  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap /p:TrackPrebuiltUsageReportFile=$scriptroot/../artifacts/log/bootstrap-prebuilt-usage.xml -bl:$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog
+  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap /p:TrackPrebuiltUsageReportFile="$scriptroot/../artifacts/log/bootstrap-prebuilt-usage.xml" -bl:"$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog"
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   echo "Cleaning up artifacts from bootstrap build..."

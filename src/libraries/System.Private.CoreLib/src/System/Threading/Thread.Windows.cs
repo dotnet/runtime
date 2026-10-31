@@ -16,6 +16,9 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+        /// <summary>Returns the operating system identifier for the current thread.</summary>
+        internal static ulong CurrentOSThreadId => Interop.Kernel32.GetCurrentThreadId();
+
         internal static void UninterruptibleSleep0() => Interop.Kernel32.Sleep(0);
 
         internal static void SleepInternal(int millisecondsTimeout)

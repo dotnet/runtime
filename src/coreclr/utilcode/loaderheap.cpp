@@ -6,8 +6,9 @@
 #include "loaderheap_shared.h"
 #include "ex.h"
 #include "pedecoder.h"
-#define DONOT_DEFINE_ETW_CALLBACK
+#ifndef SELF_NO_HOST
 #include "eventtracebase.h"
+#endif // !SELF_NO_HOST
 
 #ifndef DACCESS_COMPILE
 
@@ -95,7 +96,7 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
 
         if (fReleaseMemory)
         {
-            ExecutableAllocator::Instance()->Release(pVirtualAddress);
+            ExecutableAllocator::Instance()->Release(pVirtualAddress, pSearch->dwVirtualSize);
         }
 
         delete pSearch;
@@ -103,33 +104,11 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
 
     if (m_reservedBlock.m_fReleaseMemory)
     {
-        ExecutableAllocator::Instance()->Release(m_reservedBlock.pVirtualAddress);
+        ExecutableAllocator::Instance()->Release(m_reservedBlock.pVirtualAddress, m_reservedBlock.dwVirtualSize);
     }
 }
 
 #endif // #ifndef DACCESS_COMPILE
-
-#if 0
-// Disables access to all pages in the heap - useful when trying to determine if someone is
-// accessing something in the low frequency heap
-void UnlockedLoaderHeap::DebugGuardHeap()
-{
-    WRAPPER_NO_CONTRACT;
-    LoaderHeapBlock *pSearch, *pNext;
-
-    for (pSearch = m_pFirstBlock; pSearch; pSearch = pNext)
-    {
-        void *  pResult;
-        void *  pVirtualAddress;
-
-        pVirtualAddress = pSearch->pVirtualAddress;
-        pNext = pSearch->pNext;
-
-        pResult = ClrVirtualAlloc(pVirtualAddress, pSearch->dwVirtualSize, MEM_COMMIT, PAGE_NOACCESS);
-        _ASSERTE(pResult != NULL);
-    }
-}
-#endif
 
 size_t UnlockedLoaderHeap::GetBytesAvailReservedRegion()
 {
@@ -230,7 +209,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     {
         // This method reserved the memory (or the caller asked us to release the
         // provided block), so own it for automatic cleanup on the error paths below.
-        pDataHolder = pData;
+        pDataHolder = ReservedMemoryBlock{ pData, dwSizeToReserve };
     }
 
     size_t dwSizeToCommitPart = dwSizeToCommit;
@@ -450,7 +429,7 @@ again:
     }
 
     // Need to commit some more pages in reserved region.
-    // If we run out of pages in the reserved region, ClrVirtualAlloc some more pages
+    // If we run out of pages in the reserved region, reserve some more pages
     if (GetMoreCommittedPages(dwSize))
         goto again;
 
@@ -779,55 +758,6 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequestedSize,
 
 }
 #endif // #ifndef DACCESS_COMPILE
-
-
-#ifdef _DEBUG
-
-void UnlockedLoaderHeap::DumpFreeList()
-{
-    LIMITED_METHOD_CONTRACT;
-    if (m_pFirstFreeBlock == NULL)
-    {
-        minipal_log_print_info("FREEDUMP: FreeList is empty\n");
-    }
-    else
-    {
-        InlineSString<128> buf;
-        LoaderHeapFreeBlock *pBlock = m_pFirstFreeBlock;
-        while (pBlock != NULL)
-        {
-            size_t dwsize = pBlock->m_dwSize;
-            BOOL ccbad = FALSE;
-            BOOL sizeunaligned = FALSE;
-
-            if ( 0 != (dwsize & ALLOC_ALIGN_CONSTANT) )
-            {
-                sizeunaligned = TRUE;
-            }
-
-            for (size_t i = sizeof(LoaderHeapFreeBlock); i < dwsize; i++)
-            {
-                if ( ((BYTE*)pBlock)[i] != 0xcc )
-                {
-                    ccbad = TRUE;
-                    break;
-                }
-            }
-
-            buf.Printf("Addr = %pxh, Size = %xh", pBlock, ((ULONG)dwsize));
-            if (ccbad) buf.AppendUTF8(" *** ERROR: NOT CC'd ***");
-            if (sizeunaligned) buf.AppendUTF8(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
-            buf.AppendUTF8("\n");
-
-            minipal_log_print_info("%s", buf.GetUTF8());
-            buf.Clear();
-
-            pBlock = pBlock->m_pNext;
-        }
-    }
-}
-
-#endif //_DEBUG
 
 #ifndef DACCESS_COMPILE
 /*static*/ void LoaderHeapFreeBlock::InsertFreeBlock(LoaderHeapFreeBlock **ppHead, void *pMem, size_t dwTotalSize, UnlockedLoaderHeap *pHeap)

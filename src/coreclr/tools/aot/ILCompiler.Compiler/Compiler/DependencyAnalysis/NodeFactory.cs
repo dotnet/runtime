@@ -11,8 +11,10 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.JitInterface;
 using Internal.NativeFormat;
+using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -271,13 +273,29 @@ namespace ILCompiler.DependencyAnalysis
                 return new FieldRvaDataNode(key);
             });
 
-            _externFunctionSymbols = new NodeCache<Utf8String, ExternFunctionSymbolNode>((Utf8String name) =>
+            _directPInvokes = new NodeCache<MethodDesc, ExternFunctionSymbolNode>((MethodDesc key) =>
             {
-                return new ExternFunctionSymbolNode(name);
+                LinkageMetadata linkage = InteropStubManager.GetLinkageMetadata(key);
+                Utf8String externName = linkage.Symbol;
+                if (externName.IsNull)
+                {
+                    // If metadata doesn't provide symbol name, mangle as a normal method.
+                    // We need to however mangle differently from the potential marshalling thunk;
+                    // this method is the raw P/invoke method so mangle as that.
+                    MethodDesc nativeTarget = key is PInvokeTargetNativeMethod
+                        ? key
+                        : new PInvokeTargetNativeMethod(key, key.Signature);
+                    externName = NameMangler.GetMangledMethodName(nativeTarget);
+                }
+                externName = NameMangler.NodeMangler.ExternMethod(externName, key);
+
+                return new ExternFunctionSymbolNode(externName, key.Signature, isUnmanagedCallersOnly: true, isAsyncCall: false, hasGenericContextArg: false,
+                    linkageMetadata: linkage);
             });
+
             _externIndirectFunctionSymbols = new NodeCache<Utf8String, ExternFunctionSymbolNode>((Utf8String name) =>
             {
-                return new ExternFunctionSymbolNode(name, isIndirection: true);
+                return new ExternFunctionSymbolNode(name, signature: null, false, false, false, new LinkageMetadata(name, isIndirection: true));
             });
             _externDataSymbols = new NodeCache<Utf8String, ExternDataSymbolNode>((Utf8String name) =>
             {
@@ -429,6 +447,16 @@ namespace ILCompiler.DependencyAnalysis
             _interfaceUses = new NodeCache<TypeDesc, InterfaceUseNode>((TypeDesc type) =>
             {
                 return new InterfaceUseNode(type);
+            });
+
+            _r2rHelpers = new NodeCache<ReadyToRunHelper, ISymbolNode>((ReadyToRunHelper id) =>
+            {
+                Utf8String name = KnownExternFunctions.GetName(id, TypeSystemContext.Target);
+                return new ExternFunctionSymbolNode(
+                    name,
+                    KnownExternFunctions.GetSignature(id, TypeSystemContext),
+                    isUnmanagedCallersOnly: false, isAsyncCall: false, hasGenericContextArg: false,
+                    linkageMetadata: new LinkageMetadata(name));
             });
 
             _readyToRunHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelperNode);
@@ -994,18 +1022,17 @@ namespace ILCompiler.DependencyAnalysis
             return _genericVariances.GetOrAdd(details);
         }
 
-        private NodeCache<Utf8String, ExternFunctionSymbolNode> _externFunctionSymbols;
-
-        public ISortableSymbolNode ExternFunctionSymbol(Utf8String name)
-        {
-            return _externFunctionSymbols.GetOrAdd(name);
-        }
-
         private NodeCache<Utf8String, ExternFunctionSymbolNode> _externIndirectFunctionSymbols;
 
         public ISortableSymbolNode ExternIndirectFunctionSymbol(Utf8String name)
         {
             return _externIndirectFunctionSymbols.GetOrAdd(name);
+        }
+
+        private NodeCache<MethodDesc, ExternFunctionSymbolNode> _directPInvokes;
+        public ExternFunctionSymbolNode DirectPInvokeTarget(MethodDesc method)
+        {
+            return _directPInvokes.GetOrAdd(method);
         }
 
         private NodeCache<Utf8String, ExternDataSymbolNode> _externDataSymbols;
@@ -1306,7 +1333,7 @@ namespace ILCompiler.DependencyAnalysis
             protected override bool CompareKeyToValue(MethodDesc key, ShadowConcreteMethodNode value) => key == value.Method;
             protected override bool CompareValueToValue(ShadowConcreteMethodNode value1, ShadowConcreteMethodNode value2) => value1.Method == value2.Method;
             protected override ShadowConcreteMethodNode CreateValueFromKey(MethodDesc key) =>
-                new ShadowConcreteMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                new ShadowConcreteMethodNode(key, (IMethodBodyNode)_factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(ShadowConcreteMethodNode value) => value.Method.GetHashCode();
         }
@@ -1324,7 +1351,7 @@ namespace ILCompiler.DependencyAnalysis
             protected override bool CompareKeyToValue(MethodDesc key, ShadowNonConcreteMethodNode value) => key == value.Method;
             protected override bool CompareValueToValue(ShadowNonConcreteMethodNode value1, ShadowNonConcreteMethodNode value2) => value1.Method == value2.Method;
             protected override ShadowNonConcreteMethodNode CreateValueFromKey(MethodDesc key) =>
-                new ShadowNonConcreteMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                new ShadowNonConcreteMethodNode(key, (IMethodBodyNode)_factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(ShadowNonConcreteMethodNode value) => value.Method.GetHashCode();
         }
@@ -1422,6 +1449,13 @@ namespace ILCompiler.DependencyAnalysis
         public DependencyNodeCore<NodeFactory> InterfaceUse(TypeDesc type)
         {
             return _interfaceUses.GetOrAdd(type);
+        }
+
+        private NodeCache<ReadyToRunHelper, ISymbolNode> _r2rHelpers;
+
+        public ISymbolNode ReadyToRunHelper(ReadyToRunHelper id)
+        {
+            return _r2rHelpers.GetOrAdd(id);
         }
 
         private NodeCache<ReadyToRunHelperKey, ISymbolNode> _readyToRunHelpers;
@@ -1628,6 +1662,16 @@ namespace ILCompiler.DependencyAnalysis
         public WasmTypeNode WasmTypeNode(MethodDesc desc)
         {
             return _wasmTypeNodes.GetOrAdd(WasmLowering.GetSignature(desc).FuncType);
+        }
+
+        public WasmTypeNode WasmTypeNode(INodeWithTypeSignature node)
+        {
+            return _wasmTypeNodes.GetOrAdd(WasmLowering.GetSignature(node).FuncType);
+        }
+
+        public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
+        {
+            return _wasmTypeNodes.GetOrAdd(WasmFuncType.FromCorInfoSignature(types));
         }
 
         /// <summary>

@@ -196,6 +196,7 @@ CONFIG_INTEGER(JitProfileChecks, "JitProfileChecks", -1)
 CONFIG_INTEGER(JitRequired, "JITRequired", -1)
 CONFIG_INTEGER(JitStackAllocToLocalSize, "JitStackAllocToLocalSize", DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
 CONFIG_INTEGER(JitSkipArrayBoundCheck, "JitSkipArrayBoundCheck", 0)
+CONFIG_INTEGER(JitEnablePhaseChecks, "JitEnablePhaseChecks", 1) // Run the phase IR checks
 
 // On ARM, use this as the maximum function/funclet size for creating function fragments (and creating
 // multiple RUNTIME_FUNCTION entries)
@@ -448,6 +449,7 @@ RELEASE_CONFIG_INTEGER(EnableArm64Sve2,             "EnableArm64Sve2",          
 RELEASE_CONFIG_INTEGER(EnableArm64Sha3,             "EnableArm64Sha3",           1) // Allows Arm64 Sha3+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sm4,              "EnableArm64Sm4",            1) // Allows Arm64 Sm4+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64SveAes,           "EnableArm64SveAes",         1) // Allows Arm64 SveAes+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64SvePmull128,      "EnableArm64SvePmull128",    1) // Allows Arm64 SvePmull128+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64SveSha3,          "EnableArm64SveSha3",        1) // Allows Arm64 SveSha3+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64SveSm4,           "EnableArm64SveSm4",         1) // Allows Arm64 SveSm4+ hardware intrinsics to be disabled
 #elif defined(TARGET_RISCV64)
@@ -687,6 +689,9 @@ CONFIG_STRING(JitInlineReplayFile, "JitInlineReplayFile")
 // Stress general runtime async inlining: forcibly inline async callees that may suspend,
 // with a probability that decays with inline depth. Nonzero enables; the value is the
 // external random seed. See AsyncStressPolicy.
+//
+// The stress is also enabled for roughly 50% of async methods under JitStress, in which
+// case the JitStress value is used as the external random seed.
 CONFIG_INTEGER(JitStressAsyncInlining, "JitStressAsyncInlining", 0)
 CONFIG_INTEGER(JitStressAsyncInliningMaxDepth, "JitStressAsyncInliningMaxDepth", 8)
 // Probability, in percent, that the first async candidate of a body at depth 1 is inlined.
@@ -911,14 +916,14 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #endif // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_WASM)
-// Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
-RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
-
 // Specify methods that will fail with R2R unsupported after codegen.
 // Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
 CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
 // Enable processing methods with funclets. Set to 0 to bail to R2R unsupported before codegen.
 RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 1)
+// Method filter for WASM performance instrumentation profiler. Uses standard MethodSet pattern format.
+// Same key as the interpreter's InterpConfig.WasmPerformanceInstrumentation so both engines share it.
+RELEASE_CONFIG_METHODSET(WasmPerformanceInstrumentation, "WasmPerformanceInstrumentation")
 #endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.

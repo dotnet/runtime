@@ -153,36 +153,43 @@ public class WasmTemplateTestsBase : BuildTestBase
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
     }
 
-    private static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
+    protected static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
     {
         if (!s_buildEnv.IsCoreClrRuntime)
             return;
 
-        string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
+        string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
 
         extraProperties +=
         """
             <UseMonoRuntime>false</UseMonoRuntime>
         """;
-        extraItems +=
-        $$"""
-            <KnownFrameworkReference Update="Microsoft.NETCore.App">
-              <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
-              <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
-              <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
-              <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
-            </KnownFrameworkReference>
-        """;
-        insertAtEnd +=
-        $$"""
-            <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
-                <ItemGroup>
-                <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
-                    <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
-                </KnownWebAssemblySdkPack>
-                </ItemGroup>
-            </Target>
-        """;
+        foreach (string targetFramework in new[] { DefaultTargetFramework, DefaultTargetFrameworkForBlazorTemplate }.Distinct())
+        {
+            extraItems +=
+            $$"""
+                <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                                         Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+                  <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</TargetingPackVersion>
+                  <LatestRuntimeFrameworkVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
+                  <RuntimePackRuntimeIdentifiers Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{targetFramework}}'">browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+                </KnownFrameworkReference>
+            """;
+            insertAtEnd +=
+            $$"""
+                <Target Name="_UpdateKnownCoreClrWebAssemblyPacks_{{targetFramework.Replace('.', '_')}}" BeforeTargets="ProcessFrameworkReferences"
+                        Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+                    <ItemGroup>
+                    <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
+                        <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</WebAssemblySdkPackVersion>
+                    </KnownWebAssemblySdkPack>
+                    <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack)">
+                        <Crossgen2PackVersion Condition="'%(KnownCrossgen2Pack.TargetFramework)' == '{{targetFramework}}'">{{runtimePackVersion}}</Crossgen2PackVersion>
+                    </KnownCrossgen2Pack>
+                    </ItemGroup>
+                </Target>
+            """;
+        }
     }
 
     /// <summary>

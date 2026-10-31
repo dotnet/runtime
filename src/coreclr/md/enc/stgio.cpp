@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // StgIO.h
-//
-
 //
 // This module handles disk/memory i/o for a generic set of storage solutions,
 // including:
@@ -33,12 +32,14 @@
 //      only the portion of the file with the .clb in it.
 //</REVISIT_TODO>
 //*****************************************************************************
+
 #include "stdafx.h"                     // Standard headers.
 #include "stgio.h"                      // Our definitions.
 #include "corerror.h"
 #include "posterror.h"
 #include "pedecoder.h"
 #include "pedecoder.inl"
+#include <minipal.h>
 
 //********** Types. ***********************************************************
 #define SMALL_ALLOC_MAP_SIZE (64 * 1024) // 64 kb is the minimum size of virtual
@@ -882,7 +883,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
             memset(m_rgPageMap, 0, sizeof(BYTE) * (iMaxSize / m_iPageSize));
 
             // Allocate space for the file contents.
-            if ((m_pBaseData = m_pData = ::ClrVirtualAlloc(0, iMaxSize, MEM_RESERVE, PAGE_NOACCESS)) == 0)
+            if ((m_pBaseData = m_pData = VMToOSInterface::ReserveMemory(iMaxSize)) == 0)
             {
                 hr = PostError(OutOfMemory());
                 goto ErrExit;
@@ -909,42 +910,6 @@ ErrExit:
         *pcbSize = m_cbData;
     return (hr);
 }
-
-
-//*****************************************************************************
-// Free the mapping object for shared memory but keep the rest of the internal
-// state intact.
-//*****************************************************************************
-HRESULT StgIO::ReleaseMappingObject()   // Return code.
-{
-    // Check type first.
-    if (m_iType != STGIO_SHAREDMEM)
-    {
-        _ASSERTE(FALSE);
-        return S_OK;
-    }
-
-    // Must have an allocated handle.
-    _ASSERTE(m_hMapping != 0);
-
-    // Freeing the mapping object doesn't do any good if you still have the file.
-    _ASSERTE(m_hFile == INVALID_HANDLE_VALUE);
-
-    // Unmap the memory we allocated before freeing the handle.  But keep the
-    // memory address intact.
-    if (m_pData)
-        VERIFY(UnmapViewOfFile(m_pData));
-
-    // Free the handle.
-    if (m_hMapping != 0)
-    {
-        VERIFY(CloseHandle(m_hMapping));
-        m_hMapping = 0;
-    }
-    return S_OK;
-}
-
-
 
 //*****************************************************************************
 // Resets the logical base address and size to the value given.  This is for
@@ -1045,8 +1010,8 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
             }
 
             // First commit the memory for this part of the file.
-            if (::ClrVirtualAlloc((void *) ((DWORD_PTR) m_pData + iOffset),
-                    iSize, MEM_COMMIT, PAGE_READWRITE) == 0)
+            if (VMToOSInterface::CommitReservedMemory((void *) ((DWORD_PTR) m_pData + iOffset),
+                    iSize, VMToOSInterface::MemoryProtection::ReadWrite) == 0)
                 return (PostError(OutOfMemory()));
 
             // Now load that portion of the file from disk.
@@ -1056,11 +1021,13 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
                 return (hr);
             }
 
+#ifndef TARGET_WASM
             // Change the memory to read only to avoid any modifications.  Any faults
             // that occur indicate a bug whereby the engine is trying to write to
             // protected memory.
-            _ASSERTE(::ClrVirtualAlloc((void *) ((DWORD_PTR) m_pData + iOffset),
-                    iSize, MEM_COMMIT, PAGE_READONLY) != 0);
+            _ASSERTE(VMToOSInterface::ProtectMemory((void *) ((DWORD_PTR) m_pData + iOffset),
+                    iSize, VMToOSInterface::MemoryProtection::ReadOnly));
+#endif // !TARGET_WASM
 
             // Record each new loaded page.
             for (;  j<i;  j++)
@@ -1264,8 +1231,9 @@ void StgIO::FreePageMap()
     {
         delete [] m_rgPageMap;
         m_rgPageMap = 0;
-        VERIFY(::ClrVirtualFree(m_pBaseData, (((m_cbData - 1) & ~(m_iPageSize - 1)) + m_iPageSize), MEM_DECOMMIT));
-        VERIFY(::ClrVirtualFree(m_pBaseData, 0, MEM_RELEASE));
+        ULONG iMaxSize = (((m_cbData - 1) & ~(m_iPageSize - 1)) + m_iPageSize);
+        VERIFY(VMToOSInterface::DecommitMemory(m_pBaseData, iMaxSize));
+        VERIFY(VMToOSInterface::ReleaseMemoryReservation(m_pBaseData, iMaxSize));
         m_pBaseData = 0;
         m_cbData = 0;
     }
@@ -1334,4 +1302,3 @@ void FreeMemory(void *pbData)
     _ASSERTE(pbData);
     delete [] (BYTE *) pbData;
 }
-
