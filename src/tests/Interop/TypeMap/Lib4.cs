@@ -4,6 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 
+[assembly: TypeMap<DefinedInLibrary>("third", typeof(object))]
+[assembly: TypeMapAssociation<DefinedInLibrary>(typeof(S1), typeof(object))]
+[assembly: TypeMapAssemblyTarget<DefinedInLibrary>("TypeMapLib1")]
+[assembly: TypeMapAssemblyTarget<DefinedInLibrary>("TypeMapLib3")]
+
 [assembly: TypeMap<MultipleTypeMapAssemblies>("3", typeof(object))]
 [assembly: TypeMap<MultipleTypeMapAssemblies>("4", typeof(string))]
 
