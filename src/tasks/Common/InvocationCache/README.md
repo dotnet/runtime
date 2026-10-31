@@ -5,14 +5,25 @@ and storage format are experimental, without compatibility guarantees.
 
 ## Integrating a task
 
-Call `InvocationCache.ExecuteCached` with:
+Derive from `CachedToolTask` and compile the shared sources into the task assembly. Override:
 
-- An `InvocationCacheConfiguration` naming the tool and its enable/path environment variables. Only
-  `true` enables caching; a path alone does not. Without an override, storage uses the platform's user
-  cache directory.
-- A description callback returning ordered input paths, effective arguments/context, and an owned
+- `CacheConfiguration` with an `InvocationCacheConfiguration` naming the tool and its enable/path
+  environment variables. Only `true` enables caching; a path alone does not. Without an override,
+  storage uses the platform's user cache directory.
+- `DescribeInvocation` to return ordered input paths, effective arguments/context, and an owned
   directory or file set through `InvocationDescription`. Return null for unsupported invocations.
-- A normal-execution callback that prepares outputs and runs the tool independently of caching.
+- `ExecuteToolCore` when the task needs tool-specific output preparation before calling the base
+  implementation. It runs only on misses and bypasses.
+
+The base class calls `InvocationCache.TryExecuteCached` with lazy description and execution callbacks
+and a replay callback. Disabled or bypassed invocations execute normally without capture. Eligible
+misses allocate capture buffers and return an `InvocationResult` containing the exit code and separate
+ordered stdout and stderr lists. Per-stream output must be deterministic for the same key.
+
+The cache invokes the replay callback only after successfully restoring an entry. `CachedToolTask`
+replays through its ordinary `ToolTask` logging path, using current importance and stderr-as-error
+policy rather than policy cached from execution. These settings are not passed to the cache. Normal
+execution logs its output as the tool runs and must not be replayed.
 
 The task must inventory all relevant inputs and toolchain files, including its own assembly. The
 shared layer hashes declared files with SHA-256; it does not interpret arguments or discover
@@ -32,8 +43,30 @@ Restoration is not transactional. Empty directories are not preserved, and symbo
 checked.
 
 Keys retain absolute input/output paths and execution context; cross-worktree reuse is not promised.
-Hits do not replay diagnostics or non-file task outputs. Cache operations do not observe cancellation.
-Consumers must bypass invocations whose dependencies or required side effects cannot be modeled.
+Diagnostics are restored only when the consumer returns captured output with its execution result. Other
+non-file task outputs are not restored. Cache operations do not observe cancellation. Consumers must
+bypass invocations whose dependencies or required side effects cannot be modeled.
+
+## Stored output and diagnostics
+
+Each entry contains a binary `manifest`, its `manifest.sha256` checksum, an `outputs/` tree, a binary
+`diagnostics` file, and a `last-used` timestamp. The manifest records the output contract, file paths,
+presence, lengths, and SHA-256 hashes, followed by the diagnostics length and SHA-256 hash. Diagnostics
+contain two separate sequences, stdout followed by stderr, each with a count and its original lines.
+Empty streams have an explicit zero count. Lines are replayed in the same fixed stream order,
+preserving line order within each stream. Cross-stream callback timing
+does not affect the stored diagnostics or their integrity records; uncached logging retains the
+tool task's ordinary interleaving. Validate all records and files before modifying outputs; replay
+begins only after restoration succeeds.
+
+The cache invokes replay only after cache operations succeed; `CachedToolTask` owns how the lines are
+logged. Logging failures must not rerun the tool, since partial replay cannot be undone, and replay
+that logs errors returns a failing exit code. Cold executions that log errors are not stored, even
+if the tool exits zero.
+
+The experimental format remains version 1. Consumers include their task assembly contents in the
+key, invalidating entries when these compiled-in sources change. Entries missing diagnostics or
+their integrity record fail validation rather than being assumed warning-free.
 
 Entries are staged locally and published atomically. Concurrent processes on one machine may share
 storage when writing distinct destinations; same-destination execution and distributed writers are
