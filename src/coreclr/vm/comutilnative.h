@@ -27,20 +27,23 @@
 class ExceptionNative
 {
 public:
-    FCDECL1(static FC_BOOL_RET, IsImmutableAgileException, Object* pExceptionUNSAFE);
     FCDECL1(static FC_BOOL_RET, IsTransient, INT32 hresult);
-    FCDECL0(static VOID, PrepareForForeignExceptionRaise);
 
 #ifdef FEATURE_COMINTEROP
     // NOTE: caller cleans up any partially initialized BSTRs in pED
     static void      GetExceptionData(OBJECTREF, ExceptionData *);
 #endif
-
-    // Note: these are on the PInvoke class to hide these from the user.
-    FCDECL0(static EXCEPTION_POINTERS*, GetExceptionPointers);
-    FCDECL0(static INT32, GetExceptionCode);
-    FCDECL0(static UINT32, GetExceptionCount);
 };
+
+extern "C"
+{
+    FCDECL1(FC_BOOL_RET, Exception_IsImmutableAgileException, Object* pExceptionUNSAFE);
+    FCDECL0(VOID, Exception_PrepareForForeignExceptionRaise);
+    // Note: these are on the PInvoke class to hide these from the user.
+    FCDECL0(EXCEPTION_POINTERS*, Marshal_GetExceptionPointers);
+    FCDECL0(INT32, Marshal_GetExceptionCode);
+    FCDECL0(UINT32, Exception_GetExceptionCount);
+}
 
 extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandleOnStack exception, QCall::ObjectHandleOnStack ret, QCallExceptionStatus* qcallError);
 
@@ -72,11 +75,10 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* 
 //
 // Buffer
 //
-class Buffer
+extern "C"
 {
-public:
-    FCDECL3(static VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
-};
+    FCDECL3(VOID, Buffer_BulkMoveWithWriteBarrierInternal, void *dst, void *src, size_t byteCount);
+}
 
 const UINT MEM_PRESSURE_COUNT = 4;
 
@@ -147,28 +149,6 @@ private:
 public:
     static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
 
-    FCDECL0(static INT64,   GetTotalPauseDuration);
-    FCDECL2(static void,    GetMemoryInfo, Object* objUNSAFE, int kind);
-    FCDECL0(static UINT32,  GetMemoryLoad);
-    FCDECL0(static int,     GetGcLatencyMode);
-    FCDECL1(static int,     SetGcLatencyMode, int newLatencyMode);
-    FCDECL0(static int,     GetLOHCompactionMode);
-    FCDECL1(static void,    SetLOHCompactionMode, int newLOHCompactionyMode);
-    FCDECL2(static FC_BOOL_RET, RegisterForFullGCNotification, UINT32 gen2Percentage, UINT32 lohPercentage);
-    FCDECL0(static FC_BOOL_RET, CancelFullGCNotification);
-    FCDECL1(static int,     GetGenerationInternal, Object* objUNSAFE);
-    FCDECL0(static UINT64,  GetSegmentSize);
-    FCDECL0(static int,     GetLastGCPercentTimeInGC);
-    FCDECL1(static UINT64,  GetGenerationSize, int gen);
-
-    FCDECL0(static int,     GetMaxGeneration);
-    FCDECL0(static FC_BOOL_RET, IsServerGC);
-    FCDECL1(static void,    SuppressFinalize, Object *obj);
-    FCDECL2(static int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
-
-    FCDECL0(static INT64,    GetAllocatedBytesForCurrentThread);
-    FCDECL0(static INT64,    GetTotalAllocatedBytesApproximate);
-
     NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
     static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
 
@@ -185,6 +165,29 @@ private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
     NOINLINE static void GarbageCollectModeAny(int generation);
 };
+
+extern "C"
+{
+    FCDECL0(INT64,   GC__GetTotalPauseDuration);
+    FCDECL2(void,    GC_GetMemoryInfo, Object* objUNSAFE, int kind);
+    FCDECL0(UINT32,  GC_GetMemoryLoad);
+    FCDECL0(int,     GCSettings_GetGCLatencyMode);
+    FCDECL1(int,     GCSettings_SetGCLatencyMode, int newLatencyMode);
+    FCDECL0(int,     GCSettings_GetLOHCompactionMode);
+    FCDECL1(void,    GCSettings_SetLOHCompactionMode, int newLOHCompactionyMode);
+    FCDECL2(FC_BOOL_RET, GC__RegisterForFullGCNotification, UINT32 gen2Percentage, UINT32 lohPercentage);
+    FCDECL0(FC_BOOL_RET, GC__CancelFullGCNotification);
+    FCDECL1(int,     GC_GetGenerationInternal, Object* objUNSAFE);
+    FCDECL0(UINT64,  GC_GetSegmentSize);
+    FCDECL0(int,     GC_GetLastGCPercentTimeInGC);
+    FCDECL1(UINT64,  GC_GetGenerationSize, int gen);
+    FCDECL0(int,     GC_GetMaxGeneration);
+    FCDECL0(FC_BOOL_RET, GCSettings_get_IsServerGC);
+    FCDECL1(void,    GC_SuppressFinalizeInternal, Object *obj);
+    FCDECL2(int,     GC__CollectionCount, INT32 generation, INT32 getSpecialGCCount);
+    FCDECL0(INT64,    GC_GetAllocatedBytesForCurrentThread);
+    FCDECL0(INT64,    GC_GetTotalAllocatedBytesApproximate);
+}
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise(QCallExceptionStatus* qcallError);
 
@@ -226,13 +229,12 @@ extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation, QC
 //
 // EnvironmentNative
 //
-class EnvironmentNative
+extern "C"
 {
-public:
     // Functions on the System.Environment class
-    FCDECL1(static VOID,SetExitCode,INT32 exitcode);
-    FCDECL0(static INT32, GetExitCode);
-};
+    FCDECL1(VOID,Environment_set_ExitCode,INT32 exitcode);
+    FCDECL0(INT32, Environment_get_ExitCode);
+}
 
 extern "C" void QCALLTYPE Environment_Exit(INT32 exitcode, QCallExceptionStatus* qcallError);
 
@@ -247,36 +249,37 @@ extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHa
 
 extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError);
 
-class ObjectNative
+extern "C"
 {
-public:
-    FCDECL1(static INT32, TryGetHashCode, Object* vThisRef);
-    FCDECL2(static FC_BOOL_RET, ContentEquals, Object *pThisRef, Object *pCompareRef);
-};
+    FCDECL1(INT32, RuntimeHelpers_TryGetHashCode, Object* vThisRef);
+    FCDECL2(FC_BOOL_RET, RuntimeHelpers_ContentEquals, Object *pThisRef, Object *pCompareRef);
+}
 
 extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle, QCallExceptionStatus* qcallError);
 
-class COMInterlocked
+extern "C"
 {
-public:
-        FCDECL2(static INT32, Exchange32, INT32 *location, INT32 value);
-        FCDECL2_IV(static INT64, Exchange64, INT64 *location, INT64 value);
-        FCDECL3(static INT32, CompareExchange32, INT32* location, INT32 value, INT32 comparand);
-        FCDECL3_IVV(static INT64, CompareExchange64, INT64* location, INT64 value, INT64 comparand);
-        FCDECL2(static LPVOID, ExchangeObject, LPVOID* location, LPVOID value);
-        FCDECL3(static LPVOID, CompareExchangeObject, LPVOID* location, LPVOID value, LPVOID comparand);
-        FCDECL2(static INT32, ExchangeAdd32, INT32 *location, INT32 value);
-        FCDECL2_IV(static INT64, ExchangeAdd64, INT64 *location, INT64 value);
-};
+    FCDECL2(INT32, Interlocked_Exchange32, INT32 *location, INT32 value);
+    FCDECL2_IV(INT64, Interlocked_Exchange64, INT64 *location, INT64 value);
+    FCDECL3(INT32, Interlocked_CompareExchange32, INT32* location, INT32 value, INT32 comparand);
+#ifdef TARGET_WASM
+    decltype(Interlocked_CompareExchange32) Interlocked_CompareExchange32Pointer;
+#endif // TARGET_WASM
+    FCDECL3_IVV(INT64, Interlocked_CompareExchange64, INT64* location, INT64 value, INT64 comparand);
+    FCDECL2(LPVOID, Interlocked_ExchangeObject, LPVOID* location, LPVOID value);
+    FCDECL3(LPVOID, Interlocked_CompareExchangeObject, LPVOID* location, LPVOID value, LPVOID comparand);
+    FCDECL2(INT32, Interlocked_ExchangeAdd32, INT32 *location, INT32 value);
+    FCDECL2_IV(INT64, Interlocked_ExchangeAdd64, INT64 *location, INT64 value);
+}
 
-class MethodTableNative {
-public:
-    FCDECL1(static UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
-    FCDECL1(static CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
-    FCDECL2(static MethodTable*, GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
-    FCDECL1(static OBJECTHANDLE, GetLoaderAllocatorHandle, MethodTable* mt);
-};
+extern "C"
+{
+    FCDECL1(UINT32, MethodTable_GetNumInstanceFieldBytes, MethodTable* mt);
+    FCDECL1(CorElementType, MethodTable_GetPrimitiveCorElementType, MethodTable* mt);
+    FCDECL2(MethodTable*, MethodTable_GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
+    FCDECL1(OBJECTHANDLE, MethodTable_GetLoaderAllocatorHandle, MethodTable* mt);
+}
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb, QCallExceptionStatus* qcallError);
 extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt, QCallExceptionStatus* qcallError);

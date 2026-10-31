@@ -15,7 +15,7 @@ namespace ILLink.Tasks.Tests
         [Fact]
         public void ReadsNestedNamespaceDefinitions()
         {
-            Dictionary<string, string> namespaces = RuntimeHeaderParser.ReadNamespaces(new[] {
+            Dictionary<string, string> namespaces = CreateRuntimeRootILLinkDescriptorFile.ReadNamespaces(new[] {
                 "#define g_SystemNS \"System\"",
                 "#define g_RuntimeNS g_SystemNS \".Runtime\"",
                 "#define g_LoaderNS g_RuntimeNS \".Loader\" // comment"
@@ -34,7 +34,7 @@ namespace ILLink.Tasks.Tests
         public void InvalidHeaderConditionsAreDiagnosed(string source)
         {
             var errors = new List<string>();
-            var tracker = new RuntimeHeaderParser.DefineTracker(new HashSet<string>(), errors.Add, "corelib.h");
+            var tracker = new CreateRuntimeRootILLinkDescriptorFile.DefineTracker(new HashSet<string>(), errors.Add, "corelib.h");
             foreach (string line in source.Split('\n'))
                 tracker.ProcessLine(line);
             tracker.Complete();

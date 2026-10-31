@@ -12,7 +12,7 @@
 #include "common.h"
 #include "comdependenthandle.h"
 
-FCIMPL2(OBJECTHANDLE, DependentHandle::InternalAlloc, Object *target, Object *dependent)
+FCIMPL2(OBJECTHANDLE, DependentHandle_InternalAlloc, Object *target, Object *dependent)
 {
     FCALL_CONTRACT;
 
@@ -42,7 +42,7 @@ extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(
     return result;
 }
 
-FCIMPL1(Object*, DependentHandle::InternalGetTarget, OBJECTHANDLE handle)
+FCIMPL1(Object*, DependentHandle_InternalGetTarget, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
@@ -52,7 +52,7 @@ FCIMPL1(Object*, DependentHandle::InternalGetTarget, OBJECTHANDLE handle)
 }
 FCIMPLEND
 
-FCIMPL1(Object*, DependentHandle::InternalGetDependent, OBJECTHANDLE handle)
+FCIMPL1(Object*, DependentHandle_InternalGetDependent, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
@@ -67,7 +67,7 @@ FCIMPL1(Object*, DependentHandle::InternalGetDependent, OBJECTHANDLE handle)
 }
 FCIMPLEND
 
-FCIMPL2(Object*, DependentHandle::InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent)
+FCIMPL2(Object*, DependentHandle_InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent)
 {
     FCALL_CONTRACT;
 
@@ -83,7 +83,7 @@ FCIMPL2(Object*, DependentHandle::InternalGetTargetAndDependent, OBJECTHANDLE ha
 }
 FCIMPLEND
 
-FCIMPL1(VOID, DependentHandle::InternalSetTargetToNull, OBJECTHANDLE handle)
+FCIMPL1(VOID, DependentHandle_InternalSetTargetToNull, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
@@ -94,7 +94,7 @@ FCIMPL1(VOID, DependentHandle::InternalSetTargetToNull, OBJECTHANDLE handle)
 }
 FCIMPLEND
 
-FCIMPL2(VOID, DependentHandle::InternalSetDependent, OBJECTHANDLE handle, Object *_dependent)
+FCIMPL2(VOID, DependentHandle_InternalSetDependent, OBJECTHANDLE handle, Object *_dependent)
 {
     FCALL_CONTRACT;
 
@@ -105,7 +105,7 @@ FCIMPL2(VOID, DependentHandle::InternalSetDependent, OBJECTHANDLE handle, Object
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, DependentHandle::InternalFree, OBJECTHANDLE handle)
+FCIMPL1(FC_BOOL_RET, DependentHandle_InternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 

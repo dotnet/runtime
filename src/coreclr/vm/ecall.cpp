@@ -15,10 +15,6 @@
 
 #ifndef DACCESS_COMPILE
 
-extern const ECClass c_rgECClasses[];
-extern const int c_nECClasses;
-
-
 /**********
 
 The constructors of string-like types (String, Utf8String) are special since the JIT will
@@ -37,8 +33,7 @@ Utf8String, but String is similar.)
 - src/vm/ecall.h, search for "Utf8StringCtor" and add the DYNAMICALLY_ASSIGNED_FCALL_IMPL
   definitions corresponding to the new overloads.
 
-- src/vm/ecalllist.h, search for "FCFuncStart(gUtf8StringFuncs)" and add the overloads
-  within that block.
+- src/vm/ecall.cpp, add the overloads to the dynamic String table.
 
 - src/vm/metasig.h, add the new Utf8String-returning metasig declarations; and, if necessary,
   add any void-returning metasig declarations if they haven't already been defined elsewhere.
@@ -137,82 +132,30 @@ void ECall::DynamicallyAssignFCallImpl(PCODE impl, DWORD index)
 }
 
 /*******************************************************************************/
-static INT FindImplsIndexForClass(MethodTable* pMT)
+struct DynamicFCall
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    LPCUTF8 m_name;
+    LPHARDCODEDMETASIG m_signature;
+    DWORD m_id;
+};
 
-    LPCUTF8 pszNamespace = 0;
-    LPCUTF8 pszName = pMT->GetFullyQualifiedNameInfo(&pszNamespace);
-
-    // Array classes get null from the above routine, but they have no ecalls.
-    if (pszName == NULL)
-        return (-1);
-
-    unsigned low  = 0;
-    unsigned high = c_nECClasses;
-
-#ifdef _DEBUG
-    static bool checkedSort = false;
-    if (!checkedSort) {
-        checkedSort = true;
-        for (unsigned i = 1; i < high; i++)  {
-                // Make certain list is sorted!
-            int cmp = strcmp(c_rgECClasses[i].m_szClassName, c_rgECClasses[i-1].m_szClassName);
-            if (cmp == 0)
-                cmp = strcmp(c_rgECClasses[i].m_szNameSpace, c_rgECClasses[i-1].m_szNameSpace);
-            _ASSERTE(cmp > 0 && W("You forgot to keep ECall class names sorted"));      // Hey, you forgot to sort the new class
-        }
-    }
-#endif // _DEBUG
-    while (high > low) {
-        unsigned mid  = (high + low) / 2;
-        int cmp = strcmp(pszName, c_rgECClasses[mid].m_szClassName);
-        if (cmp == 0)
-            cmp = strcmp(pszNamespace, c_rgECClasses[mid].m_szNameSpace);
-
-        if (cmp == 0) {
-            return(mid);
-        }
-        if (cmp > 0)
-            low = mid+1;
-        else
-            high = mid;
-    }
-
-    return (-1);
-}
-
-/*******************************************************************************/
-/*  Finds the implementation for the given method desc.  */
-
-static const ECFunc* GetECFunc(const ECClass* table, INT index)
+static const DynamicFCall s_StringFCalls[] =
 {
-    LIMITED_METHOD_CONTRACT;
-#ifdef TARGET_WASM
-    return table->m_pECFunc[index];
-#else // TARGET_WASM
-    const ECFunc* entry = reinterpret_cast<const ECFunc*>(table->m_pECFunc + index);
-    return entry->IsEndOfArray() ? nullptr : entry;
-#endif // TARGET_WASM
-}
+    { "FastAllocateString", nullptr, ECall::FastAllocateString },
+    { COR_CTOR_METHOD_NAME, &gsig_IM_ArrChar_RetVoid, ECall::CtorCharArrayManaged },
+    { COR_CTOR_METHOD_NAME, &gsig_IM_ArrChar_Int_Int_RetVoid, ECall::CtorCharArrayStartLengthManaged },
+    { COR_CTOR_METHOD_NAME, &gsig_IM_PtrChar_RetVoid, ECall::CtorCharPtrManaged },
+    { COR_CTOR_METHOD_NAME, &gsig_IM_PtrChar_Int_Int_RetVoid, ECall::CtorCharPtrStartLengthManaged },
+    { COR_CTOR_METHOD_NAME, &gsig_IM_Char_Int_RetVoid, ECall::CtorCharCountManaged },
+    { COR_CTOR_METHOD_NAME, &gsig_IM_ReadOnlySpanOfChar_RetVoid, ECall::CtorReadOnlySpanOfCharManaged },
+    { COR_CTOR_METHOD_NAME, &gsig_IM_PtrSByt_RetVoid, ECall::CtorSBytePtrManaged },
+    { COR_CTOR_METHOD_NAME, &gsig_IM_PtrSByt_Int_Int_RetVoid, ECall::CtorSBytePtrStartLengthManaged },
+    { COR_CTOR_METHOD_NAME, &gsig_IM_PtrSByt_Int_Int_Encoding_RetVoid, ECall::CtorSBytePtrStartLengthEncodingManaged },
+};
 
-static INT NextECIndex(const ECFunc* entry, INT index)
-{
-    LIMITED_METHOD_CONTRACT;
-#ifdef TARGET_WASM
-    return index + 1;
-#else // TARGET_WASM
-    return index + (entry->HasSignature() ? sizeof(ECFunc) : offsetof(ECFunc, m_pMethodSig)) / sizeof(void*);
-#endif // TARGET_WASM
-}
+static_assert(ARRAY_SIZE(s_StringFCalls) == ECall::NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS);
 
-static INT FindECIndexForMethod(MethodDesc *pMD, const ECClass* table)
+static int FindDynamicFCall(MethodDesc* pMD)
 {
     CONTRACTL
     {
@@ -222,6 +165,13 @@ static INT FindECIndexForMethod(MethodDesc *pMD, const ECClass* table)
     }
     CONTRACTL_END;
 
+    if (pMD->GetMethodTable() != g_pStringClass)
+        return ECall::InvalidDynamicFCallId;
+
+    DWORD cachedID = ((FCallMethodDesc*)pMD)->GetECallID();
+    if (cachedID != 0)
+        return cachedID - 1;
+
     LPCUTF8 szMethodName = pMD->GetName();
     PCCOR_SIGNATURE pMethodSig;
     ULONG       cbMethodSigLen;
@@ -229,19 +179,14 @@ static INT FindECIndexForMethod(MethodDesc *pMD, const ECClass* table)
     pMD->GetSig(&pMethodSig, &cbMethodSigLen);
     Module* pModule = pMD->GetModule();
 
-    for (INT index = 0; ; )
+    for (const DynamicFCall& entry : s_StringFCalls)
     {
-        const ECFunc* cur = GetECFunc(table, index);
-        if (cur == nullptr)
-            break;
-        INT currentIndex = index;
-        index = NextECIndex(cur, index);
-        if (strcmp(cur->m_szMethodName, szMethodName) != 0)
+        if (strcmp(entry.m_name, szMethodName) != 0)
             continue;
 
-        if (cur->HasSignature())
+        if (entry.m_signature != nullptr)
         {
-            Signature sig = CoreLibBinder::GetTargetSignature(cur->m_pMethodSig);
+            Signature sig = CoreLibBinder::GetTargetSignature(entry.m_signature);
 
             //@GENERICS: none of these methods belong to generic classes so there is no instantiation info to pass in
             if (!MetaSig::CompareMethodSigs(pMethodSig, cbMethodSigLen, pModule, NULL,
@@ -251,75 +196,11 @@ static INT FindECIndexForMethod(MethodDesc *pMD, const ECClass* table)
             }
         }
 
-        // We have found a match!
-        return currentIndex;
+        ((FCallMethodDesc*)pMD)->SetECallID(entry.m_id + 1);
+        return entry.m_id;
     }
 
-    return -1;
-}
-
-/*******************************************************************************/
-/* ID is formed of 2 USHORTs - class index  in high word, method index in low word.  */
-/* method index starts at 1. id == 0 means no implementation.                   */
-
-DWORD ECall::GetIDForMethod(MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    INT ImplsIndex = FindImplsIndexForClass(pMD->GetMethodTable());
-    if (ImplsIndex < 0)
-        return 0;
-    INT ECIndex = FindECIndexForMethod(pMD, &c_rgECClasses[ImplsIndex]);
-    if (ECIndex < 0)
-        return 0;
-
-    return (ImplsIndex<<16) | (ECIndex + 1);
-}
-
-static const ECFunc* FindECFuncForID(DWORD id)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (id == 0)
-        return NULL;
-
-    INT ImplsIndex  = (id >> 16);
-    INT ECIndex     = (id & 0xffff) - 1;
-
-    return GetECFunc(&c_rgECClasses[ImplsIndex], ECIndex);
-}
-
-static const ECFunc* FindECFuncForMethod(MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(pMD->IsFCall());
-    }
-    CONTRACTL_END;
-
-    DWORD id = ((FCallMethodDesc *)pMD)->GetECallID();
-    if (id == 0)
-    {
-        id = ECall::GetIDForMethod(pMD);
-
-        CONSISTENCY_CHECK_MSGF(0 != id,
-                    ("No method entry found for %s::%s.\n",
-                    pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-
-        // Cache the id
-        ((FCallMethodDesc *)pMD)->SetECallID(id);
-    }
-
-    return FindECFuncForID(id);
+    return ECall::InvalidDynamicFCallId;
 }
 
 /*******************************************************************************
@@ -340,6 +221,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall, bool* pHa
     // Avoid null checks in the common case
     bool hasManagedImplDummy = false;
     if (pHasManagedImpl == nullptr) pHasManagedImpl = &hasManagedImplDummy;
+    *pHasManagedImpl = false;
 
     MethodTable * pMT = pMD->GetMethodTable();
 
@@ -347,13 +229,13 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall, bool* pHa
     // Delegate constructors are QCalls for which the entrypoint points to the target of the delegate
     // We have to intercept these and set the call target to the managed helper Delegate.DelegateConstruct
     //
-    if (pMT->IsDelegate())
+    if (pMT->IsDelegate() && pMD->IsCtor())
     {
         _ASSERTE(pMD->IsCtor());
 
         *pHasManagedImpl = true;
 
-        // We need to set up the ECFunc properly.  We don't want to use the pMD passed in,
+        // We don't want to use the pMD passed in,
         // since it may disappear.  Instead, use the stable one on Delegate.  Remember
         // that this is 1:M between the method and the constructors.
         return CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE)->GetMultiCallableAddrOfCode();
@@ -387,90 +269,31 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall, bool* pHa
         return (PCODE)NULL;
     }
 
-    const ECFunc* ret = FindECFuncForMethod(pMD);
-
-    // ECall is a set of tables to call functions within the EE from the classlibs.
-    // First we use the class name & namespace to find an array of function pointers for
-    // a class, then use the function name (& sometimes signature) to find the correct
-    // function pointer for your method.  Methods in the BCL will be marked as
-    // [MethodImplAttribute(MethodImplOptions.InternalCall)] and extern.
-    //
-    // You'll see this assert in several situations, almost all being the fault of whomever
-    // last touched a particular ecall or fcall method, either here or in the classlibs.
-    // However, you must also ensure you don't have stray copies of System.Private.CoreLib.dll on your machine.
-    // 1) You forgot to add your class to c_rgECClasses, the list of classes w/ ecall & fcall methods.
-    // 2) You forgot to add your particular method to the ECFunc array for your class.
-    // 3) You misspelled the name of your function and/or classname.
-    // 4) The signature of the managed function doesn't match the hardcoded metadata signature
-    //    listed in your ECFunc array.  The hardcoded metadata sig is only necessary to disambiguate
-    //    overloaded ecall functions - usually you can leave it set to NULL.
-    // 5) Your copy of System.Private.CoreLib.dll & coreclr.dll are out of sync - rebuild both.
-    // 6) You've loaded the wrong copy of System.Private.CoreLib.dll.  In Visual Studio's debug menu,
-    //    select the "Modules..." dialog.  Verify the path for System.Private.CoreLib is right.
-    // 7) Someone mucked around with how the signatures in metasig.h are parsed, changing the
-    //    interpretation of a part of the signature (this is very rare & extremely unlikely,
-    //    but has happened at least once).
-
-    CONSISTENCY_CHECK_MSGF(ret != NULL,
-        ("Could not find an ECALL entry for %s::%s.\n"
-        "Read comment above this assert in vm/ecall.cpp\n",
-        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-
-    PCODE pImplementation = (PCODE)ret->m_pImplementation;
-
-    int iDynamicID = ret->DynamicID();
+    PCODE pImplementation;
+    int iDynamicID = FindDynamicFCall(pMD);
     if (iDynamicID != InvalidDynamicFCallId)
     {
         *pHasManagedImpl = IsManagedFCall(iDynamicID);
         pImplementation = g_FCDynamicallyAssignedImplementations[iDynamicID];
     }
-
-    _ASSERTE(pImplementation != (PCODE)NULL);
-    return pImplementation;
-}
-
-BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
-{
-    STANDARD_VM_CONTRACT;
-
-    BOOL fUnusedFCallsFound = FALSE;
-
-    INT num = c_nECClasses;
-    for (INT ImplsIndex=0; ImplsIndex < num; ImplsIndex++)
+    else
     {
-        const ECClass * pECClass = c_rgECClasses + ImplsIndex;
-
-        BOOL fUnreferencedType = TRUE;
-        for (INT index = 0; ; )
-        {
-            const ECFunc* ptr = GetECFunc(pECClass, index);
-            if (ptr == nullptr)
-                break;
-            INT ECIndex = index;
-            index = NextECIndex(ptr, index);
-            if (ptr->DynamicID() == InvalidDynamicFCallId && !ptr->IsUnreferenced())
-            {
-                DWORD id = (ImplsIndex<<16) | (ECIndex + 1);
-
-                if (!usedIDs.Contains(id))
-                {
-                    minipal_log_print_error("CheckCoreLibExtended: Unused ecall found: %s.%s::%s\n", pECClass->m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName, ptr->m_szMethodName);
-                    fUnusedFCallsFound = TRUE;
-                    continue;
-                }
-            }
-            fUnreferencedType = FALSE;
-        }
-
-        if (fUnreferencedType)
-        {
-            minipal_log_print_error("CheckCoreLibExtended: Unused type found: %s.%s\n", c_rgECClasses[ImplsIndex].m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName);
-            fUnusedFCallsFound = TRUE;
-            continue;
-        }
+        LPCUTF8 nameSpace;
+        LPCUTF8 typeName = pMT->GetFullyQualifiedNameInfo(&nameSpace);
+        StackSString entryPoint(SString::Utf8, typeName);
+        entryPoint.AppendUTF8("_");
+        entryPoint.AppendUTF8(pMD->GetName());
+        pImplementation = (PCODE)QCallResolveDllImport(entryPoint.GetUTF8());
     }
 
-    return !fUnusedFCallsFound;
+    if (pImplementation == (PCODE)NULL && throwForInvalidFCall)
+    {
+        CONSISTENCY_CHECK_MSGF(false, ("Could not resolve internal call %s::%s.\n",
+            pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
+        COMPlusThrow(kMissingMethodException);
+    }
+
+    return pImplementation;
 }
 
 

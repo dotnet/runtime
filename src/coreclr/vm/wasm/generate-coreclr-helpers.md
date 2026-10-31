@@ -5,7 +5,8 @@ scripts in this directory regenerate the checked-in CoreCLR call-helper source f
 WebAssembly runtime. They parse their arguments and hand the work to
 `generate-coreclr-helpers.proj` next to them, which runs crossgen2 in
 `--generate-portable-callhelpers` mode over the managed framework assemblies to emit the native
-P/Invoke, reverse-P/Invoke, and interpreter-to-managed call helpers. The generator lives in
+P/Invoke, reverse-P/Invoke, and interpreter-to-managed call helpers, including the shared static
+QCall/FCall entrypoint table. The generator lives in
 [`ILCompiler.ReadyToRun/PortableCallHelpers`](../../tools/aot/ILCompiler.ReadyToRun/PortableCallHelpers) so it can use crossgen2's
 type system to compute the wasm ABI layout of the structs that cross the boundary.
 
@@ -33,13 +34,36 @@ Each run emits three files into the output directory:
 - `callhelpers-reverse.cpp`
 - `callhelpers-interp-to-managed.cpp`
 
-`callhelpers-pinvoke.cpp` also defines a separate QCall table and `QCallResolveDllImport`.
-QCalls are collected only from CoreLib in the managed assembly closure, independently of the P/Invoke module list,
-matching CoreCLR's restriction that only CoreLib can resolve QCalls.
-On WebAssembly, this replaces the full table in `qcallentrypoints.cpp`, so an app's native relink
-can discard QCall implementations that its trimmed managed assemblies no longer reference.
-Browser `memmove` and `memset` QCalls retain the bulk-memory wrappers in `qcallentrypoints.cpp`;
-WASI uses the libc entrypoints directly. Non-WebAssembly builds still use the hand-written table.
+## The shared QCall/FCall table
+
+`callhelpers-pinvoke.cpp` contains the QCall resolver and one static entrypoint table for both
+QCalls and fixed-address FCalls, alongside the ordinary P/Invoke module tables. Only the scanned
+`System.Private.CoreLib` contributes QCalls and FCalls. Static FCall names are derived from the
+managed type and method (`Type_Method`); their declarations preserve the FCall ABI, including
+the WASM caller-stack pointer, instance receiver where applicable, and portable-entrypoint context.
+The generator sorts entries ordinally, deduplicates compatible entries, and rejects conflicting
+lookup names.
+Math helpers keep the C symbols shared with NativeAOT (`Rhp_*` and the integer division/remainder
+helpers), while their lookup names remain `Math_Method` or `MathF_Method`.
+Browser `memmove` and `memset` use the bulk-memory wrappers in `wasm/helpers.cpp`;
+WASI uses the libc entrypoints directly.
+
+Prebuilt runtimes use the full native table in `qcallentrypoints.cpp`, including
+configuration-specific entries. The checked-in P/Invoke helpers define
+`CORECLR_PREGENERATED_CALLHELPERS` to exclude their metadata-derived table and resolver.
+The native table belongs to the replaceable `libcoreclr_gen_static.a`, so app relinking
+replaces it with the generated table rather than retaining both.
+
+String constructors and `String.FastAllocateString` use the runtime's separate non-trimmable
+dynamic mechanism. Delegate constructors and the signature-only
+`RuntimeHelpers.NewobjHelperDummy` are also excluded from static entrypoint generation, without
+excluding their interpreter signatures.
+
+No separate manifest, SDK header, fourth generated source, or build identity is needed. The
+managed closure and native runtime must come from matching sources and target configuration.
+App relinking scans the actual bundled post-trim IL; browser and WASI targets remap
+ReadyToRun/webcil outputs back to that IL before filtering and scanning assemblies. Do not
+replace a trimmed CoreLib with the runtime-pack copy when generating an app-specific table.
 
 ## The P/Invoke module list
 

@@ -8,12 +8,12 @@ NativeFileReference.
 
 WebAssembly has no dynamic library loading, so a test's native library cannot be resolved at run
 time the way a .so/.dylib/.dll is elsewhere. It has to be linked into the host up front, together
-with a generated table mapping each [DllImport] to the address of its target. That is what this
-file does, once per test that has a CMakeProjectReference:
+with generated tables mapping [DllImport] and CoreLib QCall/FCall entrypoints to their targets.
+That is what this file does, once per test that has a CMakeProjectReference:
 
   1. crossgen2, in its portable call-helpers generation mode, scans the test's managed assemblies
-     plus the whole framework closure and emits callhelpers-{pinvoke,reverse,interp-to-managed,ecalls}.cpp.
-  2. Those four sources are compiled with em++ (browser) or the wasi-sdk clang++ (WASI) using the
+     plus the whole framework closure and emits callhelpers-{pinvoke,reverse,interp-to-managed}.cpp.
+  2. Those three sources are compiled with em++ (browser) or the wasi-sdk clang++ (WASI) using the
      response file exported by the CoreCLR build (see src/coreclr/hosts/corerun/wasm/testkit.cmake).
   3. They are linked, together with the test's own static libraries, against the same archives
      that produce CORE_ROOT/corerun(.js), minus libcoreclr_gen_static.a, which holds the
@@ -254,8 +254,6 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
                                    ObjectFile="$(_WasmCorerunDir)callhelpers-reverse.o" />
       <_WasmCorerunGeneratedSource Include="$(_WasmCorerunDir)callhelpers-interp-to-managed.cpp"
                                    ObjectFile="$(_WasmCorerunDir)callhelpers-interp-to-managed.o" />
-      <_WasmCorerunGeneratedSource Include="$(_WasmCorerunDir)callhelpers-ecalls.cpp"
-                                   ObjectFile="$(_WasmCorerunDir)callhelpers-ecalls.o" />
 
       <!-- Track the kit payload itself, not just its response files: those name their inputs
            relatively and so do not change when the runtime is rebuilt, and a coreclr native
@@ -265,7 +263,6 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*$(StaticLibSuffix)" />
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*.js" />
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*.wit" />
-      <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)ecall-manifest.json" />
       <_WasmCorerunGeneratorInput Include="$(Crossgen2Path);$([System.IO.Path]::GetDirectoryName('$(Crossgen2Path)'))\*.dll"
                                   Condition="'$(Crossgen2Path)' != ''" />
 
@@ -346,7 +343,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   <Target Name="_WasmGenerateTestCallHelpers"
           DependsOnTargets="_WasmResolveTestCorerunAssemblies;_WasmWriteTestCorerunInputManifest"
           Condition="'$(_WasmCorerunSkip)' != 'true'"
-          Inputs="@(_WasmCorerunAssembly);@(_WasmCorerunNativeSource);@(_WasmCorerunTestLib);$(_WasmCorerunInputManifest);$(WasmCoreClrFrameworkPInvokeModuleListFile);$(WasmCorerunKitDir)ecall-manifest.json;@(_WasmCorerunGeneratorInput)"
+          Inputs="@(_WasmCorerunAssembly);@(_WasmCorerunNativeSource);@(_WasmCorerunTestLib);$(_WasmCorerunInputManifest);$(WasmCoreClrFrameworkPInvokeModuleListFile);@(_WasmCorerunGeneratorInput)"
           Outputs="@(_WasmCorerunGeneratedSource)">
     <MakeDir Directories="$(_WasmCorerunDir)" />
 
@@ -386,7 +383,6 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_Crossgen2GeneratorArg Include="--targetos:$(TargetOS)" />
       <_Crossgen2GeneratorArg Include="--targetarch:wasm" />
       <_Crossgen2GeneratorArg Include="--generate-portable-callhelpers:$(_WasmCorerunDir)" />
-      <_Crossgen2GeneratorArg Include="--ecall-manifest:$(WasmCorerunKitDir)ecall-manifest.json" />
       <_Crossgen2GeneratorArg Include="@(_WasmCorerunPInvokeModule->'--directpinvoke:%(Identity)')" />
       <_Crossgen2GeneratorArg Include="@(_WasmCorerunManagedAssembly->'%(FullPath)')" />
     </ItemGroup>

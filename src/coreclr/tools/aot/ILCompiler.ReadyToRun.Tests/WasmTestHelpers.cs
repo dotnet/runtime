@@ -30,12 +30,15 @@ internal static class WasmTestHelpers
     /// app closure, which a real build always supplies alongside CoreLib.
     /// </summary>
     public static ReadyToRunCompilerContext CreateContext(params string[] extraInputAssemblyPaths)
+        => CreateContextWithCoreLib(TargetOS.Browser, TestPaths.SystemPrivateCoreLibPath, extraInputAssemblyPaths);
+
+    public static ReadyToRunCompilerContext CreateContextWithCoreLib(
+        TargetOS targetOS, string coreLibPath, params string[] extraInputAssemblyPaths)
     {
-        string coreLibPath = TestPaths.SystemPrivateCoreLibPath;
         Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found at '{coreLibPath}'");
 
         InstructionSetSupport instructionSetSupport = new(default, default, TargetArchitecture.Wasm32);
-        TargetDetails target = new(TargetArchitecture.Wasm32, TargetOS.Browser, TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
+        TargetDetails target = new(TargetArchitecture.Wasm32, targetOS, TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
         Dictionary<string, string> inputFilePaths = new(StringComparer.OrdinalIgnoreCase) { { CoreLibSimpleName, coreLibPath } };
         foreach (string path in extraInputAssemblyPaths)

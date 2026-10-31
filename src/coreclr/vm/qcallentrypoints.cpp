@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Describes all of the P/Invokes to the special QCall module that resolves to internal runtime methods.
+// Shared native entrypoint table for CoreLib QCalls and fixed-address FCalls.
 
 #include "common.h"
 
@@ -16,6 +16,7 @@
 #include "comdynamic.h"
 #include "excep.h"
 #include "fcall.h"
+#include "ecall.h"
 #include "clrconfignative.h"
 #include "commodule.h"
 #include "marshalnative.h"
@@ -28,6 +29,7 @@
 #include "proftoeeinterfaceimpl.h"
 
 #include "appdomainnative.hpp"
+#include "conditionalweaktable.h"
 #include "runtimehandles.h"
 #include "reflectioninvocation.h"
 #include "managedmdimport.hpp"
@@ -44,6 +46,9 @@
 #endif // FEATURE_COMINTEROP
 
 #include "interoplibinterface.h"
+#if defined(FEATURE_COMWRAPPERS)
+#include "interoplibinterface_comwrappers.h"
+#endif
 
 #include "stubhelpers.h"
 #include "ilmarshalers.h"
@@ -88,21 +93,11 @@
 #include "MiscNativeHelpers.h"
 
 #ifdef TARGET_BROWSER
-// emscripten libc before 6.0.10 implements overlapping memmove and memset with scalar loops.
-// Compiling these wrappers with -mbulk-memory lowers the builtins to memory.copy and memory.fill.
-// TODO: Remove once emsdk is 6.0.10 or later (https://github.com/dotnet/runtime/issues/136012).
-extern "C" void* QCall_memmove(void* dest, const void* src, size_t len)
-{
-    return __builtin_memmove(dest, src, len);
-}
-
-extern "C" void* QCall_memset(void* dest, int value, size_t len)
-{
-    return __builtin_memset(dest, value, len);
-}
+extern "C" void* QCall_memmove(void* dest, const void* src, size_t len);
+extern "C" void* QCall_memset(void* dest, int value, size_t len);
 #endif // TARGET_BROWSER
 
-#if !defined(TARGET_WASM) || !GEN_PINVOKE
+#define FCallEntry(name, impl) { #name, (const void*)&impl },
 static const Entry s_QCall[] =
 {
 #ifdef FEATURE_VARARGS
@@ -584,10 +579,238 @@ static const Entry s_QCall[] =
     DllImportEntry(WasiFinalizer_RunWorker)
     DllImportEntry(WasiFinalizer_TryClearPending)
 #endif // TARGET_WASI
+
+    FCallEntry(Array_GetCorElementTypeOfElementType, Array_GetCorElementTypeOfElementType)
+    FCallEntry(AssemblyLoadContext_IsTracingEnabled, AssemblyLoadContext_IsTracingEnabled)
+#if (defined(FEATURE_INTERPRETER))
+    FCallEntry(AsyncHelpers_ResumeInterpreterContinuation, AsyncHelpers_ResumeInterpreterContinuation)
+#endif
+    FCallEntry(Buffer_BulkMoveWithWriteBarrierInternal, Buffer_BulkMoveWithWriteBarrierInternal)
+    FCallEntry(Delegate_GetInvokeMethod, Delegate_GetInvokeMethod)
+    FCallEntry(Delegate_GetMulticastInvoke, Delegate_GetMulticastInvoke)
+    FCallEntry(DependentHandle_InternalAlloc, DependentHandle_InternalAlloc)
+    FCallEntry(DependentHandle_InternalFree, DependentHandle_InternalFree)
+    FCallEntry(DependentHandle_InternalGetDependent, DependentHandle_InternalGetDependent)
+    FCallEntry(DependentHandle_InternalGetTarget, DependentHandle_InternalGetTarget)
+    FCallEntry(DependentHandle_InternalGetTargetAndDependent, DependentHandle_InternalGetTargetAndDependent)
+    FCallEntry(DependentHandle_InternalSetDependent, DependentHandle_InternalSetDependent)
+    FCallEntry(DependentHandle_InternalSetTargetToNull, DependentHandle_InternalSetTargetToNull)
+    FCallEntry(Environment_get_ExitCode, Environment_get_ExitCode)
+    FCallEntry(Environment_set_ExitCode, Environment_set_ExitCode)
+    FCallEntry(Exception_GetExceptionCount, Exception_GetExceptionCount)
+    FCallEntry(Exception_IsImmutableAgileException, Exception_IsImmutableAgileException)
+    FCallEntry(Exception_PrepareForForeignExceptionRaise, Exception_PrepareForForeignExceptionRaise)
+    FCallEntry(GCFrameRegistration_RegisterForGCReporting, GCFrameRegistration_RegisterForGCReporting)
+    FCallEntry(GCFrameRegistration_UnregisterForGCReporting, GCFrameRegistration_UnregisterForGCReporting)
+    FCallEntry(GCHandle_InternalCompareExchange, GCHandle_InternalCompareExchange)
+    FCallEntry(GCHandle_InternalGet, GCHandle_InternalGet)
+    FCallEntry(GCHandle_InternalSet, GCHandle_InternalSet)
+#if (defined(FEATURE_JAVAMARSHAL))
+    FCallEntry(GCHandle_InternalTryGetBridgeWait, GCHandle_InternalTryGetBridgeWait)
+#endif
+    FCallEntry(GCHandle__InternalAlloc, GCHandle__InternalAlloc)
+    FCallEntry(GCHandle__InternalFree, GCHandle__InternalFree)
+    FCallEntry(GCSettings_GetGCLatencyMode, GCSettings_GetGCLatencyMode)
+    FCallEntry(GCSettings_GetLOHCompactionMode, GCSettings_GetLOHCompactionMode)
+    FCallEntry(GCSettings_SetGCLatencyMode, GCSettings_SetGCLatencyMode)
+    FCallEntry(GCSettings_SetLOHCompactionMode, GCSettings_SetLOHCompactionMode)
+    FCallEntry(GCSettings_get_IsServerGC, GCSettings_get_IsServerGC)
+    FCallEntry(GC_GetAllocatedBytesForCurrentThread, GC_GetAllocatedBytesForCurrentThread)
+    FCallEntry(GC_GetGenerationInternal, GC_GetGenerationInternal)
+    FCallEntry(GC_GetGenerationSize, GC_GetGenerationSize)
+    FCallEntry(GC_GetLastGCPercentTimeInGC, GC_GetLastGCPercentTimeInGC)
+    FCallEntry(GC_GetMaxGeneration, GC_GetMaxGeneration)
+    FCallEntry(GC_GetMemoryInfo, GC_GetMemoryInfo)
+    FCallEntry(GC_GetMemoryLoad, GC_GetMemoryLoad)
+    FCallEntry(GC_GetSegmentSize, GC_GetSegmentSize)
+    FCallEntry(GC_GetTotalAllocatedBytesApproximate, GC_GetTotalAllocatedBytesApproximate)
+    FCallEntry(GC_SuppressFinalizeInternal, GC_SuppressFinalizeInternal)
+    FCallEntry(GC__CancelFullGCNotification, GC__CancelFullGCNotification)
+    FCallEntry(GC__CollectionCount, GC__CollectionCount)
+    FCallEntry(GC__GetTotalPauseDuration, GC__GetTotalPauseDuration)
+    FCallEntry(GC__RegisterForFullGCNotification, GC__RegisterForFullGCNotification)
+    FCallEntry(Interlocked_CompareExchange32, Interlocked_CompareExchange32)
+    FCallEntry(Interlocked_CompareExchange32Pointer, Interlocked_CompareExchange32)
+    FCallEntry(Interlocked_CompareExchange64, Interlocked_CompareExchange64)
+    FCallEntry(Interlocked_CompareExchangeObject, Interlocked_CompareExchangeObject)
+    FCallEntry(Interlocked_Exchange32, Interlocked_Exchange32)
+    FCallEntry(Interlocked_Exchange64, Interlocked_Exchange64)
+    FCallEntry(Interlocked_ExchangeAdd32, Interlocked_ExchangeAdd32)
+    FCallEntry(Interlocked_ExchangeAdd64, Interlocked_ExchangeAdd64)
+    FCallEntry(Interlocked_ExchangeObject, Interlocked_ExchangeObject)
+    FCallEntry(JitInfo_GetCompilationTimeInTicks, JitInfo_GetCompilationTimeInTicks)
+    FCallEntry(JitInfo_GetCompiledILBytes, JitInfo_GetCompiledILBytes)
+    FCallEntry(JitInfo_GetCompiledMethodCount, JitInfo_GetCompiledMethodCount)
+#if (defined(FEATURE_COMINTEROP))
+    FCallEntry(Marshal_AreComObjectsAvailableForCleanup, Marshal_AreComObjectsAvailableForCleanup)
+#endif
+    FCallEntry(Marshal_GetExceptionCode, Marshal_GetExceptionCode)
+    FCallEntry(Marshal_GetExceptionPointers, Marshal_GetExceptionPointers)
+    FCallEntry(Marshal_GetLastPInvokeError, Marshal_GetLastPInvokeError)
+    FCallEntry(Marshal_SetLastPInvokeError, Marshal_SetLastPInvokeError)
+    FCallEntry(MathF_Acos, Rhp_acosf)
+    FCallEntry(MathF_Acosh, Rhp_acoshf)
+    FCallEntry(MathF_Asin, Rhp_asinf)
+    FCallEntry(MathF_Asinh, Rhp_asinhf)
+    FCallEntry(MathF_Atan, Rhp_atanf)
+    FCallEntry(MathF_Atan2, Rhp_atan2f)
+    FCallEntry(MathF_Atanh, Rhp_atanhf)
+    FCallEntry(MathF_Cbrt, Rhp_cbrtf)
+    FCallEntry(MathF_Ceiling, Rhp_ceilf)
+    FCallEntry(MathF_Cos, Rhp_cosf)
+    FCallEntry(MathF_Cosh, Rhp_coshf)
+    FCallEntry(MathF_Exp, Rhp_expf)
+    FCallEntry(MathF_Floor, Rhp_floorf)
+    FCallEntry(MathF_FusedMultiplyAdd, Rhp_fmaf)
+    FCallEntry(MathF_Log, Rhp_logf)
+    FCallEntry(MathF_Log10, Rhp_log10f)
+    FCallEntry(MathF_Log2, Rhp_log2f)
+    FCallEntry(MathF_ModF, Rhp_modff)
+    FCallEntry(MathF_Pow, Rhp_powf)
+    FCallEntry(MathF_Sin, Rhp_sinf)
+    FCallEntry(MathF_SinCos, Rhp_sincosf)
+    FCallEntry(MathF_Sinh, Rhp_sinhf)
+    FCallEntry(MathF_Sqrt, Rhp_sqrtf)
+    FCallEntry(MathF_Tan, Rhp_tanf)
+    FCallEntry(MathF_Tanh, Rhp_tanhf)
+    FCallEntry(Math_Acos, Rhp_acos)
+    FCallEntry(Math_Acosh, Rhp_acosh)
+    FCallEntry(Math_Asin, Rhp_asin)
+    FCallEntry(Math_Asinh, Rhp_asinh)
+    FCallEntry(Math_Atan, Rhp_atan)
+    FCallEntry(Math_Atan2, Rhp_atan2)
+    FCallEntry(Math_Atanh, Rhp_atanh)
+    FCallEntry(Math_Cbrt, Rhp_cbrt)
+    FCallEntry(Math_Ceiling, Rhp_ceil)
+    FCallEntry(Math_Cos, Rhp_cos)
+    FCallEntry(Math_Cosh, Rhp_cosh)
+#if (defined(TARGET_32BIT))
+    FCallEntry(Math_DivInt32Internal, DivInt32Internal)
+    FCallEntry(Math_DivInt64Internal, DivInt64Internal)
+    FCallEntry(Math_DivUInt32Internal, DivUInt32Internal)
+    FCallEntry(Math_DivUInt64Internal, DivUInt64Internal)
+#endif
+    FCallEntry(Math_Exp, Rhp_exp)
+    FCallEntry(Math_Floor, Rhp_floor)
+    FCallEntry(Math_FusedMultiplyAdd, Rhp_fma)
+    FCallEntry(Math_Log, Rhp_log)
+    FCallEntry(Math_Log10, Rhp_log10)
+    FCallEntry(Math_Log2, Rhp_log2)
+    FCallEntry(Math_ModF, Rhp_modf)
+#if (defined(TARGET_32BIT))
+    FCallEntry(Math_ModInt32Internal, ModInt32Internal)
+    FCallEntry(Math_ModInt64Internal, ModInt64Internal)
+    FCallEntry(Math_ModUInt32Internal, ModUInt32Internal)
+    FCallEntry(Math_ModUInt64Internal, ModUInt64Internal)
+#endif
+    FCallEntry(Math_Pow, Rhp_pow)
+    FCallEntry(Math_Sin, Rhp_sin)
+    FCallEntry(Math_SinCos, Rhp_sincos)
+    FCallEntry(Math_Sinh, Rhp_sinh)
+    FCallEntry(Math_Sqrt, Rhp_sqrt)
+    FCallEntry(Math_Tan, Rhp_tan)
+    FCallEntry(Math_Tanh, Rhp_tanh)
+    FCallEntry(MetadataImport_GetClassLayout, MetadataImport_GetClassLayout)
+    FCallEntry(MetadataImport_GetCustomAttributeProps, MetadataImport_GetCustomAttributeProps)
+    FCallEntry(MetadataImport_GetDefaultValue, MetadataImport_GetDefaultValue)
+    FCallEntry(MetadataImport_GetEventProps, MetadataImport_GetEventProps)
+    FCallEntry(MetadataImport_GetFieldDefProps, MetadataImport_GetFieldDefProps)
+    FCallEntry(MetadataImport_GetFieldMarshal, MetadataImport_GetFieldMarshal)
+    FCallEntry(MetadataImport_GetFieldOffset, MetadataImport_GetFieldOffset)
+    FCallEntry(MetadataImport_GetGenericParamProps, MetadataImport_GetGenericParamProps)
+    FCallEntry(MetadataImport_GetMemberRefProps, MetadataImport_GetMemberRefProps)
+    FCallEntry(MetadataImport_GetMetadataImport, MetadataImport_GetMetadataImport)
+    FCallEntry(MetadataImport_GetName, MetadataImport_GetName)
+    FCallEntry(MetadataImport_GetNamespace, MetadataImport_GetNamespace)
+    FCallEntry(MetadataImport_GetPInvokeMap, MetadataImport_GetPInvokeMap)
+    FCallEntry(MetadataImport_GetParamDefProps, MetadataImport_GetParamDefProps)
+    FCallEntry(MetadataImport_GetParentToken, MetadataImport_GetParentToken)
+    FCallEntry(MetadataImport_GetPropertyProps, MetadataImport_GetPropertyProps)
+    FCallEntry(MetadataImport_GetScopeProps, MetadataImport_GetScopeProps)
+    FCallEntry(MetadataImport_GetSigOfFieldDef, MetadataImport_GetSigOfFieldDef)
+    FCallEntry(MetadataImport_GetSigOfMethodDef, MetadataImport_GetSigOfMethodDef)
+    FCallEntry(MetadataImport_GetSignatureFromToken, MetadataImport_GetSignatureFromToken)
+    FCallEntry(MetadataImport_GetUserString, MetadataImport_GetUserString)
+    FCallEntry(MetadataImport_IsValidToken, MetadataImport_IsValidToken)
+    FCallEntry(MethodTable_GetLoaderAllocatorHandle, MethodTable_GetLoaderAllocatorHandle)
+    FCallEntry(MethodTable_GetMethodTableMatchingParentClass, MethodTable_GetMethodTableMatchingParentClass)
+    FCallEntry(MethodTable_GetNumInstanceFieldBytes, MethodTable_GetNumInstanceFieldBytes)
+    FCallEntry(MethodTable_GetPrimitiveCorElementType, MethodTable_GetPrimitiveCorElementType)
+    FCallEntry(ObjectHeader_GetLockHandleIfExists, ObjectHeader_GetLockHandleIfExists)
+    FCallEntry(RuntimeAssembly_GetIsCollectible, RuntimeAssembly_GetIsCollectible)
+    FCallEntry(RuntimeAssembly_GetIsDynamic, RuntimeAssembly_GetIsDynamic)
+    FCallEntry(RuntimeAssembly_GetManifestModule, RuntimeAssembly_GetManifestModule)
+    FCallEntry(RuntimeAssembly_GetTokenInternal, RuntimeAssembly_GetTokenInternal)
+    FCallEntry(RuntimeFieldHandle_AcquiresContextFromThis, RuntimeFieldHandle_AcquiresContextFromThis)
+    FCallEntry(RuntimeFieldHandle_GetApproxDeclaringMethodTable, RuntimeFieldHandle_GetApproxDeclaringMethodTable)
+    FCallEntry(RuntimeFieldHandle_GetAttributes, RuntimeFieldHandle_GetAttributes)
+    FCallEntry(RuntimeFieldHandle_GetInstanceFieldOffset, RuntimeFieldHandle_GetInstanceFieldOffset)
+    FCallEntry(RuntimeFieldHandle_GetLoaderAllocatorInternal, RuntimeFieldHandle_GetLoaderAllocatorInternal)
+    FCallEntry(RuntimeFieldHandle_GetStaticFieldAddress, RuntimeFieldHandle_GetStaticFieldAddress)
+    FCallEntry(RuntimeFieldHandle_GetStaticFieldForGenericType, RuntimeFieldHandle_GetStaticFieldForGenericType)
+    FCallEntry(RuntimeFieldHandle_GetToken, RuntimeFieldHandle_GetToken)
+    FCallEntry(RuntimeFieldHandle_GetUtf8NameInternal, RuntimeFieldHandle_GetUtf8NameInternal)
+    FCallEntry(RuntimeFieldHandle_IsFastPathSupported, RuntimeFieldHandle_IsFastPathSupported)
+    FCallEntry(RuntimeHelpers_ContentEquals, RuntimeHelpers_ContentEquals)
+    FCallEntry(RuntimeHelpers_GetTailCallArgBuffer, RuntimeHelpers_GetTailCallArgBuffer)
+    FCallEntry(RuntimeHelpers_GetTailCallInfo, RuntimeHelpers_GetTailCallInfo)
+    FCallEntry(RuntimeHelpers_TryEnsureSufficientExecutionStack, RuntimeHelpers_TryEnsureSufficientExecutionStack)
+    FCallEntry(RuntimeHelpers_TryGetHashCode, RuntimeHelpers_TryGetHashCode)
+    FCallEntry(RuntimeMethodHandle_GetAttributes, RuntimeMethodHandle_GetAttributes)
+    FCallEntry(RuntimeMethodHandle_GetGenericParameterCount, RuntimeMethodHandle_GetGenericParameterCount)
+    FCallEntry(RuntimeMethodHandle_GetImplAttributes, RuntimeMethodHandle_GetImplAttributes)
+    FCallEntry(RuntimeMethodHandle_GetLoaderAllocatorInternal, RuntimeMethodHandle_GetLoaderAllocatorInternal)
+    FCallEntry(RuntimeMethodHandle_GetMethodDef, RuntimeMethodHandle_GetMethodDef)
+    FCallEntry(RuntimeMethodHandle_GetMethodFromCanonical, RuntimeMethodHandle_GetMethodFromCanonical)
+    FCallEntry(RuntimeMethodHandle_GetMethodTable, RuntimeMethodHandle_GetMethodTable)
+    FCallEntry(RuntimeMethodHandle_GetResolver, RuntimeMethodHandle_GetResolver)
+    FCallEntry(RuntimeMethodHandle_GetSlot, RuntimeMethodHandle_GetSlot)
+    FCallEntry(RuntimeMethodHandle_GetStubIfNeededInternal, RuntimeMethodHandle_GetStubIfNeededInternal)
+    FCallEntry(RuntimeMethodHandle_GetUtf8NameInternal, RuntimeMethodHandle_GetUtf8NameInternal)
+    FCallEntry(RuntimeMethodHandle_HasMethodInstantiation, RuntimeMethodHandle_HasMethodInstantiation)
+    FCallEntry(RuntimeMethodHandle_IsAsyncMethod, RuntimeMethodHandle_IsAsyncMethod)
+    FCallEntry(RuntimeMethodHandle_IsCollectible, RuntimeMethodHandle_IsCollectible)
+    FCallEntry(RuntimeMethodHandle_IsConstructor, RuntimeMethodHandle_IsConstructor)
+    FCallEntry(RuntimeMethodHandle_IsDynamicMethod, RuntimeMethodHandle_IsDynamicMethod)
+    FCallEntry(RuntimeMethodHandle_IsGenericMethodDefinition, RuntimeMethodHandle_IsGenericMethodDefinition)
+    FCallEntry(RuntimeMethodHandle_IsTypicalMethodDefinition, RuntimeMethodHandle_IsTypicalMethodDefinition)
+    FCallEntry(RuntimeTypeHandle_CompareCanonicalHandles, RuntimeTypeHandle_CompareCanonicalHandles)
+    FCallEntry(RuntimeTypeHandle_ContainsGenericVariables, RuntimeTypeHandle_ContainsGenericVariables)
+    FCallEntry(RuntimeTypeHandle_GetArrayRank, RuntimeTypeHandle_GetArrayRank)
+    FCallEntry(RuntimeTypeHandle_GetAssemblyIfExists, RuntimeTypeHandle_GetAssemblyIfExists)
+    FCallEntry(RuntimeTypeHandle_GetAttributes, RuntimeTypeHandle_GetAttributes)
+    FCallEntry(RuntimeTypeHandle_GetElementTypeHandle, RuntimeTypeHandle_GetElementTypeHandle)
+    FCallEntry(RuntimeTypeHandle_GetFirstIntroducedMethod, RuntimeTypeHandle_GetFirstIntroducedMethod)
+    FCallEntry(RuntimeTypeHandle_GetGenericVariableIndex, RuntimeTypeHandle_GetGenericVariableIndex)
+    FCallEntry(RuntimeTypeHandle_GetModuleIfExists, RuntimeTypeHandle_GetModuleIfExists)
+    FCallEntry(RuntimeTypeHandle_GetNextIntroducedMethod, RuntimeTypeHandle_GetNextIntroducedMethod)
+    FCallEntry(RuntimeTypeHandle_GetNumVirtuals, RuntimeTypeHandle_GetNumVirtuals)
+    FCallEntry(RuntimeTypeHandle_GetToken, RuntimeTypeHandle_GetToken)
+    FCallEntry(RuntimeTypeHandle_GetUtf8NameInternal, RuntimeTypeHandle_GetUtf8NameInternal)
+    FCallEntry(RuntimeTypeHandle_InternalAllocNoChecks_FastPath, RuntimeTypeHandle_InternalAllocNoChecks_FastPath)
+    FCallEntry(RuntimeTypeHandle_IsGenericVariable, RuntimeTypeHandle_IsGenericVariable)
+    FCallEntry(RuntimeTypeHandle_IsUnmanagedFunctionPointer, RuntimeTypeHandle_IsUnmanagedFunctionPointer)
+    FCallEntry(Signature_GetCallingConventionFromFunctionPointerAtOffsetInternal, Signature_GetCallingConventionFromFunctionPointerAtOffsetInternal)
+    FCallEntry(Signature_GetParameterOffsetInternal, Signature_GetParameterOffsetInternal)
+    FCallEntry(Signature_GetTypeParameterOffsetInternal, Signature_GetTypeParameterOffsetInternal)
+#if (defined(FEATURE_VARARGS))
+    FCallEntry(StubHelpers_CalcVaListSize, StubHelpers_CalcVaListSize)
+#endif
+    FCallEntry(StubHelpers_ClearLastError, StubHelpers_ClearLastError)
+#if (defined(FEATURE_COMINTEROP))
+    FCallEntry(StubHelpers_GetCOMIPFromRCW, StubHelpers_GetCOMIPFromRCW)
+#endif
+    FCallEntry(StubHelpers_LogPinnedArgument, StubHelpers_LogPinnedArgument)
+    FCallEntry(StubHelpers_SetLastError, StubHelpers_SetLastError)
+#if (defined(FEATURE_MULTITHREADING))
+    FCallEntry(Thread_CatchAtSafePoint, Thread_CatchAtSafePoint)
+    FCallEntry(Thread_CurrentThreadIsFinalizerThread, Thread_CurrentThreadIsFinalizerThread)
+    FCallEntry(Thread_InternalFinalize, Thread_InternalFinalize)
+#endif
 };
+#undef FCallEntry
 
 const void* QCallResolveDllImport(const char* name)
 {
     return minipal_resolve_dllimport(s_QCall, ARRAY_SIZE(s_QCall), name);
 }
-#endif // !defined(TARGET_WASM) || !GEN_PINVOKE

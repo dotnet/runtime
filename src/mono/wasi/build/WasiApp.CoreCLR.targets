@@ -226,9 +226,6 @@
       <_WasiPInvokeTablePath>$(_WasiRelinkObjDir)callhelpers-pinvoke.cpp</_WasiPInvokeTablePath>
       <_WasiReversePInvokeTablePath>$(_WasiRelinkObjDir)callhelpers-reverse.cpp</_WasiReversePInvokeTablePath>
       <_WasiInterpToNativeTablePath>$(_WasiRelinkObjDir)callhelpers-interp-to-managed.cpp</_WasiInterpToNativeTablePath>
-      <_WasiECallTablePath>$(_WasiRelinkObjDir)callhelpers-ecalls.cpp</_WasiECallTablePath>
-      <_WasiECallManifest>$(WasiCoreCLRNativeRuntimeDir)ecall-manifest.json</_WasiECallManifest>
-      <_WasiECallIncludeDir>$(WasiCoreCLRNativeRuntimeDir)include\</_WasiECallIncludeDir>
 
       <!-- Curated header set for the generated callhelpers (mirrors browser's
            _EmccCFlagsGenerated): force-include coreclr_compat.h + -I the dirs with
@@ -257,10 +254,6 @@
 
     <MakeDir Directories="$(_WasiRelinkObjDir)" />
 
-    <Error Condition="!Exists('$(_WasiECallManifest)')"
-           Text="ECall manifest not found: '$(_WasiECallManifest)'. Use the manifest from the native CoreCLR runtime being linked." />
-    <Error Condition="!Exists('$(_WasiECallIncludeDir)ecall-table.h')"
-           Text="ECall table header not found: '$(_WasiECallIncludeDir)ecall-table.h'. Use the header shipped with the native runtime being linked." />
     <Error Condition="!Exists('$(_WasiCoreClrCompatHeader)')"
            Text="coreclr_compat.h not found at $(_WasiCoreClrCompatHeader). For out-of-tree/pack builds set %24(CORECLR_COMPAT_HEADER) to the staged header (and CORECLR_VM_WASM_INCLUDE_DIR/MINIPAL_INCLUDE_DIR for the include dirs); see #128362." />
     <Error Condition="!Exists('$(_WasiHttpWorldWit)')"
@@ -311,7 +304,6 @@
       <_Crossgen2GeneratorArg Include="--targetos:wasi" />
       <_Crossgen2GeneratorArg Include="--targetarch:wasm" />
       <_Crossgen2GeneratorArg Include="--generate-portable-callhelpers:$(_WasiRelinkObjDir)" />
-      <_Crossgen2GeneratorArg Include="--ecall-manifest:$(_WasiECallManifest)" />
       <_Crossgen2GeneratorArg Include="@(_WasiPInvokeModules->'--directpinvoke:%(Identity)')" />
       <_Crossgen2GeneratorArg Include="@(_WasiManagedAssemblies->'%(FullPath)')" />
     </ItemGroup>
@@ -321,10 +313,10 @@
     <Exec Command="&quot;$(Crossgen2Path)&quot; &quot;@$(_Crossgen2GeneratorRsp)&quot;" />
 
     <ItemGroup>
-      <FileWrites Include="$(_Crossgen2GeneratorRsp);$(_WasiPInvokeTablePath);$(_WasiReversePInvokeTablePath);$(_WasiInterpToNativeTablePath);$(_WasiECallTablePath)" />
+      <FileWrites Include="$(_Crossgen2GeneratorRsp);$(_WasiPInvokeTablePath);$(_WasiReversePInvokeTablePath);$(_WasiInterpToNativeTablePath)" />
     </ItemGroup>
 
-    <!-- 2. Compile the generated callhelper sources with the wasi-sdk clang.
+    <!-- 2. Compile the three generated callhelper sources with the wasi-sdk clang.
          The generated .cpp #include the real <callhelpers.hpp>/<minipal/*.h>; the
          force-included coreclr_compat.h supplies the prerequisite types/macros the
          in-tree PCH would otherwise provide. -->
@@ -383,7 +375,6 @@
       <_WasiRelinkCompileFlags Include="-D_WASI_EMULATED_SIGNAL" />
       <_WasiRelinkCompileFlags Include="-include &quot;$(_WasiCoreClrCompatHeader.Replace('\','/'))&quot;" />
       <_WasiRelinkCompileFlags Include="-I&quot;$(_WasiVmWasmIncludeDir.TrimEnd('\/').Replace('\','/'))&quot;" />
-      <_WasiRelinkCompileFlags Include="-I&quot;$(_WasiECallIncludeDir.TrimEnd('\/').Replace('\','/'))&quot;" />
       <_WasiRelinkCompileFlags Include="-I&quot;$(_WasiMinipalIncludeRoot.TrimEnd('\/').Replace('\','/'))&quot;" />
     </ItemGroup>
     <WriteLinesToFile Lines="@(_WasiRelinkCompileFlags)" File="$(_WasiRelinkCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
@@ -392,7 +383,6 @@
       <_WasiCallHelperSource Include="$(_WasiPInvokeTablePath)"        ObjectFile="$(_WasiRelinkObjDir)callhelpers-pinvoke.o" />
       <_WasiCallHelperSource Include="$(_WasiReversePInvokeTablePath)" ObjectFile="$(_WasiRelinkObjDir)callhelpers-reverse.o" />
       <_WasiCallHelperSource Include="$(_WasiInterpToNativeTablePath)" ObjectFile="$(_WasiRelinkObjDir)callhelpers-interp-to-managed.o" />
-      <_WasiCallHelperSource Include="$(_WasiECallTablePath)" ObjectFile="$(_WasiRelinkObjDir)callhelpers-ecalls.o" />
       <_WasiCallHelperSource Include="$(_WasiR2RImageBufferSource)"
                              ObjectFile="$(_WasiRelinkObjDir)r2r-image-buffer.o"
                              Condition="'$(PublishReadyToRun)' == 'true'" />

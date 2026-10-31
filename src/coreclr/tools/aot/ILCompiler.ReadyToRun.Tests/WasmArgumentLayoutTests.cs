@@ -40,6 +40,7 @@ namespace ILCompiler.ReadyToRun.Tests;
 [ConditionalClass(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
 public class WasmArgumentLayoutTests
 {
+    private const string CoreLibSimpleName = "System.Private.CoreLib";
     private const string Vector128OfT = "Vector128`1";
     private const string VectorOfT = "Vector`1";
     private const string Vector64OfT = "Vector64`1";
@@ -1351,7 +1352,7 @@ public class WasmArgumentLayoutTests
         {
             string inputAssembly = CompileCallbackAssembly(source,
                 Path.Combine(workingDirectory, CoreLibSimpleName + ".dll"), useCoreLibReference: false);
-            ReadyToRunCompilerContext context = CreateWasmContextWithCoreLib(
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContextWithCoreLib(
                 targetOS == "browser" ? TargetOS.Browser : TargetOS.Wasi, inputAssembly);
 
             var options = new PortableCallHelpersGeneratorOptions
@@ -1430,8 +1431,8 @@ public class WasmArgumentLayoutTests
         try
         {
             string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Imports.dll"));
-            ReadyToRunCompilerContext context = CreateWasmContext(
-                targetOS == "browser" ? TargetOS.Browser : TargetOS.Wasi, inputAssembly);
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContextWithCoreLib(
+                targetOS == "browser" ? TargetOS.Browser : TargetOS.Wasi, TestPaths.SystemPrivateCoreLibPath, inputAssembly);
             context.InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { "Imports", inputAssembly },
@@ -1471,6 +1472,138 @@ public class WasmArgumentLayoutTests
         }
     }
 
+    [Theory]
+    [InlineData(TargetOS.Browser)]
+    [InlineData(TargetOS.Wasi)]
+    public void PortableCallHelpersGeneratorUnifiesCoreLibEntryPoints(TargetOS targetOS)
+    {
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        try
+        {
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContextWithCoreLib(
+                targetOS, TestPaths.SystemPrivateCoreLibPath);
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = workingDirectory,
+                TargetOS = targetOS == TargetOS.Browser ? "browser" : "wasi",
+            };
+            var log = new StringWriter();
+            Assert.True(PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false)) == 0,
+                log.ToString());
+            string path = Path.Combine(workingDirectory, PortableCallHelpersGenerator.PInvokeFileName);
+            string table = File.ReadAllText(path);
+            Assert.Contains("#ifndef CORECLR_PREGENERATED_CALLHELPERS", table);
+            Assert.Contains("double QCall_Math_Ceiling (uintptr_t, double, uintptr_t) __asm__(\"Rhp_ceil\");", table);
+            Assert.Contains("float QCall_MathF_FusedMultiplyAdd (uintptr_t, float, float, float, uintptr_t) __asm__(\"Rhp_fmaf\");", table);
+            Assert.Contains("void QCall_Math_SinCos (uintptr_t, double, void *, void *, uintptr_t) __asm__(\"Rhp_sincos\");", table);
+            Assert.Contains("int32_t QCall_Math_DivInt32Internal (uintptr_t, int32_t, int32_t, uintptr_t) __asm__(\"DivInt32Internal\");", table);
+            Assert.Contains("int32_t QCall_Interlocked_CompareExchange32 (uintptr_t, void *, int32_t, int32_t, uintptr_t)", table);
+            Assert.Contains("\"Interlocked_CompareExchange32Pointer\"", table);
+            Assert.Contains("\"GCInterface_GetTotalMemory\"", table);
+            Assert.DoesNotContain("String_FastAllocateString", table);
+            Assert.DoesNotContain("String_.ctor", table);
+            Assert.DoesNotContain("RuntimeHelpers_NewobjHelperDummy", table);
+            Assert.False(File.Exists(Path.Combine(workingDirectory, "callhelpers-ecalls.cpp")));
+
+            string entries = table.Split("static const Entry s_QCall[] = {", StringSplitOptions.None)[1]
+                .Split("};", StringSplitOptions.None)[0];
+            string[] names = entries.Split('\n')
+                .Where(line => line.TrimStart().StartsWith("{ \"", StringComparison.Ordinal))
+                .Select(line => line.Split('"')[1])
+                .ToArray();
+            Assert.Contains("Math_Ceiling", names);
+            Assert.Contains("GCInterface_GetTotalMemory", names);
+            Assert.Equal(names.Order(StringComparer.Ordinal), names);
+            Assert.Equal(names.Length, names.Distinct(StringComparer.Ordinal).Count());
+
+            DateTime timestamp = File.GetLastWriteTimeUtc(path);
+            Assert.True(PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false)) == 0,
+                log.ToString());
+            Assert.Equal(table, File.ReadAllText(path));
+            Assert.Equal(timestamp, File.GetLastWriteTimeUtc(path));
+        }
+        finally
+        {
+            if (Directory.Exists(workingDirectory))
+                Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FCallDeclarationsIncludeInstanceReceiver()
+    {
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
+        var log = new InteropLogger(new Logger(new StringWriter(), isVerbose: false));
+        var collector = new InternalCallSignatureCollector(log);
+        foreach (EcmaType type in context.SystemModule.GetAllTypes().OfType<EcmaType>())
+            collector.ScanType(type);
+
+        PInvokeInfo entry = collector.Entrypoints.First(entry => !entry.Method.Signature.IsStatic);
+        var table = new StringWriter();
+        new PInvokeTableGenerator(log).EmitPInvokeTable(table, context.Target, context.SystemModule, [], [entry]);
+        string declaration = table.ToString().Split('\n').Single(line => line.Contains("__asm__", StringComparison.Ordinal));
+        Assert.Contains("(uintptr_t, void *", declaration);
+        Assert.EndsWith($"uintptr_t) __asm__(\"{entry.EntryPoint}\");", declaration.TrimEnd());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SharedNativeEntryPointNamesRejectCollisions(bool qcallCollision)
+    {
+        string source = $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            namespace First
+            {
+                public static class Shared
+                {
+                    [MethodImpl(MethodImplOptions.InternalCall)]
+                    public static extern void Run();
+                }
+            }
+            namespace Second
+            {
+                public static class Shared
+                {
+                    {{(qcallCollision ? """[DllImport("QCall", EntryPoint = "Shared_Run")]""" : "[MethodImpl(MethodImplOptions.InternalCall)]")}}
+                    public static extern void Run();
+                }
+            }
+            """;
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            string input = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Collisions.dll"));
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext(input);
+            EcmaModule module = context.GetModuleForSimpleName("Collisions");
+            var log = new InteropLogger(new Logger(new StringWriter(), isVerbose: false));
+            var internalCalls = new InternalCallSignatureCollector(log);
+            var pinvokes = new List<PInvokeInfo>();
+            foreach (EcmaType type in module.GetAllTypes().OfType<EcmaType>())
+            {
+                internalCalls.ScanType(type);
+                foreach (EcmaMethod method in type.GetMethods().OfType<EcmaMethod>())
+                {
+                    if (method.IsPInvoke)
+                        pinvokes.Add(new PInvokeInfo("Shared_Run", "QCall", method, wasmLinkage: false));
+                }
+            }
+            pinvokes.AddRange(internalCalls.Entrypoints);
+            Assert.All(pinvokes, entry => Assert.Equal("Shared_Run", entry.EntryPoint));
+            LogAsErrorException exception = Assert.Throws<LogAsErrorException>(() =>
+                new PInvokeTableGenerator(log).EmitPInvokeTable(new StringWriter(), context.Target, module, [], pinvokes));
+            Assert.Contains("Shared_Run", exception.Message);
+            Assert.Contains("First.Shared", exception.Message);
+            Assert.Contains("Second.Shared", exception.Message);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
     /// <summary>
     /// Builds an input assembly for the generator to scan, referencing the context's CoreLib
     /// unless the source defines its own.
@@ -1493,55 +1626,6 @@ public class WasmArgumentLayoutTests
     private static EcmaType GetSystemType(ReadyToRunCompilerContext context, string typeName)
     {
         return (EcmaType)context.SystemModule.GetType("System"u8, System.Text.Encoding.UTF8.GetBytes(typeName));
-    }
-
-    /// <summary>
-    /// Configures a type system context the way crossgen2 does for
-    /// <c>--targetarch wasm --targetos browser</c>. Extra input assemblies stand in for the rest of an
-    /// app closure, which a real build always supplies alongside CoreLib.
-    /// </summary>
-    private ReadyToRunCompilerContext CreateWasmContext(params string[] extraInputAssemblyPaths)
-        => CreateWasmContext(TargetOS.Browser, extraInputAssemblyPaths);
-
-    private ReadyToRunCompilerContext CreateWasmContext(TargetOS targetOS, params string[] extraInputAssemblyPaths)
-        => CreateWasmContextWithCoreLib(targetOS, TestPaths.SystemPrivateCoreLibPath, extraInputAssemblyPaths);
-
-    private ReadyToRunCompilerContext CreateWasmContextWithCoreLib(TargetOS targetOS, string coreLibPath, params string[] extraInputAssemblyPaths)
-    {
-        Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found at '{coreLibPath}'");
-
-        InstructionSetSupport instructionSetSupport = new(default, default, TargetArchitecture.Wasm32);
-        TargetDetails target = new(TargetArchitecture.Wasm32, targetOS, TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
-
-        Dictionary<string, string> inputFilePaths = new(StringComparer.OrdinalIgnoreCase) { { CoreLibSimpleName, coreLibPath } };
-        foreach (string path in extraInputAssemblyPaths)
-        {
-            inputFilePaths.Add(Path.GetFileNameWithoutExtension(path), path);
-        }
-
-        // Wasm cannot generate code at runtime, matching what crossgen2's Program computes for this target.
-        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: false, targetIsSingleThreaded: true, instructionSetSupport, oldTypeSystemContext: null)
-        {
-            InputFilePaths = inputFilePaths,
-            ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
-        };
-
-        EcmaModule coreLib = (EcmaModule)context.GetModuleForSimpleName(CoreLibSimpleName);
-        context.SetSystemModule(coreLib);
-
-        // The R2R field layout algorithm reaches into the compilation group to decide whether base
-        // offsets need aligning, so a context without one throws before computing any layout.
-        context.SetCompilationGroup(new ReadyToRunSingleAssemblyCompilationModuleGroup(new ReadyToRunCompilationModuleGroupConfig
-        {
-            Context = context,
-            IsInputBubble = true,
-            CompilationModuleSet = new[] { coreLib },
-            VersionBubbleModuleSet = new ModuleDesc[] { coreLib },
-            CrossModuleInlineable = Array.Empty<ModuleDesc>(),
-            InstructionSetSupport = instructionSetSupport,
-        }));
-
-        return context;
     }
 
     private static DefType InstantiateVector(ReadyToRunCompilerContext context, string vectorType, WellKnownType elementType)

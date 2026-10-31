@@ -296,7 +296,6 @@ function(corerun_kit_export)
     # copied -- WasiApp.CoreCLR.targets reaches for it the same way.
     install(FILES
                 "${CLR_DIR}/vm/wasm/callhelpers.hpp"
-                "${CLR_DIR}/vm/wasm/ecall-table.h"
                 "${CLR_REPO_ROOT_DIR}/src/mono/browser/build/coreclr_compat.h"
             DESTINATION ${kitDestination}/include COMPONENT ${KIT_COMPONENT})
     install(FILES

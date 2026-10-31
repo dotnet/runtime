@@ -307,12 +307,6 @@
         $(LibrariesSharedFrameworkDir)dotnet.native.wasm;"
         IsNative="true" />
 
-      <LibrariesRuntimeFiles Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'CoreCLR' and
-                                       '$(BuildNativeAOTRuntimePack)' != 'true' and '$(TestBuildMode)' != 'nativeaot'"
-                             Include="$(CoreCLRSharedFrameworkDir)include\ecall-table.h"
-                             NativeSubDirectory="include"
-                             IsNative="true" />
-
       <!-- Headers included by the CoreCLR native relink generated sources (see BrowserWasmApp.CoreCLR.targets).
            The browserhost CMakeLists installs them into the host sharedFramework; mirrors the Mono include\wasm handling. -->
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'"

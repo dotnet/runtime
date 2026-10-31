@@ -14,53 +14,43 @@ Windows build [requirements](../../../docs/workflow/requirements/windows-require
 
 At this time no other build dependencies are necessary to start building for WebAssembly. If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Configurations) to understand configurations. Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`.
 
-### CoreCLR FCall table trimming
+### CoreCLR QCall and FCall table trimming
 
-CoreCLR browser and WASI native relinking generates `callhelpers-ecalls.cpp` from
-the surviving `InternalCall` declarations in the bundled, post-trim
-`System.Private.CoreLib.dll`. This replaces the full ECall aggregate in
-`libcoreclr_gen_static.a`, allowing the native linker to discard unused FCall
-descriptors and implementations. Independent native references still retain their
-implementations. Prebuilt runtimes retain the full table.
+CoreCLR browser and WASI native relinking generates one static QCall/FCall
+entrypoint table in `callhelpers-pinvoke.cpp` from the bundled managed closure.
+Only `System.Private.CoreLib` contributes QCalls and fixed-address FCalls. For
+trimmed apps, the generator scans the surviving declarations in the actual
+post-trim IL, not the runtime-pack CoreLib or ReadyToRun/webcil images.
 
-The runtime build reads `src/coreclr/vm/ecalllist.h`, `metasig.h`, `corelib.h`,
-and `namespace.h` directly and ships `ecall-manifest.json` and
-`include/ecall-table.h` in the runtime pack. The `scripts/GenECalls.cs` file-based
-app shares conditional and namespace parsing with
-`CreateRuntimeRootILLinkDescriptorFile`, but generates mappings rather than
-additional trimming roots.
-For CoreCLR WASM native builds, `eng/Subsets.props` includes
-`src/coreclr/generate-ecalls.proj` before the native runtime project. The generator imports
-CoreLib's shared feature properties and defines. It produces the
-manifest without native intermediate outputs. Native C++ expands `ecalllist.h`
-directly to define descriptors and the default full table.
-The generation project also copies the manifest to the runtime output,
-`sharedFramework`, and `corerun-link` directories, including configure-only builds.
-Manifest generation uses CoreLib's feature definitions; the native build uses the
-corresponding CMake feature configuration.
-Use the repository's
-`build.cmd clr.native` or `build.sh clr.native` entrypoint to build both the
-runtime and its manifest.
-The manifest maps managed identities (including signatures for
-overloaded String constructors) to native descriptors. Use a manifest generated from
-matching runtime sources and target configuration: descriptor symbols use physical
-source lines in `ecalllist.h`, and version alignment is a build requirement.
-Declarations absent from the manifest are ignored, including
-signature-only helpers and delegate constructors. Ambiguous mappings fail during
-generation.
+The generated table uses the QCall resolver for both kinds of entrypoint.
+Static FCalls have C-linkage names derived from the managed type and method,
+such as `Math_Ceiling`. Their FCall calling convention and hidden arguments
+remain unchanged; they do not become P/Invokes or acquire a QCall transition.
+The generator rejects conflicting native lookup names and emits a deterministic,
+ordinally sorted table.
+
+The three generated sources (`callhelpers-pinvoke.cpp`, `callhelpers-reverse.cpp`,
+and `callhelpers-interp-to-managed.cpp`) replace `libcoreclr_gen_static.a` during
+app and runtime-test relinking. The native linker can then discard unused
+static entrypoints and implementations, unless independent native references
+retain them. Prebuilt WASM runtimes use the checked-in full-framework helpers and
+the configuration-specific full native entrypoint table; other CoreCLR platforms
+also use that full table.
 
 The generator is available as
-`crossgen2 --generate-portable-callhelpers <output-dir> --ecall-manifest <manifest>
---targetos browser --targetarch wasm <managed-assemblies>`.
-For WASI, use `--targetos wasi`. Include the actual bundled CoreLib, using its
-trimmed IL rather than a ReadyToRun/webcil image. Without `--ecall-manifest`, the
-generator emits only the existing interop helpers.
+`crossgen2 --generate-portable-callhelpers <output-dir> --targetos browser
+--targetarch wasm <managed-assemblies>`.
+For WASI, use `--targetos wasi`. Include the actual bundled CoreLib and use
+matching managed/native sources and target configuration. No separate manifest,
+SDK header, or build identity is required. See
+[Generating CoreCLR WebAssembly call helpers](../../coreclr/vm/wasm/generate-coreclr-helpers.md)
+for regenerating the checked-in full-framework sources.
 
-ECall IDs remain positional within the active runtime table; they are not
-interchangeable between full and app-specific tables. Dynamic FCall IDs remain
-unchanged. Delegate constructors bypass the table, and the independent CoreLib
-binder roots for managed String constructor helpers are not trimmed by this
-mechanism.
+The nine signature-qualified String constructors and `String.FastAllocateString`
+remain in a separate, non-trimmable dynamic mechanism with unchanged dynamic IDs
+and binder roots. Delegate constructors retain their special runtime handling.
+The signature-only `RuntimeHelpers.NewobjHelperDummy` is not emitted as a static
+entrypoint. These exclusions do not remove interpreter signature thunks.
 
 ## macOS
 

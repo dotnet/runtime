@@ -66,6 +66,10 @@
         {
             string text = File.ReadAllText(file.ItemSpec);
             string newLine = text.Contains("\r\n") ? "\r\n" : "\n";
+            if (Path.GetFileName(file.ItemSpec) == "callhelpers-pinvoke.cpp")
+            {
+                text = "#define CORECLR_PREGENERATED_CALLHELPERS" + newLine + newLine + text;
+            }
             string content =
                 "// Licensed to the .NET Foundation under one or more agreements." + newLine +
                 "// The .NET Foundation licenses this file to you under the MIT license." + newLine +

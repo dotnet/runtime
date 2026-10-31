@@ -1094,10 +1094,8 @@ void CoreLibBinder::CheckExtended()
     }
 
     //
-    // CoreLib referencing VM (ecalllist.h)
+    // CoreLib referencing native entrypoints.
     //
-    SetSHash<DWORD> usedECallIds;
-
     HRESULT hr = S_OK;
     Module *pModule = CoreLibBinder::m_pModule;
     IMDInternalImport *pInternalImport = pModule->GetMDImport();
@@ -1154,14 +1152,16 @@ void CoreLibBinder::CheckExtended()
             pMD = pMD->FindOrCreateTypicalSharedInstantiation();
         }
 
-        DWORD id = 0;
+        PCODE implementation = (PCODE)NULL;
 
         if (pMD->IsFCall())
         {
-            id = ((FCallMethodDesc *)pMD)->GetECallID();
-            if (id == 0) {
-                id = ECall::GetIDForMethod(pMD);
-            }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            // This declaration supplies a helper signature, not an executable method.
+            if (pMD == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__NEWOBJ_HELPER_DUMMY))
+                continue;
+#endif
+            implementation = ECall::GetFCallImpl(pMD, false);
         }
         else
         if (pMD->IsPInvoke())
@@ -1191,8 +1191,7 @@ void CoreLibBinder::CheckExtended()
             continue;
         }
 
-        // ... check that the method is in the fcall table.
-        if (id == 0) {
+        if (implementation == (PCODE)NULL) {
             LPCUTF8 pszClassName;
             LPCUTF8 pszNameSpace;
             if (FAILED(pInternalImport->GetNameOfTypeDef(tdClass, &pszClassName, &pszNameSpace)))
@@ -1207,23 +1206,15 @@ void CoreLibBinder::CheckExtended()
             minipal_log_print_error("CheckExtended: Unable to find internalcall implementation: %s.%s::%s\n", pszNameSpace, pszClassName, pszName);
         }
 
-        if (id != 0)
-        {
-            usedECallIds.Add(id);
-        }
-
 #ifdef CHECK_FCALL_SIGNATURE
         if (pMD->IsFCall())
         {
-            FCallCheckSignature(pMD, ECall::GetFCallImpl(pMD));
+            FCallCheckSignature(pMD, implementation);
         }
 #endif // CHECK_FCALL_SIGNATURE
     }
 
     pInternalImport->EnumClose(&hEnum);
-
-    // Verify that there are no unused entries in the ecall table
-    ECall::CheckUnusedECalls(usedECallIds);
 
     //
     // Stub constants
