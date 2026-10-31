@@ -34,6 +34,61 @@ static bool g_ComAndFlsInitSucceeded = false;
 
 EXTERN_C void QCALLTYPE ProcessFinalizers();
 
+#ifdef TARGET_WASM
+EXTERN_C void QCALLTYPE ProcessFinalizersWorkerIteration();
+#endif // TARGET_WASM
+
+#if defined(TARGET_BROWSER) || defined(TARGET_WASI)
+#ifdef TARGET_BROWSER
+EXTERN_C void SystemJS_ScheduleFinalization();
+#endif // TARGET_BROWSER
+
+#ifdef TARGET_WASI
+EXTERN_C void WasiFinalizer_Schedule();
+#endif // TARGET_WASI
+
+static void RunFinalizerIterationOnCurrentThread()
+{
+    ProcessFinalizersWorkerIteration();
+}
+
+#ifdef TARGET_BROWSER
+EXTERN_C void SystemJS_ExecuteFinalizationCallback()
+{
+    RunFinalizerIterationOnCurrentThread();
+}
+#else // TARGET_WASI
+EXTERN_C void QCALLTYPE WasiFinalizer_RunWorker()
+{
+    RunFinalizerIterationOnCurrentThread();
+}
+#endif // TARGET_BROWSER
+#endif // TARGET_BROWSER || TARGET_WASI
+
+#ifdef TARGET_WASI
+#ifdef FEATURE_WASM_MANAGED_THREADS
+#error "TARGET_WASI finalization requires a single-threaded runtime."
+#endif // FEATURE_WASM_MANAGED_THREADS
+
+static Volatile<bool> s_finalizationPending = false;
+
+EXTERN_C void WasiFinalizer_Schedule()
+{
+    // Called inside the GC; managed callbacks, allocations, and locks are not safe here.
+    s_finalizationPending = true;
+}
+
+EXTERN_C UInt32_BOOL QCALLTYPE WasiFinalizer_TryClearPending()
+{
+    bool pending = s_finalizationPending;
+    if (pending)
+        s_finalizationPending = false;
+
+    return pending ? TRUE : FALSE;
+}
+#endif // TARGET_WASI
+
+#ifdef FEATURE_MULTITHREADING
 // Unmanaged front-end to the finalizer thread. We require this because at the point when this thread is
 // created we can't run managed code. Instead this method waits
 // for the first finalization request (by which time everything must be up and running) and kicks off the
@@ -77,9 +132,11 @@ uint32_t WINAPI FinalizerStart(void* pContext)
     ASSERT(!"Finalizer thread should never return");
     return 0;
 }
+#endif // FEATURE_MULTITHREADING
 
 bool RhInitializeFinalization()
 {
+#ifdef FEATURE_MULTITHREADING
     // Allocate the events the GC expects the finalizer thread to have. The g_FinalizerEvent event is signalled
     // by the GC whenever it completes a collection where it found otherwise unreachable finalizable objects.
     // The g_FinalizerDoneEvent is set by the finalizer thread every time it wakes up and drains the
@@ -99,10 +156,12 @@ bool RhInitializeFinalization()
     }
 #endif
 
-#ifdef FEATURE_MULTITHREADING
     // Create the finalizer thread itself.
     if (!PalStartFinalizerThread(FinalizerStart, &g_FinalizerEvent))
         return false;
+#else // FEATURE_MULTITHREADING
+    // The thread is not attached until the first managed entry.
+    g_pFinalizerThread = PTR_Thread(ThreadStore::RawGetCurrentThread());
 #endif // FEATURE_MULTITHREADING
 
     return true;
@@ -119,7 +178,13 @@ bool RhWaitForFinalizerThreadStart()
 
 void RhEnableFinalization()
 {
+#ifdef FEATURE_MULTITHREADING
     g_FinalizerEvent.Set();
+#elif defined(TARGET_BROWSER)
+    SystemJS_ScheduleFinalization();
+#else // TARGET_WASI
+    WasiFinalizer_Schedule();
+#endif // FEATURE_MULTITHREADING
 }
 
 static int32_t g_fullGcCountSeenByFinalization;
@@ -130,12 +195,15 @@ EXTERN_C void QCALLTYPE RhpSignalFinalizationComplete(uint32_t fcount, int32_t o
     FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
 
     g_fullGcCountSeenByFinalization = observedFullGcCount;
+
+#ifdef FEATURE_MULTITHREADING
     g_FinalizerDoneEvent.Set();
 
     if (YieldProcessorNormalization::IsMeasurementScheduled())
     {
         YieldProcessorNormalization::PerformMeasurement();
     }
+#endif // FEATURE_MULTITHREADING
 }
 
 EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
@@ -144,6 +212,7 @@ EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWai
     // called in cooperative mode.
     ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
+#ifdef FEATURE_MULTITHREADING
     // Can't call this from the finalizer thread itself.
     if (ThreadStore::GetCurrentThread() != g_pFinalizerThread)
     {
@@ -174,12 +243,28 @@ EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWai
             goto tryAgain;
         }
     }
+#else // !FEATURE_MULTITHREADING
+    // The sole thread also runs application code, so thread identity cannot detect recursive waits.
+    static thread_local bool s_inDrain = false;
+    if (s_inDrain)
+    {
+        return;
+    }
+    s_inDrain = true;
+
+    ProcessFinalizersWorkerIteration();
+
+    s_inDrain = false;
+#endif // FEATURE_MULTITHREADING
 }
 
 // Block the current thread until at least one object needs to be finalized (returns true) or memory is low
 // (returns false and the finalizer thread should initiate a garbage collection).
 EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
 {
+    IGCHeap * pHeap = GCHeapUtilities::GetGCHeap();
+
+#ifdef FEATURE_MULTITHREADING
     // We can wait for two events; finalization queue has been populated and low memory resource notification.
     // But if the latter is signalled we shouldn't wait on it again immediately -- if the garbage collection
     // the finalizer thread initiates as a result is not sufficient to remove the low memory condition the
@@ -188,8 +273,6 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
     // was low memory and if so we'll wait at least two seconds (the CLR value) on just a finalization
     // request.
     static bool fLastEventWasLowMemory = false;
-
-    IGCHeap * pHeap = GCHeapUtilities::GetGCHeap();
 
     // Wait in a loop because we may have to retry if we decide to only wait for finalization events but the
     // two second timeout expires.
@@ -216,6 +299,7 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
         switch (uResult)
         {
         case WAIT_OBJECT_0:
+#endif // FEATURE_MULTITHREADING
             // At least one object is ready for finalization.
             {
                 // Process pending finalizer work items from the GC first.
@@ -230,6 +314,7 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
             FireEtwGCFinalizersBegin_V1(GetClrInstanceId());
             return TRUE;
 
+#ifdef FEATURE_MULTITHREADING
         case WAIT_OBJECT_0 + 1:
             // Memory is low, tell the finalizer thread to garbage collect.
             ASSERT(!fLastEventWasLowMemory);
@@ -248,6 +333,7 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
             return FALSE;
         }
     } while (true);
+#endif // FEATURE_MULTITHREADING
 }
 
 //
