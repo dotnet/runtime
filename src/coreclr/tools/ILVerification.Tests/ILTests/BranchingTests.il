@@ -81,7 +81,7 @@
         IL_0014: ret
     }
 
-    .method static public hidebysig void Branching.NullConditional_Invalid_StackUnexpected() cil managed
+    .method static public hidebysig void Branching.NullConditional_Invalid_StackUnexpected_Validation_Valid() cil managed
     {
         //object o = null;
         //Type t = o != null ? o.GetType() : o;
@@ -175,7 +175,7 @@
         ret
     }
 
-    .method static public hidebysig void Branching.UnequalStackMergeArrays_Invalid_StackUnexpected(class CustomComparer[] comparers,
+    .method static public hidebysig void Branching.UnequalStackMergeArrays_Invalid_StackUnexpected_Validation_Valid(class CustomComparer[] comparers,
         class [System.Runtime]System.Collections.IEqualityComparer[] customComparer) cil managed
     {
         .maxstack 1
@@ -949,7 +949,7 @@
         ret
     }
 
-    .method static public hidebysig void Branch.BackwardWithoutPredecessor_Invalid_BackwardBranch() cil managed 
+    .method static public hidebysig void Branch.BackwardWithoutPredecessor_Invalid_BackwardBranch_Validation_Valid() cil managed 
     {
         br      MethodEnd
 

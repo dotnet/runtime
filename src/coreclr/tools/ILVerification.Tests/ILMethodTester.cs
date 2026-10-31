@@ -54,7 +54,23 @@ namespace ILVerification.Tests
             }
         }
 
-        private static IEnumerable<VerificationResult> Verify(TestCase testCase)
+        [Theory(DisplayName = "")]
+        [MemberData(nameof(TestDataLoader.GetMethodsForValidationOnlyMode), MemberType = typeof(TestDataLoader))]
+        [Trait("", "Validation-only IL Tests")]
+        public static void TestMethodsInValidationOnlyMode(ValidationOnlyTestCase testCase)
+        {
+            // Unlike verification, validation must not throw for invalid IL, so exceptions are not caught here.
+            var results = Verify(testCase, validationOnly: true).ToList();
+            var actual = string.Join(",", results.Select(e => e.Code.ToString()));
+
+            Assert.True(testCase.ExpectedVerifierErrors.Count == results.Count, $"Actual errors were: {actual}");
+            foreach (var item in testCase.ExpectedVerifierErrors)
+            {
+                Assert.True(results.Any(r => r.Code == item), $"Actual errors were: {actual}");
+            }
+        }
+
+        private static IEnumerable<VerificationResult> Verify(TestCase testCase, bool validationOnly = false)
         {
             EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName, allowIgnoresAccessChecksTo: true);
             var methodHandle = (MethodDefinitionHandle) MetadataTokens.EntityHandle(testCase.MetadataToken);
@@ -62,7 +78,8 @@ namespace ILVerification.Tests
             var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context, new VerifierOptions
             {
                 IncludeMetadataTokensInErrorMessages = true,
-                SanityChecks = true
+                SanityChecks = true,
+                ValidationOnly = validationOnly
             });
 
             return verifier.Verify(module.PEReader, methodHandle);
