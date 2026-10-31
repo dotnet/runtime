@@ -215,12 +215,8 @@ namespace TestLibrary
             {
                 // Some distros might not have the /proc/pid/task/tid/children entry enabled in the kernel
                 // attempt to use pgrep then
-                var pgrepInfo = new ProcessStartInfo("pgrep", ["-P", process.Id.ToString()]);
-                pgrepInfo.InheritedHandles = [];
-                pgrepInfo.RedirectStandardOutput = true;
-                pgrepInfo.RedirectStandardError = true;
-
-                string[] pidStrings = Process.RunAndCaptureText(pgrepInfo).StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                string[] pidStrings = Process.RunAndCaptureText("pgrep", ["-P", process.Id.ToString()])
+                    .StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
                 childPids = new List<int>();
                 foreach (var pidString in pidStrings)

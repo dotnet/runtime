@@ -554,6 +554,86 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(nameof(Process.StartAndForget), false)]
+        [InlineData(nameof(Process.Run), false)]
+        [InlineData(nameof(Process.Run), true)]
+        [InlineData(nameof(Process.RunAsync), false)]
+        [InlineData(nameof(Process.RunAsync), true)]
+        [InlineData(nameof(Process.RunAndCaptureText), false)]
+        [InlineData(nameof(Process.RunAndCaptureTextAsync), false)]
+        public void ScenarioWithFileName_DoesNotInheritAdditionalHandles(string method, bool silent)
+        {
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static async (methodArg, silentArg) =>
+            {
+                string path = Path.GetTempFileName();
+                string completedPath = path + ".completed";
+                try
+                {
+                    using SafeFileHandle fileHandle = File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite, FileShare.Inheritable);
+                    string id = GetSafeFileHandleId(fileHandle);
+
+                    using RemoteInvokeHandle template = RemoteExecutor.Invoke(
+                        static (handleStr, fileId, childCompletedPath) =>
+                        {
+                            using SafeFileHandle handle = new(nint.Parse(handleStr), ownsHandle: false);
+                            string? childId = null;
+                            try
+                            {
+                                childId = GetSafeFileHandleId(handle);
+                            }
+                            catch (Win32Exception)
+                            {
+                                // The original handle value need not be valid in the child.
+                            }
+
+                            Assert.NotEqual(fileId, childId);
+                            File.WriteAllText(childCompletedPath, string.Empty);
+                            return RemoteExecutor.SuccessExitCode;
+                        },
+                        fileHandle.DangerousGetHandle().ToString(), id, completedPath,
+                        new RemoteInvokeOptions { Start = false, CheckExitCode = false });
+
+                    using Process childTemplate = template.Process;
+                    template.Process = null;
+                    string fileName = childTemplate.StartInfo.FileName;
+                    List<string>? arguments = Helpers.MapToArgumentList(childTemplate.StartInfo);
+                    bool silentValue = bool.Parse(silentArg);
+                    ProcessExitStatus status;
+                    switch (methodArg)
+                    {
+                        case nameof(Process.StartAndForget):
+                            Assert.True(Process.StartAndForget(fileName, arguments) > 0);
+                            Assert.True(SpinWait.SpinUntil(() => File.Exists(completedPath), WaitInMS));
+                            return RemoteExecutor.SuccessExitCode;
+                        case nameof(Process.Run):
+                            status = Process.Run(fileName, arguments, silentValue);
+                            break;
+                        case nameof(Process.RunAsync):
+                            status = await Process.RunAsync(fileName, arguments, silentValue);
+                            break;
+                        case nameof(Process.RunAndCaptureText):
+                            status = Process.RunAndCaptureText(fileName, arguments).ExitStatus;
+                            break;
+                        case nameof(Process.RunAndCaptureTextAsync):
+                            status = (await Process.RunAndCaptureTextAsync(fileName, arguments)).ExitStatus;
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException(nameof(methodArg), methodArg, null);
+                    }
+
+                    Assert.Equal(RemoteExecutor.SuccessExitCode, status.ExitCode);
+                    Assert.False(status.Canceled);
+                    return RemoteExecutor.SuccessExitCode;
+                }
+                finally
+                {
+                    File.Delete(completedPath);
+                    File.Delete(path);
+                }
+            }, method, silent.ToString());
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void NonInheritedFileHandle_IsNotAvailableInChildProcess(bool inheritHandle)
