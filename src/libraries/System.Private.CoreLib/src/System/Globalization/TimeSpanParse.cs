@@ -269,7 +269,7 @@ namespace System.Globalization
                 int pos = ++_pos;
                 return (uint)pos < (uint)_value.Length ?
                     _value[pos] :
-                    default;
+                    TChar.CastFrom(0);
             }
         }
 
