@@ -902,6 +902,10 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(type);
 
+            // A modified type has no token of its own.
+            if (type is ModifiedType or SignatureModifiedType)
+                type = type.UnderlyingSystemType;
+
             // Return a token for the class relative to the Module.  Tokens
             // are used to indentify objects when the objects are used in IL
             // instructions.  Tokens are always relative to the Module.  For example,
