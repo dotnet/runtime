@@ -14,7 +14,7 @@
     Architecture:
       Setup emscripten → Compile native sources (EmccCompile) → Link (emcc) → Register outputs
 
-    Link flags mirror src/native/corehost/browserhost/CMakeLists.txt.
+    The prebuilt browserhost also uses these native link targets.
   -->
 
   <!-- ======================== Properties ======================== -->
@@ -89,21 +89,13 @@
     <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">$(EmccInitialHeapSize)</WasmInitialHeapSize>
   </PropertyGroup>
 
-  <!-- Diagnostics: transform Mono-style WasmPerformanceInstrumentation property into CoreCLR env vars.
-       Input format: "all,interval=0" or "N:Namespace" or "all" (Mono convention)
-       Output: DOTNET_WasmPerformanceInstrumentation=<MethodSet filter> ('all' mapped to '*')
-               DOTNET_EventPipeThreadSamplingRate=<ms> (if interval= specified) -->
+  <!-- Map the Mono-style "all" instrumentation filter to the CoreCLR MethodSet wildcard. -->
   <PropertyGroup Condition="'$(EnableDiagnostics)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''">
     <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
-    <_WasmPerfInstInterval></_WasmPerfInstInterval>
-    <_WasmPerfInstInterval Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring($([MSBuild]::Add($(WasmPerformanceInstrumentation.IndexOf(',interval=')), 10))))</_WasmPerfInstInterval>
-    <_WasmPerfInstFilter Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring(0, $(WasmPerformanceInstrumentation.IndexOf(',interval='))))</_WasmPerfInstFilter>
-    <_WasmPerfInstInterval Condition="'$(_WasmPerfInstInterval)' != '' and $(_WasmPerfInstInterval.Contains(','))">$(_WasmPerfInstInterval.Substring(0, $(_WasmPerfInstInterval.IndexOf(','))))</_WasmPerfInstInterval>
     <_WasmPerfInstFilter Condition="'$(_WasmPerfInstFilter)' == 'all'">*</_WasmPerfInstFilter>
   </PropertyGroup>
   <ItemGroup Condition="'$(EnableDiagnostics)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''">
     <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstFilter)" />
-    <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
   </ItemGroup>
 
   <!-- Task declarations: Both tasks live in WasmAppBuilder.dll -->
@@ -830,9 +822,9 @@
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
     </PropertyGroup>
 
-    <!-- CoreCLR static libraries from the runtime pack (order matches CMakeLists.txt) -->
+    <!-- CoreCLR static libraries from the runtime pack -->
     <ItemGroup>
-      <!-- Browser host (linked first, as in CMakeLists.txt) -->
+      <!-- Browser host -->
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libBrowserHost.a" />
 
       <!-- CoreCLR runtime engine -->
@@ -873,7 +865,7 @@
       <_CoreCLRJsLibrary Include="@(WasmExtraJSFile)" Kind="%(WasmExtraJSFile.Kind)" Condition="'%(WasmExtraJSFile.Kind)' != ''" />
     </ItemGroup>
 
-    <!-- Build link arguments matching browserhost/CMakeLists.txt -->
+    <!-- Build link arguments shared by the prebuilt browserhost and app relinks -->
     <ItemGroup>
       <_EmccLinkStepArgs Include="$(EmccLinkOptimizationFlag)" />
       <_EmccLinkStepArgs Include="@(_EmccCommonFlags)" />
@@ -896,7 +888,7 @@
       <_EmccLinkStepArgs Include="-s EXPORT_NAME=createDotnetRuntime" />
       <_EmccLinkStepArgs Include="-s ENVIRONMENT=web,webview,worker,node,shell" />
 
-      <!-- Symbol handling (strict undefined checks in Debug only, matching CMakeLists.txt) -->
+      <!-- Symbol handling (strict undefined checks in Debug only) -->
       <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s LLD_REPORT_UNDEFINED" />
       <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s ERROR_ON_UNDEFINED_SYMBOLS=1" />
       <_EmccLinkStepArgs Include="--emit-symbol-map" />
@@ -950,7 +942,7 @@
 
   <Target Name="_CoreCLRLinkNative"
           Inputs="@(_WasmLinkDependencies)"
-          Outputs="$(_WasmIntermediateOutputPath)dotnet.native.js;$(_WasmIntermediateOutputPath)dotnet.native.wasm"
+          Outputs="$(_WasmIntermediateOutputPath)dotnet.native.js;$(_WasmIntermediateOutputPath)dotnet.native.wasm;$(_WasmIntermediateOutputPath)dotnet.native.js.symbols"
           Returns="@(FileWrites)">
 
     <Message Text="Linking CoreCLR WASM with initial memory $(WasmInitialHeapSize) bytes." Importance="High" />

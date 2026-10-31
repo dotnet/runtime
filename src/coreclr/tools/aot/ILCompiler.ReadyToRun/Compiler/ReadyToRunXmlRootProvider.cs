@@ -111,20 +111,24 @@ namespace ILCompiler
             private void PreserveMethodsOnType(TypeDesc type)
             {
                 MetadataType typeWithMethods = (MetadataType)type;
+                bool skipCanonicalInstantiation = ReadyToRunLibraryRootProvider.SkipCanonicalInstantiation(typeWithMethods);
                 if (type.HasInstantiation)
                 {
-                    typeWithMethods = ReadyToRunLibraryRootProvider.InstantiateIfPossible(typeWithMethods);
+                    if (skipCanonicalInstantiation)
+                        return;
+
+                    typeWithMethods = ReadyToRunLibraryRootProvider.InstantiateTypeIfPossible(typeWithMethods);
                     if (typeWithMethods == null)
                         return;
                 }
 
                 foreach (MethodDesc method in typeWithMethods.GetAllMethods())
                 {
-                    RootMethod(method);
+                    RootMethod(method, skipCanonicalInstantiation);
                 }
             }
 
-            private void RootMethod(MethodDesc method)
+            private void RootMethod(MethodDesc method, bool skipCanonicalInstantiation)
             {
                 // Skip methods with no IL
                 if (method.IsAbstract)
@@ -133,10 +137,15 @@ namespace ILCompiler
                 if (method.IsInternalCall)
                     return;
 
+                bool methodHasInstantiation = method.HasInstantiation;
+                if ((method.OwningType.HasInstantiation || methodHasInstantiation)
+                    && ReadyToRunLibraryRootProvider.SkipCanonicalInstantiation(method, skipCanonicalInstantiation))
+                    return;
+
                 MethodDesc methodToRoot = method;
-                if (method.HasInstantiation)
+                if (methodHasInstantiation)
                 {
-                    methodToRoot = ReadyToRunLibraryRootProvider.InstantiateIfPossible(method);
+                    methodToRoot = ReadyToRunLibraryRootProvider.InstantiateMethodIfPossible(method);
 
                     if (methodToRoot == null)
                         return;
@@ -185,22 +194,27 @@ namespace ILCompiler
                 }
                 else
                 {
-                    ProcessTypeChildren(type, nav);
+                    bool skipCanonicalInstantiation = ReadyToRunLibraryRootProvider.SkipCanonicalInstantiation((MetadataType)type);
+                    ProcessTypeChildren(type, nav, skipCanonicalInstantiation);
                 }
             }
 
             protected override void ProcessMethod(TypeDesc type, MethodDesc method, XPathNavigator nav, object customData)
             {
                 MetadataType typeWithMethods = (MetadataType)type;
+                bool skipCanonicalInstantiation = (bool)customData;
                 if (type.HasInstantiation)
                 {
-                    InstantiatedType instantiated = ReadyToRunLibraryRootProvider.InstantiateIfPossible(typeWithMethods);
+                    if (skipCanonicalInstantiation)
+                        return;
+
+                    InstantiatedType instantiated = ReadyToRunLibraryRootProvider.InstantiateTypeIfPossible(typeWithMethods);
                     if (instantiated is null)
                         return;
                     method = method.Context.GetMethodForInstantiatedType(method, instantiated);
                 }
 
-                RootMethod(method);
+                RootMethod(method, skipCanonicalInstantiation);
             }
 
             private static TypePreserve GetTypePreserve(XPathNavigator nav)

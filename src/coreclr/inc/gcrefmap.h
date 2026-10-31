@@ -196,6 +196,16 @@ class GCRefMapDecoder
     }
 
 public:
+    static PTR_CBYTE Skip(PTR_CBYTE pBlob)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        while ((*pBlob++ & 0x80) != 0)
+        {
+        }
+        return pBlob;
+    }
+
     GCRefMapDecoder(PTR_BYTE pBlob)
         : m_pCurrentByte(pBlob), m_PendingByte(0x80), m_Pos(0)
     {

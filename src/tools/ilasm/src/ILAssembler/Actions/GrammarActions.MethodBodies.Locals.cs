@@ -51,9 +51,8 @@ internal sealed partial class GrammarActions
         ImmutableArray<SignatureArgumentValue>.Builder builder = arguments.ToBuilder();
         foreach ((int index, (int parsedSlot, IToken token)) in _explicitLocalSlots)
         {
-            // The recorded value is ParseInt32's, which narrows the literal to 32 bits without a check:
-            // [4294967296] would be slot 0 and [4294967295] would be [-1]. A literal that cannot be read has
-            // already been reported by ParseInt32 and keeps its value.
+            // Check the original magnitude: ParseInt32 preserves unsigned bit patterns, so
+            // [4294967295] has the same parsed value as the [-1] sentinel.
             long slot = ReadLocalSlotLiteral(token.Text) ?? parsedSlot;
 
             // An [n] is recorded for an argument only as that argument is parsed, so every recorded position has

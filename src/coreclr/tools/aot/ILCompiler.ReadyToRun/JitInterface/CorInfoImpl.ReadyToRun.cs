@@ -516,7 +516,6 @@ namespace Internal.JitInterface
 
         private void AddAdditionalDependency(ISymbolNode node, string reason)
         {
-            _additionalDependencies ??= new DependencyList();
             _additionalDependencies.Add(node, reason);
         }
 
@@ -1392,6 +1391,10 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_POLL_GC:
                     id = ReadyToRunHelper.GCPoll;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_WASM_PROF_SAMPLEPOINT:
+                    id = ReadyToRunHelper.WasmProfSamplepoint;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
@@ -2557,12 +2560,6 @@ namespace Internal.JitInterface
                     classMustBeLoadedBeforeCodeIsRun(type);
                 }
             }
-        }
-
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-        {
-            TypeDesc type = HandleToObject(cls);
-            classMustBeLoadedBeforeCodeIsRun(type);
         }
 
         private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
