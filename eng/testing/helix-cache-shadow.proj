@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Validate">
+  <Import Project="$(HelixCacheShadowDirectory)/submission.props" Condition="'$(HelixCacheShadowDirectory)' != ''" />
+
+  <PropertyGroup>
+    <HelixTargetQueue>$(ShadowQueue)</HelixTargetQueue>
+    <HelixCacheSdkPackage>$([System.IO.Path]::GetFullPath('$(MicrosoftDotNetHelixSdkTasksAssembly)/../../../microsoft.dotnet.helix.sdk.$(MicrosoftDotNetHelixSdkPackageVersion).nupkg'))</HelixCacheSdkPackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ShadowCorrelationPayload Include="$(ShadowRuntime)" AsArchive="true" />
+  </ItemGroup>
+
+  <Target Name="Validate">
+    <Error Condition="'$(ShadowQueue)' == '' or '@(ShadowWorkItem)' == ''"
+           Text="Expected a prepared shadow submission with at least one work item." />
+    <Error Condition="'$(ShadowRuntime)' == '' or !Exists('$(ShadowRuntime)')"
+           Text="The frozen shadow runtime archive is missing." />
+    <Error Condition="'%(ShadowWorkItem.PayloadArchive)' == '' or !Exists('%(ShadowWorkItem.PayloadArchive)')"
+           Text="The frozen shadow payload archive is missing for %(ShadowWorkItem.Identity)." />
+    <GetFileHash Files="$(HelixCacheSdkPackage)" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="HelixCacheSdkDigest" />
+    </GetFileHash>
+    <Error Condition="'$(ShadowCommandGeneratorDigest)' == '' or '$(HelixCacheSdkDigest)' != '$(ShadowCommandGeneratorDigest)'"
+           Text="The Helix SDK package differs from the command generator fingerprint recorded by prepare." />
+  </Target>
+
+  <Target Name="Submit" DependsOnTargets="Validate">
+    <!-- The SDK still generates a command wrapper; prepare fingerprints its package and Validate checks it. -->
+    <SendHelixJob Type="test/functional/helix-cache-shadow/"
+                  TargetQueue="$(ShadowQueue)"
+                  Creator="$(ShadowCreator)"
+                  IsPosixShell="true"
+                  MaxRetryCount="0"
+                  WorkItems="@(ShadowWorkItem)"
+                  CorrelationPayloads="@(ShadowCorrelationPayload)">
+      <Output TaskParameter="JobCorrelationId" PropertyName="ShadowJobId" />
+      <Output TaskParameter="JobCancellationToken" PropertyName="ShadowCancellationToken" />
+    </SendHelixJob>
+    <WriteLinesToFile File="$(HelixCacheShadowDirectory)/job-id.txt"
+                      Lines="$(ShadowJobId)" Overwrite="true" />
+    <ItemGroup>
+      <ShadowSentJob Include="$(ShadowJobId)">
+        <WorkItemCount>@(ShadowWorkItem->Count())</WorkItemCount>
+        <HelixJobCancellationToken>$(ShadowCancellationToken)</HelixJobCancellationToken>
+      </ShadowSentJob>
+    </ItemGroup>
+    <WaitForHelixJobCompletion Jobs="@(ShadowSentJob)" CancelHelixJobsOnTaskCancellation="true" />
+  </Target>
+</Project>
