@@ -977,6 +977,18 @@ struct Wasm32GcInfoEncoding {
     static const bool HAS_INTERRUPTIBLE_RANGES = false;
 };
 
+#elif defined(TARGET_INTERP)
+
+#ifndef TARGET_POINTER_SIZE
+#ifdef TARGET_64BIT
+#define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#else
+#define TARGET_POINTER_SIZE 4    // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#endif
+#endif
+
+#define TargetGcInfoEncoding InterpreterGcInfoEncoding
+
 #else // No target defined
 
 #ifdef PORTABILITY_WARNING
@@ -985,7 +997,7 @@ PORTABILITY_WARNING("Please specialize these definitions for your platform!")
 
 #endif // defined(TARGET_xxx)
 
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) || defined(TARGET_INTERP)
 
 struct InterpreterGcInfoEncoding {
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
@@ -1041,7 +1053,7 @@ struct InterpreterGcInfoEncoding {
     static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
 
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER || TARGET_INTERP
 
 #ifdef debug_instrumented_return
 #define return debug_instrumented_return

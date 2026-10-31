@@ -297,7 +297,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // consistent with the saturating float/double -> int behavior introduced
             // in .NET 9 (https://learn.microsoft.com/dotnet/core/compatibility/jit/9.0/fp-to-integer).
             //
-            // On xarch / Arm64 / WASM: clamp in the float domain using
+            // On xarch / Arm64 / WASM / interpreter: clamp in the float domain using
             // MinNative(smallMax, MaxNative(smallMin, x)) before the R -> int cast.
             // These platforms' min/max propagate NaN through the clamp so that the
             // subsequent saturating R -> int maps it to 0.
@@ -312,7 +312,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // Overflow-checked casts must NOT be clamped here: the outer
             // CAST_OVF(smallType <- int) is responsible for throwing OverflowException
             // when the value is out of range.
-#if defined(FEATURE_HW_INTRINSICS) || defined(TARGET_WASM)
+#if defined(FEATURE_HW_INTRINSICS) || defined(TARGET_WASM) || defined(TARGET_INTERP)
             if (!tree->gtOverflow())
             {
                 double smallMin;

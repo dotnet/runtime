@@ -330,6 +330,9 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     if not "!string:-wasmjit-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! wasmjit
     )
+    if not "!string:-interpjit-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! interpjit
+    )
     if not "!string:-alljits-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! alljits
     )
