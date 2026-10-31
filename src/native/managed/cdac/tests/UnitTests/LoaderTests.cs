@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -30,6 +31,7 @@ public unsafe class LoaderTests
             [DataType.CGrowableSymbolStream] = TargetTestHelpers.CreateTypeInfo(loader.CGrowableSymbolStreamLayout),
             [DataType.ModuleLookupMap] = TargetTestHelpers.CreateTypeInfo(loader.ModuleLookupMapLayout),
             [DataType.DynamicILBlobTable] = TargetTestHelpers.CreateTypeInfo(loader.DynamicILBlobTableLayout),
+            [DataType.EETypeHashTable] = TargetTestHelpers.CreateTypeInfo(loader.EETypeHashTableLayout),
         };
 
     private static ILoader CreateLoaderContract(MockTarget.Architecture arch, Action<MockLoaderBuilder> configure)
@@ -59,6 +61,69 @@ public unsafe class LoaderTests
         targetBuilder.AddContract<ILoader>(version: "c1");
         var target = targetBuilder.Build();
         return (target.Contracts.Loader, target);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetAvailableTypeParams_HashReadsOnlySelectedBucket(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddress = default;
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            moduleAddress = module.Address;
+            ulong buckets = loader.SetAvailableTypeParams(module, 7, (3, 0x1003), (10, 0x2001), (4, 0x3001));
+            TargetTestHelpers helpers = loader.Builder.TargetTestHelpers;
+            // An unrelated bucket is unreadable: lookup must not eagerly enumerate the table.
+            helpers.WritePointer(loader.Builder.BorrowAddressRange(buckets + (ulong)(3 * helpers.PointerSize), helpers.PointerSize), 0xdead0000);
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddress);
+        Assert.Equal(new TargetPointer[] { 0x2000, 0x1002 }, contract.GetAvailableTypeParams(handle, 3).ToArray());
+        Assert.Equal(new TargetPointer[] { 0x3000 }, contract.GetAvailableTypeParams(handle, 4).ToArray());
+        Assert.Empty(contract.GetAvailableTypeParams(handle, 2));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetAvailableTypeParams_HashSearchesResizeLinkedBuckets(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddress = default;
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            moduleAddress = module.Address;
+            ulong oldBuckets = loader.SetAvailableTypeParams(module, 7, (10, 0x1001));
+            ulong oldHeader = module.AvailableTypeParams;
+            ulong newBuckets = loader.SetAvailableTypeParams(module, 11, (10, 0x2003), (9, 0x3001));
+            TargetTestHelpers helpers = loader.Builder.TargetTestHelpers;
+            helpers.WritePointer(loader.Builder.BorrowAddressRange(oldBuckets + (ulong)helpers.PointerSize, helpers.PointerSize), newBuckets);
+            module.AvailableTypeParams = oldHeader;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddress);
+        Assert.Equal(new TargetPointer[] { 0x1000 }, contract.GetAvailableTypeParams(handle).ToArray());
+        Assert.Equal(new TargetPointer[] { 0x1000, 0x2002 }, contract.GetAvailableTypeParams(handle, 10).ToArray());
+        Assert.Equal(new TargetPointer[] { 0x3000 }, contract.GetAvailableTypeParams(handle, 9).ToArray());
+        Assert.Empty(contract.GetAvailableTypeParams(handle, 5));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetAvailableTypeParams_HashHandlesNullAndEmptyTables(MockTarget.Architecture arch)
+    {
+        TargetPointer nullModule = default;
+        TargetPointer emptyModule = default;
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            nullModule = loader.AddModule().Address;
+            MockLoaderModule module = loader.AddModule();
+            emptyModule = module.Address;
+            loader.SetAvailableTypeParams(module, 0);
+        });
+
+        Assert.Empty(contract.GetAvailableTypeParams(contract.GetModuleHandleFromModulePtr(nullModule), 123));
+        Assert.Empty(contract.GetAvailableTypeParams(contract.GetModuleHandleFromModulePtr(emptyModule), 123));
     }
 
     [Theory]

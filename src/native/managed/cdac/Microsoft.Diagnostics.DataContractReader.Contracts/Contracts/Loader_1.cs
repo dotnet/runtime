@@ -385,6 +385,18 @@ internal readonly struct Loader_1 : ILoader
         return typeHashTable.Entries.Select(entry => entry.TypeHandle);
     }
 
+    IEnumerable<TargetPointer> ILoader.GetAvailableTypeParams(ModuleHandle handle, uint hash)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (module.AvailableTypeParams == TargetPointer.Null)
+            yield break;
+
+        Target.TypeInfo type = _target.GetTypeInfo(DataType.EETypeHashTable);
+        DacEnumerableHash table = new(_target, module.AvailableTypeParams, type);
+        foreach (TargetPointer entry in table.Lookup(hash))
+            yield return new EETypeHashTable.Entry(_target.ReadPointer(entry)).TypeHandle;
+    }
+
     IEnumerable<TargetPointer> ILoader.GetInstantiatedMethods(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);

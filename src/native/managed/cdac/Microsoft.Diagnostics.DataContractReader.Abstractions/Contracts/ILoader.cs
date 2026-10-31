@@ -102,6 +102,18 @@ public interface ILoader : IContract
     TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
     bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle) => throw new NotImplementedException();
+    /// <summary>
+    /// Gets constructed-type candidates using a native type-key hash as a lookup optimization.
+    /// </summary>
+    /// <remarks>
+    /// Supplying a hash is not required: callers can use the overload without a hash.
+    /// Implementations may ignore the hash and return additional candidates.
+    /// Candidates always require full type-key comparison.
+    /// </remarks>
+    /// <param name="handle">The module containing the constructed-type table.</param>
+    /// <param name="hash">The native type-key hash used to select a bucket.</param>
+    /// <returns>The candidate type handles to compare against the full type key.</returns>
+    IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle, uint hash) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle) => throw new NotImplementedException();
 
     bool IsProbeExtensionResultValid(ModuleHandle handle) => throw new NotImplementedException();
