@@ -922,6 +922,22 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     }
 
 #ifdef TARGET_WASM
+    if (pRuntimeFunctionsDir != nullptr &&
+        ((pRuntimeFunctionsDir->Size % 128) != 0 || (dac_cast<TADDR>(m_pRuntimeFunctions) & 127) != 0))
+    {
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+    m_gcInfoBase = 0;
+    if (m_nRuntimeFunctions > 0)
+    {
+        IMAGE_DATA_DIRECTORY* pGCInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::WasmGCInfo);
+        if (pGCInfoDir == nullptr)
+        {
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+        m_gcInfoBase = dac_cast<TADDR>(m_pComposite->GetLayout()->GetDirectoryData(pGCInfoDir));
+    }
+
     // For WASM, the min function table index is stored as a u32 immediately after the
     // sentinel entry (0xFFFFFFFF) at the end of the RUNTIME_FUNCTION table.
     if (m_nRuntimeFunctions > 0)
@@ -2969,11 +2985,15 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
         // The last RUNTIME_FUNCTION entry's BeginAddress is the virtual IP index of that entry.
         // Total virtual IPs = lastEntry.BeginAddress + virtualIPCount(lastEntry)
         T_RUNTIME_FUNCTION* pLastEntry = &m_pRuntimeFunctions[m_nRuntimeFunctions - 1];
+        while (RUNTIME_FUNCTION__Skip(pLastEntry))
+        {
+            pLastEntry--;
+        }
         UINT32 lastEntryVirtualIPIndex = RUNTIME_FUNCTION__BeginAddress(pLastEntry);
 
         // Decode the virtual IP count from the last entry's unwind data.
         // Unwind format: ULEB128(frameSize) ULEB128(virtualIPCount)
-        PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(imageBase + pLastEntry->UnwindData);
+        PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(GetGCInfoBase() + RUNTIME_FUNCTION__GetUnwindDataOffset(pLastEntry));
         DecodeULEB128AsU32(&pUnwindData); // skip frame size
         UINT32 lastEntryVIPCount = DecodeULEB128AsU32(&pUnwindData) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
 

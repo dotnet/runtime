@@ -1101,6 +1101,11 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
+            if (Target.IsWasm)
+            {
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.WasmGCInfo, RuntimeFunctionsGCInfo);
+            }
+
             if (!Target.IsWasm)
             {
                 DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");

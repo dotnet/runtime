@@ -88,6 +88,30 @@ public static class WasmWebcilModule
         public int Value;
     }
 
+    public ref struct GCFields
+    {
+        public object Reference;
+        public Span<int> ByRef;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int StructGCFields()
+    {
+        GCFields fields = new()
+        {
+            Reference = new object(),
+            ByRef = new int[] { 42 },
+        };
+        return ReadStructGCFields(ref fields);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadStructGCFields(ref GCFields fields)
+    {
+        GC.Collect();
+        return fields.Reference.GetHashCode() ^ fields.ByRef[0];
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static Type ReadIntrinsicTypeToken(int index) => index switch
     {

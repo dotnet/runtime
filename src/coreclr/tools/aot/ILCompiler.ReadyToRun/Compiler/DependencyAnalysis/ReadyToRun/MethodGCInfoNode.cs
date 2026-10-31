@@ -24,6 +24,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 892356612;
 
+        public int GetWasmDataSize()
+        {
+            Debug.Assert(_methodNode.ColdCodeNode is null);
+            int size = _methodNode.GCInfo?.Length ?? 0;
+            foreach (FrameInfo frame in _methodNode.FrameInfos)
+            {
+                size = checked(size + frame.BlobData.Length);
+            }
+
+            return size;
+        }
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("MethodGCInfoNode->"u8);
