@@ -17,7 +17,7 @@
   </Target>
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
+  <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesManagedRuntimeFilesFromLocalBuild">
     <PropertyGroup>
       <WasmPInvokeTablePath>$(WasiObjDir)\pinvoke-table.h</WasmPInvokeTablePath>
       <WasmInterpToNativeTablePath>$(WasiObjDir)\wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
