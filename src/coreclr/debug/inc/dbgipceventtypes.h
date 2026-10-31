@@ -18,6 +18,10 @@ IPC_EVENT_TYPE0(DB_IPCE_TYPE_MASK                    ,0x0FFF)
 // These rules are enforced by a bunch of compile time checks (static_assert) in
 // the function DoCompileTimeCheckOnDbgIpcEventTypes.
 // If you get compiler errors in this file, you are probably violating the rules above.
+// Each event's wire size must also be added to the switch behind DbgTransportSession::GetEventSize
+// (TryGetEventAdditionalSize in dbgtransportsession.cpp). In checked builds, when the debugger transport is
+// enabled, a startup check there asserts on any declared event type that is neither sized nor listed in the
+// check as never sent.
 
 // Events that travel from the RC to the DI (Left to Right)
 IPC_EVENT_TYPE0(DB_IPCE_RUNTIME_FIRST                ,0x0100)   // change to TYPE0 because it is not really an event
