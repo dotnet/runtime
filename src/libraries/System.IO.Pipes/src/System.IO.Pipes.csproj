@@ -34,6 +34,8 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeThreadHandle.cs"
              Link="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeTokenHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
@@ -60,6 +62,8 @@
              Link="Common\Interop\Windows\Interop.FileTypes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
              Link="Common\Interop\Windows\Interop.GetCurrentProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThread.cs"
+             Link="Common\Interop\Windows\Interop.GetCurrentThread.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafePipeHandle.cs"
              Link="Common\Interop\Windows\Interop.DuplicateHandle_SafePipeHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs"
@@ -98,6 +102,10 @@
              Link="Common\Interop\Windows\Interop.RevertToSelf.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ImpersonateNamedPipeClient.cs"
              Link="Common\Interop\Windows\Interop.ImpersonateNamedPipeClient.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenThreadToken_SafeTokenHandle.cs"
+             Link="Common\Interop\Windows\Interop.OpenThreadToken_SafeTokenHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.SetThreadToken.cs"
+             Link="Common\Interop\Windows\Interop.SetThreadToken.cs" />
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs"
              Link="Common\CoreLib\System\IO\Win32Marshal.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateNamedPipeClient.cs"
