@@ -720,6 +720,7 @@ bool ReadyToRunInfo::IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModu
 // tightly associated with the module itself.
 ReadyToRunInfo* s_pGlobalR2RModules = NULL;
 PTR_ReadyToRunInfo ReadyToRunInfo::GetUnrelatedR2RModules() { return s_pGlobalR2RModules; }
+
 void ReadyToRunInfo::RegisterUnrelatedR2RModule()
 {
     LIMITED_METHOD_CONTRACT; // This function takes no locks, and can never fail
@@ -744,6 +745,11 @@ void ReadyToRunInfo::RegisterUnrelatedR2RModule()
                 oldGlobalValue = s_pGlobalR2RModules;
                 m_pNextR2RForUnrelatedCode = dac_cast<PTR_ReadyToRunInfo>(dac_cast<TADDR>(oldGlobalValue) | 0x1);
             }
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+            // Generic methods that missed in every image searched so far may have code in this new image.
+            IncrementAuxiliaryEntryPointsEra();
+#endif // FEATURE_AUXILIARY_R2R_MODULES
         }
     }
     else
@@ -853,6 +859,23 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         // In this case, we'll pull the ready to run image layout from pLayout.
         _ASSERT(pLayout != NULL);
         m_pCompositeInfo = this;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        // TODO: Use image-owned activation flags for the auxiliary code and EntryPoints modules.
+        m_pAuxiliaryModuleActivationFlag = (PTR_DWORD)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DWORD))));
+        if (pNativeImage != nullptr)
+        {
+            EnsureAuxiliaryEntryPointsModuleStatus();
+            m_pAuxiliaryEntryPointsModuleStatus = &s_simulatedAuxiliaryEntryPointsCallsRemaining;
+            *m_pAuxiliaryModuleActivationFlag = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_R2RDelayedActivationCallCount);
+        }
+        else
+        {
+            // Only composite images have auxiliary modules.
+            m_pAuxiliaryEntryPointsModuleStatus = (PTR_DWORD)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DWORD))));
+            *m_pAuxiliaryEntryPointsModuleStatus = 0;
+            *m_pAuxiliaryModuleActivationFlag = 0;
+        }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
         m_component = ReadyToRunCoreInfo(pLayout, &pHeader->CoreHeader);
         m_pComposite = &m_component;
         m_isComponentAssembly = false;
@@ -1317,6 +1340,9 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    bool mayDelayR2RCode = false;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
     mdToken token = pMD->GetMemberDef();
     int rid = RidFromToken(token);
     if (rid == 0)
@@ -1324,6 +1350,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     // If R2R code is disabled for this module, simply behave as if it is never found
     if (ReadyToRunCodeDisabled())
         goto done;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    // TODO: Resolve module-less composite registrations in the unrelated R2R list. Signature decoding
+    // needs a module, so skip these entries.
+    if (m_pModule == NULL)
+        goto done;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
     // Return-dropping async thunks are VM-synthesized. They share the same metadata
     // token and signature shape as a regular async variant, so the R2R lookup below
@@ -1334,6 +1366,23 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         goto done;
 
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    // Delay only when interpreter fallback is available and the caller can wait for R2R code.
+    mayDelayR2RCode = pConfig != NULL
+        && pConfig->MayDelayAuxiliaryModule()
+        && !HasStrippedILBodies()
+        && pMD->IsIL()
+        && !pMD->IsWrapperStub()
+        && (!pMD->GetModule()->IsReadyToRun() || !pMD->GetModule()->GetReadyToRunInfo()->HasStrippedILBodies())
+        && !pMD->HasUnmanagedCallersOnlyAttribute();
+
+    // The EntryPoints for this method may be in an auxiliary EntryPoints module that is not yet activated.
+    if (mayDelayR2RCode && !m_pCompositeInfo->IsAuxiliaryEntryPointsModuleActivated())
+    {
+        goto done;
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
     uint offset;
     // Async variants and unboxing stubs are stored in the instance methods table.
@@ -1368,6 +1417,18 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         if (!m_methodDefEntryPoints.TryGetAt(rid - 1, &offset))
             goto done;
     }
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    _ASSERTE(!mayDelayR2RCode || m_pCompositeInfo->IsAuxiliaryEntryPointsModuleActivated());
+
+    if (mayDelayR2RCode
+        && !IsAuxiliaryModuleActivated(m_pCompositeInfo->GetAuxiliaryModuleActivationFlag(pMD)))
+    {
+        // Stop searching once the method's code module is known; retry when its countdown reaches zero.
+        pConfig->SetAuxiliaryModuleActivationFlag(m_pCompositeInfo->GetAuxiliaryModuleActivationFlag(pMD));
+        goto done;
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
 #ifdef PROFILING_SUPPORTED
         {
