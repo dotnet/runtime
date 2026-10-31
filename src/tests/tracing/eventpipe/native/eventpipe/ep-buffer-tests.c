@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #if defined(_MSC_VER) && defined(_DEBUG)
 #include "ep-tests-debug.h"
 #endif
@@ -8,13 +11,11 @@
 #include <eventpipe/ep-event.h>
 #include <eventpipe/ep-event-payload.h>
 #include <eventpipe/ep-session.h>
-#include <eglib/test/test.h>
+#include "test.h"
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 #define TEST_FILE "./ep_test_create_file.txt"
 #define TEST_EVENT_DATA "Dummy data for perf test."
-
-//#define TEST_PERF
 
 #ifdef _CRTDBG_MAP_ALLOC
 static _CrtMemState eventpipe_memory_start_snapshot;
@@ -22,7 +23,7 @@ static _CrtMemState eventpipe_memory_end_snapshot;
 static _CrtMemState eventpipe_memory_diff_snapshot;
 #endif
 
-static const gchar event_instance_data[] = "Dummy event test data %u.";
+static const char event_instance_data[] = "Dummy event test data %u.";
 
 static
 void
@@ -34,16 +35,10 @@ buffer_free (
 
 	// Buffer must be read only when freed.
 	if (ep_buffer_get_volatile_state (buffer) == EP_BUFFER_STATE_WRITABLE) {
-		EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1)
 		ep_buffer_convert_to_read_only (buffer);
-		EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1)
 	}
 
 	ep_buffer_free (buffer);
-	return;
-
-ep_on_error:
-	return;
 }
 
 static
@@ -86,13 +81,15 @@ load_buffer_with_events_init (
 			NULL,
 			EP_SESSION_TYPE_FILE,
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
-			false,
+			0,
+			true,
 			1,
 			current_provider_config,
 			1,
 			NULL,
 			NULL,
-			0);
+			0,
+			EP_BUFFERING_MODE_DROP);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (*session != NULL);
@@ -135,13 +132,13 @@ load_buffer (
 	uint32_t i = 0;
 	for (; i < event_count; ++i) {
 		EventPipeEventPayload payload;
-		gchar *event_data = NULL;
+		char *event_data = NULL;
 		size_t event_data_len = 0;
 		if (!perf_test) {
-			event_data = g_strdup_printf (event_instance_data, i);
+			event_data = ep_rt_utf8_string_printf_alloc (event_instance_data, i);
 			event_data_len = strlen (event_data) + 1;
 		}else {
-			event_data = (gchar *)TEST_EVENT_DATA;
+			event_data = (char *)TEST_EVENT_DATA;
 			event_data_len = ARRAY_SIZE (TEST_EVENT_DATA);
 		}
 		if (event_data) {
@@ -150,7 +147,7 @@ load_buffer (
 			ep_event_payload_fini (&payload);
 
 			if (!perf_test)
-				g_free (event_data);
+				free (event_data);
 
 			if (!result)
 				break;
@@ -218,9 +215,7 @@ test_create_free_buffer (void)
 
 	test_location = 2;
 
-	EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1)
 	ep_buffer_convert_to_read_only (buffer);
-	EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1)
 
 ep_on_exit:
 	buffer_free (buffer, thread);
@@ -257,9 +252,7 @@ test_write_event_to_buffer (void)
 
 	test_location = 3;
 
-	EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1)
 	ep_buffer_convert_to_read_only (buffer);
-	EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1)
 
 ep_on_exit:
 	buffer_free (buffer, thread);
@@ -296,9 +289,7 @@ test_read_event_from_buffer (void)
 
 	test_location = 3;
 
-	EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1)
 	ep_buffer_convert_to_read_only (buffer);
-	EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1)
 
 	test_location = 4;
 	EventPipeEventInstance *current_event = ep_buffer_get_current_read_event (buffer);
@@ -321,7 +312,7 @@ test_read_events_from_buffer (void)
 	RESULT result = NULL;
 	uint32_t test_location = 0;
 
-	const int max_events = 100;
+	const uint32_t max_events = 100;
 
 	EventPipeThread *thread = NULL;
 	EventPipeBuffer *buffer = NULL;
@@ -341,9 +332,7 @@ test_read_events_from_buffer (void)
 
 	test_location = 3;
 
-	EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1)
 	ep_buffer_convert_to_read_only (buffer);
-	EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1)
 
 	test_location = 4;
 
@@ -352,7 +341,7 @@ test_read_events_from_buffer (void)
 
 	test_location = 5;
 
-	int event_count = 0;
+	uint32_t event_count = 0;
 	while (instance) {
 		ep_buffer_move_next_read_event (buffer);
 		instance = ep_buffer_get_current_read_event (buffer);
@@ -407,9 +396,7 @@ test_check_buffer_state (void)
 
 	ep_raise_error_if_nok (ep_buffer_get_volatile_state (buffer) == EP_BUFFER_STATE_WRITABLE);
 
-	EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1)
 	ep_buffer_convert_to_read_only (buffer);
-	EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1)
 
 	test_location = 5;
 	ep_raise_error_if_nok (ep_buffer_get_volatile_state (buffer) == EP_BUFFER_STATE_READ_ONLY);
@@ -433,7 +420,7 @@ test_check_buffer_event_instances (void)
 
 	EventPipeThread *thread = NULL;
 	EventPipeBuffer *buffer = NULL;
-	gchar * template_data = NULL;
+	char * template_data = NULL;
 
 	thread = ep_thread_alloc ();
 	ep_raise_error_if_nok (thread != NULL);
@@ -452,13 +439,11 @@ test_check_buffer_event_instances (void)
 	result = load_buffer_with_events (buffer, 100);
 	ep_raise_error_if_nok (result == NULL);
 
-	EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1)
 	ep_buffer_convert_to_read_only (buffer);
-	EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1)
 
 	test_location = 4;
 
-	int event_count = 0;
+	uint32_t event_count = 0;
 	const uint8_t *data = NULL;
 	uint32_t data_len = 0;
 
@@ -471,13 +456,13 @@ test_check_buffer_event_instances (void)
 		data = ep_event_instance_get_data (instance);
 		data_len = ep_event_instance_get_data_len (instance);
 
-		g_free (template_data);
-		template_data = g_strdup_printf (event_instance_data, event_count);
+		free (template_data);
+		template_data = ep_rt_utf8_string_printf_alloc (event_instance_data, event_count);
 		ep_raise_error_if_nok (template_data != NULL);
 
 		test_location = 6;
 
-		ep_raise_error_if_nok (strcmp (template_data, (gchar *)data) == 0);
+		ep_raise_error_if_nok (strcmp (template_data, (char *)data) == 0);
 
 		test_location = 7;
 
@@ -492,7 +477,7 @@ test_check_buffer_event_instances (void)
 	}
 
 ep_on_exit:
-	g_free (template_data);
+	free (template_data);
 	buffer_free (buffer, thread);
 	ep_thread_free (thread);
 	return result;
@@ -530,16 +515,14 @@ test_check_buffer_oom (void)
 	result = load_buffer_with_events (buffer, 1000 * 1000);
 	ep_raise_error_if_nok (result != NULL);
 
-	g_free (result);
+	free (result);
 	result = NULL;
 
 	test_location = 4;
 
 	ep_raise_error_if_nok (ep_buffer_get_volatile_state (buffer) == EP_BUFFER_STATE_WRITABLE);
 
-	EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1)
 	ep_buffer_convert_to_read_only (buffer);
-	EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1)
 
 	test_location = 5;
 
@@ -550,7 +533,7 @@ test_check_buffer_oom (void)
 
 	test_location = 6;
 
-	int event_count = 0;
+	uint32_t event_count = 0;
 	while (instance) {
 		ep_buffer_move_next_read_event (buffer);
 		instance = ep_buffer_get_current_read_event (buffer);
@@ -570,7 +553,8 @@ ep_on_error:
 }
 
 
-static RESULT
+#if TEST_PERF
+RESULT
 test_check_buffer_perf (void)
 {
 	RESULT result = NULL;
@@ -646,7 +630,7 @@ ep_on_error:
 		result = FAILED ("Failed at test location=%i", test_location);
 	ep_exit_error_handler ();
 }
-
+#endif
 
 #ifdef EP_CHECKED_BUILD
 static RESULT
@@ -675,9 +659,7 @@ test_check_buffer_consistency (void)
 	result = load_buffer_with_events (buffer, 100);
 	ep_raise_error_if_nok (result == NULL);
 
-	EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1)
 	ep_buffer_convert_to_read_only (buffer);
-	EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1)
 
 	test_location = 4;
 
@@ -717,9 +699,6 @@ static Test ep_buffer_tests [] = {
 	{"test_check_buffer_state", test_check_buffer_state},
 	{"test_check_buffer_event_instances", test_check_buffer_event_instances},
 	{"test_check_buffer_oom", test_check_buffer_oom},
-#ifdef TEST_PERF
-	{"test_check_buffer_perf", test_check_buffer_perf},
-#endif
 #ifdef EP_CHECKED_BUILD
 	{"test_check_buffer_consistency", test_check_buffer_consistency},
 #endif

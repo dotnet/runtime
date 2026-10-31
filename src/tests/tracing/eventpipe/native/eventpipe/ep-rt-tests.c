@@ -1,9 +1,12 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #if defined(_MSC_VER) && defined(_DEBUG)
 #include "ep-tests-debug.h"
 #endif
 
 #include <eventpipe/ep.h>
-#include <eglib/test/test.h>
+#include "test.h"
 
 #ifdef _CRTDBG_MAP_ALLOC
 static _CrtMemState eventpipe_memory_start_snapshot;
@@ -39,7 +42,7 @@ test_rt_perf_timestamp (void)
 	double elapsed_time_ms = 0;
 
 	ep_timestamp_t start = ep_perf_timestamp_get ();
-	g_usleep (10 * 1000);
+	minipal_sleep (10);
 	ep_timestamp_t stop = ep_perf_timestamp_get ();
 
 	test_location = 1;
@@ -105,7 +108,7 @@ test_rt_system_time (void)
 	ep_raise_error_if_nok (ep_system_time_get_milliseconds (&time1) >= 0 && ep_system_time_get_milliseconds (&time1) < 1000);
 	test_location = 8;
 
-	g_usleep (1000 * 1000);
+	minipal_sleep (1000);
 
 	ep_system_time_get (&time2);
 
@@ -136,7 +139,7 @@ test_rt_system_timestamp (void)
 	uint32_t test_location = 0;
 
 	ep_system_timestamp_t start = ep_system_timestamp_get ();
-	g_usleep (10 * 1000);
+	minipal_sleep (10);
 	ep_system_timestamp_t stop = ep_system_timestamp_get ();
 
 	test_location = 1;
@@ -194,6 +197,29 @@ ep_on_error:
 }
 
 static RESULT
+test_rt_spin_lock (void)
+{
+	ep_rt_spin_lock_handle_t lock = {0};
+	ep_rt_spin_lock_alloc (&lock);
+	if (!ep_rt_spin_lock_is_valid (&lock))
+		return FAILED ("Failed to allocate spin lock");
+
+	ep_rt_spin_lock_requires_lock_not_held (&lock);
+	if (!ep_rt_spin_lock_acquire (&lock)) {
+		ep_rt_spin_lock_free (&lock);
+		return FAILED ("Failed to acquire spin lock");
+	}
+	ep_rt_spin_lock_requires_lock_held (&lock);
+	if (!ep_rt_spin_lock_release (&lock)) {
+		ep_rt_spin_lock_free (&lock);
+		return FAILED ("Failed to release spin lock");
+	}
+	ep_rt_spin_lock_requires_lock_not_held (&lock);
+	ep_rt_spin_lock_free (&lock);
+	return NULL;
+}
+
+static RESULT
 test_rt_teardown (void)
 {
 #ifdef _CRTDBG_MAP_ALLOC
@@ -206,6 +232,15 @@ test_rt_teardown (void)
 	return NULL;
 }
 
+#ifdef TARGET_LINUX
+static RESULT
+test_rt_current_processor (void)
+{
+	return ep_rt_current_processor_get_number () != UINT32_MAX ?
+		NULL : FAILED ("Current processor number is unavailable");
+}
+#endif
+
 static Test ep_rt_tests [] = {
 	{"test_rt_setup", test_rt_setup},
 	{"test_rt_perf_frequency", test_rt_perf_frequency},
@@ -213,6 +248,10 @@ static Test ep_rt_tests [] = {
 	{"test_rt_system_time", test_rt_system_time},
 	{"test_rt_system_timestamp", test_rt_system_timestamp},
 	{"test_rt_temp_path_get", test_rt_temp_path_get},
+	{"test_rt_spin_lock", test_rt_spin_lock},
+#ifdef TARGET_LINUX
+	{"test_rt_current_processor", test_rt_current_processor},
+#endif
 	{"test_rt_teardown", test_rt_teardown},
 	{NULL, NULL}
 };

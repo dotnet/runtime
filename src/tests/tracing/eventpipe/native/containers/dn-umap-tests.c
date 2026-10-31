@@ -1,13 +1,19 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #if defined(_MSC_VER) && defined(_DEBUG)
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
 #endif
 
-#include <eglib/test/test.h>
+#include "test.h"
 #include <containers/dn-umap.h>
 #include <containers/dn-umap-t.h>
 
+#if defined(_MSC_VER) && !defined(strdup)
+#define strdup _strdup
+#endif
 
 #ifdef _CRTDBG_MAP_ALLOC
 static _CrtMemState dn_umap_memory_start_snapshot;
@@ -665,6 +671,7 @@ uint32_t foreach_count = 0;
 uint32_t foreach_fail = 0;
 
 static void
+DN_CALLBACK_CALLTYPE
 umap_for_each_str_str_func (void *key, void *value, void *user_data)
 {
 	foreach_count++;
@@ -733,15 +740,15 @@ test_umap_grow (void)
 	uint32_t count = 0;
 
 	for (uint32_t i = 0; i < 1000; i++) {
-		sprintf (buffer1, "%d", i);
-		sprintf (buffer2, "x-%d", i);
+		snprintf (buffer1, sizeof (buffer1), "%u", i);
+		snprintf (buffer2, sizeof (buffer2), "x-%u", i);
 		dn_umap_insert (map, strdup (buffer1), strdup (buffer2));
 	}
 
 	for (uint32_t i = 0; i < 1000; i++){
-		sprintf (buffer1, "%d", i);
+		snprintf (buffer1, sizeof (buffer1), "%u", i);
 		dn_umap_it_t found = dn_umap_find (map, buffer1);
-		sprintf (buffer1, "x-%d", i);
+		snprintf (buffer1, sizeof (buffer1), "x-%u", i);
 		if (strcmp (dn_umap_it_value_t (found, char *), buffer1) != 0)
 			return FAILED ("Failed to lookup the key %d, the value was %s\n", i, dn_umap_it_value_t (found, char *));
 	}
@@ -832,7 +839,7 @@ test_umap_ptr_uint32_find_erase (void)
 	const void *data = items [3];
 	dn_umap_ptr_uint32_insert (map, (void *)data, 4);
 
-	dn_umap_it_t found = dn_umap_ptr_uint32_find (map, data);
+	dn_umap_it_t found = dn_umap_ptr_uint32_find (map, (void *)data);
 
 	if (dn_umap_it_key_ptr (found) != (void *)data)
 		return FAILED ("find failed #1");
@@ -862,7 +869,7 @@ test_umap_ptr_uint32_find_erase_insert (void)
 	dn_umap_ptr_uint32_insert (map, (char *)items [1], 2);
 	dn_umap_ptr_uint32_insert (map, (char *)items [0], 1);
 
-	dn_umap_it_t found = dn_umap_ptr_uint32_find (map, items [1]);
+	dn_umap_it_t found = dn_umap_ptr_uint32_find (map, (void *)items [1]);
 
 	if (dn_umap_it_end (found))
 		return FAILED ("find failed #1");

@@ -1,9 +1,12 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-block.h>
 #include <eventpipe/ep-event.h>
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-stream.h>
-#include <eglib/test/test.h>
+#include "test.h"
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 
@@ -17,7 +20,7 @@ static
 void
 memory_stream_writer_free_func (void *stream)
 {
-	g_free ((MemoryStreamWriter *)stream);
+	free ((MemoryStreamWriter *)stream);
 }
 
 static
@@ -62,7 +65,7 @@ test_fast_serializer_object_fast_serialize (void)
 	EventPipeEventBlock *event_block = NULL;
 
 	// Use memory stream for testing.
-	stream_writer = g_new0 (MemoryStreamWriter, 1);
+	stream_writer = (MemoryStreamWriter *)calloc (1, sizeof (MemoryStreamWriter));
 	ep_raise_error_if_nok (stream_writer != NULL);
 
 	test_location = 1;
