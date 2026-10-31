@@ -469,6 +469,7 @@
       <_WasmCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_WasmCompileRsp>
       <_WasmCompileRspGenerated>$(_WasmIntermediateOutputPath)emcc-compile-generated.rsp</_WasmCompileRspGenerated>
       <_WasmLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_WasmLinkRsp>
+      <_WasmOptArgsFile>$(_WasmIntermediateOutputPath)wasm-opt-args.txt</_WasmOptArgsFile>
     </PropertyGroup>
 
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)')"
@@ -573,6 +574,10 @@
       <EmccStackSize Condition="'$(EmccStackSize)' == ''">2MB</EmccStackSize>
 
       <DisableParallelEmccCompile Condition="'$(DisableParallelEmccCompile)' == ''">false</DisableParallelEmccCompile>
+
+      <!-- Opt-in post-link wasm-opt pass over the relinked dotnet.native.wasm. Unlike the Mono path, this
+           is not implied by WasmNativeStrip while CoreCLR wasm codegen is still changing. -->
+      <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
       <_WasmCompileOutputMessageImportance Condition="'$(EmccVerbose)' == 'true'">Normal</_WasmCompileOutputMessageImportance>
       <_WasmCompileOutputMessageImportance Condition="'$(EmccVerbose)' != 'true'">Low</_WasmCompileOutputMessageImportance>
     </PropertyGroup>
@@ -592,6 +597,26 @@
       <_EmccCommonFlags Include="-sWASM_LEGACY_EXCEPTIONS=0" />
       <_EmccCommonFlags Include="-msimd128" />
       <_EmccCommonFlags Include="-mrelaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
+    </ItemGroup>
+
+    <!-- emcc strips the target_features section, so wasm-opt needs the features the link was built with.
+         Re-encoding without any pass grows the module, so default to -Oz unless the project's
+         WasmOptConfigurationFlags already pick an -O level. -->
+    <ItemGroup Condition="'$(WasmRunWasmOpt)' == 'true'">
+      <_WasmOptUserOptimizationFlag Remove="@(_WasmOptUserOptimizationFlag)" />
+      <_WasmOptUserOptimizationFlag Include="@(WasmOptConfigurationFlags)" Condition="$([System.String]::Copy('%(WasmOptConfigurationFlags.Identity)').StartsWith('-O'))" />
+
+      <_WasmOptArgs Remove="@(_WasmOptArgs)" />
+      <_WasmOptArgs Include="--enable-simd;--enable-exception-handling;--enable-reference-types;--enable-multivalue;--enable-bulk-memory;--enable-nontrapping-float-to-int;--enable-sign-ext" />
+      <_WasmOptArgs Include="--enable-relaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
+      <_WasmOptArgs Include="--strip-dwarf" Condition="'$(WasmNativeStrip)' == 'true'" />
+      <!-- wasm-opt drops the name section and DWARF unless asked to keep debug info. -->
+      <_WasmOptArgs Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true' and '$(WasmNativeStrip)' != 'true'" />
+      <_WasmOptArgs Include="-Oz" Condition="@(_WasmOptUserOptimizationFlag->Count()) == 0" />
+      <_WasmOptArgs Include="@(WasmOptConfigurationFlags)" />
+      <!-- Optimization removes and reorders functions, so regenerate the symbol map from the names
+           the link keeps via profiling-funcs. This must be the last pass. -->
+      <_WasmOptArgs Include="--symbolmap=&quot;$(_WasmIntermediateOutputPath)dotnet.native.js.symbols&quot;" />
     </ItemGroup>
 
     <ItemGroup>
@@ -892,6 +917,8 @@
       <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s LLD_REPORT_UNDEFINED" />
       <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s ERROR_ON_UNDEFINED_SYMBOLS=1" />
       <_EmccLinkStepArgs Include="--emit-symbol-map" />
+      <!-- Keep function names for wasm-opt to rebuild the symbol map; it drops them from its output. -->
+      <_EmccLinkStepArgs Condition="'$(WasmRunWasmOpt)' == 'true'" Include="--profiling-funcs" />
 
       <!-- Assertions for debug -->
       <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s ASSERTIONS=1" />
@@ -930,11 +957,15 @@
       <_WasmLinkDependencies Include="@(_CoreCLRNativeLibs)" />
       <_WasmLinkDependencies Include="@(_CoreCLRJsLibrary)" />
       <_WasmLinkDependencies Include="$(_WasmLinkRsp)" />
+      <_WasmLinkDependencies Include="$(_WasmOptArgsFile)" />
     </ItemGroup>
 
     <WriteLinesToFile Lines="@(_EmccLinkStepArgs)" File="$(_WasmLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <!-- wasm-opt rewrites dotnet.native.wasm in place, so changing its settings must rerun the link. -->
+    <WriteLinesToFile Lines="WasmRunWasmOpt=$(WasmRunWasmOpt);@(_WasmOptArgs)" File="$(_WasmOptArgsFile)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_WasmLinkRsp)" />
+      <FileWrites Include="$(_WasmOptArgsFile)" />
     </ItemGroup>
   </Target>
 
@@ -954,6 +985,20 @@
       <Output TaskParameter="ConsoleOutput" PropertyName="_EmccLinkStepConsoleOutput" />
       <Output TaskParameter="ExitCode" PropertyName="_EmccLinkStepExitCode" />
     </Exec>
+
+    <PropertyGroup Condition="'$(WasmRunWasmOpt)' == 'true'">
+      <_WasmOptOutputFile>$(_WasmIntermediateOutputPath)dotnet.native.wasm</_WasmOptOutputFile>
+    </PropertyGroup>
+    <Message Text="Running wasm-opt with @(_WasmOptArgs, ' ')" Importance="High" Condition="'$(WasmRunWasmOpt)' == 'true'" />
+    <Exec Command="&quot;$(EmscriptenUpstreamBinPath)wasm-opt$(_ExeExt)&quot; @(_WasmOptArgs, ' ') &quot;$(_WasmOptOutputFile)&quot; -o &quot;$(_WasmOptOutputFile)&quot;"
+          IgnoreStandardErrorWarningFormat="true"
+          EnvironmentVariables="@(EmscriptenEnvVars)"
+          ContinueOnError="ErrorAndContinue"
+          Condition="'$(WasmRunWasmOpt)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="_WasmOptExitCode" />
+    </Exec>
+    <!-- Do not leave an unoptimized link output that looks up to date to the next incremental build. -->
+    <Delete Files="$(_WasmOptOutputFile)" Condition="'$(WasmRunWasmOpt)' == 'true' and '$(_WasmOptExitCode)' != '0'" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />

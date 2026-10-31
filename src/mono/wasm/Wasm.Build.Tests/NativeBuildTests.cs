@@ -43,6 +43,25 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        public async Task NativeBuildWithWasmOpt(Configuration config, bool aot)
+        {
+            ProjectInfo info = CreateWasmTemplateProject(
+                Template.WasmBrowser,
+                config,
+                aot,
+                "native_wasm_opt",
+                extraProperties: "<WasmBuildNative>true</WasmBuildNative><WasmRunWasmOpt>true</WasmRunWasmOpt>");
+
+            UpdateBrowserProgramFile();
+            ReplaceMainJsWithMinimalRunMain();
+
+            (string _, string buildOutput) = PublishProject(info, config, isNativeBuild: true);
+            Assert.Contains("Running wasm-opt with", buildOutput);
+            await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));
+        }
+
+        [Theory]
+        [BuildAndRun(aot: false)]
         [TestCategory("native"), TestCategory("mono")]
         [SkipOnPlatform(TestPlatforms.AnyUnix, "The cmd.exe quoting behavior this covers is Windows-specific.")]
         public async Task NativeBuildWithSpecialCharsInTempPath(Configuration config, bool aot)
