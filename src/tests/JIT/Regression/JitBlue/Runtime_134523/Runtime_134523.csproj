@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Tiered compilation is disabled in interpreter mode. -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
+    <!-- Relies on Tiered PGO and on reading IL via MethodBody. -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+
+    <!-- GDV needs a class profile, so let Tiered PGO collect one quickly. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_CallCountThreshold" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_CallCountingDelayMs" Value="0" />
+    <!-- A MinOpts stress leg would make Tier1 MinOpts (no GDV) and the test vacuous. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
+  </ItemGroup>
+</Project>
