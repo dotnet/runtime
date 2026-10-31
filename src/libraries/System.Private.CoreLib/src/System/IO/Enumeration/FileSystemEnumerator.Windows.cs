@@ -102,9 +102,7 @@ namespace System.IO.Enumeration
             {
                 // NtQueryDirectoryFile needs its buffer to be 64bit aligned to work
                 // successfully with FileFullDirectoryInformation.
-                // From https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_full_dir_information:
-                // "This structure must be aligned on a LONGLONG (8-byte) boundary."
-                _buffer = NativeMemory.AlignedAlloc((nuint)_bufferLength, sizeof(ulong));
+                _buffer = NativeMemory.Alloc((nuint)_bufferLength);
             }
             catch
             {
@@ -385,7 +383,7 @@ namespace System.IO.Enumeration
 
                     if (_buffer != null)
                     {
-                        NativeMemory.AlignedFree(_buffer);
+                        NativeMemory.Free(_buffer);
                     }
 
                     _buffer = null;
