@@ -4625,6 +4625,54 @@ ValueNum Compiler::optGetPreferredBoundForRange(ValueNum vn, ASSERT_VALARG_TP as
 }
 
 //------------------------------------------------------------------------
+// GetVerifiedSsaDefiningValue: Find the full SSA definition corresponding to
+// this use. The caller must verify the current defining expression before
+// using its identity: CSE may have rewritten it since SSA construction.
+//
+static GenTree* GetVerifiedSsaDefiningValue(Compiler* comp, GenTreeLclVar* local)
+{
+    LclVarDsc*   varDsc = comp->lvaGetDesc(local);
+    ValueNumPair useVN  = local->gtVNPair;
+    // Narrowing and partial stores are not value-preserving copies.
+    if (!local->HasSsaName() || !useVN.BothDefined() || varTypeIsSmall(varDsc->TypeGet()) ||
+        varDsc->TypeIs(TYP_STRUCT) || !local->TypeIs(varDsc->TypeGet()))
+    {
+        return nullptr;
+    }
+
+    LclSsaVarDsc*        ssaDef = varDsc->GetPerSsaData(local->GetSsaNum());
+    GenTreeLclVarCommon* store  = ssaDef->GetDefNode();
+    if (!ssaDef->m_vnPair.BothDefined() || (ssaDef->m_vnPair.GetLiberal() != useVN.GetLiberal()) ||
+        (store == nullptr) || !store->OperIs(GT_STORE_LCL_VAR) || (store->GetLclNum() != local->GetLclNum()) ||
+        ((store->gtFlags & GTF_VAR_USEASG) != 0))
+    {
+        return nullptr;
+    }
+    return store->Data();
+}
+
+//------------------------------------------------------------------------
+// GetVerifiedSsaCopySource: Follow one same-typed local copy whose current
+// source still has the use's liberal identity. PHIs and other definitions stop
+// the walk; the source's conservative identity may differ after CSE.
+//
+static GenTreeLclVar* GetVerifiedSsaCopySource(Compiler* comp, GenTreeLclVar* local)
+{
+    GenTree* value = GetVerifiedSsaDefiningValue(comp, local);
+    if (value == nullptr)
+    {
+        return nullptr;
+    }
+    value = value->gtEffectiveVal();
+    if (!value->OperIs(GT_LCL_VAR) || !value->TypeIs(local->TypeGet()) || !value->AsLclVar()->HasSsaName() ||
+        !value->gtVNPair.BothDefined() || (value->gtVNPair.GetLiberal() != local->gtVNPair.GetLiberal()))
+    {
+        return nullptr;
+    }
+    return value->AsLclVar();
+}
+
+//------------------------------------------------------------------------
 // optAssertionProp: try and optimize a relop via assertion propagation
 //
 // Arguments:
@@ -4833,7 +4881,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     }
 
     // Use non-null assertions for the address or its base, including across PHIs.
-    if (op2->IsIntegralConst(0) && varTypeIsI(op1) && optAssertionVNIsNonNull(op1VN, assertions))
+    if (op2->IsIntegralConst(0) && varTypeIsI(op1) &&
+        (optAssertionVNIsNonNull(op1VN, assertions) || ((optCSEcount != 0) && optAssertionIsNonNull(op1, assertions))))
     {
         JITDUMP("Proved [%06u] non-null\n", dspTreeID(op1));
         newTree = gtWrapWithSideEffects(tree->OperIs(GT_EQ) ? gtNewFalse() : gtNewTrue(), tree, GTF_ALL_EFFECT);
@@ -5199,8 +5248,22 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
     // If local assertion prop use lcl comparison, else use VN comparison.
     if (!optLocalAssertionProp)
     {
-        ValueNum vn = vnStore->VNConservativeNormalValue(op->gtVNPair);
-        return optAssertionVNIsNonNull(vn, assertions);
+        // Consult each copy identity without changing VNs that existing
+        // expressions and assertions may still reference.
+        GenTreeLclVar* local = op->AsLclVar();
+        for (unsigned budget = 16; (local != nullptr) && (budget > 0); budget--)
+        {
+            if (optAssertionVNIsNonNull(vnStore->VNConservativeNormalValue(local->gtVNPair), assertions))
+            {
+                return true;
+            }
+            if (optCSEcount == 0)
+            {
+                break;
+            }
+            local = GetVerifiedSsaCopySource(this, local);
+        }
+        return false;
     }
     else
     {
