@@ -89,6 +89,36 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [TestCategory("coreclr")]
+    public async Task StartupDownloadQueueGuardDetectsGrowth(bool simulateGrowth)
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"StartupDownloadQueueGuard_{simulateGrowth}");
+        List<string> errors = new();
+        if (simulateGrowth)
+        {
+            UpdateFile("wwwroot/main.js", new Dictionary<string, string>
+            {
+                { "recordStartupDownloadProgress(loaded, total);", "recordStartupDownloadProgress(loaded, total + 1);" }
+            });
+        }
+        PublishProject(info, config);
+
+        await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "DownloadResourceProgressTest",
+            ExpectedExitCode: simulateGrowth ? 1 : 0,
+            OnErrorMessage: message => errors.Add(message)
+        ));
+        if (simulateGrowth)
+        {
+            Assert.Contains(errors, message => message.Contains("Startup download queue changed:"));
+        }
+    }
+
     [Fact, TestCategory("bundler-friendly")]
     public async Task OutErrOverrideWorks()
     {
