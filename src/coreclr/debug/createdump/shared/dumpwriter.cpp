@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef __APPLE__
 #include "createdump.h"
-
-DumpWriter::DumpWriter(CrashInfo& crashInfo) :
-    m_fd(-1),
-    m_crashInfo(crashInfo)
-{
-    m_crashInfo.AddRef();
-}
+#else
+#include "createdumpcore.h"
+#include "dumpwriter.h"
+#endif
 
 DumpWriter::~DumpWriter()
 {
@@ -17,7 +15,9 @@ DumpWriter::~DumpWriter()
         close(m_fd);
         m_fd = -1;
     }
+#ifdef __APPLE__
     m_crashInfo.Release();
+#endif
 }
 
 bool
@@ -39,8 +39,13 @@ DumpWriter::WriteDiagInfo(size_t size)
     SpecialDiagInfoHeader header = {
         {SPECIAL_DIAGINFO_SIGNATURE},
         SPECIAL_DIAGINFO_VERSION,
+    #ifdef __APPLE__
         m_crashInfo.ExceptionRecord(),
         m_crashInfo.RuntimeBaseAddress()
+    #else
+        m_processInfo.ExceptionRecord(),
+        m_processInfo.RuntimeBaseAddress()
+    #endif
     };
     if (!WriteData(&header, sizeof(header))) {
         return false;
