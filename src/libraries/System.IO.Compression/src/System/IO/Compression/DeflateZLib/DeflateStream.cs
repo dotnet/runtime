@@ -596,6 +596,7 @@ namespace System.IO.Compression
             Debug.Assert(_deflater != null);
             WriteDeflaterOutput();
 
+            // SAFETY: To be audited
             unsafe
             {
                 // Pass new bytes through deflater and write them too:

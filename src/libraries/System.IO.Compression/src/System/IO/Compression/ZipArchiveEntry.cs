@@ -900,11 +900,16 @@ namespace System.IO.Compression
         }
 
         // should only throw an exception in extremely exceptional cases because it is called from dispose
-        internal unsafe void WriteCentralDirectoryFileHeader(bool forceWrite)
+        internal void WriteCentralDirectoryFileHeader(bool forceWrite)
         {
             if (WriteCentralDirectoryFileHeaderInitialize(forceWrite, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint offsetOfLocalHeaderTruncated))
             {
-                Span<byte> cdStaticHeader = stackalloc byte[ZipCentralDirectoryFileHeader.BlockConstantSectionSize];
+                scoped Span<byte> cdStaticHeader;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    cdStaticHeader = stackalloc byte[ZipCentralDirectoryFileHeader.BlockConstantSectionSize];
+                }
                 WriteCentralDirectoryFileHeaderPrepare(cdStaticHeader, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength, offsetOfLocalHeaderTruncated);
 
                 _archive.ArchiveStream.Write(cdStaticHeader);
@@ -1598,7 +1603,7 @@ namespace System.IO.Compression
         private bool ShouldUseZIP64 => AreSizesTooLarge || IsOffsetTooLarge;
         internal ZipEncryptionMethod Encryption { get => _encryptionMethod; private set => _encryptionMethod = value; }
 
-        private unsafe bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite)
+        private bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite)
         {
             // _entryname only gets set when we read in or call moveTo. MoveTo does a check, and
             // reading in should not be able to produce an entryname longer than ushort.MaxValue
@@ -1771,11 +1776,16 @@ namespace System.IO.Compression
         }
 
         // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
-        private unsafe bool WriteLocalFileHeader(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor = false)
+        private bool WriteLocalFileHeader(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor = false)
         {
             if (WriteLocalFileHeaderInitialize(isEmptyFile, forceWrite, preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite))
             {
-                Span<byte> lfStaticHeader = stackalloc byte[ZipLocalFileHeader.SizeOfLocalHeader];
+                scoped Span<byte> lfStaticHeader;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    lfStaticHeader = stackalloc byte[ZipLocalFileHeader.SizeOfLocalHeader];
+                }
                 WriteLocalFileHeaderPrepare(lfStaticHeader, crc32ToWrite, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength);
 
                 // write header
@@ -1803,7 +1813,7 @@ namespace System.IO.Compression
             return zip64ExtraField != null;
         }
 
-        private unsafe void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
+        private void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
         {
             // Check if the entry's stored data was actually modified (StoredData flag is set).
             // If _storedUncompressedData is loaded but StoredData is not set, it means the entry
@@ -1957,7 +1967,12 @@ namespace System.IO.Compression
                             _archive.ArchiveStream.Seek(
                                 _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags,
                                 SeekOrigin.Begin);
-                            Span<byte> flagBytes = stackalloc byte[2];
+                            scoped Span<byte> flagBytes;
+                            // SAFETY: To be audited
+                            unsafe
+                            {
+                                flagBytes = stackalloc byte[2];
+                            }
                             BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)savedFlags);
                             _archive.ArchiveStream.Write(flagBytes);
                             _archive.ArchiveStream.Seek(currentPos, SeekOrigin.Begin);
@@ -2018,10 +2033,15 @@ namespace System.IO.Compression
         // Using _offsetOfLocalHeader, seeks back to where CRC and sizes should be in the header,
         // writes them, then seeks back to where you started
         // Assumes that the stream is currently at the end of the data
-        private unsafe void WriteCrcAndSizesInLocalHeader(bool zip64HeaderUsed)
+        private void WriteCrcAndSizesInLocalHeader(bool zip64HeaderUsed)
         {
             // Buffer has been sized to the largest data payload required: the 64-bit data descriptor.
-            Span<byte> writeBuffer = stackalloc byte[Zip64DataDescriptorCrcAndSizesBufferLength];
+            scoped Span<byte> writeBuffer;
+            // SAFETY: To be audited
+            unsafe
+            {
+                writeBuffer = stackalloc byte[Zip64DataDescriptorCrcAndSizesBufferLength];
+            }
 
             WriteCrcAndSizesInLocalHeaderInitialize(zip64HeaderUsed, out long finalPosition, out bool pretendStreaming, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated);
 
@@ -2144,9 +2164,14 @@ namespace System.IO.Compression
         // signature is optional but recommended by the spec
         private const int MaxSizeOfDataDescriptor = 24;
 
-        private unsafe void WriteDataDescriptor()
+        private void WriteDataDescriptor()
         {
-            Span<byte> dataDescriptor = stackalloc byte[MaxSizeOfDataDescriptor];
+            scoped Span<byte> dataDescriptor;
+            // SAFETY: To be audited
+            unsafe
+            {
+                dataDescriptor = stackalloc byte[MaxSizeOfDataDescriptor];
+            }
             int bytesToWrite = PrepareToWriteDataDescriptor(dataDescriptor);
             _archive.ArchiveStream.Write(dataDescriptor[..bytesToWrite]);
         }

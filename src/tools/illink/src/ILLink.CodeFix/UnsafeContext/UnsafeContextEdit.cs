@@ -64,10 +64,7 @@ namespace ILLink.CodeFix.UnsafeContext
         }
     }
 
-    /// <summary>
-    /// Converts an expression body (<c>=&gt; expr</c>) into a block body holding one unsafe block. Used when no wrapper
-    /// is valid, typically because the body must be a statement expression.
-    /// </summary>
+    /// <summary>Converts an expression body (<c>=&gt; expr</c>) into a block body holding one unsafe block.</summary>
     internal sealed class ExpressionBodyBlockEdit(SyntaxNode owner, ExpressionSyntax body, bool asStatement, string indentation) : UnsafeContextEdit
     {
         public override TextSpan Span => body.Span;
