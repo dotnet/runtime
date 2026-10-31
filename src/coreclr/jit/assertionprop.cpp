@@ -4833,7 +4833,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     }
 
     // Use non-null assertions for the address or its base, including across PHIs.
-    if (op2->IsIntegralConst(0) && varTypeIsI(op1) && optAssertionVNIsNonNull(op1VN, assertions))
+    if (op2->IsIntegralConst(0) && varTypeIsI(op1) &&
+        (optAssertionVNIsNonNull(op1VN, assertions) || optAssertionIsNonNull(op1, assertions)))
     {
         JITDUMP("Proved [%06u] non-null\n", dspTreeID(op1));
         newTree = gtWrapWithSideEffects(tree->OperIs(GT_EQ) ? gtNewFalse() : gtNewTrue(), tree, GTF_ALL_EFFECT);
@@ -5199,8 +5200,43 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
     // If local assertion prop use lcl comparison, else use VN comparison.
     if (!optLocalAssertionProp)
     {
-        ValueNum vn = vnStore->VNConservativeNormalValue(op->gtVNPair);
-        return optAssertionVNIsNonNull(vn, assertions);
+        // CSE can update the source of an SSA copy without updating the copy's
+        // VN. Consult each identity without changing VNs that existing expressions
+        // and assertions may still reference.
+        for (unsigned budget = 16; budget > 0; budget--)
+        {
+            ValueNumPair original = op->gtVNPair;
+            if (optAssertionVNIsNonNull(vnStore->VNConservativeNormalValue(original), assertions))
+            {
+                return true;
+            }
+
+            GenTreeLclVar* local  = op->AsLclVar();
+            LclVarDsc*     varDsc = lvaGetDesc(local);
+            if ((optCSEcount == 0) || !local->HasSsaName() || !original.BothDefined() ||
+                varTypeIsSmall(varDsc->TypeGet()) || varDsc->TypeIs(TYP_STRUCT) || !local->TypeIs(varDsc->TypeGet()))
+            {
+                break;
+            }
+
+            LclSsaVarDsc*        ssaDef = varDsc->GetPerSsaData(local->GetSsaNum());
+            GenTreeLclVarCommon* store  = ssaDef->GetDefNode();
+            if (!ssaDef->m_vnPair.BothDefined() || (ssaDef->m_vnPair.GetLiberal() != original.GetLiberal()) ||
+                (store == nullptr) || !store->OperIs(GT_STORE_LCL_VAR) || (store->GetLclNum() != local->GetLclNum()) ||
+                ((store->gtFlags & GTF_VAR_USEASG) != 0))
+            {
+                break;
+            }
+
+            GenTree* value = store->Data()->gtEffectiveVal();
+            if (!value->OperIs(GT_LCL_VAR) || !value->TypeIs(local->TypeGet()) || !value->AsLclVar()->HasSsaName() ||
+                !value->gtVNPair.BothDefined() || (value->gtVNPair.GetLiberal() != original.GetLiberal()))
+            {
+                break;
+            }
+            op = value;
+        }
+        return false;
     }
     else
     {
