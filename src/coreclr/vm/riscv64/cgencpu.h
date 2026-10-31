@@ -287,14 +287,22 @@ inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target
     // We require 8-byte alignment so the LD instruction is aligned properly
     _ASSERTE(((UINT_PTR)pCode & 7) == 0);
 
-    // auipc ra, 0
-    // ld    ra, ra, 16
-    // jalr  x0, ra, 0
+    // The stub sits between a call and its target, so it may only use a register that
+    // neither side expects to survive the call. The link register is not one: a call
+    // arrives here with ra holding the return address, and a tail jump with ra holding
+    // the caller's return address. Of the temporaries, t0/t1 carry the profiler enter
+    // arguments, t2 the secret stub parameter and the dispatch token, t3/t4 the write
+    // barrier arguments and t5 the indirection cell. t6 (REG_OPT_RSVD in the JIT) carries
+    // nothing across a call, and the write barrier already declares it trashed.
+
+    // auipc t6, 0
+    // ld    t6, 16(t6)
+    // jalr  x0, t6, 0
     // nop    //padding.
 
-    pCode[0] = 0x00000097; // auipc ra, 0
-    pCode[1] = 0x0100b083; // ld    ra, 16(ra)
-    pCode[2] = 0x00008067; // jalr  x0, ra, 0
+    pCode[0] = 0x00000f97; // auipc t6, 0
+    pCode[1] = 0x010fbf83; // ld    t6, 16(t6)
+    pCode[2] = 0x000f8067; // jalr  x0, t6, 0
     pCode[3] = 0x00000013; // padding nop.
 
     // Ensure that the updated instructions get updated in the I-Cache
