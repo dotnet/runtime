@@ -7,20 +7,13 @@ namespace System.Reflection.Emit
 {
     internal sealed partial class ConstructorOnTypeBuilderInstantiation : ConstructorInfo
     {
-        #region Private Static Members
-        internal static ConstructorInfo GetConstructor(ConstructorInfo constructor, TypeBuilderInstantiation type)
-        {
-            return new ConstructorOnTypeBuilderInstantiation(constructor, type);
-        }
-        #endregion
-
         #region Private Data Members
-        internal ConstructorInfo _ctor;
-        private TypeBuilderInstantiation _type;
+        internal readonly ConstructorInfo _ctor;
+        private readonly Type _type;
         #endregion
 
         #region Constructor
-        internal ConstructorOnTypeBuilderInstantiation(ConstructorInfo constructor, TypeBuilderInstantiation type)
+        internal ConstructorOnTypeBuilderInstantiation(ConstructorInfo constructor, Type type)
         {
             _ctor = constructor;
             _type = type;

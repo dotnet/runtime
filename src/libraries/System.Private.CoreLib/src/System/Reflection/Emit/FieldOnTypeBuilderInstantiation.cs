@@ -7,32 +7,13 @@ namespace System.Reflection.Emit
 {
     internal sealed partial class FieldOnTypeBuilderInstantiation : FieldInfo
     {
-        #region Private Static Members
-        internal static FieldInfo GetField(FieldInfo Field, TypeBuilderInstantiation type)
-        {
-            FieldInfo m;
-
-            if (type._hashtable.Contains(Field))
-            {
-                m = (type._hashtable[Field] as FieldInfo)!;
-            }
-            else
-            {
-                m = new FieldOnTypeBuilderInstantiation(Field, type);
-                type._hashtable[Field] = m;
-            }
-
-            return m;
-        }
-        #endregion
-
         #region Private Data Members
-        private FieldInfo _field;
-        private TypeBuilderInstantiation _type;
+        private readonly FieldInfo _field;
+        private readonly Type _type;
         #endregion
 
         #region Constructor
-        internal FieldOnTypeBuilderInstantiation(FieldInfo field, TypeBuilderInstantiation type)
+        internal FieldOnTypeBuilderInstantiation(FieldInfo field, Type type)
         {
             _field = field;
             _type = type;

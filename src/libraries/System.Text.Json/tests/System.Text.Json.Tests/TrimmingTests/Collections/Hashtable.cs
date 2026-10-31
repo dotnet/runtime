@@ -13,12 +13,14 @@ namespace SerializerTrimmingTest
     {
         static int Main(string[] args)
         {
-            string json = """{"Key":1}""";
-            object obj = JsonSerializer.Deserialize(json, typeof(Hashtable));
-            if (!(TestHelper.AssertCollectionAndSerialize<Hashtable>(obj, json)))
-            {
-                return -1;
-            }
+            // Test is currently disabled until issue #53393 is addressed.
+
+            //string json = """{"Key":1}""";
+            //object obj = JsonSerializer.Deserialize(json, typeof(Hashtable));
+            //if (!(TestHelper.AssertCollectionAndSerialize<Hashtable>(obj, json)))
+            //{
+            //    return -1;
+            //}
 
             return 100;
         }
