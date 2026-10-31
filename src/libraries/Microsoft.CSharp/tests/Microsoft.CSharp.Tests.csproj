@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <MemorySafetyRulesVersion Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">2</MemorySafetyRulesVersion>
     <!--
     We wish to test operations that would result in
     "Operator '-' cannot be applied to operands of type 'ushort' and 'EnumArithmeticTests.UInt16Enum'"

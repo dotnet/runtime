@@ -76,7 +76,11 @@ namespace Microsoft.Win32.RegistryTests
         {
             const string valueName = "MyTestKey";
             string expectedValue = "%" + varName + "%" + @"\subdirectory\myfile.txt";
-            Helpers.SetEnvironmentVariable(varName, @"C:\UsedToBeCurrentDirectoryButAnythingWorks");
+            // SAFETY: To be audited
+            unsafe
+            {
+                Helpers.SetEnvironmentVariable(varName, @"C:\UsedToBeCurrentDirectoryButAnythingWorks");
+            }
             TestRegistryKey.SetValue(valueName, expectedValue, RegistryValueKind.ExpandString);
             Assert.Equal(expectedValue, TestRegistryKey.GetValue(valueName, string.Empty, RegistryValueOptions.DoNotExpandEnvironmentNames));
             TestRegistryKey.DeleteValue(valueName);

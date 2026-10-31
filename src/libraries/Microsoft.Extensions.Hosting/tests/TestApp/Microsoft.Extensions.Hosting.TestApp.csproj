@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <MemorySafetyRulesVersion Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">2</MemorySafetyRulesVersion>
     <EnableDefaultItems>true</EnableDefaultItems>
     <OutputType>Exe</OutputType>
   </PropertyGroup>

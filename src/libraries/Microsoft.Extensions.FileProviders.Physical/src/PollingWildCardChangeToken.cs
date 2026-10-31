@@ -186,8 +186,12 @@ namespace Microsoft.Extensions.FileProviders.Physical
 #if NET
         private static void ComputeHash(IncrementalHash sha256, string path, DateTime lastChangedUtc)
         {
-            sha256.AppendData(MemoryMarshal.AsBytes(path.AsSpan()));
-            sha256.AppendData(MemoryMarshal.AsBytes([lastChangedUtc]));
+            // SAFETY: To be audited
+            unsafe
+            {
+                sha256.AppendData(MemoryMarshal.AsBytes(path.AsSpan()));
+                sha256.AppendData(MemoryMarshal.AsBytes([lastChangedUtc]));
+            }
         }
 #else
         private void ComputeHash(IncrementalHash sha256, string path, DateTime lastChangedUtc)

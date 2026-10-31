@@ -14,20 +14,26 @@ internal static partial class Interop
             internal unsafe void* lpSecurityDescriptor;
             internal BOOL bInheritHandle;
 
-            internal static unsafe SECURITY_ATTRIBUTES Create() =>
+            internal static SECURITY_ATTRIBUTES Create() =>
                 new SECURITY_ATTRIBUTES
                 {
                     nLength = (uint)sizeof(SECURITY_ATTRIBUTES)
                 };
 
-            internal static unsafe SECURITY_ATTRIBUTES Create(void* securityDescriptor) =>
-                new SECURITY_ATTRIBUTES
+            internal static unsafe SECURITY_ATTRIBUTES Create(void* securityDescriptor)
+            {
+                // SAFETY: To be audited
+                unsafe
                 {
-                    nLength = (uint)sizeof(SECURITY_ATTRIBUTES),
-                    lpSecurityDescriptor = securityDescriptor
-                };
+                    return new SECURITY_ATTRIBUTES
+                    {
+                        nLength = (uint)sizeof(SECURITY_ATTRIBUTES),
+                        lpSecurityDescriptor = securityDescriptor
+                    };
+                }
+            }
 
-            internal static unsafe SECURITY_ATTRIBUTES Create(bool inheritable) =>
+            internal static SECURITY_ATTRIBUTES Create(bool inheritable) =>
                 new SECURITY_ATTRIBUTES
                 {
                     nLength = (uint)sizeof(SECURITY_ATTRIBUTES),

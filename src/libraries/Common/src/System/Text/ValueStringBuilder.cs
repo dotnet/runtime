@@ -72,7 +72,11 @@ namespace System.Text
         /// </summary>
         public ref char GetPinnableReference()
         {
-            return ref MemoryMarshal.GetReference(_chars);
+            // SAFETY: To be audited
+            unsafe
+            {
+                return ref MemoryMarshal.GetReference(_chars);
+            }
         }
 
         public ref char this[int index]
