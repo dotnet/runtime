@@ -70,16 +70,23 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.InteropServices", "GuidAttribute"))
                 {
                     CustomAttribute ca = cah.GetCustomAttribute(_reader);
-                    HandleCollection.Enumerator fahEnumerator = ca.FixedArguments.GetEnumerator();
-                    if (!fahEnumerator.MoveNext())
-                        continue;
-                    Handle guidStringArgumentHandle = fahEnumerator.Current;
-                    if (fahEnumerator.MoveNext())
-                        continue;
-                    if (guidStringArgumentHandle.HandleType != HandleType.ConstantStringValue)
+                    MethodSignature signature = ca.Constructor.HandleType == HandleType.QualifiedMethod
+                        ? ca.Constructor.ToQualifiedMethodHandle(_reader).GetQualifiedMethod(_reader)
+                            .Method.GetMethod(_reader).Signature.GetMethodSignature(_reader)
+                        : ca.Constructor.ToMemberReferenceHandle(_reader).GetMemberReference(_reader)
+                            .Signature.ParseMethodSignature(_reader);
+                    if (signature.Parameters.Count != 1)
                         continue;
 
-                    ConstantStringValueHandle constantStringValueHandle = guidStringArgumentHandle.ToConstantStringValueHandle(_reader);
+                    HandleCollection.Enumerator parameters = signature.Parameters.GetEnumerator();
+                    parameters.MoveNext();
+                    if (parameters.Current.Resolve(_reader, default).ToType() != typeof(string))
+                        continue;
+
+                    BlobReader blob = new BlobReader(ca.Blob.AsSpan());
+                    ConstantStringValueHandle constantStringValueHandle = blob.ReadStringHandle();
+                    if (constantStringValueHandle.IsNil)
+                        continue;
 
                     // Parse a 'Guid' directly from the encoded UTF8 buffer, instead of round-tripping through a 'string'
                     return Guid.Parse(_reader.ReadStringAsBytes(constantStringValueHandle));
@@ -234,18 +241,15 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 if (0 != (field.Flags & FieldAttributes.Static))
                 {
                     unsortedNames[i] = field.Name.GetString(_reader);
-                    Handle handle = field.DefaultValue;
-                    unsortedValues[i] = handle.HandleType switch
+                    Constant constant = field.DefaultValue.GetConstant(_reader);
+                    BlobReader blob = new BlobReader(constant.Blob.AsSpan());
+                    unsortedValues[i] = constant.TypeCode switch
                     {
-                        HandleType.ConstantSByteValue => (object)(byte)handle.ToConstantSByteValueHandle(_reader).GetConstantSByteValue(_reader).Value,
-                        HandleType.ConstantByteValue => handle.ToConstantByteValueHandle(_reader).GetConstantByteValue(_reader).Value,
-                        HandleType.ConstantInt16Value => (ushort)handle.ToConstantInt16ValueHandle(_reader).GetConstantInt16Value(_reader).Value,
-                        HandleType.ConstantUInt16Value => handle.ToConstantUInt16ValueHandle(_reader).GetConstantUInt16Value(_reader).Value,
-                        HandleType.ConstantInt32Value => (uint)handle.ToConstantInt32ValueHandle(_reader).GetConstantInt32Value(_reader).Value,
-                        HandleType.ConstantUInt32Value => handle.ToConstantUInt32ValueHandle(_reader).GetConstantUInt32Value(_reader).Value,
-                        HandleType.ConstantInt64Value => (ulong)handle.ToConstantInt64ValueHandle(_reader).GetConstantInt64Value(_reader).Value,
-                        HandleType.ConstantUInt64Value => handle.ToConstantUInt64ValueHandle(_reader).GetConstantUInt64Value(_reader).Value,
-                        _ => throw new InvalidOperationException(),
+                        ConstantTypeCode.SByte or ConstantTypeCode.Byte => (object)blob.ReadByte(),
+                        ConstantTypeCode.Int16 or ConstantTypeCode.UInt16 => blob.ReadUInt16(),
+                        ConstantTypeCode.Int32 or ConstantTypeCode.UInt32 => blob.ReadUInt32(),
+                        ConstantTypeCode.Int64 or ConstantTypeCode.UInt64 => blob.ReadUInt64(),
+                        _ => throw new UnreachableException(),
                     };
                     i++;
                 }
