@@ -3,19 +3,18 @@
 
 using System.Collections;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that the serializer's warm up routine for (de)serializing Hashtable is trimming-safe.
+    /// Tests that source generated metadata for (de)serializing Hashtable is trimming-safe.
     /// </summary>
     internal class Program
     {
         static int Main(string[] args)
         {
-            string json = """{"Key":1}""";
-            object obj = JsonSerializer.Deserialize(json, typeof(Hashtable));
-            if (!(TestHelper.AssertCollectionAndSerialize<Hashtable>(obj, json)))
+            if (!TestHelper.RoundtripCollection("""{"Key":1}""", typeof(Hashtable), Context.Default))
             {
                 return -1;
             }
@@ -23,4 +22,8 @@ namespace SerializerTrimmingTest
             return 100;
         }
     }
+
+    [JsonSerializable(typeof(Hashtable))]
+    [JsonSerializable(typeof(JsonElement))]
+    internal partial class Context : JsonSerializerContext;
 }
