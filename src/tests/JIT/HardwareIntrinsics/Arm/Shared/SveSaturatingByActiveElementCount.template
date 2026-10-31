@@ -77,7 +77,7 @@ namespace {Namespace}
             public DataTable({Op2BaseType}[] inArray2, int alignment)
             {
                 int sizeOfinArray2 = inArray2.Length * sizeof({Op2BaseType});
-                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray2)
+                if (!int.IsPow2(alignment) || (alignment * 2) < sizeOfinArray2)
                 {
                     throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray2: {sizeOfinArray2}");
                 }
@@ -128,7 +128,7 @@ namespace {Namespace}
             }
         }
 
-        private static readonly int LargestVectorSize = {LargestVectorSize};
+        private static readonly int LargestVectorSize = Math.Max({LargestVectorSize}, (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count));
 
         private static readonly int Op2ElementCount = sizeof({Op2VectorType}<{Op2BaseType}>) / sizeof({Op2BaseType});
 

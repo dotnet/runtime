@@ -97,7 +97,7 @@ namespace {Namespace}._{Isa}
                 int sizeOfoutArray = outArray.Length * sizeof({RetBaseType});
                 int sizeOfmaskArray = maskArray.Length * sizeof({Op1BaseType});
 
-                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray || (alignment * 2) < sizeOfmaskArray)
+                if (!int.IsPow2(alignment) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray || (alignment * 2) < sizeOfmaskArray)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }
@@ -262,7 +262,7 @@ namespace {Namespace}._{Isa}
             ValidateConditionalSelectResult_FalseValue(mask, op1, op2, trueOp, _dataTable.outArrayPtr);
         }
 
-        private static readonly int LargestVectorSize = 64;
+        private static readonly int LargestVectorSize = Math.Max(64, (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count));
 
         private static readonly int Op1ElementCount  = sizeof(Vector<{Op1BaseType}>) / sizeof({Op1BaseType});
         private static readonly int Op2ElementCount  = sizeof(Vector<{Op2BaseType}>) / sizeof({Op2BaseType});
