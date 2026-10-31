@@ -1032,11 +1032,14 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         return false;
     }
 
-    // Ensure there are no additional side effects.
-    if ((cond1->gtFlags & GTF_OBS_EFFECT) != 0 || (cond2->gtFlags & GTF_OBS_EFFECT) != 0)
+    // The second condition will be evaluated unconditionally. The first already
+    // executes on every path, so its operands can be evaluated before the chain.
+    if ((cond2->gtFlags & GTF_OBS_EFFECT) != 0)
     {
         return false;
     }
+
+    bool splitFirst = (cond1->gtFlags & GTF_OBS_EFFECT) != 0;
 
     // Integer compares only for now (until support for Arm64 fccmp instruction is added)
     if (varTypeIsFloating(cond1->gtGetOp1()) || varTypeIsFloating(cond2->gtGetOp1()))
@@ -1066,13 +1069,33 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         int maxOp1Cost = op1IsCondChain ? 31 : 7;
         int maxOp2Cost = op2IsCondChain ? 31 : 7;
 
-        // Cost to allow for chain size of three.
-        if (op1Cost > maxOp1Cost || op2Cost > maxOp2Cost)
+        // Cost to allow for chain size of three. If we split the first condition,
+        // its operand work stays outside the chain and executes as before.
+        if ((!splitFirst && (op1Cost > maxOp1Cost)) || (op2Cost > maxOp2Cost))
         {
             JITDUMP("Skipping CompareChainCond that will evaluate conditions unconditionally at costs %d,%d\n", op1Cost,
                     op2Cost);
             return false;
         }
+    }
+
+    if (splitFirst)
+    {
+        // In particular, CSE can embed a definition in the first comparison.
+        // Split its operands in execution order, preserving their effects while
+        // leaving a pure comparison that can participate in the chain.
+        Statement* firstNewStmt;
+        GenTree**  splitUse;
+        m_compiler->gtSplitTree(m_b1, s1, cond1, &firstNewStmt, &splitUse);
+        m_compiler->gtUpdateStmtSideEffects(s1);
+        for (Statement* stmt = firstNewStmt; (stmt != nullptr) && (stmt != s1); stmt = stmt->GetNextStmt())
+        {
+            m_compiler->gtSetStmtInfo(stmt);
+            m_compiler->fgSetStmtSeq(stmt);
+        }
+        m_compiler->gtSetStmtInfo(s1);
+        m_compiler->fgSetStmtSeq(s1);
+        assert((cond1->gtFlags & GTF_OBS_EFFECT) == 0);
     }
 
     // Remove the first JTRUE statement.
