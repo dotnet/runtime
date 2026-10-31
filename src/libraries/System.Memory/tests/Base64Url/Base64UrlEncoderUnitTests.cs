@@ -338,5 +338,481 @@ namespace System.Buffers.Text.Tests
                 Assert.Equal(expectedText.Substring(0, 4), encodedText);
             }
         }
+
+#if NET
+        private static readonly Base64UrlFormattingOptions[] s_invalidOptions =
+        {
+            (Base64UrlFormattingOptions)1, // reserved
+            (Base64UrlFormattingOptions)3,
+            (Base64UrlFormattingOptions)4,
+            (Base64UrlFormattingOptions)(-1),
+            (Base64UrlFormattingOptions)int.MinValue,
+        };
+
+        private static byte[] SequentialBytes(int numBytes)
+        {
+            byte[] source = new byte[numBytes];
+            for (int i = 0; i < numBytes; i++)
+            {
+                source[i] = (byte)(i + 1);
+            }
+
+            return source;
+        }
+
+        private static string PaddedReference(byte[] source) =>
+            Convert.ToBase64String(source).Replace('+', '-').Replace('/', '_');
+
+        [Fact]
+        public void GetEncodedLengthWithPadding()
+        {
+            int[]    input = { 0, 1, 2, 3, 4, 5, 6, 1610612728, 1610612729, 1610612730, 1610612731, 1610612732, 1610612733 };
+            int[] expected = { 0, 4, 4, 4, 8, 8, 8, 2147483640, 2147483640, 2147483640, 2147483644, 2147483644, 2147483644 };
+            for (int i = 0; i < input.Length; i++)
+            {
+                Assert.Equal(expected[i], Base64Url.GetEncodedLength(input[i], Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(Base64Url.GetEncodedLength(input[i]), Base64Url.GetEncodedLength(input[i], Base64UrlFormattingOptions.None));
+            }
+
+            // integer overflow
+            Assert.Throws<ArgumentOutOfRangeException>(() => Base64Url.GetEncodedLength(1610612734, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Base64Url.GetEncodedLength(int.MaxValue, Base64UrlFormattingOptions.IncludePadding));
+
+            // negative input
+            Assert.Throws<ArgumentOutOfRangeException>(() => Base64Url.GetEncodedLength(-1, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Base64Url.GetEncodedLength(int.MinValue, Base64UrlFormattingOptions.IncludePadding));
+        }
+
+        [Fact]
+        public void InvalidOptionsThrow()
+        {
+            foreach (Base64UrlFormattingOptions options in s_invalidOptions)
+            {
+                AssertInvalidOptions(() => Base64Url.GetEncodedLength(3, options));
+                AssertInvalidOptions(() => Base64Url.EncodeToString(new byte[3], options));
+                AssertInvalidOptions(() => Base64Url.EncodeToUtf8(new byte[3], options));
+                AssertInvalidOptions(() => Base64Url.EncodeToChars(new byte[3], options));
+                AssertInvalidOptions(() => Base64Url.EncodeToUtf8(new byte[3], new byte[4], options));
+                AssertInvalidOptions(() => Base64Url.EncodeToChars(new byte[3], new char[4], options));
+                AssertInvalidOptions(() => Base64Url.TryEncodeToUtf8(new byte[3], new byte[4], out _, options));
+                AssertInvalidOptions(() => Base64Url.TryEncodeToChars(new byte[3], new char[4], out _, options));
+                AssertInvalidOptions(() => Base64Url.TryEncodeToUtf8InPlace(new byte[4], 3, out _, options));
+                AssertInvalidOptions(() => Base64Url.EncodeToUtf8(new byte[3], new byte[4], out _, out _, options));
+                AssertInvalidOptions(() => Base64Url.EncodeToChars(new byte[3], new char[4], out _, out _, options));
+                AssertInvalidOptions(() => Base64Url.EncodeToUtf8(new byte[3], new byte[4], out _, out _, options, isFinalBlock: false));
+                AssertInvalidOptions(() => Base64Url.EncodeToChars(new byte[3], new char[4], out _, out _, options, isFinalBlock: false));
+
+                // Validation happens before the empty-input fast path.
+                AssertInvalidOptions(() => Base64Url.EncodeToString(Array.Empty<byte>(), options));
+                AssertInvalidOptions(() => Base64Url.EncodeToUtf8(Array.Empty<byte>(), Array.Empty<byte>(), out _, out _, options));
+                AssertInvalidOptions(() => Base64Url.TryEncodeToUtf8InPlace(Array.Empty<byte>(), 0, out _, options));
+            }
+
+            static void AssertInvalidOptions(Action action)
+            {
+                ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(action);
+                Assert.Equal("options", ex.ParamName);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, "")]
+        [InlineData(1, "AQ==")]
+        [InlineData(2, "AQI=")]
+        [InlineData(3, "AQID")]
+        [InlineData(4, "AQIDBA==")]
+        [InlineData(5, "AQIDBAU=")]
+        [InlineData(6, "AQIDBAUG")]
+        [InlineData(7, "AQIDBAUGBw==")]
+        public void EncodeWithPaddingKnownInput(int numBytes, string expectedText)
+        {
+            byte[] source = SequentialBytes(numBytes);
+            byte[] expectedUtf8 = Encoding.ASCII.GetBytes(expectedText);
+            int expectedLength = expectedText.Length;
+
+            Assert.Equal(expectedLength, Base64Url.GetEncodedLength(numBytes, Base64UrlFormattingOptions.IncludePadding));
+
+            Assert.Equal(expectedText, Base64Url.EncodeToString(source, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(expectedUtf8, Base64Url.EncodeToUtf8(source, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(expectedText.ToCharArray(), Base64Url.EncodeToChars(source, Base64UrlFormattingOptions.IncludePadding));
+
+            byte[] utf8 = new byte[expectedLength];
+            Assert.Equal(expectedLength, Base64Url.EncodeToUtf8(source, utf8, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(expectedUtf8, utf8);
+
+            char[] chars = new char[expectedLength];
+            Assert.Equal(expectedLength, Base64Url.EncodeToChars(source, chars, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(expectedText, new string(chars));
+
+            utf8 = new byte[expectedLength];
+            Assert.True(Base64Url.TryEncodeToUtf8(source, utf8, out int written, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(expectedLength, written);
+            Assert.Equal(expectedUtf8, utf8);
+
+            chars = new char[expectedLength];
+            Assert.True(Base64Url.TryEncodeToChars(source, chars, out written, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(expectedLength, written);
+            Assert.Equal(expectedText, new string(chars));
+
+            utf8 = new byte[expectedLength];
+            Assert.Equal(OperationStatus.Done, Base64Url.EncodeToUtf8(source, utf8, out int consumed, out written, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(numBytes, consumed);
+            Assert.Equal(expectedLength, written);
+            Assert.Equal(expectedUtf8, utf8);
+
+            chars = new char[expectedLength];
+            Assert.Equal(OperationStatus.Done, Base64Url.EncodeToChars(source, chars, out consumed, out written, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(numBytes, consumed);
+            Assert.Equal(expectedLength, written);
+            Assert.Equal(expectedText, new string(chars));
+
+            byte[] buffer = new byte[expectedLength];
+            source.CopyTo(buffer, 0);
+            Assert.True(Base64Url.TryEncodeToUtf8InPlace(buffer, numBytes, out written, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(expectedLength, written);
+            Assert.Equal(expectedUtf8, buffer);
+
+            // Padded output decodes back to the input.
+            Assert.Equal(source, Base64Url.DecodeFromUtf8(expectedUtf8));
+            Assert.Equal(source, Base64Url.DecodeFromChars(expectedText.AsSpan()));
+        }
+
+        [Fact]
+        public void EncodeWithPaddingSha256Digest()
+        {
+            // SHA-256("hello")
+            byte[] hash =
+            {
+                0x2c, 0xf2, 0x4d, 0xba, 0x5f, 0xb0, 0xa3, 0x0e, 0x26, 0xe8, 0x3b, 0x2a, 0xc5, 0xb9, 0xe2, 0x9e,
+                0x1b, 0x16, 0x1e, 0x5c, 0x1f, 0xa7, 0x42, 0x5e, 0x73, 0x04, 0x33, 0x62, 0x93, 0x8b, 0x98, 0x24,
+            };
+
+            Assert.Equal("LPJNul-wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ=", Base64Url.EncodeToString(hash, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal("LPJNul-wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ", Base64Url.EncodeToString(hash, Base64UrlFormattingOptions.None));
+            Assert.Equal("LPJNul-wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ", Base64Url.EncodeToString(hash));
+        }
+
+        [Fact]
+        public void EncodeWithPaddingMatchesConvert()
+        {
+            // Lengths through 300 cover the scalar tail after every vectorized path (Vector128, AVX2, AVX-512).
+            for (int numBytes = 0; numBytes <= 300; numBytes++)
+            {
+                byte[] source = new byte[numBytes];
+                Base64TestHelper.InitializeBytes(source, numBytes);
+                AssertMatchesConvert(source);
+            }
+
+            var rnd = new Random(42);
+            for (int i = 0; i < 10; i++)
+            {
+                byte[] source = new byte[rnd.Next(1000, 1000 * 1000)];
+                Base64TestHelper.InitializeBytes(source, i);
+                AssertMatchesConvert(source);
+            }
+
+            static void AssertMatchesConvert(byte[] source)
+            {
+                string expected = PaddedReference(source);
+
+                Assert.Equal(expected, Base64Url.EncodeToString(source, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(expected, Encoding.ASCII.GetString(Base64Url.EncodeToUtf8(source, Base64UrlFormattingOptions.IncludePadding)));
+                Assert.Equal(expected, new string(Base64Url.EncodeToChars(source, Base64UrlFormattingOptions.IncludePadding)));
+
+                byte[] buffer = new byte[Base64Url.GetEncodedLength(source.Length, Base64UrlFormattingOptions.IncludePadding)];
+                source.CopyTo(buffer, 0);
+                Assert.True(Base64Url.TryEncodeToUtf8InPlace(buffer, source.Length, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(buffer.Length, written);
+                Assert.Equal(expected, Encoding.ASCII.GetString(buffer));
+
+                Assert.Equal(expected.TrimEnd('='), Base64Url.EncodeToString(source, Base64UrlFormattingOptions.None));
+                Assert.Equal(Base64Url.EncodeToString(source), Base64Url.EncodeToString(source, Base64UrlFormattingOptions.None));
+
+                Assert.Equal(source, Base64Url.DecodeFromChars(expected.AsSpan()));
+            }
+        }
+
+        [Theory]
+        [InlineData(1, "", 0, 0)]
+        [InlineData(2, "", 0, 0)]
+        [InlineData(3, "AQID", 3, 4)]
+        [InlineData(4, "AQID", 3, 4)]
+        [InlineData(5, "AQID", 3, 4)]
+        [InlineData(6, "AQIDBAUG", 6, 8)]
+        [InlineData(7, "AQIDBAUG", 6, 8)]
+        public void EncodeWithPaddingFinalBlockFalseWritesNoPadding(int numBytes, string expectedText, int expectedConsumed, int expectedWritten)
+        {
+            byte[] source = SequentialBytes(numBytes);
+            OperationStatus expectedStatus = numBytes % 3 == 0 ? OperationStatus.Done : OperationStatus.NeedMoreData;
+
+            byte[] utf8 = new byte[Base64Url.GetEncodedLength(numBytes, Base64UrlFormattingOptions.IncludePadding)];
+            Assert.Equal(expectedStatus, Base64Url.EncodeToUtf8(source, utf8, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding, isFinalBlock: false));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, written);
+            Assert.Equal(expectedText, Encoding.ASCII.GetString(utf8, 0, written));
+
+            char[] chars = new char[utf8.Length];
+            Assert.Equal(expectedStatus, Base64Url.EncodeToChars(source, chars, out consumed, out written, Base64UrlFormattingOptions.IncludePadding, isFinalBlock: false));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, written);
+            Assert.Equal(expectedText, new string(chars, 0, written));
+
+            // Finishing with isFinalBlock: true pads the remainder.
+            string expectedTail = PaddedReference(source).Substring(expectedWritten);
+            Assert.Equal(OperationStatus.Done, Base64Url.EncodeToUtf8(source.AsSpan(consumed), utf8.AsSpan(written), out consumed, out written, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(numBytes - expectedConsumed, consumed);
+            Assert.Equal(expectedTail.Length, written);
+            Assert.Equal(PaddedReference(source), Encoding.ASCII.GetString(utf8));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(100)]
+        public void EncodeWithPaddingFinalBlockFalseIgnoresPaddingInSizing(int numBytes)
+        {
+            // With isFinalBlock: false the option has no effect, so a destination sized for the
+            // unpadded output must get the same status and counts as the unpadded overload.
+            byte[] source = SequentialBytes(numBytes);
+            int unpaddedLength = Base64Url.GetEncodedLength(numBytes);
+            Assert.True(unpaddedLength < Base64Url.GetEncodedLength(numBytes, Base64UrlFormattingOptions.IncludePadding));
+
+            byte[] expectedUtf8 = new byte[unpaddedLength];
+            OperationStatus expectedStatus = Base64Url.EncodeToUtf8(source, expectedUtf8, out int expectedConsumed, out int expectedWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.NeedMoreData, expectedStatus);
+
+            byte[] utf8 = new byte[unpaddedLength];
+            Assert.Equal(expectedStatus, Base64Url.EncodeToUtf8(source, utf8, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding, isFinalBlock: false));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, written);
+            Assert.Equal(expectedUtf8, utf8);
+
+            char[] chars = new char[unpaddedLength];
+            Assert.Equal(expectedStatus, Base64Url.EncodeToChars(source, chars, out consumed, out written, Base64UrlFormattingOptions.IncludePadding, isFinalBlock: false));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, written);
+            Assert.Equal(Encoding.ASCII.GetString(expectedUtf8, 0, expectedWritten), new string(chars, 0, written));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(7)]
+        [InlineData(8)]
+        public void EncodeWithPaddingDestinationTooSmall(int numBytes)
+        {
+            byte[] source = SequentialBytes(numBytes);
+            int paddedLength = Base64Url.GetEncodedLength(numBytes, Base64UrlFormattingOptions.IncludePadding);
+            int unpaddedLength = Base64Url.GetEncodedLength(numBytes);
+            Assert.True(unpaddedLength < paddedLength);
+
+            // Enough room for the unpadded output, but not for the padding.
+            int expectedConsumed = numBytes / 3 * 3;
+            int expectedWritten = numBytes / 3 * 4;
+
+            byte[] utf8 = new byte[paddedLength - 1];
+            Assert.Equal(OperationStatus.DestinationTooSmall, Base64Url.EncodeToUtf8(source, utf8, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, written);
+
+            char[] chars = new char[paddedLength - 1];
+            Assert.Equal(OperationStatus.DestinationTooSmall, Base64Url.EncodeToChars(source, chars, out consumed, out written, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, written);
+
+            Assert.False(Base64Url.TryEncodeToUtf8(source, new byte[paddedLength - 1], out written, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(expectedWritten, written);
+            Assert.False(Base64Url.TryEncodeToChars(source, new char[paddedLength - 1], out written, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(expectedWritten, written);
+
+            Assert.Throws<ArgumentException>(() => Base64Url.EncodeToUtf8(source, new byte[paddedLength - 1], Base64UrlFormattingOptions.IncludePadding));
+            Assert.Throws<ArgumentException>(() => Base64Url.EncodeToChars(source, new char[paddedLength - 1], Base64UrlFormattingOptions.IncludePadding));
+
+            byte[] buffer = new byte[paddedLength - 1];
+            source.CopyTo(buffer, 0);
+            Assert.False(Base64Url.TryEncodeToUtf8InPlace(buffer, numBytes, out written, Base64UrlFormattingOptions.IncludePadding));
+            Assert.Equal(0, written);
+
+            // The same destination is large enough without padding.
+            Assert.True(Base64Url.TryEncodeToUtf8(source, new byte[paddedLength - 1], out written, Base64UrlFormattingOptions.None));
+            Assert.Equal(unpaddedLength, written);
+        }
+
+        [Fact]
+        public void TryEncodeInPlaceWithPadding()
+        {
+            const int numberOfBytes = 15;
+            Span<byte> testBytes = new byte[numberOfBytes / 3 * 4]; // slack since encoding inflates the data
+            Base64TestHelper.InitializeBytes(testBytes);
+
+            for (int numberOfBytesToTest = 0; numberOfBytesToTest <= numberOfBytes; numberOfBytesToTest++)
+            {
+                string expectedText = PaddedReference(testBytes.Slice(0, numberOfBytesToTest).ToArray());
+
+                Assert.True(Base64Url.TryEncodeToUtf8InPlace(testBytes, numberOfBytesToTest, out int bytesWritten, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(Base64Url.GetEncodedLength(numberOfBytesToTest, Base64UrlFormattingOptions.IncludePadding), bytesWritten);
+
+                string encodedText = Encoding.ASCII.GetString(testBytes.Slice(0, bytesWritten).ToArray());
+                Assert.Equal(expectedText, encodedText);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void EncodingOutputTooSmallWithPadding(bool isFinalBlock)
+        {
+            for (int numBytes = 4; numBytes < 20; numBytes++)
+            {
+                byte[] source = SequentialBytes(numBytes);
+                string expectedText = PaddedReference(source.AsSpan(0, 3).ToArray());
+
+                byte[] utf8 = new byte[4];
+                Assert.Equal(OperationStatus.DestinationTooSmall, Base64Url.EncodeToUtf8(source, utf8, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding, isFinalBlock));
+                Assert.Equal(3, consumed);
+                Assert.Equal(4, written);
+                Assert.Equal(expectedText, Encoding.ASCII.GetString(utf8));
+
+                char[] chars = new char[4];
+                Assert.Equal(OperationStatus.DestinationTooSmall, Base64Url.EncodeToChars(source, chars, out consumed, out written, Base64UrlFormattingOptions.IncludePadding, isFinalBlock));
+                Assert.Equal(3, consumed);
+                Assert.Equal(4, written);
+                Assert.Equal(expectedText, new string(chars));
+            }
+        }
+
+        [Theory]
+        [InlineData(750, true)]
+        [InlineData(750, false)]
+        [InlineData(751, true)]
+        [InlineData(752, true)]
+        public void EncodingOutputTooSmallRetryWithPadding(int numBytes, bool isFinalBlock)
+        {
+            byte[] source = SequentialBytes(numBytes);
+            string expectedText = PaddedReference(source);
+            int requiredSize = Base64Url.GetEncodedLength(numBytes, Base64UrlFormattingOptions.IncludePadding);
+            Assert.Equal(expectedText.Length, requiredSize);
+
+            const int outputSize = 320;
+            const int firstConsumed = outputSize / 4 * 3;
+
+            byte[] utf8 = new byte[outputSize];
+            Assert.Equal(OperationStatus.DestinationTooSmall, Base64Url.EncodeToUtf8(source, utf8, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding, isFinalBlock));
+            Assert.Equal(firstConsumed, consumed);
+            Assert.Equal(outputSize, written);
+            Assert.Equal(expectedText.Substring(0, outputSize), Encoding.ASCII.GetString(utf8));
+
+            byte[] utf8Rest = new byte[requiredSize - outputSize];
+            Assert.Equal(OperationStatus.Done, Base64Url.EncodeToUtf8(source.AsSpan(consumed), utf8Rest, out consumed, out written, Base64UrlFormattingOptions.IncludePadding, isFinalBlock));
+            Assert.Equal(numBytes - firstConsumed, consumed);
+            Assert.Equal(utf8Rest.Length, written);
+            Assert.Equal(expectedText.Substring(outputSize), Encoding.ASCII.GetString(utf8Rest));
+
+            char[] chars = new char[outputSize];
+            Assert.Equal(OperationStatus.DestinationTooSmall, Base64Url.EncodeToChars(source, chars, out consumed, out written, Base64UrlFormattingOptions.IncludePadding, isFinalBlock));
+            Assert.Equal(firstConsumed, consumed);
+            Assert.Equal(outputSize, written);
+            Assert.Equal(expectedText.Substring(0, outputSize), new string(chars));
+
+            char[] charsRest = new char[requiredSize - outputSize];
+            Assert.Equal(OperationStatus.Done, Base64Url.EncodeToChars(source.AsSpan(consumed), charsRest, out consumed, out written, Base64UrlFormattingOptions.IncludePadding, isFinalBlock));
+            Assert.Equal(numBytes - firstConsumed, consumed);
+            Assert.Equal(charsRest.Length, written);
+            Assert.Equal(expectedText.Substring(outputSize), new string(charsRest));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(15)]
+        [InlineData(16)]
+        [InlineData(17)]
+        [InlineData(31)]
+        [InlineData(32)]
+        [InlineData(33)]
+        [InlineData(47)]
+        [InlineData(48)]
+        [InlineData(49)]
+        [InlineData(63)]
+        [InlineData(64)]
+        [InlineData(65)]
+        [InlineData(95)]
+        [InlineData(96)]
+        [InlineData(97)]
+        public void EncodeWithPaddingGuardedBuffers(int numBytes)
+        {
+            // Source and destinations are followed by a poison page, so any read or write past the end
+            // of a span faults instead of going unnoticed. Lengths sit on the scalar and vector block
+            // boundaries (16, 32, 48 source bytes per iteration) with 0, 1 and 2 byte tails.
+            byte[] sourceBytes = SequentialBytes(numBytes);
+            string expectedText = PaddedReference(sourceBytes);
+            int paddedLength = expectedText.Length;
+
+            // A destination one element short only has room for whole blocks.
+            int shortWritten = (paddedLength - 1) / 4 * 4;
+            int shortConsumed = shortWritten / 4 * 3;
+            string shortText = expectedText.Substring(0, shortWritten);
+
+            using BoundedMemory<byte> sourceMemory = BoundedMemory.AllocateFromExistingData(sourceBytes);
+            sourceMemory.MakeReadonly();
+            ReadOnlySpan<byte> source = sourceMemory.Span;
+
+            using (BoundedMemory<byte> utf8 = BoundedMemory.Allocate<byte>(paddedLength))
+            {
+                Assert.Equal(OperationStatus.Done, Base64Url.EncodeToUtf8(source, utf8.Span, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(numBytes, consumed);
+                Assert.Equal(paddedLength, written);
+                Assert.Equal(expectedText, Encoding.ASCII.GetString(utf8.Span));
+            }
+
+            using (BoundedMemory<byte> utf8 = BoundedMemory.Allocate<byte>(paddedLength - 1))
+            {
+                Assert.Equal(OperationStatus.DestinationTooSmall, Base64Url.EncodeToUtf8(source, utf8.Span, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(shortConsumed, consumed);
+                Assert.Equal(shortWritten, written);
+                Assert.Equal(shortText, Encoding.ASCII.GetString(utf8.Span.Slice(0, written)));
+            }
+
+            using (BoundedMemory<char> chars = BoundedMemory.Allocate<char>(paddedLength))
+            {
+                Assert.Equal(OperationStatus.Done, Base64Url.EncodeToChars(source, chars.Span, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(numBytes, consumed);
+                Assert.Equal(paddedLength, written);
+                Assert.Equal(expectedText, new string(chars.Span));
+            }
+
+            using (BoundedMemory<char> chars = BoundedMemory.Allocate<char>(paddedLength - 1))
+            {
+                Assert.Equal(OperationStatus.DestinationTooSmall, Base64Url.EncodeToChars(source, chars.Span, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(shortConsumed, consumed);
+                Assert.Equal(shortWritten, written);
+                Assert.Equal(shortText, new string(chars.Span.Slice(0, written)));
+            }
+
+            using (BoundedMemory<byte> buffer = BoundedMemory.Allocate<byte>(paddedLength))
+            {
+                source.CopyTo(buffer.Span);
+                Assert.True(Base64Url.TryEncodeToUtf8InPlace(buffer.Span, numBytes, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(paddedLength, written);
+                Assert.Equal(expectedText, Encoding.ASCII.GetString(buffer.Span));
+            }
+
+            using (BoundedMemory<byte> buffer = BoundedMemory.Allocate<byte>(paddedLength - 1))
+            {
+                source.CopyTo(buffer.Span);
+                Assert.False(Base64Url.TryEncodeToUtf8InPlace(buffer.Span, numBytes, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(0, written);
+            }
+        }
+#endif
     }
 }
