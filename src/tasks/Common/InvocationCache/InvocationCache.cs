@@ -51,6 +51,14 @@ internal sealed partial class InvocationCache
         => TryExecuteCached(log, configuration, describeInvocation, executeNormally, out int exitCode)
             ? exitCode : executeNormally();
 
+    internal static int ExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
+        Func<InvocationCacheRequest?> prepareInvocation, Func<int> executeNormally)
+    {
+        InvocationCache? cache = TryCreateFromEnvironment(log, configuration);
+        InvocationCacheRequest? request = cache is null ? null : prepareInvocation();
+        return ExecutePrepared(cache, DateTime.UtcNow, request, executeNormally);
+    }
+
     private static bool TryExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
         Func<InvocationDescription?> describeInvocation, Func<int> executeNormally, out int exitCode)
     {

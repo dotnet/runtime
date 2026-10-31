@@ -176,6 +176,9 @@
   </Target>
 
   <Target Name="PrepareForAssembliesTrim">
+    <ItemGroup>
+      <_ILLinkSourceRoot Include="$(RepoRoot)" MappedPath="/_/" />
+    </ItemGroup>
     <!-- ILLink.Tasks arguments common to runs for both individual libraries and for the entire runtime pack -->
     <PropertyGroup>
       <_ILLinkHasCustomArgs Condition="'$(ILLinkArgs)' != ''">true</_ILLinkHasCustomArgs>
@@ -288,6 +291,7 @@
     </PropertyGroup>
 
     <ILLink AssemblyPaths="@(_ILLinkAssemblyToTrim)"
+            SourceRoots="@(_ILLinkSourceRoot)"
             RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             RootDescriptorFiles="@(_ILLinkRootDescriptors)"
             TrimMode="$(_ILLinkTrimMode)"
