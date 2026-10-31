@@ -469,6 +469,7 @@
     "PInvokeCalliFrame.VASigCookiePtr": "Pointer to the varargs signature cookie for the unmanaged call",
     "PInvokeMethodDesc.Size": "Base size for mcPInvoke classification",
     "PlatformMetadata.CodePointerFlags": "fields describing the behavior of target code pointers",
+    "PlatformMetadata.PointerAuthenticationMask": "Bits to clear from pointer-authenticated return addresses",
     "PlatformMetadata.PrecodeMachineDescriptor": "precode stub-related platform specific properties",
     "PortableEntryPoint.ActualCode": "Native code for the entrypoint; on WebAssembly R2R code this is a function-table index (only defined if `FeaturePortableEntrypoints` is enabled)",
     "PortableEntryPoint.Flags": "Portable entrypoint flags; `0x4` means the interpreter entrypoint is preferred over `ActualCode` (only defined if `FeaturePortableEntrypoints` is enabled)",

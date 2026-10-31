@@ -1371,6 +1371,7 @@ public unsafe class StackWalkTests
             .AddMockContract(Mock.Of<IGC>())
             .AddMockContract(Mock.Of<IGCInfo>())
             .AddMockContract(runtimeInfo)
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
         ContextHolder<X86Context> context = new()
         {
@@ -1608,8 +1609,10 @@ public unsafe class StackWalkTests
         Assert.NotEqual(0u, context.ContextFlags & (uint)RISCV64Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
     }
 
-    [Fact]
-    public void ARM64Unwind_SaveAnyPair_RestoresCallerContext()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ARM64Unwind_SaveAnyPair_RestoresCallerContext(bool hasPac)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
@@ -1623,6 +1626,7 @@ public unsafe class StackWalkTests
         const ulong SavedX19 = 0x1919_1919_1919_1919;
         const ulong SavedX20 = 0x2020_2020_2020_2020;
         const ulong ReturnAddress = 0x1234_5678_9abc_def0;
+        const ulong PacMask = 0xff7f_8000_0000_0000;
 
         Layout<MockRuntimeFunction> runtimeFunctionLayout = MockRuntimeFunction.CreateLayout(arch, includeEndAddress: false);
         byte[] runtimeFunctionData = new byte[runtimeFunctionLayout.Size];
@@ -1636,12 +1640,13 @@ public unsafe class StackWalkTests
             Name = "Runtime function",
         });
 
-        byte[] unwindData = new byte[2 * sizeof(uint)];
-        helpers.Write(unwindData.AsSpan(0, sizeof(uint)), 16u | (1u << 27));
+        byte[] unwindData = new byte[3 * sizeof(uint)];
+        helpers.Write(unwindData.AsSpan(0, sizeof(uint)), 16u | (2u << 27));
         unwindData[4] = 0xe7; // save_any
         unwindData[5] = 0x53; // p=1, x=0, r=19
         unwindData[6] = 0x00; // f=0, o=0
-        unwindData[7] = 0xe4; // end
+        unwindData[7] = hasPac ? (byte)0xfc : (byte)0xe4; // pac or end
+        unwindData[8] = 0xe4; // end
         targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
         {
             Address = ImageBase + XdataRva,
@@ -1672,6 +1677,7 @@ public unsafe class StackWalkTests
                 [DataType.RuntimeFunction] = TargetTestHelpers.CreateTypeInfo(runtimeFunctionLayout),
             })
             .AddMockContract(executionManager.Object)
+            .AddMockContract(Mock.Of<IPlatformMetadata>(m => m.GetPointerAuthenticationMask() == PacMask))
             .Build();
 
         ARM64Context context = new()
@@ -1688,7 +1694,9 @@ public unsafe class StackWalkTests
         Assert.Equal(SavedX19, context.X19);
         Assert.Equal(SavedX20, context.X20);
         Assert.Equal(CurrentSp, context.Sp);
-        Assert.Equal(ReturnAddress, context.Pc);
+        ulong expectedReturnAddress = hasPac ? ReturnAddress & ~PacMask : ReturnAddress;
+        Assert.Equal(expectedReturnAddress, context.Lr);
+        Assert.Equal(expectedReturnAddress, context.Pc);
         Assert.NotEqual(0u, context.ContextFlags & (uint)ARM64Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
     }
 
@@ -1836,6 +1844,7 @@ public unsafe class StackWalkTests
             // invoke ExecutionManager or GCInfo, so empty mocks satisfy construction.
             .AddMockContract(executionManager ?? Mock.Of<IExecutionManager>())
             .AddMockContract(Mock.Of<IGCInfo>())
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
     }
 

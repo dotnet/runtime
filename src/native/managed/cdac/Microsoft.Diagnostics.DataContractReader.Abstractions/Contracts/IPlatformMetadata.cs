@@ -8,7 +8,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public enum CodePointerFlags : byte
 {
     HasArm32ThumbBit = 0x1,
-    HasArm64PtrAuth = 0x2,
 }
 
 public interface IPlatformMetadata : IContract
@@ -16,6 +15,7 @@ public interface IPlatformMetadata : IContract
     static string IContract.Name { get; } = nameof(PlatformMetadata);
     TargetPointer GetPrecodeMachineDescriptor() => throw new NotImplementedException();
     CodePointerFlags GetCodePointerFlags() => throw new NotImplementedException();
+    ulong GetPointerAuthenticationMask() => throw new NotImplementedException();
 }
 
 public readonly struct PlatformMetadata : IPlatformMetadata
