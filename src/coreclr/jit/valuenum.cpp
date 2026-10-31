@@ -3039,8 +3039,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 //
 // Return Value:     - Returns the ValueNum associated with 'func'('arg0VN','arg1VN','arg2VN','arg3VN')
 //
-// Note:   Currently the only four operand funcs are VNF_PtrToArrElem and VNF_MapStore.
-//
 ValueNum ValueNumStore::VNForFunc(
     var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN, ValueNum arg3VN)
 {
@@ -7095,8 +7093,7 @@ var_types ValueNumStore::TypeOfVN(ValueNum vn) const
 }
 
 //------------------------------------------------------------------------
-// LoopOfVN: If the given value number is VNF_MemOpaque, VNF_MapStore, or
-//    VNF_MemoryPhiDef, return the loop where the memory update occurs,
+// LoopOfVN: If the given value number describes a memory update, return its loop,
 //    otherwise returns nullptr
 //
 // Arguments:
@@ -7130,6 +7127,10 @@ FlowGraphNaturalLoop* ValueNumStore::LoopOfVN(ValueNum vn)
             }
 
             return m_compiler->m_loops->GetLoopByIndex(index);
+        }
+        else if (funcApp.FuncIs(VNF_ByrefExposedStore))
+        {
+            return LoopOfVN(funcApp.GetArg(3));
         }
     }
     else if (GetMemoryPhiDef(vn, &memoryPhiDef))
@@ -12291,12 +12292,18 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         }
 #endif
 
+        fgVNChangedSideEffects = false;
         for (GenTree* const tree : stmt->TreeList())
         {
             // Set up ambient var referring to current tree.
             compCurTree = tree;
             fgValueNumberTree(tree);
             compCurTree = nullptr;
+        }
+
+        if (fgVNChangedSideEffects)
+        {
+            gtUpdateStmtSideEffects(stmt);
         }
 
 #ifdef DEBUG
@@ -12943,6 +12950,70 @@ void Compiler::fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree)
 }
 
 //------------------------------------------------------------------------
+// IsByrefStoreForwardingType: Can a store of this type to unknown memory be forwarded to a later load?
+//
+// Arguments:
+//    type - The store or load type
+//
+// Return Value:
+//    True for primitive types the target operates on as a single value.
+//
+static bool IsByrefStoreForwardingType(var_types type)
+{
+    switch (type)
+    {
+        case TYP_INT:
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return true;
+        case TYP_LONG:
+            return LOWER_DECOMPOSE_LONGS == 0;
+        default:
+            return false;
+    }
+}
+
+#ifdef TARGET_XARCH
+//------------------------------------------------------------------------
+// IsMemoryUpdateSource: Is this load the source of an in-place memory update?
+//
+// Arguments:
+//    load - The GT_IND being numbered
+//
+// Return Value:
+//    True if the load feeds an operator that has a memory-operand form
+//    (e.g. "add [mem], reg") whose result is stored back to the same address.
+//
+// Notes:
+//    Forwarding a previous store's value to such a load lets CSE keep that value
+//    in a register, which prevents lowering from using the memory-operand form.
+//
+static bool IsMemoryUpdateSource(GenTree* load)
+{
+    if (!varTypeIsIntegral(load))
+    {
+        return false;
+    }
+
+    GenTree* op    = load->gtGetParent(nullptr);
+    GenTree* store = (op != nullptr) ? op->gtGetParent(nullptr) : nullptr;
+    if ((store == nullptr) || !store->OperIs(GT_STOREIND) || (store->AsStoreInd()->Data() != op))
+    {
+        return false;
+    }
+
+    if (!op->OperIs(GT_NOT, GT_NEG) &&
+        (!op->OperIsBinary() || !op->OperIsRMWMemOp() || ((op->gtGetOp1() != load) && !op->OperIsCommutative())))
+    {
+        return false;
+    }
+
+    // The store's address may not be numbered yet, so match it the way lowering does.
+    return GenTree::Compare(store->AsStoreInd()->Addr(), load->AsIndir()->Addr());
+}
+#endif // TARGET_XARCH
+
+//------------------------------------------------------------------------
 // fgValueNumberStore: Does value numbering for a store.
 //
 // While this method does indeed give a VN to the store tree itself, its
@@ -13052,15 +13123,21 @@ void Compiler::fgValueNumberStore(GenTree* store)
             else
             {
                 assert(!store->HasAnyLocalDefs(this));
-                // If it doesn't define a local, then it might update GcHeap/ByrefExposed.
-                // For the new ByrefExposed VN, we could use an operator here like
-                // VNF_ByrefExposedStore that carries the VNs of the pointer and RHS, then
-                // at byref loads if the current ByrefExposed VN happens to be
-                // VNF_ByrefExposedStore with the same pointer VN, we could propagate the
-                // VN from the RHS to the VN for the load.  This would e.g. allow tracking
-                // values through stores to out params.  For now, just model this as an
-                // opaque GcHeap/ByrefExposed mutation.
-                fgMutateGcHeap(store DEBUGARG("assign-of-IND"));
+                if (byrefStatesMatchGcHeapStates && store->OperIs(GT_STOREIND) &&
+                    IsByrefStoreForwardingType(store->TypeGet()) && (value->TypeGet() == store->TypeGet()) &&
+                    !store->AsIndir()->IsVolatile() && !(addrIsVNFunc && funcApp.FuncIs(VNF_PtrToLoc)))
+                {
+                    // Keep the rest of memory opaque; only an exact, same-type load can reuse this value.
+                    ValueNum memoryVN =
+                        vnStore->VNForFunc(TYP_HEAP, VNF_ByrefExposedStore, vnStore->VNNormalValue(addrVN),
+                                           vnStore->VNNormalValue(addr->gtVNPair.GetConservative()),
+                                           valueVNPair.GetLiberal(), vnStore->VNForExpr(compCurBB, TYP_HEAP));
+                    recordGcHeapStore(store, memoryVN DEBUGARG("byref store"));
+                }
+                else
+                {
+                    fgMutateGcHeap(store DEBUGARG("assign-of-IND"));
+                }
             }
         }
         break;
@@ -13736,7 +13813,36 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 else // We don't know where the address points, so it is an ByrefExposed load.
                 {
                     ValueNum addrVN = addr->gtVNPair.GetLiberal();
-                    ValueNum loadVN = fgValueNumberByrefExposedLoad(typ, addrVN);
+                    ValueNum loadVN;
+                    if (IsByrefStoreForwardingType(typ) && vnStore->GetVNFunc(fgCurMemoryVN[ByrefExposed], &funcApp) &&
+                        funcApp.FuncIs(VNF_ByrefExposedStore) &&
+                        (funcApp.GetArg(0) == vnStore->VNNormalValue(addrVN)) &&
+                        (vnStore->TypeOfVN(funcApp.GetArg(2)) == typ)
+#ifdef TARGET_XARCH
+                        && !IsMemoryUpdateSource(tree)
+#endif
+                    )
+                    {
+                        loadVN = funcApp.GetArg(2);
+                        if (m_blockToLoop->GetLoop(compCurBB) != nullptr)
+                        {
+                            optRecordLoopMemoryDependence(tree, compCurBB, fgCurMemoryVN[ByrefExposed]);
+                        }
+
+                        // A nonfaulting proof must apply to the actual address, not just its liberal value.
+                        if (tree->IndirMayFault(this) && (funcApp.GetArg(1) == addrNvnp.GetConservative()))
+                        {
+                            tree->gtFlags |= GTF_IND_NONFAULTING;
+                            tree->SetIndirExceptionFlags(this);
+                            tree->SetHasOrderingSideEffect();
+                            fgVNChangedSideEffects = true;
+                        }
+                    }
+                    else
+                    {
+                        loadVN = fgValueNumberByrefExposedLoad(typ, addrVN);
+                    }
+
                     tree->gtVNPair.SetLiberal(loadVN);
                     tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                 }

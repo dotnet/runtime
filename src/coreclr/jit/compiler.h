@@ -6702,6 +6702,9 @@ public:
     // memory yields an unknown value.
     ValueNum fgCurMemoryVN[MemoryKindCount];
 
+    // Set when value numbering changes a node's side-effect flags in the current statement.
+    bool fgVNChangedSideEffects = false;
+
     // Return a "pseudo"-class handle for an array element type. If `elemType` is TYP_STRUCT,
     // `elemStructType` is the struct handle (it must be non-null and have a low-order zero bit).
     // Otherwise, `elemTyp` is encoded by left-shifting by 1 and setting the low-order bit to 1.
