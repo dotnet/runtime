@@ -4994,9 +4994,10 @@ namespace System.Threading.Tasks
         /// </summary>
         internal static void AddExceptionsForCompletedTask(ref List<Exception>? exceptions, Task t)
         {
-            AggregateException? ex = t.GetExceptions(true);
-            if (ex != null)
+            if (t.ExceptionRecorded)
             {
+                AggregateException ex = t.GetExceptions(true)!;
+
                 // make sure the task's exception observed status is set appropriately
                 // it's possible that WaitAll was called by the parent of an attached child,
                 // this will make sure it won't throw again in the implicit wait
@@ -5004,6 +5005,17 @@ namespace System.Threading.Tasks
 
                 exceptions ??= new List<Exception>(ex.InnerExceptionCount);
                 exceptions.AddRange(ex.InternalInnerExceptions);
+            }
+            else if (t.IsCanceled)
+            {
+                t.UpdateExceptionObservedStatus();
+
+                // Don't go through GetExceptions here: for a canceled task it allocates a
+                // TaskCanceledException, captures its stack trace, and wraps it in an
+                // AggregateException just to unwrap it again. With many canceled tasks
+                // (e.g. in WaitAll), the stack trace captures dominate memory usage.
+                exceptions ??= new List<Exception>();
+                exceptions.Add(new TaskCanceledException(t));
             }
         }
 
