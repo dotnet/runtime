@@ -249,7 +249,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                         ConstantTypeCode.Int16 or ConstantTypeCode.UInt16 => blob.ReadUInt16(),
                         ConstantTypeCode.Int32 or ConstantTypeCode.UInt32 => blob.ReadUInt32(),
                         ConstantTypeCode.Int64 or ConstantTypeCode.UInt64 => blob.ReadUInt64(),
-                        _ => throw new UnreachableException(),
+                        _ => throw new BadImageFormatException(),
                     };
                     i++;
                 }

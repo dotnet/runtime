@@ -134,7 +134,7 @@ namespace System.Reflection.Runtime.General
                 ConstantTypeCode.Double => blob.ReadDouble(),
                 ConstantTypeCode.String => blob.ReadStringHandle().GetString(reader),
                 ConstantTypeCode.NullReference => null,
-                _ => throw new UnreachableException()
+                _ => throw new BadImageFormatException()
             };
         }
 

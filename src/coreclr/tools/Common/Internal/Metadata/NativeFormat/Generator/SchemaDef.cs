@@ -234,6 +234,7 @@ internal sealed class SchemaDef
                 new MemberDef(name: "ContentTypeMask", value: "0x00000e00", comment: "Content type mask. Masked bits correspond to values of System.Reflection.AssemblyContentType"),
             }
         ),
+        // ConstantTypeCode - mirrors the System.Reflection.Metadata definition.
         new RecordDef(
             name: "ConstantTypeCode",
             baseTypeName: "byte",

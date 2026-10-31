@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace Internal.Metadata.NativeFormat;
 
+// Public surface mirrors a subset of System.Reflection.Metadata.BlobReader.
 internal ref struct BlobReader(ReadOnlySpan<byte> blob)
 {
     private readonly ReadOnlySpan<byte> _blob = blob;

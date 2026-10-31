@@ -335,7 +335,7 @@ namespace System.Reflection
                         }
                         break;
                     default:
-                        throw new UnreachableException();
+                        throw new BadImageFormatException();
                 }
 
                 return argument;
