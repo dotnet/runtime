@@ -309,6 +309,42 @@ namespace System.Reflection.Tests
             public static void Throw() => throw new Exception("Here");
         }
 
+        [Theory]
+        [InlineData(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.NoArgs), null)]
+        [InlineData(typeof(IStaticAbstractMethods<int>), nameof(IStaticAbstractMethods<int>.OneArg), new object[] { 42 })]
+        [InlineData(typeof(IStaticAbstractMethods<string>), nameof(IStaticAbstractMethods<string>.OneArg), new object[] { "abc" })]
+        [InlineData(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.SpanReturn), null)]
+        [InlineData(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.RefSpanReturn), null)]
+        public void Invoke_StaticAbstract_ThrowsMemberAccessException(Type type, string methodName, object?[]? parameters)
+        {
+            MethodInfo method = type.GetMethod(methodName)!;
+            MemberAccessException ex = Assert.Throws<MemberAccessException>(() => Invoke(method, null, parameters));
+            Assert.Contains($"{type}.{methodName}", ex.Message);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        public void Invoke_StaticAbstractGenericMethod_ThrowsMemberAccessException(Type typeArgument)
+        {
+            MethodInfo method = typeof(IStaticAbstractMethods).GetMethod(nameof(IStaticAbstractMethods.GenericNoArgs))!.MakeGenericMethod(typeArgument);
+            MemberAccessException ex = Assert.Throws<MemberAccessException>(() => Invoke(method, null, null));
+            Assert.Contains($"{typeof(IStaticAbstractMethods)}.{nameof(IStaticAbstractMethods.GenericNoArgs)}", ex.Message);
+        }
+
+        protected interface IStaticAbstractMethods
+        {
+            static abstract void NoArgs();
+            static abstract void GenericNoArgs<T>();
+            static abstract Span<int> SpanReturn();
+            static abstract ref Span<int> RefSpanReturn();
+        }
+
+        protected interface IStaticAbstractMethods<T>
+        {
+            static abstract T OneArg(T value);
+        }
+
         public static IEnumerable<object[]> PropertyTestData()
         {
             yield return new object[] { "Bool", TestClass.BoolValue };

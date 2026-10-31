@@ -29,6 +29,10 @@ namespace Internal.Reflection.Execution
             var tMethods = new MethodInfo[ifaceMethods.Length];
             for (int i = 0; i < ifaceMethods.Length; i++)
             {
+                // A static abstract method is not implemented through the instance type's virtual slots (https://github.com/dotnet/runtime/issues/89157)
+                if (ifaceMethods[i].IsStatic && ifaceMethods[i].IsAbstract)
+                    throw new NotSupportedException();
+
                 var invoker = (VirtualMethodInvoker)GetMethodInvoker(ifaceMethods[i]);
 
                 IntPtr classRtMethodHandle = invoker.ResolveTarget(instanceType.TypeHandle);
