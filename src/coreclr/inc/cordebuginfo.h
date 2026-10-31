@@ -299,6 +299,12 @@ public:
 
     };
 
+#ifdef TARGET_WASM
+    // WASM has no physical registers. A register field in a variable location holds a wasm
+    // local index biased past the reserved RegNum values above.
+    static constexpr uint32_t WASM_LOCAL_REGNUM_BASE = REGNUM_AMBIENT_SP + 1;
+#endif // TARGET_WASM
+
     // VarLoc describes the location of a native variable.  Note that currently, VLT_REG_BYREF and VLT_STK_BYREF
     // are only used for value types on X64.
     // [cDAC]: Mirrored in managed code (IDacDbiInterface.cs).
