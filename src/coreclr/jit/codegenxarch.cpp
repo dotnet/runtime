@@ -971,6 +971,18 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
 
+    if (treeNode->IsFunnelShift())
+    {
+        regNumber lo = op1->gtGetOp1()->GetRegNum();
+        regNumber hi = op2->gtGetOp1()->GetRegNum();
+        assert(targetReg != hi);
+        inst_Mov(targetType, targetReg, lo, /* canSkip */ true);
+        inst_RV_RV_IV(INS_shrd, emitTypeSize(targetType), targetReg, hi,
+                      static_cast<unsigned>(op1->gtGetOp2()->AsIntCon()->IconValue()));
+        genProduceReg(treeNode);
+        return;
+    }
+
     bool eligibleForNDD = false;
 
     // Commutative operations can mark op1 as contained or reg-optional to generate "op reg, memop/immed"
