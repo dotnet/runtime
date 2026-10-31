@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <!-- A PE TLS directory makes this library architecture-specific. -->
+    <IlasmFlags Condition="'$(TargetArchitecture)' == 'x64'">$(IlasmFlags) -PE64 -X64</IlasmFlags>
+    <IlasmFlags Condition="'$(TargetArchitecture)' == 'arm64'">$(IlasmFlags) -PE64 -ARM64</IlasmFlags>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TlsFieldLibrary.il" />
+  </ItemGroup>
+</Project>
