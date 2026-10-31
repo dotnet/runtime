@@ -101,7 +101,7 @@ typedef DPTR(class DebuggerMethodInfo) PTR_DebuggerMethodInfo;
 typedef VPTR(class DebuggerMethodInfoTable) PTR_DebuggerMethodInfoTable;
 typedef DPTR(class DebuggerJitInfo) PTR_DebuggerJitInfo;
 typedef DPTR(class DebuggerEval) PTR_DebuggerEval;
-typedef DPTR(struct DebuggerIPCControlBlock) PTR_DebuggerIPCControlBlock;
+typedef DPTR(struct DebuggerIPCControlBlock_2) PTR_DebuggerIPCControlBlock;
 
 
 /* ------------------------------------------------------------------------ *
@@ -802,7 +802,7 @@ public:
 
     void WatchForStragglers(void);
 
-    HRESULT SetupRuntimeOffsets(DebuggerIPCControlBlock *pDCB);
+    HRESULT SetupRuntimeOffsets(DebuggerIPCControlBlock_2 *pDCB);
 
     bool HandleRSEA();
     void MainLoop();
@@ -885,7 +885,7 @@ private:
     PTR_DebuggerIPCControlBlock     m_pDCB;
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_VM
-    // These buffers move here out of the DebuggerIPCControlBlock since the block is not shared memory when
+    // These buffers move here out of the DebuggerIPCControlBlock_2 since the block is not shared memory when
     // using the transport, but we do send its contents over the wire (and these buffers would greatly impact
     // the number of bytes sent without being useful in any way).
     BYTE                            m_receiveBuffer[CorDBIPC_BUFFER_SIZE];

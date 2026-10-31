@@ -204,10 +204,10 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
 #endif // TARGET_X86 || TARGET_ARM
 
 //
-// DebuggerIPCControlBlock describes the layout of the shared memory shared between the Left Side and the Right
+// DebuggerIPCControlBlock_2 describes the layout of the shared memory shared between the Left Side and the Right
 // Side. This includes error information, handles for the IPC channel, and space for the send/receive buffers.
 //
-struct MSLAYOUT DebuggerIPCControlBlock
+struct MSLAYOUT DebuggerIPCControlBlock_2
 {
     // Version data should be first in the control block to ensure that we can read it even if the control block
     // changes.
@@ -298,6 +298,30 @@ struct MSLAYOUT DebuggerIPCControlBlock
                 );
 
 };
+
+// Preserve the DebuggerIPCControlBlock_2 prefix.
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_DCBSize) == 0x0);
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_verMajor) == (sizeof(SIZE_T) == 8 ? 0x8 : 0x4));
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_verMinor) == (sizeof(SIZE_T) == 8 ? 0xc : 0x8));
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_checkedBuild) == (sizeof(SIZE_T) == 8 ? 0x10 : 0xc));
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_runtimeProtocol) == (sizeof(SIZE_T) == 8 ? 0x14 : 0x10));
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_runtimeProtocolMinSupported) == (sizeof(SIZE_T) == 8 ? 0x18 : 0x14));
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_debuggerProtocolCurrent) == (sizeof(SIZE_T) == 8 ? 0x1c : 0x18));
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_debuggerProtocolMinSupported) == (sizeof(SIZE_T) == 8 ? 0x20 : 0x1c));
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_errorHR) == (sizeof(SIZE_T) == 8 ? 0x24 : 0x20));
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_errorCode) == (sizeof(SIZE_T) == 8 ? 0x28 : 0x24));
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_rightSideEventAvailable) == (sizeof(SIZE_T) == 8 ? 0x30 : 0x28));
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_rightSideEventRead) == (sizeof(SIZE_T) == 8 ? 0x38 : 0x2c));
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_rightSideProcessHandle) == (sizeof(SIZE_T) == 8 ? 0x50 : 0x38));
+static_assert(offsetof(DebuggerIPCControlBlock_2, m_leftSideUnmanagedWaitEvent) == (sizeof(SIZE_T) == 8 ? 0x58 : 0x3c));
+
+#ifdef RIGHT_SIDE_COMPILE
+struct DebuggerIPCControlBlock
+{
+    UINT m_version;
+    DebuggerIPCControlBlock_2 m_dcb2 = {};
+};
+#endif // RIGHT_SIDE_COMPILE
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 

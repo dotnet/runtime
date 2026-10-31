@@ -20,7 +20,9 @@
 class RemoteEventChannel : public IEventChannel
 {
 public:
-    RemoteEventChannel(DebuggerIPCControlBlock * pDCBBuffer,
+    RemoteEventChannel(CORDB_ADDRESS pLeftSideDCB,
+                       DebuggerIPCControlBlock * pDCBBuffer,
+                       ICorDebugMutableDataTarget * pMutableDataTarget,
                        DbgTransportTarget *      pProxy,
                        DbgTransportSession *     pTransport);
 
@@ -35,19 +37,6 @@ public:
     // Delete the event channel and clean up all the resources it owns.  This function can only be called once.
     virtual void Delete();
 
-
-
-    // Update a single field with a value stored in the RS copy of the DCB.
-    virtual HRESULT UpdateLeftSideDCBField(void *rsFieldAddr, SIZE_T size);
-
-    // Update the entire RS copy of the debugger control block by reading the LS copy.
-    virtual HRESULT UpdateRightSideDCB();
-
-    // Get the pointer to the RS DCB.
-    virtual DebuggerIPCControlBlock * GetDCB();
-
-
-
     // Check whether we need to wait for an acknowledgement from the LS after sending an IPC event.
     virtual BOOL NeedToWaitForAck(DebuggerIPCEvent * pEvent);
 
@@ -57,15 +46,11 @@ public:
     // Clean up the state if the wait for an acknowledgement is unsuccessful.
     virtual void   ClearEventForLeftSide();
 
-
-
     // Send an IPC event to the LS.
     virtual HRESULT SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_T eventSize);
 
     // Get the reply from the LS for a previously sent IPC event.
     virtual HRESULT GetReplyFromLeftSide(DebuggerIPCEvent * pReplyEvent, SIZE_T eventSize);
-
-
 
     // Save an IPC event from the LS.
     // Used for transferring an IPC event from the native pipeline to the IPC event channel.
@@ -76,7 +61,6 @@ public:
     virtual HRESULT GetEventFromLeftSide(DebuggerIPCEvent * pLocalManagedEvent);
 
 private:
-    DebuggerIPCControlBlock * m_pDCBBuffer;     // local buffer for the DCB on the RS
     DbgTransportTarget *      m_pProxy;         // connection to the debugger proxy
     DbgTransportSession *     m_pTransport;     // connection to the debuggee process
 
@@ -116,14 +100,14 @@ HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB,
         goto Label_Exit;
     }
 
-    pDCBBuffer = new (nothrow) DebuggerIPCControlBlock;
+    pDCBBuffer = new (nothrow) DebuggerIPCControlBlock{};
     if (pDCBBuffer == NULL)
     {
         hr = E_OUTOFMEMORY;
         goto Label_Exit;
     }
 
-    pEventChannel = new (nothrow) RemoteEventChannel(pDCBBuffer, pProxy, pTransport);
+    pEventChannel = new (nothrow) RemoteEventChannel(pLeftSideDCB, pDCBBuffer, pMutableDataTarget, pProxy, pTransport);
     if (pEventChannel == NULL)
     {
         hr = E_OUTOFMEMORY;
@@ -172,11 +156,15 @@ Label_Exit:
 //    pMutableDataTarget - data target for reading from and writing to the target process's address space
 //
 
-RemoteEventChannel::RemoteEventChannel(DebuggerIPCControlBlock * pDCBBuffer,
+RemoteEventChannel::RemoteEventChannel(CORDB_ADDRESS pLeftSideDCB,
+                                       DebuggerIPCControlBlock * pDCBBuffer,
+                                       ICorDebugMutableDataTarget * pMutableDataTarget,
                                        DbgTransportTarget *      pProxy,
                                        DbgTransportSession *     pTransport)
 {
     m_pDCBBuffer = pDCBBuffer;
+    m_pLeftSideDCB = pLeftSideDCB;
+    m_pMutableDataTarget.Assign(pMutableDataTarget);
     m_pProxy = pProxy;
     m_pTransport = pTransport;
     m_fLeftSideEventAvailable = FALSE;
@@ -216,36 +204,6 @@ void RemoteEventChannel::Delete()
     }
 
     delete this;
-}
-
-// Update a single field with a value stored in the RS copy of the DCB.
-//
-// virtual
-HRESULT RemoteEventChannel::UpdateLeftSideDCBField(void * rsFieldAddr, SIZE_T size)
-{
-    _ASSERTE(m_pDCBBuffer != NULL);
-
-    // Ask the transport to update the LS DCB.
-    return m_pTransport->SetDCB(m_pDCBBuffer);
-}
-
-// Update the entire RS copy of the debugger control block by reading the LS copy.
-//
-// virtual
-HRESULT RemoteEventChannel::UpdateRightSideDCB()
-{
-    _ASSERTE(m_pDCBBuffer != NULL);
-
-    // Ask the transport to read the DCB from the Ls.
-    return m_pTransport->GetDCB(m_pDCBBuffer);
-}
-
-// Get the pointer to the RS DCB.
-//
-// virtual
-DebuggerIPCControlBlock * RemoteEventChannel::GetDCB()
-{
-    return m_pDCBBuffer;
 }
 
 // Check whether we need to wait for an acknowledgement from the LS after sending an IPC event.

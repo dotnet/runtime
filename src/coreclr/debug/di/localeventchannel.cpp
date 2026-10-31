@@ -34,19 +34,6 @@ public:
     // Delete the event channel and clean up all the resources it owns.  This function can only be called once.
     virtual void Delete();
 
-
-
-    // Update a single field with a value stored in the RS copy of the DCB.
-    virtual HRESULT UpdateLeftSideDCBField(void *rsFieldAddr, SIZE_T size);
-
-    // Update the entire RS copy of the debugger control block by reading the LS copy.
-    virtual HRESULT UpdateRightSideDCB();
-
-    // Get the pointer to the RS DCB.
-    virtual DebuggerIPCControlBlock * GetDCB();
-
-
-
     // Check whether we need to wait for an acknowledgement from the LS after sending an IPC event.
     virtual BOOL NeedToWaitForAck(DebuggerIPCEvent * pEvent);
 
@@ -56,15 +43,11 @@ public:
     // Clean up the state if the wait for an acknowledgement is unsuccessful.
     virtual void   ClearEventForLeftSide();
 
-
-
     // Send an IPC event to the LS.
     virtual HRESULT SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_T eventSize);
 
     // Get the reply from the LS for a previously sent IPC event.
     virtual HRESULT GetReplyFromLeftSide(DebuggerIPCEvent * pReplyEvent, SIZE_T eventSize);
-
-
 
     // Save an IPC event from the LS.
     // Used for transferring an IPC event from the native pipeline to the IPC event channel.
@@ -83,17 +66,8 @@ private:
     // holds information sent to the LS with an IPC event.
     TargetBuffer RemoteSendBuffer(SIZE_T size);
 
-    // write memory to the LS using the data target
-    HRESULT SafeWriteBuffer(TargetBuffer tb, const BYTE * pLocalBuffer);
-
-    // read memory from the LS using the data target
-    HRESULT SafeReadBuffer(TargetBuffer tb, BYTE * pLocalBuffer);
-
     // duplicate a remote handle into the local process
     HRESULT DuplicateHandleToLocalProcess(HANDLE * pLocalHandle, RemoteHANDLE * pRemoteHandle);
-
-    // target address of the DCB on the LS
-    CORDB_ADDRESS m_pLeftSideDCB;
 
     // used to signal the to the LS that an event is available
     HANDLE        m_rightSideEventAvailable;
@@ -105,11 +79,6 @@ private:
     // handle of the debuggee process
     HANDLE        m_hTargetProc;
 
-    // local buffer for the DCB on the RS
-    DebuggerIPCControlBlock * m_pDCBBuffer;
-
-    // data target used for cross-process memory reads and writes
-    RSExtSmartPtr<ICorDebugMutableDataTarget> m_pMutableDataTarget;
 };
 
 // Allocate and return an old-style event channel object for this target platform.
@@ -124,7 +93,7 @@ HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB,
     LocalEventChannel *       pEventChannel = NULL;
     DebuggerIPCControlBlock * pDCBBuffer    = NULL;
 
-    pDCBBuffer = new (nothrow) DebuggerIPCControlBlock;
+    pDCBBuffer = new (nothrow) DebuggerIPCControlBlock{};
     if (pDCBBuffer == NULL)
     {
         return E_OUTOFMEMORY;
@@ -176,21 +145,21 @@ HRESULT LocalEventChannel::Init(HANDLE hTargetProc)
 
     // Duplicate the handle of the RS process (i.e. the debugger) to the LS process's address space.
     BOOL fSuccess =
-        m_pDCBBuffer->m_rightSideProcessHandle.DuplicateToRemoteProcess(m_hTargetProc, GetCurrentProcess());
+        m_pDCBBuffer->m_dcb2.m_rightSideProcessHandle.DuplicateToRemoteProcess(m_hTargetProc, GetCurrentProcess());
     if (!fSuccess)
     {
         return HRESULT_FROM_GetLastError();
     }
 
-    IfFailRet(UpdateLeftSideDCBField(&(m_pDCBBuffer->m_rightSideProcessHandle),
-                                     sizeof(m_pDCBBuffer->m_rightSideProcessHandle)));
+    IfFailRet(UpdateLeftSideDCBField(&(m_pDCBBuffer->m_dcb2.m_rightSideProcessHandle),
+                                     sizeof(m_pDCBBuffer->m_dcb2.m_rightSideProcessHandle)));
 
     // Dup RSEA and RSER into this process if we don't already have them.
     // On Launch, we don't have them yet, but on attach we do.
     IfFailRet(DuplicateHandleToLocalProcess(&m_rightSideEventAvailable,
-                                            &m_pDCBBuffer->m_rightSideEventAvailable));
+                                            &m_pDCBBuffer->m_dcb2.m_rightSideEventAvailable));
     IfFailRet(DuplicateHandleToLocalProcess(&m_rightSideEventRead,
-                                            &m_pDCBBuffer->m_rightSideEventRead));
+                                            &m_pDCBBuffer->m_dcb2.m_rightSideEventRead));
 
     m_rightSideEventReadWaitHandle = new (nothrow) WaitEvent(m_rightSideEventRead);
     if (m_rightSideEventReadWaitHandle == nullptr)
@@ -232,8 +201,8 @@ void LocalEventChannel::Delete()
 {
     if (m_hTargetProc != NULL)
     {
-        m_pDCBBuffer->m_rightSideProcessHandle.CloseInRemoteProcess(m_hTargetProc);
-        UpdateLeftSideDCBField(&(m_pDCBBuffer->m_rightSideProcessHandle), sizeof(m_pDCBBuffer->m_rightSideProcessHandle));
+        m_pDCBBuffer->m_dcb2.m_rightSideProcessHandle.CloseInRemoteProcess(m_hTargetProc);
+        UpdateLeftSideDCBField(&(m_pDCBBuffer->m_dcb2.m_rightSideProcessHandle), sizeof(m_pDCBBuffer->m_dcb2.m_rightSideProcessHandle));
         m_hTargetProc = NULL;
     }
 
@@ -265,40 +234,6 @@ void LocalEventChannel::Delete()
 
     delete this;
 }
-
-// Update a single field with a value stored in the RS copy of the DCB.
-//
-// virtual
-HRESULT LocalEventChannel::UpdateLeftSideDCBField(void * rsFieldAddr, SIZE_T size)
-{
-    _ASSERTE(m_pDCBBuffer != NULL);
-    _ASSERTE(m_pLeftSideDCB  != NULL);
-
-    BYTE * pbRSFieldAddr = reinterpret_cast<BYTE *>(rsFieldAddr);
-    CORDB_ADDRESS lsFieldAddr = m_pLeftSideDCB + (pbRSFieldAddr - reinterpret_cast<BYTE *>(m_pDCBBuffer));
-    return SafeWriteBuffer(TargetBuffer(lsFieldAddr, (ULONG)size), const_cast<const BYTE *>(pbRSFieldAddr));
-}
-
-// Update the entire RS copy of the debugger control block by reading the LS copy.
-//
-// virtual
-HRESULT LocalEventChannel::UpdateRightSideDCB()
-{
-    _ASSERTE(m_pDCBBuffer != NULL);
-    _ASSERTE(m_pLeftSideDCB  != NULL);
-
-    return SafeReadBuffer(TargetBuffer(m_pLeftSideDCB, sizeof(DebuggerIPCControlBlock)),
-                          reinterpret_cast<BYTE *>(m_pDCBBuffer));
-}
-
-// Get the pointer to the RS DCB.
-//
-// virtual
-DebuggerIPCControlBlock * LocalEventChannel::GetDCB()
-{
-    return m_pDCBBuffer;
-}
-
 
 // Check whether we need to wait for an acknowledgement from the LS after sending an IPC event.
 //
@@ -419,7 +354,7 @@ HRESULT LocalEventChannel::GetEventFromLeftSide(DebuggerIPCEvent * pLocalManaged
 
 TargetBuffer LocalEventChannel::RemoteReceiveBuffer(SIZE_T size)
 {
-    return TargetBuffer(m_pLeftSideDCB + offsetof(DebuggerIPCControlBlock, m_receiveBuffer), (ULONG)size);
+    return TargetBuffer(m_pLeftSideDCB + offsetof(DebuggerIPCControlBlock_2, m_receiveBuffer), (ULONG)size);
 }
 
 //-----------------------------------------------------------------------------
@@ -436,53 +371,7 @@ TargetBuffer LocalEventChannel::RemoteReceiveBuffer(SIZE_T size)
 
 TargetBuffer LocalEventChannel::RemoteSendBuffer(SIZE_T size)
 {
-    return TargetBuffer(m_pLeftSideDCB + offsetof(DebuggerIPCControlBlock, m_sendBuffer), (ULONG)size);
-}
-
-//-----------------------------------------------------------------------------
-//
-// Write memory to the LS using the data target.
-//
-// Arguments:
-//    tb           - target address and size to be written to
-//    pLocalBuffer - data to write
-//
-// Return Value:
-//    S_OK if successful
-//
-
-HRESULT LocalEventChannel::SafeWriteBuffer(TargetBuffer tb, const BYTE * pLocalBuffer)
-{
-    return m_pMutableDataTarget->WriteVirtual(tb.pAddress, pLocalBuffer, tb.cbSize);
-}
-
-//-----------------------------------------------------------------------------
-//
-// Read memory from the LS using the data target.
-//
-// Arguments:
-//    tb           - target address and size to be read from
-//    pLocalBuffer - buffer for storing the data read from the LS
-//
-// Return Value:
-//    S_OK if the entire specified range is read successful
-//
-
-HRESULT LocalEventChannel::SafeReadBuffer(TargetBuffer tb, BYTE * pLocalBuffer)
-{
-    ULONG32 cbRead;
-    HRESULT hr = m_pMutableDataTarget->ReadVirtual(tb.pAddress, pLocalBuffer, tb.cbSize, &cbRead);
-    if (FAILED(hr))
-    {
-        return CORDBG_E_READVIRTUAL_FAILURE;
-    }
-
-    if (cbRead != tb.cbSize)
-    {
-        return HRESULT_FROM_WIN32(ERROR_PARTIAL_COPY);
-    }
-
-    return S_OK;
+    return TargetBuffer(m_pLeftSideDCB + offsetof(DebuggerIPCControlBlock_2, m_sendBuffer), (ULONG)size);
 }
 
 //-----------------------------------------------------------------------------

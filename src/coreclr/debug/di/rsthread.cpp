@@ -3311,14 +3311,14 @@ bool CordbUnmanagedThread::IsCantStop()
     EX_END_CATCH
 
     // Helper's canary thread is always can't-stop.
-    if (this->m_id == GetProcess()->GetDCB()->m_CanaryThreadId)
+    if (this->m_id == GetProcess()->GetDCB()->m_dcb2.m_CanaryThreadId)
     {
         return true;
     }
 
     // Check helper thread / or anyone pretending to be the helper thread.
-    if ((this->m_id == GetProcess()->GetDCB()->m_helperThreadId) ||
-        (this->m_id == GetProcess()->GetDCB()->m_temporaryHelperThreadId) ||
+    if ((this->m_id == GetProcess()->GetDCB()->m_dcb2.m_helperThreadId) ||
+        (this->m_id == GetProcess()->GetDCB()->m_dcb2.m_temporaryHelperThreadId) ||
         (this->m_id == GetProcess()->m_helperThreadId))
     {
        return true;

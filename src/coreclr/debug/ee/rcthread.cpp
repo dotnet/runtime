@@ -127,7 +127,7 @@ void DebuggerRCThread::CloseIPCHandles()
 //
 //
 //---------------------------------------------------------------------------------------
-HRESULT DebuggerIPCControlBlock::Init(
+HRESULT DebuggerIPCControlBlock_2::Init(
     HANDLE hRsea,
     HANDLE hRser,
     HANDLE hLsea,
@@ -149,7 +149,7 @@ HRESULT DebuggerIPCControlBlock::Init(
     // attack scenarios, but we will be messed up anyway.
     // WARNING!!!  m_DCBSize is used as a semaphore and is set to non-zero to signal that initialization of the
     // WARNING!!!  DCB is complete.  if you remove the below memset be sure to initialize m_DCBSize to zero in the ctor!
-    memset( this, 0, sizeof( DebuggerIPCControlBlock) );
+    memset( this, 0, sizeof( DebuggerIPCControlBlock_2) );
 
     // Setup version checking info.
     m_verMajor = RuntimeFileBuildVersion;
@@ -267,7 +267,7 @@ HRESULT DebuggerRCThread::Init(void)
     // Create the helper thread can go event.
     m_helperThreadCanGoEvent.CreateManualEvent(TRUE);
 
-    m_pDCB = new(nothrow) DebuggerIPCControlBlock;
+    m_pDCB = new(nothrow) DebuggerIPCControlBlock_2;
 
     // Don't fail out because the shared memory failed to create
 #if _DEBUG
@@ -390,7 +390,7 @@ HRESULT DebuggerRCThread::Init(void)
         // m_DCBSize is used as a semaphore to indicate that the DCB is fully initialized.
         // let's ensure that it's updated after all the other fields.
         MemoryBarrier();
-        m_pDCB->m_DCBSize = sizeof(DebuggerIPCControlBlock);
+        m_pDCB->m_DCBSize = sizeof(DebuggerIPCControlBlock_2);
     }
 
     return S_OK;
@@ -409,7 +409,7 @@ HRESULT DebuggerRCThread::Init(void)
 //    S_OK on success.
 //
 //---------------------------------------------------------------------------------------
-HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebuggerIPCControlBlock)
+HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock_2 * pDebuggerIPCControlBlock)
 {
     CONTRACTL
     {
@@ -1367,7 +1367,7 @@ HRESULT DebuggerRCThread::Start(void)
         }
 
         // This gets published immediately.
-        DebuggerIPCControlBlock* dcb = GetDCB();
+        DebuggerIPCControlBlock_2* dcb = GetDCB();
         _ASSERTE(dcb != NULL);
         dcb->m_realHelperThreadId = helperThreadId;
 

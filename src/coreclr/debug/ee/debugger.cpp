@@ -1907,7 +1907,7 @@ HRESULT Debugger::Startup(void)
         startup.RaiseStartupNotification();
 
         // See if we need to spin up the helper thread now, rather than later.
-        DebuggerIPCControlBlock* pIPCControlBlock = m_pRCThread->GetDCB();
+        DebuggerIPCControlBlock_2* pIPCControlBlock = m_pRCThread->GetDCB();
         (void)pIPCControlBlock; //prevent "unused variable" error from GCC
 
         _ASSERTE(pIPCControlBlock != NULL);
@@ -4977,7 +4977,7 @@ void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
     // Else threads may slip forward during attach and send debug events while we're tyring to attach.
     MarkDebuggerAttachedInternal();
 
-    DebuggerIPCControlBlock * pDCB;
+    DebuggerIPCControlBlock_2 * pDCB;
     pDCB = m_pRCThread->GetDCB();
     (void)pDCB; //prevent "unused variable" error from GCC
 
@@ -11440,7 +11440,7 @@ void Debugger::PollWaitingForHelper()
 
     LOG((LF_CORDB, LL_INFO10000, "PollWaitingForHelper() start\n"));
 
-    DebuggerIPCControlBlock * pDCB = g_pRCThread->GetDCB();
+    DebuggerIPCControlBlock_2 * pDCB = g_pRCThread->GetDCB();
 
     _ASSERTE(pDCB != NULL);
 
@@ -12232,7 +12232,7 @@ void Debugger::UnrecoverableError(HRESULT errorHR,
     // Fill out the control block with the error.
     // in-proc will find out when the function fails
     //
-    DebuggerIPCControlBlock *pDCB = m_pRCThread->GetDCB();
+    DebuggerIPCControlBlock_2 *pDCB = m_pRCThread->GetDCB();
 
     _ASSERTE(pDCB != NULL);
 
@@ -13424,7 +13424,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     if(m_pRCThread == NULL)
         return EXCEPTION_CONTINUE_SEARCH;
 
-    DebuggerIPCControlBlock *pDCB = m_pRCThread->GetDCB();
+    DebuggerIPCControlBlock_2 *pDCB = m_pRCThread->GetDCB();
     if(pDCB == NULL)
         return EXCEPTION_CONTINUE_SEARCH;
 
@@ -14633,7 +14633,7 @@ void Debugger::ShutdownBegun(void)
 
     if (m_pRCThread != NULL)
     {
-        DebuggerIPCControlBlock *dcb = m_pRCThread->GetDCB();
+        DebuggerIPCControlBlock_2 *dcb = m_pRCThread->GetDCB();
 
         if ((dcb != NULL) && (dcb->m_rightSideIsWin32Debugger))
             dcb->m_shutdownBegun = true;
@@ -14940,7 +14940,7 @@ HRESULT Debugger::UpdateSpecialThreadList(DWORD cThreadArrayLength,
 
     _ASSERTE(g_pRCThread != NULL);
 
-    DebuggerIPCControlBlock *pIPC = g_pRCThread->GetDCB();
+    DebuggerIPCControlBlock_2 *pIPC = g_pRCThread->GetDCB();
     _ASSERTE(pIPC);
 
     if (!pIPC)
@@ -15133,7 +15133,7 @@ bool ThisIsTempHelperThread(DWORD tid)
     if (g_pRCThread != NULL)
     {
         // May be the temporary helper thread...
-        DebuggerIPCControlBlock * pBlock = g_pRCThread->GetDCB();
+        DebuggerIPCControlBlock_2 * pBlock = g_pRCThread->GetDCB();
         if (pBlock != NULL)
         {
             DWORD idTemp = pBlock->m_temporaryHelperThreadId;

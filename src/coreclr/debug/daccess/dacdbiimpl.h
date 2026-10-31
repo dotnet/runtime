@@ -789,7 +789,7 @@ protected:
     // into account the number of exception parameters.
     void WriteExceptionRecordHelper(CORDB_ADDRESS pRemotePtr, const EXCEPTION_RECORD * pExcepRecord);
 
-    typedef DPTR(struct DebuggerIPCControlBlock) PTR_DebuggerIPCControlBlock;
+    typedef DPTR(struct DebuggerIPCControlBlock_2) PTR_DebuggerIPCControlBlock;
 
     // Get the address of the Debugger control block on the helper thread. Returns
     // NULL if the control block has not been successfully allocated
