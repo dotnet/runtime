@@ -246,12 +246,21 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
         "--scenario", scenario_name,
         "--application.framework", framework,
         "--application.channel", "edge",
-        "--application.sdkVersion", "latest",
         "--application.noGlobalJson", "false",
         "--load.options.reuseBuild", "true",
         "--load.job", "bombardier", # Bombardier is more cross-platform friendly (wrk is linux only)
         "--load.variables.connections", "16",
     ]
+
+    if framework == "net11.0":
+        # Pin a coherent RTM build until stable-branded artifacts are published.
+        cmd.extend([
+            "--application.sdkVersion", "11.0.100-rtm.26480.113",
+            "--application.runtimeVersion", "11.0.0-rtm.26480.113",
+            "--application.aspNetCoreVersion", "11.0.0-rtm.26480.113",
+        ])
+    else:
+        cmd.extend(["--application.sdkVersion", "latest"])
     
     # Only add SPMI collection environment variables and output files if not in dry run mode
     if not dryrun:
@@ -266,6 +275,11 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
             "--application.options.outputFiles", str(core_root_path / spcorelib),
             "--application.options.outputFiles", str(core_root_path / systemNative),
         ])
+        if framework == "net11.0":
+            # Socket interop must match the overlaid CoreLib and System.Native.
+            cmd.extend([
+                "--application.options.outputFiles", str(core_root_path / "System.Net.Sockets.dll"),
+            ])
     
     # Add custom environment variables for this run
     for var_name, var_value in env_vars.items():
