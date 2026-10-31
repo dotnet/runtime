@@ -125,7 +125,11 @@ namespace System.Net.WebSockets.Client.Tests
             HttpClientHandler handler = new HttpClientHandler();
             if (PlatformDetection.IsNotBrowser)
             {
-                handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
+                if (PlatformDetection.IsTlsSupported)
+                {
+                    handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
+                }
+
                 ConfigureCustomHandler?.Invoke(handler);
             }
 

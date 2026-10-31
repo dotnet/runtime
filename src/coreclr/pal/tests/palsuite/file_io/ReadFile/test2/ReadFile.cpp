@@ -18,6 +18,8 @@
 
 
 #include <palsuite.h>
+#include <sys/mman.h>
+
 
 #define szStringTest "The quick fox jumped over the lazy dog's back.\0"
 #define szEmptyString ""
@@ -136,7 +138,6 @@ PALTEST(file_io_ReadFile_test2_paltest_readfile_test2, "file_io/ReadFile/test2/p
     //                           -1
                             };
 
-    DWORD oldProt;
     char szResults[] =  "1111"; // Was "111100": Refer VSW 312690
     int i;
     BOOL bRc = FALSE;
@@ -147,17 +148,16 @@ PALTEST(file_io_ReadFile_test2_paltest_readfile_test2, "file_io/ReadFile/test2/p
         return FAIL;
     }
 
-    /* allocate read-write memery for readBuffer */
-    if (!(readBuffer_ReadFile_test2 = (char*) VirtualAlloc(NULL, bufferSize, MEM_COMMIT, PAGE_READWRITE)))
+    readBuffer_ReadFile_test2 = (char*)mmap(NULL, bufferSize, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	if (readBuffer_ReadFile_test2 == MAP_FAILED)
 	{
-		Fail("VirtualAlloc failed: GetLastError returns %d\n", GetLastError());
+		Fail("mmap failed for readBuffer\n");
 		return FAIL;
 	}
 
-    /* write protect the second page of readBuffer */
-	if (!VirtualProtect(&readBuffer_ReadFile_test2[pageSize], pageSize, PAGE_NOACCESS, &oldProt))
+    if (mprotect(&readBuffer_ReadFile_test2[pageSize], pageSize, PROT_NONE) != 0)
 	{
-		Fail("VirtualProtect failed: GetLastError returns %d\n", GetLastError());
+		Fail("mprotect failed for readBuffer\n");
 		return FAIL;
 	}
 
@@ -189,7 +189,7 @@ PALTEST(file_io_ReadFile_test2_paltest_readfile_test2, "file_io/ReadFile/test2/p
         }
     }
 
-	VirtualFree(readBuffer_ReadFile_test2, bufferSize, MEM_RELEASE);
+	munmap(readBuffer_ReadFile_test2, bufferSize);
     PAL_Terminate();
     return PASS;
 }

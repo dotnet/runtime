@@ -1,0 +1,8 @@
+is_global = true
+
+# Unsafe-v2 migration analyzers, enabled by eng/memorySafetyRules.targets when EnableUnsafeMigrationAnalyzers=true.
+dotnet_diagnostic.IL5005.severity = warning
+dotnet_diagnostic.IL5006.severity = warning
+dotnet_diagnostic.IL5007.severity = warning
+dotnet_diagnostic.IL5009.severity = warning
+dotnet_diagnostic.IL5010.severity = warning

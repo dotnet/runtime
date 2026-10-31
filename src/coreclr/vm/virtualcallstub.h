@@ -283,6 +283,7 @@ public:
 #endif
           m_loaderAllocator(NULL),
           m_initialReservedMemForHeaps(NULL),
+          m_initialReservedMemForHeapsSize(0),
           m_FreeIndCellList(NULL),
           m_RecycledIndCellList(NULL),
           indcell_heap(NULL),
@@ -543,6 +544,7 @@ private:
     PTR_LoaderAllocator m_loaderAllocator;
 
     BYTE *          m_initialReservedMemForHeaps;
+    size_t          m_initialReservedMemForHeapsSize;
 
     static const UINT32 INDCELLS_PER_BLOCK = 32;    // 32 indirection cells per block.
 
@@ -1523,10 +1525,13 @@ private:
     // does not throw on OOM. **YOU MUST CHECK FOR NULL RETURN**
     static FastTable* MakeTable(size_t numberOfEntries)
     {
-        CONTRACTL {
+        CONTRACTL
+        {
             THROWS;
             GC_TRIGGERS;
-        } CONTRACTL_END;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
 
         size_t size = CALL_STUB_MIN_ENTRIES;
         while (size < numberOfEntries) {size = size<<1;}

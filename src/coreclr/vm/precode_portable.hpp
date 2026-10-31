@@ -55,6 +55,13 @@ public: // static
     static PortableEntryPoint* ToPortableEntryPoint(PCODE addr);
 
 public:
+    MethodDesc* GetMethodDescIfExists() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return _pMD;
+    }
+
     void Init(MethodDesc* pMD);
     void Init(void* nativeEntryPoint);
     void Init_WithInterpreterThunk(void* nativeEntryPoint, MethodDesc* pMD);

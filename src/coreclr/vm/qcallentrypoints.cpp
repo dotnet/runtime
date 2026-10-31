@@ -22,8 +22,6 @@
 #include "nativelibrarynative.h"
 #include "comutilnative.h"
 #include "comsynchronizable.h"
-#include "floatdouble.h"
-#include "floatsingle.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
 
@@ -89,6 +87,22 @@
 
 #include "MiscNativeHelpers.h"
 
+#ifdef TARGET_BROWSER
+// emscripten libc before 6.0.10 implements overlapping memmove and memset with scalar loops.
+// Compiling these wrappers with -mbulk-memory lowers the builtins to memory.copy and memory.fill.
+// TODO: Remove once emsdk is 6.0.10 or later (https://github.com/dotnet/runtime/issues/136012).
+extern "C" void* QCall_memmove(void* dest, const void* src, size_t len)
+{
+    return __builtin_memmove(dest, src, len);
+}
+
+extern "C" void* QCall_memset(void* dest, int value, size_t len)
+{
+    return __builtin_memset(dest, value, len);
+}
+#endif // TARGET_BROWSER
+
+#if !defined(TARGET_WASM) || !GEN_PINVOKE
 static const Entry s_QCall[] =
 {
 #ifdef FEATURE_VARARGS
@@ -299,6 +313,7 @@ static const Entry s_QCall[] =
     DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
     DllImportEntry(AppContext_TryGetHostPropertyValue)
     DllImportEntry(ThreadNative_GetQCallSpecialException)
+#ifdef FEATURE_MULTITHREADING
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)
@@ -306,6 +321,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_SetIsBackground)
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_Initialize)
+#endif // FEATURE_MULTITHREADING
     DllImportEntry(ThreadNative_GetThreadState)
     DllImportEntry(ThreadNative_ReentrantWaitAny)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -319,7 +335,9 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_Interrupt)
     DllImportEntry(ThreadNative_GetOSHandle)
 #endif // TARGET_WINDOWS
+#ifdef FEATURE_MULTITHREADING
     DllImportEntry(ThreadNative_PollGC)
+#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
@@ -328,10 +346,16 @@ static const Entry s_QCall[] =
 #ifdef TARGET_SUNOS
     // Work around illumos.org/issues/17832
     {"memset", (void*)&std::memset},
+#elif defined(TARGET_BROWSER)
+    {"memset", (void*)&QCall_memset},
 #else // TARGET_SUNOS
     DllImportEntry(memset)
 #endif // TARGET_SUNOS
+#ifdef TARGET_BROWSER
+    {"memmove", (void*)&QCall_memmove},
+#else
     DllImportEntry(memmove)
+#endif // TARGET_BROWSER
     DllImportEntry(DependentHandle_InternalAllocWithGCTransition)
     DllImportEntry(DependentHandle_InternalFreeWithGCTransition)
     DllImportEntry(GCInterface_GetTotalAllocatedBytesPrecise)
@@ -409,9 +433,11 @@ static const Entry s_QCall[] =
     DllImportEntry(GetFileLoadExceptionMessage)
     DllImportEntry(FileLoadException_GetMessageForHR)
     DllImportEntry(Interlocked_MemoryBarrierProcessWide)
+#ifdef FEATURE_MULTITHREADING
     DllImportEntry(Thread_SpinWait)
     DllImportEntry(Thread_Yield)
     DllImportEntry(Thread_GetOptimalMaxSpinWaitsPerSpinIteration)
+#endif // FEATURE_MULTITHREADING
     DllImportEntry(ObjectNative_GetHashCodeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
     DllImportEntry(MetadataImport_Enum)
@@ -486,6 +512,9 @@ static const Entry s_QCall[] =
     DllImportEntry(EventPipeInternal_GetNextEvent)
     DllImportEntry(EventPipeInternal_SignalSession)
     DllImportEntry(EventPipeInternal_WaitForSessionSignal)
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+    DllImportEntry(EventPipeInternal_WasiRunJobs)
+#endif // TARGET_WASI && PERFTRACING_DISABLE_THREADS
 #endif // FEATURE_PERFTRACING
 #if defined(TARGET_UNIX)
     DllImportEntry(FreeEnvironmentStringsW)
@@ -535,8 +564,10 @@ static const Entry s_QCall[] =
     DllImportEntry(AppendExceptionStackFrame)
     DllImportEntry(InitClassHelper)
     DllImportEntry(ResolveVirtualFunctionPointer)
+#ifdef FEATURE_MULTITHREADING
     DllImportEntry(GetThreadStaticsByMethodTable)
     DllImportEntry(GetThreadStaticsByIndex)
+#endif // FEATURE_MULTITHREADING
     DllImportEntry(GenericHandleWorker)
     DllImportEntry(ThrowInvalidCastException)
     DllImportEntry(IsInstanceOf_NoCacheLookup)
@@ -559,3 +590,4 @@ const void* QCallResolveDllImport(const char* name)
 {
     return minipal_resolve_dllimport(s_QCall, ARRAY_SIZE(s_QCall), name);
 }
+#endif // !defined(TARGET_WASM) || !GEN_PINVOKE

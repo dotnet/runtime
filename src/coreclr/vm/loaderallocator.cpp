@@ -36,6 +36,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 
     // initialize all members up front to NULL so that short-circuit failure won't cause invalid values
     m_InitialReservedMemForLoaderHeaps = NULL;
+    m_InitialReservedMemForLoaderHeapsSize = 0;
     m_pLowFrequencyHeap = NULL;
     m_pHighFrequencyHeap = NULL;
     m_pExecutableHeap = NULL;
@@ -377,13 +378,7 @@ void LoaderAllocator::Mark()
 //static
 LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain * pAppDomain)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
     // List of LoaderAllocators being deleted
     LoaderAllocator * pFirstDestroyedLoaderAllocator = NULL;
 
@@ -1165,6 +1160,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     BYTE * initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
     m_InitialReservedMemForLoaderHeaps = initReservedMem;
+    m_InitialReservedMemForLoaderHeapsSize = dwTotalReserveMemSize;
 
     if (initReservedMem == NULL)
         COMPlusThrowOM();
@@ -1478,7 +1474,7 @@ void LoaderAllocator::Terminate()
 
     if (m_InitialReservedMemForLoaderHeaps)
     {
-        ExecutableAllocator::Instance()->Release(m_InitialReservedMemForLoaderHeaps);
+        ExecutableAllocator::Instance()->Release(m_InitialReservedMemForLoaderHeaps, m_InitialReservedMemForLoaderHeapsSize);
         m_InitialReservedMemForLoaderHeaps=NULL;
     }
 
@@ -1960,11 +1956,13 @@ void AssemblyLoaderAllocator::CleanupHandles()
     CONTRACTL_END;
 
 
+#ifdef FEATURE_MULTITHREADING
     if (m_hLoaderAllocatorObjectHandle != NULL)
     {
         GCX_COOP();
         FreeTLSIndicesForLoaderAllocator(this);
     }
+#endif // FEATURE_MULTITHREADING
 
     // This method doesn't take a lock around RemoveHead because it's supposed to
     // be called only from Terminate
@@ -2308,6 +2306,7 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -2381,6 +2380,7 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

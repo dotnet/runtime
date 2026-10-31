@@ -421,23 +421,33 @@ namespace System.Reflection
 
             private MethodBuilder AddMethodImpl(MethodInfo mi, int methodInfoIndex)
             {
+                // Reflection returns the custom modifiers of one kind in the reverse of the order DefineMethod takes them in.
                 ParameterInfo[] parameters = mi.GetParameters();
                 Type[] paramTypes = new Type[parameters.Length];
                 Type[][] paramReqMods = new Type[paramTypes.Length][];
+                Type[][] paramOptMods = new Type[paramTypes.Length][];
 
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     paramTypes[i] = parameters[i].ParameterType;
                     paramReqMods[i] = parameters[i].GetRequiredCustomModifiers();
+                    Array.Reverse(paramReqMods[i]);
+                    paramOptMods[i] = parameters[i].GetOptionalCustomModifiers();
+                    Array.Reverse(paramOptMods[i]);
                 }
 
                 MethodAttributes attributes = MethodAttributes.Public;
 
                 attributes |= mi.IsStatic ? MethodAttributes.Static : MethodAttributes.Virtual;
 
+                ParameterInfo returnParameter = mi.ReturnParameter;
+                Type[] returnReqMods = returnParameter.GetRequiredCustomModifiers();
+                Array.Reverse(returnReqMods);
+                Type[] returnOptMods = returnParameter.GetOptionalCustomModifiers();
+                Array.Reverse(returnOptMods);
                 MethodBuilder mdb = _tb.DefineMethod(mi.Name, attributes, CallingConventions.Standard,
-                    mi.ReturnType, null, null,
-                    paramTypes, paramReqMods, null);
+                    mi.ReturnType, returnReqMods, returnOptMods,
+                    paramTypes, paramReqMods, paramOptMods);
 
                 if (mi.ContainsGenericParameters)
                 {
