@@ -165,40 +165,6 @@
 
 .endm
 
-// Loads the address of a thread-local variable into the target register,
-// which cannot be x0.
-// Preserves registers except for xip0 and xip1 on Apple
-.macro INLINE_GET_TLS_VAR target, var
-    .ifc \target, x0
-        .error "target cannot be x0"
-    .endif
-
-    // This sequence of instructions is recognized and potentially patched
-    // by the linker (GD->IE/LE relaxation).
-#if defined(__APPLE__)
-
-    adrp    x0, \var@TLVPPAGE
-    ldr     x0, [x0, \var@TLVPPAGEOFF]
-    ldr     \target, [x0]
-
-    blr     \target
-    // End of the sequence
-
-    mov     \target, x0
-#else
-    adrp    x0, :tlsdesc:\var
-    ldr     \target, [x0, #:tlsdesc_lo12:\var]
-    add     x0, x0, :tlsdesc_lo12:\var
-    .tlsdesccall \var
-    blr     \target
-    // End of the sequence
-
-    mrs     \target, tpidr_el0
-    add     \target, \target, x0
-#endif
-
-.endm
-
 
 // Inlined version of GetThreadEEAllocContext. Target cannot be x0 or x1.
 .macro INLINE_GET_ALLOC_CONTEXT_BASE target
@@ -208,22 +174,27 @@
         .ifc  \target, x1
                 .error "target cannot be x1"
         .endif
+        .ifc  \target, x2
+                .error "target cannot be x2"
+        .endif
 
-#if defined(FEATURE_EMULATED_TLS) || defined(__APPLE__)
-        PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x20
+#ifdef FEATURE_EMULATED_TLS
+        PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x30
         PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
+        PROLOG_SAVE_REG                   x2, 0x20
 
         bl      C_FUNC(GetThreadEEAllocContext)
         mov     \target, x0
 
+        EPILOG_RESTORE_REG                x2, 0x20
         EPILOG_RESTORE_REG_PAIR           x0, x1, 0x10
-        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
+        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x30
 #else
         PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
-        INLINE_GET_TLS_VAR \target, t_runtime_thread_locals
+        INLINE_GET_TLS_VAR \target, C_FUNC(t_runtime_thread_locals)
 
         .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
-                add     \target, x0, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+                add     \target, \target, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
         .endif
 
         EPILOG_RESTORE_REG_PAIR_INDEXED   x0, lr, 0x10
