@@ -8302,6 +8302,12 @@ public:
 
     bool canKeepNonInlineableGdvCandidate(GenTreeCall* call);
 
+    int getCastMaxTypeChecks()
+    {
+        const int maxTypeChecks = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT) ? 1 : MAX_GDV_TYPE_CHECKS;
+        return min(maxTypeChecks, max(0, JitConfig.JitCastMaxTypeChecks()));
+    }
+
     int getGDVMaxTypeChecks()
     {
         int typeChecks = JitConfig.JitGuardedDevirtualizationMaxTypeChecks();
