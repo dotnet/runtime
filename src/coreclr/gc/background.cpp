@@ -3795,6 +3795,8 @@ void gc_heap::background_sweep()
         uint64_t suspended_end_ts = GetHighPrecisionTimeStamp();
         last_bgc_info[last_bgc_info_index].pause_durations[1] = (size_t)(suspended_end_ts - suspended_start_time);
         total_suspended_time += last_bgc_info[last_bgc_info_index].pause_durations[1];
+        record_pause_record(last_bgc_info[last_bgc_info_index].index,
+                          last_bgc_info[last_bgc_info_index].pause_durations[1], max_generation, true);
         restart_EE ();
     }
 

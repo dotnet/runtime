@@ -37,6 +37,7 @@ extern "C" uint8_t* g_write_watch_table;
 // g_gc_dac_vars is a structure of pointers to GC globals that the
 // DAC uses. It is not exposed directly to the DAC.
 extern GcDacVars g_gc_dac_vars;
+extern VersionInfo g_gc_version_info;
 
 // Instead of exposing g_gc_dac_vars to the DAC, a pointer to it
 // is exposed here (g_gcDacGlobals). The reason for this is to avoid
@@ -89,6 +90,8 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
+    static bool SupportsPauseRecordCallbacks();
+
     // Initializes the GC
     static HRESULT InitializeGC();
 

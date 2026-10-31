@@ -1153,6 +1153,24 @@ extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation, QC
     return result;
 }
 
+extern "C" BOOL QCALLTYPE GCInterface_ConfigurePauseRecordCallback(GCPauseRecordCallback callback, BOOL enabled, UINT64* sequence, UINT64* missedRecords, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    BOOL supported = FALSE;
+    *sequence = 0;
+    *missedRecords = 0;
+    BEGIN_QCALL;
+    if (GCHeapUtilities::SupportsPauseRecordCallbacks())
+    {
+        GCHeapUtilities::GetGCHeap()->ConfigurePauseRecordCallback(callback, enabled != FALSE, sequence, missedRecords);
+        supported = TRUE;
+    }
+    END_QCALL;
+
+    return supported;
+}
+
 uint64_t GCInterface::GetGenerationBudget(int generation)
 {
     STANDARD_VM_CONTRACT;

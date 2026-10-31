@@ -460,6 +460,19 @@ EXTERN_C enable_no_gc_region_callback_status QCALLTYPE RhEnableNoGCRegionCallbac
     return pHeap->EnableNoGCRegionCallback(pCallback, totalSize);
 }
 
+EXTERN_C int32_t QCALLTYPE RhConfigurePauseRecordCallback(GCPauseRecordCallback callback, int32_t enabled, uint64_t* sequence, uint64_t* missedRecords)
+{
+    *sequence = 0;
+    *missedRecords = 0;
+    if (!GCHeapUtilities::SupportsPauseRecordCallbacks())
+    {
+        return 0;
+    }
+
+    GCHeapUtilities::GetGCHeap()->ConfigurePauseRecordCallback(callback, enabled != 0, sequence, missedRecords);
+    return 1;
+}
+
 EXTERN_C int64_t QCALLTYPE RhGetTotalAllocatedBytesPrecise()
 {
     int64_t allocated;

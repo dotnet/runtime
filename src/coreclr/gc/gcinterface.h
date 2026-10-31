@@ -11,7 +11,9 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 9
+#define GC_INTERFACE_MINOR_VERSION 10
+
+#define GC_INTERFACE_MINOR_VERSION_PAUSE_RECORD_CALLBACK 10
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
@@ -120,6 +122,20 @@ struct FinalizerWorkItem
     FinalizerWorkItem* next;
     void (*callback)(FinalizerWorkItem*);
 };
+
+// Keep in sync with NativePauseRecord in GC.PauseRecord.cs.
+struct GCPauseRecord
+{
+    uint64_t sequence_number;
+    uint64_t collection_index;
+    uint64_t duration_microseconds;
+    uint32_t generation;
+    uint32_t concurrent;
+};
+
+static_assert(sizeof(GCPauseRecord) == 32);
+
+typedef void (*GCPauseRecordCallback)(const GCPauseRecord* pause, uint64_t missed_records);
 
 struct NoGCRegionCallbackFinalizerWorkItem : public FinalizerWorkItem
 {
@@ -1076,6 +1092,8 @@ public:
     virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) PURE_VIRTUAL;
 
     virtual uintptr_t* GetPendingBridgeHandles(size_t* count) PURE_VIRTUAL;
+
+    virtual void ConfigurePauseRecordCallback(GCPauseRecordCallback callback, bool enabled, uint64_t* sequence, uint64_t* missed_records) PURE_VIRTUAL;
 };
 
 #ifdef WRITE_BARRIER_CHECK
