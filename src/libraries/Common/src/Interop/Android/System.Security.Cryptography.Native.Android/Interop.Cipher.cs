@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
+using Internal.Cryptography;
 
 internal static partial class Interop
 {
@@ -84,7 +85,7 @@ internal static partial class Interop
             SafeEvpCipherCtxHandle ctx,
             ref byte @out,
             out int outl,
-            ref byte @in,
+            ref readonly byte @in,
             int inl);
 
         internal static bool EvpCipherUpdate(
@@ -97,7 +98,7 @@ internal static partial class Interop
                 ctx,
                 ref MemoryMarshal.GetReference(output),
                 out bytesWritten,
-                ref MemoryMarshal.GetReference(input),
+                in Helpers.GetNonNullPinnableReference(input),
                 input.Length);
         }
 
@@ -133,7 +134,7 @@ internal static partial class Interop
             Span<byte> output,
             out int bytesWritten)
         {
-            return EvpCipherFinalEx(ctx, ref MemoryMarshal.GetReference(output), out bytesWritten);
+            return EvpCipherFinalEx(ctx, ref Helpers.GetNonNullPinnableReference(output), out bytesWritten);
         }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_AeadCipherFinalEx")]
