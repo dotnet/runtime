@@ -81,12 +81,27 @@ internal sealed partial class GrammarActions
         TypeValue type,
         MarshallingDescriptorValue marshalling,
         CILParser.IdContext? name)
-        => new SignatureArgumentValue(
+    {
+        if (name is
+            {
+                Parent: CILParser.SigArgContext
+                {
+                    Parent: CILParser.SigArgsContext { Parent: CILParser.LocalsDeclContext } arguments
+                }
+            })
+        {
+            // The name of a local, recorded for EndLocalsDirective by the argument's position, as an explicit [n]
+            // is (SetRawParameterAttributeElement).
+            _localNameTokens[arguments.Builder.Count] = name.Start;
+        }
+
+        return new SignatureArgumentValue(
             false,
             attributes,
             type,
             marshalling,
             name is null ? null : GetIdentifier(name));
+    }
 
     internal void SetParameterAttributeElement(CILParser.ParamAttrElementContext context, IToken attribute)
     {

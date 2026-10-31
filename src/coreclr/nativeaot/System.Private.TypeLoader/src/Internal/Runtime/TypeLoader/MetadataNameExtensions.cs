@@ -64,7 +64,7 @@ namespace Internal.Runtime.TypeLoader
                         break;
 
                     case HandleType.NamespaceDefinition:
-                        currentHandle = currentHandle.ToNamespaceDefinitionHandle(reader).GetNamespaceDefinition(reader).ParentScopeOrNamespace;
+                        currentHandle = currentHandle.ToNamespaceDefinitionHandle(reader).GetNamespaceDefinition(reader).Scope;
                         break;
 
                     case HandleType.ScopeDefinition:
@@ -85,13 +85,7 @@ namespace Internal.Runtime.TypeLoader
             if (nspace.Name.IsNil)
                 return null;
 
-            var name = nspace.Name.GetConstantStringValue(reader).Value;
-            var containingNamespace = nspace.ParentScopeOrNamespace.IsNil ? null : nspace.ParentScopeOrNamespace.GetFullName(reader);
-
-            if (containingNamespace is not null)
-                return containingNamespace + "." + name;
-
-            return name;
+            return nspace.Name.GetConstantStringValue(reader).Value;
         }
 
         private static string GetFullName(this ScopeDefinitionHandle scopeDefHandle, MetadataReader reader)

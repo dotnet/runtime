@@ -187,9 +187,10 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         assert(m_compiler->lvaWasmVirtualIP != BAD_VAR_NUM);
         assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
 
-        // Helpers may be called without a PEP, so their identity is independent of the caller.
+        // NativeAOT encodes the method start. CoreCLR helpers may be called without a PEP,
+        // so their identity is independent of the caller.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
+        if (m_compiler->IsNativeAot() || m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
         {
             GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
         }
@@ -2176,9 +2177,8 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         icon = treeNode->AsIntConCommon();
         if (icon->IsIconHandle())
         {
-            // Wasm has no absolute-address literals; every handle is materialized as a module-base-
-            // relative constant and relocated. compReloc is always on for a real AOT compile, so a
-            // handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
+            // Handles need linker relocations for NativeAOT or image-relative relocations for R2R.
+            // A handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
             assert(icon->ImmedValNeedsReloc(m_compiler) || m_compiler->RunningSuperPmiReplay());
             GetEmitter()->emitAddressConstant((void*)icon->IntegralValue());
             WasmProduceReg(treeNode);
@@ -3150,11 +3150,18 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     if (addr->isContained() && !addr->OperIs(GT_LEA))
     {
-        // A contained address constant folds into the memarg offset, so emit just the image base here.
+        // A contained address constant folds into the memarg offset, so emit just the address base here.
         //
         assert(addr->IsIconHandle() && !tree->TypeIs(TYP_SIMD12));
         assert(addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler));
-        GetEmitter()->emitImageBase();
+        if (m_compiler->IsNativeAot())
+        {
+            GetEmitter()->emitIns_I(INS_i32_const, EA_PTRSIZE, 0);
+        }
+        else
+        {
+            GetEmitter()->emitImageBase();
+        }
         GetEmitter()->emitIns_MemargAddress(ins_Load(type), emitActualTypeSize(type),
                                             (void*)addr->AsIntConCommon()->IntegralValue());
     }
@@ -4654,10 +4661,11 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
         maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
     }
 
-    // Runtime wants us to report twice the actual Virtual IP range as code size.
+    // CoreCLR doubles virtual IPs to preserve the low-bit tag on virtual code addresses.
+    // NativeAOT uses unscaled virtual IPs.
     // Use 1 as the prolog size.
     //
-    codeSize   = 2 * maxVirtualIP;
+    codeSize   = m_compiler->IsNativeAot() ? maxVirtualIP : 2 * maxVirtualIP;
     prologSize = 1;
 
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).

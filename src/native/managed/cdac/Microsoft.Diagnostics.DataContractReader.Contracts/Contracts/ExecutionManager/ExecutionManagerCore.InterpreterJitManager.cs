@@ -39,7 +39,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (!GetInterpreterRealCodeHeader(codeStart, out Data.InterpreterRealCodeHeader? realCodeHeader))
                 return false;
 
-            info = new CodeBlock(codeStart.Value, realCodeHeader.MethodDesc, relativeOffset, rangeSection.Data.JitManager);
+            info = new CodeBlock(codeStart.Value, realCodeHeader.MethodDesc, relativeOffset, rangeSection);
             return true;
         }
 

@@ -107,14 +107,13 @@ namespace ILCompiler
                 }
             }
 
-            public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+            public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
             {
                 foreach (EcmaMethod method in GetExportedMethods(_module))
                 {
                     if (!method.IsUnmanagedCallersOnly)
                     {
-                        foreach (DependencyListEntry dependency in GetMethodStaticDependencies(context, method, "Runtime export", new Utf8String(method.GetRuntimeExportName())))
-                            yield return dependency;
+                        AddMethodStaticDependencies(sink, context, method, "Runtime export", new Utf8String(method.GetRuntimeExportName()));
 
                         continue;
                     }
@@ -122,15 +121,12 @@ namespace ILCompiler
                     if (!TryGetAssociatedSourceType(method, out TypeDesc associatedSourceType) || associatedSourceType is not null)
                         continue;
 
-                    foreach (DependencyListEntry dependency in GetMethodStaticDependencies(context, method, "Native callable", new Utf8String(method.GetUnmanagedCallersOnlyExportName())))
-                        yield return dependency;
+                    AddMethodStaticDependencies(sink, context, method, "Native callable", new Utf8String(method.GetUnmanagedCallersOnlyExportName()));
                 }
             }
 
-            public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+            public override void AddConditionalDependencies(DependencySink sink, NodeFactory context)
             {
-                List<CombinedDependencyListEntry> dependencies = [];
-
                 foreach (EcmaMethod method in GetExportedMethods(_module))
                 {
                     if (!TryGetAssociatedSourceType(method, out TypeDesc associatedSourceType) || associatedSourceType is null)
@@ -140,24 +136,23 @@ namespace ILCompiler
 
                     IMethodNode methodEntryPoint = GetMethodEntrypointAndAddAlias(context, method, new Utf8String(method.GetUnmanagedCallersOnlyExportName()));
 
-                    dependencies.Add(new CombinedDependencyListEntry(
+                    sink.Add(new CombinedDependencyListEntry(
                         methodEntryPoint,
                         effectiveTrimTargetType,
                         "Native callable with associated source type"));
 
-                    RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(dependencies, context, effectiveTrimTargetType, "Associated source type that could be loaded at runtime");
+                    RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(sink, context, effectiveTrimTargetType, "Associated source type that could be loaded at runtime");
                 }
 
-                return dependencies;
             }
 
-            public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
+            public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
 
-            private IEnumerable<DependencyListEntry> GetMethodStaticDependencies(NodeFactory context, EcmaMethod method, string reason, Utf8String exportName)
+            private void AddMethodStaticDependencies(DependencySink sink, NodeFactory context, EcmaMethod method, string reason, Utf8String exportName)
             {
                 IMethodNode methodEntryPoint = GetMethodEntrypointAndAddAlias(context, method, exportName);
 
-                yield return new DependencyListEntry(methodEntryPoint, reason);
+                sink.Add(methodEntryPoint, reason);
             }
 
             private IMethodNode GetMethodEntrypointAndAddAlias(NodeFactory context, EcmaMethod method, Utf8String exportName)

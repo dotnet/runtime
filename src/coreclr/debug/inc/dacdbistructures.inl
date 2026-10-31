@@ -643,7 +643,7 @@ void FieldData::ClearFields()
 }
 
 inline
-BOOL FieldData::OkToGetOrSetInstanceOffset()
+BOOL FieldData::OkToGetOrSetInstanceOffset() const
 {
     return (!m_fFldIsStatic && !m_fFldIsRVA && !m_fFldIsTLS &&
             m_fFldStorageAvailable  && (m_pFldStaticAddress == (CORDB_ADDRESS)NULL));
@@ -662,7 +662,7 @@ void FieldData::SetInstanceOffset(ULONG64 offset)
 }
 
 inline
-BOOL FieldData::OkToGetOrSetStaticAddress()
+BOOL FieldData::OkToGetOrSetStaticAddress() const
 {
     return (m_fFldIsStatic && !m_fFldIsTLS &&
             m_fFldStorageAvailable && (m_fldInstanceOffset == 0));
@@ -681,7 +681,7 @@ void FieldData::SetStaticAddress(CORDB_ADDRESS addr)
 
 // Get the offset of a field
 inline
-CORDB_ADDRESS FieldData::GetInstanceOffset()
+CORDB_ADDRESS FieldData::GetInstanceOffset() const
 {
     _ASSERTE(!m_fFldIsStatic);
     _ASSERTE(!m_fFldIsRVA);
@@ -693,7 +693,7 @@ CORDB_ADDRESS FieldData::GetInstanceOffset()
 
 // Get the static address for a field
 inline
-CORDB_ADDRESS FieldData::GetStaticAddress()
+CORDB_ADDRESS FieldData::GetStaticAddress() const
 {
     _ASSERTE(m_fFldIsStatic);
     _ASSERTE(!m_fFldIsTLS);

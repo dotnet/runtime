@@ -1723,6 +1723,12 @@ ep_init (void)
 
 	// Allow overriding the sampling rate via DOTNET_EventPipeThreadSamplingRate (in milliseconds).
 	uint32_t configured_rate_ms = ep_rt_config_value_get_sampling_rate ();
+#ifdef PERFTRACING_DISABLE_THREADS
+	// Reserve INT32_MAX for sampling every instrumentation point in cooperative profilers.
+	if (configured_rate_ms == INT32_MAX)
+		ep_sample_profiler_set_sampling_rate (0);
+	else
+#endif
 	if (configured_rate_ms > 0)
 		ep_sample_profiler_set_sampling_rate ((uint64_t)configured_rate_ms * 1000000);
 	else
