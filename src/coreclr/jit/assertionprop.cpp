@@ -4842,11 +4842,35 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     }
 
     // Exact type assertions are about the object, while op1 is expected to be its method table load.
-    ValueNum  op1ObjVN = ValueNumStore::NoVN;
+    ValueNum  op1ObjVN    = ValueNumStore::NoVN;
+    ValueNum  op1DefObjVN = ValueNumStore::NoVN;
     VNFuncApp funcApp;
     if (op1->TypeIs(TYP_I_IMPL) && vnStore->GetVNFunc(op1VN, &funcApp) && funcApp.FuncIs(VNF_InvariantNonNullLoad))
     {
         op1ObjVN = funcApp.GetArg(0);
+
+        // CSE may update the receiver without updating the method-table VN.
+        // Also consult the receiver of the load defining this CSE value.
+        GenTree* load = op1->gtCommaStoreVal();
+        if (load->OperIs(GT_LCL_VAR) && load->AsLclVar()->HasSsaName())
+        {
+            GenTreeLclVar* local  = load->AsLclVar();
+            LclVarDsc*     varDsc = lvaGetDesc(local);
+            if (varDsc->lvIsCSE && varDsc->TypeIs(TYP_I_IMPL))
+            {
+                GenTreeLclVarCommon* def = varDsc->GetPerSsaData(local->GetSsaNum())->GetDefNode();
+                if ((def != nullptr) && def->OperIs(GT_STORE_LCL_VAR) && ((def->gtFlags & GTF_VAR_USEASG) == 0))
+                {
+                    load = def->Data()->gtCommaStoreVal();
+                }
+            }
+        }
+
+        if (load->OperIs(GT_IND) && load->TypeIs(TYP_I_IMPL) && load->AsIndir()->Addr()->TypeIs(TYP_REF) &&
+            (vnStore->VNLiberalNormalValue(load->gtVNPair) == vnStore->VNLiberalNormalValue(op1->gtVNPair)))
+        {
+            op1DefObjVN = optConservativeNormalVN(load->AsIndir()->Addr());
+        }
     }
 
     // Find an equal or not equal assertion involving "op1" and "op2".
@@ -4861,7 +4885,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         }
 
         if ((curAssertion.GetOp1().KindIs(O1K_VN) && (curAssertion.GetOp1().GetVN() == op1VN)) ||
-            (curAssertion.GetOp1().KindIs(O1K_EXACT_TYPE) && (curAssertion.GetOp1().GetVN() == op1ObjVN)))
+            (curAssertion.GetOp1().KindIs(O1K_EXACT_TYPE) &&
+             ((curAssertion.GetOp1().GetVN() == op1ObjVN) || (curAssertion.GetOp1().GetVN() == op1DefObjVN))))
         {
             JITDUMP("Found matching assertion #%02u for tree %06u.", GetAssertionIndex(index), dspTreeID(tree));
             const bool result = curAssertion.KindIs(OAK_EQUAL) == tree->OperIs(GT_EQ);
