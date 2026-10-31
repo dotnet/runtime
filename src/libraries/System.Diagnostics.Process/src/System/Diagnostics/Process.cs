@@ -592,6 +592,7 @@ namespace System.Diagnostics
                 if (_threads == null)
                 {
                     ProcessInfo processInfo = GetProcessInfo();
+                    EnsureThreadsPopulated(processInfo);
                     int count = processInfo._threadInfoList.Count;
                     ProcessThread[] newThreadsArray = new ProcessThread[count];
                     for (int i = 0; i < count; i++)
@@ -617,6 +618,8 @@ namespace System.Diagnostics
         }
 
         partial void EnsureHandleCountPopulated();
+
+        partial void EnsureThreadsPopulated(ProcessInfo processInfo);
 
         public long VirtualMemorySize64
             => GetProcessInfo().VirtualBytes;

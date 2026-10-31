@@ -1214,5 +1214,113 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(RemotelyInvokable.SuccessExitCode, childHandle.Process.ExitCode);
             });
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void HandleCount_OtherProcess_MatchesFileDescriptorDirectory()
+        {
+            const string ChildReadyMessage = "Child ready";
+
+            var options = new RemoteInvokeOptions
+            {
+                StartInfo = new ProcessStartInfo { RedirectStandardOutput = true, RedirectStandardInput = true }
+            };
+
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () =>
+            {
+                // Open the standard streams before signaling readiness so that the child
+                // does not open or close any more file descriptors while it waits.
+                TextReader input = Console.In;
+                Console.WriteLine(ChildReadyMessage);
+                input.ReadToEnd();
+            }, options);
+
+            try
+            {
+                AssertRemoteProcessStandardOutputLine(handle, ChildReadyMessage, WaitInMS);
+
+                int expected = Directory.GetFileSystemEntries($"/proc/{handle.Process.Id}/fd").Length;
+                Assert.Equal(expected, handle.Process.HandleCount);
+            }
+            finally
+            {
+                handle.Process.StandardInput.Close();
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void HandleCount_CurrentProcess_IncreasesWhenFilesAreOpened()
+        {
+            // Run in a separate process as other tests open and close files in the test process.
+            RemoteExecutor.Invoke(static () =>
+            {
+                string path = Path.GetTempFileName();
+
+                try
+                {
+                    using Process p = Process.GetCurrentProcess();
+
+                    // Warm up the code paths so that nothing is lazily initialized between the measurements.
+                    OpenAndCloseTwoFiles(path);
+                    p.Refresh();
+                    _ = p.HandleCount;
+
+                    p.Refresh();
+                    int before = p.HandleCount;
+                    int during;
+
+                    using (var one = new FileStream(path, FileMode.Open, FileAccess.Read))
+                    using (var two = new FileStream(path, FileMode.Open, FileAccess.Read))
+                    {
+                        p.Refresh();
+                        during = p.HandleCount;
+                    }
+
+                    p.Refresh();
+                    int after = p.HandleCount;
+
+                    // Assert only once all of the measurements have been taken. The first call to an assertion
+                    // method can load assemblies, and each assembly that is loaded holds file descriptors open.
+                    Assert.Equal(before + 2, during);
+                    Assert.Equal(before, after);
+                }
+                finally
+                {
+                    File.Delete(path);
+                }
+
+                static void OpenAndCloseTwoFiles(string path)
+                {
+                    using var one = new FileStream(path, FileMode.Open, FileAccess.Read);
+                    using var two = new FileStream(path, FileMode.Open, FileAccess.Read);
+                }
+            }).Dispose();
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Threads_AreAvailableAfterOtherProcessInformationWasRead()
+        {
+            using Process p = Process.GetCurrentProcess();
+
+            // Reading the memory properties must not require (or prevent) the thread list being read afterwards.
+            Assert.True(p.WorkingSet64 > 0);
+            Assert.NotEmpty(p.Threads.Cast<ProcessThread>());
+
+            p.Refresh();
+            Assert.NotEmpty(p.Threads.Cast<ProcessThread>());
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Threads_OtherProcess_AreAvailableAfterOtherProcessInformationWasRead()
+        {
+            Process p = CreateDefaultProcess();
+
+            // Reading the memory properties must not require (or prevent) the thread list being read afterwards.
+            Assert.True(p.WorkingSet64 > 0);
+            Assert.NotEmpty(p.Threads.Cast<ProcessThread>());
+        }
     }
 }
