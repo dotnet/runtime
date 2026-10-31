@@ -193,145 +193,18 @@ namespace System.Buffers.Text
 
         private static bool TryParseInt32D(ReadOnlySpan<byte> source, out int value, out int bytesConsumed)
         {
-            if (source.Length < 1)
-                goto FalseExit;
+            // Parsing as Int64 and range-checking accepts and rejects exactly the same inputs as a dedicated
+            // Int32 parser would, and keeps this method small enough for the JIT to inline it.
 
-            int sign = 1;
-            int index = 0;
-            int num = source[index];
-            if (num == '-')
+            if (TryParseInt64D(source, out long parsedValue, out bytesConsumed) && parsedValue == (int)parsedValue)
             {
-                sign = -1;
-                index++;
-                if ((uint)index >= (uint)source.Length)
-                    goto FalseExit;
-                num = source[index];
-            }
-            else if (num == '+')
-            {
-                index++;
-                if ((uint)index >= (uint)source.Length)
-                    goto FalseExit;
-                num = source[index];
+                value = (int)parsedValue;
+                return true;
             }
 
-            int answer = 0;
-
-            if (ParserHelpers.IsDigit(num))
-            {
-                if (num == '0')
-                {
-                    do
-                    {
-                        index++;
-                        if ((uint)index >= (uint)source.Length)
-                            goto Done;
-                        num = source[index];
-                    } while (num == '0');
-                    if (!ParserHelpers.IsDigit(num))
-                        goto Done;
-                }
-
-                answer = num - '0';
-                index++;
-
-                if ((uint)index >= (uint)source.Length)
-                    goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
-
-                if ((uint)index >= (uint)source.Length)
-                    goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
-
-                if ((uint)index >= (uint)source.Length)
-                    goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
-
-                if ((uint)index >= (uint)source.Length)
-                    goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
-
-                if ((uint)index >= (uint)source.Length)
-                    goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
-
-                if ((uint)index >= (uint)source.Length)
-                    goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
-
-                if ((uint)index >= (uint)source.Length)
-                    goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
-
-                if ((uint)index >= (uint)source.Length)
-                    goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
-
-                // Potential overflow
-                if ((uint)index >= (uint)source.Length)
-                    goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                if (answer > int.MaxValue / 10)
-                    goto FalseExit; // Overflow
-                answer = answer * 10 + num - '0';
-                // if sign < 0, (-1 * sign + 1) / 2 = 1
-                // else, (-1 * sign + 1) / 2 = 0
-                if ((uint)answer > (uint)int.MaxValue + (-1 * sign + 1) / 2)
-                    goto FalseExit; // Overflow
-
-                if ((uint)index >= (uint)source.Length)
-                    goto Done;
-                if (!ParserHelpers.IsDigit(source[index]))
-                    goto Done;
-
-                // Guaranteed overflow
-                goto FalseExit;
-            }
-
-        FalseExit:
-            bytesConsumed = default;
+            bytesConsumed = 0;
             value = default;
             return false;
-
-        Done:
-            bytesConsumed = index;
-            value = answer * sign;
-            return true;
         }
 
         private static bool TryParseInt64D(ReadOnlySpan<byte> source, out long value, out int bytesConsumed)
