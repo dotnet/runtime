@@ -68,6 +68,7 @@ namespace System.Net.Http
         // Requests currently in flight will continue to be processed.
         // When all requests have completed, the connection will be torn down.
         private bool _shutdown;
+        private bool _disposeWhenIdle;
 
         // If this is set, the connection is aborting due to an IO failure (IOException) or a protocol violation (Http2ProtocolException).
         // _shutdown above is true, and requests in flight have been (or are being) failed.
@@ -307,7 +308,7 @@ namespace System.Net.Http
 
             lock (SyncObject)
             {
-                if (_shutdown)
+                if (_shutdown || _disposeWhenIdle)
                 {
                     return false;
                 }
@@ -340,7 +341,7 @@ namespace System.Net.Http
 
                 if (_streamsInUse < _maxConcurrentStreams)
                 {
-                    SignalAvailableStreamsWaiter(true);
+                    SignalAvailableStreamsWaiter(!_disposeWhenIdle);
                 }
 
                 if (_streamsInUse == 0)
@@ -349,6 +350,25 @@ namespace System.Net.Http
                     {
                         FinalTeardown();
                     }
+                    else if (_disposeWhenIdle)
+                    {
+                        Shutdown();
+                    }
+                }
+            }
+        }
+
+        // An untracked pool must not keep a connection alive after its assigned streams complete.
+        // Delay shutdown until then so a waiter that has reserved a stream can still send its request.
+        public void DisposeWhenIdle()
+        {
+            lock (SyncObject)
+            {
+                _disposeWhenIdle = true;
+                SignalAvailableStreamsWaiter(false);
+                if (_streamsInUse == 0)
+                {
+                    Shutdown();
                 }
             }
         }
@@ -363,7 +383,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(_availableStreamsWaiter is null, "As used currently, shouldn't already have a waiter");
 
-                if (_shutdown)
+                if (_shutdown || _disposeWhenIdle)
                 {
                     return Task.FromResult(false);
                 }
