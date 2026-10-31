@@ -51,6 +51,47 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, line => line.Contains("QCall trimming sample passed", StringComparison.Ordinal));
         }
 
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, false })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, false })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false, true })]
+        [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true, true })]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload"), TestCategory("no-workload")]
+        public async Task UnusedCoreLibEntryPointsAreTrimmed(Configuration config, bool aot, bool useEntryPoints, bool readyToRun)
+        {
+            string extraProperties = $"<WasmBuildNative>true</WasmBuildNative><WasmEmitSymbolMap>true</WasmEmitSymbolMap><AllowUnsafeBlocks>true</AllowUnsafeBlocks><PublishTrimmed>true</PublishTrimmed><PublishReadyToRun>{readyToRun}</PublishReadyToRun>";
+            if (useEntryPoints)
+                extraProperties += "<DefineConstants>$(DefineConstants);USE_ENTRYPOINTS</DefineConstants>";
+
+            string runtimeSdkImport = string.Empty;
+            if (!s_buildEnv.IsWorkload)
+            {
+                extraProperties += "<UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>";
+                runtimeSdkImport = $"<Import Project=\"Sdk.targets\" Sdk=\"Microsoft.NET.Runtime.WebAssembly.Sdk\" Version=\"{s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework)}\" />";
+            }
+
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, $"entrypoints_{useEntryPoints}_{readyToRun}", extraProperties: extraProperties, insertAtEnd: runtimeSdkImport);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "CoreLibEntryPointTrimming.cs"));
+            ReplaceMainJsWithMinimalRunMain();
+            PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false,
+                ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)), isNativeBuild: true);
+
+            string nativeBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-publish");
+            string symbols = File.ReadAllText(Path.Combine(nativeBuildDir, "dotnet.native.js.symbols"));
+            string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
+            Assert.Contains("const void* QCallResolveDllImport(const char* name)", table);
+            Assert.DoesNotContain("{\"QCall\",", table);
+            foreach ((string entryPoint, string symbol) in new[] { ("GCInterface_GetTotalMemory", "GCInterface_GetTotalMemory"), ("Math_Asinh", "Rhp_asinh") })
+            {
+                Assert.Equal(useEntryPoints, symbols.Split('\n').Any(line => line.TrimEnd('\r').EndsWith($":{symbol}", StringComparison.Ordinal)));
+                Assert.Equal(useEntryPoints, table.Contains($"{{ \"{entryPoint}\",", StringComparison.Ordinal));
+            }
+            Assert.False(File.Exists(Path.Combine(nativeBuildDir, "callhelpers-ecalls.cpp")));
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, line => line.Contains("CoreLib entrypoint trimming sample passed", StringComparison.Ordinal));
+        }
+
         // Only Mono's generator rejects a non-blittable callback signature; crossgen2 leaves the
         // check to Roslyn and the runtime.
         [Theory, TestCategory("mono")]

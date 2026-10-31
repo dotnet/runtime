@@ -1197,7 +1197,7 @@ GCFrame::~GCFrame()
 
     // Normally the destructor performs the pop for a GCPROTECT_BEGIN/END scope, so the frame is
     // still linked when we get here. If it was already popped explicitly - by PopExplicitFrames
-    // during EH unwind, or by the interpreter's GCReporting::Unregister - then m_pCurThread is
+    // during EH unwind, or by the interpreter's GCFrameRegistration_UnregisterForGCReporting - then m_pCurThread is
     // NULL and there is nothing left to do.
     if (m_pCurThread != NULL)
     {

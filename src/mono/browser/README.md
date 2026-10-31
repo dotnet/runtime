@@ -14,6 +14,44 @@ Windows build [requirements](../../../docs/workflow/requirements/windows-require
 
 At this time no other build dependencies are necessary to start building for WebAssembly. If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Configurations) to understand configurations. Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`.
 
+### CoreCLR QCall and FCall table trimming
+
+CoreCLR browser and WASI native relinking generates one static QCall/FCall
+entrypoint table in `callhelpers-pinvoke.cpp` from the bundled managed closure.
+Only `System.Private.CoreLib` contributes QCalls and fixed-address FCalls. For
+trimmed apps, the generator scans the surviving declarations in the actual
+post-trim IL, not the runtime-pack CoreLib or ReadyToRun/webcil images.
+
+The generated table uses the QCall resolver for both kinds of entrypoint.
+Static FCalls have C-linkage names derived from the managed type and method,
+such as `Math_Ceiling`. Their FCall calling convention and hidden arguments
+remain unchanged; they do not become P/Invokes or acquire a QCall transition.
+The generator rejects conflicting native lookup names and emits a deterministic,
+ordinally sorted table.
+
+The three generated sources (`callhelpers-pinvoke.cpp`, `callhelpers-reverse.cpp`,
+and `callhelpers-interp-to-managed.cpp`) replace `libcoreclr_gen_static.a` during
+app and runtime-test relinking. The native linker can then discard unused
+static entrypoints and implementations, unless independent native references
+retain them. Prebuilt WASM runtimes use the checked-in full-framework helpers and
+the configuration-specific full native entrypoint table; other CoreCLR platforms
+also use that full table.
+
+The generator is available as
+`crossgen2 --generate-portable-callhelpers <output-dir> --targetos browser
+--targetarch wasm <managed-assemblies>`.
+For WASI, use `--targetos wasi`. Include the actual bundled CoreLib and use
+matching managed/native sources and target configuration. No separate manifest,
+SDK header, or build identity is required. See
+[Generating CoreCLR WebAssembly call helpers](../../coreclr/vm/wasm/generate-coreclr-helpers.md)
+for regenerating the checked-in full-framework sources.
+
+The nine signature-qualified String constructors and `String.FastAllocateString`
+remain in a separate, non-trimmable dynamic mechanism with unchanged dynamic IDs
+and binder roots. Delegate constructors retain their special runtime handling.
+The signature-only `RuntimeHelpers.NewobjHelperDummy` is not emitted as a static
+entrypoint. These exclusions do not remove interpreter signature thunks.
+
 ## macOS
 
 * To build the whole repository, including libraries:

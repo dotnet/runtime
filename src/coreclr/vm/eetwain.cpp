@@ -1018,7 +1018,7 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
 #endif // FEATURE_VARARGS
 
 #ifndef DACCESS_COMPILE
-FCIMPL1(void, GCReporting::Register, GCFrame* frame)
+FCIMPL1(void, GCFrameRegistration_RegisterForGCReporting, GCFrame* frame)
 {
     FCALL_CONTRACT;
 
@@ -1043,7 +1043,7 @@ FCIMPL1(void, GCReporting::Register, GCFrame* frame)
 }
 FCIMPLEND
 
-FCIMPL1(void, GCReporting::Unregister, GCFrame* frame)
+FCIMPL1(void, GCFrameRegistration_UnregisterForGCReporting, GCFrame* frame)
 {
     FCALL_CONTRACT;
 

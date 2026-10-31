@@ -694,7 +694,6 @@ inline GetComIPFromCCW::flags operator|=(GetComIPFromCCW::flags & lhs, GetComIPF
 
 class ComCallWrapper
 {
-    friend class MarshalNative;
     friend class ClrDataAccess;
 
 private:

@@ -15,11 +15,10 @@
 
 #include "qcall.h"
 
-class ArrayNative
+extern "C"
 {
-public:
-    FCDECL1(static INT32, GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE);
-};
+    FCDECL1(INT32, Array_GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE);
+}
 
 extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray, QCallExceptionStatus* qcallError);

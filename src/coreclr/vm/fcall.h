@@ -495,7 +495,7 @@ public:
 #define HCIMPL_PROLOG(funcname) FC_COMMON_PROLOG()
 
 // HCIMPL macros are used to implement JIT helpers. The only difference is that
-// HCIMPL methods are not mapped to a managed method in CoreLib in ecalllist.h.
+// HCIMPL methods are not registered as managed FCalls in the native entrypoint table.
 
 #ifdef SWIZZLE_STKARG_ORDER
 #ifdef SWIZZLE_REGARG_ORDER
