@@ -4154,7 +4154,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (other == null) return false;
             if (Flags != other.Flags) return false;
             if (!Object.Equals(Name, other.Name)) return false;
-            if (HashAlgorithm != other.HashAlgorithm) return false;
             if (MajorVersion != other.MajorVersion) return false;
             if (MinorVersion != other.MinorVersion) return false;
             if (BuildNumber != other.BuildNumber) return false;
@@ -4175,7 +4174,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash.Add(1490364984);
             hash.Add(Flags);
             hash.Add(Name);
-            hash.Add(HashAlgorithm);
             hash.Add(MajorVersion);
             hash.Add(MinorVersion);
             hash.Add(BuildNumber);
@@ -4215,7 +4213,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             writer.Write(Flags);
             writer.Write(Name);
-            writer.Write(HashAlgorithm);
             writer.Write(MajorVersion);
             writer.Write(MinorVersion);
             writer.Write(BuildNumber);
@@ -4254,7 +4251,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public AssemblyFlags Flags;
         public ConstantStringValue Name;
-        public AssemblyHashAlgorithm HashAlgorithm;
         public ushort MajorVersion;
         public ushort MinorVersion;
         public ushort BuildNumber;
