@@ -385,10 +385,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
-        case GT_ADD_HI:
         case GT_SUB_LO:
-        case GT_SUB_HI:
 #endif
+        case GT_ADD_HI:
+        case GT_SUB_HI:
         case GT_SUB:
         case GT_AND:
         case GT_OR:
@@ -407,6 +407,15 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 if (node->OperIs(GT_AND, GT_OR, GT_XOR) && TryFoldBinop(node->AsOp()))
                 {
                     return nextNode;
+                }
+
+                if (node->OperIs(GT_SUB))
+                {
+                    GenTree* replacementNode = TryLowerAddSubOfCompare(node->AsOp());
+                    if (replacementNode != nullptr)
+                    {
+                        return replacementNode->gtNext;
+                    }
                 }
             }
 
@@ -7921,6 +7930,253 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 }
 
 //------------------------------------------------------------------------
+// FindAddSubCompareOperand: Find the compare in ADD/SUB(x, cond), ADD/SUB(x, CAST(long <- cond))
+//    or ADD/SUB(x, ADD(cond, k)).
+//
+// Arguments:
+//    node   - GT_ADD or GT_SUB node
+//    other  - [out] the "x" operand
+//    condOp - [out] the operand of "node" that contains the compare
+//    addCns - [out] the "k" constant, or nullptr if there is none
+//
+// Return Value:
+//    The compare, or nullptr if "node" has none of these shapes.
+//
+GenTree* Lowering::FindAddSubCompareOperand(GenTreeOp* node, GenTree** other, GenTree** condOp, GenTree** addCns)
+{
+    assert(node->OperIs(GT_ADD, GT_SUB));
+
+    if (!m_compiler->opts.OptimizationEnabled() || !node->TypeIs(TYP_INT, TYP_LONG) || node->gtOverflow() ||
+        node->gtSetFlags())
+    {
+        return nullptr;
+    }
+
+    auto findCompare = [this, node](GenTree* op, GenTree** foundCns) -> GenTree* {
+        *foundCns = nullptr;
+
+        if (op->OperIs(GT_CAST) && node->TypeIs(TYP_LONG) && !op->gtOverflow() &&
+            op->AsCast()->CastOp()->OperIsCompare() && op->AsCast()->CastOp()->TypeIs(TYP_INT))
+        {
+            return op->AsCast()->CastOp();
+        }
+
+        if (op->OperIs(GT_ADD) && op->TypeIs(TYP_INT) && node->TypeIs(TYP_INT) && !op->gtOverflow() &&
+            !op->gtSetFlags())
+        {
+            GenTree* addOp1 = op->gtGetOp1();
+            GenTree* addOp2 = op->gtGetOp2();
+
+            if (addOp1->IsCnsIntOrI())
+            {
+                std::swap(addOp1, addOp2);
+            }
+
+            if (addOp1->OperIsCompare() && addOp1->TypeIs(TYP_INT) && addOp2->IsCnsIntOrI() &&
+                !addOp2->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+            {
+                *foundCns = addOp2;
+                return addOp1;
+            }
+
+            return nullptr;
+        }
+
+        return (op->OperIsCompare() && (genActualType(op) == genActualType(node))) ? op : nullptr;
+    };
+
+    *other         = node->gtGetOp1();
+    *condOp        = node->gtGetOp2();
+    GenTree* relop = findCompare(*condOp, addCns);
+
+    if ((relop == nullptr) && node->OperIs(GT_ADD))
+    {
+        std::swap(*other, *condOp);
+        relop = findCompare(*condOp, addCns);
+    }
+
+    return relop;
+}
+
+//------------------------------------------------------------------------
+// TryLowerAddSubOfCompare: Lower ADD/SUB(x, cond) and ADD/SUB(x, ADD(cond, k)), where "cond" is true iff
+//    the unsigned subtraction "a - b" borrows (or iff it does not), to the compare followed by an
+//    add/subtract with carry, when the target has a suitable one (see TryGetCarryOp). For example:
+//
+//      x + ((a <u b) + k)   =>  cmp a, b; adc x, k     (xarch)
+//      x - (a <u b)         =>  cmp a, b; sbc x, x, zr (arm64)
+//
+//    "a == 0", "a != 0", "a <=u c" and "a >u c" are handled as "a <u 1", "a >=u 1",
+//    "a <u c + 1" and "a >=u c + 1" respectively.
+//
+// Arguments:
+//    node - GT_ADD or GT_SUB node
+//
+// Return Value:
+//    The ADD_HI/SUB_HI node if the transformation was done, otherwise nullptr.
+//
+GenTree* Lowering::TryLowerAddSubOfCompare(GenTreeOp* node)
+{
+    GenTree* other;
+    GenTree* condOp;
+    GenTree* addCns;
+    GenTree* relop = FindAddSubCompareOperand(node, &other, &condOp, &addCns);
+
+    // The flags consumer needs "other" in a register and it must not be a constant that may be
+    // materialized with a flags-clobbering instruction.
+    if ((relop == nullptr) || other->IsCnsIntOrI() || !relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
+    {
+        return nullptr;
+    }
+
+    GenTree* cmpOp1 = relop->gtGetOp1();
+    GenTree* cmpOp2 = relop->gtGetOp2();
+
+    if (!varTypeIsIntegral(cmpOp1) || !varTypeIsIntegral(cmpOp2))
+    {
+        return nullptr;
+    }
+
+#ifdef TARGET_XARCH
+    // Keep "*p = *p + cond" as a read-modify-write add. The store address is not lowered yet.
+    LIR::Use use;
+    if (other->OperIs(GT_IND) && BlockRange().TryGetUse(node, &use) && use.User()->OperIs(GT_STOREIND) &&
+        (use.User()->AsStoreInd()->Data() == node))
+    {
+        return nullptr;
+    }
+#endif
+
+#ifndef TARGET_64BIT
+    if (varTypeIsLong(cmpOp1) || varTypeIsLong(cmpOp2))
+    {
+        return nullptr;
+    }
+#endif
+
+    // After the compare, the borrow is set iff "cmpOp1 <u cmpOp2" (with cmpOp2 incremented if 'bumpCns').
+    bool borrowIsCond;
+    bool bumpCns;
+
+    if (relop->OperIs(GT_EQ, GT_NE))
+    {
+        if (!cmpOp2->IsIntegralConst(0))
+        {
+            return nullptr;
+        }
+
+        borrowIsCond = relop->OperIs(GT_EQ);
+        bumpCns      = true;
+    }
+    else
+    {
+        if (!relop->IsUnsigned())
+        {
+            return nullptr;
+        }
+
+        borrowIsCond = relop->OperIs(GT_LT, GT_LE);
+        bumpCns      = relop->OperIs(GT_LE, GT_GT);
+    }
+
+    ssize_t    k = (addCns != nullptr) ? addCns->AsIntCon()->IconValue() : 0;
+    genTreeOps carryOper;
+    ssize_t    imm;
+    if (!TryGetCarryOp(node->OperIs(GT_ADD), borrowIsCond, k, &carryOper, &imm))
+    {
+        return nullptr;
+    }
+
+    if (node->TypeIs(TYP_INT))
+    {
+        imm = static_cast<int32_t>(imm);
+    }
+
+    ssize_t bumpedCns = 0;
+    if (bumpCns)
+    {
+        if (!cmpOp2->IsCnsIntOrI() || cmpOp2->IsIconHandle() || cmpOp2->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        {
+            return nullptr;
+        }
+
+#ifdef TARGET_XARCH
+        unsigned cmpSize = relop->AsOp()->GetCompareSize();
+#else
+        unsigned cmpSize = genTypeSize(genActualType(cmpOp1));
+#endif
+        uint64_t mask  = (cmpSize == 8) ? UINT64_MAX : ((uint64_t(1) << (cmpSize * 8)) - 1);
+        uint64_t value = static_cast<uint64_t>(cmpOp2->AsIntCon()->IconValue()) & mask;
+
+        if (value == mask)
+        {
+            // "a <=u MAX" and "a >u MAX" have no "a <u c + 1" form.
+            return nullptr;
+        }
+
+        value++;
+        bumpedCns = (cmpSize == 4) ? static_cast<int32_t>(value) : static_cast<ssize_t>(value);
+
+        if (cmpOp2->isContained())
+        {
+            ssize_t cns = cmpOp2->AsIntCon()->IconValue();
+            cmpOp2->AsIntCon()->SetIconValue(bumpedCns);
+            bool canContain = IsContainableImmed(relop, cmpOp2);
+            cmpOp2->AsIntCon()->SetIconValue(cns);
+
+            if (!canContain)
+            {
+                return nullptr;
+            }
+        }
+    }
+
+    if (!IsInvariantInRange(relop, node))
+    {
+        return nullptr;
+    }
+
+    JITDUMP("Lowering ADD/SUB of a compare to a carry consuming op:\n");
+    DISPTREERANGE(BlockRange(), node);
+
+    if (bumpCns)
+    {
+        cmpOp2->AsIntCon()->SetIconValue(bumpedCns);
+    }
+
+    if (condOp != relop)
+    {
+        BlockRange().Remove(condOp);
+    }
+
+    if (addCns != nullptr)
+    {
+        BlockRange().Remove(addCns);
+    }
+
+    relop->SetOper(GT_CMP);
+    relop->gtType = TYP_VOID;
+    relop->gtFlags |= GTF_SET_FLAGS;
+    BlockRange().Remove(relop);
+    BlockRange().InsertBefore(node, relop);
+
+    // The flags consumer must immediately follow the flags producer.
+    GenTree* immNode = m_compiler->gtNewIconNode(imm, node->TypeGet());
+    BlockRange().InsertBefore(relop, immNode);
+
+    node->ChangeOper(carryOper);
+    node->gtOp1 = other;
+    node->gtOp2 = immNode;
+    ContainCheckBinary(node);
+
+    JITDUMP("Result:\n");
+    DISPTREERANGE(BlockRange(), node);
+    JITDUMP("\n");
+
+    return node;
+}
+
+//------------------------------------------------------------------------
 // LowerAdd: turn this add into a GT_LEA if that would be profitable
 //
 // Arguments:
@@ -8030,6 +8286,15 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             }
         }
 
+        if (node->OperIs(GT_ADD))
+        {
+            GenTree* replacementNode = TryLowerAddSubOfCompare(node);
+            if (replacementNode != nullptr)
+            {
+                return replacementNode->gtNext;
+            }
+        }
+
 #ifdef TARGET_XARCH
         if (BlockRange().TryGetUse(node, &use))
         {
@@ -8056,6 +8321,12 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         if (TryLowerAddSubToMulLongOp(node, &next))
         {
             return next;
+        }
+
+        GenTree* replacementNode = TryLowerAddOfCompareToCinc(node);
+        if (replacementNode != nullptr)
+        {
+            return replacementNode->gtNext;
         }
     }
 #endif // TARGET_ARM64
@@ -9595,10 +9866,10 @@ void Lowering::ContainCheckNode(GenTree* node)
         case GT_SUB:
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
-        case GT_ADD_HI:
         case GT_SUB_LO:
-        case GT_SUB_HI:
 #endif
+        case GT_ADD_HI:
+        case GT_SUB_HI:
         case GT_AND:
         case GT_OR:
         case GT_XOR:
@@ -11634,9 +11905,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         {
             // 'cur' is part of data flow of 'indir', so we will be moving the
             // currently recorded effects past 'cur'.
-            // MarkTree does not track implicit flags dependencies.
-            if (cur->OperConsumesFlags() || cur->gtSetFlags() ||
-                m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
+            if (m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
                 return false;
