@@ -45,6 +45,32 @@ namespace System.Net.Security
             };
         }
 
+        private static bool CanQueryConnectionInfoDuringCertificateValidation()
+        {
+            if (OperatingSystem.IsAndroidVersionAtLeast(29))
+            {
+                // API 29+ can read the negotiated cipher from the handshake session.
+                return true;
+            }
+
+            if (OperatingSystem.IsAndroidVersionAtLeast(27))
+            {
+                // API 27 can dereference a null cipher and cause SIGSEGV.
+                // API 28 reports SSL_NULL_WITH_NULL_NULL instead.
+                // Both must wait for handshake completion.
+                return false;
+            }
+
+            if (OperatingSystem.IsAndroidVersionAtLeast(26))
+            {
+                // API 26 exposes an intermediate handshake session with a valid cipher.
+                return true;
+            }
+
+            // API 24-25 report (NONE) before certificate validation completes.
+            return false;
+        }
+
         private bool ShouldRespectPlatformValidation()
         {
             // Android platform trust is part of default/callback-only validation, but explicit
