@@ -78,8 +78,6 @@ public:
     FCDECL3(static VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
 };
 
-const UINT MEM_PRESSURE_COUNT = 4;
-
 struct GCGenerationInfo
 {
     UINT64 sizeBefore;
@@ -137,16 +135,11 @@ struct GCHeapHardLimitInfo
 };
 
 class GCInterface {
-private:
-    static INT32    m_gc_counts[3];
-
-    static UINT64   m_addPressure[MEM_PRESSURE_COUNT];
-    static UINT64   m_remPressure[MEM_PRESSURE_COUNT];
-    static UINT     m_iteration;
-
 public:
-    static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
-
+    FCDECL0(static INT64, GetCurrentObjSize);
+    FCDECL0(static INT64, GetGCNow);
+    FCDECL0(static INT64, GetLastGCStartTime);
+    FCDECL0(static INT64, GetLastGCDuration);
     FCDECL0(static INT64,   GetTotalPauseDuration);
     FCDECL2(static void,    GetMemoryInfo, Object* objUNSAFE, int kind);
     FCDECL0(static UINT32,  GetMemoryLoad);
@@ -172,7 +165,6 @@ public:
     NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
     static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
 
-    static void CheckCollectionCount();
     static void RemoveMemoryPressure(UINT64 bytesAllocated);
     static void AddMemoryPressure(UINT64 bytesAllocated);
 
@@ -180,10 +172,6 @@ public:
     static int  RefreshMemoryLimit();
     static enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
     static uint64_t GetGenerationBudget(int generation);
-
-private:
-    // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
-    NOINLINE static void GarbageCollectModeAny(int generation);
 };
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise(QCallExceptionStatus* qcallError);

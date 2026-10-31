@@ -3218,7 +3218,14 @@ OBJECTREF Thread::GetExposedObject()
         }
         else
         {
+            OBJECTREF exposedObject = ObjectFromHandle(m_ExposedObject);
+            GCPROTECT_BEGIN(exposedObject);
+
             attempt->ClearInternal();
+            tsHolder.Release();
+            GCInterface::RemoveMemoryPressure(sizeof(Thread));
+
+            GCPROTECT_END();
         }
 
         GCPROTECT_END();

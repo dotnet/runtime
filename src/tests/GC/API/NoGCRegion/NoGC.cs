@@ -1,5 +1,9 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Runtime;
+using System.Threading;
 using Xunit;
 using TestLibrary;
 
@@ -8,6 +12,56 @@ public class Test
     private static byte[][] arrByteArray;
     private static int arrByteArrayLen;
     private static Random Rand;
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void MemoryPressureEndsNoGCRegion(bool useLohBudget)
+    {
+        const long Budget = 64 * 1024 * 1024;
+        const long Pressure = 1024 * 1024;
+        const int MaximumIterations = 256;
+
+        GC.AddMemoryPressure(1);
+        GC.RemoveMemoryPressure(1);
+        _ = GCSettings.LatencyMode;
+        Thread.Sleep(1);
+        Assert.True(true);
+        GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+
+        bool started = useLohBudget
+            ? GC.TryStartNoGCRegion(Budget, Budget / 2)
+            : GC.TryStartNoGCRegion(Budget);
+        Assert.True(started);
+
+        int initialGen2Count = GC.CollectionCount(2);
+        int finalGen2Count;
+        bool ended;
+        try
+        {
+            for (int i = 0; i < MaximumIterations && GCSettings.LatencyMode == GCLatencyMode.NoGCRegion; i++)
+            {
+                Thread.Sleep(10);
+                GC.AddMemoryPressure(Pressure);
+                GC.RemoveMemoryPressure(Pressure);
+            }
+
+            finalGen2Count = GC.CollectionCount(2);
+            ended = GCSettings.LatencyMode != GCLatencyMode.NoGCRegion;
+        }
+        finally
+        {
+            if (GCSettings.LatencyMode == GCLatencyMode.NoGCRegion)
+            {
+                GC.EndNoGCRegion();
+            }
+        }
+
+        Assert.True(ended);
+        Assert.True(finalGen2Count > initialGen2Count);
+    }
 
     static void DoAlloc()
     {
@@ -207,4 +261,3 @@ public class Test
         return isTestSucceeded ? 100 : 1;
     }
 }
-

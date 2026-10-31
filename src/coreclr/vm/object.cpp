@@ -1530,7 +1530,6 @@ void ThreadBaseObject::ClearInternal()
 
     _ASSERTE(m_InternalThread != NULL);
     m_InternalThread = NULL;
-    GCInterface::RemoveMemoryPressure(sizeof(Thread));
 }
 
 #endif // #ifndef DACCESS_COMPILE

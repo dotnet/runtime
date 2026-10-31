@@ -23,8 +23,17 @@ namespace System.Reflection
     //
     internal sealed partial class LoaderAllocatorScout
     {
+        private const long MemoryPressure = 30_000;
+
         // This field is set by the VM to atomically transfer the ownership to the managed loader allocator
         internal IntPtr m_nativeLoaderAllocator;
+        private bool _memoryPressureAdded;
+
+        internal LoaderAllocatorScout()
+        {
+            GC.AddMemoryPressure(MemoryPressure);
+            _memoryPressureAdded = true;
+        }
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_Destroy")]
@@ -33,15 +42,20 @@ namespace System.Reflection
 
         ~LoaderAllocatorScout()
         {
-            if (m_nativeLoaderAllocator == IntPtr.Zero)
-                return;
-
             // Destroy returns false if the managed LoaderAllocator is still alive.
-            if (!Destroy(m_nativeLoaderAllocator))
+            if (m_nativeLoaderAllocator != IntPtr.Zero && !Destroy(m_nativeLoaderAllocator))
             {
                 // Somebody might have been holding a reference on us via weak handle.
                 // We will keep trying. It will be hopefully released eventually.
                 GC.ReRegisterForFinalize(this);
+                return;
+            }
+
+            // Initialization can fail before ownership of the native allocator is transferred.
+            if (_memoryPressureAdded)
+            {
+                _memoryPressureAdded = false;
+                GC.RemoveMemoryPressure(MemoryPressure);
             }
         }
     }
