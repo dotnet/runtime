@@ -33,6 +33,8 @@ namespace System.Net.Http.Functional.Tests
 
         protected static bool IsWinHttpHandler => false;
 
+        public static bool IsWasiHttpHandler => false;
+
         public static bool IsHttp3Supported
         {
             get

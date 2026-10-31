@@ -10,6 +10,8 @@ namespace System.Net.Http.Functional.Tests
     {
         protected static bool IsWinHttpHandler => true;
 
+        public static bool IsWasiHttpHandler => false;
+
         // WinHTTP owns TLS and does not expose SslStream's resumption setting.
         protected static WinHttpClientHandler CreateHttpClientHandler(Version useVersion = null, bool allowAllCertificates = true, bool allowTlsResume = true)
         {
