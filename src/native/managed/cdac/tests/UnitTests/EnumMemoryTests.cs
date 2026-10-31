@@ -5,6 +5,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -481,7 +482,7 @@ public unsafe partial class EnumMemoryTests
         {
             using RecordingCallback callback = new(supportsUpdates: false);
             Assert.Equal(HResults.S_OK, impl.EnumMemoryRegions((void*)callback.Address, 0, CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_DEFAULT));
-            Assert.Equal(3 * (i + 1), imageReadCount);
+            Assert.Equal(i + 1, imageReadCount);
             Assert.True(imageReadUnderLock);
             Assert.Contains((ImageBase, 64u), callback.Ranges);
             Assert.Contains((ImageBase + 0x80, 264u), callback.Ranges);
@@ -493,11 +494,11 @@ public unsafe partial class EnumMemoryTests
 
         using RecordingCallback cancelled = new(supportsUpdates: false) { CancelAtAddress = ImageBase };
         Assert.Equal(HResults.COR_E_OPERATIONCANCELED, impl.EnumMemoryRegions((void*)cancelled.Address, 0, CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_DEFAULT));
-        Assert.Equal(7, imageReadCount);
+        Assert.Equal(3, imageReadCount);
         using RecordingCallback afterCancellation = new(supportsUpdates: false);
         Assert.Equal(HResults.S_OK, impl.EnumMemoryRegions((void*)afterCancellation.Address, 0, CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_DEFAULT));
         Assert.Contains((ImageBase, 0x300u), afterCancellation.Ranges);
-        Assert.Equal(10, imageReadCount);
+        Assert.Equal(4, imageReadCount);
     }
 
     [Theory]
@@ -595,13 +596,13 @@ public unsafe partial class EnumMemoryTests
 
     [Theory]
     [InlineData("no-base", 0)]
-    [InlineData("unreadable-dos", 1)]
-    [InlineData("unreadable-pe", 2)]
+    [InlineData("unreadable-dos", 2)]
+    [InlineData("unreadable-pe", 3)]
     [InlineData("not-pe", 1)]
     [InlineData("negative-offset", 1)]
-    [InlineData("bad-signature", 2)]
-    [InlineData("bad-optional-header", 2)]
-    [InlineData("zero-headers", 2)]
+    [InlineData("bad-signature", 1)]
+    [InlineData("bad-optional-header", 1)]
+    [InlineData("zero-headers", 1)]
     public void RuntimeImageDiscovery_HandlesMissingOrInvalidImages(string scenario, int expectedReads)
     {
         const ulong ImageBase = 0x10000;
@@ -637,7 +638,8 @@ public unsafe partial class EnumMemoryTests
                 {
                     reads++;
                     if ((scenario == "unreadable-dos" && address == ImageBase)
-                        || (scenario == "unreadable-pe" && address == ImageBase + 0x80))
+                        || (scenario == "unreadable-pe" && address <= ImageBase + 0x80
+                            && (ulong)buffer.Length > ImageBase + 0x80 - address))
                     {
                         return HResults.E_FAIL;
                     }
@@ -1274,7 +1276,10 @@ public unsafe partial class EnumMemoryTests
         VerifyRead(() => Assert.Equal(Text, recording.ReadUtf8String(Utf8Address, strict: true)));
         VerifyRead(() => Assert.Equal(Text, recording.ReadUtf16String(Utf16Address)));
         VerifyRead(() => Assert.Equal(longText, recording.ReadUtf8String(0x7000)));
-        VerifyRead(() => Assert.Equal(longText, recording.ReadUtf16String(0x8000)));
+        VerifyRead(() => Assert.Equal(longText, recording.ReadUtf16String(0x8000)),
+            expectedReads: Enumerable.Range(0, longText.Length + 1)
+                .Select(i => (0x8000ul + (ulong)i * sizeof(char), (ulong)sizeof(char)))
+                .Append((0x8000ul, (ulong)utf16.GetByteCount(longText))));
         VerifyRead(() => Assert.Empty(recording.ReadUtf8String(EmptyAddress)));
         VerifyRead(() => Assert.Empty(recording.ReadUtf16String(EmptyAddress)));
         VerifyRead(() => Assert.Equal("\ufffd\ufffd", recording.ReadUtf8String(InvalidUtf8Address)));
@@ -1333,12 +1338,12 @@ public unsafe partial class EnumMemoryTests
 
         void AddBytes(ulong address, byte[] bytes) => builder.AddHeapFragment(new() { Address = address, Data = bytes, Name = $"Data_{address:x}" });
 
-        void VerifyRead(Action action, bool expectReads = true)
+        void VerifyRead(Action action, bool expectReads = true, IEnumerable<(ulong Address, ulong Size)>? expectedReads = null)
         {
             underlyingReads.Clear();
             recordedReads.Clear();
             action();
-            Assert.Equal(underlyingReads, recordedReads);
+            Assert.Equal(expectedReads ?? underlyingReads, recordedReads);
             if (expectReads)
                 Assert.NotEmpty(recordedReads);
             else
@@ -1869,7 +1874,18 @@ public unsafe partial class EnumMemoryTests
         Target memory = CreateMiniMetadataTarget(new() { IsLittleEndian = true, Is64Bit = true }, new byte[64]);
         ContractDescriptorTarget target = ContractDescriptorTarget.Create(
             ContractDescriptorParser.ParseCompact("""{"version":2,"globals":{"MiniMetaDataBuffAddress":[0],"MiniMetaDataBuffMaxSize":[1]}}"""u8), [0x1000, 0x2000],
-            (ulong address, Span<byte> buffer) => { memory.ReadBuffer(address, buffer); return HResults.S_OK; },
+            (ulong address, Span<byte> buffer) =>
+            {
+                try
+                {
+                    memory.ReadBuffer(address, buffer);
+                    return HResults.S_OK;
+                }
+                catch (VirtualReadException)
+                {
+                    return HResults.E_FAIL;
+                }
+            },
             (_, _) => HResults.E_NOTIMPL, (_, _, _) => HResults.E_NOTIMPL, (_, _) => HResults.E_NOTIMPL,
             (ulong _, out ulong address) => { address = 0; return HResults.E_NOTIMPL; },
             isLittleEndian: true, pointerSize: 8);
@@ -1975,6 +1991,9 @@ public unsafe partial class EnumMemoryTests
             ContractDescriptorParser.ParseCompact("""{"version":2,"contracts":{"Thread":"c1","StackWalk":"c1","Object":"c1","RuntimeTypeSystem":"c1","Exception":"c1","FeatureFlags":"c1"}}"""u8), [],
             (ulong address, Span<byte> buffer) =>
             {
+                if (buffer.Length != helpers.PointerSize)
+                    return HResults.E_FAIL;
+
                 helpers.WritePointer(buffer, address == 0x1000 ? 0x3000ul : 0x3100ul);
                 return HResults.S_OK;
             },
