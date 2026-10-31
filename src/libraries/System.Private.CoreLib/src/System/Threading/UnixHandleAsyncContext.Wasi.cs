@@ -332,8 +332,15 @@ namespace System.Threading
                     switch (socket->state.tag)
                     {
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECTING:
-                        case tcp_socket_state_tag.TCP_SOCKET_STATE_LISTENING:
                             pollableHandles.Add(EnsurePollable(SubscribeKindTcpSocket, socket->socket.handle, ref socket->socket_pollable.handle));
+                            break;
+                        case tcp_socket_state_tag.TCP_SOCKET_STATE_LISTENING:
+                            // A listener with a queued connection stays ready until it's accepted, so only wait on it
+                            // while an accept is pending. Otherwise it keeps every poll from blocking.
+                            if (asyncContext._readQueue.IsWaiting)
+                            {
+                                pollableHandles.Add(EnsurePollable(SubscribeKindTcpSocket, socket->socket.handle, ref socket->socket_pollable.handle));
+                            }
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECTED:
                             // Only wait on directions that have a pending operation. An idle connected socket's
