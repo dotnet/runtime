@@ -112,6 +112,7 @@ export interface AssetEntryInternal extends AssetEntry {
     // this could have multiple values in time, because of re-try download logic
     pendingDownloadInternal?: LoadingResource
     cache?: RequestCache
+    cacheReloadAttempted?: boolean
     useCredentials?: boolean
     isCore?: boolean
 }
