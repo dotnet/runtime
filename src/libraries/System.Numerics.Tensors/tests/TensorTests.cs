@@ -8377,10 +8377,9 @@ namespace System.Numerics.Tensors.Tests
     }
 
     /// <summary>
-    /// Test complex number type that implements IRootFunctions for testing consistency between
-    /// TensorPrimitives.StdDev and Tensor.StdDev
+    /// Test complex number type for testing custom-number support in tensor operations.
     /// </summary>
-    public readonly struct TestComplex(Complex value) : IRootFunctions<TestComplex>, IEquatable<TestComplex>
+    public readonly struct TestComplex(Complex value) : IRootFunctions<TestComplex>, ITrigonometricFunctions<TestComplex>, IEquatable<TestComplex>
     {
         private readonly Complex _value = value;
         
@@ -8399,6 +8398,8 @@ namespace System.Numerics.Tensors.Tests
         public static TestComplex operator /(TestComplex left, TestComplex right) => new(left._value / right._value);
         public static TestComplex operator -(TestComplex left, TestComplex right) => new(left._value - right._value);
         public static TestComplex Sqrt(TestComplex x) => new(Complex.Sqrt(x._value));
+        public static (TestComplex Sin, TestComplex Cos) SinCos(TestComplex x) =>
+            (new(Complex.Sin(x._value)), new(Complex.Cos(x._value)));
         public static TestComplex Abs(TestComplex value) => new(new(Complex.Abs(value._value), 0));
         public static TestComplex AdditiveIdentity => new(Complex.Zero);
         public static TestComplex CreateChecked<TOther>(TOther value) where TOther : INumberBase<TOther> => new(Complex.CreateChecked(value));
@@ -8461,5 +8462,18 @@ namespace System.Numerics.Tensors.Tests
         public static TestComplex Cbrt(TestComplex x) => throw new NotImplementedException();
         public static TestComplex Hypot(TestComplex x, TestComplex y) => throw new NotImplementedException();
         public static TestComplex RootN(TestComplex x, int n) => throw new NotImplementedException();
+        public static TestComplex Acos(TestComplex x) => throw new NotImplementedException();
+        public static TestComplex AcosPi(TestComplex x) => throw new NotImplementedException();
+        public static TestComplex Asin(TestComplex x) => throw new NotImplementedException();
+        public static TestComplex AsinPi(TestComplex x) => throw new NotImplementedException();
+        public static TestComplex Atan(TestComplex x) => throw new NotImplementedException();
+        public static TestComplex AtanPi(TestComplex x) => throw new NotImplementedException();
+        public static TestComplex Cos(TestComplex x) => throw new NotImplementedException();
+        public static TestComplex CosPi(TestComplex x) => throw new NotImplementedException();
+        public static TestComplex Sin(TestComplex x) => throw new NotImplementedException();
+        public static (TestComplex SinPi, TestComplex CosPi) SinCosPi(TestComplex x) => throw new NotImplementedException();
+        public static TestComplex SinPi(TestComplex x) => throw new NotImplementedException();
+        public static TestComplex Tan(TestComplex x) => throw new NotImplementedException();
+        public static TestComplex TanPi(TestComplex x) => throw new NotImplementedException();
     }
 }
