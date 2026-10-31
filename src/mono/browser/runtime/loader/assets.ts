@@ -448,9 +448,14 @@ export async function start_asset_download (asset: AssetEntryInternal): Promise<
             // we will not re-try with local file
             throw err;
         }
-        if (err && err.status == 404) {
+        const retryWithCacheReload = asset.cache === "force-cache";
+        if (err && err.status == 404 && !retryWithCacheReload) {
             // we will not re-try with 404
             throw err;
+        }
+        if (retryWithCacheReload) {
+            // A cached failure is not authoritative, even for an otherwise terminal status.
+            asset.cache = "reload";
         }
         asset.pendingDownloadInternal = undefined;
         // second attempt only after all first attempts are queued
@@ -459,6 +464,9 @@ export async function start_asset_download (asset: AssetEntryInternal): Promise<
             mono_log_debug(() => `Retrying download '${asset.name}'`);
             return await start_asset_download_with_throttle(asset);
         } catch (err) {
+            if (retryWithCacheReload && err instanceof Error && "status" in err && err.status === 404) {
+                throw err;
+            }
             asset.pendingDownloadInternal = undefined;
             // third attempt after small delay
             await delay(100);
@@ -485,11 +493,20 @@ async function start_asset_download_with_throttle (asset: AssetEntryInternal): P
         if (!response) {
             return asset;
         }
+        const checkEmpty = (asset.cache === "force-cache" || asset.cache === "reload") &&
+            asset.behavior !== "vfs" && asset.behavior !== "symbols";
+        if (checkEmpty && response.headers.get("Content-Length") === "0") {
+            throw new Error(`Failed to load resource '${asset.name}': empty response`);
+        }
         const skipBuffer = skipBufferByAssetTypes[asset.behavior];
         if (skipBuffer) {
             return asset;
         }
-        asset.buffer = await response.arrayBuffer();
+        const buffer = await response.arrayBuffer();
+        if (checkEmpty && buffer.byteLength === 0) {
+            throw new Error(`Failed to load resource '${asset.name}': empty response`);
+        }
+        asset.buffer = buffer;
         ++loaderHelpers.actual_downloaded_assets_count;
         return asset;
     } finally {
@@ -612,7 +629,7 @@ export function appendUniqueQuery (attemptUrl: string, behavior: AssetBehaviors)
     return attemptUrl;
 }
 
-let resourcesLoaded = 0;
+const resourcesLoaded = new Set<string>();
 const totalResources = new Set<string>();
 
 function download_resource (asset: AssetEntryInternal): LoadingResource {
@@ -622,13 +639,17 @@ function download_resource (asset: AssetEntryInternal): LoadingResource {
         const response = { name: asset.name, url: asset.resolvedUrl, response: fetchResponse };
 
         totalResources.add(asset.name!);
-        response.response.then(() => {
+        response.response = response.response.then((res) => {
+            if (resourcesLoaded.has(asset.name!)) {
+                return res;
+            }
             if (asset.behavior == "assembly") {
                 loaderHelpers.loadedAssemblies.push(asset.name);
             }
 
-            resourcesLoaded++;
-            loaderHelpers.callbacks.downloadResourceProgress?.(resourcesLoaded, totalResources.size);
+            loaderHelpers.callbacks.downloadResourceProgress?.(resourcesLoaded.size + 1, totalResources.size);
+            resourcesLoaded.add(asset.name!);
+            return res;
         });
         return response;
     } catch (err) {
