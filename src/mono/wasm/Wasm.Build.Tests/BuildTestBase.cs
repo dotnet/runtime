@@ -397,6 +397,9 @@ namespace Wasm.Build.Tests
             string hostArch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
             string crossgenDir = Path.Combine(baseDir, "coreclr", $"browser.wasm.{config}", hostArch, "crossgen2");
             string shimDir = Path.Combine(baseDir, "Crossgen2Tasks", config.ToString());
+            // The shim's build configuration is independent of the app's configuration.
+            if (composite && !Directory.Exists(shimDir))
+                shimDir = Path.Combine(baseDir, "Crossgen2Tasks", config == Configuration.Debug ? "Release" : "Debug");
             string shimProps = Path.Combine(shimDir, "Microsoft.NET.CrossGen.props");
             string shimTargets = Path.Combine(shimDir, "Microsoft.NET.CrossGen.targets");
 
