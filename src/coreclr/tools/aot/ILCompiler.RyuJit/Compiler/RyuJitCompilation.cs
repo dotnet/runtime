@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 using ILCompiler.DependencyAnalysis;
@@ -74,6 +75,11 @@ namespace ILCompiler
         public ProfileDataManager ProfileData => _profileDataManager;
 
         public bool IsInitOnly(FieldDesc field) => _readOnlyFieldPolicy.IsReadOnly(field);
+
+        public void WriteLlvmLto(string outputFilePath)
+        {
+            LlvmLtoWriter.Write(outputFilePath, this, _dependencyGraph.MarkedNodeList.OfType<MethodCodeNode>());
+        }
 
         public override IEETypeNode NecessaryTypeSymbolIfPossible(TypeDesc type)
         {

@@ -253,6 +253,7 @@
     <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs">
       <Link>IL\ILReader.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\ILScalarSemantics.cs" Link="IL\ILScalarSemantics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\StackValueKind.cs">
       <Link>IL\StackValueKind.cs</Link>
     </Compile>
