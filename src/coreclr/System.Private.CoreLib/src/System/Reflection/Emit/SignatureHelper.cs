@@ -323,20 +323,20 @@ namespace System.Reflection.Emit
 
             Debug.Assert(clsArgument != null);
 
-            // As in PersistedAssemblyBuilder, required modifiers come first.
+            // Required modifiers come first.
             if (requiredCustomModifiers != null)
-                AddCustomModifiers(requiredCustomModifiers, required: true, nameof(requiredCustomModifiers));
+                AddCustomModifiers(requiredCustomModifiers, isOptional: false, nameof(requiredCustomModifiers));
 
             if (optionalCustomModifiers != null)
-                AddCustomModifiers(optionalCustomModifiers, required: false, nameof(optionalCustomModifiers));
+                AddCustomModifiers(optionalCustomModifiers, isOptional: true, nameof(optionalCustomModifiers));
 
             AddOneArgTypeHelper(clsArgument);
         }
 
-        // As in PersistedAssemblyBuilder, customModifiers is in the order GetRequiredCustomModifiers and
-        // GetOptionalCustomModifiers return, the reverse of signature order.
-        private void AddCustomModifiers(Type[] customModifiers, bool required, string paramName)
+        private void AddCustomModifiers(Type[] customModifiers, bool isOptional, string paramName)
         {
+            // Custom modifiers are in the order GetRequiredCustomModifiers and GetOptionalCustomModifiers
+            // return, the reverse of signature order.
             for (int i = customModifiers.Length - 1; i >= 0; i--)
             {
                 Type t = customModifiers[i];
@@ -349,7 +349,7 @@ namespace System.Reflection.Emit
                 if (t.ContainsGenericParameters)
                     throw new ArgumentException(SR.Argument_GenericsInvalid, paramName);
 
-                AddElementType(required ? CorElementType.ELEMENT_TYPE_CMOD_REQD : CorElementType.ELEMENT_TYPE_CMOD_OPT);
+                AddElementType(isOptional ? CorElementType.ELEMENT_TYPE_CMOD_OPT : CorElementType.ELEMENT_TYPE_CMOD_REQD);
 
                 int token = m_module!.GetTypeMetadataToken(t);
                 Debug.Assert(!MetadataToken.IsNullToken(token));
@@ -793,20 +793,20 @@ namespace System.Reflection.Emit
 
             Debug.Assert(clsArgument != null);
 
-            // As in AddOneArgTypeHelper, required modifiers come first.
+            // Required modifiers come first.
             if (requiredCustomModifiers != null)
-                AddDynamicCustomModifiers(dynamicScope, requiredCustomModifiers, required: true, nameof(requiredCustomModifiers));
+                AddDynamicCustomModifiers(dynamicScope, requiredCustomModifiers, isOptional: false, nameof(requiredCustomModifiers));
 
             if (optionalCustomModifiers != null)
-                AddDynamicCustomModifiers(dynamicScope, optionalCustomModifiers, required: false, nameof(optionalCustomModifiers));
+                AddDynamicCustomModifiers(dynamicScope, optionalCustomModifiers, isOptional: true, nameof(optionalCustomModifiers));
 
             AddOneArgTypeHelper(clsArgument, dynamicScope);
         }
 
-        // As in AddCustomModifiers, customModifiers is in the order GetRequiredCustomModifiers and
-        // GetOptionalCustomModifiers return, the reverse of signature order.
-        private void AddDynamicCustomModifiers(DynamicScope dynamicScope, Type[] customModifiers, bool required, string paramName)
+        private void AddDynamicCustomModifiers(DynamicScope dynamicScope, Type[] customModifiers, bool isOptional, string paramName)
         {
+            // Custom modifiers are in the order GetRequiredCustomModifiers and GetOptionalCustomModifiers
+            // return, the reverse of signature order.
             for (int i = customModifiers.Length - 1; i >= 0; i--)
             {
                 Type t = customModifiers[i];
@@ -823,7 +823,7 @@ namespace System.Reflection.Emit
                 if (t.IsFunctionPointer)
                     throw new ArgumentException(SR.Argument_FunctionPointersInvalid, paramName);
 
-                AddElementType(required ? CorElementType.ELEMENT_TYPE_CMOD_REQD : CorElementType.ELEMENT_TYPE_CMOD_OPT);
+                AddElementType(isOptional ? CorElementType.ELEMENT_TYPE_CMOD_OPT : CorElementType.ELEMENT_TYPE_CMOD_REQD);
 
                 int token = dynamicScope.GetTokenFor(rtType.TypeHandle);
                 Debug.Assert(!MetadataToken.IsNullToken(token));

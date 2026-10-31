@@ -15,8 +15,8 @@ namespace System.Reflection.Emit.Tests
         private static readonly Type[] s_required = [typeof(IsConst), typeof(IsVolatile)];
         private static readonly Type[] s_optional = [typeof(IsLong), typeof(IsBoxed)];
 
-        private static readonly (bool Required, Type Modifier)[] s_signatureModifiers =
-            [(true, typeof(IsVolatile)), (true, typeof(IsConst)), (false, typeof(IsBoxed)), (false, typeof(IsLong))];
+        private static readonly (bool IsOptional, Type Modifier)[] s_signatureModifiers =
+            [(false, typeof(IsVolatile)), (false, typeof(IsConst)), (true, typeof(IsBoxed)), (true, typeof(IsLong))];
 
         [Fact]
         [SkipOnMono("Mono's AssemblyBuilder writes each custom modifier array in the order given.")]
@@ -97,11 +97,11 @@ namespace System.Reflection.Emit.Tests
 
         private static void AssertModifiedInt32(Module module, ref BlobReader reader)
         {
-            List<(bool Required, Type Modifier)> modifiers = new();
+            List<(bool IsOptional, Type Modifier)> modifiers = new();
             SignatureTypeCode typeCode;
             while ((typeCode = reader.ReadSignatureTypeCode()) is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier)
             {
-                modifiers.Add((typeCode == SignatureTypeCode.RequiredModifier, module.ResolveType(MetadataTokens.GetToken(reader.ReadTypeHandle()))));
+                modifiers.Add((typeCode == SignatureTypeCode.OptionalModifier, module.ResolveType(MetadataTokens.GetToken(reader.ReadTypeHandle()))));
             }
 
             Assert.Equal(s_signatureModifiers, modifiers);

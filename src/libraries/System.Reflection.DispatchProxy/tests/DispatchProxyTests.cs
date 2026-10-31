@@ -658,22 +658,22 @@ namespace DispatchProxyTests
         [InlineData(false, true)]
         [InlineData(false, false)]
         [SkipOnMono("Mono's AssemblyBuilder writes each custom modifier array in the order given.")]
-        public static void Invoke_Method_With_Two_Custom_Modifiers_Of_One_Kind_Invokes_Correct_Method(bool required, bool onReturn)
+        public static void Invoke_Method_With_Two_Custom_Modifiers_Of_One_Kind_Invokes_Correct_Method(bool isOptional, bool onReturn)
         {
             // System.Reflection.Emit generates the method so that two required or two optional custom modifiers sit on its return type or parameter.
             Type[] modifiers = new[] { typeof(IsVolatile), typeof(IsConst) };
             Type[] returnModifiers = onReturn ? modifiers : null;
             Type[][] parameterModifiers = new[] { onReturn ? null : modifiers };
-            AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"TwoModifiersBuilder_{required}_{onReturn}"), AssemblyBuilderAccess.Run);
+            AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"TwoModifiersBuilder_{isOptional}_{onReturn}"), AssemblyBuilderAccess.Run);
             ModuleBuilder modb = ab.DefineDynamicModule("mod");
             TypeBuilder tb = modb.DefineType("TestType_ITwoModifiersService", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
             tb.DefineMethod("Echo", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, CallingConventions.HasThis,
-                typeof(int), required ? returnModifiers : null, required ? null : returnModifiers,
-                new[] { typeof(int) }, required ? parameterModifiers : null, required ? null : parameterModifiers);
+                typeof(int), isOptional ? null : returnModifiers, isOptional ? returnModifiers : null,
+                new[] { typeof(int) }, isOptional ? null : parameterModifiers, isOptional ? parameterModifiers : null);
             Type interfaceType = tb.CreateType();
             MethodInfo interfaceMethod = interfaceType.GetMethod("Echo");
             ParameterInfo interfaceModified = onReturn ? interfaceMethod.ReturnParameter : interfaceMethod.GetParameters()[0];
-            Assert.Equal(2, (required ? interfaceModified.GetRequiredCustomModifiers() : interfaceModified.GetOptionalCustomModifiers()).Length);
+            Assert.Equal(2, (isOptional ? interfaceModified.GetOptionalCustomModifiers() : interfaceModified.GetRequiredCustomModifiers()).Length);
 
             object proxy = DispatchProxy.Create(interfaceType, typeof(TestDispatchProxy));
 

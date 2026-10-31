@@ -214,8 +214,6 @@ namespace System.ComponentModel.Composition
                 string propertyName = propertyInfo.Name;
 
                 Type[] propertyTypeArguments = new Type[] { propertyInfo.PropertyType };
-                Type[] optionalModifiers = propertyInfo.GetOptionalCustomModifiers();
-                Type[] requiredModifiers = propertyInfo.GetRequiredCustomModifiers();
 
                 // Generate field
                 FieldBuilder proxyFieldBuilder = proxyTypeBuilder.DefineField(
@@ -312,8 +310,8 @@ namespace System.ComponentModel.Composition
                         MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final,
                         CallingConventions.HasThis,
                         propertyInfo.PropertyType,
-                        requiredModifiers,
-                        optionalModifiers,
+                        propertyInfo.GetRequiredCustomModifiers(),
+                        propertyInfo.GetOptionalCustomModifiers(),
                         Type.EmptyTypes, null, null);
 
                     proxyTypeBuilder.DefineMethodOverride(getMethodBuilder, propertyInfo.GetGetMethod()!);

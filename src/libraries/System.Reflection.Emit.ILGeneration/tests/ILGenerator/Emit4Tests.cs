@@ -228,7 +228,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        [SkipOnMono("Mono's ILGenerator does not implement EmitCalli(Type).")]
         public void TestDynamicMethodEmitCalliFnPtr_RequiredModifiersFirst()
         {
             // A DynamicMethod's signatures can't be read back, so the order its modifiers are written in shows only in
@@ -239,18 +239,18 @@ namespace System.Reflection.Emit.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
-        public void TestDynamicMethodEmitCalliFnPtr_LastModifierOfOneKindFirst(bool required)
+        [SkipOnMono("Mono's ILGenerator does not implement EmitCalli(Type).")]
+        public void TestDynamicMethodEmitCalliFnPtr_LastModifierOfOneKindFirst(bool isOptional)
         {
             // Both invalid modifiers throw ArgumentException for the same parameter, so only the message, compared with
             // the one for the generic modifier alone, shows that the array's last modifier is written first.
             Type[] generic = [typeof(List<>)];
             Type[] arrayThenGeneric = [typeof(int[]), typeof(List<>)];
             string expected = Assert.Throws<ArgumentException>(
-                () => EmitCalliWithModifiedReturn(required ? generic : Type.EmptyTypes, required ? Type.EmptyTypes : generic)).Message;
+                () => EmitCalliWithModifiedReturn(isOptional ? Type.EmptyTypes : generic, isOptional ? generic : Type.EmptyTypes)).Message;
 
             ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => EmitCalliWithModifiedReturn(required ? arrayThenGeneric : Type.EmptyTypes, required ? Type.EmptyTypes : arrayThenGeneric));
+                () => EmitCalliWithModifiedReturn(isOptional ? Type.EmptyTypes : arrayThenGeneric, isOptional ? arrayThenGeneric : Type.EmptyTypes));
             Assert.Equal(expected, ex.Message);
         }
 
