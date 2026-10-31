@@ -114,12 +114,94 @@ namespace System.Text.Json.Serialization.Tests
             public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(string);
             public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.GetString()!;
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options) => writer.WriteStringValue(value?.ToString());
+        }
 
-            // These methods write/read distinctive values to verify the fallback converter is used instead
-            public override void WriteAsPropertyName(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
-                => writer.WritePropertyName(string.Empty);
-            public override object ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-                => "unexpected_key";
+        [Fact]
+        public static void EnumConverterDeclaredForBaseType_DictionaryWithEnumKey_RoundTrips()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/136588: converters declared
+            // for System.Enum (the only way to cover every enum without MakeGenericType) must keep
+            // handling dictionary keys after being wrapped in a CastingConverter.
+            var options = new JsonSerializerOptions { Converters = { new BaseEnumConverter() } };
+            var value = new Dictionary<TestColor, int> { [TestColor.Red] = 1 };
+
+            Assert.Equal("\"red\"", JsonSerializer.Serialize(TestColor.Red, options));
+            Assert.Equal("""{"red":1}""", JsonSerializer.Serialize(value, options));
+
+            var deserialized = JsonSerializer.Deserialize<Dictionary<TestColor, int>>("""{"red":1}""", options);
+            Assert.Equal(1, deserialized[TestColor.Red]);
+        }
+
+        [Fact]
+        public static void ConverterDeclaredForBaseType_WithoutPropertyNameOverrides_ThrowsNotSupported()
+        {
+            // A converter declared for a base type that doesn't implement property name serialization
+            // has no fallback to fall back to, so dictionary keys remain unsupported (as on .NET 10).
+            // This is the counterpart to EnumConverterDeclaredForBaseType_DictionaryWithEnumKey_RoundTrips.
+            var options = new JsonSerializerOptions { Converters = { new BaseEnumConverterWithoutPropertyNameSupport() } };
+            var value = new Dictionary<TestColor, int> { [TestColor.Red] = 1 };
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(value, options));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<TestColor, int>>("""{"red":1}""", options));
+        }
+
+        [Fact]
+        public static void ConverterDeclaredForAbstractBaseType_DictionaryWithDerivedKey_RoundTrips()
+        {
+            // Same as above, but for converters declared for an abstract base class rather than Enum.
+            var options = new JsonSerializerOptions { Converters = { new AnimalConverter() } };
+            var value = new Dictionary<Dog, int> { [new Dog { Name = "Rex" }] = 1 };
+
+            Assert.Equal("""{"Rex":1}""", JsonSerializer.Serialize(value, options));
+
+            var deserialized = JsonSerializer.Deserialize<Dictionary<Dog, int>>("""{"Rex":1}""", options);
+            Assert.Equal("Rex", deserialized.Keys.Single().Name);
+        }
+
+        public enum TestColor { Red, Green }
+
+        public sealed class BaseEnumConverter : JsonConverter<Enum>
+        {
+            public override bool CanConvert(Type typeToConvert) => typeToConvert.IsEnum;
+            public override Enum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => (Enum)Enum.Parse(typeToConvert, reader.GetString()!, ignoreCase: true);
+            public override void Write(Utf8JsonWriter writer, Enum value, JsonSerializerOptions options)
+                => writer.WriteStringValue(value.ToString().ToLowerInvariant());
+            public override Enum ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => (Enum)Enum.Parse(typeToConvert, reader.GetString()!, ignoreCase: true);
+            public override void WriteAsPropertyName(Utf8JsonWriter writer, Enum value, JsonSerializerOptions options)
+                => writer.WritePropertyName(value.ToString().ToLowerInvariant());
+        }
+
+        public sealed class BaseEnumConverterWithoutPropertyNameSupport : JsonConverter<Enum>
+        {
+            public override bool CanConvert(Type typeToConvert) => typeToConvert.IsEnum;
+            public override Enum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => (Enum)Enum.Parse(typeToConvert, reader.GetString()!, ignoreCase: true);
+            public override void Write(Utf8JsonWriter writer, Enum value, JsonSerializerOptions options)
+                => writer.WriteStringValue(value.ToString().ToLowerInvariant());
+        }
+
+        public abstract class Animal
+        {
+            public string Name { get; set; } = "";
+        }
+
+        public sealed class Dog : Animal
+        {
+        }
+
+        public sealed class AnimalConverter : JsonConverter<Animal>
+        {
+            public override bool CanConvert(Type typeToConvert) => typeof(Animal).IsAssignableFrom(typeToConvert);
+            public override Animal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => new Dog { Name = reader.GetString()! };
+            public override void Write(Utf8JsonWriter writer, Animal value, JsonSerializerOptions options)
+                => writer.WriteStringValue(value.Name);
+            public override Animal ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => new Dog { Name = reader.GetString()! };
+            public override void WriteAsPropertyName(Utf8JsonWriter writer, Animal value, JsonSerializerOptions options)
+                => writer.WritePropertyName(value.Name);
         }
 
         public class EmbeddedJsonKeyConverter<T> : JsonConverter<T>
