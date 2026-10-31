@@ -93,4 +93,21 @@
         pop
         ret
     }
+
+    .method public static void ByRefLike.Review5705GenericNewArray_Invalid_ArrayByRef<byreflike T>() cil managed
+    {
+        ldc.i4.1
+        newarr !!T
+        pop
+        ret
+    }
+
+    .method public static void ByRefLike.Review5705GenericNewMDArray_Invalid_ArrayByRef<byreflike T>() cil managed
+    {
+        ldc.i4.1
+        ldc.i4.1
+        newobj instance void !!T[0...,0...]::.ctor(int32, int32)
+        pop
+        ret
+    }
 }
