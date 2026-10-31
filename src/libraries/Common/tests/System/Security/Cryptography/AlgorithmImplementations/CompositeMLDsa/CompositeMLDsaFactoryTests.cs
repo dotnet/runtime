@@ -730,7 +730,7 @@ namespace System.Security.Cryptography.Tests
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                supported = CompositeMLDsaTestHelpers.IsBCryptSupported;
+                supported = true;
             }
             else
             {
@@ -751,11 +751,10 @@ namespace System.Security.Cryptography.Tests
             {
                 // Windows supports: https://learn.microsoft.com/en-us/windows/win32/seccng/bcrypt/ns-bcrypt-bcrypt_pqdsa_key_blob#cbparameterset
                 supported =
-                    CompositeMLDsaTestHelpers.IsBCryptSupported &&
-                    (algorithm == CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256 ||
-                        algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256 ||
-                        algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384 ||
-                        algorithm == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384);
+                    algorithm == CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256 ||
+                    algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256 ||
+                    algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384 ||
+                    algorithm == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384;
             }
             else
             {

@@ -14,6 +14,9 @@ namespace System.Security.Cryptography.Tests
         protected abstract CompositeMLDsa ImportPrivateKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
         protected abstract CompositeMLDsa ImportPublicKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
 
+        protected virtual void AssertExportPkcs8FromPublicKey(Action export) =>
+            Assert.Throws<CryptographicException>(export);
+
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void GenerateSignVerifyWithPublicKey(CompositeMLDsaAlgorithm algorithm)
@@ -150,7 +153,8 @@ namespace System.Security.Cryptography.Tests
                 Assert.Throws<CryptographicException>(publicKey.ExportCompositeMLDsaPrivateKey);
 
                 CompositeMLDsaTestHelpers.AssertExportPrivateKey(
-                    export => Assert.Throws<CryptographicException>(() => export(publicKey)));
+                    export => Assert.Throws<CryptographicException>(() => export(publicKey)),
+                    export => AssertExportPkcs8FromPublicKey(() => export(publicKey)));
 
                 byte[] exportedPublicKey = publicKey.ExportCompositeMLDsaPublicKey();
                 CompositeMLDsaTestHelpers.AssertPublicKeyEquals(vector.Algorithm, vector.PublicKey, exportedPublicKey);
@@ -194,7 +198,8 @@ namespace System.Security.Cryptography.Tests
                 export => CompositeMLDsaTestHelpers.AssertPublicKeyEquals(vector.Algorithm, vector.PublicKey, export(dsa)));
 
             CompositeMLDsaTestHelpers.AssertExportPrivateKey(
-                export => Assert.Throws<CryptographicException>(() => export(dsa)));
+                export => Assert.Throws<CryptographicException>(() => export(dsa)),
+                export => AssertExportPkcs8FromPublicKey(() => export(dsa)));
         }
 
         [Theory]
