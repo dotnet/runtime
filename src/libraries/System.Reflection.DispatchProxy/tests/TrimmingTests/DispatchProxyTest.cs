@@ -9,7 +9,7 @@ using System.Reflection;
 /// </summary>
 class Program
 {
-    static int Main()
+    static unsafe int Main()
     {
         IFoo foo = CountingProxy.Wrap(new Foo());
 
@@ -17,7 +17,13 @@ class Program
         foo.Method1();
         foo.Method2();
 
-        if (((CountingProxy)foo).InvocationCount != 3)
+        int value = 42;
+        if (foo.PointerMethod(&value) != &value)
+        {
+            return -2;
+        }
+
+        if (((CountingProxy)foo).InvocationCount != 4)
         {
             return -1;
         }
@@ -34,6 +40,7 @@ public interface IFoo
     public void Method1();
     public void Method2();
     public void UnusedMethod3();
+    public unsafe int* PointerMethod(int* p);
 }
 
 class Foo : IFoo
@@ -44,6 +51,7 @@ class Foo : IFoo
     public void Method1() { }
     public void Method2() { }
     public void UnusedMethod3() { }
+    public unsafe int* PointerMethod(int* p) => p;
 }
 
 public class CountingProxy : DispatchProxy

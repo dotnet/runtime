@@ -142,6 +142,38 @@ public interface TypeType_GenericMethod
     T Echo<T>(T messages);
 }
 
+public unsafe interface TestType_IPointerService
+{
+    int* Echo(int* p);
+    void Ref(ref int* p);
+    void Out(out int* p);
+    T* EchoGeneric<T>(T* p) where T : unmanaged;
+    void* EchoVoid(void* p);
+    int** EchoPointerPointer(int** p);
+    void In(in int* p);
+}
+
+public unsafe class TestType_PointerService : TestType_IPointerService
+{
+    public int* Echo(int* p) => p + 1;
+    public void Ref(ref int* p) => p++;
+    public void Out(out int* p) => p = null;
+    public T* EchoGeneric<T>(T* p) where T : unmanaged => p + 1;
+    public void* EchoVoid(void* p) => (byte*)p + 1;
+    public int** EchoPointerPointer(int** p) => p + 1;
+    public void In(in int* p) { }
+}
+
+public unsafe interface TestType_IPointerReturnService
+{
+    int* Get();
+}
+
+public unsafe interface TestType_IPointerArgumentService
+{
+    void Set(int* p);
+}
+
 // Negative -- demonstrates trying to use a class for the interface type for the proxy
 public class TestType_ConcreteClass
 {
