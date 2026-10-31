@@ -1740,6 +1740,12 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         return false;
     }
 
+    GenTree*       dstLen                    = call->gtArgs.GetUserArgByIndex(3)->GetNode();
+    const ValueNum dstLenVN                  = vnStore->VNConservativeNormalValue(dstLen->gtVNPair);
+    const bool     hasConstantDstLen         = vnStore->IsVNInt32Constant(dstLenVN);
+    const bool     lengthCheckAlwaysSucceeds = hasConstantDstLen && (vnStore->GetConstantInt32(dstLenVN) >= srcLenU8);
+    const bool     lengthCheckAlwaysFails    = hasConstantDstLen && (vnStore->GetConstantInt32(dstLenVN) < srcLenU8);
+
     DebugInfo debugInfo = stmt->GetDebugInfo();
 
     BasicBlock*    prevBb;
@@ -1755,8 +1761,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // We don't need this flag anymore.
     call->gtCallMoreFlags &= ~GTF_CALL_M_SPECIAL_INTRINSIC;
 
-    // srcLenU8 is the length of the string literal in chars (UTF16)
-    // but we're going to use the same value as the "bytesWritten" result in the fast path and in the length check.
+    // Use the UTF-8 byte count as both the result and the required destination length.
     GenTree* srcLenU8Node = gtNewIconNode(srcLenU8);
     fgValueNumberTreeConst(srcLenU8Node);
 
@@ -1784,12 +1789,23 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     lengthCheckBb->SetFlags(BBF_INTERNAL);
 
     // Set bytesWritten -1 by default, if the fast path is not taken we'll return it as the result.
-    GenTree* bytesWrittenDefaultVal = gtNewStoreLclVarNode(resultLclNum, gtNewIconNode(-1));
-    fgInsertStmtAtEnd(lengthCheckBb, fgNewStmtFromTree(bytesWrittenDefaultVal, debugInfo));
+    if (!lengthCheckAlwaysSucceeds)
+    {
+        GenTree* bytesWrittenDefaultVal = gtNewStoreLclVarNode(resultLclNum, gtNewIconNode(-1));
+        fgInsertStmtAtEnd(lengthCheckBb, fgNewStmtFromTree(bytesWrittenDefaultVal, debugInfo));
+    }
 
-    GenTree* dstLen      = call->gtArgs.GetUserArgByIndex(3)->GetNode();
-    GenTree* lengthCheck = gtNewOperNode(GT_LT, TYP_INT, gtCloneExpr(dstLen), srcLenU8Node);
-    lengthCheck->gtFlags |= GTF_RELOP_JMP_USED;
+    GenTree* lengthCheck;
+    if (lengthCheckAlwaysSucceeds || lengthCheckAlwaysFails)
+    {
+        lengthCheck = gtNewIconNode(lengthCheckAlwaysFails);
+    }
+    else
+    {
+        dstLen      = call->gtArgs.GetUserArgByIndex(3)->GetNode();
+        lengthCheck = gtNewOperNode(GT_LT, TYP_INT, gtCloneExpr(dstLen), srcLenU8Node);
+        lengthCheck->gtFlags |= GTF_RELOP_JMP_USED;
+    }
     Statement* lengthCheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, lengthCheck), debugInfo);
     fgInsertStmtAtEnd(lengthCheckBb, lengthCheckStmt);
     lengthCheckBb->bbCodeOffs    = block->bbCodeOffsEnd;
@@ -1867,14 +1883,11 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         lengthCheckBb->SetTrueEdge(trueEdge);
         lengthCheckBb->SetFalseEdge(falseEdge);
 
-        // review: we assume length check always succeeds??
-        trueEdge->setLikelihood(1.0);
-        falseEdge->setLikelihood(0.0);
+        trueEdge->setLikelihood(lengthCheckAlwaysFails ? 1.0 : 0.0);
+        falseEdge->setLikelihood(lengthCheckAlwaysFails ? 0.0 : 1.0);
 
-        if (lengthCheckBb->hasProfileWeight())
-        {
-            fastpathBb->setBBProfileWeight(falseEdge->getLikelyWeight());
-        }
+        fastpathBb->inheritWeight(lengthCheckBb);
+        fastpathBb->scaleBBWeight(falseEdge->getLikelihood());
     }
 
     {
@@ -1893,6 +1906,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     assert(BasicBlock::sameEHRegion(prevBb, block));
     assert(BasicBlock::sameEHRegion(prevBb, lengthCheckBb));
     assert(BasicBlock::sameEHRegion(prevBb, fastpathBb));
+
+    fgFoldConditional(lengthCheckBb);
 
     // Extra step: merge prevBb with lengthCheckBb if possible
     if (fgCanCompactBlock(prevBb))
