@@ -658,6 +658,7 @@ bool FoldNeverNegativeRangeTest(
 //    fold them into a single compare node if possible, e.g.:
 //      1) "X >= 10 && X <= 100" -> "(X - 10) u<= 90"
 //      2) "X >= 0 && X <= 100"  -> "X u<= 100"
+//      3) "X u>= 10 && (X - 10) u>= 20" -> "X u>= 30"
 //    where 'u' stands for unsigned comparison. cmp1 is used as the target node for folding.
 //    It's also guaranteed to be first in the execution order (so can allow some side effects).
 //
@@ -680,8 +681,8 @@ bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTre
     genTreeOps     cmp1Op;
     genTreeOps     cmp2Op;
 
-    // Make sure both conditions are constant range checks with matching signedness, e.g. "X > CNS".
-    if ((cmp1->IsUnsigned() != cmp2->IsUnsigned()) || !IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op) ||
+    // Make sure both conditions are constant range checks, e.g. "X > CNS".
+    if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op) ||
         !IsConstantRangeTest(cmp2, &var2Node, &cns2Node, &cmp2Op))
     {
         // Give FoldNeverNegativeRangeTest a try when the constant range fold does not apply.
@@ -691,6 +692,37 @@ bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTre
     // Reverse the comparisons if necessary so we'll get a canonical form "cond1 == true && cond2 == true" -> InRange.
     cmp1Op = cmp1IsReversed ? GenTree::ReverseRelop(cmp1Op) : cmp1Op;
     cmp2Op = cmp2IsReversed ? GenTree::ReverseRelop(cmp2Op) : cmp2Op;
+
+    // Once X >= A, subtracting A cannot underflow. Thus X >= A && X - A >= B
+    // is equivalent to X >= A + B, provided the combined bound is representable.
+    // A signed first comparison also proves X is nonnegative on the second path,
+    // allowing an unsigned second comparison as used by constant Slice checks.
+    if ((cmp1Op == GT_GE) && (cmp2Op == GT_GE) && var1Node->TypeIs(TYP_INT) && var2Node->TypeIs(TYP_INT) &&
+        var2Node->OperIs(GT_ADD, GT_SUB) && !var2Node->gtOverflow() && (!cmp1->IsUnsigned() || cmp2->IsUnsigned()) &&
+        !cns1Node->IsIconHandle() && !cns2Node->IsIconHandle() && (cns1Node->IconValue() >= 0) &&
+        (cns1Node->IconValue() <= INT_MAX) && (cns2Node->IconValue() >= 0) && (cns2Node->IconValue() <= INT_MAX))
+    {
+        GenTreeOp* subtract = var2Node->AsOp();
+        ssize_t    offset   = var2Node->OperIs(GT_SUB) ? cns1Node->IconValue() : -cns1Node->IconValue();
+        if (subtract->gtGetOp1()->OperIs(GT_LCL_VAR) &&
+            GenTree::Compare(var1Node->gtEffectiveVal(), subtract->gtGetOp1()) &&
+            subtract->gtGetOp2()->IsIntegralConst(offset) && !subtract->gtGetOp2()->AsIntCon()->IsIconHandle())
+        {
+            uint64_t bound = static_cast<uint64_t>(cns1Node->IconValue()) + cns2Node->IconValue();
+            if (bound <= (cmp1->IsUnsigned() ? UINT_MAX : INT_MAX))
+            {
+                cmp1->gtOp1 = var1Node;
+                cmp1->gtOp2 = comp->gtNewIconNode(static_cast<int32_t>(bound));
+                cmp1->SetOper(cmp2IsReversed ? GT_LT : GT_GE);
+                return true;
+            }
+        }
+    }
+
+    if (cmp1->IsUnsigned() != cmp2->IsUnsigned())
+    {
+        return FoldNeverNegativeRangeTest(comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed);
+    }
 
     // Make sure variables are the same:
     if (!var2Node->OperIs(GT_LCL_VAR) || !GenTree::Compare(var1Node->gtEffectiveVal(), var2Node))
