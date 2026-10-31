@@ -314,11 +314,20 @@ namespace System.Numerics.Tensors.Tests
     // The tests for some types have been marked as OuterLoop simply to decrease inner loop testing time.
 
     public class DoubleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<double> { }
-    public class SingleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float> { }
+    public class SingleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float>
+    {
+        [Theory]
+        [MemberData(nameof(ExpFunctions_NearOverflowThreshold_Data))]
+        public void ExpFunctions_NearOverflowThreshold(int length) => AssertExpFunctionsNearOverflowThreshold(length, 1e-5f);
+    }
     public class HalfGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<Half>
     {
         protected override void AssertEqualTolerance(Half expected, Half actual, Half? tolerance = null) =>
             base.AssertEqualTolerance(expected, actual, tolerance ?? Half.CreateTruncating(0.001));
+
+        [Theory]
+        [MemberData(nameof(ExpFunctions_NearOverflowThreshold_Data))]
+        public void ExpFunctions_NearOverflowThreshold(int length) => AssertExpFunctionsNearOverflowThreshold(length, tolerance: null);
     }
 
     [OuterLoop]
@@ -588,6 +597,51 @@ namespace System.Numerics.Tensors.Tests
 
             static object[] Create(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
                 => new object[] { tensorPrimitivesMethod, expectedMethod, tolerance };
+        }
+
+        public static IEnumerable<object[]> ExpFunctions_NearOverflowThreshold_Data()
+        {
+            foreach (int length in new[] { 1, 4, 8, 15, 16, 17, 33 })
+            {
+                yield return new object[] { length };
+            }
+        }
+
+        // https://github.com/dotnet/runtime/issues/135718: the vectorized Exp10 returned infinity for 38.531837f,
+        // whose result is finite, because x * ln(10) was rounded to float before calling Exp. The float and Half
+        // test classes call this; Half is computed through the float operators.
+        protected void AssertExpFunctionsNearOverflowThreshold(int length, T? tolerance)
+        {
+            (SpanDestinationDelegate Method, Func<T, T> Expected, T Threshold)[] functions =
+            [
+                (TensorPrimitives.Exp10, T.Exp10, T.Log10(T.MaxValue)),
+                (TensorPrimitives.Exp10M1, T.Exp10M1, T.Log10(T.MaxValue)),
+                (TensorPrimitives.Exp2, T.Exp2, T.Log2(T.MaxValue)),
+                (TensorPrimitives.Exp2M1, T.Exp2M1, T.Log2(T.MaxValue)),
+            ];
+
+            T[] x = new T[length];
+            T[] destination = new T[length];
+
+            foreach ((SpanDestinationDelegate method, Func<T, T> expected, T threshold) in functions)
+            {
+                T value = threshold;
+                for (int i = 0; i < 32; i++)
+                {
+                    value = T.BitDecrement(value);
+                }
+
+                for (int i = 0; i < 64; i++, value = T.BitIncrement(value))
+                {
+                    x.AsSpan().Fill(value);
+                    method(x, destination);
+
+                    foreach (T actual in destination)
+                    {
+                        AssertEqualTolerance(expected(value), actual, tolerance);
+                    }
+                }
+            }
         }
 
         [Theory]
