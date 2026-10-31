@@ -442,22 +442,36 @@ namespace Internal.Reflection.Execution
         // ldftn reverse lookup hash. Must be cleared and reset if the module list changes. (All sets to
         // this variable must happen under a lock)
         private volatile KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] _ldftnReverseLookup_InvokeMap;
+#if TARGET_WASM
+        // Virtual IPs and callable table indices are distinct, overlapping address spaces.
+        private volatile KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] _startAddressReverseLookup_InvokeMap;
+#endif
 
         /// <summary>
         /// Initialize a lookup array of module to function pointer/parser offset pair arrays.
         /// </summary>
-        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_InvokeMap()
+        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetReverseLookups_InvokeMap(bool forStartAddress)
         {
+#if TARGET_WASM
+            KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = forStartAddress
+                ? _startAddressReverseLookup_InvokeMap : _ldftnReverseLookup_InvokeMap;
+#else
             KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = _ldftnReverseLookup_InvokeMap;
+#endif
             if (ldFtnReverseLookup == null)
             {
                 var ldFtnReverseLookupBuilder = default(ArrayBuilder<KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>>);
                 foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                 {
-                    ldFtnReverseLookupBuilder.Add(new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, ComputeLdftnReverseLookup_InvokeMap(module)));
+                    ldFtnReverseLookupBuilder.Add(new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, ComputeReverseLookup_InvokeMap(module, forStartAddress)));
                 }
                 ldFtnReverseLookup = ldFtnReverseLookupBuilder.ToArray();
-                _ldftnReverseLookup_InvokeMap = ldFtnReverseLookup;
+#if TARGET_WASM
+                if (forStartAddress)
+                    _startAddressReverseLookup_InvokeMap = ldFtnReverseLookup;
+                else
+#endif
+                    _ldftnReverseLookup_InvokeMap = ldFtnReverseLookup;
             }
             return ldFtnReverseLookup;
         }
@@ -489,7 +503,7 @@ namespace Internal.Reflection.Execution
             }
 
             // Search InvokeMap
-            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_InvokeMap())
+            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetReverseLookups_InvokeMap(forStartAddress: false))
             {
                 int startIndex;
                 int endIndex;
@@ -510,20 +524,20 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
-        internal bool TryGetMethodForStartAddress(IntPtr methodStartAddress, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle)
+        internal bool TryGetMethodForAddress(IntPtr address, bool isFunctionPointer, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle)
         {
             // Search InvokeMap
-            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_InvokeMap())
+            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetReverseLookups_InvokeMap(forStartAddress: !isFunctionPointer))
             {
                 int startIndex;
                 int endIndex;
 
-                if (perModuleLookup.Value.TryGetOffsetsRange(methodStartAddress, out startIndex, out endIndex))
+                if (perModuleLookup.Value.TryGetOffsetsRange(address, out startIndex, out endIndex))
                 {
                     for (int curIndex = startIndex; curIndex <= endIndex; curIndex++)
                     {
                         uint parserOffset = perModuleLookup.Value.Data[curIndex].Offset;
-                        if (TryGetMethodForOriginalLdFtnResult_InvokeMap_Inner(perModuleLookup.Key, forStartAddress: true, methodStartAddress, IntPtr.Zero, parserOffset, ref declaringTypeHandle, out methodHandle, out _))
+                        if (TryGetMethodForOriginalLdFtnResult_InvokeMap_Inner(perModuleLookup.Key, forStartAddress: true, address, IntPtr.Zero, parserOffset, ref declaringTypeHandle, out methodHandle, out _))
                         {
                             if (RuntimeAugments.IsGenericType(declaringTypeHandle))
                                 declaringTypeHandle = RuntimeAugments.GetGenericDefinition(declaringTypeHandle);
@@ -537,7 +551,7 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
-        private static FunctionPointersToOffsets ComputeLdftnReverseLookup_InvokeMap(NativeFormatModuleInfo mappingTableModule)
+        private static FunctionPointersToOffsets ComputeReverseLookup_InvokeMap(NativeFormatModuleInfo mappingTableModule, bool forStartAddress)
         {
             FunctionPointersToOffsets functionPointerToOffsetInInvokeMap = default;
 
@@ -572,6 +586,17 @@ namespace Internal.Reflection.Execution
                 RuntimeTypeHandle declaringTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
                 IntPtr entryMethodEntrypoint = externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
+#if TARGET_WASM
+                if (forStartAddress)
+                {
+                    if ((entryFlags & InvokeTableFlags.HasVirtualIP) != 0)
+                    {
+                        IntPtr virtualIP = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
+                        functionPointers.Add(new FunctionPointerOffsetPair(virtualIP, parserOffset));
+                    }
+                    continue;
+                }
+#endif
                 functionPointers.Add(new FunctionPointerOffsetPair(entryMethodEntrypoint, parserOffset));
 
                 // Add resolved stub targets to the reverse LdFtn lookup map for the purpose of reflection-based
@@ -633,6 +658,9 @@ namespace Internal.Reflection.Execution
             uint entryDeclaringTypeRaw = entryParser.GetUnsigned();
 
             IntPtr entryMethodEntrypoint = externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
+
+            if ((entryFlags & InvokeTableFlags.HasVirtualIP) != 0)
+                entryParser.SkipInteger();
 
             if ((entryFlags & InvokeTableFlags.NeedsParameterInterpretation) == 0)
                 entryParser.SkipInteger(); // skip dynamic invoke cookie
