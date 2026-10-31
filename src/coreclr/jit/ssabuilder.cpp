@@ -421,8 +421,9 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
 {
     assert(defNode->OperIsStore() || defNode->OperIs(GT_CALL));
 
-    bool anyDefs  = false;
-    auto visitDef = [&](const auto& def) {
+    bool     anyDefs       = false;
+    GenTree* lastMemoryDef = nullptr;
+    auto     visitDef      = [&](const auto& def) {
         anyDefs                           = true;
         GenTreeLclVarCommon* localDefNode = def.GetDefNode();
         // This should have been marked as definition.
@@ -437,21 +438,17 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
             def.SetSsaNum(m_compiler, RenamePushDef(defNode, block, lclNum, def.IsEntire(m_compiler)));
             assert(!varDsc->IsAddressExposed()); // Cannot define SSA memory.
         }
+        else if (varDsc->IsAddressExposed() && (localDefNode != lastMemoryDef))
+        {
+            // Multiple definitions of address-exposed memory by one node share a memory SSA name.
+            RenamePushLocalMemoryDef(localDefNode, block);
+            lastMemoryDef = localDefNode;
+        }
 
         return GenTree::VisitResult::Continue;
     };
 
     defNode->VisitLogicalLocalDefs(m_compiler, visitDef);
-
-    auto visitDefNode = [&](GenTreeLclVarCommon* lcl) {
-        if (m_compiler->lvaGetDesc(lcl)->IsAddressExposed())
-        {
-            RenamePushMemoryDef(lcl, block);
-        }
-
-        return GenTree::VisitResult::Continue;
-    };
-    defNode->VisitPhysicalLocalDefNodes(m_compiler, visitDefNode);
 
     if (!anyDefs)
     {
@@ -514,64 +511,86 @@ unsigned SsaBuilder::RenamePushDef(GenTree* defNode, BasicBlock* block, unsigned
     return ssaNum;
 }
 
+//------------------------------------------------------------------------
+// RenamePushLocalMemoryDef: Record an address-exposed local definition for EH.
+//
+// Arguments:
+//    defNode - Node identifying the local definition
+//    block   - Block containing the definition
+//
+void SsaBuilder::RenamePushLocalMemoryDef(GenTree* defNode, BasicBlock* block)
+{
+    if (((block->bbMemoryHavoc & memoryKindSet(GcHeap, ByrefExposed)) != 0) || !m_compiler->ehBlockHasExnFlowDsc(block))
+    {
+        return;
+    }
+
+    RenamePushMemoryDefForKind(defNode, block, ByrefExposed);
+}
+
+//------------------------------------------------------------------------
+// RenamePushMemoryDef: Record a non-local memory modification for EH.
+//
+// Arguments:
+//    defNode - Node modifying memory
+//    block   - Block containing the modification
+//
 void SsaBuilder::RenamePushMemoryDef(GenTree* defNode, BasicBlock* block)
 {
-    // Figure out if "defNode" may make a new GC heap state (if we care for this block).
+    assert(!defNode->OperIsAnyLocal());
+
     if (((block->bbMemoryHavoc & memoryKindSet(GcHeap)) != 0) || !m_compiler->ehBlockHasExnFlowDsc(block))
     {
         return;
     }
 
-    bool hasByrefHavoc = ((block->bbMemoryHavoc & memoryKindSet(ByrefExposed)) != 0);
-
-    if (defNode->OperIsAnyLocal() && hasByrefHavoc)
-    {
-        // No need to record these.
-        return;
-    }
-
-    // It *may* define byref memory in a non-havoc way.  Make a new SSA # -- associate with this node.
-    unsigned ssaNum = m_compiler->lvMemoryPerSsaData.AllocSsaNum(m_allocator);
+    bool     hasByrefHavoc = ((block->bbMemoryHavoc & memoryKindSet(ByrefExposed)) != 0);
+    unsigned ssaNum        = SsaConfig::RESERVED_SSA_NUM;
     if (!hasByrefHavoc)
     {
-        m_renameStack.PushMemory(ByrefExposed, block, ssaNum);
-        m_compiler->GetMemorySsaMap(ByrefExposed)->Set(defNode, ssaNum);
+        ssaNum = RenamePushMemoryDefForKind(defNode, block, ByrefExposed);
+    }
+
+    if (m_compiler->byrefStatesMatchGcHeapStates)
+    {
+        // GcHeap and ByrefExposed share the same stacks, SsaMap, and phis.
+        assert(!hasByrefHavoc);
+        assert(*m_compiler->GetMemorySsaMap(GcHeap)->LookupPointer(defNode) == ssaNum);
+        assert(block->bbMemorySsaPhiFunc[GcHeap] == block->bbMemorySsaPhiFunc[ByrefExposed]);
+    }
+    else
+    {
+        RenamePushMemoryDefForKind(defNode, block, GcHeap);
+    }
+}
+
+//------------------------------------------------------------------------
+// RenamePushMemoryDefForKind: Allocate and record one memory SSA definition.
+//
+// Arguments:
+//    defNode    - Node identifying the definition
+//    block      - Block containing the definition
+//    memoryKind - Memory state being defined
+//
+// Return Value:
+//    The allocated memory SSA number.
+//
+unsigned SsaBuilder::RenamePushMemoryDefForKind(GenTree* defNode, BasicBlock* block, MemoryKind memoryKind)
+{
+    unsigned ssaNum = m_compiler->lvMemoryPerSsaData.AllocSsaNum(m_allocator);
+    m_renameStack.PushMemory(memoryKind, block, ssaNum);
+    m_compiler->GetMemorySsaMap(memoryKind)->Set(defNode, ssaNum);
 #ifdef DEBUG
-        if (m_compiler->verboseSsa)
-        {
-            printf("Node ");
-            Compiler::printTreeID(defNode);
-            printf(" (in try block) may define memory; ssa # = %d.\n", ssaNum);
-        }
+    if ((memoryKind == ByrefExposed) && m_compiler->verboseSsa)
+    {
+        printf("Node ");
+        Compiler::printTreeID(defNode);
+        printf(" (in try block) may define memory; ssa # = %d.\n", ssaNum);
+    }
 #endif // DEBUG
 
-        // Now add this SSA # to all phis of the reachable catch blocks.
-        AddMemoryDefToEHSuccessorPhis(ByrefExposed, block, ssaNum);
-    }
-
-    if (!defNode->OperIsAnyLocal())
-    {
-        // Add a new def for GcHeap as well
-        if (m_compiler->byrefStatesMatchGcHeapStates)
-        {
-            // GcHeap and ByrefExposed share the same stacks, SsaMap, and phis
-            assert(!hasByrefHavoc);
-            assert(*m_compiler->GetMemorySsaMap(GcHeap)->LookupPointer(defNode) == ssaNum);
-            assert(block->bbMemorySsaPhiFunc[GcHeap] == block->bbMemorySsaPhiFunc[ByrefExposed]);
-        }
-        else
-        {
-            if (!hasByrefHavoc)
-            {
-                // Allocate a distinct defnum for the GC Heap
-                ssaNum = m_compiler->lvMemoryPerSsaData.AllocSsaNum(m_allocator);
-            }
-
-            m_renameStack.PushMemory(GcHeap, block, ssaNum);
-            m_compiler->GetMemorySsaMap(GcHeap)->Set(defNode, ssaNum);
-            AddMemoryDefToEHSuccessorPhis(GcHeap, block, ssaNum);
-        }
-    }
+    AddMemoryDefToEHSuccessorPhis(memoryKind, block, ssaNum);
+    return ssaNum;
 }
 
 //------------------------------------------------------------------------
