@@ -1,0 +1,19 @@
+<Project>
+  <ItemGroup>
+    <!-- Manifest of source paths needed to compile cDAC. Used when building out of tree. -->
+    <CDacSourceManifestSource Include="src/native/managed/cdac" />
+    <CDacSourceManifestSource Include="eng/generatorProjects.targets" />
+    <CDacSourceManifestSource Include="src/libraries/Common/src/System/HResults.cs" />
+    <CDacSourceManifestSource Include="src/coreclr/tools/aot/ILCompiler.Reflection.ReadyToRun/NativeReader.cs" />
+    <CDacSourceManifestSource Include="src/coreclr/tools/aot/ILCompiler.Reflection.ReadyToRun/NibbleReader.cs" />
+    <CDacSourceManifestSource Include="src/coreclr/tools/aot/ILCompiler.Reflection.ReadyToRun/NativeArray.cs" />
+    <CDacSourceManifestSource Include="src/coreclr/tools/Common/Compiler/ObjectWriter/Dwarf/DwarfHelper.cs" />
+    <CDacSourceManifestSource Include="src/coreclr/tools/Common/CallingConvention/ArgIterator.cs" />
+    <CDacSourceManifestSource Include="src/coreclr/tools/Common/CallingConvention/FpStructInRegistersInfo.cs" />
+    <CDacSourceManifestSource Include="src/coreclr/tools/Common/CallingConvention/ITypeHandle.cs" />
+    <CDacSourceManifestSource Include="src/coreclr/tools/Common/CallingConvention/SystemVAmd64PassingDescriptor.cs" />
+    <CDacSourceManifestSource Include="src/coreclr/tools/Common/CallingConvention/TransitionBlock.cs" />
+    <CDacSourceManifestSource Include="src/coreclr/tools/Common/Internal/Runtime/CorConstants.cs" />
+    <CDacSourceManifestSource Include="src/coreclr/tools/Common/TypeSystem/Common/TargetArchitecture.cs" />
+  </ItemGroup>
+</Project>

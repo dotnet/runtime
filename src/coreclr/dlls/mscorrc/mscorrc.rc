@@ -312,6 +312,7 @@ BEGIN
 #endif
 
     IDS_CLASSLOAD_GENERAL                   "Could not load type '%1' from assembly '%2'."
+    IDS_CLASSLOAD_TYPE_NOT_CREATED          "Could not load type '%1' from assembly '%2' because it has not been created. Call CreateType() on its TypeBuilder or EnumBuilder before using it."
     IDS_CLASSLOAD_TYPESPEC                  "Could not load TypeSpec from assembly '%2'."
     IDS_CLASSLOAD_SEALEDPARENT              "Could not load type '%1' from assembly '%2' because the parent type is sealed."
     IDS_CLASSLOAD_BADFORMAT                 "Could not load type '%1' from assembly '%2' because the format is invalid."

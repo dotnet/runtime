@@ -31,19 +31,26 @@ This fork of reference assemblies exists just for the experimental support. It w
 
 ### Implementation assemblies ###
 
-The implementation (in `System.Private.CoreLib`) we check
-`System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported` or call
-`System.Runtime.CompilerServices.RuntimeFeature.ThrowIfMultithreadingIsNotSupported()` to guard code paths that depends on
+The implementation in `System.Private.CoreLib` checks
+`System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported` or uses
+`FEATURE_MULTITHREADING` to guard code paths that depend on
 multi-threading.  The property is a boolean constant that will allow the IL trimmer or the
 JIT/interpreter/AOT to drop the multi-threaded implementation in the single-threaded CoreLib.
 
 The implementation should not use `[UnsupportedOSPlatform("browser")]`
 
-Synchronous wait APIs that are unsupported without multithreading should call
-`ThrowIfMultithreadingIsNotSupported()` only when they would actually block. They can succeed when
-a semaphore count, task completion, or set state is already available, and a zero-timeout wait
-should return its normal result. The public APIs remain annotated as unsupported because whether a
-wait blocks depends on runtime state.
+Synchronous wait APIs can succeed when a semaphore count, task completion, or set state is already
+available, and a zero-timeout wait should return its normal result. Both single-threaded and
+multi-threaded implementations also honor positive finite timeouts. On the DOM thread, these waits
+may spin until the operation succeeds or the timeout expires. They do not pump the JavaScript event
+loop or run queued managed work, so they can delay rendering and event processing. Unsatisfied
+infinite waits remain unsupported in single-threaded implementations.
+
+Multi-threaded WebAssembly implementations should pass the wait timeout to
+`System.Runtime.CompilerServices.RuntimeFeature.ThrowIfBlockingIsNotSupported(millisecondsTimeout)`.
+Only infinite waits are subject to the current thread's blocking policy. Operations without a timeout
+omit the argument, which defaults to an infinite timeout. The public APIs remain annotated as
+unsupported because whether a wait blocks depends on runtime state.
 
 ## Native runtime preprocessor defines ##
 

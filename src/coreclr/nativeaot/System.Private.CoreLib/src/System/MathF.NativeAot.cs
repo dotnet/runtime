@@ -160,6 +160,17 @@ namespace System
             return RuntimeImports.modff(x, intptr);
         }
 
-        public static (float Sin, float Cos) SinCos(float x) => (Sin(x), Cos(x));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe (float Sin, float Cos) SinCos(float x)
+        {
+            if (RuntimeHelpers.IsKnownConstant(x))
+            {
+                return (Sin(x), Cos(x));
+            }
+
+            float sin, cos;
+            RuntimeImports.sincosf(x, &sin, &cos);
+            return (sin, cos);
+        }
     }
 }

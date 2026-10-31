@@ -22,7 +22,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
-#include "pal/virtual.h"
 #include "pal/environ.h"
 #include "pal/utils.h"
 #include "pal/debug.h"
@@ -465,15 +464,6 @@ Initialize(
             goto CLEANUP6;
         }
 
-        /* Initialize the Virtual* functions. */
-        bool initializeExecutableMemoryAllocator = (flags & PAL_INITIALIZE_EXEC_ALLOCATOR) != 0;
-        if (FALSE == VIRTUALInitialize(initializeExecutableMemoryAllocator))
-        {
-            ERROR("Unable to initialize virtual memory support\n");
-            palError = ERROR_PALINIT_VIRTUAL;
-            goto CLEANUP10;
-        }
-
         if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
         {
             // Initialize before first thread is created for faster load on Linux
@@ -490,7 +480,7 @@ Initialize(
         {
             ERROR("Unable to initialize SEH support\n");
             palError = ERROR_PALINIT_SEH;
-            goto CLEANUP13;
+            goto CLEANUP10;
         }
 
         if (flags & PAL_INITIALIZE_STD_HANDLES)
@@ -527,8 +517,6 @@ Initialize(
 
 CLEANUP14:
     SEHCleanup();
-CLEANUP13:
-    VIRTUALCleanup();
 CLEANUP10:
     MAPCleanup();
 CLEANUP6:

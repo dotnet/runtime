@@ -181,13 +181,20 @@ void WasmRegAlloc::IdentifyCandidates()
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
             varIsRegCandidate = false;
         }
-        // We also need to ensure that any GC refs are not stored in wasm locals until we have support for
-        // spilling them to the stack before calls.
-        // TODO-WASM: Add support for spilling GC refs in order to relax this second restriction.
+        // We also need to ensure that any GC refs are not stored in wasm locals unless they are pre-identified as
+        // candidates (identified as never gc-exposed).
+        // TODO-WASM: Add support for spilling GC ref locals in order to relax this second restriction and enregister
+        // more GC ref locals.
         if (varTypeIsGC(varDsc->lvType))
         {
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
-            varIsRegCandidate = false;
+            bool isRefCandidate =
+                varDsc->lvTracked &&
+                VarSetOps::IsMember(m_compiler, *m_compiler->m_wasmGCRefCandidates, varDsc->lvVarIndex);
+            if (!isRefCandidate)
+            {
+                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
+                varIsRegCandidate = false;
+            }
         }
         if (varIsRegCandidate)
         {

@@ -38,7 +38,7 @@ azure-feed://dnceng/public/dotnet11@Local
 
 1. Acquire the latest development .NET SDK by downloading and extracting a zip/tarball or using an installer from the [latest builds table in dotnet/sdk](https://github.com/dotnet/sdk#installing-the-sdk) (for example, https://aka.ms/dotnet/11.0/daily/dotnet-sdk-win-x64.zip).
 
-2. If you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045:  The current .NET SDK does not support targeting .NET 11.0." then you may be executing an older `dotnet`.
+2. If you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045:  The current .NET SDK does not support targeting .NET 12.0." then you may be executing an older `dotnet`.
 
 After setting up dotnet you can verify you are using the current preview version by executing `dotnet --info`. Here is an example output:
 ```
@@ -58,7 +58,7 @@ global.json file:
   Not found
 
 Host:
-  Version:      11.0.0-alpha.1.24556.3
+  Version:      12.0.0-alpha.1.24556.3
   Architecture: x64
   Commit:       47d9c43ab1
 
@@ -66,7 +66,7 @@ Host:
   11.0.100-alpha.1.24556.7 [C:\Program Files\dotnet\sdk]
 
 .NET runtimes installed:
-  Microsoft.NETCore.App 11.0.0-alpha.1.24556.7 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.NETCore.App 12.0.0-alpha.1.24556.7 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
 
 Download .NET:
   https://aka.ms/dotnet-download
