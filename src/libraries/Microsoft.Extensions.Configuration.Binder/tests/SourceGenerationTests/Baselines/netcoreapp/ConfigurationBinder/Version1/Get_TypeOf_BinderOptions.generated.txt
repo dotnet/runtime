@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "MyInt", out string? value1))
             {
-                if (!string.IsNullOrEmpty(value1))
+                if (value1 is not null)
                 {
                     instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
                 }
