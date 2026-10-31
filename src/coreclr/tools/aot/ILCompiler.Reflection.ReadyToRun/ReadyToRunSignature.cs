@@ -1222,6 +1222,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(" (METHOD_ENTRY)");
                     break;
 
+                case ReadyToRunFixupKind.MethodEntry_ReadyToRun:
+                    ParseMethod(builder);
+                    builder.Append(" (METHOD_ENTRY_READYTORUN)");
+                    break;
+
                 case ReadyToRunFixupKind.MethodEntry_DefToken:
                     uint methodDefToken = ParseMethodDefToken(builder, owningTypeOverride: null);
                     builder.Append(" (METHOD_ENTRY");
@@ -1807,6 +1812,10 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.GCPoll:
                     builder.Append("GCPOLL");
+                    break;
+
+                case ReadyToRunHelper.WasmProfSamplepoint:
+                    builder.Append("WASM_PROF_SAMPLEPOINT");
                     break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:

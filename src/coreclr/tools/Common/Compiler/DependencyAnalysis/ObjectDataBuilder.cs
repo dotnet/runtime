@@ -282,7 +282,9 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                     EmitInt(delta);
                     break;
+                case RelocType.WASM_TYPE_INDEX_LEB:
                 case RelocType.WASM_ASYNC_RESUME_INFO_DELTA_ULEB:
+                    // Padded ULEB128, so the resolved value can be written in place
                     uint value = checked((uint)delta);
                     for (int i = 0; i < Relocation.GetSize(relocType) - 1; i++)
                     {

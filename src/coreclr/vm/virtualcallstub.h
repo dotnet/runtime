@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
+// ============================================================================
 // File: VirtualCallStub.h
 //
 // See code:VirtualCallStubManager for details
-//
 // ============================================================================
 
 #ifndef _VIRTUAL_CALL_STUB_H
@@ -284,6 +283,7 @@ public:
 #endif
           m_loaderAllocator(NULL),
           m_initialReservedMemForHeaps(NULL),
+          m_initialReservedMemForHeapsSize(0),
           m_FreeIndCellList(NULL),
           m_RecycledIndCellList(NULL),
           indcell_heap(NULL),
@@ -544,6 +544,7 @@ private:
     PTR_LoaderAllocator m_loaderAllocator;
 
     BYTE *          m_initialReservedMemForHeaps;
+    size_t          m_initialReservedMemForHeapsSize;
 
     static const UINT32 INDCELLS_PER_BLOCK = 32;    // 32 indirection cells per block.
 
@@ -778,8 +779,6 @@ class VirtualCallStubManagerManager : public StubManager
     virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
 
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
-
-    static MethodDesc *Entry2MethodDesc(PCODE stubStartAddress, MethodTable *pMT);
 
 #ifdef DACCESS_COMPILE
     virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -1526,10 +1525,13 @@ private:
     // does not throw on OOM. **YOU MUST CHECK FOR NULL RETURN**
     static FastTable* MakeTable(size_t numberOfEntries)
     {
-        CONTRACTL {
+        CONTRACTL
+        {
             THROWS;
             GC_TRIGGERS;
-        } CONTRACTL_END;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
 
         size_t size = CALL_STUB_MIN_ENTRIES;
         while (size < numberOfEntries) {size = size<<1;}

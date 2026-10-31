@@ -313,7 +313,9 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
             ScanStackRoots(pThread, fn, sc);
             ScanTailCallArgBufferRoots(pThread, fn, sc);
+#ifdef FEATURE_MULTITHREADING
             ScanThreadStaticRoots(pThread, fn, sc);
+#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_EVENT_TRACE
             sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -681,7 +683,9 @@ void GcScanRootsForProfilerAndETW(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
         ScanStackRoots(pThread, fn, sc);
         ScanTailCallArgBufferRoots(pThread, fn, sc);
+#ifdef FEATURE_MULTITHREADING
         ScanThreadStaticRoots(pThread, fn, sc);
+#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_EVENT_TRACE
         sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -1476,6 +1480,7 @@ bool GCToEEInterface::WasCurrentThreadCreatedByGC()
     return !!::IsGCSpecialThread();
 }
 
+#ifdef FEATURE_MULTITHREADING
 struct SuspendableThreadStubArguments
 {
     void* Argument;
@@ -1652,9 +1657,11 @@ namespace
         return true;
     }
 } // anonymous namespace
+#endif // FEATURE_MULTITHREADING
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
+#ifdef FEATURE_MULTITHREADING
     InlineSString<MaxThreadNameSize> wideName;
     const WCHAR* namePtr = nullptr;
     EX_TRY
@@ -1681,6 +1688,11 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     {
         return CreateNonSuspendableThread(threadStart, arg, namePtr);
     }
+#else
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();
+    return false;
+#endif // FEATURE_MULTITHREADING
 }
 
 void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)

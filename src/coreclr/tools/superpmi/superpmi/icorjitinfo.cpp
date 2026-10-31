@@ -282,13 +282,6 @@ bool MyICJI::satisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent, // the exa
     return jitInstance->mc->repSatisfiesMethodConstraints(parent, method);
 }
 
-// load and restore the method
-void MyICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
-{
-    jitInstance->mc->cr->AddCall("methodMustBeLoadedBeforeCodeIsRun");
-    jitInstance->mc->cr->recMethodMustBeLoadedBeforeCodeIsRun(method);
-}
-
 // Returns the global cookie for the /GS unsafe buffer checks
 // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
 void MyICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
@@ -428,6 +421,18 @@ bool MyICJI::isValueClass(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("isValueClass");
     return jitInstance->mc->repIsValueClass(cls);
+}
+
+bool MyICJI::isByRefLike(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("isByRefLike");
+    return jitInstance->mc->repIsByRefLike(cls);
+}
+
+bool MyICJI::isSharedInst(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("isSharedInst");
+    return jitInstance->mc->repIsSharedInst(cls);
 }
 
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
@@ -695,22 +700,6 @@ CorInfoInitClassResult MyICJI::initClass(CORINFO_FIELD_HANDLE field, // Non-null
 {
     jitInstance->mc->cr->AddCall("initClass");
     return jitInstance->mc->repInitClass(field, method, context);
-}
-
-// This used to be called "loadClass".  This records the fact
-// that the class must be loaded (including restored if necessary) before we execute the
-// code that we are currently generating.  When jitting code
-// the function loads the class immediately.  When zapping code
-// the zapper will if necessary use the call to record the fact that we have
-// to do a fixup/restore before running the method currently being generated.
-//
-// This is typically used to ensure value types are loaded before zapped
-// code that manipulates them is executed, so that the GC can access information
-// about those value types.
-void MyICJI::classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("classMustBeLoadedBeforeCodeIsRun");
-    jitInstance->mc->cr->recClassMustBeLoadedBeforeCodeIsRun(cls);
 }
 
 // returns the class handle for the special builtin classes

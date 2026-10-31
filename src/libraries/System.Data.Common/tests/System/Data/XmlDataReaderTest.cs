@@ -35,7 +35,7 @@ namespace System.Data.Tests
     public class XmlDataReaderTest
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51369", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51369", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51369", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public void XmlLoadTest()
         {

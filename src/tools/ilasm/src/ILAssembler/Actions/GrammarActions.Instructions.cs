@@ -5,11 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Text;
 using Antlr4.Runtime;
+using LabelHandle = ILAssembler.MethodBodyWriter.Label;
 
 namespace ILAssembler;
 
@@ -64,9 +66,9 @@ internal sealed partial class GrammarActions
         }
         else
         {
-            for (int i = method.LocalsScopes.Count - 1; i >= 0; i--)
+            for (int i = method.OpenScopes.Count - 1; i >= 0; i--)
             {
-                if (method.LocalsScopes[i].TryGetValue(variableName, out int localIndex))
+                if (method.OpenScopes[i].Names.TryGetValue(variableName, out int localIndex))
                 {
                     index = localIndex;
                     break;
@@ -95,7 +97,7 @@ internal sealed partial class GrammarActions
         int value = ParseInt32(valueToken);
         if (instruction.OpCode is ILOpCode.Ldc_i4 or ILOpCode.Ldc_i4_s)
         {
-            instruction.Method.Definition.MethodBody.LoadConstantI4(value);
+            instruction.Method.Definition.MethodBody.LoadConstantI4(instruction.OpCode, value, _options.Optimize);
             return;
         }
 
@@ -141,17 +143,9 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        InstructionEncoder body = instruction.Method.Definition.MethodBody;
         int offset = ParseInt32(offsetToken);
-        body.OpCode(instruction.OpCode);
-        if (instruction.OpCode.GetBranchOperandSize() == 1)
-        {
-            body.CodeBuilder.WriteSByte(unchecked((sbyte)offset));
-        }
-        else
-        {
-            body.CodeBuilder.WriteInt32(offset);
-        }
+        instruction.Method.Definition.MethodBody.Branch(instruction.OpCode, offset,
+            _options.Optimize, Location.From(opcodeToken, _documents));
     }
 
     internal void EmitBranchLabelInstruction(IToken opcodeToken, IToken labelToken)
@@ -165,7 +159,8 @@ internal sealed partial class GrammarActions
         string labelName = ParseIdentifier(labelToken);
         LabelHandle label = GetOrCreateMethodLabel(method, labelName, opcodeToken);
 
-        method.Definition.MethodBody.Branch(instruction.OpCode, label);
+        method.Definition.MethodBody.Branch(instruction.OpCode, label,
+            _options.Optimize, Location.From(opcodeToken, _documents));
     }
 
     internal void EmitRawFloatingInstruction(
@@ -258,12 +253,31 @@ internal sealed partial class GrammarActions
         }
     }
 
-    internal void SetEntryPoint()
+    internal void SetEntryPoint(IToken directiveToken)
     {
-        if (_currentMethod is not null)
+        if (_currentMethod is null)
         {
-            _entityRegistry.EntryPoint = _currentMethod.Definition;
+            return;
         }
+
+        if (_entityRegistry.EntryPoint is not null)
+        {
+            ReportError(
+                DiagnosticIds.DuplicateEntryPoint,
+                DiagnosticMessageTemplates.DuplicateEntryPoint,
+                directiveToken);
+            return;
+        }
+
+        if (!_currentMethod.Definition.MethodAttributes.HasFlag(MethodAttributes.Static))
+        {
+            ReportError(
+                DiagnosticIds.InstanceEntryPoint,
+                DiagnosticMessageTemplates.InstanceEntryPoint,
+                directiveToken);
+        }
+
+        _entityRegistry.EntryPoint = _currentMethod.Definition;
     }
 
     internal void SetZeroInit()
@@ -318,7 +332,7 @@ internal sealed partial class GrammarActions
         {
             if (isOffset)
             {
-                labels.Add((method.Definition.MethodBody.DefineLabel(), ParseInt32(token)));
+                labels.Add((default, ParseInt32(token)));
                 continue;
             }
 
@@ -331,29 +345,15 @@ internal sealed partial class GrammarActions
             labels.Add((label, null));
         }
 
-        if (labels.Count > 0)
-        {
-            SwitchInstructionEncoder switchEncoder = method.Definition.MethodBody.Switch(labels.Count);
-            foreach ((LabelHandle label, _) in labels)
-            {
-                switchEncoder.Branch(label);
-            }
-        }
-        else
-        {
-            method.Definition.MethodBody.OpCode(ILOpCode.Switch);
-            method.Definition.MethodBody.CodeBuilder.WriteInt32(0);
-        }
-
-        foreach ((LabelHandle label, int? offset) in labels)
-        {
-            if (offset is int value)
-            {
-                method.Definition.MethodBody.MarkLabel(label, method.Definition.MethodBody.Offset + value);
-            }
-        }
+        method.Definition.MethodBody.Switch(labels, Location.From(builder.OpcodeToken, _documents));
     }
 
+    /// <summary>
+    /// Starts emitting an instruction into the current method: records its sequence point at the current IL offset
+    /// (<see cref="RecordSequencePoint"/>) and parses its opcode. Every instruction passes through here before its
+    /// bytes are written, and the caller must write them.
+    /// </summary>
+    /// <returns>The current method and the opcode, or <see langword="null"/> outside a method body.</returns>
     private (CurrentMethodContext Method, ILOpCode OpCode)? StartInstruction(IToken opcodeToken)
     {
         if (_currentMethod is not { } method)
@@ -362,21 +362,12 @@ internal sealed partial class GrammarActions
         }
 
         ILOpCode opcode = ParseOpCodeFromToken(opcodeToken);
+        RecordSequencePoint(method, opcodeToken);
         return (method, opcode);
     }
 
-    private static void WriteVariableIndex(CurrentMethodContext method, ILOpCode opcode, int index)
-    {
-        method.Definition.MethodBody.OpCode(opcode);
-        if (opcode.ToString().EndsWith("_s", StringComparison.Ordinal))
-        {
-            method.Definition.MethodBody.CodeBuilder.WriteByte((byte)index);
-        }
-        else
-        {
-            method.Definition.MethodBody.CodeBuilder.WriteInt32(index);
-        }
-    }
+    private void WriteVariableIndex(CurrentMethodContext method, ILOpCode opcode, int index)
+        => method.Definition.MethodBody.Variable(opcode, index, _options.Optimize);
 
     private static void WriteFloatingInstruction(CurrentMethodContext method, ILOpCode opcode, double value)
     {
@@ -401,8 +392,14 @@ internal sealed partial class GrammarActions
         string normalized = text.Replace('.', '_');
         normalized = normalized switch
         {
+            "brnull" or "brzero" => "brfalse",
+            "brnull_s" or "brzero_s" => "brfalse_s",
+            "brinst" => "brtrue",
+            "brinst_s" => "brtrue_s",
             "ldelem_u8" => "ldelem_i8",
             "ldind_u8" => "ldind_i8",
+            "ldelem_any" => "ldelem",
+            "stelem_any" => "stelem",
             "endfault" => "endfinally",
             _ => normalized
         };

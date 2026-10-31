@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/thread.hpp
 
 Abstract:
     Header file for thread structures
-
-
-
 --*/
 
 #ifndef _PAL_THREAD_HPP_
@@ -80,14 +73,6 @@ namespace CorUnix
     VOID
     InternalEndCurrentThread(
         CPalThread *pThread
-        );
-
-    PAL_ERROR
-    InternalCreateDummyThread(
-        CPalThread *pThread,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        CPalThread **ppDummyThread,
-        HANDLE *phThread
         );
 
     PAL_ERROR
@@ -164,15 +149,6 @@ namespace CorUnix
                 DWORD,
                 SIZE_T*,
                 HANDLE*
-                );
-
-        friend
-            PAL_ERROR
-            InternalCreateDummyThread(
-                CPalThread *pThread,
-                LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                CPalThread **ppDummyThread,
-                HANDLE *phThread
                 );
 
         friend

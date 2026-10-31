@@ -43,7 +43,13 @@
 #include <cstdarg>
 #include <signal.h>
 #include <minipal/memorybarrierprocesswide.h>
+#include <minipal/ospagesize.h>
 #include <minipal/thread.h>
+
+#ifdef TARGET_WASI
+extern "C" char __stack_low;
+extern "C" char __stack_high;
+#endif
 
 #ifdef TARGET_LINUX
 #include <sys/syscall.h>
@@ -291,9 +297,9 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-#if defined(TARGET_LINUX)
+#if defined(FEATURE_MULTITHREADING) && defined(TARGET_LINUX)
 static pthread_key_t key;
-#endif
+#endif // FEATURE_MULTITHREADING && TARGET_LINUX
 
 #ifdef FEATURE_HIJACK
 bool InitializeSignalHandling();
@@ -335,17 +341,17 @@ bool PalInit()
     }
 #endif
 
-#if defined(TARGET_LINUX)
+#if defined(FEATURE_MULTITHREADING) && defined(TARGET_LINUX)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
     {
         return false;
     }
-#endif
+#endif // FEATURE_MULTITHREADING && TARGET_LINUX
 
     return true;
 }
 
-#if !defined(TARGET_LINUX)
+#if defined(FEATURE_MULTITHREADING) && !defined(TARGET_LINUX)
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -367,7 +373,7 @@ struct TlsDestructionMonitor
 // This thread local object is used to detect thread shutdown. Its destructor
 // is called when a thread is being shut down.
 thread_local TlsDestructionMonitor tls_destructionMonitor;
-#endif
+#endif // FEATURE_MULTITHREADING && !TARGET_LINUX
 
 // Register the thread with OS to be notified when thread is about to be destroyed
 // It fails fast if a different thread was already registered.
@@ -375,6 +381,7 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 //  thread        - thread to attach
 void PalAttachThread(void* thread)
 {
+#ifdef FEATURE_MULTITHREADING
 #if defined(TARGET_LINUX)
     if (pthread_setspecific(key, thread) != 0)
     {
@@ -384,6 +391,7 @@ void PalAttachThread(void* thread)
 #else
     tls_destructionMonitor.SetThread(thread);
 #endif
+#endif // FEATURE_MULTITHREADING
 
 #ifdef FEATURE_HIJACK
     UnmaskActivationSignal();
@@ -674,8 +682,9 @@ UInt32_BOOL PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect
     int unixProtect = W32toUnixAccessControl(protect);
 
     // mprotect expects the address to be page-aligned
-    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, OS_PAGE_SIZE);
-    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, OS_PAGE_SIZE) - pPageStart;
+    size_t pageSize = minipal_getpagesize();
+    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, pageSize);
+    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, pageSize) - pPageStart;
 
     return mprotect(pPageStart, memSize, unixProtect) == 0;
 }
@@ -911,7 +920,10 @@ bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHi
     void* pStackHighOut = NULL;
     void* pStackLowOut = NULL;
 
-#ifdef __APPLE__
+#ifdef TARGET_WASI
+    pStackLowOut = &__stack_low;
+    pStackHighOut = &__stack_high;
+#elif defined(__APPLE__)
     // This is a Mac specific method
     pStackHighOut = pthread_get_stackaddr_np(pthread_self());
     pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));

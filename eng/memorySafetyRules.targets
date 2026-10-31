@@ -1,0 +1,36 @@
+<Project>
+
+  <!--
+    Opt an assembly into the updated memory safety rules (unsafe-v2) by setting
+    <MemorySafetyRulesVersion>2</MemorySafetyRulesVersion> in its project file. AllowUnsafeBlocks stays the library's
+    own decision: a library without unsafe operations needs neither it nor any safe/unsafe annotations.
+
+    MemorySafetyRulesVersion is the compiler's own MSBuild property (dotnet/roslyn#85980). The compiler we build with
+    predates it, so it is mapped to the legacy feature flag here. Delete the Features line when a compiler that passes
+    MemorySafetyRulesVersion to csc flows in: the flag is deprecated there and warns (dotnet/roslyn#86224).
+  -->
+  <PropertyGroup Condition="'$(MemorySafetyRulesVersion)' == '2'">
+    <Features>$(Features);updated-memory-safety-rules</Features>
+  </PropertyGroup>
+
+  <!--
+    The migration analyzers (IL5005-IL5010) are disabled by default and not built into Release ILLink analyzers.
+    Set EnableUnsafeMigrationAnalyzers=true (and ToolsConfiguration=Debug or Checked) to run them, e.g. from dotnet format.
+  -->
+  <PropertyGroup Condition="'$(EnableUnsafeMigrationAnalyzers)' == 'true'">
+    <EnableUnsafeAnalyzer>true</EnableUnsafeAnalyzer>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(EnableUnsafeMigrationAnalyzers)' == 'true'">
+    <EditorConfigFiles Include="$(MSBuildThisFileDirectory)unsafeMigration.globalconfig" />
+  </ItemGroup>
+
+  <!--
+    Lets a migration driver load a single target framework of the project at UnsafeMigrationProject, e.g. through
+    'dotnet format'. 'dotnet format -f' can't be used: it sets TargetFramework globally, retargeting every referenced
+    project too.
+  -->
+  <PropertyGroup Condition="'$(UnsafeMigrationTargetFramework)' != '' and '$(MSBuildProjectFullPath)' == '$(UnsafeMigrationProject)'">
+    <TargetFrameworks>$(UnsafeMigrationTargetFramework)</TargetFrameworks>
+  </PropertyGroup>
+
+</Project>

@@ -249,8 +249,14 @@ namespace System.Net
                     continue;
                 }
 
-                if (_sawCR && c == '\n')
+                if (_sawCR)
+                {
+                    // The CR must be immediately followed by a LF. Don't drop a bare CR and join the digits around it.
+                    if (c != '\n')
+                        ThrowProtocolViolation("Missing \\n");
+
                     break;
+                }
 
                 _saved.Append(c);
 
@@ -260,9 +266,6 @@ namespace System.Net
 
             if (!_sawCR || c != '\n')
             {
-                if (offset < size)
-                    ThrowProtocolViolation("Missing \\n");
-
                 try
                 {
                     if (_saved.Length > 0)

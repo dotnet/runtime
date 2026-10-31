@@ -29,6 +29,7 @@
 #include <minipal/guid.h>
 #include <minipal/strings.h>
 #include <minipal/time.h>
+#include <minipal.h>
 
 #ifdef TARGET_UNIX
 #include <sys/time.h>
@@ -314,12 +315,26 @@ ep_rt_init_finish (void)
 	STATIC_CONTRACT_NOTHROW;
 }
 
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+// WASI has no host event loop, so jobs are kept on a native list that the managed
+// WASI event loop drains (see ep-rt-coreclr.cpp).
+bool ep_rt_coreclr_wasi_queue_job (size_t (*cb)(void *data), void *data);
+
+// Runs the queued jobs once; returns true if any job is still queued.
+bool ep_rt_coreclr_wasi_run_jobs (void);
+#endif
+
 static
 inline
 void
 ep_rt_shutdown (void)
 {
 	STATIC_CONTRACT_NOTHROW;
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+	// The event loop no longer runs, so run the queued jobs once to let the now-disabled streaming
+	// sessions release their references; freeing a session ends its trace file.
+	ep_rt_coreclr_wasi_run_jobs ();
+#endif
 }
 
 static
@@ -1111,6 +1126,8 @@ ep_rt_queue_job (
 	if (!cb (params))
 		SystemJS_DiagnosticServerQueueJob (cb, params);
 	return true;
+#elif defined(TARGET_WASI)
+	return ep_rt_coreclr_wasi_queue_job ((size_t (*)(void *))job_func, params);
 #else
 	EP_UNREACHABLE ("Not implemented on this platform");
 	return false;
@@ -1398,7 +1415,7 @@ uint8_t *
 ep_rt_valloc0 (size_t buffer_size)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return reinterpret_cast<uint8_t *>(ClrVirtualAlloc (NULL, buffer_size, MEM_COMMIT, PAGE_READWRITE));
+	return reinterpret_cast<uint8_t *>(VMToOSInterface::AllocateMemory (NULL, buffer_size, VMToOSInterface::MemoryProtection::ReadWrite));
 }
 
 static
@@ -1411,7 +1428,7 @@ ep_rt_vfree (
 	STATIC_CONTRACT_NOTHROW;
 
 	if (buffer)
-		ClrVirtualFree (buffer, 0, MEM_RELEASE);
+		VMToOSInterface::ReleaseMemoryReservation (buffer, buffer_size);
 }
 
 static
@@ -1972,7 +1989,11 @@ bool
 ep_rt_thread_has_started (ep_rt_thread_handle_t thread_handle)
 {
 	STATIC_CONTRACT_NOTHROW;
+#ifdef FEATURE_MULTITHREADING
 	return thread_handle != NULL && thread_handle->HasStarted ();
+#else
+	return thread_handle != NULL;
+#endif // FEATURE_MULTITHREADING
 }
 
 static

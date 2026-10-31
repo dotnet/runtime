@@ -1195,7 +1195,7 @@ bool
 session_requested_sampling (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
-	return ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (ep_session_get_providers (session)), ep_config_get_sample_profiler_provider_name_utf8 ());
+	return ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (ep_session_get_providers (session)), ep_config_get_sample_profiler_provider_name_utf8 ()) != NULL;
 }
 
 static
@@ -1723,6 +1723,12 @@ ep_init (void)
 
 	// Allow overriding the sampling rate via DOTNET_EventPipeThreadSamplingRate (in milliseconds).
 	uint32_t configured_rate_ms = ep_rt_config_value_get_sampling_rate ();
+#ifdef PERFTRACING_DISABLE_THREADS
+	// Reserve INT32_MAX for sampling every instrumentation point in cooperative profilers.
+	if (configured_rate_ms == INT32_MAX)
+		ep_sample_profiler_set_sampling_rate (0);
+	else
+#endif
 	if (configured_rate_ms > 0)
 		ep_sample_profiler_set_sampling_rate ((uint64_t)configured_rate_ms * 1000000);
 	else

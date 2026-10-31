@@ -30,8 +30,17 @@ public sealed class ComposeWasiReadyToRun : Task
     public ITaskItem[] ComponentStubs { get; set; } = Array.Empty<ITaskItem>();
     public string? StubOutputDirectory { get; set; }
 
+    /// <summary>
+    /// Runs wasm-opt over the composed module. Off by default so crossgen2's output reaches the app as
+    /// emitted; optimizing also needs several times more memory for large composites.
+    /// </summary>
+    public bool Optimize { get; set; }
+
     [Output]
     public int FunctionCount { get; private set; }
+
+    [Output]
+    public int TableSlotCount { get; private set; }
 
     [Output]
     public int PayloadSize { get; private set; }
@@ -43,8 +52,13 @@ public sealed class ComposeWasiReadyToRun : Task
     {
         try
         {
-            WasiR2RComposition.InspectComposite(CompositePath, out int functionCount, out int payloadSize);
+            WasiR2RComposition.InspectComposite(
+                CompositePath,
+                out int functionCount,
+                out int tableSlotCount,
+                out int payloadSize);
             FunctionCount = functionCount;
+            TableSlotCount = tableSlotCount;
             PayloadSize = payloadSize;
 
             if (InspectOnly)
@@ -69,7 +83,7 @@ public sealed class ComposeWasiReadyToRun : Task
                 out int reservedTableStart,
                 out int compositeNameBase,
                 out int compositeNameCapacity);
-            int compositeTableEnd = checked(tableBase + FunctionCount);
+            int compositeTableEnd = checked(tableBase + TableSlotCount);
             if (compositeTableEnd > reservedTableStart)
                 throw new LogAsErrorException(
                     $"The composite needs table slots {tableBase}..{compositeTableEnd - 1}, " +
@@ -91,7 +105,8 @@ public sealed class ComposeWasiReadyToRun : Task
 
             Log.LogMessage(MessageImportance.High,
                 $"WASI R2R composition: imageBase={imageBase} tableBase={tableBase} " +
-                $"reservedSlots={reservedTableStart} compositeFuncs={FunctionCount} payload={PayloadSize} cap={imageCapacity} " +
+                $"reservedSlots={reservedTableStart} compositeFuncs={FunctionCount} compositeTableSlots={TableSlotCount} " +
+                $"payload={PayloadSize} cap={imageCapacity} " +
                 $"composite='{compositeName}'");
 
             string shimWatPath = Path.Combine(OutputDirectory!, "shim.wat");
@@ -105,9 +120,18 @@ public sealed class ComposeWasiReadyToRun : Task
                 $"-g --all-features --enable-gc {Quote(hostModule)} webcil {Quote(shimPath)} webcil " +
                 $"{Quote(CompositePath)} composite -o {Quote(mergedPath)}");
 
+            // Merging turns the composite's imported base globals into module-defined globals, which engines
+            // only accept in constant expressions with the extended-const proposal. Fold them to constants.
             string finalModulePath = Path.Combine(OutputDirectory!, "final.wasm");
-            Run(WasmOptPath!,
-                $"{Quote(mergedPath)} --all-features -g --simplify-globals -o {Quote(finalModulePath)}");
+            if (Optimize)
+            {
+                Run(WasmOptPath!,
+                    $"{Quote(mergedPath)} --all-features -g --simplify-globals -o {Quote(finalModulePath)}");
+            }
+            else
+            {
+                WasiR2RComposition.FoldConstantGlobalReads(mergedPath, finalModulePath);
+            }
 
             WasiR2RComposition.ReplaceFirstCoreModule(ComponentPath!, finalModulePath, OutputPath!);
             Run(WasmToolsPath!, $"validate --features all {Quote(OutputPath!)}");
@@ -150,7 +174,8 @@ public sealed class ComposeWasiReadyToRun : Task
         RequireFile(ComponentPath, nameof(ComponentPath));
         RequireFile(WasmToolsPath, nameof(WasmToolsPath));
         RequireFile(WasmMergePath, nameof(WasmMergePath));
-        RequireFile(WasmOptPath, nameof(WasmOptPath));
+        if (Optimize)
+            RequireFile(WasmOptPath, nameof(WasmOptPath));
         if (string.IsNullOrEmpty(OutputDirectory))
             throw new LogAsErrorException($"{nameof(OutputDirectory)} is required.");
         if (string.IsNullOrEmpty(OutputPath))
@@ -173,7 +198,8 @@ public sealed class ComposeWasiReadyToRun : Task
         OutputPath = Path.GetFullPath(OutputPath!);
         WasmToolsPath = Path.GetFullPath(WasmToolsPath!);
         WasmMergePath = Path.GetFullPath(WasmMergePath!);
-        WasmOptPath = Path.GetFullPath(WasmOptPath!);
+        if (Optimize)
+            WasmOptPath = Path.GetFullPath(WasmOptPath!);
         if (StubOutputDirectory is not null)
             StubOutputDirectory = Path.GetFullPath(StubOutputDirectory);
     }

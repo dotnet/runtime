@@ -29,6 +29,7 @@ TypeAttr(typeof(object), name = "TypeAttrSimple")]
 
 namespace System.Reflection.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134952", TestPlatforms.Wasi)]
     public class AssemblyTests : FileCleanupTestBase
     {
         private const string s_sourceTestAssemblyName = "TestAssembly.dll";
@@ -329,7 +330,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50715", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50715", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public void GetType_DefaultsToItself()
         {
             Assembly a = typeof(AssemblyTests).Assembly;
