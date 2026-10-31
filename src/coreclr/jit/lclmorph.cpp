@@ -1497,6 +1497,16 @@ private:
     {
         assert(val.IsAddress());
 
+        // A known local address is a common side-effect-free discarded value.
+        if (IsUnused(val.Node(), user))
+        {
+            val.Node()->BashToConst(0, val.Node()->TypeGet());
+            m_stmtModified            = true;
+            m_stmtSideEffectsModified = true;
+            INDEBUG(val.Consume();)
+            return;
+        }
+
         unsigned   lclNum = val.LclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
