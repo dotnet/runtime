@@ -1477,6 +1477,45 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
     return targetIp;
 }
 
+static InterpByteCodeStart* ResolveInterpreterCode(MethodDesc*& targetMethod, InterpMethodContextFrame* pFrame, InterpreterFrame* pInterpreterFrame, const int32_t* ip)
+{
+    InterpByteCodeStart* targetIp;
+    if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
+    {
+        targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
+    }
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    // This info is not cleared when R2R code is published, so calls through a stale override alias still
+    // reach the prestub and are redirected to the published native code.
+    if (targetIp != nullptr
+        && targetIp->Method->auxiliaryMethodInfo.ShouldTryActivateMethod())
+    {
+        pFrame->ip = ip;
+        pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+        MethodDesc* pActualMethod = targetIp->Method->methodHnd;
+        // A method that already switched to R2R code has no interpreter code left, so a call through an alias
+        // only needs the redirect below.
+        if (pActualMethod->GetInterpreterCode() != nullptr)
+        {
+            GCX_PREEMP_REGION_BEGIN();
+            CallWithSEHWrapper(
+                [pActualMethod]() {
+                    return pActualMethod->DoPrestub(nullptr, CallerGCMode::Coop);
+                });
+            GCX_PREEMP_REGION_END();
+        }
+        if (pActualMethod->GetInterpreterCode() == nullptr)
+        {
+            targetMethod = pActualMethod;
+            return nullptr;
+        }
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
+    return targetIp;
+}
+
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
     CONTRACTL
@@ -3582,11 +3621,7 @@ SWITCH_OPCODE:
                             targetMethod = NonVirtualEntry2MethodDesc(actualTarget);
                         }
 
-                        PTR_InterpByteCodeStart targetIp;
-                        if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
-                        {
-                            targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
-                        }
+                        PTR_InterpByteCodeStart targetIp = ResolveInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
                         if (targetIp != NULL)
                         {
                             pFrame->ip = ip;
@@ -3680,11 +3715,7 @@ CALL_INTERP_METHOD:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
-                    InterpByteCodeStart* targetIp;
-                    if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
-                    {
-                        targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
-                    }
+                    InterpByteCodeStart* targetIp = ResolveInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
                     if (targetIp == NULL)
                     {
                         // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.

@@ -63,10 +63,12 @@ function mergeResources(target: Assets, source: Assets): Assets {
     source.hash = source.hash ?? target.hash;
     source.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly || []];
     source.assembly = [...target.assembly!, ...source.assembly || []];
+    source.auxiliaryAssembly = [...target.auxiliaryAssembly!, ...source.auxiliaryAssembly || []];
     source.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly || []];
     source.corePdb = [...target.corePdb!, ...source.corePdb || []];
     source.pdb = [...target.pdb!, ...source.pdb || []];
     source.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative || []];
+    source.jsModuleAuxiliaryWorker = [...target.jsModuleAuxiliaryWorker!, ...source.jsModuleAuxiliaryWorker || []];
     source.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics || []];
     source.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime || []];
     source.wasmSymbols = [...target.wasmSymbols!, ...source.wasmSymbols || []];
@@ -114,10 +116,12 @@ function normalizeConfig(target: LoaderConfigInternal) {
 function normalizeResources(target: Assets) {
     if (!target.coreAssembly) target.coreAssembly = [];
     if (!target.assembly) target.assembly = [];
+    if (!target.auxiliaryAssembly) target.auxiliaryAssembly = [];
     if (!target.lazyAssembly) target.lazyAssembly = [];
     if (!target.corePdb) target.corePdb = [];
     if (!target.pdb) target.pdb = [];
     if (!target.jsModuleNative) target.jsModuleNative = [];
+    if (!target.jsModuleAuxiliaryWorker) target.jsModuleAuxiliaryWorker = [];
     if (!target.jsModuleDiagnostics) target.jsModuleDiagnostics = [];
     if (!target.jsModuleRuntime) target.jsModuleRuntime = [];
     if (!target.wasmSymbols) target.wasmSymbols = [];

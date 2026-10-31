@@ -217,11 +217,13 @@ export interface Assets {
     lazyAssembly?: AssemblyAsset[];
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
+    jsModuleAuxiliaryWorker?: JsAsset[];
     jsModuleDiagnostics?: JsAsset[];
     jsModuleNative: JsAsset[];
     jsModuleRuntime: JsAsset[];
     wasmSymbols?: SymbolsAsset[];
     wasmNative: WasmAsset[];
+    auxiliaryAssembly?: (WasmAsset & { virtualPath: string })[];
     icu?: IcuAsset[];
     satelliteResources?: {
         [cultureName: string]: AssemblyAsset[];

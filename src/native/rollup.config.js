@@ -50,6 +50,17 @@ const dotnetJS = configure({
     }
 });
 
+const dotnetAuxiliaryWorkerJS = configure({
+    input: "./libs/Common/JavaScript/loader/auxiliary-module-worker.ts",
+    output: [{
+        file: staticLibDestination + "/dotnet.auxiliary.worker.js",
+    }],
+    terser: {
+        compress: { module: true },
+        mangle: { module: true },
+    }
+});
+
 const libNativeBrowser = configure({
     input: "./libs/System.Native.Browser/native/index.ts",
     output: [{
@@ -162,6 +173,7 @@ const libBrowserHost = configure({
 
 export default defineConfig([
     dotnetJS,
+    dotnetAuxiliaryWorkerJS,
     dotnetDTS,
     libNativeBrowser,
     libBrowserUtils,

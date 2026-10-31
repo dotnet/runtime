@@ -35,7 +35,37 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Compile every assembly into one shared (large) version bubble. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--instruction-set:relaxed-simd</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableAuxiliaryR2RModules)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--wasm-auxiliary-modules</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
+
+  <!-- This must also run for native-free publishes, which never import the native relink SDK. -->
+  <Target Name="_WasmCoreClrConfigureAuxiliaryR2RModules"
+          Condition="'$(PublishReadyToRun)' == 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <ItemGroup Condition="'$(WasmEnableAuxiliaryR2RModules)' == 'true'">
+      <_WasmAuxiliaryPrimaryImage Include="@(_ReadyToRunCompileList->WithMetadataValue('CreateCompositeImage', 'true')->'%(OutputR2RImage)')" />
+    </ItemGroup>
+    <CollectWasmAuxiliaryR2RModules Condition="'@(_WasmAuxiliaryPrimaryImage)' != ''"
+                                  PrimaryImages="@(_WasmAuxiliaryPrimaryImage)"
+                                  AllowMissingFiles="true">
+      <Output TaskParameter="MissingOutputs" ItemName="_WasmMissingAuxiliaryR2ROutput" />
+    </CollectWasmAuxiliaryR2RModules>
+    <!-- The compiler's tracked output is the primary image; missing sidecars invalidate that image. -->
+    <Delete Files="@(_WasmAuxiliaryPrimaryImage)" Condition="'@(_WasmMissingAuxiliaryR2ROutput)' != ''" />
+    <PropertyGroup>
+      <_WasmReadyToRunAuxiliaryStamp>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'R2R', 'auxiliary-modules.stamp'))</_WasmReadyToRunAuxiliaryStamp>
+      <_PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableAuxiliaryR2RModules)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--wasm-auxiliary-modules'))">$(_PublishReadyToRunCrossgen2ExtraArgs);--wasm-auxiliary-modules</_PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasmReadyToRunAuxiliaryStamp)'))" />
+    <WriteLinesToFile File="$(_WasmReadyToRunAuxiliaryStamp)"
+                      Lines="WasmEnableAuxiliaryR2RModules=$(WasmEnableAuxiliaryR2RModules)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunAuxiliaryStamp)" />
+      <FileWrites Include="$(_WasmReadyToRunAuxiliaryStamp)" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
     <RuntimeHostConfigurationOption Include="System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"
@@ -109,6 +139,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <ItemGroup>
     <_WasmWebcilStampProperty Include="PublishTrimmed" />
     <_WasmWebcilStampProperty Include="PublishReadyToRunComposite" />
+    <_WasmWebcilStampProperty Include="WasmEnableAuxiliaryR2RModules" />
   </ItemGroup>
 
   <!-- Prune raw pack R2R images (native/r2r/*.wasm) from build copy-local so the 90 MB closure never lands
@@ -271,7 +302,8 @@ Copyright (c) .NET Foundation. All rights reserved.
           Condition="'$(PublishReadyToRun)' == 'true'">
     <PropertyGroup>
       <!-- Item-dependent configuration must run at target execution time. -->
-      <PublishReadyToRunCrossgen2ExtraArgs Condition="'@(PublishReadyToRunPgoFiles)' != ''">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
+      <!-- Auxiliary profiles select method placement without limiting the compiled method set. -->
+      <PublishReadyToRunCrossgen2ExtraArgs Condition="'@(PublishReadyToRunPgoFiles)' != '' and '$(WasmEnableAuxiliaryR2RModules)' != 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
   </Target>
 
@@ -317,10 +349,16 @@ Copyright (c) .NET Foundation. All rights reserved.
           Condition="'$(PublishReadyToRun)' == 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
           AfterTargets="_CreateR2RImages">
+    <CollectWasmAuxiliaryR2RModules Condition="'$(WasmEnableAuxiliaryR2RModules)' == 'true' and '@(_WasmAuxiliaryPrimaryImage)' != ''"
+                                  PrimaryImages="@(_WasmAuxiliaryPrimaryImage)">
+      <Output TaskParameter="Modules" ItemName="_WasmEmittedAuxiliaryR2R" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </CollectWasmAuxiliaryR2RModules>
     <ItemGroup Condition="'$(_WasmPublishR2RDir)' != '' and Exists('$(_WasmPublishR2RDir)')">
       <!-- Keep what crossgen2 actually emitted, not the task's publish plan: every compiled image, plus in
            composite mode a <name>.wasm component stub beside the owner for each composite input. -->
       <_WasmEmittedPerAppR2R Include="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
+      <_WasmEmittedPerAppR2R Include="@(_WasmEmittedAuxiliaryR2R)" />
       <_WasmEmittedPerAppR2R Include="@(_ReadyToRunCompositeBuildInput->'$(_WasmPublishR2RDir)%(FileName).wasm');@(_ReadyToRunCompositeUnrootedBuildInput->'$(_WasmPublishR2RDir)%(FileName).wasm')"
                              Condition="'$(PublishReadyToRunComposite)' == 'true'" />
       <!-- Both extensions: ConvertDll probes PrebuiltR2RDirectory for .dll before .wasm (a stock SDK names the

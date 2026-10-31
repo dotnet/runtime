@@ -93,6 +93,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public string Name => _name;
+        internal ISymbolNode SignatureArray => _signatures;
 
         public bool EmitPrecode => _emitPrecode;
 
