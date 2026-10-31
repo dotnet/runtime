@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -90,7 +91,7 @@ namespace System.Diagnostics
         /// <param name="timeout">
         /// The maximum amount of time to wait for the process to exit.
         /// When <see langword="null"/>, waits indefinitely.
-        /// If the process does not exit within the specified timeout, it is killed.
+        /// If the process does not exit within the specified timeout, it and its descendants are killed.
         /// </param>
         /// <returns>The exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> is <see langword="null"/>.</exception>
@@ -106,11 +107,17 @@ namespace System.Diagnostics
 
             ThrowIfUseShellExecute(startInfo, nameof(Run));
 
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
+            startInfo.ThrowIfInvalid(out bool anyRedirection, out _);
+            if (anyRedirection)
+            {
+                throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
+            }
+
+            using Process process = Start(startInfo)!;
 
             return timeout.HasValue
-                ? processHandle.WaitForExitOrKillOnTimeout(timeout.Value)
-                : processHandle.WaitForExit();
+                ? process.WaitForExitOrKillEntireProcessTreeOnTimeout(timeout.Value)
+                : process.WaitForExitStatus();
         }
 
         /// <summary>
@@ -129,7 +136,7 @@ namespace System.Diagnostics
         /// <param name="timeout">
         /// The maximum amount of time to wait for the process to exit.
         /// When <see langword="null"/>, waits indefinitely.
-        /// If the process does not exit within the specified timeout, it is killed.
+        /// If the process does not exit within the specified timeout, it and its descendants are killed.
         /// </param>
         /// <returns>The exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null"/>.</exception>
@@ -155,7 +162,7 @@ namespace System.Diagnostics
         /// <param name="startInfo">The <see cref="ProcessStartInfo"/> that contains the information used to start the process.</param>
         /// <param name="cancellationToken">
         /// A token to cancel the asynchronous operation.
-        /// If the token is canceled, the process is killed.
+        /// If the token is canceled, the process and its descendants are killed.
         /// </param>
         /// <returns>A task that represents the asynchronous operation. The value of the task contains the exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> is <see langword="null"/>.</exception>
@@ -171,9 +178,14 @@ namespace System.Diagnostics
 
             ThrowIfUseShellExecute(startInfo, nameof(RunAsync));
 
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
+            startInfo.ThrowIfInvalid(out bool anyRedirection, out _);
+            if (anyRedirection)
+            {
+                throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
+            }
 
-            return await processHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false);
+            using Process process = Start(startInfo)!;
+            return await process.WaitForExitOrKillEntireProcessTreeOnCancellationAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -191,7 +203,7 @@ namespace System.Diagnostics
         /// </param>
         /// <param name="cancellationToken">
         /// A token to cancel the asynchronous operation.
-        /// If the token is canceled, the process is killed.
+        /// If the token is canceled, the process and its descendants are killed.
         /// </param>
         /// <returns>A task that represents the asynchronous operation. The value of the task contains the exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null"/>.</exception>
@@ -219,7 +231,7 @@ namespace System.Diagnostics
         /// <param name="timeout">
         /// The maximum amount of time to wait for the process to exit.
         /// When <see langword="null"/>, waits indefinitely.
-        /// If the process does not exit within the specified timeout, it is killed.
+        /// If the process does not exit within the specified timeout, it and its descendants are killed.
         /// </param>
         /// <returns>The captured text output and exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> is <see langword="null"/>.</exception>
@@ -249,7 +261,8 @@ namespace System.Diagnostics
             }
             catch
             {
-                try { process.Kill(); } catch { }
+                // Cleanup must not replace the original capture exception.
+                try { process.TryKillEntireTree(); } catch { }
                 throw;
             }
 
@@ -259,11 +272,11 @@ namespace System.Diagnostics
                 TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
                 TimeSpan remaining = timeout.Value - elapsed;
                 remaining = remaining >= TimeSpan.Zero ? remaining : TimeSpan.Zero;
-                exitStatus = process.SafeHandle.WaitForExitOrKillOnTimeout(remaining);
+                exitStatus = process.WaitForExitOrKillEntireProcessTreeOnTimeout(remaining);
             }
             else
             {
-                exitStatus = process.SafeHandle.WaitForExit();
+                exitStatus = process.WaitForExitStatus();
             }
 
             return new ProcessTextOutput(exitStatus, standardOutput, standardError, process.Id);
@@ -281,7 +294,7 @@ namespace System.Diagnostics
         /// <param name="timeout">
         /// The maximum amount of time to wait for the process to exit.
         /// When <see langword="null"/>, waits indefinitely.
-        /// If the process does not exit within the specified timeout, it is killed.
+        /// If the process does not exit within the specified timeout, it and its descendants are killed.
         /// </param>
         /// <returns>The captured text output and exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null"/>.</exception>
@@ -299,7 +312,7 @@ namespace System.Diagnostics
         /// <param name="startInfo">The <see cref="ProcessStartInfo"/> that contains the information used to start the process.</param>
         /// <param name="cancellationToken">
         /// A token to cancel the asynchronous operation.
-        /// If the token is canceled, the process is killed.
+        /// If the token is canceled, the process and its descendants are killed.
         /// </param>
         /// <returns>A task that represents the asynchronous operation. The value of the task contains the captured text output and exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> is <see langword="null"/>.</exception>
@@ -327,11 +340,12 @@ namespace System.Diagnostics
             }
             catch
             {
-                try { process.Kill(); } catch { }
+                // Cleanup must not replace the original capture exception.
+                try { process.TryKillEntireTree(); } catch { }
                 throw;
             }
 
-            ProcessExitStatus exitStatus = await process.SafeHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false);
+            ProcessExitStatus exitStatus = await process.WaitForExitOrKillEntireProcessTreeOnCancellationAsync(cancellationToken).ConfigureAwait(false);
 
             return new ProcessTextOutput(exitStatus, standardOutput, standardError, process.Id);
         }
@@ -347,7 +361,7 @@ namespace System.Diagnostics
         /// </param>
         /// <param name="cancellationToken">
         /// A token to cancel the asynchronous operation.
-        /// If the token is canceled, the process is killed.
+        /// If the token is canceled, the process and its descendants are killed.
         /// </param>
         /// <returns>A task that represents the asynchronous operation. The value of the task contains the captured text output and exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null"/>.</exception>
@@ -372,6 +386,45 @@ namespace System.Diagnostics
             startInfo.RedirectStandardError = true;
 
             return startInfo;
+        }
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private ProcessExitStatus WaitForExitOrKillEntireProcessTreeOnTimeout(TimeSpan timeout)
+        {
+            SafeProcessHandle safeProcessHandle = _processHandle!;
+            if (safeProcessHandle.TryWaitForExit(timeout, out ProcessExitStatus? exitStatus))
+            {
+                return exitStatus;
+            }
+
+            safeProcessHandle.Canceled = true;
+            TryKillEntireTree();
+
+            return safeProcessHandle.WaitForExit();
+        }
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private Task<ProcessExitStatus> WaitForExitOrKillEntireProcessTreeOnCancellationAsync(CancellationToken cancellationToken)
+            => _processHandle!.WaitForExitOrKillOnCancellationAsync(cancellationToken, cancellationToken.CanBeCanceled ? TryKillEntireTree : null);
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private void TryKillEntireTree()
+        {
+            try
+            {
+                Kill(entireProcessTree: true);
+            }
+            catch
+            {
+                // In case killing the process tree fails, attempt to Kill the root.
+                Kill();
+            }
         }
 
         private static void ThrowIfUseShellExecute(ProcessStartInfo startInfo, string methodName)
