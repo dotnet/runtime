@@ -1805,6 +1805,15 @@ namespace System.Net.Sockets
 
             int milliseconds = microseconds == -1 ? -1 : microseconds / 1000;
 
+            // On Apple platforms, poll() doesn't report out-of-band data, so use select() when OutOfBandInline is off.
+            // With OutOfBandInline set, out-of-band data must not be reported, so keep poll(): select() would report it.
+            if (mode == SelectMode.SelectError && SelectOverPollIsBroken &&
+                GetSockOpt(handle, SocketOptionLevel.Socket, SocketOptionName.OutOfBandInline, out int outOfBandInline) == SocketError.Success &&
+                outOfBandInline == 0)
+            {
+                return PollErrorViaSelect(handle, milliseconds, out status);
+            }
+
             Interop.PollEvents outEvents;
             Interop.Error err = Interop.Sys.Poll(handle, inEvent, milliseconds, out outEvents);
             if (err != Interop.Error.SUCCESS)
@@ -1821,6 +1830,89 @@ namespace System.Net.Sockets
                 default: status = false; break;
             }
             return SocketError.Success;
+        }
+
+        // On Apple platforms poll() never reports POLLPRI for pending out-of-band data; it only adds POLLPRI to POLLHUP,
+        // which is how a failed connect shows up. select() reports out-of-band data in the error set, but not a failed
+        // connect, which only makes the socket readable. So wait for either with select(), and when the socket becomes
+        // readable, poll() it without waiting to tell a hang-up from plain data.
+        private static SocketError PollErrorViaSelect(SafeSocketHandle handle, int milliseconds, out bool status)
+        {
+            status = false;
+            if (milliseconds < -1)
+            {
+                // poll() rejects these; select() would wait forever.
+                return GetSocketErrorForErrorCode(Interop.Error.EINVAL);
+            }
+
+            bool refAdded = false;
+            try
+            {
+                handle.DangerousAddRef(ref refAdded);
+                int fd = (int)handle.DangerousGetHandle();
+
+                Span<int> readFDs = stackalloc int[1];
+                Span<int> errorFDs = stackalloc int[1];
+                bool checkRead = true;
+                long start = Environment.TickCount64;
+                int remaining = milliseconds;
+
+                while (true)
+                {
+                    // A successful Select replaces each entry with 0 or 1, so put the descriptor back before every call.
+                    readFDs[0] = fd;
+                    errorFDs[0] = fd;
+                    Interop.Error err = Interop.Sys.Select(readFDs, checkRead ? 1 : 0, default, 0, errorFDs, 1,
+                        remaining == -1 ? -1 : remaining * 1000, fd, out int triggered);
+
+                    if (err == Interop.Error.SUCCESS)
+                    {
+                        if (triggered == 0)
+                        {
+                            return SocketError.Success;
+                        }
+
+                        if (errorFDs[0] != 0)
+                        {
+                            status = true;
+                            return SocketError.Success;
+                        }
+
+                        err = Interop.Sys.Poll(handle, Interop.PollEvents.POLLPRI, 0, out Interop.PollEvents outEvents);
+                        if (err != Interop.Error.SUCCESS)
+                        {
+                            return GetSocketErrorForErrorCode(err);
+                        }
+
+                        if ((outEvents & (Interop.PollEvents.POLLERR | Interop.PollEvents.POLLPRI)) != 0)
+                        {
+                            status = true;
+                            return SocketError.Success;
+                        }
+
+                        // Plain data or a pending connection keeps the socket readable, so wait only for out-of-band
+                        // data from here on. poll() does no better: its one-shot wait for a hang-up ends when data arrives.
+                        checkRead = false;
+                    }
+                    else if (err != Interop.Error.EINTR)
+                    {
+                        return GetSocketErrorForErrorCode(err);
+                    }
+
+                    // With no time left, each further select() returns without waiting.
+                    if (remaining != -1)
+                    {
+                        remaining = (int)Math.Max(0, milliseconds - (Environment.TickCount64 - start));
+                    }
+                }
+            }
+            finally
+            {
+                if (refAdded)
+                {
+                    handle.DangerousRelease();
+                }
+            }
         }
 
         public static unsafe SocketError Select(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
