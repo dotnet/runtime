@@ -5,16 +5,13 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace System.Globalization
 {
     internal static class TimeSpanFormat
     {
-        internal static readonly FormatLiterals PositiveInvariantFormatLiterals = FormatLiterals.InitInvariant(isNegative: false);
-        internal static readonly FormatLiterals NegativeInvariantFormatLiterals = FormatLiterals.InitInvariant(isNegative: true);
-
         /// <summary>Main method called from TimeSpan.ToString.</summary>
         internal static string Format(TimeSpan value, string? format, IFormatProvider? formatProvider)
         {
@@ -510,61 +507,71 @@ namespace System.Globalization
             }
         }
 
-        internal struct FormatLiterals
+        internal ref struct FormatLiterals<TChar> where TChar : unmanaged, IUtfChar<TChar>
         {
-            internal string AppCompatLiteral;
-            internal int dd;
-            internal int hh;
-            internal int mm;
-            internal int ss;
-            internal int ff;
+            private ReadOnlySpan<TChar> _buffer;
+            private int _end0, _end1, _end2, _end3, _end4; // end offset of each literal; End runs to _buffer.Length
 
-            private string[] _literals;
-
-            internal string Start => _literals[0];
-            internal string DayHourSep => _literals[1];
-            internal string HourMinuteSep => _literals[2];
-            internal string MinuteSecondSep => _literals[3];
-            internal string SecondFractionSep => _literals[4];
-            internal string End => _literals[5];
+            internal ReadOnlySpan<TChar> Start => _buffer.Slice(0, _end0);
+            internal ReadOnlySpan<TChar> DayHourSep => _buffer.Slice(_end0, _end1 - _end0);
+            internal ReadOnlySpan<TChar> HourMinuteSep => _buffer.Slice(_end1, _end2 - _end1);
+            internal ReadOnlySpan<TChar> MinuteSecondSep => _buffer.Slice(_end2, _end3 - _end2);
+            internal ReadOnlySpan<TChar> SecondFractionSep => _buffer.Slice(_end3, _end4 - _end3);
+            internal ReadOnlySpan<TChar> End => _buffer.Slice(_end4);
+            internal ReadOnlySpan<TChar> AppCompatLiteral => _buffer.Slice(_end2, _end4 - _end2);
 
             /* factory method for static invariant FormatLiterals */
-            internal static FormatLiterals InitInvariant(bool isNegative)
+            internal static FormatLiterals<TChar> InitInvariant(bool isNegative)
             {
-                FormatLiterals x = default;
-                x._literals = new string[6];
-                x._literals[0] = isNegative ? "-" : string.Empty;
-                x._literals[1] = ".";
-                x._literals[2] = ":";
-                x._literals[3] = ":";
-                x._literals[4] = ".";
-                x._literals[5] = string.Empty;
-                x.AppCompatLiteral = ":."; // MinuteSecondSep+SecondFractionSep;
-                x.dd = 2;
-                x.hh = 2;
-                x.mm = 2;
-                x.ss = 2;
-                x.ff = DateTimeFormat.MaxSecondsFractionDigits;
-                return x;
+                ReadOnlySpan<TChar> buffer;
+                if (typeof(TChar) == typeof(byte))
+                {
+                    buffer = Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>("-.::."u8);
+                }
+                else
+                {
+                    Debug.Assert(typeof(TChar) == typeof(char));
+                    buffer = Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>("-.::.");
+                }
+
+                FormatLiterals<TChar> literals = default;
+                if (isNegative)
+                {
+                    literals._buffer = buffer;
+                    literals._end0 = 1;
+                    literals._end1 = 2;
+                    literals._end2 = 3;
+                    literals._end3 = 4;
+                    literals._end4 = 5;
+                }
+                else
+                {
+                    literals._buffer = buffer.Slice(1);
+                    literals._end0 = 0;
+                    literals._end1 = 1;
+                    literals._end2 = 2;
+                    literals._end3 = 3;
+                    literals._end4 = 4;
+                }
+
+                return literals;
             }
 
             // For the "v1" TimeSpan localized patterns, the data is simply literal field separators with
             // the constants guaranteed to include DHMSF ordered greatest to least significant.
             // Once the data becomes more complex than this we will need to write a proper tokenizer for
             // parsing and formatting
-            internal void Init(ReadOnlySpan<char> format, bool useInvariantFieldLengths)
+            internal void Init(ReadOnlySpan<char> format)
             {
-                dd = hh = mm = ss = ff = 0;
-                _literals = new string[6];
-                for (int i = 0; i < _literals.Length; i++)
-                {
-                    _literals[i] = string.Empty;
-                }
+                var literals = new ValueListBuilder<TChar>(stackalloc TChar[256]);
+                var pending = new ValueListBuilder<TChar>(stackalloc TChar[256]);
 
-                var sb = new ValueStringBuilder(stackalloc char[256]);
+                Span<int> ends = [0, 0, 0, 0, 0];
                 bool inQuote = false;
                 char quote = '\'';
                 int field = 0;
+                int fieldStart = 0;
+                int dd = 0, hh = 0, mm = 0, ss = 0, ff = 0; // only used to validate the pattern in debug builds
 
                 for (int i = 0; i < format.Length; i++)
                 {
@@ -576,8 +583,9 @@ namespace System.Globalization
                             {
                                 /* we were in a quote and found a matching exit quote, so we are outside a quote now */
                                 Debug.Assert(field >= 0 && field <= 5);
-                                _literals[field] = sb.AsSpan().ToString();
-                                sb.Length = 0;
+                                literals.Length = fieldStart;
+                                literals.Append(pending.AsSpan());
+                                pending.Length = 0;
                                 inQuote = false;
                             }
                             else if (!inQuote)
@@ -604,32 +612,32 @@ namespace System.Globalization
                         case 'd':
                             if (!inQuote)
                             {
-                                Debug.Assert((field == 0 && sb.Length == 0) || field == 1, "field == 0 || field == 1, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
-                                field = 1; // DayHourSep
+                                Debug.Assert((field == 0 && pending.Length == 0) || field == 1, "field == 0 || field == 1, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
+                                CloseFields(ends, ref field, ref fieldStart, 1, literals.Length); // DayHourSep
                                 dd++;
                             }
                             break;
                         case 'h':
                             if (!inQuote)
                             {
-                                Debug.Assert((field == 1 && sb.Length == 0) || field == 2, "field == 1 || field == 2, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
-                                field = 2; // HourMinuteSep
+                                Debug.Assert((field == 1 && pending.Length == 0) || field == 2, "field == 1 || field == 2, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
+                                CloseFields(ends, ref field, ref fieldStart, 2, literals.Length); // HourMinuteSep
                                 hh++;
                             }
                             break;
                         case 'm':
                             if (!inQuote)
                             {
-                                Debug.Assert((field == 2 && sb.Length == 0) || field == 3, "field == 2 || field == 3, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
-                                field = 3; // MinuteSecondSep
+                                Debug.Assert((field == 2 && pending.Length == 0) || field == 3, "field == 2 || field == 3, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
+                                CloseFields(ends, ref field, ref fieldStart, 3, literals.Length); // MinuteSecondSep
                                 mm++;
                             }
                             break;
                         case 's':
                             if (!inQuote)
                             {
-                                Debug.Assert((field == 3 && sb.Length == 0) || field == 4, "field == 3 || field == 4, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
-                                field = 4; // SecondFractionSep
+                                Debug.Assert((field == 3 && pending.Length == 0) || field == 4, "field == 3 || field == 4, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
+                                CloseFields(ends, ref field, ref fieldStart, 4, literals.Length); // SecondFractionSep
                                 ss++;
                             }
                             break;
@@ -637,21 +645,19 @@ namespace System.Globalization
                         case 'F':
                             if (!inQuote)
                             {
-                                Debug.Assert((field == 4 && sb.Length == 0) || field == 5, "field == 4 || field == 5, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
-                                field = 5; // End
+                                Debug.Assert((field == 4 && pending.Length == 0) || field == 5, "field == 4 || field == 5, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
+                                CloseFields(ends, ref field, ref fieldStart, 5, literals.Length); // End
                                 ff++;
                             }
                             break;
                         default:
-                            sb.Append(format[i]);
+                            // Non-ASCII characters become multi-byte sequences for TChar == byte; surrogate pairs are consumed together.
+                            i += DateTimeFormat.AppendChar(ref pending, format.Slice(i)) - 1;
                             break;
                     }
                 }
 
-                sb.Dispose();
-
-                Debug.Assert(field == 5);
-                AppCompatLiteral = MinuteSecondSep + SecondFractionSep;
+                CloseFields(ends, ref field, ref fieldStart, 5, literals.Length);
 
                 Debug.Assert(0 < dd && dd < 3, "0 < dd && dd < 3, Bug in System.Globalization.DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
                 Debug.Assert(0 < hh && hh < 3, "0 < hh && hh < 3, Bug in System.Globalization.DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
@@ -659,21 +665,24 @@ namespace System.Globalization
                 Debug.Assert(0 < ss && ss < 3, "0 < ss && ss < 3, Bug in System.Globalization.DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
                 Debug.Assert(0 < ff && ff < 8, "0 < ff && ff < 8, Bug in System.Globalization.DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
 
-                if (useInvariantFieldLengths)
+                _buffer = literals.AsSpan().ToArray();
+                _end0 = ends[0];
+                _end1 = ends[1];
+                _end2 = ends[2];
+                _end3 = ends[3];
+                _end4 = ends[4];
+
+                pending.Dispose();
+                literals.Dispose();
+
+                static void CloseFields(Span<int> ends, ref int field, ref int fieldStart, int newField, int length)
                 {
-                    dd = 2;
-                    hh = 2;
-                    mm = 2;
-                    ss = 2;
-                    ff = DateTimeFormat.MaxSecondsFractionDigits;
-                }
-                else
-                {
-                    if (dd < 1 || dd > 2) dd = 2;   // The DTFI property has a problem. let's try to make the best of the situation.
-                    if (hh < 1 || hh > 2) hh = 2;
-                    if (mm < 1 || mm > 2) mm = 2;
-                    if (ss < 1 || ss > 2) ss = 2;
-                    if (ff < 1 || ff > 7) ff = 7;
+                    // Marks the end of every field from the current one up to (but excluding) newField at the current buffer length.
+                    for (; field < newField; field++)
+                    {
+                        ends[field] = length;
+                    }
+                    fieldStart = length;
                 }
             }
         }
