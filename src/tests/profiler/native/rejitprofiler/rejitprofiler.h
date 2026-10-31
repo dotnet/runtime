@@ -47,6 +47,7 @@ private:
     void AddInlining(FunctionID inliner, FunctionID inlinee);
 
     bool FunctionSeen(FunctionID func);
+    void CheckILToNativeMapping2(FunctionID functionId);
 
     FunctionID GetFunctionIDFromToken(ModuleID module, mdMethodDef token, bool invalidArgNotFailure);
     mdMethodDef GetMethodDefForFunction(FunctionID functionId);
