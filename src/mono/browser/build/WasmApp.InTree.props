@@ -17,6 +17,8 @@
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <UseMonoRuntime>false</UseMonoRuntime>
+    <!-- Library tests import these props after the SDK's early-defaults hook has run. -->
+    <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
     <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120226 (CoreCLR on wasm defaults) -->
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>
