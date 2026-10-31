@@ -89,7 +89,7 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
         // Make sure that the IL image can be opened.
         if (pImage->IsFile())
         {
-            hr = pImage->TryOpenFile();
+            hr = pImage->TryOpenFile(/* takeLock */ true);
             if (FAILED(hr))
             {
                 if (pDiagnosticInfo != NULL)

@@ -184,6 +184,14 @@ public abstract class ContractRegistry
     }
 
     /// <summary>
+    /// Gets the target-advertised version of a contract without instantiating or validating its implementation.
+    /// </summary>
+    /// <typeparam name="TContract">The contract whose version to retrieve.</typeparam>
+    /// <param name="version">The target-advertised version, or <see langword="null"/> if the contract is absent.</param>
+    /// <returns><see langword="true"/> if the target advertises the contract; otherwise, <see langword="false"/>.</returns>
+    public abstract bool TryGetContractVersion<TContract>([NotNullWhen(true)] out string? version) where TContract : IContract;
+
+    /// <summary>
     /// Determines whether this cDAC can provide the requested contract for the target. Implementations
     /// should resolve the target-advertised version against the registered implementations only, without
     /// instantiating the contract, so that validation performs no target memory reads (safe on partial or

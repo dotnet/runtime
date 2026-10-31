@@ -313,9 +313,6 @@ protected:
     virtual PTRARRAYREF     RetrieveFieldList();
     virtual PTRARRAYREF     RetrieveMethList();
 
-    // Virtual method to retrieve the InvokeMember method desc.
-    virtual MethodDesc*     GetInvokeMemberMD();
-
     // Virtual method to retrieve the reflection object associated with the DispatchInfo.
     virtual OBJECTREF       GetReflectionObject();
 
@@ -370,17 +367,11 @@ public:
     DispatchMemberInfo*     GetFirstMember();
     DispatchMemberInfo*     GetNextMember(DISPID CurrMemberDispID);
 
-    // Methods to retrieve the cached MD's
-    MethodDesc*             GetIReflectMD(BinderMethodID Method);
-
 private:
     // Helper methods called from SynchWithManagedView() to retrieve the lists of members.
     virtual PTRARRAYREF     RetrievePropList();
     virtual PTRARRAYREF     RetrieveFieldList();
     virtual PTRARRAYREF     RetrieveMethList();
-
-    // Virtual method to retrieve the InvokeMember method desc.
-    virtual MethodDesc*     GetInvokeMemberMD();
 
     // Virtual method to retrieve the reflection object associated with the DispatchInfo.
     virtual OBJECTREF       GetReflectionObject();
