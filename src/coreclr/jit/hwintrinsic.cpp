@@ -986,7 +986,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      Atomics
     { FIRST_NI_Vector, LAST_NI_Vector },                        // Vector64
     { FIRST_NI_Vector, LAST_NI_Vector },                        // Vector128
-    { NI_Illegal, NI_Illegal },                                 //      VectorT
+    { FIRST_NI_Vector, LAST_NI_Vector },                        //      VectorT
     { NI_Illegal, NI_Illegal },                                 //      Dczva
     { NI_Illegal, NI_Illegal },                                 //      Rcpc
     { NI_Illegal, NI_Illegal },                                 //      VectorT128
@@ -3087,7 +3087,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #if defined(TARGET_ARM64)
                 intrinsic = NI_AdvSimd_AddSaturate;
 
-                if ((simdSize == 8) && varTypeIsLong(simdBaseType))
+                if (simdSize == SIZE_UNKNOWN)
+                {
+                    intrinsic = NI_Sve_AddSaturate;
+                }
+                else if ((simdSize == 8) && varTypeIsLong(simdBaseType))
                 {
                     intrinsic = NI_AdvSimd_AddSaturateScalar;
                 }
@@ -3247,7 +3251,21 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             retNode = impSIMDPopStack();
 
-            assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+#ifdef TARGET_ARM64
+            if (retType == TYP_SIMD)
+            {
+                if (!retNode->TypeIs(retType))
+                {
+                    // We should only have a conversion from Vector128<T> -> Vector<T> at the moment.
+                    assert(simdSize == 16);
+                    retNode = gtNewSimdHWIntrinsicNode(retType, retNode, NI_Sve_AsVector, simdBaseType, simdSize);
+                }
+            }
+            else
+#endif
+            {
+                assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+            }
             break;
         }
 
@@ -3467,6 +3485,13 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                     retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseType, simdSize);
                     break;
                 }
+#elif defined(TARGET_ARM64)
+                case SIZE_UNKNOWN:
+                {
+                    op1     = impSIMDPopStack();
+                    retNode = gtNewSimdGetLowerNode(retType, op1, simdBaseType, simdSize);
+                    break;
+                }
 #endif
 
                 default:
@@ -3591,7 +3616,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 intrinsic = NI_AVX512_ConvertToVector128Double;
             }
 #elif defined(TARGET_ARM64)
-            if (simdSize == 16)
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                intrinsic = NI_Sve_ConvertToDouble;
+            }
+            else if (simdSize == 16)
             {
                 intrinsic = NI_AdvSimd_Arm64_ConvertToDouble;
             }
@@ -3719,7 +3748,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 #elif defined(TARGET_ARM64)
-            intrinsic = NI_AdvSimd_ConvertToSingle;
+            intrinsic = (simdSize == SIZE_UNKNOWN) ? NI_Sve_ConvertToSingle : NI_AdvSimd_ConvertToSingle;
 #elif defined(TARGET_WASM)
             intrinsic = NI_PackedSimd_ConvertToSingle;
 #else
@@ -3819,6 +3848,14 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
+#if defined(TARGET_ARM64)
+            // TODO-SVE: Generate scalable geometric sequences directly in the JIT.
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                return nullptr;
+            }
+#endif // TARGET_ARM64
+
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
@@ -3829,6 +3866,14 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_CreateGeometricSequence:
         {
             assert(sig->numArgs == 2);
+
+#if defined(TARGET_ARM64)
+            // TODO-SVE: Generate scalable geometric sequences directly in the JIT.
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                return nullptr;
+            }
+#endif // TARGET_ARM64
 
             bool multiplierIsConst = impStackTop(0).val->OperIsConst();
             bool initialIsConst    = impStackTop(1).val->OperIsConst();
@@ -3923,6 +3968,13 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
             retNode = gtNewSimdSumNode(retType, retNode, simdBaseType, simdSize);
             break;
+#elif defined(TARGET_ARM64)
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                retNode = gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
+                retNode = gtNewSimdSumNode(retType, retNode, simdBaseType, simdSize);
+                break;
+            }
 #elif defined(TARGET_XARCH)
             if ((simdSize == 64) || varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType))
             {
@@ -4737,12 +4789,37 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 retNode = gtNewSimdNarrowWithSaturationNode(retType, op1, op2, simdBaseType, simdSize);
             }
 #elif defined(TARGET_ARM64)
+            // We require SVE2 to implement this for scalable Vector<T>.
+            // TODO-SVE: Can we find a way to implement with base SVE?
+            if (simdSize == SIZE_UNKNOWN && varTypeIsIntegral(simdBaseType) &&
+                !compOpportunisticallyDependsOn(InstructionSet_Sve2))
+            {
+                break;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
             if (varTypeIsFloating(simdBaseType))
             {
                 retNode = gtNewSimdNarrowNode(retType, op1, op2, simdBaseType, simdSize);
+            }
+            else if (simdSize == SIZE_UNKNOWN)
+            {
+                assert(varTypeIsIntegral(simdBaseType));
+                assert(compOpportunisticallyDependsOn(InstructionSet_Sve2));
+
+                // We can perform a saturating narrow operation with SQXTNB from SVE2. This will leave saturated
+                // narrow elements in the even lanes of the two source vectors, so we finish with UnzipEven to
+                // deinterleave and concatenate the two.
+                retNode = gtNewSimdHWIntrinsicNode(retType,
+                                                   gtNewSimdHWIntrinsicNode(retType, op1,
+                                                                            NI_Sve2_SaturatingExtractAndNarrowEven,
+                                                                            simdBaseType, simdSize),
+                                                   gtNewSimdHWIntrinsicNode(retType, op2,
+                                                                            NI_Sve2_SaturatingExtractAndNarrowEven,
+                                                                            simdBaseType, simdSize),
+                                                   NI_Sve_UnzipEven, simdBaseType, simdSize);
             }
             else if (simdSize == 16)
             {
@@ -4848,7 +4925,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 intrinsic = NI_AVX2_ShiftLeftLogicalVariable;
             }
 #elif defined(TARGET_ARM64)
-            if (simdSize == 16)
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                intrinsic = NI_Sve_ShiftLeftLogical;
+            }
+            else if (simdSize == 16)
             {
                 intrinsic = NI_AdvSimd_ShiftLogical;
             }
@@ -4865,6 +4946,13 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #endif
 
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
+
+#if defined(TARGET_ARM64)
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                retNode->AsHWIntrinsic()->SetAuxiliaryType(simdBaseType);
+            }
+#endif // TARGET_ARM64
             break;
         }
 
@@ -5055,7 +5143,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #if defined(TARGET_ARM64)
                 intrinsic = NI_AdvSimd_SubtractSaturate;
 
-                if ((simdSize == 8) && varTypeIsLong(simdBaseType))
+                if (simdSize == SIZE_UNKNOWN)
+                {
+                    intrinsic = NI_Sve_SubtractSaturate;
+                }
+                else if ((simdSize == 8) && varTypeIsLong(simdBaseType))
                 {
                     intrinsic = NI_AdvSimd_SubtractSaturateScalar;
                 }
@@ -5259,6 +5351,12 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 return nullptr;
             }
 #elif defined(TARGET_ARM64)
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                // SVE WithElement is handled by the managed implementation.
+                return nullptr;
+            }
+
             bool     isIndexConst = true;
             GenTree* indexOp      = impStackTop(1).val;
 
@@ -5384,9 +5482,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
-                GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(simdBaseType, 2.718281828459045);
-                retNode = vecCns;
+                retNode = gtNewSimdCreateBroadcastNode(retType, gtNewDconNode(2.718281828459045, simdBaseType),
+                                                       simdBaseType, simdSize);
             }
             break;
         }
@@ -5397,12 +5494,26 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (simdBaseType == TYP_FLOAT)
             {
+#if defined(TARGET_ARM64)
+                if (simdSize == SIZE_UNKNOWN)
+                {
+                    retNode = gtNewScalableRepeatedConstant(BitOperations::UInt32BitsToSingle(0x00000001));
+                    break;
+                }
+#endif // TARGET_ARM64
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
                 vecCns->EvaluateBroadcastInPlace(TYP_INT, static_cast<int64_t>(0x00000001));
                 retNode = vecCns;
             }
             else if (simdBaseType == TYP_DOUBLE)
             {
+#if defined(TARGET_ARM64)
+                if (simdSize == SIZE_UNKNOWN)
+                {
+                    retNode = gtNewScalableRepeatedConstant(BitOperations::UInt64BitsToDouble(0x0000000000000001));
+                    break;
+                }
+#endif // TARGET_ARM64
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
                 vecCns->EvaluateBroadcastInPlace(TYP_LONG, static_cast<int64_t>(0x0000000000000001));
                 retNode = vecCns;
@@ -5423,12 +5534,26 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (simdBaseType == TYP_FLOAT)
             {
+#if defined(TARGET_ARM64)
+                if (simdSize == SIZE_UNKNOWN)
+                {
+                    retNode = gtNewScalableRepeatedConstant(BitOperations::UInt32BitsToSingle(0xFFC00000));
+                    break;
+                }
+#endif // TARGET_ARM64
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
                 vecCns->EvaluateBroadcastInPlace(TYP_INT, static_cast<int64_t>(0xFFC00000));
                 retNode = vecCns;
             }
             else if (simdBaseType == TYP_DOUBLE)
             {
+#if defined(TARGET_ARM64)
+                if (simdSize == SIZE_UNKNOWN)
+                {
+                    retNode = gtNewScalableRepeatedConstant(BitOperations::UInt64BitsToDouble(0xFFF8000000000000));
+                    break;
+                }
+#endif // TARGET_ARM64
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
                 vecCns->EvaluateBroadcastInPlace(TYP_LONG, static_cast<int64_t>(0xFFF8000000000000));
                 retNode = vecCns;
@@ -5442,12 +5567,26 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (simdBaseType == TYP_FLOAT)
             {
+#if defined(TARGET_ARM64)
+                if (simdSize == SIZE_UNKNOWN)
+                {
+                    retNode = gtNewScalableRepeatedConstant(BitOperations::UInt32BitsToSingle(0xFF800000));
+                    break;
+                }
+#endif // TARGET_ARM64
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
                 vecCns->EvaluateBroadcastInPlace(TYP_INT, static_cast<int64_t>(0xFF800000));
                 retNode = vecCns;
             }
             else if (simdBaseType == TYP_DOUBLE)
             {
+#if defined(TARGET_ARM64)
+                if (simdSize == SIZE_UNKNOWN)
+                {
+                    retNode = gtNewScalableRepeatedConstant(BitOperations::UInt64BitsToDouble(0xFFF0000000000000));
+                    break;
+                }
+#endif // TARGET_ARM64
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
                 vecCns->EvaluateBroadcastInPlace(TYP_LONG, static_cast<int64_t>(0xFFF0000000000000));
                 retNode = vecCns;
@@ -5461,15 +5600,12 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
-                GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(simdBaseType, -1.0);
-                retNode = vecCns;
+                retNode =
+                    gtNewSimdCreateBroadcastNode(retType, gtNewDconNode(-1.0, simdBaseType), simdBaseType, simdSize);
             }
             else if (varTypeIsSigned(simdBaseType))
             {
-                GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(simdBaseType, static_cast<int64_t>(-1));
-                retNode = vecCns;
+                retNode = gtNewAllBitsSetConNode(retType);
             }
             break;
         }
@@ -5480,6 +5616,16 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
+#if defined(TARGET_ARM64)
+                if (simdSize == SIZE_UNKNOWN)
+                {
+                    retNode =
+                        (simdBaseType == TYP_FLOAT)
+                            ? gtNewScalableRepeatedConstant(BitOperations::UInt32BitsToSingle(0x80000000))
+                            : gtNewScalableRepeatedConstant(BitOperations::UInt64BitsToDouble(0x8000000000000000));
+                    break;
+                }
+#endif // TARGET_ARM64
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
                 vecCns->EvaluateBroadcastInPlace(simdBaseType, -0.0);
                 retNode = vecCns;
@@ -5500,9 +5646,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
-                GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(simdBaseType, 3.141592653589793);
-                retNode = vecCns;
+                retNode = gtNewSimdCreateBroadcastNode(retType, gtNewDconNode(3.141592653589793, simdBaseType),
+                                                       simdBaseType, simdSize);
             }
             break;
         }
@@ -5513,12 +5658,26 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (simdBaseType == TYP_FLOAT)
             {
+#if defined(TARGET_ARM64)
+                if (simdSize == SIZE_UNKNOWN)
+                {
+                    retNode = gtNewScalableRepeatedConstant(BitOperations::UInt32BitsToSingle(0x7F800000));
+                    break;
+                }
+#endif // TARGET_ARM64
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
                 vecCns->EvaluateBroadcastInPlace(TYP_INT, static_cast<int64_t>(0x7F800000));
                 retNode = vecCns;
             }
             else if (simdBaseType == TYP_DOUBLE)
             {
+#if defined(TARGET_ARM64)
+                if (simdSize == SIZE_UNKNOWN)
+                {
+                    retNode = gtNewScalableRepeatedConstant(BitOperations::UInt64BitsToDouble(0x7FF0000000000000));
+                    break;
+                }
+#endif // TARGET_ARM64
                 GenTreeVecCon* vecCns = gtNewVconNode(retType);
                 vecCns->EvaluateBroadcastInPlace(TYP_LONG, static_cast<int64_t>(0x7FF0000000000000));
                 retNode = vecCns;
@@ -5529,6 +5688,13 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_get_SignSequence:
         {
             assert(sig->numArgs == 0);
+
+#ifdef TARGET_ARM64
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                return nullptr;
+            }
+#endif
 
             var_types scalarType  = genActualType(simdBaseType);
             GenTree*  one         = gtNewOneConNode(scalarType);
@@ -5545,9 +5711,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
-                GenTreeVecCon* vecCns = gtNewVconNode(retType);
-                vecCns->EvaluateBroadcastInPlace(simdBaseType, 6.283185307179586);
-                retNode = vecCns;
+                retNode = gtNewSimdCreateBroadcastNode(retType, gtNewDconNode(6.283185307179586, simdBaseType),
+                                                       simdBaseType, simdSize);
             }
             break;
         }
@@ -5786,6 +5951,14 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     {
         assert(sig->numArgs == 2);
         assert(retNode == nullptr);
+
+#if defined(TARGET_ARM64)
+        // TODO-SVE: Generate scalable concat operations directly in the JIT.
+        if (simdSize == SIZE_UNKNOWN)
+        {
+            return nullptr;
+        }
+#endif // TARGET_ARM64
 
         op2 = impSIMDPopStack();
         op1 = impSIMDPopStack();
