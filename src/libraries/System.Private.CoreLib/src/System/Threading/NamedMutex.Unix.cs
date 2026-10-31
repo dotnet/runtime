@@ -153,20 +153,18 @@ namespace System.Threading
             SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
 
             // This method can be called from one of two threads:
-            // 1. The dead thread that owns the mutex.
-            //   In the first case, we know that no one else can acquire the lock, so we can safely
-            //   set the lock count to 0 and abandon the mutex.
+            // 1. The exiting thread that owns the mutex.
+            //   No one else can acquire the mutex yet, so we can mark it abandoned and release it.
             // 2. The finalizer thread after the owning thread has died.
-            //   In this case, its possible for the mutex to have been acquired by another thread
-            //   after the owning thread died if it is backed by a pthread mutex.
-            //   A pthread mutex doesn't need our Abandon() call to be abandoned, it will be automatically abandoned
-            //   when the owning thread dies.
-            //   In this case, we don't want to do anything. Our named mutex implementation will handle the abandonment
-            //   as part of acquisition.
-            Debug.Assert(IsLockOwnedByCurrentThread || (!abandonedThread.IsAlive && Thread.CurrentThreadIsFinalizerThread()),
+            //   For pthread-backed mutexes, native thread exit automatically abandons the mutex, and another thread
+            //   or process may already have acquired it. In this case, only retire the dead thread's local ownership;
+            //   deferred cleanup must not modify shared state or release the native mutex.
+            // In both cases, use local ownership to identify the bookkeeping to retire, since another process can change
+            // the shared owner IDs without taking our creation/deletion process lock.
+            Debug.Assert(Thread.CurrentThread == abandonedThread || (!abandonedThread.IsAlive && Thread.CurrentThreadIsFinalizerThread()),
                 "Abandon can only be called from the thread that owns the lock or from the finalizer thread when the owning thread is dead.");
 
-            if (!IsLockOwnedByThreadInThisProcess(abandonedThread))
+            if (_lockOwnerThread != abandonedThread)
             {
                 Debug.Assert(Thread.CurrentThreadIsFinalizerThread());
                 // Lock is owned by a different thread already, so we don't need to do anything.
@@ -175,18 +173,22 @@ namespace System.Threading
                 return;
             }
 
-            IsAbandoned = true;
-
             _lockCount = 0;
 
             Debug.Assert(_lockOwnerThread is not null);
 
-            ReleaseLockCore(abandoning: true);
+            AbandonLockCore(abandonedThread);
 
             chain.Remove(this);
             _lockOwnerThread = null;
             // Remove the refcount from the thread's wait info.
             _processDataHeader.DecrementRefCount();
+        }
+
+        protected virtual void AbandonLockCore(Thread abandonedThread)
+        {
+            IsAbandoned = true;
+            ReleaseLockCore(abandoning: true);
         }
 
         protected abstract MutexTryAcquireLockResult AcquireLockCore(int timeoutMilliseconds);
@@ -303,6 +305,14 @@ namespace System.Threading
 
                 SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
 
+                // A robust mutex can be recovered before the dead owner's managed cleanup runs.
+                if (mutexData._lockOwnerThread is Thread previousOwner)
+                {
+                    Debug.Assert(!previousOwner.IsAlive);
+                    previousOwner.WaitInfo.NamedMutexOwnershipChain.Remove(mutexData);
+                    mutexData._processDataHeader.DecrementRefCount();
+                }
+
                 mutexData.SetLockOwnerToCurrentThread();
                 mutexData._lockCount = 1;
                 mutexData._lockOwnerThread = waitInfo.Thread;
@@ -375,9 +385,8 @@ namespace System.Threading
                 return result;
             }
 
-            if (_lockCount != 0)
+            if (_lockCount != 0 && IsLockOwnedByCurrentThread)
             {
-                Debug.Assert(IsLockOwnedByCurrentThread);
                 Debug.Assert(!IsAbandoned);
                 try
                 {
@@ -395,6 +404,16 @@ namespace System.Threading
             }
 
             return result;
+        }
+
+        protected override void AbandonLockCore(Thread abandonedThread)
+        {
+            // Native thread exit automatically abandons robust pthread mutexes. Deferred cleanup must not
+            // modify shared state or unlock a mutex that another process may already own.
+            if (Thread.CurrentThread == abandonedThread)
+            {
+                base.AbandonLockCore(abandonedThread);
+            }
         }
 
         protected override void ReleaseLockCore(bool abandoning)
