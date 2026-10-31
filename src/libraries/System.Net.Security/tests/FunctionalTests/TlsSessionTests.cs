@@ -4311,16 +4311,106 @@ namespace System.Net.Security.Tests
             return cert;
         }
 
-        [Fact]
-        public async Task ServerSession_GetClientHelloBytes_BufferedPath_ReturnsWireBytes()
+        [Theory]
+        [InlineData(1, 0)]
+        [InlineData(58, 0)]
+        [InlineData(1, 20 * 1024)]
+        public void ServerSession_FragmentedClientHello_IncrementalInput(int fragmentSize, int paddingLength)
+        {
+            byte[] source = paddingLength == 0
+                ? TlsFrameHelperTests.ClientHello.ToArray()
+                : TlsFrameHelperTests.CreatePaddedClientHello(paddingLength);
+            byte[] hello = TlsFrameHelperTests.FragmentHello(source, fragmentSize);
+            using TlsContext context = TlsContext.CreateServer(new SslServerAuthenticationOptions());
+            using TlsBufferSession session = NewBufferSession(context);
+            byte[] destination = new byte[CipherBufSize];
+            int increment = paddingLength == 0 ? 1 : TlsFrameHelper.HeaderSize + fragmentSize;
+
+            for (int length = increment; length < hello.Length; length += increment)
+            {
+                Assert.Equal(TlsOperationStatus.NeedMoreData,
+                    session.Handshake(hello.AsSpan(0, length), destination, out int consumed, out int written));
+                Assert.Equal(0, consumed);
+                Assert.Equal(0, written);
+                Assert.Null(session.ClientHelloInfo);
+            }
+
+            Assert.Equal(TlsOperationStatus.NeedsTlsContext,
+                session.Handshake(hello, destination, out int bytesConsumed, out int bytesWritten));
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(paddingLength == 0 ? "10.211.55.2" : new string('a', 19), session.ClientHelloInfo!.Value.ServerName);
+            Assert.Equal(hello, GetClientHelloBytesHelper(session));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        public void ServerSession_FragmentedClientHello_InvalidFramingThrows(int invalidKind)
+        {
+            const int SecondRecordOffset = TlsFrameHelper.HeaderSize + 58;
+            byte[] hello = TlsFrameHelperTests.FragmentHello(TlsFrameHelperTests.ClientHello, 58);
+            switch (invalidKind)
+            {
+                case 0:
+                    hello = TlsFrameHelperTests.CreatePaddedClientHello(20 * 1024);
+                    break;
+                case 1:
+                    hello[SecondRecordOffset] = (byte)TlsContentType.ChangeCipherSpec;
+                    break;
+                case 2:
+                    hello[6] = 0xFF;
+                    hello[7] = 0xFF;
+                    hello[8] = 0xFF;
+                    break;
+                case 3:
+                    hello[SecondRecordOffset + 3] = 0;
+                    hello[SecondRecordOffset + 4] = 0;
+                    break;
+                default:
+                    hello = TlsFrameHelperTests.CreatePaddedClientHello(20 * 1024).AsSpan(0, TlsFrameHelper.HeaderSize).ToArray();
+                    break;
+            }
+
+            using TlsContext context = TlsContext.CreateServer(new SslServerAuthenticationOptions());
+            using TlsBufferSession session = NewBufferSession(context);
+            byte[] destination = new byte[CipherBufSize];
+            Assert.Throws<AuthenticationException>(() => session.Handshake(hello, destination, out _, out _));
+            Assert.Null(session.ClientHelloInfo);
+            Assert.Equal(0, session.GetClientHelloLength());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(58)]
+        public async Task ServerSession_GetClientHelloBytes_BufferedPath_ReturnsWireBytes(int fragmentSize)
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            byte[]? expectedHello = null;
+            using var clientWrapper = new DelegateDelegatingStream(clientStream)
+            {
+                WriteAsyncMemoryFunc = (buffer, token) =>
+                {
+                    if (expectedHello is null && !buffer.IsEmpty)
+                    {
+                        expectedHello = fragmentSize == 0
+                            ? buffer.ToArray()
+                            : TlsFrameHelperTests.FragmentHello(buffer.Span, fragmentSize);
+                        buffer = expectedHello;
+                    }
+
+                    return clientStream.WriteAsync(buffer, token);
+                }
+            };
             using (clientStream)
             using (serverStream)
-            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            using (SslStream clientSsl = new SslStream(clientWrapper, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
                 using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
@@ -4343,17 +4433,19 @@ namespace System.Net.Security.Tests
 
                 // Capture bytes via ToArray so we can assert on the shape without re-entering GetClientHelloBytes.
                 byte[] bytes = GetClientHelloBytesHelper(session);
+                Assert.Equal(expectedHello, bytes);
                 Assert.True(bytes.Length >= 5, $"ClientHello smaller than TLS record header: {bytes.Length}");
                 // TLS handshake record: content-type 0x16, TLS 1.0/1.2 legacy version 0x0301/0x0303 in header,
                 // then 2-byte length, then message body starting with handshake type 0x01 (client_hello).
                 Assert.Equal(0x16, bytes[0]);
                 int payloadLen = (bytes[3] << 8) | bytes[4];
-                Assert.Equal(5 + payloadLen, bytes.Length);
+                Assert.Equal(fragmentSize == 0 ? bytes.Length : 5 + fragmentSize, 5 + payloadLen);
                 Assert.Equal(0x01, bytes[5]);
 
                 // ClientHelloInfo and TargetHostName are also populated on the options-up-front path.
                 Assert.NotNull(session.ClientHelloInfo);
                 Assert.Equal(serverName, session.ClientHelloInfo!.Value.ServerName);
+                Assert.True((session.ClientHelloInfo.Value.SslProtocols & session.NegotiatedProtocol) == session.NegotiatedProtocol);
                 Assert.Equal(serverName, session.TargetHostName);
             }
         }
@@ -4407,63 +4499,273 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
-        public async Task SocketBoundSession_GetClientHelloBytes_ReturnsWireBytes()
+        public Task SocketBoundSession_GetClientHelloBytes_ReturnsWireBytes() =>
+            VerifySocketClientHelloCapture(SslProtocols.Tls12 | SslProtocols.Tls13, 0, deferredOptions: false);
+
+        public static IEnumerable<object[]> SocketClientHelloCaptureData()
+        {
+            foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13, true))
+            {
+                foreach (int fragmentSize in new[] { 0, 1, 58 })
+                {
+                    yield return new object[] { protocol, fragmentSize, false };
+                    yield return new object[] { protocol, fragmentSize, true };
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
+        [MemberData(nameof(SocketClientHelloCaptureData))]
+        public Task SocketBoundSession_ClientHelloCapture_HandshakeAndReplay(
+            SslProtocols protocol, int fragmentSize, bool deferredOptions) =>
+            VerifySocketClientHelloCapture(protocol, fragmentSize, deferredOptions);
+
+        private static async Task VerifySocketClientHelloCapture(SslProtocols protocol, int fragmentSize, bool deferredOptions)
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
-
-            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-            listener.Listen(1);
-            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
-
-            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
-            using Socket serverSocket = await listener.AcceptAsync();
-            await connect;
-            serverSocket.Blocking = false;
-
-            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            (NetworkStream clientTransport, NetworkStream serverTransport) = TestHelper.GetConnectedTcpStreams();
+            using (clientTransport)
+            using (serverTransport)
+            using (var cts = new CancellationTokenSource(TestConfiguration.PassingTestTimeout))
             {
-                ServerCertificate = serverCert,
-                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
-            });
-            using TlsSocketSession session = NewSocketSession(ctx, serverSocket.SafeHandle);
-
-            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
-            Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
-            {
-                TargetHost = serverName,
-                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
-                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
-            });
-
-            Task serverHandshake = Task.Run(() =>
-            {
-                while (true)
+                serverTransport.Socket.Blocking = false;
+                using TlsContext hostContext = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
-                    TlsOperationStatus s = session.Handshake();
-                    if (s == TlsOperationStatus.Complete) return;
-                    if (s == TlsOperationStatus.NeedsCertificateValidation) { session.AcceptWithDefaultValidation(); continue; }
-                    if (s == TlsOperationStatus.NeedMoreData) { serverSocket.Poll(-1, SelectMode.SelectRead); continue; }
-                    if (s == TlsOperationStatus.DestinationTooSmall) { serverSocket.Poll(-1, SelectMode.SelectWrite); continue; }
-                    throw new IOException($"Unexpected handshake status {s}");
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = protocol,
+                    AllowTlsResume = false,
+                    ApplicationProtocols = [SslApplicationProtocol.Http2]
+                });
+                using TlsContext bootstrap = TlsContext.CreateServer(new SslServerAuthenticationOptions());
+                using TlsSocketSession session = NewSocketSession(
+                    deferredOptions ? bootstrap : hostContext, serverTransport.Socket.SafeHandle);
+                byte[]? expectedHello = null;
+                using var wrapper = new DelegateDelegatingStream(clientTransport)
+                {
+                    WriteAsyncMemoryFunc = (buffer, token) =>
+                    {
+                        if (expectedHello is null && !buffer.IsEmpty)
+                        {
+                            expectedHello = fragmentSize == 0
+                                ? buffer.ToArray()
+                                : TlsFrameHelperTests.FragmentHello(buffer.Span, fragmentSize);
+                            buffer = expectedHello;
+                        }
+
+                        return clientTransport.WriteAsync(buffer, token);
+                    }
+                };
+                using var clientSsl = new SslStream(wrapper);
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = protocol,
+                    AllowTlsResume = false,
+                    ApplicationProtocols = [SslApplicationProtocol.Http2],
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate
+                }, cts.Token);
+                int contextSelections = 0;
+                byte[]? helloAtSelection = null;
+                Task serverHandshake = Task.Run(async () =>
+                {
+                    while (!session.IsHandshakeComplete)
+                    {
+                        switch (session.Handshake())
+                        {
+                            case TlsOperationStatus.Complete:
+                                break;
+                            case TlsOperationStatus.NeedsTlsContext:
+                                contextSelections++;
+                                Assert.True(deferredOptions);
+                                Assert.Equal(serverName, session.ClientHelloInfo!.Value.ServerName);
+                                helloAtSelection = GetClientHelloBytesHelper(session);
+                                Assert.Equal(TlsOperationStatus.NeedsTlsContext, session.Handshake());
+                                session.SetContext(hostContext);
+                                break;
+                            case TlsOperationStatus.NeedsCertificateValidation:
+                                session.AcceptWithDefaultValidation();
+                                break;
+                            case TlsOperationStatus.NeedMoreData:
+                            case TlsOperationStatus.DestinationTooSmall:
+                                await Task.Delay(1, cts.Token);
+                                break;
+                            default:
+                                Assert.Fail("Unexpected socket handshake status.");
+                                break;
+                        }
+                    }
+                });
+
+                try
+                {
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(clientHandshake, serverHandshake);
+                    Assert.True(session.IsHandshakeComplete);
+                    Assert.Equal(deferredOptions ? 1 : 0, contextSelections);
+                    Assert.Equal(expectedHello, GetClientHelloBytesHelper(session));
+                    if (deferredOptions)
+                    {
+                        Assert.Equal(expectedHello, helloAtSelection);
+                    }
+
+                    Assert.Equal(serverName, session.ClientHelloInfo!.Value.ServerName);
+                    Assert.Equal(serverName, session.TargetHostName);
+                    Assert.True((session.ClientHelloInfo.Value.SslProtocols & session.NegotiatedProtocol) == session.NegotiatedProtocol);
+                    Assert.Equal(SslApplicationProtocol.Http2, session.NegotiatedApplicationProtocol);
+                    await WriteAllOverSocketAsync(session, TestHelper.s_ping).WaitAsync(cts.Token);
+                    byte[] received = new byte[TestHelper.s_ping.Length];
+                    await clientSsl.ReadExactlyAsync(received, cts.Token);
+                    Assert.Equal(TestHelper.s_ping, received);
                 }
-            });
+                finally
+                {
+                    cts.Cancel();
+                }
+            }
+        }
 
-            await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
-            Assert.True(session.IsHandshakeComplete);
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
+        [InlineData(1, 0, 1)]
+        [InlineData(58, 0, 5)]
+        [InlineData(16 * 1024, 20 * 1024, 4096)]
+        [InlineData(1, 20 * 1024, 4096)]
+        public async Task SocketBoundSession_ClientHelloCapture_IncrementalInput(
+            int fragmentSize, int paddingLength, int writeSize)
+        {
+            byte[] source = paddingLength == 0
+                ? TlsFrameHelperTests.ClientHello.ToArray()
+                : TlsFrameHelperTests.CreatePaddedClientHello(paddingLength);
+            byte[] hello = TlsFrameHelperTests.FragmentHello(source, fragmentSize);
+            (NetworkStream client, NetworkStream server) = TestHelper.GetConnectedTcpStreams();
+            using (client)
+            using (server)
+            {
+                server.Socket.Blocking = false;
+                using TlsContext context = TlsContext.CreateServer(new SslServerAuthenticationOptions());
+                using TlsSocketSession session = NewSocketSession(context, server.Socket.SafeHandle);
+                Assert.Equal(TlsOperationStatus.NeedMoreData, session.Handshake());
+                Assert.Equal(0, session.GetClientHelloLength());
 
-            // Native path: span backed by socket-replay BIO's retained peek buffer.
-            byte[] bytes = GetClientHelloBytesHelper(session);
-            Assert.Equal(0x16, bytes[0]);
-            int payloadLen = (bytes[3] << 8) | bytes[4];
-            Assert.Equal(5 + payloadLen, bytes.Length);
-            Assert.Equal(0x01, bytes[5]);
+                for (int offset = 0; offset < hello.Length;)
+                {
+                    int length = Math.Min(writeSize, hello.Length - offset);
+                    await client.WriteAsync(hello.AsMemory(offset, length));
+                    offset += length;
+                    if (offset < hello.Length)
+                    {
+                        Assert.Equal(TlsOperationStatus.NeedMoreData, session.Handshake());
+                        Assert.Null(session.ClientHelloInfo);
+                        Assert.Equal(0, session.GetClientHelloLength());
+                        Assert.Equal(TlsOperationStatus.NeedMoreData, session.Handshake());
+                    }
+                    else
+                    {
+                        Assert.Equal(TlsOperationStatus.NeedsTlsContext, await WaitForSocketClientHelloAsync(session));
+                    }
+                }
 
-            Assert.NotNull(session.ClientHelloInfo);
-            Assert.Equal(serverName, session.ClientHelloInfo!.Value.ServerName);
-            Assert.Equal(serverName, session.TargetHostName);
+                Assert.Equal(paddingLength == 0 ? "10.211.55.2" : new string('a', 19), session.ClientHelloInfo!.Value.ServerName);
+                Assert.Equal(hello, GetClientHelloBytesHelper(session));
+                Assert.Equal(TlsOperationStatus.NeedsTlsContext, session.Handshake());
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public async Task SocketBoundSession_ClientHelloCapture_InvalidFramingThrows(int invalidKind)
+        {
+            const int SecondRecordOffset = TlsFrameHelper.HeaderSize + 58;
+            byte[] hello = TlsFrameHelperTests.FragmentHello(TlsFrameHelperTests.ClientHello, 58);
+            switch (invalidKind)
+            {
+                case 0:
+                    hello[SecondRecordOffset] = (byte)TlsContentType.ChangeCipherSpec;
+                    break;
+                case 1:
+                    hello[SecondRecordOffset + 3] = 0;
+                    hello[SecondRecordOffset + 4] = 0;
+                    break;
+                case 2:
+                    hello[6] = 0xFF;
+                    hello[7] = 0xFF;
+                    hello[8] = 0xFF;
+                    break;
+                default:
+                    hello = TlsFrameHelperTests.CreatePaddedClientHello(20 * 1024).AsSpan(0, TlsFrameHelper.HeaderSize).ToArray();
+                    break;
+            }
+
+            (NetworkStream client, NetworkStream server) = TestHelper.GetConnectedTcpStreams();
+            using (client)
+            using (server)
+            {
+                server.Socket.Blocking = false;
+                using TlsContext context = TlsContext.CreateServer(new SslServerAuthenticationOptions());
+                using TlsSocketSession session = NewSocketSession(context, server.Socket.SafeHandle);
+                await client.WriteAsync(hello);
+                await Assert.ThrowsAsync<AuthenticationException>(() => WaitForSocketClientHelloAsync(session));
+                Assert.Null(session.ClientHelloInfo);
+                Assert.Equal(0, session.GetClientHelloLength());
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(63)]
+        public async Task SocketBoundSession_ClientHelloCapture_TruncatedInputThrows(int prefixLength)
+        {
+            byte[] hello = TlsFrameHelperTests.FragmentHello(TlsFrameHelperTests.ClientHello, 58);
+            (NetworkStream client, NetworkStream server) = TestHelper.GetConnectedTcpStreams();
+            using (client)
+            using (server)
+            {
+                server.Socket.Blocking = false;
+                using TlsContext context = TlsContext.CreateServer(new SslServerAuthenticationOptions());
+                using TlsSocketSession session = NewSocketSession(context, server.Socket.SafeHandle);
+                await client.WriteAsync(hello.AsMemory(0, prefixLength));
+                Assert.Equal(TlsOperationStatus.NeedMoreData, session.Handshake());
+                Assert.Equal(0, session.GetClientHelloLength());
+                client.Socket.Shutdown(SocketShutdown.Send);
+                await Assert.ThrowsAsync<IOException>(() => WaitForSocketClientHelloAsync(session));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
+        public async Task SocketBoundSession_ClientHelloCapture_UnifiedHello()
+        {
+            byte[] hello = TlsFrameHelperTests.s_UnifiedHello;
+            (NetworkStream client, NetworkStream server) = TestHelper.GetConnectedTcpStreams();
+            using (client)
+            using (server)
+            {
+                server.Socket.Blocking = false;
+                using TlsContext context = TlsContext.CreateServer(new SslServerAuthenticationOptions());
+                using TlsSocketSession session = NewSocketSession(context, server.Socket.SafeHandle);
+                await client.WriteAsync(hello);
+                Assert.Equal(TlsOperationStatus.NeedsTlsContext, await WaitForSocketClientHelloAsync(session));
+                Assert.Equal(string.Empty, session.ClientHelloInfo!.Value.ServerName);
+                Assert.Equal(hello, GetClientHelloBytesHelper(session));
+            }
+        }
+
+        private static async Task<TlsOperationStatus> WaitForSocketClientHelloAsync(TlsSocketSession session)
+        {
+            using var cts = new CancellationTokenSource(TestConfiguration.PassingTestTimeout);
+            while (true)
+            {
+                TlsOperationStatus status = session.Handshake();
+                if (status != TlsOperationStatus.NeedMoreData)
+                {
+                    return status;
+                }
+
+                await Task.Delay(1, cts.Token);
+            }
         }
 
         public enum ClientHelloPeekFailure
@@ -4473,16 +4775,15 @@ namespace System.Net.Security.Tests
             OversizedRecord,
         }
 
-        // A socket-bound server session peeks the ClientHello off the socket before OpenSSL
-        // takes it over. When the peer closes or resets the connection before a full record
-        // arrives, or announces a record larger than the peek buffer, the peek fails with an
-        // IOException whose message must be complete (no unformatted placeholder).
+        // Transport failures report IOException; invalid TLS framing reports
+        // AuthenticationException. Neither message should claim an OpenSSL error
+        // or leave an unformatted placeholder.
         [Theory]
         [InlineData(ClientHelloPeekFailure.PeerClosed)]
         [InlineData(ClientHelloPeekFailure.PeerReset)]
         [InlineData(ClientHelloPeekFailure.OversizedRecord)]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public async Task SocketBoundServerSession_ClientHelloPeekFails_ThrowsIOExceptionWithMessage(ClientHelloPeekFailure failure)
+        public async Task SocketBoundServerSession_ClientHelloPeekFails_ThrowsWithMessage(ClientHelloPeekFailure failure)
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
 
@@ -4519,14 +4820,9 @@ namespace System.Net.Security.Tests
                     break;
             }
 
-            IOException ex = Assert.Throws<IOException>(() =>
-            {
-                for (int i = 0; i < 10; i++)
-                {
-                    Assert.Equal(TlsOperationStatus.NeedMoreData, session.Handshake());
-                    Assert.True(serverSocket.Poll(30_000_000, SelectMode.SelectRead));
-                }
-            });
+            Exception ex = failure == ClientHelloPeekFailure.OversizedRecord
+                ? await Assert.ThrowsAsync<AuthenticationException>(() => WaitForSocketClientHelloAsync(session))
+                : await Assert.ThrowsAsync<IOException>(() => WaitForSocketClientHelloAsync(session));
 
             // No OpenSSL call failed, so the message must not claim an OpenSSL error.
             Assert.DoesNotContain("{0}", ex.Message);

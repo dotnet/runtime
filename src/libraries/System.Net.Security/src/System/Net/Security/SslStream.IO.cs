@@ -489,9 +489,39 @@ namespace System.Net.Security
                         throw new IOException(SR.net_ssl_io_frame);
                     }
 
-                    if (!_isRenego && _buffer.EncryptedReadOnlySpan[handshakeTypeOffset] == (byte)TlsHandshakeType.ClientHello &&
+                    // Later TLS 1.2 handshake records can already contain ciphertext.
+                    if (_securityContext is null && !_isRenego && !_isReAuthentication &&
+                        _buffer.EncryptedReadOnlySpan[handshakeTypeOffset] == (byte)TlsHandshakeType.ClientHello &&
                         _sslAuthenticationOptions!.IsServer) // guard against malicious endpoints. We should not see ClientHello on client.
                     {
+#pragma warning disable CS0618 // Ssl2 is obsolete.
+                        if (_lastFrame.Header.Version != SslProtocols.Ssl2)
+#pragma warning restore CS0618
+                        {
+                            TlsFrameHelper.HandshakeFrame clientHello = default;
+                            OperationStatus status;
+                            while ((status = clientHello.Process(_buffer.EncryptedReadOnlySpan, out int requiredLength)) == OperationStatus.NeedMoreData)
+                            {
+                                _buffer.EnsureAvailableSpace(requiredLength - _buffer.EncryptedLength);
+                                int bytesRead = await TIOAdapter.ReadAsync(InnerStream, _buffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
+                                if (bytesRead == 0)
+                                {
+                                    throw new IOException(SR.net_io_eof);
+                                }
+
+                                _buffer.Commit(bytesRead);
+                            }
+
+                            if (status != OperationStatus.Done)
+                            {
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "Invalid fragmented TLS hello.");
+                                throw new AuthenticationException(SR.net_ssl_io_frame);
+                            }
+
+                            // Keep the original record headers for the TLS backend.
+                            frameSize = clientHello.FrameLength;
+                        }
+
                         TlsFrameHelper.ProcessingOptions options = TlsFrameHelper.ProcessingOptions.ServerName;
 
                         if (OperatingSystem.IsMacOS() && _sslAuthenticationOptions.IsServer)
