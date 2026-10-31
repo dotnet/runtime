@@ -74,6 +74,21 @@ namespace System.Net.Sockets.Tests
             await AssertThrowsSynchronously<ArgumentNullException>(() => socket.SendToAsync(new byte[1], SocketFlags.None, socketAddress).AsTask());
         }
 
+        // https://github.com/dotnet/runtime/issues/47772
+        // SendTo should validate the remote end point's address family up front (like ReceiveFrom does)
+        // instead of failing deep inside the OS PAL with a SocketError.InvalidArgument.
+        [Fact]
+        public async Task AddressFamilyDoesNotMatch_Throws_ArgumentException()
+        {
+            using var ipv4Socket = CreateSocket();
+            EndPoint ipV6Endpoint = GetGetDummyTestEndpoint(AddressFamily.InterNetworkV6);
+            await AssertThrowsSynchronously<ArgumentException>(() => SendToAsync(ipv4Socket, new ArraySegment<byte>(new byte[1]), ipV6Endpoint));
+
+            // The synchronous byte[] and span overloads must behave consistently as well.
+            Assert.Throws<ArgumentException>(() => ipv4Socket.SendTo(new byte[1], ipV6Endpoint));
+            Assert.Throws<ArgumentException>(() => ipv4Socket.SendTo(new byte[1].AsSpan(), SocketFlags.None, ipV6Endpoint));
+        }
+
         [Fact]
         public async Task Datagram_UDP_ShouldImplicitlyBindLocalEndpoint()
         {
