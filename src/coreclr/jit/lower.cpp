@@ -4825,7 +4825,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     }
     else if (trueVal->IsCnsIntOrI() || falseVal->IsCnsIntOrI())
     {
-        TryLowerCnsIntCselToCinc(select, cond);
+        TryLowerCnsIntCselToCSOp(select, cond);
     }
 #endif
 
