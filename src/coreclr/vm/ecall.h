@@ -15,41 +15,6 @@
 
 class MethodDesc;
 
-enum {
-    FCFuncFlag_EndOfArray   = 0x01,
-    FCFuncFlag_HasSignature = 0x02,
-    FCFuncFlag_Unreferenced = 0x04, // Suppress unused fcall check
-};
-
-struct ECFunc {
-    UINT_PTR            m_dwFlags;
-
-    LPVOID              m_pImplementation;
-
-    LPCSTR              m_szMethodName;
-    LPHARDCODEDMETASIG  m_pMethodSig;       // Optional field. It is valid only if HasSignature() is set.
-
-    bool                IsEndOfArray()  { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_EndOfArray); }
-    bool                HasSignature()  { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_HasSignature); }
-    bool                IsUnreferenced(){ LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_Unreferenced); }
-    int                 DynamicID()     { LIMITED_METHOD_CONTRACT; return (int)              ((INT8)(m_dwFlags >> 24)); }
-
-    ECFunc*             NextInArray()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (ECFunc*)((BYTE*)this +
-            (HasSignature() ? sizeof(ECFunc) : offsetof(ECFunc, m_pMethodSig)));
-    }
-};
-
-struct ECClass
-{
-    LPCSTR      m_szClassName;
-    LPCSTR      m_szNameSpace;
-    const LPVOID *  m_pECFunc;
-};
-
 //=======================================================================
 // Collects code and data pertaining to the ECall interface.
 //=======================================================================
@@ -57,10 +22,6 @@ class ECall
 {
     public:
         static PCODE GetFCallImpl(MethodDesc* pMD, bool throwForInvalidFCall = true, bool* pHasManagedImpl = nullptr);
-        static DWORD GetIDForMethod(MethodDesc *pMD);
-
-        static BOOL CheckUnusedECalls(SetSHash<DWORD>& usedIDs);
-
         static void DynamicallyAssignFCallImpl(PCODE impl, DWORD index);
 
         static void PopulateManagedStringConstructors();
@@ -93,11 +54,10 @@ class ECall
 
 extern "C" FCDECL1(VOID, FCComCtor, LPVOID pV);
 
-class GCReporting final
+extern "C"
 {
-public:
-    FCDECL1(static void, Register, GCFrame*);
-    FCDECL1(static void, Unregister, GCFrame*);
-};
+    FCDECL1(void, GCFrameRegistration_RegisterForGCReporting, GCFrame*);
+    FCDECL1(void, GCFrameRegistration_UnregisterForGCReporting, GCFrame*);
+}
 
 #endif // _ECALL_H_

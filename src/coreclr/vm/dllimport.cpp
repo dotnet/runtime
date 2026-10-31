@@ -2497,7 +2497,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         else if (SF_IsCOMStub(dwStubFlags))
         {
             // this is a CLR -> COM call
-            // the target has been computed by StubHelpers::GetCOMIPFromRCW
+            // the target has been computed by StubHelpers_GetCOMIPFromRCW
             pcsEmit->EmitLDLOC(m_dwTargetEntryPointLocalNum);
         }
 #endif // FEATURE_COMINTEROP

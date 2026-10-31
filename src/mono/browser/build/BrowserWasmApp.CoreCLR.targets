@@ -696,15 +696,21 @@
     <FilterManagedAssemblies Assemblies="@(_WasmBundledFile)">
       <Output TaskParameter="ManagedAssemblies" ItemName="_WasmManagedAssemblies" />
     </FilterManagedAssemblies>
+    <ItemGroup>
+      <_WasmBundledCoreLib Include="@(_WasmBundledFile)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.dll'" />
+    </ItemGroup>
 
     <!-- Locate System.Private.CoreLib in runtime pack if not already bundled -->
     <PropertyGroup>
       <_HasCoreLib Condition="'%(_WasmManagedAssemblies.FileName)%(_WasmManagedAssemblies.Extension)' == 'System.Private.CoreLib.dll'">true</_HasCoreLib>
       <!-- CoreCLR WASM ships CoreLib in the native directory, not the lib directory -->
-      <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll</_CoreLibPath>
+      <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true' and '$(IntermediateLinkDir)' != '' and Exists('$(IntermediateLinkDir)System.Private.CoreLib.dll')">$(IntermediateLinkDir)System.Private.CoreLib.dll</_CoreLibPath>
+      <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true' and '$(_CoreLibPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll</_CoreLibPath>
       <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true' and !Exists('$(_CoreLibPath)')">$([System.IO.Path]::Combine($(MicrosoftNetCoreAppRuntimePackRidLibTfmDir), 'System.Private.CoreLib.dll'))</_CoreLibPath>
     </PropertyGroup>
 
+    <Error Condition="'$(_HasCoreLib)' != 'true' and '@(_WasmBundledCoreLib)' != '' and ('$(IntermediateLinkDir)' == '' or !Exists('$(IntermediateLinkDir)System.Private.CoreLib.dll'))"
+           Text="The bundled System.Private.CoreLib is not readable IL. Supply its post-trim IL through IntermediateLinkDir; call-helper generation must not substitute the untrimmed runtime-pack CoreLib." />
     <Error Condition="'$(_HasCoreLib)' != 'true' and !Exists('$(_CoreLibPath)')"
            Text="Could not find 'System.Private.CoreLib.dll' in the runtime pack at $(_CoreLibPath)" />
 

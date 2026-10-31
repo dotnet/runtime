@@ -14,28 +14,27 @@
 
 #include "fcall.h"
 
-class MarshalNative
+extern "C"
 {
-public:
-    FCDECL0(static int, GetLastPInvokeError);
-    FCDECL1(static void, SetLastPInvokeError, int error);
+    FCDECL0(int, Marshal_GetLastPInvokeError);
+    FCDECL1(void, Marshal_SetLastPInvokeError, int error);
 
-    FCDECL2(static LPVOID, GCHandleInternalAlloc, Object *obj, int type);
-    FCDECL1(static FC_BOOL_RET, GCHandleInternalFree, OBJECTHANDLE handle);
-    FCDECL1(static LPVOID, GCHandleInternalGet, OBJECTHANDLE handle);
+    FCDECL2(LPVOID, GCHandle__InternalAlloc, Object *obj, int type);
+    FCDECL1(FC_BOOL_RET, GCHandle__InternalFree, OBJECTHANDLE handle);
+    FCDECL1(LPVOID, GCHandle_InternalGet, OBJECTHANDLE handle);
 #ifdef FEATURE_JAVAMARSHAL
-    FCDECL2(static FC_BOOL_RET, GCHandleInternalTryGetBridgeWait, OBJECTHANDLE handle, Object** pObjResult);
+    FCDECL2(FC_BOOL_RET, GCHandle_InternalTryGetBridgeWait, OBJECTHANDLE handle, Object** pObjResult);
 #endif
-    FCDECL2(static VOID, GCHandleInternalSet, OBJECTHANDLE handle, Object *obj);
-    FCDECL3(static Object*, GCHandleInternalCompareExchange, OBJECTHANDLE handle, Object *obj, Object* oldObj);
+    FCDECL2(VOID, GCHandle_InternalSet, OBJECTHANDLE handle, Object *obj);
+    FCDECL3(Object*, GCHandle_InternalCompareExchange, OBJECTHANDLE handle, Object *obj, Object* oldObj);
 
 #ifdef FEATURE_COMINTEROP
     //====================================================================
     // Checks whether there are RCWs from any context available for cleanup.
     //====================================================================
-    FCDECL0(static FC_BOOL_RET, AreComObjectsAvailableForCleanup);
+    FCDECL0(FC_BOOL_RET, Marshal_AreComObjectsAvailableForCleanup);
 #endif // FEATURE_COMINTEROP
-};
+}
 
 extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD, QCallExceptionStatus* qcallError);
 

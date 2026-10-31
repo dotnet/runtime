@@ -210,7 +210,9 @@ namespace ILCompiler.PortableCallHelpers
 
                 """);
 
+            w.WriteLine("#ifndef CORECLR_PREGENERATED_CALLHELPERS");
             EmitQCallTable(w, target, qcallImports);
+            w.WriteLine("#endif // !CORECLR_PREGENERATED_CALLHELPERS");
 
             static bool ShouldTreatAsVariadic(PInvokeInfo[] candidates)
             {
@@ -235,6 +237,19 @@ namespace ILCompiler.PortableCallHelpers
 
         private void EmitQCallTable(TextWriter w, TargetDetails target, List<PInvokeInfo> qcallImports)
         {
+            var identities = new Dictionary<string, PInvokeInfo>(StringComparer.Ordinal);
+            foreach (PInvokeInfo entry in qcallImports)
+            {
+                if (identities.TryGetValue(entry.EntryPoint, out PInvokeInfo previous)
+                    && (entry.Method.IsInternalCall || previous.Method.IsInternalCall)
+                    && entry.Method != previous.Method)
+                {
+                    throw new LogAsErrorException(
+                        $"Native entrypoint '{entry.EntryPoint}' conflicts between '{previous.Method}' and '{entry.Method}'.");
+                }
+                identities[entry.EntryPoint] = entry;
+            }
+
             var qcalls = qcallImports
                 .OrderBy(p => p.EntryPoint, StringComparer.Ordinal)
                 .DistinctBy(p => p.EntryPoint, StringComparer.Ordinal)
@@ -531,6 +546,14 @@ namespace ILCompiler.PortableCallHelpers
             foreach (TypeDesc parameter in ParameterTypes(signature))
                 parameterTypes.Add(MapType(parameter));
 
+            if (pinvoke.Method.IsInternalCall)
+            {
+                if (!signature.IsStatic)
+                    parameterTypes.Insert(0, "void *");
+                parameterTypes.Insert(0, "uintptr_t");
+                parameterTypes.Add("uintptr_t");
+            }
+
             if (IsPassedByReference(returnType))
             {
                 returnType = pinvoke.Method.Context.GetWellKnownType(WellKnownType.Void);
@@ -543,6 +566,23 @@ namespace ILCompiler.PortableCallHelpers
             string externKeyword = pinvoke.WasmLinkage ? "extern " : "";
 
             string nativeSymbol = CEntryPoint(pinvoke);
+            if (pinvoke.Method.IsInternalCall
+                && pinvoke.Method.OwningType is MetadataType type
+                && type.Namespace == "System"u8
+                && (type.Name == "Math"u8 || type.Name == "MathF"u8))
+            {
+                // Math helpers retain the C symbols shared with NativeAOT.
+                string methodName = pinvoke.Method.Name.ToString();
+                string mathName = methodName switch
+                {
+                    "Ceiling" => "ceil",
+                    "FusedMultiplyAdd" => "fma",
+                    _ => methodName.ToLowerInvariant(),
+                };
+                nativeSymbol = methodName.EndsWith("Internal", StringComparison.Ordinal)
+                    ? methodName
+                    : $"Rhp_{mathName}{(type.Name == "MathF"u8 ? "f" : "")}";
+            }
             string symbolAlias = symbolName is null ? "" : $" __asm__(\"{EscapeLiteral(nativeSymbol)}\")";
             return $"    {importAttributes}{externKeyword}{MapType(returnType)} {symbolName ?? nativeSymbol} ({string.Join(", ", parameterTypes)}){symbolAlias};";
         }

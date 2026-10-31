@@ -44,7 +44,7 @@
 // EXCEPTION NATIVE
 //
 //
-FCIMPL1(FC_BOOL_RET, ExceptionNative::IsImmutableAgileException, Object* pExceptionUNSAFE)
+FCIMPL1(FC_BOOL_RET, Exception_IsImmutableAgileException, Object* pExceptionUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -61,7 +61,7 @@ FCIMPLEND
 // that we have restored a foreign exception dispatch details.
 //
 // Refer to the respective methods for details on how they use this flag.
-FCIMPL0(VOID, ExceptionNative::PrepareForForeignExceptionRaise)
+FCIMPL0(VOID, Exception_PrepareForForeignExceptionRaise)
 {
     FCALL_CONTRACT;
 
@@ -250,7 +250,7 @@ GUID SimpleComCallWrapper::IErrorInfo_guid()
 
 #endif // FEATURE_COMINTEROP
 
-FCIMPL0(EXCEPTION_POINTERS*, ExceptionNative::GetExceptionPointers)
+FCIMPL0(EXCEPTION_POINTERS*, Marshal_GetExceptionPointers)
 {
     FCALL_CONTRACT;
 
@@ -266,7 +266,7 @@ FCIMPL0(EXCEPTION_POINTERS*, ExceptionNative::GetExceptionPointers)
 }
 FCIMPLEND
 
-FCIMPL0(INT32, ExceptionNative::GetExceptionCode)
+FCIMPL0(INT32, Marshal_GetExceptionCode)
 {
     FCALL_CONTRACT;
 
@@ -283,7 +283,7 @@ FCIMPL0(INT32, ExceptionNative::GetExceptionCode)
 FCIMPLEND
 
 extern uint32_t g_exceptionCount;
-FCIMPL0(UINT32, ExceptionNative::GetExceptionCount)
+FCIMPL0(UINT32, Exception_GetExceptionCount)
 {
     FCALL_CONTRACT;
     return g_exceptionCount;
@@ -461,7 +461,7 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* 
     END_QCALL;
 }
 
-FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
+FCIMPL3(VOID, Buffer_BulkMoveWithWriteBarrierInternal, void *dst, void *src, size_t byteCount)
 {
     FCALL_CONTRACT;
 
@@ -481,7 +481,7 @@ UINT64   GCInterface::m_remPressure[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // his
 // (m_iteration % MEM_PRESSURE_COUNT) is used as an index into m_addPressure and m_remPressure
 UINT     GCInterface::m_iteration = 0;
 
-FCIMPL0(INT64, GCInterface::GetTotalPauseDuration)
+FCIMPL0(INT64, GC__GetTotalPauseDuration)
 {
     FCALL_CONTRACT;
 
@@ -489,7 +489,7 @@ FCIMPL0(INT64, GCInterface::GetTotalPauseDuration)
 }
 FCIMPLEND
 
-FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
+FCIMPL2(void, GC_GetMemoryInfo, Object* objUNSAFE, int kind)
 {
     FCALL_CONTRACT;
 
@@ -519,7 +519,7 @@ FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
 }
 FCIMPLEND
 
-FCIMPL0(UINT32, GCInterface::GetMemoryLoad)
+FCIMPL0(UINT32, GC_GetMemoryLoad)
 {
     FCALL_CONTRACT;
 
@@ -528,7 +528,7 @@ FCIMPL0(UINT32, GCInterface::GetMemoryLoad)
 }
 FCIMPLEND
 
-FCIMPL0(int, GCInterface::GetGcLatencyMode)
+FCIMPL0(int, GCSettings_GetGCLatencyMode)
 {
     FCALL_CONTRACT;
 
@@ -537,7 +537,7 @@ FCIMPL0(int, GCInterface::GetGcLatencyMode)
 }
 FCIMPLEND
 
-FCIMPL1(int, GCInterface::SetGcLatencyMode, int newLatencyMode)
+FCIMPL1(int, GCSettings_SetGCLatencyMode, int newLatencyMode)
 {
     FCALL_CONTRACT;
 
@@ -545,7 +545,7 @@ FCIMPL1(int, GCInterface::SetGcLatencyMode, int newLatencyMode)
 }
 FCIMPLEND
 
-FCIMPL0(int, GCInterface::GetLOHCompactionMode)
+FCIMPL0(int, GCSettings_GetLOHCompactionMode)
 {
     FCALL_CONTRACT;
 
@@ -554,7 +554,7 @@ FCIMPL0(int, GCInterface::GetLOHCompactionMode)
 }
 FCIMPLEND
 
-FCIMPL1(void, GCInterface::SetLOHCompactionMode, int newLOHCompactionyMode)
+FCIMPL1(void, GCSettings_SetLOHCompactionMode, int newLOHCompactionyMode)
 {
     FCALL_CONTRACT;
 
@@ -563,7 +563,7 @@ FCIMPL1(void, GCInterface::SetLOHCompactionMode, int newLOHCompactionyMode)
 FCIMPLEND
 
 
-FCIMPL2(FC_BOOL_RET, GCInterface::RegisterForFullGCNotification, UINT32 gen2Percentage, UINT32 lohPercentage)
+FCIMPL2(FC_BOOL_RET, GC__RegisterForFullGCNotification, UINT32 gen2Percentage, UINT32 lohPercentage)
 {
     FCALL_CONTRACT;
 
@@ -571,7 +571,7 @@ FCIMPL2(FC_BOOL_RET, GCInterface::RegisterForFullGCNotification, UINT32 gen2Perc
 }
 FCIMPLEND
 
-FCIMPL0(FC_BOOL_RET, GCInterface::CancelFullGCNotification)
+FCIMPL0(FC_BOOL_RET, GC__CancelFullGCNotification)
 {
     FCALL_CONTRACT;
 
@@ -620,7 +620,7 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
 **Returns: The generation in which args->obj is found.
 **Arguments: args->obj -- The object to locate.
 ==============================================================================*/
-FCIMPL1(int, GCInterface::GetGenerationInternal, Object* objUNSAFE)
+FCIMPL1(int, GC_GetGenerationInternal, Object* objUNSAFE)
 {
     FCALL_CONTRACT;
     _ASSERTE(objUNSAFE != NULL);
@@ -632,7 +632,7 @@ FCIMPLEND
 **Action: Returns the maximum GC heap segment size
 **Returns: The maximum segment size of either the normal heap or the large object heap, whichever is bigger
 ==============================================================================*/
-FCIMPL0(UINT64, GCInterface::GetSegmentSize)
+FCIMPL0(UINT64, GC_GetSegmentSize)
 {
     FCALL_CONTRACT;
 
@@ -652,7 +652,7 @@ FCIMPLEND
 **Arguments: args->generation -- The generation
 **Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();
 ==============================================================================*/
-FCIMPL2(int, GCInterface::CollectionCount, INT32 generation, INT32 getSpecialGCCount)
+FCIMPL2(int, GC__CollectionCount, INT32 generation, INT32 getSpecialGCCount)
 {
     FCALL_CONTRACT;
 
@@ -699,7 +699,7 @@ extern "C" int QCALLTYPE GCInterface_EndNoGCRegion(QCallExceptionStatus* qcallEr
     return retVal;
 }
 
-FCIMPL0(int, GCInterface::GetLastGCPercentTimeInGC)
+FCIMPL0(int, GC_GetLastGCPercentTimeInGC)
 {
     FCALL_CONTRACT;
 
@@ -707,7 +707,7 @@ FCIMPL0(int, GCInterface::GetLastGCPercentTimeInGC)
 }
 FCIMPLEND
 
-FCIMPL1(UINT64, GCInterface::GetGenerationSize, int gen)
+FCIMPL1(UINT64, GC_GetGenerationSize, int gen)
 {
     FCALL_CONTRACT;
 
@@ -820,7 +820,7 @@ extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers(QCallExceptionSta
 **Arguments: None
 **Exceptions: None
 ==============================================================================*/
-FCIMPL0(int, GCInterface::GetMaxGeneration)
+FCIMPL0(int, GC_GetMaxGeneration)
 {
     FCALL_CONTRACT;
 
@@ -834,7 +834,7 @@ FCIMPLEND
 **Arguments: None
 **Exceptions: None
 ==============================================================================*/
-FCIMPL0(FC_BOOL_RET, GCInterface::IsServerGC)
+FCIMPL0(FC_BOOL_RET, GCSettings_get_IsServerGC)
 {
     FCALL_CONTRACT;
 
@@ -848,7 +848,7 @@ FCIMPLEND
 **Arguments: None
 **Exceptions: None
 ==============================================================================*/
-FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
+FCIMPL0(INT64, GC_GetAllocatedBytesForCurrentThread)
 {
     FCALL_CONTRACT;
 
@@ -888,7 +888,7 @@ extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT3
     END_QCALL;
 }
 
-FCIMPL0(INT64, GCInterface::GetTotalAllocatedBytesApproximate)
+FCIMPL0(INT64, GC_GetTotalAllocatedBytesApproximate)
 {
     FCALL_CONTRACT;
 
@@ -1011,7 +1011,7 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment, QCa
 **Arguments: Object of interest
 **Exceptions: None
 ==============================================================================*/
-FCIMPL1(void, GCInterface::SuppressFinalize, Object *obj)
+FCIMPL1(void, GC_SuppressFinalizeInternal, Object *obj)
 {
     FCALL_CONTRACT;
 
@@ -1385,7 +1385,7 @@ extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode, QCallExceptionStatus*
     END_QCALL;
 }
 
-FCIMPL1(VOID,EnvironmentNative::SetExitCode,INT32 exitcode)
+FCIMPL1(VOID,Environment_set_ExitCode,INT32 exitcode)
 {
     FCALL_CONTRACT;
 
@@ -1397,7 +1397,7 @@ FCIMPL1(VOID,EnvironmentNative::SetExitCode,INT32 exitcode)
 }
 FCIMPLEND
 
-FCIMPL0(INT32, EnvironmentNative::GetExitCode)
+FCIMPL0(INT32, Environment_get_ExitCode)
 {
     FCALL_CONTRACT;
 
@@ -1548,7 +1548,7 @@ extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnSta
     return idx;
 }
 
-FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj)
+FCIMPL1(INT32, RuntimeHelpers_TryGetHashCode, Object* obj)
 {
     FCALL_CONTRACT;
 
@@ -1560,7 +1560,7 @@ FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj)
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCompareRef)
+FCIMPL2(FC_BOOL_RET, RuntimeHelpers_ContentEquals, Object *pThisRef, Object *pCompareRef)
 {
     FCALL_CONTRACT;
 
@@ -1617,7 +1617,7 @@ extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectH
 
 #include <optsmallperfcritical.h>
 
-FCIMPL2(INT32,COMInterlocked::Exchange32, INT32 *location, INT32 value)
+FCIMPL2(INT32,Interlocked_Exchange32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
 
@@ -1625,7 +1625,7 @@ FCIMPL2(INT32,COMInterlocked::Exchange32, INT32 *location, INT32 value)
 }
 FCIMPLEND
 
-FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
+FCIMPL2_IV(INT64,Interlocked_Exchange64, INT64 *location, INT64 value)
 {
     FCALL_CONTRACT;
 
@@ -1633,7 +1633,7 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
 }
 FCIMPLEND
 
-FCIMPL3(INT32, COMInterlocked::CompareExchange32, INT32* location, INT32 value, INT32 comparand)
+FCIMPL3(INT32, Interlocked_CompareExchange32, INT32* location, INT32 value, INT32 comparand)
 {
     FCALL_CONTRACT;
 
@@ -1641,7 +1641,12 @@ FCIMPL3(INT32, COMInterlocked::CompareExchange32, INT32* location, INT32 value, 
 }
 FCIMPLEND
 
-FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 value, INT64 comparand)
+#ifdef TARGET_WASM
+extern "C" decltype(Interlocked_CompareExchange32) Interlocked_CompareExchange32Pointer
+    __attribute__((alias("Interlocked_CompareExchange32")));
+#endif // TARGET_WASM
+
+FCIMPL3_IVV(INT64, Interlocked_CompareExchange64, INT64* location, INT64 value, INT64 comparand)
 {
     FCALL_CONTRACT;
 
@@ -1649,7 +1654,7 @@ FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 val
 }
 FCIMPLEND
 
-FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
+FCIMPL2(LPVOID,Interlocked_ExchangeObject, LPVOID*location, LPVOID value)
 {
     FCALL_CONTRACT;
 
@@ -1662,7 +1667,7 @@ FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
 }
 FCIMPLEND
 
-FCIMPL3(LPVOID,COMInterlocked::CompareExchangeObject, LPVOID *location, LPVOID value, LPVOID comparand)
+FCIMPL3(LPVOID,Interlocked_CompareExchangeObject, LPVOID *location, LPVOID value, LPVOID comparand)
 {
     FCALL_CONTRACT;
 
@@ -1678,7 +1683,7 @@ FCIMPL3(LPVOID,COMInterlocked::CompareExchangeObject, LPVOID *location, LPVOID v
 }
 FCIMPLEND
 
-FCIMPL2(INT32,COMInterlocked::ExchangeAdd32, INT32 *location, INT32 value)
+FCIMPL2(INT32,Interlocked_ExchangeAdd32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
 
@@ -1686,7 +1691,7 @@ FCIMPL2(INT32,COMInterlocked::ExchangeAdd32, INT32 *location, INT32 value)
 }
 FCIMPLEND
 
-FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
+FCIMPL2_IV(INT64,Interlocked_ExchangeAdd64, INT64 *location, INT64 value)
 {
     FCALL_CONTRACT;
 
@@ -1930,14 +1935,14 @@ extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall:
     return ret;
 }
 
-FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
+FCIMPL1(UINT32, MethodTable_GetNumInstanceFieldBytes, MethodTable* mt)
 {
     FCALL_CONTRACT;
     return mt->GetNumInstanceFieldBytes();
 }
 FCIMPLEND
 
-FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTable* mt)
+FCIMPL1(CorElementType, MethodTable_GetPrimitiveCorElementType, MethodTable* mt)
 {
     FCALL_CONTRACT;
 
@@ -1949,7 +1954,7 @@ FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTab
 }
 FCIMPLEND
 
-FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, MethodTable *mt, MethodTable* parent)
+FCIMPL2(MethodTable*, MethodTable_GetMethodTableMatchingParentClass, MethodTable *mt, MethodTable* parent)
 {
     FCALL_CONTRACT;
 
@@ -1957,7 +1962,7 @@ FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, Meth
 }
 FCIMPLEND
 
-FCIMPL1(OBJECTHANDLE, MethodTableNative::GetLoaderAllocatorHandle, MethodTable *mt)
+FCIMPL1(OBJECTHANDLE, MethodTable_GetLoaderAllocatorHandle, MethodTable *mt)
 {
     FCALL_CONTRACT;
 

@@ -999,8 +999,10 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
     )
     if (GEN_PINVOKE)
         add_compile_definitions(GEN_PINVOKE=1)
+        list(REMOVE_ITEM VM_SOURCES_WKS qcallentrypoints.cpp)
         list(APPEND VM_SOURCES_WKS_GEN
             ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-pinvoke.cpp
+            qcallentrypoints.cpp
         )
     endif(GEN_PINVOKE)
 endif()
