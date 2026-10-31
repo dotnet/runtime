@@ -2935,7 +2935,19 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "U", out string diag), diag);
+            string diag;
+
+            // Wasm dispatches interface calls through LDVIRTFTN, which must still mark the interface
+            // slots as used so that the implementations get compiled.
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test1A`1<int>", "Test1Method", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test2C`1<int>", "Test2Method", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest3WithDim`1<int>", "ITest3Base.Test3Method", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test4A`1<int>", "ITest4<T>.Test4Method", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test5B`1<int>", "Test5Method", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test6B`1<int>", "Test6Method", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "Test7Method", out diag), diag);
+
+            Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "U", out diag), diag);
             Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "UG", out diag), diag);
             Assert.True(R2RAssert.HasStringThunk(reader, "UGviiii", out diag), diag);
             Assert.True(R2RAssert.HasStringThunk(reader, "UGvriiii", out diag), diag);
@@ -2951,6 +2963,37 @@ public class R2RTestSuites
                     "MS16Tp",
                     out diag),
                 diag);
+        }
+    }
+
+    [Fact]
+    public void VirtualMethodGenericsArrayInterfaceMethods()
+    {
+        var arrayInterfaceLib = new CompiledAssembly
+        {
+            AssemblyName = nameof(VirtualMethodGenericsArrayInterfaceMethods),
+            SourceResourceNames = ["VirtualMethodGenerics/ArrayInterfaceMethods.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(VirtualMethodGenericsArrayInterfaceMethods),
+            [
+                new(nameof(VirtualMethodGenericsArrayInterfaceMethods), [new CrossgenAssembly(arrayInterfaceLib)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs = ["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath],
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "System.SZArrayHelper", "get_Count", out diag, ["EmptyArrayElement"]), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "System.SZArrayHelper", "get_Item", out diag, ["IndexedArrayElement"]), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "System.SZArrayHelper", "get_Count", out diag, ["__Canon"]), diag);
         }
     }
 

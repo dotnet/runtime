@@ -2495,6 +2495,14 @@ namespace Internal.JitInterface
                 {
                     // If it is also a default interface method call, it should go through instantiating stub.
                     useInstantiatingStub = useInstantiatingStub || (targetMethod.OwningType.IsInterface && !originalMethod.IsAbstract);
+
+                    // Wasm dispatches interface calls through LDVIRTFTN instead of a VirtualEntry dispatch cell,
+                    // so mark the slot as used here to let conditional virtual method discovery
+                    // (InheritedVirtualMethodsNode, ArrayInterfaceMethodsNode) compile the implementations.
+                    if (!targetMethod.IsFinal && !targetMethod.OwningType.IsGenericDefinition)
+                    {
+                        _additionalDependencies.Add(_compilation.NodeFactory.VirtualMethodUse(targetMethod), "Wasm interface slot use");
+                    }
                 }
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
                 pResult->nullInstanceCheck = true;
