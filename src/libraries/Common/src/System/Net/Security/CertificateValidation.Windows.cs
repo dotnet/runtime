@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -13,6 +14,24 @@ namespace System.Net
 {
     internal static partial class CertificateValidation
     {
+#if NET10_0_OR_GREATER
+        internal static SafeHandle GetCertificateSafeHandle(X509Certificate certificate)
+        {
+            SafeHandle? handle = GetCertificatePal(certificate) is { } pal ? (SafeHandle?)GetCertificatePalSafeHandle(pal) : null;
+            ObjectDisposedException.ThrowIf(handle is null, certificate);
+            return handle;
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Pal")]
+        [return: UnsafeAccessorType("System.Security.Cryptography.X509Certificates.ICertificatePalCore, System.Security.Cryptography")]
+        private static extern object? GetCertificatePal(X509Certificate certificate);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_SafeHandle")]
+        [return: UnsafeAccessorType("Microsoft.Win32.SafeHandles.SafeCertContextHandle, System.Security.Cryptography")]
+        private static extern object? GetCertificatePalSafeHandle(
+            [UnsafeAccessorType("System.Security.Cryptography.X509Certificates.CertificatePal, System.Security.Cryptography")] object pal);
+#endif
+
 #pragma warning disable IDE0060
         internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName, Span<byte> certificateBuffer)
             => BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, isServer, hostName);

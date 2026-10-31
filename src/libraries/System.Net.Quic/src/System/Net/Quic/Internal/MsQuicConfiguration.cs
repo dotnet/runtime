@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
@@ -228,6 +229,8 @@ internal static partial class MsQuicConfiguration
         MsQuicConfigurationSafeHandle configurationHandle = new MsQuicConfigurationSafeHandle(handle);
 
         SslStreamCertificateContext? context = null;
+        SafeHandle? certificateHandle = null;
+        bool addedRef = false;
 
         try
         {
@@ -251,12 +254,16 @@ internal static partial class MsQuicConfiguration
                 config.Type = QUIC_CREDENTIAL_TYPE.NONE;
                 status = MsQuicApi.Api.ConfigurationLoadCredential(configurationHandle, &config);
             }
+#if TARGET_WINDOWS
             else if (MsQuicApi.UsesSChannelBackend)
             {
+                certificateHandle = CertificateValidation.GetCertificateSafeHandle(certificate);
+                certificateHandle.DangerousAddRef(ref addedRef);
                 config.Type = QUIC_CREDENTIAL_TYPE.CERTIFICATE_CONTEXT;
-                config.CertificateContext = (void*)certificate.Handle;
+                config.CertificateContext = (void*)certificateHandle.DangerousGetHandle();
                 status = MsQuicApi.Api.ConfigurationLoadCredential(configurationHandle, &config);
             }
+#endif
             else
             {
                 config.Type = QUIC_CREDENTIAL_TYPE.CERTIFICATE_PKCS12;
@@ -302,9 +309,9 @@ internal static partial class MsQuicConfiguration
             // server certificates and SEC_E_UNKNOWN_CREDENTIALS for client certificates when the
             // private key is ephemeral, which is not supported on Windows.
             if ((status == MsQuic.QUIC_STATUS_CERT_NO_CERT || (Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.UnknownCredentials) &&
-                certificate is not null && certificate.HasPrivateKey())
+                certificateHandle is not null && certificate is not null && certificate.HasPrivateKey())
             {
-                using Microsoft.Win32.SafeHandles.SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificate.Handle);
+                using Microsoft.Win32.SafeHandles.SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificateHandle!.DangerousGetHandle());
                 if (safeCertContextHandle.HasEphemeralPrivateKey)
                 {
                     throw new AuthenticationException(SR.net_auth_ephemeral);
@@ -321,6 +328,11 @@ internal static partial class MsQuicConfiguration
         }
         finally
         {
+            if (addedRef)
+            {
+                certificateHandle!.DangerousRelease();
+            }
+
             if (context is not null)
             {
                 ReleaseResources(context);
