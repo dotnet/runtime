@@ -261,7 +261,7 @@ namespace CustomTaskCovariantReturn
             Assert.Equal("GenericTaskDerived.M1;", Trace);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public static void TestSynchronizedCustomTaskOverride(bool furtherOverride)
