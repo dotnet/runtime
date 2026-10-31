@@ -925,7 +925,7 @@ namespace System.Security.Principal
                     case Interop.Errors.ERROR_BAD_LENGTH: // special case for TokenSessionId. Falling through
                     case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
                         safeAllocHandle.Dispose();
-                        safeAllocHandle = SafeNativeMemoryHandle.Alloc(checked((int)dwLength));
+                        safeAllocHandle = SafeNativeMemoryHandle.Alloc(dwLength);
 
                         bool result = Interop.Advapi32.GetTokenInformation(tokenHandle,
                                                                  (uint)tokenInformationClass,

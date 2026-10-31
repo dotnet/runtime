@@ -10,11 +10,11 @@ namespace Microsoft.Win32.SafeHandles
     {
         public SafeNativeMemoryHandle() : base(true) { }
 
-        internal static unsafe SafeNativeMemoryHandle Alloc(int cb)
+        internal static unsafe SafeNativeMemoryHandle Alloc(nuint cb)
         {
             var h = new SafeNativeMemoryHandle();
-            h.SetHandle((IntPtr)NativeMemory.Alloc((nuint)cb));
-            h.Initialize((ulong)cb);
+            h.SetHandle((IntPtr)NativeMemory.Alloc(cb));
+            h.Initialize(cb);
             return h;
         }
 
