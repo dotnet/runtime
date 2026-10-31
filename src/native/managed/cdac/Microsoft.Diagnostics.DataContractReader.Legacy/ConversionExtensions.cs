@@ -84,7 +84,7 @@ public static class ConversionExtensions
     }
 
     /// <summary>
-    /// Converts a TargetCodePointer to an address TargetPointer, removing any platform-specific bits such as the ARM32 Thumb bit or ARM64 pointer authentication.
+    /// Converts a TargetCodePointer to an address TargetPointer, removing the ARM32 Thumb bit if present.
     /// </summary>
     public static TargetPointer ToAddress(this TargetCodePointer code, Target target)
     {
@@ -93,10 +93,6 @@ public static class ConversionExtensions
         if (flags.HasFlag(CodePointerFlags.HasArm32ThumbBit))
         {
             return new TargetPointer(code.Value & ~Arm32ThumbBit);
-        }
-        else if (flags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
-        {
-            throw new NotImplementedException($"{nameof(ToAddress)}: ARM64 with pointer authentication");
         }
         Debug.Assert(flags == default);
         return new TargetPointer(code.Value);
