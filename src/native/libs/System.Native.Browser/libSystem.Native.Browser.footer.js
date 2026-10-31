@@ -18,7 +18,6 @@ function libDotnetFactory() {
     libNativeBrowser(exports);
 
     let commonDeps = [
-        "$FS",
         "$BROWSER_UTILS",
         "SystemJS_ExecuteTimerCallback",
         "SystemJS_ExecuteBackgroundJobCallback",
