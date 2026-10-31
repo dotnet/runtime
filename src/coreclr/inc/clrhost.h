@@ -30,12 +30,12 @@ using std::nothrow;
 
 struct PreserveLastErrorHolder
 {
-    PreserveLastErrorHolder()
+    PreserveLastErrorHolder() noexcept
     {
         m_dwLastError = ::GetLastError();
     }
 
-    ~PreserveLastErrorHolder()
+    ~PreserveLastErrorHolder() noexcept
     {
         ::SetLastError(m_dwLastError);
     }
@@ -60,11 +60,6 @@ private:
 #endif // _DEBUG
 
 
-LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
-BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType);
-SIZE_T ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength);
-BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
-
 #ifdef HOST_WINDOWS
 HANDLE ClrGetProcessExecutableHeap();
 #endif
@@ -78,7 +73,7 @@ HANDLE ClrGetProcessExecutableHeap();
 CRITSEC_COOKIE ClrCreateCriticalSection(CrstType type, CrstFlags flags);
 void ClrDeleteCriticalSection(CRITSEC_COOKIE cookie);
 void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
-void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
+void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie) noexcept;
 
 // Rather than use the above APIs directly, it is recommended that holder classes
 // be used.  This guarantees that the locks will be vacated when the scope is popped,
@@ -150,12 +145,12 @@ extern thread_local size_t t_CantStopCount;
 
 // For debugging, we can track arbitrary Can't-Stop regions.
 // In V1.0, this was on the Thread object, but we need to track this for threads w/o a Thread object.
-FORCEINLINE void IncCantStopCount()
+FORCEINLINE void IncCantStopCount() noexcept
 {
     t_CantStopCount++;
 }
 
-FORCEINLINE void DecCantStopCount()
+FORCEINLINE void DecCantStopCount() noexcept
 {
     t_CantStopCount--;
 }

@@ -5,9 +5,6 @@
  * Generational GC handle manager.  Entrypoint Header.
  *
  * Implements generic support for external handles into a GC heap.
- *
-
- *
  */
 
 #ifndef _HANDLETABLE_H
@@ -89,13 +86,7 @@ HHANDLETABLE    HndGetHandleTable(OBJECTHANDLE handle);
 /*
  * write barrier
  */
-void            HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value);
 void            HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF value);
-
-/*
- * logging an ETW event (for inlined methods)
- */
-void            HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value);
 
 /*
  * NON-GC handle enumeration
@@ -125,8 +116,6 @@ void            HndScanHandlesForGC(HHANDLETABLE hTable,
 
 void            HndResetAgeMap(HHANDLETABLE hTable, const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, uint32_t flags);
 void            HndVerifyTable(HHANDLETABLE hTable, const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, uint32_t flags);
-
-void            HndNotifyGcCycleComplete(HHANDLETABLE hTable, uint32_t condemned, uint32_t maxgen);
 
 /*
  * Handle counting
@@ -224,4 +213,3 @@ FORCEINLINE BOOL HndIsNullOrDestroyedHandle(_UNCHECKED_OBJECTREF value)
 #include "handletable.inl"
 
 #endif //_HANDLETABLE_H
-

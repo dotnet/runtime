@@ -43,7 +43,13 @@
 #include <cstdarg>
 #include <signal.h>
 #include <minipal/memorybarrierprocesswide.h>
+#include <minipal/ospagesize.h>
 #include <minipal/thread.h>
+
+#ifdef TARGET_WASI
+extern "C" char __stack_low;
+extern "C" char __stack_high;
+#endif
 
 #ifdef TARGET_LINUX
 #include <sys/syscall.h>
@@ -185,6 +191,7 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
 #endif
 }
 
+#ifdef FEATURE_HIJACK
 static void UnmaskActivationSignal()
 {
     sigset_t signal_set;
@@ -194,6 +201,7 @@ static void UnmaskActivationSignal()
     int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
     _ASSERTE(sigmaskRet == 0);
 }
+#endif // FEATURE_HIJACK
 
 // This functions configures behavior of the signals that are not
 // related to hardware exception handling.
@@ -289,9 +297,9 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-#if defined(TARGET_LINUX)
+#if defined(FEATURE_MULTITHREADING) && defined(TARGET_LINUX)
 static pthread_key_t key;
-#endif
+#endif // FEATURE_MULTITHREADING && TARGET_LINUX
 
 #ifdef FEATURE_HIJACK
 bool InitializeSignalHandling();
@@ -333,17 +341,17 @@ bool PalInit()
     }
 #endif
 
-#if defined(TARGET_LINUX)
+#if defined(FEATURE_MULTITHREADING) && defined(TARGET_LINUX)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
     {
         return false;
     }
-#endif
+#endif // FEATURE_MULTITHREADING && TARGET_LINUX
 
     return true;
 }
 
-#if !defined(TARGET_LINUX)
+#if defined(FEATURE_MULTITHREADING) && !defined(TARGET_LINUX)
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -365,23 +373,7 @@ struct TlsDestructionMonitor
 // This thread local object is used to detect thread shutdown. Its destructor
 // is called when a thread is being shut down.
 thread_local TlsDestructionMonitor tls_destructionMonitor;
-#endif
-
-// This thread local variable is used for delegate marshalling
-PLATFORM_THREAD_LOCAL intptr_t tls_thunkData;
-
-#ifdef FEATURE_EMULATED_TLS
-EXTERN_C intptr_t* RhpGetThunkData()
-{
-    return &tls_thunkData;
-}
-#endif //FEATURE_EMULATED_TLS
-
-FCIMPL0(intptr_t, RhGetCurrentThunkContext)
-{
-    return tls_thunkData;
-}
-FCIMPLEND
+#endif // FEATURE_MULTITHREADING && !TARGET_LINUX
 
 // Register the thread with OS to be notified when thread is about to be destroyed
 // It fails fast if a different thread was already registered.
@@ -389,6 +381,7 @@ FCIMPLEND
 //  thread        - thread to attach
 void PalAttachThread(void* thread)
 {
+#ifdef FEATURE_MULTITHREADING
 #if defined(TARGET_LINUX)
     if (pthread_setspecific(key, thread) != 0)
     {
@@ -398,8 +391,11 @@ void PalAttachThread(void* thread)
 #else
     tls_destructionMonitor.SetThread(thread);
 #endif
+#endif // FEATURE_MULTITHREADING
 
+#ifdef FEATURE_HIJACK
     UnmaskActivationSignal();
+#endif // FEATURE_HIJACK
 }
 
 #if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
@@ -686,8 +682,9 @@ UInt32_BOOL PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect
     int unixProtect = W32toUnixAccessControl(protect);
 
     // mprotect expects the address to be page-aligned
-    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, OS_PAGE_SIZE);
-    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, OS_PAGE_SIZE) - pPageStart;
+    size_t pageSize = minipal_getpagesize();
+    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, pageSize);
+    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, pageSize) - pPageStart;
 
     return mprotect(pPageStart, memSize, unixProtect) == 0;
 }
@@ -719,7 +716,7 @@ void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
     }
 #elif (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
     sys_icache_invalidate (pAddress, size);
-#else
+#elif !defined(HOST_WASM)
     __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
 #endif
 }
@@ -876,12 +873,17 @@ void PalHijack(Thread* pThreadToHijack)
 
     if (status != 0)
     {
+        // Failure to send the signal is fatal. Sending the signal can fail if the signal ID
+        // is invalid, if the thread doesn't exist anymore, or if the environment denies
+        // sending signals to threads of this process (e.g. a restrictive AppArmor/seccomp
+        // policy returning EACCES or EPERM). Report the reason, since the resulting abort
+        // is otherwise very hard to diagnose.
+        fprintf(stderr, "Failed to inject activation signal %d into thread: %s (%d)\n",
+            INJECT_ACTIVATION_SIGNAL, strerror(status), status);
+
         // Causes creation of a crash dump if enabled
         PalCreateCrashDumpIfEnabled();
 
-        // Failure to send the signal is fatal. There are only two cases when sending
-        // the signal can fail. First, if the signal ID is invalid and second,
-        // if the thread doesn't exist anymore.
         abort();
     }
 }
@@ -923,7 +925,10 @@ bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHi
     void* pStackHighOut = NULL;
     void* pStackLowOut = NULL;
 
-#ifdef __APPLE__
+#ifdef TARGET_WASI
+    pStackLowOut = &__stack_low;
+    pStackHighOut = &__stack_high;
+#elif defined(__APPLE__)
     // This is a Mac specific method
     pStackHighOut = pthread_get_stackaddr_np(pthread_self());
     pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));

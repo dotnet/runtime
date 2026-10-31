@@ -35,11 +35,8 @@ namespace Microsoft.Interop
                 .Collect()
                 .Select((topLevelAttrs, ct) => !topLevelAttrs.IsEmpty ? EnvironmentFlags.DisableRuntimeMarshalling : EnvironmentFlags.None);
 
-            // Roslyn does not expose the memory safety rules version through a public API yet
-            // (https://github.com/dotnet/roslyn/issues/82546), so the same feature flag the compiler itself
-            // reads is used to determine whether the updated rules are in effect.
-            var updatedMemorySafetyRules = context.ParseOptionsProvider
-                .Select((options, ct) => options.Features.ContainsKey("updated-memory-safety-rules")
+            var updatedMemorySafetyRules = context.CompilationProvider
+                .Select((compilation, ct) => compilation.UsesUpdatedMemorySafetyRules()
                     ? EnvironmentFlags.UpdatedMemorySafetyRules
                     : EnvironmentFlags.None);
 
@@ -57,13 +54,9 @@ namespace Microsoft.Interop
                     new StubEnvironment(data.Left, data.Right));
         }
 
-        public static void RegisterConcatenatedSyntaxOutputs<TNode>(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<TNode> nodes, string fileName)
-            where TNode : SyntaxNode
+        public static void RegisterConcatenatedOutputs(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<string> sources, string fileName)
         {
-            IncrementalValueProvider<ImmutableArray<string>> generatedMethods = nodes
-                .Select(
-                    static (node, ct) => node.NormalizeWhitespace().ToFullString())
-                .Collect();
+            IncrementalValueProvider<ImmutableArray<string>> generatedMethods = sources.Where(static source => source.Length != 0).Collect();
 
             context.RegisterSourceOutput(generatedMethods,
                 (context, generatedSources) =>
@@ -80,7 +73,6 @@ namespace Microsoft.Interop
                     foreach (string generated in generatedSources)
                     {
                         source.Append(generated);
-                        source.Append("\r\n");
                     }
 
                     // Once https://github.com/dotnet/roslyn/issues/61326 is resolved, we can avoid the ToString() here.

@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ===========================================================================
-// File: UTIL.CPP
-// ===========================================================================
-
 #include "common.h"
 #include "excep.h"
 #include "corhost.h"
@@ -139,7 +135,20 @@ void PrintToStdErrW(const WCHAR *pwzString)
     }
     CONTRACTL_END
 
-    MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, GetConsoleOutputCP());
+    UINT codePage = GetConsoleOutputCP();
+    // Console output allows best-fit mapping and default-character substitution.
+    int byteCount = WideCharToMultiByte(codePage, 0, pwzString, -1, nullptr, 0, nullptr, nullptr);
+    if (byteCount == 0)
+    {
+        ThrowWin32(ERROR_NO_UNICODE_TRANSLATION);
+    }
+
+    CQuickBytes buffer;
+    char* pStr = static_cast<char*>(buffer.AllocThrows(byteCount));
+    if (WideCharToMultiByte(codePage, 0, pwzString, -1, pStr, byteCount, nullptr, nullptr) == 0)
+    {
+        ThrowWin32(ERROR_NO_UNICODE_TRANSLATION);
+    }
 
     PrintToStdErrA(pStr);
 }
@@ -837,56 +846,6 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
     return true;
 }
 
-LPVOID
-CLRMapViewOfFile(
-    IN HANDLE hFileMappingObject,
-    IN DWORD dwDesiredAccess,
-    IN DWORD dwFileOffsetHigh,
-    IN DWORD dwFileOffsetLow,
-    IN SIZE_T dwNumberOfBytesToMap,
-    IN LPVOID lpBaseAddress
-    )
-{
-#ifdef _DEBUG
-#ifdef TARGET_X86
-
-    char *tmp = new (nothrow) char;
-    if (!tmp)
-    {
-        SetLastError(ERROR_OUTOFMEMORY);
-        return NULL;
-    }
-    delete tmp;
-
-#endif // TARGET_X86
-#endif // _DEBUG
-
-    LPVOID pv = MapViewOfFileEx(hFileMappingObject,dwDesiredAccess,dwFileOffsetHigh,dwFileOffsetLow,dwNumberOfBytesToMap,lpBaseAddress);
-
-
-    if (!pv)
-    {
-        if(GetLastError()==ERROR_SUCCESS)
-            SetLastError(ERROR_OUTOFMEMORY);
-        return NULL;
-    }
-
-    if (!pv && GetLastError()==ERROR_SUCCESS)
-        SetLastError(ERROR_OUTOFMEMORY);
-
-    return pv;
-}
-
-BOOL
-CLRUnmapViewOfFile(
-    IN LPVOID lpBaseAddress
-    )
-{
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    return UnmapViewOfFile(lpBaseAddress);
-}
-
 static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
 {
     // Don't use dynamic contract: will override GetLastError value
@@ -1520,23 +1479,6 @@ void DACNotify::DoModuleUnloadNotification(Module *ModulePtr)
     if ((g_dacNotificationFlags & CLRDATA_NOTIFY_ON_MODULE_UNLOAD) != 0)
     {
         TADDR Args[2] = { MODULE_UNLOAD_NOTIFICATION, (TADDR) ModulePtr};
-        DACNotifyExceptionHelper(Args, 2);
-    }
-}
-
-void DACNotify::DoExceptionNotification(Thread* ThreadPtr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if ((g_dacNotificationFlags & CLRDATA_NOTIFY_ON_EXCEPTION) != 0)
-    {
-        TADDR Args[2] = { EXCEPTION_NOTIFICATION, (TADDR) ThreadPtr};
         DACNotifyExceptionHelper(Args, 2);
     }
 }

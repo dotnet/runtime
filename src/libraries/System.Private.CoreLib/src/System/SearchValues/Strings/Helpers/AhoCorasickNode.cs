@@ -155,8 +155,7 @@ namespace System.Buffers
                     return false;
                 }
 
-                table = new int[maxValue + 1];
-                Array.Fill(table, -1);
+                table = Array.CreateFilled(maxValue + 1, -1);
 
                 foreach ((char childChar, int childIndex) in children)
                 {

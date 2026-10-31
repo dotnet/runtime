@@ -25,7 +25,9 @@ set(GC_WKS_SVR_SOURCES
 )
 
 set(COMMON_RUNTIME_SOURCES
+    AsmOffsetsVerify.cpp
     rhassert.cpp
+    ${RUNTIME_DIR}/MathHelpers.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
     MethodTable.cpp
@@ -38,10 +40,8 @@ set(COMMON_RUNTIME_SOURCES
     gcheaputilities.cpp
     GCMemoryHelpers.cpp
     gcenv.ee.cpp
-    GcStressControl.cpp
     HandleTableHelpers.cpp
     interoplibinterface_java.cpp
-    MathHelpers.cpp
     MiscHelpers.cpp
     TypeManager.cpp
     ObjectLayout.cpp
@@ -89,7 +89,6 @@ set(STANDALONEGC_ENABLED_SOURCES
 )
 
 set(FULL_RUNTIME_SOURCES
-    AsmOffsetsVerify.cpp
     ThunksMapping.cpp
 )
 
@@ -200,14 +199,29 @@ else()
     ${RUNTIME_DIR}/unix/CLREventBase.cpp
     unix/PalUnix.cpp
     unix/PalCreateDump.cpp
-    ${GC_DIR}/unix/gcenv.unix.cpp
-    ${GC_DIR}/unix/numasupport.cpp
+    unix/cgroupcpu.cpp
     ${GC_DIR}/unix/events.cpp
-    ${GC_DIR}/unix/cgroup.cpp
   )
 
+  if(CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND COMMON_RUNTIME_SOURCES
+      wasm/ExceptionHandling.cpp
+      wasm/MiscStubs.cpp
+      wasm/PInvoke.cpp
+      wasm/WasmCodeManager.cpp
+      ${RUNTIME_DIR}/wasm/writebarriers.cpp
+      ${GC_DIR}/wasm/gcenv.cpp
+    )
+    include_directories(${GC_DIR}/unix)
+  else()
+    list(APPEND COMMON_RUNTIME_SOURCES
+      ${GC_DIR}/unix/gcenv.unix.cpp
+      ${GC_DIR}/unix/numasupport.cpp
+      ${GC_DIR}/unix/cgroup.cpp
+    )
+  endif()
+
   list(APPEND FULL_RUNTIME_SOURCES
-    unix/cgroupcpu.cpp
     unix/HardwareExceptions.cpp
     unix/NativeContext.cpp
     unix/UnixSignals.cpp
@@ -282,10 +296,8 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/DispatchResolve.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
+  ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/PInvoke.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/InteropThunksHelpers.${ASM_SUFFIX}
-  ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
@@ -320,7 +332,6 @@ if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_WASM)
   add_definitions(-DFEATURE_64BIT_ALIGNMENT)
 endif()
 
-add_compile_definitions($<$<CONFIG:Debug,Checked>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DNATIVEAOT)

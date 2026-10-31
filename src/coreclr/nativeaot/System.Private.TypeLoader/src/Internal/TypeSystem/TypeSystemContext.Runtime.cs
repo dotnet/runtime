@@ -21,8 +21,6 @@ namespace Internal.TypeSystem
 {
     public abstract partial class TypeSystemContext
     {
-        internal static TemplateLocator TemplateLookup => default;
-
         internal class RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable : LockFreeReaderHashtableOfPointers<RuntimeTypeHandle, RuntimeTypeHandle>
         {
             protected override bool CompareKeyToValue(RuntimeTypeHandle key, RuntimeTypeHandle value)
