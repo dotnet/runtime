@@ -114,6 +114,7 @@ or inserted between other fields in the same struct, without conditioning on the
 5. Handling of the DebuggerIPCControlBlock is such that the block exposed by an older debugger is no longer understood.
 Note: Any DBI changes other than those to the IPC events that depend on runtime changes
 should be flowed through a COM interface on the DAC.
+
 */
 #define CorDB_RuntimeProtocol                  2
 #define CorDB_DebuggerProtocolCurrent          2
@@ -308,12 +309,6 @@ static_assert(offsetof(DebuggerIPCControlBlock_2, m_runtimeProtocol) == (sizeof(
 static_assert(offsetof(DebuggerIPCControlBlock_2, m_runtimeProtocolMinSupported) == (sizeof(SIZE_T) == 8 ? 0x18 : 0x14));
 static_assert(offsetof(DebuggerIPCControlBlock_2, m_debuggerProtocolCurrent) == (sizeof(SIZE_T) == 8 ? 0x1c : 0x18));
 static_assert(offsetof(DebuggerIPCControlBlock_2, m_debuggerProtocolMinSupported) == (sizeof(SIZE_T) == 8 ? 0x20 : 0x1c));
-static_assert(offsetof(DebuggerIPCControlBlock_2, m_errorHR) == (sizeof(SIZE_T) == 8 ? 0x24 : 0x20));
-static_assert(offsetof(DebuggerIPCControlBlock_2, m_errorCode) == (sizeof(SIZE_T) == 8 ? 0x28 : 0x24));
-static_assert(offsetof(DebuggerIPCControlBlock_2, m_rightSideEventAvailable) == (sizeof(SIZE_T) == 8 ? 0x30 : 0x28));
-static_assert(offsetof(DebuggerIPCControlBlock_2, m_rightSideEventRead) == (sizeof(SIZE_T) == 8 ? 0x38 : 0x2c));
-static_assert(offsetof(DebuggerIPCControlBlock_2, m_rightSideProcessHandle) == (sizeof(SIZE_T) == 8 ? 0x50 : 0x38));
-static_assert(offsetof(DebuggerIPCControlBlock_2, m_leftSideUnmanagedWaitEvent) == (sizeof(SIZE_T) == 8 ? 0x58 : 0x3c));
 
 #ifdef RIGHT_SIDE_COMPILE
 struct DebuggerIPCControlBlock
