@@ -3630,10 +3630,10 @@ int LinearScan::BuildOperandUses(GenTree* node, SingleTypeRegSet candidates)
         // ANDs may be contained in a chain.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
-    if (node->OperIs(GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ, GT_ROR))
+    if (node->OperIs(GT_NEG, GT_CAST, GT_BFIZ, GT_LSH, GT_RSH, GT_RSZ, GT_ROR))
     {
         // NEG can be contained for mneg on arm64
-        // CAST and LSH for ADD with sign/zero extension
+        // CAST and BFIZ for arithmetic and compares with sign/zero extension
         // LSH, RSH, RSZ, and ROR for various "shifted register" instructions on arm64
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
