@@ -59,7 +59,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/134902", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134900", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_StringConstructorWithExistingInstance()
         {
             ConstructorInfo constructor = typeof(string).GetConstructor(new[] { typeof(char[]) })!;
@@ -72,7 +71,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/134902", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134900", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_ArrayConstructorWithExistingInstance()
         {
             ConstructorInfo constructor = typeof(object[]).GetConstructor(new[] { typeof(int) })!;
