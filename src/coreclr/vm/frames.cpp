@@ -664,6 +664,9 @@ void Frame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targe
 
 void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
 {
+#ifdef CONTEXT_FLOATING_POINT
+    _ASSERTE((pRD->pCurrentContext->ContextFlags & (CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK)) != 0);
+#endif
     switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->UpdateFloatingPointRegisters_Impl(pRD, targetSP); }

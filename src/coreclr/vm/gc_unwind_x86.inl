@@ -3039,7 +3039,12 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     if (flags & ParentOfFuncletStackFrame)
     {
         LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it was already reported via another funclet.\n"));
-        return true;
+#if !defined(FEATURE_NATIVEAOT) && !defined(DACCESS_COMPILE)
+        if ((flags & GcRootScan) == 0 || !static_cast<GCCONTEXT*>(hCallBack)->sc->promotion)
+#endif
+        {
+            return true;
+        }
     }
 
     unsigned  EBP     = GetRegdisplayFP(pContext);
@@ -3063,6 +3068,34 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
                              &info);
 
     _ASSERTE( curOffs <= info.methodSize);
+
+#if !defined(FEATURE_NATIVEAOT) && !defined(DACCESS_COMPILE)
+    // The generic context is live even when ordinary live-slot reporting skips the frame.
+    if ((flags & GcRootScan) != 0 && info.genericsContext &&
+        info.prologOffs == hdrInfo::NOT_IN_PROLOG &&
+        info.epilogOffs == hdrInfo::NOT_IN_EPILOG)
+    {
+        GCCONTEXT* gcctx = static_cast<GCCONTEXT*>(hCallBack);
+        if (gcctx->sc->promotion)
+        {
+            PTR_VOID paramTypeArg = PTR_VOID(*PTR_TADDR(EBP - GetParamTypeArgOffset(&info)));
+            // Async methods can restore this context from the continuation after resuming.
+            _ASSERTE(paramTypeArg != NULL || info.isAsync);
+            if (paramTypeArg != NULL)
+            {
+                LoaderAllocator* pLoaderAllocator = info.genericsContextIsMethodDesc
+                    ? static_cast<MethodDesc*>(paramTypeArg)->GetLoaderAllocator()
+                    : static_cast<MethodTable*>(paramTypeArg)->GetLoaderAllocator();
+                GcReportLoaderAllocator(gcctx->f, gcctx->sc, pLoaderAllocator);
+            }
+        }
+    }
+
+    if (flags & ParentOfFuncletStackFrame)
+    {
+        return true;
+    }
+#endif // !FEATURE_NATIVEAOT && !DACCESS_COMPILE
 
 #ifdef  _DEBUG
 //    if ((gcInfoToken.Info == (void*)0x37760d0) && (curOffs == 0x264))
