@@ -55,6 +55,38 @@ public class CleanTests : BlazorWasmTestBase
     public void Blazor_BuildNative_ThenBuildNonNative_ThenClean(Configuration config)
         => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: true);
 
+    [Theory]
+    [InlineData(Configuration.Debug)]
+    public void Blazor_BuildIdStampedFile_ThenClean(Configuration config)
+    {
+        const string buildId = "1a2b3c4d5e6f7788";
+        ProjectInfo info = CopyTestAsset(
+            config,
+            aot: false,
+            TestAsset.BlazorBasicTestApp,
+            "clean_build_id",
+            extraProperties: $"<WasmNativeBuildId>{buildId}</WasmNativeBuildId>");
+        BlazorBuild(info, config, isNativeBuild: false);
+
+        string stampedDirectory = Path.Combine(
+            _projectDir,
+            "obj",
+            config.ToString(),
+            DefaultTargetFrameworkForBlazor,
+            "wasm-build-id",
+            "for-build");
+        Assert.True(File.Exists(Path.Combine(stampedDirectory, "dotnet.native.wasm")));
+
+        string logPath = Path.Combine(s_buildEnv.LogRootPath, info.ProjectName, $"{info.ProjectName}-clean.binlog");
+        using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(_projectDir);
+        cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+            .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
+            .EnsureSuccessful();
+
+        AssertEmptyOrNonExistentDirectory(stampedDirectory);
+    }
+
     private void Blazor_BuildNativeNonNative_ThenCleanTest(Configuration config, bool firstBuildNative)
     {
         string extraProperties = @"<_WasmDevel>true</_WasmDevel>";

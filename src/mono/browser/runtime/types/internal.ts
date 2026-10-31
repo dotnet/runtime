@@ -77,6 +77,7 @@ export function coerceNull<T extends ManagedPointer | NativePointer> (ptr: T | n
 // when adding new fields, please consider if it should be impacting the config hash. If not, please drop it in the getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
     assets?: AssetEntryInternal[],
+    buildId?: string,
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     logProfilerOptions?: LogProfilerOptions, // dictionary-style Object. If omitted, log profiler will not be initialized.
@@ -254,11 +255,11 @@ export type RuntimeHelpers = {
 }
 
 export type DiagnosticHelpers = {
-    ds_rt_websocket_create:(urlPtr :CharPtr) => number,
-    ds_rt_websocket_send:(client_socket :number, buffer:VoidPtr, bytes_to_write:number) => number,
-    ds_rt_websocket_poll:(client_socket :number) => number,
-    ds_rt_websocket_recv:(client_socket :number, buffer:VoidPtr, bytes_to_read:number) => number,
-    ds_rt_websocket_close:(client_socket :number) => number,
+    ds_rt_websocket_create: (urlPtr: CharPtr) => number,
+    ds_rt_websocket_send: (client_socket: number, buffer: VoidPtr, bytes_to_write: number) => number,
+    ds_rt_websocket_poll: (client_socket: number) => number,
+    ds_rt_websocket_recv: (client_socket: number, buffer: VoidPtr, bytes_to_read: number) => number,
+    ds_rt_websocket_close: (client_socket: number) => number,
 }
 
 export type AOTProfilerOptions = {
@@ -292,6 +293,8 @@ export type EmscriptenBuildOptions = {
     runAOTCompilation: boolean,
     wasmEnableThreads: boolean,
     gitHash: string,
+    // build_id from the last native (re)link, via the WASM_BUILD_ID env var. Empty when not pinned.
+    buildId: string,
 };
 export type EmscriptenInternals = {
     isPThread: boolean,

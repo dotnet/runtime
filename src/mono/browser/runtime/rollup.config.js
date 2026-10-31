@@ -21,6 +21,7 @@ const wasmObjDir = process.env.WasmObjDir ? process.env.WasmObjDir.replace(/"/g,
 const wasmEnableThreads = process.env.WasmEnableThreads === "true" ? true : false;
 const wasmEnableSIMD = process.env.WASM_ENABLE_SIMD === "1" ? true : false;
 const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "1" ? true : false;
+const buildId = process.env.WASM_BUILD_ID || "";
 const wasmEnableJsInteropByValue = process.env.ENABLE_JS_INTEROP_BY_VALUE == "1" ? true : false;
 // because of stack walk at src/mono/browser/debugger/BrowserDebugProxy/MonoProxy.cs
 // and unit test at with timers.mjs
@@ -115,6 +116,7 @@ const envConstants = {
     wasmEnableSIMD,
     wasmEnableExceptionHandling,
     gitHash,
+    buildId,
     wasmEnableJsInteropByValue,
     isContinuousIntegrationBuild,
 };

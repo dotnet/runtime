@@ -72,6 +72,10 @@
 
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
+
+    <!-- WebAssembly tool-conventions custom sections (https://github.com/WebAssembly/tool-conventions).
+         See BrowserWasmApp.targets for details. -->
+    <WasmEmitProducersSection Condition="'$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
@@ -104,6 +108,10 @@
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.FilterManagedAssemblies"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmEmitProducersObject"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
@@ -279,7 +287,7 @@
        served binary would be the original (runtime pack) dotnet.native.wasm. -->
   <Target Name="_CoreCLRWasmNativeForBuild"
           DependsOnTargets="WasmBuildApp"
-          BeforeTargets="_ComputeWasmBuildCandidates;_ResolveWasmOutputs"
+          BeforeTargets="_StampWasmBuildIdForBuild;_ComputeWasmBuildCandidates;_ResolveWasmOutputs"
           Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(WasmBuildOnlyAfterPublish)' != 'true' and
@@ -293,7 +301,7 @@
        completes — too late for ComputeWasmPublishAssets to pick up @(WasmNativeAsset). -->
   <Target Name="_CoreCLRWasmNative"
           DependsOnTargets="WasmTriggerPublishApp"
-          BeforeTargets="ProcessPublishFilesForWasm"
+          BeforeTargets="_StampWasmBuildIdForPublish;ProcessPublishFilesForWasm"
           Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(UsingBrowserRuntimeWorkload)' != 'true'" />
@@ -539,6 +547,8 @@
       <EmscriptenEnvVars Include="EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
+      <!-- build_id value exposed on runtimeBuildInfo.buildId; kept in sync with wasm-ld's build-id flag. -->
+      <EmscriptenEnvVars Include="WASM_BUILD_ID=$(_WasmNormalizedBuildId)" Condition="'$(_WasmNormalizedBuildId)' != ''" />
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=0" Condition="'$(WasmCachePath)' != '' and '$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'" />
@@ -922,6 +932,10 @@
 
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />
+
+      <!-- Emscripten strips producers by default. Preserve the section that wasm-ld merges from this object. -->
+      <_EmccLinkStepArgs Condition="'$(WasmEmitProducersSection)' == 'true'" Include="-sEMIT_PRODUCERS_SECTION=1" />
+      <_EmccLinkStepArgs Condition="'$(WasmEmitProducersSection)' == 'true'" Include="&quot;$(_WasmIntermediateOutputPath)dotnet-producers.o&quot;" />
     </ItemGroup>
 
     <!-- Collect all link dependencies for incremental build -->
@@ -929,6 +943,7 @@
       <_WasmLinkDependencies Include="@(_WasmNativeFileForLinking)" />
       <_WasmLinkDependencies Include="@(_CoreCLRNativeLibs)" />
       <_WasmLinkDependencies Include="@(_CoreCLRJsLibrary)" />
+      <_WasmLinkDependencies Condition="'$(WasmEmitProducersSection)' == 'true'" Include="$(_WasmIntermediateOutputPath)dotnet-producers.o" />
       <_WasmLinkDependencies Include="$(_WasmLinkRsp)" />
     </ItemGroup>
 
@@ -959,6 +974,20 @@
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Emit a linkable object carrying the WebAssembly 'producers' custom section, so wasm-ld merges
+       .NET toolchain info into dotnet.native.wasm. -->
+  <Target Name="_CoreCLREmitProducersObject"
+          BeforeTargets="_CoreCLRWriteLinkRsp"
+          Condition="'$(WasmEmitProducersSection)' == 'true'">
+    <WasmEmitProducersObject
+        OutputPath="$(_WasmIntermediateOutputPath)dotnet-producers.o"
+        RuntimeName="CoreCLR"
+        ProductVersion="$(ProductVersion)" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet-producers.o" />
     </ItemGroup>
   </Target>
 
