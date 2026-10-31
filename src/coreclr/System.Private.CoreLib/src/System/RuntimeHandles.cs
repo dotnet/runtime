@@ -2232,8 +2232,8 @@ namespace System
             return (SignatureCallingConvention)callConvMaybe;
         }
 
-        internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
-            GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), required);
+        internal Type[] GetCustomModifiers(int parameterIndex, bool isOptional) =>
+            GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), isOptional);
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Signature_GetCustomModifiersAtOffset")]
@@ -2243,14 +2243,15 @@ namespace System
             Interop.BOOL required,
             ObjectHandleOnStack result);
 
-        internal Type[] GetCustomModifiersAtOffset(int offset, bool required)
+        internal Type[] GetCustomModifiersAtOffset(int offset, bool isOptional)
         {
             Signature _this = this;
             Type[]? result = null;
+            Interop.BOOL required = isOptional ? Interop.BOOL.FALSE : Interop.BOOL.TRUE;
             GetCustomModifiersAtOffset(
                 ObjectHandleOnStack.Create(ref _this),
                 offset,
-                required ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                required,
                 ObjectHandleOnStack.Create(ref result));
             return result!;
         }
