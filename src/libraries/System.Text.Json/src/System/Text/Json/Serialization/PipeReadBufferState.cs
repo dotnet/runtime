@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         public async ValueTask<PipeReadBufferState> ReadAsync(PipeReader utf8Json, CancellationToken cancellationToken, bool fillBuffer = true)
         {
-            Debug.Assert(_sequence.Equals(ReadOnlySequence<byte>.Empty), "ReadAsync should only be called when the buffer is empty.");
+            Debug.Assert(HoldsNoPipeBuffer, "ReadAsync should only be called when the buffer is empty.");
 
             // Since mutable structs don't work well with async state machines,
             // make all updates on a copy which is returned once complete.
@@ -132,9 +132,13 @@ namespace System.Text.Json.Serialization
             }
         }
 
+        private readonly bool HoldsNoPipeBuffer =>
+            _sequence.Start.Equals(ReadOnlySequence<byte>.Empty.Start) &&
+            _sequence.End.Equals(ReadOnlySequence<byte>.Empty.End);
+
         public void Dispose()
         {
-            if (_sequence.Equals(ReadOnlySequence<byte>.Empty))
+            if (HoldsNoPipeBuffer)
             {
                 return;
             }
