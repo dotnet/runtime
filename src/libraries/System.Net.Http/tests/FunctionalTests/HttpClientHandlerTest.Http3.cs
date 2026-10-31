@@ -16,6 +16,7 @@ using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -421,6 +422,106 @@ namespace System.Net.Http.Functional.Tests
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        // The pool hands a new connection to the request it was created for before it adds the connection to the pool.
+        // If the connection processes GOAWAY in between, it must not be added to the pool afterwards; otherwise later
+        // requests are sent to it and fail with "The request was aborted". See https://github.com/dotnet/runtime/issues/133842.
+        // The test holds the pool at that point with an EventListener, so it runs in its own process.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task SendAsync_GoAwayBeforeNewConnectionIsPooled_NextRequestUsesNewConnection()
+        {
+            await RemoteExecutor.Invoke(static async () =>
+            {
+                using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+                using PoolInsertionDelayListener listener = new PoolInsertionDelayListener();
+
+                // Each HandleRequestAsync accepts a new connection, sends GOAWAY and the response,
+                // and waits for the client to close the connection.
+                Task serverTask = Task.Run(async () =>
+                {
+                    await server.HandleRequestAsync();
+                    await server.HandleRequestAsync();
+                });
+
+                using HttpClient client = new HttpClient(CreateSocketsHttpHandler(allowAllCertificates: true))
+                {
+                    DefaultRequestVersion = HttpVersion30,
+                    DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                using (HttpResponseMessage response = await client.GetAsync(server.Address))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+
+                // The pool is held before it adds the first connection; the client closes that connection
+                // only after it has processed GOAWAY.
+                await listener.PoolEntered.WaitAsync(TimeSpan.FromSeconds(30));
+                await listener.FirstConnectionClosed.WaitAsync(TimeSpan.FromSeconds(30));
+                listener.ReleasePool();
+                Assert.True(await listener.PoolWaitCompleted.WaitAsync(TimeSpan.FromSeconds(30)), "Pool hold timed out.");
+
+                using (HttpResponseMessage response = await client.GetAsync(server.Address))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+
+                await serverTask.WaitAsync(TimeSpan.FromSeconds(30));
+            }).DisposeAsync();
+        }
+
+        private sealed class PoolInsertionDelayListener : EventListener
+        {
+            private readonly TaskCompletionSource _firstConnectionClosed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            private readonly ManualResetEventSlim _releasePool = new ManualResetEventSlim();
+            private readonly TaskCompletionSource _poolEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            private readonly TaskCompletionSource<bool> _poolWaitCompleted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            private int _poolHeld;
+
+            public Task FirstConnectionClosed => _firstConnectionClosed.Task;
+
+            public Task PoolEntered => _poolEntered.Task;
+
+            public Task<bool> PoolWaitCompleted => _poolWaitCompleted.Task;
+
+            public void ReleasePool() => _releasePool.Set();
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Http")
+                {
+                    EnableEvents(eventSource, EventLevel.Verbose);
+                }
+                else if (eventSource.Name == "System.Net.Http")
+                {
+                    EnableEvents(eventSource, EventLevel.Informational);
+                }
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (eventData.EventName == "HandlerMessage" &&
+                    eventData.Payload?[4] is string message &&
+                    message.Contains("Dequeued waiting request.") &&
+                    Interlocked.Exchange(ref _poolHeld, 1) == 0)
+                {
+                    // This runs on the thread that has just handed the new connection to the first request
+                    // and has not yet added the connection to the pool.
+                    _poolEntered.TrySetResult();
+                    _poolWaitCompleted.TrySetResult(_releasePool.Wait(TimeSpan.FromSeconds(30)));
+                }
+                else if (eventData.EventName == "ConnectionClosed")
+                {
+                    _firstConnectionClosed.TrySetResult();
+                }
+            }
+
+            public override void Dispose()
+            {
+                _releasePool.Set();
+                base.Dispose();
+            }
         }
 
         [Fact]
