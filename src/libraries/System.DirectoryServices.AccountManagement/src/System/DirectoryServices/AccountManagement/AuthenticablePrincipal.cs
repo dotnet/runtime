@@ -246,7 +246,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // Certificates property
         private X509Certificate2Collection _certificates = new X509Certificate2Collection();
-        private readonly List<string> _certificateOriginalThumbprints = new List<string>();
+        private readonly List<byte[]> _certificateOriginalRawData = new List<byte[]>();
         private LoadState _X509Certificate2CollectionLoaded = LoadState.NotSet;
 
         public X509Certificate2Collection Certificates
@@ -384,7 +384,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 case PropertyNames.AuthenticablePrincipalCertificates:
                     LoadCertificateCollection((List<byte[]>)value);
-                    RefreshOriginalThumbprintList();
+                    RefreshOriginalCertificateData();
                     _X509Certificate2CollectionLoaded = LoadState.Loaded;
                     break;
 
@@ -522,7 +522,7 @@ namespace System.DirectoryServices.AccountManagement
 
             _enabledChanged = (_enabledChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
 
-            RefreshOriginalThumbprintList();
+            RefreshOriginalCertificateData();
 
             _accountInfo?.ResetAllChangeStatus();
 
@@ -563,67 +563,65 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // Regenerates the certificateOriginalThumbprints list based on what's
-        // currently in the certificate collection
-        private void RefreshOriginalThumbprintList()
+        // Regenerates the original certificate data based on what's currently in the certificate collection
+        private void RefreshOriginalCertificateData()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthenticablePrincipal", "RefreshOriginalThumbprintList: resetting thumbprints");
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthenticablePrincipal", "RefreshOriginalCertificateData: resetting certificate data");
 
-            _certificateOriginalThumbprints.Clear();
+            _certificateOriginalRawData.Clear();
 
             foreach (X509Certificate2 certificate in _certificates)
             {
-                _certificateOriginalThumbprints.Add(certificate.Thumbprint);
+                _certificateOriginalRawData.Add(certificate.RawData);
             }
         }
 
         // Returns true if the certificate collection has changed since the last time
-        // certificateOriginalThumbprints was refreshed (i.e., since the last time
-        // RefreshOriginalThumbprintList was called)
+        // the original certificate data was refreshed
         private bool HasCertificateCollectionChanged()
         {
-            // If the size isn't the same, the collection has certainly changed
-            if (_certificates.Count != _certificateOriginalThumbprints.Count)
+            return !CertificateCollectionsMatch(_certificateOriginalRawData, _certificates);
+        }
+
+        internal static bool CertificateCollectionsMatch(
+            IReadOnlyList<byte[]> originalCertificateData,
+            X509Certificate2Collection currentCertificates)
+        {
+            if (originalCertificateData.Count != currentCertificates.Count)
             {
-                GlobalDebug.WriteLineIf(
-                            GlobalDebug.Info,
-                            "AuthenticablePrincipal",
-                            "HasCertificateCollectionChanged: original count {0}, current count{1}",
-                            _certificateOriginalThumbprints.Count,
-                            _certificates.Count);
+                return false;
+            }
+
+            if (originalCertificateData.Count == 0)
+            {
                 return true;
             }
 
-            // Make a copy of the thumbprint list, so we can alter the copy without effecting the original.
-            List<string> remainingOriginalThumbprints = new List<string>(_certificateOriginalThumbprints);
+            bool[] matchedOriginalCertificates = new bool[originalCertificateData.Count];
 
-            foreach (X509Certificate2 certificate in _certificates)
+            foreach (X509Certificate2 certificate in currentCertificates)
             {
-                string thumbprint = certificate.Thumbprint;
+                ReadOnlySpan<byte> currentCertificateData = certificate.RawDataMemory.Span;
+                bool foundMatch = false;
 
-                // If we found a cert whose thumbprint wasn't in the thumbprints list,
-                // it was inserted --> collection has changed
-                if (!remainingOriginalThumbprints.Contains(thumbprint))
+                for (int i = 0; i < originalCertificateData.Count; i++)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthenticablePrincipal", "RefreshOriginalThumbprintList: found inserted cert");
-                    return true;
+                    if (!matchedOriginalCertificates[i] &&
+                        originalCertificateData[i].AsSpan().SequenceEqual(currentCertificateData))
+                    {
+                        matchedOriginalCertificates[i] = true;
+                        foundMatch = true;
+                        break;
+                    }
                 }
 
-                // We remove the thumbprint from the list so that if, for some reason, they inserted
-                // a duplicate of a certificate that was already in the list, we'll detect it as an insert
-                // when we encounter that cert a second time
-                remainingOriginalThumbprints.Remove(thumbprint);
+                if (!foundMatch)
+                {
+                    return false;
+                }
             }
 
-            // If a certificate was deleted, there are two possibilities:
-            //  (1) The removal caused the size to change.  We'll have caught it above and returned true.
-            //  (2) The size didn't change (because there was also an insert).  We'll have caught the insert
-            //      above and returned true.  Note that even if they insert a duplicate of a cert that was
-            //      already in the collection, we'll catch it because we remove the thumbprint from the
-            //      local copy of the thumbprint list each time we use that thumbprint.
-
-            Debug.Assert(remainingOriginalThumbprints.Count == 0);
-            return false;
+            return true;
         }
     }
 }
