@@ -1182,6 +1182,17 @@ namespace Internal.IL
 
         private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
+            if (_typeEqualityPatternAnalyzer.IsTypeEqualityBranch
+                && _typeEqualityPatternAnalyzer.GetConditionalType(_methodIL) is MetadataType conditionalType)
+            {
+                object typeCondition = _factory.NecessaryTypeSymbol(conditionalType);
+                bool targetRequiresType = (opcode == ILOpcode.brtrue) != _typeEqualityPatternAnalyzer.IsInequality;
+                ImportFallthrough(target, targetRequiresType ? typeCondition : null);
+                if (fallthrough != null)
+                    ImportFallthrough(fallthrough, targetRequiresType ? null : typeCondition);
+                return;
+            }
+
             object condition = null;
 
             if (opcode == ILOpcode.brfalse
@@ -1322,12 +1333,19 @@ namespace Internal.IL
 
             if (obj is TypeDesc type)
             {
+                _factory.MetadataManager.GetDependenciesDueToAccess(_dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeType), "ldtoken");
+
                 // We might also be able to optimize this a little if this is a ldtoken/GetTypeFromHandle/Equals sequence.
                 var helperId = ReadyToRunHelperId.MetadataTypeHandle;
                 TypeEqualityPatternAnalyzer analyzer = _typeEqualityPatternAnalyzer;
                 ILReader reader = new ILReader(_ilBytes, _currentOffset);
-                while (!analyzer.IsDefault)
+                bool canDefer = true;
+                while (!analyzer.IsDefault && reader.HasNext)
                 {
+                    // Deferral requires a predicate with no other entry points into its operands.
+                    canDefer &= _basicBlocks[reader.Offset] == null;
                     ILOpcode opcode = reader.ReadILOpcode();
                     analyzer.Advance(opcode, reader, _methodIL);
                     reader.Skip(opcode);
@@ -1335,14 +1353,19 @@ namespace Internal.IL
                     if (analyzer.IsTypeEqualityCheck)
                     {
                         helperId = ReadyToRunHelperId.NecessaryTypeHandle;
+                        if (!canDefer)
+                            break;
+                    }
+                    else if (analyzer.IsTypeEqualityBranch)
+                    {
+                        if (canDefer && analyzer.GetConditionalType(_methodIL) is MetadataType candidate && candidate == type)
+                        {
+                            _dependencies.Add(_factory.ConditionalTypeReference(candidate), "Type equality check");
+                            return;
+                        }
                         break;
                     }
                 }
-
-                _factory.MetadataManager.GetDependenciesDueToAccess(_dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
-
-                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
-                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeType), "ldtoken");
 
                 ISymbolNode reference;
                 if (type.IsRuntimeDeterminedSubtype)
