@@ -126,6 +126,15 @@ namespace System.Globalization.Tests
         [InlineData("en_GB", "en-GB")]
         [InlineData("fr-FR", "fr-FR")]
         [InlineData("ru", "ru")]
+        [InlineData("uz@latin", "uz-LATIN")]
+        [InlineData("ca@valencia", "ca-VALENCIA")]
+        [InlineData("de-1901", "de-1901")]
+        [InlineData("uz_Latn@latin", "uz-Latn-LATIN")]
+        [InlineData("uz_UZ@latin", "uz-UZ-LATIN")]
+        [InlineData("ca_ES@valencia", "ca-ES-VALENCIA")]
+        [InlineData("de_DE@1901", "de-DE-1901")]
+        [InlineData("de-1901-u-co-phonebk", "de-1901_phoneboo")]
+        [InlineData("de-DE-u-co-phonebk", "de-DE")]
         public void CurrentCulture_BasedOnLangEnvVar(string langEnvVar, string expectedCultureName)
         {
             var psi = new ProcessStartInfo();
