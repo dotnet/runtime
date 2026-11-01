@@ -75,10 +75,12 @@ namespace System.ComponentModel.Composition
         private static readonly MethodInfo ObjectGetType = typeof(object).GetMethod("GetType", Type.EmptyTypes)!;
         private static readonly ConstructorInfo ObjectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
 
+#if !NET12_0_OR_GREATER
         // Before .NET 12, CoreCLR's AssemblyBuilder took custom modifiers of one kind in the reverse of the order reflection
         // returns them in. This library's net10.0 and net11.0 builds run on those runtimes, and on .NET 12 too, so the
         // runtime decides.
         private static readonly bool ReverseCustomModifiers = Environment.Version.Major < 12;
+#endif
 
         // Must be called with _lock held
         private static ModuleBuilder GetProxyModuleBuilder()
@@ -311,11 +313,13 @@ namespace System.ComponentModel.Composition
                 {
                     Type[] requiredModifiers = propertyInfo.GetRequiredCustomModifiers();
                     Type[] optionalModifiers = propertyInfo.GetOptionalCustomModifiers();
+#if !NET12_0_OR_GREATER
                     if (ReverseCustomModifiers)
                     {
                         Array.Reverse(requiredModifiers);
                         Array.Reverse(optionalModifiers);
                     }
+#endif
 
                     // Generate "get" method implementation.
                     MethodBuilder getMethodBuilder = proxyTypeBuilder.DefineMethod(
