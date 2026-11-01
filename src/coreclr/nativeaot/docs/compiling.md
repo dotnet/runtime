@@ -8,7 +8,7 @@ The rest of this document covers advanced topics only.
 
 For using daily builds, you need to make sure the `nuget.config` file for your project contains the following package sources under the `<packageSources>` element:
 ```xml
-<add key="dotnet11" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11/nuget/v3/index.json" />
+<add key="dotnet12" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet12/nuget/v3/index.json" />
 <add key="nuget" value="https://api.nuget.org/v3/index.json" />
 ```
 
@@ -51,10 +51,10 @@ See [Building native AOT apps in containers](containers.md) for a streamlined pa
 
 For using daily builds according to the instructions above, in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.win-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
 ```xml
-<PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="9.0.0-alpha.1.23456.7" />
+<PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="12.0.0-alpha.1.26528.120" />
 ```
 
-Replace `9.0.0-alpha.1.23456.7` with the latest version from the [dotnet11](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet11/NuGet/Microsoft.DotNet.ILCompiler/) feed.
+Replace `12.0.0-alpha.1.26528.120` with the latest version from the [dotnet12](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet12/NuGet/Microsoft.DotNet.ILCompiler/) feed.
 Note that it is important to use _the same version_ for both packages to avoid potential hard-to-debug issues. After adding the package reference, you may publish for win-arm64 as usual:
 ```bash
 > dotnet publish -r win-arm64
@@ -62,7 +62,7 @@ Note that it is important to use _the same version_ for both packages to avoid p
 
 Similarly, to target linux-arm64 on a Linux x64 host, in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.linux-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
 ```xml
-<PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.linux-x64.Microsoft.DotNet.ILCompiler" Version="9.0.0-alpha.1.23456.7" />
+<PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.linux-x64.Microsoft.DotNet.ILCompiler" Version="12.0.0-alpha.1.26528.120" />
 ```
 
 ## Using statically linked ICU
