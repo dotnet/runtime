@@ -66,7 +66,28 @@ namespace System.IO.MemoryMappedFiles.Tests
             Assert.NotNull(handle);
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public unsafe void EmptyViewIsUnmappedOnDispose()
+        {
+            using MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 4096);
+            IntPtr address;
+            byte residency = 0;
+
+            using (MemoryMappedViewStream view = mmf.CreateViewStream(4096, 0))
+            {
+                address = view.SafeMemoryMappedViewHandle.DangerousGetHandle();
+                Assert.Equal(0, MinCore(address, 1, &residency));
+            }
+
+            Assert.Equal(-1, MinCore(address, 1, &residency));
+            Assert.Equal(12, Marshal.GetLastPInvokeError()); // ENOMEM: address is no longer mapped
+        }
+
         [LibraryImport("libc")]
         private static unsafe partial SafeMemoryMappedViewHandle mmap(IntPtr addr, nint lengthint, int prot, int flags, int fd, nuint offset);
+
+        [LibraryImport("libc", EntryPoint = "mincore", SetLastError = true)]
+        private static unsafe partial int MinCore(IntPtr addr, nuint length, byte* vec);
     }
 }
