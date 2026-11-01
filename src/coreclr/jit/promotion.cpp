@@ -3413,15 +3413,27 @@ bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigne
             continue;
         }
 
-        if (!genIsValidIntReg(seg.GetRegister()) && varTypeUsesFloatReg(accessType))
+        if (genIsValidFloatReg(seg.GetRegister()) && varTypeIsGC(accessType))
         {
             continue;
         }
 
-        if (genIsValidFloatReg(seg.GetRegister()) && (offset != seg.Offset))
+#ifdef FEATURE_SIMD
+        if (varTypeIsSIMD(seg.GetRegisterType()) &&
+            (varTypeIsSIMD(accessType) ? (offset != seg.Offset)
+                                       : (((offset - seg.Offset) % genTypeSize(accessType)) != 0)))
         {
             continue;
         }
+#endif // FEATURE_SIMD
+
+#if LOWER_DECOMPOSE_LONGS
+        // Extraction can require TYP_LONG bitcasts, which long decomposition does not support.
+        if (genIsValidFloatReg(seg.GetRegister()) && (!varTypeUsesFloatReg(accessType) || (offset != seg.Offset)))
+        {
+            continue;
+        }
+#endif // LOWER_DECOMPOSE_LONGS
 
         return true;
     }
