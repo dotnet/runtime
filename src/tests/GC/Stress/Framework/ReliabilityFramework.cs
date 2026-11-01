@@ -1737,15 +1737,10 @@ Thanks for contributing to CLR Stress!
                 string value = test is null
                     ? "(non test failure)"
                     : $"{test.RefOrID} ({test.TestOwner} ReturnCode={returnCode})";
-                ProcessStartInfo psi = new ProcessStartInfo("cscript.exe",
+                ProcessTextOutput result = Process.RunAndCaptureText("cscript.exe",
                     ["//b", "//nologo", Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js"),
                      "-i", Environment.ExpandEnvironmentVariables("%STRESSID%"), "-a", "ADD_CUSTOM", "-s", "RUNNING",
                      "-k", $"FAIL{_reportedFailCnt++:000}", "-v", Environment.ExpandEnvironmentVariables(value)]);
-                psi.InheritedHandles = [];
-                psi.RedirectStandardOutput = true;
-                psi.RedirectStandardError = true;
-
-                ProcessTextOutput result = Process.RunAndCaptureText(psi);
                 if (result.ExitStatus.ExitCode != 0)
                 {
                     Console.WriteLine("cscript.exe " + Environment.ExpandEnvironmentVariables("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a UPDATE_RECORD -s RUNNING"));

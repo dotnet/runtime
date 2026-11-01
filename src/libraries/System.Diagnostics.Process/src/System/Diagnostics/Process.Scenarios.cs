@@ -76,6 +76,10 @@ namespace System.Diagnostics
         /// <para>
         /// Standard handles are redirected to the null file by default.
         /// </para>
+        /// <para>
+        /// Additional handles are not inherited from the parent process. To inherit additional handles,
+        /// use an overload that accepts <see cref="ProcessStartInfo"/> and set <see cref="ProcessStartInfo.InheritedHandles"/>.
+        /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
@@ -134,6 +138,10 @@ namespace System.Diagnostics
         /// <returns>The exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="fileName"/> is empty.</exception>
+        /// <remarks>
+        /// Additional handles are not inherited from the parent process. To inherit additional handles,
+        /// use an overload that accepts <see cref="ProcessStartInfo"/> and set <see cref="ProcessStartInfo.InheritedHandles"/>.
+        /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -196,6 +204,10 @@ namespace System.Diagnostics
         /// <returns>A task that represents the asynchronous operation. The value of the task contains the exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="fileName"/> is empty.</exception>
+        /// <remarks>
+        /// Additional handles are not inherited from the parent process. To inherit additional handles,
+        /// use an overload that accepts <see cref="ProcessStartInfo"/> and set <see cref="ProcessStartInfo.InheritedHandles"/>.
+        /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -286,6 +298,10 @@ namespace System.Diagnostics
         /// <returns>The captured text output and exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="fileName"/> is empty.</exception>
+        /// <remarks>
+        /// Additional handles are not inherited from the parent process. To inherit additional handles,
+        /// use an overload that accepts <see cref="ProcessStartInfo"/> and set <see cref="ProcessStartInfo.InheritedHandles"/>.
+        /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -352,6 +368,10 @@ namespace System.Diagnostics
         /// <returns>A task that represents the asynchronous operation. The value of the task contains the captured text output and exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="fileName"/> is empty.</exception>
+        /// <remarks>
+        /// Additional handles are not inherited from the parent process. To inherit additional handles,
+        /// use an overload that accepts <see cref="ProcessStartInfo"/> and set <see cref="ProcessStartInfo.InheritedHandles"/>.
+        /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -362,7 +382,10 @@ namespace System.Diagnostics
         {
             ArgumentException.ThrowIfNullOrEmpty(fileName);
 
-            return arguments is not null ? new ProcessStartInfo(fileName, arguments) : new ProcessStartInfo(fileName);
+            ProcessStartInfo startInfo = arguments is not null ? new ProcessStartInfo(fileName, arguments) : new ProcessStartInfo(fileName);
+            startInfo.InheritedHandles = [];
+
+            return startInfo;
         }
 
         private static ProcessStartInfo CreateStartInfoForCapture(string fileName, IEnumerable<string>? arguments)

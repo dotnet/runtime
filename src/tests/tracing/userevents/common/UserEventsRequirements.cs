@@ -104,15 +104,10 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static bool IsGlibcAtLeast(Version minVersion)
         {
-            ProcessStartInfo lddStartInfo = new("ldd", ["--version"]);
-            lddStartInfo.InheritedHandles = [];
-            lddStartInfo.RedirectStandardOutput = true;
-            lddStartInfo.RedirectStandardError = true;
-
             ProcessTextOutput result;
             try
             {
-                result = Process.RunAndCaptureText(lddStartInfo);
+                result = Process.RunAndCaptureText("ldd", ["--version"]);
             }
             catch (Exception ex)
             {
