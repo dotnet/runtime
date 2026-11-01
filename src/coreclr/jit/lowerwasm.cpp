@@ -691,6 +691,181 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
+// RemoveRedundantLocalCopies: forward single-use local-to-local copies.
+//
+// Replaces "STORE_LCL_VAR<tmp>(LCL_VAR<src>) ... LCL_VAR<tmp>" with a
+// direct use of "src", when "tmp" has no other references and "src" is
+// not redefined in between. Such copies are commonly left behind when
+// CSE replaces a morph argument temp's value with a CSE local. The WASM
+// register allocator gives each candidate its own local and does not
+// coalesce, so otherwise each copy costs a "local.get"/"local.set" pair
+// and an extra local.
+//
+void Lowering::RemoveRedundantLocalCopies()
+{
+    struct PendingCopy
+    {
+        GenTreeLclVar* Store;
+        unsigned       SrcLclNum;
+    };
+
+    struct LocalRefs
+    {
+        unsigned    Count;
+        bool        AddressTaken;
+        BasicBlock* UseBlock;
+    };
+
+    const unsigned          lclCount = m_compiler->lvaCount;
+    LocalRefs*              refs     = new (m_compiler, CMK_Lower) LocalRefs[lclCount]{};
+    ArrayStack<BasicBlock*> copyBlocks(m_compiler->getAllocator(CMK_Lower));
+    for (BasicBlock* block : m_compiler->Blocks())
+    {
+        bool blockHasCopy = false;
+        for (GenTree* node : LIR::AsRange(block))
+        {
+            if (!node->OperIsAnyLocal())
+            {
+                continue;
+            }
+
+            LocalRefs& lclRefs = refs[node->AsLclVarCommon()->GetLclNum()];
+            lclRefs.Count++;
+            lclRefs.AddressTaken |= node->OperIs(GT_LCL_ADDR);
+
+            if (node->OperIs(GT_LCL_VAR))
+            {
+                lclRefs.UseBlock = block;
+            }
+            else if (node->OperIs(GT_STORE_LCL_VAR) && node->AsLclVar()->Data()->OperIs(GT_LCL_VAR))
+            {
+                blockHasCopy = true;
+            }
+        }
+
+        if (blockHasCopy)
+        {
+            copyBlocks.Push(block);
+        }
+    }
+
+    if (copyBlocks.Empty())
+    {
+        return;
+    }
+
+    // A local whose address is taken anywhere may be written through it at a point we do not track.
+    auto isAddressTaken = [this, refs](unsigned lclNum) {
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+        return refs[lclNum].AddressTaken || (varDsc->lvIsStructField && refs[varDsc->lvParentLcl].AddressTaken);
+    };
+
+    // GC refs are excluded: forwarding could extend a wasm-local GC ref's lifetime across a safepoint.
+    auto isCopyableType = [](var_types type) {
+        return varTypeIsEnregisterable(type) && !varTypeIsStruct(type) && !varTypeIsGC(type) && !varTypeIsSmall(type);
+    };
+
+    // Each tracked copy is typically consumed within a few nodes, so the pending set stays small.
+    const int               maxPendingCopies = 32;
+    ArrayStack<PendingCopy> pending(m_compiler->getAllocator(CMK_Lower));
+
+    auto removePending = [&pending](int index) {
+        pending.BottomRef(index) = pending.Top();
+        pending.Pop();
+    };
+
+    for (int blockIndex = 0; blockIndex < copyBlocks.Height(); blockIndex++)
+    {
+        BasicBlock* block = copyBlocks.Bottom(blockIndex);
+        LIR::Range& range = LIR::AsRange(block);
+        pending.Reset();
+
+        GenTree* next;
+        for (GenTree* node = range.FirstNode(); node != nullptr; node = next)
+        {
+            next = node->gtNext;
+
+            if (node->OperIs(GT_LCL_VAR) && !node->isContained())
+            {
+                unsigned lclNum = node->AsLclVar()->GetLclNum();
+                for (int i = 0; i < pending.Height(); i++)
+                {
+                    PendingCopy copy = pending.Bottom(i);
+                    if (copy.Store->GetLclNum() != lclNum)
+                    {
+                        continue;
+                    }
+
+                    removePending(i);
+                    if (node->TypeGet() != copy.Store->TypeGet())
+                    {
+                        break;
+                    }
+
+                    JITDUMP("Forwarding V%02u into [%06u] in place of single-use copy V%02u [%06u]\n", copy.SrcLclNum,
+                            Compiler::dspTreeID(node), lclNum, Compiler::dspTreeID(copy.Store));
+                    range.Remove(copy.Store->Data());
+                    range.Remove(copy.Store);
+                    node->AsLclVar()->SetLclNum(copy.SrcLclNum);
+                    node->AsLclVar()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+                    break;
+                }
+            }
+
+            if (pending.Height() != 0)
+            {
+                node->VisitLogicalLocalDefs(m_compiler, [&](const auto& def) {
+                    for (int i = pending.Height() - 1; i >= 0; i--)
+                    {
+                        if (pending.Bottom(i).SrcLclNum == def.GetLclNum())
+                        {
+                            removePending(i);
+                        }
+                    }
+                    return GenTree::VisitResult::Continue;
+                });
+            }
+
+            if (!node->OperIs(GT_STORE_LCL_VAR) || (pending.Height() >= maxPendingCopies))
+            {
+                continue;
+            }
+
+            GenTreeLclVar* store   = node->AsLclVar();
+            GenTree*       srcNode = store->Data();
+            if (!srcNode->OperIs(GT_LCL_VAR) || srcNode->isContained() ||
+                ((srcNode->gtLIRFlags & LIR::Flags::MultiplyUsed) != 0))
+            {
+                continue;
+            }
+
+            unsigned   tmpLclNum = store->GetLclNum();
+            unsigned   srcLclNum = srcNode->AsLclVar()->GetLclNum();
+            LclVarDsc* tmpDsc    = m_compiler->lvaGetDesc(tmpLclNum);
+            LclVarDsc* srcDsc    = m_compiler->lvaGetDesc(srcLclNum);
+
+            // Implicitly referenced locals, such as the SP that LCLHEAP updates, have defs not visible in IR.
+            if ((tmpLclNum == srcLclNum) || (refs[tmpLclNum].Count != 2) || (refs[tmpLclNum].UseBlock != block) ||
+                tmpDsc->lvIsParam || tmpDsc->lvIsStructField || tmpDsc->lvImplicitlyReferenced ||
+                tmpDsc->IsAddressExposed() || tmpDsc->lvIsOSRLocal || srcDsc->lvImplicitlyReferenced ||
+                srcDsc->IsAddressExposed() || srcDsc->lvPromoted || isAddressTaken(srcLclNum))
+            {
+                continue;
+            }
+
+            var_types type = tmpDsc->TypeGet();
+            if (!isCopyableType(type) || (srcDsc->TypeGet() != type) || (store->TypeGet() != type) ||
+                (srcNode->TypeGet() != type))
+            {
+                continue;
+            }
+
+            pending.Push({store, srcLclNum});
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // AfterLowerBlocks: stackify the nodes in all blocks.
 //
 // Stackification involves moving nodes around and inserting temporaries
@@ -701,8 +876,15 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
 // the introduced temporaries can get enregistered and the last-use info
 // on LCL_VAR nodes in RA is readily correct.
 //
+// Before stackifying, redundant local copies are removed when optimizing.
+//
 void Lowering::AfterLowerBlocks()
 {
+    if (m_compiler->opts.OptimizationEnabled())
+    {
+        RemoveRedundantLocalCopies();
+    }
+
     struct Temporary
     {
         unsigned   LclNum;
