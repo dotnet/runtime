@@ -520,8 +520,8 @@ namespace System.Globalization
             internal ReadOnlySpan<TChar> End => _buffer.Slice(_end4);
             internal ReadOnlySpan<TChar> AppCompatLiteral => _buffer.Slice(_end2, _end4 - _end2);
 
-            /* factory method for static invariant FormatLiterals */
-            internal static FormatLiterals<TChar> InitInvariant(bool isNegative)
+            /* initializes the invariant FormatLiterals */
+            internal void InitInvariant(bool isNegative)
             {
                 ReadOnlySpan<TChar> buffer;
                 if (typeof(TChar) == typeof(byte))
@@ -534,27 +534,24 @@ namespace System.Globalization
                     buffer = Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>("-.::.");
                 }
 
-                FormatLiterals<TChar> literals = default;
                 if (isNegative)
                 {
-                    literals._buffer = buffer;
-                    literals._end0 = 1;
-                    literals._end1 = 2;
-                    literals._end2 = 3;
-                    literals._end3 = 4;
-                    literals._end4 = 5;
+                    _buffer = buffer;
+                    _end0 = 1;
+                    _end1 = 2;
+                    _end2 = 3;
+                    _end3 = 4;
+                    _end4 = 5;
                 }
                 else
                 {
-                    literals._buffer = buffer.Slice(1);
-                    literals._end0 = 0;
-                    literals._end1 = 1;
-                    literals._end2 = 2;
-                    literals._end3 = 3;
-                    literals._end4 = 4;
+                    _buffer = buffer.Slice(1);
+                    _end0 = 0;
+                    _end1 = 1;
+                    _end2 = 2;
+                    _end3 = 3;
+                    _end4 = 4;
                 }
-
-                return literals;
             }
 
             // For the "v1" TimeSpan localized patterns, the data is simply literal field separators with

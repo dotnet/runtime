@@ -282,7 +282,7 @@ namespace System.Globalization
                 {
                     if (!_posInvInit)
                     {
-                        _posInv = TimeSpanFormat.FormatLiterals<TChar>.InitInvariant(isNegative: false);
+                        _posInv.InitInvariant(isNegative: false);
                         _posInvInit = true;
                     }
                     return _posInv;
@@ -295,7 +295,7 @@ namespace System.Globalization
                 {
                     if (!_negInvInit)
                     {
-                        _negInv = TimeSpanFormat.FormatLiterals<TChar>.InitInvariant(isNegative: true);
+                        _negInv.InitInvariant(isNegative: true);
                         _negInvInit = true;
                     }
                     return _negInv;
@@ -1054,42 +1054,46 @@ namespace System.Globalization
 
             if (inv)
             {
-                if (raw.FullHMSMatch(raw.PositiveInvariant))
+                TimeSpanFormat.FormatLiterals<TChar> positiveInvariant = raw.PositiveInvariant;
+
+                if (raw.FullHMSMatch(positiveInvariant))
                 {
                     positive = true;
                     match = TryTimeToTicks(positive, zero, raw._numbers0, raw._numbers1, raw._numbers2, zero, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.FullDHMMatch(raw.PositiveInvariant))
+                if (!match && raw.FullDHMMatch(positiveInvariant))
                 {
                     positive = true;
                     match = TryTimeToTicks(positive, raw._numbers0, raw._numbers1, raw._numbers2, zero, zero, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.PartialAppCompatMatch(raw.PositiveInvariant))
+                if (!match && raw.PartialAppCompatMatch(positiveInvariant))
                 {
                     positive = true;
                     match = TryTimeToTicks(positive, zero, raw._numbers0, raw._numbers1, zero, raw._numbers2, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.FullHMSMatch(raw.NegativeInvariant))
+                TimeSpanFormat.FormatLiterals<TChar> negativeInvariant = raw.NegativeInvariant;
+
+                if (!match && raw.FullHMSMatch(negativeInvariant))
                 {
                     positive = false;
                     match = TryTimeToTicks(positive, zero, raw._numbers0, raw._numbers1, raw._numbers2, zero, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.FullDHMMatch(raw.NegativeInvariant))
+                if (!match && raw.FullDHMMatch(negativeInvariant))
                 {
                     positive = false;
                     match = TryTimeToTicks(positive, raw._numbers0, raw._numbers1, raw._numbers2, zero, zero, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.PartialAppCompatMatch(raw.NegativeInvariant))
+                if (!match && raw.PartialAppCompatMatch(negativeInvariant))
                 {
                     positive = false;
                     match = TryTimeToTicks(positive, zero, raw._numbers0, raw._numbers1, zero, raw._numbers2, out ticks);
