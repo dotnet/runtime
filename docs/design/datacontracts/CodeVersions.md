@@ -294,7 +294,10 @@ NativeCodeVersionHandle ICodeVersions.GetNativeCodeVersionForIP(TargetCodePointe
 NativeCodeVersionHandle GetSpecificNativeCodeVersion(MethodDescHandle md, TargetCodePointer startAddress)
 {
     // "Initial" stage of NativeCodeVersionIterator::Next() with a null m_ilCodeFilter
-    TargetCodePointer firstNativeCode = rts.GetNativeCode(md);
+    // Interpreted methods store an InterpreterPrecode in the native code slot, while code-block start
+    // addresses are the bytecode start; compare against the diagnostic code start
+    // (native: GetInterpreterCodeFromEntryPointIfPresent(NativeCodeVersion::GetNativeCode())).
+    TargetCodePointer firstNativeCode = target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(rts.GetNativeCode(md));
     if (firstNativeCode == startAddress)
     {
         NativeCodeVersionHandle first = NativeCodeVersionHandle.OfSynthetic(md.Address);
@@ -303,7 +306,8 @@ NativeCodeVersionHandle GetSpecificNativeCodeVersion(MethodDescHandle md, Target
 
     return FindNativeCodeVersionNodes(rts, md, (codeVersion) =>
     {
-        return codeVersion.MethodDesc == md.Address && codeVersion.NativeCode == startAddress;
+        return codeVersion.MethodDesc == md.Address
+            && target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(codeVersion.NativeCode) == startAddress;
     }).FirstOrDefault(NativeCodeVersionHandle.Invalid);
 }
 

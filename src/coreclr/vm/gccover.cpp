@@ -29,6 +29,7 @@
 #endif
 
 #include "disassembler.h"
+#include <minipal.h>
 
 /****************************************************************************/
 
@@ -515,8 +516,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
     // For prejitted code we have to remove the write-protect on the code page
     if (fZapped)
     {
-        DWORD oldProtect;
-        if (!ClrVirtualProtect(codeStart, codeSize, PAGE_EXECUTE_READWRITE, &oldProtect))
+        if (!VMToOSInterface::ProtectMemory(codeStart, codeSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite))
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to change code protection for GC stress"));
         writeableOffset = 0;
     }
@@ -1129,13 +1129,12 @@ void GCCoverageInfo::SprinkleBreakpoints(
     // For prejitted code we have to remove the write-protect on the code page
     if (fZapped)
     {
-        DWORD oldProtect;
-        if (!ClrVirtualProtect((BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize, PAGE_EXECUTE_READWRITE, &oldProtect))
+        if (!VMToOSInterface::ProtectMemory((BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite))
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to change code protection for GC stress"));
 
         if (methodRegion.coldSize > 0)
         {
-            if (!ClrVirtualProtect((BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize, PAGE_EXECUTE_READWRITE, &oldProtect))
+            if (!VMToOSInterface::ProtectMemory((BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite))
                 EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to change code protection for GC stress"));
         }
     }

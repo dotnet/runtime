@@ -15,7 +15,10 @@ namespace System.Net.Http.Functional.Tests
     {
         protected static async Task<Stream> DefaultConnectCallback(EndPoint endPoint, CancellationToken cancellationToken)
         {
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            // WASI doesn't support dual-mode sockets, so match the endpoint's address family there.
+            Socket socket = PlatformDetection.IsWasi && endPoint is IPEndPoint ipEndPoint ?
+                new Socket(ipEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true } :
+                new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
             try
             {
                 await socket.ConnectAsync(endPoint, cancellationToken);
@@ -52,14 +55,13 @@ namespace System.Net.Http.Functional.Tests
 
             HttpClientHandler handler = (PlatformDetection.SupportsAlpn && useVersion != HttpVersion.Version30) ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
 
-            // Browser doesn't support ServerCertificateCustomValidationCallback
-            if (allowAllCertificates && PlatformDetection.IsNotBrowser && PlatformDetection.IsNotWasi)
+            if (allowAllCertificates && PlatformDetection.IsTlsSupported)
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }
 
             // Native mobile handlers do not use SslStream or expose its resumption setting.
-            if (!allowTlsResume && PlatformDetection.IsNotBrowser && PlatformDetection.IsNotWasi &&
+            if (!allowTlsResume && PlatformDetection.IsTlsSupported &&
                 GetUnderlyingSocketsHttpHandler(handler) is SocketsHttpHandler socketsHandler)
             {
                 socketsHandler.SslOptions.AllowTlsResume = false;

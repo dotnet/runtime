@@ -405,25 +405,36 @@ namespace System.IO.Compression
             Assert.Throws<InvalidOperationException>(() => encoder.SetPrefix(prefix));
         }
 
-        [Fact]
-        public void SetPrefix_AfterReset_SetsSuccessfully()
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void SetPrefix_AfterReset_SetsSuccessfully(bool useDictionary, bool emptyPrefix)
         {
-            using ZstandardEncoder encoder = new();
-            var input = ZstandardTestUtils.CreateTestData(100);
-            byte[] output = new byte[1000];
+            byte[] input = new byte[1024];
+            new Random(42).NextBytes(input);
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(input);
+            using ZstandardEncoder encoder = useDictionary ? new(dictionary) : new();
+            using ZstandardDecoder decoder = useDictionary ? new(dictionary) : new();
+
+            byte[] expectedCompressed = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
+            using ZstandardEncoder freshEncoder = useDictionary ? new(dictionary) : new();
+            Assert.Equal(OperationStatus.Done, freshEncoder.Compress(input, expectedCompressed, out int consumed, out int expectedWritten, isFinalBlock: true));
+            Assert.Equal(input.Length, consumed);
+            Assert.Equal(!useDictionary, ZstandardDecoder.TryDecompress(expectedCompressed.AsSpan(0, expectedWritten), new byte[input.Length], out _));
 
             // First compression cycle
-            byte[] firstPrefix = { 0x01, 0x02, 0x03 };
+            byte[] firstPrefix = input.AsSpan(0, input.Length / 2).ToArray();
             encoder.SetPrefix(firstPrefix);
-            encoder.Compress(input, output, out _, out _, isFinalBlock: true);
-            encoder.Flush(output, out _);
+            using ZstandardDecoder decoderWithoutPrefix = new();
+            TestRoundTrip(input, encoder, decoderWithoutPrefix, shouldFail: true);
 
             // Reset and set new prefix
             encoder.Reset();
-            byte[] secondPrefix = { 0x04, 0x05, 0x06 };
+            byte[] secondPrefix = emptyPrefix ? Array.Empty<byte>() : input.AsSpan(input.Length / 2).ToArray();
             encoder.SetPrefix(secondPrefix); // Should not throw
 
-            using ZstandardDecoder decoder = new();
             decoder.SetPrefix(secondPrefix);
 
             TestRoundTrip(input, encoder, decoder);
@@ -432,9 +443,42 @@ namespace System.IO.Compression
             decoder.Reset();
             encoder.Reset();
 
-            decoder.SetPrefix(Memory<byte>.Empty);
+            AssertResetRoundTrip();
 
-            TestRoundTrip(input, encoder, decoder);
+            // Reset must also clear a prefix that has not been used yet.
+            encoder.Reset();
+            decoder.Reset();
+            encoder.SetPrefix(secondPrefix);
+            decoder.SetPrefix(secondPrefix);
+            encoder.Reset();
+            decoder.Reset();
+
+            AssertResetRoundTrip();
+
+            if (!useDictionary)
+            {
+                encoder.Reset();
+                decoder.Reset();
+                encoder.SetPrefix(secondPrefix);
+                decoder.SetPrefix(secondPrefix);
+                decoder.Reset();
+
+                TestRoundTrip(input, encoder, decoder, shouldFail: !emptyPrefix);
+            }
+
+            void AssertResetRoundTrip()
+            {
+                byte[] compressed = new byte[expectedCompressed.Length];
+                Assert.Equal(OperationStatus.Done, encoder.Compress(input, compressed, out int bytesConsumed, out int bytesWritten, isFinalBlock: true));
+                Assert.Equal(input.Length, bytesConsumed);
+                Assert.Equal(expectedCompressed.AsSpan(0, expectedWritten), compressed.AsSpan(0, bytesWritten));
+
+                byte[] decompressed = new byte[input.Length];
+                Assert.Equal(OperationStatus.Done, decoder.Decompress(expectedCompressed.AsSpan(0, expectedWritten), decompressed, out bytesConsumed, out bytesWritten));
+                Assert.Equal(expectedWritten, bytesConsumed);
+                Assert.Equal(input.Length, bytesWritten);
+                Assert.Equal(input, decompressed);
+            }
         }
 
         [Fact]

@@ -70,8 +70,9 @@ endif(CLR_CMAKE_TARGET_WIN32)
 set(UTILCODE_SOURCES
   ${UTILCODE_COMMON_SOURCES}
   allocmemtracker.cpp
-  executableallocator.cpp
 )
+
+list(APPEND UTILCODE_SOURCES executableallocator.cpp)
 
 set(UTILCODE_DAC_SOURCES
   ${UTILCODE_COMMON_SOURCES}
@@ -83,8 +84,6 @@ set(UTILCODE_STATICNOHOST_SOURCES
   ${UTILCODE_COMMON_SOURCES}
   hostimpl.cpp
 )
-
-set (UTILCODE_DEPENDENCIES eventing_headers)
 
 convert_to_absolute_path(UTILCODE_SOURCES ${UTILCODE_SOURCES})
 convert_to_absolute_path(UTILCODE_DAC_SOURCES ${UTILCODE_DAC_SOURCES})
@@ -122,11 +121,10 @@ endif(CLR_CMAKE_HOST_WIN32)
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set_target_properties(utilcode_dac PROPERTIES DAC_COMPONENT TRUE)
   target_compile_definitions(utilcode_dac PRIVATE SELF_NO_HOST)
-  add_dependencies(utilcode_dac ${UTILCODE_DEPENDENCIES})
   target_precompile_headers(utilcode_dac PRIVATE [["stdafx.h"]])
   endif()
+target_compile_definitions(utilcode PRIVATE DISABLE_ETW_CALLBACK_HOOKS)
 target_compile_definitions(utilcodestaticnohost PRIVATE SELF_NO_HOST)
-add_dependencies(utilcode ${UTILCODE_DEPENDENCIES})
-add_dependencies(utilcodestaticnohost ${UTILCODE_DEPENDENCIES})
+add_dependencies(utilcode eventing_headers)
 target_precompile_headers(utilcode PRIVATE [["stdafx.h"]])
 target_precompile_headers(utilcodestaticnohost PRIVATE [["stdafx.h"]])

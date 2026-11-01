@@ -104,6 +104,16 @@ HRESULT GCProfiler::ObjectsAllocatedByClass(ULONG cClassCount, ClassID classIds[
         printf("GCProfiler::ObjectsAllocatedByClass: FAIL: Expected ObjectsAllocatedByClass Calls == GCStart. AllocatedByClassCalls=%d, GCStart=%d\n", (int)_allocatedByClassCalls, (int)_gcStarts);
     }
 
+    std::unordered_set<ClassID> classes;
+    for (ULONG i = 0; i < cClassCount; i++)
+    {
+        if (classIds[i] == 0 || cObjects[i] == 0 || !classes.insert(classIds[i]).second)
+        {
+            _failures++;
+            printf("GCProfiler::ObjectsAllocatedByClass: FAIL: Invalid or duplicate class entry at %u\n", i);
+        }
+    }
+
     return S_OK;
 }
 

@@ -656,7 +656,13 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         // we can't use it to directly compare against the EH ranges because we
         // may be in an cloned finally which has a call as the last instruction.
 
-        offs--;
+#ifdef TARGET_WASM
+        // On Wasm, R2R code with virtual ips should not have its ip adjusted
+        if (!ExecutionManager::IsVirtualIP(GetControlPC(pCf->GetRegisterSet())))
+#endif
+        {
+            offs--;
+        }
     }
 
     if (pData->fWriteToStressLog)
@@ -3526,6 +3532,12 @@ void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
     // you may have to change routine GCHeapUtilities::SafeToRestartManagedThreads
     // as well.
     //
+    // Fire the "restart end" event right before the threads are released. Once they are released,
+    // this thread may be preempted for a long time under CPU load, which would be wrongly reported
+    // as a part of the EE suspension.
+    //
+    FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
+
     ThreadStore::UnsetThreadTrapForSuspension();
     g_pSuspensionThread    = 0;
 
@@ -5358,10 +5370,13 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
 
     //
     // SyncClean::CleanUp reclaims resources that are safe to free only
-    // when no threads are running managed code. Since the EE is
-    // suspended at this point, we know it's safe to clean up here.
+    // when no threads are running managed code, so it can only run after
+    // the EE was successfully suspended.
     //
-    SyncClean::CleanUp();
+    if (SuspendSucceeded)
+    {
+        SyncClean::CleanUp();
+    }
 
 #ifdef PROFILING_SUPPORTED
     // If a profiler is keeping track suspend events, notify it.  This notification
@@ -5445,8 +5460,6 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
         }
     }
 #endif // FEATURE_MULTITHREADING
-
-    FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 
 #ifdef TIME_SUSPEND
     g_SuspendStatistics.EndRestart();

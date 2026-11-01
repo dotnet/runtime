@@ -47,7 +47,6 @@ namespace Internal.JitInterface
                 s_callbacks.getUnmanagedCallConv = &_getUnmanagedCallConv;
                 s_callbacks.pInvokeMarshalingRequired = &_pInvokeMarshalingRequired;
                 s_callbacks.satisfiesMethodConstraints = &_satisfiesMethodConstraints;
-                s_callbacks.methodMustBeLoadedBeforeCodeIsRun = &_methodMustBeLoadedBeforeCodeIsRun;
                 s_callbacks.getGSCookie = &_getGSCookie;
                 s_callbacks.setPatchpointInfo = &_setPatchpointInfo;
                 s_callbacks.getOSRInfo = &_getOSRInfo;
@@ -63,6 +62,8 @@ namespace Internal.JitInterface
                 s_callbacks.getMethodInstantiationArgument = &_getMethodInstantiationArgument;
                 s_callbacks.printClassName = &_printClassName;
                 s_callbacks.isValueClass = &_isValueClass;
+                s_callbacks.isByRefLike = &_isByRefLike;
+                s_callbacks.isSharedInst = &_isSharedInst;
                 s_callbacks.getClassAttribs = &_getClassAttribs;
                 s_callbacks.getClassAssemblyName = &_getClassAssemblyName;
                 s_callbacks.LongLifetimeMalloc = &_LongLifetimeMalloc;
@@ -94,7 +95,6 @@ namespace Internal.JitInterface
                 s_callbacks.getReadyToRunHelper = &_getReadyToRunHelper;
                 s_callbacks.getReadyToRunDelegateCtorHelper = &_getReadyToRunDelegateCtorHelper;
                 s_callbacks.initClass = &_initClass;
-                s_callbacks.classMustBeLoadedBeforeCodeIsRun = &_classMustBeLoadedBeforeCodeIsRun;
                 s_callbacks.getBuiltinClass = &_getBuiltinClass;
                 s_callbacks.getTypeForPrimitiveValueClass = &_getTypeForPrimitiveValueClass;
                 s_callbacks.getTypeForPrimitiveNumericClass = &_getTypeForPrimitiveNumericClass;
@@ -232,7 +232,6 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, bool*, CorInfoCallConvExtension> getUnmanagedCallConv;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, byte> pInvokeMarshalingRequired;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*, byte> satisfiesMethodConstraints;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, void> methodMustBeLoadedBeforeCodeIsRun;
             public delegate* unmanaged<IntPtr, IntPtr*, IntPtr*, IntPtr**, void> getGSCookie;
             public delegate* unmanaged<IntPtr, IntPtr*, PatchpointInfo*, void> setPatchpointInfo;
             public delegate* unmanaged<IntPtr, IntPtr*, uint*, PatchpointInfo*> getOSRInfo;
@@ -248,6 +247,8 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint, CORINFO_CLASS_STRUCT_*> getMethodInstantiationArgument;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte*, nuint, nuint*, nuint> printClassName;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte> isValueClass;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte> isByRefLike;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte> isSharedInst;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint> getClassAttribs;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte*> getClassAssemblyName;
             public delegate* unmanaged<IntPtr, IntPtr*, nuint, void*> LongLifetimeMalloc;
@@ -279,7 +280,6 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CorInfoHelpFunc, CORINFO_METHOD_STRUCT_*, CORINFO_CONST_LOOKUP*, byte> getReadyToRunHelper;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_LOOKUP*, void> getReadyToRunDelegateCtorHelper;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_CONTEXT_STRUCT*, CorInfoInitClassResult> initClass;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void> classMustBeLoadedBeforeCodeIsRun;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoClassId, CORINFO_CLASS_STRUCT_*> getBuiltinClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType> getTypeForPrimitiveValueClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType> getTypeForPrimitiveNumericClass;
@@ -793,20 +793,6 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _methodMustBeLoadedBeforeCodeIsRun(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                _this.methodMustBeLoadedBeforeCodeIsRun(method);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-            }
-        }
-
-        [UnmanagedCallersOnly]
         private static void _getGSCookie(IntPtr thisHandle, IntPtr* ppException, IntPtr* pCookieVal, IntPtr** ppCookieVal)
         {
             var _this = GetThis(thisHandle);
@@ -1018,6 +1004,36 @@ namespace Internal.JitInterface
             try
             {
                 return _this.isValueClass(cls) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static byte _isByRefLike(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.isByRefLike(cls) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static byte _isSharedInst(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.isSharedInst(cls) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -1486,20 +1502,6 @@ namespace Internal.JitInterface
             {
                 *ppException = _this.AllocException(ex);
                 return default;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static void _classMustBeLoadedBeforeCodeIsRun(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                _this.classMustBeLoadedBeforeCodeIsRun(cls);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
             }
         }
 

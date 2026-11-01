@@ -72,6 +72,9 @@ namespace System.Numerics.Tensors
                 oneVectorFromEnd = x.Length - Vector512<T>.Count;
                 if (i <= oneVectorFromEnd)
                 {
+                    // Preserve the final input vector before an in-place store can overwrite it.
+                    Vector512<T> end = Vector512.LoadUnsafe(ref sourceRef, (uint)oneVectorFromEnd);
+
                     // Loop handling one input vector / two destination vectors at a time.
                     do
                     {
@@ -88,7 +91,7 @@ namespace System.Numerics.Tensors
                     {
                         i = x.Length - Vector512<T>.Count;
 
-                        (Vector512<T> first, Vector512<T> second) = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref sourceRef, (uint)i));
+                        (Vector512<T> first, Vector512<T> second) = TUnaryOperator.Invoke(end);
                         first.StoreUnsafe(ref destination1Ref, (uint)i);
                         second.StoreUnsafe(ref destination2Ref, (uint)i);
                     }
@@ -102,6 +105,8 @@ namespace System.Numerics.Tensors
                 oneVectorFromEnd = x.Length - Vector256<T>.Count;
                 if (i <= oneVectorFromEnd)
                 {
+                    Vector256<T> end = Vector256.LoadUnsafe(ref sourceRef, (uint)oneVectorFromEnd);
+
                     // Loop handling one input vector / two destination vectors at a time.
                     do
                     {
@@ -118,7 +123,7 @@ namespace System.Numerics.Tensors
                     {
                         i = x.Length - Vector256<T>.Count;
 
-                        (Vector256<T> first, Vector256<T> second) = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref sourceRef, (uint)i));
+                        (Vector256<T> first, Vector256<T> second) = TUnaryOperator.Invoke(end);
                         first.StoreUnsafe(ref destination1Ref, (uint)i);
                         second.StoreUnsafe(ref destination2Ref, (uint)i);
                     }
@@ -132,6 +137,8 @@ namespace System.Numerics.Tensors
                 oneVectorFromEnd = x.Length - Vector128<T>.Count;
                 if (i <= oneVectorFromEnd)
                 {
+                    Vector128<T> end = Vector128.LoadUnsafe(ref sourceRef, (uint)oneVectorFromEnd);
+
                     // Loop handling one input vector / two destination vectors at a time.
                     do
                     {
@@ -148,7 +155,7 @@ namespace System.Numerics.Tensors
                     {
                         i = x.Length - Vector128<T>.Count;
 
-                        (Vector128<T> first, Vector128<T> second) = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref sourceRef, (uint)i));
+                        (Vector128<T> first, Vector128<T> second) = TUnaryOperator.Invoke(end);
                         first.StoreUnsafe(ref destination1Ref, (uint)i);
                         second.StoreUnsafe(ref destination2Ref, (uint)i);
                     }
