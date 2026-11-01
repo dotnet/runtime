@@ -289,6 +289,8 @@
   <!-- Build shell or command scripts whenever we copy native binaries -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.Execute.targets" />
 
+  <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.WasmNativeLibraries.targets" />
+
   <!-- WebAssembly cannot load native libraries at run time, so tests that call into their own
        native code need a corerun with that code linked in. -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.WasmCorerun.targets"
@@ -585,16 +587,17 @@
 
   <Target Name="ResolveNativeAotWasmNativeLibraries"
           BeforeTargets="SetupOSSpecificProps"
-          DependsOnTargets="CopyAllNativeProjectReferenceBinaries"
+          DependsOnTargets="CopyAllNativeProjectReferenceBinaries;_WasmResolveNativeTestLibraries"
           Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetArchitecture)' == 'wasm'">
-    <ItemGroup>
-      <_NativeAotWasmTestLibrary Include="$(OutDir)*$(StaticLibSuffix)" />
+    <ItemGroup Condition="'$(InMergedTestDirectory)' != 'true' or '$(_WasmNativeTestRunsFromOutDir)' == 'true'">
+      <_NativeAotWasmTestLibrary Include="@(_WasmNativeTestLib)" />
       <_NativeAotWasmTestLibrary Include="@(NativeFileReference)" Condition="'%(Extension)' == '$(StaticLibSuffix)'" />
       <_NativeAotWasmTestLibrary Update="@(_NativeAotWasmTestLibrary)">
         <ModuleName>%(Filename)</ModuleName>
         <ModuleName Condition="$([System.String]::Copy('%(Filename)').StartsWith('$(StaticLibPrefix)'))">$([System.String]::Copy('%(Filename)').Substring($(StaticLibPrefix.Length)))</ModuleName>
       </_NativeAotWasmTestLibrary>
       <NativeLibrary Include="@(_NativeAotWasmTestLibrary)" KeepDuplicates="false" />
+      <NativeLibrary Include="@(_WasmNativeCommonLib)" KeepDuplicates="false" />
       <DirectPInvoke Include="@(_NativeAotWasmTestLibrary->'%(ModuleName)')" KeepDuplicates="false" />
     </ItemGroup>
   </Target>

@@ -625,6 +625,16 @@ namespace PInvokeTests
         {
             Console.WriteLine("Testing Delegate");
 
+            Delegate_String ret = GetDelegate();
+            ThrowIfNotEquals(true, ret("Hello World!"), "Delegate as P/Invoke return failed");
+
+            IntPtr procAddress = GetFunctionPointer();
+            SetLastErrorFuncDelegate funcDelegate =
+                Marshal.GetDelegateForFunctionPointer<SetLastErrorFuncDelegate>(procAddress);
+            funcDelegate(0x204);
+            ThrowIfNotEquals(0x204, Marshal.GetLastWin32Error(), "Not match");
+
+            // Avoid a TestLibrary dependency on PlatformDetection.IsDynamicEntrypointSupported.
             if (RuntimeInformation.ProcessArchitecture is Architecture.Wasm)
             {
                 Console.WriteLine("Skipping delegate marshalling on WASM: native callback thunk allocation is not supported.");
@@ -649,9 +659,6 @@ namespace PInvokeTests
 
             Delegate_Int closed = new Delegate_Int((new ClosedDelegateCLass()).Sum);
             ThrowIfNotEquals(true, ReversePInvoke_Int(closed), "Closed Delegate marshalling failed.");
-
-            Delegate_String ret = GetDelegate();
-            ThrowIfNotEquals(true, ret("Hello World!"), "Delegate as P/Invoke return failed");
 
             Delegate_String d = new Delegate_String(new ClosedDelegateCLass().GetString);
             ThrowIfNotEquals(true, Callback(ref d), "Delegate IN marshalling failed");
@@ -680,11 +687,6 @@ namespace PInvokeTests
             Delegate_Array da = new Delegate_Array((new ClosedDelegateCLass()).CheckArray);
             ThrowIfNotEquals(true, ReversePInvoke_Array(da), "Delegate array marshalling failed.");
 
-            IntPtr procAddress = GetFunctionPointer();
-            SetLastErrorFuncDelegate funcDelegate =
-                Marshal.GetDelegateForFunctionPointer<SetLastErrorFuncDelegate>(procAddress);
-            funcDelegate(0x204);
-            ThrowIfNotEquals(0x204, Marshal.GetLastWin32Error(), "Not match");
 		}
 
 		private static unsafe void TestFunctionPointers()
