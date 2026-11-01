@@ -156,6 +156,12 @@ public sealed class JSFunctionBinding
     public static void InvokeJS(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments) { throw null; }
     public static JSFunctionBinding BindJSFunction(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures) { throw null; }
     public static JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures) { throw null; }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures, delegate*<JSMarshalerArgument*, void> callback) { throw null; }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static void RegisterAssemblyExports(string assemblyName, Action register) { throw null; }
 }
 
 [Versioning.SupportedOSPlatformAttribute("browser")]
