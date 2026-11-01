@@ -8,6 +8,10 @@
     <TestCaseBuildOutputRoot>$(ArtifactsBinDir)Mono.Linker.Tests.Cases\$(Configuration)\$(TargetFramework)</TestCaseBuildOutputRoot>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' != 'Release'">
+    <DefineConstants>$(DefineConstants);UNSAFE_MIGRATION</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <CompilerVisibleProperty Include="TestCaseBuildOutputRoot" />
   </ItemGroup>

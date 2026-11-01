@@ -15,10 +15,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Metadata.NativeFormat.AssemblyHashAlgorithm</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.BooleanCollection</Target>
   </Suppression>
   <Suppression>
@@ -471,10 +467,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Metadata.NativeFormat.NamespaceDefinitionHandleCollection</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.NamespaceReference</Target>
   </Suppression>
   <Suppression>
@@ -599,6 +591,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Internal.Metadata.NativeFormat.TypeDefinitionHandleHashtable</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.TypeForwarder</Target>
   </Suppression>
   <Suppression>
@@ -608,6 +604,10 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.TypeForwarderHandleCollection</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Internal.Metadata.NativeFormat.TypeForwarderHandleHashtable</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>

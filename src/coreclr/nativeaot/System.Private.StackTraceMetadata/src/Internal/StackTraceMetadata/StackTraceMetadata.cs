@@ -91,7 +91,7 @@ namespace Internal.StackTraceMetadata
                 {
                     foreach (CustomAttributeHandle cah in reader.GetTypeDefinition(typeHandle).CustomAttributes)
                     {
-                        if (cah.IsCustomAttributeOfType(reader, ["System", "Diagnostics"], "StackTraceHiddenAttribute"))
+                        if (cah.IsCustomAttributeOfType(reader, "System.Diagnostics", "StackTraceHiddenAttribute"))
                         {
                             isStackTraceHidden = true;
                             break;
@@ -100,7 +100,7 @@ namespace Internal.StackTraceMetadata
 
                     foreach (CustomAttributeHandle cah in reader.GetMethod(methodHandle).CustomAttributes)
                     {
-                        if (cah.IsCustomAttributeOfType(reader, ["System", "Diagnostics"], "StackTraceHiddenAttribute"))
+                        if (cah.IsCustomAttributeOfType(reader, "System.Diagnostics", "StackTraceHiddenAttribute"))
                         {
                             isStackTraceHidden = true;
                             break;
@@ -242,10 +242,10 @@ namespace Internal.StackTraceMetadata
                     return FormatAssemblyName(reader, typeInst.GenericType);
                 case HandleType.NamespaceDefinition:
                     NamespaceDefinition nsDef = reader.GetNamespaceDefinition(handle.ToNamespaceDefinitionHandle(reader));
-                    return FormatAssemblyName(reader, nsDef.ParentScopeOrNamespace);
+                    return FormatAssemblyName(reader, nsDef.Scope);
                 case HandleType.NamespaceReference:
                     NamespaceReference nsRef = reader.GetNamespaceReference(handle.ToNamespaceReferenceHandle(reader));
-                    return FormatAssemblyName(reader, nsRef.ParentScopeOrNamespace);
+                    return FormatAssemblyName(reader, nsRef.Scope);
                 case HandleType.ScopeDefinition:
                     return FormatAssemblyName(reader, handle.ToScopeDefinitionHandle(reader));
                 case HandleType.ScopeReference:

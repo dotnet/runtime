@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .intel_syntax noprefix
-#include "unixasmmacros.inc"
 #include "asmconstants.h"
+#include "unixasmmacros.inc"
 
 
 //
@@ -32,7 +32,7 @@ NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
         mov             r14, rdi
 
         // Get current thread and cache it in current frame
-        call            C_FUNC(GetThreadHelper)
+        INLINE_GETTHREAD
         mov             qword ptr [r14 + OFFSETOF__InlinedCallFrame__m_pThread], rax
 
         // pFrame->m_Next = pThread->m_pFrame;

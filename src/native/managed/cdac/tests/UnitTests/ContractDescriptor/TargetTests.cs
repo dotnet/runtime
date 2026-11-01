@@ -386,7 +386,7 @@ public unsafe partial class TargetTests
 
     // The contracts required by the data-access interfaces, advertised at the versions
     // CoreCLRContracts registers. Mirrors CoreCLRContracts.ValidateForDataAccess.
-    private static readonly IReadOnlyDictionary<string, string> s_requiredDataAccessContracts =
+    internal static readonly IReadOnlyDictionary<string, string> s_requiredDataAccessContracts =
         new Dictionary<string, string>
         {
             ["AuxiliarySymbols"] = "c1",
@@ -428,6 +428,30 @@ public unsafe partial class TargetTests
         [("OperatingSystem", null, "windows", "string")];
     private static readonly (string Name, ulong? Value, string? StringValue, string? TypeName)[] s_unixOperatingSystemGlobal =
         [("OperatingSystem", null, "unix", "string")];
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetContractVersion_DoesNotInstantiateOrValidateContract(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetContracts(new Dictionary<string, string>
+        {
+            ["GCInfo"] = "c1",
+            ["StackWalk"] = "c99",
+        });
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        Assert.True(target.Contracts.TryGetContractVersion<Contracts.IGCInfo>(out string? version));
+        Assert.Equal("c1", version);
+        Assert.True(target.Contracts.TryGetContractVersion<Contracts.IStackWalk>(out version));
+        Assert.Equal("c99", version);
+        Assert.False(target.Contracts.TryGetContractVersion<Contracts.IRuntimeInfo>(out version));
+        Assert.Null(version);
+        Assert.Throws<ContractMissingException>(() => target.Contracts.GCInfo);
+    }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]

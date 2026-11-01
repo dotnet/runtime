@@ -36,6 +36,8 @@
   <ItemGroup>
     <Compile Remove="TestCases/*/**/*.cs" />
     <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="$(LibrariesProjectRoot)System.Private.CoreLib/src/System/Runtime/SuppressReadyToRunCanonicalRootingAttribute.cs"
+                      LogicalName="SuppressReadyToRunCanonicalRootingAttribute.cs" />
   </ItemGroup>
 
   <Target Name="SetupCopyCrossgen2CompilationAssets"

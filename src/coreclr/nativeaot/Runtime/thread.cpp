@@ -164,9 +164,7 @@ void Thread::ResetCachedTransitionFrame()
 void Thread::EnablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
-#if !defined(HOST_WASM)
     ASSERT(m_pDeferredTransitionFrame != NULL);
-#endif
 
     // set preemptive mode
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, m_pDeferredTransitionFrame);
@@ -206,73 +204,6 @@ void Thread::SetDeferredTransitionFrameForNativeHelperThread()
     }
 }
 #endif // !DACCESS_COMPILE
-
-//
-// This is used by the EH system to find the place where execution left managed code when an exception leaks out of a
-// pinvoke and we need to FailFast via the appropriate class library.
-//
-// May only be used from the same thread and while in preemptive mode with an active pinvoke on the stack.
-//
-#ifndef DACCESS_COMPILE
-void * Thread::GetCurrentThreadPInvokeReturnAddress()
-{
-    ASSERT(ThreadStore::GetCurrentThread() == this);
-    ASSERT(!IsCurrentThreadInCooperativeMode());
-    return ((PInvokeTransitionFrame*)m_pTransitionFrame)->m_RIP;
-}
-#endif // !DACCESS_COMPILE
-
-#if defined(FEATURE_GC_STRESS) & !defined(DACCESS_COMPILE)
-void Thread::SetRandomSeed(uint32_t seed)
-{
-    ASSERT(!IsStateSet(TSF_IsRandSeedSet));
-    m_uRand = seed;
-    SetState(TSF_IsRandSeedSet);
-}
-
-// Generates pseudo random numbers in the range [0, 2^31)
-// using only multiplication and addition
-uint32_t Thread::NextRand()
-{
-    // Uses Carta's algorithm for Park-Miller's PRNG:
-    // x_{k+1} = 16807 * x_{k} mod (2^31-1)
-
-    uint32_t hi,lo;
-
-    // (high word of seed) * 16807 - at most 31 bits
-    hi = 16807 * (m_uRand >> 16);
-    // (low word of seed) * 16807 - at most 31 bits
-    lo = 16807 * (m_uRand & 0xFFFF);
-
-    // Proof that below operations (multiplication and addition only)
-    // are equivalent to the original formula:
-    //    x_{k+1} = 16807 * x_{k} mod (2^31-1)
-    // We denote hi2 as the low 15 bits in hi,
-    //       and hi1 as the remaining 16 bits in hi:
-    // (hi                 * 2^16 + lo) mod (2^31-1) =
-    // ((hi1 * 2^15 + hi2) * 2^16 + lo) mod (2^31-1) =
-    // ( hi1 * 2^31 + hi2 * 2^16  + lo) mod (2^31-1) =
-    // ( hi1 * (2^31-1) + hi1 + hi2 * 2^16 + lo) mod (2^31-1) =
-    // ( hi2 * 2^16 + hi1 + lo ) mod (2^31-1)
-
-    // lo + (hi2 * 2^16)
-    lo += (hi & 0x7FFF) << 16;
-    // lo + (hi2 * 2^16) + hi1
-    lo += (hi >> 15);
-    // modulo (2^31-1)
-    if (lo > 0x7fffFFFF)
-        lo -= 0x7fffFFFF;
-
-    m_uRand = lo;
-
-    return m_uRand;
-}
-
-bool Thread::IsRandInited()
-{
-    return IsStateSet(TSF_IsRandSeedSet);
-}
-#endif // FEATURE_GC_STRESS & !DACCESS_COMPILE
 
 PTR_ExInfo Thread::GetCurExInfo()
 {
@@ -416,10 +347,8 @@ void Thread::GcScanRoots(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackDat
 {
     this->CrossThreadUnhijack();
 
-#ifndef HOST_WASM
     StackFrameIterator frameIterator(this, GetTransitionFrame());
     GcScanRootsWorker(pfnEnumCallback, pvCallbackData, frameIterator);
-#endif
 }
 
 #endif // !DACCESS_COMPILE
@@ -459,7 +388,6 @@ bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token
 }
 #endif //DACCESS_COMPILE
 
-#ifndef TARGET_WASM
 void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData, StackFrameIterator & frameIterator)
 {
     PTR_OBJECTREF    pHijackedReturnValue = NULL;
@@ -493,6 +421,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
             PInvokeTransitionFrame* pTransitionFrame = GetTransitionFrame();
             ASSERT(pTransitionFrame != NULL);
 
+#ifndef FEATURE_PORTABLE_HELPERS
             if (pTransitionFrame == INTERRUPTED_THREAD_MARKER)
             {
                 GetInterruptedContext()->ForEachPossibleObjectRef
@@ -503,6 +432,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
                     }
                 );
             }
+#endif // !FEATURE_PORTABLE_HELPERS
 
             if (pTransitionFrame < pLowerBound)
                 pLowerBound = pTransitionFrame;
@@ -582,25 +512,17 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
         }
     }
 }
-#endif // !TARGET_WASM
 
 #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_HIJACK
 
 EXTERN_C void RhpGcProbeHijack();
-EXTERN_C void RhpGcStressHijack();
 
 // static
 bool Thread::IsHijackTarget(void* address)
 {
-    if (PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack) == address)
-        return true;
-#ifdef FEATURE_GC_STRESS
-    if (&RhpGcStressHijack == address)
-        return true;
-#endif // FEATURE_GC_STRESS
-    return false;
+    return PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack) == address;
 }
 
 void Thread::Hijack()
@@ -715,66 +637,6 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHij
     pThread->HijackReturnAddress(
         pThreadContext,
         PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack));
-}
-
-#ifdef FEATURE_GC_STRESS
-// This is a helper called from RhpHijackForGcStress which will place a GC Stress
-// hijack on this thread's call stack. This is never called from another thread.
-// static
-void Thread::HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx)
-{
-    Thread * pCurrentThread = ThreadStore::GetCurrentThread();
-
-    // don't hijack for GC stress if we're in a "no GC stress" region
-    if (pCurrentThread->IsSuppressGcStressSet())
-        return;
-
-    RuntimeInstance * pInstance = GetRuntimeInstance();
-
-    uintptr_t ip = pSuspendCtx->GetIp();
-
-    bool bForceGC = g_pRhConfig->GetGcStressThrottleMode() == 0;
-    // we enable collecting statistics by callsite even for stochastic-only
-    // stress mode. this will force a stack walk, but it's worthwhile for
-    // collecting data (we only actually need the IP when
-    // (g_pRhConfig->GetGcStressThrottleMode() & 1) != 0)
-    if (!bForceGC)
-    {
-        StackFrameIterator sfi(pCurrentThread, pSuspendCtx);
-        if (sfi.IsValid())
-        {
-            pCurrentThread->Unhijack();
-            sfi.CalculateCurrentMethodState();
-            // unwind to method below the one whose epilog set up the hijack
-            sfi.Next();
-            if (sfi.IsValid())
-            {
-                ip = sfi.GetRegisterSet()->GetIP();
-            }
-        }
-    }
-    if (bForceGC || pInstance->ShouldHijackCallsiteForGcStress(ip))
-    {
-        pCurrentThread->HijackReturnAddress(pSuspendCtx, &RhpGcStressHijack);
-    }
-}
-#endif // FEATURE_GC_STRESS
-
-// This function is called from a thread to place a return hijack onto its own stack for GC stress cases
-// via Thread::HijackForGcStress above. The only constraint on the suspension is that the
-// stack be crawlable enough to yield the location of the return address.
-void Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction)
-{
-    if (IsDoNotTriggerGcSet())
-        return;
-
-    StackFrameIterator frameIterator(this, pSuspendCtx);
-    if (!frameIterator.IsValid())
-    {
-        return;
-    }
-
-    HijackReturnAddressWorker(&frameIterator, pfnHijackFunction);
 }
 
 // This function is called in one of two scenarios:
@@ -1012,47 +874,6 @@ void Thread::ClearState(ThreadStateFlags flags)
     PalInterlockedAnd(&m_ThreadStateFlags, ~flags);
 }
 
-bool Thread::IsSuppressGcStressSet()
-{
-    return IsStateSet(TSF_SuppressGcStress);
-}
-
-void Thread::SetSuppressGcStress()
-{
-    ASSERT(!IsStateSet(TSF_SuppressGcStress));
-    SetState(TSF_SuppressGcStress);
-}
-
-void Thread::ClearSuppressGcStress()
-{
-    ASSERT(IsStateSet(TSF_SuppressGcStress));
-    ClearState(TSF_SuppressGcStress);
-}
-
-#endif //!DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
-#ifdef FEATURE_GC_STRESS
-#ifdef HOST_X86 // the others are implemented in assembly code to avoid trashing the argument registers
-EXTERN_C void FASTCALL RhpSuppressGcStress()
-{
-    ThreadStore::GetCurrentThread()->SetSuppressGcStress();
-}
-#endif // HOST_X86
-
-EXTERN_C void FASTCALL RhpUnsuppressGcStress()
-{
-    ThreadStore::GetCurrentThread()->ClearSuppressGcStress();
-}
-#else
-EXTERN_C void FASTCALL RhpSuppressGcStress()
-{
-}
-EXTERN_C void FASTCALL RhpUnsuppressGcStress()
-{
-}
-#endif // FEATURE_GC_STRESS
-
 // Standard calling convention variant and actual implementation for RhpWaitForGC
 EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
@@ -1066,7 +887,9 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 // Standard calling convention variant and actual implementation for RhpGcPoll
 EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 {
+#ifndef FEATURE_PORTABLE_HELPERS
     ASSERT(!Thread::IsHijackTarget(pFrame->m_RIP));
+#endif // !FEATURE_PORTABLE_HELPERS
 
     Thread* pThread = ThreadStore::GetCurrentThread();
     pFrame->m_pThread = pThread;
@@ -1081,6 +904,19 @@ void Thread::PushExInfo(ExInfo * pExInfo)
     pExInfo->m_pPrevExInfo = m_pExInfoStackHead;
     m_pExInfoStackHead = pExInfo;
 }
+
+#ifdef FEATURE_PORTABLE_HELPERS
+void Thread::PopExInfo(ExInfo* pExInfo, uintptr_t resumeSP)
+{
+    ValidateExInfoPop(pExInfo, reinterpret_cast<void*>(resumeSP));
+    do
+    {
+        pExInfo = pExInfo->m_pPrevExInfo;
+    }
+    while (pExInfo != nullptr && reinterpret_cast<uintptr_t>(pExInfo) < resumeSP);
+    m_pExInfoStackHead = pExInfo;
+}
+#endif // FEATURE_PORTABLE_HELPERS
 
 void Thread::ValidateExInfoPop(ExInfo * pExInfo, void * limitSP)
 {
@@ -1232,8 +1068,21 @@ EXTERN_C uint32_t QCALLTYPE RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, 
 }
 #endif // TARGET_UNIX
 
+#ifdef TARGET_UNIX
+bool InitGSCookie();
+#endif
+
 EXTERN_C void RhSetRuntimeInitializationCallback(int (*fPtr)())
 {
+#ifdef TARGET_UNIX
+    // In a DLL, GSCookies are read before reverse p/invoke transition (and runtime initialization) so we need to initialize them earlier than runtime.
+    if (!InitGSCookie())
+    {
+        PalPrintFatalError("\nFatal error. .NET runtime failed to initialize.\n");
+        RhFailFast();
+    }
+#endif
+
     g_RuntimeInitializationCallback = fPtr;
 }
 

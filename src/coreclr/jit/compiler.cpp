@@ -5018,6 +5018,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Transform any strongly connected components into reducible flow.
     //
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
+
+    // Insert EventPipe CPU-sampling samplepoints before lowering.
+    //
+    DoPhase(this, PHASE_WASM_PROF_INSTRUMENT, &Compiler::fgWasmProfInstrument);
 #endif
 
     // Assign registers to variables, etc.
@@ -6142,6 +6146,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64SveAes() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_SveAes);
+        }
+
+        if (JitConfig.EnableArm64SvePmull128() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SvePmull128);
         }
 
         if (JitConfig.EnableArm64SveSha3() != 0)
