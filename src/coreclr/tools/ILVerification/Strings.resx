@@ -213,6 +213,18 @@
   <data name="Endfinally" xml:space="preserve">
     <value>Endfinally/endfault from outside a finally or fault handler.</value>
   </data>
+  <data name="EndfinallyInNestedTry" xml:space="preserve">
+    <value>Endfinally inside a try block nested in a finally handler.</value>
+  </data>
+  <data name="EndfinallyInNestedFilter" xml:space="preserve">
+    <value>Endfinally inside a filter nested in a finally handler.</value>
+  </data>
+  <data name="EndfaultInNestedTry" xml:space="preserve">
+    <value>Endfault inside a try block nested in a fault handler.</value>
+  </data>
+  <data name="EndfaultInNestedFilter" xml:space="preserve">
+    <value>Endfault inside a filter nested in a fault handler.</value>
+  </data>
   <data name="ExpectedArray" xml:space="preserve">
     <value>Expected single-dimension zero-based array.</value>
   </data>

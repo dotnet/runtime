@@ -144,5 +144,9 @@ namespace ILVerify
         UnalignedAlignment, // Alignment specified for 'unaligned.' must be 1, 2, or 4.
         ExpectedSignatureToken, // Expected signature token.
         ReadOnlyInMkrefany, // A readonly ByRef cannot be used with mkrefany.
+        EndfinallyInNestedTry, // Endfinally inside a try block nested in a finally handler.
+        EndfinallyInNestedFilter, // Endfinally inside a filter nested in a finally handler.
+        EndfaultInNestedTry, // Endfault inside a try block nested in a fault handler.
+        EndfaultInNestedFilter, // Endfault inside a filter nested in a fault handler.
     }
 }
