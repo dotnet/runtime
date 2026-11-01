@@ -2875,28 +2875,9 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
+            AssertNonGVMImplementationsCompiled(reader);
+
             string diag;
-
-            // Test1: Interface impl on generic base type
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test1A`1<int>", "Test1Method", out diag), diag);
-
-            // Test2: Virtual override on generic intermediate type
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test2C`1<int>", "Test2Method", out diag), diag);
-
-            // Test3: Explicit DIM
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest3WithDim`1<int>", "ITest3Base.Test3Method", out diag), diag);
-
-            // Test4: Explicit interface impl on generic base
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test4A`1<int>", "ITest4<T>.Test4Method", out diag), diag);
-
-            // Test5: Interface dispatch resolves to override on intermediate type
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test5B`1<int>", "Test5Method", out diag), diag);
-
-            // Test6: Interface reimplementation with new slot
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test6B`1<int>", "Test6Method", out diag), diag);
-
-            // Test7: Non-final DIM
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "Test7Method", out diag), diag);
 
             // Test8: non-generic value type - both interface and Object.ToString dispatch arrive
             // with a boxed 'this' and so need an unboxing thunk
@@ -2935,19 +2916,9 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            string diag;
+            AssertNonGVMImplementationsCompiled(reader);
 
-            // Wasm dispatches interface calls through LDVIRTFTN, which must still mark the interface
-            // slots as used so that the implementations get compiled.
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test1A`1<int>", "Test1Method", out diag), diag);
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test2C`1<int>", "Test2Method", out diag), diag);
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest3WithDim`1<int>", "ITest3Base.Test3Method", out diag), diag);
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test4A`1<int>", "ITest4<T>.Test4Method", out diag), diag);
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test5B`1<int>", "Test5Method", out diag), diag);
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test6B`1<int>", "Test6Method", out diag), diag);
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "Test7Method", out diag), diag);
-
-            Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "U", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "U", out string diag), diag);
             Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "UG", out diag), diag);
             Assert.True(R2RAssert.HasStringThunk(reader, "UGviiii", out diag), diag);
             Assert.True(R2RAssert.HasStringThunk(reader, "UGvriiii", out diag), diag);
@@ -3018,28 +2989,7 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            string diag;
-
-            // Test1: Interface GVM on base type
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test1A", "Test1Method", out diag, ["int"]), diag);
-
-            // Test2: Interface GVM override on intermediate type
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test2B", "Test2Method", out diag, ["int"]), diag);
-
-            // Test3: Explicit interface GVM impl on generic base
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test3A`1<int>", "ITest3<T>.Test3Method", out diag, ["int"]), diag);
-
-            // Test4: Interface GVM reimplementation with new slot
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test4B", "Test4Method", out diag, ["int"]), diag);
-
-            // Test5: Non-final default interface GVM
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest5", "Test5Method", out diag, ["int"]), diag);
-
-            // Test6: Explicit DIM with generic method
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest6WithDim`1<int>", "ITest6Base.Test6Method", out diag, ["int"]), diag);
-
-            // Test7: Static virtual generic method
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "ITest7Base.Test7Method", out diag, ["int"]), diag);
+            AssertGVMImplementationsCompiled(reader);
 
             // Test8: Value-type interface GVM unboxing thunk
             ReadyToRunMethod unboxingThunk = Assert.Single(
@@ -3073,8 +3023,68 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
+            AssertGVMImplementationsCompiled(reader);
+
             Assert.True(R2RAssert.HasStringThunk(reader, "UMiiii", out string diag), diag);
         }
+    }
+
+    private static void AssertNonGVMImplementationsCompiled(ReadyToRunReader reader)
+    {
+        string diag;
+
+        // Test1: Interface impl on generic base type
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "Test1A`1<int>", "Test1Method", out diag), diag);
+
+        // Test2: Virtual override on generic intermediate type
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "Test2C`1<int>", "Test2Method", out diag), diag);
+
+        // Test3: Explicit DIM
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest3WithDim`1<int>", "ITest3Base.Test3Method", out diag), diag);
+
+        // Test4: Explicit interface impl on generic base
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "Test4A`1<int>", "ITest4<T>.Test4Method", out diag), diag);
+
+        // Test5: Interface dispatch resolves to override on intermediate type
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "Test5B`1<int>", "Test5Method", out diag), diag);
+
+        // Test6: Interface reimplementation with new slot
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "Test6B`1<int>", "Test6Method", out diag), diag);
+
+        // Test7: Non-final DIM
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "Test7Method", out diag), diag);
+
+        // Test12: Delegate over an interface method implemented on a generic base type
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "Test12A`1<int>", "Test12Method", out diag), diag);
+
+        // Test13: Delegate over a virtual method overridden on a generic intermediate type
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "Test13B`1<int>", "Test13Method", out diag), diag);
+    }
+
+    private static void AssertGVMImplementationsCompiled(ReadyToRunReader reader)
+    {
+        string diag;
+
+        // Test1: Interface GVM on base type
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "Test1A", "Test1Method", out diag, ["int"]), diag);
+
+        // Test2: Interface GVM override on intermediate type
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "Test2B", "Test2Method", out diag, ["int"]), diag);
+
+        // Test3: Explicit interface GVM impl on generic base
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "Test3A`1<int>", "ITest3<T>.Test3Method", out diag, ["int"]), diag);
+
+        // Test4: Interface GVM reimplementation with new slot
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "Test4B", "Test4Method", out diag, ["int"]), diag);
+
+        // Test5: Non-final default interface GVM
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest5", "Test5Method", out diag, ["int"]), diag);
+
+        // Test6: Explicit DIM with generic method
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest6WithDim`1<int>", "ITest6Base.Test6Method", out diag, ["int"]), diag);
+
+        // Test7: Static virtual generic method
+        Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "ITest7Base.Test7Method", out diag, ["int"]), diag);
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]

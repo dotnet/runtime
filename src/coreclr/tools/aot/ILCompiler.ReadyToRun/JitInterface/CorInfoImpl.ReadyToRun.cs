@@ -2495,14 +2495,6 @@ namespace Internal.JitInterface
                 {
                     // If it is also a default interface method call, it should go through instantiating stub.
                     useInstantiatingStub = useInstantiatingStub || (targetMethod.OwningType.IsInterface && !originalMethod.IsAbstract);
-
-                    // Wasm dispatches interface calls through LDVIRTFTN instead of a VirtualEntry dispatch cell,
-                    // so mark the slot as used here to let conditional virtual method discovery
-                    // (InheritedVirtualMethodsNode, ArrayInterfaceMethodsNode) compile the implementations.
-                    if (!targetMethod.IsFinal && !targetMethod.OwningType.IsGenericDefinition)
-                    {
-                        _additionalDependencies.Add(_compilation.NodeFactory.VirtualMethodUse(targetMethod), "Wasm interface slot use");
-                    }
                 }
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
                 pResult->nullInstanceCheck = true;
@@ -2805,15 +2797,21 @@ namespace Internal.JitInterface
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN:
                     if (!pResult->exactContextNeedsRuntimeLookup)
                     {
+                        MethodWithToken virtualFunctionTarget = ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false);
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.DynamicHelperCell(
-                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false),
-                                useInstantiatingStub));
+                            _compilation.NodeFactory.DynamicHelperCell(virtualFunctionTarget, useInstantiatingStub));
 
                         // Wasm routes virtual calls that cannot use a pregenerated dispatch thunk through
                         // LDVIRTFTN, so the call sig may carry a type arg (e.g., MD-array intrinsics);
                         // instParamLookup is set up by the post-switch block below.
                         Debug.Assert(!pResult->sig.hasTypeArg() || _compilation.NodeFactory.Target.IsWasm);
+
+                        // The Wasm JIT calls CORINFO_HELP_VIRTUAL_FUNC_PTR instead of using the dynamic helper cell,
+                        // so add the dependencies of the cell's VirtualEntry signature here.
+                        if (_compilation.NodeFactory.Target.IsWasm)
+                        {
+                            MethodFixupSignature.AddVirtualEntryDependencies(_additionalDependencies, _compilation.NodeFactory, virtualFunctionTarget.Method);
+                        }
                     }
                     break;
 
