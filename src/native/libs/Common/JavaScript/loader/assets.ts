@@ -104,6 +104,8 @@ export function fetchMainWasm(asset: WasmAsset): Promise<Response> {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
     assetInternal.behavior = "dotnetwasm";
+    // Assembly instantiation holds download slots until the main Wasm module supplies memory.
+    assetInternal.priority = true;
     if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
     mainWasmAsset = asset;
     wasmBinaryPromise = loadResource(assetInternal);
@@ -392,7 +394,7 @@ function loadResource(asset: AssetEntryInternal): Promise<Response> {
         // no need to retry or throttle local file access
         return loadResourceFetch(asset);
     }
-    if (!loaderConfig.enableDownloadRetry || noRetry[asset.behavior]) {
+    if (!loaderConfig.enableDownloadRetry || (noRetry[asset.behavior] && asset.cache !== "force-cache")) {
         // only throttle, no retry
         return loadResourceThrottle(asset);
     }
@@ -404,8 +406,13 @@ const noRetryStatusCodes = new Set<number>([400, 401, 403, 404, 405, 406, 409, 4
 async function loadResourceRetry(asset: AssetEntryInternal): Promise<Response> {
     let response: Response;
     response = await loadResourceAttempt();
-    if (response.ok || asset.isOptional || noRetryStatusCodes.has(response.status)) {
+    const retryWithCacheReload = asset.cache === "force-cache";
+    if (response.ok || asset.isOptional || (!retryWithCacheReload && noRetryStatusCodes.has(response.status))) {
         return response;
+    }
+    if (retryWithCacheReload) {
+        // A cached failure is not authoritative, even for an otherwise terminal status.
+        asset.cache = "reload";
     }
     // second attempt only after all first attempts are queued
     await allDownloadsQueuedPCS.promise;
@@ -459,10 +466,21 @@ async function loadResourceThrottle(asset: AssetEntryInternal): Promise<Response
         const response = await responsePromise;
         dotnetAssert.check(response, "Bad response in loadResourceThrottle");
 
-        if (!noBuffer[asset.behavior]) {
-            asset.buffer = await response.arrayBuffer();
+        const checkEmpty = response.ok && (asset.cache === "force-cache" || asset.cache === "reload") &&
+            asset.behavior !== "vfs" && asset.behavior !== "symbols";
+        if (checkEmpty && response.headers.get("Content-Length") === "0") {
+            throw new Error(`Failed to load resource '${asset.name}': empty response`);
         }
-        if (!leaveAfterInstantiation[asset.behavior]) {
+        if (!noBuffer[asset.behavior]) {
+            const buffer = await response.arrayBuffer();
+            if (checkEmpty && buffer.byteLength === 0) {
+                throw new Error(`Failed to load resource '${asset.name}': empty response`);
+            }
+            if (response.ok) {
+                asset.buffer = buffer;
+            }
+        }
+        if (!response.ok || !leaveAfterInstantiation[asset.behavior]) {
             finishThrottling(asset);
         }
         return response;

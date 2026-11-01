@@ -73,4 +73,31 @@ Blazor specific tests should be located in `Blazor` directory. New test classes 
 
 Native relinking tests can run on both runtimes. For theories that also cover Mono AOT, use runtime-aware test data to keep the non-AOT cases on CoreCLR without removing the existing Mono cases. Incremental rebuild assertions must track the appropriate runtime's generated files: CoreCLR uses the portable call-helper sources and objects rather than Mono's P/Invoke tables and driver objects.
 
+`Blazor.AssetCachingTests` exercises the browser HTTP cache using the hosted
+`BlazorWebWasm` test asset. Its recovery cases seed cacheable invalid boot
+responses, verify the cache modes and bounded download attempts, and check that
+a repaired entry is reused on the next boot. These tests run against either
+runtime using the locally constructed workload SDK, and assert that the client
+uses the expected runtime pack rather than an SDK-default downloaded pack.
+The resolved-pack loader bytes are compared with the extracted SDK-installed
+pack when independently available, or with the local package if that runtime
+pack is absent or the application resolves the installed pack itself.
+The constructed SDK must be refreshed after rebuilding
+the runtime; comparison with an installed pack checks SDK agreement, not
+package freshness.
+The cache-seeding page is a static HTML file in the hosted test asset. Native Wasm
+recovery also runs with one download slot to exercise bootstrap dependencies.
+Cache-reuse assertions use the small client assembly; browser cache retention
+of large runtime binaries is discretionary.
+Assembly selection follows `UseWebcil`: run the cache tests with
+`-p:WasmEnableWebcil=false` to cover DLL resources as well as Webcil, and run
+the healthy-cache control with `-p:WasmFingerprintAssets=false` to cover
+conditional revalidation.
+The generated Mono client explicitly selects the current built runtime and
+WebAssembly SDK pack, even when Blazor targets the previous framework.
+The shared client project remains unchanged. After a framework retargeting,
+rebuild the runtime packages and recreate the constructed workload SDK before
+validating: an older manifest can map the previous framework to the current
+package and hide a runtime-selection failure that a fresh CI SDK exposes.
+
 If you want to test templating mechanism, use `CreateWasmTemplateProject`. Otherwise, use `CopyTestAsset` with either `WasmBasicTestApp` or `BlazorBasicTestApp`, adding your custom `TestScenario` or using a generic `DotnetRun` scenario in case of WASM app and adding a page with test in case of Blazor app. Bigger snippets of code should be saved in `src/mono/wasm/testassets` and placed in the application using methods: `ReplaceFile` or `File.Move`. Replacing existing small parts of code with custom lines is done with `UpdateFile`.
