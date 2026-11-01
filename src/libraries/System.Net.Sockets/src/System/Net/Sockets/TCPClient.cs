@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -120,7 +121,7 @@ namespace System.Net.Sockets
         // Connects the Client to the specified port on the specified host.
         public void Connect(string hostname, int port)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 
@@ -139,7 +140,7 @@ namespace System.Net.Sockets
         // Connects the Client to the specified port on the specified host.
         public void Connect(IPAddress address, int port)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 
@@ -156,7 +157,7 @@ namespace System.Net.Sockets
         // Connect the Client to the specified end point.
         public void Connect(IPEndPoint remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 
@@ -169,7 +170,7 @@ namespace System.Net.Sockets
 
         public void Connect(IPAddress[] ipAddresses, int port)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 
@@ -236,8 +237,6 @@ namespace System.Net.Sockets
 
         public void EndConnect(IAsyncResult asyncResult)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             _clientSocket.EndConnect(asyncResult);
             _active = true;
 
