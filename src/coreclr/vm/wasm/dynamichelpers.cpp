@@ -34,9 +34,78 @@ extern "C" __attribute__((naked)) SIZE_T STDCALL DelayLoad_Helper(TransitionBloc
          "return" :: "i" (DelayLoad_HelperImpl));
 }
 
-extern "C" void STDCALL DelayLoad_Helper_Obj()
+extern "C" void DynamicHelper_ReturnFirstArg();
+
+extern "C" SIZE_T STDCALL DelayLoad_Helper_ObjImpl(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup, INT frameFlags)
 {
-    PORTABILITY_ASSERT("DelayLoad_Helper_Obj is not implemented on wasm");
+    SIZE_T result = DelayLoad_HelperImpl(pTransitionBlock, pImportThunkEntry, moduleBase, rvaOfModuleFixup, frameFlags);
+    if (result == 0)
+    {
+        // DynamicHelperWorker stored the result in the first argument slot of the transition block instead of
+        // publishing a helper. The import thunk reloads its arguments from the transition block and dispatches
+        // through the returned portable entrypoint, so return one that hands back its first argument.
+        static PCODE s_returnFirstArgEntryPoint = (PCODE)DynamicHelper_ReturnFirstArg;
+        result = (SIZE_T)&s_returnFirstArgEntryPoint;
+    }
+    return result;
+}
+
+extern "C" __attribute__((naked)) SIZE_T STDCALL DelayLoad_Helper_Obj(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup)
+{
+    asm ("local.get 0\n" /* Capture pTransitionBlock onto the stack for calling DelayLoad_Helper_ObjImpl function. This also happens to be the callersFramePointer */
+         "local.get 0\n" /* Capture callersFramePointer onto the stack for setting the __stack_pointer */
+         "global.get __stack_pointer\n" /* Get current value of stack global */
+         "local.set 0\n"  /* Overwrite local 0 with the previous __stack_pointer value so it can be restored after the call */
+         "global.set __stack_pointer\n" /* Set stack global to the initial value of callersFramePointer, which is the current stack pointer for the interpreter call */
+         "local.get 1\n" /* Load pImportThunkEntry argument */
+         "local.get 2\n" /* Load moduleBase argument */
+         "local.get 3\n" /* Load rvaOfModuleFixup argument */
+         "i32.const 1\n" /* frameFlags = DynamicHelperFrameFlags_ObjectArg: the first argument is an object reference */
+         "call %0\n" /* Call the actual implementation function */
+         "local.get 0\n" /* Reload the saved previous __stack_pointer value for restoration into the stack global */
+         "global.set __stack_pointer\n"
+         "return" :: "i" (DelayLoad_Helper_ObjImpl));
+}
+
+extern "C" void DynamicHelper_VirtualEntry_CallHelper();
+extern "C" void DynamicHelper_VirtualEntry_ReturnConst();
+
+static_assert(offsetof(VirtualEntryDynamicHelperStubData_PortableEntryPoint, MethodHandle) - offsetof(VirtualEntryDynamicHelperStubData_PortableEntryPoint, ClassHandle)
+    == offsetof(VirtualFunctionPointerArgs, methodHnd) - offsetof(VirtualFunctionPointerArgs, classHnd), "Inline args must match VirtualFunctionPointerArgs");
+static_assert(offsetof(VirtualFunctionPointerArgs, classHnd) == 0, "Inline args must match VirtualFunctionPointerArgs");
+
+// Wasm equivalent of the CreateReturnConst/CreateHelperWithArg helpers used for READYTORUN_FIXUP_VirtualEntry
+// on other platforms. Wasm cannot generate code at runtime, so the result is a data block whose first word is the
+// function table index of a precompiled stub with the (sp, object, portableEntrypoint) -> nint signature.
+PCODE CreateVirtualEntryHelper_Wasm(LoaderAllocator* pAllocator, TypeHandle th, MethodDesc* pMD)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+    VirtualEntryDynamicHelperStubData_PortableEntryPoint* pData = (VirtualEntryDynamicHelperStubData_PortableEntryPoint*)amTracker.Track(
+        pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(VirtualEntryDynamicHelperStubData_PortableEntryPoint))));
+
+    if (!pMD->IsVtableMethod())
+    {
+        PCODE target = pMD->GetMultiCallableAddrOfCode();
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(target);
+        pData->HelperFunctionTableIndex = (PCODE)DynamicHelper_VirtualEntry_ReturnConst;
+        pData->Target = target;
+    }
+    else
+    {
+        MethodDesc* pVirtualDispatchHelper = CoreLibBinder::GetMethod(METHOD__VIRTUALDISPATCHHELPERS__VIRTUALFUNCTIONPOINTER_DYNAMIC);
+        PCODE helperEntryPoint = pVirtualDispatchHelper->GetMultiCallableAddrOfCode();
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(helperEntryPoint);
+
+        pData->HelperFunctionTableIndex = (PCODE)DynamicHelper_VirtualEntry_CallHelper;
+        pData->Target = helperEntryPoint;
+        pData->ClassHandle = (TADDR)th.AsPtr();
+        pData->MethodHandle = (TADDR)pMD;
+    }
+
+    amTracker.SuppressRelease();
+    return (PCODE)pData;
 }
 
 extern "C" void STDCALL DelayLoad_Helper_ObjObj()

@@ -369,3 +369,55 @@ DynamicHelper_GenericDictionaryLookup_Method_UseHelper:
         call_indirect    __indirect_function_table, (i32, i32, i32, i32) -> (i32)
         return
         end_function
+
+
+// Resolved READYTORUN_FIXUP_VirtualEntry cell for a vtable method: calls the managed
+// VirtualDispatchHelpers.VirtualFunctionPointer_Dynamic(object, ref VirtualFunctionPointerArgs)
+// whose arguments live inline in the stub data.
+.functype       DynamicHelper_VirtualEntry_CallHelper (i32, i32, i32) -> (i32)
+.section        .text.DynamicHelper_VirtualEntry_CallHelper,"",@
+.hidden         DynamicHelper_VirtualEntry_CallHelper
+.globl          DynamicHelper_VirtualEntry_CallHelper
+.type           DynamicHelper_VirtualEntry_CallHelper,@function
+DynamicHelper_VirtualEntry_CallHelper:
+        .functype       DynamicHelper_VirtualEntry_CallHelper (i32, i32, i32) -> (i32)
+        local.get       0                                                                       // Load the stack pointer
+        local.get       1                                                                       // Load the object
+        local.get       2                                                                       // Load the VirtualEntryDynamicHelperStubData parameter
+        i32.const       OFFSETOF__VirtualEntryDynamicHelperStubData_PortableEntryPoint__Args
+        i32.add                                                                                 // Address of the inline VirtualFunctionPointerArgs
+        local.get       2
+        i32.load        OFFSETOF__VirtualEntryDynamicHelperStubData_PortableEntryPoint__Target  // Portable entrypoint of the managed helper
+        local.tee       2
+        local.get       2
+        i32.load        0
+        call_indirect    __indirect_function_table, (i32, i32, i32, i32) -> (i32)
+        return
+        end_function
+
+
+// Resolved READYTORUN_FIXUP_VirtualEntry cell for a non-vtable method: returns the constant target.
+.functype       DynamicHelper_VirtualEntry_ReturnConst (i32, i32, i32) -> (i32)
+.section        .text.DynamicHelper_VirtualEntry_ReturnConst,"",@
+.hidden         DynamicHelper_VirtualEntry_ReturnConst
+.globl          DynamicHelper_VirtualEntry_ReturnConst
+.type           DynamicHelper_VirtualEntry_ReturnConst,@function
+DynamicHelper_VirtualEntry_ReturnConst:
+        .functype       DynamicHelper_VirtualEntry_ReturnConst (i32, i32, i32) -> (i32)
+        local.get       2
+        i32.load        OFFSETOF__VirtualEntryDynamicHelperStubData_PortableEntryPoint__Target
+        return
+        end_function
+
+
+// Used by DelayLoad_Helper_Obj when DynamicHelperWorker stored its result in the first argument slot.
+.functype       DynamicHelper_ReturnFirstArg (i32, i32, i32) -> (i32)
+.section        .text.DynamicHelper_ReturnFirstArg,"",@
+.hidden         DynamicHelper_ReturnFirstArg
+.globl          DynamicHelper_ReturnFirstArg
+.type           DynamicHelper_ReturnFirstArg,@function
+DynamicHelper_ReturnFirstArg:
+        .functype       DynamicHelper_ReturnFirstArg (i32, i32, i32) -> (i32)
+        local.get       1
+        return
+        end_function

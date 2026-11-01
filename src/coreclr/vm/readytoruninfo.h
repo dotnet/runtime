@@ -527,6 +527,16 @@ struct GenericDictionaryDynamicHelperStubData_PortableEntryPoint
     PCODE HelperFunctionTableIndex;
     GenericDictionaryDynamicHelperStubData stubData;
 };
+
+// Callable as a portable entrypoint with the managed signature (object) -> nint.
+// Used for resolved READYTORUN_FIXUP_VirtualEntry cells on wasm.
+struct VirtualEntryDynamicHelperStubData_PortableEntryPoint
+{
+    PCODE HelperFunctionTableIndex;
+    PCODE Target;           // Constant result, or the portable entrypoint of the managed helper to call
+    TADDR ClassHandle;      // VirtualFunctionPointerArgs passed by reference to the managed helper
+    TADDR MethodHandle;
+};
 #endif
 
 class ReadyToRunLoadedImage

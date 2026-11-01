@@ -48,6 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public MethodDesc Method => _method.Method;
+        public ReadyToRunFixupKind FixupKind => _fixupKind;
         public bool IsInstantiatingStub { get; }
 
         public override int ClassCode => 150063499;

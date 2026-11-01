@@ -3645,6 +3645,11 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
     }
 }
 
+#ifdef TARGET_WASM
+// Implemented in wasm/dynamichelpers.cpp
+PCODE CreateVirtualEntryHelper_Wasm(LoaderAllocator* pAllocator, TypeHandle th, MethodDesc* pMD);
+#endif // TARGET_WASM
+
 PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWORD sectionIndex, Module * pModule, ReadyToRunFixupKind * pKind, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD)
 {
     STANDARD_VM_CONTRACT;
@@ -3737,11 +3742,14 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         pFD = ZapSig::DecodeField(pModule, pInfoModule, pBlob, &th);
         _ASSERTE(pFD->IsStatic());
         goto Statics;
+#endif // !TARGET_WASM
 
     case READYTORUN_FIXUP_VirtualEntry:
         fReliable = true;
+#ifndef TARGET_WASM
         FALLTHROUGH;
     case READYTORUN_FIXUP_DelegateCtor:
+#endif // !TARGET_WASM
         {
             pMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &th);
             pMD->PrepareForUseAsADependencyOfANativeImage();
@@ -3756,7 +3764,6 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
             pMD->EnsureActive();
         }
         break;
-#endif // !TARGET_WASM
     case READYTORUN_FIXUP_ThisObjDictionaryLookup:
     case READYTORUN_FIXUP_TypeDictionaryLookup:
     case READYTORUN_FIXUP_MethodDictionaryLookup:
@@ -3839,9 +3846,13 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                     }
                 }
                 break;
+#endif // !TARGET_WASM
 
             case READYTORUN_FIXUP_VirtualEntry:
                 {
+#ifdef TARGET_WASM
+                    pHelper = CreateVirtualEntryHelper_Wasm(pModule->GetLoaderAllocator(), th, pMD);
+#else // !TARGET_WASM
                    if (!pMD->IsVtableMethod())
                    {
                         pHelper = DynamicHelpers::CreateReturnConst(pModule->GetLoaderAllocator(), pMD->GetMultiCallableAddrOfCode());
@@ -3865,9 +3876,9 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
                         amTracker.SuppressRelease();
                     }
+#endif // !TARGET_WASM
                 }
                 break;
-#endif // !TARGET_WASM
             default:
                 UNREACHABLE();
             }

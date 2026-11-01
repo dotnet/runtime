@@ -2805,13 +2805,6 @@ namespace Internal.JitInterface
                         // LDVIRTFTN, so the call sig may carry a type arg (e.g., MD-array intrinsics);
                         // instParamLookup is set up by the post-switch block below.
                         Debug.Assert(!pResult->sig.hasTypeArg() || _compilation.NodeFactory.Target.IsWasm);
-
-                        // The Wasm JIT calls CORINFO_HELP_VIRTUAL_FUNC_PTR instead of using the dynamic helper cell,
-                        // so add the dependencies of the cell's VirtualEntry signature here.
-                        if (_compilation.NodeFactory.Target.IsWasm)
-                        {
-                            MethodFixupSignature.AddVirtualEntryDependencies(_additionalDependencies, _compilation.NodeFactory, virtualFunctionTarget.Method);
-                        }
                     }
                     break;
 

@@ -2720,15 +2720,8 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     }
 #endif
 
-    // Wasm R2R cannot use the CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR fast path because it
-    // relies on DelayLoad_Helper_Obj dynamic-helper thunks, which are not implemented on wasm.
-    // Fall through to the runtime CORINFO_HELP_VIRTUAL_FUNC_PTR helper instead.
 #ifdef FEATURE_READYTORUN
-#ifdef TARGET_WASM
-    else if (IsNativeAot())
-#else
     else if (IsAot())
-#endif
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
         {

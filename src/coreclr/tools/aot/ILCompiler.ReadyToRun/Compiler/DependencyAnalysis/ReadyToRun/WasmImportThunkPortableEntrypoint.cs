@@ -100,7 +100,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private WasmSignature GetWasmSignature(NodeFactory factory)
         {
-            if (_import.Signature is GenericLookupSignature)
+            // A VirtualEntry dynamic helper cell is called as (sp, object, pe) -> function pointer, which lowers
+            // the same as a generic lookup, not with the target method's signature. VirtualEntry imports
+            // used for virtual calls (DelayLoad_MethodCall) keep the target method's signature.
+            if (_import.Signature is GenericLookupSignature ||
+                (_import.HelperId == ReadyToRunHelper.DelayLoad_Helper_Obj &&
+                 _import.Signature is MethodFixupSignature { FixupKind: ReadyToRunFixupKind.VirtualEntry }))
             {
                 return factory.Target.PointerSize == 4 ? _genericLookupSignature32Bit : _genericLookupSignature64Bit;
             }
