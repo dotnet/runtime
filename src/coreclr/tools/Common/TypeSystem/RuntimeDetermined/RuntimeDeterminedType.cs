@@ -27,16 +27,29 @@ namespace Internal.TypeSystem
     /// Runtime determined types also behave like signature variables in the sense that they allow being
     /// substituted during signature instantiation.
     /// </remarks>
-    public sealed partial class RuntimeDeterminedType : DefType
+    public sealed partial class RuntimeDeterminedType : DefType, IPrefixMangledType
     {
         private DefType _rawCanonType;
         private GenericParameterDesc _runtimeDeterminedDetailsType;
+        private readonly byte[] _utf8Prefix;
 
         public RuntimeDeterminedType(DefType rawCanonType, GenericParameterDesc runtimeDeterminedDetailsType)
         {
             _rawCanonType = rawCanonType;
             _runtimeDeterminedDetailsType = runtimeDeterminedDetailsType;
+            int index = _runtimeDeterminedDetailsType.Index;
+            _utf8Prefix = new byte[1 + FormattingHelpers.CountDigits((uint)index)];
+            _utf8Prefix[0] = (byte)(_runtimeDeterminedDetailsType.Kind == GenericParameterKind.Type ? 'T' : 'M');
+            for (int position = _utf8Prefix.Length - 1; position > 0; position--)
+            {
+                _utf8Prefix[position] = (byte)('0' + (index % 10));
+                index /= 10;
+            }
         }
+
+        TypeDesc IPrefixMangledType.BaseType => _rawCanonType;
+
+        ReadOnlySpan<byte> IPrefixMangledType.Prefix => _utf8Prefix;
 
         /// <summary>
         /// Gets the generic parameter this runtime determined type represents.
@@ -104,8 +117,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return new Utf8Span(System.Text.Encoding.UTF8.GetBytes(_runtimeDeterminedDetailsType.Name))
-                    .Append("_"u8, _rawCanonType.Namespace);
+                return _rawCanonType.Namespace;
             }
         }
 
