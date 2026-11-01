@@ -85,6 +85,33 @@ switch (testCase) {
         if (applicationEnvironment) {
             dotnet.withApplicationEnvironment(applicationEnvironment);
         }
+        if (params.get("legacySettings") === "true") {
+            dotnet.withConfigLoaded(config => {
+                config.appsettings = config.resources.appsettings.map(asset => asset.name);
+                delete config.resources.appsettings;
+            });
+        }
+        if (params.get("noSettings") === "true") {
+            dotnet.withConfigLoaded(config => {
+                config.resources.appsettings = [];
+                delete config.appsettings;
+            });
+        }
+        if (params.get("settingsLoader")) {
+            dotnet.withResourceLoader((type, name, url, hash, behavior) => {
+                if (type !== "configuration") return url;
+                if (behavior !== "appsettings") throw new Error(`Unexpected settings behavior: ${behavior}`);
+                switch (params.get("settingsLoader")) {
+                    case "null": return null;
+                    case "response": return fetch(url);
+                    case "url": return url;
+                    default: throw new Error("Unexpected settings loader mode");
+                }
+            });
+        }
+        if (params.get("settingsDownload")) {
+            await dotnet.download(params.get("settingsDownload") === "cache");
+        }
         break;
     case "LazyLoadingTest":
         dotnet.withDiagnosticTracing(true);
@@ -337,7 +364,75 @@ try {
             exit(0);
             break;
         case "AppSettingsTest":
-            exports.AppSettingsTest.Run();
+            const inMemorySettings = !INTERNAL.monoStringToStringUnsafe;
+            const expectSettingsVfs = params.get("settingsVfs") !== "false";
+            if (inMemorySettings && params.get("legacySettings") !== "true") {
+                if (!config.resources.appsettings || config.appsettings !== undefined) {
+                    throw new Error("Expected resources.appsettings instead of the legacy manifest list");
+                }
+                if (config.resources.appsettings.some(asset => asset.loadIntoVfs !== expectSettingsVfs)) {
+                    throw new Error("Unexpected appsettings VFS placement flag");
+                }
+            }
+            exports.AppSettingsTest.Run(expectSettingsVfs, inMemorySettings);
+            if (params.get("noSettings") === "true") {
+                if (INTERNAL.getAppSettingsFiles().length !== 0 || INTERNAL.getAppSettingsBytes("appsettings.json") !== undefined) {
+                    throw new Error("Unconfigured settings must not be loaded from VFS");
+                }
+                testOutput("Appsettings file API passed");
+                exit(0);
+                break;
+            }
+            const settingsBytes = INTERNAL.getAppSettingsBytes("appsettings.json");
+            const firstSettingsByte = settingsBytes[0];
+            settingsBytes[0] ^= 0xff;
+            if (inMemorySettings) {
+                if (INTERNAL.getAppSettingsBytes("appsettings.json") !== settingsBytes) {
+                    throw new Error("Appsettings getter should return the stored Uint8Array");
+                }
+                settingsBytes[0] = firstSettingsByte;
+                const files = INTERNAL.getAppSettingsFiles();
+                const expected = ["appsettings.json", `appsettings.${config.applicationEnvironment}.json`]
+                    .filter(name => INTERNAL.getAppSettingsBytes(name) !== undefined);
+                if (JSON.stringify(files) !== JSON.stringify(expected)) {
+                    throw new Error(`Unexpected appsettings selection: ${JSON.stringify(files)}`);
+                }
+                const baseConfig = JSON.parse(new TextDecoder().decode(settingsBytes));
+                if (baseConfig.key1 !== "Default key1-value") {
+                    throw new Error("Unexpected downloaded appsettings content");
+                }
+                testOutput("Appsettings file API passed");
+                exit(0);
+                break;
+            } else if (INTERNAL.getAppSettingsBytes("appsettings.json")[0] !== firstSettingsByte) {
+                throw new Error("Mutating returned appsettings bytes changed VFS contents");
+            }
+            const originalAppsettings = config.appsettings;
+            config.appsettings = [...originalAppsettings].reverse().concat(originalAppsettings);
+            const selectedFiles = INTERNAL.getAppSettingsFiles();
+            const expectedFiles = ["appsettings.json", `appsettings.${config.applicationEnvironment}.json`]
+                .filter(name => originalAppsettings.some(url => url.substring(url.lastIndexOf("/") + 1) === name));
+            if (JSON.stringify(selectedFiles) !== JSON.stringify(expectedFiles)) {
+                throw new Error(`Unexpected appsettings selection: ${JSON.stringify(selectedFiles)}`);
+            }
+            selectedFiles.length = 0;
+            if (JSON.stringify(INTERNAL.getAppSettingsFiles()) !== JSON.stringify(expectedFiles)) {
+                throw new Error("Mutating the returned appsettings list changed subsequent results");
+            }
+            config.appsettings = originalAppsettings.filter(url => !url.endsWith("/appsettings.json"));
+            if (JSON.stringify(INTERNAL.getAppSettingsFiles()) !== JSON.stringify(expectedFiles.slice(1))) {
+                throw new Error("Unexpected appsettings selection without base settings");
+            }
+            config.appsettings = [];
+            if (INTERNAL.getAppSettingsFiles().length !== 0) {
+                throw new Error("Empty appsettings should return an empty file list");
+            }
+            delete config.appsettings;
+            if (INTERNAL.getAppSettingsFiles().length !== 0) {
+                throw new Error("Absent appsettings should return an empty file list");
+            }
+            config.appsettings = originalAppsettings;
+            testOutput("Appsettings file API passed");
             exit(0);
             break;
         case "FilesToIncludeInFileSystemTest":

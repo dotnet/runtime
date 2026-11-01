@@ -2,10 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
 
@@ -16,6 +20,83 @@ namespace Wasm.Build.Tests;
     [TestCategory("no-workload")]
     public class GenerateWasmBootJsonTests
     {
+        [Theory]
+        [InlineData("v11.0", false, false, true)]
+        [InlineData("v11.0", false, true, true)]
+        [InlineData("v11.0", true, false, false)]
+        [InlineData("v10.0", false, false, false)]
+        [InlineData("v9.0", true, false, false)]
+        public void AppSettingsManifestVersion(string framework, bool mono, bool filesystemUsage, bool expectAssets)
+        {
+            using var dir = new TempDirectory();
+            string path = Path.Combine(dir.Path, "boot.json");
+            var task = new GenerateWasmBootJson
+            {
+                BuildEngine = new TestBuildEngine(),
+                AssemblyPath = typeof(GenerateWasmBootJsonTests).Assembly.Location,
+                Resources = [],
+                Endpoints = [],
+                ConfigurationFiles = [new TaskItem("appsettings.json")],
+                TargetFrameworkVersion = framework,
+                UseMonoRuntime = mono.ToString(),
+                FilesystemUsageDetected = filesystemUsage,
+                OutputPath = path
+            };
+            Assert.True(task.Execute());
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
+            JsonElement root = document.RootElement;
+            if (expectAssets)
+            {
+                Assert.False(root.TryGetProperty("appsettings", out _));
+                JsonElement asset = Assert.Single(root.GetProperty("resources").GetProperty("appsettings").EnumerateArray());
+                Assert.Equal("../appsettings.json", asset.GetProperty("name").GetString());
+                Assert.Equal("appsettings.json", asset.GetProperty("virtualPath").GetString());
+                Assert.Equal(filesystemUsage, asset.GetProperty("loadIntoVfs").GetBoolean());
+            }
+            else
+            {
+                Assert.Equal("../appsettings.json", Assert.Single(root.GetProperty("appsettings").EnumerateArray()).GetString());
+                Assert.False(root.GetProperty("resources").TryGetProperty("appsettings", out _));
+            }
+        }
+
+        [Theory]
+        [InlineData(true, false, false)]
+        [InlineData(true, true, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, true)]
+        [InlineData(false, false, false)]
+        [InlineData(false, true, true)]
+        public void AppSettingsAssets(bool useAssets, bool filesystemUsage, bool bundlerFriendly)
+        {
+            string[] names = ["../appsettings.json", "../appsettings.Development.json"];
+            var config = new BootJsonData { appsettings = names.ToList() };
+            var task = new GenerateWasmBootJson();
+            var helper = new BootJsonBuilderHelper(task.Log, "0", false, false, new Version(11, 0), false);
+            string imports = helper.TransformResourcesToAssets(config, bundlerFriendly,
+                useAppSettingsAssets: useAssets, filesystemUsageDetected: filesystemUsage);
+            var assets = Assert.IsType<AssetsData>(config.resources);
+            if (useAssets)
+            {
+                Assert.Null(config.appsettings);
+                Assert.Equal(names, assets.appsettings.Select(asset => asset.name));
+                Assert.Equal(new[] { "appsettings.json", "appsettings.Development.json" }, assets.appsettings.Select(asset => asset.virtualPath));
+                Assert.All(assets.appsettings, asset => {
+                    Assert.Equal(filesystemUsage, asset.loadIntoVfs);
+                    Assert.Equal("no-cache", asset.cache);
+                    Assert.Equal(bundlerFriendly, asset.resolvedUrl is not null);
+                });
+            }
+            else
+            {
+                Assert.Null(assets.appsettings);
+                Assert.NotNull(config.appsettings);
+                if (!bundlerFriendly)
+                    Assert.Equal(names, config.appsettings);
+            }
+            Assert.Equal(bundlerFriendly, imports.Contains("import "));
+        }
+
         [Fact]
         public void ReadRuntimeConfigFiles_NullMainConfigPath_ReturnsNull()
         {
@@ -150,6 +231,20 @@ namespace Wasm.Build.Tests;
             Assert.NotNull(result?.runtimeOptions?.configProperties);
             Assert.Single(result!.runtimeOptions!.configProperties!);
             Assert.Equal("value1", result.runtimeOptions.configProperties["key1"].ToString());
+        }
+
+        private sealed class TestBuildEngine : IBuildEngine
+        {
+            public bool ContinueOnError => false;
+            public int LineNumberOfTaskNode => 0;
+            public int ColumnNumberOfTaskNode => 0;
+            public string ProjectFileOfTaskNode => string.Empty;
+            public void LogErrorEvent(BuildErrorEventArgs e) => throw new InvalidOperationException(e.Message);
+            public void LogWarningEvent(BuildWarningEventArgs e) => throw new InvalidOperationException(e.Message);
+            public void LogMessageEvent(BuildMessageEventArgs e) { }
+            public void LogCustomEvent(CustomBuildEventArgs e) { }
+            public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs)
+                => throw new NotSupportedException();
         }
 
         private static string WriteRuntimeConfig(string dir, string fileName, Dictionary<string, string>? configProperties)
