@@ -1332,7 +1332,8 @@ namespace System.Diagnostics.Tests
             Process p = CreateDefaultProcess();
 
             // Read other information first so that the process information is cached without the threads being read.
-            Assert.True(p.WorkingSet64 > 0);
+            // The value itself is not checked as it can be zero just after the process started on Linux 6.2+.
+            _ = p.WorkingSet64;
 
             p.Kill();
 
@@ -1364,7 +1365,8 @@ namespace System.Diagnostics.Tests
             Process p = CreateDefaultProcess();
 
             // Reading the memory properties must not require (or prevent) the thread list being read afterwards.
-            Assert.True(p.WorkingSet64 > 0);
+            // The value itself is not checked as it can be zero just after the process started on Linux 6.2+.
+            _ = p.WorkingSet64;
             Assert.NotEmpty(p.Threads.Cast<ProcessThread>());
         }
     }
