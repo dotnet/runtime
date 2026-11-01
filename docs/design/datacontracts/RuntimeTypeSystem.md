@@ -689,6 +689,8 @@ static class RuntimeTypeSystem_1_Helpers
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `TYPE_MASK_OFFSET` | int | The number of bits the type is shifted left in the field desc flags2 | `27` |
+| `ConstructedTypeHashSeed` | uint | Initial accumulator for the constructed-type hash | `5381` (`0x00001505`) |
+| `ConstructedTypeHashMultiplier` | uint | Multiplier applied before XORing each constructed-type hash input | `33` |
 
 ```csharp
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;
@@ -1323,7 +1325,8 @@ static class RuntimeTypeSystem_1_Helpers
         TargetPointer loaderModule = // see [link](https://github.com/dotnet/runtime/blob/e1979b72ccb5f916649f1d9949ef663254790c25/src/coreclr/vm/clsload.cpp#L78)
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
         ITypeHandle? potentialMatch = null;
-        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
+        uint hash = GetConstructedTypeHash(typeHandle, corElementType, typeArguments, callConv);
+        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle, hash))
         {
             potentialMatch = GetTypeHandle(ptr);
             if (corElementType == CorElementType.GenericInst)
@@ -1346,6 +1349,40 @@ static class RuntimeTypeSystem_1_Helpers
             }
         }
         return null;
+    }
+
+    // This is the runtime's HashTypeKey algorithm from src/coreclr/vm/typehash.cpp.
+    // Using this hash algorithm is NOT required for correctness; it only improves performance.
+    // Without a hash, lookup remains correct by iterating the entire table and comparing full type keys.
+    // When hash-based bucket filtering is used, the hash must match the runtime's algorithm.
+    // Arithmetic wraps to uint32.
+    // Module and array rank are not hashed, but are checked by full key comparison.
+    uint GetConstructedTypeHash(ITypeHandle? typeHandle, CorElementType kind,
+        ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv)
+    {
+        uint hash = ConstructedTypeHashSeed;
+        if (kind == CorElementType.GenericInst)
+        {
+            hash = Mix(hash, GetTypeDefToken(typeHandle));
+            foreach (ITypeHandle argument in typeArguments)
+                hash = Mix(hash, argument.Address.Value);
+        }
+        else if (kind == CorElementType.FnPtr)
+        {
+            hash = Mix(hash, (uint)CorElementType.FnPtr);
+            hash = Mix(hash, (uint)callConv);
+            hash = Mix(hash, unchecked((uint)(typeArguments.Length - 1)));
+            foreach (ITypeHandle argument in typeArguments)
+                hash = Mix(hash, argument.Address.Value);
+        }
+        else
+        {
+            hash = Mix(hash, (uint)kind);
+            hash = Mix(hash, typeHandle.Address.Value);
+        }
+        return hash;
+
+        static uint Mix(uint hash, ulong value) => unchecked((hash * ConstructedTypeHashMultiplier) ^ (uint)value);
     }
 
     public ITypeHandle GetPrimitiveType(CorElementType typeCode)
