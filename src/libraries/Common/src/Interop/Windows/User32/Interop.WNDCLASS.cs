@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class User32
     {
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal unsafe struct WNDCLASS
+        internal struct WNDCLASS
         {
             public int style;
             public IntPtr lpfnWndProc;
@@ -19,8 +19,8 @@ internal static partial class Interop
             public IntPtr hIcon;
             public IntPtr hCursor;
             public IntPtr hbrBackground;
-            public char* lpszMenuName;
-            public char* lpszClassName;
+            public unsafe char* lpszMenuName;
+            public unsafe char* lpszClassName;
         }
     }
 }

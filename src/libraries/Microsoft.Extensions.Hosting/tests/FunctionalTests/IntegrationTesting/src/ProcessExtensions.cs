@@ -14,8 +14,8 @@ namespace Microsoft.Extensions.Internal
     {
         private const int ESRCH = 3;
 #if NET
-        private static readonly int s_sigint = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 2 : GetPlatformSignalNumber(PosixSignal.SIGINT);
-        private static readonly int s_sigterm = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 15 : GetPlatformSignalNumber(PosixSignal.SIGTERM);
+        private static readonly int s_sigint = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 2 : /* SAFETY: To be audited */ unsafe(GetPlatformSignalNumber(PosixSignal.SIGINT));
+        private static readonly int s_sigterm = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 15 : /* SAFETY: To be audited */ unsafe(GetPlatformSignalNumber(PosixSignal.SIGTERM));
 #endif
         private static readonly bool _isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private static readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(30);
@@ -112,13 +112,17 @@ namespace Microsoft.Extensions.Internal
         {
             try
             {
-                if (Kill(processId, SigTermSignalNumber) != 0)
+                // SAFETY: To be audited
+                unsafe
                 {
-                    var error = Marshal.GetLastWin32Error();
-                    if (error != ESRCH)
+                    if (Kill(processId, SigTermSignalNumber) != 0)
                     {
-                        KillProcessUnixHard(processId, timeout);
-                        return;
+                        var error = Marshal.GetLastWin32Error();
+                        if (error != ESRCH)
+                        {
+                            KillProcessUnixHard(processId, timeout);
+                            return;
+                        }
                     }
                 }
 
@@ -198,18 +202,22 @@ namespace Microsoft.Extensions.Internal
             {
                 throw new PlatformNotSupportedException("Sending POSIX signals is only supported on Unix-like platforms.");
             }
-            if (Kill(pid, signal) != 0)
+            // SAFETY: To be audited
+            unsafe
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                if (Kill(pid, signal) != 0)
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
             }
         }
 
         [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
-        private static extern int Kill(int pid, int sig);
+        private static extern unsafe int Kill(int pid, int sig);
 
 #if NET
         [DllImport("libSystem.Native", EntryPoint = "SystemNative_GetPlatformSignalNumber")]
-        private static extern int GetPlatformSignalNumber(PosixSignal signal);
+        private static extern unsafe int GetPlatformSignalNumber(PosixSignal signal);
 #endif
     }
 }

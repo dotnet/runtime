@@ -25,12 +25,12 @@ using Xunit;
 public static partial class MountHelper
 {
     [DllImport("kernel32.dll", EntryPoint = "GetVolumeNameForVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
-    private static extern bool GetVolumeNameForVolumeMountPoint(string volumeName, StringBuilder uniqueVolumeName, int uniqueNameBufferCapacity);
+    private static extern unsafe bool GetVolumeNameForVolumeMountPoint(string volumeName, StringBuilder uniqueVolumeName, int uniqueNameBufferCapacity);
     // unique volume name must be "\\?\Volume{GUID}\"
     [DllImport("kernel32.dll", EntryPoint = "SetVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
-    private static extern bool SetVolumeMountPoint(string mountPoint, string uniqueVolumeName);
+    private static extern unsafe bool SetVolumeMountPoint(string mountPoint, string uniqueVolumeName);
     [DllImport("kernel32.dll", EntryPoint = "DeleteVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
-    private static extern bool DeleteVolumeMountPoint(string mountPoint);
+    private static extern unsafe bool DeleteVolumeMountPoint(string mountPoint);
 
     // Helper for ConditionalClass attributes
     internal static bool IsSubstAvailable => PlatformDetection.IsSubstAvailable;
@@ -231,13 +231,21 @@ public static partial class MountHelper
         Console.WriteLine(string.Format("Mounting volume {0} at {1}", volumeName, mountPoint));
         bool r;
         StringBuilder sb = new StringBuilder(1024);
-        r = GetVolumeNameForVolumeMountPoint(volumeName, sb, sb.Capacity);
+        // SAFETY: To be audited
+        unsafe
+        {
+            r = GetVolumeNameForVolumeMountPoint(volumeName, sb, sb.Capacity);
+        }
         if (!r)
             throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
 
         string uniqueName = sb.ToString();
         Console.WriteLine(string.Format("uniqueName: <{0}>", uniqueName));
-        r = SetVolumeMountPoint(mountPoint, uniqueName);
+        // SAFETY: To be audited
+        unsafe
+        {
+            r = SetVolumeMountPoint(mountPoint, uniqueName);
+        }
         if (!r)
             throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
         Task.Delay(100).Wait(); // adding sleep for the file system to settle down so that reparse point mounting works
@@ -249,7 +257,12 @@ public static partial class MountHelper
             mountPoint += Path.DirectorySeparatorChar;
         Console.WriteLine(string.Format("Unmounting the volume at {0}", mountPoint));
 
-        bool r = DeleteVolumeMountPoint(mountPoint);
+        bool r;
+        // SAFETY: To be audited
+        unsafe
+        {
+            r = DeleteVolumeMountPoint(mountPoint);
+        }
         if (!r)
         {
             int error = Marshal.GetLastWin32Error();

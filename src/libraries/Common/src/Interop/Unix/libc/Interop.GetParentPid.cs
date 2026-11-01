@@ -8,6 +8,6 @@ internal static partial class Interop
     internal static partial class @libc
     {
         [LibraryImport(Libraries.libc, EntryPoint = "getppid")]
-        internal static partial int GetParentPid();
+        internal static unsafe partial int GetParentPid();
     }
 }

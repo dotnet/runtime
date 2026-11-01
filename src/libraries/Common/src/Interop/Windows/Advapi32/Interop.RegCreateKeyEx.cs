@@ -16,7 +16,7 @@ internal static partial class Interop
         // an error code if it fails.
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegCreateKeyExW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegCreateKeyEx(
+        internal static unsafe partial int RegCreateKeyEx(
             SafeRegistryHandle hKey,
             string lpSubKey,
             int Reserved,

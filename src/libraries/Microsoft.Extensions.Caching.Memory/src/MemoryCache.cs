@@ -814,10 +814,20 @@ namespace Microsoft.Extensions.Caching.Memory
             [StructLayout(LayoutKind.Explicit, Size = 128)]
             private struct CacheSizePadded
             {
-                [FieldOffset(64)] public long Value;
+                [FieldOffset(64)] public unsafe long Value;
             }
 
-            internal ref long CacheSize => ref _cacheSizePadded.Value;
+            internal ref long CacheSize
+            {
+                get
+                {
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        return ref _cacheSizePadded.Value;
+                    }
+                }
+            }
 
             internal bool TryGetValue(object key, [NotNullWhen(true)] out CacheEntry? entry)
                 => key is string s ? _stringEntries.TryGetValue(s, out entry) : _nonStringEntries.TryGetValue(key, out entry);

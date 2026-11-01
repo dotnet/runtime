@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <MemorySafetyRulesVersion Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">2</MemorySafetyRulesVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>

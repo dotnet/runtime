@@ -14,7 +14,7 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegSetValueEx(
+        internal static unsafe partial int RegSetValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
             int Reserved,
@@ -24,7 +24,7 @@ internal static partial class Interop
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegSetValueEx(
+        internal static unsafe partial int RegSetValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
             int Reserved,
@@ -34,7 +34,7 @@ internal static partial class Interop
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegSetValueEx(
+        internal static unsafe partial int RegSetValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
             int Reserved,
@@ -44,7 +44,7 @@ internal static partial class Interop
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegSetValueEx(
+        internal static unsafe partial int RegSetValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
             int Reserved,
@@ -54,7 +54,7 @@ internal static partial class Interop
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegSetValueEx(
+        internal static unsafe partial int RegSetValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
             int Reserved,

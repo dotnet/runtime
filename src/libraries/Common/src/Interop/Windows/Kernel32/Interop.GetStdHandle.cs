@@ -13,6 +13,6 @@ internal static partial class Interop
 #if !NO_SUPPRESS_GC_TRANSITION
         [SuppressGCTransition]
 #endif
-        internal static partial IntPtr GetStdHandle(int nStdHandle);  // param is NOT a handle, but it returns one!
+        internal static unsafe partial IntPtr GetStdHandle(int nStdHandle);  // param is NOT a handle, but it returns one!
     }
 }

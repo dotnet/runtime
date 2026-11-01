@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.User32)]
-        public static partial IntPtr SetClassLongPtrW(IntPtr hwnd, int nIndex, IntPtr dwNewLong);
+        public static unsafe partial IntPtr SetClassLongPtrW(IntPtr hwnd, int nIndex, IntPtr dwNewLong);
     }
 }
