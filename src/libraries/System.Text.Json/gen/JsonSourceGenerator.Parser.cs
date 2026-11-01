@@ -2198,6 +2198,8 @@ namespace System.Text.Json.SourceGeneration
                         if (
                             // property is static or an indexer
                             propertyInfo.IsStatic || propertyInfo.Parameters.Length > 0 ||
+                            // A setter-only override without attributes should use its base property's getter and setter.
+                            (propertyInfo.IsOverride && propertyInfo.GetMethod is null && propertyInfo.GetAttributes().IsEmpty) ||
                             // It is overridden by a derived property
                             PropertyIsOverriddenAndIgnored(propertyInfo, state.IgnoredMembers))
                         {
