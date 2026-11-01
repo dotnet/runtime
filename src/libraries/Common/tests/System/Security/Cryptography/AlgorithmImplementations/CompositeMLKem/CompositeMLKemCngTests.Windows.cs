@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(CompositeMLKemTestHelpers), nameof(CompositeMLKemTestHelpers.IsCngSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class CompositeMLKemCngTests_AllowPlaintextExport : CompositeMLKemCngTestsWithExportPolicy
     {
@@ -15,9 +14,6 @@ namespace System.Security.Cryptography.Tests
             CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
     }
 
-    // Windows doesn't support PKCS#8 export so we can't implement encrypted exports.
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/129633")]
-    [ConditionalClass(typeof(CompositeMLKemTestHelpers), nameof(CompositeMLKemTestHelpers.IsCngSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class CompositeMLKemCngTests_AllowExport : CompositeMLKemCngTestsWithExportPolicy
     {
@@ -28,6 +24,9 @@ namespace System.Security.Cryptography.Tests
     public abstract class CompositeMLKemCngTestsWithExportPolicy : CompositeMLKemTestsBase
     {
         protected abstract CngExportPolicies ExportPolicy { get; }
+
+        protected override void AssertExportPkcs8FromEncapsulationKey(Action export) =>
+            CompositeMLKemTestHelpers.AssertThrowsCryptographicExceptionWithHResult(export);
 
         protected override CompositeMLKem GenerateKey(CompositeMLKemAlgorithm algorithm)
         {
@@ -69,7 +68,6 @@ namespace System.Security.Cryptography.Tests
         }
     }
 
-    [ConditionalClass(typeof(CompositeMLKemTestHelpers), nameof(CompositeMLKemTestHelpers.IsCngSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static class CompositeMLKemCngTests
     {
@@ -96,7 +94,8 @@ namespace System.Security.Cryptography.Tests
                     export => AssertExtensions.SequenceEqual(vector.EncapsulationKey, export(kem)));
 
                 CompositeMLKemTestHelpers.AssertExportDecapsulationKey(
-                    export => Assert.Throws<CryptographicException>(() => export(kem)));
+                    export => Assert.Throws<CryptographicException>(() => export(kem)),
+                    export => CompositeMLKemTestHelpers.AssertThrowsCryptographicExceptionWithHResult(() => export(kem)));
 
                 kem.Encapsulate(out byte[] ciphertext, out byte[] sharedSecret);
                 AssertExtensions.SequenceEqual(sharedSecret, kem.Decapsulate(ciphertext));
