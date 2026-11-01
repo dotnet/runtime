@@ -3080,15 +3080,15 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
                     // instrumented IL map if one exists.
                     if (dmi->HasInstrumentedILMap())
                     {
-                        InstrumentedILOffsetMapping mapping =
-                            dmi->GetRuntimeModule()->GetInstrumentedILOffsetMapping(dmi->m_token);
+                        InstrumentedILOffsetMappingHolder mapping(
+                            dmi->GetRuntimeModule()->GetInstrumentedILOffsetMapping(dmi->m_token));
 
                         for (SIZE_T i = 0; i < n; i++)
                         {
                             int origOffset = *p;
 
                             *p = dmi->TranslateToInstIL(
-                                                  &mapping,
+                                                  &mapping.Get(),
                                                   origOffset,
                                                   bOriginalToInstrumented);
 
