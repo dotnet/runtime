@@ -11,9 +11,9 @@ Covers `src/native/corehost/`, `src/installer/`, `src/tools`, `src/native/manage
 
 ## Tools
 
-**Build:** `./build.sh tools+tools.ilasm`
+**Build:** `./build.sh tools+tools.iltools`
 
-**Test:** `./build.sh tools+tools.ilasm+tools.illinktests+tools.cdactests -test`
+**Test:** `./build.sh tools+tools.iltools+tools.illinktests+tools.cdactests -test`
 
 ## Build Tasks
 
