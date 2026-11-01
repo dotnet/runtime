@@ -17,6 +17,34 @@ namespace System.Text.Json.SourceGeneration.Tests
     public static partial class JsonSerializerContextTests
     {
         [Fact]
+        [RequiresDynamicCode("Tests reflection-based serialization.")]
+        [RequiresUnreferencedCode("Tests reflection-based serialization.")]
+        public static void SetterOnlyOverrideUsesBasePropertyAccessors()
+        {
+            var value = new SetterOnlyDerived { X = 42 };
+            const string json = """{"X":42}""";
+
+            var reflectionOptions = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
+            Assert.Equal(json, JsonSerializer.Serialize(value, reflectionOptions));
+            Assert.Equal(json, JsonSerializer.Serialize(value, SetterOnlyContext.Default.SetterOnlyDerived));
+            Assert.Equal(json, JsonSerializer.Serialize(JsonSerializer.Deserialize<SetterOnlyDerived>(json, reflectionOptions), reflectionOptions));
+            Assert.Equal(json, JsonSerializer.Serialize(JsonSerializer.Deserialize(json, SetterOnlyContext.Default.SetterOnlyDerived), SetterOnlyContext.Default.SetterOnlyDerived));
+        }
+
+        public class SetterOnlyBase
+        {
+            public virtual int X { get; set; }
+        }
+
+        public sealed class SetterOnlyDerived : SetterOnlyBase
+        {
+            public override int X { set => base.X = value; }
+        }
+
+        [JsonSerializable(typeof(SetterOnlyDerived))]
+        internal partial class SetterOnlyContext : JsonSerializerContext { }
+
+        [Fact]
         public static void VariousNestingAndVisibilityLevelsAreSupported()
         {
             Assert.NotNull(PublicContext.Default);

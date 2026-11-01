@@ -610,9 +610,13 @@ namespace System.Text.Json.Serialization.Metadata
 
             foreach (PropertyInfo propertyInfo in currentType.GetProperties(AllInstanceMembers))
             {
-                // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
+                // Ignore indexers, virtual properties with ignored overrides, and setter-only overrides
+                // without attributes. In the latter case, the base property provides both accessors.
                 if (propertyInfo.GetIndexParameters().Length > 0 ||
-                    PropertyIsOverriddenAndIgnored(propertyInfo, state.IgnoredProperties))
+                    PropertyIsOverriddenAndIgnored(propertyInfo, state.IgnoredProperties) ||
+                    (propertyInfo.GetMethod is null &&
+                     propertyInfo.SetMethod is MethodInfo setter && setter.GetBaseDefinition() != setter &&
+                     propertyInfo.GetCustomAttributes(inherit: false).Length == 0))
                 {
                     continue;
                 }
