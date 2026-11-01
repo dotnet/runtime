@@ -15,6 +15,7 @@ pr:
     - src/coreclr/.nuget/Microsoft.NETCore.ILAsm/*
     - src/coreclr/.nuget/package-rids.props
     - src/tasks/installer.tasks/*
+    - eng/NativeAotToolPackage.targets
     - eng/Subsets.props
 
 schedules:
