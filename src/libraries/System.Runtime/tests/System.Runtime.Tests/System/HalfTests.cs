@@ -28,15 +28,24 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ExplicitConversion_FromDecimal_TestData()
         {
-            // The conversion must be correctly rounded. Several of these values round differently when the
-            // conversion goes through float first (double rounding), since float's 24-bit significand only
-            // just meets the 2 * 11 + 2 bound needed for the second rounding to Half to be innocuous.
+            // Decimal values can be arbitrarily close to a Half midpoint, so rounding through another
+            // floating-point format can lose which side of the midpoint the value is on.
             yield return new object[] { 29.101563197521766818810399014m, (ushort)0x4F47 };
             yield return new object[] { 31.61718659002636828475762054m, (ushort)0x4FE7 };
             yield return new object[] { -0.2764892618124898818101803106m, (ushort)0xB46D };
             yield return new object[] { 2174.9999823571306366729268181m, (ushort)0x683F };
             yield return new object[] { -11.800781577718180009007584962m, (ushort)0xC9E7 };
             yield return new object[] { -19752.000968250648361227086248m, (ushort)0xF4D3 };
+
+            // Decimal values just above or below Half midpoints must round to the nearer neighbor.
+            yield return new object[] { 1.0004882812500000000000000001m, (ushort)0x3C01 };
+            yield return new object[] { 1.0014648437499999999999999999m, (ushort)0x3C01 };
+            yield return new object[] { 0.0000610649585723877m, (ushort)0x0401 };
+            yield return new object[] { 0.0000000298023223876953125001m, (ushort)0x0001 };
+
+            // Exact ties outside the fast path's tie-to-even exponent range must still round to even.
+            yield return new object[] { 0.0004885196685791015625m, (ushort)0x1000 };
+            yield return new object[] { 0.0004894733428955078125m, (ushort)0x1002 };
 
             // Subnormal, subnormal/normal boundary, and overflow.
             yield return new object[] { 0.00003m, (ushort)0x01F7 };
@@ -883,6 +892,8 @@ namespace System.Tests
             yield return new object[] { "5.004000000000000000", defaultStyle, invariantFormat, 5.004f };
             yield return new object[] { "5.0040000000000000000", defaultStyle, invariantFormat, 5.004f };
             yield return new object[] { "5.040", defaultStyle, invariantFormat, 5.04f };
+            yield return new object[] { "0.0004885196685791015625", defaultStyle, invariantFormat, 0.0004885196685791015625f };
+            yield return new object[] { "0.0004894733428955078125", defaultStyle, invariantFormat, 0.0004894733428955078125f };
 
             yield return new object[] { "5004.000000000000000", defaultStyle, invariantFormat, 5004.0f };
             yield return new object[] { "50040.0", defaultStyle, invariantFormat, 50040.0f };

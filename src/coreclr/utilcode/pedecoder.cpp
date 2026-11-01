@@ -1894,7 +1894,7 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
     // Reserve the space so nobody can use it. A potential bug is likely to
     // result in a plain AV this way. It is not a good idea to use the original
     // mapping for the reservation since since it would lock the file on the disk.
-    if (!ClrVirtualAlloc(pPreferredBase, nVirtualSize, MEM_RESERVE, PAGE_NOACCESS))
+    if (!VirtualAlloc(pPreferredBase, nVirtualSize, MEM_RESERVE, PAGE_NOACCESS))
         goto ErrExit;
 
     fSuccess = TRUE;

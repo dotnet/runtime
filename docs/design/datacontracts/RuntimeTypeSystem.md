@@ -589,17 +589,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `InstantiatedMethodDesc` | `PerInstInfo` | `pointer` | The pointer to the method's type arguments |
 | `LayoutEEClass` | `LayoutInfo` | `EEClassLayoutInfo` | Inline `EEClassLayoutInfo` for a type with layout. Only the offset is used - the reader constructs an `EEClassLayoutInfo` at that offset from the `EEClass` address. Only valid when `EEClass.VMFlags` has `VMFLAG_HASLAYOUT` |
 | `LoaderAllocator` | `CreationNumber` | `uint64` | Monotonically-increasing creation number assigned to each collectible LoaderAllocator. |
-| `LoaderAllocator` | `DynamicHelpersStubHeap` | `pointer` | Dynamic-helper stub heap (optional, present when ReadyToRun dynamic-helper stubs are enabled) |
-| `LoaderAllocator` | `ExecutableHeap` | `pointer` | Executable-code heap |
-| `LoaderAllocator` | `FixupPrecodeHeap` | `pointer` | Fixup-precode heap (optional, present when fixup precodes are supported) |
-| `LoaderAllocator` | `HighFrequencyHeap` | `pointer` | High-frequency allocation heap |
 | `LoaderAllocator` | `IsCollectible` | `uint8` | Non-zero if the LoaderAllocator is collectible. |
-| `LoaderAllocator` | `LowFrequencyHeap` | `pointer` | Low-frequency allocation heap |
-| `LoaderAllocator` | `NewStubPrecodeHeap` | `pointer` | New-stub-precode heap (optional, absent with portable entry points) |
-| `LoaderAllocator` | `ObjectHandle` | `ObjectHandle` | Handle to the managed loader allocator object |
-| `LoaderAllocator` | `ReferenceCount` | `uint32` | Reference count of the loader allocator |
-| `LoaderAllocator` | `StaticsHeap` | `pointer` | Heap containing statics-related allocations |
-| `LoaderAllocator` | `VirtualCallStubManager` | `pointer` | Pointer to the virtual-call stub manager |
 | `MethodDesc` | *(type size)* | `uint32` | Base size for mcIL classification |
 | `MethodDesc` | `ChunkIndex` | `uint8` | Offset of this MethodDesc relative to the end of its containing MethodDescChunk - in multiples of MethodDescAlignment |
 | `MethodDesc` | `CodeData` | `pointer` | Pointer to per-method code data containing entry-point and code-versioning state |
@@ -607,7 +597,6 @@ static class RuntimeTypeSystem_1_Helpers
 | `MethodDesc` | `Flags` | `uint16` | The method's flags |
 | `MethodDesc` | `Flags3AndTokenRemainder` | `uint16` | More flags for the method, and the low bits of the method's token's RID |
 | `MethodDesc` | `GCCoverageInfo` | `pointer` | The method's GCCover debug info, if supported |
-| `MethodDesc` | `InterpreterCode` | `pointer` | Pointer to the method's `InterpByteCodeStart`, or the poison value 1 if the method will never be interpreted (only defined if `FEATURE_INTERPRETER` is enabled) |
 | `MethodDesc` | `Slot` | `uint16` | The method's slot |
 | `MethodDescChunk` | *(type size)* | `uint32` | Size of the data descriptor layout |
 | `MethodDescChunk` | `Count` | `uint8` | The number of MethodDesc entries in this chunk, minus 1. |
@@ -623,6 +612,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `MethodTable` | `AuxiliaryData` | `pointer` | Pointer to the AuxiliaryData of a method table |
 | `MethodTable` | `BaseSize` | `uint32` | BaseSize of a MethodTable |
 | `MethodTable` | `EEClassOrCanonMT` | `pointer` | Path to both EEClass and canonical MethodTable of a MethodTable |
+| `MethodTable` | `InterfaceMap` | `pointer` | Optional pointer to the array of interface MethodTable pointers used for contextual virtual argument-map lookup |
 | `MethodTable` | `Module` | `pointer` | Module for MethodTable |
 | `MethodTable` | `MTFlags` | `uint32` | One of the flags fields on MethodTable |
 | `MethodTable` | `MTFlags2` | `uint32` | One of the flags fields on MethodTable |
@@ -636,7 +626,6 @@ static class RuntimeTypeSystem_1_Helpers
 | `NativeCodeSlot` | *(type size)* | `uint32` | Size of the native code slot, added when HasNativeCodeSlot flag is set |
 | `NonVtableSlot` | *(type size)* | `uint32` | Size of the non-vtable slot, added when HasNonVtableSlot flag is set |
 | `Object` | *(type size)* | `uint32` | Size in bytes of the fixed Object portion through its MethodTable pointer |
-| `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `ParamTypeDesc` | `TypeArg` | `pointer` | Associated type argument |
 | `PInvokeMethodDesc` | *(type size)* | `uint32` | Base size for mcPInvoke classification |
 | `Signature` | `SignatureLength` | `uint32` | Length in bytes of the raw signature blob. |
@@ -649,9 +638,9 @@ static class RuntimeTypeSystem_1_Helpers
 | `SystemVEightByteRegistersInfo` | `EightByteSize0` | `uint8` | Byte size of the first eightbyte |
 | `SystemVEightByteRegistersInfo` | `EightByteSize1` | `uint8` | Byte size of the second eightbyte |
 | `SystemVEightByteRegistersInfo` | `NumEightBytes` | `uint8` | Number of eightbyte slots used to pass the value type in registers (0 if not passed in registers) |
-| `ThreadStaticsInfo` | *(type size)* | `uint32` | Size in bytes of the thread-statics information stored immediately before MethodTable auxiliary data |
-| `ThreadStaticsInfo` | `GCTlsIndex` | `pointer` | Pointer to GC thread local storage index |
-| `ThreadStaticsInfo` | `NonGCTlsIndex` | `pointer` | Pointer to non-GC thread local storage index |
+| `ThreadStaticsInfo` | *(type size)* | `uint32` | Size in bytes of the thread-statics information stored immediately before MethodTable auxiliary data (optional; absent on runtimes built without multithreading support) |
+| `ThreadStaticsInfo` | `GCTlsIndex` | `pointer` | Pointer to GC thread local storage index (optional; absent on runtimes built without multithreading support) |
+| `ThreadStaticsInfo` | `NonGCTlsIndex` | `pointer` | Pointer to non-GC thread local storage index (optional; absent on runtimes built without multithreading support) |
 | `TypedByRef` | `Data` | `pointer` | Managed pointer (the byref) stored in a System.TypedReference value |
 | `TypedByRef` | `Type` | `pointer` | Raw TypeHandle pointer of the referent type |
 | `TypeDesc` | `TypeAndFlags` | `uint32` | The lower 8 bits are the CorElementType of the TypeDesc, the upper 24 bits are reserved for flags |
@@ -1031,7 +1020,9 @@ static class RuntimeTypeSystem_1_Helpers
 
     public TargetPointer GetGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        // Also covers non-MethodTable handles, and runtimes without multithreading support,
+        // where [ThreadStatic] fields are regular statics and ThreadStaticsInfo is absent.
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         MethodTable_1 methodTable = _methodTables[typeHandle.Address];
         TargetPointer threadStaticsInfoSize = target.GetTypeInfo(DataType.ThreadStaticsInfo).Size;
@@ -1044,7 +1035,7 @@ static class RuntimeTypeSystem_1_Helpers
 
     public TargetPointer GetNonGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         MethodTable_1 methodTable = _methodTables[typeHandle.Address];
         TargetPointer threadStaticsInfoSize = target.GetTypeInfo(DataType.ThreadStaticsInfo).Size;
@@ -1529,7 +1520,7 @@ The contract depends on the following other contracts
 | PlatformMetadata |
 | ReJIT |
 | ExecutionManager |
-| PrecodeStubs |
+| PrecodeStubs (when advertised) |
 
 And the following enumeration definitions
 
@@ -2002,8 +1993,9 @@ Determining if a method supports multiple code versions:
         MethodDesc md = _methodDescs[methodDesc.Address];
         if (md.IsEligibleForTieredCompilation)
             return true;
-        // MethodDesc::IsEligibleForReJIT
-        if (_target.Contracts.ReJIT.IsEnabled())
+        // MethodDesc::IsEligibleForReJIT. The ReJIT contract is advertised only with PROFILING_SUPPORTED;
+        // targets without it (wasm) also lack FEATURE_REJIT, so nothing is ReJIT-eligible.
+        if (_target.Contracts.TryGetContract(out IReJIT reJit) && reJit.IsEnabled())
         {
             if (!md.IsIL)
                 return false;
@@ -2332,23 +2324,6 @@ Getting a MethodDesc for a certain slot in a MethodTable
         }
     }
 
-    private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)
-    {
-        // Standard path, ask ExecutionManager for the MethodDesc
-        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-        if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
-        {
-            TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
-            return methodDescPtr;
-        }
-
-        // Stub path, read address as a Precode and get the MethodDesc from it
-        {
-            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
-            return methodDescPtr;
-        }
-    }
-
     public IEnumerable<TargetPointer> GetIntroducedMethodDescs(ITypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
@@ -2423,7 +2398,7 @@ Getting a MethodDesc for a certain slot in a MethodTable
             return TargetPointer.Null;
         }
 
-        return GetMethodDescForEntrypoint(pCode);
+        return _target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(pCode);
     }
 ```
 

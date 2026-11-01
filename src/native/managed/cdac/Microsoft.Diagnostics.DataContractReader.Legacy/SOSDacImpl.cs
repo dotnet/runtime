@@ -31,7 +31,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// </remarks>
 [GeneratedComClass]
 public sealed unsafe partial class SOSDacImpl
-    : ICustomQueryInterface, ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
+    : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
       ISOSDacInterface6, ISOSDacInterface7, ISOSDacInterface8, ISOSDacInterface9, ISOSDacInterface10,
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
       ISOSDacInterface16, ISOSDacInterface17
@@ -103,15 +103,6 @@ public sealed unsafe partial class SOSDacImpl
         _legacyImpl13 = null;
         _legacyProcess = null;
 #endif
-    }
-
-    CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
-    {
-        ppv = default;
-
-        return iid == typeof(ICLRDataEnumMemoryRegions).GUID
-            ? CustomQueryInterfaceResult.Failed
-            : CustomQueryInterfaceResult.NotHandled;
     }
 
     #region ISOSDacInterface
@@ -2280,17 +2271,28 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    private bool IsJumpRel64(TargetPointer pThunk)
+    private bool IsJumpAbs64(TargetPointer pThunk)
+        => 0xD5 == _target.Read<byte>(pThunk) &&
+           0x00 == _target.Read<byte>(pThunk + 1) &&
+           0xA1 == _target.Read<byte>(pThunk + 2);
+
+    private bool IsJumpMovRax64(TargetPointer pThunk)
         => 0x48 == _target.Read<byte>(pThunk) &&
            0xB8 == _target.Read<byte>(pThunk + 1) &&
            0xFF == _target.Read<byte>(pThunk + 10) &&
            0xE0 == _target.Read<byte>(pThunk + 11);
 
+    private bool IsJumpRel64(TargetPointer pThunk)
+        => IsJumpAbs64(pThunk) || IsJumpMovRax64(pThunk);
+
     private TargetPointer DecodeJump64(TargetPointer pThunk)
     {
         Debug.Assert(IsJumpRel64(pThunk), "Expected a jump thunk");
 
-        return _target.ReadPointer(pThunk + 2);
+        // The immediate follows the 3-byte jmpabs opcode or the 2-byte mov rax opcode.
+        return IsJumpAbs64(pThunk)
+            ? _target.ReadPointer(pThunk + 3)
+            : _target.ReadPointer(pThunk + 2);
     }
 
     int ISOSDacInterface.GetJumpThunkTarget(void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD)
@@ -2636,6 +2638,8 @@ public sealed unsafe partial class SOSDacImpl
                 // kStateActive
                 case RejitState.Active:
                     flags = DacpReJitData.Flags.kActive;
+                    break;
+                case RejitState.Unknown:
                     break;
                 default:
                     Debug.Fail("Unknown RejitState. cDAC should be updated to understand this new state.");
@@ -5695,8 +5699,11 @@ public sealed unsafe partial class SOSDacImpl
                     case RejitState.Active:
                         pRejitData->flags = DacpReJitData2.Flags.kActive;
                         break;
+                    case RejitState.Unknown:
+                        pRejitData->flags = DacpReJitData2.Flags.kUnknown;
+                        break;
                     default:
-                        Debug.Assert(true, "Unknown SharedRejitInfo state.  cDAC should be updated to understand this new state.");
+                        Debug.Fail("Unknown SharedRejitInfo state.  cDAC should be updated to understand this new state.");
                         pRejitData->flags = DacpReJitData2.Flags.kUnknown;
                         break;
                 }

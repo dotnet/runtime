@@ -64,9 +64,18 @@ internal sealed partial class GrammarActions
 
         if (!isNewType)
         {
-            MergeTypeDefinition(context, header, typeDefinition);
+            // A reference that precedes the first declaration creates the entity without declaring it.
+            if (typeDefinition.IsDefined)
+            {
+                MergeTypeDefinition(context, header, typeDefinition);
+            }
+            else
+            {
+                InitializeTypeDefinition(context, header, typeDefinition);
+            }
         }
 
+        typeDefinition.IsDefined = true;
         return typeDefinition;
     }
 
@@ -166,7 +175,7 @@ internal sealed partial class GrammarActions
 
         typeDefinition.BaseType ??= _entityRegistry.ResolveImplicitBaseType(fallbackBase);
         if (!typeDefinition.Attributes.HasFlag(TypeAttributes.Sealed) &&
-            (requireSealed || _entityRegistry.SystemValueTypeType.Equals(typeDefinition.BaseType)))
+            (requireSealed || _entityRegistry.IsSystemValueType(typeDefinition.BaseType)))
         {
             IToken location = header.NameToken ?? context.Start;
             _diagnostics.Add(

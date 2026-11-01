@@ -24,8 +24,8 @@ the implementation without compat concerns in future releases.
 
 ### Determine target framework
 
-`net11.0` is the target framework version currently under development and the new apis
-should be added to `net11.0`. [More Information on TargetFrameworks](https://learn.microsoft.com/dotnet/standard/frameworks)
+`net12.0` is the target framework version currently under development and the new apis
+should be added to `net12.0`. [More Information on TargetFrameworks](https://learn.microsoft.com/dotnet/standard/frameworks)
 
 ## Making the changes in repo
 
@@ -77,7 +77,7 @@ These syntaxes pull the code snippet identified by the specified region from the
 
 ### Documentation placement in platform-specific libraries
 
-When a library targets platform-specific frameworks (e.g. `net11.0-windows`, `net11.0-linux`),
+When a library targets platform-specific frameworks (e.g. `netXY.0-windows`, `netXY.0-linux`),
 only **one** platform's compiler-generated doc XML is selected as the source of truth and shipped
 to all customers in the IntelliSense package. This means that if XML doc comments for a public API
 appear only in a platform-specific partial file, they might be missing from the shipped docs on other
@@ -108,8 +108,8 @@ produces the following diagnostics:
 | PLATDOC004 | Documentation for a public API differs from the canonical (platform-agnostic) build. |
 
 PLATDOC001–003 are heuristic rules that guide source organization. PLATDOC004 is an authoritative
-check: when a project also targets a platform-agnostic TFM (e.g. `net11.0` alongside
-`net11.0-windows`), the build passes the canonical TFM's compiler-generated doc XML to the
+check: when a project also targets a platform-agnostic TFM (e.g. `netXY.0` alongside
+`netXY.0-windows`), the build passes the canonical TFM's compiler-generated doc XML to the
 analyzer, which compares each public API's documentation against it. Any mismatch indicates that
 docs were placed on platform-specific source and will be inconsistent across platforms.
 

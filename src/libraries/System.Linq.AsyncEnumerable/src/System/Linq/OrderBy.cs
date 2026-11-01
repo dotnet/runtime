@@ -348,7 +348,10 @@ namespace System.Linq
                     _keys = keys;
                 }
 
-                _next?.ComputeKeysAsync(elements, count, cancellationToken);
+                if (_next is not null)
+                {
+                    await _next.ComputeKeysAsync(elements, count, cancellationToken);
+                }
             }
 
             public override int Compare(int index1, int index2)

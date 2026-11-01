@@ -950,12 +950,12 @@ void __stdcall UpdateGenerationBounds()
         s_currentGenerationTable->Refresh();
     }
 #endif // PROFILING_SUPPORTED
-#ifdef ENABLE_CONTRACTS_IMPL
+#if defined(PROFILING_SUPPORTED) && defined(ENABLE_CONTRACTS_IMPL)
     {
         LONG result = InterlockedDecrement(&s_generationTableWriterCount);
         _ASSERTE(result == 0);
     }
-#endif
+#endif // PROFILING_SUPPORTED && ENABLE_CONTRACTS_IMPL
 }
 
 void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
@@ -3375,6 +3375,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
         return E_INVALIDARG;
     }
 
+#ifdef FEATURE_MULTITHREADING
     //
     // Verify this field is of the right type
     //
@@ -3409,6 +3410,10 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
     *ppAddress = pAddress;
 
     return S_OK;
+#else
+    // Without multithreading there are no thread statics; [ThreadStatic] fields are regular statics.
+    return E_INVALIDARG;
+#endif // FEATURE_MULTITHREADING
 }
 
 /*
@@ -10657,7 +10662,8 @@ void __stdcall ProfilerUnmanagedToManagedTransitionMD(MethodDesc *pMD,
 // These do a lot of work for us, setting up Frames, gathering arg info and resolving generics.
   //*******************************************************************************************
 
-HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
+EXTERN_C FCDECL2(void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle);
+FCIMPL2(void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
 
@@ -10830,9 +10836,10 @@ LExit:
 
 #endif // PROFILING_SUPPORTED
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
+EXTERN_C FCDECL2(void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle);
+FCIMPL2(void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
 
@@ -10921,7 +10928,10 @@ HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecifi
         // Whidbey Slow-Path ELT
         //
         COR_PRF_FRAME_INFO frameInfo = 0;
-        COR_PRF_FUNCTION_ARGUMENT_RANGE argumentRange;
+        // Zero-initialized: the query leaves the range untouched when it returns early with an error, and
+        // when COR_PRF_ENABLE_FUNCTION_RETVAL is off (this path is also taken for FRAME_INFO or
+        // STACK_SNAPSHOT alone). The hook then receives an empty range instead of indeterminate values.
+        COR_PRF_FUNCTION_ARGUMENT_RANGE argumentRange = {};
 
         HRESULT hr = ProfilingGetFunctionLeave3Info(functionId, (COR_PRF_ELT_INFO)&eltInfo, &frameInfo, &argumentRange);
         _ASSERTE(hr == S_OK);
@@ -10957,9 +10967,10 @@ LExit:
 
 #endif // PROFILING_SUPPORTED
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL2(EXTERN_C void, ProfileTailcall, UINT_PTR clientData, void * platformSpecificHandle)
+EXTERN_C FCDECL2(void, ProfileTailcall, UINT_PTR clientData, void * platformSpecificHandle);
+FCIMPL2(void, ProfileTailcall, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
 
@@ -11078,4 +11089,4 @@ LExit:
 
 #endif // PROFILING_SUPPORTED
 }
-HCIMPLEND
+FCIMPLEND
