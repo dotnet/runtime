@@ -105,7 +105,7 @@ namespace {Namespace}
             }
         }
 
-        private static readonly int LargestVectorSize = {LargestVectorSize};
+        private static readonly int LargestVectorSize = Math.Max({LargestVectorSize}, (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count));
 
         private static readonly int Op1ElementCount = sizeof(Vector<{Op1BaseType}>) / sizeof({Op1BaseType});
         private static readonly int Op2ElementCount = sizeof(Vector<{Op2BaseType}>) / sizeof({Op2BaseType});
