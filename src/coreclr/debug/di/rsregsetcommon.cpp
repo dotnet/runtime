@@ -4,9 +4,10 @@
 // File: RSRegSetCommon.cpp
 //
 
-// Common cross-platform behavior of reg sets.
-// Platform specific stuff is in CordbRegisterSet.cpp located in
-// the platform sub-dir.
+// Common cross-platform behavior of reg sets. The ICorDebugRegisterSet /
+// ICorDebugRegisterSet2 surface is implemented in CordbRegisterSet.cpp using the
+// ReadRegistersFromContext / WriteRegistersToContext / GetAvailableRegistersMask
+// DDIs, which cover both integer (GPR) and floating-point / SIMD registers.
 //
 //*****************************************************************************
 #include "stdafx.h"
@@ -18,21 +19,27 @@
 
 
 CordbRegisterSet::CordbRegisterSet(
+    ContextBuffer        contextBuffer,
     CordbThread *        pThread,
-    DT_CONTEXT *         pContext,
     bool fActive,
-    bool fQuickUnwind)
+    bool fQuickUnwind,
+    bool fTakeOwnershipOfContext /*= false*/)
   : CordbBase(pThread->GetProcess(), 0, enumCordbRegisterSet)
 {
-    _ASSERTE( pContext != NULL );
-    _ASSERTE( pThread != NULL );
-    m_thread      = pThread;
-    m_context     = *pContext;
-    m_active      = fActive;
-    m_quickUnwind = fQuickUnwind;
+    _ASSERTE(pThread != NULL);
+    if ((contextBuffer.pContextBytes == NULL) ||
+        (contextBuffer.contextSize < pThread->GetProcess()->GetTargetContextSize()))
+    {
+        ThrowHR(E_INVALIDARG);
+    }
+
+    m_contextBuffer = contextBuffer;
+    m_fOwnsContext = fTakeOwnershipOfContext;
+    m_thread       = pThread;
+    m_active       = fActive;
+    m_quickUnwind  = fQuickUnwind;
 
     // Add to our parent thread's neuter list.
-
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -45,6 +52,14 @@ CordbRegisterSet::CordbRegisterSet(
 void CordbRegisterSet::Neuter()
 {
     m_thread = NULL;
+
+    if (m_fOwnsContext)
+    {
+        delete[] m_contextBuffer.pContextBytes;
+    }
+    m_contextBuffer.pContextBytes = NULL;
+    m_contextBuffer.contextSize = 0;
+
     CordbBase::Neuter();
 }
 
@@ -108,127 +123,52 @@ HRESULT CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
     EX_TRY
     {
         _ASSERTE( m_thread != NULL );
-        if( contextSize < sizeof( DT_CONTEXT ))
+        if( contextSize < GetProcess()->GetTargetContextSize())
         {
             ThrowHR(E_INVALIDARG);
         }
 
         ValidateOrThrow(context);
 
-        DT_CONTEXT *pInputContext = reinterpret_cast<DT_CONTEXT *> (context);
+        IDacDbiInterface * pDAC = GetProcess()->GetDAC();
+        ULONG32 targetContextSize = GetProcess()->GetTargetContextSize();
 
-        // Just to be safe, zero out the buffer we got in while preserving the ContextFlags.
-        // On X64 the ContextFlags field is not the first 4 bytes of the DT_CONTEXT.
-        DWORD dwContextFlags = pInputContext->ContextFlags;
-        ZeroMemory(context, contextSize);
-        pInputContext->ContextFlags = dwContextFlags;
-
-        // Augment the leafmost (active) register w/ information from the current context.
-        DT_CONTEXT * pLeafContext = NULL;
+        ContextBuffer leafContext = {};
         if (m_active)
         {
             EX_TRY
             {
                 // This may fail, but it is not a disastrous failure in this case.  All we care is whether
-                // pLeafContext is updated to a non-NULL value.
-                m_thread->GetManagedContext( &pLeafContext);
+                // leafContext is updated to contain a non-NULL value.
+                m_thread->GetManagedContext(&leafContext);
             }
             EX_CATCH
             {
             }
             EX_END_CATCH
 
-            if (pLeafContext != NULL)
+            if (leafContext.pContextBytes != NULL)
             {
-                // @todo - shouldn't this be a context-flags sensitive copy?
-                memmove( pInputContext, pLeafContext, sizeof( DT_CONTEXT) );
+                if (leafContext.contextSize < targetContextSize)
+                {
+                    ThrowHR(E_INVALIDARG);
+                }
+
+                // Raw byte copy of the leaf context, which carries the leaf's ContextFlags into the
+                // destination so the flag-sensitive overlay below is gated on those flags.
+                memcpy(context, leafContext.pContextBytes, targetContextSize);
             }
         }
-        CORDbgCopyThreadContext(pInputContext, &m_context);
+
+        // Overlay this frame's registers from the cached CONTEXT buffer, honoring the destination's
+        // ContextFlags (the leaf's if copied above, otherwise the caller's incoming flags).
+        ContextBuffer destinationContext = { context, contextSize };
+        IfFailThrow(pDAC->CopyContext(
+            destinationContext,
+            m_contextBuffer,
+            IDacDbiInterface::kCopyContextPreserveDestinationFlags,
+            0));
     }
     EX_CATCH_HRESULT(hr);
     return hr;
-}
-
-//-----------------------------------------------------------------------------
-// Helpers to impl IRegSet2 on top of original IRegSet.
-// These are useful on platforms that don't need IRegSet2 (like x86 + amd64).
-// See CorDebug.idl for details.
-//
-// Inputs:
-//   regCount - size of pAvailable buffer in bytes
-//   pAvailable - buffer to hold bitvector of available registers.
-//                On success, bit at position CorDebugRegister is 1 iff that
-//                register is available.
-// Returns S_OK on success.
-//-----------------------------------------------------------------------------
-HRESULT CordbRegisterSet::GetRegistersAvailableAdapter(
-    ULONG32 regCount,
-    BYTE    pAvailable[])
-{
-    // Defer to call on v1.0 interface
-    HRESULT hr = S_OK;
-
-    if (regCount < sizeof(ULONG64))
-    {
-        return E_INVALIDARG;
-    }
-
-    _ASSERTE(pAvailable != NULL);
-
-    ULONG64 availRegs;
-    hr = this->GetRegistersAvailable(&availRegs);
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    // Nor marshal our 64-bit value into the outgoing byte array.
-    for(int iBit = 0; iBit < (int) sizeof(availRegs) * 8; iBit++)
-    {
-        ULONG64 test = SETBITULONG64(iBit);
-        if (availRegs & test)
-        {
-            SET_BIT_MASK(pAvailable, iBit);
-        }
-        else
-        {
-            RESET_BIT_MASK(pAvailable, iBit);
-        }
-    }
-    return S_OK;
-}
-
-//-----------------------------------------------------------------------------
-// Helpers to impl IRegSet2 on top of original IRegSet.
-// These are useful on platforms that don't need IRegSet2 (like x86 + amd64).
-// See CorDebug.idl for details.
-//
-// Inputs:
-//  maskCount - size of mask buffer in bytes.
-//  mask - input buffer specifying registers to request
-//  regCount - size of regBuffer in bytes
-//  regBuffer - output buffer, regBuffer[n] = value of register at n-th active
-//              bit in mask.
-// Returns S_OK on success.
-//-----------------------------------------------------------------------------
-
-// mask input request registers, which get written to regCount buffer.
-HRESULT CordbRegisterSet::GetRegistersAdapter(
-    ULONG32 maskCount, BYTE mask[],
-    ULONG32 regCount, CORDB_REGISTER regBuffer[])
-{
-    // Convert input mask to orig mask.
-    ULONG64 maskOrig = 0;
-
-    for(UINT iBit = 0; iBit < maskCount * 8; iBit++)
-    {
-        if (IS_SET_BIT_MASK(mask, iBit))
-        {
-            maskOrig |= SETBITULONG64(iBit);
-        }
-    }
-
-    return this->GetRegisters(maskOrig,
-        regCount, regBuffer);
 }

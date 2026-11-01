@@ -8,6 +8,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 public interface IPlatformAgnosticContext
 {
     public abstract uint Size { get; }
+    public abstract uint SizeWithoutExtendedRegisters { get; }
+    public abstract uint ExtendedRegistersFlag { get; }
     public abstract uint ContextControlFlags { get; }
     public abstract uint FullContextFlags { get; }
     public abstract uint AllContextFlags { get; }
@@ -29,6 +31,15 @@ public interface IPlatformAgnosticContext
     public abstract bool TryReadRegister(string fieldName, out TargetNUInt value);
     public abstract bool TrySetRegister(int number, TargetNUInt value);
     public abstract bool TryReadRegister(int number, out TargetNUInt value);
+    public abstract bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value);
+    public abstract bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value);
+
+    // The register copy set derived from the context's [Register]-tagged fields, used to
+    // implement CONTEXT-flag-gated copies. Integer/control/segment registers are named and
+    // copied through the register accessors; floating-point/debug/extended state is copied
+    // as a raw [Start, End) byte span.
+    public abstract (uint Flag, string Name)[] GetScalarRegisters();
+    public abstract (uint Flag, int Start, int End)[] GetWideSpans();
 
     public abstract void Unwind(Target target);
 

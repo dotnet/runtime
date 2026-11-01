@@ -985,6 +985,136 @@ public unsafe class DacDbiImplTests
     }
 
     [Theory]
+    [InlineData("x86", 0xccu)]
+    [InlineData("x64", 0x4d0u)]
+    public void GetTargetContextSize_OptionalExtendedRegisters(string targetArch, uint expectedBaseSize)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(new() { IsLittleEndian = true, Is64Bit = targetArch != "x86" },
+            [(Constants.Globals.Architecture, targetArch)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        uint size;
+
+        Assert.Equal(System.HResults.S_OK, dacDbi.GetTargetContextSize(Interop.BOOL.FALSE, &size));
+        Assert.Equal(expectedBaseSize, size);
+        Assert.Equal(System.HResults.S_OK, dacDbi.GetTargetContextSize(Interop.BOOL.TRUE, &size));
+        Assert.Equal(IPlatformAgnosticContext.GetContextForPlatform(target).Size, size);
+    }
+
+    [Theory]
+    [InlineData("x64", 16u, 31u, CorDebugRegister.REGISTER_AMD64_XMM0)]
+    [InlineData("arm64", 33u, 64u, CorDebugRegister.REGISTER_ARM64_V0)]
+    public void ConvertJitRegNumToCorDebugRegister_FloatingPointRegisters(
+        string targetArch, uint firstJitRegister, uint lastJitRegister, CorDebugRegister firstRegister)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(new() { IsLittleEndian = true, Is64Bit = true },
+            [(Constants.Globals.Architecture, targetArch)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        for (uint jitRegister = firstJitRegister; jitRegister <= lastJitRegister; jitRegister++)
+        {
+            CorDebugRegister register = default;
+            Interop.BOOL isAmbientSP = Interop.BOOL.TRUE;
+
+            int hr = dacDbi.ConvertJitRegNumToCorDebugRegister(jitRegister, &register, &isAmbientSP);
+
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal((CorDebugRegister)((uint)firstRegister + jitRegister - firstJitRegister), register);
+            Assert.Equal(Interop.BOOL.FALSE, isAmbientSP);
+        }
+
+        CorDebugRegister invalidRegister = firstRegister;
+        Interop.BOOL invalidIsAmbientSP = Interop.BOOL.TRUE;
+        Assert.Equal(System.HResults.E_INVALIDARG,
+            dacDbi.ConvertJitRegNumToCorDebugRegister(lastJitRegister + 1, &invalidRegister, &invalidIsAmbientSP));
+        Assert.Equal(default, invalidRegister);
+        Assert.Equal(Interop.BOOL.FALSE, invalidIsAmbientSP);
+    }
+
+    [Theory]
+    [MemberData(nameof(TargetArchitectures))]
+    public void CopyContext_CopyModeControlsContextFlags(MockTarget.Architecture arch, string targetArch)
+    {
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobalStrings((Constants.Globals.Architecture, targetArch))
+            .AddContract<IRuntimeInfo>(version: "c1")
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        IPlatformAgnosticContext destinationContext = IPlatformAgnosticContext.GetContextForPlatform(target);
+        IPlatformAgnosticContext sourceContext = IPlatformAgnosticContext.GetContextForPlatform(target);
+        destinationContext.RawContextFlags = destinationContext.ContextControlFlags;
+        sourceContext.RawContextFlags = sourceContext.FullContextFlags;
+
+        string? sourceOnlyRegister = null;
+        foreach ((uint flag, string name) in sourceContext.GetScalarRegisters())
+        {
+            if ((sourceContext.FullContextFlags & flag) == flag &&
+                (destinationContext.ContextControlFlags & flag) != flag)
+            {
+                sourceOnlyRegister = name;
+                break;
+            }
+        }
+
+        Assert.NotNull(sourceOnlyRegister);
+        TargetNUInt expectedValue = new(0x1234);
+        Assert.True(sourceContext.TrySetRegister(sourceOnlyRegister, expectedValue));
+
+        byte[] destinationBytes = destinationContext.GetBytes();
+        byte[] sourceBytes = sourceContext.GetBytes();
+        fixed (byte* pDestination = destinationBytes)
+        fixed (byte* pSource = sourceBytes)
+        {
+            ContextBuffer destinationBuffer = new() { pContextBytes = pDestination, contextSize = (uint)destinationBytes.Length };
+            ContextBuffer sourceBuffer = new() { pContextBytes = pSource, contextSize = (uint)sourceBytes.Length };
+            int hr = dacDbi.CopyContext(destinationBuffer, sourceBuffer, ContextCopyMode.PreserveDestinationFlags, flags: 0);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+
+        destinationContext.FillFromBuffer(destinationBytes);
+        Assert.Equal(destinationContext.ContextControlFlags, destinationContext.RawContextFlags);
+        Assert.True(destinationContext.TryReadRegister(sourceOnlyRegister, out TargetNUInt preservedValue));
+        Assert.NotEqual(expectedValue, preservedValue);
+
+        fixed (byte* pDestination = destinationBytes)
+        fixed (byte* pSource = sourceBytes)
+        {
+            ContextBuffer destinationBuffer = new() { pContextBytes = pDestination, contextSize = (uint)destinationBytes.Length };
+            ContextBuffer sourceBuffer = new() { pContextBytes = pSource, contextSize = (uint)sourceBytes.Length };
+            int hr = dacDbi.CopyContext(destinationBuffer, sourceBuffer, ContextCopyMode.MergeSourceFlags, flags: 0);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+
+        destinationContext.FillFromBuffer(destinationBytes);
+        Assert.Equal(sourceContext.FullContextFlags, destinationContext.RawContextFlags);
+        Assert.True(destinationContext.TryReadRegister(sourceOnlyRegister, out TargetNUInt actualValue));
+        Assert.Equal(expectedValue, actualValue);
+
+        TargetNUInt destinationValue = new(0x5678);
+        destinationContext.RawContextFlags = destinationContext.FullContextFlags;
+        Assert.True(destinationContext.TrySetRegister(sourceOnlyRegister, destinationValue));
+        destinationBytes = destinationContext.GetBytes();
+
+        fixed (byte* pDestination = destinationBytes)
+        fixed (byte* pSource = sourceBytes)
+        {
+            ContextBuffer destinationBuffer = new() { pContextBytes = pDestination, contextSize = (uint)destinationBytes.Length };
+            ContextBuffer sourceBuffer = new() { pContextBytes = pSource, contextSize = (uint)sourceBytes.Length };
+            int hr = dacDbi.CopyContext(
+                destinationBuffer,
+                sourceBuffer,
+                ContextCopyMode.UseExplicitFlags,
+                flags: 0);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+
+        destinationContext.FillFromBuffer(destinationBytes);
+        Assert.Equal(0u, destinationContext.RawContextFlags);
+        Assert.True(destinationContext.TryReadRegister(sourceOnlyRegister, out actualValue));
+        Assert.Equal(destinationValue, actualValue);
+    }
+
+    [Theory]
     [MemberData(nameof(TargetArchitectures_SpRange))]
     public void CheckContext_WithControlFlag_ValidatesSpRange(MockTarget.Architecture arch, string targetArch, ulong sp, int expectedHr)
     {
@@ -998,8 +1128,26 @@ public unsafe class DacDbiImplTests
 
         fixed (byte* pCtx = bytes)
         {
-            int hr = dacDbi.CheckContext(ThreadAddr, pCtx);
+            ContextBuffer contextBuffer = new() { pContextBytes = pCtx, contextSize = (uint)bytes.Length };
+            int hr = dacDbi.CheckContext(ThreadAddr, contextBuffer);
             Assert.Equal(expectedHr, hr);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TargetArchitectures))]
+    public void CheckContext_UndersizedBuffer_ReturnsInvalidArgument(MockTarget.Architecture arch, string targetArch)
+    {
+        const ulong ThreadAddr = 0x1000;
+        var (dacDbi, target) = CreateCheckContextDacDbi(arch, targetArch, ThreadAddr, stackBase: 0x8000, stackLimit: 0x4000);
+        uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(target).Size;
+        byte[] bytes = new byte[(int)contextSize - 1];
+
+        fixed (byte* pCtx = bytes)
+        {
+            ContextBuffer contextBuffer = new() { pContextBytes = pCtx, contextSize = (uint)bytes.Length };
+            int hr = dacDbi.CheckContext(ThreadAddr, contextBuffer);
+            Assert.Equal(System.HResults.E_INVALIDARG, hr);
         }
     }
 
@@ -1025,7 +1173,8 @@ public unsafe class DacDbiImplTests
 
         fixed (byte* pCtx = bytes)
         {
-            int hr = dacDbi.CheckContext(ThreadAddr, pCtx);
+            ContextBuffer contextBuffer = new() { pContextBytes = pCtx, contextSize = (uint)bytes.Length };
+            int hr = dacDbi.CheckContext(ThreadAddr, contextBuffer);
             Assert.Equal(System.HResults.S_OK, hr);
         }
 

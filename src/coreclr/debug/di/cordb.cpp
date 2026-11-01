@@ -456,3 +456,77 @@ STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe,
     _ASSERTE(!"GetRequestedRuntimeInfo not impl");
     return E_NOTIMPL;
 }
+
+BOOL
+DbiGetThreadContext(HANDLE hThread,
+    T_CONTEXT *lpContext)
+{
+    // if we aren't local debugging this isn't going to work
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+    _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
+    return FALSE;
+#else
+    BOOL res = FALSE;
+    if (((ULONG_PTR)lpContext) & 0xF)
+    {
+        CONTEXT *ctx = (CONTEXT*)_aligned_malloc(sizeof(CONTEXT), 16);
+        if (ctx)
+        {
+            ctx->ContextFlags = lpContext->ContextFlags;
+            if (::GetThreadContext(hThread, ctx))
+            {
+                memcpy(lpContext, ctx, ContextSizeForFlags(ctx->ContextFlags));
+                res = TRUE;
+            }
+
+            _aligned_free(ctx);
+        }
+        else
+        {
+            // malloc does not set the last error, but the caller of GetThreadContext
+            // will expect it to be set on failure.
+            SetLastError(ERROR_OUTOFMEMORY);
+        }
+    }
+    else
+    {
+        res = ::GetThreadContext(hThread, (CONTEXT*)lpContext);
+    }
+
+    return res;
+#endif
+}
+
+BOOL
+DbiSetThreadContext(HANDLE hThread,
+    const T_CONTEXT *lpContext)
+{
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+    _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
+    return FALSE;
+#else
+    BOOL res = FALSE;
+    if (((ULONG_PTR)lpContext) & 0xF)
+    {
+        CONTEXT *ctx = (CONTEXT*)_aligned_malloc(sizeof(CONTEXT), 16);
+        if (ctx)
+        {
+            memcpy(ctx, lpContext, ContextSizeForFlags(lpContext->ContextFlags));
+            res = ::SetThreadContext(hThread, ctx);
+            _aligned_free(ctx);
+        }
+        else
+        {
+            // malloc does not set the last error, but the caller of SetThreadContext
+            // will expect it to be set on failure.
+            SetLastError(ERROR_OUTOFMEMORY);
+        }
+    }
+    else
+    {
+        res = ::SetThreadContext(hThread, (CONTEXT*)lpContext);
+    }
+
+    return res;
+#endif
+}
