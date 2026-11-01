@@ -21,8 +21,6 @@ namespace Internal.Runtime.Augments
 
         public abstract DiagnosticMethodInfo TryGetDiagnosticMethodInfoFromStartAddress(IntPtr methodStartAddress);
 
-#if TARGET_WASM
         public abstract DiagnosticMethodInfo TryGetDiagnosticMethodInfoFromFunctionPointer(IntPtr functionPointer);
-#endif
     }
 }

@@ -348,11 +348,7 @@ namespace System
                 functionPointer = unboxedPointer != 0 ? unboxedPointer : ldftnResult;
 #endif
             }
-#if TARGET_WASM
             return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromFunctionPointer(functionPointer);
-#else
-            return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromStartAddress(functionPointer);
-#endif
         }
 
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) =>

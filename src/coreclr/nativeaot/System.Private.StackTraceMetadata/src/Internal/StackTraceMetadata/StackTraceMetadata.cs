@@ -211,9 +211,9 @@ namespace Internal.StackTraceMetadata
             return null;
         }
 
-#if TARGET_WASM
         private static DiagnosticMethodInfo GetDiagnosticMethodInfoFromFunctionPointerIfAvailable(IntPtr functionPointer)
         {
+#if TARGET_WASM
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
                 PerModuleMethodNameResolver resolver = _perModuleMethodNameResolverHashtable.GetOrCreateValue(module.Handle.GetIntPtrUNSAFE());
@@ -228,8 +228,10 @@ namespace Internal.StackTraceMetadata
                 return CreateDiagnosticMethodInfo(reader, typeHandle, reader.GetMethod(methodHandle).Name);
             }
             return null;
-        }
+#else
+            return GetDiagnosticMethodInfoFromStartAddressIfAvailable(functionPointer);
 #endif
+        }
 
         private static DiagnosticMethodInfo CreateDiagnosticMethodInfo(MetadataReader reader, Handle owningType, ConstantStringValueHandle name)
         {
@@ -348,12 +350,10 @@ namespace Internal.StackTraceMetadata
                 return GetDiagnosticMethodInfoFromStartAddressIfAvailable(methodStartAddress);
             }
 
-#if TARGET_WASM
             public override DiagnosticMethodInfo TryGetDiagnosticMethodInfoFromFunctionPointer(IntPtr functionPointer)
             {
                 return GetDiagnosticMethodInfoFromFunctionPointerIfAvailable(functionPointer);
             }
-#endif
 
             public override string TryGetMethodStackFrameInfo(IntPtr methodStartAddress, int offset, bool needsFileInfo, out string owningType, out string genericArgs, out string methodSignature, out bool isStackTraceHidden, out string fileName, out int lineNumber)
             {
