@@ -745,7 +745,7 @@ the server is applicable to the hostname (an IP address) requested.
 Return values:
 1 if the hostname is a match
 0 if the hostname is not a match
-Any negative number indicates an error in the arguments.
+Any negative number indicates an error.
 */
 int32_t CryptoNative_CheckX509IpAddress(
     X509* x509, const uint8_t* addressBytes, int32_t addressBytesLen, const char* hostname, int32_t cchHostname)
@@ -763,7 +763,6 @@ int32_t CryptoNative_CheckX509IpAddress(
 
     ERR_clear_error();
 
-    int subjectNid = NID_commonName;
     int sanGenType = GEN_IPADD;
     GENERAL_NAMES* san = (GENERAL_NAMES*)(X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL));
     int success = 0;
@@ -809,30 +808,8 @@ int32_t CryptoNative_CheckX509IpAddress(
 
     if (!success)
     {
-        // This is a shared/interor pointer, do not free!
-        OSSL4CONST X509_NAME* subject = X509_get_subject_name(x509);
-
-        if (subject)
-        {
-            int i = -1;
-
-            while ((i = X509_NAME_get_index_by_NID(subject, subjectNid, i)) >= 0)
-            {
-                // Shared/interior pointers, do not free!
-                const X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
-                const ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
-
-                const char* data = (const char*)ASN1_STRING_get0_data(cn);
-
-                if (ASN1_STRING_length(cn) == cchHostname &&
-                    data != NULL &&
-                    !strncasecmp(data, hostname, (size_t)cchHostname))
-                {
-                    success = 1;
-                    break;
-                }
-            }
-        }
+        // Match Windows: DNS SAN entries take precedence over CN, without wildcard matching for IP literals.
+        success = X509_check_host(x509, hostname, (size_t)cchHostname, X509_CHECK_FLAG_NO_WILDCARDS, NULL);
     }
 
     return success;
