@@ -78,7 +78,7 @@ namespace System.Runtime.Caching
         }
 
         public abstract object? AddOrGetExisting(string key, object value, DateTimeOffset absoluteExpiration, string? regionName = null);
-        public abstract CacheItem? AddOrGetExisting(CacheItem value, CacheItemPolicy? policy);
+        public abstract CacheItem AddOrGetExisting(CacheItem value, CacheItemPolicy? policy);
 
         public abstract object? AddOrGetExisting(string key, object value, CacheItemPolicy? policy, string? regionName = null);
 

@@ -128,7 +128,7 @@ namespace System.Runtime.Caching
         // to update both the performance counters and the sliding expiration. Callers that perform
         // nested sliding expiration updates (like a MemoryCacheEntry touching its update sentinel)
         // can pass false to prevent these from unintentionally showing up in the perf counters.
-        internal void UpdateExpAndUsage(MemoryCacheEntry entry, bool updatePerfCounters = true)
+        internal void UpdateExpAndUsage(MemoryCacheEntry? entry, bool updatePerfCounters = true)
         {
             if (entry != null)
             {
@@ -205,7 +205,7 @@ namespace System.Runtime.Caching
                 AddToCache(entry);
             }
             // update outside of lock
-            if (existingEntry != null) { UpdateExpAndUsage(existingEntry); }
+            UpdateExpAndUsage(existingEntry);
 
             // Call Release after the new entry has been completely added so
             // that the CacheItemRemovedCallback can take a dependency on the newly inserted item.
@@ -293,10 +293,7 @@ namespace System.Runtime.Caching
                 entry = null;
             }
             // update outside of lock
-            if (entry != null)
-            {
-                UpdateExpAndUsage(entry);
-            }
+            UpdateExpAndUsage(entry);
             return entry;
         }
 

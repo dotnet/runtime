@@ -560,12 +560,11 @@ namespace System.Runtime.Caching
             return AddOrGetExistingInternal(key, value, policy);
         }
 
-        public override CacheItem? AddOrGetExisting(CacheItem item, CacheItemPolicy? policy)
+        public override CacheItem AddOrGetExisting(CacheItem item, CacheItemPolicy? policy)
         {
             ArgumentNullException.ThrowIfNull(item);
 
-            object? existing = AddOrGetExistingInternal(item.Key, item.Value!, policy);
-            return (existing != null) ? new CacheItem(item.Key, existing) : null;
+            return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value!, policy));
         }
 
         public override object? AddOrGetExisting(string key, object value, CacheItemPolicy? policy, string? regionName = null)

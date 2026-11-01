@@ -115,7 +115,7 @@ namespace System.Runtime.Caching
         public long PhysicalMemoryLimit { get { throw null!; } }
         public System.TimeSpan PollingInterval { get { throw null!; } }
         public override bool Add(System.Runtime.Caching.CacheItem item, System.Runtime.Caching.CacheItemPolicy? policy) { throw null!; }
-        public override System.Runtime.Caching.CacheItem? AddOrGetExisting(System.Runtime.Caching.CacheItem item, System.Runtime.Caching.CacheItemPolicy? policy) { throw null!; }
+        public override System.Runtime.Caching.CacheItem AddOrGetExisting(System.Runtime.Caching.CacheItem item, System.Runtime.Caching.CacheItemPolicy? policy) { throw null!; }
         public override object? AddOrGetExisting(string key, object value, System.DateTimeOffset absoluteExpiration, string? regionName = null) { throw null!; }
         public override object? AddOrGetExisting(string key, object value, System.Runtime.Caching.CacheItemPolicy? policy, string? regionName = null) { throw null!; }
         public override bool Contains(string key, string? regionName = null) { throw null!; }
@@ -147,7 +147,7 @@ namespace System.Runtime.Caching
         public virtual bool Add(System.Runtime.Caching.CacheItem item, System.Runtime.Caching.CacheItemPolicy? policy) { throw null!; }
         public virtual bool Add(string key, object value, System.DateTimeOffset absoluteExpiration, string? regionName = null) { throw null!; }
         public virtual bool Add(string key, object value, System.Runtime.Caching.CacheItemPolicy? policy, string? regionName = null) { throw null!; }
-        public abstract System.Runtime.Caching.CacheItem? AddOrGetExisting(System.Runtime.Caching.CacheItem value, System.Runtime.Caching.CacheItemPolicy? policy);
+        public abstract System.Runtime.Caching.CacheItem AddOrGetExisting(System.Runtime.Caching.CacheItem value, System.Runtime.Caching.CacheItemPolicy? policy);
         public abstract object? AddOrGetExisting(string key, object value, System.DateTimeOffset absoluteExpiration, string? regionName = null);
         public abstract object? AddOrGetExisting(string key, object value, System.Runtime.Caching.CacheItemPolicy? policy, string? regionName = null);
         public abstract bool Contains(string key, string? regionName = null);

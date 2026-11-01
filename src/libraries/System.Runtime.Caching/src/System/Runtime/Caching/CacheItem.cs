@@ -15,7 +15,6 @@ namespace System.Runtime.Caching
 
         public CacheItem(string key)
         {
-            ArgumentNullException.ThrowIfNull(key);
             Key = key;
         }
 
