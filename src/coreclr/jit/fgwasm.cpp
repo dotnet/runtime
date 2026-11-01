@@ -3461,8 +3461,6 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     //
     BlockToBlockMap    resumePads(getAllocator(CMK_FlowEdge));
     BlockToFlowEdgeMap continuationEdges(getAllocator(CMK_FlowEdge));
-    bool const         verifyGCModeTransitions =
-        IsReadyToRun() && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS);
 
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
@@ -3512,10 +3510,13 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
             LIR::Range     range = LIR::SeqTree(this, store);
             LIR::AsRange(resumePad).InsertAtEnd(std::move(range));
 
-            if (verifyGCModeTransitions)
+            if (IsReadyToRun())
             {
-                // Reaching this pad means this dispatcher accepted the resumption. A nonmatching
-                // inner dispatcher takes the rethrow edge and must leave transitions forbidden.
+                // Reaching this pad means this dispatcher accepted the resumption, so tell the runtime
+                // that managed code runs again. When permitted, the helper raises a thread abort that is
+                // still pending at the end of the catch. It also lifts the restriction on GC mode switches
+                // for images built with --verify-gc-mode-transitions. A nonmatching inner dispatcher takes
+                // the rethrow edge and must leave transitions forbidden.
                 GenTree* resumeAfterCatch = gtNewHelperCallNode(CORINFO_HELP_JIT_RESUME_AFTER_CATCH, TYP_VOID);
                 resumeAfterCatch          = fgMorphCall(resumeAfterCatch->AsCall());
                 gtSetEvalOrder(resumeAfterCatch);

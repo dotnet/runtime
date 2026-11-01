@@ -2062,9 +2062,45 @@ Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
+#ifdef TARGET_WASM
+// Raises a thread abort that is still pending when compiled code resumes after a catch. On other
+// targets, EECodeManager::ResumeAfterCatch does this by redirecting the resumption to
+// THROW_CONTROL_FOR_THREAD_FUNCTION. On Wasm it cannot: the frame being resumed selects its
+// continuation itself, and RtlRestoreContext does not use the context it is given. Instead, the
+// frame calls JIT_ResumeAfterCatch on its way to the continuation. The virtual IP that the frame has
+// stored is then that of the region it resumes in, so the transition block describes the place where
+// execution resumes.
+static void RaiseThreadAbortAfterCatch(TransitionBlock* transitionBlock)
+{
+    FCALL_CONTRACT;
+
+    Thread *pThread = GetThread();
+
+    SoftwareExceptionFrame exceptionFrame;
+    exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+    exceptionFrame.InitAndLink(pThread);
+
+    FC_CAN_TRIGGER_GC();
+
+    // COMPlusCheckForAbort expects Thread::m_OSContext to describe the place where execution resumes.
+    CopyOSContext(pThread->m_OSContext, exceptionFrame.GetContext());
+    if (COMPlusCheckForAbort((UINT_PTR)GetIP(exceptionFrame.GetContext())) != NULL)
+    {
+        EEException ex(kThreadAbortException);
+        OBJECTREF throwable = ex.CreateThrowable();
+        DispatchManagedException(throwable, exceptionFrame.GetContext());
+    }
+
+    exceptionFrame.Pop(pThread);
+
+    FC_CAN_TRIGGER_GC_END();
+}
+#endif // TARGET_WASM
+
 // Called at a catch resumption point, once the restore-context unwind has completed and managed
-// code is about to run again. This does not touch the thread's GC mode; it only lifts the
+// code is about to run again. This does not touch the thread's GC mode; it lifts the
 // restriction installed before ResumeAfterCatch -- see the comment on t_gcModeSwitchPermitted.
+// On Wasm, it also raises a pending thread abort when permitted; see RaiseThreadAbortAfterCatch.
 // Only WebAssembly emits a call to this helper, but the definition is unconditional so the helper
 // table links everywhere.
 EXTERN_C FCDECL0(void, JIT_ResumeAfterCatch);
@@ -2075,6 +2111,19 @@ FCIMPL0(void, JIT_ResumeAfterCatch)
 #ifdef _DEBUG
     t_gcModeSwitchPermitted = true;
 #endif // _DEBUG
+
+#ifdef TARGET_WASM
+    // Use the same check as IL_Throw: build a context only when the caller passed a frame of compiled code.
+    // COMPlusCheckForAbort then decides whether the abort may be raised at that frame's virtual IP;
+    // it is not raised while the continuation is inside a handler.
+    if (GetThread()->IsAbortRequested() && (callersStackPointer != 0) && (*(int*)callersStackPointer != TERMINATE_R2R_STACK_WALK))
+    {
+        TransitionBlock block;
+        block.m_ReturnAddress = 0;
+        block.m_StackPointer = callersStackPointer;
+        RaiseThreadAbortAfterCatch(&block);
+    }
+#endif // TARGET_WASM
 }
 FCIMPLEND
 
