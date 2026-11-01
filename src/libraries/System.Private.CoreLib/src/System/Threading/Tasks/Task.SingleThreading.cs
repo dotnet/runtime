@@ -95,9 +95,10 @@ public partial class Task
             }
 
             List<Exception>? exceptions = null;
+            TaskCanceledException? sharedCanceledException = null;
             foreach (Task task in tasks)
             {
-                AddExceptionsForCompletedTask(ref exceptions, task);
+                AddExceptionsForCompletedTask(ref exceptions, task, ref sharedCanceledException);
             }
             Debug.Assert(exceptions is not null);
             ThrowHelper.ThrowAggregateException(exceptions);

@@ -4994,9 +4994,19 @@ namespace System.Threading.Tasks
         /// </summary>
         internal static void AddExceptionsForCompletedTask(ref List<Exception>? exceptions, Task t)
         {
-            AggregateException? ex = t.GetExceptions(true);
-            if (ex != null)
+            TaskCanceledException? sharedCanceledException = null;
+            AddExceptionsForCompletedTask(ref exceptions, t, ref sharedCanceledException);
+        }
+
+        internal static void AddExceptionsForCompletedTask(
+            ref List<Exception>? exceptions,
+            Task t,
+            ref TaskCanceledException? sharedCanceledException)
+        {
+            if (t.ExceptionRecorded)
             {
+                AggregateException ex = t.GetExceptions(true)!;
+
                 // make sure the task's exception observed status is set appropriately
                 // it's possible that WaitAll was called by the parent of an attached child,
                 // this will make sure it won't throw again in the implicit wait
@@ -5004,6 +5014,30 @@ namespace System.Threading.Tasks
 
                 exceptions ??= new List<Exception>(ex.InnerExceptionCount);
                 exceptions.AddRange(ex.InternalInnerExceptions);
+            }
+            else if (t.IsCanceled)
+            {
+                t.UpdateExceptionObservedStatus();
+
+                exceptions ??= new List<Exception>();
+
+                // Don't go through GetExceptions here: for a canceled task it allocates a
+                // TaskCanceledException, captures its stack trace, and wraps it in an
+                // AggregateException just to unwrap it again.
+                // To avoid OOM during mass cancellations (e.g. in WaitAll), capture the stack trace
+                // once and share it across all synthetic TaskCanceledException instances.
+                TaskCanceledException tce = new TaskCanceledException(t);
+                if (sharedCanceledException == null)
+                {
+                    tce.SetCurrentStackTrace();
+                    sharedCanceledException = tce;
+                }
+                else
+                {
+                    tce.SetCurrentStackTrace(sharedCanceledException);
+                }
+
+                exceptions.Add(tce);
             }
         }
 

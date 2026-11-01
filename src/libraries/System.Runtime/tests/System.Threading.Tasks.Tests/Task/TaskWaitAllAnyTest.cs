@@ -1293,5 +1293,23 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             Task.WaitAll((List<Task>)[Task.Delay(1)]);
             Task.WaitAll((IEnumerable<Task>)[Task.Delay(1), Task.CompletedTask, Task.Delay(1), Task.CompletedTask, Task.Delay(1)]);
         }
+
+        [Fact]
+        public static void TaskWaitAll_CanceledTasks_PreservesStackTrace()
+        {
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            Task t1 = Task.FromCanceled(cts.Token);
+            Task t2 = Task.FromCanceled(cts.Token);
+
+            AggregateException ex = Assert.Throws<AggregateException>(() => Task.WaitAll(t1, t2));
+            Assert.Equal(2, ex.InnerExceptions.Count);
+            foreach (Exception inner in ex.InnerExceptions)
+            {
+                var tce = Assert.IsAssignableFrom<TaskCanceledException>(inner);
+                Assert.NotNull(tce.StackTrace);
+                Assert.NotEmpty(tce.StackTrace);
+            }
+        }
     }
 }
