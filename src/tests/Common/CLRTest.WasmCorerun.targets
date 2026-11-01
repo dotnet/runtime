@@ -112,7 +112,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   <!-- ======================== Resolve inputs ======================== -->
 
   <Target Name="_WasmResolveTestCorerunInputs"
-          DependsOnTargets="$(_WasmCorerunToolchainTargets)">
+          DependsOnTargets="$(_WasmCorerunToolchainTargets);_WasmResolveNativeTestLibraries">
     <PropertyGroup>
       <!-- Produced by src/coreclr/hosts/corerun/wasm/testkit.cmake during the 'clr.hosts' build.
            Resolved here rather than during evaluation because eng/liveBuilds.targets, which
@@ -129,9 +129,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     </ItemGroup>
 
     <ItemGroup>
-      <!-- Native static libraries produced by the test's own CMake project(s), already staged into
-           $(OutDir) by CopyNativeProjectBinaries. -->
-      <_WasmCorerunTestLib Include="$(OutDir)*$(StaticLibSuffix)" />
+      <_WasmCorerunTestLib Include="@(_WasmNativeTestLib)" />
 
       <!-- Match the app build's support for source NativeFileReference items. -->
       <_WasmCorerunNativeSource Include="@(NativeFileReference)"
@@ -149,9 +147,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            skip themselves through PlatformDetection.PlatformDoesNotSupportNativeTestAssets. Giving
            every such wrapper its own corerun would add one ~7 MB module per wrapper to the Helix
            payload, so tests that need their native code should set RequiresProcessIsolation. -->
-      <_WasmCorerunRunsFromOutDir Condition="'$(RequiresProcessIsolation)' == 'true' or
-                                             '$(BuildAsStandalone)' == 'true' or
-                                             '$(IsMergedTestRunnerAssembly)' == 'true'">true</_WasmCorerunRunsFromOutDir>
+      <_WasmCorerunRunsFromOutDir>$(_WasmNativeTestRunsFromOutDir)</_WasmCorerunRunsFromOutDir>
 
       <_WasmCorerunSkip Condition="'$(WasmBuildTestCorerun)' != 'true'">true</_WasmCorerunSkip>
       <_WasmCorerunSkip Condition="'@(_WasmCorerunTestLib)' == '' and '@(_WasmCorerunNativeSource)' == ''">true</_WasmCorerunSkip>
@@ -262,16 +258,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*.js" />
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*.wit" />
 
-      <!-- src/tests/Common/Platform is the shared native helper library for tests, and several of
-           the CMake projects that produce a test library link it (Interop, Runtime_101046,
-           Runtime_76194, exceptioninterop). It installs into the common bin directory instead of
-           being staged next to each test, so without it here any use of its TP_* helpers would
-           only surface as an undefined symbol from wasm-ld. It is kept out of
-           @(_WasmCorerunTestLib) on purpose: that item decides whether a project has native code
-           at all, and this library exists for every project. Linking it costs nothing when it goes
-           unused, because wasm-ld pulls in only the archive members that are referenced. -->
-      <_WasmCorerunCommonLib Include="$(TestBinDir)bin/libplatformdefines$(StaticLibSuffix)"
-                             Condition="Exists('$(TestBinDir)bin/libplatformdefines$(StaticLibSuffix)')" />
+      <_WasmCorerunCommonLib Include="@(_WasmNativeCommonLib)" />
     </ItemGroup>
   </Target>
 

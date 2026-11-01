@@ -195,10 +195,10 @@ namespace PInvokeTests
         static extern void StructTest_ByRef(ref SequentialStruct ss);
 
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall, EntryPoint = "StructTest_ByRef")]
-        static extern bool ClassTest([In, Out] SequentialClass ss);
+        static extern void ClassTest([In, Out] SequentialClass ss);
 
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall, EntryPoint = "StructTest_ByRef")]
-        static extern bool AsAnyTest([In, Out, MarshalAs(40 /* UnmanagedType.AsAny */)] object o);
+        static extern void AsAnyTest([In, Out, MarshalAs(40 /* UnmanagedType.AsAny */)] object o);
 
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         static extern void StructTest_ByOut(out SequentialStruct ss);
@@ -625,6 +625,22 @@ namespace PInvokeTests
         {
             Console.WriteLine("Testing Delegate");
 
+            Delegate_String ret = GetDelegate();
+            ThrowIfNotEquals(true, ret("Hello World!"), "Delegate as P/Invoke return failed");
+
+            IntPtr procAddress = GetFunctionPointer();
+            SetLastErrorFuncDelegate funcDelegate =
+                Marshal.GetDelegateForFunctionPointer<SetLastErrorFuncDelegate>(procAddress);
+            funcDelegate(0x204);
+            ThrowIfNotEquals(0x204, Marshal.GetLastWin32Error(), "Not match");
+
+            // Avoid a TestLibrary dependency on PlatformDetection.IsDynamicEntrypointSupported.
+            if (RuntimeInformation.ProcessArchitecture is Architecture.Wasm)
+            {
+                Console.WriteLine("Skipping delegate marshalling on WASM: native callback thunk allocation is not supported.");
+                return;
+            }
+
             Delegate_Int del = new Delegate_Int(Sum);
             ThrowIfNotEquals(true, ReversePInvoke_Int(del), "Delegate marshalling failed.");
 
@@ -643,9 +659,6 @@ namespace PInvokeTests
 
             Delegate_Int closed = new Delegate_Int((new ClosedDelegateCLass()).Sum);
             ThrowIfNotEquals(true, ReversePInvoke_Int(closed), "Closed Delegate marshalling failed.");
-
-            Delegate_String ret = GetDelegate();
-            ThrowIfNotEquals(true, ret("Hello World!"), "Delegate as P/Invoke return failed");
 
             Delegate_String d = new Delegate_String(new ClosedDelegateCLass().GetString);
             ThrowIfNotEquals(true, Callback(ref d), "Delegate IN marshalling failed");
@@ -674,11 +687,6 @@ namespace PInvokeTests
             Delegate_Array da = new Delegate_Array((new ClosedDelegateCLass()).CheckArray);
             ThrowIfNotEquals(true, ReversePInvoke_Array(da), "Delegate array marshalling failed.");
 
-            IntPtr procAddress = GetFunctionPointer();
-            SetLastErrorFuncDelegate funcDelegate =
-                Marshal.GetDelegateForFunctionPointer<SetLastErrorFuncDelegate>(procAddress);
-            funcDelegate(0x204);
-            ThrowIfNotEquals(0x204, Marshal.GetLastWin32Error(), "Not match");
 		}
 
 		private static unsafe void TestFunctionPointers()
@@ -925,6 +933,12 @@ namespace PInvokeTests
                 pass = true;
             }
             ThrowIfNotEquals(true, pass, "Struct marshalling scenario6 failed.");
+
+            if (RuntimeInformation.ProcessArchitecture is Architecture.Wasm)
+            {
+                Console.WriteLine("Skipping struct delegate marshalling on WASM: native callback thunk allocation is not supported.");
+                return;
+            }
 
             Callbacks callbacks = new Callbacks();
             callbacks.callback0 = new Callback0(callbackFunc0);
