@@ -46,7 +46,7 @@ from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_n
     make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
     require_azure_storage_libraries, authenticate_using_azure, \
     create_unique_directory_name, create_unique_file_name, get_files_from_path, determine_jit_name, \
-    get_deepest_existing_directory, run_command
+    get_deepest_existing_directory, run_command, get_assembly_simple_name, is_managed_assembly
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
@@ -313,6 +313,7 @@ collect_parser.add_argument("--nativeaot", action="store_true", help="Run native
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
 collect_parser.add_argument("-crossgen2_reference_directory", help="Directory containing the assemblies crossgen2 should resolve references against. Optional; defaults to the Core_Root directory. Used for cross-target crossgen2 collections, where the assemblies being compiled are built for the target and not for the host.")
 collect_parser.add_argument("--crossgen2_composite", action="store_true", help="Run crossgen2 in composite mode: compile all the assemblies in one invocation, with the whole reference set in the version bubble, so cross-assembly generic instantiations are compiled as well. Slower, but collects many more method contexts.")
+collect_parser.add_argument("-crossgen2_timeout", type=int, help="Timeout in seconds for each crossgen2 invocation. An invocation that times out is killed and its method contexts are dropped. Optional; default is no timeout.")
 collect_parser.add_argument("-ilc_rsps", dest="ilc_rsps", nargs="+", default=[], help="For --nativeaot only. A list of 'ilc.rsp' files.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
@@ -575,73 +576,6 @@ def decode_clrjit_build_string(clrjit_path):
 ################################################################################
 # Helper classes
 ################################################################################
-
-def get_assembly_simple_name(filename):
-    """ Get the assembly simple name crossgen2 will key a module by, i.e. the file name
-        without its directory or extension, lowercased for comparison.
-
-    Args:
-        filename (str) : path to the assembly
-
-    Returns:
-        The lowercased simple name.
-    """
-
-    return os.path.splitext(os.path.basename(filename))[0].lower()
-
-
-def is_managed_assembly(filename):
-    """ Determine if a file is a managed assembly by looking for a non-empty CLI header
-        in its PE data directory. Used to keep native binaries out of the crossgen2
-        composite input set, which crossgen2 refuses to load.
-
-    Args:
-        filename (str) : path to the file to check
-
-    Returns:
-        True if the file is a managed assembly, False otherwise (including if it
-        can't be read or isn't a PE file at all).
-    """
-
-    try:
-        with open(filename, "rb") as file_handle:
-            if file_handle.read(2) != b"MZ":
-                return False
-
-            file_handle.seek(0x3C)
-            pe_header_offset_bytes = file_handle.read(4)
-            if len(pe_header_offset_bytes) != 4:
-                return False
-            pe_header_offset = int.from_bytes(pe_header_offset_bytes, "little")
-
-            file_handle.seek(pe_header_offset)
-            if file_handle.read(4) != b"PE\0\0":
-                return False
-
-            # Skip the COFF header (20 bytes) to reach the optional header.
-            optional_header_offset = pe_header_offset + 4 + 20
-            file_handle.seek(optional_header_offset)
-            magic_bytes = file_handle.read(2)
-            if len(magic_bytes) != 2:
-                return False
-            magic = int.from_bytes(magic_bytes, "little")
-            if magic == 0x10B:      # PE32
-                data_directory_offset = optional_header_offset + 96
-            elif magic == 0x20B:    # PE32+
-                data_directory_offset = optional_header_offset + 112
-            else:
-                return False
-
-            # The CLI header is data directory entry 14; each entry is 8 bytes.
-            file_handle.seek(data_directory_offset + 14 * 8)
-            cli_header_entry = file_handle.read(8)
-            # Require a complete entry with a nonzero CLI header RVA (first 4 bytes) and size (last 4 bytes).
-            return len(cli_header_entry) == 8 and \
-                int.from_bytes(cli_header_entry[:4], "little") != 0 and \
-                int.from_bytes(cli_header_entry[4:], "little") != 0
-    except OSError:
-        return False
-
 
 def get_crossgen2_reference_assemblies(reference_directory):
     """ Get managed composite inputs, filtering out native binaries and rejecting an empty result. """
@@ -1171,6 +1105,8 @@ class SuperPMICollect:
                     # -r:<reference_dir>\Microsoft.*.dll
                     # -r:<reference_dir>\mscorlib.dll   /// System.*.dll above includes CoreLib
                     # -r:<reference_dir>\netstandard.dll
+                    # -r:<reference_dir>\*.dll          /// cross-target non-composite mode only
+                    # -r:<input_dir>\*.dll              /// cross-target non-composite mode only
                     # --jitpath:<self.collection_shim_name>
                     # --codegenopt:<option>=<value>   /// for each member of dotnet_env
                     #
@@ -1218,6 +1154,14 @@ class SuperPMICollect:
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "Microsoft.*.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "mscorlib.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "netstandard.dll") + "\n")
+                        if self.coreclr_args.crossgen2_reference_directory and not is_composite:
+                            # A cross-target reference directory is a staged set of target assemblies
+                            # (e.g. xunit and test infrastructure besides the framework), so reference
+                            # all of it. Then let an input such as a test resolve dependencies copied
+                            # next to it. crossgen2 binds a reference simple name to the first match,
+                            # so the staged set wins over stale copies in the input's directory.
+                            rsp_write_handle.write("-r:" + os.path.join(reference_directory, "*.dll") + "\n")
+                            rsp_write_handle.write("-r:" + os.path.join(os.path.dirname(input_assemblies[0]), "*.dll") + "\n")
                         rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
                         # If we are cross-compiling (target != host), tell crossgen2 explicitly which
@@ -1247,16 +1191,44 @@ class SuperPMICollect:
                         stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
                         stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
 
+                        # With a timeout, give the invocation its own shim log directory, so a killed
+                        # invocation's (possibly partially written) .mc file can be dropped.
+                        timeout = self.coreclr_args.crossgen2_timeout
+                        shim_log_directory = None
+                        process_env = None
+                        if timeout:
+                            # Keep the name short: the shim limits the length of the .mc file path.
+                            shim_log_directory = tempfile.mkdtemp(prefix="mc", dir=self.temp_location)
+                            process_env = os.environ.copy()
+                            process_env["SuperPMIShimLogPath"] = shim_log_directory
+
                         # Avoid shell splitting when the crossgen2 or response-file path contains spaces.
                         proc = await asyncio.create_subprocess_exec(
                             *command,
                             stdout=stdout_file_handle,
-                            stderr=stderr_file_handle)
+                            stderr=stderr_file_handle,
+                            env=process_env)
 
-                        await proc.communicate()
+                        timed_out = False
+                        try:
+                            await asyncio.wait_for(proc.communicate(), timeout=timeout if timeout else None)
+                        except asyncio.TimeoutError:
+                            timed_out = True
+                            proc.kill()
+                            await proc.wait()
 
                         os.close(stdout_file_handle)
                         os.close(stderr_file_handle)
+
+                        if shim_log_directory is not None:
+                            if timed_out:
+                                logging.warning("%scrossgen2 timed out after %s seconds and was killed; dropping its method contexts: %s",
+                                                print_prefix, timeout, " ".join(input_assemblies))
+                            else:
+                                for item in os.listdir(shim_log_directory):
+                                    if item.endswith(".mc"):
+                                        shutil.move(os.path.join(shim_log_directory, item), os.path.join(self.temp_location, item))
+                            shutil.rmtree(shim_log_directory, ignore_errors=True)
 
                         # No need to keep zero-length files
                         if is_zero_length_file(stdout_filepath):
@@ -5575,6 +5547,11 @@ def setup_args(args):
                             "crossgen2_composite",
                             lambda unused: True,
                             "Unable to set crossgen2_composite")
+
+        coreclr_args.verify(args,
+                            "crossgen2_timeout",
+                            lambda timeout: timeout is None or timeout > 0,
+                            "crossgen2_timeout must be a positive number of seconds")
 
         coreclr_args.verify(args,
                             "nativeaot",
