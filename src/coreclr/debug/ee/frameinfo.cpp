@@ -1743,6 +1743,13 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         }
 
         d->info.md = md;
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        // These targets use caller SP as the frame marker in the saved REGDISPLAY.
+        if (pCF->IsFrameless())
+        {
+            pCF->EnsureCallerContextIsValid();
+        }
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
         CopyREGDISPLAY(&(d->info.registers), &(d->regDisplay));
 
 #if defined(TARGET_AMD64)
