@@ -56,7 +56,7 @@
     }
 
     // Correct CIL, but verification requires a managed pointer.
-    .method public hidebysig static void Mkrefany.NativeIntPointer_Invalid_StackByRef() cil managed
+    .method public hidebysig static void Mkrefany.NativeIntPointer_Invalid_StackByRef_Validation_Valid() cil managed
     {
         ldc.i4.0
         conv.i
@@ -65,7 +65,7 @@
         ret
     }
 
-    .method public hidebysig static void Mkrefany.TypeMismatch_Invalid_StackUnexpected() cil managed
+    .method public hidebysig static void Mkrefany.TypeMismatch_Invalid_StackUnexpected_Validation_Valid() cil managed
     {
         .locals init (int32 V_0)
         ldloca.s V_0
@@ -75,7 +75,7 @@
     }
 
     // The pointer must point to exactly the type of the class token, not to a derived type.
-    .method public hidebysig static void Mkrefany.ReferenceTypeMismatch_Invalid_StackUnexpected() cil managed
+    .method public hidebysig static void Mkrefany.ReferenceTypeMismatch_Invalid_StackUnexpected_Validation_Valid() cil managed
     {
         .locals init (string V_0)
         ldloca.s V_0
@@ -152,7 +152,7 @@
     }
 
     // The address in a typed reference can point to a local of a caller.
-    .method public hidebysig static int32& Refanyval.ReturnAddress_Invalid_ReturnPtrToStack(typedref tr) cil managed
+    .method public hidebysig static int32& Refanyval.ReturnAddress_Invalid_ReturnPtrToStack_Validation_Valid(typedref tr) cil managed
     {
         ldarg.0
         refanyval [System.Runtime]System.Int32
