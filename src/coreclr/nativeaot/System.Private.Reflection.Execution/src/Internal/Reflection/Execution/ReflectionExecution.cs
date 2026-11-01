@@ -51,15 +51,7 @@ namespace Internal.Reflection.Execution
             ExecutionEnvironment = executionEnvironment;
         }
 
-        public static bool TryGetMethodMetadataFromStartAddress(IntPtr methodStartAddress, out MetadataReader reader, out TypeDefinitionHandle typeHandle, out MethodHandle methodHandle)
-            => TryGetMethodMetadataFromAddress(methodStartAddress, isFunctionPointer: false, out reader, out typeHandle, out methodHandle);
-
-#if TARGET_WASM
-        public static bool TryGetMethodMetadataFromFunctionPointer(IntPtr functionPointer, out MetadataReader reader, out TypeDefinitionHandle typeHandle, out MethodHandle methodHandle)
-            => TryGetMethodMetadataFromAddress(functionPointer, isFunctionPointer: true, out reader, out typeHandle, out methodHandle);
-#endif
-
-        private static bool TryGetMethodMetadataFromAddress(IntPtr address, bool isFunctionPointer, out MetadataReader reader, out TypeDefinitionHandle typeHandle, out MethodHandle methodHandle)
+        public static bool TryGetMethodMetadataFromAddress(IntPtr address, bool isFunctionPointer, out MetadataReader reader, out TypeDefinitionHandle typeHandle, out MethodHandle methodHandle)
         {
             reader = null;
             typeHandle = default(TypeDefinitionHandle);

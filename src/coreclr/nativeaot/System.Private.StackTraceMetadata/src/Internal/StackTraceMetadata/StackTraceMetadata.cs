@@ -82,7 +82,7 @@ namespace Internal.StackTraceMetadata
             isStackTraceHidden = false;
 
             // We haven't found information in the stack trace metadata tables, but maybe reflection will have this
-            if (methodStartAddress != IntPtr.Zero && ReflectionExecution.TryGetMethodMetadataFromStartAddress(methodStartAddress,
+            if (methodStartAddress != IntPtr.Zero && ReflectionExecution.TryGetMethodMetadataFromAddress(methodStartAddress, isFunctionPointer: false,
                 out MetadataReader reader,
                 out TypeDefinitionHandle typeHandle,
                 out MethodHandle methodHandle))
@@ -200,7 +200,7 @@ namespace Internal.StackTraceMetadata
             }
 
             // We haven't found information in the stack trace metadata tables, but maybe reflection will have this
-            if (methodStartAddress != IntPtr.Zero && ReflectionExecution.TryGetMethodMetadataFromStartAddress(methodStartAddress,
+            if (methodStartAddress != IntPtr.Zero && ReflectionExecution.TryGetMethodMetadataFromAddress(methodStartAddress, isFunctionPointer: false,
                 out MetadataReader reader,
                 out TypeDefinitionHandle typeHandle,
                 out MethodHandle methodHandle))
@@ -220,7 +220,7 @@ namespace Internal.StackTraceMetadata
                 if (resolver.TryGetStackTraceDataFromFunctionPointer(functionPointer, out var data))
                     return CreateDiagnosticMethodInfo(resolver.Reader, data.OwningType, data.Name);
             }
-            if (ReflectionExecution.TryGetMethodMetadataFromFunctionPointer(functionPointer,
+            if (ReflectionExecution.TryGetMethodMetadataFromAddress(functionPointer, isFunctionPointer: true,
                 out MetadataReader reader,
                 out TypeDefinitionHandle typeHandle,
                 out MethodHandle methodHandle))

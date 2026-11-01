@@ -450,11 +450,11 @@ namespace Internal.Reflection.Execution
         /// <summary>
         /// Initialize a lookup array of module to function pointer/parser offset pair arrays.
         /// </summary>
-        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetReverseLookups_InvokeMap(bool forStartAddress)
+        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetReverseLookups_InvokeMap(bool isFunctionPointer)
         {
 #if TARGET_WASM
-            KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = forStartAddress
-                ? _startAddressReverseLookup_InvokeMap : _ldftnReverseLookup_InvokeMap;
+            KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = isFunctionPointer
+                ? _ldftnReverseLookup_InvokeMap : _startAddressReverseLookup_InvokeMap;
 #else
             KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = _ldftnReverseLookup_InvokeMap;
 #endif
@@ -463,11 +463,11 @@ namespace Internal.Reflection.Execution
                 var ldFtnReverseLookupBuilder = default(ArrayBuilder<KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>>);
                 foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                 {
-                    ldFtnReverseLookupBuilder.Add(new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, ComputeReverseLookup_InvokeMap(module, forStartAddress)));
+                    ldFtnReverseLookupBuilder.Add(new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, ComputeReverseLookup_InvokeMap(module, isFunctionPointer)));
                 }
                 ldFtnReverseLookup = ldFtnReverseLookupBuilder.ToArray();
 #if TARGET_WASM
-                if (forStartAddress)
+                if (!isFunctionPointer)
                     _startAddressReverseLookup_InvokeMap = ldFtnReverseLookup;
                 else
 #endif
@@ -503,7 +503,7 @@ namespace Internal.Reflection.Execution
             }
 
             // Search InvokeMap
-            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetReverseLookups_InvokeMap(forStartAddress: false))
+            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetReverseLookups_InvokeMap(isFunctionPointer: true))
             {
                 int startIndex;
                 int endIndex;
@@ -527,7 +527,7 @@ namespace Internal.Reflection.Execution
         internal bool TryGetMethodForAddress(IntPtr address, bool isFunctionPointer, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle)
         {
             // Search InvokeMap
-            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetReverseLookups_InvokeMap(forStartAddress: !isFunctionPointer))
+            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetReverseLookups_InvokeMap(isFunctionPointer))
             {
                 int startIndex;
                 int endIndex;
@@ -551,7 +551,7 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
-        private static FunctionPointersToOffsets ComputeReverseLookup_InvokeMap(NativeFormatModuleInfo mappingTableModule, bool forStartAddress)
+        private static FunctionPointersToOffsets ComputeReverseLookup_InvokeMap(NativeFormatModuleInfo mappingTableModule, bool isFunctionPointer)
         {
             FunctionPointersToOffsets functionPointerToOffsetInInvokeMap = default;
 
@@ -587,7 +587,7 @@ namespace Internal.Reflection.Execution
 
                 IntPtr entryMethodEntrypoint = externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
 #if TARGET_WASM
-                if (forStartAddress)
+                if (!isFunctionPointer)
                 {
                     if ((entryFlags & InvokeTableFlags.HasVirtualIP) != 0)
                     {
