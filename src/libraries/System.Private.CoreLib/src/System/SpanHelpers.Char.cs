@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
@@ -502,6 +503,12 @@ namespace System
                     }
                     i += (nuint)(sizeof(nuint) / sizeof(char));
                 }
+
+                // The loop above only stops with a whole chunk left if the chunk differs.
+                if (minLength >= (i + (nuint)(sizeof(nuint) / sizeof(char))))
+                {
+                    return CompareFirstDifferentChar(ref Unsafe.Add(ref first, (nint)i), ref Unsafe.Add(ref second, (nint)i));
+                }
             }
 
 #if TARGET_64BIT
@@ -525,6 +532,24 @@ namespace System
 
         Equal:
             return lengthDelta;
+        }
+
+        /// <summary>Compares the first differing char among the first sizeof(nuint) bytes of two runs of chars, which must differ.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int CompareFirstDifferentChar(ref char first, ref char second)
+        {
+            nuint differentBits = Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref first)) ^
+                Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref second));
+            Debug.Assert(differentBits != 0);
+
+            // Byte swap on big-endian, so that the lowest set bit belongs to the first differing char as on little-endian.
+            if (!BitConverter.IsLittleEndian)
+            {
+                differentBits = BinaryPrimitives.ReverseEndianness(differentBits);
+            }
+
+            nuint index = (uint)BitOperations.TrailingZeroCount(differentBits) / (8 * sizeof(char));
+            return Unsafe.Add(ref first, index).CompareTo(Unsafe.Add(ref second, index));
         }
 
         // IndexOfNullCharacter processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
