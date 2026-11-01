@@ -15,7 +15,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
 namespace ILAssembler.Tests
 {
@@ -43,6 +42,43 @@ namespace ILAssembler.Tests
             MethodDefinition method = reader.GetMethodDefinition(Assert.Single(reader.MethodDefinitions));
             Assert.Equal(new byte[] { 0, 0, 1 }, reader.GetBlobBytes(method.Signature));
             Assert.Equal(new byte[] { 0x28, 1, 0, 0, 6, 0x2A }, pe.GetMethodBody(method.RelativeVirtualAddress).GetILBytes());
+        }
+
+        [Theory]
+        [InlineData("native")]
+        [InlineData("cil")]
+        [InlineData("optil")]
+        [InlineData("managed")]
+        [InlineData("unmanaged")]
+        [InlineData("forwardref")]
+        [InlineData("preservesig")]
+        [InlineData("runtime")]
+        [InlineData("internalcall")]
+        [InlineData("synchronized")]
+        [InlineData("noinlining")]
+        [InlineData("aggressiveinlining")]
+        [InlineData("nooptimization")]
+        [InlineData("aggressiveoptimization")]
+        [InlineData("async")]
+        [InlineData("extended")]
+        public void ImplementationKeywords_AreUnquotedIdentifiers(string name)
+        {
+            string source = $$"""
+                .assembly test {}
+                .method public static void {{name}}(int32 {{name}}) cil managed
+                {
+                    ldc.i4.0
+                    call void {{name}}(int32)
+                    ret
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinition method = reader.GetMethodDefinition(Assert.Single(reader.MethodDefinitions));
+            Assert.Equal(name, reader.GetString(method.Name));
+            Assert.Equal(name, reader.GetString(reader.GetParameter(Assert.Single(method.GetParameters())).Name));
+            Assert.Equal(new byte[] { 0x16, 0x28, 1, 0, 0, 6, 0x2A }, pe.GetMethodBody(method.RelativeVirtualAddress).GetILBytes());
         }
 
         [Fact]

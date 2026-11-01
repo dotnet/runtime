@@ -113,7 +113,9 @@ struct ee_alloc_context
     uint8_t m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
 
     gc_alloc_context* GetGCAllocContext();
-    uint8_t* GetCombinedLimit();
+    uint8_t* getCombinedLimit();
+    uint8_t* getAllocPtr();
+    void setAllocPtr(uint8_t* ptr);
     void UpdateCombinedLimit(bool samplingEnabled);
     static bool IsRandomizedSamplingEnabled();
     static uint32_t ComputeGeometricRandom();
@@ -286,6 +288,9 @@ public:
     bool                IsWithinStackBounds(PTR_VOID p);
     void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
     void                PushExInfo(ExInfo * pExInfo);
+#ifdef FEATURE_PORTABLE_HELPERS
+    void                PopExInfo(ExInfo* pExInfo, uintptr_t resumeSP);
+#endif // FEATURE_PORTABLE_HELPERS
     void                ValidateExInfoPop(ExInfo * pExInfo, void * limitSP);
     void                ValidateExInfoStack();
     bool                IsDoNotTriggerGcSet();
@@ -307,7 +312,6 @@ public:
 
     PInvokeTransitionFrame* GetTransitionFrameForStackTrace();
     PInvokeTransitionFrame* GetTransitionFrameForSampling();
-    void *              GetCurrentThreadPInvokeReturnAddress();
 
     //
     // The set of operations used to support unmanaged code running in cooperative mode
@@ -315,8 +319,8 @@ public:
     void                EnablePreemptiveMode();
     void                DisablePreemptiveMode();
 
-    // Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame
-    // in assembly code. Do not use anywhere else.
+    // Record the managed caller's transition frame for GC allocation helpers that remain in
+    // cooperative mode, so the GC can walk the managed stack. Do not use anywhere else.
     void                SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransitionFrame);
 
     // Setup the m_pDeferredTransitionFrame field for GC helpers entered via regular PInvoke.

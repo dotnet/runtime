@@ -18,6 +18,14 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- The old bootstrap targeting pack predates required .NET 11 APIs; leave newer packs unchanged. -->
+    <!-- TODO: Remove after rebootstrap replaces the old .NET 11 RC1 targeting pack. -->
+    <KnownFrameworkReference Update="Microsoft.NETCore.App">
+      <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == 'net11.0' and '%(KnownFrameworkReference.TargetingPackVersion)' == '11.0.0-rc.1.26420.103'">11.0.0-rc.2.26478.114</TargetingPackVersion>
+    </KnownFrameworkReference>
+  </ItemGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>

@@ -822,7 +822,7 @@ namespace System.Runtime.Serialization.DataContracts
                     MemberInfo member = memberInfos[i];
                     if (HasDataContract)
                     {
-                        object[] memberAttributes = member.GetCustomAttributes(typeof(DataMemberAttribute), false).ToArray();
+                        object[] memberAttributes = member.GetCustomAttributes(typeof(DataMemberAttribute), false);
                         if (memberAttributes != null && memberAttributes.Length > 0)
                         {
                             if (memberAttributes.Length > 1)
@@ -885,7 +885,7 @@ namespace System.Runtime.Serialization.DataContracts
                         if ((field == null && property == null) || (field != null && field.IsInitOnly))
                             continue;
 
-                        object[] memberAttributes = member.GetCustomAttributes(typeof(IgnoreDataMemberAttribute), false).ToArray();
+                        object[] memberAttributes = member.GetCustomAttributes(typeof(IgnoreDataMemberAttribute), false);
                         if (memberAttributes != null && memberAttributes.Length > 0)
                         {
                             if (memberAttributes.Length > 1)

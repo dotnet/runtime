@@ -275,7 +275,7 @@ VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD Ex
 // These CallFunclet functions are used to call funclets from the VM.
 // They set up a new stack frame for calling a function which provides the TERMINATE_R2R_STACK_WALK flag so that unwinds from the funclet terminate correctly.
 // then invoke the new funclet with SP pointing to the top of the new frame.
-// There are two versions of the function, one for funclets that need to pass a Throwable (catch/finally), and 1 for those do not (finally/fault)
+// There are two versions of the function, one for funclets that need to pass a Throwable (catch/filter), and one for those that do not (finally/fault)
 __attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP)
 {
     asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
@@ -490,6 +490,45 @@ EXTERN_C __attribute__((naked)) void F_CALL_CONV RhpGcPoll(uintptr_t callersStac
         :: [g_TrapReturningThreads] "i" (&g_TrapReturningThreads),
            [JIT_PollGCRarePath] "i" (JIT_PollGCRarePath));
 }
+
+// EventPipe CPU-sampling samplepoint helper for R2R (native wasm) code on single-threaded WASM.
+// Emitted by the JIT at method entry and loop back-edges when a method matches the
+// WasmPerformanceInstrumentation filter. Cooperative throughout; when a sample is due it
+// anchors a managed stack walk with an InlinedCallFrame derived from the caller's shadow SP, then
+// delegates to the shared sample collection implementation.
+#if defined(FEATURE_PERFTRACING) && defined(PERFTRACING_DISABLE_THREADS)
+EXTERN_C bool SamplingProfiler_ShouldSample();
+EXTERN_C void SamplingProfiler_CollectSample();
+#endif
+
+FCIMPL0(void, JIT_WasmProfSamplepoint)
+{
+    FCALL_CONTRACT;
+
+#if defined(FEATURE_PERFTRACING) && defined(PERFTRACING_DISABLE_THREADS)
+    if (!SamplingProfiler_ShouldSample())
+        return;
+
+    Thread* pThread = GetThread();
+
+    // Anchor the walk with a cooperative InlinedCallFrame (JIT_PInvokeBeginImpl's setup minus the
+    // preemptive transition): StackWalkFrames starts from a zeroed context and walks the Frame chain.
+    InlinedCallFrame inlinedCallFrame;
+    ::new ((void*)&inlinedCallFrame) InlinedCallFrame();
+    inlinedCallFrame.m_pCallSiteSP          = (void*)callersStackPointer;
+    inlinedCallFrame.m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R;
+    inlinedCallFrame.m_pCalleeSavedFP       = 0;
+    inlinedCallFrame.m_pThread              = pThread;
+    inlinedCallFrame.Push();
+
+    SamplingProfiler_CollectSample();
+
+    inlinedCallFrame.Pop();
+#else
+    UNREFERENCED_PARAMETER(callersStackPointer);
+#endif // FEATURE_PERFTRACING && PERFTRACING_DISABLE_THREADS
+}
+FCIMPLEND
 
 void InitJITHelpers1()
 {
