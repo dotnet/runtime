@@ -94,7 +94,7 @@ namespace System.Reflection
                 & Internal.Metadata.NativeFormat.SignatureCallingConvention.UnmanagedCallingConventionMask);
         }
 
-        private Type[] GetCustomModifiers(bool required)
+        private Type[] GetCustomModifiers(bool isOptional)
         {
             ArrayBuilder<Type> builder = default;
 
@@ -110,7 +110,7 @@ namespace System.Reflection
 
                 handle = modifiedType.Type;
 
-                if (modifiedType.IsOptional == required)
+                if (modifiedType.IsOptional != isOptional)
                     continue;
 
                 builder.Add(modifiedType.ModifierType.Resolve(reader, new TypeContext(null, null)).ToType());

@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using Xunit;
 
 namespace System.ComponentModel.Composition
@@ -189,6 +193,31 @@ namespace System.ComponentModel.Composition
             {
                 MetadataViewProvider.GetMetadataView<ITrans_MetadataTests_MetadataView2>(metadata);
             });
+        }
+
+        [Fact]
+        public void GetMetadataView_InterfaceWithCustomModifiersFromPersistedAssemblyBuilder()
+        {
+            // PersistedAssemblyBuilder writes the view, so the generated getter's signature must match one the runtime's AssemblyBuilder didn't write.
+            Type[] required = new[] { typeof(IsConst), typeof(IsVolatile) };
+            Type[] optional = new[] { typeof(IsLong), typeof(IsBoxed) };
+            PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("PersistedModifiersMetadataView"), typeof(object).Assembly);
+            TypeBuilder tb = ab.DefineDynamicModule("mod").DefineType("IPersistedModifiersMetadataView", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
+            PropertyBuilder pb = tb.DefineProperty("Value", PropertyAttributes.None, CallingConventions.HasThis, typeof(int), required, optional, Type.EmptyTypes, null, null);
+            pb.SetGetMethod(tb.DefineMethod("get_Value", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.SpecialName,
+                CallingConventions.HasThis, typeof(int), required, optional, Type.EmptyTypes, null, null));
+            tb.CreateType();
+            using MemoryStream stream = new MemoryStream();
+            ab.Save(stream);
+            stream.Position = 0;
+            Type viewType = AssemblyLoadContext.Default.LoadFromStream(stream).GetType("IPersistedModifiersMetadataView");
+
+            var metadata = new Dictionary<string, object>();
+            metadata["Value"] = 10;
+
+            object view = typeof(AttributedModelServices).GetMethod(nameof(AttributedModelServices.GetMetadataView)).MakeGenericMethod(viewType).Invoke(null, new object[] { metadata });
+
+            Assert.Equal(10, viewType.GetProperty("Value").GetValue(view));
         }
 
         [Fact]

@@ -51,7 +51,7 @@ namespace System.Reflection
                 ParameterIndex = parameterIndex;
             }
 
-            internal bool TryGetCustomModifiersFromSignatureHolderInfo(bool required, out Type[] modifiers)
+            internal bool TryGetCustomModifiersFromSignatureHolderInfo(bool isOptional, out Type[] modifiers)
             {
                 if (SignatureHolderInfo is null)
                 {
@@ -63,13 +63,13 @@ namespace System.Reflection
                     switch (SignatureHolderInfo)
                     {
                         case RuntimeFieldInfo fieldInfo:
-                            modifiers = fieldInfo.GetCustomModifiersFromModifiedType(!required, fieldInfo.FieldType.IsGenericType ? ParameterIndex : -1);
+                            modifiers = fieldInfo.GetCustomModifiersFromModifiedType(isOptional, fieldInfo.FieldType.IsGenericType ? ParameterIndex : -1);
                             break;
                         case RuntimeParameterInfo parameterInfo:
-                            modifiers = parameterInfo.GetCustomModifiersFromModifiedType(!required, parameterInfo.ParameterType.IsGenericType ? ParameterIndex : -1);
+                            modifiers = parameterInfo.GetCustomModifiersFromModifiedType(isOptional, parameterInfo.ParameterType.IsGenericType ? ParameterIndex : -1);
                             break;
                         case RuntimePropertyInfo propertyInfo:
-                            modifiers = propertyInfo.GetCustomModifiersFromModifiedType(!required, propertyInfo.PropertyType.IsGenericType ? ParameterIndex : -1);
+                            modifiers = propertyInfo.GetCustomModifiersFromModifiedType(isOptional, propertyInfo.PropertyType.IsGenericType ? ParameterIndex : -1);
                             break;
                         default:
                             throw new Exception($"SignatureHolderInfo: {SignatureHolderInfo} is not recognized");
@@ -78,7 +78,7 @@ namespace System.Reflection
                 }
             }
 
-            internal bool TryGetCustomModifiersFromSignatureHolderType(bool required, out Type[] modifiers)
+            internal bool TryGetCustomModifiersFromSignatureHolderType(bool isOptional, out Type[] modifiers)
             {
                 if (SignatureHolderType is null)
                 {
@@ -87,7 +87,7 @@ namespace System.Reflection
                 }
                 else
                 {
-                    modifiers = SignatureHolderType.GetCustomModifiersFromFunctionPointer(ParameterIndex, optional: !required);
+                    modifiers = SignatureHolderType.GetCustomModifiersFromFunctionPointer(ParameterIndex, optional: isOptional);
                     return true;
                 }
             }
@@ -141,11 +141,11 @@ namespace System.Reflection
             return _typeSignature.SignatureHolderType.GetCallingConventionFromFunctionPointer();
         }
 
-        private Type[] GetCustomModifiers(bool required)
+        private Type[] GetCustomModifiers(bool isOptional)
         {
-            if (_typeSignature.TryGetCustomModifiersFromSignatureHolderInfo(required, out var modifiersFromInfo))
+            if (_typeSignature.TryGetCustomModifiersFromSignatureHolderInfo(isOptional, out var modifiersFromInfo))
                 return modifiersFromInfo;
-            else if (_typeSignature.TryGetCustomModifiersFromSignatureHolderType(required, out var modifiersFromType))
+            else if (_typeSignature.TryGetCustomModifiersFromSignatureHolderType(isOptional, out var modifiersFromType))
                 return modifiersFromType;
             else
                 throw new Exception($"Failed to retrieve custom modifiers on a modified type: {this}");
