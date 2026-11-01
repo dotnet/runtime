@@ -75,6 +75,11 @@ namespace System.ComponentModel.Composition
         private static readonly MethodInfo ObjectGetType = typeof(object).GetMethod("GetType", Type.EmptyTypes)!;
         private static readonly ConstructorInfo ObjectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
 
+        // Before .NET 12, CoreCLR's AssemblyBuilder took custom modifiers of one kind in the reverse of the order reflection
+        // returns them in. This library's net10.0 and net11.0 builds run on those runtimes, and on .NET 12 too, so the
+        // runtime decides.
+        private static readonly bool ReverseCustomModifiers = Environment.Version.Major < 12;
+
         // Must be called with _lock held
         private static ModuleBuilder GetProxyModuleBuilder()
         {
@@ -304,14 +309,22 @@ namespace System.ComponentModel.Composition
                 }
                 if (propertyInfo.CanRead)
                 {
+                    Type[] requiredModifiers = propertyInfo.GetRequiredCustomModifiers();
+                    Type[] optionalModifiers = propertyInfo.GetOptionalCustomModifiers();
+                    if (ReverseCustomModifiers)
+                    {
+                        Array.Reverse(requiredModifiers);
+                        Array.Reverse(optionalModifiers);
+                    }
+
                     // Generate "get" method implementation.
                     MethodBuilder getMethodBuilder = proxyTypeBuilder.DefineMethod(
                         "get_" + propertyName,
                         MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final,
                         CallingConventions.HasThis,
                         propertyInfo.PropertyType,
-                        propertyInfo.GetRequiredCustomModifiers(),
-                        propertyInfo.GetOptionalCustomModifiers(),
+                        requiredModifiers,
+                        optionalModifiers,
                         Type.EmptyTypes, null, null);
 
                     proxyTypeBuilder.DefineMethodOverride(getMethodBuilder, propertyInfo.GetGetMethod()!);

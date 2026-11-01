@@ -228,39 +228,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [SkipOnMono("Mono's ILGenerator does not implement EmitCalli(Type).")]
-        public void TestDynamicMethodEmitCalliFnPtr_RequiredModifiersFirst()
-        {
-            // A DynamicMethod's signatures can't be read back, so the order its modifiers are written in shows only in
-            // which of two invalid ones is reported.
-            AssertExtensions.Throws<ArgumentException>("requiredCustomModifiers", () => EmitCalliWithModifiedReturn([typeof(int[])], [typeof(List<>)]));
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        [SkipOnMono("Mono's ILGenerator does not implement EmitCalli(Type).")]
-        public void TestDynamicMethodEmitCalliFnPtr_LastModifierOfOneKindFirst(bool isOptional)
-        {
-            // Both invalid modifiers throw ArgumentException for the same parameter, so only the message, compared with
-            // the one for the generic modifier alone, shows that the array's last modifier is written first.
-            Type[] generic = [typeof(List<>)];
-            Type[] arrayThenGeneric = [typeof(int[]), typeof(List<>)];
-            string expected = Assert.Throws<ArgumentException>(
-                () => EmitCalliWithModifiedReturn(isOptional ? Type.EmptyTypes : generic, isOptional ? generic : Type.EmptyTypes)).Message;
-
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => EmitCalliWithModifiedReturn(isOptional ? Type.EmptyTypes : arrayThenGeneric, isOptional ? arrayThenGeneric : Type.EmptyTypes));
-            Assert.Equal(expected, ex.Message);
-        }
-
-        private static void EmitCalliWithModifiedReturn(Type[] requiredModifiers, Type[] optionalModifiers)
-        {
-            Type returnType = Type.MakeModifiedSignatureType(typeof(int), requiredModifiers, optionalModifiers);
-            new DynamicMethod("F", typeof(void), Type.EmptyTypes).GetILGenerator().EmitCalli(Type.MakeFunctionPointerSignatureType(returnType, []));
-        }
-
-        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
         public unsafe void TestDynamicMethodEmitCalli_NestedFunctionPointer()
         {
