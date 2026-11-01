@@ -2797,10 +2797,9 @@ namespace Internal.JitInterface
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN:
                     if (!pResult->exactContextNeedsRuntimeLookup)
                     {
+                        MethodWithToken virtualFunctionTarget = ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false);
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.DynamicHelperCell(
-                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false),
-                                useInstantiatingStub));
+                            _compilation.NodeFactory.DynamicHelperCell(virtualFunctionTarget, useInstantiatingStub));
 
                         // Wasm routes virtual calls that cannot use a pregenerated dispatch thunk through
                         // LDVIRTFTN, so the call sig may carry a type arg (e.g., MD-array intrinsics);

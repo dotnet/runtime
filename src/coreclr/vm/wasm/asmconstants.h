@@ -56,5 +56,13 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData_PortableE
 ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData_PortableEntryPoint__HandleArgs
                     == offsetof(GenericDictionaryDynamicHelperStubData, HandleArgs) + offsetof(GenericDictionaryDynamicHelperStubData_PortableEntryPoint, stubData));
 
+#define OFFSETOF__VirtualEntryDynamicHelperStubData_PortableEntryPoint__Target    0x4
+ASMCONSTANTS_C_ASSERT(OFFSETOF__VirtualEntryDynamicHelperStubData_PortableEntryPoint__Target
+                    == offsetof(VirtualEntryDynamicHelperStubData_PortableEntryPoint, Target));
+
+#define OFFSETOF__VirtualEntryDynamicHelperStubData_PortableEntryPoint__Args      0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__VirtualEntryDynamicHelperStubData_PortableEntryPoint__Args
+                    == offsetof(VirtualEntryDynamicHelperStubData_PortableEntryPoint, ClassHandle));
+
 #undef ASMCONSTANTS_RUNTIME_ASSERT
 #undef ASMCONSTANTS_C_ASSERT
