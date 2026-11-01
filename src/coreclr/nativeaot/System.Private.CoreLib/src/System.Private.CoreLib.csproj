@@ -367,6 +367,7 @@
     <MetadataCommonPath>$(CompilerCommonPath)\Internal\Metadata\NativeFormat</MetadataCommonPath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MetadataCommonPath)\BlobReader.cs" />
     <Compile Include="$(MetadataCommonPath)\NativeFormatReaderCommonGen.cs" />
     <Compile Include="$(MetadataCommonPath)\MdBinaryReader.cs" />
     <Compile Include="$(MetadataCommonPath)\MdBinaryReaderGen.cs" />
