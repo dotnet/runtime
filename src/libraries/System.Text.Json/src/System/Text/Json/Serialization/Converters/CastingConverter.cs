@@ -15,6 +15,17 @@ namespace System.Text.Json.Serialization.Converters
     internal sealed class CastingConverter<T> : JsonConverter<T>
     {
         private readonly JsonConverter _sourceConverter;
+
+        // Whether property name serialization can be delegated to the source converter.
+        //
+        // Delegation is unsafe only for converters declared for object: their inherited property name
+        // implementations fall back to ObjectConverter, which is the one converter that re-dispatches
+        // on the runtime type. That lookup resolves back to this casting converter, which delegates
+        // again, recursing until the stack overflows (see dotnet/runtime#118381). For every other
+        // declared type the inherited implementation either has no fallback at all or a fallback that
+        // serializes the type directly, so delegating cannot resolve back to this instance.
+        private readonly bool _delegatePropertyNameSerialization;
+
         internal override Type? KeyType => _sourceConverter.KeyType;
         internal override Type? ElementType => _sourceConverter.ElementType;
         internal override JsonConverter? NullableElementConverter => _sourceConverter.NullableElementConverter;
@@ -37,6 +48,8 @@ namespace System.Text.Json.Serialization.Converters
             HandleNullOnRead = sourceConverter.HandleNullOnRead;
             HandleNullOnWrite = sourceConverter.HandleNullOnWrite;
             HandleNull = sourceConverter.HandleNullOnWrite;
+
+            _delegatePropertyNameSerialization = sourceConverter.Type != typeof(object);
         }
 
         internal override JsonConverter? SourceConverterForCastingConverter => _sourceConverter;
@@ -59,66 +72,56 @@ namespace System.Text.Json.Serialization.Converters
 
         public override T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (_sourceConverter.Type == typeof(T))
+            if (_delegatePropertyNameSerialization)
             {
                 return JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadAsPropertyNameAsObject(ref reader, typeToConvert, options))!;
             }
             else
             {
-                // The source converter's Type doesn't match T. Using the source converter's
-                // ReadAsPropertyName could fail or behave incorrectly: the source's fallback
-                // would look up a converter for its type (e.g. object), not T. Use our base
-                // class logic instead, which correctly uses the fallback for type T.
+                // Delegating to a converter declared for object would recurse back into this instance.
+                // Use our base class logic instead, which resolves the fallback for type T.
                 return base.ReadAsPropertyName(ref reader, typeToConvert, options);
             }
         }
 
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (_sourceConverter.Type == typeof(T))
+            if (_delegatePropertyNameSerialization)
             {
                 return JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadAsPropertyNameCoreAsObject(ref reader, typeToConvert, options))!;
             }
             else
             {
-                // The source converter's Type doesn't match T. Using the source converter's
-                // ReadAsPropertyNameCore could fail or behave incorrectly: the source's fallback
-                // would look up a converter for its type (e.g. object), not T. Use our base
-                // class logic instead, which correctly uses the fallback for type T.
+                // Delegating to a converter declared for object would recurse back into this instance.
+                // Use our base class logic instead, which resolves the fallback for type T.
                 return base.ReadAsPropertyNameCore(ref reader, typeToConvert, options);
             }
         }
 
         public override void WriteAsPropertyName(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options)
         {
-            if (_sourceConverter.Type == typeof(T))
+            if (_delegatePropertyNameSerialization)
             {
                 _sourceConverter.WriteAsPropertyNameAsObject(writer, value, options);
             }
             else
             {
-                // The source converter's Type doesn't match T. Using the source converter's
-                // WriteAsPropertyName could cause infinite recursion: the source's fallback
-                // would look up a converter for its type (e.g. object), which might delegate
-                // back to us via the runtime type lookup. Use our base class logic instead,
-                // which correctly uses the fallback for type T.
+                // Delegating to a converter declared for object would recurse back into this instance.
+                // Use our base class logic instead, which resolves the fallback for type T.
                 base.WriteAsPropertyName(writer, value, options);
             }
         }
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            if (_sourceConverter.Type == typeof(T))
+            if (_delegatePropertyNameSerialization)
             {
                 _sourceConverter.WriteAsPropertyNameCoreAsObject(writer, value, options, isWritingExtensionDataProperty);
             }
             else
             {
-                // The source converter's Type doesn't match T. Using the source converter's
-                // WriteAsPropertyNameCore could cause infinite recursion: the source's fallback
-                // would look up a converter for its type (e.g. object), which might delegate
-                // back to us via the runtime type lookup. Use our base class logic instead,
-                // which correctly uses the fallback for type T.
+                // Delegating to a converter declared for object would recurse back into this instance.
+                // Use our base class logic instead, which resolves the fallback for type T.
                 base.WriteAsPropertyNameCore(writer, value!, options, isWritingExtensionDataProperty);
             }
         }
