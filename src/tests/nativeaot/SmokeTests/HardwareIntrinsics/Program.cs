@@ -451,8 +451,8 @@ unsafe class Program
         // Check("Avx512Vp2intersect.VL", ExpectedAvx512Vp2intersect, &Avx512Vp2intersectVLIsSupported, Avx512Vp2intersect.VL.IsSupported, null);
         // Check("Avx512Vp2intersect.X64", ExpectedAvx512Vp2intersect, &Avx512Vp2intersectX64IsSupported, Avx512Vp2intersect.X64.IsSupported, null);
 
-        // Check("AvxIfma", ExpectedAvxIfma, &AvxIfmaIsSupported, AvxIfma.IsSupported, null);
-        // Check("AvxIfma.X64", ExpectedAvxIfma, &AvxIfmaX64IsSupported, AvxIfma.X64.IsSupported, null);
+        Check("AvxIfma", ExpectedAvxIfma, &AvxIfmaIsSupported, AvxIfma.IsSupported, () => AvxIfma.MultiplyAdd52Low(Vector128<ulong>.Zero, Vector128<ulong>.Zero, Vector128<ulong>.Zero).Equals(Vector128<ulong>.Zero));
+        Check("AvxIfma.X64", ExpectedAvxIfma, &AvxIfmaX64IsSupported, AvxIfma.X64.IsSupported, null);
 
         Check("AvxVnni", ExpectedAvxVnni, &AvxVnniIsSupported, AvxVnni.IsSupported, () => AvxVnni.MultiplyWideningAndAdd(Vector128<int>.Zero, Vector128<byte>.Zero, Vector128<sbyte>.Zero).Equals(Vector128<int>.Zero));
         Check("AvxVnni.X64", ExpectedAvxVnni, &AvxVnniX64IsSupported, AvxVnni.X64.IsSupported, null);
@@ -462,6 +462,12 @@ unsafe class Program
         // VEX AvxVnni CPUID bit, AvxVnni.V512.IsSupported (and AvxVnni.IsSupported)
         // must still report true.
         Check("AvxVnni.V512", ExpectedAvx512Vbmi2, &AvxVnniV512IsSupported, AvxVnni.V512.IsSupported, () => AvxVnni.V512.MultiplyWideningAndAdd(Vector512<int>.Zero, Vector512<byte>.Zero, Vector512<sbyte>.Zero).Equals(Vector512<int>.Zero));
+
+        // AvxIfma.V512 is folded under AVX512v2 (Avx512Vbmi is a representative
+        // sibling). On a machine that has AVX-512-IFMA but lacks the dedicated
+        // VEX AvxIfma CPUID bit, AvxIfma.V512.IsSupported (and AvxIfma.IsSupported)
+        // must still report true.
+        Check("AvxIfma.V512", ExpectedAvx512Vbmi, &AvxIfmaV512IsSupported, AvxIfma.V512.IsSupported, () => AvxIfma.V512.MultiplyAdd52Low(Vector512<ulong>.Zero, Vector512<ulong>.Zero, Vector512<ulong>.Zero).Equals(Vector512<ulong>.Zero));
 
         Check("Gfni", ExpectedGfni, &GfniIsSupported, Gfni.IsSupported, () => Gfni.GaloisFieldMultiply(Vector128<byte>.Zero, Vector128<byte>.Zero).Equals(Vector128<byte>.Zero));
         Check("Gfni.V256", ExpectedGfniV256, &GfniV256IsSupported, Gfni.V256.IsSupported, () => Gfni.V256.GaloisFieldMultiply(Vector256<byte>.Zero, Vector256<byte>.Zero).Equals(Vector256<byte>.Zero));
@@ -591,8 +597,9 @@ unsafe class Program
     // static bool Avx512Vp2intersectVLIsSupported() => Avx512Vp2intersect.VL.IsSupported;
     // static bool Avx512Vp2intersectX64IsSupported() => Avx512Vp2intersect.X64.IsSupported;
 
-    // static bool AvxIfmaIsSupported() => AvxIfma.IsSupported;
-    // static bool AvxIfmaX64IsSupported() => AvxIfma.X64.IsSupported;
+    static bool AvxIfmaIsSupported() => AvxIfma.IsSupported;
+    static bool AvxIfmaX64IsSupported() => AvxIfma.X64.IsSupported;
+    static bool AvxIfmaV512IsSupported() => AvxIfma.V512.IsSupported;
 
     static bool AvxVnniIsSupported() => AvxVnni.IsSupported;
     static bool AvxVnniX64IsSupported() => AvxVnni.X64.IsSupported;
