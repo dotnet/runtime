@@ -18,7 +18,7 @@ using Antlr4.Runtime;
 using Internal.IL;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class SourceDirectiveTests
     {

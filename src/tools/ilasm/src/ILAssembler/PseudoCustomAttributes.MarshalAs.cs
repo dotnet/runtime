@@ -8,7 +8,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal static partial class PseudoCustomAttributes
 {

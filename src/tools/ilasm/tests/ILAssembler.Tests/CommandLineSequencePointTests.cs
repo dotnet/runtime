@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reflection.PortableExecutable;
 using Xunit;
 
-namespace ILAssembler.Tests;
+namespace Microsoft.DotNet.ILAssembler.Tests;
 
 /// <summary>
 /// Runs the ilasm command line (<see cref="Program"/>) in process with -DEBUG and reads back the sequence points of

@@ -10,7 +10,7 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using Xunit;
 
-namespace ILAssembler.Tests;
+namespace Microsoft.DotNet.ILAssembler.Tests;
 
 /// <summary>
 /// Tests of <see cref="OutputWriter"/> on in-memory streams, without the file system: the order of the writes,

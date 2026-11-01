@@ -13,7 +13,7 @@ using System.Text;
 using Internal.IL;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     internal static class DocumentCompilerTestHelpers
     {

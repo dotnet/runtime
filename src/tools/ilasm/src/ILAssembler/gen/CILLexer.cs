@@ -19,7 +19,7 @@
 // Ambiguous reference in cref attribute
 #pragma warning disable 419
 
-namespace ILAssembler {
+namespace Microsoft.DotNet.ILAssembler {
 using System;
 using System.IO;
 using System.Text;
@@ -2018,4 +2018,4 @@ public partial class CILLexer : Lexer {
 
 
 }
-} // namespace ILAssembler
+} // namespace Microsoft.DotNet.ILAssembler
