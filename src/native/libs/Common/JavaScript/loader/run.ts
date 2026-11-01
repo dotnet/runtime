@@ -3,7 +3,7 @@
 
 import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource, VfsAsset } from "./types";
 
-import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
+import { dotnetApi, dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
 import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
@@ -62,6 +62,10 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         let modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = [];
         if (!configInitialized) {
             await validateEngineFeatures();
+
+            if (loaderConfig.buildId) {
+                dotnetApi.runtimeBuildInfo.buildId = loaderConfig.buildId;
+            }
 
             await loaderCallbacks.configLoaded?.(loaderConfig);
             validateLoaderConfig();

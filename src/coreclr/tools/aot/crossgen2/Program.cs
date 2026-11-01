@@ -711,6 +711,7 @@ namespace ILCompiler
                         .UseJitPath(Get(_command.JitPath))
                         .UseInstructionSetSupport(instructionSetSupport)
                         .UseCustomPESectionAlignment(Get(_command.CustomPESectionAlignment))
+                        .UseWasmNativeBuildId(Get(_command.WasmNativeBuildId))
                         .UseVerifyTypeAndFieldLayout(Get(_command.VerifyTypeAndFieldLayout))
                         .UseHotColdSplitting(Get(_command.HotColdSplitting))
                         .UseVerifyGCModeTransitions(Get(_command.VerifyGCModeTransitions))
