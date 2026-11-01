@@ -275,7 +275,7 @@ VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD Ex
 // These CallFunclet functions are used to call funclets from the VM.
 // They set up a new stack frame for calling a function which provides the TERMINATE_R2R_STACK_WALK flag so that unwinds from the funclet terminate correctly.
 // then invoke the new funclet with SP pointing to the top of the new frame.
-// There are two versions of the function, one for funclets that need to pass a Throwable (catch/finally), and 1 for those do not (finally/fault)
+// There are two versions of the function, one for funclets that need to pass a Throwable (catch/filter), and one for those that do not (finally/fault)
 __attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP)
 {
     asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
@@ -501,7 +501,7 @@ EXTERN_C bool SamplingProfiler_ShouldSample();
 EXTERN_C void SamplingProfiler_CollectSample();
 #endif
 
-HCIMPL0(void, JIT_WasmProfSamplepoint)
+FCIMPL0(void, JIT_WasmProfSamplepoint)
 {
     FCALL_CONTRACT;
 
@@ -528,7 +528,7 @@ HCIMPL0(void, JIT_WasmProfSamplepoint)
     UNREFERENCED_PARAMETER(callersStackPointer);
 #endif // FEATURE_PERFTRACING && PERFTRACING_DISABLE_THREADS
 }
-HCIMPLEND
+FCIMPLEND
 
 void InitJITHelpers1()
 {

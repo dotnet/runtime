@@ -184,3 +184,12 @@
         POP_CALLEE_SAVED_REGISTERS
         free_stack 16
 .endm
+.macro INLINE_GETTHREAD
+#ifdef FEATURE_EMULATED_TLS
+        bl      C_FUNC(GetThreadHelper)
+#else
+        INLINE_GET_TLS_VAR C_FUNC(t_CurrentThreadInfo)
+        ldr     r0, [r0, #OFFSETOF__ThreadLocalInfo__m_pThread]
+#endif
+.endm
+

@@ -2646,7 +2646,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     _ASSERTE(heapSize >= initialRequestSize);
 
-    // We do not need to memset this memory, since ClrVirtualAlloc() guarantees that the memory is zero.
+    // We do not need to memset this memory, since VirtualAlloc() guarantees that the memory is zero.
     // Furthermore, if we avoid writing to it, these pages don't come into our working set
 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
