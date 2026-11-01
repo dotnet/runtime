@@ -158,6 +158,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
+        IsDiagnosticsHidden = 0x00020000,
         ILStubTypeMask = 0x000007FF,
     }
 
@@ -1871,6 +1872,38 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         return AsDynamicMethodDesc(methodDesc).IsILStub;
+    }
+
+    public bool IsDiagnosticsHidden(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        if (methodDesc.Classification == MethodClassification.Dynamic)
+        {
+            DynamicMethodDesc dynamicMethod = AsDynamicMethodDesc(methodDesc);
+            if (dynamicMethod.IsILStub ||
+                dynamicMethod.ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsDiagnosticsHidden))
+            {
+                return true;
+            }
+        }
+
+        AsyncMethodFlags flags = GetAsyncMethodFlags(methodDescHandle);
+        return IsWrapperStub(methodDesc) ||
+            (flags.HasFlag(AsyncMethodFlags.Thunk) &&
+                (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant)));
+    }
+
+    public bool IsDiagnosticsHiddenLCGMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        if (methodDesc.Classification != MethodClassification.Dynamic)
+        {
+            return false;
+        }
+
+        DynamicMethodDesc dynamicMethod = AsDynamicMethodDesc(methodDesc);
+        return dynamicMethod.IsDynamicMethod &&
+            dynamicMethod.ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsDiagnosticsHidden);
     }
 
     public bool HasMDContextArg(MethodDescHandle methodDescHandle)

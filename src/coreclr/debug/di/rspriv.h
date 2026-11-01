@@ -8190,7 +8190,8 @@ public:
                              CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
-                             ICorDebugValue ** ppValue) = 0;
+                             ICorDebugValue ** ppValue,
+                             CordbValue *      pExternalMemoryParent = nullptr) = 0;
 
     // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
     // Arguments
@@ -8254,7 +8255,8 @@ public:
                                 CORDB_ADDRESS     offset,
                                 void *            localAddress,
                                 ULONG32           size,
-                                ICorDebugValue ** ppValue);
+                                ICorDebugValue ** ppValue,
+                                CordbValue *      pExternalMemoryParent = nullptr);
 
     // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
     virtual
@@ -8307,7 +8309,8 @@ public:
                              CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
-                             ICorDebugValue ** ppValue);
+                             ICorDebugValue ** ppValue,
+                             CordbValue *      pExternalMemoryParent = nullptr);
 
     // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
     virtual
@@ -8374,7 +8377,8 @@ public:
                              CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
-                             ICorDebugValue ** ppValue);
+                             ICorDebugValue ** ppValue,
+                             CordbValue *      pExternalMemoryParent = nullptr);
 
     // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
     virtual
@@ -8621,7 +8625,8 @@ public:
                             TargetBuffer                   remoteValue,
                             MemoryRange                    localValue,
                             EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                            ICorDebugValue**               ppValue);
+                            ICorDebugValue**               ppValue,
+                            CordbValue*                    pExternalMemoryParent);
 
     // Helper for code:CordbValue::CreateValueByType. Create a new instance of CordbVCObjectValue or
     // CordbReferenceValue
@@ -8633,7 +8638,8 @@ public:
                                MemoryRange                    localValue,
                                EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                                VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner,
-                               ICorDebugValue**               ppValue);
+                               ICorDebugValue**               ppValue,
+                               CordbValue*                    pExternalMemoryParent);
 
     // Create the proper ICDValue instance based on the given element type.
     static void CreateValueByType(CordbAppDomain *               appdomain,
@@ -8643,7 +8649,8 @@ public:
                                   MemoryRange                    localValue,
                                   EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                                   VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner,
-                                  ICorDebugValue**               ppValue);
+                                  ICorDebugValue**               ppValue,
+                                  CordbValue*                    pExternalMemoryParent = nullptr);
 
     // Create the proper ICDValue instance based on the given remote heap object
     static ICorDebugValue* CreateHeapValue(CordbAppDomain* pAppDomain,
@@ -8683,6 +8690,10 @@ public:
 
     // true if the value is a RS fabrication.
     bool                        m_isLiteral;
+
+private:
+    // A field's remote home remains valid only while its external-memory parent is alive.
+    RSExtSmartPtr<CordbValue> m_pExternalMemoryParent;
 
 };
 
@@ -9376,6 +9387,8 @@ public:
 
 private:
 
+    void RefreshObjectCopy();
+
     // local cached copy of the value class
     BYTE *   m_pObjectCopy;
 
@@ -9383,6 +9396,7 @@ private:
     ValueHome * m_pValueHome;
 
     VMPTR_DebuggerExternalMemoryOwner m_vmExternalMemoryOwner;
+    bool m_isExternalMemory;
 };
 
 

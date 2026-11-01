@@ -17,8 +17,8 @@ public class ExternalMemoryHandlesTests
     private const ulong ExternalMemoryHandlesHeadSlotAddr = 0x0500;
     private const ulong Handle1Addr = 0x2000;
     private const ulong Handle2Addr = 0x2100;
-    private const ulong MethodTable1Addr = 0x9000;
-    private const ulong MethodTable2Addr = 0x9100;
+    private const ulong TypeHandle1Addr = 0x9000;
+    private const ulong TypeHandle2Addr = 0x9102;
     private const ulong Memory1Addr = 0x9500;
     private const ulong Memory2Addr = 0x9600;
 
@@ -27,10 +27,12 @@ public class ExternalMemoryHandlesTests
         TargetTestHelpers helpers = new(Arch);
         int ptrSize = helpers.PointerSize;
         var rts = new Mock<IRuntimeTypeSystem>(MockBehavior.Strict);
-        ITypeHandle typeHandle1 = new TargetTypeHandle(new TargetPointer(MethodTable1Addr));
-        ITypeHandle typeHandle2 = new TargetTypeHandle(new TargetPointer(MethodTable2Addr));
-        rts.Setup(r => r.GetTypeHandle(new TargetPointer(MethodTable1Addr))).Returns(typeHandle1);
-        rts.Setup(r => r.GetTypeHandle(new TargetPointer(MethodTable2Addr))).Returns(typeHandle2);
+        ITypeHandle typeHandle1 = new TargetTypeHandle(new TargetPointer(TypeHandle1Addr));
+        ITypeHandle typeHandle2 = new TargetTypeHandle(new TargetPointer(TypeHandle2Addr));
+        rts.Setup(r => r.GetTypeHandle(new TargetPointer(TypeHandle1Addr))).Returns(typeHandle1);
+        rts.Setup(r => r.GetTypeHandle(new TargetPointer(TypeHandle2Addr))).Returns(typeHandle2);
+        rts.Setup(r => r.GetSignatureCorElementType(typeHandle1)).Returns(CorElementType.Class);
+        rts.Setup(r => r.GetSignatureCorElementType(typeHandle2)).Returns(CorElementType.Byref);
         rts.Setup(r => r.IsValueType(typeHandle1)).Returns(false);
         rts.Setup(r => r.IsValueType(typeHandle2)).Returns(false);
         var gc = new Mock<IGC>();
@@ -45,9 +47,8 @@ public class ExternalMemoryHandlesTests
                     Fields = new Dictionary<string, Target.FieldInfo>
                     {
                         { nameof(Data.ExternalMemoryHandle.Next), new() { Offset = 0, TypeName = DataType.pointer.ToString() } },
-                        { nameof(Data.ExternalMemoryHandle.MethodTable), new() { Offset = ptrSize, TypeName = DataType.pointer.ToString() } },
+                        { nameof(Data.ExternalMemoryHandle.TypeHandle), new() { Offset = ptrSize, TypeName = DataType.pointer.ToString() } },
                         { nameof(Data.ExternalMemoryHandle.Memory), new() { Offset = 2 * ptrSize, TypeName = DataType.pointer.ToString() } },
-                        { nameof(Data.ExternalMemoryHandle.GCFlags), new() { Offset = 3 * ptrSize, TypeName = DataType.uint32.ToString() } },
                     }
                 },
                 [DataType.Object] = TargetTestHelpers.CreateTypeInfo(MockObjectData.CreateLayout(Arch)),
@@ -61,11 +62,9 @@ public class ExternalMemoryHandlesTests
         // ExternalMemoryHandles global slot -> head of the list (or null when empty)
         targetBuilder.MemoryBuilder.AddHeapFragment(PointerFragment(helpers, ExternalMemoryHandlesHeadSlotAddr, hasHandles ? Handle1Addr : 0));
 
-        // Handle1: Next -> Handle2, MethodTable1, Memory1, GCFlags=0
-        targetBuilder.MemoryBuilder.AddHeapFragment(ExternalMemoryHandleFragment(helpers, Handle1Addr, Handle2Addr, MethodTable1Addr, Memory1Addr, 0));
+        targetBuilder.MemoryBuilder.AddHeapFragment(ExternalMemoryHandleFragment(helpers, Handle1Addr, Handle2Addr, TypeHandle1Addr, Memory1Addr));
 
-        // Handle2: Next -> null, MethodTable2, Memory2, GCFlags=1
-        targetBuilder.MemoryBuilder.AddHeapFragment(ExternalMemoryHandleFragment(helpers, Handle2Addr, 0, MethodTable2Addr, Memory2Addr, 1));
+        targetBuilder.MemoryBuilder.AddHeapFragment(ExternalMemoryHandleFragment(helpers, Handle2Addr, 0, TypeHandle2Addr, Memory2Addr));
         targetBuilder.MemoryBuilder.AddHeapFragment(PointerFragment(helpers, Memory2Addr, 0x9700));
 
         return targetBuilder.Build();
@@ -78,14 +77,13 @@ public class ExternalMemoryHandlesTests
         return new MockMemorySpace.HeapFragment { Address = address, Data = data, Name = "Pointer" };
     }
 
-    private static MockMemorySpace.HeapFragment ExternalMemoryHandleFragment(TargetTestHelpers helpers, ulong address, ulong next, ulong methodTable, ulong memory, uint gcFlags)
+    private static MockMemorySpace.HeapFragment ExternalMemoryHandleFragment(TargetTestHelpers helpers, ulong address, ulong next, ulong typeHandle, ulong memory)
     {
         int ptrSize = helpers.PointerSize;
-        byte[] data = new byte[3 * ptrSize + sizeof(uint)];
+        byte[] data = new byte[3 * ptrSize];
         helpers.WritePointer(data.AsSpan(0, ptrSize), next);
-        helpers.WritePointer(data.AsSpan(ptrSize, ptrSize), methodTable);
+        helpers.WritePointer(data.AsSpan(ptrSize, ptrSize), typeHandle);
         helpers.WritePointer(data.AsSpan(2 * ptrSize, ptrSize), memory);
-        helpers.Write(data.AsSpan(3 * ptrSize, sizeof(uint)), gcFlags);
         return new MockMemorySpace.HeapFragment { Address = address, Data = data, Name = "ExternalMemoryHandle" };
     }
 

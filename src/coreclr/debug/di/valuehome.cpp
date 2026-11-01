@@ -684,7 +684,8 @@ void RemoteValueHome::CreateInternalValue(CordbType *       pType,
                                           CORDB_ADDRESS     offset,
                                           void *            localAddress,
                                           ULONG32           size,
-                                          ICorDebugValue ** ppValue)
+                                          ICorDebugValue ** ppValue,
+                                          CordbValue *      pExternalMemoryParent)
 {
     // If we're creating an ICDValue for a field added with EnC, the local address will be null, since the field
     // will not be included with the local cached copy of the ICDObjectValue to which the field belongs.
@@ -702,7 +703,8 @@ void RemoteValueHome::CreateInternalValue(CordbType *       pType,
                                   MemoryRange(localAddress, localSize),
                                   NULL, // remote reg
                                   VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
-                                  ppValue);  // throws
+                                  ppValue,
+                                  pExternalMemoryParent);  // throws
 } // RemoteValueHome::CreateInternalValue
 
 // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
@@ -784,7 +786,8 @@ void RegisterValueHome::CreateInternalValue(CordbType *       pType,
                                             CORDB_ADDRESS     offset,
                                             void *            localAddress,
                                             ULONG32           size,
-                                            ICorDebugValue ** ppValue)
+                                            ICorDebugValue ** ppValue,
+                                            CordbValue *      pExternalMemoryParent)
 {
     TargetBuffer remoteValue(PTR_TO_CORDB_ADDRESS((void *)NULL),0);
     EnregisteredValueHomeHolder pRemoteReg(NULL);
@@ -827,7 +830,8 @@ void RegisterValueHome::CreateInternalValue(CordbType *       pType,
                                   MemoryRange(localAddress, size),
                                   pRegHolder,
                                   VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
-                                  ppValue);  // throws
+                                  ppValue,
+                                  pExternalMemoryParent);  // throws
 } // RegisterValueHome::CreateInternalValue
 
 // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
@@ -996,7 +1000,8 @@ void HandleValueHome::CreateInternalValue(CordbType *       pType,
                                           CORDB_ADDRESS     offset,
                                           void *            localAddress,
                                           ULONG32           size,
-                                          ICorDebugValue ** ppValue)
+                                          ICorDebugValue ** ppValue,
+                                          CordbValue *      pExternalMemoryParent)
 {
     _ASSERTE(!"References don't have sub-objects--we shouldn't be here");
     ThrowHR(E_INVALIDARG);
