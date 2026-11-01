@@ -78,6 +78,60 @@ namespace Wasm.Build.Tests
         public Task PublishRunAllPagesNativeRelink(Configuration config, bool trimmed)
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: true, composite: false);
 
+        // WasmRunWasmOpt rewrites the per-app ReadyToRun images (each per-assembly image, or the composite) in place
+        // with wasm-opt before they are staged; they must keep the self-installing Webcil host ABI and still run.
+        // wasm-opt comes from the workload's Emscripten SDK, so this runs only in workload mode.
+        [Theory]
+        [InlineData(Configuration.Release, /*composite*/ false)]
+        [InlineData(Configuration.Release, /*composite*/ true)]
+        public async Task PublishRunAllPagesWasmOpt(Configuration config, bool composite)
+        {
+            string extraItems = composite
+                ? """<ProjectReference Include="../R2rSuffixLibrary/R2rSuffixLibrary.csproj" />"""
+                : string.Empty;
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, $"r2r_pub_wasmopt{(composite ? "_composite" : "")}",
+                extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{(composite ? "true" : "false")}</PublishReadyToRunComposite><WasmRunWasmOpt>true</WasmRunWasmOpt>",
+                extraItems: extraItems);
+            if (composite)
+                LogR2RSuffixLibraryMarker();
+            string extraArgs = GetR2RBuildArgs(config, composite);
+
+            (string _, string publishOutput) = BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: extraArgs));
+            Assert.Contains("ReadyToRun image(s) with", publishOutput);
+
+            // Every image crossgen2 compiled gets a stamp once optimized: each per-assembly image, or just the
+            // composite. An image newer than its stamp was rewritten after wasm-opt ran and ships unoptimized.
+            const string StampSuffix = ".wasm-opt.stamp";
+            string r2rDir = GetObjSubDir(config, "R2R");
+            string[] optimized = Directory.EnumerateFiles(r2rDir, $"*{StampSuffix}")
+                .Select(stamp => Path.GetFileName(stamp)[..^StampSuffix.Length])
+                .ToArray();
+            if (composite)
+                Assert.EndsWith(".r2r.wasm", Assert.Single(optimized));
+            else
+                Assert.Contains("System.Private.CoreLib.wasm", optimized);
+            foreach (string image in optimized)
+            {
+                string imagePath = Path.Combine(r2rDir, image);
+                Assert.True(File.GetLastWriteTimeUtc(imagePath) <= File.GetLastWriteTimeUtc(imagePath + StampSuffix),
+                    $"'{imagePath}' is newer than its wasm-opt stamp.");
+            }
+
+            string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
+            if (composite)
+                AssertCompositeReadyToRun(frameworkDir);
+            else
+                AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
+
+            bool suffixLibraryLoaded = false;
+            await RunForPublishWithWebServer(new BlazorRunOptions(config,
+                CheckCounter: false,
+                OnConsoleMessage: (_, msg) => suffixLibraryLoaded |= msg.Contains(SuffixLibraryLoadedMessage),
+                ExecuteAfterLoaded: (_, page) => InteractAllPagesAsync(page)));
+            if (composite)
+                Assert.True(suffixLibraryLoaded, $"'{SuffixLibraryLoadedMessage}' was not logged; R2rSuffixLibrary.r2r did not load as a component assembly.");
+        }
+
         private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink, bool composite)
         {
             // Publish runs per-app crossgen2 for the whole closure, trimmed or not: even the untrimmed CoreLib

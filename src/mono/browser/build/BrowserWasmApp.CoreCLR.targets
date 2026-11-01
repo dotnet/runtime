@@ -80,6 +80,13 @@
                                     Trim="true" />
   </ItemGroup>
 
+  <!-- Wasm features for wasm-opt over dotnet.native.wasm and ReadyToRun images. Neither emcc's link output
+       nor crossgen2's images carry a target_features section, so wasm-opt must be told what is in use. -->
+  <ItemGroup>
+    <_WasmOptFeatureFlag Include="--enable-simd;--enable-exception-handling;--enable-reference-types;--enable-multivalue;--enable-bulk-memory;--enable-nontrapping-float-to-int;--enable-sign-ext" />
+    <_WasmOptFeatureFlag Include="--enable-relaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
+  </ItemGroup>
+
   <!-- EmccInitialHeapSize is the documented browser property (src/mono/browser/README.md) and
        EmccTotalMemory is its legacy alias; the Mono path collapses both into WasmInitialHeapSize
        (BrowserWasmApp.targets). Do the same here at evaluation time so the relink registry in
@@ -599,16 +606,15 @@
       <_EmccCommonFlags Include="-mrelaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
     </ItemGroup>
 
-    <!-- emcc strips the target_features section, so wasm-opt needs the features the link was built with.
-         Re-encoding without any pass grows the module, so default to -Oz unless the project's
-         WasmOptConfigurationFlags already pick an -O level. -->
+    <!-- emcc strips the target_features section, so wasm-opt needs the features the link was built with
+         (@(_WasmOptFeatureFlag)). Re-encoding without any pass grows the module, so default to -Oz unless
+         the project's WasmOptConfigurationFlags already pick an -O level. -->
     <ItemGroup Condition="'$(WasmRunWasmOpt)' == 'true'">
       <_WasmOptUserOptimizationFlag Remove="@(_WasmOptUserOptimizationFlag)" />
       <_WasmOptUserOptimizationFlag Include="@(WasmOptConfigurationFlags)" Condition="$([System.String]::Copy('%(WasmOptConfigurationFlags.Identity)').StartsWith('-O'))" />
 
       <_WasmOptArgs Remove="@(_WasmOptArgs)" />
-      <_WasmOptArgs Include="--enable-simd;--enable-exception-handling;--enable-reference-types;--enable-multivalue;--enable-bulk-memory;--enable-nontrapping-float-to-int;--enable-sign-ext" />
-      <_WasmOptArgs Include="--enable-relaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
+      <_WasmOptArgs Include="@(_WasmOptFeatureFlag)" />
       <_WasmOptArgs Include="--strip-dwarf" Condition="'$(WasmNativeStrip)' == 'true'" />
       <!-- wasm-opt drops the name section and DWARF unless asked to keep debug info. -->
       <_WasmOptArgs Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true' and '$(WasmNativeStrip)' != 'true'" />
@@ -1040,6 +1046,70 @@
       <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" />
       <WasmAssembliesFinal Include="@(_WasmSatelliteAssemblies)" />
     </ItemGroup>
+  </Target>
+
+  <!-- ======================== ReadyToRun wasm-opt ======================== -->
+
+  <!-- The SDK pack warns that WasmRunWasmOpt is ignored for ReadyToRun images unless these targets are present. -->
+  <PropertyGroup>
+    <_WasmCoreClrR2RWasmOptSupported>true</_WasmCoreClrR2RWasmOptSupported>
+  </PropertyGroup>
+
+  <!-- Opt-in wasm-opt over the per-app ReadyToRun images crossgen2 wrote to obj/R2R: every per-assembly image,
+       or the composite image. It rewrites them in place before ConvertDllsToWebcil stages them, so the served,
+       fingerprinted assets are the optimized images. The settings join the SDK's ReadyToRun state stamp, so
+       turning the option on or off, or changing its arguments, recompiles every image. -->
+  <Target Name="_WasmCoreClrConfigureR2RWasmOpt"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmRunWasmOpt)' == 'true'"
+          BeforeTargets="_WasmCoreClrConservativeR2RInputs">
+    <PropertyGroup>
+      <_WasmR2RWasmOptPath Condition="'$(EmscriptenUpstreamBinPath)' != ''">$([MSBuild]::NormalizePath('$(EmscriptenUpstreamBinPath)', 'wasm-opt$(_ExeExt)'))</_WasmR2RWasmOptPath>
+    </PropertyGroup>
+    <Error Condition="'$(_WasmR2RWasmOptPath)' == '' or !Exists('$(_WasmR2RWasmOptPath)')"
+           Text="WasmRunWasmOpt=true requires wasm-opt from the Emscripten SDK to optimize ReadyToRun images, but it was not found at '$(_WasmR2RWasmOptPath)'." />
+
+    <ItemGroup>
+      <_WasmR2RWasmOptUserOptimizationFlag Include="@(WasmOptConfigurationFlags)" Condition="$([System.String]::Copy('%(WasmOptConfigurationFlags.Identity)').StartsWith('-O'))" />
+
+      <_WasmR2RWasmOptArgs Include="@(_WasmOptFeatureFlag)" />
+      <!-- The images import the runtime's mutable __stack_pointer and __async_continuation globals. -->
+      <_WasmR2RWasmOptArgs Include="--enable-mutable-globals" />
+      <!-- Keep the data segments intact. Passive segment 0 holds payloadSize/tableSize, which
+           AttachWebcilSizes reads for the boot config; memory-packing may trim or split it. -->
+      <_WasmR2RWasmOptArgs Include="--skip-pass=memory-packing" />
+      <!-- crossgen2 emits a name section by default; wasm-opt drops it unless asked to keep debug info. -->
+      <_WasmR2RWasmOptArgs Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true' and '$(WasmNativeStrip)' != 'true'" />
+      <!-- Unlike dotnet.native.wasm (-Oz), default to -O2: on R2R images it compresses smaller than -Oz and
+           keeps speed optimizations. An -O level in WasmOptConfigurationFlags, shared with the relink, wins. -->
+      <_WasmR2RWasmOptArgs Include="-O2" Condition="@(_WasmR2RWasmOptUserOptimizationFlag->Count()) == 0" />
+      <_WasmR2RWasmOptArgs Include="@(WasmOptConfigurationFlags)" />
+
+      <_WasmR2RImageToOptimize Include="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
+      <_WasmR2RImageToOptimize Remove="@(_WasmR2RImageToOptimize)" Condition="'%(Extension)' != '.wasm'" />
+      <!-- Recorded even when the images are up to date, so incremental clean keeps the stamps. -->
+      <FileWrites Include="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.stamp')" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_WasmReadyToRunPostProcessState>$(_WasmReadyToRunPostProcessState)WasmOpt=$(_WasmR2RWasmOptPath) @(_WasmR2RWasmOptArgs, ' ');</_WasmReadyToRunPostProcessState>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Each image gets a stamp touched after it is optimized: a recompiled image is newer than its stamp and is
+       optimized again, while an up-to-date image is not optimized twice. wasm-opt writes to a temporary file,
+       so a failed run leaves the crossgen2 output in place and the next build retries it. -->
+  <Target Name="_WasmCoreClrOptimizeR2RImages"
+          Condition="'$(_WasmR2RWasmOptPath)' != '' and '@(_WasmR2RImageToOptimize)' != ''"
+          AfterTargets="_CreateR2RImages"
+          Inputs="@(_WasmR2RImageToOptimize)"
+          Outputs="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.stamp')">
+    <Message Importance="High" Text="Running wasm-opt on @(_WasmR2RImageToOptimize->Count()) ReadyToRun image(s) with @(_WasmR2RWasmOptArgs, ' ')" />
+    <Exec Command="&quot;$(_WasmR2RWasmOptPath)&quot; @(_WasmR2RWasmOptArgs, ' ') &quot;%(_WasmR2RImageToOptimize.FullPath)&quot; -o &quot;%(_WasmR2RImageToOptimize.FullPath).wasm-opt.tmp&quot;"
+          IgnoreStandardErrorWarningFormat="true"
+          StandardOutputImportance="Low" />
+    <Move SourceFiles="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.tmp')"
+          DestinationFiles="@(_WasmR2RImageToOptimize->'%(FullPath)')" />
+    <Touch Files="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.stamp')" AlwaysCreate="true" />
   </Target>
 
 </Project>
