@@ -11,6 +11,7 @@ using Microsoft.NET.WebAssembly.Webcil;
 using Microsoft.Playwright;
 using Xunit;
 using Xunit.Abstractions;
+using SL = Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -77,6 +78,63 @@ namespace Wasm.Build.Tests
         [TestCategory("no-workload")]
         public Task PublishRunAllPagesNativeRelink(Configuration config, bool trimmed)
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: true, composite: false);
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(Configuration.Debug, false, false, null, null, "", false, false)]
+        [InlineData(Configuration.Release, false, false, null, null, "", true, true)]
+        [InlineData(Configuration.Release, false, true, null, null, "", false, false)]
+        [InlineData(Configuration.Release, false, true, "true", "false", "", true, false)]
+        [InlineData(Configuration.Release, false, true, "false", "true", "", false, true)]
+        [InlineData(Configuration.Debug, false, false, "true", "true", "--optimize", true, true)]
+        [InlineData(Configuration.Debug, true, false, null, null, "", false, false)]
+        [InlineData(Configuration.Release, true, false, null, null, "", true, true)]
+        [InlineData(Configuration.Release, true, true, null, null, "", false, false)]
+        [InlineData(Configuration.Release, true, true, "true", "false", "", true, false)]
+        [InlineData(Configuration.Release, true, true, "false", "true", "", false, true)]
+        [InlineData(Configuration.Debug, true, false, "true", "true", "--optimize", true, true)]
+        [TestCategory("no-workload")]
+        public void PublishCrossgen2ArgumentsReflectWasmDebugInfoProperties(
+            Configuration config,
+            bool composite,
+            bool debuggerSupport,
+            string? stripInliningInfo,
+            string? stripDebugInfo,
+            string extraCrossgen2Args,
+            bool expectStripInliningInfo,
+            bool expectStripDebugInfo)
+        {
+            string extraProperties = $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{composite.ToString().ToLowerInvariant()}</PublishReadyToRunComposite><DebuggerSupport>{debuggerSupport.ToString().ToLowerInvariant()}</DebuggerSupport>";
+            if (extraCrossgen2Args.Length > 0)
+                extraProperties += $"<PublishReadyToRunCrossgen2ExtraArgs>{extraCrossgen2Args}</PublishReadyToRunCrossgen2ExtraArgs>";
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_args",
+                extraProperties: extraProperties);
+
+            string r2rBuildArgs = GetR2RBuildArgs(config, composite);
+            if (composite)
+            {
+                Assert.Contains("-p:Crossgen2SdkOverridePropsPath=", r2rBuildArgs);
+                Assert.Contains("-p:Crossgen2SdkOverrideTargetsPath=", r2rBuildArgs);
+            }
+            List<string> extraBuildArgs = [r2rBuildArgs];
+            if (stripInliningInfo is not null)
+                extraBuildArgs.Add($"-p:PublishReadyToRunStripInliningInfo={stripInliningInfo}");
+            if (stripDebugInfo is not null)
+                extraBuildArgs.Add($"-p:PublishReadyToRunStripDebugInfo={stripDebugInfo}");
+            extraBuildArgs.Add("-v:diag");
+
+            (_, string binlogPath) = BuildProjectWithoutAssert(config, info.ProjectName,
+                new PublishOptions(ExtraMSBuildArgs: string.Join(" ", extraBuildArgs)));
+            AssertPerAppCrossgenRan(config, expected: true);
+
+            string crossgen2Args = GetCrossgen2ExtraCommandLineArgs(binlogPath);
+            string expectedWasmDebugInfo = config == Configuration.Debug ? "--wasm-debug-info=all" : "--wasm-debug-info=none";
+            Assert.Contains(expectedWasmDebugInfo, crossgen2Args);
+            Assert.Equal(expectStripInliningInfo, crossgen2Args.Contains("--strip-inlining-info", System.StringComparison.Ordinal));
+            Assert.Equal(expectStripDebugInfo, crossgen2Args.Contains("--strip-debug-info", System.StringComparison.Ordinal));
+            Assert.Contains("--opt-cross-module:*", crossgen2Args);
+            if (extraCrossgen2Args.Length > 0)
+                Assert.Contains(extraCrossgen2Args, crossgen2Args);
+        }
 
         private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink, bool composite)
         {
@@ -385,6 +443,26 @@ namespace Wasm.Build.Tests
                 Assert.True(imageCount > 0, $"Expected per-app ReadyToRun images under '{r2rDir}'.");
             else
                 Assert.True(imageCount == 0, $"Expected no per-app crossgen2 output, found {imageCount} file(s) under '{r2rDir}'.");
+        }
+
+        private static string GetCrossgen2ExtraCommandLineArgs(string binlogPath)
+        {
+            SL.Build build = SL.BinaryLog.ReadBuild(binlogPath);
+            List<string> extraArgs = [];
+            build.VisitAllChildren<SL.Task>(task =>
+            {
+                if (task.Name != "RunReadyToRunCompiler")
+                    return;
+
+                task.VisitAllChildren<SL.Property>(parameter =>
+                {
+                    if (parameter.Name == "Crossgen2ExtraCommandLineArgs")
+                        extraArgs.Add(parameter.Value);
+                });
+            });
+
+            Assert.NotEmpty(extraArgs);
+            return string.Join(" ", extraArgs);
         }
 
         // Total table bytes across the canonical per-app R2R outputs. The base SDK names them .dll while the
