@@ -7835,6 +7835,14 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             level += 5;
             costEx += 3 * IND_COST_EX;
+
+            // ReadyToRun runtime lookups call a helper that performs a generic dictionary lookup.
+            // Not on NativeAOT: lookups it failed to build throw when invoked and must not be hoisted speculatively.
+            if (!IsNativeAot() && call->IsHelperCall() &&
+                (call->GetHelperNum() == CORINFO_HELP_READYTORUN_GENERIC_HANDLE))
+            {
+                costEx += 11 * IND_COST_EX;
+            }
             break;
 
 #if defined(FEATURE_HW_INTRINSICS)
