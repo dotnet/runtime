@@ -1303,6 +1303,13 @@ namespace System.Text.Json.Serialization.Metadata
                     return false;
                 }
 
+                if (Type == typeof(object) && Options.TypeInfoResolver is JsonTypeInfoResolverChain { Count: > 1 })
+                {
+                    // Object values may resolve to runtime types known only to a later resolver.
+                    // A generated serialize handler cannot consult that resolver.
+                    return false;
+                }
+
                 if (Options.CanUseFastPathSerializationLogic)
                 {
                     // Simple case/backward compatibility: options uses a combination of compatible built-in converters.

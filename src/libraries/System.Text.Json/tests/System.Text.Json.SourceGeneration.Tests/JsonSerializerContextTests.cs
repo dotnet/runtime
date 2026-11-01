@@ -17,6 +17,32 @@ namespace System.Text.Json.SourceGeneration.Tests
     public static partial class JsonSerializerContextTests
     {
         [Fact]
+        [RequiresDynamicCode("Uses the reflection-based resolver as a fallback.")]
+        [RequiresUnreferencedCode("Uses the reflection-based resolver as a fallback.")]
+        public static void ResolverChainFallsBackForRuntimeObjectValues()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolverChain = { ResolverChainPayloadContext.Default, new DefaultJsonTypeInfoResolver() }
+            };
+
+            var value = new ResolverChainPayload
+            {
+                Metadata = new Dictionary<string, object> { ["timestamp"] = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            };
+
+            Assert.Equal("""{"Metadata":{"timestamp":"2024-01-01T00:00:00Z"}}""", JsonSerializer.Serialize(value, options));
+        }
+
+        public sealed class ResolverChainPayload
+        {
+            public Dictionary<string, object>? Metadata { get; set; }
+        }
+
+        [JsonSerializable(typeof(ResolverChainPayload))]
+        internal partial class ResolverChainPayloadContext : JsonSerializerContext { }
+
+        [Fact]
         public static void VariousNestingAndVisibilityLevelsAreSupported()
         {
             Assert.NotNull(PublicContext.Default);
