@@ -11,6 +11,7 @@ namespace System.Net.Security
     /// </summary>
     [UnsupportedOSPlatform("windows")]
     [UnsupportedOSPlatform("android")]
+    [UnsupportedOSPlatform("wasi")]
     public sealed partial class CipherSuitesPolicy
     {
         internal CipherSuitesPolicyPal Pal { get; }
