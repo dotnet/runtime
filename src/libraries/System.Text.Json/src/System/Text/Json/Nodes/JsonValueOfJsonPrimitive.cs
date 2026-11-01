@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 
 namespace System.Text.Json.Nodes
@@ -23,14 +24,42 @@ namespace System.Text.Json.Nodes
                     ReadOnlyMemory<byte> utf8String = buffer.AsMemory(0, reader.CopyString(buffer));
                     return new JsonValueOfJsonString(utf8String, options);
                 case JsonTokenType.Number:
+#if NET
+                    return reader.HasValueSequence
+                        ? CreateNumberValue(reader.ValueSequence, options)
+                        : CreateNumberValue(reader.ValueSpan, options);
+#else
                     byte[] numberValue = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
                     return new JsonValueOfJsonNumber(numberValue, options);
+#endif
                 default:
                     Debug.Fail("Only primitives allowed.");
                     ThrowHelper.ThrowJsonException();
                     return null!; // Unreachable, but required for compilation.
             }
         }
+
+#if NET
+        private static JsonValue CreateNumberValue(ReadOnlySpan<byte> number, JsonNodeOptions options)
+        {
+            if (number.Length <= JsonValueOfJsonNumberInline16.MaxLength)
+            {
+                return new JsonValueOfJsonNumberInline16(number, options);
+            }
+
+            return new JsonValueOfJsonNumber(number.ToArray(), options);
+        }
+
+        private static JsonValue CreateNumberValue(ReadOnlySequence<byte> number, JsonNodeOptions options)
+        {
+            if (number.Length <= JsonValueOfJsonNumberInline16.MaxLength)
+            {
+                return new JsonValueOfJsonNumberInline16(number, options);
+            }
+
+            return new JsonValueOfJsonNumber(number.ToArray(), options);
+        }
+#endif
     }
 
     internal sealed class JsonValueOfJsonString : JsonValue
@@ -196,10 +225,21 @@ namespace System.Text.Json.Nodes
 
         public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
             where T : default
+            => TryGetNumberValue(_value, out value);
+
+        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+
+            writer.WriteNumberValue(_value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool TryGetNumberValue<T>(ReadOnlySpan<byte> number, [NotNullWhen(true)] out T? value)
         {
             if (typeof(T) == typeof(JsonElement) || typeof(T) == typeof(JsonElement?) || typeof(T) == typeof(object))
             {
-                value = (T)(object)JsonElement.Parse(_value);
+                value = (T)(object)JsonElement.Parse(number);
                 return true;
             }
 
@@ -207,8 +247,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(int) || typeof(T) == typeof(int?))
             {
-                success = Utf8Parser.TryParse(_value, out int result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(number, out int result, out int consumed) &&
+                            consumed == number.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -216,8 +256,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(long) || typeof(T) == typeof(long?))
             {
-                success = Utf8Parser.TryParse(_value, out long result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(number, out long result, out int consumed) &&
+                            consumed == number.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -225,8 +265,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(double) || typeof(T) == typeof(double?))
             {
-                success = Utf8Parser.TryParse(_value, out double result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(number, out double result, out int consumed) &&
+                            consumed == number.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -234,8 +274,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(short) || typeof(T) == typeof(short?))
             {
-                success = Utf8Parser.TryParse(_value, out short result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(number, out short result, out int consumed) &&
+                            consumed == number.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -243,8 +283,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(decimal) || typeof(T) == typeof(decimal?))
             {
-                success = Utf8Parser.TryParse(_value, out decimal result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(number, out decimal result, out int consumed) &&
+                            consumed == number.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -252,8 +292,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(byte?))
             {
-                success = Utf8Parser.TryParse(_value, out byte result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(number, out byte result, out int consumed) &&
+                            consumed == number.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -261,8 +301,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(float) || typeof(T) == typeof(float?))
             {
-                success = Utf8Parser.TryParse(_value, out float result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(number, out float result, out int consumed) &&
+                            consumed == number.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -270,8 +310,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(uint) || typeof(T) == typeof(uint?))
             {
-                success = Utf8Parser.TryParse(_value, out uint result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(number, out uint result, out int consumed) &&
+                            consumed == number.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -279,8 +319,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(ushort) || typeof(T) == typeof(ushort?))
             {
-                success = Utf8Parser.TryParse(_value, out ushort result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(number, out ushort result, out int consumed) &&
+                            consumed == number.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -288,8 +328,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(ulong) || typeof(T) == typeof(ulong?))
             {
-                success = Utf8Parser.TryParse(_value, out ulong result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(number, out ulong result, out int consumed) &&
+                            consumed == number.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -297,8 +337,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(sbyte?))
             {
-                success = Utf8Parser.TryParse(_value, out sbyte result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(number, out sbyte result, out int consumed) &&
+                            consumed == number.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -307,12 +347,60 @@ namespace System.Text.Json.Nodes
             value = default!;
             return false;
         }
+    }
+
+#if NET
+    // Numbers of up to 16 bytes are stored inline to avoid allocating an array.
+    internal sealed class JsonValueOfJsonNumberInline16 : JsonValue
+    {
+        internal const int MaxLength = 16;
+
+        private readonly InlineArray16<byte> _value;
+        private readonly byte _length;
+
+        internal JsonValueOfJsonNumberInline16(ReadOnlySpan<byte> number, JsonNodeOptions? options)
+            : base(options)
+        {
+            Debug.Assert(number.Length <= MaxLength);
+
+            number.CopyTo(_value);
+            _length = (byte)number.Length;
+        }
+
+        internal JsonValueOfJsonNumberInline16(ReadOnlySequence<byte> number, JsonNodeOptions? options)
+            : base(options)
+        {
+            Debug.Assert(number.Length <= MaxLength);
+
+            number.CopyTo(_value);
+            _length = (byte)number.Length;
+        }
+
+        private ReadOnlySpan<byte> Value => ((ReadOnlySpan<byte>)_value).Slice(0, _length);
+
+        internal override JsonNode DeepCloneCore() => new JsonValueOfJsonNumberInline16(Value, Options);
+        private protected override JsonValueKind GetValueKindCore() => JsonValueKind.Number;
+
+        public override T GetValue<T>()
+        {
+            if (!TryGetValue(out T? value))
+            {
+                ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(JsonValueKind.Number, typeof(T));
+            }
+
+            return value;
+        }
+
+        public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
+            where T : default
+            => JsonValueOfJsonNumber.TryGetNumberValue(Value, out value);
 
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
             ArgumentNullException.ThrowIfNull(writer);
 
-            writer.WriteNumberValue(_value);
+            writer.WriteNumberValue(Value);
         }
     }
+#endif
 }
