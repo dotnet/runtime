@@ -11603,7 +11603,8 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
     EX_TRY
     {
         const InstrumentedILOffsetMapping *pILOffsetMapping = NULL;
-        InstrumentedILOffsetMapping loadTimeMapping;
+        // Owns the copy of the load-time map. The ReJIT map is borrowed and must not be freed.
+        InstrumentedILOffsetMappingHolder loadTimeMapping;
 #ifdef FEATURE_REJIT
         ILCodeVersion ilVersion;
 
@@ -11624,8 +11625,8 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
             // if there is a profiler load-time mapping and not a rejit mapping, apply that instead
             loadTimeMapping =
                 m_pMethodBeingCompiled->GetAssembly()->GetModule()->GetInstrumentedILOffsetMapping(m_pMethodBeingCompiled->GetMemberDef());
-            if (!loadTimeMapping.IsNull())
-                pILOffsetMapping = &loadTimeMapping;
+            if (!loadTimeMapping.Get().IsNull())
+                pILOffsetMapping = &loadTimeMapping.Get();
         }
 
         PTR_BYTE pDebugInfo = CompressDebugInfo::Compress(
