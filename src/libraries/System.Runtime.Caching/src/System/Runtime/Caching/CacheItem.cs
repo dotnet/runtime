@@ -8,22 +8,23 @@ namespace System.Runtime.Caching
     public class CacheItem
     {
         public string Key { get; set; }
-        public object Value { get; set; }
-        public string RegionName { get; set; }
+        public object? Value { get; set; }
+        public string? RegionName { get; set; }
 
-        private CacheItem() { } // hide default constructor
+        private CacheItem() { Key = null!; } // hide default constructor
 
         public CacheItem(string key)
         {
+            ArgumentNullException.ThrowIfNull(key);
             Key = key;
         }
 
-        public CacheItem(string key, object value) : this(key)
+        public CacheItem(string key, object? value) : this(key)
         {
             Value = value;
         }
 
-        public CacheItem(string key, object value, string regionName) : this(key, value)
+        public CacheItem(string key, object? value, string? regionName) : this(key, value)
         {
             RegionName = regionName;
         }

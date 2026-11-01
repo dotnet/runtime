@@ -32,7 +32,7 @@ namespace System.Runtime.Caching
         protected int _pressureLow;       // low pressure level - slow growth here
 
         protected int _i0;
-        protected int[] _pressureHist;
+        protected int[] _pressureHist = null!;
         protected int _pressureTotal;
 
 #pragma warning disable CA1802, CS0649 // some builds initialize these to other values in a static cctor

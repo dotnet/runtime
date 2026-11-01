@@ -15,7 +15,7 @@ namespace System.Runtime.Caching
 #endif
 
         [Conditional("DEBUG")]
-        internal static void Trace(string tagName, string message, Exception e = null)
+        internal static void Trace(string tagName, string message, Exception? e = null)
         {
 #if DEBUG
             if (!s_tracingEnabled)
@@ -23,14 +23,14 @@ namespace System.Runtime.Caching
                 return;
             }
 
-            string exceptionMessage =
+            string? exceptionMessage =
                 e is null ? null :
                 e is ExternalException ee ? "Exception " + e + Environment.NewLine + "_hr=0x" + ee.ErrorCode.ToString("x", CultureInfo.InvariantCulture) :
                 "Exception " + e;
 
             if (string.IsNullOrEmpty(message) & exceptionMessage != null)
             {
-                message = exceptionMessage;
+                message = exceptionMessage!;
                 exceptionMessage = null;
             }
 

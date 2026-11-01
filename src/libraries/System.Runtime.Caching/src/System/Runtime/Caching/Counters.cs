@@ -21,7 +21,7 @@ namespace System.Runtime.Caching
         private const string EVENT_SOURCE_NAME_ROOT = "System.Runtime.Caching.";
         private const int NUM_COUNTERS = 7;
 
-        private DiagnosticCounter[] _counters;
+        private DiagnosticCounter[]? _counters;
 
         // Backing storage for the raw counter values.
         //
@@ -120,7 +120,7 @@ namespace System.Runtime.Caching
 
         public new void Dispose()
         {
-            DiagnosticCounter[] counters = _counters;
+            DiagnosticCounter[]? counters = _counters;
 
             // ensure this only happens once
             if (counters != null && Interlocked.CompareExchange(ref _counters, null, counters) == counters)

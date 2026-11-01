@@ -30,11 +30,11 @@ namespace System.Runtime.Caching
         private int _lastTrimPercent;
         private DateTime _lastTrimTime;
         private int _pollingInterval;
-        private GCHandleRef<Timer> _timerHandleRef;
+        private GCHandleRef<Timer>? _timerHandleRef;
         private readonly object _timerLock;
         private long _totalCountBeforeTrim;
 
-        private CacheMemoryMonitor _cacheMemoryMonitor;
+        private CacheMemoryMonitor _cacheMemoryMonitor = null!;
         private readonly MemoryCache _memoryCache;
         private readonly PhysicalMemoryMonitor _physicalMemoryMonitor;
 #if NET
@@ -50,6 +50,9 @@ namespace System.Runtime.Caching
         private MemoryCacheStatistics()
         {
             //hide default ctor
+            _memoryCache = null!;
+            _timerLock = null!;
+            _physicalMemoryMonitor = null!;
         }
 
         private void AdjustTimer()
@@ -98,7 +101,7 @@ namespace System.Runtime.Caching
         }
 
         // timer callback
-        private void CacheManagerTimerCallback(object state)
+        private void CacheManagerTimerCallback(object? state)
         {
             CacheManagerThread(0);
         }
@@ -122,12 +125,12 @@ namespace System.Runtime.Caching
             }
         }
 
-        private void InitializeConfiguration(NameValueCollection config)
+        private void InitializeConfiguration(NameValueCollection? config)
         {
-            MemoryCacheElement element = null;
+            MemoryCacheElement? element = null;
             if (!_memoryCache.ConfigLess && _configSupported)
             {
-                MemoryCacheSection section = ConfigurationManager.GetSection("system.runtime.caching/memoryCache") as MemoryCacheSection;
+                MemoryCacheSection? section = ConfigurationManager.GetSection("system.runtime.caching/memoryCache") as MemoryCacheSection;
                 if (section != null)
                 {
                     element = section.NamedCaches[_memoryCache.Name];
@@ -254,7 +257,7 @@ namespace System.Runtime.Caching
             }
         }
 
-        internal MemoryCacheStatistics(MemoryCache memoryCache, NameValueCollection config)
+        internal MemoryCacheStatistics(MemoryCache memoryCache, NameValueCollection? config)
         {
             _memoryCache = memoryCache;
             _lastTrimGen2Count = -1;
@@ -338,7 +341,7 @@ namespace System.Runtime.Caching
             {
                 lock (_timerLock)
                 {
-                    GCHandleRef<Timer> timerHandleRef = _timerHandleRef;
+                    GCHandleRef<Timer>? timerHandleRef = _timerHandleRef;
                     if (timerHandleRef != null && Interlocked.CompareExchange(ref _timerHandleRef, null, timerHandleRef) == timerHandleRef)
                     {
                         timerHandleRef.Dispose();

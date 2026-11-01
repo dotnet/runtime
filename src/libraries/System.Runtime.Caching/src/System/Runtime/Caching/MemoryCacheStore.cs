@@ -22,10 +22,10 @@ namespace System.Runtime.Caching
         private readonly CacheExpires _expires;
         private readonly CacheUsage _usage;
         private int _disposed;
-        private ManualResetEvent _insertBlock;
+        private ManualResetEvent _insertBlock = null!;
         private volatile bool _useInsertBlock;
         private readonly MemoryCache _cache;
-        private readonly Counters _perfCounters;
+        private readonly Counters? _perfCounters;
 #if NET
         [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
@@ -34,7 +34,7 @@ namespace System.Runtime.Caching
         private static bool _countersSupported => true;
 #endif
 
-        internal MemoryCacheStore(MemoryCache cache, Counters perfCounters)
+        internal MemoryCacheStore(MemoryCache cache, Counters? perfCounters)
         {
             _cache = cache;
             _perfCounters = perfCounters;
@@ -167,14 +167,14 @@ namespace System.Runtime.Caching
 
         internal CacheUsage Usage { get { return _usage; } }
 
-        internal MemoryCacheEntry AddOrGetExisting(MemoryCacheKey key, MemoryCacheEntry entry)
+        internal MemoryCacheEntry? AddOrGetExisting(MemoryCacheKey key, MemoryCacheEntry entry)
         {
             if (_useInsertBlock && entry.HasUsage())
             {
                 WaitInsertBlock();
             }
-            MemoryCacheEntry existingEntry = null;
-            MemoryCacheEntry toBeReleasedEntry = null;
+            MemoryCacheEntry? existingEntry = null;
+            MemoryCacheEntry? toBeReleasedEntry = null;
             bool added = false;
             lock (_entriesLock)
             {
@@ -198,14 +198,14 @@ namespace System.Runtime.Caching
                 }
             }
             // release outside of lock
-            RemoveFromCache(toBeReleasedEntry, CacheEntryRemovedReason.Expired, delayRelease: true);
+            if (toBeReleasedEntry != null) { RemoveFromCache(toBeReleasedEntry, CacheEntryRemovedReason.Expired, delayRelease: true); }
             if (added)
             {
                 // add outside of lock
                 AddToCache(entry);
             }
             // update outside of lock
-            UpdateExpAndUsage(existingEntry);
+            if (existingEntry != null) { UpdateExpAndUsage(existingEntry); }
 
             // Call Release after the new entry has been completely added so
             // that the CacheItemRemovedCallback can take a dependency on the newly inserted item.
@@ -227,9 +227,7 @@ namespace System.Runtime.Caching
                 {
                     foreach (DictionaryEntry e in _entries)
                     {
-                        MemoryCacheKey key = e.Key as MemoryCacheKey;
-                        MemoryCacheEntry entry = e.Value as MemoryCacheEntry;
-                        if (entry.UtcAbsExp > DateTime.UtcNow)
+                        if (e.Key is MemoryCacheKey key && e.Value is MemoryCacheEntry entry && entry.UtcAbsExp > DateTime.UtcNow)
                         {
                             h[key.Key] = entry.Value;
                         }
@@ -258,8 +256,10 @@ namespace System.Runtime.Caching
                 {
                     foreach (DictionaryEntry e in _entries)
                     {
-                        MemoryCacheEntry entry = e.Value as MemoryCacheEntry;
-                        entries.Add(entry);
+                        if (e.Value is MemoryCacheEntry entry)
+                        {
+                            entries.Add(entry);
+                        }
                     }
                     foreach (MemoryCacheEntry entry in entries)
                     {
@@ -283,9 +283,9 @@ namespace System.Runtime.Caching
             }
         }
 
-        internal MemoryCacheEntry Get(MemoryCacheKey key)
+        internal MemoryCacheEntry? Get(MemoryCacheKey key)
         {
-            MemoryCacheEntry entry = _entries[key] as MemoryCacheEntry;
+            MemoryCacheEntry? entry = _entries[key] as MemoryCacheEntry;
             // has it expired?
             if (entry != null && entry.UtcAbsExp <= DateTime.UtcNow)
             {
@@ -293,13 +293,16 @@ namespace System.Runtime.Caching
                 entry = null;
             }
             // update outside of lock
-            UpdateExpAndUsage(entry);
+            if (entry != null)
+            {
+                UpdateExpAndUsage(entry);
+            }
             return entry;
         }
 
-        internal MemoryCacheEntry Remove(MemoryCacheKey key, MemoryCacheEntry entryToRemove, CacheEntryRemovedReason reason)
+        internal MemoryCacheEntry? Remove(MemoryCacheKey key, MemoryCacheEntry? entryToRemove, CacheEntryRemovedReason reason)
         {
-            MemoryCacheEntry entry = null;
+            MemoryCacheEntry? entry = null;
             lock (_entriesLock)
             {
                 if (_disposed == 0)
@@ -322,7 +325,7 @@ namespace System.Runtime.Caching
                 }
             }
             // release outside of lock
-            RemoveFromCache(entry, reason);
+            if (entry != null) { RemoveFromCache(entry, reason); }
             return entry;
         }
 
@@ -332,7 +335,7 @@ namespace System.Runtime.Caching
             {
                 WaitInsertBlock();
             }
-            MemoryCacheEntry existingEntry = null;
+            MemoryCacheEntry? existingEntry = null;
             bool added = false;
             lock (_entriesLock)
             {

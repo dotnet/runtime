@@ -15,12 +15,12 @@ namespace System.Runtime.Caching
 {
     public abstract class ObjectCache : IEnumerable<KeyValuePair<string, object>>
     {
-        private static IServiceProvider s_host;
+        private static IServiceProvider? s_host;
 
         public static readonly DateTimeOffset InfiniteAbsoluteExpiration = DateTimeOffset.MaxValue;
         public static readonly TimeSpan NoSlidingExpiration = TimeSpan.Zero;
 
-        public static IServiceProvider Host
+        public static IServiceProvider? Host
         {
             get
             {
@@ -42,14 +42,14 @@ namespace System.Runtime.Caching
         public abstract string Name { get; }
 
         //Default indexer property
-        public abstract object this[string key] { get; set; }
+        public abstract object? this[string key] { get; set; }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
             return ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
         }
 
-        public abstract CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null);
+        public abstract CacheEntryChangeMonitor? CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string? regionName = null);
 
         IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
         {
@@ -59,49 +59,49 @@ namespace System.Runtime.Caching
         protected abstract IEnumerator<KeyValuePair<string, object>> GetEnumerator();
 
         //Existence check for a single item
-        public abstract bool Contains(string key, string regionName = null);
+        public abstract bool Contains(string key, string? regionName = null);
 
         //The Add overloads are for adding an item without requiring the existing item to be returned.  This was requested for Velocity.
-        public virtual bool Add(string key, object value, DateTimeOffset absoluteExpiration, string regionName = null)
+        public virtual bool Add(string key, object value, DateTimeOffset absoluteExpiration, string? regionName = null)
         {
             return (AddOrGetExisting(key, value, absoluteExpiration, regionName) == null);
         }
 
-        public virtual bool Add(CacheItem item, CacheItemPolicy policy)
+        public virtual bool Add(CacheItem item, CacheItemPolicy? policy)
         {
             return (AddOrGetExisting(item, policy) == null);
         }
 
-        public virtual bool Add(string key, object value, CacheItemPolicy policy, string regionName = null)
+        public virtual bool Add(string key, object value, CacheItemPolicy? policy, string? regionName = null)
         {
             return (AddOrGetExisting(key, value, policy, regionName) == null);
         }
 
-        public abstract object AddOrGetExisting(string key, object value, DateTimeOffset absoluteExpiration, string regionName = null);
-        public abstract CacheItem AddOrGetExisting(CacheItem value, CacheItemPolicy policy);
+        public abstract object? AddOrGetExisting(string key, object value, DateTimeOffset absoluteExpiration, string? regionName = null);
+        public abstract CacheItem? AddOrGetExisting(CacheItem value, CacheItemPolicy? policy);
 
-        public abstract object AddOrGetExisting(string key, object value, CacheItemPolicy policy, string regionName = null);
+        public abstract object? AddOrGetExisting(string key, object value, CacheItemPolicy? policy, string? regionName = null);
 
-        public abstract object Get(string key, string regionName = null);
+        public abstract object? Get(string key, string? regionName = null);
 
-        public abstract CacheItem GetCacheItem(string key, string regionName = null);
+        public abstract CacheItem? GetCacheItem(string key, string? regionName = null);
 
-        public abstract void Set(string key, object value, DateTimeOffset absoluteExpiration, string regionName = null);
+        public abstract void Set(string key, object value, DateTimeOffset absoluteExpiration, string? regionName = null);
 
-        public abstract void Set(CacheItem item, CacheItemPolicy policy);
+        public abstract void Set(CacheItem item, CacheItemPolicy? policy);
 
-        public abstract void Set(string key, object value, CacheItemPolicy policy, string regionName = null);
+        public abstract void Set(string key, object value, CacheItemPolicy? policy, string? regionName = null);
 
         //Get multiple items by keys
-        public abstract IDictionary<string, object> GetValues(IEnumerable<string> keys, string regionName = null);
+        public abstract IDictionary<string, object>? GetValues(IEnumerable<string> keys, string? regionName = null);
 
-        public virtual IDictionary<string, object> GetValues(string regionName, params string[] keys)
+        public virtual IDictionary<string, object>? GetValues(string? regionName, params string[] keys)
         {
             return GetValues(keys, regionName);
         }
 
-        public abstract object Remove(string key, string regionName = null);
+        public abstract object? Remove(string key, string? regionName = null);
 
-        public abstract long GetCount(string regionName = null);
+        public abstract long GetCount(string? regionName = null);
     }
 }

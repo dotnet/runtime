@@ -18,12 +18,12 @@ namespace System.Runtime.Caching
         private static readonly DateTime s_DATETIME_MINVALUE_UTC = new DateTime(0, DateTimeKind.Utc);
         private const int MAX_CHAR_COUNT_OF_LONG_CONVERTED_TO_HEXADECIMAL_STRING = 16;
         private readonly ReadOnlyCollection<string> _keys;
-        private readonly string _regionName;
-        private string _uniqueId;
+        private readonly string? _regionName;
+        private string _uniqueId = null!;
         private DateTimeOffset _lastModified;
-        private List<MemoryCacheEntry> _dependencies;
+        private List<MemoryCacheEntry>? _dependencies;
 
-        private MemoryCacheEntryChangeMonitor() { } // hide default .ctor
+        private MemoryCacheEntryChangeMonitor() { _keys = null!; _uniqueId = null!; } // hide default .ctor
 
         private void InitDisposableMembers(MemoryCache cache)
         {
@@ -31,12 +31,12 @@ namespace System.Runtime.Caching
             try
             {
                 bool hasChanged = false;
-                string uniqueId = null;
+                string? uniqueId = null;
                 _dependencies = new List<MemoryCacheEntry>(_keys.Count);
                 if (_keys.Count == 1)
                 {
                     string k = _keys[0];
-                    MemoryCacheEntry entry = cache.GetEntry(k);
+                    MemoryCacheEntry? entry = cache.GetEntry(k);
                     DateTime utcCreated = s_DATETIME_MINVALUE_UTC;
                     StartMonitoring(cache, entry, ref hasChanged, ref utcCreated);
                     uniqueId = $"{k}{utcCreated.Ticks:X}";
@@ -52,7 +52,7 @@ namespace System.Runtime.Caching
                     StringBuilder sb = new StringBuilder(capacity);
                     foreach (string key in _keys)
                     {
-                        MemoryCacheEntry entry = cache.GetEntry(key);
+                        MemoryCacheEntry? entry = cache.GetEntry(key);
                         DateTime utcCreated = s_DATETIME_MINVALUE_UTC;
                         StartMonitoring(cache, entry, ref hasChanged, ref utcCreated);
                         sb.Append(key);
@@ -81,14 +81,14 @@ namespace System.Runtime.Caching
             }
         }
 
-        private void StartMonitoring(MemoryCache cache, MemoryCacheEntry entry, ref bool hasChanged, ref DateTime utcCreated)
+        private void StartMonitoring(MemoryCache cache, MemoryCacheEntry? entry, ref bool hasChanged, ref DateTime utcCreated)
         {
             if (entry != null)
             {
                 // pass reference to self so the dependency can notify us when it changes
                 entry.AddDependent(cache, this);
                 // add dependency to collection so we can dispose it later
-                _dependencies.Add(entry);
+                _dependencies!.Add(entry!);
                 // has the entry already changed?
                 if (entry.State != EntryState.AddedToCache)
                 {
@@ -126,12 +126,12 @@ namespace System.Runtime.Caching
         //
 
         public override ReadOnlyCollection<string> CacheKeys { get { return new ReadOnlyCollection<string>(_keys); } }
-        public override string RegionName { get { return _regionName; } }
-        public override string UniqueId { get { return _uniqueId; } }
+        public override string? RegionName { get { return _regionName; } }
+        public override string UniqueId => _uniqueId!;
         public override DateTimeOffset LastModified { get { return _lastModified; } }
-        internal List<MemoryCacheEntry> Dependencies { get { return _dependencies; } }
+        internal List<MemoryCacheEntry>? Dependencies { get { return _dependencies; } }
 
-        internal MemoryCacheEntryChangeMonitor(ReadOnlyCollection<string> keys, string regionName, MemoryCache cache)
+        internal MemoryCacheEntryChangeMonitor(ReadOnlyCollection<string> keys, string? regionName, MemoryCache cache)
         {
             Debug.Assert(keys != null && keys.Count > 0, "keys != null && keys.Count > 0");
             _keys = keys;

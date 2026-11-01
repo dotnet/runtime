@@ -20,7 +20,7 @@ namespace System.Runtime.Caching
         private const long PRIVATE_BYTES_LIMIT_64BIT = 1L * TERABYTE;
         private const int SAMPLE_COUNT = 2;
 
-        private static IMemoryCacheManager s_memoryCacheManager;
+        private static IMemoryCacheManager? s_memoryCacheManager;
         private static long s_autoPrivateBytesLimit = -1;
         private static long s_effectiveProcessMemoryLimit = -1;
 
@@ -28,7 +28,7 @@ namespace System.Runtime.Caching
         private readonly long[] _cacheSizeSamples;
         private readonly DateTime[] _cacheSizeSampleTimes;
         private int _idx;
-        private SRefMultiple _sizedRefMultiple;
+        private SRefMultiple? _sizedRefMultiple;
         private int _gen2Count;
         private long _memoryLimit;
 
@@ -40,6 +40,9 @@ namespace System.Runtime.Caching
         private CacheMemoryMonitor()
         {
             // hide default ctor
+            _memoryCache = null!;
+            _cacheSizeSamples = null!;
+            _cacheSizeSampleTimes = null!;
         }
 
         internal CacheMemoryMonitor(MemoryCache memoryCache, int cacheMemoryLimitMegabytes)
@@ -132,7 +135,7 @@ namespace System.Runtime.Caching
 
         public void Dispose()
         {
-            SRefMultiple sref = _sizedRefMultiple;
+            SRefMultiple? sref = _sizedRefMultiple;
             if (sref != null && Interlocked.CompareExchange(ref _sizedRefMultiple, null, sref) == sref)
             {
                 sref.Dispose();
@@ -161,7 +164,7 @@ namespace System.Runtime.Caching
             // This update must happen, otherwise the CacheManager won't
             // know the total cache size.
             int gen2Count = GC.CollectionCount(2);
-            SRefMultiple sref = _sizedRefMultiple;
+            SRefMultiple? sref = _sizedRefMultiple;
             if (gen2Count != _gen2Count && sref != null)
             {
                 // update _gen2Count
@@ -250,8 +253,8 @@ namespace System.Runtime.Caching
         {
             if (s_memoryCacheManager == null)
             {
-                IMemoryCacheManager memoryCacheManager = null;
-                IServiceProvider host = ObjectCache.Host;
+                IMemoryCacheManager? memoryCacheManager = null;
+                IServiceProvider? host = ObjectCache.Host;
                 if (host != null)
                 {
                     memoryCacheManager = host.GetService(typeof(IMemoryCacheManager)) as IMemoryCacheManager;
