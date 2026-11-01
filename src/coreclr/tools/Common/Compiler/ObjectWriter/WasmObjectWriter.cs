@@ -10,6 +10,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.ObjectWriter.WasmInstructions;
+using Internal.IL;
 using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -158,7 +159,14 @@ namespace ILCompiler.ObjectWriter
                     }
 
                     int typeIndex = RegisterSignature(WasmLowering.GetSignature(function).FuncType);
-                    WriteImport(new WasmImport("env", name.ToString(), new WasmFunctionImportType(typeIndex)));
+                    string importModule = "env";
+                    string importName = name.ToString();
+                    if (function is INodeWithLinkageMetadata { LinkageMetadata: WasmLinkageMetadata import })
+                    {
+                        importModule = import.ImportModule.ToString();
+                        importName = import.ImportName.ToString();
+                    }
+                    WriteImport(new WasmImport(importModule, importName, new WasmFunctionImportType(typeIndex)), name);
                 }
             }
         }
@@ -378,14 +386,19 @@ namespace ILCompiler.ObjectWriter
         /// <summary>
         /// Adds the given import entry, including its prefix (module/name/kind) and body (external ref).
         /// </summary>
-        private protected void WriteImport(WasmImport import)
+        private protected void WriteImport(WasmImport import, Utf8String symbolName = default)
         {
-            Utf8String symbolName = new(import.Name);
-            _wasmSymbolManager.AddImport(symbolName, GetIndexSpace(import.Kind), import.Index);
+            Utf8String importName = new(import.Name);
+            if (symbolName.IsNull)
+            {
+                symbolName = importName;
+            }
+            _wasmSymbolManager.AddImport(symbolName, GetIndexSpace(import.Kind), import.Index, hasExplicitName: !symbolName.Equals(importName));
 
             WasmImportSection section = GetOrCreateSection<WasmImportSection>(
                 WasmObjectNodeSection.ImportSection,
                 out SectionWriter writer);
+            writer.EmitSymbolDefinition(symbolName);
             section.WriteEntry(writer, import);
         }
 

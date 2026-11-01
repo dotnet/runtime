@@ -288,7 +288,10 @@ namespace ILCompiler.DependencyAnalysis
 
                     IMethodNode relocTarget = _sealedVTableEntries[i].Target;
 
-                    int delta = isSharedDynamicInterfaceCastableImpl ? DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag : 0;
+                    int requiresInstantiatingThunkFlag = factory.Target.IsWasm
+                        ? DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlagWasm
+                        : DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag;
+                    int delta = isSharedDynamicInterfaceCastableImpl ? requiresInstantiatingThunkFlag : 0;
 
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(relocTarget, RelocType.IMAGE_REL_BASED_RELPTR32, delta);

@@ -25,6 +25,14 @@ namespace ILAssembler
     {
         public (ImmutableArray<Diagnostic> Diagnostics, CompilationResult? Image) BuildImage()
         {
+            ResourceSectionBuilder? nativeResources = null;
+            if (_options.Win32ResourceFile is string resourceFile)
+            {
+                byte[] resourceBytes = _resourceLocator(resourceFile) ??
+                    throw new FileNotFoundException($"Win32 resource file not found: {resourceFile}", resourceFile);
+                nativeResources = Win32ResourceSectionBuilder.Create(resourceBytes);
+            }
+
             // Default module name to output filename if no .module directive was provided
             if (_entityRegistry.Module.Name is null && _options.OutputFileName is not null)
             {
@@ -164,6 +172,7 @@ namespace ILAssembler
                 ilStream,
                 _mappedFieldData,
                 _manifestResources,
+                nativeResources: nativeResources,
                 debugDirectoryBuilder: debugDirectoryBuilder,
                 entryPoint: entryPoint,
                 flags: corFlags,
@@ -581,7 +590,7 @@ namespace ILAssembler
             portablePdb = null;
 
             // Only /DEBUG (any mode) or /PDB produces a PDB. Without them, .line
-            // directives are still parsed and validated, and no sequence points are recorded.
+            // directives are still parsed, but their PDB coordinates are not validated or recorded.
             if (!GeneratesPdb)
             {
                 return null;

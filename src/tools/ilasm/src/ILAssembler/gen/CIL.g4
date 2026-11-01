@@ -438,9 +438,7 @@ dottedNamePart returns [string Value]
 @init {_localctx.Value = string.Empty;}
 @after {_localctx.Value = Actions.ParseDottedNamePart(_localctx.Start);}
 :
-	ID
-	| INSTANCE
-	| SQSTRING
+	id
 	| DOTTEDNAME
 	| 'volatile'
 ;

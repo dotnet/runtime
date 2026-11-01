@@ -11043,13 +11043,22 @@ namespace System.IO
         public override void Write(char value) { }
         public override void Write(char[]? buffer) { }
         public override void Write(char[] buffer, int index, int count) { }
+        public override void Write(decimal value) { }
+        public override void Write(double value) { }
+        public override void Write(int value) { }
+        public override void Write(long value) { }
         public override void Write(System.ReadOnlySpan<char> buffer) { }
+        public override void Write(float value) { }
         public override void Write(string? value) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
+        [System.CLSCompliantAttribute(false)]
+        public override void Write(uint value) { }
+        [System.CLSCompliantAttribute(false)]
+        public override void Write(ulong value) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -11179,9 +11188,18 @@ namespace System.IO
         public override string ToString() { throw null; }
         public override void Write(char value) { }
         public override void Write(char[] buffer, int index, int count) { }
+        public override void Write(decimal value) { }
+        public override void Write(double value) { }
+        public override void Write(int value) { }
+        public override void Write(long value) { }
         public override void Write(System.ReadOnlySpan<char> buffer) { }
+        public override void Write(float value) { }
         public override void Write(string? value) { }
         public override void Write(System.Text.StringBuilder? value) { }
+        [System.CLSCompliantAttribute(false)]
+        public override void Write(uint value) { }
+        [System.CLSCompliantAttribute(false)]
+        public override void Write(ulong value) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

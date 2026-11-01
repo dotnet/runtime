@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
@@ -151,7 +150,7 @@ namespace System.Runtime.Serialization.DataContracts
                 XmlDictionary dictionary = new XmlDictionary();
                 Name = dictionary.Add(XmlName.Name);
                 Namespace = dictionary.Add(XmlName.Namespace);
-                object[]? xmlRootAttributes = UnderlyingType?.GetCustomAttributes(typeof(XmlRootAttribute), false).ToArray();
+                object[]? xmlRootAttributes = UnderlyingType?.GetCustomAttributes(typeof(XmlRootAttribute), false);
                 if (xmlRootAttributes == null || xmlRootAttributes.Length == 0)
                 {
                     if (hasRoot)

@@ -33,16 +33,6 @@ namespace Internal.Metadata.NativeFormat
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
 #endif
-    public enum AssemblyHashAlgorithm : uint
-    {
-        None = 0x0,
-        Reserved = 0x8003,
-        SHA1 = 0x8004,
-    } // AssemblyHashAlgorithm
-
-#if SYSTEM_PRIVATE_CORELIB
-    [CLSCompliant(false)]
-#endif
     public enum GenericParameterKind : byte
     {
         /// Represents a type parameter for a generic type.

@@ -107,6 +107,10 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 target_link_libraries(createdump PRIVATE minipal)
 
+if(CLR_CMAKE_TARGET_OSX)
+    set_macos_bundle_identifier(createdump com.microsoft.dotnet.createdump)
+endif()
+
 if (CLR_CMAKE_HOST_APPLE)
     adhoc_sign_with_entitlements(createdump "${CLR_ENG_NATIVE_DIR}/createdump-entitlements.plist")
 endif()

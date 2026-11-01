@@ -25,7 +25,7 @@ steps:
 
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
-      - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:8d59a620b39a4cff1bcfe56c2702a74162f20b98066cd025eb1ee9f53839b254
+      - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:5310bf13d3ad5c18633b11db37c5f91c6610f9fd882cdefab7eb3d42a6a879a9
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
