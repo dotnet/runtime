@@ -116,7 +116,7 @@ namespace System.Buffers.Text.Tests
                 // it's in the range of an Int32. Unless, of course, the implementation had the foresight to check before assimilating.
                 yield return new ParserTestData<int>("9999999990", 0, 'D', expectedSuccess: false);
 
-                // Leading zeros don't count toward overflow, even when the input is longer than the longest Int64.
+                // Leading zeros don't count toward overflow.
                 yield return new ParserTestData<int>("00000000000000000000002147483647", int.MaxValue, 'D', expectedSuccess: true);
                 yield return new ParserTestData<int>("-00000000000000000000002147483648", int.MinValue, 'D', expectedSuccess: true);
                 yield return new ParserTestData<int>("00000000000000000000002147483648", 0, 'D', expectedSuccess: false);

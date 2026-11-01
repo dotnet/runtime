@@ -193,15 +193,92 @@ namespace System.Buffers.Text
 
         private static bool TryParseInt32D(ReadOnlySpan<byte> source, out int value, out int bytesConsumed)
         {
-            // Parsing as Int64 and range-checking accepts and rejects exactly the same inputs as a dedicated
-            // Int32 parser would, and keeps this method small enough for the JIT to inline it.
+            // This is the same algorithm as TryParseInt64D, with a 32-bit accumulator.
 
-            if (TryParseInt64D(source, out long parsedValue, out bytesConsumed) && parsedValue == (int)parsedValue)
+            int sign = 0; // 0 if the value is positive, -1 if the value is negative
+            int idx = 0;
+
+            uint firstChar;
+            while (true)
             {
-                value = (int)parsedValue;
-                return true;
+                if ((uint)idx >= (uint)source.Length) { goto FalseExit; }
+                firstChar = (uint)source[idx] - '0';
+                if (firstChar <= 9) { break; }
+
+                // A sign character is only allowed at index 0, and must be followed by a digit.
+
+                if (idx != 0)
+                {
+                    goto FalseExit;
+                }
+
+                idx++;
+
+                if (firstChar == unchecked((uint)('-' - '0')))
+                {
+                    sign--; // set to -1
+                }
+                else if (firstChar != unchecked((uint)('+' - '0')))
+                {
+                    goto FalseExit; // not a digit, not '-', and not '+'; fail
+                }
             }
 
+            uint parsedValue = firstChar;
+            int overflowLength = ParserHelpers.Int32OverflowLength + idx; // +idx to account for any sign char we read
+            idx++;
+
+            if (source.Length < overflowLength)
+            {
+                // Too few digits to overflow; no overflow checks needed.
+
+                while (true)
+                {
+                    if ((uint)idx >= (uint)source.Length) { break; } // EOF
+                    uint nextChar = (uint)source[idx] - '0';
+                    if (nextChar > 9) { break; } // not a digit
+                    parsedValue = parsedValue * 10 + nextChar;
+                    idx++;
+                }
+            }
+            else
+            {
+                while (true)
+                {
+                    if ((uint)idx >= (uint)source.Length) { break; } // EOF
+                    uint nextChar = (uint)source[idx] - '0';
+                    if (nextChar > 9) { break; } // not a digit
+                    idx++;
+
+                    // The const below is the smallest unsigned x for which "x * 10 + 9"
+                    // might overflow int.MaxValue. If the current accumulator is below
+                    // this const, there's no risk of overflowing.
+
+                    const uint OverflowRisk = 0x0CCC_CCCCu;
+
+                    if (parsedValue < OverflowRisk)
+                    {
+                        parsedValue = parsedValue * 10 + nextChar;
+                        continue;
+                    }
+
+                    // At exactly OverflowRisk, the last digit can be at most 7 (or 8 if negative).
+                    // Above it, the value can't fit. (nextChar + sign) > 7 checks both cases.
+
+                    if (parsedValue != OverflowRisk || (int)nextChar + sign > 7)
+                    {
+                        goto FalseExit;
+                    }
+
+                    parsedValue = OverflowRisk * 10 + nextChar;
+                }
+            }
+
+            bytesConsumed = idx;
+            value = ((int)parsedValue ^ sign) - sign;
+            return true;
+
+        FalseExit:
             bytesConsumed = 0;
             value = default;
             return false;
