@@ -13,9 +13,9 @@ namespace System.Net.Mime
     /// This stream does not encode content, but merely allows the user to declare
     /// that the content does not need encoding.
     ///
-    /// This stream is also used to implement RFC 2821 Section 4.5.2 (pad leading
-    /// dots on a line) on the entire message so we don't have to implement it
-    /// on all of the individual components.
+    /// For SMTP transport, this stream implements RFC 5321 Sections 2.3.8 and
+    /// 4.5.2 (normalize line endings and pad leading dots) on the entire message
+    /// so we don't have to implement it on all of the individual components.
     ///
     /// History: This class used to be called SevenBitStream and was supposed to
     /// validate that outgoing bytes were within the acceptable range of 0 - 127
@@ -26,9 +26,8 @@ namespace System.Net.Mime
     /// </summary>
     internal sealed class EightBitStream : DelegatedStream, IEncodableStream
     {
-        // Should we do RFC 2821 Section 4.5.2 encoding of leading dots on a line?
-        // We make this optional because this stream may be used recursively and
-        // the encoding should only be done once.
+        // Apply SMTP line normalization and dot-stuffing only at the outermost
+        // stream, since this stream may also be used recursively.
         private readonly bool _shouldEncodeLeadingDots;
         private bool _lastWriteEndedWithCr;
 
@@ -92,86 +91,47 @@ namespace System.Net.Mime
 
         // helper methods
 
-        // Despite not having to encode content, we still have to implement
-        // RFC 2821 Section 4.5.2 about leading dots on a line
+        // Normalize line endings to CRLF and escape leading dots (RFC 5321
+        // Sections 2.3.8 and 4.5.2).
         private void EncodeLines(ReadOnlySpan<byte> buffer)
         {
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                // Note: for legacy reasons we are not enforcing buffer[i] <= 127.
+            WriteStateInfoBase writeState = WriteState;
 
+            while (!buffer.IsEmpty)
+            {
                 if (_lastWriteEndedWithCr)
                 {
                     _lastWriteEndedWithCr = false;
 
-                    // Detect CRLF line endings
-                    if (buffer[i] == '\n')
+                    // The CR already emitted CRLF, so consume a following LF without
+                    // adding another newline, even when CRLF is split across writes.
+                    if (buffer[0] == '\n')
                     {
-                        WriteState.AppendCRLF(false); // Resets CurrentLineLength to 0
+                        buffer = buffer.Slice(1);
                         continue;
                     }
-                    else
-                    {
-                        // Write the delayed CR since it wasn't part of a CRLF sequence
-                        WriteState.Append((byte)'\r');
-                    }
                 }
 
-                if (buffer[i] == '\n')
+                if (writeState.CurrentLineLength == 0 && buffer[0] == '.')
                 {
-                    // Bare LF (not preceded by CR). Some SMTP servers may interpret a bare
-                    // "\n.\n" sequence as the "CRLF.CRLF" end-of-data marker, which would
-                    // corrupt the message. Canonicalize the bare LF to CRLF and reset the
-                    // line state so subsequent leading dots are still dot-stuffed.
-                    WriteState.AppendCRLF(false); // Resets CurrentLineLength to 0
-                    continue;
+                    // Escape leading dots so a line containing only "." cannot end the SMTP data.
+                    writeState.Append((byte)'.');
                 }
 
-                if ((WriteState.CurrentLineLength == 0) && (buffer[i] == '.'))
+                int lineEndingIndex = buffer.IndexOfAny((byte)'\r', (byte)'\n');
+                if (lineEndingIndex < 0)
                 {
-                    // RFC 2821 Section 4.5.2: We must pad leading dots on a line with an extra dot
-                    // This is the only 'encoding' change we make to the data in this method
-                    WriteState.Append((byte)'.');
+                    writeState.Append(buffer);
+                    return;
                 }
 
-                if (buffer[i] == '\r')
-                {
-                    // defer writing CR until we see if it's followed by LF
-                    _lastWriteEndedWithCr = true;
-                    continue;
-                }
-
-                // Regular data byte, pass it through unchanged.
-                WriteState.Append(buffer[i]);
+                writeState.Append(buffer.Slice(0, lineEndingIndex));
+                // Some SMTP servers accept bare CR or LF as line endings. Normalize
+                // both and reset the line state so subsequent leading dots are escaped.
+                writeState.AppendCRLF(false);
+                _lastWriteEndedWithCr = buffer[lineEndingIndex] == '\r';
+                buffer = buffer.Slice(lineEndingIndex + 1);
             }
-        }
-
-        public override void Close()
-        {
-            if (_lastWriteEndedWithCr)
-            {
-                // Write the delayed CR before the underlying stream is closed.
-                // DelegatedStream.Close() closes the underlying stream, so this
-                // must happen before we delegate to the base implementation.
-                _lastWriteEndedWithCr = false;
-                BaseStream.WriteByte((byte)'\r');
-            }
-
-            base.Close();
-        }
-
-        public override async ValueTask DisposeAsync()
-        {
-            if (_lastWriteEndedWithCr)
-            {
-                // write the delayed CR
-                _lastWriteEndedWithCr = false;
-                await BaseStream.WriteAsync(new byte[] { (byte)'\r' }, CancellationToken.None).ConfigureAwait(false);
-            }
-
-            // DelegatedStream does not override DisposeAsync, so the base implementation
-            // falls back to synchronous Dispose(), which disposes the underlying stream.
-            await base.DisposeAsync().ConfigureAwait(false);
         }
 
         public int DecodeBytes(Span<byte> buffer) { throw new NotImplementedException(); }
