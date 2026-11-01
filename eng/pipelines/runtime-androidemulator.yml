@@ -5,10 +5,18 @@
 
 trigger: none
 
+parameters:
+  - name: runAndroidContainerTests
+    displayName: Run CoreCLR and library API 29 parity validation only
+    type: boolean
+    default: false
+
 variables:
   - template: /eng/pipelines/common/variables.yml
   - name: enableHelixJobMonitor
     value: true
+  - name: androidContainerHelixQueue
+    value: (Android.29.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-android-29-amd64@sha256:193e6d0ce33f6d8b9c10170ef8a197683c0fa4fe75fe5f1e3199318e8fb84d03
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -23,8 +31,58 @@ extends:
             timeoutInMinutes: 540
             allowNoHelixJobs: true
 
-      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
-        parameters:
-          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-          isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
-          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+      - ${{ if parameters.runAndroidContainerTests }}:
+        - template: /eng/pipelines/common/xplat-setup.yml
+          parameters:
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
+            osGroup: android
+            archType: x64
+            targetRid: android-x64
+            platform: android_x64
+            container: android
+            variables:
+              - name: priorityArg
+                value: ''
+              - name: runtimeFlavorArgs
+                value: ''
+              - name: runtimeVariantArg
+                value: ''
+              - name: librariesConfigurationArg
+                value: ''
+            jobParameters:
+              buildConfig: Release
+              runtimeFlavor: coreclr
+              nameSuffix: API29_Parity_CoreCLR
+              buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests+host+packs -c Release /p:ArchiveTests=true
+              timeoutInMinutes: 480
+              helixQueues:
+                - Ubuntu.2204.Amd64.Android.29.Open
+                - $(androidContainerHelixQueue)
+              postBuildSteps:
+                - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+                - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+                  parameters:
+                    displayName: Run CoreCLR tests on API 29 legacy and container queues
+                    creator: $(Build.DefinitionName)
+                    helixBuild: $(Build.BuildNumber)
+                    helixSource: ci/dotnet/runtime/$(Build.SourceBranch)
+                    helixType: test/functional/cli/
+                    publishTestResults: true
+                    useHelixMonitor: true
+                    scenarios:
+                      - normal
+                    timeoutPerTestInMinutes: 60
+                    timeoutPerTestCollectionInMinutes: 180
+                    helixProjectArguments: $(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj
+                - template: /eng/pipelines/libraries/helix.yml
+                  parameters:
+                    creator: $(Build.DefinitionName)
+                    testRunNamePrefixSuffix: CoreCLR_Release_API29_Parity_Libraries
+                    useHelixMonitor: true
+
+      - ${{ if not(parameters.runAndroidContainerTests) }}:
+        - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
+          parameters:
+            isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+            isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
