@@ -2904,7 +2904,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     const int MAX_INDEX_COMPLEXITY = 4;
 
     var_types            elemTyp        = indexAddr->gtElemType;
-    unsigned             elemSize       = indexAddr->gtElemSize;
+    ValueSize            elemSize       = indexAddr->gtElemSize;
     uint8_t              elemOffs       = static_cast<uint8_t>(indexAddr->gtElemOffset);
     CORINFO_CLASS_HANDLE elemStructType = indexAddr->gtStructElemClass;
 
@@ -3052,10 +3052,10 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     }
 #endif // TARGET_64BIT
 
-    /* Scale the index value if necessary */
-    if (elemSize > 1)
+    // Scale the index value if necessary.
+    if (!elemSize.IsExact() || (elemSize.GetExact() > 1))
     {
-        GenTree* size = gtNewIconNode(elemSize, TYP_I_IMPL);
+        GenTree* multiplier = gtNewValueSize(elemSize, TYP_I_IMPL);
 
         // Fix 392756 WP7 Crossgen
         //
@@ -3063,10 +3063,9 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         // is a constant and is not capable of handling CSE'ing the elemSize constant into a lclvar.
         // Hence to prevent the constant from becoming a CSE we mark it as NO_CSE.
         //
-        size->gtFlags |= GTF_DONT_CSE;
-
+        multiplier->gtFlags |= GTF_DONT_CSE;
         /* Multiply by the array element size */
-        addr = gtNewOperNode(GT_MUL, TYP_I_IMPL, index, size);
+        addr = gtNewOperNode(GT_MUL, TYP_I_IMPL, index, multiplier);
     }
     else
     {
