@@ -186,21 +186,20 @@ internal static partial class Interop
             }
         }
 
-        // Reads directly from the BIO's bound fd into its internal peek buffer until a
-        // full TLS record is present. Returns:
-        //   1  = have full frame; framePtr / frameLen point into the BIO's buffer.
+        // Reads directly from the BIO's bound fd until requiredLength bytes are buffered.
+        // Managed TLS framing determines how many more bytes the ClientHello needs.
+        //   1  = requested prefix is present; prefixPtr / prefixLen point into the BIO's buffer.
         //   0  = need more data (fd would block); caller polls SelectRead and retries.
-        //  -1  = error (EOF, oversized record, or recv failure).
+        //  -1  = error (invalid length, EOF, allocation failure, or recv failure).
         //
-        // The returned pointer is valid until the BIO is destroyed or SocketReplayBioRead
-        // starts consuming the buffer (i.e. once SSL_do_handshake runs against this BIO).
-        // Callers must span-wrap and parse before creating the SSL* that owns the BIO.
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioPeekTlsFrame")]
-        internal static unsafe partial int BioPeekTlsFrame(SafeBioHandle bio, out byte* framePtr, out int frameLen);
+        // The next call can grow the buffer and invalidate the returned pointer.
+        // All reads must finish before handing the BIO to OpenSSL for replay.
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioReadPrefix")]
+        internal static unsafe partial int BioReadPrefix(SafeBioHandle bio, int requiredLength, out byte* prefixPtr, out int prefixLen);
 
         // Returns the socket-replay BIO's retained peek buffer (bytes captured by
-        // BioPeekTlsFrame). Valid until the BIO is destroyed, even after OpenSSL has
-        // drained it during handshake.
+        // BioReadPrefix). Once prefetch is complete, valid until the BIO is destroyed,
+        // even after OpenSSL has drained it during handshake.
         //   1  = prefix present; prefixPtr / prefixLen wrap the internal buffer.
         //   0  = BIO has no captured prefix.
         //  -1  = error (invalid args).
@@ -553,7 +552,7 @@ namespace Microsoft.Win32.SafeHandles
             if (usePreallocatedBio)
             {
                 // Deferred-server flow (native pre-fetch): the caller populated a
-                // socket-replay BIO via BioPeekTlsFrame; adopt it as the read BIO
+                // socket-replay BIO via BioReadPrefix; adopt it as the read BIO
                 // and create a peer write BIO for OpenSSL's outbound records.
                 // Clear the field so ownership transfer happens exactly once.
                 readBio = preallocatedReadBio;

@@ -6,8 +6,10 @@ using System.ComponentModel;
 using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Reflection;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -104,6 +106,327 @@ namespace System.Net.Security.Tests
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
             }
+        }
+
+        [Theory]
+        [InlineData(1, int.MaxValue)]
+        [InlineData(2, int.MaxValue)]
+        [InlineData(3, int.MaxValue)]
+        [InlineData(4, int.MaxValue)]
+        [InlineData(58, int.MaxValue)]
+        [InlineData(128, int.MaxValue)]
+        [InlineData(1, 1)]
+        [InlineData(58, 1)]
+        public Task ServerAsyncAuthenticate_FragmentedClientHello_OptionsCallbackGetsCompleteHello(int fragmentSize, int maxReadSize)
+        {
+            byte[] hello = TlsFrameHelperTests.FragmentHello(TlsFrameHelperTests.ClientHello, fragmentSize);
+            return AssertClientHelloOptions(hello, maxReadSize, "10.211.55.2", SslProtocols.Tls13);
+        }
+
+        [Theory]
+        [InlineData(58)]
+        [InlineData(16 * 1024)]
+        public Task ServerAsyncAuthenticate_FragmentedClientHello_LargeHello(int fragmentSize)
+        {
+            byte[] hello = TlsFrameHelperTests.FragmentHello(TlsFrameHelperTests.CreatePaddedClientHello(20 * 1024), fragmentSize);
+            return AssertClientHelloOptions(hello, int.MaxValue, new string('a', 19), SslProtocols.Tls12);
+        }
+
+        private static async Task AssertClientHelloOptions(byte[] hello, int maxReadSize, string serverName, SslProtocols protocol)
+        {
+            using var input = new MemoryStream(hello);
+            using var transport = new DelegateDelegatingStream(input)
+            {
+                ReadAsyncMemoryFunc = (buffer, token) =>
+                    input.ReadAsync(buffer.Slice(0, Math.Min(buffer.Length, maxReadSize)), token)
+            };
+            using var server = new SslStream(transport);
+            var expectedException = new InvalidOperationException();
+            int callbackCount = 0;
+
+            InvalidOperationException actualException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                server.AuthenticateAsServerAsync((_, info, _, _) =>
+                {
+                    callbackCount++;
+                    Assert.Equal(serverName, info.ServerName);
+                    Assert.True((info.SslProtocols & protocol) == protocol);
+                    throw expectedException;
+                }, null));
+
+            Assert.Same(expectedException, actualException);
+            Assert.Equal(1, callbackCount);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ServerAsyncAuthenticate_FragmentedClientHello_IncompleteDoesNotInvokeCallback(bool cancel)
+        {
+            const int FirstRecordLength = TlsFrameHelper.HeaderSize + 58;
+            byte[] hello = TlsFrameHelperTests.FragmentHello(TlsFrameHelperTests.ClientHello, 58);
+            using var input = new MemoryStream(hello.AsSpan(0, FirstRecordLength).ToArray());
+            var readRequested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var transport = new DelegateDelegatingStream(input) { ReadAsyncMemoryFunc = Read };
+            using var server = new SslStream(transport);
+            using var cts = new CancellationTokenSource(TestConfiguration.PassingTestTimeout);
+            bool callbackInvoked = false;
+            Task authentication = server.AuthenticateAsServerAsync((_, _, _, _) =>
+            {
+                callbackInvoked = true;
+                throw new InvalidOperationException();
+            }, null, cts.Token);
+
+            try
+            {
+                if (cancel)
+                {
+                    await Task.WhenAny(readRequested.Task, authentication).WaitAsync(TestConfiguration.PassingTestTimeout);
+                    Assert.False(authentication.IsCompleted);
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => authentication);
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<IOException>(() => authentication);
+                }
+
+                Assert.False(callbackInvoked);
+            }
+            finally
+            {
+                cts.Cancel();
+            }
+
+            async ValueTask<int> Read(Memory<byte> buffer, CancellationToken cancellationToken)
+            {
+                int read = input.Read(buffer.Span);
+                if (read == 0 && !buffer.IsEmpty && cancel)
+                {
+                    readRequested.TrySetResult();
+                    await Task.Delay(Timeout.Infinite, cancellationToken);
+                }
+
+                return read;
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public async Task ServerAsyncAuthenticate_FragmentedClientHello_InvalidFramingDoesNotInvokeCallback(int invalidKind)
+        {
+            const int SecondRecordOffset = TlsFrameHelper.HeaderSize + 58;
+            byte[] hello = TlsFrameHelperTests.FragmentHello(TlsFrameHelperTests.ClientHello, 58);
+            switch (invalidKind)
+            {
+                case 0:
+                    hello[SecondRecordOffset + 3] = 0;
+                    hello[SecondRecordOffset + 4] = 0;
+                    break;
+                case 1:
+                    hello[SecondRecordOffset] = (byte)TlsContentType.ChangeCipherSpec;
+                    break;
+                default:
+                    hello[6] = 0xFF;
+                    hello[7] = 0xFF;
+                    hello[8] = 0xFF;
+                    break;
+            }
+
+            using var input = new MemoryStream(hello);
+            using var server = new SslStream(input);
+            bool callbackInvoked = false;
+            await Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync((_, _, _, _) =>
+            {
+                callbackInvoked = true;
+                throw new InvalidOperationException();
+            }, null));
+            Assert.False(callbackInvoked);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public async Task ReceiveHandshakeFrame_Reauthentication_DoesNotParseCiphertext()
+        {
+            // An encrypted TLS 1.2 handshake record can coincidentally start with ClientHello's type.
+            byte[] record = [22, 3, 3, 0, 4, 1, 0xFF, 0xFF, 0xFF];
+            using var input = new MemoryStream(record);
+            using var server = new SslStream(input);
+            const BindingFlags InstanceFlags = BindingFlags.Instance | BindingFlags.NonPublic;
+            Type streamType = typeof(SslStream);
+            object options = streamType.GetField("_sslAuthenticationOptions", InstanceFlags)!.GetValue(server)!;
+            options.GetType().GetProperty("IsServer", InstanceFlags)!.SetValue(options, true);
+            streamType.GetField("_isReAuthentication", InstanceFlags)!.SetValue(server, true);
+            Type adapter = streamType.Assembly.GetType("System.SyncReadWriteAdapter", throwOnError: true)!;
+            MethodInfo receive = streamType.GetMethod("ReceiveHandshakeFrameAsync", InstanceFlags)!.MakeGenericMethod(adapter);
+            ValueTask<int> receiveTask = Assert.IsType<ValueTask<int>>(receive.Invoke(server, [CancellationToken.None]));
+
+            Assert.Equal(record.Length, await receiveTask);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReceiveHandshakeFrame_EncryptedHandshake_DoesNotParseClientHello(bool isReauthentication)
+        {
+            (Stream clientTransport, Stream serverTransport) = TestHelper.GetConnectedStreams();
+            using var client = new SslStream(clientTransport);
+            using var server = new SslStream(serverTransport);
+            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = "localhost",
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    AllowTlsResume = false,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate
+                }),
+                server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = _serverCertificate,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    AllowTlsResume = false
+                }));
+
+            const BindingFlags InstanceFlags = BindingFlags.Instance | BindingFlags.NonPublic;
+            Type streamType = typeof(SslStream);
+            Assert.NotNull(streamType.GetField("_securityContext", InstanceFlags)!.GetValue(server));
+            streamType.GetField("_handshakeCompleted", InstanceFlags)!.SetValue(server, false);
+            streamType.GetField("_isReAuthentication", InstanceFlags)!.SetValue(server, isReauthentication);
+
+            // A TLS 1.2 Finished record is encrypted even before authentication completes.
+            byte[] record = [22, 3, 3, 0, 4, 1, 0xFF, 0xFF, 0xFF];
+            await clientTransport.WriteAsync(record);
+            Type adapter = streamType.Assembly.GetType("System.AsyncReadWriteAdapter", throwOnError: true)!;
+            MethodInfo receive = streamType.GetMethod("ReceiveHandshakeFrameAsync", InstanceFlags)!.MakeGenericMethod(adapter);
+            ValueTask<int> receiveTask = Assert.IsType<ValueTask<int>>(receive.Invoke(server, [CancellationToken.None]));
+
+            Assert.Equal(record.Length, await receiveTask);
+        }
+
+        public static IEnumerable<object[]> FragmentedClientHelloData()
+        {
+            foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13, true))
+            {
+                foreach (ServerCertificateSource certificateSource in Enum.GetValues<ServerCertificateSource>())
+                {
+                    foreach (bool useAsync in new[] { false, true })
+                    {
+                        if (!useAsync && certificateSource == ServerCertificateSource.OptionsCallback)
+                        {
+                            continue;
+                        }
+
+                        yield return new object[] { protocol, certificateSource, useAsync, 58, int.MaxValue };
+                        yield return new object[] { protocol, certificateSource, useAsync, -1, 1 };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(FragmentedClientHelloData))]
+        // These backends support managed server-side TLS 1.3 selection.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.FreeBSD)]
+        public async Task ServerAuthenticate_FragmentedClientHello_HandshakeSucceeds(
+            SslProtocols protocol, ServerCertificateSource certificateSource, bool useAsync, int fragmentSize, int maxReadSize)
+        {
+            const string HostName = "fragmented.example";
+            (Stream clientTransport, Stream serverTransport) = TestHelper.GetConnectedStreams();
+            bool fragmented = false;
+            using var clientWrapper = new DelegateDelegatingStream(clientTransport)
+            {
+                WriteAsyncMemoryFunc = (buffer, token) =>
+                {
+                    if (!fragmented && !buffer.IsEmpty)
+                    {
+                        TlsFrameHeader header = default;
+                        Assert.True(TlsFrameHelper.TryGetFrameHeader(buffer.Span, ref header));
+                        Assert.Equal(buffer.Length, header.Length);
+                        int size = fragmentSize;
+                        if (size == -1)
+                        {
+                            int nameOffset = buffer.Span.IndexOf(Encoding.ASCII.GetBytes(HostName));
+                            Assert.True(nameOffset >= TlsFrameHelper.HeaderSize);
+                            size = nameOffset + 2 - TlsFrameHelper.HeaderSize;
+                        }
+
+                        buffer = TlsFrameHelperTests.FragmentHello(buffer.Span, size);
+                        fragmented = true;
+                    }
+
+                    return clientTransport.WriteAsync(buffer, token);
+                }
+            };
+            using var serverWrapper = new DelegateDelegatingStream(serverTransport)
+            {
+                ReadSpanFunc = buffer => serverTransport.Read(buffer.Slice(0, Math.Min(buffer.Length, maxReadSize))),
+                ReadAsyncMemoryFunc = (buffer, token) =>
+                    serverTransport.ReadAsync(buffer.Slice(0, Math.Min(buffer.Length, maxReadSize)), token)
+            };
+            using var client = new SslStream(clientWrapper);
+            using var server = new SslStream(serverWrapper);
+            int callbackCount = 0;
+            string? observedName = null;
+            SslProtocols observedProtocols = SslProtocols.None;
+            var serverOptions = new SslServerAuthenticationOptions
+            {
+                EnabledSslProtocols = protocol,
+                AllowTlsResume = false
+            };
+            if (certificateSource == ServerCertificateSource.SelectionCallback)
+            {
+                serverOptions.ServerCertificateSelectionCallback = (_, name) =>
+                {
+                    callbackCount++;
+                    observedName = name;
+                    return _serverCertificate;
+                };
+            }
+            else
+            {
+                serverOptions.ServerCertificate = _serverCertificate;
+            }
+
+            Task clientTask = client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = HostName,
+                EnabledSslProtocols = protocol,
+                AllowTlsResume = false,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate
+            });
+            Task serverTask;
+            if (certificateSource == ServerCertificateSource.OptionsCallback)
+            {
+                serverTask = server.AuthenticateAsServerAsync((_, info, _, _) =>
+                {
+                    callbackCount++;
+                    observedName = info.ServerName;
+                    observedProtocols = info.SslProtocols;
+                    return new ValueTask<SslServerAuthenticationOptions>(serverOptions);
+                }, null);
+            }
+            else
+            {
+                serverTask = useAsync
+                    ? server.AuthenticateAsServerAsync(serverOptions)
+                    : Task.Run(() => server.AuthenticateAsServer(serverOptions));
+            }
+
+            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(clientTask, serverTask);
+
+            Assert.True(fragmented);
+            Assert.Equal(HostName, server.TargetHostName);
+            Assert.Equal(certificateSource == ServerCertificateSource.Direct ? 0 : 1, callbackCount);
+            if (certificateSource != ServerCertificateSource.Direct)
+            {
+                Assert.Equal(HostName, observedName);
+            }
+            if (certificateSource == ServerCertificateSource.OptionsCallback)
+            {
+                Assert.True((observedProtocols & protocol) == protocol);
+            }
+
+            await TestHelper.PingPong(client, server);
         }
 
         [Theory]
