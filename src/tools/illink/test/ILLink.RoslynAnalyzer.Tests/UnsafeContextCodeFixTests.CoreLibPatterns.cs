@@ -10,9 +10,8 @@ namespace ILLink.RoslynAnalyzer.Tests
     public partial class UnsafeContextCodeFixTests
     {
         [Fact]
-        public Task NestedOperandInExpressionBody_GetsInlineMarker()
+        public Task NestedOperandInExpressionBody_ConvertsToBlock()
         {
-            // The marker goes directly before `unsafe(`, not above the member.
             return VerifyAsync("""
                 class C
                 {
@@ -27,7 +26,14 @@ namespace ILLink.RoslynAnalyzer.Tests
                     static unsafe int Read(int* p) => 0;
 
                     [System.Obsolete]
-                    int M(int* p, int? cached, bool fast) => cached ?? (fast ? 0 : /* SAFETY: To be audited */ unsafe(Read(p)) + 1);
+                    int M(int* p, int? cached, bool fast)
+                    {
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            return cached ?? (fast ? 0 : Read(p) + 1);
+                        }
+                    }
                 }
                 """);
         }
@@ -84,9 +90,8 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task ManyFailingWrappers_StillReachBodyConversion()
+        public Task DeeplyParenthesizedPropertyExpressionBody_ConvertsToGetAccessor()
         {
-            // Every parenthesized level is a wrapper candidate that fails as above; the conversion comes after all of them.
             return VerifyAsync("""
                 class Base
                 {
@@ -135,7 +140,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task SwitchCaseGuards_EachLabelIsAnAnchor()
+        public Task SwitchCaseGuards_WrapsWholeSwitch()
         {
             return VerifyAsync("""
                 class C
@@ -169,17 +174,21 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     int M(object o)
                     {
-                        switch (o)
+                        // SAFETY: To be audited
+                        unsafe
                         {
-                            case string s when /* SAFETY: To be audited */ unsafe(Check(s)):
-                                Use();
-                                return 1;
-                            case { } when /* SAFETY: To be audited */ unsafe(Check(o)):
-                                Use();
-                                return 2;
-                            default:
-                                Use();
-                                return 0;
+                            switch (o)
+                            {
+                                case string s when Check(s):
+                                    Use();
+                                    return 1;
+                                case { } when Check(o):
+                                    Use();
+                                    return 2;
+                                default:
+                                    Use();
+                                    return 0;
+                            }
                         }
                     }
                 }

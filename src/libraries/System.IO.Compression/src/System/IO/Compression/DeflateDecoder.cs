@@ -74,6 +74,7 @@ namespace System.IO.Compression
                 return OperationStatus.DestinationTooSmall;
             }
 
+            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* inputPtr = &MemoryMarshal.GetReference(source))

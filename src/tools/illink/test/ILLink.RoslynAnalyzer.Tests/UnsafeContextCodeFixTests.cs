@@ -151,7 +151,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task ExpressionBodiedMember_KeepsExpressionBody()
+        public Task ExpressionBodiedMember_ConvertsToGetAccessor()
         {
             return VerifyAsync("""
                 class C
@@ -165,7 +165,17 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     int* _p;
 
-                    int Value => /* SAFETY: To be audited */ unsafe(*_p);
+                    int Value
+                    {
+                        get
+                        {
+                            // SAFETY: To be audited
+                            unsafe
+                            {
+                                return *_p;
+                            }
+                        }
+                    }
                 }
                 """);
         }

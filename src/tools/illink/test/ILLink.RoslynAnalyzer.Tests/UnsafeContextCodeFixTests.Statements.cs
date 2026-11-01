@@ -9,8 +9,118 @@ namespace ILLink.RoslynAnalyzer.Tests
 {
     public partial class UnsafeContextCodeFixTests
     {
+        [Theory]
+        [InlineData("if")]
+        [InlineData("while")]
+        public Task ControlFlowCondition_PrefersBlock(string statement)
+        {
+            return VerifyAsync($$"""
+                using System.Security.Cryptography;
+
+                class C
+                {
+                    static unsafe int GetRandomBytes(byte* buffer, int length) => 0;
+
+                    void M(byte* buffer, int length)
+                    {
+                        {{statement}} ({|CS9362:GetRandomBytes(buffer, length)|} != 0)
+                            throw new CryptographicException();
+                    }
+                }
+                """, $$"""
+                using System.Security.Cryptography;
+
+                class C
+                {
+                    static unsafe int GetRandomBytes(byte* buffer, int length) => 0;
+
+                    void M(byte* buffer, int length)
+                    {
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            {{statement}} (GetRandomBytes(buffer, length) != 0)
+                                throw new CryptographicException();
+                        }
+                    }
+                }
+                """);
+        }
+
         [Fact]
-        public Task HeaderOnlyCondition_UsesExpression()
+        public Task EmbeddedCondition_PrefersBlock()
+        {
+            return VerifyAsync("""
+                class C
+                {
+                    static unsafe bool Check() => true;
+
+                    void M(bool ready)
+                    {
+                        if (ready)
+                            if ({|CS9362:Check()|})
+                                return;
+                    }
+                }
+                """, """
+                class C
+                {
+                    static unsafe bool Check() => true;
+
+                    void M(bool ready)
+                    {
+                        if (ready)
+                        {
+                            // SAFETY: To be audited
+                            unsafe
+                            {
+                                if (Check())
+                                    return;
+                            }
+                        }
+                    }
+                }
+                """);
+        }
+
+        [Theory]
+        [InlineData("System.Action callback = static () => { };")]
+        [InlineData("void callback() { }")]
+        public Task ConditionWithNestedFunction_UsesExpression(string declaration)
+        {
+            return VerifyAsync($$"""
+                class C
+                {
+                    static unsafe bool Check() => true;
+
+                    void M()
+                    {
+                        if ({|CS9362:Check()|})
+                        {
+                            {{declaration}}
+                            callback();
+                        }
+                    }
+                }
+                """, $$"""
+                class C
+                {
+                    static unsafe bool Check() => true;
+
+                    void M()
+                    {
+                        if (/* SAFETY: To be audited */ unsafe(Check()))
+                        {
+                            {{declaration}}
+                            callback();
+                        }
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public Task HeaderOnlyCondition_WrapsWholeLoop()
         {
             return VerifyAsync("""
                 class C
@@ -33,10 +143,14 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     void M(int* p, int a, int b)
                     {
-                        while (/* SAFETY: To be audited */ unsafe(*p) != 0)
+                        // SAFETY: To be audited
+                        unsafe
                         {
-                            Use(a);
-                            Use(b);
+                            while (*p != 0)
+                            {
+                                Use(a);
+                                Use(b);
+                            }
                         }
                     }
                 }
@@ -108,7 +222,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task ElseIf_UsesExpressionAndKeepsChain()
+        public Task ElseIf_WrapsWholeChain()
         {
             return VerifyAsync("""
                 class C
@@ -134,13 +248,17 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     void M(int* p, bool a)
                     {
-                        if (a)
+                        // SAFETY: To be audited
+                        unsafe
                         {
-                            Use();
-                        }
-                        else if (/* SAFETY: To be audited */ unsafe(*p) == 0)
-                        {
-                            Use();
+                            if (a)
+                            {
+                                Use();
+                            }
+                            else if (*p == 0)
+                            {
+                                Use();
+                            }
                         }
                     }
                 }
@@ -339,7 +457,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task CatchFilter_UsesExpression()
+        public Task CatchFilter_WrapsTryStatement()
         {
             return VerifyAsync("""
                 using System;
@@ -373,13 +491,17 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     void M()
                     {
-                        try
+                        // SAFETY: To be audited
+                        unsafe
                         {
-                            Work();
-                        }
-                        catch (Exception e) when (/* SAFETY: To be audited */ unsafe(Filter(e)))
-                        {
-                            Work();
+                            try
+                            {
+                                Work();
+                            }
+                            catch (Exception e) when (Filter(e))
+                            {
+                                Work();
+                            }
                         }
                     }
                 }
@@ -529,7 +651,14 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                 class C
                 {
-                    object M() => /* SAFETY: To be audited */ unsafe(new G<U>());
+                    object M()
+                    {
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            return new G<U>();
+                        }
+                    }
                 }
                 """);
         }
