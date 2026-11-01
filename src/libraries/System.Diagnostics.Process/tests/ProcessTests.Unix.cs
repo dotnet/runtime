@@ -1298,6 +1298,51 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void HandleCount_CurrentProcess_MatchesFileDescriptorDirectory_IncludingDirectories()
+        {
+            // Run in a separate process so that other tests cannot open or close descriptors concurrently.
+            RemoteExecutor.Invoke(static () =>
+            {
+                using Process p = Process.GetCurrentProcess();
+
+                // Hold a directory descriptor open, which a count that filtered out directories would miss.
+                // The directory stream is opened by the first call to MoveNext() and kept open until disposed.
+                using IEnumerator<string> directory = Directory.EnumerateFileSystemEntries(Path.GetTempPath()).GetEnumerator();
+                Assert.True(directory.MoveNext());
+
+                // Warm up the code paths so that nothing is lazily initialized between the measurements.
+                _ = p.HandleCount;
+                p.Refresh();
+
+                // Enumerating /proc/self/fd opens one additional descriptor (the directory stream) that is listed
+                // in its own results, so it is subtracted here. HandleCount excludes the descriptor it opens itself.
+                int expected = Directory.GetFileSystemEntries("/proc/self/fd").Length - 1;
+                int actual = p.HandleCount;
+
+                Assert.Equal(expected, actual);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Threads_OtherProcess_AreEmptyWhenFirstAccessedAfterProcessExited()
+        {
+            Process p = CreateDefaultProcess();
+
+            // Read other information first so that the process information is cached without the threads being read.
+            Assert.True(p.WorkingSet64 > 0);
+
+            p.Kill();
+
+            // Wait for the exit without calling WaitForExit(), which would refresh the cached information.
+            Assert.True(SpinWait.SpinUntil(() => p.HasExited, WaitInMS));
+
+            // The process ID may have been recycled, so its threads must not be read after the process exited.
+            Assert.Empty(p.Threads.Cast<ProcessThread>());
+        }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void Threads_AreAvailableAfterOtherProcessInformationWasRead()

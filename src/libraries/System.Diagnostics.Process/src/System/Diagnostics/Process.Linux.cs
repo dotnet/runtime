@@ -131,7 +131,42 @@ namespace System.Diagnostics
             IntPtr dir = Interop.Sys.OpenDir(path);
             if (dir == IntPtr.Zero)
             {
-                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                return HandleDirectoryError(Interop.Sys.GetLastErrorInfo());
+            }
+
+            try
+            {
+                int count = 0;
+                Interop.Sys.DirectoryEntry entry;
+                int result;
+                while ((result = Interop.Sys.ReadDir(dir, &entry)) == 0)
+                {
+                    byte* name = entry.Name;
+                    if (name[0] == (byte)'.' && (name[1] == 0 || (name[1] == (byte)'.' && name[2] == 0)))
+                    {
+                        continue;
+                    }
+
+                    count++;
+                }
+
+                // ReadDir returns -1 at the end of the directory, and an errno value if the enumeration failed.
+                // Don't report a partial count in the latter case.
+                if (result != -1)
+                {
+                    return HandleDirectoryError(new Interop.ErrorInfo(result));
+                }
+
+                return excludeOwnDescriptor ? count - 1 : count;
+            }
+            finally
+            {
+                Interop.Sys.CloseDir(dir);
+            }
+
+            // Returns -1 if the directory no longer exists (for example, because the process exited), otherwise throws.
+            static int HandleDirectoryError(Interop.ErrorInfo error)
+            {
                 if (error.Error is Interop.Error.ENOENT or Interop.Error.ESRCH)
                 {
                     return -1;
@@ -144,28 +179,6 @@ namespace System.Diagnostics
                 }
 
                 throw new Win32Exception(error.RawErrno);
-            }
-
-            try
-            {
-                int count = 0;
-                Interop.Sys.DirectoryEntry entry;
-                while (Interop.Sys.ReadDir(dir, &entry) == 0)
-                {
-                    byte* name = entry.Name;
-                    if (name[0] == (byte)'.' && (name[1] == 0 || (name[1] == (byte)'.' && name[2] == 0)))
-                    {
-                        continue;
-                    }
-
-                    count++;
-                }
-
-                return excludeOwnDescriptor ? count - 1 : count;
-            }
-            finally
-            {
-                Interop.Sys.CloseDir(dir);
             }
         }
 
