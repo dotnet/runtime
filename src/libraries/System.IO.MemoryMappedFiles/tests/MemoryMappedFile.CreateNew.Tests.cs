@@ -100,6 +100,24 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [OuterLoop]
+        [Fact]
+        public void FailedViewCommit_DoesNotCreateAccessor()
+        {
+            if (IntPtr.Size != 8)
+            {
+                return;
+            }
+
+            // The mapping reserves address space, while the view exceeds the commit limit on typical machines.
+            // A failed commit must be reported here rather than when the accessor is first used.
+            using MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 1L << 42,
+                MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.DelayAllocatePages, HandleInheritability.None);
+
+            AssertExtensions.ThrowsAny<IOException, OutOfMemoryException>(() => mmf.CreateViewAccessor(0, 1L << 40));
+        }
+
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
