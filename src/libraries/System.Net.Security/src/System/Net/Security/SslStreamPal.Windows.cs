@@ -268,16 +268,19 @@ namespace System.Net.Security
         public static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions, bool newCredentialsRequested)
         {
             SslStreamCertificateContext? certificateContext = sslAuthenticationOptions.CertificateContext;
+            SafeHandle? certificateHandle = certificateContext is null ? null : CertificateValidation.GetCertificateSafeHandle(certificateContext.TargetCertificate);
+            bool addedRef = false;
 
             try
             {
+                certificateHandle?.DangerousAddRef(ref addedRef);
                 EncryptionPolicy policy = sslAuthenticationOptions.EncryptionPolicy;
 
                 // New crypto API supports TLS1.3 but it does not allow to force NULL encryption.
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 SafeFreeCredentials cred = !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
-                    AcquireCredentialsHandleSchannelCred(sslAuthenticationOptions) :
-                    AcquireCredentialsHandleSchCredentials(sslAuthenticationOptions);
+                    AcquireCredentialsHandleSchannelCred(sslAuthenticationOptions, certificateHandle) :
+                    AcquireCredentialsHandleSchCredentials(sslAuthenticationOptions, certificateHandle);
 #pragma warning restore SYSLIB0040
 
                 if (certificateContext != null && certificateContext.Trust != null && certificateContext.Trust._sendTrustInHandshake)
@@ -299,13 +302,20 @@ namespace System.Net.Security
             catch (Win32Exception e) when (e.NativeErrorCode == (int)Interop.SECURITY_STATUS.NoCredentials && certificateContext != null)
             {
                 Debug.Assert(certificateContext.TargetCertificate.HasPrivateKey);
-                using SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificateContext.TargetCertificate.Handle);
+                using SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificateHandle!.DangerousGetHandle());
                 // on Windows we do not support ephemeral keys.
                 throw new AuthenticationException(safeCertContextHandle.HasEphemeralPrivateKey ? SR.net_auth_ephemeral : SR.net_auth_SSPI, e);
             }
             catch (Win32Exception e)
             {
                 throw new AuthenticationException(SR.net_auth_SSPI, e);
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    certificateHandle!.DangerousRelease();
+                }
             }
         }
 
@@ -332,9 +342,8 @@ namespace System.Net.Security
 
         // This is legacy crypto API used on older Windows versions.
         // It only supports TLS up to 1.2
-        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(SslAuthenticationOptions authOptions)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(SslAuthenticationOptions authOptions, SafeHandle? certificateHandle)
         {
-            X509Certificate2? certificate = authOptions.CertificateContext?.TargetCertificate;
             bool isServer = authOptions.IsServer;
             int protocolFlags = GetProtocolFlagsFromSslProtocols(authOptions.EnabledSslProtocols, isServer);
             Interop.SspiCli.SCHANNEL_CRED.Flags flags = Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_CACHE_ONLY_URL_RETRIEVAL_ON_CREATE;
@@ -395,21 +404,20 @@ namespace System.Net.Security
                 secureCredential.dwSessionLifespan = -1;
             }
 
-            Interop.Crypt32.CERT_CONTEXT* certificateHandle;
-            if (certificate != null)
+            Interop.Crypt32.CERT_CONTEXT* certificateContext;
+            if (certificateHandle is not null)
             {
                 secureCredential.cCreds = 1;
-                certificateHandle = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
-                secureCredential.paCred = &certificateHandle;
+                certificateContext = (Interop.Crypt32.CERT_CONTEXT*)certificateHandle.DangerousGetHandle();
+                secureCredential.paCred = &certificateContext;
             }
 
             return AcquireCredentialsHandle(direction, &secureCredential);
         }
 
         // This function uses new crypto API to support TLS 1.3 and beyond.
-        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(SslAuthenticationOptions authOptions)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(SslAuthenticationOptions authOptions, SafeHandle? certificateHandle)
         {
-            X509Certificate2? certificate = authOptions.CertificateContext?.TargetCertificate;
             bool isServer = authOptions.IsServer;
             int protocolFlags = GetProtocolFlagsFromSslProtocols(authOptions.EnabledSslProtocols, isServer);
             Interop.SspiCli.SCH_CREDENTIALS.Flags flags = Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_CACHE_ONLY_URL_RETRIEVAL_ON_CREATE;
@@ -477,12 +485,12 @@ namespace System.Net.Security
                 credential.dwSessionLifespan = -1;
             }
 
-            Interop.Crypt32.CERT_CONTEXT* certificateHandle;
-            if (certificate != null)
+            Interop.Crypt32.CERT_CONTEXT* certificateContext;
+            if (certificateHandle is not null)
             {
                 credential.cCreds = 1;
-                certificateHandle = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
-                credential.paCred = &certificateHandle;
+                certificateContext = (Interop.Crypt32.CERT_CONTEXT*)certificateHandle.DangerousGetHandle();
+                credential.paCred = &certificateContext;
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
