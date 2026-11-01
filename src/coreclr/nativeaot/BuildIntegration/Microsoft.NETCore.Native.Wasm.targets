@@ -15,6 +15,8 @@
       <CppLinker>$(CppCompilerAndLinker)</CppLinker>
       <CppLibCreator>$(WASI_SDK_PATH)/bin/llvm-ar$(_WasiToolExeSuffix)</CppLibCreator>
       <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == ''">8388608</IlcDefaultStackSize>
+      <EventPipeName>libeventpipe-disabled</EventPipeName>
+      <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">libeventpipe-enabled</EventPipeName>
       <LinkStandardCPlusPlusLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' == '' and '$(InvariantGlobalization)' != 'true'">true</LinkStandardCPlusPlusLibrary>
     </PropertyGroup>
 
@@ -36,6 +38,7 @@
       <NativeLibrary Include="$(IlcSdkPath)libbootstrapper.o" Condition="'$(NativeLib)' == '' and '$(CustomNativeMain)' != 'true'" />
       <NativeLibrary Include="$(IlcSdkPath)libbootstrapperdll.o" Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" />
       <NativeLibrary Include="$(IlcSdkPath)libPortableRuntime.a" />
+      <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName).a" />
       <NativeLibrary Include="$(IlcSdkPath)libstandalonegc-disabled.a" />
       <NativeLibrary Include="$(IlcSdkPath)libaotminipal.a" />
       <NativeLibrary Include="$(IlcSdkPath)libstdc++compat.a" Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true'" />
