@@ -445,6 +445,23 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void MoreThan64EnumValuesToDeserialize(bool useGenericVariant)
+        {
+            JsonSerializerOptions options = CreateStringEnumOptionsForType<MyEnum>(useGenericVariant);
+
+            for (int i = 1; i <= 128; i++)
+            {
+                MyEnum value = (MyEnum)i;
+                string json = JsonSerializer.Serialize(value, options).ToLowerInvariant();
+                Assert.Equal(value, JsonSerializer.Deserialize<MyEnum>(json, options));
+            }
+
+            Assert.Equal((MyEnum)65, JsonSerializer.Deserialize<MyEnum>("\"65\"", options));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void VeryLargeAmountOfEnumsToSerialize()
