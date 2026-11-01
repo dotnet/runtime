@@ -12,7 +12,7 @@ namespace System.IO.FileSystem.Tests
     [Collection(nameof(DisableParallelization))] // don't create multiple large files at the same time
     public class LargeFileTests : FileSystemTest
     {
-        [Fact]
+        [ConditionalFact(typeof(FileSystemTest), nameof(FileSystemTest.TempPathSupportsLargeFiles))]
         public async Task ReadAllBytesOverLimit()
         {
             using FileStream fs = new (GetTestFilePath(), FileMode.Create, FileAccess.Write, FileShare.Read, 4096, FileOptions.DeleteOnClose);
@@ -26,7 +26,7 @@ namespace System.IO.FileSystem.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(FileSystemTest), nameof(FileSystemTest.TempPathSupportsLargeFiles))]
         public void NoInt32OverflowInTheBufferingLogic()
         {
             const long position1 = 10;
