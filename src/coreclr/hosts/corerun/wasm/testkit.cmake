@@ -147,8 +147,8 @@ endfunction()
 #   JS_LIBRARIES     -- --js-library inputs (browser)
 #   EXTERN_POST_JS   -- --extern-post-js input (browser)
 #   EXTRA_FILES      -- other files the link options name, copied into the kit
-#   WHOLE_ARCHIVE_HOST -- link all of corerun's objects. wasi-libc only references
-#                       main weakly, so it would not pull main out of an archive.
+#   WHOLE_ARCHIVE_HOST -- link all of corerun's objects. This is required for
+#                       unreferenced host hooks and weak libc entry points.
 function(corerun_kit_export)
     cmake_parse_arguments(KIT "WHOLE_ARCHIVE_HOST" "COMPONENT;EXTERN_POST_JS" "SOURCES;LINK_OPTIONS;COMPILE_OPTIONS;JS_LIBRARIES;EXTRA_FILES" ${ARGN})
 
