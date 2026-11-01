@@ -27,6 +27,7 @@ public class AssetsComputingHelper
     private static readonly string[] dotnetJsSingleThreadNames = new[]
     {
         "dotnet",
+        "dotnet.auxiliary.worker",
         "dotnet.native",
         "dotnet.runtime"
     };
@@ -135,6 +136,7 @@ public class AssetsComputingHelper
             relativePath = (fileName, extension) switch
             {
                 ("dotnet", ".js") => string.Concat(fileName, fingerprintDotNetJs ? requiredFingerprint : optionalFingerprint, extension),
+                ("dotnet.auxiliary.worker", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.runtime", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.diagnostics", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.native", ".js") => string.Concat(fileName, requiredFingerprint, extension),

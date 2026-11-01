@@ -12,6 +12,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project ToolsVersion="14.0">
 
   <PropertyGroup>
+    <WasmEnableAuxiliaryR2RModules Condition="'$(WasmEnableAuxiliaryR2RModules)' == ''">false</WasmEnableAuxiliaryR2RModules>
     <_UseBlazorDevServer>$(RunArguments.Contains('blazor-devserver.dll').ToString().ToLower())</_UseBlazorDevServer>    
 
     <_TargetingNET80OrLater>false</_TargetingNET80OrLater>
@@ -63,6 +64,16 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebcil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.AttachWebcilSizes" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.CollectWasmAuxiliaryR2RModules" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+
+  <Target Name="_WasmValidateAuxiliaryR2RModules"
+          BeforeTargets="PrepareForBuild;_PrepareForReadyToRunCompilation;_CreateR2RImages"
+          Condition="'$(WasmEnableAuxiliaryR2RModules)' == 'true'">
+    <Error Condition="'$(UseMonoRuntime)' != 'false' or '$(RuntimeIdentifier)' != 'browser-wasm' or '$(PublishReadyToRun)' != 'true' or '$(PublishReadyToRunComposite)' != 'true' or '$(WasmEnableThreads)' == 'true'"
+           Text="WasmEnableAuxiliaryR2RModules requires single-threaded CoreCLR browser-wasm composite ReadyToRun compilation." />
+    <Error Condition="$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs);$(_PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-il'))"
+           Text="WasmEnableAuxiliaryR2RModules requires retained IL; remove --strip-il from crossgen2 options." />
+  </Target>
 
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -616,6 +627,28 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="Assets" ItemName="WasmStaticWebAsset" />
     </DefineStaticWebAssets>
 
+    <CollectWasmAuxiliaryR2RModules Condition="'$(WasmEnableAuxiliaryR2RModules)' == 'true' and '@(_WasmCompositeBuildCandidate)' != ''"
+                                  PrimaryImages="@(_WasmCompositeBuildCandidate)">
+      <Output TaskParameter="Modules" ItemName="_WasmAuxiliaryBuildCandidate" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </CollectWasmAuxiliaryR2RModules>
+    <DefineStaticWebAssets Condition="'@(_WasmAuxiliaryBuildCandidate)' != ''"
+      CandidateAssets="@(_WasmAuxiliaryBuildCandidate)"
+      SourceId="$(PackageId)"
+      SourceType="Computed"
+      AssetKind="Build"
+      AssetMode="All"
+      AssetRole="Primary"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="readyToRunAuxiliary"
+      CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)"
+      CopyToPublishDirectory="Never"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
+      FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
+      BasePath="$(StaticWebAssetBasePath)">
+      <Output TaskParameter="Assets" ItemName="WasmStaticWebAsset" />
+    </DefineStaticWebAssets>
+
     <DefineStaticWebAssets
       CandidateAssets="@(_WasmDiscoveredFileCandidates)"
       AssetTraitName="WasmResource"
@@ -1112,6 +1145,28 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="Assets" ItemName="_WasmCompositePublishStaticWebAsset" />
     </DefineStaticWebAssets>
 
+    <CollectWasmAuxiliaryR2RModules Condition="'$(WasmEnableAuxiliaryR2RModules)' == 'true' and '@(_WasmCompositePublishCandidate)' != ''"
+                                  PrimaryImages="@(_WasmCompositePublishCandidate)">
+      <Output TaskParameter="Modules" ItemName="_WasmAuxiliaryPublishCandidate" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </CollectWasmAuxiliaryR2RModules>
+    <DefineStaticWebAssets Condition="'@(_WasmAuxiliaryPublishCandidate)' != ''"
+      CandidateAssets="@(_WasmAuxiliaryPublishCandidate)"
+      SourceId="$(PackageId)"
+      SourceType="Computed"
+      BasePath="$(StaticWebAssetBasePath)"
+      AssetKind="Publish"
+      AssetMode="All"
+      AssetRole="Primary"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="readyToRunAuxiliary"
+      CopyToOutputDirectory="Never"
+      CopyToPublishDirectory="PreserveNewest"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
+      FingerprintPatterns="@(_WasmCompositeFingerprintPattern)">
+      <Output TaskParameter="Assets" ItemName="_WasmAuxiliaryPublishStaticWebAsset" />
+    </DefineStaticWebAssets>
+
     <ItemGroup Condition="'$(_WasmInlineBootConfig)' == 'true'">
       <_WasmDotnetJsForPublish Include="@(ResolvedFileToPublish)" Condition="'%(FileName)%(Extension)' == 'dotnet.js'" />
     </ItemGroup>
@@ -1177,7 +1232,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </DefineStaticWebAssets>
 
     <DefineStaticWebAssetEndpoints
-      CandidateAssets="@(_NewWebcilPublishStaticWebAssets);@(_WasmCompositePublishStaticWebAsset)"
+      CandidateAssets="@(_NewWebcilPublishStaticWebAssets);@(_WasmCompositePublishStaticWebAsset);@(_WasmAuxiliaryPublishStaticWebAsset)"
       ExistingEndpoints="@(StaticWebAssetEndpoint)"
       ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
     >
@@ -1186,7 +1241,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(_PublishResolvedFilesToRemove)" />
-      <StaticWebAsset Include="@(_NewWebcilPublishStaticWebAssets);@(_WasmCompositePublishStaticWebAsset)" />
+      <StaticWebAsset Include="@(_NewWebcilPublishStaticWebAssets);@(_WasmCompositePublishStaticWebAsset);@(_WasmAuxiliaryPublishStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(_NewWebcilPublishStaticWebAssetsEndpoint)" />
 
       <!-- TODO: Probably doesn't do anything as of now, original https://github.com/dotnet/aspnetcore/pull/34798 -->

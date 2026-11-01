@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -435,6 +436,18 @@ namespace ILCompiler
             var nodes = _dependencyGraph.MarkedNodeList;
 
             nodes = _fileLayoutOptimizer.ApplyProfilerGuidedMethodSort(nodes);
+            if (NodeFactory.UsesWasmAuxiliaryModules)
+            {
+                int hotIndex = 0;
+                int coldIndex = nodes.Length;
+                foreach (DependencyNodeCore<NodeFactory> node in nodes)
+                {
+                    if (node is MethodWithGCInfo method)
+                        method.CustomSort = NodeFactory.IsAuxiliaryMethod(method) ? coldIndex++ : hotIndex++;
+                }
+                nodes = nodes.Sort(new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
+                NodeFactory.AuxiliaryModuleMetadata.OutputFileName = Path.GetFileNameWithoutExtension(outputFile);
+            }
 
             using (PerfEventSource.StartStopEvents.EmittingEvents())
             {

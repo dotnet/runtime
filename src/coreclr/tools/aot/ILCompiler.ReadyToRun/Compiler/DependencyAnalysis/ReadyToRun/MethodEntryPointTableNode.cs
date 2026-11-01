@@ -17,6 +17,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class MethodEntryPointTableNode : ModuleSpecificHeaderTableNode
     {
+        public bool IsAuxiliary { get; }
+        public override int Offset => _entryPointsOffset;
+        private int _entryPointsOffset;
+
         private struct EntryPoint
         {
             public static EntryPoint Null = new EntryPoint(-1, null);
@@ -33,11 +37,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public MethodEntryPointTableNode(EcmaModule module) : base(module)
+        public MethodEntryPointTableNode(EcmaModule module, bool auxiliary = false) : base(module)
         {
+            IsAuxiliary = auxiliary;
         }
 
-        protected override string ModuleSpecificName => "__ReadyToRunMethodEntryPointTable__";
+        protected override string ModuleSpecificName => IsAuxiliary
+            ? "__ReadyToRunAuxiliaryMethodEntryPointTable__"
+            : "__ReadyToRunMethodEntryPointTable__";
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -50,6 +57,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods(_module, CompiledMethodCategory.NonInstantiated))
             {
+                if (factory.IsAuxiliaryMethod(method) != IsAuxiliary)
+                    continue;
+
                 Debug.Assert(method.Method is EcmaMethod);
                 EcmaMethod ecmaMethod = (EcmaMethod)method.Method;
                 Debug.Assert(ecmaMethod.Module == _module);
@@ -70,6 +80,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             NativeWriter writer = new NativeWriter();
 
+            Section fixupsSection = IsAuxiliary ? writer.NewSection() : null;
             Section arraySection = writer.NewSection();
             VertexArray vertexArray = new VertexArray(arraySection);
             arraySection.Place(vertexArray);
@@ -88,6 +99,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         fixupBlobVertex = new BlobVertex(fixups);
                         uniqueFixups.Add(fixups, fixupBlobVertex);
+                        fixupsSection?.Place(fixupBlobVertex);
                     }
                     EntryPointVertex entryPointVertex = new EntryPointVertex((uint)entryPoint.MethodIndex, fixupBlobVertex);
                     vertexArray.Set(rid, entryPointVertex);
@@ -98,6 +110,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             MemoryStream arrayContent = new MemoryStream();
             writer.Save(arrayContent);
+            _entryPointsOffset = vertexArray.VertexOffset;
             return new ObjectData(
                 data: arrayContent.ToArray(),
                 relocs: null,
@@ -106,6 +119,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
-        public override int ClassCode => (int)ObjectNodeOrder.MethodEntrypointTableNode;
+        public override int ClassCode => (int)ObjectNodeOrder.MethodEntrypointTableNode + (IsAuxiliary ? 1000 : 0);
     }
 }

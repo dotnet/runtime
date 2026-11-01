@@ -134,6 +134,8 @@ namespace ILCompiler
             new("--perfmap-format-version") { DefaultValueFactory = _ => 0, Description = SR.PerfMapFormatVersionOption };
         public Option<WasmDebugInfo> WasmDebugInfoOption { get; } =
             new("--wasm-debug-info") { CustomParser = MakeWasmDebugInfo, DefaultValueFactory = MakeWasmDebugInfo, Description = SR.WasmDebugInfoOption, HelpName = "formats" };
+        public Option<bool> WasmAuxiliaryModules { get; } =
+            new("--wasm-auxiliary-modules") { Description = SR.WasmAuxiliaryModulesOption };
         public Option<string[]> CrossModuleInlining { get; } =
             new("--opt-cross-module") { Description = SR.CrossModuleInlining };
         public Option<bool> AsyncMethodOptimization { get; } =
@@ -233,6 +235,7 @@ namespace ILCompiler
             Options.Add(PerfMapPath);
             Options.Add(PerfMapFormatVersion);
             Options.Add(WasmDebugInfoOption);
+            Options.Add(WasmAuxiliaryModules);
             Options.Add(CrossModuleInlining);
             Options.Add(AsyncMethodOptimization);
             Options.Add(NonLocalGenericsModule);

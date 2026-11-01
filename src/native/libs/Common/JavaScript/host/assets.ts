@@ -5,9 +5,14 @@ import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "../types";
 import { _ems_ } from "../ems-ambient";
 
 import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
+import { loadAuxiliaryModules, readAuxiliaryModuleMetadata } from "./auxiliary-modules";
+import type { AuxiliaryModuleSource } from "./auxiliary-modules";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
+type StartAuxiliaryModules = () => void;
+const pendingAuxiliaryModules = new Map<number, StartAuxiliaryModules>();
+const auxiliaryModuleLoads: Promise<void>[] = [];
 // Self-installing wrapper version; keep in sync with WebcilConstants.WASM_WRAPPER_VERSION_SELF_INSTALLING.
 const webcilWrapperVersion = 2;
 
@@ -49,7 +54,7 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortNa
     }
 }
 
-export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number): Promise<void> {
+export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number, prepareAuxiliaryModule?: (name: string) => Promise<AuxiliaryModuleSource>): Promise<void> {
     // Boot-config sizes let us reserve the payload and table ranges before streaming instantiation.
     // Assets without a tableSize are IL-only images.
     if (typeof payloadSize !== "number" || payloadSize === 0) {
@@ -71,7 +76,20 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
             const data = await res.arrayBuffer();
             instance = (await WebAssembly.instantiate(data, imports)).instance;
         }
+        const modules = readAuxiliaryModuleMetadata(instance, memory, payloadPtr, payloadSize, tableEntries);
+        if (modules.length !== 0 && !prepareAuxiliaryModule) {
+            throw new Error(`Webcil asset '${virtualPath}' has auxiliary modules but no auxiliary resource loader.`);
+        }
         finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath);
+        if (modules.length !== 0) {
+            pendingAuxiliaryModules.set(payloadPtr, () => {
+                auxiliaryModuleLoads.push(loadAuxiliaryModules(modules, memory, imports, prepareAuxiliaryModule!, () => {
+                    const notify = _ems_.wasmExports.dotnet_wasm_notify_auxiliary_entrypoints_activated;
+                    if (typeof notify !== "function") throw new Error("Runtime does not support auxiliary R2R modules.");
+                    notify();
+                }, error => _ems_.dotnetLogger.error(error.message, error)));
+            });
+        }
     } catch (err) {
         // Instantiation failed after the payload buffer was allocated; free it to avoid leaking
         // unmanaged memory. (A grown R2R table cannot be shrunk back, but a failed R2R instantiate is fatal.)
@@ -80,6 +98,11 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
         }
         throw err;
     }
+}
+
+export async function waitForAuxiliaryModules(): Promise<void> {
+    await Promise.resolve();
+    await Promise.all(auxiliaryModuleLoads);
 }
 
 async function checkWebcilResponse(webcilPromise: Promise<Response>, virtualPath: string): Promise<Response> {
@@ -183,6 +206,12 @@ export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStart
         // int64_t target
         _ems_.HEAPU32[outSize as any >>> 2] = assembly.length;
         _ems_.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
+        const startAuxiliaryModules = pendingAuxiliaryModules.get(assembly.ptr);
+        if (startAuxiliaryModules) {
+            pendingAuxiliaryModules.delete(assembly.ptr);
+            // The synchronous probe must return before native image registration and any activation.
+            queueMicrotask(startAuxiliaryModules);
+        }
         return true;
     }
     _ems_.dotnetLogger.debug(`Assembly not found: '${path}'`);

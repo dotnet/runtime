@@ -18,7 +18,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
 
-        public int Offset => 0;
+        public virtual int Offset => 0;
+
+        // The definition already accounts for any leading fixup blobs.
+        int ISymbolNode.Offset => 0;
 
         public override bool IsShareable => false;
 

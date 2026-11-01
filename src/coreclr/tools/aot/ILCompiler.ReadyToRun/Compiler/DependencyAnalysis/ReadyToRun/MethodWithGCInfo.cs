@@ -268,6 +268,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             sink.Add(GCInfoNode, "Unwind & GC info");
+            if (factory.UsesWasmAuxiliaryModules && factory.IsAuxiliaryMethod(this))
+            {
+                sink.Add(factory.WasmR2RToInterpreterThunk(WasmLowering.GetSignature(_method)),
+                    "Interpreter fallback for auxiliary method");
+            }
 
             if (this.ColdCodeNode != null)
             {

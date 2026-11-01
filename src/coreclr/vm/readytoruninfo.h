@@ -14,8 +14,11 @@
 #include "inlinetracking.h"
 #include "wellknownattributes.h"
 #include "nativeimage.h"
+#include "auxiliaryentrypointsera.h"
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
+typedef DPTR(struct READYTORUN_AUXILIARY_MODULE_METADATA) PTR_READYTORUN_AUXILIARY_MODULE_METADATA;
+typedef DPTR(struct READYTORUN_AUXILIARY_MODULE) PTR_READYTORUN_AUXILIARY_MODULE;
 
 class NativeImage;
 class PrepareCodeConfig;
@@ -144,6 +147,7 @@ class ReadyToRunInfo
     friend class HotColdMappingLookupTable;
 
     PTR_Module                      m_pModule;
+    PTR_Module                      m_pEntryPointModule = nullptr;
     PTR_ModuleBase                  m_pNativeManifestModule;
     PTR_READYTORUN_HEADER           m_pHeader;
     bool                            m_isComponentAssembly;
@@ -201,6 +205,17 @@ class ReadyToRunInfo
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
     TADDR                           m_pLoadedImageBase;
 
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    PTR_READYTORUN_AUXILIARY_MODULE_METADATA m_pAuxiliaryModuleMetadata = nullptr;
+    PTR_DWORD                       m_pAuxiliaryModuleActivationFlag = 0;
+    PTR_DWORD                       m_pAuxiliaryEntryPointsModuleStatus = 0;
+
+    // Starts at 1 so a recorded era is never 0, which callers use to mean "not awaiting EntryPoints".
+    inline static DWORD             s_auxiliaryEntryPointsEra = 1;
+    // Legacy call-count simulation for unpartitioned composite images; (DWORD)-1 means not configured.
+    inline static DWORD             s_simulatedAuxiliaryEntryPointsCallsRemaining = (DWORD)-1;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
 
@@ -247,7 +262,126 @@ public:
         return (PCODE)(GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[r2rFunctionIndex]));
     }
     void RegisterVirtualIPRange(Module* pModule);
+    int FindRuntimeFunction(DWORD relativeVirtualIP) const;
+    bool IsRuntimeFunctionActive(DWORD index) const;
+    DWORD GetRuntimeFunctionRangeEnd(DWORD index) const;
 #endif // TARGET_WASM
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    PTR_READYTORUN_AUXILIARY_MODULE GetAuxiliaryModule(DWORD runtimeFunctionIndex) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (m_pAuxiliaryModuleMetadata != nullptr)
+        {
+            PTR_READYTORUN_AUXILIARY_MODULE entries = dac_cast<PTR_READYTORUN_AUXILIARY_MODULE>(
+                dac_cast<TADDR>(m_pAuxiliaryModuleMetadata) + sizeof(READYTORUN_AUXILIARY_MODULE_METADATA));
+            for (DWORD i = 0; i < m_pAuxiliaryModuleMetadata->AuxiliaryModuleCount; i++)
+            {
+                if (runtimeFunctionIndex >= entries[i].RelativeTableBase &&
+                    runtimeFunctionIndex - entries[i].RelativeTableBase < entries[i].MethodCount)
+                    return entries + i;
+            }
+        }
+        return nullptr;
+    }
+
+    PTR_DWORD GetAuxiliaryModuleActivationFlag(DWORD runtimeFunctionIndex) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (m_pAuxiliaryModuleMetadata != nullptr)
+        {
+            PTR_READYTORUN_AUXILIARY_MODULE entry = GetAuxiliaryModule(runtimeFunctionIndex);
+            return entry == nullptr ? nullptr : &entry->ActivationStatus;
+        }
+        return m_pAuxiliaryModuleActivationFlag;
+    }
+
+    // The era advances each time an auxiliary EntryPoints module is activated in any R2R image, or a new R2R image
+    // with code for unrelated generics is registered.
+    static AuxiliaryEntryPointsEra GetCurrentAuxiliaryEntryPointsEra()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return AuxiliaryEntryPointsEra(VolatileLoad(&s_auxiliaryEntryPointsEra));
+    }
+
+    // Returns true if auxiliary EntryPoints modules have been activated since the given era was observed.
+    static bool IsAuxiliaryEntryPointsEraStale(AuxiliaryEntryPointsEra era)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(era.IsAwaiting());
+        return era.m_value != VolatileLoad(&s_auxiliaryEntryPointsEra);
+    }
+
+    // Indicates that one or more new auxiliary EntryPoints modules have been activated.
+    static void IncrementAuxiliaryEntryPointsEra()
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&s_auxiliaryEntryPointsEra, VolatileLoad(&s_auxiliaryEntryPointsEra) + 1);
+    }
+
+    PTR_DWORD GetAuxiliaryEntryPointsModuleStatus() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pAuxiliaryEntryPointsModuleStatus;
+    }
+
+    static bool IsAuxiliaryEntryPointsModuleActivated(PTR_DWORD pModuleStatus)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pModuleStatus != nullptr);
+        return VolatileLoad(pModuleStatus) == 0;
+    }
+
+    bool IsAuxiliaryEntryPointsModuleActivated() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (m_pAuxiliaryModuleMetadata != nullptr)
+            return VolatileLoad(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus) == 1;
+        return m_pAuxiliaryEntryPointsModuleStatus == nullptr ||
+            IsAuxiliaryEntryPointsModuleActivated(m_pAuxiliaryEntryPointsModuleStatus);
+    }
+
+    // The encoding of the activation flag is owned by the R2R image; every reader goes through this.
+    static bool IsAuxiliaryModuleActivated(PTR_DWORD pActivationFlag)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pActivationFlag != nullptr);
+        return VolatileLoad(pActivationFlag) == 1;
+    }
+
+    static void AdvanceSimulatedAuxiliaryModuleDownload(PTR_DWORD pActivationFlag)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pActivationFlag != nullptr);
+        // Real activation flags are 0 or 1. Only the legacy countdown simulation uses values above 1.
+        if (VolatileLoad(pActivationFlag) > 1)
+            VolatileStore(pActivationFlag, VolatileLoad(pActivationFlag) - 1);
+    }
+
+    static void EnsureAuxiliaryEntryPointsModuleStatus()
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (s_simulatedAuxiliaryEntryPointsCallsRemaining == (DWORD)-1)
+        {
+            s_simulatedAuxiliaryEntryPointsCallsRemaining =
+                CLRConfig::IsConfigOptionSpecified(W("R2RDelayedEntryPointsActivationCallCount"))
+                    ? CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_R2RDelayedEntryPointsActivationCallCount)
+                    : CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_R2RDelayedActivationCallCount);
+        }
+    }
+
+    static void AdvanceSimulatedAuxiliaryEntryPointsDownload()
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (s_simulatedAuxiliaryEntryPointsCallsRemaining == (DWORD)-1)
+            return;
+        if (s_simulatedAuxiliaryEntryPointsCallsRemaining == 0)
+            return;
+
+        if (--s_simulatedAuxiliaryEntryPointsCallsRemaining == 0)
+            IncrementAuxiliaryEntryPointsEra();
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
     void RegisterResumptionStub(PCODE stubEntryPoint);
 
@@ -353,6 +487,11 @@ public:
         ReadyToRunInfo * m_pInfo;
         int m_methodDefIndex;
 
+        NativeFormat::NativeArray m_methodDefEntryPoints;
+        NativeFormat::NativeHashtable m_instMethodEntryPoints;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        bool m_enumeratingAuxiliary = false;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
         NativeFormat::NativeHashtable::AllEntriesEnumerator m_genericEnum;
         NativeFormat::NativeParser m_genericParser;
         uint m_genericCurrentOffset;
@@ -365,6 +504,8 @@ public:
         MethodIterator(ReadyToRunInfo * pInfo) :
             m_pInfo(pInfo),
             m_methodDefIndex(-1),
+            m_methodDefEntryPoints(pInfo->m_methodDefEntryPoints),
+            m_instMethodEntryPoints(pInfo->m_instMethodEntryPoints),
             m_genericEnum(),
             m_genericParser(),
             m_genericCurrentOffset(-1),
@@ -372,9 +513,9 @@ public:
             m_genericCurrentSig(NULL)
         {
             NativeFormat::PTR_NativeHashtable pHash = NULL;
-            if (!pInfo->m_instMethodEntryPoints.IsNull())
+            if (!m_instMethodEntryPoints.IsNull())
             {
-                pHash = NativeFormat::PTR_NativeHashtable(&pInfo->m_instMethodEntryPoints);
+                pHash = NativeFormat::PTR_NativeHashtable(&m_instMethodEntryPoints);
             }
 
             m_genericEnum = NativeFormat::NativeHashtable::AllEntriesEnumerator(pHash);

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>true</Optimize>
+    <DefineConstants>$(DefineConstants);PARTITIONED_WASM_R2R_BOUNDARY</DefineConstants>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <OutputType>Exe</OutputType>
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <CrossGenTestSkipR2RDump>true</CrossGenTestSkipR2RDump>
+    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --wasm-auxiliary-modules</CrossGen2TestExtraArguments>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'browser' or '$(RuntimeFlavor)' != 'coreclr' or '$(WasmEnableThreads)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DelayedR2RActivation.cs" />
+  </ItemGroup>
+</Project>
