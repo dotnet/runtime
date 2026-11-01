@@ -114,6 +114,10 @@
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.AlignWebcilPayload"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComputeWasmPInvokeModules"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
@@ -1077,10 +1081,11 @@
       <!-- Keep the data segments intact. Passive segment 0 holds payloadSize/tableSize, which
            AttachWebcilSizes reads for the boot config; memory-packing may trim or split it. -->
       <_WasmR2RWasmOptArgs Include="--skip-pass=memory-packing" />
-      <!-- crossgen2 emits a name section by default; wasm-opt drops it unless asked to keep debug info. -->
-      <_WasmR2RWasmOptArgs Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true' and '$(WasmNativeStrip)' != 'true'" />
-      <!-- Unlike dotnet.native.wasm (-Oz), default to -O2: on R2R images it compresses smaller than -Oz and
-           keeps speed optimizations. An -O level in WasmOptConfigurationFlags, shared with the relink, wins. -->
+      <!-- Keep whatever names crossgen2 emitted: its wasm debug-info settings decide whether there are any,
+           and wasm-opt would otherwise drop them. -->
+      <_WasmR2RWasmOptArgs Include="-g" />
+      <!-- Unlike dotnet.native.wasm (-Oz), default to -O2: on R2R images it compresses smaller than -Oz and -O3
+           and keeps speed optimizations. An -O level in WasmOptConfigurationFlags, shared with the relink, wins. -->
       <_WasmR2RWasmOptArgs Include="-O2" Condition="@(_WasmR2RWasmOptUserOptimizationFlag->Count()) == 0" />
       <_WasmR2RWasmOptArgs Include="@(WasmOptConfigurationFlags)" />
 
@@ -1107,6 +1112,8 @@
     <Exec Command="&quot;$(_WasmR2RWasmOptPath)&quot; @(_WasmR2RWasmOptArgs, ' ') &quot;%(_WasmR2RImageToOptimize.FullPath)&quot; -o &quot;%(_WasmR2RImageToOptimize.FullPath).wasm-opt.tmp&quot;"
           IgnoreStandardErrorWarningFormat="true"
           StandardOutputImportance="Low" />
+    <!-- wasm-opt re-encodes the module and moves the payload; tools such as R2RDump read it at its file offset. -->
+    <AlignWebcilPayload Files="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.tmp')" />
     <Move SourceFiles="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.tmp')"
           DestinationFiles="@(_WasmR2RImageToOptimize->'%(FullPath)')" />
     <Touch Files="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.stamp')" AlwaysCreate="true" />

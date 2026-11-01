@@ -100,7 +100,8 @@ namespace Wasm.Build.Tests
             Assert.Contains("ReadyToRun image(s) with", publishOutput);
 
             // Every image crossgen2 compiled gets a stamp once optimized: each per-assembly image, or just the
-            // composite. An image newer than its stamp was rewritten after wasm-opt ran and ships unoptimized.
+            // composite. An image newer than its stamp was rewritten after wasm-opt ran and ships unoptimized, and
+            // the payload must stay at the file alignment crossgen2 gave it for tools such as R2RDump.
             const string StampSuffix = ".wasm-opt.stamp";
             string r2rDir = GetObjSubDir(config, "R2R");
             string[] optimized = Directory.EnumerateFiles(r2rDir, $"*{StampSuffix}")
@@ -115,6 +116,10 @@ namespace Wasm.Build.Tests
                 string imagePath = Path.Combine(r2rDir, image);
                 Assert.True(File.GetLastWriteTimeUtc(imagePath) <= File.GetLastWriteTimeUtc(imagePath + StampSuffix),
                     $"'{imagePath}' is newer than its wasm-opt stamp.");
+                Assert.True(WebcilWasmPayloadAlignment.TryGetPayloadFileOffset(File.ReadAllBytes(imagePath), out long payloadOffset),
+                    $"'{imagePath}' has no Webcil payload segment.");
+                Assert.True(payloadOffset % WebcilWasmPayloadAlignment.PayloadFileAlignment == 0,
+                    $"The Webcil payload of '{imagePath}' starts at unaligned file offset {payloadOffset}.");
             }
 
             string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
