@@ -10,6 +10,21 @@ namespace System.Formats.Tar
     // Windows specific methods for the TarEntry class.
     public abstract partial class TarEntry
     {
+        private static bool IsExistingNonLink(string path, out bool isOrdinaryDirectory)
+        {
+            isOrdinaryDirectory = false;
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            if (Interop.Kernel32.GetFileAttributesEx(path, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
+            {
+                FileAttributes attributes = (FileAttributes)data.dwFileAttributes;
+                isOrdinaryDirectory = (attributes & (FileAttributes.Directory | FileAttributes.ReparsePoint)) == FileAttributes.Directory;
+
+                return (attributes & FileAttributes.ReparsePoint) == 0;
+            }
+
+            return false;
+        }
+
 #pragma warning disable IDE0060
         // Throws on Windows. Block devices are not supported on this platform.
         private void ExtractAsBlockDevice(string destinationFileName)
