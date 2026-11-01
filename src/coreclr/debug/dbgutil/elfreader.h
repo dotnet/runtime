@@ -68,7 +68,7 @@ public:
 #endif
     bool PopulateForSymbolLookup(uint64_t baseAddress);
     bool TryLookupSymbol(std::string symbolName, uint64_t* symbolOffset);
-    bool EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias = nullptr, Elf_Dyn** pdynamicAddr = nullptr);
+    bool EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias = nullptr, Elf_Dyn** pdynamicAddr = nullptr, uint64_t* pdynamicSize = nullptr);
 
 private:
     bool GetSymbol(int32_t index, Elf_Sym* symbol);
@@ -77,13 +77,14 @@ private:
     uint32_t Hash(const std::string& symbolName);
     bool GetChain(int index, int32_t* chain);
     bool GetStringAtIndex(int index, std::string& result);
-    bool NeedsLoadBias(uint64_t baseAddress);
-    bool HasAndroidNote(uint64_t loadbias, const Elf_Phdr& header);
-    bool HasMuslDependency(uint64_t loadbias, Elf_Dyn* dynamicAddr, Elf_Phdr* phdrAddr, int phnum);
+    // Detection helpers return success separately from the detected result.
+    bool NeedsLoadBias(uint64_t baseAddress, bool* needsLoadBias);
+    bool HasAndroidNote(uint64_t loadbias, const Elf_Phdr& header, bool* hasAndroidNote);
+    bool HasMuslDependency(uint64_t loadbias, Elf_Dyn* dynamicAddr, uint64_t dynamicSize, Elf_Phdr* phdrAddr, int phnum, bool* hasMuslDependency);
 #if defined(HOST_UNIX) && !defined(HOST_APPLE)
-    bool EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr);
+    bool EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr, uint64_t dynamicSize);
 #endif
-    bool EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr);
+    bool EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr, uint64_t* pdynamicSize);
     virtual void VisitModule(uint64_t baseAddress, std::string& moduleName) { };
     virtual void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Elf_Phdr* phdr) { };
     virtual bool ReadMemory(void* address, void* buffer, size_t size) = 0;
