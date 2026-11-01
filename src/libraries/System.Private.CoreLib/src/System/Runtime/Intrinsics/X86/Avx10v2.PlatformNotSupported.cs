@@ -90,6 +90,106 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<int> ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32(Vector256<float> value)  { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        ///   <para>  VCVTTPS2DQS xmm1{k1}{z}, xmm2/m128/m32bcst</para>
+        /// </summary>
+        public static Vector128<int> ConvertToVector128Int32WithTruncatedSaturation(Vector128<float> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPS2DQS ymm1{k1}{z}, ymm2/m256/m32bcst {sae}</para>
+        /// </summary>
+        public static Vector256<int> ConvertToVector256Int32WithTruncatedSaturation(Vector256<float> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPS2UDQS xmm1{k1}{z}, xmm2/m128/m32bcst</para>
+        /// </summary>
+        public static Vector128<uint> ConvertToVector128UInt32WithTruncatedSaturation(Vector128<float> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPS2UDQS ymm1{k1}{z}, ymm2/m256/m32bcst {sae}</para>
+        /// </summary>
+        public static Vector256<uint> ConvertToVector256UInt32WithTruncatedSaturation(Vector256<float> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPS2QQS xmm1{k1}{z}, xmm2/m64/m32bcst</para>
+        /// </summary>
+        public static Vector128<long> ConvertToVector128Int64WithTruncatedSaturation(Vector128<float> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPS2QQS ymm1{k1}{z}, xmm2/m128/m32bcst {sae}</para>
+        /// </summary>
+        public static Vector256<long> ConvertToVector256Int64WithTruncatedSaturation(Vector128<float> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPS2UQQS xmm1{k1}{z}, xmm2/m64/m32bcst</para>
+        /// </summary>
+        public static Vector128<ulong> ConvertToVector128UInt64WithTruncatedSaturation(Vector128<float> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPS2UQQS ymm1{k1}{z}, xmm2/m128/m32bcst {sae}</para>
+        /// </summary>
+        public static Vector256<ulong> ConvertToVector256UInt64WithTruncatedSaturation(Vector128<float> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPD2DQS xmm1{k1}{z}, xmm2/m128/m64bcst</para>
+        /// </summary>
+        public static Vector128<int> ConvertToVector128Int32WithTruncatedSaturation(Vector128<double> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPD2DQS xmm1{k1}{z}, ymm2/m256/m64bcst {sae}</para>
+        /// </summary>
+        public static Vector128<int> ConvertToVector128Int32WithTruncatedSaturation(Vector256<double> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPD2UDQS xmm1{k1}{z}, xmm2/m128/m64bcst</para>
+        /// </summary>
+        public static Vector128<uint> ConvertToVector128UInt32WithTruncatedSaturation(Vector128<double> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPD2UDQS xmm1{k1}{z}, ymm2/m256/m64bcst {sae}</para>
+        /// </summary>
+        public static Vector128<uint> ConvertToVector128UInt32WithTruncatedSaturation(Vector256<double> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPD2QQS xmm1{k1}{z}, xmm2/m128/m64bcst</para>
+        /// </summary>
+        public static Vector128<long> ConvertToVector128Int64WithTruncatedSaturation(Vector128<double> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPD2QQS ymm1{k1}{z}, ymm2/m256/m64bcst {sae}</para>
+        /// </summary>
+        public static Vector256<long> ConvertToVector256Int64WithTruncatedSaturation(Vector256<double> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPD2UQQS xmm1{k1}{z}, xmm2/m128/m64bcst</para>
+        /// </summary>
+        public static Vector128<ulong> ConvertToVector128UInt64WithTruncatedSaturation(Vector128<double> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTPD2UQQS ymm1{k1}{z}, ymm2/m256/m64bcst {sae}</para>
+        /// </summary>
+        public static Vector256<ulong> ConvertToVector256UInt64WithTruncatedSaturation(Vector256<double> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTSS2SIS r32, xmm1/m32 {sae}</para>
+        /// </summary>
+        public static int ConvertToInt32WithTruncatedSaturation(Vector128<float> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTSS2USIS r32, xmm1/m32 {sae}</para>
+        /// </summary>
+        public static uint ConvertToUInt32WithTruncatedSaturation(Vector128<float> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTSD2SIS r32, xmm1/m64 {sae}</para>
+        /// </summary>
+        public static int ConvertToInt32WithTruncatedSaturation(Vector128<double> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VCVTTSD2USIS r32, xmm1/m64 {sae}</para>
+        /// </summary>
+        public static uint ConvertToUInt32WithTruncatedSaturation(Vector128<double> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         ///   <para>  VMOVD xmm1, xmm2/m32</para>
         /// </summary>
         public static Vector128<int> MoveScalar(Vector128<int> value)  { throw new PlatformNotSupportedException(); }
@@ -128,6 +228,26 @@ namespace System.Runtime.Intrinsics.X86
             /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
             /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
+
+            /// <summary>
+            ///   <para>  VCVTTSS2SIS r64, xmm1/m32 {sae}</para>
+            /// </summary>
+            public static long ConvertToInt64WithTruncatedSaturation(Vector128<float> value)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  VCVTTSS2USIS r64, xmm1/m32 {sae}</para>
+            /// </summary>
+            public static ulong ConvertToUInt64WithTruncatedSaturation(Vector128<float> value)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  VCVTTSD2SIS r64, xmm1/m64 {sae}</para>
+            /// </summary>
+            public static long ConvertToInt64WithTruncatedSaturation(Vector128<double> value)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  VCVTTSD2USIS r64, xmm1/m64 {sae}</para>
+            /// </summary>
+            public static ulong ConvertToUInt64WithTruncatedSaturation(Vector128<double> value)  { throw new PlatformNotSupportedException(); }
 
         }
 
@@ -180,6 +300,46 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VCVTTPS2IUBS zmm1{k1}{z}, zmm2/m512/m32bcst {sae}</para>
             /// </summary>
             public static Vector512<int> ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32(Vector512<float> value)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  VCVTTPS2DQS zmm1{k1}{z}, zmm2/m512/m32bcst {sae}</para>
+            /// </summary>
+            public static Vector512<int> ConvertToVector512Int32WithTruncatedSaturation(Vector512<float> value)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  VCVTTPS2UDQS zmm1{k1}{z}, zmm2/m512/m32bcst {sae}</para>
+            /// </summary>
+            public static Vector512<uint> ConvertToVector512UInt32WithTruncatedSaturation(Vector512<float> value)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  VCVTTPS2QQS zmm1{k1}{z}, ymm2/m256/m32bcst {sae}</para>
+            /// </summary>
+            public static Vector512<long> ConvertToVector512Int64WithTruncatedSaturation(Vector256<float> value)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  VCVTTPS2UQQS zmm1{k1}{z}, ymm2/m256/m32bcst {sae}</para>
+            /// </summary>
+            public static Vector512<ulong> ConvertToVector512UInt64WithTruncatedSaturation(Vector256<float> value)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  VCVTTPD2DQS ymm1{k1}{z}, zmm2/m512/m64bcst {sae}</para>
+            /// </summary>
+            public static Vector256<int> ConvertToVector256Int32WithTruncatedSaturation(Vector512<double> value)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  VCVTTPD2UDQS ymm1{k1}{z}, zmm2/m512/m64bcst {sae}</para>
+            /// </summary>
+            public static Vector256<uint> ConvertToVector256UInt32WithTruncatedSaturation(Vector512<double> value)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  VCVTTPD2QQS zmm1{k1}{z}, zmm2/m512/m64bcst {sae}</para>
+            /// </summary>
+            public static Vector512<long> ConvertToVector512Int64WithTruncatedSaturation(Vector512<double> value)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  VCVTTPD2UQQS zmm1{k1}{z}, zmm2/m512/m64bcst {sae}</para>
+            /// </summary>
+            public static Vector512<ulong> ConvertToVector512UInt64WithTruncatedSaturation(Vector512<double> value)  { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>  VMPSADBW zmm1{k1}{z}, zmm2, zmm3/m512, imm8</para>
