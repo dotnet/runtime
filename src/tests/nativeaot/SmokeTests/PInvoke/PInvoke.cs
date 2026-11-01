@@ -195,10 +195,10 @@ namespace PInvokeTests
         static extern void StructTest_ByRef(ref SequentialStruct ss);
 
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall, EntryPoint = "StructTest_ByRef")]
-        static extern bool ClassTest([In, Out] SequentialClass ss);
+        static extern void ClassTest([In, Out] SequentialClass ss);
 
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall, EntryPoint = "StructTest_ByRef")]
-        static extern bool AsAnyTest([In, Out, MarshalAs(40 /* UnmanagedType.AsAny */)] object o);
+        static extern void AsAnyTest([In, Out, MarshalAs(40 /* UnmanagedType.AsAny */)] object o);
 
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         static extern void StructTest_ByOut(out SequentialStruct ss);
@@ -625,6 +625,12 @@ namespace PInvokeTests
         {
             Console.WriteLine("Testing Delegate");
 
+            if (RuntimeInformation.ProcessArchitecture is Architecture.Wasm)
+            {
+                Console.WriteLine("Skipping delegate marshalling on WASM: native callback thunk allocation is not supported.");
+                return;
+            }
+
             Delegate_Int del = new Delegate_Int(Sum);
             ThrowIfNotEquals(true, ReversePInvoke_Int(del), "Delegate marshalling failed.");
 
@@ -925,6 +931,12 @@ namespace PInvokeTests
                 pass = true;
             }
             ThrowIfNotEquals(true, pass, "Struct marshalling scenario6 failed.");
+
+            if (RuntimeInformation.ProcessArchitecture is Architecture.Wasm)
+            {
+                Console.WriteLine("Skipping struct delegate marshalling on WASM: native callback thunk allocation is not supported.");
+                return;
+            }
 
             Callbacks callbacks = new Callbacks();
             callbacks.callback0 = new Callback0(callbackFunc0);

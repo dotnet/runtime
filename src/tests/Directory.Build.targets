@@ -271,13 +271,17 @@
       <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([MSBuild]::NormalizePath('$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)'))')" />
       <!-- Don't copy out-of-process test components to the merged wrapper output folder -->
       <MergedWrapperReferenceFolders Remove="@(OutOfProcessTestFolders)" />
-      <!-- For merged project wrappers, include native libraries in all project references -->
-      <!-- Dynamic libraries only. On browser a static archive in a wrapper's output directory has
+      <!-- For merged project wrappers, include native libraries in all project references.
+           NativeAOT on WebAssembly links static archives into the wrapper's executable. -->
+      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(StaticLibSuffix)"
+                                   Condition="'@(MergedWrapperReferenceFolders)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(TargetArchitecture)' == 'wasm'" />
+      <!-- CoreCLR uses dynamic libraries only. On browser a static archive in a wrapper's output directory has
            no consumer: only a corerun links one, and a merged wrapper never builds a corerun,
            because the hook in Common/CLRTest.WasmCorerun.targets needs the project's own
            @(CMakeProjectReference). Tests merged into a wrapper keep their native code unlinked and
            gate on PlatformDetection.PlatformDoesNotSupportNativeTestAssets instead. -->
-      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" Condition="'@(MergedWrapperReferenceFolders)' != ''" />
+      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)"
+                                   Condition="'@(MergedWrapperReferenceFolders)' != '' and ('$(TestBuildMode)' != 'nativeaot' or '$(TargetArchitecture)' != 'wasm')" />
     </ItemGroup>
     <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
         DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')"
@@ -292,7 +296,7 @@
   <!-- WebAssembly cannot load native libraries at run time, so tests that call into their own
        native code need a corerun with that code linked in. -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.WasmCorerun.targets"
-          Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'coreclr'" />
+          Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' != 'nativeaot'" />
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
           Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
@@ -581,6 +585,22 @@
     <PropertyGroup>
       <WASI_SDK_PATH>$(RuntimeBuildWasiSdkPath)</WASI_SDK_PATH>
     </PropertyGroup>
+  </Target>
+
+  <Target Name="ResolveNativeAotWasmNativeLibraries"
+          BeforeTargets="SetupOSSpecificProps"
+          DependsOnTargets="CopyAllNativeProjectReferenceBinaries"
+          Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetArchitecture)' == 'wasm'">
+    <ItemGroup>
+      <_NativeAotWasmTestLibrary Include="$(OutDir)*$(StaticLibSuffix)" />
+      <_NativeAotWasmTestLibrary Include="@(NativeFileReference)" Condition="'%(Extension)' == '$(StaticLibSuffix)'" />
+      <_NativeAotWasmTestLibrary Update="@(_NativeAotWasmTestLibrary)">
+        <ModuleName>%(Filename)</ModuleName>
+        <ModuleName Condition="$([System.String]::Copy('%(Filename)').StartsWith('$(StaticLibPrefix)'))">$([System.String]::Copy('%(Filename)').Substring($(StaticLibPrefix.Length)))</ModuleName>
+      </_NativeAotWasmTestLibrary>
+      <NativeLibrary Include="@(_NativeAotWasmTestLibrary)" KeepDuplicates="false" />
+      <DirectPInvoke Include="@(_NativeAotWasmTestLibrary->'%(ModuleName)')" KeepDuplicates="false" />
+    </ItemGroup>
   </Target>
 
   <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
