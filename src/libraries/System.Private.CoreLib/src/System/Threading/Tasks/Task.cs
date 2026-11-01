@@ -4994,6 +4994,15 @@ namespace System.Threading.Tasks
         /// </summary>
         internal static void AddExceptionsForCompletedTask(ref List<Exception>? exceptions, Task t)
         {
+            TaskCanceledException? sharedCanceledException = null;
+            AddExceptionsForCompletedTask(ref exceptions, t, ref sharedCanceledException);
+        }
+
+        internal static void AddExceptionsForCompletedTask(
+            ref List<Exception>? exceptions,
+            Task t,
+            ref TaskCanceledException? sharedCanceledException)
+        {
             if (t.ExceptionRecorded)
             {
                 AggregateException ex = t.GetExceptions(true)!;
@@ -5010,12 +5019,25 @@ namespace System.Threading.Tasks
             {
                 t.UpdateExceptionObservedStatus();
 
+                exceptions ??= new List<Exception>();
+
                 // Don't go through GetExceptions here: for a canceled task it allocates a
                 // TaskCanceledException, captures its stack trace, and wraps it in an
-                // AggregateException just to unwrap it again. With many canceled tasks
-                // (e.g. in WaitAll), the stack trace captures dominate memory usage.
-                exceptions ??= new List<Exception>();
-                exceptions.Add(new TaskCanceledException(t));
+                // AggregateException just to unwrap it again.
+                // To avoid OOM during mass cancellations (e.g. in WaitAll), capture the stack trace
+                // once and share it across all synthetic TaskCanceledException instances.
+                TaskCanceledException tce = new TaskCanceledException(t);
+                if (sharedCanceledException == null)
+                {
+                    tce.SetCurrentStackTrace();
+                    sharedCanceledException = tce;
+                }
+                else
+                {
+                    tce.SetCurrentStackTrace(sharedCanceledException);
+                }
+
+                exceptions.Add(tce);
             }
         }
 
