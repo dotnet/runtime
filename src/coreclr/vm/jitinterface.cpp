@@ -12126,18 +12126,23 @@ void CEEJitInfo::recordRelocation(void *       location,
             // Target is out of 32-bit range
             // If we're fixing up a jump, try jumping through a stub
             PCODE jumpStubAddr = (PCODE)NULL;
-            if ((fRelocType == CorInfoReloc::RISCV64_CALL_PLT) && !m_fJumpStubOverflow)
+            if (fRelocType == CorInfoReloc::RISCV64_CALL_PLT)
             {
-                BYTE* loAddr = (BYTE*)location - (1ll << 31) - (1ll << 11);
-                BYTE* hiAddr = (BYTE*)location + (1ll << 31) - (1ll << 11) - 1;
+                // Once an overflow has been recorded the code is thrown away and recompiled, so do not allocate
+                // more jump stubs; keep counting them so that the retry reserves enough space.
+                if (!m_fJumpStubOverflow)
+                {
+                    BYTE* loAddr = (BYTE*)location - (1ll << 31) - (1ll << 11);
+                    BYTE* hiAddr = (BYTE*)location + (1ll << 31) - (1ll << 11) - 1;
 
-                // Check for the wrap around cases
-                if (loAddr > location)
-                    loAddr = (BYTE*)UINT64_MIN; // overflow
-                if (hiAddr < location)
-                    hiAddr = (BYTE*)UINT64_MAX; // overflow
+                    // Check for the wrap around cases
+                    if (loAddr > location)
+                        loAddr = (BYTE*)UINT64_MIN; // overflow
+                    if (hiAddr < location)
+                        hiAddr = (BYTE*)UINT64_MAX; // overflow
 
-                PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr);
+                    jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr);
+                }
 
                 // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it
                 // to reserve extra memory on retry to increase chances that the retry succeeds.
