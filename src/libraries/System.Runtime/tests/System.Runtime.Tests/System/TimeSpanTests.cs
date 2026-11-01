@@ -1531,7 +1531,7 @@ namespace System.Tests
             FormatException ex = Assert.Throws<FormatException>(() => TimeSpan.Parse(utf8Text, null));
             Assert.DoesNotContain("12:34", ex.Message, StringComparison.Ordinal);
             Assert.DoesNotContain("ReadOnlySpan", ex.Message, StringComparison.Ordinal);
-            Assert.DoesNotContain("�", ex.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("\uFFFD", ex.Message, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -1542,7 +1542,7 @@ namespace System.Tests
 
             OverflowException ex = Assert.Throws<OverflowException>(() => TimeSpan.Parse(utf8Text, null));
             Assert.DoesNotContain("4294967296", ex.Message, StringComparison.Ordinal);
-            Assert.DoesNotContain("�", ex.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("\uFFFD", ex.Message, StringComparison.Ordinal);
 
             Assert.False(TimeSpan.TryParse(utf8Text, null, out TimeSpan result));
             Assert.Equal(TimeSpan.Zero, result);

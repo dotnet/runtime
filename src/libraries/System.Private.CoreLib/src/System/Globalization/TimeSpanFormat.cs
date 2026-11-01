@@ -5,7 +5,6 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Globalization
@@ -509,50 +508,21 @@ namespace System.Globalization
 
         internal ref struct FormatLiterals<TChar> where TChar : unmanaged, IUtfChar<TChar>
         {
-            private ReadOnlySpan<TChar> _buffer;
-            private int _end0, _end1, _end2, _end3, _end4; // end offset of each literal; End runs to _buffer.Length
+            private ReadOnlySpan<TChar> _start;
+            private ReadOnlySpan<TChar> _dayHourSep;
+            private ReadOnlySpan<TChar> _hourMinuteSep;
+            private ReadOnlySpan<TChar> _minuteSecondSep;
+            private ReadOnlySpan<TChar> _secondFractionSep;
+            private ReadOnlySpan<TChar> _end;
+            private ReadOnlySpan<TChar> _appCompatLiteral; // MinuteSecondSep + SecondFractionSep
 
-            internal ReadOnlySpan<TChar> Start => _buffer.Slice(0, _end0);
-            internal ReadOnlySpan<TChar> DayHourSep => _buffer.Slice(_end0, _end1 - _end0);
-            internal ReadOnlySpan<TChar> HourMinuteSep => _buffer.Slice(_end1, _end2 - _end1);
-            internal ReadOnlySpan<TChar> MinuteSecondSep => _buffer.Slice(_end2, _end3 - _end2);
-            internal ReadOnlySpan<TChar> SecondFractionSep => _buffer.Slice(_end3, _end4 - _end3);
-            internal ReadOnlySpan<TChar> End => _buffer.Slice(_end4);
-            internal ReadOnlySpan<TChar> AppCompatLiteral => _buffer.Slice(_end2, _end4 - _end2);
-
-            /* initializes the invariant FormatLiterals */
-            internal void InitInvariant(bool isNegative)
-            {
-                ReadOnlySpan<TChar> buffer;
-                if (typeof(TChar) == typeof(byte))
-                {
-                    buffer = Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>("-.::."u8);
-                }
-                else
-                {
-                    Debug.Assert(typeof(TChar) == typeof(char));
-                    buffer = Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>("-.::.");
-                }
-
-                if (isNegative)
-                {
-                    _buffer = buffer;
-                    _end0 = 1;
-                    _end1 = 2;
-                    _end2 = 3;
-                    _end3 = 4;
-                    _end4 = 5;
-                }
-                else
-                {
-                    _buffer = buffer.Slice(1);
-                    _end0 = 0;
-                    _end1 = 1;
-                    _end2 = 2;
-                    _end3 = 3;
-                    _end4 = 4;
-                }
-            }
+            internal readonly ReadOnlySpan<TChar> Start => _start;
+            internal readonly ReadOnlySpan<TChar> DayHourSep => _dayHourSep;
+            internal readonly ReadOnlySpan<TChar> HourMinuteSep => _hourMinuteSep;
+            internal readonly ReadOnlySpan<TChar> MinuteSecondSep => _minuteSecondSep;
+            internal readonly ReadOnlySpan<TChar> SecondFractionSep => _secondFractionSep;
+            internal readonly ReadOnlySpan<TChar> End => _end;
+            internal readonly ReadOnlySpan<TChar> AppCompatLiteral => _appCompatLiteral;
 
             // For the "v1" TimeSpan localized patterns, the data is simply literal field separators with
             // the constants guaranteed to include DHMSF ordered greatest to least significant.
@@ -662,12 +632,14 @@ namespace System.Globalization
                 Debug.Assert(0 < ss && ss < 3, "0 < ss && ss < 3, Bug in System.Globalization.DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
                 Debug.Assert(0 < ff && ff < 8, "0 < ff && ff < 8, Bug in System.Globalization.DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
 
-                _buffer = literals.AsSpan().ToArray();
-                _end0 = ends[0];
-                _end1 = ends[1];
-                _end2 = ends[2];
-                _end3 = ends[3];
-                _end4 = ends[4];
+                ReadOnlySpan<TChar> buffer = literals.AsSpan().ToArray();
+                _start = buffer.Slice(0, ends[0]);
+                _dayHourSep = buffer[ends[0]..ends[1]];
+                _hourMinuteSep = buffer[ends[1]..ends[2]];
+                _minuteSecondSep = buffer[ends[2]..ends[3]];
+                _secondFractionSep = buffer[ends[3]..ends[4]];
+                _end = buffer.Slice(ends[4]);
+                _appCompatLiteral = buffer[ends[2]..ends[4]];
 
                 pending.Dispose();
                 literals.Dispose();

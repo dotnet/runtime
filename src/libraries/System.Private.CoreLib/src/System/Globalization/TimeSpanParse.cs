@@ -276,32 +276,6 @@ namespace System.Globalization
         /// <summary>Stores intermediary parsing state for the standard formats.</summary>
         private ref struct TimeSpanRawInfo<TChar> where TChar : unmanaged, IUtfChar<TChar>
         {
-            internal TimeSpanFormat.FormatLiterals<TChar> PositiveInvariant
-            {
-                get
-                {
-                    if (!_posInvInit)
-                    {
-                        _posInv.InitInvariant(isNegative: false);
-                        _posInvInit = true;
-                    }
-                    return _posInv;
-                }
-            }
-
-            internal TimeSpanFormat.FormatLiterals<TChar> NegativeInvariant
-            {
-                get
-                {
-                    if (!_negInvInit)
-                    {
-                        _negInv.InitInvariant(isNegative: true);
-                        _negInvInit = true;
-                    }
-                    return _negInv;
-                }
-            }
-
             internal TimeSpanFormat.FormatLiterals<TChar> PositiveLocalized
             {
                 get
@@ -411,17 +385,99 @@ namespace System.Globalization
                 && _literals3.SequenceEqual(pattern.SecondFractionSep)
                 && _literals4.SequenceEqual(pattern.End);
 
+            private static bool IsInvariantStart(ReadOnlySpan<TChar> literal, bool negative) =>
+                negative ? IsChar(literal, '-') : literal.IsEmpty;
+
+            private static bool IsChar(ReadOnlySpan<TChar> literal, char c) =>
+                literal.Length == 1
+                && TChar.CastToUInt32(literal[0]) == c;
+
+            private static bool IsInvariantAppCompatLiteral(ReadOnlySpan<TChar> literal) =>
+                literal.Length == 2
+                && TChar.CastToUInt32(literal[0]) == ':'
+                && TChar.CastToUInt32(literal[1]) == '.';
+
+            internal bool FullAppCompatMatchInvariant(bool negative) =>
+                _sepCount == 5
+                && _numCount == 4
+                && IsInvariantStart(_literals0, negative)
+                && IsChar(_literals1, '.')
+                && IsChar(_literals2, ':')
+                && IsInvariantAppCompatLiteral(_literals3)
+                && _literals4.IsEmpty;
+
+            internal bool PartialAppCompatMatchInvariant(bool negative) =>
+                _sepCount == 4
+                && _numCount == 3
+                && IsInvariantStart(_literals0, negative)
+                && IsChar(_literals1, ':')
+                && IsInvariantAppCompatLiteral(_literals2)
+                && _literals3.IsEmpty;
+
+            internal bool FullMatchInvariant(bool negative) =>
+                _sepCount == MaxLiteralTokens
+                && _numCount == MaxNumericTokens
+                && IsInvariantStart(_literals0, negative)
+                && IsChar(_literals1, '.')
+                && IsChar(_literals2, ':')
+                && IsChar(_literals3, ':')
+                && IsChar(_literals4, '.')
+                && _literals5.IsEmpty;
+
+            internal bool FullDMatchInvariant(bool negative) =>
+                _sepCount == 2
+                && _numCount == 1
+                && IsInvariantStart(_literals0, negative)
+                && _literals1.IsEmpty;
+
+            internal bool FullHMMatchInvariant(bool negative) =>
+                _sepCount == 3
+                && _numCount == 2
+                && IsInvariantStart(_literals0, negative)
+                && IsChar(_literals1, ':')
+                && _literals2.IsEmpty;
+
+            internal bool FullDHMMatchInvariant(bool negative) =>
+                _sepCount == 4
+                && _numCount == 3
+                && IsInvariantStart(_literals0, negative)
+                && IsChar(_literals1, '.')
+                && IsChar(_literals2, ':')
+                && _literals3.IsEmpty;
+
+            internal bool FullHMSMatchInvariant(bool negative) =>
+                _sepCount == 4
+                && _numCount == 3
+                && IsInvariantStart(_literals0, negative)
+                && IsChar(_literals1, ':')
+                && IsChar(_literals2, ':')
+                && _literals3.IsEmpty;
+
+            internal bool FullDHMSMatchInvariant(bool negative) =>
+                _sepCount == 5
+                && _numCount == 4
+                && IsInvariantStart(_literals0, negative)
+                && IsChar(_literals1, '.')
+                && IsChar(_literals2, ':')
+                && IsChar(_literals3, ':')
+                && _literals4.IsEmpty;
+
+            internal bool FullHMSFMatchInvariant(bool negative) =>
+                _sepCount == 5
+                && _numCount == 4
+                && IsInvariantStart(_literals0, negative)
+                && IsChar(_literals1, ':')
+                && IsChar(_literals2, ':')
+                && IsChar(_literals3, '.')
+                && _literals4.IsEmpty;
+
             internal TTT _lastSeenTTT;
             internal int _tokenCount;
             internal int _sepCount;
             internal int _numCount;
 
-            private TimeSpanFormat.FormatLiterals<TChar> _posInv;
-            private TimeSpanFormat.FormatLiterals<TChar> _negInv;
             private TimeSpanFormat.FormatLiterals<TChar> _posLoc;
             private TimeSpanFormat.FormatLiterals<TChar> _negLoc;
-            private bool _posInvInit;
-            private bool _negInvInit;
             private bool _posLocInit;
             private bool _negLocInit;
             private string _fullPosPattern;
@@ -445,8 +501,6 @@ namespace System.Globalization
 
                 _fullPosPattern = dtfi.FullTimeSpanPositivePattern;
                 _fullNegPattern = dtfi.FullTimeSpanNegativePattern;
-                _posInvInit = false;
-                _negInvInit = false;
                 _posLocInit = false;
                 _negLocInit = false;
             }
@@ -854,12 +908,12 @@ namespace System.Globalization
 
             if (inv)
             {
-                if (raw.FullMatch(raw.PositiveInvariant))
+                if (raw.FullMatchInvariant(false))
                 {
                     match = true;
                     positive = true;
                 }
-                if (!match && raw.FullMatch(raw.NegativeInvariant))
+                if (!match && raw.FullMatchInvariant(true))
                 {
                     match = true;
                     positive = false;
@@ -927,42 +981,42 @@ namespace System.Globalization
 
             if (inv)
             {
-                if (raw.FullHMSFMatch(raw.PositiveInvariant))
+                if (raw.FullHMSFMatchInvariant(false))
                 {
                     positive = true;
                     match = TryTimeToTicks(positive, zero, raw._numbers0, raw._numbers1, raw._numbers2, raw._numbers3, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.FullDHMSMatch(raw.PositiveInvariant))
+                if (!match && raw.FullDHMSMatchInvariant(false))
                 {
                     positive = true;
                     match = TryTimeToTicks(positive, raw._numbers0, raw._numbers1, raw._numbers2, raw._numbers3, zero, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.FullAppCompatMatch(raw.PositiveInvariant))
+                if (!match && raw.FullAppCompatMatchInvariant(false))
                 {
                     positive = true;
                     match = TryTimeToTicks(positive, raw._numbers0, raw._numbers1, raw._numbers2, zero, raw._numbers3, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.FullHMSFMatch(raw.NegativeInvariant))
+                if (!match && raw.FullHMSFMatchInvariant(true))
                 {
                     positive = false;
                     match = TryTimeToTicks(positive, zero, raw._numbers0, raw._numbers1, raw._numbers2, raw._numbers3, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.FullDHMSMatch(raw.NegativeInvariant))
+                if (!match && raw.FullDHMSMatchInvariant(true))
                 {
                     positive = false;
                     match = TryTimeToTicks(positive, raw._numbers0, raw._numbers1, raw._numbers2, raw._numbers3, zero, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.FullAppCompatMatch(raw.NegativeInvariant))
+                if (!match && raw.FullAppCompatMatchInvariant(true))
                 {
                     positive = false;
                     match = TryTimeToTicks(positive, raw._numbers0, raw._numbers1, raw._numbers2, zero, raw._numbers3, out ticks);
@@ -1054,46 +1108,42 @@ namespace System.Globalization
 
             if (inv)
             {
-                TimeSpanFormat.FormatLiterals<TChar> positiveInvariant = raw.PositiveInvariant;
-
-                if (raw.FullHMSMatch(positiveInvariant))
+                if (raw.FullHMSMatchInvariant(false))
                 {
                     positive = true;
                     match = TryTimeToTicks(positive, zero, raw._numbers0, raw._numbers1, raw._numbers2, zero, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.FullDHMMatch(positiveInvariant))
+                if (!match && raw.FullDHMMatchInvariant(false))
                 {
                     positive = true;
                     match = TryTimeToTicks(positive, raw._numbers0, raw._numbers1, raw._numbers2, zero, zero, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.PartialAppCompatMatch(positiveInvariant))
+                if (!match && raw.PartialAppCompatMatchInvariant(false))
                 {
                     positive = true;
                     match = TryTimeToTicks(positive, zero, raw._numbers0, raw._numbers1, zero, raw._numbers2, out ticks);
                     overflow = overflow || !match;
                 }
 
-                TimeSpanFormat.FormatLiterals<TChar> negativeInvariant = raw.NegativeInvariant;
-
-                if (!match && raw.FullHMSMatch(negativeInvariant))
+                if (!match && raw.FullHMSMatchInvariant(true))
                 {
                     positive = false;
                     match = TryTimeToTicks(positive, zero, raw._numbers0, raw._numbers1, raw._numbers2, zero, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.FullDHMMatch(negativeInvariant))
+                if (!match && raw.FullDHMMatchInvariant(true))
                 {
                     positive = false;
                     match = TryTimeToTicks(positive, raw._numbers0, raw._numbers1, raw._numbers2, zero, zero, out ticks);
                     overflow = overflow || !match;
                 }
 
-                if (!match && raw.PartialAppCompatMatch(negativeInvariant))
+                if (!match && raw.PartialAppCompatMatchInvariant(true))
                 {
                     positive = false;
                     match = TryTimeToTicks(positive, zero, raw._numbers0, raw._numbers1, zero, raw._numbers2, out ticks);
@@ -1183,13 +1233,13 @@ namespace System.Globalization
 
             if (inv)
             {
-                if (raw.FullHMMatch(raw.PositiveInvariant))
+                if (raw.FullHMMatchInvariant(false))
                 {
                     match = true;
                     positive = true;
                 }
 
-                if (!match && raw.FullHMMatch(raw.NegativeInvariant))
+                if (!match && raw.FullHMMatchInvariant(true))
                 {
                     match = true;
                     positive = false;
@@ -1253,13 +1303,13 @@ namespace System.Globalization
 
             if (inv)
             {
-                if (raw.FullDMatch(raw.PositiveInvariant))
+                if (raw.FullDMatchInvariant(false))
                 {
                     match = true;
                     positive = true;
                 }
 
-                if (!match && raw.FullDMatch(raw.NegativeInvariant))
+                if (!match && raw.FullDMatchInvariant(true))
                 {
                     match = true;
                     positive = false;
