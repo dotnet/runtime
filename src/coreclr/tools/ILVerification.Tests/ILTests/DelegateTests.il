@@ -9,6 +9,438 @@
 {
 }
 
+.class public auto ansi sealed Round776ReadonlyDelegate extends [System.Runtime]System.MulticastDelegate
+{
+    .method public hidebysig specialname rtspecialname instance void .ctor(object target, native int fn) runtime managed {}
+    .method public hidebysig newslot virtual instance void Invoke([in] object& input, object replacement) runtime managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+    }
+}
+
+.class public auto ansi sealed Round776RequiredDelegate extends [System.Runtime]System.MulticastDelegate
+{
+    .method public hidebysig specialname rtspecialname instance void .ctor(object target, native int fn) runtime managed {}
+    .method public hidebysig newslot virtual instance void Invoke([in] object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) input, object replacement) runtime managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+    }
+}
+
+.class public auto ansi sealed Round776SingleReadonlyDelegate extends [System.Runtime]System.MulticastDelegate
+{
+    .method public hidebysig specialname rtspecialname instance void .ctor(object target, native int fn) runtime managed {}
+    .method public hidebysig newslot virtual instance void Invoke([in] object& input) runtime managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+    }
+}
+
+.class public auto ansi sealed Round776StaticInvokeDelegate extends [System.Runtime]System.MulticastDelegate
+{
+    .method public hidebysig specialname rtspecialname instance void .ctor(object target, native int fn) runtime managed {}
+    .method public hidebysig static void Invoke(int32& 'value') runtime managed {}
+}
+
+.class public auto ansi sealed Round776WritableReturnDelegate extends [System.Runtime]System.MulticastDelegate
+{
+    .method public hidebysig specialname rtspecialname instance void .ctor(object target, native int fn) runtime managed {}
+    .method public hidebysig newslot virtual instance object& Invoke() runtime managed {}
+}
+
+.class public auto ansi beforefieldinit Round776ReadonlyBase extends [System.Runtime]System.Object
+{
+    .method public hidebysig newslot virtual instance void Read([in] object& input, object replacement) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ret
+    }
+
+    .method public hidebysig instance class Round776ReadonlyDelegate Delegate.Round776ExactLdftnBase_Valid() cil managed
+    {
+        ldarg.0
+        ldftn instance void Round776ReadonlyBase::Read(object&, object)
+        newobj instance void Round776ReadonlyDelegate::.ctor(object, native int)
+        ret
+    }
+}
+
+.class public auto ansi sealed Round776WritableOverride extends Round776ReadonlyBase
+{
+    .method public hidebysig virtual instance void Read(object& input, object replacement) cil managed
+    {
+        ldarg.1
+        ldarg.2
+        stind.ref
+        ret
+    }
+}
+
+.class public auto ansi sealed Round776ReadonlySealedOverride extends Round776ReadonlyBase
+{
+    .method public hidebysig virtual instance void Read([in] object& input, object replacement) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ret
+    }
+}
+
+.class interface public abstract auto ansi IRound776Readonly
+{
+    .method public hidebysig newslot abstract virtual instance void Read([in] object& input, object replacement) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+    }
+}
+
+.class public auto ansi sealed Round776WritableImplementation extends [System.Runtime]System.Object implements IRound776Readonly
+{
+    .method public hidebysig newslot virtual final instance void Read(object& input, object replacement) cil managed
+    {
+        ldarg.1
+        ldarg.2
+        stind.ref
+        ret
+    }
+}
+
+.class interface public abstract auto ansi IRound776Required
+{
+    .method public hidebysig newslot abstract virtual instance void Read([in] object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) input, object replacement) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+    }
+}
+
+.class public auto ansi sealed Round776RequiredImplementation extends [System.Runtime]System.Object implements IRound776Required
+{
+    .method public hidebysig newslot virtual final instance void Read(object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) input, object replacement) cil managed
+    {
+        ldarg.1
+        ldind.ref
+        pop
+        ret
+    }
+}
+
+.class public auto ansi sealed Round776RequiredMismatch_InvalidType_InterfaceMethodNotImplemented
+        extends [System.Runtime]System.Object implements IRound776Required
+{
+    .method public hidebysig newslot virtual final instance void Read(object& input, object replacement) cil managed
+    {
+        ret
+    }
+}
+
+.class public auto ansi sealed Round776RequiredMatched_ValidType_Valid
+        extends [System.Runtime]System.Object implements IRound776Required
+{
+    .method public hidebysig newslot virtual final instance void Read([in] object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) input, object replacement) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ret
+    }
+}
+
+.class public auto ansi sealed Round776RequiredWriter extends [System.Runtime]System.Object implements IRound776Required
+{
+    .method public hidebysig newslot virtual final instance void Delegate.Round776RequiredImplementationWrite_Invalid_ReadOnlyIllegalWrite(object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) input, object replacement) cil managed
+    {
+        .override method instance void IRound776Required::Read(object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute), object)
+        ldarg.1
+        ldarg.2
+        stind.ref
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit Round776DelegateCases extends [System.Runtime]System.Object
+{
+    .field private static object _global
+
+    .method public hidebysig static object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) ReadonlyReturn() cil managed
+    {
+        .param [0]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldsflda object Round776DelegateCases::_global
+        ret
+    }
+
+    .method public hidebysig static void ClosedRead(object state, [in] object& input) cil managed
+    {
+        .param [2]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ret
+    }
+
+    .method public hidebysig static void IntTarget(int32& 'value') cil managed
+    {
+        ret
+    }
+
+    .method public hidebysig static void ClosedWrite(object state, object& input) cil managed
+    {
+        ldarg.1
+        ldnull
+        stind.ref
+        ret
+    }
+
+    .method public hidebysig static void Write(object& input, object replacement) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stind.ref
+        ret
+    }
+
+    .method public hidebysig static void Read([in] object& input, object replacement) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldind.ref
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776WritableTargetMismatch_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn void Round776DelegateCases::Write(object&, object)
+        newobj instance void Round776ReadonlyDelegate::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776RequiredWritableMismatch_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn void Round776DelegateCases::Write(object&, object)
+        newobj instance void Round776RequiredDelegate::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776ReadonlyTarget_Valid() cil managed
+    {
+        ldnull
+        ldftn void Round776DelegateCases::Read(object&, object)
+        newobj instance void Round776ReadonlyDelegate::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776RequiredReadonlyTarget_Valid() cil managed
+    {
+        ldnull
+        ldftn void Round776DelegateCases::Read(object&, object)
+        newobj instance void Round776RequiredDelegate::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776CovariantDelegateChain_Invalid_DelegateCtor.StackUnexpected(object[] input) cil managed
+    {
+        ldnull
+        ldftn void Round776DelegateCases::Write(object&, object)
+        newobj instance void Round776ReadonlyDelegate::.ctor(object, native int)
+        ldarg.0
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        newobj instance void [System.Runtime]System.Object::.ctor()
+        callvirt instance void Round776ReadonlyDelegate::Invoke(object&, object)
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776ReadonlyInvoke_Invalid_StackUnexpected(class Round776RequiredDelegate action, object[] input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        newobj instance void [System.Runtime]System.Object::.ctor()
+        callvirt instance void Round776RequiredDelegate::Invoke(object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute), object)
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776VirtualPointerMismatch_Invalid_DelegateCtor(class Round776ReadonlyBase reader) cil managed
+    {
+        ldarg.0
+        dup
+        ldvirtftn instance void Round776ReadonlyBase::Read(object&, object)
+        newobj instance void Round776ReadonlyDelegate::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776UnresolvedVirtualReadonly_Invalid_StackUnexpected(class Round776ReadonlyBase reader, object[] input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        newobj instance void [System.Runtime]System.Object::.ctor()
+        callvirt instance void Round776ReadonlyBase::Read(object&, object)
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776UnresolvedInterfaceReadonly_Invalid_StackUnexpected(class IRound776Readonly reader, object[] input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        newobj instance void [System.Runtime]System.Object::.ctor()
+        callvirt instance void IRound776Readonly::Read(object&, object)
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776RequiredInterfaceReadonly_Valid(class IRound776Required reader, object[] input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        newobj instance void [System.Runtime]System.Object::.ctor()
+        callvirt instance void IRound776Required::Read(object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute), object)
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776SealedReadonlyVirtual_Valid(class Round776ReadonlySealedOverride reader, object[] input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        newobj instance void [System.Runtime]System.Object::.ctor()
+        callvirt instance void Round776ReadonlySealedOverride::Read(object&, object)
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776ClosedStaticReadonly_Valid() cil managed
+    {
+        newobj instance void [System.Runtime]System.Object::.ctor()
+        ldftn void Round776DelegateCases::ClosedRead(object, object&)
+        newobj instance void Round776SingleReadonlyDelegate::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776ClosedStaticWritableMismatch_Invalid_DelegateCtor() cil managed
+    {
+        newobj instance void [System.Runtime]System.Object::.ctor()
+        ldftn void Round776DelegateCases::ClosedWrite(object, object&)
+        newobj instance void Round776SingleReadonlyDelegate::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776StaticInvoke_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn void Round776DelegateCases::IntTarget(int32&)
+        newobj instance void Round776StaticInvokeDelegate::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776ReadonlyReturnMismatch_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) Round776DelegateCases::ReadonlyReturn()
+        newobj instance void Round776WritableReturnDelegate::.ctor(object, native int)
+        pop
+        ret
+    }
+}
+
+.class public auto ansi abstract sealed Opus2e46ReflectionCases extends [System.Runtime]System.Object
+{
+    .method public hidebysig static void Write(object& input) cil managed
+    {
+        ldarg.0
+        ldnull
+        stind.ref
+        ret
+    }
+
+    .method public hidebysig static void WritePair(object& input, object replacement) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stind.ref
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Opus2e46ReflectionDelegate_Invalid_StackUnexpected(object[] input) cil managed
+    {
+        ldtoken Round776SingleReadonlyDelegate
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        ldtoken method void Opus2e46ReflectionCases::Write(object&)
+        call class [System.Runtime]System.Reflection.MethodBase [System.Runtime]System.Reflection.MethodBase::GetMethodFromHandle(valuetype [System.Runtime]System.RuntimeMethodHandle)
+        castclass [System.Runtime]System.Reflection.MethodInfo
+        call class [System.Runtime]System.Delegate [System.Runtime]System.Delegate::CreateDelegate(class [System.Runtime]System.Type, class [System.Runtime]System.Reflection.MethodInfo)
+        castclass Round776SingleReadonlyDelegate
+        ldarg.0
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        callvirt instance void Round776SingleReadonlyDelegate::Invoke(object&)
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Opus2e46ReflectionDelegateModreq_Invalid_StackUnexpected(object[] input) cil managed
+    {
+        ldtoken Round776RequiredDelegate
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        ldtoken method void Opus2e46ReflectionCases::WritePair(object&, object)
+        call class [System.Runtime]System.Reflection.MethodBase [System.Runtime]System.Reflection.MethodBase::GetMethodFromHandle(valuetype [System.Runtime]System.RuntimeMethodHandle)
+        castclass [System.Runtime]System.Reflection.MethodInfo
+        call class [System.Runtime]System.Delegate [System.Runtime]System.Delegate::CreateDelegate(class [System.Runtime]System.Type, class [System.Runtime]System.Reflection.MethodInfo)
+        castclass Round776RequiredDelegate
+        ldarg.0
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        newobj instance void [System.Runtime]System.Object::.ctor()
+        callvirt instance void Round776RequiredDelegate::Invoke(object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute), object)
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Opus2e46MutableInvoke_Valid(class Round776RequiredDelegate action, object& input, object replacement) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        ldarg.2
+        callvirt instance void Round776RequiredDelegate::Invoke(object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute), object)
+        ret
+    }
+
+    .method public hidebysig static class Round776SingleReadonlyDelegate Delegate.Opus2e46RebindInvoke_Valid(class Round776SingleReadonlyDelegate action) cil managed
+    {
+        ldarg.0
+        dup
+        ldvirtftn instance void Round776SingleReadonlyDelegate::Invoke(object&)
+        newobj instance void Round776SingleReadonlyDelegate::.ctor(object, native int)
+        ret
+    }
+}
+
 .class public auto ansi sealed ByteEnum
        extends [System.Runtime]System.Enum
 {
