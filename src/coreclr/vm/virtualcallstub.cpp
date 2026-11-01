@@ -1636,17 +1636,15 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     PCODE target = (PCODE)NULL;
 
-    bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
         pSDFrame->Push(CURRENT_THREAD);
         INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         COMPlusThrow(kNullReferenceException);
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
         UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
@@ -1684,8 +1682,8 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     pSDFrame->Push(CURRENT_THREAD);
 
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     // For Virtual Delegates the m_siteAddr is a field of a managed object
     // Thus we have to report it as an interior pointer,
@@ -1721,8 +1719,8 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     GCPROTECT_END();
 
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
     UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pSDFrame->Pop(CURRENT_THREAD);
@@ -1757,16 +1755,14 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
 
     PCODE target = (PCODE)NULL;
 
-    bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-
     if (pObj == NULL) {
         pSDFrame->Push(CURRENT_THREAD);
         INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         COMPlusThrow(kNullReferenceException);
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
         UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
@@ -1774,8 +1770,8 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
     pSDFrame->Push(CURRENT_THREAD);
 
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     GCPROTECT_BEGIN(pObj);
 
@@ -1810,8 +1806,8 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
     GCPROTECT_END();
     GCPROTECT_END();
 
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
     UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pSDFrame->Pop(CURRENT_THREAD);

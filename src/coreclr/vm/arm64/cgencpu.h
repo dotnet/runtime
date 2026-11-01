@@ -71,9 +71,8 @@ extern "C" void* PacStripPtr(void* ptr);
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16  // bytes (two int registers: x0 and x1)
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          16  // bytes (max value type size that can be passed by value)
 
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
-#define CALLDESCR_RETBUFFARGREG                 1   // CallDescrWorker has RetBuffArg parameter that's separate from arg regs
+#define CALLDESCR_FPARGREGS                     1   // Calling convention has separate floating-point argument registers
+#define CALLDESCR_RETBUFFARGREG                 1   // Calling convention has a dedicated return-buffer argument register
 
 #define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
 
