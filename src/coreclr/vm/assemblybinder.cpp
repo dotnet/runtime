@@ -182,8 +182,10 @@ void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* 
 
     GCPROTECT_BEGIN(gc);
 
-    UnmanagedCallersOnlyCaller callToString(METHOD__RUNTIME_HELPERS__CALL_TO_STRING);
-    callToString.InvokeThrowing(&gc.obj, &gc.alcName);
+    // Not a plain ToString() call: an override is user code that may return null or throw.
+    UnmanagedCallersOnlyCaller getNameForDiagnostics(METHOD__ASSEMBLYLOADCONTEXT__GET_NAME_FOR_DIAGNOSTICS);
+    getNameForDiagnostics.InvokeThrowing(&gc.obj, &gc.alcName);
+    _ASSERTE(gc.alcName != NULL);
     gc.alcName->GetSString(alcName);
 
     GCPROTECT_END();
