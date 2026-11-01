@@ -98,7 +98,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGenerationSize")]
-        internal static extern int RhGetGenerationSize(int gen);
+        internal static extern ulong RhGetGenerationSize(int gen);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetLastGCPercentTimeInGC")]
