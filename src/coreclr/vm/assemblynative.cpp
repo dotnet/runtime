@@ -1772,6 +1772,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
 
     AssemblyTargetProcessor assemblies{ pAssembly };
+    assemblies.Add(groupTypeTH.GetAssembly());
     ExternalTypeNameHash seenPreprocessedExternalEntries;
     while (!assemblies.IsEmpty())
     {

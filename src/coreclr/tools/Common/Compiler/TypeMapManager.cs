@@ -14,6 +14,7 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Runtime;
 using Internal.TypeSystem;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 
 namespace ILCompiler
 {
@@ -32,6 +33,14 @@ namespace ILCompiler
         internal abstract IEnumerable<IExternalTypeMapNode> GetExternalTypeMaps();
 
         internal abstract IEnumerable<IProxyTypeMapNode> GetProxyTypeMaps();
+
+        internal virtual void AddExternalTypeMapDependencies(DependencySink sink, NodeFactory factory, TypeDesc typeMapGroup)
+        {
+        }
+
+        internal virtual void AddProxyTypeMapDependencies(DependencySink sink, NodeFactory factory, TypeDesc typeMapGroup)
+        {
+        }
 
         public abstract void AddCompilationRoots(IRootingServiceProvider rootProvider);
 
