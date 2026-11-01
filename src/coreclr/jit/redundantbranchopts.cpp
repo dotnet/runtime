@@ -1200,6 +1200,17 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     unsigned       matchCount  = 0;
     const unsigned matchLimit  = 4;
 
+    // Compares with no relation to this one don't count against matchLimit, so also bound the
+    // total number of dominating compares inspected. Otherwise a long chain of unrelated
+    // compares makes each relop walk to the method entry, which is quadratic in the chain length.
+    //
+    unsigned domCompareCount = 0;
+#ifdef DEBUG
+    const unsigned domCompareLimit = (unsigned)JitConfig.JitRboDominatorLimit();
+#else
+    const unsigned domCompareLimit = 128;
+#endif
+
     // Unpack the tree's VN
     //
     ValueNum treeNormVN;
@@ -1261,6 +1272,12 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
             if (domCmpTree->OperIsCompare())
             {
+                if (++domCompareCount > domCompareLimit)
+                {
+                    JITDUMP("Bailing out; inspected %u dominating compares\n", domCompareLimit);
+                    break;
+                }
+
                 // We can use liberal VNs here, as bounds checks are not yet
                 // manifest explicitly as relops.
                 //
