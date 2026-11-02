@@ -358,7 +358,6 @@ protected:
 
     // Protect the handle table data structures, seperated from m_crstLoaderAllocator to allow thread cleanup to use the lock
     CrstExplicitInit    m_crstLoaderAllocatorHandleTable;
-    bool                m_fGCPressure;
     bool                m_fUnloaded;
     bool                m_fTerminated;
     bool                m_fMarked;

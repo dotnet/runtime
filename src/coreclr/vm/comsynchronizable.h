@@ -40,7 +40,7 @@ public:
     };
 
 #ifdef FEATURE_MULTITHREADING
-    FCDECL1(static void,        Finalize, ThreadBaseObject* pThis);
+    FCDECL1(static UINT32,      Finalize, ThreadBaseObject* pThis);
     FCDECL0(static FC_BOOL_RET, CatchAtSafePoint);
     FCDECL0(static FC_BOOL_RET, CurrentThreadIsFinalizerThread);
 #endif // FEATURE_MULTITHREADING

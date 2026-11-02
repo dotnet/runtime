@@ -2001,6 +2001,7 @@ class LoaderAllocatorScoutObject : public Object
 
 protected:
     LoaderAllocator * m_nativeLoaderAllocator;
+    bool m_memoryPressureAdded;
 };
 
 #ifdef USE_CHECKED_OBJECTREFS
