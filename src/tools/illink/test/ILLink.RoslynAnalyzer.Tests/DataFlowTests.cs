@@ -1,7 +1,11 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Immutable;
 using System.Threading.Tasks;
+using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.Shared.DataFlow;
 using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -9,6 +13,120 @@ namespace ILLink.RoslynAnalyzer.Tests
     public sealed partial class DataFlowTests : LinkerTestBase
     {
         protected override string TestSuiteName => "DataFlow";
+
+        [Fact]
+        public void StructuredLocalValueEqualityAndDeepCopy()
+        {
+            LocalValue<TestValue> value = Tuple(
+                Scalar(1),
+                Tuple(Scalar(2), Scalar(3)));
+            LocalValue<TestValue> copy = value.DeepCopy();
+
+            Assert.Equal(value, copy);
+            Assert.Equal(value.GetHashCode(), copy.GetHashCode());
+            Assert.NotSame(value.Elements[0].ScalarValue.Box, copy.Elements[0].ScalarValue.Box);
+            Assert.NotSame(value.Elements[1].Elements[0].ScalarValue.Box, copy.Elements[1].Elements[0].ScalarValue.Box);
+            Assert.NotEqual(value, Tuple(Scalar(1), Tuple(Scalar(2), Scalar(4))));
+            Assert.Equal(LocalValue<TestValue>.Top, LocalValue<TestValue>.Top.DeepCopy());
+            Assert.Equal(LocalValue<TestValue>.Unknown, LocalValue<TestValue>.Unknown.DeepCopy());
+        }
+
+        [Fact]
+        public void StructuredLocalValueLatticeMergesCompatibleShapes()
+        {
+            LocalValueLattice<TestValue, TestValueLattice> lattice = new(default(TestValueLattice));
+            LocalValue<TestValue> left = Tuple(Scalar(1), Tuple(Scalar(2), Scalar(3)));
+            LocalValue<TestValue> right = Tuple(Scalar(4), Tuple(Scalar(5), Scalar(6)));
+
+            Assert.Equal(Tuple(Scalar(5), Tuple(Scalar(7), Scalar(7))), lattice.Meet(left, right));
+            Assert.Equal(left, lattice.Meet(LocalValue<TestValue>.Top, left));
+            Assert.Equal(right, lattice.Meet(right, LocalValue<TestValue>.Top));
+            Assert.Equal(LocalValue<TestValue>.Unknown, lattice.Meet(LocalValue<TestValue>.Unknown, left));
+            Assert.Equal(LocalValue<TestValue>.Unknown, lattice.Meet(right, LocalValue<TestValue>.Unknown));
+            Assert.Equal(1, Scalar(1).GetScalarValueOrTop(new TestValue(99)).Box.Value);
+            Assert.Equal(99, left.GetScalarValueOrTop(new TestValue(99)).Box.Value);
+        }
+
+        [Fact]
+        public void StructuredLocalValueLatticeRejectsIncompatibleShapes()
+        {
+            LocalValueLattice<TestValue, TestValueLattice> lattice = new(default(TestValueLattice));
+
+            Assert.Equal(LocalValue<TestValue>.Unknown, lattice.Meet(Scalar(1), Tuple(Scalar(1))));
+            Assert.Equal(LocalValue<TestValue>.Unknown, lattice.Meet(Tuple(Scalar(1)), Tuple(Scalar(1), Scalar(2))));
+            Assert.Equal(
+                Tuple(LocalValue<TestValue>.Unknown, Scalar(3)),
+                lattice.Meet(Tuple(Scalar(1), Scalar(2)), Tuple(Tuple(Scalar(1)), Scalar(3))));
+        }
+
+        [Fact]
+        public void StructuredLocalValueLatticeSatisfiesLatticeLaws()
+        {
+            LocalValueLattice<TestValue, TestValueLattice> lattice = new(default(TestValueLattice));
+            LocalValue<TestValue>[] values =
+            [
+                LocalValue<TestValue>.Top,
+                LocalValue<TestValue>.Unknown,
+                Scalar(1),
+                Scalar(2),
+                Tuple(Scalar(1)),
+                Tuple(Scalar(2)),
+                Tuple(Scalar(1), Scalar(2)),
+                Tuple(Tuple(Scalar(1)), Scalar(2))
+            ];
+
+            foreach (LocalValue<TestValue> left in values)
+            {
+                Assert.Equal(left, lattice.Meet(left, left));
+
+                foreach (LocalValue<TestValue> middle in values)
+                {
+                    Assert.Equal(lattice.Meet(left, middle), lattice.Meet(middle, left));
+
+                    foreach (LocalValue<TestValue> right in values)
+                    {
+                        Assert.Equal(
+                            lattice.Meet(lattice.Meet(left, middle), right),
+                            lattice.Meet(left, lattice.Meet(middle, right)));
+                    }
+                }
+            }
+        }
+
+        private static LocalValue<TestValue> Scalar(int value) => new(new TestValue(value));
+
+        private static LocalValue<TestValue> Tuple(params LocalValue<TestValue>[] elements) =>
+            new(ImmutableArray.Create(elements));
+
+        private sealed class TestValueBox
+        {
+            public int Value { get; }
+
+            public TestValueBox(int value) => Value = value;
+        }
+
+        private readonly struct TestValue : IEquatable<TestValue>, IDeepCopyValue<TestValue>
+        {
+            public TestValueBox Box { get; }
+
+            public TestValue(int value) => Box = new TestValueBox(value);
+
+            public bool Equals(TestValue other) => Box.Value == other.Box.Value;
+
+            public override bool Equals(object? obj) => obj is TestValue other && Equals(other);
+
+            public override int GetHashCode() => Box.Value;
+
+            public TestValue DeepCopy() => new(Box.Value);
+        }
+
+        private readonly struct TestValueLattice : ILattice<TestValue>
+        {
+            public TestValue Top => default;
+
+            public TestValue Meet(TestValue left, TestValue right) =>
+                new(left.Box.Value | right.Box.Value);
+        }
 
         [Fact]
         public Task AnnotatedMembersAccessedViaReflection()
