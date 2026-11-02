@@ -634,6 +634,7 @@ namespace System.Reflection.Tests
 
         private static void VerifyModifiedType(Type expected, Type modified)
         {
+            Assert.NotNull(modified);
             Assert.NotSame(expected, modified);
             Assert.Same(expected, modified.UnderlyingSystemType);
             Assert.Empty(modified.GetRequiredCustomModifiers());
