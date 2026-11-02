@@ -6,6 +6,7 @@
     <NativeAotIncompatible>true</NativeAotIncompatible>
     <!-- Generates invalid metadata that do not round-trip -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).il" />
