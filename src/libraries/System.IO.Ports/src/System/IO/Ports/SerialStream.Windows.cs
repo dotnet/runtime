@@ -775,14 +775,14 @@ namespace System.IO.Ports
                         {
                             _handle.Close();
                             _handle = null;
-                            _threadPoolBinding.Dispose();
+                            _threadPoolBinding?.Dispose();
                         }
                     }
                     else
                     {
                         _handle.Close();
                         _handle = null;
-                        _threadPoolBinding.Dispose();
+                        _threadPoolBinding?.Dispose();
                     }
                     base.Dispose(disposing);
                 }
@@ -915,7 +915,7 @@ namespace System.IO.Ports
                 // Legacy behavior as indicated by tests (e.g.: System.IO.Ports.Tests.SerialStream_EndRead.EndReadAfterClose)
                 // expects to be able to call EndRead after Close/Dispose - even if disposed _threadPoolBinding can free the
                 // native overlapped.
-                _threadPoolBinding.FreeNativeOverlapped(overlappedPtr);
+                _threadPoolBinding!.FreeNativeOverlapped(overlappedPtr);
             }
 
             // Check for non-timeout errors during the read.
@@ -979,7 +979,7 @@ namespace System.IO.Ports
                 // Legacy behavior as indicated by tests (e.g.: System.IO.Ports.Tests.SerialStream_EndWrite.EndWriteAfterSerialStreamClose)
                 // expects to be able to call EndWrite after Close/Dispose - even if disposed _threadPoolBinding can free the
                 // native overlapped.
-                _threadPoolBinding.FreeNativeOverlapped(overlappedPtr);
+                _threadPoolBinding!.FreeNativeOverlapped(overlappedPtr);
             }
 
             // Now check for any error during the write.
@@ -1082,7 +1082,7 @@ namespace System.IO.Ports
                 IAsyncResult result = BeginWriteCore(array, offset, count, null, null);
                 EndWrite(result);
 
-                SerialStreamAsyncResult afsar = result as SerialStreamAsyncResult;
+                SerialStreamAsyncResult? afsar = result as SerialStreamAsyncResult;
                 Debug.Assert(afsar != null, "afsar should be a SerialStreamAsyncResult and should not be null");
                 numBytes = afsar._numBytes;
             }
@@ -1120,7 +1120,7 @@ namespace System.IO.Ports
                 IAsyncResult result = BeginWriteCore(_tempBuf, 0, 1, null, null);
                 EndWrite(result);
 
-                SerialStreamAsyncResult afsar = result as SerialStreamAsyncResult;
+                SerialStreamAsyncResult? afsar = result as SerialStreamAsyncResult;
                 Debug.Assert(afsar != null, "afsar should be a SerialStreamAsyncResult and should not be null");
                 numBytes = afsar._numBytes;
             }
@@ -1358,7 +1358,7 @@ namespace System.IO.Ports
             ManualResetEvent waitHandle = new ManualResetEvent(false);
             asyncResult._waitHandle = waitHandle;
 
-            NativeOverlapped* intOverlapped = _threadPoolBinding.AllocateNativeOverlapped(s_IOCallback, asyncResult, array);
+            NativeOverlapped* intOverlapped = _threadPoolBinding!.AllocateNativeOverlapped(s_IOCallback, asyncResult, array);
 
             asyncResult._overlapped = intOverlapped;
 
@@ -1404,7 +1404,7 @@ namespace System.IO.Ports
             ManualResetEvent waitHandle = new ManualResetEvent(false);
             asyncResult._waitHandle = waitHandle;
 
-            NativeOverlapped* intOverlapped = _threadPoolBinding.AllocateNativeOverlapped(s_IOCallback, asyncResult, array);
+            NativeOverlapped* intOverlapped = _threadPoolBinding!.AllocateNativeOverlapped(s_IOCallback, asyncResult, array);
 
             asyncResult._overlapped = intOverlapped;
 

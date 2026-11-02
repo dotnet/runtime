@@ -19,7 +19,7 @@ namespace System.IO.Ports
             //
             // QueryDosDevice involves finding any ports that map to \Device\Serialx (call with null to get all, then iterate to get the actual device name)
 
-            using (RegistryKey serialKey = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM"))
+            using (RegistryKey? serialKey = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM"))
             {
                 if (serialKey != null)
                 {
@@ -27,7 +27,7 @@ namespace System.IO.Ports
                     for (int i = 0; i < result.Length; i++)
                     {
                         // Replace the name in the array with its value.
-                        result[i] = (string)serialKey.GetValue(result[i]);
+                        result[i] = (string)serialKey.GetValue(result[i])!;
                     }
                     return result;
                 }

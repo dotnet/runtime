@@ -423,7 +423,7 @@ namespace System.IO.Ports
 
         internal int Read(byte[] array, int offset, int count, int timeout)
         {
-            using (CancellationTokenSource cts = GetCancellationTokenSourceFromTimeout(timeout))
+            using (CancellationTokenSource? cts = GetCancellationTokenSourceFromTimeout(timeout))
             {
                 Task<int> t = ReadAsync(array, offset, count, cts?.Token ?? CancellationToken.None);
 
@@ -560,7 +560,7 @@ namespace System.IO.Ports
 
         internal void Write(byte[] array, int offset, int count, int timeout)
         {
-            using (CancellationTokenSource cts = GetCancellationTokenSourceFromTimeout(timeout))
+            using (CancellationTokenSource? cts = GetCancellationTokenSourceFromTimeout(timeout))
             {
                 Task t = WriteAsync(array, offset, count, cts?.Token ?? CancellationToken.None);
 
@@ -867,7 +867,7 @@ namespace System.IO.Ports
 
             return 0;
 
-            bool TryPeekNextRequest(out SerialStreamIORequest r)
+            bool TryPeekNextRequest([NotNullWhen(true)] out SerialStreamIORequest? r)
             {
                 lock (queueLock)
                 {
@@ -880,7 +880,7 @@ namespace System.IO.Ports
                         q.TryDequeue(out _);
                     }
                 }
-                r = default;
+                r = null;
                 return false;
             }
         }
@@ -1064,7 +1064,7 @@ namespace System.IO.Ports
             }
         }
 
-        private static CancellationTokenSource GetCancellationTokenSourceFromTimeout(int timeoutMs)
+        private static CancellationTokenSource? GetCancellationTokenSourceFromTimeout(int timeoutMs)
         {
             return timeoutMs == SerialPort.InfiniteTimeout ?
                 null :
