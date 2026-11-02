@@ -42,26 +42,6 @@ extern MethodDesc* g_pDebuggerInvokeFunctionMethodDesc;
 // Raw byref returns use a scalar interior root. An interior root for a buffer never roots its contents.
 
 //
-// IsElementTypeSpecial()
-//
-// This is a simple function used to check if a CorElementType needs special handling for func eval.
-//
-// parameters:   type - the CorElementType which we need to check
-//
-// return value: true if the specified type needs special handling
-//
-inline static bool IsElementTypeSpecial(CorElementType type)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return ((type == ELEMENT_TYPE_CLASS)   ||
-            (type == ELEMENT_TYPE_OBJECT)  ||
-            (type == ELEMENT_TYPE_ARRAY)   ||
-            (type == ELEMENT_TYPE_SZARRAY) ||
-            (type == ELEMENT_TYPE_STRING));
-}
-
-//
 // Given a register, return the value.
 //
 static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_ADDRESS regAddr, ULONG64 regValue)
@@ -971,7 +951,7 @@ static HRESULT ProtectFuncEvalArgumentStorage(
     {
         DebuggerIPCE_FuncEvalArgData* pArg = &pArguments[i];
         bool nonLeafRegister = HasNonLeafFuncEvalRegister(pArg);
-        if (IsElementTypeSpecial(pArg->argElementType))
+        if (CorTypeInfo::IsObjRef_NoThrow(pArg->argElementType))
         {
             if (nonLeafRegister)
             {
@@ -1068,6 +1048,13 @@ static BYTE* AllocateFuncEvalExternalResult(DebuggerEval* pDE)
     return pDE->CreateExternalMemory(pMT, size);
 }
 
+void Debugger::SetFuncEvalResultType(DebuggerEval* pDE, TypeHandle resultType)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    pDE->m_resultType = resultType;
+}
+
 void* Debugger::AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType)
 {
     CONTRACTL
@@ -1082,8 +1069,7 @@ void* Debugger::AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle res
     return ::AllocateFuncEvalExternalResult(pDE);
 }
 
-void Debugger::ProtectFuncEvalByRefResult(
-    DebuggerEval* pDE, TypeHandle resultType, DebuggerFuncEvalResult** ppResult)
+void Debugger::ProtectFuncEvalByRefResult(DebuggerEval* pDE, TypeHandle resultType)
 {
     CONTRACTL
     {
@@ -1093,8 +1079,8 @@ void Debugger::ProtectFuncEvalByRefResult(
     }
     CONTRACTL_END;
 
-    _ASSERTE(*ppResult == nullptr);
-    *ppResult = new (interopsafe) DebuggerFuncEvalResult(pDE, resultType);
+    _ASSERTE(pDE->m_funcEvalResult == nullptr);
+    pDE->m_funcEvalResult = new (interopsafe) DebuggerFuncEvalResult(pDE, resultType);
 }
 
 TypeHandle Debugger::GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index)
@@ -1116,7 +1102,7 @@ TypeHandle Debugger::GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index)
 }
 
 BOOL Debugger::ReadFuncEvalPrimitiveRegister(
-    DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue)
+    DebuggerEval* pDE, UINT32 index, UINT64* pValue)
 {
     CONTRACTL
     {
@@ -1126,10 +1112,10 @@ BOOL Debugger::ReadFuncEvalPrimitiveRegister(
     }
     CONTRACTL_END;
 
-    _ASSERTE(index < pContext->argumentCount);
-    DebuggerIPCE_FuncEvalArgData* pArg = &pContext->pEval->GetArgData()[index];
-    _ASSERTE(pArg->argElementType != ELEMENT_TYPE_VALUETYPE && !IsElementTypeSpecial(pArg->argElementType));
-    return ReadFuncEvalRegisterValue(pContext->pEval, pArg, pValue);
+    _ASSERTE(index < pDE->m_argCount);
+    DebuggerIPCE_FuncEvalArgData* pArg = &pDE->GetArgData()[index];
+    _ASSERTE(pArg->argElementType != ELEMENT_TYPE_VALUETYPE && !CorTypeInfo::IsObjRef_NoThrow(pArg->argElementType));
+    return ReadFuncEvalRegisterValue(pDE, pArg, pValue);
 }
 
 void Debugger::WriteFuncEvalRegister(
@@ -1215,11 +1201,12 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
     pDE->m_successful = false;
     LOG((LF_CORDB, LL_EVERYTHING, "D::FEHW - Exception during funceval.\n"));
 
-    if (pDE->m_externalMemoryOwner != nullptr)
-    {
-        DeleteInteropSafe(pDE->m_externalMemoryOwner);
-        pDE->m_externalMemoryOwner = nullptr;
-    }
+    // We are going to return an exception,
+    // so we need to release any handles we have already allocated for returning results.
+    pDE->m_funcEvalResult.Release();
+    pDE->m_funcEvalResult = NULL;
+    pDE->m_externalMemoryOwner.Release();
+    pDE->m_externalMemoryOwner = NULL;
 
     //
     // Special handling for thread abort exceptions. We need to explicitly reset the
@@ -1288,14 +1275,16 @@ DebuggerFuncEvalResult::~DebuggerFuncEvalResult()
     ReleaseDebuggerExternalMemoryHandle(m_resultHandle);
 }
 
-void DebuggerEval::ReleaseFuncEvalResult()
+static void FreeFuncEvalTemporaryResult(DebuggerFuncEvalContext* pContext)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (m_funcEvalResult != nullptr)
+    if (pContext->pTemporaryResult != nullptr)
     {
-        DeleteInteropSafe(m_funcEvalResult);
-        m_funcEvalResult = nullptr;
+        ExternalMemoryHandle::Remove(pContext->pTemporaryResult DEBUG_ARG(false));
+        pContext->pTemporaryResult = nullptr;
+        delete[] static_cast<BYTE*>(pContext->pResultData);
+        pContext->pResultData = nullptr;
     }
 }
 
@@ -1340,9 +1329,7 @@ static void ValidateFuncEvalArgumentCount(DebuggerEval* pDE)
     }
 }
 
-static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatcherStackAddr,
-                                  DebuggerFuncEvalResult** ppResult,
-                                  ExternalMemoryHandle** ppTemporaryResult, HRESULT captureResult)
+static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatcherStackAddr)
 {
     CONTRACTL
     {
@@ -1352,16 +1339,6 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
     }
     CONTRACTL_END;
 
-    if (captureResult == E_POINTER)
-    {
-        COMPlusThrow(kArgumentNullException);
-    }
-    if (captureResult == COR_E_ARGUMENT)
-    {
-        COMPlusThrow(kArgumentException, W("Argument_BadObjRef"));
-    }
-    IfFailThrow(captureResult);
-
     ValidateFuncEvalArgumentCount(pContext->pEval);
 
     if (VolatileLoad(&g_pDebuggerInvokeFunctionMethodDesc) == nullptr)
@@ -1369,15 +1346,13 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
         VolatileStore(&g_pDebuggerInvokeFunctionMethodDesc, CoreLibBinder::GetMethod(METHOD__DEBUGGER__INVOKE_FUNCTION));
     }
     UnmanagedCallersOnlyCaller caller(METHOD__DEBUGGER__INVOKE_FUNCTION);
-    pContext->ppResult = ppResult;
-    pContext->ppTemporaryResult = ppTemporaryResult;
     FuncEvalWrapper(&caller, pContext, pCatcherStackAddr);
 
     {
         DebuggerEval* pDE = pContext->pEval;
         bool external = (pContext->flags & FuncEvalExternalResult) != 0;
-        bool boxed = !external &&
-            ((pContext->flags & FuncEvalNewObject) != 0 || pContext->returnElementType == ELEMENT_TYPE_VALUETYPE);
+        bool boxed = !external
+            && (pContext->flags & (FuncEvalNewObject | FuncEvalValueTypeResult)) != 0;
         pDE->m_retValueBoxing = external ? Debugger::NoValueTypeBoxing :
             boxed ? Debugger::AllBoxed : Debugger::OnlyPrimitivesUnboxed;
         if (pContext->resultHandle != nullptr)
@@ -1416,10 +1391,6 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
-
-
-    DebuggerFuncEvalResultHolder result;
-    ExternalMemoryHandle* temporaryResult = nullptr;
 
     //
     // Object references and possible interior pointers share this GC-protected array.
@@ -1477,25 +1448,19 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     // Keep a null terminator so partially registered snapshots are cleaned up on failure.
     memset(pArgumentHandles, 0, cbAllocSize);
 
-    DebuggerFuncEvalData data = {};
-    data.pModule = pDE->m_debuggerModule->GetRuntimeModule();
-    data.ppMethod = &pDE->m_md;
-    data.pOwnerType = &pDE->m_ownerTypeHandle;
-    data.pResultType = &pDE->m_resultType;
-    data.pResult = pDE->m_result;
-    data.methodToken = pDE->m_methodToken;
-    data.genericArgsCount = pDE->m_genericArgsCount;
-    data.isNewObject = pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT;
-
     DebuggerFuncEvalContext context = {};
     context.pEval = pDE;
     context.pArguments = pArguments;
     context.pInteriors = pMaybeInteriorPtrArray;
     context.pHomes = pByRefMaybeInteriorPtrArray;
     context.pCapturedArguments = pBufferForArgsArray;
+    context.pResultByRefs = reinterpret_cast<void**>(pDE->m_result);
     context.pResultData = pDE->m_result;
+    context.pModule = pDE->m_debuggerModule->GetRuntimeModule();
     context.argumentCount = pDE->m_argCount;
-    context.pData = &data;
+    context.flags = pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT ? FuncEvalNewObject : 0;
+    context.methodToken = pDE->m_methodToken;
+    context.genericArgsCount = pDE->m_genericArgsCount;
     Holder<ExternalMemoryHandle**, DoNothing<ExternalMemoryHandle**>, ReleaseFuncEvalArgumentHandles>
         argumentHandles(pArgumentHandles);
     Holder<DebuggerFuncEvalContext*, DoNothing<DebuggerFuncEvalContext*>, FreeFuncEvalTemporaryResult>
@@ -1520,13 +1485,24 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
                 pDE, pBufferForArgsArray, pArgumentHandles);
         }
 
-        InvokeManagedFuncEval(&context, pCatcherStackAddr, &result, &temporaryResult, captureResult);
+        // Check the captureResult code outside of the GCX_FORBID block
+        // so we can allocate and throw an exception if needed.
+        if (captureResult == E_POINTER)
+        {
+            COMPlusThrow(kArgumentNullException);
+        }
+        if (captureResult == COR_E_ARGUMENT)
+        {
+            COMPlusThrow(kArgumentException, W("Argument_BadObjRef"));
+        }
+        IfFailThrow(captureResult);
+
+        InvokeManagedFuncEval(&context, pCatcherStackAddr);
     }
     EX_CATCH
     {
-        // The result slot is registered as an interior root for byref returns. Release
-        // that registration before replacing the slot with an exception OBJECTHANDLE.
-        result = nullptr;
+        // If we allocated a temporary memory handle for a value-type result,
+        // we can release that handle and the memory here.
         temporaryResultHolder.Release();
 
         // Managed code can create the result handle immediately before an abort reaches
@@ -1552,9 +1528,6 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     GCPROTECT_END();    // pByRefMaybeInteriorPtrArray
     GCPROTECT_END();    // pMaybeInteriorPtrArray
     LOG((LF_CORDB, LL_EVERYTHING, "Managed func-eval: returning...\n"));
-    _ASSERTE(pDE->m_funcEvalResult == nullptr);
-    pDE->m_funcEvalResult = result;
-    result.SuppressRelease();
 }
 
 
@@ -1621,7 +1594,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
                 if (th.IsNull() || th.ContainsGenericVariables())
                     COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
 
-                ValidateFuncEvalReturnType(true, th.GetMethodTable());
+                ValidateFuncEvalConstructorType(th.GetMethodTable());
 
                 // Run the Class Init for this type, if necessary.
                 MethodTable * pOwningMT = th.GetMethodTable();
@@ -1694,7 +1667,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
                 CorElementType et = th.GetSignatureCorElementType();
                 // Gotta be a primitive, class, or System.Object.
                 if (((et < ELEMENT_TYPE_BOOLEAN) || (et > ELEMENT_TYPE_R8)) &&
-                    !IsElementTypeSpecial(et))
+                    !CorTypeInfo::IsObjRef_NoThrow(et))
                 {
                     COMPlusThrow(kArgumentOutOfRangeException, W("ArgumentOutOfRange_Enum"));
                 }
@@ -1703,7 +1676,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
                 SIZE_T *dims;
                 dims = (SIZE_T*) (firstdata + pDE->m_genericArgsNodeCount);
 
-                if (IsElementTypeSpecial(et))
+                if (CorTypeInfo::IsObjRef_NoThrow(et))
                 {
                     newObj = AllocateObjectArray((DWORD)dims[0], th);
                 }

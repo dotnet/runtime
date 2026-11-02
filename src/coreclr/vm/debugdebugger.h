@@ -22,24 +22,11 @@ extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();
 
 #ifdef DEBUGGING_SUPPORTED
 class DebuggerEval;
-class DebuggerFuncEvalResult;
 class ExternalMemoryHandle;
 struct DebuggerFuncEvalArgument;
 
-void ValidateFuncEvalReturnType(bool isNewObject, MethodTable* pMT);
+void ValidateFuncEvalConstructorType(MethodTable* pMT);
 HRESULT ValidateObject(Object* objPtr);
-
-struct DebuggerFuncEvalData
-{
-    Module* pModule;
-    MethodDesc** ppMethod;
-    TypeHandle* pOwnerType;
-    TypeHandle* pResultType;
-    ARG_SLOT* pResult;
-    mdMethodDef methodToken;
-    uint32_t genericArgsCount;
-    bool isNewObject;
-};
 
 struct DebuggerFuncEvalContext
 {
@@ -48,29 +35,23 @@ struct DebuggerFuncEvalContext
     void** pInteriors;
     void** pHomes;
     INT64* pCapturedArguments;
-    DebuggerFuncEvalResult** ppResult;
-    ExternalMemoryHandle** ppTemporaryResult;
+    ExternalMemoryHandle* pTemporaryResult;
     void** pResultByRefs;
     void* pResultData;
     void* resultHandle;
+    Module* pModule;
     UINT32 argumentCount;
     UINT32 parameterCount;
     UINT32 flags;
-    UINT32 returnElementType;
-    DebuggerFuncEvalData* pData;
+    mdMethodDef methodToken;
+    uint32_t genericArgsCount;
 };
-
-void FreeFuncEvalTemporaryResult(DebuggerFuncEvalContext* pContext);
 
 enum DebuggerFuncEvalFlags
 {
     FuncEvalNewObject = 1,
-    FuncEvalStatic = 2,
-    FuncEvalVirtual = 4,
-    FuncEvalInterface = 8,
-    FuncEvalShared = 16,
-    FuncEvalExternalResult = 32,
-    FuncEvalValueTypeResult = 64,
+    FuncEvalExternalResult = 2,
+    FuncEvalValueTypeResult = 4,
 };
 
 struct DebuggerFuncEvalArgument
@@ -93,7 +74,8 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
     QCall::ObjectHandleOnStack declaringType, QCall::ObjectHandleOnStack methodOwner,
     QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
-    DebuggerFuncEvalContext* pContext, QCallExceptionStatus* qcallError);
+    DebuggerFuncEvalContext* pContext, QCall::TypeHandle resultType,
+    QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
     DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack type, QCallExceptionStatus* qcallError);
 extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(

@@ -1223,7 +1223,6 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_successful = false;
     m_argData = NULL;
     memset(m_result, 0, sizeof(m_result));
-    m_md = NULL;
     m_resultType = TypeHandle();
     m_externalMemoryOwner = NULL;
     m_funcEvalResult = NULL;
@@ -9768,7 +9767,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)pResult;
     ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pDomain);
     ipce->FuncEvalComplete.vmObjectHandle = pDE->m_vmObjectHandle;
-    ipce->FuncEvalComplete.vmExternalMemoryOwner.SetRawPtr(pDE->m_externalMemoryOwner);
+    ipce->FuncEvalComplete.vmExternalMemoryOwner.SetRawPtr(pDE->m_externalMemoryOwner.GetValue());
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: TypeHandle is %p\n", pDE->m_resultType.AsPtr()));
 
@@ -9789,7 +9788,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
         (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr))));
 
     IfFailThrow(m_pRCThread->SendIPCEvent());
-    pDE->m_externalMemoryOwner = NULL;
+    pDE->m_externalMemoryOwner.SuppressRelease();
 
 #endif
 }

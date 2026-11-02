@@ -28,31 +28,27 @@ namespace System.Diagnostics
                 // Native array of captured argument values.
                 // Contains literal values and GC handles.
                 internal ulong* CapturedArguments;
-                internal void** ResultOwner;
-                internal void** TemporaryResultHandle;
+                internal void* TemporaryResultHandle;
                 internal void** ResultByRefs;
                 // Unboxed result data.
-                // SAFETY: Rooted by either ResultOwner or TemporaryResultHandle depending on whether or not the final result is boxed.
+                // SAFETY: GC-containing data is rooted by debugger-owned storage or TemporaryResultHandle.
                 internal void* ResultData;
                 // GC Handle to result (if boxed).
                 internal IntPtr ResultHandle;
+                internal void* Module;
                 internal uint ArgumentCount;
                 internal uint ParameterCount;
                 internal EvaluationFlags Flags;
-                internal uint ReturnElementType;
-                internal void* Data;
+                internal uint MethodToken;
+                internal uint GenericArgsCount;
             }
 
             [Flags]
             internal enum EvaluationFlags : uint
             {
                 NewObject = 1,
-                Static = 2,
-                Virtual = 4,
-                Interface = 8,
-                Shared = 16,
-                ExternalResult = 32,
-                ValueTypeResult = 64,
+                ExternalResult = 2,
+                ValueTypeResult = 4,
             }
 
             [Flags]
@@ -95,6 +91,7 @@ namespace System.Diagnostics
             private readonly Context* _context;
             private readonly void** _storage;
             private readonly MethodBase _method;
+            private readonly RuntimeType _returnType;
             private readonly bool _hasThis;
             private readonly Argument[] _arguments;
             private readonly object?[] _objects;
@@ -157,15 +154,15 @@ namespace System.Diagnostics
                     ObjectHandleOnStack.Create(ref declaringType), ObjectHandleOnStack.Create(ref methodOwner));
                 Debug.Assert(declaringType is not null);
                 Debug.Assert(methodOwner is not null);
-                bool isStatic = (context->Flags & EvaluationFlags.Static) != 0;
-                Debug.Assert((ulong)context->ArgumentCount + (IsNewObject() ? 1UL : 0UL) ==
-                    (ulong)context->ParameterCount + (isStatic ? 0UL : 1UL));
-
                 MethodBase? method = RuntimeType.GetMethodBase(declaringType, methodOwner);
                 Debug.Assert(method is RuntimeMethodInfo or RuntimeConstructorInfo);
                 Debug.Assert(!IsNewObject() || method is RuntimeConstructorInfo);
+
+                Debug.Assert((ulong)context->ArgumentCount + (IsNewObject() ? 1UL : 0UL) ==
+                    (ulong)context->ParameterCount + (method.IsStatic ? 0UL : 1UL));
+
                 _method = method;
-                _hasThis = !isStatic && !IsNewObject();
+                _hasThis = !method.IsStatic && !IsNewObject();
                 _objects = new object?[argumentCount];
 
                 if (_hasThis)
@@ -177,9 +174,12 @@ namespace System.Diagnostics
                     }
 
                     PrepareArgument(0, declaringType, isByRef: false);
-                    ValidateThis(declaringType);
+                    ValidateThis(declaringType, method);
                 }
-                PrepareResult(context);
+                RuntimeType returnType = method is RuntimeMethodInfo methodInfo
+                    ? (RuntimeType)methodInfo.ReturnType
+                    : IsNewObject() ? (RuntimeType)method.DeclaringType! : (RuntimeType)typeof(void);
+                PrepareResult(context, new QCallTypeHandle(ref returnType));
 
                 ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
                 for (int i = 0; i < parameters.Length; i++)
@@ -190,14 +190,14 @@ namespace System.Diagnostics
                         isByRef ? (RuntimeType)parameterType.GetElementType()! : parameterType, isByRef);
                 }
 
-                CorElementType returnElementType = (CorElementType)context->ReturnElementType;
-                if (returnElementType == CorElementType.ELEMENT_TYPE_TYPEDBYREF)
+                _returnType = returnType;
+                if (_returnType == typeof(TypedReference))
                 {
                     throw new ArgumentException(SR.Argument_CannotCreateTypedReference);
                 }
 
-                _invoke = method is RuntimeMethodInfo methodInfo
-                    ? methodInfo.Invoker.GetDebuggerInvokeDelegate()
+                _invoke = method is RuntimeMethodInfo runtimeMethodInfo
+                    ? runtimeMethodInfo.Invoker.GetDebuggerInvokeDelegate()
                     : ((RuntimeConstructorInfo)method).GetDebuggerInvokeDelegate();
             }
 
@@ -205,34 +205,30 @@ namespace System.Diagnostics
             internal void Invoke()
             {
                 int resultSlot = checked((int)_context->ParameterCount + 1);
-                CorElementType returnType = (CorElementType)_context->ReturnElementType;
+                bool returnsObject = IsObject(_returnType.GetCorElementType());
                 object? resultObject = null;
                 if (UsesExternalResult || UsesValueTypeResult)
                 {
                     SetStorage(resultSlot, ref *(byte*)_context->ResultData);
                 }
-                else if (IsObject(returnType))
+                else if (returnsObject)
                 {
                     SetStorage(resultSlot, ref resultObject);
                 }
-                else if (returnType == CorElementType.ELEMENT_TYPE_BYREF)
+                else if (_returnType.IsByRef)
                 {
                     SetStorage(resultSlot, ref *(byte*)_context->ResultByRefs);
                 }
-                else if (returnType != CorElementType.ELEMENT_TYPE_VOID)
+                else if (_returnType != typeof(void))
                 {
                     SetStorage(resultSlot, ref *(byte*)_context->ResultData);
                 }
-
-                bool abstractNewObject = IsNewObject() && _method.DeclaringType!.IsAbstract;
+                bool abstractNewObject = IsNewObject() && _returnType.IsAbstract;
                 object? newObject = abstractNewObject ? null : _invoke(this, _storage);
                 if (UsesValueTypeResult)
                 {
-                    RuntimeType type = IsNewObject()
-                        ? (RuntimeType)_method.DeclaringType!
-                        : (RuntimeType)((RuntimeMethodInfo)_method).ReturnType;
                     ref byte source = ref *(byte*)_context->ResultData;
-                    resultObject = CastHelpers.Box(type.GetNativeTypeHandle().AsMethodTable(), ref source);
+                    resultObject = CastHelpers.Box(_returnType.GetNativeTypeHandle().AsMethodTable(), ref source);
                 }
                 else if (IsNewObject() && !UsesExternalResult)
                 {
@@ -243,8 +239,8 @@ namespace System.Diagnostics
                 // Matches native's boxing-policy computation (DebuggerEval::m_retValueBoxing) so the
                 // completion step in funceval.cpp can tell what, if anything, it should publish.
                 bool boxed = !UsesExternalResult &&
-                    (IsNewObject() || returnType == CorElementType.ELEMENT_TYPE_VALUETYPE);
-                if (boxed || IsObject(returnType))
+                    (IsNewObject() || UsesValueTypeResult);
+                if (boxed || returnsObject)
                 {
                     // Allocate a GC handle for the boxed result object.
                     _context->ResultHandle = GCHandle.ToIntPtr(GCHandle.Alloc(resultObject));
@@ -445,7 +441,7 @@ namespace System.Diagnostics
                 }
             }
 
-            private void ValidateThis(RuntimeType declaringType)
+            private void ValidateThis(RuntimeType declaringType, MethodBase method)
             {
                 if (declaringType.IsValueType)
                 {
@@ -459,13 +455,20 @@ namespace System.Diagnostics
                     throw new NullReferenceException(SR.NullReference_This);
                 }
 
-                if (declaringType == typeof(SZArrayHelper))
+                if (declaringType.IsInstanceOfType(thisArg))
+                {
+                    // If the receiver is assignable to the declaring type, the call is valid.
+                    return;
+                }
+
+                if (declaringType == typeof(SZArrayHelper) && thisArg.GetType().IsSZArray)
                 {
                     // SZArrayHelper methods are invoked with array "this" parameters by design.
                     return;
                 }
 
-                if ((_context->Flags & (EvaluationFlags.Interface | EvaluationFlags.Virtual)) == EvaluationFlags.Interface
+                if (!method.IsVirtual
+                    && declaringType.IsInterface
                     && declaringType.IsDefined(typeof(DynamicInterfaceCastableImplementationAttribute)))
                 {
                     // When calling a non-virtual method on a DynamicInterfaceCastableImplementation-attributed interface type,
@@ -474,10 +477,7 @@ namespace System.Diagnostics
                     return;
                 }
 
-                if (!declaringType.IsInstanceOfType(thisArg))
-                {
-                    throw new ArgumentException(SR.Argument_CORDBBadMethod);
-                }
+                throw new ArgumentException(SR.Argument_CORDBBadMethod);
             }
 
             [DebuggerHidden]
@@ -769,7 +769,7 @@ namespace System.Diagnostics
 
             [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_PrepareFuncEvalResult")]
-            private static partial void PrepareResult(Context* context);
+            private static partial void PrepareResult(Context* context, QCallTypeHandle resultType);
 
             [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_GetFuncEvalArgumentType")]

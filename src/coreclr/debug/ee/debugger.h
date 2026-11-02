@@ -2539,13 +2539,13 @@ public:
     virtual bool ReadFuncEvalTypeHandles(
         DebuggerEval* pDE, TypeHandle* pTypes, uint32_t count);
     virtual void* AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType);
-    virtual void ProtectFuncEvalByRefResult(
-        DebuggerEval* pDE, TypeHandle resultType, DebuggerFuncEvalResult** ppResult);
+    virtual void ProtectFuncEvalByRefResult(DebuggerEval* pDE, TypeHandle resultType);
     virtual TypeHandle GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index);
     virtual BOOL ReadFuncEvalPrimitiveRegister(
-        DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue);
+        DebuggerEval* pDE, UINT32 index, UINT64* pValue);
     virtual void WriteFuncEvalRegister(
         DebuggerEval* pDE, UINT32 index, UINT64 value);
+    virtual void SetFuncEvalResultType(DebuggerEval* pDE, TypeHandle resultType);
 #endif // !DACCESS_COMPILE
 
     HRESULT SetReference(void *objectRefAddress, VMPTR_OBJECTHANDLE vmObjectHandle, void *newReference);
@@ -3293,6 +3293,27 @@ private:
     BYTE                 *m_pMemory;
 };
 
+
+typedef Wrapper<DebuggerExternalMemoryOwner*, DoNothing<DebuggerExternalMemoryOwner*>,
+    DeleteInteropSafe<DebuggerExternalMemoryOwner>> DebuggerExternalMemoryOwnerHolder;
+
+// Persistent roots for a raw byref result, owned by DebuggerEval through cleanup.
+class DebuggerFuncEvalResult
+{
+public:
+    DebuggerFuncEvalResult(DebuggerEval* pDE, TypeHandle resultType);
+    ~DebuggerFuncEvalResult();
+
+    DebuggerFuncEvalResult(const DebuggerFuncEvalResult&) = delete;
+    DebuggerFuncEvalResult& operator=(const DebuggerFuncEvalResult&) = delete;
+
+private:
+    ExternalMemoryHandle* m_resultHandle;
+};
+
+typedef Wrapper<DebuggerFuncEvalResult*, DoNothing<DebuggerFuncEvalResult*>,
+    DeleteInteropSafe<DebuggerFuncEvalResult>> DebuggerFuncEvalResultHolder;
+
 class DebuggerEval
 {
 public:
@@ -3323,24 +3344,21 @@ public:
     unsigned int                       m_genericArgsNodeCount;
     SIZE_T                             m_stringSize;
     BYTE                              *m_argData;
-    MethodDesc                        *m_md;
     ARG_SLOT                           m_result[NUMBER_RETURNVALUE_SLOTS];
     TypeHandle                         m_resultType;
-    DebuggerExternalMemoryOwner       *m_externalMemoryOwner;
-    DebuggerFuncEvalResult             *m_funcEvalResult;
+    DebuggerExternalMemoryOwnerHolder m_externalMemoryOwner;
+    DebuggerFuncEvalResultHolder       m_funcEvalResult;
     SIZE_T                             m_arrayRank;
     FUNC_EVAL_ABORT_TYPE               m_aborting;          // Has an abort been requested, and what type.
     bool                               m_aborted;           // Was this eval aborted
     bool                               m_completed;          // Is the eval complete - successfully or by aborting
     bool                               m_evalUsesHijack;
     VMPTR_OBJECTHANDLE                 m_vmObjectHandle;
-    TypeHandle                         m_ownerTypeHandle;
     DebuggerEvalBreakpointInfoSegment* m_bpInfoSegment;
 
     DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
 
     BYTE *CreateExternalMemory(MethodTable *pMT, SIZE_T size);
-    void ReleaseFuncEvalResult();
 
     bool Init()
     {
@@ -3377,13 +3395,6 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        ReleaseFuncEvalResult();
-
-        if (m_externalMemoryOwner != NULL)
-        {
-            DeleteInteropSafe(m_externalMemoryOwner);
-        }
-
         if (m_argData)
         {
             // Clean up any temporary buffers used to send the argument type information.  These were allocated
@@ -3409,23 +3420,6 @@ public:
     }
 
 };
-
-// Persistent roots for a raw byref result, owned by DebuggerEval through cleanup.
-class DebuggerFuncEvalResult
-{
-public:
-    DebuggerFuncEvalResult(DebuggerEval* pDE, TypeHandle resultType);
-    ~DebuggerFuncEvalResult();
-
-    DebuggerFuncEvalResult(const DebuggerFuncEvalResult&) = delete;
-    DebuggerFuncEvalResult& operator=(const DebuggerFuncEvalResult&) = delete;
-
-private:
-    ExternalMemoryHandle* m_resultHandle;
-};
-
-typedef Wrapper<DebuggerFuncEvalResult*, DoNothing<DebuggerFuncEvalResult*>,
-    DeleteInteropSafe<DebuggerFuncEvalResult>> DebuggerFuncEvalResultHolder;
 
 /* ------------------------------------------------------------------------ *
  * New/delete overrides to use the debugger's private heap
