@@ -586,81 +586,76 @@ static GenTree* FoldComparisons(
         return nullptr;
     }
 
+    GenTree*   value = base1;
+    GenTree*   newBound;
+    genTreeOps oper;
+    bool       isUnsigned = false;
     if (range.HasSymbolicUpper())
     {
         assert(symbolicBound != nullptr && range.UpperIdentity() == 1);
-        genTreeOps oper = range.IsUpperExclusive() ? GT_LT : GT_LE;
-        cmp1->gtOp1     = comp->gtWrapWithSideEffects(base1, value1, GTF_OBS_EFFECT);
-        cmp1->gtOp2     = symbolicBound;
-        cmp1->SetOper(cmp2IsReversed ? GenTree::ReverseRelop(oper) : oper);
-        if (range.Lower() == 0)
-            cmp1->SetUnsigned();
-        else
-            cmp1->ClearUnsigned();
-        return cmp1;
+        oper       = range.IsUpperExclusive() ? GT_LT : GT_LE;
+        newBound   = symbolicBound;
+        isUnsigned = range.Lower() == 0;
     }
-
-    var_types     type = value1->TypeGet();
-    GenTree*      value;
-    target_size_t constant;
-    genTreeOps    oper;
-    bool          isUnsigned = false;
-    if (range.IsEmpty() || range.IsFull(mask))
+    else if (range.IsEmpty() || range.IsFull(mask))
     {
         // Only the first expression is guaranteed to execute in the original chain.
         bool result = range.IsFull(mask) != cmp2IsReversed;
         return comp->gtWrapWithSideEffects(comp->gtNewIconNode(result ? 1 : 0), value1, GTF_OBS_EFFECT);
     }
-
-    target_size_t lower   = range.Lower();
-    target_size_t upper   = range.Upper();
-    target_size_t signBit = (mask >> 1) + 1;
-    value                 = base1;
-    if (lower == upper)
-    {
-        oper     = GT_EQ;
-        constant = lower;
-    }
-    else if (range.Width(mask) == mask - 1)
-    {
-        oper     = GT_NE;
-        constant = (lower - 1) & mask;
-    }
-    else if (upper == signBit - 1)
-    {
-        oper     = GT_GE;
-        constant = lower;
-    }
-    else if (lower == signBit)
-    {
-        oper     = GT_LE;
-        constant = upper;
-    }
-    else if (lower == 0)
-    {
-        oper       = GT_LE;
-        constant   = upper;
-        isUnsigned = true;
-    }
-    else if (upper == mask)
-    {
-        oper       = GT_GE;
-        constant   = lower;
-        isUnsigned = true;
-    }
     else
     {
-        value      = comp->gtNewOperNode(GT_SUB, type, value, NewRangeConstant(comp, lower, type));
-        constant   = range.Width(mask);
-        isUnsigned = constant != signBit - 1;
-        oper       = isUnsigned ? GT_LE : GT_GE;
-        if (!isUnsigned)
+        var_types     type = value1->TypeGet();
+        target_size_t constant;
+        target_size_t lower   = range.Lower();
+        target_size_t upper   = range.Upper();
+        target_size_t signBit = (mask >> 1) + 1;
+        if (lower == upper)
         {
-            constant = 0;
+            oper     = GT_EQ;
+            constant = lower;
         }
-    }
+        else if (range.Width(mask) == mask - 1)
+        {
+            oper     = GT_NE;
+            constant = (lower - 1) & mask;
+        }
+        else if (upper == signBit - 1)
+        {
+            oper     = GT_GE;
+            constant = lower;
+        }
+        else if (lower == signBit)
+        {
+            oper     = GT_LE;
+            constant = upper;
+        }
+        else if (lower == 0)
+        {
+            oper       = GT_LE;
+            constant   = upper;
+            isUnsigned = true;
+        }
+        else if (upper == mask)
+        {
+            oper       = GT_GE;
+            constant   = lower;
+            isUnsigned = true;
+        }
+        else
+        {
+            value      = comp->gtNewOperNode(GT_SUB, type, value, NewRangeConstant(comp, lower, type));
+            constant   = range.Width(mask);
+            isUnsigned = constant != signBit - 1;
+            oper       = isUnsigned ? GT_LE : GT_GE;
+            if (!isUnsigned)
+            {
+                constant = 0;
+            }
+        }
 
-    GenTree* newBound = NewRangeConstant(comp, constant, type);
+        newBound = NewRangeConstant(comp, constant, type);
+    }
 #ifdef TARGET_ARM64
     if ((value != base1) && (symbolicBound == nullptr) && value1->gtEffectiveVal()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
         value2->OperIs(GT_LCL_VAR, GT_LCL_FLD))
