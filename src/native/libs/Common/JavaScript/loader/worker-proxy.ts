@@ -8,7 +8,8 @@ import { dotnetApi, dotnetInternals, dotnetRuntimeExports, dotnetLogger, Module 
 import { runtimeState } from "./exit";
 import { loaderCallbacks } from "./callbacks";
 import { initPolyfillsLoader } from "./polyfills";
-import { loadDotnetModule, loadJSModule, callLibraryInitializerOnRuntimeConfigLoaded, callLibraryInitializerOnRuntimeReady, hasCustomResourceLoader } from "./assets";
+import { loadDotnetModule, loadJSModule, callLibraryInitializerOnRuntimeConfigLoaded, callLibraryInitializerOnRuntimeReady, updateWorkerDownloadProgress } from "./assets";
+import { serveWorkerResource } from "./worker-assets";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { createNativeChannel, NativeOperation } from "./worker-native";
 import {
@@ -20,9 +21,6 @@ import type { WorkerToMainMessage, WorkerCommandMessage } from "./worker-runtime
 
 export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAPI> {
     await loaderCallbacks.configLoaded?.(config);
-    if (hasCustomResourceLoader() || loaderCallbacks.downloadResourceProgress) {
-        throw new Error("withWorker(): custom resource loading/progress callbacks are not yet routed by the native-boundary proof");
-    }
     await initPolyfillsLoader();
     const resources = config.resources;
     if (!resources) throw new Error("withWorker(): runtime resources are missing");
@@ -36,12 +34,14 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
     let pending: AbortController | undefined;
     let exitRequested = false;
     let uiAttached = false;
+    const resourceAbort = new AbortController();
     const timeoutMs = config.workerOptions?.timeoutMs ?? 30000;
     const timeout = timeoutMs > 0 ? setTimeout(() => terminate(new Error("withWorker(): worker startup timed out")), timeoutMs) : undefined;
 
     function terminate(error: Error): void {
         if (exited) return;
         exited = error;
+        resourceAbort.abort(error);
         if (timeout !== undefined) clearTimeout(timeout);
         runtimeState.exitCode ??= 1;
         const context = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext];
@@ -196,7 +196,15 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
     worker.onmessage = event => {
         if (exited) return;
         const message = event.data as WorkerToMainMessage;
-        if (message.type === "attach") {
+        if (message.type === "resource") {
+            void serveWorkerResource(message, resourceAbort.signal).catch(error => terminate(error instanceof Error ? error : new Error(String(error))));
+        } else if (message.type === "download-progress") {
+            try {
+                updateWorkerDownloadProgress(message.loaded, message.total);
+            } catch (error) {
+                terminate(error instanceof Error ? error : new Error(String(error)));
+            }
+        } else if (message.type === "attach") {
             if (signal) {
                 terminate(new Error("withWorker(): duplicate native attachment")); return;
             }

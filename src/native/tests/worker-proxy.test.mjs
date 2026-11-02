@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createContext, SourceTextModule, SyntheticModule } from "node:vm";
-import { Worker } from "node:worker_threads";
+import { MessageChannel, Worker } from "node:worker_threads";
 import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import ts from "typescript";
@@ -36,36 +36,179 @@ test("shared heap I53 reads preserve actual native conversion semantics at signe
     }
 });
 
-for (const callback of ["resource", "progress"]) {
-    test(`unsupported ${callback} callback is rejected explicitly before spawning a native worker`, async () => {
-        let configured = false;
-        let spawned = 0;
-        const callbacks = { configLoaded: async () => {
-            configured = true;
-            if (callback === "progress") callbacks.downloadResourceProgress = () => {};
-        } };
-        const load = createWorkerModuleLoader(createContext({ Worker: class {
-            constructor() {
-                spawned++; throw new Error("Worker must not start");
-            }
-        } }), {
-            "../types": { InternalExchangeIndex: {} },
-            "./bootstrap": { scriptUrl: "https://example.test/dotnet.js" },
-            "./cross-module": { dotnetApi: {}, dotnetInternals: [], dotnetRuntimeExports: {}, dotnetLogger: {}, Module: {} },
-            "./exit": { runtimeState: {} }, "./callbacks": { loaderCallbacks: callbacks },
-            "./polyfills": { initPolyfillsLoader: async () => {} },
-            "./assets": {
-                hasCustomResourceLoader: () => configured && callback === "resource",
-                loadDotnetModule() {}, loadJSModule() {}, callLibraryInitializerOnRuntimeConfigLoaded() {}, callLibraryInitializerOnRuntimeReady() {},
-            },
-        });
-        const module = await load("./worker-proxy");
-        await module.evaluate();
-        await assert.rejects(module.namespace.createWorkerProxy({ resources: {} }), /resource loading\/progress callbacks/);
-        assert.equal(configured, true);
-        assert.equal(spawned, 0);
+async function loadAssetHelpers(fetch = async () => new Response("fallback")) {
+    const callbacks = {};
+    const internals = [];
+    const load = createWorkerModuleLoader(createContext({ Response, Uint8Array, URL }), {
+        "../types": { InternalExchangeIndex: { WorkerRuntimeContext: 10 } },
+        "./cross-module": {
+            dotnetAssert: { check: (condition, message) => assert.ok(condition, message) },
+            dotnetLogger: { debug() {}, warn() {} }, dotnetInternals: internals,
+            dotnetBrowserHostExports: { loadIcuData() {} }, dotnetUpdateInternals() {},
+            dotnetDiagnosticsExports: {}, dotnetNativeBrowserExports: {}, dotnetApi: {},
+        },
+        "./per-module": { ENVIRONMENT_IS_SHELL: false, ENVIRONMENT_IS_NODE: false, ENVIRONMENT_IS_WEB: true, browserVirtualAppBase: "/" },
+        "./bootstrap": {
+            locateFile: name => "https://example.test/" + name,
+            makeURLAbsoluteWithApplicationBase: url => new URL(url, "https://example.test/").href,
+        },
+        "./polyfills": { fetchLike: fetch, responseLike: (_url, body, options) => new Response(body, options) },
+        "./config": { loaderConfig: {} }, "./callbacks": { loaderCallbacks: callbacks },
     });
+    const module = await load("./assets");
+    await module.evaluate();
+    return { assets: module.namespace, callbacks, internals };
 }
+
+test("resource callbacks preserve defaults, URLs, response promises, fetch policy and failures", async () => {
+    const fetches = [];
+    const { assets, internals } = await loadAssetHelpers(async (url, options) => {
+        fetches.push({ url, options }); return new Response("fallback");
+    });
+    const asset = { name: "test.wasm", resolvedUrl: "https://example.test/test.wasm", behavior: "webcil", hash: "sha256-test" };
+    for (const result of [undefined, null, "redirect.wasm"]) {
+        assets.setLoadBootResourceCallback((...args) => {
+            assert.deepEqual(args, ["assembly", asset.name, asset.resolvedUrl, asset.hash, "webcil"]);
+            return result;
+        });
+        const request = { ...asset };
+        assert.equal(await (await assets.loadResourceFetch(request)).text(), "fallback");
+        assert.equal(request.resolvedUrl, result ? "https://example.test/redirect.wasm" : asset.resolvedUrl);
+        assert.equal(fetches.at(-1).options.integrity, asset.hash);
+        assert.equal(fetches.at(-1).options.cache, "no-cache");
+    }
+    const abort = new AbortController();
+    assets.setLoadBootResourceCallback(undefined);
+    await assets.loadResourceFetch({ ...asset, cache: "reload", useCredentials: true }, abort.signal);
+    assert.equal(fetches.at(-1).options.credentials, "include");
+    assert.equal(fetches.at(-1).options.integrity, undefined);
+    assert.equal(fetches.at(-1).options.cache, "reload");
+    assert.equal(fetches.at(-1).options.signal, abort.signal);
+    const response = new Response("custom");
+    assets.setLoadBootResourceCallback(() => Promise.resolve(response));
+    assert.equal(await assets.loadResourceFetch({ ...asset }), response);
+    assets.setLoadBootResourceCallback(() => {
+        throw new Error("custom resource failed");
+    });
+    await assert.rejects(assets.loadResourceFetch({ ...asset }), /custom resource failed/);
+    internals[10] = { loadResource: async () => response };
+    assert.equal(await assets.loadResourceFetch({ ...asset }), response);
+});
+
+test("module resource callbacks preserve default URLs and reject non-URL overrides", async () => {
+    const { assets } = await loadAssetHelpers();
+    for (const result of [undefined, null, "redirect.js"]) {
+        assets.setLoadBootResourceCallback(() => result);
+        assert.equal(assets.resolveModuleResource({ name: "native.js" }),
+            "https://example.test/" + (result || "native.js"));
+    }
+    assets.setLoadBootResourceCallback(() => Promise.resolve(new Response("not a module URL")));
+    assert.throws(() => assets.resolveModuleResource({ name: "native.js" }), /must return string URL/);
+});
+
+test("UI and worker progress share monotonic counters and finish at the exact combined total", async () => {
+    const { assets, callbacks } = await loadAssetHelpers();
+    const progress = [];
+    callbacks.downloadResourceProgress = (loaded, total) => progress.push([loaded, total]);
+    assets.updateWorkerDownloadProgress(2, 5);
+    assets.nativeModulePromiseController.resolve({});
+    await assets.fetchIcu({ name: "icu.dat", buffer: new ArrayBuffer(1) });
+    assets.updateWorkerDownloadProgress(5, 5);
+    assert.deepEqual(progress, [[2, 5], [3, 6], [6, 6]]);
+    assets.verifyAllAssetsDownloaded();
+});
+
+test("native resource messages transfer streams and metadata without application value serialization", async () => {
+    let adapter;
+    let requestAsset;
+    let status = 206;
+    const abort = new AbortController();
+    const load = createWorkerModuleLoader(createContext({
+        Error, Response, MessageChannel,
+        self: { postMessage(request, options) {
+            const cloned = structuredClone(request, options);
+            void adapter.serveWorkerResource(cloned, abort.signal);
+        } },
+    }), {
+        "./assets": {
+            resolveModuleResource: () => "https://example.test/redirect.js",
+            loadResourceFetch: async asset => {
+                requestAsset = asset;
+                if (status === 0) return Response.error();
+                if (status === 204) return new Response(null, { status });
+                asset.resolvedUrl = "https://example.test/redirect.wasm";
+                const response = new Response(new Uint8Array([0, 97, 115, 109]), {
+                    status: 206, statusText: "Partial Content", headers: { "Content-Type": "application/wasm", "X-Test": "native" },
+                });
+                Object.defineProperties(response, {
+                    url: { value: asset.resolvedUrl }, redirected: { value: true }, type: { value: "cors" },
+                });
+                return response;
+            },
+        },
+    });
+    const module = await load("./worker-assets");
+    await module.evaluate();
+    adapter = module.namespace;
+    const asset = { name: "test.wasm", behavior: "webcil", buffer: Promise.resolve(new ArrayBuffer(1)) };
+    assert.equal(await adapter.resolveWorkerModule(asset), "https://example.test/redirect.js");
+    const response = await adapter.loadWorkerResource(asset);
+    assert.equal(requestAsset.buffer, undefined);
+    assert.equal(response.status, 206);
+    assert.equal(response.statusText, "Partial Content");
+    assert.equal(response.url, "https://example.test/redirect.wasm");
+    assert.equal(asset.resolvedUrl, response.url);
+    assert.equal(response.redirected, true);
+    assert.equal(response.type, "cors");
+    assert.equal(response.headers.get("x-test"), "native");
+    assert.equal(response.bodyUsed, false);
+    assert.deepEqual(Array.from(new Uint8Array(await response.arrayBuffer())), [0, 97, 115, 109]);
+    for (status of [0, 204]) {
+        const empty = await adapter.loadWorkerResource(asset);
+        assert.equal(empty.status, status);
+        assert.equal(empty.body, null);
+        assert.equal(empty.type, status === 0 ? "error" : "default");
+    }
+});
+
+test("native resource failures reject and aborted late responses are canceled rather than transferred", async () => {
+    let adapter;
+    let complete;
+    const abort = new AbortController();
+    const load = createWorkerModuleLoader(createContext({
+        Error, Response, MessageChannel,
+        self: { postMessage(request, options) {
+            void adapter.serveWorkerResource(structuredClone(request, options), abort.signal);
+        } },
+    }), {
+        "./assets": {
+            resolveModuleResource: () => {
+                throw new Error("custom module failed");
+            },
+            loadResourceFetch: () => new Promise(resolve => complete = resolve),
+        },
+    });
+    const module = await load("./worker-assets");
+    await module.evaluate();
+    adapter = module.namespace;
+    await assert.rejects(adapter.resolveWorkerModule({ name: "native.js" }), /custom module failed/);
+    let canceled = 0;
+    let closed = 0;
+    const pending = adapter.serveWorkerResource({
+        asset: {}, module: false, port: { postMessage() {
+            assert.fail("Late response was transferred");
+        }, close() {
+            closed++;
+        } },
+    }, abort.signal);
+    abort.abort(new Error("worker terminated"));
+    complete(new Response(new ReadableStream({ cancel() {
+        canceled++;
+    } })));
+    await pending;
+    assert.equal(canceled, 1);
+    assert.equal(closed, 1);
+});
 
 test("native UTF16 error buffers are terminated even when the allocator returns dirty shared memory", async () => {
     const bytes = new Uint8Array(new SharedArrayBuffer(64));

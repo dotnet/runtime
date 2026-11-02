@@ -5,6 +5,7 @@ import {
     SignalState, OFFSET_WAKEUP_MAIN, OFFSET_WAKEUP_WORKER, OFFSET_WORKER_STATE, OFFSET_WORKER_ERROR_LENGTH,
     wakeMain, wakeWorker, readSharedError,
 } from "./shared-signaling";
+import type { AssetEntryInternal } from "./types";
 
 const callCapacity = 16;
 const capacity = callCapacity + 4; // Allocation, release and exception marshaling must survive call saturation.
@@ -34,6 +35,8 @@ export interface WorkerRuntimeContext {
     beforeTaskCompletion?: () => void;
     assertNativeCall?: () => void;
     exitError?: Error;
+    loadResource?: (asset: AssetEntryInternal) => Promise<Response>;
+    resolveModuleResource?: (asset: AssetEntryInternal) => Promise<string>;
 }
 
 export class NativeCallCapacityError extends Error { }

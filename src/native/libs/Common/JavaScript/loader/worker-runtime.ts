@@ -8,6 +8,9 @@ import { mergeLoaderConfig } from "./config";
 import { HostBuilder } from "./host-builder";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { createNativeCallBuffer, createNativeChannel, NativeOperation } from "./worker-native";
+import { loadWorkerResource, resolveWorkerModule } from "./worker-assets";
+import type { WorkerResourceRequest } from "./worker-assets";
+import { loaderCallbacks } from "./callbacks";
 import {
     createSignalingBuffer, SignalState, CommandId, OFFSET_COMMAND_RESULT, OFFSET_COMMAND_SIGNAL,
     OFFSET_COMMAND_PROMISE_ID, OFFSET_WORKER_STATE, OFFSET_WORKER_ERROR_LENGTH, writeSharedError, wakeMain,
@@ -21,7 +24,9 @@ export interface WorkerCommandMessage {
 export type WorkerToMainMessage =
     | { type: "attach", wasmMemory: WebAssembly.Memory, signalBuffer: SharedArrayBuffer, nativeBuffer: SharedArrayBuffer }
     | { type: "ready", runtimeBuildInfo: RuntimeAPI["runtimeBuildInfo"], workerProxyCounts: number[] }
-    | { type: "error", message: string };
+    | { type: "error", message: string }
+    | WorkerResourceRequest
+    | { type: "download-progress"; loaded: number; total: number };
 
 export function waitForInitMessage(): Promise<WorkerInitMessage> {
     return new Promise(resolve => {
@@ -114,7 +119,7 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
     }
 
     dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext] = {
-        role: "worker", invoke: channel.invoke,
+        role: "worker", invoke: channel.invoke, loadResource: loadWorkerResource, resolveModuleResource: resolveWorkerModule,
         beforeRuntimeStart: async () => {
             const wasmMemory = dotnetNativeBrowserExports.getWasmMemory();
             if (!(wasmMemory.buffer instanceof SharedArrayBuffer)) throw new Error("withWorker(): native memory is not shared");
@@ -122,6 +127,7 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
             await attached.promise;
         },
     };
+    loaderCallbacks.downloadResourceProgress = (loaded, total) => self.postMessage({ type: "download-progress", loaded, total });
     channel.listen(fail);
     self.addEventListener("error", (event: ErrorEvent) => fail(event.error ?? new Error(event.message)));
     self.addEventListener("unhandledrejection", (event: PromiseRejectionEvent) => {

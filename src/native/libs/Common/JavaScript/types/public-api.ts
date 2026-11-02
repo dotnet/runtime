@@ -19,6 +19,7 @@ export interface DotnetHostBuilder {
      * Native calls and callbacks cross the worker boundary using existing native argument frames.
      * Managed execution, native allocation and the VM stack remain on the runtime worker.
      * JS handles, managed proxies, Promise holders, application modules and browser services are UI-owned.
+     * Boot-resource and download-progress callbacks execute on UI; resource response streams transfer to the worker.
      * UI marshaling uses shared memory and a separate worker-allocated scratch stack.
      * Nested managed-entry calls are bounded to 16, with reserved capacity for native helper operations.
      * Synchronous signatures remain synchronous; Task completion follows the normal interop contract.

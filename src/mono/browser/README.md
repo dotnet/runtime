@@ -116,9 +116,14 @@ operations and native background work remain on the runtime worker.
 This branch is a native-boundary architecture proof, not a complete hosting
 implementation. Configuration/ready callbacks and application library
 initializers execute on UI. Custom boot-resource and download-progress callbacks
-are explicitly rejected until native asset-loading requests are routed to UI;
-they are not silently ignored. Lazy/satellite resource loading and diagnostics
-still need their native-host adapters and dedicated validation.
+also execute on UI, including requests made before native memory is attached.
+The existing loader handles URL overrides, default loading and Response promises;
+response streams are transferred to the worker without buffering whole WASM
+images. Progress combines UI and worker assets. Native JS modules are imported
+only in the worker, even when their URLs are selected by a UI callback.
+Shutdown aborts loader-owned fetches and cancels late custom response bodies.
+Lazy/satellite resource loading and diagnostics still need their native-host
+adapters and dedicated validation.
 
 The JS interop test project supports an explicit `WasmTestWithWorker` mode.
 It registers its UI imports before managed execution and checks UI-backed
