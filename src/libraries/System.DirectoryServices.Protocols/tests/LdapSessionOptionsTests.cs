@@ -785,6 +785,33 @@ namespace System.DirectoryServices.Protocols.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => options.TrustedCertificatesDirectory = "CertificateDirectory");
             }
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CanonicalizeHostName_GetReturnsTrue_SetThrowsPlatformNotSupportedException()
+        {
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.True(options.CanonicalizeHostName);
+                Assert.Throws<PlatformNotSupportedException>(() => options.CanonicalizeHostName = false);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void CanonicalizeHostName_GetSet_ReturnsExpected()
+        {
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.True(options.CanonicalizeHostName);
+                options.CanonicalizeHostName = false;
+                Assert.False(options.CanonicalizeHostName);
+                options.CanonicalizeHostName = true;
+                Assert.True(options.CanonicalizeHostName);
+            }
+        }
 #endif
     }
 }

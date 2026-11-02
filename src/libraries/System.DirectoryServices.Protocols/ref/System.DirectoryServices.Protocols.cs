@@ -381,6 +381,9 @@ namespace System.DirectoryServices.Protocols
     {
         internal LdapSessionOptions() { }
         public bool AutoReconnect { get { throw null; } set { } }
+#if NET
+        public bool CanonicalizeHostName { get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")] set { } }
+#endif
         public string DomainName { get { throw null; } set { } }
 #if NET
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]

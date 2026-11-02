@@ -13,6 +13,13 @@ namespace System.DirectoryServices.Protocols
 
         private bool _secureSocketLayer;
 
+        public bool CanonicalizeHostName
+        {
+            get => !GetBoolValueHelper(LdapOption.LDAP_OPT_X_SASL_NOCANON);
+            [UnsupportedOSPlatform("windows")]
+            set => SetBoolValueHelper(LdapOption.LDAP_OPT_X_SASL_NOCANON, !value);
+        }
+
         /// <summary>
         /// Specifies the path of the directory containing CA certificates in the PEM format.
         /// Multiple directories may be specified by separating with a semi-colon.
