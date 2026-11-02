@@ -163,8 +163,8 @@ struct MSLAYOUT TargetBuffer
 // A variable sized host memory context buffer in target architecture specific layout.
 // The currently supported layout matches the CONTEXT structure for the
 // target architecture and OS.
+// Buffers may include trailing XSTATE/SVE data, but only the DT_CONTEXT portion is read or written.
 // Not (yet) supported:
-// - Optional trailing XState feature data in the buffer
 // - Add an architecture enum field to make the struct self-describing
 struct MSLAYOUT ContextBuffer
 {
@@ -554,7 +554,11 @@ struct MSLAYOUT Debugger_STRData
     // fp is fixed-width across target architectures. ctx wraps a DBI-owned buffer
     // (pointer plus size) holding the target's opaque CONTEXT byte image.
     CORDB_ADDRESS           fp;
-    ContextBuffer           ctx;
+    union MSLAYOUT
+    {
+        ContextBuffer       ctx;
+        UINT64              ctxPadding[2]; // Keep subsequent field offsets identical on 32- and 64-bit hosts.
+    };
     VMPTR_AppDomain         vmCurrentAppDomainToken;
 
 
@@ -597,6 +601,9 @@ struct MSLAYOUT Debugger_STRData
 
     };
 };
+static_assert(offsetof(Debugger_STRData, ctx) == 8);
+static_assert(offsetof(Debugger_STRData, vmCurrentAppDomainToken) == 24);
+static_assert(offsetof(Debugger_STRData, v) == 40);
 #if defined(_MSC_VER)
 #pragma warning( pop )
 #endif

@@ -35,7 +35,7 @@ internal static class SimdRegisterAccess
     /// </summary>
     public static bool TryWriteRegister(Span<byte> context, int fileOffset, int registerStride, int registerCount, int index, ReadOnlySpan<byte> value)
     {
-        if ((uint)index >= (uint)registerCount)
+        if ((uint)index >= (uint)registerCount || value.Length is not (sizeof(float) or sizeof(double)))
             return false;
         int offset = fileOffset + (index * registerStride);
         if (offset + value.Length > context.Length)

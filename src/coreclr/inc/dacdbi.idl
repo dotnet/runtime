@@ -449,7 +449,7 @@ interface IDacDbiInterface : IUnknown
     // Context size queries
     HRESULT GetTargetContextSize([in] ULONG32 contextFlags, [out] ULONG32 * pSize);
 
-    // CONTEXT register accessors.
+    // CONTEXT register accessors. Each regs element is a CorDebugRegister value.
     HRESULT WriteRegistersToContext([in] ContextBuffer contextBuffer, [in] const int * regs, [in] ULONG32 nRegs, [in] const TADDR * values);
     HRESULT ReadRegistersFromContext([in] ContextBuffer contextBuffer, [in] const int * regs, [in] ULONG32 nRegs, [out] CORDB_REGISTER * pValues);
 

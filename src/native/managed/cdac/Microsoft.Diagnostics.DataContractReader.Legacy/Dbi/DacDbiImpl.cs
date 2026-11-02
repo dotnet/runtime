@@ -6636,7 +6636,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null)
         {
-            uint flagsLocal;
+            uint flagsLocal = 0;
             int hrLocal = _legacy.GetFullContextFlags(pFlags is null ? null : &flagsLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
