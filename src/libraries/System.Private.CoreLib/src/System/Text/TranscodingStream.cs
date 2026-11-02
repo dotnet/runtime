@@ -581,19 +581,19 @@ namespace System.Text
 
                         // convert chars -> bytes [inner]
 
-                        ArraySegment<char> decodedChars = new ArraySegment<char>(scratchChars, 0, charsWritten);
+                        int charsOffset = 0;
 
                         do
                         {
                             _innerEncoder.Convert(
-                                chars: decodedChars,
+                                chars: scratchChars.AsSpan(charsOffset, charsWritten - charsOffset),
                                 bytes: scratchBytes,
                                 flush: false,
                                 out int charsConsumed,
                                 out int bytesWritten,
                                 out encoderFinished);
 
-                            decodedChars = decodedChars.Slice(charsConsumed);
+                            charsOffset += charsConsumed;
                             await _innerStream.WriteAsync(new ReadOnlyMemory<byte>(scratchBytes, 0, bytesWritten), cancellationToken).ConfigureAwait(false);
                         } while (!encoderFinished);
                     } while (!decoderFinished);
