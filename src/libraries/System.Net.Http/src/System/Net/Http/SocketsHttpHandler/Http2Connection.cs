@@ -407,7 +407,7 @@ namespace System.Net.Http
 
             if (_availableStreamsWaiter is not null)
             {
-                Debug.Assert(_shutdown != result);
+                Debug.Assert((_shutdown || _disposeWhenIdle) != result);
                 _availableStreamsWaiter.SetResult(result);
                 _availableStreamsWaiter = null;
             }
