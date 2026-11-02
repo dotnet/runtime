@@ -113,7 +113,7 @@ namespace System.IO.Ports
         public string ReadTo(string value) { throw null; }
         public void Write(byte[] buffer, int offset, int count) { }
         public void Write(char[] buffer, int offset, int count) { }
-        public void Write(string text) { }
+        public void Write(string? text) { }
         public void WriteLine(string? text) { }
     }
     public enum StopBits

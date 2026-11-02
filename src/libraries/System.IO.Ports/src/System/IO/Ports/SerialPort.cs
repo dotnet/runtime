@@ -1173,13 +1173,11 @@ namespace System.IO.Ports
         }
 
         // Writes string to output, no matter string's length.
-        public void Write(string text)
+        public void Write(string? text)
         {
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
-            if (text == null)
-                throw new ArgumentNullException(nameof(text));
-            if (text.Length == 0) return;
+            if (string.IsNullOrEmpty(text)) return;
             byte[] bytesToWrite;
 
             bytesToWrite = _encoding.GetBytes(text);
