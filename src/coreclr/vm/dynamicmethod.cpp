@@ -257,6 +257,8 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
                     | DynamicMethodDesc::FlagStatic
                     | DynamicMethodDesc::FlagIsLCGMethod);
 
+    // LCG signatures contain only types supplied by the managed API, which are already loaded.
+    pNewMD->SetNativeImageDependenciesPrepared();
 
     // Note: Reset has THROWS contract since it may allocate jump stub and on WASM parses the signature
     // It will never throw here for jump stubs since it will always reuse the existing jump stub,
@@ -368,7 +370,7 @@ HostCodeHeap::~HostCodeHeap()
         delete[] m_pHeapList->pHdrMap;
 
     if (m_pBaseAddr)
-        ExecutableAllocator::Instance()->Release(m_pBaseAddr);
+        ExecutableAllocator::Instance()->Release(m_pBaseAddr, m_TotalBytesAvailable);
     LOG((LF_BCL, LL_INFO10, "Level1 - CodeHeap destroyed {0x%p}\n", this));
 }
 

@@ -8,12 +8,15 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true' ">
-    <ProjectReference Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.proj" />
     <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.proj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <!-- ASP.NET Core consumes this package on non-browser platforms too. -->
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' != 'true'">
     <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NETCore.BrowserDebugHost.Transport\Microsoft.NETCore.BrowserDebugHost.Transport.pkgproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <ProjectReference Include="$(MonoProjectRoot)\wasm\templates\Microsoft.NET.Runtime.WebAssembly.Templates.csproj" />
     <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\Microsoft.NET.Sdk.WebAssembly.Pack.pkgproj" />
 

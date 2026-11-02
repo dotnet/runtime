@@ -2568,20 +2568,6 @@ PTRARRAYREF DispatchInfo::RetrieveMethList()
     return gc.orRetVal;
 }
 
-// Virtual method to retrieve the InvokeMember method desc.
-MethodDesc* DispatchInfo::GetInvokeMemberMD()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return CoreLibBinder::GetMethod(METHOD__CLASS__INVOKE_MEMBER);
-}
-
 // Virtual method to retrieve the object associated with this DispatchInfo that
 // implements IReflect.
 OBJECTREF DispatchInfo::GetReflectionObject()
@@ -2891,23 +2877,6 @@ DispatchMemberInfo* DispatchExInfo::GetNextMember(DISPID CurrMemberDispID)
     return *ppNextMemberInfo;
 }
 
-MethodDesc* DispatchExInfo::GetIReflectMD(BinderMethodID Method)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = m_pSimpleWrapperOwner->GetMethodTable();
-    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(CoreLibBinder::GetMethod(Method), TRUE /* throwOnConflict */);
-
-    // Return the specified method desc.
-    return pMD;
-}
-
 PTRARRAYREF DispatchExInfo::RetrievePropList()
 {
     CONTRACTL
@@ -2975,20 +2944,6 @@ PTRARRAYREF DispatchExInfo::RetrieveMethList()
     GCPROTECT_END();
 
     return gc.oMethList;
-}
-
-// Virtual method to retrieve the InvokeMember method desc.
-MethodDesc* DispatchExInfo::GetInvokeMemberMD()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return GetIReflectMD(METHOD__IREFLECT__INVOKE_MEMBER);
 }
 
 // Virtual method to retrieve the object associated with this DispatchInfo that

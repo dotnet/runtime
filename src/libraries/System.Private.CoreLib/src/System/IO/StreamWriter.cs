@@ -372,6 +372,92 @@ namespace System.IO
 
         public override Encoding Encoding => _encoding;
 
+        public override void Write(int value)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        [CLSCompliant(false)]
+        public override void Write(uint value)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(long value)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        [CLSCompliant(false)]
+        public override void Write(ulong value)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(float value)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(double value)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(decimal value)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
         public override void Write(char value)
         {
             CheckAsyncTaskInProgress();

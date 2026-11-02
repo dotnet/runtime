@@ -183,38 +183,6 @@ add_executable_clr(paltests
   filemapping_memmgt/ProbeMemory/test1/ProbeMemory.cpp
   filemapping_memmgt/UnmapViewOfFile/test1/UnmapViewOfFile.cpp
   filemapping_memmgt/UnmapViewOfFile/test2/unmapviewoffile.cpp
-  filemapping_memmgt/VirtualAlloc/test1/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test10/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test11/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test12/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test13/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test14/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test15/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test16/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test17/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test18/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test19/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test2/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test20/virtualalloc.cpp
-  filemapping_memmgt/VirtualAlloc/test21/virtualalloc.cpp
-  filemapping_memmgt/VirtualAlloc/test22/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test3/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test4/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test5/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test6/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test7/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test8/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualAlloc/test9/VirtualAlloc.cpp
-  filemapping_memmgt/VirtualFree/test1/VirtualFree.cpp
-  filemapping_memmgt/VirtualFree/test2/VirtualFree.cpp
-  filemapping_memmgt/VirtualFree/test3/VirtualFree.cpp
-  filemapping_memmgt/VirtualProtect/test1/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test2/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test3/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test4/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test6/VirtualProtect.cpp
-  filemapping_memmgt/VirtualProtect/test7/VirtualProtect.cpp
-  filemapping_memmgt/VirtualQuery/test1/VirtualQuery.cpp
   file_io/CreateFileA/test1/CreateFileA.cpp
   file_io/CreateFileW/test1/CreateFileW.cpp
   file_io/errorpathnotfound/test1/test1.cpp

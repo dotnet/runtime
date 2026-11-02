@@ -14,7 +14,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
 namespace ILAssembler.Tests
 {
@@ -594,7 +593,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void ExplicitSlot_ReusedWithADifferentType_TheSlotTakesTheNewType()
         {
-            // As in native ilasm, the conflicting declaration still types the slot.
+            // The conflicting declaration still types the slot.
             string source = OneMethod("""
                 {
                     .locals init ([0] int32 x)
@@ -656,7 +655,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void ExplicitSlot_ClosingABlockThatRedeclaredAnEnclosingSlot_LeavesTheSlotNotInUse()
         {
-            // Native ilasm keeps one in-use flag per slot, cleared when any scope that declared the slot closes.
+            // There is one in-use flag per slot, cleared when any scope that declared the slot closes.
             // So after the block closes, slot 0 is not in use although a's scope is still open, and c's
             // declaration gets no warning; only b's does.
             string source = OneMethod("""
@@ -678,28 +677,24 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
-        [InlineData("65536")]
-        [InlineData("-2")]
-        [InlineData("0x10000")]
-        [InlineData("2147483648")]
-        [InlineData("4294967296")]
-        [InlineData("0x100000000")]
-        [InlineData("-4294967296")]
-        [InlineData("4294967295")]
-        [InlineData("040000000000")]
-        [InlineData("0x10000000000000000")]
-        [InlineData("0xFFFFFFFFFFFFFFFF")]
-        [InlineData("18446744073709551615")]
-        [InlineData("01777777777777777777777")]
-        [InlineData("02000000000000000000000")]
-        [InlineData("-02000000000000000000000")]
-        public void ExplicitSlot_OutsideTheSixteenBitRange_IsReportedAndTakesTheNextSlot(string slot)
+        [InlineData("65536", false)]
+        [InlineData("-2", false)]
+        [InlineData("0x10000", false)]
+        [InlineData("2147483648", false)]
+        [InlineData("4294967296", true)]
+        [InlineData("0x100000000", true)]
+        [InlineData("-4294967296", true)]
+        [InlineData("4294967295", false)]
+        [InlineData("040000000000", true)]
+        [InlineData("0x10000000000000000", true)]
+        [InlineData("0xFFFFFFFFFFFFFFFF", true)]
+        [InlineData("18446744073709551615", true)]
+        [InlineData("01777777777777777777777", true)]
+        [InlineData("02000000000000000000000", true)]
+        [InlineData("-02000000000000000000000", true)]
+        public void ExplicitSlot_OutsideTheSixteenBitRange_IsReportedAndTakesTheNextSlot(string slot, bool literalOutOfRange)
         {
-            // The message names the slot as written: 2147483648 does not fit an int32, and is not reported as
-            // the negative value it wraps to. The literals past 32 bits would wrap to 0, and 4294967295 to -1
-            // ("no explicit slot"), as would 0xFFFFFFFFFFFFFFFF, 18446744073709551615 and 01777777777777777777777
-            // read as an int64, and the octal literals of 2^64 to 0; slot 0 is taken first, so x taking slot 1
-            // shows that none of them did.
+            // Slot 0 is taken first, so x taking slot 1 verifies recovery without aliasing slot 0.
             string source = OneMethod($$"""
                 .locals init ([0] int32 a, [{{slot}}] int32 x)
                 ldloc x
@@ -710,7 +705,15 @@ namespace ILAssembler.Tests
             (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
                 DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options { ErrorTolerant = true });
 
-            Diagnostic diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(literalOutOfRange ? 2 : 1, diagnostics.Length);
+            if (literalOutOfRange)
+            {
+                Assert.Equal(DiagnosticIds.LiteralOutOfRange, diagnostics[0].Id);
+                Assert.Equal(DiagnosticSeverity.Error, diagnostics[0].Severity);
+                Assert.Equal($"The value '{slot}' is out of range", diagnostics[0].Message);
+            }
+
+            Diagnostic diagnostic = diagnostics[^1];
             Assert.Equal(
                 (DiagnosticIds.LocalSlotOutOfRange, DiagnosticSeverity.Error, $"Local var slot {slot} is out of range; a slot index must be between 0 and 65535"),
                 (diagnostic.Id, diagnostic.Severity, diagnostic.Message));
@@ -794,7 +797,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void LocalNames_AreCaseSensitive()
         {
-            // As in native ilasm, which compares local names with strcmp.
+            // Local names are compared ordinally.
             string source = OneMethod("""
                 .locals init (int32 a, string A)
                 ldnull
@@ -834,7 +837,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void ExplicitSlot_MinusOne_TakesTheNextSlot()
         {
-            // As in native ilasm, [-1] is the encoding of "no explicit slot".
+            // [-1] is the encoding of "no explicit slot".
             string source = OneMethod("""
                 .locals init (string a, [-1] int32 b)
                 ldloc b
@@ -851,7 +854,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void Sentinel_TakesNoSlot()
         {
-            // As in native ilasm, a ... sentinel in a .locals list is not a local.
+            // A ... sentinel in a .locals list is not a local.
             string source = OneMethod("""
                 .locals init (int32 a, ..., int32 b)
                 ldloc b
@@ -872,7 +875,7 @@ namespace ILAssembler.Tests
         public void SentinelPrefixedType_IsALocal()
         {
             // In "... int32 a" the sentinel is part of the type: the argument is a typed local, not the
-            // standalone sentinel that takes no slot. As in native ilasm, its type is written as given.
+            // standalone sentinel that takes no slot. Its type is written as given.
             string source = OneMethod("""
                 .locals init ([0] ... int32 a)
                 ldloc a

@@ -29,7 +29,6 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include "pal/utils.h"
 #include "pal/init.h"
 #include "pal/environ.h"
-#include "pal/virtual.h"
 #include "pal/map.hpp"
 #include "pal/stackstring.hpp"
 
@@ -39,6 +38,7 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include <limits.h>
 #include <dlfcn.h>
 #include <stdlib.h>
+#include <minipal/ospagesize.h>
 
 #if defined(TARGET_WASI)
 #include "pal/wasi/pal_wasi_missing.h"
@@ -239,7 +239,7 @@ GetProcAddress(
        because of the address range reserved for ordinals contain can
        be a valid string address on non-Windows systems
     */
-    if ((DWORD_PTR)lpProcName < GetVirtualPageSize())
+    if ((DWORD_PTR)lpProcName < minipal_getpagesize())
     {
         ASSERT("Attempt to locate symbol by ordinal?!\n");
     }
@@ -707,116 +707,6 @@ PAL_UnregisterModule(
 
     LOGEXIT("PAL_UnregisterModule returns\n");
     PERF_EXIT(PAL_UnregisterModule);
-}
-
-/*++
-    PAL_LOADLoadPEFile
-
-    Map a PE format file into memory like Windows LoadLibrary() would do.
-    Doesn't apply base relocations if the function is relocated.
-
-Parameters:
-    IN hFile - file to map
-    IN offset - offset within hFile where the PE "file" is located
-
-Return value:
-    non-NULL - the base address of the mapped image
-    NULL - error, with last error set.
---*/
-PVOID
-PALAPI
-PAL_LOADLoadPEFile(HANDLE hFile, size_t offset)
-{
-    ENTRY("PAL_LOADLoadPEFile (hFile=%p, offset=%zx)\n", hFile, offset);
-
-    void* loadedBase = MAPMapPEFile(hFile, offset);
-
-#ifdef _DEBUG
-    if (loadedBase != nullptr)
-    {
-        char* envVar = EnvironGetenv("PAL_ForcePEMapFailure");
-        if (envVar)
-        {
-            if (strlen(envVar) > 0)
-            {
-                TRACE("Forcing failure of PE file map, and retry\n");
-                PAL_LOADUnloadPEFile(loadedBase); // unload it
-                loadedBase = MAPMapPEFile(hFile, offset); // load it again
-            }
-
-            free(envVar);
-        }
-    }
-#endif // _DEBUG
-
-    LOGEXIT("PAL_LOADLoadPEFile returns %p\n", loadedBase);
-    return loadedBase;
-}
-
-/*++
-    PAL_LOADUnloadPEFile
-
-    Unload a PE file that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the file pointer returned by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-BOOL
-PALAPI
-PAL_LOADUnloadPEFile(PVOID ptr)
-{
-    BOOL retval = FALSE;
-
-    ENTRY("PAL_LOADUnloadPEFile (ptr=%p)\n", ptr);
-
-    if (nullptr == ptr)
-    {
-        ERROR( "Invalid pointer value\n" );
-    }
-    else
-    {
-        retval = MAPUnmapPEFile(ptr);
-    }
-
-    LOGEXIT("PAL_LOADUnloadPEFile returns %d\n", retval);
-    return retval;
-}
-
-/*++
-    PAL_LOADMarkSectionAsNotNeeded
-
-    Mark a section as NotNeeded that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the section address mapped by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-BOOL
-PALAPI
-PAL_LOADMarkSectionAsNotNeeded(void * ptr)
-{
-    BOOL retval = FALSE;
-
-    ENTRY("PAL_LOADMarkSectionAsNotNeeded (ptr=%p)\n", ptr);
-
-    if (nullptr == ptr)
-    {
-        ERROR( "Invalid pointer value\n" );
-    }
-    else
-    {
-        retval = MAPMarkSectionAsNotNeeded(ptr);
-    }
-
-    LOGEXIT("PAL_LOADMarkSectionAsNotNeeded returns %d\n", retval);
-    return retval;
 }
 
 /*++
