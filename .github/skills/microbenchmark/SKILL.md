@@ -7,6 +7,12 @@ description: Generate and run ad hoc BenchmarkDotNet microbenchmarks to validate
 
 When you need to validate the performance impact of a code change, follow this process to write a BenchmarkDotNet benchmark and compare local baseline and changed builds.
 
+## Explicitly Supplied PR
+
+When the user supplies a PR URL to vet its performance, use [PR-supplied EgorBot vetting](references/pr-vetting.md) instead of the local steps and legacy EgorBot guidance below, unless the user explicitly requests local-only measurements. That workflow selects benchmarks, posts the EgorBot invocation comment(s) on the supplied PR, and stops without waiting for results.
+
+Do not infer this mode from the current branch, a linked PR, or an existing PR checkout. Without an explicitly supplied PR URL, or for local-only requests, follow the existing workflow below unchanged. The canonical-first selection policy in the reference applies only to the PR-supplied EgorBot mode.
+
 ## Step 1: Write the Benchmark
 
 Create a BenchmarkDotNet benchmark that tests the specific operation being changed. Follow these guidelines:
