@@ -104,12 +104,18 @@ internal sealed unsafe class MemoryRegionEmitter(nint callback, uint pointerSize
     // Returns the last range whose start is <= address, or -1 if none. The caller must still check its end.
     private int FindMetadataRangeIndex(ulong address)
     {
-        // Sort after any range with the same start.
-        int index = _metadataRanges.BinarySearch((address, ulong.MaxValue));
-        if (index < 0)
-            return (~index) - 1;
+        int low = 0;
+        int high = _metadataRanges.Count;
+        while (low < high)
+        {
+            int middle = low + (high - low) / 2;
+            if (_metadataRanges[middle].Start <= address)
+                low = middle + 1;
+            else
+                high = middle;
+        }
 
-        return index;
+        return low - 1;
     }
 
     public bool Update(ulong address, ReadOnlySpan<byte> buffer)
