@@ -146,6 +146,16 @@
       <_BuildInParallel Condition=" '@(_ProjectsToBuild->Count())' &gt; '1' ">true</_BuildInParallel>
     </PropertyGroup>
 
+    <!-- Browser and WASI scenario projects all stage the same tools (chrome, v8, wasmtime, ...) into the
+         shared $(HelixDependenciesStagingPath). Stage them serially before the parallel fan-out; otherwise
+         the projects copy the same files concurrently, and one project's Helix upload can try to zip a
+         file that another project is still writing. -->
+    <MSBuild Condition="'$(_BuildInParallel)' == 'true' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')"
+             Projects="@(_ProjectsToBuild)"
+             Targets="StageDependenciesForHelix"
+             Properties="_StageHelixDependenciesOnly=true"
+             BuildInParallel="false" />
+
     <!-- Invoke MSBuild once for each Scenario (because of the "batching" defined in "_ProjectsToBuild").
          Create the Helix work items and start the jobs. This is done by invoking the "Test" Helix target.
     -->
