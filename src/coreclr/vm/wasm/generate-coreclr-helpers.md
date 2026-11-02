@@ -33,6 +33,14 @@ Each run emits three files into the output directory:
 - `callhelpers-reverse.cpp`
 - `callhelpers-interp-to-managed.cpp`
 
+`callhelpers-pinvoke.cpp` also defines a separate QCall table and `QCallResolveDllImport`.
+QCalls are collected only from CoreLib in the managed assembly closure, independently of the P/Invoke module list,
+matching CoreCLR's restriction that only CoreLib can resolve QCalls.
+On WebAssembly, this replaces the full table in `qcallentrypoints.cpp`, so an app's native relink
+can discard QCall implementations that its trimmed managed assemblies no longer reference.
+Browser `memmove` and `memset` QCalls retain the bulk-memory wrappers in `qcallentrypoints.cpp`;
+WASI uses the libc entrypoints directly. Non-WebAssembly builds still use the hand-written table.
+
 ## The P/Invoke module list
 
 Only the framework native libraries the runtime links statically get an entry in the generated
@@ -127,7 +135,8 @@ The Release `browser_wasm` CoreCLR build leg and the `wasi_wasm` CoreCLR build-o
 [`wasm-coreclr-callhelpers-check.yml`](../../../../eng/pipelines/common/templates/wasm-coreclr-callhelpers-check.yml)
 after building. It regenerates the leg's own flavor with `--target-os` and fails if
 `src/coreclr/vm/wasm/<os>/` differs from what is committed, printing the diff and the commands to
-fix it. A stale table still builds, but the corerun that links it crashes at run time; a missing
+fix it. A stale QCall table can fail native linking if it still references a removed entrypoint.
+Other stale entries can crash corerun at run time; a missing
 `[UnmanagedCallersOnly]` thunk, for example, fails startup with
 `GetUnmanagedCallersOnlyThunk: unknown thunk`. Library tests do not catch this because the app
 relink generates its own tables.

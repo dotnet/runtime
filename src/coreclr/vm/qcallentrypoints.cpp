@@ -22,8 +22,6 @@
 #include "nativelibrarynative.h"
 #include "comutilnative.h"
 #include "comsynchronizable.h"
-#include "floatdouble.h"
-#include "floatsingle.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
 
@@ -93,17 +91,18 @@
 // emscripten libc before 6.0.10 implements overlapping memmove and memset with scalar loops.
 // Compiling these wrappers with -mbulk-memory lowers the builtins to memory.copy and memory.fill.
 // TODO: Remove once emsdk is 6.0.10 or later (https://github.com/dotnet/runtime/issues/136012).
-static void* QCall_memmove(void* dest, const void* src, size_t len)
+extern "C" void* QCall_memmove(void* dest, const void* src, size_t len)
 {
     return __builtin_memmove(dest, src, len);
 }
 
-static void* QCall_memset(void* dest, int value, size_t len)
+extern "C" void* QCall_memset(void* dest, int value, size_t len)
 {
     return __builtin_memset(dest, value, len);
 }
 #endif // TARGET_BROWSER
 
+#if !defined(TARGET_WASM) || !GEN_PINVOKE
 static const Entry s_QCall[] =
 {
 #ifdef FEATURE_VARARGS
@@ -591,3 +590,4 @@ const void* QCallResolveDllImport(const char* name)
 {
     return minipal_resolve_dllimport(s_QCall, ARRAY_SIZE(s_QCall), name);
 }
+#endif // !defined(TARGET_WASM) || !GEN_PINVOKE
