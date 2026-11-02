@@ -20,8 +20,7 @@ namespace System
 {
     internal sealed partial class RuntimeType
     {
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "Attribute constructors are preserved by metadata generation.")]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         internal object? CreateInstanceDefaultCtor(bool publicOnly, bool wrapExceptions) =>
             ActivatorImplementation.CreateInstance(this, nonPublic: !publicOnly, wrapExceptions);
     }
