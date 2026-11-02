@@ -99,22 +99,22 @@ This file should be imported by eng/Versions.props
     <optimizationwindows_ntx64MIBCRuntimePackageVersion>1.0.0-prerelease.26502.1</optimizationwindows_ntx64MIBCRuntimePackageVersion>
     <optimizationwindows_ntx86MIBCRuntimePackageVersion>1.0.0-prerelease.26502.1</optimizationwindows_ntx86MIBCRuntimePackageVersion>
     <!-- dotnet-runtime-assets dependencies -->
-    <MicrosoftDotNetCilStripSourcesPackageVersion>11.0.0-beta.26506.3</MicrosoftDotNetCilStripSourcesPackageVersion>
-    <MicrosoftDotnetFuzzingTestDataPackageVersion>11.0.0-beta.26506.3</MicrosoftDotnetFuzzingTestDataPackageVersion>
-    <MicrosoftNETHostModelTestDataPackageVersion>11.0.0-beta.26506.3</MicrosoftNETHostModelTestDataPackageVersion>
-    <SystemComponentModelTypeConverterTestDataPackageVersion>11.0.0-beta.26506.3</SystemComponentModelTypeConverterTestDataPackageVersion>
-    <SystemDataCommonTestDataPackageVersion>11.0.0-beta.26506.3</SystemDataCommonTestDataPackageVersion>
-    <SystemDrawingCommonTestDataPackageVersion>11.0.0-beta.26506.3</SystemDrawingCommonTestDataPackageVersion>
-    <SystemFormatsTarTestDataPackageVersion>11.0.0-beta.26506.3</SystemFormatsTarTestDataPackageVersion>
-    <SystemIOCompressionTestDataPackageVersion>11.0.0-beta.26506.3</SystemIOCompressionTestDataPackageVersion>
-    <SystemIOPackagingTestDataPackageVersion>11.0.0-beta.26506.3</SystemIOPackagingTestDataPackageVersion>
-    <SystemNetTestDataPackageVersion>11.0.0-beta.26506.3</SystemNetTestDataPackageVersion>
-    <SystemPrivateRuntimeUnicodeDataPackageVersion>11.0.0-beta.26506.3</SystemPrivateRuntimeUnicodeDataPackageVersion>
-    <SystemRuntimeNumericsTestDataPackageVersion>11.0.0-beta.26506.3</SystemRuntimeNumericsTestDataPackageVersion>
-    <SystemRuntimeTimeZoneDataPackageVersion>11.0.0-beta.26506.3</SystemRuntimeTimeZoneDataPackageVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>11.0.0-beta.26506.3</SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>
-    <SystemTextRegularExpressionsTestDataPackageVersion>11.0.0-beta.26506.3</SystemTextRegularExpressionsTestDataPackageVersion>
-    <SystemWindowsExtensionsTestDataPackageVersion>11.0.0-beta.26506.3</SystemWindowsExtensionsTestDataPackageVersion>
+    <MicrosoftDotNetCilStripSourcesPackageVersion>11.0.0-beta.26531.3</MicrosoftDotNetCilStripSourcesPackageVersion>
+    <MicrosoftDotnetFuzzingTestDataPackageVersion>11.0.0-beta.26531.3</MicrosoftDotnetFuzzingTestDataPackageVersion>
+    <MicrosoftNETHostModelTestDataPackageVersion>11.0.0-beta.26531.3</MicrosoftNETHostModelTestDataPackageVersion>
+    <SystemComponentModelTypeConverterTestDataPackageVersion>11.0.0-beta.26531.3</SystemComponentModelTypeConverterTestDataPackageVersion>
+    <SystemDataCommonTestDataPackageVersion>11.0.0-beta.26531.3</SystemDataCommonTestDataPackageVersion>
+    <SystemDrawingCommonTestDataPackageVersion>11.0.0-beta.26531.3</SystemDrawingCommonTestDataPackageVersion>
+    <SystemFormatsTarTestDataPackageVersion>11.0.0-beta.26531.3</SystemFormatsTarTestDataPackageVersion>
+    <SystemIOCompressionTestDataPackageVersion>11.0.0-beta.26531.3</SystemIOCompressionTestDataPackageVersion>
+    <SystemIOPackagingTestDataPackageVersion>11.0.0-beta.26531.3</SystemIOPackagingTestDataPackageVersion>
+    <SystemNetTestDataPackageVersion>11.0.0-beta.26531.3</SystemNetTestDataPackageVersion>
+    <SystemPrivateRuntimeUnicodeDataPackageVersion>11.0.0-beta.26531.3</SystemPrivateRuntimeUnicodeDataPackageVersion>
+    <SystemRuntimeNumericsTestDataPackageVersion>11.0.0-beta.26531.3</SystemRuntimeNumericsTestDataPackageVersion>
+    <SystemRuntimeTimeZoneDataPackageVersion>11.0.0-beta.26531.3</SystemRuntimeTimeZoneDataPackageVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>11.0.0-beta.26531.3</SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>
+    <SystemTextRegularExpressionsTestDataPackageVersion>11.0.0-beta.26531.3</SystemTextRegularExpressionsTestDataPackageVersion>
+    <SystemWindowsExtensionsTestDataPackageVersion>11.0.0-beta.26531.3</SystemWindowsExtensionsTestDataPackageVersion>
     <!-- dotnet-xharness dependencies -->
     <MicrosoftDotNetXHarnessCLIPackageVersion>11.0.0-prerelease.26517.1</MicrosoftDotNetXHarnessCLIPackageVersion>
     <MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>11.0.0-prerelease.26517.1</MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>
