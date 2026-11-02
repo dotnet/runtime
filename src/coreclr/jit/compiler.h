@@ -7639,6 +7639,7 @@ private:
     PhaseStatus fgForwardSub();
     bool fgForwardSubBlock(BasicBlock* block);
     bool fgForwardSubStatement(Statement* statement);
+    bool fgForwardSubCond(BasicBlock* block, Statement* statement);
     bool fgForwardSubMultiUse(Statement* nextStmt, unsigned lclNum, GenTree* fwdSubNode);
     bool fgForwardSubHasStoreInterference(Statement* defStmt, Statement* nextStmt, GenTree* nextStmtUse);
     void fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* newSubListLast);
