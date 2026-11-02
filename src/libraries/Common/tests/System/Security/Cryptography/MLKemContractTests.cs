@@ -1117,9 +1117,11 @@ namespace System.Security.Cryptography.Tests
         internal int TryExportPkcs8PrivateKeyCoreCount { get; set; }
 
         private bool _disposed;
+        private bool _verifyCallsOnDispose;
 
-        public MLKemContract(MLKemAlgorithm algorithm) : base(algorithm)
+        public MLKemContract(MLKemAlgorithm algorithm, bool verifyCallsOnDispose = true) : base(algorithm)
         {
+            _verifyCallsOnDispose = verifyCallsOnDispose;
         }
 
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
@@ -1161,7 +1163,12 @@ namespace System.Security.Cryptography.Tests
         protected override void Dispose(bool disposing)
         {
             GetCallback(OnDispose)(disposing);
-            VerifyCalledOnDispose();
+
+            if (_verifyCallsOnDispose)
+            {
+                VerifyCalledOnDispose();
+            }
+
             _disposed = true;
         }
 

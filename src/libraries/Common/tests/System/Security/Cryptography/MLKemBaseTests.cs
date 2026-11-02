@@ -21,6 +21,9 @@ namespace System.Security.Cryptography.Tests
         public abstract MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source);
         public abstract MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source);
 
+        protected virtual void AssertExportPkcs8FromPublicKey(Action export) =>
+            Assert.Throws<CryptographicException>(export);
+
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void ExportPrivateSeed_Roundtrip(MLKemAlgorithm algorithm)
@@ -353,8 +356,8 @@ namespace System.Security.Cryptography.Tests
         public void TryExportPkcs8PrivateKey_EncapsulationKey_Fails()
         {
             using MLKem kem = ImportEncapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512EncapsulationKey);
-            Assert.Throws<CryptographicException>(() => DoTryUntilDone(kem.TryExportPkcs8PrivateKey));
-            Assert.Throws<CryptographicException>(() => kem.ExportPkcs8PrivateKey());
+            AssertExportPkcs8FromPublicKey(() => DoTryUntilDone(kem.TryExportPkcs8PrivateKey));
+            AssertExportPkcs8FromPublicKey(() => kem.ExportPkcs8PrivateKey());
         }
 
         [Fact]
@@ -396,41 +399,41 @@ namespace System.Security.Cryptography.Tests
         {
             using MLKem kem = ImportEncapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512EncapsulationKey);
 
-            Assert.Throws<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+            AssertExportPkcs8FromPublicKey(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
                 kem.TryExportEncryptedPkcs8PrivateKey(
                     MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
                     s_aes128Pbe,
                     destination,
                     out bytesWritten)));
 
-            Assert.Throws<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+            AssertExportPkcs8FromPublicKey(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
                 kem.TryExportEncryptedPkcs8PrivateKey(
                     MLKemTestData.EncryptedPrivateKeyPasswordBytes,
                     s_aes128Pbe,
                     destination,
                     out bytesWritten)));
 
-            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+            AssertExportPkcs8FromPublicKey(() => kem.ExportEncryptedPkcs8PrivateKey(
                 MLKemTestData.EncryptedPrivateKeyPassword,
                 s_aes128Pbe));
 
-            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+            AssertExportPkcs8FromPublicKey(() => kem.ExportEncryptedPkcs8PrivateKey(
                 MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
                 s_aes128Pbe));
 
-            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+            AssertExportPkcs8FromPublicKey(() => kem.ExportEncryptedPkcs8PrivateKey(
                 MLKemTestData.EncryptedPrivateKeyPasswordBytes,
                 s_aes128Pbe));
 
-            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKeyPem(
+            AssertExportPkcs8FromPublicKey(() => kem.ExportEncryptedPkcs8PrivateKeyPem(
                 MLKemTestData.EncryptedPrivateKeyPasswordBytes,
                 s_aes128Pbe));
 
-            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKeyPem(
+            AssertExportPkcs8FromPublicKey(() => kem.ExportEncryptedPkcs8PrivateKeyPem(
                 MLKemTestData.EncryptedPrivateKeyPassword,
                 s_aes128Pbe));
 
-            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKeyPem(
+            AssertExportPkcs8FromPublicKey(() => kem.ExportEncryptedPkcs8PrivateKeyPem(
                 MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
                 s_aes128Pbe));
         }

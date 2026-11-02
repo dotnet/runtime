@@ -73,6 +73,48 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+#if !SYSTEM_SECURITY_CRYPTOGRAPHY
+        [SupportedOSPlatform("windows")]
+#endif
+        internal static TCertificate CopyWithPrivateKey(TCertificate certificate, MLKem privateKey)
+        {
+            if (privateKey is MLKemCng mlKemCng)
+            {
+                CngKey key = mlKemCng.KeyNoDuplicate;
+
+                TCertificate? clone = CopyWithPersistedCngKey(certificate, key);
+
+                if (clone is not null)
+                {
+                    return clone;
+                }
+            }
+
+            if (privateKey is MLKemImplementation mlKemImplementation)
+            {
+                using (CngKey clonedKey = mlKemImplementation.CreateEphemeralCng())
+                {
+                    return CopyWithEphemeralKey(certificate, clonedKey);
+                }
+            }
+
+            byte[] exportedPkcs8 = privateKey.ExportPkcs8PrivateKey();
+
+            using (PinAndClear.Track(exportedPkcs8))
+            using (MLKemCng clonedKey = MLKemCng.ImportPkcs8PrivateKey(exportedPkcs8, out _))
+            {
+                CngKey clonedCngKey = clonedKey.KeyNoDuplicate;
+
+                if (clonedCngKey.AlgorithmGroup != CngAlgorithmGroup.MLKem)
+                {
+                    Debug.Fail($"{nameof(MLKemCng)} should only give ML-KEM keys.");
+                    throw new CryptographicException();
+                }
+
+                return CopyWithEphemeralKey(certificate, clonedCngKey);
+            }
+        }
+
         [SupportedOSPlatform("windows")]
         internal static T? GetPrivateKey<T>(TCertificate certificate, Func<CspParameters, T> createCsp, Func<CngKey, T?> createCng)
             where T : class, IDisposable
