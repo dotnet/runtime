@@ -159,7 +159,7 @@ export function upgradeManagedProxyToStrongRef(owner: any, gcHandle: GCHandle): 
 }
 
 export function teardownManagedProxy(owner: any, gcHandle: GCHandle, skipManaged?: boolean): void {
-    assertJsInterop();
+    if (!forceDisposeProxiesInProgress) assertJsInterop();
     // The JS object associated with this gcHandle has been collected by the JS GC.
     // As such, it's not possible for this gcHandle to be invoked by JS anymore, so
     //  we can release the tracking weakref (it's null now, by definition),

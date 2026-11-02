@@ -4,6 +4,7 @@
 import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource, VfsAsset } from "./types";
 
 import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
+import { InternalExchangeIndex } from "../types";
 import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
@@ -153,6 +154,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
 
         await nativeModulePromiseController.promise;
         runtimeState.nativeReady = true;
+        await dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.beforeRuntimeStart?.();
         await coreAssembliesPromise;
         await vfsPromise;
         await icuDataPromise;

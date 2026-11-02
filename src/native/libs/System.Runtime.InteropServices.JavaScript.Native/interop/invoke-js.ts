@@ -7,8 +7,8 @@ import { dotnetBrowserUtilsExports, dotnetApi, dotnetAssert, dotnetLogger, VoidP
 
 import type { BindingClosureJS, BoundMarshalerToJs, JSFnHandle, JSFunctionSignature, JSHandle, JSMarshalerArguments, VoidPtr, WrappedJSFunction } from "./types";
 
-import { isWorkerValueType, isWorkerReturnType, MarshalerType, MeasuredBlock, WorkerMaxArgumentCount } from "./types";
-import { getSig, getSignatureArgumentCount, getSignatureFunctionName, getSignatureHandle, getSignatureModuleName, getSignatureType, getSignatureResType, getSignatureVersion, isReceiverShouldFree, jsInteropState } from "./marshal";
+import { MarshalerType, MeasuredBlock } from "./types";
+import { getSig, getSignatureArgumentCount, getSignatureFunctionName, getSignatureHandle, getSignatureModuleName, getSignatureType, getSignatureVersion, isReceiverShouldFree, jsInteropState } from "./marshal";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, fixupPointer, startMeasure } from "./utils";
 import { bindArgMarshalToJs } from "./marshal-to-js";
 import { boundJsFunctionSymbol, getJSObjectFromJSHandle, importedJsFunctionSymbol, jsImportWrapperByFnHandle } from "./gc-handles";
@@ -17,29 +17,6 @@ import { wrapAsCancelablePromise } from "./cancelable-promise";
 
 export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
-type WorkerImportInvoker = (args: JSMarshalerArguments, isAsync: boolean, values: unknown[], argumentTypes: MarshalerType[], returnType: MarshalerType) => unknown;
-const workerImports = new Map<string, Map<string, WorkerImportInvoker>>();
-type WorkerInterop = {
-    bind: (moduleName: string | null, functionName: string) => WorkerImportInvoker,
-    importModule: (moduleName: string, moduleUrl: string) => Promise<object>,
-    globalThis: () => object,
-    runtime: () => object,
-};
-let workerInterop: WorkerInterop | undefined;
-
-export function configureWorkerInterop(interop: WorkerInterop): void {
-    if (workerInterop) throw new Error("withWorker(): interop routing is already configured");
-    workerInterop = interop;
-}
-
-export function registerWorkerJSImport(moduleName: string, functionName: string, invoke: WorkerImportInvoker): void {
-    let functions = workerImports.get(moduleName);
-    if (!functions) {
-        functions = new Map();
-        workerImports.set(moduleName, functions);
-    }
-    functions.set(functionName, invoke);
-}
 
 export function setModuleImports(moduleName: string, moduleImports: any): void {
     importedModules.set(moduleName, moduleImports);
@@ -78,27 +55,7 @@ function bindJsImport(signature: JSFunctionSignature): Function {
     dotnetLogger.debug(() => `Binding [JSImport] ${jsFunctionName} from ${jsModuleName} module`);
 
     const argsCount = getSignatureArgumentCount(signature);
-    // INTERNAL bindings implement runtime services over worker-owned native state.
-    const runtimeService = !jsModuleName && jsFunctionName.startsWith("INTERNAL.");
-    const workerInvoke = workerImports.get(jsModuleName)?.get(jsFunctionName)
-        ?? (workerInterop && !runtimeService ? workerInterop.bind(jsModuleName || null, jsFunctionName) : undefined);
-    let currentWorkerArgs: JSMarshalerArguments | undefined;
-    const workerResSig = getSig(signature, 1);
-    const workerResType = getSignatureType(workerResSig);
-    const workerAsync = workerResType === MarshalerType.Task || workerResType === MarshalerType.TaskPreCreated;
-    const workerArgumentTypes = Array.from({ length: argsCount }, (_, index) => getSignatureType(getSig(signature, index + 2)));
-    const rawWorkerReturnType = workerAsync ? getSignatureResType(workerResSig) : workerResType;
-    const workerReturnType = rawWorkerReturnType === MarshalerType.None || rawWorkerReturnType === MarshalerType.Discard || rawWorkerReturnType === MarshalerType.DiscardNoWait
-        ? MarshalerType.Void : rawWorkerReturnType;
-    if (workerInvoke && (argsCount > WorkerMaxArgumentCount || !workerArgumentTypes.every(isWorkerValueType) || !isWorkerReturnType(workerReturnType))) {
-        throw new Error(`withWorker(): UI imports require at most ${WorkerMaxArgumentCount} supported arguments and a supported result or Task`);
-    }
-    const fn = workerInvoke
-        ? (...values: unknown[]) => {
-            if (currentWorkerArgs === undefined) throw new Error("withWorker(): UI import argument frame is missing");
-            return workerInvoke(currentWorkerArgs, workerAsync, values, workerArgumentTypes, workerReturnType);
-        }
-        : lookupJsImport(jsFunctionName, jsModuleName);
+    const fn = lookupJsImport(jsFunctionName, jsModuleName);
 
     const argMarshalers: (BoundMarshalerToJs)[] = new Array(argsCount);
     const argCleanup: (Function | undefined)[] = new Array(argsCount);
@@ -171,18 +128,6 @@ function bindJsImport(signature: JSFunctionSignature): Function {
         }
     }
 
-    if (workerInvoke) {
-        const inner = wrappedFn;
-        wrappedFn = (args: JSMarshalerArguments): void => {
-            const previous = currentWorkerArgs;
-            currentWorkerArgs = args;
-            try {
-                inner(args);
-            } finally {
-                currentWorkerArgs = previous;
-            }
-        };
-    }
 
     (<any>wrappedFn)[importedJsFunctionSymbol] = closure;
 
@@ -385,11 +330,11 @@ export function getTypeOfProperty(self: any, name: string): string {
 }
 
 export function getGlobalThis(): any {
-    return workerInterop ? workerInterop.globalThis() : globalThis;
+    return globalThis;
 }
 
 export function getDotnetInstance(): any {
-    return workerInterop ? workerInterop.runtime() : dotnetApi;
+    return dotnetApi;
 }
 
 export function dynamicImport(module_name: string, module_url: string): Promise<any> {
@@ -400,8 +345,7 @@ export function dynamicImport(module_name: string, module_url: string): Promise<
     const newPromise = !promise;
     if (newPromise) {
         dotnetLogger.debug(() => `importing ES6 module '${module_name}' from '${module_url}'`);
-        promise = workerInterop ? workerInterop.importModule(module_name, new URL(module_url, import.meta.url).href)
-            : import(/*! webpackIgnore: true */module_url);
+        promise = import(/*! webpackIgnore: true */module_url);
         importedModulesPromises.set(module_name, promise);
     }
 

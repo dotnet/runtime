@@ -15,6 +15,47 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     [ConditionalClass(typeof(WorkerInteropTest), nameof(IsBrowserDomSupportedOrWorker))]
     public partial class WorkerInteropTest
     {
+        [JSImport("nativeBoundaryProof", nameof(WorkerInteropTest))]
+        private static partial bool CheckNativeBoundaryOnUI();
+
+        [Fact]
+        public void NativeBoundaryOwnership() => Assert.True(CheckNativeBoundaryOnUI());
+
+        [JSImport("nativeBoundaryCapacity", nameof(WorkerInteropTest))]
+        private static partial int CheckNativeCapacityOnUI();
+
+        [Fact]
+        public void NativeBoundaryCapacityAndRecovery() => Assert.Equal(42, CheckNativeCapacityOnUI());
+
+        [Fact]
+        public async Task NativeBoundaryCancellationRace()
+        {
+            for (int index = 0; index < 20; index++)
+            {
+                using CancellationTokenSource cancellation = new();
+                Task<JSObject> imported = JSHost.ImportAsync("BoundaryCancellationProbe", "data:text/javascript,export const value=42", cancellation.Token);
+                cancellation.Cancel();
+                JSException error = await Assert.ThrowsAsync<JSException>(() => imported);
+                Assert.Equal("Error: OperationCanceledException", error.Message);
+                _ = error.StackTrace;
+            }
+        }
+
+        [JSImport("inlineThenable", nameof(WorkerInteropTest))]
+        private static partial Task<int> InlineThenableOnUI();
+
+        [JSImport("inlineThenableCalls", nameof(WorkerInteropTest))]
+        private static partial int InlineThenableCallsOnUI();
+
+        [Fact]
+        public async Task NativeBoundaryTaskCallbackReady()
+        {
+            Task<int> task = InlineThenableOnUI();
+            Assert.False(task.IsCompleted);
+            Assert.Equal(42, await task);
+            Assert.Equal(1, InlineThenableCallsOnUI());
+        }
+
         [JSImport("globalThis.document.hasFocus")]
         private static partial bool DocumentHasFocus();
 
@@ -1158,16 +1199,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public void MultipleArgumentValidationAndLimits()
         {
             Assert.Equal(42, CheckMultiContractsOnUI(42));
-            if (Environment.GetEnvironmentVariable("DOTNET_TEST_WITH_WORKER") == "1")
-            {
-                JSException error = Assert.Throws<JSException>(() => OverLimitOnUI(1, 2, 3, 4, 5, 6, 7));
-                Assert.Contains("at most 6", error.Message);
-                Assert.NotEmpty(error.StackTrace);
-            }
-            else
-            {
-                Assert.Equal(28, OverLimitOnUI(1, 2, 3, 4, 5, 6, 7));
-            }
+            Assert.Equal(28, OverLimitOnUI(1, 2, 3, 4, 5, 6, 7));
             Assert.Equal(42, SumTwoOnUI(12, 30));
         }
 

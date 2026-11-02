@@ -4,6 +4,7 @@
 import type { DotnetModuleConfig, RuntimeAPI, AssetEntry, LoaderConfig } from "./public-api";
 import type { EmscriptenModule, InstantiateWasmCallBack, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
 import { InteropJavaScriptExportsTable, LoaderExportsTable, BrowserHostExportsTable, RuntimeExportsTable, NativeBrowserExportsTable, BrowserUtilsExportsTable, DiagnosticsExportsTable } from "./exchange";
+import type { WorkerRuntimeContext } from "../loader/worker-native";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -105,6 +106,7 @@ export type InternalExchange = [
     NativeBrowserExportsTable, //7
     BrowserUtilsExportsTable, //8
     DiagnosticsExportsTable, //9
+    WorkerRuntimeContext?, //10
 ]
 export const enum InternalExchangeIndex {
     RuntimeAPI = 0,
@@ -117,6 +119,7 @@ export const enum InternalExchangeIndex {
     NativeBrowserExportsTable = 7,
     BrowserUtilsExportsTable = 8,
     DiagnosticsExportsTable = 9,
+    WorkerRuntimeContext = 10,
 }
 
 export type JsModuleExports = {

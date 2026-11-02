@@ -11,6 +11,7 @@ let nestedScalar;
 let recordNestedOrder = false;
 const nestedEvents = [];
 const asyncEvents = [];
+const initializerEvents = [];
 
 function readMeaningAsync(value) {
     asyncEvents.push(`prefix:${value}`);
@@ -81,10 +82,47 @@ try {
     const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
         .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true })
         .withWorker()
+        .withConfigLoaded(config => {
+            if (typeof document !== "object") throw new Error("Configuration callback ran outside UI");
+            initializerEvents.push("config-callback");
+            globalThis.nativeBoundaryInitializerEvents = initializerEvents;
+            const configInitializer = `
+                export function onRuntimeConfigLoaded() {
+                    if (typeof document !== "object") throw new Error("Config initializer ran outside UI");
+                    globalThis.nativeBoundaryInitializerEvents.push("config-initializer");
+                }
+                export function onRuntimeReady() {
+                    if (typeof document !== "object") throw new Error("Ready initializer ran outside UI");
+                    globalThis.nativeBoundaryInitializerEvents.push("config-ready");
+                }`;
+            const readyInitializer = `
+                export function onRuntimeReady() {
+                    if (typeof document !== "object") throw new Error("Ready initializer ran outside UI");
+                    globalThis.nativeBoundaryInitializerEvents.push("ready-initializer");
+                }`;
+            config.resources.modulesAfterConfigLoaded ??= [];
+            config.resources.modulesAfterRuntimeReady ??= [];
+            config.resources.modulesAfterConfigLoaded.push({
+                name: "native-boundary-config-initializer",
+                resolvedUrl: "data:text/javascript," + encodeURIComponent(configInitializer),
+            });
+            config.resources.modulesAfterRuntimeReady.push({
+                name: "native-boundary-ready-initializer",
+                resolvedUrl: "data:text/javascript," + encodeURIComponent(readyInitializer),
+            });
+        })
+        .withDotnetReady(() => {
+            if (typeof document !== "object") throw new Error("Ready callback ran outside UI");
+            initializerEvents.push("ready-callback");
+        })
         .withApplicationArgumentsFromQuery()
         .withDiagnosticTracing(true)
         .create();
 
+    if (initializerEvents.join(",") !== "config-callback,config-initializer,ready-callback,config-ready,ready-initializer") {
+        throw new Error("Library initializer ownership, ordering or exactly-once behavior changed");
+    }
+    console.log("UI callbacks and library initializers completed exactly once.");
     setModuleImports("main.js", {
         Sample: {
             Test: {
@@ -156,7 +194,7 @@ try {
             nestedExport(16);
             throw new Error("Expected nested export capacity failure.");
         } catch (error) {
-            if (!error.message.includes("queue is full")) throw error;
+            if (!error.message.includes("native call capacity exceeded")) throw error;
             error.dispose?.();
         }
     }
@@ -230,11 +268,13 @@ try {
         }
     }
     if (getConfig().workerOptions) {
+        if (await exports.Sample.Test.TaskThroughImport(-6) !== 46) throw new Error("Thenable completion changed.");
         try {
-            exports.Sample.Test.TaskThroughImport(-6);
-            throw new Error("Expected an unsupported-thenable error.");
+            await exports.Sample.Test.TaskThroughImport(-7);
+            throw new Error("Expected a rejected thenable.");
         } catch (error) {
-            if (!error.message.includes("Promise")) throw error;
+            if (!error.message.includes("M5 thenable failure")) throw error;
+            error.dispose?.();
         }
     }
     const concurrentResults = await Promise.all(Array.from({ length: 70 }, (_, value) => exports.Sample.Test.TaskThroughImport(value)));

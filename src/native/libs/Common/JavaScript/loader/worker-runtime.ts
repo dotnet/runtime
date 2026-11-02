@@ -1,337 +1,140 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// -----------------------------------------------------------
-// Worker-side runtime bootstrap for withWorker() mode.
-//
-// When dotnet.js detects ENVIRONMENT_IS_WEB_WORKER, it calls
-// waitForInitMessage() to receive config from the main thread,
-// then bootstrapWorkerRuntime() boots the runtime and enters
-// the signaling event loop.
-// -----------------------------------------------------------
-
 import type { LoaderConfig, RuntimeAPI } from "./types";
-import { JavaScriptMarshalerArgSize, MarshalerType, WorkerMaxArgumentCount } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
-import type { WorkerReferenceMessage } from "./worker-references";
-import { workerReferences } from "./worker-references";
-
-import { dotnetNativeBrowserExports, Module } from "./cross-module";
+import { InternalExchangeIndex } from "../types";
+import { dotnetInternals, dotnetNativeBrowserExports, dotnetInteropJSExports, dotnetBrowserUtilsExports, Module } from "./cross-module";
 import { mergeLoaderConfig } from "./config";
 import { HostBuilder } from "./host-builder";
+import { createPromiseCompletionSource } from "./promise-completion-source";
+import { createNativeCallBuffer, createNativeChannel, NativeOperation } from "./worker-native";
 import {
-    createSignalingBuffer,
-    notifyMemoryGrowth,
-    MemoryViewManager,
-    OFFSET_COMMAND_SIGNAL,
-    OFFSET_COMMAND_RESULT,
-    OFFSET_COMMAND_PROMISE_ID,
-    OFFSET_WORKER_ERROR_LENGTH,
-    OFFSET_WORKER_STATE,
-    OFFSET_WAKEUP_WORKER,
-    OFFSET_FRAME_PTRS,
-    FRAME_RING_CAPACITY,
-    SignalState,
-    CommandId,
-    wakeMain,
-    writeSharedError,
+    createSignalingBuffer, SignalState, CommandId, OFFSET_COMMAND_RESULT, OFFSET_COMMAND_SIGNAL,
+    OFFSET_COMMAND_PROMISE_ID, OFFSET_WORKER_STATE, OFFSET_WORKER_ERROR_LENGTH, writeSharedError, wakeMain,
 } from "./shared-signaling";
-import type { WorkerModuleImportsMessage } from "./worker-imports";
-import { createWorkerJSImportInvoker } from "./worker-imports";
-import type { WorkerExportDescriptor, WorkerExportsRequest, WorkerExportsResponse } from "./worker-exports";
-import { createWorkerJSExportDispatcher } from "./worker-exports";
-import type { WorkerPromiseMessage } from "./worker-promises";
-import { createWorkerPromises } from "./worker-promises";
 
-// -----------------------------------------------------------
-// Init message types (exchanged via postMessage during Phase A)
-// -----------------------------------------------------------
-
-export interface WorkerInitMessage {
-    type: "init";
-    config: LoaderConfig;
-}
-
-export interface WorkerReadyMessage {
-    type: "ready";
-    wasmMemory: WebAssembly.Memory;
-    signalBuffer: SharedArrayBuffer;
-    runtimeBuildInfo: RuntimeAPI["runtimeBuildInfo"];
-}
-
+export interface WorkerInitMessage { type: "init"; config: LoaderConfig }
 export interface WorkerCommandMessage {
-    type: "command";
-    commandId: CommandId;
-    promiseId: number;
-    mainAssemblyName?: string;
-    args?: string[];
-    exitCode?: number;
-    reason?: unknown;
+    type: "command"; commandId: CommandId; promiseId: number;
+    mainAssemblyName?: string; args?: string[]; exitCode?: number; reason?: unknown;
 }
-
-export interface WorkerErrorMessage {
-    type: "error";
-    message: string;
-    stack?: string;
-}
-
-export type WorkerToMainMessage = WorkerReadyMessage | WorkerErrorMessage | WorkerExportsResponse | WorkerPromiseMessage | WorkerReferenceMessage;
-
-// -----------------------------------------------------------
-// Wait for init message from main thread
-//
-// Returns a Promise that resolves when the main thread posts
-// the "init" message with config.
-// -----------------------------------------------------------
+export type WorkerToMainMessage =
+    | { type: "attach", wasmMemory: WebAssembly.Memory, signalBuffer: SharedArrayBuffer, nativeBuffer: SharedArrayBuffer }
+    | { type: "ready", runtimeBuildInfo: RuntimeAPI["runtimeBuildInfo"], workerProxyCounts: number[] }
+    | { type: "error", message: string };
 
 export function waitForInitMessage(): Promise<WorkerInitMessage> {
-    return new Promise<WorkerInitMessage>((resolve) => {
-        const handler = (ev: MessageEvent): void => {
-            const data = ev.data;
-            if (data && data.type === "init") {
-                self.removeEventListener("message", handler);
-                resolve(data as WorkerInitMessage);
-            }
+    return new Promise(resolve => {
+        const handler = (event: MessageEvent<WorkerInitMessage>) => {
+            if (event.data?.type !== "init") return;
+            self.removeEventListener("message", handler);
+            resolve(event.data);
         };
         self.addEventListener("message", handler);
     });
 }
 
-// -----------------------------------------------------------
-// Bootstrap the runtime on the worker
-//
-// Boots the full runtime, allocates
-// signaling + frame buffers, hooks memory growth, posts
-// "ready" back, then enters the signaling event loop.
-// -----------------------------------------------------------
-
-export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promise<void> {
-    const { config } = initMsg;
-
-    try {
-        // Apply config from main thread
-        mergeLoaderConfig(config);
-
-        // Boot the runtime through the normal HostBuilder path.
-        const builder = new HostBuilder();
-        const runtime: RuntimeAPI = await builder.create();
-
-
-        const wasmMemory = dotnetNativeBrowserExports.getWasmMemory();
-        if (!(wasmMemory.buffer instanceof SharedArrayBuffer)) {
-            throw new Error("withWorker(): runtime WASM memory is not shared");
-        }
-
-        // Allocate the signaling buffer (separate small SharedArrayBuffer)
-        const signalBuffer = createSignalingBuffer();
-        const signalView = new Int32Array(signalBuffer);
-
-        // Pre-allocate frame slots in WASM heap for main→worker arg frames
-        const mallocFn = (Module as any)._malloc as (size: number) => number;
-        if (mallocFn) {
-            const FRAME_SLOT_SIZE = (WorkerMaxArgumentCount + 2) * JavaScriptMarshalerArgSize;
-            for (let i = 0; i < FRAME_RING_CAPACITY; i++) {
-                const ptr = mallocFn(FRAME_SLOT_SIZE);
-                Atomics.store(signalView, OFFSET_FRAME_PTRS + i, ptr);
-            }
-        }
-
-        // Hook memory growth to increment memory_generation
-        const originalGrow = wasmMemory.grow.bind(wasmMemory);
-        wasmMemory.grow = (delta: number): number => {
-            const result = originalGrow(delta);
-            notifyMemoryGrowth(signalView);
-
-            return result;
-        };
-
-        runWorkerEventLoop(signalView, runtime, new MemoryViewManager(wasmMemory, signalView));
-
-        // Post "ready" back to main thread
-        const readyMsg: WorkerReadyMessage = {
-            type: "ready",
-            wasmMemory,
-            signalBuffer,
-            runtimeBuildInfo: runtime.runtimeBuildInfo,
-        };
-        self.postMessage(readyMsg);
-
-    } catch (err: any) {
-        // Post error back to main thread
-        const errorMsg: WorkerErrorMessage = {
-            type: "error",
-            message: err?.message ?? String(err),
-            stack: err?.stack,
-        };
-        self.postMessage(errorMsg);
-    }
-}
-
-// -----------------------------------------------------------
-// Worker event loop
-//
-// Uses Atomics.waitAsync when no synchronous call is on stack
-// (keeps the JS event loop alive for async managed code like
-// runMainAndExit). Falls back to Atomics.wait only during
-// synchronous JSExport processing where blocking is needed.
-//
-// Command messages carry arguments; JSExport ring writes notify
-// OFFSET_WAKEUP_WORKER to wake the shared-memory loop.
-// -----------------------------------------------------------
-
-function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryViews: MemoryViewManager): void {
-    let closing = false;
+export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promise<void> {
+    const signalBuffer = createSignalingBuffer();
+    const signal = new Int32Array(signalBuffer);
+    const nativeBuffer = createNativeCallBuffer();
+    const attached = createPromiseCompletionSource<void>();
+    let runtime: RuntimeAPI;
     let commandRunning = false;
-    const promises = createWorkerPromises(memoryViews);
-    const processExports = createWorkerJSExportDispatcher(signalView, memoryViews, (handle, pointer, values) => {
-        return runtime.INTERNAL.invokeWorkerJSExport(handle, pointer, values);
-    }, message => {
-        if (!closing) self.postMessage(message);
-    }, reportFailure);
-    const references = workerReferences(memoryViews);
-    const invokeReference = createWorkerJSImportInvoker(signalView, memoryViews, 0, pumpExports, promises);
-    references.configure("worker", request => {
-        const pointer = Module._malloc(3 * JavaScriptMarshalerArgSize);
-        if (!Number(pointer)) throw new Error("withWorker(): unable to allocate reference frame");
-        try {
-            const result = invokeReference(pointer, false, [request], [MarshalerType.String], MarshalerType.String);
-            if (typeof result !== "string") throw new Error("withWorker(): invalid reference response");
-            return result;
-        } finally {
-            Module._free(pointer);
+    let closing = false;
+    let failed = false;
+    const channel = createNativeChannel(signal, nativeBuffer, true, (operation, first, second) => {
+        const args = first as any;
+        switch (operation) {
+            case NativeOperation.GetManagedStackTrace: dotnetInteropJSExports.SystemInteropJS_GetManagedStackTrace(args); break;
+            case NativeOperation.CallDelegate: dotnetInteropJSExports.SystemInteropJS_CallDelegate(args); break;
+            case NativeOperation.CompleteTask: dotnetInteropJSExports.SystemInteropJS_CompleteTask(args); break;
+            case NativeOperation.ReleaseJSOwnedObject: dotnetInteropJSExports.SystemInteropJS_ReleaseJSOwnedObjectByGCHandle(args); break;
+            case NativeOperation.BindAssemblyExports: dotnetInteropJSExports.SystemInteropJS_BindAssemblyExports(args); break;
+            case NativeOperation.CallJSExport: dotnetInteropJSExports.SystemInteropJS_CallJSExport(args, second as any); break;
+            case NativeOperation.Malloc: return Number(Module._malloc(first));
+            case NativeOperation.Free: Module._free(args); break;
+            case NativeOperation.RunBackgroundTimers: dotnetBrowserUtilsExports.runBackgroundTimers(); break;
+            default: throw new Error(`withWorker(): unknown native operation ${operation}`);
         }
-    }, message => self.postMessage(message));
-    runtime.INTERNAL.configureWorkerInterop({
-        bind: (moduleName: string | null, functionName: string) => {
-            const handle = references.invokeHost("bind", [moduleName, functionName]);
-            if (typeof handle !== "number") throw new Error("withWorker(): invalid UI import handle");
-            return createWorkerJSImportInvoker(signalView, memoryViews, handle, pumpExports, promises);
-        },
-        importModule: async (moduleName: string, moduleUrl: string) => {
-            const module = await references.invokeHost("import", [moduleName, moduleUrl]);
-            if (!module || typeof module !== "object") throw new Error("withWorker(): invalid UI module");
-            return module;
-        },
-        globalThis: () => references.invokeHost("global"),
-        runtime: () => references.invokeHost("runtime"),
+        return 0;
     });
-    function reportFailure(error: unknown): void {
-        references.stop(error instanceof Error ? error : new Error(String(error)));
-        promises.stop(error instanceof Error ? error : new Error(String(error)));
-        writeSharedError(signalView, OFFSET_WORKER_ERROR_LENGTH, error, "worker");
-        Atomics.store(signalView, OFFSET_WORKER_STATE, SignalState.ERROR);
-        wakeMain(signalView);
-    }
-    self.addEventListener("error", (event: ErrorEvent) => reportFailure(event.error ?? new Error(event.message)));
-    function pumpExports(): void {
-        try {
-            processExports();
-        } catch (error) {
-            reportFailure(error);
-            self.postMessage({ type: "error", message: error instanceof Error ? error.message : String(error) });
-            throw error;
-        }
+
+    function fail(error: unknown): void {
+        if (failed) return;
+        failed = true;
+        const failure = error instanceof Error ? error : new Error(String(error));
+        writeSharedError(signal, OFFSET_WORKER_ERROR_LENGTH, failure, "native worker");
+        Atomics.store(signal, OFFSET_WORKER_STATE, SignalState.ERROR);
+        attached.reject(failure);
+        channel.stop(failure);
+        wakeMain(signal);
+        self.postMessage({ type: "error", message: failure.message });
     }
 
-    self.addEventListener("message", (ev: MessageEvent<WorkerCommandMessage | WorkerModuleImportsMessage | WorkerExportsRequest | WorkerPromiseMessage | WorkerReferenceMessage>): void => {
-        if (ev.data.type === "reference-release" || ev.data.type === "reference-settlement") {
-            references.receive(ev.data);
+    self.addEventListener("message", (event: MessageEvent<WorkerCommandMessage | { type: "attached" }>) => {
+        const request = event.data;
+        if (request.type === "attached") {
+            attached.resolve();
             return;
         }
-        if (ev.data.type === "async-import" && !closing) {
-            promises.complete(ev.data);
-            return;
-        }
-        if (ev.data.type === "exports" && !closing) {
-            const request = ev.data;
-            void runtime.INTERNAL.getWorkerAssemblyExports(request.assemblyName).then(
-                (exports: WorkerExportDescriptor[]) => self.postMessage({ type: "exports", requestId: request.requestId, exports }),
-                (error: unknown) => self.postMessage({
-                    type: "exports", requestId: request.requestId, error: error instanceof Error ? error.message : String(error),
-                }),
-            );
-            return;
-        }
-        if (ev.data.type === "imports" && !closing) {
-            for (const entry of ev.data.functions) {
-                runtime.INTERNAL.registerWorkerJSImport(ev.data.moduleName, entry.name, createWorkerJSImportInvoker(signalView, memoryViews, entry.handle, pumpExports, promises));
-            }
-            return;
-        }
-        if (ev.data.type !== "command" || closing) return;
-        const command = ev.data;
-        if (commandRunning && command.commandId !== CommandId.EXIT) {
-            const errorMsg: WorkerErrorMessage = { type: "error", message: "Another worker command is already running" };
-            self.postMessage(errorMsg);
+        if (request.type !== "command" || closing) return;
+        if (commandRunning && request.commandId !== CommandId.EXIT) {
+            fail(new Error("withWorker(): another command is already running"));
             return;
         }
         commandRunning = true;
-        if (command.commandId === CommandId.EXIT) closing = true;
-        void processCommand(command, runtime).then(result => {
-            if (closing && command.commandId !== CommandId.EXIT) return;
-            Atomics.store(signalView, OFFSET_COMMAND_RESULT, result);
-            Atomics.store(signalView, OFFSET_COMMAND_PROMISE_ID, command.promiseId);
-            Atomics.store(signalView, OFFSET_COMMAND_SIGNAL, SignalState.DONE);
+        void execute(request).then(result => {
+            if (closing && request.commandId !== CommandId.EXIT) return;
+            Atomics.store(signal, OFFSET_COMMAND_RESULT, result);
+            Atomics.store(signal, OFFSET_COMMAND_PROMISE_ID, request.promiseId);
+            Atomics.store(signal, OFFSET_COMMAND_SIGNAL, SignalState.DONE);
             commandRunning = false;
-            wakeMain(signalView);
-            if (command.commandId !== CommandId.RUN_MAIN) {
+            if (request.commandId !== CommandId.RUN_MAIN) {
                 closing = true;
-                references.stop(new Error("withWorker(): worker has exited"));
-                promises.stop(new Error("withWorker(): worker has exited"));
-                Atomics.store(signalView, OFFSET_WORKER_STATE, SignalState.DONE);
+                Atomics.store(signal, OFFSET_WORKER_STATE, SignalState.DONE);
                 self.close();
             }
-        }, error => {
-            if (closing && command.commandId !== CommandId.EXIT) return;
-            closing = true;
-            reportFailure(error);
-            const errorMsg: WorkerErrorMessage = {
-                type: "error",
-                message: error instanceof Error ? error.message : String(error),
-            };
-            self.postMessage(errorMsg);
-            self.close();
-        });
+            wakeMain(signal);
+        }, fail);
     });
 
-    function waitLoop(): void {
-        if (closing) return;
-        const lastSeen = Atomics.load(signalView, OFFSET_WAKEUP_WORKER);
-        // Process anything already pending
-        pumpExports();
-
-        // Wait asynchronously for next wakeup — keeps event loop alive
-        // so that async operations (runMainAndExit, Promises) can resolve.
-        const result = Atomics.waitAsync(signalView, OFFSET_WAKEUP_WORKER, lastSeen);
-        if (result.async) {
-            result.value.then(() => waitLoop());
-        } else {
-            // "not-equal" — value already changed, process immediately
-            setTimeout(waitLoop, 0);
+    async function execute(command: WorkerCommandMessage): Promise<number> {
+        if (command.commandId === CommandId.RUN_MAIN) return runtime.runMain(command.mainAssemblyName, command.args);
+        if (command.commandId === CommandId.RUN_MAIN_AND_EXIT) return runtime.runMainAndExit(command.mainAssemblyName, command.args);
+        if (command.commandId !== CommandId.EXIT) throw new Error("withWorker(): invalid lifecycle command");
+        closing = true;
+        try {
+            runtime.exit(command.exitCode ?? 0, command.reason);
+        } catch (error) {
+            if (error && typeof error === "object" && "status" in error && typeof error.status === "number") return error.status;
+            throw error;
         }
+        return command.exitCode ?? 0;
     }
 
-    waitLoop();
-}
-
-async function processCommand(command: WorkerCommandMessage, runtime: RuntimeAPI): Promise<number> {
-    switch (command.commandId) {
-        case CommandId.RUN_MAIN:
-            return await runtime.runMain(command.mainAssemblyName, command.args);
-        case CommandId.RUN_MAIN_AND_EXIT:
-            return await runtime.runMainAndExit(command.mainAssemblyName, command.args);
-        case CommandId.EXIT: {
-            const exitCode = command.exitCode ?? 0;
-            try {
-                runtime.exit(exitCode, command.reason);
-            } catch (error) {
-                if (!error || typeof error !== "object" || !("status" in error) || typeof error.status !== "number") {
-                    throw error;
-                }
-                return error.status;
-            }
-            return exitCode;
-        }
-        default:
-            throw new Error(`Unknown worker command ${command.commandId}`);
+    dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext] = {
+        role: "worker", invoke: channel.invoke,
+        beforeRuntimeStart: async () => {
+            const wasmMemory = dotnetNativeBrowserExports.getWasmMemory();
+            if (!(wasmMemory.buffer instanceof SharedArrayBuffer)) throw new Error("withWorker(): native memory is not shared");
+            self.postMessage({ type: "attach", wasmMemory, signalBuffer, nativeBuffer });
+            await attached.promise;
+        },
+    };
+    channel.listen(fail);
+    self.addEventListener("error", (event: ErrorEvent) => fail(event.error ?? new Error(event.message)));
+    self.addEventListener("unhandledrejection", (event: PromiseRejectionEvent) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        fail(event.reason);
+    });
+    try {
+        mergeLoaderConfig(message.config);
+        runtime = await new HostBuilder().create();
+        self.postMessage({ type: "ready", runtimeBuildInfo: runtime.runtimeBuildInfo,
+            workerProxyCounts: runtime.INTERNAL.nativeBoundary.getProxyCounts() });
+    } catch (error) {
+        fail(error);
     }
 }

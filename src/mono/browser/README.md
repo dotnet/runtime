@@ -62,8 +62,8 @@ application assets; do not patch files in the NuGet cache or published output.
 Browser ReadyToRun images must be produced by a compiler that includes a maximum
 in their memory imports. Older unbounded images fail shared staging explicitly.
 
-The current bridge supports up to six mixed arguments using the native interop
-marshalers: Boolean, Byte, Char, Int16, Int32, Int52, BigInt64, Single, Double,
+The bridge reuses the normal UI-side `dotnet.runtime.js` implementation and native
+interop signatures: Boolean, Byte, Char, Int16, Int32, Int52, BigInt64, Single, Double,
 String, IntPtr, DateTime/DateTimeOffset, nullable scalars, arrays, Span/ArraySegment,
 Action/Function, Task arguments, JSObject/Object and Exception values.
 Results use the same native-supported types or void, synchronously or through a
@@ -80,36 +80,45 @@ numeric UTF-16 code units, not JavaScript strings. Int52 follows the existing
 double-valued marshaler slot. BigInt64 follows `long`/`JSType.BigInt`, uses a
 signed 64-bit slot and JavaScript `bigint` values, including Task completions;
 it never converts through a JavaScript Number.
-The worker owns temporary UTF-16 transport allocations and native marshaling;
-UI code only copies transport payloads and accesses live shared memory views.
+The worker owns native allocation and managed execution. The UI runs the original
+marshalers against shared WASM memory; only native operation identifiers, scalar
+ABI parameters and frame pointers cross the boundary. `dotnet.native.js` is loaded
+only by the worker. There is no separate value serializer or object-reference
+protocol, and no six-argument transport restriction.
 IntPtr preserves the native unsigned Wasm32 representation. Dates retain native
-millisecond precision. Arrays are copied; object, exception and callback values
-use bidirectional identity-preserving references with weak proxy caches and
-per-transmission leases. Reference operations use the reentrant synchronous
-rings; Promise arguments settle through messages. Span lifetime ends with its
-import (also on failure); ArraySegment disposal runs on the worker. Memory-view
-methods refresh shared memory after growth and reject disposed views.
-Thrown import/export failures and Task rejections preserve reference identity.
-If an exception payload cannot be allocated, the failure explicitly reports that
-exception transport failed and uses the bounded shared-error snapshot.
-Shared slots and transport buffers are released
-after initial invocation, before asynchronous completion messages.
+millisecond precision. Arrays, objects, exceptions, callbacks and Tasks use the
+existing native marshalers and UI-owned handle/Promise registries. Span lifetime
+ends with its import (also on failure); ArraySegment disposal uses the normal
+managed-proxy lifecycle. Memory views refresh after growth. UI scratch frames
+are allocated from shared heap memory, not the VM's native stack.
+Native Task completion is dispatched only after the worker leaves the initial
+import, so the managed callback is ready. UI thenables are assimilated through
+native Promises to prevent inline completion before that boundary.
 Synchronous calls block the UI and service interop requests, not arbitrary Promise
-continuations. Each direction has 16 active synchronous call slots; asynchronous
-calls release their slots after initial invocation. Async UI imports require native
-Promises, not custom thenables. Shutdown rejects pending proxy calls but does not
-cancel arbitrary user Promises. The full RuntimeAPI remains unsupported;
+continuations. Managed-entry calls have a 16-call budget, with reserved native
+capacity for allocation, release and exception handling. Async UI imports use native
+Promises/thenables under the normal marshaler contract. Shutdown disposes normal
+proxy state and rejects pending managed Task promises, but does not cancel
+arbitrary user Promises. Raw Emscripten Module/FS/Wasm-table access is unsupported;
 this prototype still requires API/design review.
-Operations on worker-owned reference proxies fail after the worker exits;
-objects returned to their original UI owner retain their original identity.
+Managed proxies and exported functions use normal runtime-lifetime checks after
+the worker exits. UI JavaScript objects stay in their original realm.
 
 ### Library tests in worker mode
 
 Application JavaScript always runs on the UI/main thread. `JSHost.ImportAsync`
 loads modules there, global imports bind there, and `JSHost.GlobalThis` and
 `JSHost.DotnetInstance` expose UI-owned objects. Unregistered application imports
-never fall back to worker-local lookup. Runtime-owned `INTERNAL` service bindings
-still implement native marshaling and runtime state on the runtime worker.
+never fall back to worker-local lookup. `INTERNAL` interop helpers, including
+property access and HTTP/WebSocket services, also run on UI. Only native VM/host
+operations and native background work remain on the runtime worker.
+
+This branch is a native-boundary architecture proof, not a complete hosting
+implementation. Configuration/ready callbacks and application library
+initializers execute on UI. Custom boot-resource and download-progress callbacks
+are explicitly rejected until native asset-loading requests are routed to UI;
+they are not silently ignored. Lazy/satellite resource loading and diagnostics
+still need their native-host adapters and dedicated validation.
 
 The JS interop test project supports an explicit `WasmTestWithWorker` mode.
 It registers its UI imports before managed execution and checks UI-backed
@@ -133,6 +142,9 @@ The UI event loop runs independently from managed execution on the worker.
 does not prevent UI timers or Promise continuations from running between calls.
 Within a single synchronous export, the UI spin loop still services only interop
 requests and does not pump arbitrary microtasks.
+Native Task completion first acknowledges worker readiness, then commits the
+normal UI PromiseHolder and frame. Cancellation can still win before that commit,
+without losing or reusing its handle.
 When using the shared browser cache, set `CHROME_PATH_FOR_TESTS` and put its
 matching ChromeDriver on `PATH`; a cached driver cannot drive an unrelated
 system Chrome major version.

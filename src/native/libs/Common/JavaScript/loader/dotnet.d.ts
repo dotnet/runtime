@@ -51,18 +51,14 @@ interface DotnetHostBuilder {
     /**
      * Configures the runtime to start on a dedicated web worker.
      * The main thread gets a proxy supporting runMain, runMainAndExit, and exit.
-     * UI imports and exports support up to six arguments using the native interop marshalers.
-     * Supported scalars: Boolean, Byte, Char, Int16, Int32, Int52, BigInt64, Single, Double, String.
-     * Also supports IntPtr, dates, nullable scalars, arrays, memory views, callbacks and object/exception values.
-     * Results may be supported native types or void, synchronously or through a Task.
-     * Managed allocation and reference ownership remain on the runtime worker.
-     * Application modules, global imports and JSHost.GlobalThis execute against the UI/main thread.
-     * JSHost.ImportAsync loads modules on the UI; there is no worker-local application import fallback.
-     * Register each module once, before running managed code.
-     * Nested synchronous calls have 16 in-flight slots in each direction.
-     * Asynchronous calls release those slots after their synchronous prefix.
-     * Asynchronous UI imports require native Promise results; custom thenables are not supported.
-     * Heap access and diagnostics are not yet supported by the proxy.
+     * The normal dotnet.runtime.js interop implementation runs on the UI/main thread.
+     * Native calls and callbacks cross the worker boundary using existing native argument frames.
+     * Managed execution, native allocation and the VM stack remain on the runtime worker.
+     * JS handles, managed proxies, Promise holders, application modules and browser services are UI-owned.
+     * UI marshaling uses shared memory and a separate worker-allocated scratch stack.
+     * Nested managed-entry calls are bounded to 16, with reserved capacity for native helper operations.
+     * Synchronous signatures remain synchronous; Task completion follows the normal interop contract.
+     * Arbitrary raw Emscripten Module/FS/Wasm-table access is not available on the UI.
      * Build the application with WasmEnableSharedMemory=true to select app-owned shared assets.
      * Requires COOP/COEP headers and SharedArrayBuffer support.
      */

@@ -1,347 +1,234 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// -----------------------------------------------------------
-// Main-thread worker proxy for withWorker() mode.
-//
-// Spawns a dedicated worker running the same dotnet.js module
-// and returns a RuntimeAPI
-// that proxies runMain/runMainAndExit to the worker via shared
-// memory signaling.
-//
-// Full JSImport/JSExport interop is deferred to a future phase.
-// -----------------------------------------------------------
-
-import type { LoaderConfig, RuntimeAPI } from "./types";
-
-import {
-    SignalState,
-    CommandId,
-    OFFSET_WAKEUP_MAIN,
-    OFFSET_COMMAND_SIGNAL,
-    OFFSET_COMMAND_ID,
-    OFFSET_COMMAND_RESULT,
-    OFFSET_COMMAND_PROMISE_ID,
-    allocatePromiseId,
-    wakeMain,
-    MemoryViewManager,
-    OFFSET_VERSION,
-    SIGNALING_BUFFER_BYTE_SIZE,
-    SIGNALING_VERSION,
-} from "./shared-signaling";
-
-import type { WorkerCommandMessage, WorkerInitMessage, WorkerToMainMessage } from "./worker-runtime";
+import type { LoaderConfig, RuntimeAPI, VoidPtr } from "./types";
+import { InternalExchangeIndex } from "../types";
 import { scriptUrl } from "./bootstrap";
+import { dotnetApi, dotnetInternals, dotnetRuntimeExports, dotnetLogger, Module } from "./cross-module";
+import { runtimeState } from "./exit";
+import { loaderCallbacks } from "./callbacks";
+import { initPolyfillsLoader } from "./polyfills";
+import { loadDotnetModule, loadJSModule, callLibraryInitializerOnRuntimeConfigLoaded, callLibraryInitializerOnRuntimeReady, hasCustomResourceLoader } from "./assets";
 import { createPromiseCompletionSource } from "./promise-completion-source";
-import { dotnetLogger, Module } from "./cross-module";
-import { createWorkerJSImportDispatcher } from "./worker-imports";
-import { createWorkerJSExportClient } from "./worker-exports";
-import type { WorkerReferenceMessage } from "./worker-references";
-import { workerReferences } from "./worker-references";
-
-const DEFAULT_TIMEOUT_MS = 30_000;
+import { createNativeChannel, NativeOperation } from "./worker-native";
+import {
+    SignalState, CommandId, MemoryViewManager, allocatePromiseId, OFFSET_VERSION, SIGNALING_VERSION,
+    OFFSET_COMMAND_SIGNAL, OFFSET_COMMAND_PROMISE_ID, OFFSET_COMMAND_RESULT, OFFSET_WAKEUP_MAIN,
+    OFFSET_WORKER_STATE, OFFSET_WORKER_ERROR_LENGTH, readSharedError, wakeMain,
+} from "./shared-signaling";
+import type { WorkerToMainMessage, WorkerCommandMessage } from "./worker-runtime";
 
 export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAPI> {
-
-    const worker = new globalThis.Worker(scriptUrl, { type: "module" });
-
-    const { promise: apiPromise, resolve, reject } = createPromiseCompletionSource<RuntimeAPI>();
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    let rejectCommand: ((error: Error) => void) | undefined;
-    let terminated = false;
+    await loaderCallbacks.configLoaded?.(config);
+    if (hasCustomResourceLoader() || loaderCallbacks.downloadResourceProgress) {
+        throw new Error("withWorker(): custom resource loading/progress callbacks are not yet routed by the native-boundary proof");
+    }
+    await initPolyfillsLoader();
+    const resources = config.resources;
+    if (!resources) throw new Error("withWorker(): runtime resources are missing");
+    const initializers = (resources.modulesAfterConfigLoaded ?? []).map(asset => [asset, callLibraryInitializerOnRuntimeConfigLoaded(asset)] as const);
+    await Promise.all(initializers.map(([, promise]) => promise));
+    const worker = new Worker(scriptUrl, { type: "module" });
+    const ready = createPromiseCompletionSource<RuntimeAPI>();
+    let signal: Int32Array | undefined;
+    let channel: ReturnType<typeof createNativeChannel> | undefined;
+    let exited: Error | undefined;
+    let pending: AbortController | undefined;
+    let exitRequested = false;
+    let uiAttached = false;
+    const timeoutMs = config.workerOptions?.timeoutMs ?? 30000;
+    const timeout = timeoutMs > 0 ? setTimeout(() => terminate(new Error("withWorker(): worker startup timed out")), timeoutMs) : undefined;
 
     function terminate(error: Error): void {
-        if (terminated) return;
-        terminated = true;
-        if (timeoutId !== undefined) clearTimeout(timeoutId);
+        if (exited) return;
+        exited = error;
+        if (timeout !== undefined) clearTimeout(timeout);
+        runtimeState.exitCode ??= 1;
+        const context = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext];
+        if (context) context.exitError = error;
+        channel?.stop(error);
+        if (typeof dotnetRuntimeExports.forceDisposeProxies === "function") {
+            try {
+                dotnetRuntimeExports.forceDisposeProxies(false, false);
+            } catch (cleanupError) {
+                dotnetLogger.error("withWorker(): UI proxy cleanup failed", cleanupError);
+            }
+        }
+        pending?.abort(error);
         worker.onmessage = null;
         worker.onerror = null;
         worker.onmessageerror = null;
         worker.terminate();
-        rejectCommand?.(error);
-        reject(error);
+        ready.reject(error);
+        if (signal) wakeMain(signal);
     }
 
-    const timeoutMs = config.workerOptions?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-    if (timeoutMs > 0) {
-        timeoutId = setTimeout(() => {
-            terminate(new Error(`withWorker(): worker did not respond within ${timeoutMs}ms`));
-        }, timeoutMs);
+    async function attach(message: Extract<WorkerToMainMessage, { type: "attach" }>): Promise<void> {
+        if (!(message.wasmMemory.buffer instanceof SharedArrayBuffer)) throw new Error("withWorker(): memory is not shared");
+        signal = new Int32Array(message.signalBuffer);
+        if (Atomics.load(signal, OFFSET_VERSION) !== SIGNALING_VERSION) throw new Error("withWorker(): signaling version mismatch");
+        channel = createNativeChannel(signal, message.nativeBuffer, false, (operation, first, second) => {
+            switch (operation) {
+                case 0: return Number(dotnetRuntimeExports.bindJSImportST(first as any));
+                case 1: dotnetRuntimeExports.invokeJSImportST(first as any, second as any); break;
+                case 2: dotnetRuntimeExports.releaseCSOwnedObject(first as any); break;
+                case 3: dotnetRuntimeExports.resolveOrRejectPromise(first as any); break;
+                case 4: dotnetRuntimeExports.cancelPromise(first as any); break;
+                case 5: dotnetRuntimeExports.invokeJSFunction(first as any, second as any); break;
+                case 6: dotnetRuntimeExports.forceDisposeProxies(!!first, !!second); break;
+                case 7: dotnetRuntimeExports.abortInteropTimers(); break;
+                default: throw new Error("withWorker(): unknown runtime callback");
+            }
+            return 0;
+        });
+        const native = channel;
+        const frames: VoidPtr[] = [];
+        Object.assign(Module, {
+            _malloc: (size: number) => {
+                const pointer = native.invoke(NativeOperation.Malloc, size) >>> 0;
+                if (!pointer && size !== 0) throw new Error("withWorker(): native allocation failed");
+                return pointer as any as VoidPtr;
+            },
+            _free: (pointer: VoidPtr) => {
+                if (Number(pointer)) native.invoke(NativeOperation.Free, Number(pointer));
+            },
+            stackSave: () => frames.length as any as VoidPtr,
+            stackAlloc: (size: number) => {
+                const pointer = Module._malloc(Math.ceil(size / 16) * 16);
+                frames.push(pointer);
+                return pointer;
+            },
+            stackRestore: (saved: VoidPtr) => {
+                const count = Number(saved);
+                if (!Number.isInteger(count) || count < 0 || count > frames.length) throw new Error("withWorker(): invalid scratch stack restore");
+                while (frames.length > count) Module._free(frames.pop()!);
+            },
+            safeSetTimeout: (callback: () => void, delay: number) => setTimeout(callback, delay),
+            runtimeKeepalivePush: () => {},
+            runtimeKeepalivePop: () => {},
+        });
+        const call = (operation: NativeOperation, first = 0, second = 0) => {
+            const context = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext];
+            native.invoke(operation, first, second, operation === NativeOperation.CompleteTask ? context?.beforeTaskCompletion : undefined);
+        };
+        dotnetInternals[InternalExchangeIndex.InteropJavaScriptExportsTable] = [
+            args => call(NativeOperation.GetManagedStackTrace, Number(args)),
+            args => call(NativeOperation.CallDelegate, Number(args)),
+            args => call(NativeOperation.CompleteTask, Number(args)),
+            args => call(NativeOperation.ReleaseJSOwnedObject, Number(args)),
+            args => call(NativeOperation.BindAssemblyExports, Number(args)),
+            (handle, args) => call(NativeOperation.CallJSExport, Number(handle), Number(args)),
+        ];
+        dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext] = {
+            role: "ui", invoke: native.invoke, memory: message.wasmMemory, assertNativeCall: native.assertCallAvailable,
+        };
+        Object.assign(dotnetApi, {
+            runMain: (assembly?: string, args?: string[]) => send(CommandId.RUN_MAIN, assembly, args),
+            runMainAndExit: async (assembly?: string, args?: string[]) => {
+                try {
+                    const code = await send(CommandId.RUN_MAIN_AND_EXIT, assembly, args);
+                    runtimeState.exitCode = code;
+                    return code;
+                } finally {
+                    terminate(new Error("withWorker(): runtime exited"));
+                }
+            },
+            exit: (code: number, reason?: unknown) => {
+                if (exited || exitRequested) return;
+                exitRequested = true;
+                pending?.abort(new Error(`withWorker(): runtime exited with code ${code}`));
+                pending = undefined;
+                void send(CommandId.EXIT, undefined, undefined, code, reason).then(() => {
+                    runtimeState.exitCode = code;
+                    terminate(new Error("withWorker(): runtime exited"));
+                }, error => terminate(error instanceof Error ? error : new Error(String(error))));
+            },
+        });
+        runtimeState.nativeReady = true;
+        const runtimeModule = await loadDotnetModule(resources!.jsModuleRuntime[0]);
+        await runtimeModule.dotnetInitializeModule<void>(dotnetInternals);
+        dotnetApi.INTERNAL.workerMemoryViews = new MemoryViewManager(message.wasmMemory, signal);
+        dotnetApi.INTERNAL.nativeBoundary = { role: "ui", getStats: native.getStats, getScratchCount: () => frames.length };
+        native.listen(terminate);
+        uiAttached = true;
+        worker.postMessage({ type: "attached" });
     }
 
-    worker.onmessage = (ev: MessageEvent<WorkerToMainMessage>): void => {
-        const msg = ev.data;
-
-        if (msg.type === "ready") {
-            if (!(msg.wasmMemory?.buffer instanceof SharedArrayBuffer)) {
-                terminate(new Error("withWorker(): worker WASM memory is missing or not shared"));
-                return;
-            }
-            if (!(msg.signalBuffer instanceof SharedArrayBuffer) || msg.signalBuffer.byteLength !== SIGNALING_BUFFER_BYTE_SIZE
-                || Atomics.load(new Int32Array(msg.signalBuffer), OFFSET_VERSION) !== SIGNALING_VERSION) {
-                terminate(new Error("withWorker(): incompatible worker signaling protocol"));
-                return;
-            }
-            if (timeoutId !== undefined) {
-                clearTimeout(timeoutId);
-            }
-
-            const signalView = new Int32Array(msg.signalBuffer);
-            const memoryViews = new MemoryViewManager(msg.wasmMemory, signalView);
-            const api = buildProxyRuntimeAPI(config, signalView, memoryViews, msg.runtimeBuildInfo, worker, terminate, handler => {
-                rejectCommand = handler;
+    async function send(commandId: CommandId, mainAssemblyName?: string, args?: string[], exitCode?: number, reason?: unknown): Promise<number> {
+        if (exited) throw exited;
+        if (!signal) throw new Error("withWorker(): native transport is not attached");
+        if (pending) throw new Error("withWorker(): another command is already running");
+        const activeSignal = signal;
+        const controller = new AbortController();
+        pending = controller;
+        const promiseId = allocatePromiseId();
+        Atomics.store(activeSignal, OFFSET_COMMAND_SIGNAL, SignalState.PENDING);
+        const command: WorkerCommandMessage = { type: "command", commandId, promiseId, mainAssemblyName, args, exitCode, reason };
+        worker.postMessage(command);
+        try {
+            return await new Promise<number>((resolve, reject) => {
+                const check = () => {
+                    if (controller.signal.aborted) {
+                        reject(controller.signal.reason); return;
+                    }
+                    const generation = Atomics.load(activeSignal, OFFSET_WAKEUP_MAIN);
+                    if (Atomics.load(activeSignal, OFFSET_COMMAND_PROMISE_ID) === promiseId
+                        && Atomics.load(activeSignal, OFFSET_COMMAND_SIGNAL) === SignalState.DONE) {
+                        resolve(Atomics.load(activeSignal, OFFSET_COMMAND_RESULT));
+                        return;
+                    }
+                    if (Atomics.load(activeSignal, OFFSET_WORKER_STATE) === SignalState.ERROR) {
+                        reject(readSharedError(activeSignal, OFFSET_WORKER_ERROR_LENGTH));
+                        return;
+                    }
+                    const wait = Atomics.waitAsync(activeSignal, OFFSET_WAKEUP_MAIN, generation);
+                    if (wait.async) void wait.value.then(check);
+                    else setTimeout(check, 0);
+                };
+                controller.signal.addEventListener("abort", check, { once: true });
+                check();
             });
-            resolve(api);
-        } else if (msg.type === "error") {
-            terminate(new Error(`withWorker(): worker failed: ${msg.message}`));
+        } finally {
+            if (pending === controller) pending = undefined;
+        }
+    }
+
+    worker.onmessage = event => {
+        if (exited) return;
+        const message = event.data as WorkerToMainMessage;
+        if (message.type === "attach") {
+            if (signal) {
+                terminate(new Error("withWorker(): duplicate native attachment")); return;
+            }
+            void attach(message).catch(error => terminate(error instanceof Error ? error : new Error(String(error))));
+        } else if (message.type === "error") {
+            const error = new Error(message.message);
+            dotnetLogger.error("withWorker(): native worker failed", error);
+            terminate(error);
+        } else if (message.type === "ready") {
+            if (!uiAttached) {
+                terminate(new Error("withWorker(): worker became ready before UI attachment")); return;
+            }
+            if (timeout !== undefined) clearTimeout(timeout);
+            runtimeState.dotnetReady = true;
+            Object.assign(dotnetApi.runtimeBuildInfo, message.runtimeBuildInfo);
+            dotnetApi.INTERNAL.nativeBoundary.workerProxyCounts = message.workerProxyCounts;
+            void (async () => {
+                const afterReady = (resources.modulesAfterRuntimeReady ?? []).map(asset => [asset, loadJSModule(asset)] as const);
+                await loaderCallbacks.dotnetReady?.();
+                await Promise.all([...initializers, ...afterReady].map(([asset, promise]) => callLibraryInitializerOnRuntimeReady([asset, promise])));
+                ready.resolve(dotnetApi);
+            })().catch(error => terminate(error instanceof Error ? error : new Error(String(error))));
         }
     };
-
-    worker.onerror = (ev: ErrorEvent): void => {
-        terminate(new Error(`withWorker(): worker error: ${ev.message}`));
-    };
-    worker.onmessageerror = (): void => {
-        terminate(new Error("withWorker(): could not deserialize a worker message"));
-    };
-
-    const initMsg: WorkerInitMessage = { type: "init", config };
+    worker.onerror = event => terminate(new Error(event.message));
+    worker.onmessageerror = () => terminate(new Error("withWorker(): invalid worker message"));
     try {
-        worker.postMessage(initMsg);
+        worker.postMessage({ type: "init", config: {
+            ...config, resources: { ...resources, modulesAfterConfigLoaded: [], modulesAfterRuntimeReady: [] },
+        } });
     } catch (error) {
         terminate(error instanceof Error ? error : new Error(String(error)));
     }
-
-    return await apiPromise;
-}
-
-// -----------------------------------------------------------
-// Build the proxy RuntimeAPI returned to the caller
-//
-// Supports lifecycle operations and scalar synchronous interop.
-// Other API surfaces remain explicit unsupported stubs.
-// -----------------------------------------------------------
-
-function buildProxyRuntimeAPI(
-    config: LoaderConfig,
-    signalView: Int32Array,
-    memoryViews: MemoryViewManager,
-    runtimeBuildInfo: RuntimeAPI["runtimeBuildInfo"],
-    worker: Worker,
-    terminate: (error: Error) => void,
-    registerFailureHandler: (handler: (error: Error) => void) => void,
-): RuntimeAPI {
-    let pendingCommand: AbortController | undefined;
-    let exited: Error | undefined;
-    let exiting = false;
-    let exitRequested = false;
-    const workerImports = createWorkerJSImportDispatcher(signalView, memoryViews, message => worker.postMessage(message), terminate);
-    const workerExports = createWorkerJSExportClient(signalView, memoryViews, worker, workerImports.processPending, () => {
-        if (exiting || exited) throw exited ?? new Error("withWorker(): runtime is exiting");
-    }, terminate);
-    const references = workerReferences(memoryViews);
-    references.configure("ui", workerExports.invokeReference, message => worker.postMessage(message));
-    const referenceListener = (event: MessageEvent<WorkerReferenceMessage>) => {
-        if (event.data.type === "reference-release" || event.data.type === "reference-settlement") {
-            try {
-                references.receive(event.data);
-            } catch (error) {
-                terminate(error instanceof Error ? error : new Error(String(error)));
-            }
-        }
-    };
-    worker.addEventListener("message", referenceListener);
-
-    registerFailureHandler(error => {
-        references.stop(error);
-        worker.removeEventListener("message", referenceListener);
-        workerImports.stop();
-        workerExports.stop(error);
-        exited = error;
-        pendingCommand?.abort(error);
-        wakeMain(signalView);
-    });
-
-    async function sendCommandAndWait(commandId: CommandId, mainAssemblyName?: string, args?: string[], exitCode?: number, reason?: unknown): Promise<number> {
-        if (exited) throw exited;
-        if (pendingCommand) throw new Error("withWorker(): another command is already running");
-        const controller = new AbortController();
-        pendingCommand = controller;
-        const promiseId = allocatePromiseId();
-        const message: WorkerCommandMessage = { type: "command", commandId, promiseId, mainAssemblyName, args, exitCode, reason };
-        Atomics.store(signalView, OFFSET_COMMAND_ID, commandId);
-        Atomics.store(signalView, OFFSET_COMMAND_SIGNAL, SignalState.PENDING);
-        try {
-            // Strings are structured-cloned until the shared-heap marshaler is implemented.
-            worker.postMessage(message);
-            return await waitForCommandCompletion(signalView, promiseId, controller.signal);
-        } finally {
-            if (pendingCommand === controller) pendingCommand = undefined;
-        }
-    }
-
-    const notSupported = (name: string) => (): never => {
-        throw new Error(`${name}() is not supported in withWorker() proxy mode`);
-    };
-
-    const api: RuntimeAPI = {
-        // Functional APIs
-        runMain: (mainAssemblyName?: string, args?: string[]): Promise<number> => {
-            if (exiting) return Promise.reject(exited ?? new Error("withWorker(): runtime is exiting"));
-            return sendCommandAndWait(CommandId.RUN_MAIN, mainAssemblyName, args);
-        },
-        runMainAndExit: async (mainAssemblyName?: string, args?: string[]): Promise<number> => {
-            if (exiting) throw exited ?? new Error("withWorker(): runtime is exiting");
-            if (pendingCommand) throw new Error("withWorker(): another command is already running");
-            try {
-                return await sendCommandAndWait(CommandId.RUN_MAIN_AND_EXIT, mainAssemblyName, args);
-            } finally {
-                if (!exitRequested) terminate(new Error("withWorker(): runtime has exited"));
-            }
-        },
-        exit: (code: number, reason?: unknown): void => {
-            if (exitRequested || exited) return;
-            exitRequested = true;
-            exiting = true;
-            pendingCommand?.abort(new Error(`withWorker(): runtime exited with code ${code}`));
-            pendingCommand = undefined;
-            wakeMain(signalView);
-            const timeout = setTimeout(() => {
-                const error = new Error("withWorker(): worker did not acknowledge exit");
-                dotnetLogger.error(error.message, error);
-                terminate(error);
-            }, DEFAULT_TIMEOUT_MS);
-            void sendCommandAndWait(CommandId.EXIT, undefined, undefined, code, reason).catch(error => {
-                dotnetLogger.error("withWorker(): worker shutdown failed", error);
-            }).finally(() => {
-                clearTimeout(timeout);
-                terminate(new Error(`withWorker(): runtime exited with code ${code}`));
-            });
-        },
-        getConfig: (): LoaderConfig => config,
-        runtimeBuildInfo,
-
-        // Stubs — not yet supported in proxy mode
-        INTERNAL: { workerMemoryViews: memoryViews, workerImports,
-            getGlobalThis: () => globalThis, getDotnetInstance: () => api },
-        Module,
-        runtimeId: 0,
-        getAssemblyExports: workerExports.getAssemblyExports,
-        setModuleImports: (moduleName: string, moduleImports: unknown): void => {
-            if (exiting || exited) throw exited ?? new Error("withWorker(): runtime is exiting");
-            if (pendingCommand || workerExports.isCalling() || workerImports.isDispatching()) throw new Error("withWorker(): register module imports before running managed code");
-            workerImports.setModuleImports(moduleName, moduleImports);
-        },
-        invokeLibraryInitializers: notSupported("invokeLibraryInitializers"),
-
-        // Memory APIs — not supported in proxy mode
-        setHeapB32: notSupported("setHeapB32"),
-        setHeapB8: notSupported("setHeapB8"),
-        setHeapU8: notSupported("setHeapU8"),
-        setHeapU16: notSupported("setHeapU16"),
-        setHeapU32: notSupported("setHeapU32"),
-        setHeapI8: notSupported("setHeapI8"),
-        setHeapI16: notSupported("setHeapI16"),
-        setHeapI32: notSupported("setHeapI32"),
-        setHeapI52: notSupported("setHeapI52"),
-        setHeapU52: notSupported("setHeapU52"),
-        setHeapI64Big: notSupported("setHeapI64Big"),
-        setHeapF32: notSupported("setHeapF32"),
-        setHeapF64: notSupported("setHeapF64"),
-        getHeapB32: notSupported("getHeapB32"),
-        getHeapB8: notSupported("getHeapB8"),
-        getHeapU8: notSupported("getHeapU8"),
-        getHeapU16: notSupported("getHeapU16"),
-        getHeapU32: notSupported("getHeapU32"),
-        getHeapI8: notSupported("getHeapI8"),
-        getHeapI16: notSupported("getHeapI16"),
-        getHeapI32: notSupported("getHeapI32"),
-        getHeapI52: notSupported("getHeapI52"),
-        getHeapU52: notSupported("getHeapU52"),
-        getHeapI64Big: notSupported("getHeapI64Big"),
-        getHeapF32: notSupported("getHeapF32"),
-        getHeapF64: notSupported("getHeapF64"),
-        localHeapViewI8: notSupported("localHeapViewI8"),
-        localHeapViewI16: notSupported("localHeapViewI16"),
-        localHeapViewI32: notSupported("localHeapViewI32"),
-        localHeapViewI64Big: notSupported("localHeapViewI64Big"),
-        localHeapViewU8: notSupported("localHeapViewU8"),
-        localHeapViewU16: notSupported("localHeapViewU16"),
-        localHeapViewU32: notSupported("localHeapViewU32"),
-        localHeapViewF32: notSupported("localHeapViewF32"),
-        localHeapViewF64: notSupported("localHeapViewF64"),
-
-        // Diagnostics APIs — not supported in proxy mode
-        collectCpuSamples: notSupported("collectCpuSamples"),
-        collectMetrics: notSupported("collectMetrics"),
-        collectGcDump: notSupported("collectGcDump"),
-        collectPgoTrace: notSupported("collectPgoTrace"),
-        connectDSRouter: notSupported("connectDSRouter"),
-    };
-
-    references.configureHost((operation, args) => {
-        switch (operation) {
-            case "global": return globalThis;
-            case "runtime": return api;
-            case "bind": {
-                const [moduleName, functionName] = args;
-                if ((moduleName !== null && typeof moduleName !== "string") || typeof functionName !== "string") throw new Error("withWorker(): invalid UI import binding");
-                return workerImports.bindImport(moduleName, functionName);
-            }
-            case "import": {
-                const [moduleName, moduleUrl] = args;
-                if (typeof moduleName !== "string" || typeof moduleUrl !== "string") throw new Error("withWorker(): invalid UI module request");
-                return workerImports.importModule(moduleName, moduleUrl);
-            }
-            default: throw new Error(`withWorker(): unknown UI host operation ${operation}`);
-        }
-    });
-    return api;
-}
-
-// -----------------------------------------------------------
-// Async wait for command completion using Atomics.waitAsync
-//
-// Waits on OFFSET_WAKEUP_MAIN for notifications from the worker.
-// On each wakeup, checks whether the command signal has moved
-// from PENDING to DONE or ERROR.
-// -----------------------------------------------------------
-
-function waitForCommandCompletion(signalView: Int32Array, promiseId: number, abortSignal: AbortSignal): Promise<number> {
-    return new Promise<number>((resolve, reject) => {
-        function check(): void {
-            if (abortSignal.aborted) {
-                reject(abortSignal.reason);
-                return;
-            }
-            const lastSeen = Atomics.load(signalView, OFFSET_WAKEUP_MAIN);
-            const signal = Atomics.load(signalView, OFFSET_COMMAND_PROMISE_ID) === promiseId
-                ? Atomics.load(signalView, OFFSET_COMMAND_SIGNAL)
-                : SignalState.PENDING;
-            if (signal === SignalState.DONE) {
-                const result = Atomics.load(signalView, OFFSET_COMMAND_RESULT);
-                Atomics.store(signalView, OFFSET_COMMAND_SIGNAL, SignalState.IDLE);
-                resolve(result);
-
-                return;
-            }
-            if (signal === SignalState.ERROR) {
-                const result = Atomics.load(signalView, OFFSET_COMMAND_RESULT);
-                Atomics.store(signalView, OFFSET_COMMAND_SIGNAL, SignalState.IDLE);
-                reject(new Error(`Worker command failed with exit code ${result}`));
-
-                return;
-            }
-
-            // Not yet complete — wait for next wakeup
-            const waitResult = Atomics.waitAsync(signalView, OFFSET_WAKEUP_MAIN, lastSeen);
-            if (waitResult.async) {
-                waitResult.value.then(check);
-            } else {
-                // "not-equal" — value already changed, check immediately
-                setTimeout(check, 0);
-            }
-        }
-
-        check();
-    });
+    return ready.promise;
 }

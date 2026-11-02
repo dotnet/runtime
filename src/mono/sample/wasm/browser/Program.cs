@@ -24,7 +24,7 @@ namespace Sample
                         throw new InvalidOperationException($"Root import nesting returned {result} for {depth}.");
                 }
                 catch (JSException exception) when (args.Length > 2 && args[2] == "catch-capacity"
-                    && exception.Message.Contains("queue is full", StringComparison.Ordinal))
+                    && exception.Message.Contains("native call capacity exceeded", StringComparison.Ordinal))
                 {
                     Console.WriteLine("Root import capacity error recovered.");
                 }

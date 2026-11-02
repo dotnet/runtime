@@ -3,72 +3,22 @@
 
 import BuildConfiguration from "consts:configuration";
 
-import type { BindingClosureCS, BoundMarshalerToCs, CSFnHandle, JSFunctionSignature, JSMarshalerArguments } from "./types";
-import type { WorkerExportDescriptor } from "../../Common/JavaScript/loader/worker-exports";
+import type { BindingClosureCS, BoundMarshalerToCs, CSFnHandle, JSFunctionSignature } from "./types";
 
-import { dotnetAssert, dotnetLogger, Module } from "./cross-module";
+import { dotnetAssert, dotnetLogger, dotnetInternals, Module } from "./cross-module";
+import { InternalExchangeIndex } from "../types";
 
 import { bindAssemblyExports, invokeJSExport } from "./managed-exports";
-import { allocStackFrame, getArg, getMarshalerToCsByType, getSig, getSignatureType, getSignatureResType, getSignatureArgumentCount, getSignatureVersion, jsInteropState } from "./marshal";
+import { allocStackFrame, getSig, getSignatureType, getSignatureArgumentCount, getSignatureVersion, jsInteropState } from "./marshal";
 import { bindArgMarshalToCs } from "./marshal-to-cs";
 import { bindArgMarshalToJs, endMarshalTaskToJs, releaseEagerTaskHolder } from "./marshal-to-js";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, isRuntimeRunning, startMeasure } from "./utils";
-import { isWorkerBufferedType, isWorkerValueType, isWorkerReturnType, MarshalerType, MeasuredBlock, WorkerMaxArgumentCount } from "./types";
+import { MarshalerType, MeasuredBlock } from "./types";
 import { boundCsFunctionSymbol, exportsByAssembly } from "./gc-handles";
-import { ManagedError } from "./marshaled-types";
 
-const workerExportHandles = new WeakMap<Function, number>();
-const workerExports = new Map<number, Function>();
-let nextWorkerExportHandle = 1;
-
-function snapshotWorkerExportError(error: unknown): Error {
-    const result = new Error(error instanceof Error ? error.message : String(error));
-    if (error instanceof ManagedError && !error.isDisposed) error.dispose();
-    return result;
-}
-
-export async function getWorkerAssemblyExports(assemblyName: string): Promise<WorkerExportDescriptor[]> {
-    const descriptors: WorkerExportDescriptor[] = [];
-    function walk(scope: object, prefix: string[]): void {
-        for (const [name, value] of Object.entries(scope)) {
-            const path = [...prefix, name];
-            if (typeof value === "function") {
-                let handle = workerExportHandles.get(value);
-                if (handle === undefined) {
-                    handle = nextWorkerExportHandle++;
-                    workerExportHandles.set(value, handle);
-                }
-                const closure: BindingClosureCS | undefined = Reflect.get(value, boundCsFunctionSymbol);
-                const supported = closure?.isWorkerScalar === true;
-                if (supported) workerExports.set(handle, value);
-                descriptors.push({ path, handle, supported, isAsync: closure?.isAsync === true,
-                    argumentTypes: closure?.workerArgumentTypes ?? [], returnType: closure?.workerReturnType ?? MarshalerType.None });
-            } else if (value && typeof value === "object") {
-                walk(value, path);
-            }
-        }
-    }
-    try {
-        const exports = await getAssemblyExports(assemblyName);
-        walk(exports, []);
-        return descriptors;
-    } catch (error) {
-        throw snapshotWorkerExportError(error);
-    }
-}
-
-export function invokeWorkerJSExport(handle: number, args: JSMarshalerArguments, values: unknown[]): unknown {
-    const fn = workerExports.get(handle);
-    if (!fn) throw new Error("withWorker(): unknown or unsupported export");
-    const closure: BindingClosureCS = Reflect.get(fn, boundCsFunctionSymbol);
-    if (values.length !== closure.argsCount) throw new Error("withWorker(): export argument count mismatch");
-    const result = fn(...values);
-    if (closure.isAsync || isWorkerBufferedType(closure.workerReturnType)) return result;
-    if (closure.workerReturnType === MarshalerType.Void) return undefined;
-    const converter = getMarshalerToCsByType(closure.workerReturnType);
-    if (!converter) throw new Error("Worker result marshaler is not initialized");
-    converter(getArg(args, 1), result);
-    return undefined;
+function assertJSExportRunning(): void {
+    assertRuntimeRunning();
+    dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.assertNativeCall?.();
 }
 
 export async function getAssemblyExports(assemblyName: string): Promise<any> {
@@ -113,10 +63,6 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
     }
     const resConverter = bindArgMarshalToJs(resSig, resMarshalerType, 1);
 
-    const workerArgumentTypes = Array.from({ length: argsCount }, (_, index) => getSignatureType(getSig(signature, index + 2)));
-    const rawWorkerReturnType = isAsync ? getSignatureResType(resSig) : resMarshalerType;
-    const workerReturnType = rawWorkerReturnType === MarshalerType.None || rawWorkerReturnType === MarshalerType.Discard || rawWorkerReturnType === MarshalerType.DiscardNoWait
-        ? MarshalerType.Void : rawWorkerReturnType;
     const closure: BindingClosureCS = {
         methodHandle,
         fullyQualifiedName,
@@ -126,9 +72,6 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
         isAsync,
         isDiscardNoWait,
         isDisposed: false,
-        isWorkerScalar: argsCount <= WorkerMaxArgumentCount && isWorkerReturnType(workerReturnType) && workerArgumentTypes.every(isWorkerValueType),
-        workerArgumentTypes,
-        workerReturnType,
     };
     let boundFn: Function;
 
@@ -181,7 +124,7 @@ function bindFn_0V(closure: BindingClosureCS) {
     (<any>closure) = null;
     return function boundFn_0V() {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 2;
@@ -202,7 +145,7 @@ function bindFn_1V(closure: BindingClosureCS) {
     const fqn = closure.fullyQualifiedName;
     return function boundFn_1V(arg1: any) {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 3;
@@ -226,7 +169,7 @@ function bindFn_1R(closure: BindingClosureCS) {
     const fqn = closure.fullyQualifiedName;
     return function boundFn_1R(arg1: any) {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 3;
@@ -254,7 +197,7 @@ function bindFn_1RA(closure: BindingClosureCS) {
     (<any>closure) = null;
     return function bindFn_1RA(arg1: any) {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 3;
@@ -294,7 +237,7 @@ function bindFn_2R(closure: BindingClosureCS) {
     (<any>closure) = null;
     return function boundFn_2R(arg1: any, arg2: any) {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 4;
@@ -324,7 +267,7 @@ function bindFn_2RA(closure: BindingClosureCS) {
     (<any>closure) = null;
     return function bindFn_2RA(arg1: any, arg2: any) {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 4;
@@ -366,7 +309,7 @@ function bindFn(closure: BindingClosureCS) {
     const isDiscardNoWait = closure.isDiscardNoWait;
     return function boundFn(...jsArgs: any[]) {
         const mark = startMeasure();
-        assertRuntimeRunning();
+        assertJSExportRunning();
         const sp = Module.stackSave();
         try {
             const size = 2 + argsCount;

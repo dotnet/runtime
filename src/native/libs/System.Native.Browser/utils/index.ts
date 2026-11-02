@@ -1,16 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { InternalExchange, BrowserUtilsExports, RuntimeAPI, BrowserUtilsExportsTable } from "./types";
+import type { InternalExchange, BrowserUtilsExports, BrowserUtilsExportsTable } from "./types";
 import { InternalExchangeIndex } from "../types";
 
 import GitHash from "consts:gitHash";
 
 import {
-    setHeapB32, setHeapB8, setHeapU8, setHeapU16, setHeapU32, setHeapI8, setHeapI16, setHeapI32, setHeapI52, setHeapU52, setHeapI64Big, setHeapF32, setHeapF64,
-    getHeapB32, getHeapB8, getHeapU8, getHeapU16, getHeapU32, getHeapI8, getHeapI16, getHeapI32, getHeapI52, getHeapU52, getHeapI64Big, getHeapF32, getHeapF64,
-    localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
-    zeroRegion,
+    installMemoryAPI, zeroRegion,
     arrayBufferNeedsCopy,
     viewOrCopy,
 } from "./memory";
@@ -37,12 +34,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     registerCDAC(runtimeApi);
 
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
-    const runtimeApiLocal: Partial<RuntimeAPI> = {
-        setHeapB32, setHeapB8, setHeapU8, setHeapU16, setHeapU32, setHeapI8, setHeapI16, setHeapI32, setHeapI52, setHeapU52, setHeapI64Big, setHeapF32, setHeapF64,
-        getHeapB32, getHeapB8, getHeapU8, getHeapU16, getHeapU32, getHeapI8, getHeapI16, getHeapI32, getHeapI52, getHeapU52, getHeapI64Big, getHeapF32, getHeapF64,
-        localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
-    };
-    Object.assign(runtimeApi, runtimeApiLocal);
+    installMemoryAPI(runtimeApi);
 
     internals[InternalExchangeIndex.BrowserUtilsExportsTable] = browserUtilsExportsToTable({
         utf16ToString,

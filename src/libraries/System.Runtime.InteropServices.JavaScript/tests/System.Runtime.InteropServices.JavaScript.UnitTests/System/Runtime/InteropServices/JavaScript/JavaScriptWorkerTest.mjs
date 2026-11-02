@@ -7,10 +7,53 @@ export async function setup(runtime) {
     const worker = runtime.getConfig().workerOptions !== undefined;
     const voidEvents = [];
     let lastView;
+    let inlineThenableCalls = 0;
     function check(condition, message) {
         if (!condition) throw new Error(message);
     }
     runtime.setModuleImports("WorkerInteropTest", {
+        nativeBoundaryCapacity: () => {
+            const boundary = runtime.INTERNAL.nativeBoundary;
+            const before = boundary?.getScratchCount();
+            check(exports.Nested(15) === 15, "Supported native nesting changed");
+            if (worker) {
+                let failure;
+                try {
+                    exports.Nested(16);
+                } catch (error) {
+                    failure = error;
+                }
+                check(failure?.message.includes("native call capacity exceeded"), "Native capacity must fail through normal marshaling");
+                failure.dispose?.();
+            } else check(exports.Nested(16) === 16, "Ordinary nesting changed");
+            check(exports.Nested(4) === 4 && exports.Echo(42) === 42, "Native capacity did not recover");
+            if (worker) check(boundary.getScratchCount() === before, "Native scratch frames leaked");
+            return 42;
+        },
+        inlineThenable: () => {
+            inlineThenableCalls = 0;
+            if (worker) return { then(resolve) {
+                inlineThenableCalls++;
+                resolve(42);
+            } };
+            inlineThenableCalls++;
+            return Promise.resolve(42);
+        },
+        inlineThenableCalls: () => inlineThenableCalls,
+        nativeBoundaryProof: () => {
+            if (!worker) return true;
+            const boundary = runtime.INTERNAL.nativeBoundary;
+            check(boundary.role === "ui", "The UI must own normal interop");
+            check(globalThis.getDotnetRuntime(runtime.runtimeId) === runtime, "Normal UI runtime registration is missing");
+            check(boundary.workerProxyCounts.length === 5 && boundary.workerProxyCounts.every(count => count === 0),
+                "The worker created a second interop handle registry");
+            check(!runtime.INTERNAL.workerImports && !runtime.INTERNAL.getWorkerAssemblyExports,
+                "The typed worker interop bridge is still installed");
+            check(runtime.INTERNAL.getProxyCounts()[4] > 0, "UI normal import binders are not populated");
+            const stats = boundary.getStats();
+            check(stats.sent > 0 && stats.received > 0, "Native exchange tables were not exercised in both directions");
+            return true;
+        },
         newObject: () => ({ value: 42 }),
         callFunction: (fn, value) => fn(value),
         callAction: action => action(),
@@ -328,7 +371,7 @@ export async function setup(runtime) {
                         error = caught;
                     }
                     check(error?.message, "Invalid integer was not rejected");
-                    if (worker) check(name === "BigInt64" ? error.message.includes(name) : error.message.startsWith("Assert failed: "),
+                    if (worker) check(error.message.startsWith("Assert failed: "),
                         "Integer validation did not preserve the native error contract");
                     error.dispose?.();
                 }
@@ -353,17 +396,7 @@ export async function setup(runtime) {
                 check(error?.message.includes(message), "Multi-argument validation did not report the wrong argument");
                 error.dispose?.();
             }
-            if (worker) {
-                let error;
-                try {
-                    exports.OverLimit(1, 2, 3, 4, 5, 6, 7);
-                } catch (caught) {
-                    error = caught;
-                }
-                check(error?.message.includes("at most 6"), "Argument limit must fail explicitly");
-            } else {
-                check(exports.OverLimit(1, 2, 3, 4, 5, 6, 7) === 28, "Ordinary argument support changed");
-            }
+            check(exports.OverLimit(1, 2, 3, 4, 5, 6, 7) === 28, "Native signature argument support changed");
             return value;
         },
         primitiveContracts: value => {
@@ -389,6 +422,12 @@ export async function setup(runtime) {
             return value;
         },
         mode: () => {
+            if (worker) {
+                check(runtime.INTERNAL.nativeBoundary?.role === "ui", "Normal runtime interop must be initialized on UI");
+                check(typeof runtime.Module.cwrap === "undefined", "UI must not load the Emscripten native module");
+                check(!performance.getEntriesByType("resource").some(entry => /dotnet\.native.*\.js(?:$|\?)/.test(entry.name)),
+                    "UI downloaded a native JS module");
+            }
             if (typeof document !== "object" || document.defaultView !== globalThis) {
                 throw new Error("The registered import must execute on the UI thread");
             }

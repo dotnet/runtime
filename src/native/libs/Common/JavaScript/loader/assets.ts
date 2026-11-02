@@ -27,6 +27,9 @@ export function resolveAllDownloadsQueued(): void {
 export function setLoadBootResourceCallback(callback: LoadBootResourceCallback | undefined): void {
     loadBootResourceCallback = callback;
 }
+export function hasCustomResourceLoader(): boolean {
+    return loadBootResourceCallback !== undefined;
+}
 export let wasmBinaryPromise: Promise<Response> | undefined = undefined;
 export const wasmMemoryPromiseController = createPromiseCompletionSource<WebAssembly.Memory>();
 export const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {

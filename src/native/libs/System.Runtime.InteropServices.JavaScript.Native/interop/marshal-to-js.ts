@@ -3,7 +3,8 @@
 
 import BuildConfiguration from "consts:configuration";
 
-import { dotnetBrowserUtilsExports, dotnetLoaderExports, dotnetApi, dotnetAssert, dotnetLogger, Module } from "./cross-module";
+import { dotnetBrowserUtilsExports, dotnetLoaderExports, dotnetApi, dotnetAssert, dotnetLogger, dotnetInternals, Module } from "./cross-module";
+import { InternalExchangeIndex } from "../types";
 
 import type { BoundMarshalerToJs, JSHandle, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, TypedArray } from "./types";
 import { GCHandleNull, JavaScriptMarshalerArgSize, MarshalerType } from "./types";
@@ -210,6 +211,13 @@ function _marshalDelegateToJs(arg: JSMarshalerArgument, _?: MarshalerType, resCo
 
 export class TaskHolder {
     constructor(public promise: Promise<any>, public resolveOrReject: (type: MarshalerType, jsHandle: JSHandle, argInner: JSMarshalerArgument) => void) {
+    }
+
+    dispose(): void {
+        const promise = this.promise;
+        dotnetAssert.check(dotnetLoaderExports.isControllablePromise(promise), "Expected a controllable Task promise");
+        const reason = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.exitError ?? new Error("Process is being terminated.");
+        dotnetLoaderExports.getPromiseCompletionSource(promise).reject(reason);
     }
 }
 
