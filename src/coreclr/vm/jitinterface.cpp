@@ -1068,6 +1068,12 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 // we cannot resolve to an Async variant in such case.
                 // return NULL, so that caller would re-resolve as a regular method call
                 pMD = pMD->ReturnsTaskOrValueTask() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
+                if (pMD != NULL && pMD->IsCovariantForwardingThunk())
+                {
+                    // This variant preserves the base slot's return type and dispatches virtually.
+                    // It cannot replace a direct await or a nonvirtual call to the ordinary variant.
+                    pMD = NULL;
+                }
             }
             break;
 
