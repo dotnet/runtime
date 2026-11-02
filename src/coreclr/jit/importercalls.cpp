@@ -7485,7 +7485,9 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             {
                 // Wasm, Apple arm64 and arm32 ABIs require arguments to be zero/sign
                 // extended up to 32 bit. The managed ABI does not require
-                // this.
+// These native ABIs require arguments to be zero/sign
+// extended up to 32 bit. The managed ABI does not require
+// this.
                 if (fgCastNeeded(argNode, jitSigType))
                 {
                     argNode = gtNewCastNode(TYP_INT, argNode, false, jitSigType);
