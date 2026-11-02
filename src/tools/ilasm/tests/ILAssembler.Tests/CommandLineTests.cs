@@ -8,7 +8,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace ILAssembler.Tests;
+namespace Microsoft.DotNet.ILAssembler.Tests;
 
 public class CommandLineTests
 {
