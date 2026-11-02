@@ -32,6 +32,19 @@ namespace ILCompiler
                 if (instructionSetInfo.ManagedName != "")
                     _instructionSetMap.Add(instructionSetInfo.ManagedName, instructionSetInfo.InstructionSet);
             }
+
+            if (_context.Target.Architecture is TargetArchitecture.X86 or TargetArchitecture.X64)
+            {
+                // Match the code generator's VEX-to-EVEX fallback for these intrinsics.
+                if (!_isaSupport.IsInstructionSetOptimisticallySupported(InstructionSet.X64_AVXVNNI))
+                    _instructionSetMap["AvxVnni"] = InstructionSet.X64_AVX512v3;
+
+                if (!_isaSupport.IsInstructionSetOptimisticallySupported(InstructionSet.X64_AVXVNNIINT))
+                {
+                    _instructionSetMap["AvxVnniInt8"] = InstructionSet.X64_AVXVNNIINT_V512;
+                    _instructionSetMap["AvxVnniInt16"] = InstructionSet.X64_AVXVNNIINT_V512;
+                }
+            }
         }
 
         public override MethodIL GetMethodIL(MethodDesc method)
