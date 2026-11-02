@@ -10,12 +10,11 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using Microsoft.Build.Framework;
-using Microsoft.Build.Utilities;
 using Microsoft.NET.Build.Tasks;
 
 namespace ILLink.Tasks
 {
-    public class ILLink : ToolTask
+    public class ILLink : CachedToolTask
     {
         private static readonly InvocationCacheConfiguration s_cacheConfiguration =
             new("ILLink", "ILLINK_EXPERIMENTAL_CACHE", "ILLINK_EXPERIMENTAL_CACHE_PATH");
@@ -269,12 +268,9 @@ namespace ILLink.Tasks
 
         protected override string GenerateFullPathToTool() => DotNetPath;
 
-        protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
-            => InvocationCache.ExecuteCached(Log, s_cacheConfiguration,
-                () => DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands),
-                () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands));
+        private protected override InvocationCacheConfiguration CacheConfiguration => s_cacheConfiguration;
 
-        private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands)
+        protected override int ExecuteToolCore(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             try
             {
@@ -289,11 +285,11 @@ namespace ILLink.Tasks
                 return -1;
             }
 
-            return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+            return base.ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
         }
 
 #nullable enable annotations
-        private InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
+        private protected override InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
                 !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)
