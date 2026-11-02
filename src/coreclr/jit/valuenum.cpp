@@ -12292,18 +12292,12 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         }
 #endif
 
-        fgVNChangedSideEffects = false;
         for (GenTree* const tree : stmt->TreeList())
         {
             // Set up ambient var referring to current tree.
             compCurTree = tree;
             fgValueNumberTree(tree);
             compCurTree = nullptr;
-        }
-
-        if (fgVNChangedSideEffects)
-        {
-            gtUpdateStmtSideEffects(stmt);
         }
 
 #ifdef DEBUG
@@ -13525,6 +13519,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
     genTreeOps oper = tree->OperGet();
     var_types  typ  = tree->TypeGet();
 
+    // Set when a forwarded load reads the address its forwarding store already dereferenced.
+    bool addressAlreadyDereferenced = false;
+
     if (GenTree::OperIsConst(oper))
     {
         fgValueNumberTreeConst(tree);
@@ -13819,14 +13816,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             optRecordLoopMemoryDependence(tree, compCurBB, fgCurMemoryVN[ByrefExposed]);
                         }
 
-                        // A nonfaulting proof must apply to the actual address, not just its liberal value.
-                        if (tree->IndirMayFault(this) && (funcApp.GetArg(1) == addrNvnp.GetConservative()))
-                        {
-                            tree->gtFlags |= GTF_IND_NONFAULTING;
-                            tree->SetIndirExceptionFlags(this);
-                            tree->SetHasOrderingSideEffect();
-                            fgVNChangedSideEffects = true;
-                        }
+                        // The store faults first on a null address, so this load cannot. This must hold for
+                        // the actual address, not just its liberal value.
+                        addressAlreadyDereferenced = funcApp.GetArg(1) == addrNvnp.GetConservative();
                     }
                     else
                     {
@@ -14087,7 +14079,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         }
 
         // next we add any exception sets for the current tree node
-        fgValueNumberAddExceptionSet(tree);
+        if (!addressAlreadyDereferenced)
+        {
+            fgValueNumberAddExceptionSet(tree);
+        }
     }
     else
     {
