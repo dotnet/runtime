@@ -5925,7 +5925,7 @@ namespace
             void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
 #ifdef _DEBUG
             CONSISTENCY_CHECK_MSGF(pvTarget != nullptr,
-                ("%s::%s is not registered using DllImportEntry macro in qcallentrypoints.cpp",
+                ("%s::%s is not registered in the QCall entrypoint table",
                 pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
             pMD->SetPInvokeTarget(pvTarget);

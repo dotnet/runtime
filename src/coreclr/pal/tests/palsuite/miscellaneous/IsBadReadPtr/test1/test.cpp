@@ -11,6 +11,7 @@
 **=========================================================*/
 
 #include <palsuite.h>
+#include <sys/mman.h>
 
 #define MEMORY_AMOUNT 16
 
@@ -18,7 +19,7 @@ PALTEST(miscellaneous_IsBadReadPtr_test1_paltest_isbadreadptr_test1, "miscellane
 {
     LPVOID TestingPointer = NULL;
     BOOL ResultValue = 0;
-  
+
     /*
      * Initialize the PAL and return FAILURE if this fails
      */
@@ -27,111 +28,84 @@ PALTEST(miscellaneous_IsBadReadPtr_test1_paltest_isbadreadptr_test1, "miscellane
     {
         return FAIL;
     }
-  
-    TestingPointer = malloc(MEMORY_AMOUNT); 
+
+    TestingPointer = malloc(MEMORY_AMOUNT);
     if ( TestingPointer == NULL )
     {
         Fail("ERROR: Failed to allocate memory for TestingPointer pointer. "
-           "Can't properly exec test case without this.\n");
+           "Can't properly exec test case without this.");
     }
- 
+
 
     /* This should be readable, and return 0 */
     ResultValue = IsBadReadPtr(TestingPointer,MEMORY_AMOUNT);
-    if(ResultValue != 0) 
+    if(ResultValue != 0)
     {
         free(TestingPointer);
 
         Fail("ERROR: The function returned %d instead of 0, when pointing "
-             "at readable memory.\n",ResultValue);    
+             "at readable memory.",ResultValue);
     }
 
     /* If we pass 0, the result should be 0 as well */
     ResultValue = IsBadReadPtr(TestingPointer,0);
-    if(ResultValue != 0) 
+    if(ResultValue != 0)
     {
         free(TestingPointer);
 
         Fail("ERROR: The function returned %d instead of 0, when the "
-             "function was passed a range of 0 bytes.\n",ResultValue);
+             "function was passed a range of 0 bytes.",ResultValue);
     }
     free(TestingPointer); /* we are done with this */
 
-    /* create a READABLE address */
-    TestingPointer =  VirtualAlloc(
-        NULL,               /* system selects address */
-        80,                 /* size of allocation*/
-        MEM_COMMIT,         /* commit */
-        PAGE_READONLY);     /* protection = read only */
+    /* create a readable address */
+    TestingPointer = mmap(NULL, 80, PROT_READ, MAP_ANON | MAP_PRIVATE, -1, 0);
 
-    if (TestingPointer == NULL )
+    if (TestingPointer == MAP_FAILED )
     {
-        Fail("ERROR: call to VirtualAlloc failed\n");
+        Fail("ERROR: call to mmap failed");
     }
 
     ResultValue = IsBadReadPtr(TestingPointer,16);
-    if(ResultValue != 0)    /* if no access */
+    if(ResultValue != 0)
     {
-        if(!VirtualFree(TestingPointer, 0, MEM_RELEASE))
-        {
-            Trace("ERROR: Call to VirtualFree failed with error"
-                " code[ %u ]\n",GetLastError());  
-        }
+        munmap(TestingPointer, 80);
 
         Fail("ERROR: The function returned %d instead of 1 when checking "
-            "on unreadable memory.\n",ResultValue);
+            "on unreadable memory.",ResultValue);
     }
 
-    if(!VirtualFree(TestingPointer,0, MEM_RELEASE))
-    {
-        Fail("ERROR: Call to VirtualFree failed with error"
-            " code[ %u ]\n",GetLastError());  
-    }
+    munmap(TestingPointer, 80);
 
     /* create an unreadable address */
-    TestingPointer =  VirtualAlloc(
-        NULL,                 /* system selects address */
-        80,                   /* size of allocation */
-        MEM_COMMIT,           /* commit */
-        PAGE_NOACCESS);       /* protection = no access */
+    TestingPointer = mmap(NULL, 80, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
 
-    if (TestingPointer == NULL )
+    if (TestingPointer == MAP_FAILED )
     {
-        Fail("ERROR: call to VirtualAlloc failed\n");
+        Fail("ERROR: call to mmap failed");
     }
 
     ResultValue = IsBadReadPtr(TestingPointer,16);
 
-    if(ResultValue == 0) /* if access */ 
+    if(ResultValue == 0)
     {
-        if(!VirtualFree(TestingPointer, 0, MEM_RELEASE))
-        {
-            Trace("ERROR: Call to VirtualFree failed with error"
-                " code[ %u ]\n",GetLastError());  
-        }
+        munmap(TestingPointer, 80);
 
         Fail("ERROR: The function returned %d instead of 1 when checking "
-             "on unreadable memory.\n",ResultValue);
+             "on unreadable memory.",ResultValue);
     }
 
-    if(!VirtualFree(TestingPointer,0, MEM_RELEASE))
-    {
-        Fail("ERROR: Call to VirtualFree failed with error"
-            " code[ %u ]\n",GetLastError());  
-    }
+    munmap(TestingPointer, 80);
 
 
     /* This should be unreadable and return 1 */
     ResultValue = IsBadReadPtr(NULL,16);
-    if(ResultValue != 1) 
+    if(ResultValue != 1)
     {
         Fail("ERROR: The function returned %d instead of 1 when checking "
-             "to see if NULL was readable.\n",ResultValue);
+             "to see if NULL was readable.",ResultValue);
     }
 
     PAL_Terminate();
     return PASS;
 }
-
-
-

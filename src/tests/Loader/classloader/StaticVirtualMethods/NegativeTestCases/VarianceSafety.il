@@ -32,6 +32,7 @@
   .method public static void Test_Scenario1() cil managed noinlining
   {
     ldtoken class InterfaceScenario1`1<object>
+    call string [TypeHierarchyCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     pop
     ret
   } // end of method Test_Scenario1
@@ -39,6 +40,7 @@
   .method public static void Test_Scenario2() cil managed noinlining
   {
     ldtoken class InterfaceScenario2`1<object>
+    call string [TypeHierarchyCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     pop
     ret
   } // end of method Test_Scenario1

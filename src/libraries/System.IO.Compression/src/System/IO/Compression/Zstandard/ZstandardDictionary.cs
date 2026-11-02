@@ -11,7 +11,6 @@ namespace System.IO.Compression
 {
     /// <summary>Represents a Zstandard compression dictionary.</summary>
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardDictionary : IDisposable
     {
         private readonly SafeZstdCDictHandle _compressionDictionary;

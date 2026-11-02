@@ -12,7 +12,6 @@ namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties to decompress data using Zstandard decompression.</summary>
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardDecoder : IDisposable
     {
         private SafeZstdDecompressHandle _context;

@@ -2885,6 +2885,10 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                             node->Op(1) = nestedOp1;
                             node->Op(2) = nestedOp2;
 
+                            // nestedOp2 may have been contained by the AND, which doesn't imply it is safe
+                            // to contain by the PTEST (it's now evaluated later). Let PTEST decide again.
+                            nestedOp2->ClearContained();
+
                             BlockRange().Remove(op1);
                             BlockRange().Remove(op2);
 
@@ -2906,6 +2910,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                             node->Op(1) = nestedOp1;
                             node->Op(2) = nestedOp2;
+                            nestedOp2->ClearContained();
 
                             BlockRange().Remove(op1);
                             BlockRange().Remove(op2);

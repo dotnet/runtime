@@ -757,6 +757,35 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Fact]
+        public async Task Receive0Byte_NotConnected_Throws()
+        {
+            using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            SocketException ex = await Assert.ThrowsAsync<SocketException>(() => ReceiveAsync(socket, new ArraySegment<byte>(Array.Empty<byte>())))
+                .WaitAsync(TestSettings.PassingTestTimeout);
+            Assert.Equal(SocketError.NotConnected, ex.SocketErrorCode);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows consumes the datagram on a zero-byte receive.
+        public async Task Receive0Byte_Udp_CompletesWhenDatagramArrives()
+        {
+            using Socket receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            receiver.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+
+            Task<int> receive = ReceiveAsync(receiver, new ArraySegment<byte>(Array.Empty<byte>()));
+            Assert.False(receive.IsCompleted, $"Task should not have been completed, was {receive.Status}");
+
+            await SendToAsync(sender, new byte[] { 42 }, receiver.LocalEndPoint!);
+            Assert.Equal(0, await receive.WaitAsync(TestSettings.PassingTestTimeout));
+
+            byte[] buffer = new byte[1];
+            Assert.Equal(1, await ReceiveAsync(receiver, buffer).WaitAsync(TestSettings.PassingTestTimeout));
+            Assert.Equal(42, buffer[0]);
+        }
+
         [Theory]
         [InlineData(false, 1)]
         [InlineData(true, 1)]

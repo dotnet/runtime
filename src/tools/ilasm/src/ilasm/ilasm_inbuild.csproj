@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Publish;PublishItemsOutputGroup">
+  <PropertyGroup>
+    <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+    <PublishDir>$(CoreclrRuntimeBinDir)$(BuildArchitecture)\managed-ilasm\</PublishDir>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishSingleFile>true</PublishSingleFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CrossBuild)' != 'true'">
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
+  </PropertyGroup>
+
+  <Import Project="ilasm.props" />
+</Project>
