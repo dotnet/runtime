@@ -2,7 +2,7 @@
 
 <!-- A description of the package and where one can find more documentation -->
 
-Microsoft.DotNet.ILAssembler compiles Common Intermediate Language (CIL) source text into .NET assemblies. It exposes the managed assembler as a library for tools that generate or process IL, without requiring a separate `ilasm` process.
+Microsoft.DotNet.ILAssembler compiles Common Intermediate Language (CIL) source text into .NET assemblies. It exposes the compiler as a library for tools that generate or process IL, without requiring a separate `ilasm` process.
 
 ## Key Features
 
