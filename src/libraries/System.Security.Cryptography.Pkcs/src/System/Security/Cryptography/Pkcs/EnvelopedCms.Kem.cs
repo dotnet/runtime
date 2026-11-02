@@ -34,8 +34,7 @@ namespace System.Security.Cryptography.Pkcs
             ArgumentNullException.ThrowIfNull(recipientInfo);
             ArgumentNullException.ThrowIfNull(privateKey);
 
-            throw new PlatformNotSupportedException(
-                SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLKem)));
+            DecryptWithKey(recipientInfo, privateKey);
         }
     }
 }
