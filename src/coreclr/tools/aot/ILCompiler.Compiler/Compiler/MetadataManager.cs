@@ -451,6 +451,10 @@ namespace ILCompiler
             if (!IsReflectionInvokable(method))
                 return false;
 
+            // Static abstract interface methods have no body to invoke
+            if (method.Signature.IsStatic && method.IsAbstract)
+                return false;
+
             return true;
         }
 
