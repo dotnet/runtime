@@ -268,7 +268,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(Sha3TestCases))]
         public void Sha3Tests(HkdfTestCase test)
         {
-            if (PlatformDetection.SupportsSha3)
+            if (SupportsSha3)
             {
                 byte[] okm = DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info);
                 Assert.Equal(test.Okm, okm);
@@ -323,7 +323,7 @@ namespace System.Security.Cryptography.Tests
                 yield return new object[] { HashAlgorithmName.MD5, 128 / 8 - 1 };
             }
 
-            if (PlatformDetection.SupportsSha3)
+            if (SupportsSha3)
             {
                 yield return new object[] { HashAlgorithmName.SHA3_256, SHA3_256.HashSizeInBytes - 1 };
                 yield return new object[] { HashAlgorithmName.SHA3_384, SHA3_384.HashSizeInBytes - 1 };
@@ -589,6 +589,12 @@ namespace System.Security.Cryptography.Tests
                 };
             }
         }
+
+        public static bool SupportsSha3 => PlatformDetection.SupportsSha3 ||
+            OperatingSystem.IsMacOSVersionAtLeast(26) ||
+            OperatingSystem.IsMacCatalystVersionAtLeast(26) ||
+            OperatingSystem.IsIOSVersionAtLeast(26) ||
+            OperatingSystem.IsTvOSVersionAtLeast(26);
 
         public struct HkdfTestCase
         {
