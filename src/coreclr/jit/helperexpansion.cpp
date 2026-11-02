@@ -2107,10 +2107,10 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     //  2) If VM can tell us the exact class for this class/interface via getExactClasses - use it
     //     e.g. NativeAOT can promise us that for e.g. "foo is IMyInterface" foo can only ever be
     //     MyImpl and no other implementation of IMyInterface can be loaded dynamically.
-    //  3) If we have PGO data and there is a dominating candidate - use it.
+    //  3) If we have PGO data and there are likely candidates - use them.
     //  4) Try to speculate and make optimistic guesses
     //
-    // NOTE: only 2) supports multiple candidates at the moment.
+    // NOTE: 2) and 3) support multiple candidates.
     //
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2155,8 +2155,7 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     // 2) If VM can tell us the exact class for this "cast to" class - use it.
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // Let's re-use GDV's threshold on how many guesses we can make (can be 3 by default).
-    const int maxTypeChecks = min(comp->getGDVMaxTypeChecks(), MAX_GDV_TYPE_CHECKS);
+    const int maxTypeChecks = comp->getCastMaxTypeChecks();
 
     CORINFO_CLASS_HANDLE exactClasses[MAX_GDV_TYPE_CHECKS] = {};
     const int numExactClasses = comp->info.compCompHnd->getExactClasses(castToCls, maxTypeChecks, exactClasses);
@@ -2220,52 +2219,42 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 
     if (likelyClassCount > 0)
     {
-        // TODO-InlineCast: support multiple candidates, for now always pick the first one
-        // It's already supported, but it requires some careful performance testing to enable.
-        //
-        likelihoods[0] = likelyLikelihoods[0];
-        candidates[0]  = likelyClasses[0];
+        int numCandidates = 0;
+        for (int i = 0; i < likelyClassCount; i++)
+        {
+            CORINFO_CLASS_HANDLE candidate = likelyClasses[i];
+            if ((candidate == NO_CLASS_HANDLE) ||
+                ((comp->info.compCompHnd->getClassAttribs(candidate) & isAbstractFlags) != 0))
+            {
+                continue;
+            }
 
-        // Protect from stale static PGO data if a candidate becomes abstract/interface
-        if ((likelyClasses[0] == NO_CLASS_HANDLE) ||
-            (comp->info.compCompHnd->getClassAttribs(likelyClasses[0]) & isAbstractFlags) != 0)
-        {
-            return 0;
-        }
+            const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(candidate, castToCls);
+            if ((castResult == TypeCompareState::May) || (isCastClass && (castResult == TypeCompareState::MustNot)))
+            {
+                continue;
+            }
 
-        // We don't fully trust PGO data, so let's check it via compareTypesForCast
-        const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(candidates[0], castToCls);
-        if (castResult == TypeCompareState::May)
-        {
-            // TODO-InlineCast: do we need to check for May here? Conservatively assume that we do.
-            JITDUMP("compareTypesForCast returned May for this candidate\n");
-            return 0;
-        }
-        if (castResult == TypeCompareState::Must)
-        {
-            // The specialized helper skips null and exact-type checks. A failed guard against
-            // a subclass would not rule out the target class itself.
-            if ((helper == CORINFO_HELP_CHKCASTCLASS) && (candidates[0] == castToCls))
+            const TypeCheckPassedAction passedAction = castResult == TypeCompareState::Must
+                                                           ? TypeCheckPassedAction::ReturnObj
+                                                           : TypeCheckPassedAction::ReturnNull;
+            // All guards share one success block, so they must agree on its result.
+            if ((numCandidates != 0) && (*typeCheckPassed != passedAction))
+            {
+                continue;
+            }
+
+            candidates[numCandidates]  = candidate;
+            likelihoods[numCandidates] = likelyLikelihoods[i];
+            *typeCheckPassed           = passedAction;
+            numCandidates++;
+
+            if ((helper == CORINFO_HELP_CHKCASTCLASS) && (candidate == castToCls))
             {
                 *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
             }
-
-            // return actual object on successful type check
-            *typeCheckPassed = TypeCheckPassedAction::ReturnObj;
-            return 1;
         }
-        if (castResult == TypeCompareState::MustNot)
-        {
-            // Our likely candidate never passes the type check (may happen with PGO-driven expansion),
-            if (!isCastClass)
-            {
-                // return null on successful type check
-                *typeCheckPassed = TypeCheckPassedAction::ReturnNull;
-                return 1;
-            }
-            // give up on castclass - it's going to throw InvalidCastException anyway
-            return 0;
-        }
+        return numCandidates;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2437,6 +2426,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     BasicBlock* typeChecksBbs[MAX_GDV_TYPE_CHECKS] = {};
     BasicBlock* lastTypeCheckBb                    = nullcheckBb;
+    GenTree*    methodTable                        = gtNewMethodTableLookup(gtCloneExpr(tmpNode));
+    GenTree*    methodTableReuse                   = numOfCandidates > 1 ? fgMakeMultiUse(&methodTable) : nullptr;
     for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
     {
         const CORINFO_CLASS_HANDLE expectedCls = expectedExactClasses[candidateId];
@@ -2460,7 +2451,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
             }
         }
 
-        GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(tmpNode)), expectedClsNode);
+        GenTree* mtValue = candidateId == 0 ? methodTable : gtCloneExpr(methodTableReuse);
+        GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, mtValue, expectedClsNode);
         mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
         GenTree* jtrue             = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
         typeChecksBbs[candidateId] = fgNewBBFromTreeAfter(BBJ_COND, lastTypeCheckBb, jtrue, debugInfo, true);
@@ -2649,8 +2641,9 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
         // Fix likelihood of block's outgoing edges.
         //
-        weight_t likelihood    = (weight_t)likelihoods[candidateId] / 100;
-        weight_t relLikelihood = likelihood / (1.0 - sumOfPreviousLikelihood);
+        weight_t likelihood = (weight_t)likelihoods[candidateId] / 100;
+        // Rounding can make the final conditional probability slightly greater than one.
+        weight_t relLikelihood = min(1.0, likelihood / (1.0 - sumOfPreviousLikelihood));
 
         JITDUMP("Candidate %d: likelihood " FMT_WT " relative likelihood " FMT_WT "\n", candidateId, likelihood,
                 relLikelihood);
