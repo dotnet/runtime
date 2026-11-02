@@ -1710,9 +1710,9 @@ namespace System.IO.Ports
             {
                 // Extract the async result from overlapped structure
                 SerialStreamAsyncResult asyncResult =
-                    (SerialStreamAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
+                    (SerialStreamAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
 
-                if (Interlocked.Decrement(ref asyncResult!._numBytes) == 0)
+                if (Interlocked.Decrement(ref asyncResult._numBytes) == 0)
                     threadPoolBinding.FreeNativeOverlapped(pOverlapped);
             }
 
