@@ -535,7 +535,8 @@ static GenTree* FoldComparisons(
 
     target_size_t mask = value1->TypeIs(TYP_INT) ? UINT32_MAX : static_cast<target_size_t>(-1);
     op1                = cmp1IsReversed ? GenTree::ReverseRelop(op1) : op1;
-    ModularRange first = ModularRange::FromComparison(op1, bound1->IconValue(), cmp1->IsUnsigned(), mask, offset1);
+    ModularRange first = ModularRange::FromComparison(op1, static_cast<target_size_t>(bound1->IconValue()),
+                                                      cmp1->IsUnsigned(), mask, offset1);
     ModularRange second;
     GenTree*     symbolicBound = nullptr;
     if (IsConstantRangeTest(cmp2, &value2, &bound2, &op2))
@@ -548,7 +549,8 @@ static GenTree* FoldComparisons(
             return nullptr;
         }
         op2    = cmp2IsReversed ? GenTree::ReverseRelop(op2) : op2;
-        second = ModularRange::FromComparison(op2, bound2->IconValue(), cmp2->IsUnsigned(), mask, offset2);
+        second = ModularRange::FromComparison(op2, static_cast<target_size_t>(bound2->IconValue()), cmp2->IsUnsigned(),
+                                              mask, offset2);
     }
     else
     {
