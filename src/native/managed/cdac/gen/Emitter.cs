@@ -91,7 +91,7 @@ internal static class Emitter
 
         // The type layout is resolved once at construction. Resolution never
         // reads a field or fails for a missing one (it only looks up the type
-        // and wires an on-demand managed-metadata source), so resolving it
+        // or, if absent, wires an on-demand managed-metadata source), so resolving it
         // eagerly does not defeat the lazy per-field reads: the failure sites
         // (field lookup + read) still happen on first property access.
         if (needsDescriptor)

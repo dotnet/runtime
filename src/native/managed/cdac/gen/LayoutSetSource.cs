@@ -5,9 +5,8 @@ namespace Microsoft.Diagnostics.DataContractReader.DataGenerator;
 
 /// <summary>
 /// Source for the <c>LayoutSet</c> struct emitted into each consuming assembly via
-/// <c>RegisterPostInitializationOutput</c>. Resolves fields across an arbitrary
-/// number of type layout sources (native cdac descriptors, managed type metadata,
-/// symbols, etc.) discovered via <see cref="ContractRegistry.GetContracts{T}"/>.
+/// <c>RegisterPostInitializationOutput</c>. Resolves a native cdac layout when
+/// available, otherwise lazily resolves a managed type metadata layout.
 /// </summary>
 internal static class LayoutSetSource
 {
@@ -22,45 +21,39 @@ internal static class LayoutSetSource
 #nullable enable
 
 using System;
-using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Generated;
 
 /// <summary>
-/// An ordered set of type layouts resolved from multiple type info sources.
-/// Field lookups iterate sources in priority order (native cdac descriptor
-/// first, then managed type metadata), trying each candidate field name
-/// per source. Sources are resolved lazily.
+/// A type layout selected from the native cdac descriptor, or lazily from
+/// managed type metadata when no native layout exists. Field lookups try
+/// each candidate field name within the selected layout.
 /// </summary>
 internal readonly struct LayoutSet
 {
-    private readonly LazyLayout[] _layouts;
+    private readonly LazyLayout? _layout;
 
-    public LayoutSet(LazyLayout[] layouts)
+    public LayoutSet(LazyLayout layout)
     {
-        _layouts = layouts;
+        _layout = layout;
     }
 
     public ulong InstanceSize
     {
         get
         {
-            foreach (LazyLayout layout in _layouts)
-            {
-                if (layout.Get()?.Size is uint s)
-                    return s;
-            }
+            if (_layout?.Get()?.Size is uint size)
+                return size;
+
             throw new InvalidOperationException("No layout source has a known instance size.");
         }
     }
 
     public bool TrySelect(TargetPointer address, out Target.TypeInfo type, out TargetPointer baseAddr, out string name, params ReadOnlySpan<string> names)
     {
-        foreach (LazyLayout layout in _layouts)
+        if (_layout?.Get() is Target.TypeInfo ti)
         {
-            if (layout.Get() is not Target.TypeInfo ti)
-                continue;
             foreach (string candidate in names)
             {
                 if (ti.Fields.ContainsKey(candidate))
@@ -86,20 +79,15 @@ internal readonly struct LayoutSet
 
     public static LayoutSet Resolve(Target target, string[] names)
     {
-        List<LazyLayout> layouts = new(2);
-
         foreach (string name in names)
         {
             if (target.TryGetTypeInfo(name, out Target.TypeInfo n))
-            {
-                layouts.Add(new LazyLayout(n));
-                break;
-            }
+                return new LayoutSet(new LazyLayout(n));
         }
 
         if (target.Contracts.TryGetContract(out IManagedTypeSource mts))
         {
-            layouts.Add(new LazyLayout(() =>
+            return new LayoutSet(new LazyLayout(() =>
             {
                 foreach (string name in names)
                 {
@@ -110,7 +98,7 @@ internal readonly struct LayoutSet
             }));
         }
 
-        return new LayoutSet(layouts.ToArray());
+        return default;
     }
 }
 
