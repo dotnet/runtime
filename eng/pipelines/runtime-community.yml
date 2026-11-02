@@ -100,3 +100,34 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - openharmony_arm64
+          variables:
+          - name: OHOS_NDK_HOME
+            value: /tmp/ohos-sdk/linux
+          - name: OHOS_ASSETS
+            value: /tmp/ohos-assets
+          - name: OHOS_CMAKE_ARGS
+            value: '-DCMAKE_ICU_DIR=/tmp/ohos-assets/icu -DOPENSSL_ROOT_DIR=/tmp/ohos-assets/openssl -DOPENSSL_INCLUDE_DIR=/tmp/ohos-assets/openssl/include -DOPENSSL_CRYPTO_LIBRARY=/tmp/ohos-assets/openssl/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=/tmp/ohos-assets/openssl/lib/libssl.a'
+          jobParameters:
+            nameSuffix: AllSubsets_OHOS
+            buildArgs: -s clr.runtime+libs.native -c Release -cmakeargs "$(OHOS_CMAKE_ARGS)"
+            timeoutInMinutes: 180
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+            preBuildSteps:
+            - script: sudo tdnf install -y cmake ninja-build perl-core
+              displayName: Install CMake and Ninja
+            - script: eng/pipelines/ohos/setup-ohos-assets.sh
+              displayName: Prepare the OpenHarmony SDK and assets
+              env:
+                OHOS_NDK_HOME: $(OHOS_NDK_HOME)
+                OHOS_ASSETS: $(OHOS_ASSETS)
+
