@@ -934,6 +934,7 @@ namespace PInvokeTests
             }
             ThrowIfNotEquals(true, pass, "Struct marshalling scenario6 failed.");
 
+            // Avoid a TestLibrary dependency on PlatformDetection.IsDynamicEntrypointSupported.
             if (RuntimeInformation.ProcessArchitecture is Architecture.Wasm)
             {
                 Console.WriteLine("Skipping struct delegate marshalling on WASM: native callback thunk allocation is not supported.");
