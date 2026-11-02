@@ -9465,6 +9465,8 @@ public:
         FlowGraphNaturalLoop* loop;
         const bool            cloneForArrayBounds;
         const bool            cloneForGDVTests;
+        bool                  checkedArrayRefEffects = false;
+        bool                  canHoistArrayRefs      = false;
         LoopCloneVisitorInfo(LoopCloneContext*     context,
                              FlowGraphNaturalLoop* loop,
                              Statement*            stmt,
@@ -9480,6 +9482,7 @@ public:
     };
 
     bool         optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum);
+    bool         optAreJaggedArrayRefsInvariant(LoopCloneVisitorInfo* info);
     bool         optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     bool         optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
     bool         optExtractSpanIndex(GenTree* tree, SpanIndex* result);
