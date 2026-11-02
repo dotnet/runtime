@@ -29,7 +29,8 @@ public class AddressExposedLoads
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int GuardExposedSpan(ReadOnlySpan<byte> span, int count)
     {
-        // CHECK-NOT: ThrowArgumentOutOfRangeException
+        // ARM64-NOT: ThrowArgumentOutOfRangeException
+        // X64-NOT: ThrowArgumentOutOfRangeException
         ExposeSpan(ref span);
         if (count < 0 || count > span.Length)
             return -1;
