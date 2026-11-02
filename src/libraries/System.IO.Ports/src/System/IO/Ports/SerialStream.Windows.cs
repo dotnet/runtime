@@ -1475,7 +1475,7 @@ namespace System.IO.Ports
                 // as closed to give slightly better error messages.  Also
                 // help ensure we avoid handle recycling bugs.
                 if (hr == Interop.Errors.ERROR_INVALID_HANDLE)
-                    _handle.SetHandleAsInvalid();
+                    _handle!.SetHandleAsInvalid();
 
                 return -1;
             }
@@ -1523,7 +1523,7 @@ namespace System.IO.Ports
                 // as closed to give slightly better error messages.  Also
                 // help ensure we avoid handle recycling bugs.
                 if (hr == Interop.Errors.ERROR_INVALID_HANDLE)
-                    _handle.SetHandleAsInvalid();
+                    _handle!.SetHandleAsInvalid();
 
                 return -1;
             }
@@ -1555,7 +1555,7 @@ namespace System.IO.Ports
             // The OS does not signal this event.  We must do it ourselves.
             // But don't close it if the user callback called EndXxx,
             // which then closed the manual reset event already.
-            ManualResetEvent wh = asyncResult._waitHandle;
+            ManualResetEvent? wh = asyncResult._waitHandle;
             if (wh != null)
             {
                 bool r = wh.Set();
@@ -1589,8 +1589,8 @@ namespace System.IO.Ports
 
             internal unsafe EventLoopRunner(SerialStream stream)
             {
-                handle = stream._handle;
-                threadPoolBinding = stream._threadPoolBinding;
+                handle = stream._handle!;
+                threadPoolBinding = stream._threadPoolBinding!;
                 streamWeakReference = new WeakReference(stream);
 
                 callErrorEvents = new WaitCallback(CallErrorEvents);
@@ -1766,10 +1766,10 @@ namespace System.IO.Ports
                 }
             }
 
-            private void CallErrorEvents(object state)
+            private void CallErrorEvents(object? state)
             {
-                int errors = (int)state;
-                SerialStream stream = (SerialStream)streamWeakReference.Target;
+                int errors = (int)state!;
+                SerialStream? stream = (SerialStream?)streamWeakReference.Target;
                 if (stream is null)
                     return;
 
@@ -1789,10 +1789,10 @@ namespace System.IO.Ports
                     stream.ErrorReceived?.Invoke(stream, new SerialErrorReceivedEventArgs(SerialError.Frame));
             }
 
-            private void CallReceiveEvents(object state)
+            private void CallReceiveEvents(object? state)
             {
-                int nativeEvents = (int)state;
-                SerialStream stream = (SerialStream)streamWeakReference.Target;
+                int nativeEvents = (int)state!;
+                SerialStream? stream = (SerialStream?)streamWeakReference.Target;
                 if (stream is null)
                     return;
 
@@ -1803,11 +1803,11 @@ namespace System.IO.Ports
                     stream.DataReceived?.Invoke(stream, new SerialDataReceivedEventArgs(SerialData.Eof));
             }
 
-            private void CallPinEvents(object state)
+            private void CallPinEvents(object? state)
             {
-                int nativeEvents = (int)state;
+                int nativeEvents = (int)state!;
 
-                SerialStream stream = (SerialStream)streamWeakReference.Target;
+                SerialStream? stream = (SerialStream?)streamWeakReference.Target;
                 if (stream is null)
                     return;
 
@@ -1881,7 +1881,7 @@ namespace System.IO.Ports
                         _waitHandle = mre;
                     }
                     */
-                    return _waitHandle;
+                    return _waitHandle!;
                 }
             }
 
