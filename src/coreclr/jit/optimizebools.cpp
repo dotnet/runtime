@@ -660,8 +660,25 @@ static GenTree* FoldComparisons(
         }
     }
 
+    GenTree* newBound = NewRangeConstant(comp, constant, type);
+#ifdef TARGET_ARM64
+    if ((value != base1) && (symbolicBound == nullptr) && value1->gtEffectiveVal()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+        value2->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    {
+        // SUB/CMP need as many arithmetic instructions as CMP/CCMP. Avoid making
+        // a simple comparison pair more expensive by introducing costly constants.
+        GenTree* offset = value->gtGetOp2();
+        comp->gtSetEvalOrder(offset);
+        comp->gtSetEvalOrder(newBound);
+        if ((offset->GetCostEx() + newBound->GetCostEx()) > (bound1->GetCostEx() + bound2->GetCostEx()))
+        {
+            return nullptr;
+        }
+    }
+#endif
+
     cmp1->gtOp1 = comp->gtWrapWithSideEffects(value, value1, GTF_OBS_EFFECT);
-    cmp1->gtOp2 = NewRangeConstant(comp, constant, type);
+    cmp1->gtOp2 = newBound;
     cmp1->SetOper(cmp2IsReversed ? GenTree::ReverseRelop(oper) : oper);
     if (isUnsigned)
         cmp1->SetUnsigned();

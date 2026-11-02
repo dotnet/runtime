@@ -100,6 +100,25 @@ public class ModularRanges
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool SymbolicFirstEffect(int x, ReadOnlySpan<int> span) => (x = Observe(x)) >= 0 && x < span.Length;
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int WideBounds(long x)
+    {
+        // ARM64: cmp
+        // ARM64: ccmp
+        if (x < int.MinValue || x > uint.MaxValue) throw new ArgumentOutOfRangeException();
+        return unchecked((int)x);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int SubBarelyFits(int a, int b)
+    {
+        // ARM64: cmp
+        // ARM64: ccmp
+        if (a < int.MinValue + 500 || a > 0) return -1;
+        if (b < 0 || b > 500) return -1;
+        return checked(a - b);
+    }
+
     private static int s_effects;
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Observe(int x)
@@ -182,6 +201,16 @@ public class ModularRanges
         Assert.True(SymbolicFirstEffect(-1, new int[1]));
         Assert.False(SymbolicFirstEffect(-2, new int[1]));
         Assert.Equal(2, s_effects);
+        foreach (long x in new[] { (long)int.MinValue, -1L, 0, int.MaxValue, uint.MaxValue })
+            Assert.Equal(unchecked((int)x), WideBounds(x));
+        Assert.Throws<ArgumentOutOfRangeException>(() => WideBounds((long)int.MinValue - 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => WideBounds((long)uint.MaxValue + 1));
+        Assert.Equal(int.MinValue, SubBarelyFits(int.MinValue + 500, 500));
+        Assert.Equal(-500, SubBarelyFits(0, 500));
+        Assert.Equal(-1, SubBarelyFits(int.MinValue, 0));
+        Assert.Equal(-1, SubBarelyFits(1, 0));
+        Assert.Equal(-1, SubBarelyFits(0, -1));
+        Assert.Equal(-1, SubBarelyFits(0, 501));
         Assert.Throws<OverflowException>(() => Checked(int.MaxValue));
         Assert.Equal(0, Checked(0));
         s_effects = 0;
