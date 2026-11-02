@@ -314,6 +314,9 @@ namespace System
             public GCHandle<Action> action;
         }
 
+        static unsafe partial void ConfigurePauseRecordCallback(void* callback, bool enabled, ref PauseRecordCallbackState state)
+            => state.Supported = RuntimeImports.RhConfigurePauseRecordCallback(callback, enabled ? 1 : 0, out state.Sequence, out state.MissedRecords) != 0;
+
         public static unsafe void RegisterNoGCRegionCallback(long totalSize, Action callback)
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(totalSize);

@@ -221,6 +221,8 @@ extern "C" int  QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo hea
 
 extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize, QCallExceptionStatus* qcallError);
 
+extern "C" BOOL QCALLTYPE GCInterface_ConfigurePauseRecordCallback(GCPauseRecordCallback callback, BOOL enabled, UINT64* sequence, UINT64* missedRecords, QCallExceptionStatus* qcallError);
+
 extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation, QCallExceptionStatus* qcallError);
 
 //

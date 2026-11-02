@@ -3317,6 +3317,9 @@
   <data name="PlatformNotSupported_ComInterop" xml:space="preserve">
     <value>COM Interop is not supported on this platform.</value>
   </data>
+  <data name="PlatformNotSupported_GCPauseRecordCallback" xml:space="preserve">
+    <value>Garbage collection pause callbacks are not supported by this runtime or garbage collector.</value>
+  </data>
   <data name="PlatformNotSupported_NamedSynchronizationPrimitives" xml:space="preserve">
     <value>The named version of this synchronization primitive is not supported on this platform.</value>
   </data>

@@ -83,6 +83,7 @@ namespace System.Diagnostics.Metrics
 
             if (enabled)
             {
+                instrument!.ListenerStateChanged?.Invoke();
                 if (oldStateStored && MeasurementsCompleted is not null)
                 {
                     MeasurementsCompleted?.Invoke(instrument!, oldState);
@@ -119,6 +120,7 @@ namespace System.Diagnostics.Metrics
                 state = instrument.DisableMeasurements(this);
             }
 
+            instrument.ListenerStateChanged?.Invoke();
             MeasurementsCompleted?.Invoke(instrument, state);
             return state;
         }
@@ -274,6 +276,10 @@ namespace System.Diagnostics.Metrics
                     do
                     {
                         object? state = current.Value.DisableMeasurements(this);
+                        if (current.Value.ListenerStateChanged is not null)
+                        {
+                            callbacksArguments ??= new Dictionary<Instrument, object?>();
+                        }
                         callbacksArguments?.Add(current.Value, state);
                         current = current.Next;
                     } while (current is not null);
@@ -284,6 +290,11 @@ namespace System.Diagnostics.Metrics
 
             if (callbacksArguments is not null)
             {
+                foreach (Instrument instrument in callbacksArguments.Keys)
+                {
+                    instrument.ListenerStateChanged?.Invoke();
+                }
+
                 foreach (KeyValuePair<Instrument, object?> kvp in callbacksArguments)
                 {
                     measurementsCompleted?.Invoke(kvp.Key, kvp.Value);

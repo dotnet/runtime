@@ -1222,6 +1222,16 @@ size_t gc_heap::interesting_data_per_gc[max_idp_count];
 
 no_gc_region_info gc_heap::current_no_gc_region_info;
 FinalizerWorkItem* gc_heap::finalizer_work;
+GCPauseRecord gc_heap::pause_records[pause_record_capacity];
+GCPauseRecordCallback gc_heap::pause_record_callback;
+FinalizerWorkItem gc_heap::pause_record_work = { nullptr, &gc_heap::deliver_pause_record };
+uint32_t gc_heap::pause_record_enabled;
+uint32_t gc_heap::pause_record_version;
+uint32_t gc_heap::pause_record_write;
+uint32_t gc_heap::pause_record_read;
+int32_t gc_heap::pause_record_scheduled;
+alignas(8) uint64_t gc_heap::pause_record_sequence;
+alignas(8) uint64_t gc_heap::pause_record_missed;
 BOOL gc_heap::proceed_with_gc_p = FALSE;
 GCSpinLock gc_heap::gc_lock;
 
