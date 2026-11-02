@@ -93,7 +93,7 @@ namespace System.IO.Ports
                     int baudRateOld = (int)_dcb.BaudRate;
                     _dcb.BaudRate = (uint)value;
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (!Interop.Kernel32.SetCommState(_handle!, ref _dcb))
                     {
                         _dcb.BaudRate = (uint)baudRateOld;
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -109,13 +109,13 @@ namespace System.IO.Ports
             {
                 if (value)
                 {
-                    if (!Interop.Kernel32.SetCommBreak(_handle))
+                    if (!Interop.Kernel32.SetCommBreak(_handle!))
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     _inBreak = true;
                 }
                 else
                 {
-                    if (!Interop.Kernel32.ClearCommBreak(_handle))
+                    if (!Interop.Kernel32.ClearCommBreak(_handle!))
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     _inBreak = false;
                 }
@@ -132,7 +132,7 @@ namespace System.IO.Ports
                     byte byteSizeOld = _dcb.ByteSize;
                     _dcb.ByteSize = (byte)value;
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (!Interop.Kernel32.SetCommState(_handle!, ref _dcb))
                     {
                         _dcb.ByteSize = byteSizeOld;
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -151,7 +151,7 @@ namespace System.IO.Ports
                     int fNullOld = fNullFlag;
                     SetDcbFlag(Interop.Kernel32.DCBFlags.FNULL, value ? 1 : 0);
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (!Interop.Kernel32.SetCommState(_handle!, ref _dcb))
                     {
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FNULL, fNullOld);
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -174,14 +174,14 @@ namespace System.IO.Ports
                 int fDtrControlOld = GetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL);
 
                 SetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL, value ? Interop.Kernel32.DCBDTRFlowControl.DTR_CONTROL_ENABLE : Interop.Kernel32.DCBDTRFlowControl.DTR_CONTROL_DISABLE);
-                if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                if (!Interop.Kernel32.SetCommState(_handle!, ref _dcb))
                 {
                     SetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL, fDtrControlOld);
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
 
                 // then set the actual pin
-                if (!Interop.Kernel32.EscapeCommFunction(_handle, value ? Interop.Kernel32.CommFunctions.SETDTR : Interop.Kernel32.CommFunctions.CLRDTR))
+                if (!Interop.Kernel32.EscapeCommFunction(_handle!, value ? Interop.Kernel32.CommFunctions.SETDTR : Interop.Kernel32.CommFunctions.CLRDTR))
                     throw Win32Marshal.GetExceptionForLastWin32Error();
             }
         }
@@ -224,7 +224,7 @@ namespace System.IO.Ports
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_DISABLE);
                     }
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (!Interop.Kernel32.SetCommState(_handle!, ref _dcb))
                     {
                         _handshake = handshakeOld;
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FINX, fInOutXOld);
@@ -271,7 +271,7 @@ namespace System.IO.Ports
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, 0);
                         _dcb.ErrorChar = (byte)'\0';
                     }
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (!Interop.Kernel32.SetCommState(_handle!, ref _dcb))
                     {
                         _dcb.Parity = parityOld;
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FPARITY, fParityOld);
@@ -310,7 +310,7 @@ namespace System.IO.Ports
                         _dcb.ErrorChar = (byte)'\0';
                     }
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (!Interop.Kernel32.SetCommState(_handle!, ref _dcb))
                     {
                         _parityReplace = parityReplaceOld;
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, fErrorCharOld);
@@ -376,7 +376,7 @@ namespace System.IO.Ports
                     _commTimeouts.ReadIntervalTimeout = Interop.Kernel32.MAXDWORD;
                 }
 
-                if (!Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts))
+                if (!Interop.Kernel32.SetCommTimeouts(_handle!, ref _commTimeouts))
                 {
                     _commTimeouts.ReadTotalTimeoutConstant = oldReadConstant;
                     _commTimeouts.ReadTotalTimeoutMultiplier = oldReadMultiplier;
@@ -411,7 +411,7 @@ namespace System.IO.Ports
                     else
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_DISABLE);
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (!Interop.Kernel32.SetCommState(_handle!, ref _dcb))
                     {
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, fRtsControlOld);
                         // set it back to the old value on a failure
@@ -419,7 +419,7 @@ namespace System.IO.Ports
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
 
-                    if (!Interop.Kernel32.EscapeCommFunction(_handle, value ? Interop.Kernel32.CommFunctions.SETRTS : Interop.Kernel32.CommFunctions.CLRRTS))
+                    if (!Interop.Kernel32.EscapeCommFunction(_handle!, value ? Interop.Kernel32.CommFunctions.SETRTS : Interop.Kernel32.CommFunctions.CLRRTS))
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
             }
@@ -451,7 +451,7 @@ namespace System.IO.Ports
                     byte stopBitsOld = _dcb.StopBits;
                     _dcb.StopBits = nativeValue;
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (!Interop.Kernel32.SetCommState(_handle!, ref _dcb))
                     {
                         _dcb.StopBits = stopBitsOld;
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -478,7 +478,7 @@ namespace System.IO.Ports
                 int oldWriteConstant = _commTimeouts.WriteTotalTimeoutConstant;
                 _commTimeouts.WriteTotalTimeoutConstant = ((value == SerialPort.InfiniteTimeout) ? 0 : value);
 
-                if (!Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts))
+                if (!Interop.Kernel32.SetCommTimeouts(_handle!, ref _commTimeouts))
                 {
                     _commTimeouts.WriteTotalTimeoutConstant = oldWriteConstant;
                     throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -494,7 +494,7 @@ namespace System.IO.Ports
             get
             {
                 int pinStatus = 0;
-                if (!Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus))
+                if (!Interop.Kernel32.GetCommModemStatus(_handle!, ref pinStatus))
                     throw Win32Marshal.GetExceptionForLastWin32Error();
 
                 return (Interop.Kernel32.CommModemState.MS_RLSD_ON & pinStatus) != 0;
@@ -506,7 +506,7 @@ namespace System.IO.Ports
             get
             {
                 int pinStatus = 0;
-                if (!Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus))
+                if (!Interop.Kernel32.GetCommModemStatus(_handle!, ref pinStatus))
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 return (Interop.Kernel32.CommModemState.MS_CTS_ON & pinStatus) != 0;
             }
@@ -518,7 +518,7 @@ namespace System.IO.Ports
             get
             {
                 int pinStatus = 0;
-                if (!Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus))
+                if (!Interop.Kernel32.GetCommModemStatus(_handle!, ref pinStatus))
                     throw Win32Marshal.GetExceptionForLastWin32Error();
 
                 return (Interop.Kernel32.CommModemState.MS_DSR_ON & pinStatus) != 0;
@@ -533,7 +533,7 @@ namespace System.IO.Ports
             get
             {
                 int errorCode = 0; // "ref" arguments need to have values, as opposed to "out" arguments
-                if (!Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat))
+                if (!Interop.Kernel32.ClearCommError(_handle!, ref errorCode, ref _comStat))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
@@ -548,7 +548,7 @@ namespace System.IO.Ports
             get
             {
                 int errorCode = 0; // "ref" arguments need to be set before method invocation, as opposed to "out" arguments
-                if (!Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat))
+                if (!Interop.Kernel32.ClearCommError(_handle!, ref errorCode, ref _comStat))
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 return (int)_comStat.cbOutQue;
 
@@ -614,8 +614,8 @@ namespace System.IO.Ports
                 _commProp = default;
                 int pinStatus = 0;
 
-                if (!Interop.Kernel32.GetCommProperties(_handle, ref _commProp)
-                    || !Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus))
+                if (!Interop.Kernel32.GetCommProperties(_handle!, ref _commProp)
+                    || !Interop.Kernel32.GetCommModemStatus(_handle!, ref pinStatus))
                 {
                     // If the portName they have passed in is a FILE_TYPE_CHAR but not a serial port,
                     // for example "LPT1", this API will fail.  For this reason we handle the error message specially.
@@ -676,18 +676,18 @@ namespace System.IO.Ports
                 _commTimeouts.WriteTotalTimeoutConstant = ((writeTimeout == SerialPort.InfiniteTimeout) ? 0 : writeTimeout);
 
                 // set unmanaged timeout structure
-                if (!Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts))
+                if (!Interop.Kernel32.SetCommTimeouts(_handle!, ref _commTimeouts))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
 
                 if (_isAsync)
                 {
-                    _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(_handle);
+                    _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(_handle!);
                 }
 
                 // monitor all events except TXEMPTY
-                Interop.Kernel32.SetCommMask(_handle, Interop.Kernel32.CommEvents.ALL_EVENTS);
+                Interop.Kernel32.SetCommMask(_handle!, Interop.Kernel32.CommEvents.ALL_EVENTS);
 
                 // prep. for starting event cycle.
                 _eventRunner = new EventLoopRunner(this);
@@ -720,8 +720,8 @@ namespace System.IO.Ports
                     bool skipSPAccess = false;
 
                     // turn off all events and signal WaitCommEvent
-                    Interop.Kernel32.SetCommMask(_handle, 0);
-                    if (!Interop.Kernel32.EscapeCommFunction(_handle, Interop.Kernel32.CommFunctions.CLRDTR))
+                    Interop.Kernel32.SetCommMask(_handle!, 0);
+                    if (!Interop.Kernel32.EscapeCommFunction(_handle!, Interop.Kernel32.CommFunctions.CLRDTR))
                     {
                         int hr = Marshal.GetLastPInvokeError();
 
@@ -843,14 +843,14 @@ namespace System.IO.Ports
         internal void DiscardInBuffer()
         {
 
-            if (!Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_RXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_RXABORT))
+            if (!Interop.Kernel32.PurgeComm(_handle!, Interop.Kernel32.PurgeFlags.PURGE_RXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_RXABORT))
                 throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
         // Uses Win32 method to dump out the xmit buffer; analogous to MSComm's "OutBufferCount = 0"
         internal void DiscardOutBuffer()
         {
-            if (!Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_TXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_TXABORT))
+            if (!Interop.Kernel32.PurgeComm(_handle!, Interop.Kernel32.PurgeFlags.PURGE_TXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_TXABORT))
                 throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
@@ -996,7 +996,7 @@ namespace System.IO.Ports
         public override void Flush()
         {
             if (_handle == null) throw new ObjectDisposedException(SR.Port_not_open);
-            Interop.Kernel32.FlushFileBuffers(_handle);
+            Interop.Kernel32.FlushFileBuffers(_handle!);
         }
 
         // Blocking read operation, returning the number of bytes read from the stream.
@@ -1064,7 +1064,7 @@ namespace System.IO.Ports
         {
             if (_handle == null) InternalResources.FileNotOpen();
 
-            if (!Interop.Kernel32.SetupComm(_handle, readBufferSize, writeBufferSize))
+            if (!Interop.Kernel32.SetupComm(_handle!, readBufferSize, writeBufferSize))
                 throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
@@ -1152,7 +1152,7 @@ namespace System.IO.Ports
         private unsafe void InitializeDCB(int baudRate, Parity parity, int dataBits, StopBits stopBits, bool discardNull)
         {
             // first get the current dcb structure setup
-            if (!Interop.Kernel32.GetCommState(_handle, ref _dcb))
+            if (!Interop.Kernel32.GetCommState(_handle!, ref _dcb))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
@@ -1245,7 +1245,7 @@ namespace System.IO.Ports
             _dcb.EvtChar = Interop.Kernel32.DCB.EOFCHAR;
 
             // set DCB structure
-            if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+            if (!Interop.Kernel32.SetCommState(_handle!, ref _dcb))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
@@ -1457,9 +1457,9 @@ namespace System.IO.Ports
             fixed (byte* p = bytes)
             {
                 if (_isAsync)
-                    r = Interop.Kernel32.ReadFile(_handle, p + offset, count, IntPtr.Zero, overlapped);
+                    r = Interop.Kernel32.ReadFile(_handle!, p + offset, count, IntPtr.Zero, overlapped);
                 else
-                    r = Interop.Kernel32.ReadFile(_handle, p + offset, count, out numBytesRead, IntPtr.Zero);
+                    r = Interop.Kernel32.ReadFile(_handle!, p + offset, count, out numBytesRead, IntPtr.Zero);
             }
 
             if (r == 0)
@@ -1506,9 +1506,9 @@ namespace System.IO.Ports
             fixed (byte* p = bytes)
             {
                 if (_isAsync)
-                    r = Interop.Kernel32.WriteFile(_handle, p + offset, count, IntPtr.Zero, overlapped);
+                    r = Interop.Kernel32.WriteFile(_handle!, p + offset, count, IntPtr.Zero, overlapped);
                 else
-                    r = Interop.Kernel32.WriteFile(_handle, p + offset, count, out numBytesWritten, IntPtr.Zero);
+                    r = Interop.Kernel32.WriteFile(_handle!, p + offset, count, out numBytesWritten, IntPtr.Zero);
             }
 
             if (r == 0)

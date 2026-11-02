@@ -131,7 +131,7 @@ namespace System.IO.Ports
         {
             get
             {
-                return Interop.Termios.TermiosGetSpeed(_handle);
+                return Interop.Termios.TermiosGetSpeed(_handle!);
             }
             set
             {
@@ -139,7 +139,7 @@ namespace System.IO.Ports
                 {
                     CheckBaudRate(value);
 
-                    if (Interop.Termios.TermiosSetSpeed(_handle, value) < 0)
+                    if (Interop.Termios.TermiosSetSpeed(_handle!, value) < 0)
                     {
                         throw GetLastIOError();
                     }
@@ -158,7 +158,7 @@ namespace System.IO.Ports
                 {
                     // Unlike Windows, there is no infinite break and positive value is platform dependent.
                     // As best guess, send break with default duration.
-                    Interop.Termios.TermiosSendBreak(_handle, 0);
+                    Interop.Termios.TermiosSendBreak(_handle!, 0);
                 }
                 _inBreak = value;
             }
@@ -166,19 +166,19 @@ namespace System.IO.Ports
 
         internal int BytesToWrite
         {
-            get { return Interop.Termios.TermiosGetAvailableBytes(_handle, false); }
+            get { return Interop.Termios.TermiosGetAvailableBytes(_handle!, false); }
         }
 
         internal int BytesToRead
         {
-            get { return Interop.Termios.TermiosGetAvailableBytes(_handle, true); }
+            get { return Interop.Termios.TermiosGetAvailableBytes(_handle!, true); }
         }
 
         internal bool CDHolding
         {
             get
             {
-                int status = Interop.Termios.TermiosGetSignal(_handle, Interop.Termios.Signals.SignalDcd);
+                int status = Interop.Termios.TermiosGetSignal(_handle!, Interop.Termios.Signals.SignalDcd);
                 if (status < 0)
                 {
                     throw GetLastIOError();
@@ -192,7 +192,7 @@ namespace System.IO.Ports
         {
             get
             {
-                int status = Interop.Termios.TermiosGetSignal(_handle, Interop.Termios.Signals.SignalCts);
+                int status = Interop.Termios.TermiosGetSignal(_handle!, Interop.Termios.Signals.SignalCts);
                 if (status < 0)
                 {
                     throw GetLastIOError();
@@ -206,7 +206,7 @@ namespace System.IO.Ports
         {
             get
             {
-                int status = Interop.Termios.TermiosGetSignal(_handle, Interop.Termios.Signals.SignalDsr);
+                int status = Interop.Termios.TermiosGetSignal(_handle!, Interop.Termios.Signals.SignalDsr);
                 if (status < 0)
                 {
                     throw GetLastIOError();
@@ -220,7 +220,7 @@ namespace System.IO.Ports
         {
             get
             {
-                int status = Interop.Termios.TermiosGetSignal(_handle, Interop.Termios.Signals.SignalDtr);
+                int status = Interop.Termios.TermiosGetSignal(_handle!, Interop.Termios.Signals.SignalDtr);
                 if (status < 0)
                 {
                     throw GetLastIOError();
@@ -231,7 +231,7 @@ namespace System.IO.Ports
 
             set
             {
-                if (Interop.Termios.TermiosGetSignal(_handle, Interop.Termios.Signals.SignalDtr, value ? 1 : 0) != 0)
+                if (Interop.Termios.TermiosGetSignal(_handle!, Interop.Termios.Signals.SignalDtr, value ? 1 : 0) != 0)
                 {
                     throw GetLastIOError();
                 }
@@ -240,7 +240,7 @@ namespace System.IO.Ports
 
         private bool RtsEnabledNative()
         {
-            int status = Interop.Termios.TermiosGetSignal(_handle, Interop.Termios.Signals.SignalRts);
+            int status = Interop.Termios.TermiosGetSignal(_handle!, Interop.Termios.Signals.SignalRts);
             if (status < 0)
             {
                 throw GetLastIOError();
@@ -264,7 +264,7 @@ namespace System.IO.Ports
                 if ((_handshake == Handshake.RequestToSend || _handshake == Handshake.RequestToSendXOnXOff))
                     throw new InvalidOperationException(SR.CantSetRtsWithHandshaking);
 
-                if (Interop.Termios.TermiosGetSignal(_handle, Interop.Termios.Signals.SignalRts, value ? 1 : 0) != 0)
+                if (Interop.Termios.TermiosGetSignal(_handle!, Interop.Termios.Signals.SignalRts, value ? 1 : 0) != 0)
                 {
                     throw GetLastIOError();
                 }
@@ -280,7 +280,7 @@ namespace System.IO.Ports
 
                 if (value != _handshake)
                 {
-                    if (Interop.Termios.TermiosReset(_handle, _baudRate, _dataBits, _stopBits, _parity, value) != 0)
+                    if (Interop.Termios.TermiosReset(_handle!, _baudRate, _dataBits, _stopBits, _parity, value) != 0)
                     {
                         throw new ArgumentException();
                     }
@@ -297,7 +297,7 @@ namespace System.IO.Ports
                 Debug.Assert(!(value < MinDataBits || value > MaxDataBits), "An invalid value was passed to DataBits");
                 if (value != _dataBits)
                 {
-                    if (Interop.Termios.TermiosReset(_handle, _baudRate, value, _stopBits, _parity, _handshake) != 0)
+                    if (Interop.Termios.TermiosReset(_handle!, _baudRate, value, _stopBits, _parity, _handshake) != 0)
                     {
                         throw new ArgumentException();
                     }
@@ -315,7 +315,7 @@ namespace System.IO.Ports
 
                 if (value != _parity)
                 {
-                    if (Interop.Termios.TermiosReset(_handle, _baudRate, _dataBits, _stopBits, value, _handshake) != 0)
+                    if (Interop.Termios.TermiosReset(_handle!, _baudRate, _dataBits, _stopBits, value, _handshake) != 0)
                     {
                         throw new ArgumentException();
                     }
@@ -332,7 +332,7 @@ namespace System.IO.Ports
                 Debug.Assert(!(value < StopBits.One || value > StopBits.OnePointFive), "An invalid value was passed to StopBits");
                 if (value != _stopBits)
                 {
-                    if (Interop.Termios.TermiosReset(_handle, _baudRate, _dataBits, value, _parity, _handshake) != 0)
+                    if (Interop.Termios.TermiosReset(_handle!, _baudRate, _dataBits, value, _parity, _handshake) != 0)
                     {
                         throw new ArgumentException();
                     }
@@ -370,14 +370,14 @@ namespace System.IO.Ports
         {
             if (_handle == null) InternalResources.FileNotOpen();
             // This may or may not work depending on hardware.
-            Interop.Termios.TermiosDiscard(_handle, Interop.Termios.Queue.ReceiveQueue);
+            Interop.Termios.TermiosDiscard(_handle!, Interop.Termios.Queue.ReceiveQueue);
         }
 
         internal void DiscardOutBuffer()
         {
             if (_handle == null) InternalResources.FileNotOpen();
             // This may or may not work depending on hardware.
-            Interop.Termios.TermiosDiscard(_handle, Interop.Termios.Queue.SendQueue);
+            Interop.Termios.TermiosDiscard(_handle!, Interop.Termios.Queue.SendQueue);
         }
 
 #pragma warning disable IDE0060
@@ -407,7 +407,7 @@ namespace System.IO.Ports
                 sw.SpinOnce();
             }
 
-            Interop.Termios.TermiosDrain(_handle);
+            Interop.Termios.TermiosDrain(_handle!);
         }
 
         internal int ReadByte(int timeout)
@@ -519,7 +519,7 @@ namespace System.IO.Ports
         }
 #endif
 
-        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
+        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback? userCallback, object? stateObject)
         {
             return TaskToAsyncResult.Begin(ReadAsync(array, offset, numBytes), userCallback, stateObject);
         }
@@ -620,7 +620,7 @@ namespace System.IO.Ports
                 _stopBits = stopBits;
                 _dataBits = dataBits;
 
-                if (Interop.Termios.TermiosReset(_handle, _baudRate, _dataBits, _stopBits, _parity, _handshake) != 0)
+                if (Interop.Termios.TermiosReset(_handle!, _baudRate, _dataBits, _stopBits, _parity, _handshake) != 0)
                 {
                     throw new ArgumentException();
                 }
@@ -783,7 +783,7 @@ namespace System.IO.Ports
             fixed (byte* bufPtr = buff)
             {
                 // assumes dequeue-ing happens on a single thread
-                int numBytes = Interop.Serial.Read(_handle, bufPtr, buff.Length);
+                int numBytes = Interop.Serial.Read(_handle!, bufPtr, buff.Length);
 
                 if (numBytes < 0)
                 {
@@ -816,7 +816,7 @@ namespace System.IO.Ports
             fixed (byte* bufPtr = buff)
             {
                 // assumes dequeue-ing happens on a single thread
-                int numBytes = Interop.Serial.Write(_handle, bufPtr, buff.Length);
+                int numBytes = Interop.Serial.Write(_handle!, bufPtr, buff.Length);
 
                 if (numBytes <= 0)
                 {
@@ -893,7 +893,7 @@ namespace System.IO.Ports
             bool lastIsIdle = false;
             int ticksWhenIdleStarted = 0;
 
-            Signals lastSignals = _pinChanged != null ? Interop.Termios.TermiosGetAllSignals(_handle) : Signals.Error;
+            Signals lastSignals = _pinChanged != null ? Interop.Termios.TermiosGetAllSignals(_handle!) : Signals.Error;
 
             bool IsNoEventRegistered() => _dataReceived == null && _pinChanged == null;
 
@@ -995,7 +995,7 @@ namespace System.IO.Ports
                     // This would require spinning new thread and also would potentially trigger events when
                     // user didn't have time to respond.
                     // Diffing seems like a better solution.
-                    Signals current = Interop.Termios.TermiosGetAllSignals(_handle);
+                    Signals current = Interop.Termios.TermiosGetAllSignals(_handle!);
 
                     // There is no really good action we can take when this errors so just ignore
                     // a sinle event.

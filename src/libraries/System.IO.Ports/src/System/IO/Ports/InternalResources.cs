@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using Marshal = System.Runtime.InteropServices.Marshal;
 
 namespace System.IO.Ports
@@ -24,6 +25,7 @@ namespace System.IO.Ports
             return new ObjectDisposedException(null, SR.Port_not_open);
         }
 
+        [DoesNotReturn]
         internal static void FileNotOpen()
         {
             throw FileNotOpenException();
