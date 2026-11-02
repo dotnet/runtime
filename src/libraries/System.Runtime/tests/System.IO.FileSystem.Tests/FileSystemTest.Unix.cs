@@ -13,5 +13,7 @@ namespace System.IO.Tests
 
         [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         protected static partial int mkfifo(string path, int mode);
+
+        protected static string GetExpectedFinalLinkTarget(string path) => Interop.Sys.RealPath(path);
     }
 }
