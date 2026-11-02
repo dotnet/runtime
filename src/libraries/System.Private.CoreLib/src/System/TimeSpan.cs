@@ -26,7 +26,8 @@ namespace System
           IEquatable<TimeSpan>,
           ISpanFormattable,
           ISpanParsable<TimeSpan>,
-          IUtf8SpanFormattable
+          IUtf8SpanFormattable,
+          IUtf8SpanParsable<TimeSpan>
     {
         /// <summary>
         /// Represents the number of nanoseconds per tick. This field is constant.
@@ -793,6 +794,15 @@ namespace System
             return TimeSpanParse.TryParse(input, formatProvider, out result);
         }
         public static bool TryParse(ReadOnlySpan<char> input, IFormatProvider? formatProvider, out TimeSpan result) => TimeSpanParse.TryParse(input, formatProvider, out result);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static TimeSpan Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
+            => TimeSpanParse.Parse(utf8Text, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out TimeSpan result)
+            => TimeSpanParse.TryParse(utf8Text, provider, out result);
+
         public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.TimeSpanFormat)] string? format, IFormatProvider? formatProvider, out TimeSpan result)
         {
             if (input is null || format is null)

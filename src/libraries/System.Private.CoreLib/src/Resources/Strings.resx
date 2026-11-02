@@ -3296,6 +3296,9 @@
   <data name="Overflow_TimeSpanElementTooLarge" xml:space="preserve">
     <value>The TimeSpan string '{0}' could not be parsed because at least one of the numeric components is out of range or contains too many digits.</value>
   </data>
+  <data name="Overflow_TimeSpanElementTooLargeNoValue" xml:space="preserve">
+    <value>The TimeSpan string could not be parsed because at least one of the numeric components is out of range or contains too many digits.</value>
+  </data>
   <data name="Overflow_TimeSpanTooLong" xml:space="preserve">
     <value>TimeSpan overflowed because the duration is too long.</value>
   </data>
