@@ -5,8 +5,6 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -44,7 +42,7 @@ namespace ILAssembler.Tests
             }, options);
         }
 
-        internal static PEReader CompileAndGetReader(SourceText sourceText, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
+        internal static PEReader CompileAndGetReader(SourceText sourceText, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]?> resourceLocator, Options options)
         {
             var documentCompiler = new DocumentCompiler();
             var (diagnostics, result) = documentCompiler.Compile(sourceText, includedDocumentLoader, resourceLocator, options);
@@ -57,6 +55,14 @@ namespace ILAssembler.Tests
 
         internal static ImmutableArray<byte> Compile(string source, Options options)
         {
+            var (diagnostics, result) = CompileWithDiagnostics(source, options);
+            Assert.Empty(diagnostics);
+            Assert.NotNull(result);
+            return Serialize(result);
+        }
+
+        internal static (ImmutableArray<Diagnostic> Diagnostics, CompilationResult? Result) CompileWithDiagnostics(string source, Options options)
+        {
             var sourceText = new SourceText(source, "test.il");
             var documentCompiler = new DocumentCompiler();
             var (diagnostics, result) = documentCompiler.Compile(sourceText, _ =>
@@ -64,11 +70,42 @@ namespace ILAssembler.Tests
                 Assert.Fail("Expected no includes");
                 return default;
             }, _ => { Assert.Fail("Expected no resources"); return default; }, options);
-            Assert.Empty(diagnostics);
-            Assert.NotNull(result);
+            return (diagnostics, result);
+        }
+
+        internal static ImmutableArray<byte> Serialize(CompilationResult result)
+        {
             var blobBuilder = new BlobBuilder();
-            result!.Serialize(blobBuilder);
+            result.Serialize(blobBuilder);
             return blobBuilder.ToImmutableArray();
+        }
+
+        internal static string MethodSource(string instructions, string methodHeader = "public static void M(int32 arg)") => $$"""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public Test
+            {
+                .method {{methodHeader}} cil managed
+                {
+                    .maxstack 8
+                    .locals init (int32 local)
+                    {{instructions}}
+                }
+            }
+            """;
+
+        internal static MethodBodyBlock GetMethodBody(PEReader pe, string methodName = "M")
+        {
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinition method = reader.MethodDefinitions.Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == methodName);
+            return pe.GetMethodBody(method.RelativeVirtualAddress);
+        }
+
+        internal static byte[] CompileMethodIL(string instructions, Options options, string methodHeader = "public static void M(int32 arg)")
+        {
+            using PEReader pe = CompileAndGetReader(MethodSource(instructions, methodHeader), options);
+            return GetMethodBody(pe).GetILBytes()!;
         }
 
         internal static ImmutableArray<byte> CompileAndGetImageBytes(string source, Options options)
@@ -76,25 +113,54 @@ namespace ILAssembler.Tests
             return Compile(source, options);
         }
 
-        internal static ImmutableArray<byte> CompileAndGetEmbeddedPortablePdb(string source, Options options)
+        internal static CompilationResult CompileAndGetResult(string source, Options options)
         {
-            using PEReader pe = CompileAndGetReader(source, options);
-            DebugDirectoryEntry embeddedPdbEntry = pe.ReadDebugDirectory()
-                .Single(entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-            ImmutableArray<byte> embeddedPdb = pe.GetSectionData(embeddedPdbEntry.DataRelativeVirtualAddress)
-                .GetContent(0, embeddedPdbEntry.DataSize);
-
-            const int EmbeddedPdbHeaderSize = 8;
-            ReadOnlySpan<byte> embeddedPdbBytes = embeddedPdb.AsSpan();
-            int uncompressedSize = BinaryPrimitives.ReadInt32LittleEndian(embeddedPdbBytes.Slice(sizeof(int)));
-            using MemoryStream compressedStream = new(embeddedPdbBytes.Slice(EmbeddedPdbHeaderSize).ToArray());
-            using DeflateStream deflateStream = new(compressedStream, CompressionMode.Decompress);
-            using MemoryStream pdbStream = new(uncompressedSize);
-            deflateStream.CopyTo(pdbStream);
-            Assert.Equal(uncompressedSize, pdbStream.Length);
-
-            return ImmutableArray.CreateRange(pdbStream.ToArray());
+            var (diagnostics, result) = CompileWithDiagnostics(source, options);
+            Assert.Empty(diagnostics);
+            Assert.NotNull(result);
+            return result!;
         }
+
+        /// <summary>Gets the Portable PDB that the compilation returned for writing beside the image.</summary>
+        internal static ImmutableArray<byte> GetPortablePdb(CompilationResult result)
+        {
+            Assert.True(result.PortablePdb.HasValue, "Expected the compilation to produce a Portable PDB");
+            return result.PortablePdb!.Value;
+        }
+
+        internal static MetadataReaderProvider GetPortablePdbReaderProvider(CompilationResult result)
+            => MetadataReaderProvider.FromPortablePdbImage(GetPortablePdb(result));
+
+        internal static ImmutableArray<byte> CompileAndGetPortablePdb(string source, Options options)
+            => GetPortablePdb(CompileAndGetResult(source, options));
+
+        /// <summary>
+        /// Compiles a program with one method, with a PDB and deterministically, and returns the image and the PDB
+        /// that its CodeView entry refers to. Different names give different PDB ids: the method's sequence point
+        /// is in a document named after it, and the PDB does not record method names.
+        /// </summary>
+        internal static (ImmutableArray<byte> Image, ImmutableArray<byte> Pdb) CompileImageAndPdb(string name)
+        {
+            CompilationResult result = CompileAndGetResult(OneMethodSource(name, $".line 1 '{name}.cs'"), new Options { Debug = true, Deterministic = true });
+            return (Serialize(result), GetPortablePdb(result));
+        }
+
+        /// <summary>Compiles a program with one method without a PDB: the image has no debug directory.</summary>
+        internal static ImmutableArray<byte> CompileImageWithoutPdb(string name)
+            => Compile(OneMethodSource(name, lineDirective: string.Empty), new Options { Deterministic = true });
+
+        private static string OneMethodSource(string methodName, string lineDirective) => $$"""
+            .assembly extern System.Runtime { }
+            .assembly test { }
+            .class public auto ansi beforefieldinit Test
+            {
+                .method public static void {{methodName}}() cil managed
+                {
+                    {{lineDirective}}
+                    ret
+                }
+            }
+            """;
 
         internal static int GetFirstTokenOperand(PEReader pe, MetadataReader reader, string methodName, ILOpcode targetOpcode)
         {

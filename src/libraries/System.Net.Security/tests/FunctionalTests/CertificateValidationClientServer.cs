@@ -57,8 +57,10 @@ namespace System.Net.Security.Tests
             using (server)
             {
                 int count = 0;
+                bool validationCallbackCalled = false;
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
                 clientOptions.TargetHost = "localhost";
+                clientOptions.AllowTlsResume = false;
                 // Force Tls 1.2 to avoid issues with certain OpenSSL versions and Tls 1.3
                 // https://github.com/openssl/openssl/issues/7384
                 clientOptions.EnabledSslProtocols = SslProtocols.Tls12;
@@ -81,6 +83,7 @@ namespace System.Net.Security.Tests
                 serverOptions.ClientCertificateRequired = true;
                 serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
                 {
+                    validationCallbackCalled = true;
                     if (sendClientCertificate)
                     {
                         Assert.NotNull(certificate);
@@ -99,6 +102,8 @@ namespace System.Net.Security.Tests
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions),
                                 server.AuthenticateAsServerAsync(serverOptions));
+
+                Assert.True(validationCallbackCalled);
 
                 // verify that the session is usable with or without client's certificate
                 await TestHelper.PingPong(client, server);

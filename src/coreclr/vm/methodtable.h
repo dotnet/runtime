@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: methodtable.h
-//
 
 #ifndef _METHODTABLE_H_
 #define _METHODTABLE_H_
@@ -26,7 +23,9 @@
 #include "generics.h"
 #include "gcinfotypes.h"
 #include "enum_class_flags.h"
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 /*
  * Forward Declarations
@@ -38,7 +37,6 @@ class FCallMethodDesc;
 class    EEClass;
 class    EnCFieldDesc;
 class FieldDesc;
-class JIT_TrialAlloc;
 class MetaSig;
 class    MethodDesc;
 class    MethodDescChunk;
@@ -298,11 +296,15 @@ typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 
 // Any MethodTable which has static variables has this structure
 struct DynamicStaticsInfo;
+#ifdef FEATURE_MULTITHREADING
 struct ThreadStaticsInfo;
+#endif // FEATURE_MULTITHREADING
 struct GenericsStaticsInfo;
 
 typedef DPTR(DynamicStaticsInfo) PTR_DynamicStaticsInfo;
+#ifdef FEATURE_MULTITHREADING
 typedef DPTR(ThreadStaticsInfo) PTR_ThreadStaticsInfo;
+#endif // FEATURE_MULTITHREADING
 typedef DPTR(GenericsStaticsInfo) PTR_GenericsStaticsInfo;
 
 //
@@ -386,7 +388,9 @@ struct MethodTableAuxiliaryData
     // These pointers make it easier to examine the various statics structures in the debugger
     PTR_DynamicStaticsInfo m_debugOnlyDynamicStatics;
     PTR_GenericsStaticsInfo m_debugOnlyGenericStatics;
+#ifdef FEATURE_MULTITHREADING
     PTR_ThreadStaticsInfo m_debugOnlyThreadStatics;
+#endif // FEATURE_MULTITHREADING
 #endif
 
 public:
@@ -573,7 +577,9 @@ public:
 
     static inline PTR_DynamicStaticsInfo GetDynamicStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
     static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
+#ifdef FEATURE_MULTITHREADING
     static inline PTR_ThreadStaticsInfo GetThreadStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
+#endif // FEATURE_MULTITHREADING
     inline void SetMayHaveOpenInterfacesInInterfaceMap()
     {
         LIMITED_METHOD_CONTRACT;
@@ -693,6 +699,7 @@ struct GenericsStaticsInfo
     return dac_cast<PTR_GenericsStaticsInfo>(dac_cast<TADDR>(pAuxiliaryData) - sizeof(GenericsStaticsInfo));
 }
 
+#ifdef FEATURE_MULTITHREADING
 // And MethodTable with Thread Statics has this structure. NOTE: This structure includes
 // GenericsStatics which may not actually have the m_pFieldDescs filled in if the MethodTable
 // is not actually Generic
@@ -712,6 +719,7 @@ struct ThreadStaticsInfo
 {
     return dac_cast<PTR_ThreadStaticsInfo>(dac_cast<TADDR>(pAuxiliaryData) - sizeof(ThreadStaticsInfo));
 }
+#endif // FEATURE_MULTITHREADING
 
 #ifdef UNIX_AMD64_ABI_ITF
 inline
@@ -977,7 +985,6 @@ class MethodTable
 
     // Special access for setting up String object method table correctly
     friend class ClassLoader;
-    friend class JIT_TrialAlloc;
     friend class Module;
     friend class EEClass;
     friend class MethodTableBuilder;
@@ -1243,7 +1250,9 @@ public:
 
     // Allocate any memory needed for statics, acquire TLSIndex for TLS statics, and check to see if the class can be considered pre-inited, and if so, set the initialized flag
     void EnsureStaticDataAllocated();
+#ifdef FEATURE_MULTITHREADING
     void EnsureTlsIndexAllocated();
+#endif // FEATURE_MULTITHREADING
 
     BOOL IsInitError()
     {
@@ -1324,7 +1333,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded) == 0;
+        return (VolatileLoad(&GetAuxiliaryData()->m_dwFlags) & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded) == 0;
     }
 
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
@@ -1381,7 +1390,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        DWORD dwFlags = GetAuxiliaryData()->m_dwFlags;
+        DWORD dwFlags = VolatileLoad(&GetAuxiliaryData()->m_dwFlags);
 
         if (dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded)
         {
@@ -2147,7 +2156,7 @@ public:
     BOOL HasApproxParent()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasApproxParent) != 0;
+        return (VolatileLoad(&GetAuxiliaryData()->m_dwFlags) & MethodTableAuxiliaryData::enum_flag_HasApproxParent) != 0;
     }
     inline void SetHasExactParent()
     {
@@ -2208,8 +2217,6 @@ public:
     PTR_EEClass GetClassWithPossibleAV();
 
     BOOL ValidateWithPossibleAV();
-
-    BOOL IsClassPointerValid();
 
     static UINT32 GetOffsetOfFlags()
     {
@@ -2648,6 +2655,7 @@ public:
 
     inline PTR_BYTE GetNonGCStaticsBasePointer();
     inline PTR_BYTE GetGCStaticsBasePointer();
+#ifdef FEATURE_MULTITHREADING
 #ifndef DACCESS_COMPILE
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer();
     inline PTR_BYTE GetGCThreadStaticsBasePointer();
@@ -2661,6 +2669,7 @@ public:
     // This is particularly relevant as a problem for profiler developers, but they are given the tools (such as GC events) to be notified of situations where these invariants may not hold
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
     inline PTR_BYTE GetGCThreadStaticsBasePointer(PTR_Thread pThread);
+#endif // FEATURE_MULTITHREADING
 
     inline BOOL IsDynamicStatics()
     {
@@ -4064,12 +4073,14 @@ public:
         return MethodTableAuxiliaryData::GetDynamicStaticsInfo(AuxiliaryData);
     }
 
+#ifdef FEATURE_MULTITHREADING
     PTR_ThreadStaticsInfo GetThreadStaticsInfo()
     {
         PTR_MethodTableAuxiliaryData AuxiliaryData = GetAuxiliaryDataForWrite();
         _ASSERTE(GetNumThreadStaticFields() > 0);
         return MethodTableAuxiliaryData::GetThreadStaticsInfo(AuxiliaryData);
     }
+#endif // FEATURE_MULTITHREADING
 private:
 
     // Optional members.  These are used for fields in the data structure where
@@ -4167,6 +4178,7 @@ template<> struct cdac_data<MethodTable>
     static constexpr size_t NumInterfaces = offsetof(MethodTable, m_wNumInterfaces);
     static constexpr size_t NumVirtuals = offsetof(MethodTable, m_wNumVirtuals);
     static constexpr size_t PerInstInfo = offsetof(MethodTable, m_pPerInstInfo);
+    static constexpr size_t InterfaceMap = offsetof(MethodTable, m_pInterfaceMap);
 };
 
 #ifndef CROSSBITNESS_COMPILE

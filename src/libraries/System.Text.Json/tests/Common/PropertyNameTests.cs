@@ -678,6 +678,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(JsonKnownNamingPolicy.SnakeCaseUpper, @"""MY_TEST_PROPERTY""")]
         [InlineData(JsonKnownNamingPolicy.KebabCaseLower, @"""my-test-property""")]
         [InlineData(JsonKnownNamingPolicy.KebabCaseUpper, @"""MY-TEST-PROPERTY""")]
+        [InlineData(JsonKnownNamingPolicy.PascalCase, @"""MyTestProperty""")]
         public void JsonNamingPolicyAttribute_AllKnownPolicies(JsonKnownNamingPolicy policy, string expectedPropertyName)
         {
             var attribute = new JsonNamingPolicyAttribute(policy);

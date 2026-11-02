@@ -149,12 +149,7 @@ public:
 
     void WriteUnencodedU32(uint32_t x)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
+        WRAPPER_NO_CONTRACT;
 
         for (int i = 0; i < 8; i++)
         {

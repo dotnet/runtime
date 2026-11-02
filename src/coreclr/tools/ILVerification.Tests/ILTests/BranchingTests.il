@@ -1013,4 +1013,69 @@
 
         ret
     }
+
+    // The branch operands below are written as numeric offsets to place the targets outside the method or inside an operand.
+
+    .method static public hidebysig void Branch.ToEndOfMethod_Invalid_BadBranch() cil managed
+    {
+        // IL_0000: br.s +1 (target IL_0003, the end of the method)
+        br.s        1
+        ret
+    }
+
+    .method static public hidebysig void Branch.PastEndOfMethod_Invalid_BadBranch() cil managed
+    {
+        // IL_0000: br +0x100 (target IL_0105)
+        br          0x100
+        ret
+    }
+
+    .method static public hidebysig void Branch.BeforeStartOfMethod_Invalid_BadBranch() cil managed
+    {
+        // IL_0001: br.s -0x10 (target -0x0d)
+        nop
+        br.s        -16
+        ret
+    }
+
+    .method static public hidebysig void BrTrue.PastEndOfMethod_Invalid_BadBranch() cil managed
+    {
+        // IL_0001: brtrue.s +0x10 (target IL_0013)
+        ldc.i4.0
+        brtrue.s    0x10
+        ret
+    }
+
+    .method static public hidebysig void Switch.PastEndOfMethod_Invalid_BadBranch() cil managed
+    {
+        // IL_0001: switch (+0x10) (target IL_001a)
+        ldc.i4.0
+        switch      (0x10)
+        ret
+    }
+
+    .method static public hidebysig void Leave.PastEndOfMethod_Invalid_BadBranch() cil managed
+    {
+        // IL_0000: leave.s +0x10 (target IL_0012)
+        leave.s     0x10
+        ret
+    }
+
+    .method static public hidebysig void Branch.IntoOperand_Invalid_BadJumpTarget() cil managed
+    {
+        // IL_0000: br.s +1 (target IL_0003, inside the operand of the ldc.i4 at IL_0002)
+        br.s        1
+        ldc.i4      42
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Leave.IntoOperand_Invalid_BadJumpTarget() cil managed
+    {
+        // IL_0000: leave.s +1 (target IL_0003, inside the operand of the ldc.i4 at IL_0002)
+        leave.s     1
+        ldc.i4      42
+        pop
+        ret
+    }
 }

@@ -44,7 +44,7 @@ CordbFunction::CordbFunction(CordbModule * m,
     m_argCountCached(0),
     m_fIsStaticCached(FALSE)
 #ifdef FEATURE_CODE_VERSIONING
-    , m_reJitILCodes(1)
+    , m_reJitILCodes()
 #endif // FEATURE_CODE_VERSIONING
 {
     m_methodSigParserCached = SigParser(NULL, 0);

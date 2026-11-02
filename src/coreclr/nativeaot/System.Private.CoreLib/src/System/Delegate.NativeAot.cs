@@ -329,18 +329,26 @@ namespace System
                 unsafe
                 {
                     GenericMethodDescriptor* realTargetData = FunctionPointerOps.ConvertToGenericDescriptor(ldftnResult);
+#if TARGET_WASM
+                    functionPointer = realTargetData->MethodFunctionPointer;
+#else
                     functionPointer = RuntimeAugments.GetCodeTarget(realTargetData->MethodFunctionPointer);
+#endif
                 }
             }
             else
             {
+#if TARGET_WASM
+                functionPointer = ldftnResult;
+#else
                 nint unboxedPointer = RuntimeAugments.GetCodeTarget(ldftnResult);
                 if (unboxedPointer == ldftnResult)
                     unboxedPointer = RuntimeAugments.GetTargetOfUnboxingAndInstantiatingStub(ldftnResult);
 
                 functionPointer = unboxedPointer != 0 ? unboxedPointer : ldftnResult;
+#endif
             }
-            return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromStartAddress(functionPointer);
+            return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromFunctionPointer(functionPointer);
         }
 
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) =>

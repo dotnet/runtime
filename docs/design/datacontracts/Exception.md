@@ -46,7 +46,7 @@ IEnumerable<ExceptionStackFrameInfo> GetExceptionStackFrames(TargetPointer excep
 | `Exception` | `_watsonBuckets` | `pointer` | Pointer to exception Watson buckets |
 | `Exception` | `_xcode` | `int32` | Native exception code captured at throw |
 | `ExceptionInfo` | `PreviousNestedInfo` | `pointer` | Pointer to previous nested exception info |
-| `ExceptionInfo` | `ThrownObject` | `pointer` | Handle to the thrown exception object |
+| `ExceptionInfo` | `ThrownObject` | `pointer` | The thrown exception object (an object reference, not a handle) |
 | `StackTraceArrayHeader` | *(type size)* | `uint32` | Size of the data descriptor layout |
 | `StackTraceArrayHeader` | `Size` | `uint32` | Number of StackTraceElement entries that follow this header in the I1Array payload |
 | `StackTraceElement` | *(type size)* | `uint32` | Size in bytes of each element in the exception stack trace array |
@@ -79,11 +79,9 @@ _None._
 TargetPointer GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo, out TargetPointer thrownObjectHandle)
 {
     nextNestedExceptionInfo = target.ReadPointer(exceptionInfoAddr + /* ExceptionInfo::PreviousNestedInfo offset*/);
-    thrownObjectHandle = target.ReadPointer(exceptionInfoAddr + /* ExceptionInfo::ThrownObject offset */);
-    if (thrownObjectHandle == TargetPointer.Null)
-    {
-        return TargetPointer.Null;
-    }
+    // ExceptionInfo::ThrownObject (ExInfo::m_exception) holds the exception object itself, not a handle.
+    // The address of the field serves as a pseudo-handle: reading through it yields the object.
+    thrownObjectHandle = exceptionInfoAddr + /* ExceptionInfo::ThrownObject offset */;
     return target.ReadPointer(thrownObjectHandle);
 }
 

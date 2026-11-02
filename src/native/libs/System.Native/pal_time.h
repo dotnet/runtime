@@ -19,6 +19,12 @@ typedef struct ProcessCpuInformation
     uint64_t lastRecordedUserTime;
 } ProcessCpuInformation;
 
+/**
+ * Delays execution for a nonnegative number of milliseconds, retrying native signal interruptions.
+ *
+ * Returns a PAL error or Error_SUCCESS.
+ */
+PALEXPORT int32_t SystemNative_ThreadSleep(int32_t timeoutMilliseconds);
 
 /**
  * Sets the last access and last modified time of a file

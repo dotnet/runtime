@@ -15,7 +15,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
 namespace ILAssembler.Tests
 {
@@ -95,6 +94,27 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
+        [Fact]
+        public void Typedef_CustomAttributeAliasNotFound_ReportsError()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    MissingAttributeAlias
+                }
+                """;
+
+            Diagnostic error = Assert.Single(
+                DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options()));
+
+            Assert.Equal(DiagnosticIds.TypedefNotFound, error.Id);
+            Assert.Equal("Typedef 'MissingAttributeAlias' not found", error.Message);
+            Assert.Equal(
+                source.IndexOf("MissingAttributeAlias", StringComparison.Ordinal),
+                error.Location.Span.Start);
+        }
+
 
         [Fact]
         public void Typedef_ResolvedInTypeContext()
@@ -141,6 +161,26 @@ namespace ILAssembler.Tests
             var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
             // Typedef type blob resolution should compile
             Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void Typedef_TypeBlob_ResolvesAsNativeMarshalType()
+        {
+            string source = """
+                .assembly test { }
+                .typedef int32 as NativeTypeBlob
+                .class public auto ansi Test
+                {
+                    .field public marshal(NativeTypeBlob) int32 Value
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            var field = reader.GetFieldDefinition(Assert.Single(type.GetFields()));
+
+            Assert.Equal([0x08], reader.GetBlobBytes(field.GetMarshallingDescriptor()));
         }
 
         [Fact]

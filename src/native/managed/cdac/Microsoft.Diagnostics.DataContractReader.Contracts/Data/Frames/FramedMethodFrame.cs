@@ -8,4 +8,5 @@ internal partial class FramedMethodFrame : IData<FramedMethodFrame>
 {
     [Field] public partial TargetPointer TransitionBlockPtr { get; }
     [Field] public partial TargetPointer MethodDescPtr { get; }
+    [Field] public partial TargetPointer? CachedGCRefMap { get; }
 }

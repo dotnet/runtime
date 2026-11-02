@@ -554,16 +554,17 @@ void Compiler::lvaAllocWasmStackPtr()
 //
 // Notes:
 //   The managed calling convention for Wasm passes a pointer to the portable entry point as the last arg.
-//   This arg is currently unused in the JIT, and we may not need to model it.
+//   Ordinary managed methods store this argument as their unwindable frame identity.
 //
 void Compiler::lvaInitWasmPortableEntryPtr(unsigned* curVarNum)
 {
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
     {
-        LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
-        varDsc->lvType    = TYP_I_IMPL;
-        varDsc->lvIsParam = 1;
-        varDsc->lvOnFrame = true;
+        lvaWasmPortableEntryPointArg = *curVarNum;
+        LclVarDsc* varDsc            = lvaGetDesc(*curVarNum);
+        varDsc->lvType               = TYP_I_IMPL;
+        varDsc->lvIsParam            = 1;
+        varDsc->lvOnFrame            = true;
         (*curVarNum)++;
     }
 }

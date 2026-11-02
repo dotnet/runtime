@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 
@@ -9,25 +8,6 @@ namespace System.Security.Cryptography
 {
     internal static class NetStandardShims
     {
-#if !NET
-        extension<T>(ReadOnlySpan<T> source) where T : IEquatable<T>?
-        {
-            internal int IndexOfAnyExcept(T value)
-            {
-                for (int i = 0; i < source.Length; i++)
-                {
-                    if (!EqualityComparer<T>.Default.Equals(source[i], value))
-                    {
-                        return i;
-                    }
-                }
-
-                return -1;
-            }
-        }
-
-#endif
-
         internal static void ReadExactly(this Stream stream, Span<byte> buffer) =>
             ReadAtLeast(stream, buffer, buffer.Length, throwOnEndOfStream: true);
 

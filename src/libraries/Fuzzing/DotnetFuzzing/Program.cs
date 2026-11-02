@@ -225,7 +225,7 @@ public static class Program
                 continue;
             }
 
-            yield return (path, null);
+            yield return (path, fuzzer.TargetAssemblyPrefixes.Length > 0 ? string.Join(' ', fuzzer.TargetAssemblyPrefixes) : null);
         }
 
         if (instrumentCoreLib)

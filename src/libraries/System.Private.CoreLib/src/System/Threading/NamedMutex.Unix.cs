@@ -84,14 +84,14 @@ namespace System.Threading
         // Until Rosetta 2 is removed, we need to use the non-PThread mutexes on Apple platforms.
         // On FreeBSD, pthread process-shared robust mutexes cannot be placed in shared memory mapped
         // independently by the processes involved. See https://github.com/dotnet/runtime/issues/10519.
-        // On OpenBSD, cross process mutexes are not supported in the pthread implementation. See https://github.com/dotnet/runtime/pull/125089.
+        // On OpenBSD and OpenHarmony, cross process mutexes are not supported in the pthread implementation.
         // On Haiku, robust mutexes are WIP. See https://github.com/dotnet/runtime/pull/126701#issuecomment-4334338213.
         // On Linux arm and arm64, we do not use PThread mutex-backed named mutexes for compatibility with previous .NET versions.
         private static bool UsePThreadMutexes =>
 #if (TARGET_ARM || TARGET_ARM64)
             !OperatingSystem.IsLinux() &&
 #endif
-            !OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD() && !OperatingSystem.IsOpenBSD() && !OperatingSystem.IsHaiku();
+            !OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD() && !OperatingSystem.IsOpenBSD() && !OperatingSystem.IsHaiku() && !OperatingSystem.IsOpenHarmony();
 
         private readonly SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader = header;
         protected nuint _lockCount;
@@ -209,7 +209,8 @@ namespace System.Threading
                     createIfNotExist,
                     acquireLockIfCreated,
                     out created,
-                    out AutoReleaseFileLock creationDeletionLockFileScope);
+                    out AutoReleaseFileLock creationDeletionLockFileScope,
+                    out SafeFileHandle runtimeDirectoryHandle);
 
                 if (processDataHeader is null)
                 {
@@ -231,7 +232,10 @@ namespace System.Threading
                         }
                         else
                         {
-                            processDataHeader._processData = new NamedMutexProcessDataNoPThreads(processDataHeader, created);
+                            processDataHeader._processData = new NamedMutexProcessDataNoPThreads(
+                                processDataHeader,
+                                runtimeDirectoryHandle,
+                                created);
                         }
 
                         if (created && acquireLockIfCreated)
@@ -419,34 +423,46 @@ namespace System.Threading
     internal sealed unsafe class NamedMutexProcessDataNoPThreads : NamedMutexProcessDataBase
     {
         private const string SharedMemoryLockFilesDirectoryName = "lockfiles";
+
         private readonly Mutex _processLevelMutex = new Mutex(initiallyOwned: false);
         private readonly SafeFileHandle _sharedLockFileHandle;
 
         private readonly SharedData* _sharedData;
 
-        public NamedMutexProcessDataNoPThreads(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader, bool created) : base(processDataHeader)
+        public NamedMutexProcessDataNoPThreads(
+            SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader,
+            SafeFileHandle runtimeDirectoryHandle,
+            bool created) : base(processDataHeader)
         {
             _sharedData = (SharedData*)SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader);
-            string lockFileDirectory = Path.Combine(
-                SharedMemoryHelpers.SharedFilesPath,
-                Id.GetRuntimeTempDirectoryName(),
-                SharedMemoryLockFilesDirectoryName
-            );
+            string lockFilesDirectoryPath = Path.Combine(
+                SharedMemoryHelpers.GetSharedFilesSystemPath(Id),
+                SharedMemoryHelpers.GetRuntimeDirectoryName(Id),
+                SharedMemoryLockFilesDirectoryName);
+            using SafeFileHandle lockFilesDirectoryHandle = SharedMemoryHelpers.EnsureDirectoryExists(
+                runtimeDirectoryHandle,
+                SharedMemoryLockFilesDirectoryName,
+                lockFilesDirectoryPath,
+                Id,
+                created);
 
-            if (created)
-            {
-                SharedMemoryHelpers.EnsureDirectoryExists(lockFileDirectory, Id, isGlobalLockAcquired: true);
-            }
+            string sessionDirectoryName = SharedMemoryHelpers.GetSessionDirectoryName(Id);
+            using SafeFileHandle sessionDirectoryHandle = lockFilesDirectoryHandle.IsInvalid
+                ? new SafeFileHandle()
+                : SharedMemoryHelpers.EnsureDirectoryExists(
+                    lockFilesDirectoryHandle,
+                    sessionDirectoryName,
+                    Path.Combine(lockFilesDirectoryPath, sessionDirectoryName),
+                    Id,
+                    created);
 
-            string sessionDirectory = Path.Combine(lockFileDirectory, Id.GetSessionDirectoryName());
-
-            if (created)
-            {
-                SharedMemoryHelpers.EnsureDirectoryExists(sessionDirectory, Id, isGlobalLockAcquired: true);
-            }
-
-            string lockFilePath = Path.Combine(sessionDirectory, Id.Name);
-            _sharedLockFileHandle = SharedMemoryHelpers.CreateOrOpenFile(lockFilePath, Id, created, out _);
+            _sharedLockFileHandle = SharedMemoryHelpers.CreateOrOpenFile(
+                sessionDirectoryHandle,
+                Id.Name,
+                Path.Combine(lockFilesDirectoryPath, sessionDirectoryName, Id.Name),
+                Id,
+                created,
+                out _);
         }
 
         protected override bool IsLockOwnedByThreadInThisProcess(Thread thread)

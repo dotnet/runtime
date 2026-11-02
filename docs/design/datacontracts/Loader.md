@@ -169,8 +169,8 @@ enum ClrModifiableAssemblies : uint
 | `CGrowableSymbolStream` | `Buffer` | `pointer` | Pointer to the in-memory symbol stream buffer |
 | `CGrowableSymbolStream` | `Size` | `uint32` | Size of the symbol stream buffer in bytes |
 | `DynamicILBlobTable` | *(type size)* | `uint32` | Size in bytes of each table entry |
-| `DynamicILBlobTable` | `EntryIL` | `pointer` | Offset of the IL pointer within each dynamic IL table entry |
-| `DynamicILBlobTable` | `EntryMethodToken` | `uint32` | Offset of the method token within each dynamic IL table entry |
+| `DynamicILBlobTable` | `EntryIL` | `pointer` | Offset of the IL-body or RVA-field-data pointer within each entry |
+| `DynamicILBlobTable` | `EntryMethodToken` | `uint32` | Offset of the full MethodDef or FieldDef token within each entry |
 | `DynamicILBlobTable` | `Table` | `pointer` | Address of the SHash table |
 | `DynamicILBlobTable` | `TableSize` | `uint32` | Number of entries in the table |
 | `EEConfig` | `ModifiableAssemblies` | `uint32` | Edit and Continue configuration represented by `ClrModifiableAssemblies` |
@@ -199,7 +199,7 @@ enum ClrModifiableAssemblies : uint
 | `Module` | `Assembly` | `pointer` | Pointer to the containing assembly |
 | `Module` | `AvailableTypeParams` | `pointer` | Pointer to the available type-parameter hash table |
 | `Module` | `Base` | `pointer` | Base address of the module's loaded image |
-| `Module` | `DynamicILBlobTable` | `pointer` | Pointer to the table of dynamically supplied IL bodies |
+| `Module` | `DynamicILBlobTable` | `pointer` | Pointer to the token-keyed table of dynamically supplied IL bodies and RVA field data |
 | `Module` | `FieldDefToDescMap` | `pointer` | Pointer to the field-definition-to-field-descriptor lookup map |
 | `Module` | `FileName` | `pointer` | Pointer to the null-terminated UTF-16 module file name |
 | `Module` | `Flags` | `uint32` | Module state and capability flags |
@@ -309,6 +309,12 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
 
     foreach (TargetPointer pAssembly in arrayList.Elements)
     {
+        if (pAssembly == TargetPointer.Null)
+        {
+            // an unloaded assembly leaves an empty slot in the list, skip
+            continue;
+        }
+
         Assembly assembly = // read Assembly object at pAssembly
 
         // The Assemblies map 1:1 to Modules, however we must filter them based on the iterationFlags before returning.
@@ -326,7 +332,7 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
         }
 
         if ((assembly.NotifyFlags & ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED) != 0 &&
-            !iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
+            iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
         {
             // The assembly has reached the state at which we would notify profilers,
             // and we're supposed to include such assemblies in the enumeration. So
@@ -372,7 +378,7 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
             }
 
             Module module = // read Module at assembly.Module
-            if (((ModuleFlags)module.Flags).HasFlag(ModuleFlags.Tenured))
+            if (!((ModuleFlags)module.Flags).HasFlag(ModuleFlags.Tenured))
             {
                 // Un-tenured collectible assemblies should not be returned. (This can only happen in a brief
                 // window during collectible assembly creation.

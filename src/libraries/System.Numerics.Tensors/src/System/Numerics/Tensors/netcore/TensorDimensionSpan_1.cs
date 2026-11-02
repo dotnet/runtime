@@ -18,16 +18,24 @@ namespace System.Numerics.Tensors
 
         internal TensorDimensionSpan(TensorSpan<T> tensor, int dimension)
         {
-            if ((uint)dimension >= tensor.Rank)
+            int rank = tensor.Rank;
+            if (rank == 0)
+            {
+                tensor = new TensorSpan<T>(ref tensor._reference, TensorShape.Normalize(tensor._shape));
+                rank = tensor.Rank;
+            }
+
+            if ((uint)dimension >= rank)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException();
             }
             dimension += 1;
 
+            ReadOnlySpan<nint> lengths = tensor.Lengths;
             _tensor = tensor;
-            _length = TensorShape.GetProduct(tensor.Lengths[..dimension]);
+            _length = TensorShape.GetProduct(lengths[..dimension]);
             _dimension = dimension;
-            _sliceShape = TensorShape.Create((dimension != tensor.Rank) ? tensor.Lengths[dimension..] : [1], tensor.Strides[dimension..], tensor.IsPinned);
+            _sliceShape = TensorShape.Create((dimension != rank) ? lengths[dimension..] : [1], tensor.Strides[dimension..], tensor.IsPinned);
         }
 
         /// <summary>Gets <c>true</c> if the slices that exist within the tracked dimension are dense; otherwise, <c>false</c>.</summary>

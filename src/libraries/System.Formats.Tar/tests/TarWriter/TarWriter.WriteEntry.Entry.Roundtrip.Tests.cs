@@ -288,5 +288,39 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(writeEntry.ModificationTime, readEntry.ModificationTime);
             Assert.Equal(writeEntry.LinkName, readEntry.LinkName);
         }
+
+        [Theory]
+        [InlineData(TarEntryFormat.Gnu, int.MaxValue)]
+        [InlineData(TarEntryFormat.Gnu, unchecked((int)0xB65A6538u))]
+        [InlineData(TarEntryFormat.Gnu, -1)]
+        [InlineData(TarEntryFormat.Pax, int.MaxValue)]
+        [InlineData(TarEntryFormat.Pax, unchecked((int)0xB65A6538u))]
+        [InlineData(TarEntryFormat.Pax, -1)]
+        public void UidGid_LargerThanInt32MaxValue_Roundtrips(TarEntryFormat format, int id)
+        {
+            TarEntry writeEntry = InvokeTarEntryCreationConstructor(format, TarEntryType.Directory, "dir");
+            writeEntry.Uid = id;
+            writeEntry.Gid = id;
+
+            using MemoryStream ms = new MemoryStream();
+            using (TarWriter writer = new TarWriter(ms, leaveOpen: true))
+            {
+                writer.WriteEntry(writeEntry);
+            }
+
+            ms.Position = 0;
+            using TarReader reader = new TarReader(ms);
+            TarEntry readEntry = reader.GetNextEntry();
+            Assert.NotNull(readEntry);
+            Assert.Equal(id, readEntry.Uid);
+            Assert.Equal(id, readEntry.Gid);
+
+            if (readEntry is PaxTarEntry paxEntry && id < 0)
+            {
+                string expected = unchecked((uint)id).ToString();
+                Assert.Equal(expected, paxEntry.ExtendedAttributes["uid"]);
+                Assert.Equal(expected, paxEntry.ExtendedAttributes["gid"]);
+            }
+        }
     }
 }

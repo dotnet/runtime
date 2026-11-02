@@ -35,9 +35,9 @@ typedef void (*MonovmRuntimeConfigArgumentsCleanup)          (MonovmRuntimeConfi
 
 typedef struct {
 	uint32_t assembly_count;
-	char **basenames; /* Foo.dll */
+	char **basenames; /* Foo.dll for path-based entries; Foo for host-resolved entries */
 	uint32_t *basename_lens;
-	char **assembly_filepaths; /* /blah/blah/blah/Foo.dll */
+	char **assembly_filepaths; /* /blah/blah/blah/Foo.dll; NULL for host-resolved entries */
 } MonoCoreTrustedPlatformAssemblies;
 
 typedef struct {

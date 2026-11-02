@@ -49,12 +49,6 @@ namespace Internal.Runtime
             {
                 return _standardEntryCount;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                _standardEntryCount = checked((ushort)value);
-            }
-#endif
         }
 
         public uint NumDefaultEntries
@@ -63,12 +57,6 @@ namespace Internal.Runtime
             {
                 return _defaultEntryCount;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                _defaultEntryCount = checked((ushort)value);
-            }
-#endif
         }
 
         public uint NumStandardStaticEntries
@@ -77,12 +65,6 @@ namespace Internal.Runtime
             {
                 return _standardStaticEntryCount;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                _standardStaticEntryCount = checked((ushort)value);
-            }
-#endif
         }
 
         public uint NumDefaultStaticEntries
@@ -91,12 +73,6 @@ namespace Internal.Runtime
             {
                 return _defaultStaticEntryCount;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                _defaultStaticEntryCount = checked((ushort)value);
-            }
-#endif
         }
 
         public int Size
@@ -182,21 +158,6 @@ namespace Internal.Runtime
                 // return (_uFlags & (uint)EETypeFlags.HasComponentSizeFlag) != 0;
                 return (int)_uFlags < 0;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                if (value)
-                {
-                    Debug.Assert(ExtendedFlags == 0);
-                    _uFlags |= (uint)EETypeFlags.HasComponentSizeFlag;
-                }
-                else
-                {
-                    // we should not be un-setting this bit.
-                    Debug.Assert(!HasComponentSize);
-                }
-            }
-#endif
         }
 
         internal ushort ComponentSize
@@ -209,7 +170,7 @@ namespace Internal.Runtime
             set
             {
                 Debug.Assert(HasComponentSize);
-                _uFlags |= (uint)value;
+                _uFlags = (_uFlags & ~(uint)ushort.MaxValue) | value;
             }
 #endif
         }
@@ -221,13 +182,6 @@ namespace Internal.Runtime
                 Debug.Assert(IsGenericTypeDefinition);
                 return (ushort)_uBaseSize;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                Debug.Assert(IsGenericTypeDefinition);
-                _uBaseSize = value;
-            }
-#endif
         }
 
         internal uint Flags
@@ -251,14 +205,6 @@ namespace Internal.Runtime
             {
                 return HasComponentSize ? (ushort)0 : (ushort)_uFlags;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                Debug.Assert(!HasComponentSize);
-                Debug.Assert(ExtendedFlags == 0);
-                _uFlags |= (uint)value;
-            }
-#endif
         }
 
         internal uint RawBaseSize
@@ -282,12 +228,6 @@ namespace Internal.Runtime
                 Debug.Assert(IsCanonical || IsArray);
                 return _uBaseSize;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                _uBaseSize = value;
-            }
-#endif
         }
 
         internal ushort NumVtableSlots
@@ -643,13 +583,6 @@ namespace Internal.Runtime
                 Debug.Assert(IsFunctionPointer);
                 return _uBaseSize & ~FunctionPointerFlags.FlagsMask;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                Debug.Assert(IsFunctionPointer);
-                _uBaseSize = value | (_uBaseSize & FunctionPointerFlags.FlagsMask);
-            }
-#endif
         }
 
         internal bool IsUnmanagedFunctionPointer
@@ -659,16 +592,6 @@ namespace Internal.Runtime
                 Debug.Assert(IsFunctionPointer);
                 return (_uBaseSize & FunctionPointerFlags.IsUnmanaged) != 0;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                Debug.Assert(IsFunctionPointer);
-                if (value)
-                    _uBaseSize |= FunctionPointerFlags.IsUnmanaged;
-                else
-                    _uBaseSize &= ~FunctionPointerFlags.IsUnmanaged;
-            }
-#endif
         }
 
         internal MethodTableList FunctionPointerParameters

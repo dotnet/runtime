@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Test.Cryptography;
@@ -310,8 +311,21 @@ namespace System.Formats.Cbor.Tests
             {
                 "bf01ff", // indefinite-length map key missing a value
                 "daffffffffff", // tag followed by break byte
+                "fc", // reserved additional information in major type 7
+                "fd",
+                "fe",
+                "81fc", // reserved initial byte in an array
+                "a101fd", // reserved initial byte as a map value
+                "c1fe", // tag followed by a reserved initial byte
             };
 
         public static string[] InvalidCborValues => TruncatedCborValues.Concat(MalformedCborValues).ToArray();
+
+        public static IEnumerable<object[]> ReservedSimpleValueInputs =>
+            from mode in new[] { CborConformanceMode.Lax, CborConformanceMode.Strict, CborConformanceMode.Canonical, CborConformanceMode.Ctap2Canonical }
+            from isFinalBlock in new[] { true, false }
+            where isFinalBlock || mode == CborConformanceMode.Lax
+            from hexEncoding in new[] { "fc", "fd", "fe" }
+            select new object[] { mode, isFinalBlock, hexEncoding };
     }
 }

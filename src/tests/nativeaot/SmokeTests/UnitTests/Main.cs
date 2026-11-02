@@ -4,11 +4,18 @@
 using System;
 using System.Runtime.CompilerServices;
 
-bool success = RunTest(BasicThreading.Run);
+bool success = true;
+if (RuntimeFeature.IsMultithreadingSupported)
+{
+    success &= RunTest(BasicThreading.Run);
+}
 success &= RunTest(Delegates.Run);
 success &= RunTest(Generics.Run);
 success &= RunTest(Interfaces.Run);
-success &= RunTest(Threading.Run);
+if (RuntimeFeature.IsMultithreadingSupported)
+{
+    success &= RunTest(Threading.Run);
+}
 success &= RunTest(Devirtualization.Run);
 success &= RunTest(StackTraces.Run);
 success &= RunTest(Ordering.Run);

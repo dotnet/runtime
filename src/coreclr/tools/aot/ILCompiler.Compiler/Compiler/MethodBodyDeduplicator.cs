@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 using ILCompiler.DependencyAnalysis;
 
 using Internal.IL.Stubs;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -50,7 +52,7 @@ namespace ILCompiler
                 if (!factory.GetSymbolAlternateName(body, out _).IsNull)
                     continue;
 
-                var key = new MethodInternKey(body, factory);
+                var key = new MethodInternKey(body, factory, previousSymbolRemapping);
                 if (methodHash.TryGetValue(key, out MethodInternKey found))
                 {
                     symbolRemapping.TryAdd(body, found.Method);
@@ -69,12 +71,41 @@ namespace ILCompiler
             public IMethodBodyNode Method { get; }
             public int HashCode { get; }
 
-            public MethodInternKey(IMethodBodyNode node, NodeFactory factory)
+            public MethodInternKey(IMethodBodyNode node, NodeFactory factory, Dictionary<ISymbolNode, ISymbolNode> interner)
             {
                 ObjectNode.ObjectData data = ((ObjectNode)node).GetData(factory, relocsOnly: false);
 
                 var hashCode = default(HashCode);
                 hashCode.AddBytes(data.Data);
+
+                if (factory.Target.IsWasm)
+                    hashCode.Add(WasmLowering.GetSignature(node.Method).FuncType);
+
+                // Hash relocations consistently with MethodInternComparer.AreSame so that bodies that only differ
+                // in their relocation targets (e.g. instantiations over different struct state machines)
+                // don't all end up in the same bucket.
+                foreach (Relocation reloc in data.Relocs)
+                {
+                    hashCode.Add((int)reloc.RelocType);
+                    hashCode.Add(reloc.Offset);
+
+                    ISymbolNode target = reloc.Target;
+                    if (target is MethodReadOnlyDataNode rodata)
+                    {
+                        // AreSame considers read-only data nodes with the same contents equal
+                        hashCode.AddBytes(rodata.GetData(factory, relocsOnly: false).Data);
+                    }
+                    else
+                    {
+                        // AreSame considers targets equal if one got interned into the other. Interned
+                        // targets are never interning targets themselves, so hashing the target this
+                        // maps to is consistent with that.
+                        if (interner != null && interner.TryGetValue(target, out ISymbolNode internedTarget))
+                            target = internedTarget;
+
+                        hashCode.Add(RuntimeHelpers.GetHashCode(target));
+                    }
+                }
 
                 var nodeWithCodeInfo = (INodeWithCodeInfo)node;
 
@@ -154,6 +185,11 @@ namespace ILCompiler
 
                 if (_genericsOnly
                     && a.Method.Method.GetTypicalMethodDefinition() != b.Method.Method.GetTypicalMethodDefinition())
+                    return false;
+
+                // Identical WASM bodies can still have different types when some parameters are unused.
+                if (_factory.Target.IsWasm
+                    && !WasmLowering.GetSignature(a.Method.Method).FuncType.Equals(WasmLowering.GetSignature(b.Method.Method).FuncType))
                     return false;
 
                 ObjectNode.ObjectData o1data = ((ObjectNode)a.Method).GetData(_factory, relocsOnly: false);

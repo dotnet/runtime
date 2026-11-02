@@ -561,97 +561,13 @@ ErrExit:
 
 
 
-//*****************************************************************************
-// find a token in the tokenmap.
-//*****************************************************************************
-MDTOKENMAP::~MDTOKENMAP()
-{
-    if (m_pMap)
-        m_pMap->Release();
-} // MDTOKENMAP::~MDTOKENMAP()
-
-HRESULT MDTOKENMAP::Init(
-    IUnknown    *pImport)               // The import that this map is for.
-{
-    HRESULT     hr;                     // A result.
-    IMetaDataTables *pITables=0;        // Table information.
-    ULONG       cRows;                  // Count of rows in a table.
-    ULONG       cTotal;                 // Running total of rows in db.
-    TOKENREC    *pRec;                  // A TOKENREC record.
-    mdToken     tkTable;                // Token kind for a table.
-
-    hr = pImport->QueryInterface(IID_IMetaDataTables, (void**)&pITables);
-    if (hr == S_OK)
-    {
-        // Determine the size of each table.
-        cTotal = 0;
-        for (ULONG ixTbl=0; ixTbl<TBL_COUNT; ++ixTbl)
-        {
-            // Where does this table's data start.
-            m_TableOffset[ixTbl] = cTotal;
-            // See if this table has tokens.
-            tkTable = CMiniMdRW::GetTokenForTable(ixTbl);
-            if (tkTable == (ULONG) -1)
-            {
-                // It doesn't have tokens, so we won't see any tokens for the table.
-            }
-            else
-            {   // It has tokens, so we may see a token for every row.
-                IfFailGo(pITables->GetTableInfo(ixTbl, 0, &cRows, 0,0,0));
-                // Safe: cTotal += cRows
-                if (!ClrSafeInt<ULONG>::addition(cTotal, cRows, cTotal))
-                {
-                    IfFailGo(COR_E_OVERFLOW);
-                }
-            }
-        }
-        m_TableOffset[TBL_COUNT] = cTotal;
-        m_iCountIndexed = cTotal;
-        // Attempt to allocate space for all of the possible remaps.
-        if (!AllocateBlock(cTotal))
-            IfFailGo(E_OUTOFMEMORY);
-        // Note that no sorts are needed.
-        m_sortKind = Indexed;
-        // Initialize entries to "not found".
-        for (ULONG i=0; i<cTotal; ++i)
-        {
-            pRec = Get(i);
-            pRec->SetEmpty();
-        }
-    }
-#if defined(_DEBUG)
-    if (SUCCEEDED(pImport->QueryInterface(IID_IMetaDataImport, (void**)&m_pImport)))
-    {
-        // Ok, here's a pretty nasty workaround. We're going to make a big assumption here
-        // that we're owned by the pImport, and so we don't need to keep a refcount
-        // on the pImport object.
-        //
-        // If we did, we'd create a circular reference and neither this object nor
-        // the RegMeta would be freed.
-        m_pImport->Release();
-
-    }
-
-
-
-#endif
-
-ErrExit:
-    if (pITables)
-        pITables->Release();
-    return hr;
-} // HRESULT MDTOKENMAP::Init()
-
+#ifdef FEATURE_METADATA_PERSISTENCE
 HRESULT MDTOKENMAP::EmptyMap()
 {
-    int nCount = Count();
-    for (int i=0; i<nCount; ++i)
-    {
-        Get(i)->SetEmpty();
-    }
-
+    Clear();
+    m_iCountSorted = 0;
     return S_OK;
-}// HRESULT MDTOKENMAP::Clear()
+}
 
 
 //*****************************************************************************
@@ -664,275 +580,29 @@ bool MDTOKENMAP::Find(
     int         lo,mid,hi;              // binary search indices.
     TOKENREC    *pRec = NULL;
 
-    if (m_sortKind == Indexed && TypeFromToken(tkFind) != mdtString)
-    {
-        // Get the entry.
-        ULONG ixTbl = CMiniMdRW::GetTableForToken(tkFind);
-        if(ixTbl == (ULONG) -1)
-            return false;
-        ULONG iRid = RidFromToken(tkFind);
-        if((m_TableOffset[ixTbl] + iRid) > m_TableOffset[ixTbl+1])
-            return false;
-        pRec = Get(m_TableOffset[ixTbl] + iRid - 1);
-        // See if it has been set.
-        if (pRec->IsEmpty())
-            return false;
-        // Verify that it is what we think it is.
-        _ASSERTE(pRec->m_tkFrom == tkFind);
-        *ppRec = pRec;
-        return true;
-    }
-    else
-    {   // Shouldn't be any unsorted records, and table must be sorted in proper ordering.
-        _ASSERTE( m_iCountTotal == m_iCountSorted &&
-            (m_sortKind == SortByFromToken || m_sortKind == Indexed) );
-        _ASSERTE( (m_iCountIndexed + m_iCountTotal) == (ULONG)Count() );
+    _ASSERTE(m_iCountSorted == (ULONG)Count());
 
-        // Start with entire table.
-        lo = m_iCountIndexed;
-        hi = Count() - 1;
-
-        // While there are rows in the range...
-        while (lo <= hi)
-        {   // Look at the one in the middle.
-            mid = (lo + hi) / 2;
-
-            pRec = Get(mid);
-
-            // If equal to the target, done.
-            if (tkFind == pRec->m_tkFrom)
-            {
-                *ppRec = Get(mid);
-                return true;
-            }
-
-            // If middle item is too small, search the top half.
-            if (pRec->m_tkFrom < tkFind)
-                lo = mid + 1;
-            else // but if middle is to big, search bottom half.
-                hi = mid - 1;
-        }
-    }
-
-    // Didn't find anything that matched.
-    return false;
-} // bool MDTOKENMAP::Find()
-
-
-
-//*****************************************************************************
-// remap the token
-//*****************************************************************************
-HRESULT MDTOKENMAP::Remap(
-    mdToken     tkFrom,
-    mdToken     *ptkTo)
-{
-    HRESULT     hr = NOERROR;
-    TOKENREC    *pRec;
-
-    // Remap nil to same thing (helps because System.Object has no base class.)
-    if (IsNilToken(tkFrom))
-    {
-        *ptkTo = tkFrom;
-        return hr;
-    }
-
-    if ( Find(tkFrom, &pRec) )
-    {
-        *ptkTo = pRec->m_tkTo;
-    }
-    else
-    {
-        _ASSERTE( !" Bad lookup map!");
-        hr = META_E_BADMETADATA;
-    }
-    return hr;
-} // HRESULT MDTOKENMAP::Remap()
-
-
-
-//*****************************************************************************
-// find a token in the tokenmap.
-//*****************************************************************************
-HRESULT MDTOKENMAP::InsertNotFound(
-    mdToken     tkFind,
-    bool        fDuplicate,
-    mdToken     tkTo,
-    TOKENREC    **ppRec)
-{
-    HRESULT     hr = NOERROR;
-    int         lo, mid, hi;                // binary search indices.
-    TOKENREC    *pRec;
-
-    // If possible, validate the input.
-    _ASSERTE(!m_pImport || m_pImport->IsValidToken(tkFind));
-
-    if (m_sortKind == Indexed && TypeFromToken(tkFind) != mdtString)
-    {
-        // Get the entry.
-        ULONG ixTbl = CMiniMdRW::GetTableForToken(tkFind);
-        _ASSERTE(ixTbl != (ULONG) -1);
-        ULONG iRid = RidFromToken(tkFind);
-        _ASSERTE((m_TableOffset[ixTbl] + iRid) <= m_TableOffset[ixTbl+1]);
-        pRec = Get(m_TableOffset[ixTbl] + iRid - 1);
-        // See if it has been set.
-        if (!pRec->IsEmpty())
-        {   // Verify that it is what we think it is.
-            _ASSERTE(pRec->m_tkFrom == tkFind);
-        }
-        // Store the data.
-        pRec->m_tkFrom = tkFind;
-        pRec->m_isDuplicate = fDuplicate;
-        pRec->m_tkTo = tkTo;
-        pRec->m_isFoundInImport = false;
-        // Return the result.
-        *ppRec = pRec;
-    }
-    else
-    {   // Shouldn't be any unsorted records, and table must be sorted in proper ordering.
-        _ASSERTE( m_iCountTotal == m_iCountSorted &&
-            (m_sortKind == SortByFromToken || m_sortKind == Indexed) );
-
-        if ((Count() - m_iCountIndexed) > 0)
-        {
-            // Start with entire table.
-            lo = m_iCountIndexed;
-            hi = Count() - 1;
-
-            // While there are rows in the range...
-            while (lo < hi)
-            {   // Look at the one in the middle.
-                mid = (lo + hi) / 2;
-
-                pRec = Get(mid);
-
-                // If equal to the target, done.
-                if (tkFind == pRec->m_tkFrom)
-                {
-                    *ppRec = Get(mid);
-                    goto ErrExit;
-                }
-
-                // If middle item is too small, search the top half.
-                if (pRec->m_tkFrom < tkFind)
-                    lo = mid + 1;
-                else // but if middle is to big, search bottom half.
-                    hi = mid - 1;
-            }
-            _ASSERTE(hi <= lo);
-            pRec = Get(lo);
-
-            if (tkFind == pRec->m_tkFrom)
-            {
-                if (tkTo == pRec->m_tkTo && fDuplicate == pRec->m_isDuplicate)
-                {
-                    *ppRec = pRec;
-                }
-                else
-                {
-                    _ASSERTE(!"inconsistent token has been added to the table!");
-                    IfFailGo( E_FAIL );
-                }
-            }
-
-            if (tkFind < pRec->m_tkFrom)
-            {
-                // insert before lo;
-                pRec = Insert(lo);
-            }
-            else
-            {
-                // insert after lo
-                pRec = Insert(lo + 1);
-            }
-        }
-        else
-        {
-            // table is empty
-            pRec = Insert(m_iCountIndexed);
-        }
-
-
-        // If pRec == NULL, return E_OUTOFMEMORY
-        IfNullGo(pRec);
-
-        m_iCountTotal++;
-        m_iCountSorted++;
-
-        *ppRec = pRec;
-
-        // initialize the record
-        pRec->m_tkFrom = tkFind;
-        pRec->m_isDuplicate = fDuplicate;
-        pRec->m_tkTo = tkTo;
-        pRec->m_isFoundInImport = false;
-    }
-
-ErrExit:
-    return hr;
-} // HRESULT MDTOKENMAP::InsertNotFound()
-
-
-//*****************************************************************************
-// find a "to" token in the tokenmap. Now that we are doing the ref to def optimization,
-// we might have several from tokens map to the same to token. We need to return a range of index
-// instead....
-//*****************************************************************************
-bool MDTOKENMAP::FindWithToToken(
-    mdToken     tkFind,                 // [IN] the token value to find
-    int         *piPosition)            // [OUT] return the first from-token that has the matching to-token
-{
-    int         lo, mid, hi;            // binary search indices.
-    TOKENREC    *pRec;
-    TOKENREC    *pRec2;
-
-    // This makes sure that no insertions take place between calls to FindWithToToken.
-    // We want to avoid repeated sorting of the table.
-    _ASSERTE(m_sortKind != SortByToToken || m_iCountTotal == m_iCountSorted);
-
-    // If the map is sorted with From tokens, change it to be sorted with To tokens.
-    if (m_sortKind != SortByToToken)
-        SortTokensByToToken();
-
-    // Start with entire table.
     lo = 0;
     hi = Count() - 1;
-
-    // While there are rows in the range...
     while (lo <= hi)
-    {   // Look at the one in the middle.
+    {
         mid = (lo + hi) / 2;
-
         pRec = Get(mid);
 
-        // If equal to the target, done.
-        if (tkFind == pRec->m_tkTo)
+        if (tkFind == pRec->m_tkFrom)
         {
-            for (int i = mid-1; i >= 0; i--)
-            {
-                pRec2 = Get(i);
-                if (tkFind != pRec2->m_tkTo)
-                {
-                    *piPosition = i + 1;
-                    return true;
-                }
-            }
-            *piPosition = 0;
+            *ppRec = pRec;
             return true;
         }
 
-        // If middle item is too small, search the top half.
-        if (pRec->m_tkTo < tkFind)
+        if (pRec->m_tkFrom < tkFind)
             lo = mid + 1;
-        else // but if middle is to big, search bottom half.
+        else
             hi = mid - 1;
     }
-    // Didn't find anything that matched.
+
     return false;
-} // bool MDTOKENMAP::FindWithToToken()
-
-
-
+}
 //*****************************************************************************
 // output a remapped token
 //*****************************************************************************
@@ -941,36 +611,25 @@ mdToken MDTOKENMAP::SafeRemap(
 {
     TOKENREC    *pRec;
 
-    // If possible, validate the input.
-    _ASSERTE(!m_pImport || m_pImport->IsValidToken(tkFrom));
-
     SortTokensByFromToken();
 
-    if ( Find(tkFrom, &pRec) )
+    if (Find(tkFrom, &pRec))
     {
         return pRec->m_tkTo;
     }
 
     return tkFrom;
-} // mdToken MDTOKENMAP::SafeRemap()
+}
 
-
-//*****************************************************************************
-// Sorting
-//*****************************************************************************
-void MDTOKENMAP::SortTokensByToToken()
+void MDTOKENMAP::SortTokensByFromToken()
 {
-    // Only sort if there are unsorted records or the sort kind changed.
-    if (m_iCountSorted < m_iCountTotal || m_sortKind != SortByToToken)
+    ULONG count = Count();
+    if (m_iCountSorted < count)
     {
-        // Sort the entire array.
-        m_iCountTotal = Count();
-        m_iCountIndexed = 0;
-        SortRangeToToken(0, m_iCountTotal - 1);
-        m_iCountSorted = m_iCountTotal;
-        m_sortKind = SortByToToken;
+        SortRangeFromToken(0, count - 1);
+        m_iCountSorted = count;
     }
-} // void MDTOKENMAP::SortTokensByToToken()
+}
 
 void MDTOKENMAP::SortRangeFromToken(
     int         iLeft,
@@ -998,39 +657,7 @@ void MDTOKENMAP::SortRangeFromToken(
     // Sort the each partition.
     SortRangeFromToken(iLeft, iLast-1);
     SortRangeFromToken(iLast+1, iRight);
-} // void MDTOKENMAP::SortRangeFromToken()
-
-
-//*****************************************************************************
-// Sorting
-//*****************************************************************************
-void MDTOKENMAP::SortRangeToToken(
-    int         iLeft,
-    int         iRight)
-{
-    int         iLast;
-    int         i;                      // loop variable.
-
-    // if less than two elements you're done.
-    if (iLeft >= iRight)
-        return;
-
-    // The mid-element is the pivot, move it to the left.
-    Swap(iLeft, (iLeft+iRight)/2);
-    iLast = iLeft;
-
-    // move everything that is smaller than the pivot to the left.
-    for(i = iLeft+1; i <= iRight; i++)
-        if (CompareToToken(i, iLeft) < 0)
-            Swap(i, ++iLast);
-
-    // Put the pivot to the point where it is in between smaller and larger elements.
-    Swap(iLeft, iLast);
-
-    // Sort the each partition.
-    SortRangeToToken(iLeft, iLast-1);
-    SortRangeToToken(iLast+1, iRight);
-} // void MDTOKENMAP::SortRangeToToken()
+}
 
 
 //*****************************************************************************
@@ -1038,177 +665,19 @@ void MDTOKENMAP::SortRangeToToken(
 //*****************************************************************************
 HRESULT MDTOKENMAP::AppendRecord(
     mdToken     tkFind,
-    bool        fDuplicate,
-    mdToken     tkTo,
-    TOKENREC    **ppRec)
-{
-    HRESULT     hr = NOERROR;
-    TOKENREC    *pRec;
-
-    // If possible, validate the input.
-    _ASSERTE(!m_pImport || m_pImport->IsValidToken(tkFind));
-
-    // If the map is indexed, and this is a table token, update-in-place.
-    if (m_sortKind == Indexed && TypeFromToken(tkFind) != mdtString)
-    {
-        // Get the entry.
-        ULONG ixTbl = CMiniMdRW::GetTableForToken(tkFind);
-        _ASSERTE(ixTbl != (ULONG) -1);
-        ULONG iRid = RidFromToken(tkFind);
-        _ASSERTE((m_TableOffset[ixTbl] + iRid) <= m_TableOffset[ixTbl+1]);
-        pRec = Get(m_TableOffset[ixTbl] + iRid - 1);
-        // See if it has been set.
-        if (!pRec->IsEmpty())
-        {   // Verify that it is what we think it is.
-            _ASSERTE(pRec->m_tkFrom == tkFind);
-        }
-    }
-    else
-    {
-        pRec = Append();
-        IfNullGo(pRec);
-
-        // number of entries increased but not the sorted entry
-        m_iCountTotal++;
-    }
-
-    // Store the data.
-    pRec->m_tkFrom = tkFind;
-    pRec->m_isDuplicate = fDuplicate;
-    pRec->m_tkTo = tkTo;
-    pRec->m_isFoundInImport = false;
-    *ppRec = pRec;
-
-ErrExit:
-    return hr;
-} // HRESULT MDTOKENMAP::AppendRecord()
-
-
-
-//*********************************************************************************************************
-//
-// CMapToken's constructor
-//
-//*********************************************************************************************************
-CMapToken::CMapToken()
-{
-    m_cRef = 1;
-    m_pTKMap = NULL;
-    m_isSorted = true;
-} // TokenManager::TokenManager()
-
-
-
-//*********************************************************************************************************
-//
-// CMapToken's destructor
-//
-//*********************************************************************************************************
-CMapToken::~CMapToken()
-{
-    delete m_pTKMap;
-}   // CMapToken::~CMapToken()
-
-
-ULONG CMapToken::AddRef()
-{
-    return InterlockedIncrement(&m_cRef);
-}   // CMapToken::AddRef()
-
-
-
-ULONG CMapToken::Release()
-{
-    ULONG   cRef = InterlockedDecrement(&m_cRef);
-    if (!cRef)
-        delete this;
-    return (cRef);
-}   // CMapToken::Release()
-
-
-HRESULT CMapToken::QueryInterface(REFIID riid, void **ppUnk)
-{
-	if (ppUnk == NULL)
-		return E_INVALIDARG;
-
-	if (IsEqualIID(riid, IID_IMapToken))
-	{
-		*ppUnk = (IMapToken *) this;
-	}
-	else if (IsEqualIID(riid, IID_IUnknown))
-	{
-		*ppUnk = (IUnknown *) this;
-	}
-	else
-	{
-		*ppUnk = NULL;
-		return (E_NOINTERFACE);
-	}
-
-    AddRef();
-    return (S_OK);
-}   // CMapToken::QueryInterface
-
-
-
-//*********************************************************************************************************
-//
-// Track the token mapping
-//
-//*********************************************************************************************************
-HRESULT CMapToken::Map(
-    mdToken     tkFrom,
     mdToken     tkTo)
 {
-    HRESULT     hr = NOERROR;
-    TOKENREC    *pTkRec;
+    TOKENREC *pRec = Append();
+    IfNullRet(pRec);
 
-    if (m_pTKMap == NULL)
-        m_pTKMap = new (nothrow) MDTOKENMAP;
-
-    IfNullGo( m_pTKMap );
-
-    IfFailGo( m_pTKMap->AppendRecord(tkFrom, false, tkTo, &pTkRec) );
-    _ASSERTE( pTkRec );
-
-    m_isSorted = false;
-ErrExit:
-    return hr;
+    pRec->m_tkFrom = tkFind;
+    pRec->m_tkTo = tkTo;
+    return S_OK;
 }
 
 
-//*********************************************************************************************************
-//
-// return what tkFrom is mapped to ptkTo. If there is no remap
-// (ie the token from is filtered out by the filter mechanism, it will return false.
-//
-//*********************************************************************************************************
-bool    CMapToken::Find(
-    mdToken     tkFrom,
-    TOKENREC    **pRecTo)
-{
-    TOKENREC    *pRec;
-    bool        bRet;
-    if ( m_isSorted == false )
-    {
-        // sort the map
-        m_pTKMap->SortTokensByFromToken();
-        m_isSorted = true;
-    }
 
-    bRet =  m_pTKMap->Find(tkFrom, &pRec) ;
-    if (bRet)
-    {
-        _ASSERTE(pRecTo);
-        *pRecTo = pRec;
-    }
-    else
-    {
-        pRec = NULL;
-    }
-    return bRet;
-}
-
+#endif
 
 //*********************************************************************************************************
 //

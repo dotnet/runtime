@@ -130,106 +130,88 @@ set "__TestWorkingDir=%__RootBinDir%\tests\coreclr\%__TargetOS%.%__BuildArch%.%_
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%\
 if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinBase%\Reports\
 
-REM Set up arguments to call run.py
+REM Set up arguments to call run.cs
 
-set __RuntestPyArgs=-arch %__BuildArch% -build_type %__BuildType%
+set __RuntestArgs=-arch %__BuildArch% -build_type %__BuildType%
 
 if defined __HostOS (
-    set __RuntestPyArgs=!__RuntestPyArgs! -os %__HostOS%
+    set __RuntestArgs=!__RuntestArgs! -os %__HostOS%
 )
 
 if defined LogsDirArg (
-    set __RuntestPyArgs=%__RuntestPyArgs% -logs_dir %LogsDirArg%
+    set __RuntestArgs=%__RuntestArgs% -logs_dir %LogsDirArg%
 )
 
 if defined __LongGCTests (
-    set __RuntestPyArgs=%__RuntestPyArgs% --long_gc
+    set __RuntestArgs=%__RuntestArgs% --long_gc
 )
 
 if defined __GCSimulatorTests (
-    set __RuntestPyArgs=%__RuntestPyArgs% --gcsimulator
+    set __RuntestArgs=%__RuntestArgs% --gcsimulator
 )
 
 if defined __IlasmRoundTrip (
-    set __RuntestPyArgs=%__RuntestPyArgs% --ilasmroundtrip
+    set __RuntestArgs=%__RuntestArgs% --ilasmroundtrip
 )
 
 if defined __UseManagedIlasm (
-    set __RuntestPyArgs=%__RuntestPyArgs% --use_managed_ilasm
+    set __RuntestArgs=%__RuntestArgs% --use_managed_ilasm
 )
 
 if defined __TestEnv (
-    set __RuntestPyArgs=%__RuntestPyArgs% -test_env %__TestEnv%
+    set __RuntestArgs=%__RuntestArgs% -test_env %__TestEnv%
 )
 
 if defined __Sequential (
-    set __RuntestPyArgs=%__RuntestPyArgs% --sequential
+    set __RuntestArgs=%__RuntestArgs% --sequential
 )
 
 if defined __ParallelType (
-    set __RuntestPyArgs=%__RuntestPyArgs% -parallel %__ParallelType%
+    set __RuntestArgs=%__RuntestArgs% -parallel %__ParallelType%
 )
 
 if defined RunCrossGen2 (
-    set __RuntestPyArgs=%__RuntestPyArgs% --run_crossgen2_tests
+    set __RuntestArgs=%__RuntestArgs% --run_crossgen2_tests
 )
 
 if defined CrossgenLargeVersionBubble (
-    set __RuntestPyArgs=%__RuntestPyArgs% --large_version_bubble
+    set __RuntestArgs=%__RuntestArgs% --large_version_bubble
 )
 
 if defined CrossGen2SynthesizePgo (
-    set __RuntestPyArgs=%__RuntestPyArgs% --synthesize_pgo
+    set __RuntestArgs=%__RuntestArgs% --synthesize_pgo
 )
 
 if defined __PrintLastResultsOnly (
-    set __RuntestPyArgs=%__RuntestPyArgs% --analyze_results_only
+    set __RuntestArgs=%__RuntestArgs% --analyze_results_only
 )
 
 if defined RunInUnloadableContext (
-    set __RuntestPyArgs=%__RuntestPyArgs% --run_in_context
+    set __RuntestArgs=%__RuntestArgs% --run_in_context
 )
 
 if defined TieringTest (
-    set __RuntestPyArgs=%__RuntestPyArgs% --tiering_test
+    set __RuntestArgs=%__RuntestArgs% --tiering_test
 )
 
 if defined RunNativeAot (
-    set __RuntestPyArgs=%__RuntestPyArgs% --run_nativeaot_tests
+    set __RuntestArgs=%__RuntestArgs% --run_nativeaot_tests
 )
 
 if defined RunInterpreter (
-    set __RuntestPyArgs=%__RuntestPyArgs% --interpreter
+    set __RuntestArgs=%__RuntestArgs% --interpreter
 )
 
 if defined RunWithNodeJS (
-    set __RuntestPyArgs=%__RuntestPyArgs% --node
+    set __RuntestArgs=%__RuntestArgs% --node
 )
 
 if defined __TreeSubtree (
-    set __RuntestPyArgs=%__RuntestPyArgs% --tree "%__TreeSubtree%"
+    set __RuntestArgs=%__RuntestArgs% --tree "%__TreeSubtree%"
 )
 
-REM Find python and set it to the variable PYTHON
-set _C=-c "import sys; sys.stdout.write(sys.executable)"
-set __PythonLocation=
-for /f "delims=" %%i in ('py -3 %_C% 2^>NUL') do set "__PythonLocation=%%i"
-if NOT DEFINED __PythonLocation for /f "delims=" %%i in ('py -2 %_C% 2^>NUL') do set "__PythonLocation=%%i"
-if NOT DEFINED __PythonLocation for /f "delims=" %%i in ('python3 %_C% 2^>NUL') do set "__PythonLocation=%%i"
-if NOT DEFINED __PythonLocation for /f "delims=" %%i in ('python2 %_C% 2^>NUL') do set "__PythonLocation=%%i"
-if NOT DEFINED __PythonLocation for /f "delims=" %%i in ('python %_C% 2^>NUL') do set "__PythonLocation=%%i"
-if DEFINED __PythonLocation set "PYTHON=!__PythonLocation!"
-set __PythonLocation=
-set _C=
-
-if NOT DEFINED PYTHON (
-    echo %__MsgPrefix%Error: Could not find a Python installation.
-    exit /b 1
-)
-
-set NEXTCMD="%PYTHON%" "%__RepoRootDir%\src\tests\run.py" %__RuntestPyArgs%
-echo %NEXTCMD%
-%NEXTCMD%
+echo "%DotNetCli%" "%__RepoRootDir%\src\tests\run.cs" -- %__RuntestArgs%
+call "%DotNetCli%" "%__RepoRootDir%\src\tests\run.cs" -- %__RuntestArgs%
 
 exit /b %ERRORLEVEL%
 

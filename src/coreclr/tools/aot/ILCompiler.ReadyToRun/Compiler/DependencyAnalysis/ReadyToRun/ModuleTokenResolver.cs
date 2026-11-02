@@ -58,7 +58,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ModuleToken token;
             if (type is EcmaType ecmaType)
             {
-                if (_compilationModuleGroup.VersionsWithType(ecmaType))
+                // The global module type always has TypeDef token 0x02000001 (ECMA-335 II.22.37),
+                // so its token remains valid even outside the version bubble.
+                if (_compilationModuleGroup.VersionsWithType(ecmaType) || ecmaType.IsModuleType)
                 {
                     return new ModuleToken(ecmaType.Module, (mdToken)MetadataTokens.GetToken(ecmaType.Handle));
                 }

@@ -651,6 +651,9 @@ void Compiler::unwindPacSignLR()
         }
         FuncInfoDsc*   func     = funCurrentFunc();
         UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
+        // Sign before frame setup so signing SP == CFA.
+        // Stack probes may precede PAC because they do not change SP.
+        assert(func->cfiCodes->empty());
         // Maps to DW_CFA_AARCH64_negate_ra_state
         createCfiCode(func, cbProlog, CFI_NEGATE_RA_STATE, DWARF_REG_ILLEGAL);
 

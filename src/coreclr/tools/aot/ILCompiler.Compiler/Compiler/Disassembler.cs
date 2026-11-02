@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.ObjectWriter;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -67,6 +68,7 @@ namespace ILCompiler
         private sealed class CoreDisassembler : IDisposable
         {
             private IntPtr _handle;
+            private TargetArchitecture _targetArchitecture;
 
             private const string Library = "coredistools";
 
@@ -75,7 +77,10 @@ namespace ILCompiler
                 Target_X86 = 1,
                 Target_X64,
                 Target_Thumb,
-                Target_Arm64
+                Target_Arm64,
+                Target_LoongArch64,
+                Target_RiscV64,
+                Target_Wasm32,
             };
 
             [DllImport(Library)]
@@ -83,12 +88,16 @@ namespace ILCompiler
 
             public CoreDisassembler(TargetArchitecture arch)
             {
+                _targetArchitecture = arch;
                 _handle = InitBufferedDisasm(arch switch
                 {
                     TargetArchitecture.X86 => TargetArch.Target_X86,
                     TargetArchitecture.X64 => TargetArch.Target_X64,
                     TargetArchitecture.ARM => TargetArch.Target_Thumb,
                     TargetArchitecture.ARM64 => TargetArch.Target_Arm64,
+                    TargetArchitecture.LoongArch64 => TargetArch.Target_LoongArch64,
+                    TargetArchitecture.RiscV64 => TargetArch.Target_RiscV64,
+                    TargetArchitecture.Wasm32 => TargetArch.Target_Wasm32,
                     _ => throw new NotSupportedException()
                 });
 
@@ -101,10 +110,25 @@ namespace ILCompiler
 
             public unsafe int Disassemble(byte[] bytes, int offset, out string instruction)
             {
-                int size;
+                int size = 0;
+
+                if (offset == 0 && _targetArchitecture == TargetArchitecture.Wasm32)
+                {
+                    offset = 5; // padded body-size field
+                    uint groups = checked((uint)DwarfHelper.ReadULEB128(bytes.AsSpan(offset), out int read));
+                    offset += read;
+
+                    for (uint i = 0; i < groups; i++)
+                    {
+                        DwarfHelper.ReadULEB128(bytes.AsSpan(offset), out read); // local count
+                        offset += read + 1; // count encoding + one-byte value type
+                    }
+                    size = offset;
+                }
+
                 fixed (byte* pByte = &bytes[offset])
                 {
-                    size = DumpInstruction(_handle, (ulong)offset, (IntPtr)pByte, bytes.Length - offset);
+                    size += DumpInstruction(_handle, (ulong)offset, (IntPtr)pByte, bytes.Length - offset);
                 }
 
                 instruction = Marshal.PtrToStringUTF8(GetOutputBuffer());

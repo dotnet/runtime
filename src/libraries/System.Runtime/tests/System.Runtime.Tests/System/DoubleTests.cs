@@ -1206,6 +1206,79 @@ namespace System.Tests
             Assert.True(double.IsNegative(result) && result == 0.0);
         }
 
+        [Theory]
+        [InlineData(0.0, "x", "plus", "minus", "0x0pplus0")]
+        [InlineData(-0.0, "X", "plus", "minus", "minus0X0Pplus0")]
+        [InlineData(0.0, "x3", "plus", "minus", "0x0.000pplus0")]
+        [InlineData(-0.0, "X3", "plus", "minus", "minus0X0.000Pplus0")]
+        [InlineData(3.0, "x", "plus", "minus", "0x1.8pplus1")]
+        [InlineData(-0.75, "X", "plus", "minus", "minus0X1.8Pminus1")]
+        [InlineData(3.0, "X", "\u200E+", "\u200E-", "0X1.8P\u200E+1")]
+        [InlineData(-0.75, "x", "\u200E+", "\u200E-", "\u200E-0x1.8p\u200E-1")]
+        [InlineData(3.0, "x", "\u061C+", "\u061C-", "0x1.8p\u061C+1")]
+        [InlineData(-0.75, "X", "\u061C+", "\u061C-", "\u061C-0X1.8P\u061C-1")]
+        [InlineData(0.75, "x", "+", "\u2212", "0x1.8p\u22121")]
+        [InlineData(3.0, "X", "", "~", "0X1.8P1")]
+        [InlineData(3.0, "x", "-+", "-", "0x1.8p-+1")]
+        [InlineData(3.0, "X", "-", "-+", "0X1.8P-1")]
+        [InlineData(3.0, "x", "-", "+", "0x1.8p-1")]
+        [InlineData(0.75, "X", "-", "+", "0X1.8P+1")]
+        [InlineData(-3.0, "X", "-", "+", "+0X1.8P-1")]
+        [InlineData(-3.0, "x", "-+", "-", "-0x1.8p-+1")]
+        [InlineData(-3.0, "X", "-", "-+", "-+0X1.8P-1")]
+        [InlineData(-0.75, "x", "-", "-+", "-+0x1.8p-+1")]
+        [InlineData(0.75, "x", "-", "-+", "0x1.8p-+1")]
+        public static void ToStringHexFloat_CustomSigns(double value, string format, string positiveSign, string negativeSign, string expected)
+        {
+            var info = new NumberFormatInfo { PositiveSign = positiveSign, NegativeSign = negativeSign };
+            Assert.Equal(expected, value.ToString(format, info));
+            NumberFormatTestHelper.TryFormatNumberTest(value, format, info, expected, formatCasingMatchesOutput: false);
+
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(double.Parse(expected, NumberStyles.HexFloat, info)));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(double.Parse(expected.AsSpan(), NumberStyles.HexFloat, info)));
+            byte[] utf8 = Encoding.UTF8.GetBytes(expected);
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(double.Parse(utf8, NumberStyles.HexFloat, info)));
+
+            Assert.True(double.TryParse(expected, NumberStyles.HexFloat, info, out double result));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+            Assert.True(double.TryParse(expected.AsSpan(), NumberStyles.HexFloat, info, out result));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+            Assert.True(double.TryParse(utf8, NumberStyles.HexFloat, info, out result));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+        }
+
+        [Theory]
+        [InlineData(-3.0, "E-0")]
+        [InlineData(-0.75, "E-+")]
+        public static void ToStringE_CustomSignPrefixes(double value, string exponentSign)
+        {
+            var info = new NumberFormatInfo { PositiveSign = "-", NegativeSign = "-+" };
+            string formatted = value.ToString("E", info);
+            Assert.StartsWith("-+", formatted);
+            Assert.Contains(exponentSign, formatted);
+
+            Assert.True(double.TryParse(formatted, NumberStyles.Float, info, out double result));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+            Assert.True(double.TryParse(formatted.AsSpan(), NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+            byte[] utf8 = Encoding.UTF8.GetBytes(formatted);
+            Assert.True(double.TryParse(utf8, NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+        }
+
+        [Theory]
+        [InlineData("123-+", "-", "-+", -123.0)]
+        [InlineData("123-+", "-+", "-", 123.0)]
+        public static void Parse_CustomSignPrefixes_Trailing(string value, string positiveSign, string negativeSign, double expected)
+        {
+            var info = new NumberFormatInfo { PositiveSign = positiveSign, NegativeSign = negativeSign };
+
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(double.Parse(value, NumberStyles.AllowTrailingSign, info)));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(double.Parse(value.AsSpan(), NumberStyles.AllowTrailingSign, info)));
+            byte[] utf8 = Encoding.UTF8.GetBytes(value);
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(double.Parse(utf8, NumberStyles.AllowTrailingSign, info)));
+        }
+
         [Fact]
         public static void HexFloat_CustomNumberFormat()
         {
@@ -1422,7 +1495,8 @@ namespace System.Tests
 
             // Non-ASCII and supplementary signs are matched ignoring case
             yield return new object[] { "\u00C9Infinity", "\u00E9", "-", true, double.PositiveInfinity };
-            yield return new object[] { "\U00010400Infinity", "\U00010428", "-", true, double.PositiveInfinity };
+            // NLS doesn't case-fold supplementary characters
+            yield return new object[] { "\U00010400Infinity", "\U00010428", "-", !PlatformDetection.IsNlsGlobalization, PlatformDetection.IsNlsGlobalization ? 0.0 : double.PositiveInfinity };
             yield return new object[] { "\u200E+\u200EInfinity", "\u200E+\u200E", "\u200E-\u200E", true, double.PositiveInfinity };
             yield return new object[] { "\u200E-\u200ENaN", "\u200E+\u200E", "\u200E-\u200E", true, double.NaN };
 

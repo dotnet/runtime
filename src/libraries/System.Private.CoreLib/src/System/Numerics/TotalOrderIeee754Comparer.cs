@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -13,6 +14,7 @@ namespace System.Numerics
     /// with IEEE 754 totalOrder semantic.
     /// </summary>
     /// <typeparam name="T">The type of the numbers to be compared, must be an IEEE 754 floating-point type.</typeparam>
+    [SuppressReadyToRunCanonicalRooting]
     public readonly struct TotalOrderIeee754Comparer<T> : IComparer<T>, IEqualityComparer<T>, IEquatable<TotalOrderIeee754Comparer<T>>
         where T : IFloatingPointIeee754<T>?
     {
@@ -137,7 +139,7 @@ namespace System.Numerics
 
                     ReadOnlySpan<byte> extra = longer[..(longer.Length - shorter.Length)];
 
-                    if (extra.IndexOfAnyExcept(fill) >= 0)
+                    if (extra.ContainsAnyExcept(fill))
                     {
                         // A mismatch means the longer span has a byte that isn't fill in a position more
                         // significant than every remaining byte. Since fill is already the extreme byte

@@ -14,6 +14,26 @@ namespace System.Formats.Tar.Tests
 {
     public class TarFile_ExtractToDirectory_Stream_Tests : TarFile_ExtractToDirectory_Tests
     {
+        protected override Task ExtractArchive(MemoryStream archive, string destinationDirectoryName, bool overwriteFiles, bool useOptions, bool async, CancellationToken cancellationToken = default)
+        {
+            if (async)
+            {
+                return useOptions
+                    ? TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles }, cancellationToken)
+                    : TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName, overwriteFiles, cancellationToken);
+            }
+
+            if (useOptions)
+            {
+                TarFile.ExtractToDirectory(archive, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles });
+            }
+            else
+            {
+                TarFile.ExtractToDirectory(archive, destinationDirectoryName, overwriteFiles);
+            }
+            return Task.CompletedTask;
+        }
+
         public static IEnumerable<object[]> GetLinkEntryTypesAndBooleanData() => GetDataAndBooleanData(new[]
         {
             new object[] { TarEntryType.SymbolicLink },
@@ -34,15 +54,6 @@ namespace System.Formats.Tar.Tests
             new object[] { "subdir/../readme.txt", "readme.txt" },
             new object[] { "subdir/./readme.txt", Path.Join("subdir", "readme.txt") }
         });
-
-        [Fact]
-        public async Task ExtractToDirectoryAsync_Cancel()
-        {
-            CancellationTokenSource cs = new CancellationTokenSource();
-            cs.Cancel();
-            using MemoryStream archiveStream = new MemoryStream();
-            await Assert.ThrowsAsync<TaskCanceledException>(() => TarFile.ExtractToDirectoryAsync(archiveStream, "directory", overwriteFiles: true, cs.Token));
-        }
 
         [Theory]
         [MemberData(nameof(GetBooleanData))]
@@ -65,17 +76,6 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archive = new MemoryStream();
             using WrappedStream unreadable = new WrappedStream(archive, canRead: false, canWrite: true, canSeek: true);
             await Assert.ThrowsAsync<ArgumentException>(() => ExtractToDirectory(unreadable, destinationDirectoryName: "path", overwriteFiles: false, async));
-        }
-
-        [Theory]
-        [MemberData(nameof(GetBooleanData))]
-        public async Task NonExistentDirectory_Throws(bool async)
-        {
-            using TempDirectory root = new TempDirectory();
-            string dirPath = Path.Join(root.Path, "dir");
-
-            using MemoryStream archive = new MemoryStream();
-            await Assert.ThrowsAsync<DirectoryNotFoundException>(() => ExtractToDirectory(archive, destinationDirectoryName: dirPath, overwriteFiles: false, async));
         }
 
         [Theory]
@@ -265,8 +265,7 @@ namespace System.Formats.Tar.Tests
         [MemberData(nameof(GetContentSizeAndBooleanData))]
         public async Task Extract_UnseekableStream_BlockAlignmentPadding_DoesNotAffectNextEntries(int contentSize, bool async)
         {
-            byte[] fileContents = new byte[contentSize];
-            Array.Fill<byte>(fileContents, 0x1);
+            byte[] fileContents = Array.CreateFilled<byte>(contentSize, 0x1);
 
             using MemoryStream archive = new MemoryStream();
             using (GZipStream compressor = new GZipStream(archive, CompressionMode.Compress, leaveOpen: true))
@@ -612,9 +611,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(100, 25)] // EA smaller than header
         public void PaxExtraction_EntryLengthMatchesExtractedFileSize(int dataSize, long eaSize)
         {
-            byte[] actualData = new byte[dataSize];
-            Array.Fill<byte>(actualData, (byte)'X');
-
+            byte[] actualData = Array.CreateFilled(dataSize, (byte)'X');
+            
             byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, dataSize, eaSize);
 
             long apiLength;
