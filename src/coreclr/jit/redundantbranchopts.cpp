@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
+#include "modularrange.h"
 
 //------------------------------------------------------------------------
 // optRedundantBranches: try and optimize redundant branches in the method
@@ -178,142 +179,48 @@ enum RelopResult
 //
 RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, target_ssize_t bound1, genTreeOps oper2, target_ssize_t bound2)
 {
-    struct IntegralRange
-    {
-        target_ssize_t startIncl; // inclusive
-        target_ssize_t endIncl;   // inclusive
-
-        bool Intersects(const IntegralRange other) const
-        {
-            return (startIncl <= other.endIncl) && (other.startIncl <= endIncl);
-        }
-
-        bool Contains(const IntegralRange other) const
-        {
-            return (startIncl <= other.startIncl) && (other.endIncl <= endIncl);
-        }
-    };
-
     constexpr target_ssize_t minValue = TARGET_POINTER_SIZE == 4 ? INT32_MIN : INT64_MIN;
     constexpr target_ssize_t maxValue = TARGET_POINTER_SIZE == 4 ? INT32_MAX : INT64_MAX;
-
-    // Start with the widest possible ranges
-    IntegralRange range1 = {minValue, maxValue};
-    IntegralRange range2 = {minValue, maxValue};
-
-    // Update ranges based on inputs
-    auto setRange = [](genTreeOps oper, target_ssize_t bound, IntegralRange* range) -> bool {
-        switch (oper)
-        {
-            case GT_LT:
-                // x < cns -> [minValue, cns - 1]
-                if (bound == minValue)
-                {
-                    // overflows
-                    return false;
-                }
-                range->endIncl = bound - 1;
-                return true;
-
-            case GT_LE:
-                // x <= cns -> [minValue, cns]
-                range->endIncl = bound;
-                return true;
-
-            case GT_GT:
-                // x > cns -> [cns + 1, maxValue]
-                if (bound == maxValue)
-                {
-                    // overflows
-                    return false;
-                }
-                range->startIncl = bound + 1;
-                return true;
-
-            case GT_GE:
-                // x >= cns -> [cns, maxValue]
-                range->startIncl = bound;
-                return true;
-
-            case GT_EQ:
-            case GT_NE:
-                // x == cns -> [cns, cns]
-                // NE is special-cased below
-                range->startIncl = bound;
-                range->endIncl   = bound;
-                return true;
-
-            default:
-                // unsupported operator
-                return false;
-        }
-    };
-
-    if (setRange(oper1, bound1, &range1) && setRange(oper2, bound2, &range2))
+    if (((oper1 == GT_LT) && (bound1 == minValue)) || ((oper1 == GT_GT) && (bound1 == maxValue)) ||
+        ((oper2 == GT_LT) && (bound2 == minValue)) || ((oper2 == GT_GT) && (bound2 == maxValue)))
     {
-        // Special handling of GT_NE:
-        if ((oper1 == GT_NE) || (oper2 == GT_NE))
+        return RelopResult::Unknown;
+    }
+
+    target_size_t mask = static_cast<target_size_t>(-1);
+    // Use singleton ranges for the equality/exclusion implications of NE below.
+    ModularRange first  = ModularRange::FromComparison(oper1 == GT_NE ? GT_EQ : oper1, bound1, false, mask);
+    ModularRange second = ModularRange::FromComparison(oper2 == GT_NE ? GT_EQ : oper2, bound2, false, mask);
+    if ((oper1 == GT_NE) || (oper2 == GT_NE))
+    {
+        // x != 100 implies x != 100; x == 100 implies x != 101.
+        if (oper1 == oper2)
         {
-            // if (x != 100)
-            //    if (x != 100) // always true
-            if (oper1 == oper2)
-            {
-                return bound1 == bound2 ? RelopResult::AlwaysTrue : RelopResult::Unknown;
-            }
-
-            // if (x == 100)
-            //    if (x != 100) // always false
-            //
-            // if (x == 100)
-            //    if (x != 101) // always true
-            if (oper1 == GT_EQ)
-            {
-                return bound1 == bound2 ? RelopResult::AlwaysFalse : RelopResult::AlwaysTrue;
-            }
-
-            // if (x > 100)
-            //    if (x != 10) // always true
-            if ((oper2 == GT_NE) && !range1.Intersects(range2))
-            {
-                return AlwaysTrue;
-            }
-
-            return RelopResult::Unknown;
+            return bound1 == bound2 ? RelopResult::AlwaysTrue : RelopResult::Unknown;
         }
-
-        // If ranges never intersect, then the 2nd range is never "true"
-        if (!range1.Intersects(range2))
+        if (oper1 == GT_EQ)
         {
-            // E.g.:
-            //
-            // range1: [100 .. SSIZE_T_MAX]
-            // range2: [SSIZE_T_MIN ..  10]
-            //
-            // or in other words:
-            //
-            // if (x >= 100)
-            //    if (x <= 10) // always false
-            //
-            return RelopResult::AlwaysFalse;
+            return bound1 == bound2 ? RelopResult::AlwaysFalse : RelopResult::AlwaysTrue;
         }
-
-        // If range1 is a subset of range2, then the 2nd range is always "true"
-        if (range2.Contains(range1))
+        // x > 100 implies x != 10.
+        ModularRange overlap;
+        if ((oper2 == GT_NE) && (first.Intersect(second, mask, &overlap) == ModularRange::Intersection::Empty))
         {
-            // E.g.:
-            //
-            // range1: [100 .. SSIZE_T_MAX]
-            // range2: [10  .. SSIZE_T_MAX]
-            //
-            // or in other words:
-            //
-            // if (x >= 100)
-            //    if (x >= 10) // always true
-            //
             return RelopResult::AlwaysTrue;
         }
+        return RelopResult::Unknown;
     }
-    return RelopResult::Unknown;
+
+    ModularRange               overlap;
+    ModularRange::Intersection intersection = first.Intersect(second, mask, &overlap);
+    // [100..MAX] and [MIN..10] do not intersect: x >= 100 implies !(x <= 10).
+    if (intersection == ModularRange::Intersection::Empty)
+    {
+        return RelopResult::AlwaysFalse;
+    }
+    // [100..MAX] is contained in [10..MAX]: x >= 100 implies x >= 10.
+    return (intersection == ModularRange::Intersection::Single) && overlap.Equals(first, mask) ? RelopResult::AlwaysTrue
+                                                                                               : RelopResult::Unknown;
 }
 
 //------------------------------------------------------------------------
