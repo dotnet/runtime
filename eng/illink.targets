@@ -9,7 +9,11 @@
   <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
     <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
-    <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
+    <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);_ILLinkMoveUntrimmedAssembly</TargetsTriggeredByCompilation>
+    <!-- Anything consuming the compiler output, including concurrent requests to build this project, must wait for
+         it to be trimmed. API compat runs after CoreCompile and validates the trimmed assembly. -->
+    <CompileDependsOn>$(CompileDependsOn);ILLinkTrimAssembly</CompileDependsOn>
+    <ApiCompatValidateAssembliesDependsOn>$(ApiCompatValidateAssembliesDependsOn);ILLinkTrimAssembly</ApiCompatValidateAssembliesDependsOn>
 
     <ILLinkDirectory Condition="'$(ILLinkDirectory)' == ''">$(MSBuildProjectDirectory)\ILLink\</ILLinkDirectory>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
@@ -52,6 +56,12 @@
     <ILLinkSuppressionsXmls Include="@(ILLinkSuppressionsLibraryBuildXml)" />
     <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)"
                             TargetPath="%(FileName).$(AssemblyName).xml" />
+  </ItemGroup>
+
+  <!-- The untrimmed assembly is kept for trimming it again without recompiling, so it must survive IncrementalClean
+       in every build of the project, including those in which the trimming targets don't run. -->
+  <ItemGroup Condition="'$(ILLinkTrimAssembly)' == 'true'">
+    <FileWrites Include="$(ILLinkTrimInputAssembly);$(ILLinkTrimInputSymbols)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -192,15 +202,113 @@
     </PropertyGroup>
   </Target>
 
-  <!-- Examines the "input assembly" for IL that is unreachable from public API and trims that,
-       rewriting the assembly to an "output assembly" -->
+  <!-- Returns the implementation assemblies of the project references and, transitively, of their project references
+       (e.g. System.Private.Uri, which System.Runtime forwards to). A reference is resolved to the flavor that is built
+       for the TargetOS, which is the one in the shared framework, rather than the flavor that is compatible with the
+       referencing project's flavor (e.g. the unix flavor of System.Net.Http compiles against System.Net.Quic's
+       platform-agnostic flavor, while linux uses its linux flavor). -->
+  <Target Name="_GetILLinkReferencedImplementations"
+          Returns="@(_ILLinkTransitiveImplementation)">
+    <MSBuild Projects="@(_MSBuildProjectReferenceExistent)"
+             Targets="GetILLinkImplementationClosureForTargetOS"
+             Properties="%(_MSBuildProjectReferenceExistent.SetConfiguration)"
+             RemoveProperties="TargetFramework;%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)"
+             SkipNonexistentTargets="true"
+             BuildInParallel="$(BuildInParallel)">
+      <Output TaskParameter="TargetOutputs" ItemName="_ILLinkTransitiveImplementation" />
+    </MSBuild>
+  </Target>
+
+  <PropertyGroup>
+    <_GetILLinkImplementationClosureForTargetOSDependsOn Condition="'$(IsCrossTargetingBuild)' == 'true'">GetProjectWithBestTargetFrameworks</_GetILLinkImplementationClosureForTargetOSDependsOn>
+  </PropertyGroup>
+
+  <Target Name="GetILLinkImplementationClosureForTargetOS"
+          DependsOnTargets="$(_GetILLinkImplementationClosureForTargetOSDependsOn)"
+          Returns="@(_ILLinkImplementationClosureForTargetOS)">
+    <ItemGroup Condition="'$(IsCrossTargetingBuild)' == 'true'">
+      <_ILLinkBestInnerBuild Include="@(InnerBuildProjectsWithBestTargetFramework)"
+                             Condition="$([System.String]::Copy('%(AdditionalProperties)').StartsWith('TargetFramework=$(NetCoreAppCurrent)'))" />
+    </ItemGroup>
+
+    <!-- The flavor isn't necessarily the one the project reference built, so make sure it is up to date. -->
+    <MSBuild Projects="@(_ILLinkBestInnerBuild)"
+             Targets="Build;GetILLinkImplementationClosure"
+             SkipNonexistentTargets="true"
+             Condition="'$(IsCrossTargetingBuild)' == 'true'">
+      <Output TaskParameter="TargetOutputs" ItemName="_ILLinkImplementationClosureForTargetOS" />
+    </MSBuild>
+
+    <CallTarget Targets="GetILLinkImplementationClosure"
+                Condition="'$(IsCrossTargetingBuild)' != 'true'">
+      <Output TaskParameter="TargetOutputs" ItemName="_ILLinkImplementationClosureForTargetOS" />
+    </CallTarget>
+  </Target>
+
+  <!-- Returns this project's implementation assembly followed by the implementations it references.
+       Packable libraries can be replaced by a newer package at run time, so they contribute their reference
+       assembly instead to avoid baking their implementation details into the referencing library. -->
+  <Target Name="GetILLinkImplementationClosure"
+          Condition="'$(IsReferenceAssemblyProject)' != 'true'"
+          DependsOnTargets="ResolveProjectReferences;_GetILLinkReferencedImplementations"
+          Returns="@(_ILLinkImplementationClosure)">
+    <ItemGroup>
+      <_ILLinkImplementationClosure Include="@(ResolvedMatchingContract->'%(FullPath)')"
+                                    Condition="'$(IsPackable)' == 'true'" />
+      <_ILLinkImplementationClosure Include="$(TargetPath)"
+                                    Condition="'$(IsPackable)' != 'true' or '@(ResolvedMatchingContract)' == ''" />
+      <_ILLinkImplementationClosure Include="@(_ILLinkTransitiveImplementation)" />
+    </ItemGroup>
+  </Target>
+
   <UsingTask TaskName="ILLink"
              AssemblyFile="$(ILLinkTasksAssembly)"
              TaskFactory="TaskHostFactory"
              Condition="'$(ILLinkTasksAssembly)' != ''" />
+
+  <!-- Move the freshly compiled assembly into a subdirectory for ILLink. -->
+  <Target Name="_ILLinkMoveUntrimmedAssembly"
+          Condition="'$(ILLinkTrimAssembly)' == 'true'">
+    <Move SourceFiles="$(ILLinkTrimAssemblyPath)"
+          DestinationFolder="$(ILLinkTrimInputPath)" />
+
+    <!-- Move the PDB into a subdirectory for ILLink if we are rewriting PDBs -->
+    <Move SourceFiles="$(ILLinkTrimAssemblySymbols)"
+          DestinationFolder="$(ILLinkTrimInputPath)"
+          Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')" />
+  </Target>
+
+  <Target Name="_PrepareILLinkTrimAssembly"
+          Condition="'$(ILLinkTrimAssembly)' == 'true'">
+    <!-- Shared framework libraries are trimmed against the implementations of their references, including
+         System.Private.CoreLib which is only reachable through type forwards, so that constants in those
+         implementations can be propagated. -->
+    <PropertyGroup>
+      <!-- The implementations (and their constants) are those of the TargetOS being built, so only use them
+           for flavors which run on that OS. -->
+      <_ILLinkUseImplementationReferences Condition="'$(IsNETCoreAppSrc)' == 'true' and
+                                                     ('$(TargetPlatformIdentifier)' == '' or
+                                                      '$(TargetPlatformIdentifier)' == '$(TargetOS)' or
+                                                      ('$(TargetPlatformIdentifier)' == 'unix' and '$(TargetsUnix)' == 'true') or
+                                                      ('$(TargetPlatformIdentifier)' == 'linux' and '$(TargetsLinux)' == 'true') or
+                                                      ('$(TargetPlatformIdentifier)' == 'ios' and ('$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true')) or
+                                                      ('$(TargetPlatformIdentifier)' == 'tvos' and '$(TargetstvOS)' == 'true'))">true</_ILLinkUseImplementationReferences>
+    </PropertyGroup>
+
+    <CallTarget Targets="_GetILLinkReferencedImplementations"
+                Condition="'$(_ILLinkUseImplementationReferences)' == 'true'">
+      <Output TaskParameter="TargetOutputs" ItemName="_ILLinkReferencedImplementation" />
+    </CallTarget>
+  </Target>
+
+  <!-- Examines the "input assembly" for IL that is unreachable from public API and trims that,
+       rewriting the assembly to an "output assembly". Runs after CoreCompile rather than only when compiling
+       so that the assembly is trimmed again when the implementations it is trimmed against change. -->
   <Target Name="ILLinkTrimAssembly"
-          Condition="'$(ILLinkTrimAssembly)' == 'true'"
-          DependsOnTargets="PrepareForAssembliesTrim">
+          Condition="'$(ILLinkTrimAssembly)' == 'true' and '$(DesignTimeBuild)' != 'true'"
+          DependsOnTargets="PrepareForAssembliesTrim;_PrepareILLinkTrimAssembly"
+          Inputs="$(ILLinkTrimInputAssembly);@(_ILLinkReferencedImplementation)"
+          Outputs="$(ILLinkTrimAssemblyPath)">
     <PropertyGroup>
       <!-- suppress warnings with the following codes:
            IL2008: Could not find type A specified in resource B
@@ -220,8 +328,8 @@
       <ILLinkArgs>$(ILLinkArgs) --action skip</ILLinkArgs>
       <!-- trim the target assembly -->
       <ILLinkArgs>$(ILLinkArgs) --action link $(TargetName)</ILLinkArgs>
-      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
-      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)') and '$(DeterministicSourcePaths)' == 'true'">$(ILLinkArgs) --preserve-symbol-paths</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimInputSymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimInputSymbols)') and '$(DeterministicSourcePaths)' == 'true'">$(ILLinkArgs) --preserve-symbol-paths</ILLinkArgs>
       <!-- pass the non-embedded descriptors xml file on the command line -->
       <ILLinkArgs Condition="'@(ILLinkDescriptorsLibraryBuildXml)' != ''">$(ILLinkArgs) -x "@(ILLinkDescriptorsLibraryBuildXml->'%(FullPath)', '" -x "')"</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkSubstitutionsLibraryBuildXml)' != ''">$(ILLinkArgs) --substitutions "$(ILLinkSubstitutionsLibraryBuildXml)"</ILLinkArgs>
@@ -235,7 +343,7 @@
       <_ILLinkDefaultAction>skip</_ILLinkDefaultAction>
       <_ILLinkNoWarn>$(LinkerNoWarn)</_ILLinkNoWarn>
       <_ILLinkRemoveSymbols>true</_ILLinkRemoveSymbols>
-      <_ILLinkRemoveSymbols Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">false</_ILLinkRemoveSymbols>
+      <_ILLinkRemoveSymbols Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimInputSymbols)')">false</_ILLinkRemoveSymbols>
       <_ILLinkPreserveSymbolPaths Condition="'$(_ILLinkRemoveSymbols)' == 'false' and '$(DeterministicSourcePaths)' == 'true'">true</_ILLinkPreserveSymbolPaths>
       <_ILLinkIPConstProp Condition="'$(ILLinkDisableIPConstProp)' == 'true'">false</_ILLinkIPConstProp>
       <ILLinkArgs Condition="'$(ILLinkSubstitutionsLibraryBuildXml)' != ''">$(ILLinkArgs) --substitutions "$(ILLinkSubstitutionsLibraryBuildXml)"</ILLinkArgs>
@@ -250,21 +358,12 @@
                               Condition="'$(_ILLinkHasCustomArgs)' != 'true'" />
     </ItemGroup>
 
-    <!-- Move the assembly into a subdirectory for ILLink -->
-    <Move SourceFiles="$(ILLinkTrimAssemblyPath)"
-          DestinationFolder="$(ILLinkTrimInputPath)">
-      <Output TaskParameter="MovedFiles" ItemName="FileWrites" />
-    </Move>
-
-    <!-- Move the PDB into a subdirectory for ILLink if we are rewriting PDBs -->
-    <Move SourceFiles="$(ILLinkTrimAssemblySymbols)"
-          DestinationFolder="$(ILLinkTrimInputPath)"
-          Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">
-      <Output TaskParameter="MovedFiles" ItemName="FileWrites" />
-    </Move>
-
     <ItemGroup>
-      <_DependencyDirectoriesTemp Include="@(ReferencePathWithRefAssemblies->'%(RootDir)%(Directory)')" />
+      <_ILLinkReference Include="@(_ILLinkReferencedImplementation)"
+                        ReferenceSourceTarget="ProjectReference" />
+      <_ILLinkReference Include="@(ReferencePathWithRefAssemblies)"
+                        Condition="'$(_ILLinkUseImplementationReferences)' != 'true' or '%(ReferencePathWithRefAssemblies.ReferenceSourceTarget)' != 'ProjectReference'" />
+      <_DependencyDirectoriesTemp Include="@(_ILLinkReference->'%(RootDir)%(Directory)')" />
       <!-- Remove duplicate directories by batching over them -->
       <!-- Add project references first to give precedence to project-specific files -->
       <_DependencyDirectories Condition="'%(_DependencyDirectoriesTemp.ReferenceSourceTarget)'=='ProjectReference'" Include="%(_DependencyDirectoriesTemp.Identity)" />
@@ -285,6 +384,7 @@
 
     <PropertyGroup>
       <ILLinkArgs Condition="@(_DependencyDirectories->Count()) > 0">$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
+      <ILLinkArgs Condition="'$(_ILLinkUseImplementationReferences)' == 'true'">$(ILLinkArgs) --ignore-substitutions true</ILLinkArgs>
     </PropertyGroup>
 
     <ILLink AssemblyPaths="@(_ILLinkAssemblyToTrim)"
