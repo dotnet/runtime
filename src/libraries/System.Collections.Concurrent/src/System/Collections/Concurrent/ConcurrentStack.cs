@@ -586,6 +586,8 @@ namespace System.Collections.Concurrent
             Node? head;
             Node next;
             int backoff = 1;
+            int shift = Numerics.BitOperations.Log2(int.MaxValue / (uint)count);
+            int checkHeadMask = (1 << shift) - 1;
             while (true)
             {
                 head = _head;
@@ -605,6 +607,13 @@ namespace System.Collections.Concurrent
                 for (; nodesCount < count && next._next != null; nodesCount++)
                 {
                     next = next._next;
+                    if ((nodesCount & checkHeadMask) == 0)
+                    {
+                        if (head != _head)
+                        {
+                            break;
+                        }
+                    }
                 }
 
                 // Try to swap the new head.  If we succeed, break out of the loop.
