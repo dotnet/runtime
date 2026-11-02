@@ -894,7 +894,7 @@ namespace System.IO.Ports
 
             // There are lots of checks to determine if this really is a single byte encoding with no
             // funky fallbacks that would make it not single byte
-            DecoderReplacementFallback fallback = _encoding.DecoderFallback as DecoderReplacementFallback;
+            DecoderReplacementFallback? fallback = _encoding.DecoderFallback as DecoderReplacementFallback;
             if (_encoding.IsSingleByte && _encoding.GetMaxCharCount(bytesToRead) == bytesToRead &&
                 fallback != null && fallback.MaxCharCount == 1)
             {

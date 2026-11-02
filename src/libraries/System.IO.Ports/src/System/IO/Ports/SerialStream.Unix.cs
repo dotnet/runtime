@@ -549,7 +549,7 @@ namespace System.IO.Ports
 
             Interop.PollEvents events;
             Interop.Error ret = Interop.Serial.Poll(
-                _handle,
+                _handle!,
                 eventsToPoll,
                 timeout,
                 out events);
@@ -575,7 +575,7 @@ namespace System.IO.Ports
             }
         }
 
-        public override IAsyncResult BeginWrite(byte[] array, int offset, int count, AsyncCallback userCallback, object stateObject)
+        public override IAsyncResult BeginWrite(byte[] array, int offset, int count, AsyncCallback? userCallback, object? stateObject)
         {
             return TaskToAsyncResult.Begin(WriteAsync(array, offset, count), userCallback, stateObject);
         }
@@ -694,9 +694,9 @@ namespace System.IO.Ports
         {
             lock (_readQueueLock)
             {
-                while (_readQueue.TryDequeue(out SerialStreamIORequest r))
+                while (_readQueue.TryDequeue(out SerialStreamIORequest? r))
                 {
-                    r.Complete(error.HasValue ?
+                    r!.Complete(error.HasValue ?
                                Interop.GetIOException(error.Value) :
                                InternalResources.FileNotOpenException());
                 }
@@ -704,9 +704,9 @@ namespace System.IO.Ports
 
             lock (_writeQueueLock)
             {
-                while (_writeQueue.TryDequeue(out SerialStreamIORequest r))
+                while (_writeQueue.TryDequeue(out SerialStreamIORequest? r))
                 {
-                    r.Complete(error.HasValue ?
+                    r!.Complete(error.HasValue ?
                                Interop.GetIOException(error.Value) :
                                InternalResources.FileNotOpenException());
                 }
@@ -743,7 +743,7 @@ namespace System.IO.Ports
             if (_dataReceived != null)
             {
                 ThreadPool.QueueUserWorkItem(s => {
-                    var thisRef = (SerialStream)s;
+                    var thisRef = (SerialStream)s!;
                     thisRef._dataReceived?.Invoke(thisRef, new SerialDataReceivedEventArgs(SerialData.Chars));
                 }, this);
             }
@@ -754,7 +754,7 @@ namespace System.IO.Ports
             if (_pinChanged != null)
             {
                 ThreadPool.QueueUserWorkItem(s => {
-                    var thisRef = (SerialStream)s;
+                    var thisRef = (SerialStream)s!;
                     thisRef._pinChanged?.Invoke(thisRef, new SerialPinChangedEventArgs(pinChanged));
                 }, this);
             }
@@ -765,7 +765,7 @@ namespace System.IO.Ports
             if (_dataReceived != null)
             {
                 ThreadPool.QueueUserWorkItem(s => {
-                    var thisRef = (SerialStream)s;
+                    var thisRef = (SerialStream)s!;
                     thisRef._dataReceived?.Invoke(thisRef, new SerialDataReceivedEventArgs(SerialData.Eof));
                 }, this);
             }
@@ -826,7 +826,7 @@ namespace System.IO.Ports
                     // numBytes == 0 means that there might be an error
                     if (lastError.Error != Interop.Error.SUCCESS && lastError.Error != Interop.Error.EWOULDBLOCK)
                     {
-                        r.Complete(Interop.GetIOException(lastError));
+                        r!.Complete(Interop.GetIOException(lastError));
                     }
                 }
                 else

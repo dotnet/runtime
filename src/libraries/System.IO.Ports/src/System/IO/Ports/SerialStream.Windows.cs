@@ -53,7 +53,7 @@ namespace System.IO.Ports
         private Interop.Kernel32.COMSTAT _comStat;
         private Interop.Kernel32.COMMPROP _commProp;
 
-        private readonly ThreadPoolBoundHandle _threadPoolBinding;
+        private ThreadPoolBoundHandle? _threadPoolBinding;
         private readonly EventLoopRunner _eventRunner;
         private readonly Task _waitForComEventTask;
 
@@ -691,7 +691,7 @@ namespace System.IO.Ports
 
                 // prep. for starting event cycle.
                 _eventRunner = new EventLoopRunner(this);
-                _waitForComEventTask = Task.Factory.StartNew(s => ((EventLoopRunner)s).WaitForCommEvent(), _eventRunner, CancellationToken.None,
+                _waitForComEventTask = Task.Factory.StartNew(s => ((EventLoopRunner)s!).WaitForCommEvent(), _eventRunner, CancellationToken.None,
                                                                    TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
             catch
@@ -865,7 +865,7 @@ namespace System.IO.Ports
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            SerialStreamAsyncResult afsar = asyncResult as SerialStreamAsyncResult;
+            SerialStreamAsyncResult? afsar = asyncResult as SerialStreamAsyncResult;
             if (afsar == null || afsar._isWrite)
                 InternalResources.WrongAsyncResult();
 
@@ -878,7 +878,7 @@ namespace System.IO.Ports
 
             // Obtain the WaitHandle, but don't use public property in case we
             // delay initialize the manual reset event in the future.
-            ManualResetEvent wh = afsar._waitHandle;
+            ManualResetEvent? wh = afsar._waitHandle;
             if (wh != null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
@@ -945,7 +945,7 @@ namespace System.IO.Ports
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            SerialStreamAsyncResult afsar = asyncResult as SerialStreamAsyncResult;
+            SerialStreamAsyncResult? afsar = asyncResult as SerialStreamAsyncResult;
             if (afsar == null || !afsar._isWrite)
                 InternalResources.WrongAsyncResult();
 
@@ -956,7 +956,7 @@ namespace System.IO.Ports
 
             // Obtain the WaitHandle, but don't use public property in case we
             // delay initialize the manual reset event in the future.
-            ManualResetEvent wh = afsar._waitHandle;
+            ManualResetEvent? wh = afsar._waitHandle;
             if (wh != null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
