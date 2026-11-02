@@ -209,6 +209,37 @@ namespace System.Diagnostics.Tests
             Assert.Equal(TaskStatus.RanToCompletion, task.Status);
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(1)]
+        [InlineData(4)]
+        public async Task SingleProcess_ConcurrentWaitForExitAsync(int waiterCount)
+        {
+            Process p = CreateProcessLong();
+            p.Start();
+            // Keep watcher initialization out of the concurrent registration being tested.
+            p.EnableRaisingEvents = true;
+            Assert.False(p.HasExited);
+
+            // Calls made on this thread would register handlers sequentially. Dedicated threads
+            // and a barrier encourage overlap, but do not force the faulty interleaving.
+            using var start = new Barrier(waiterCount);
+            Task<Task>[] registrations = Enumerable.Range(0, waiterCount).Select(_ => Task.Factory.StartNew(() =>
+            {
+                Assert.True(start.SignalAndWait(WaitInMS));
+                return p.WaitForExitAsync();
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray();
+
+            // Finish registration while the child is alive so early-exit checks cannot mask a lost handler.
+            Task[] waits = await Task.WhenAll(registrations).WaitAsync(TimeSpan.FromMilliseconds(WaitInMS));
+            Assert.All(waits, wait => Assert.False(wait.IsCompleted));
+            Assert.False(p.HasExited);
+
+            p.Kill();
+            // Confirm process exit independently before checking that every async wait completes.
+            Assert.True(p.WaitForExit(WaitInMS));
+            await Task.WhenAll(waits).WaitAsync(TimeSpan.FromMilliseconds(WaitInMS));
+        }
+
         [SkipOnMono("Hangs on Mono, https://github.com/dotnet/runtime/issues/38943")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]

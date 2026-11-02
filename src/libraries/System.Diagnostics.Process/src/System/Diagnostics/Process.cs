@@ -51,7 +51,8 @@ namespace System.Diagnostics
 
         private bool _watchForExit;
         private bool _watchingForExit;
-        private EventHandler? _onExited;
+        // Independent exit waits can subscribe and unsubscribe concurrently.
+        private event EventHandler? _onExited;
         private bool _exited;
         private int _exitCode;
 
