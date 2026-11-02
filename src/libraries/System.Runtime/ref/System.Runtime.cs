@@ -8078,13 +8078,21 @@ namespace System.Buffers.Text
         public static System.Buffers.OperationStatus DecodeFromUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) { throw null; }
         public static int DecodeFromUtf8InPlace(System.Span<byte> buffer) { throw null; }
         public static char[] EncodeToChars(System.ReadOnlySpan<byte> source) { throw null; }
+        public static char[] EncodeToChars(System.ReadOnlySpan<byte> source, System.Buffers.Text.Base64UrlFormattingOptions options) { throw null; }
         public static int EncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination) { throw null; }
+        public static int EncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination, System.Buffers.Text.Base64UrlFormattingOptions options) { throw null; }
         public static System.Buffers.OperationStatus EncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesConsumed, out int charsWritten, bool isFinalBlock = true) { throw null; }
+        public static System.Buffers.OperationStatus EncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesConsumed, out int charsWritten, System.Buffers.Text.Base64UrlFormattingOptions options, bool isFinalBlock = true) { throw null; }
         public static string EncodeToString(System.ReadOnlySpan<byte> source) { throw null; }
+        public static string EncodeToString(System.ReadOnlySpan<byte> source, System.Buffers.Text.Base64UrlFormattingOptions options) { throw null; }
         public static byte[] EncodeToUtf8(System.ReadOnlySpan<byte> source) { throw null; }
+        public static byte[] EncodeToUtf8(System.ReadOnlySpan<byte> source, System.Buffers.Text.Base64UrlFormattingOptions options) { throw null; }
         public static int EncodeToUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static int EncodeToUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, System.Buffers.Text.Base64UrlFormattingOptions options) { throw null; }
         public static System.Buffers.OperationStatus EncodeToUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) { throw null; }
+        public static System.Buffers.OperationStatus EncodeToUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, System.Buffers.Text.Base64UrlFormattingOptions options, bool isFinalBlock = true) { throw null; }
         public static int GetEncodedLength(int bytesLength) { throw null; }
+        public static int GetEncodedLength(int bytesLength, System.Buffers.Text.Base64UrlFormattingOptions options) { throw null; }
         public static int GetMaxDecodedLength(int base64Length) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<byte> utf8Base64UrlText) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<byte> utf8Base64UrlText, out int decodedLength) { throw null; }
@@ -8093,8 +8101,17 @@ namespace System.Buffers.Text
         public static bool TryDecodeFromChars(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryDecodeFromUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryEncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryEncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten, System.Buffers.Text.Base64UrlFormattingOptions options) { throw null; }
         public static bool TryEncodeToUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryEncodeToUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, System.Buffers.Text.Base64UrlFormattingOptions options) { throw null; }
         public static bool TryEncodeToUtf8InPlace(System.Span<byte> buffer, int dataLength, out int bytesWritten) { throw null; }
+        public static bool TryEncodeToUtf8InPlace(System.Span<byte> buffer, int dataLength, out int bytesWritten, System.Buffers.Text.Base64UrlFormattingOptions options) { throw null; }
+    }
+    [System.FlagsAttribute]
+    public enum Base64UrlFormattingOptions
+    {
+        None = 0,
+        IncludePadding = 2,
     }
 }
 namespace System.CodeDom.Compiler
