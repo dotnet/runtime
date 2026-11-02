@@ -14,9 +14,24 @@ typedef int (STDMETHODCALLTYPE *CALLBACKPROC)(int n);
 typedef int (__stdcall *CALLBACKPROC_STDCALL_SINGLEARG)(int n);
 typedef int (__stdcall *CALLBACKPROC_STDCALL)(int m, int n, int o);
 typedef int (__cdecl *CALLBACKPROC_CDECL)(int m, int n, int o);
+typedef bool (STDMETHODCALLTYPE *BOOL_CALLBACKPROC)(void* firstArg, void* context);
+typedef char16_t (STDMETHODCALLTYPE *CHAR_CALLBACKPROC)(void* firstArg, void* context);
 #ifdef _WIN32
 typedef int (__fastcall *CALLBACKPROC_FASTCALL)(int m, int n, int o);
 #endif // _WIN32
+
+#ifdef _MSC_VER
+__declspec(noinline)
+#else
+__attribute__((noinline))
+#endif
+static void DirtyStack(uintptr_t value)
+{
+    volatile uintptr_t stack[128];
+
+    for (size_t i = 0; i < sizeof(stack) / sizeof(stack[0]); i++)
+        stack[i] = value;
+}
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcMultipleTimes(int m, CALLBACKPROC pCallbackProc, int n)
 {
@@ -45,6 +60,18 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Stdcall(CALLBACKPROC
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Cdecl(CALLBACKPROC_CDECL pCallbackProc, int m, int n, int o)
 {
     return pCallbackProc(m, n, o);
+}
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcReturningBool(BOOL_CALLBACKPROC pCallbackProc, uintptr_t firstArg)
+{
+    DirtyStack(firstArg);
+    return pCallbackProc(reinterpret_cast<void*>(firstArg), nullptr) ? 1 : 0;
+}
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcReturningChar(CHAR_CALLBACKPROC pCallbackProc, uintptr_t firstArg)
+{
+    DirtyStack(firstArg);
+    return pCallbackProc(reinterpret_cast<void*>(firstArg), nullptr) == u'A' ? 1 : 0;
 }
 
 #ifdef _WIN32
