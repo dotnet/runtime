@@ -7479,7 +7479,8 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             // insert any widening or narrowing casts for backwards compatibility
             argNode = impImplicitIorI4Cast(argNode, jitSigType);
 
-            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32 || TargetArchitecture::IsWasm) &&
+            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32 || TargetArchitecture::IsWasm ||
+                 TargetArchitecture::IsLoongArch64) &&
                 call->IsUnmanaged() && varTypeIsSmall(jitSigType))
             {
                 // Wasm, Apple arm64 and arm32 ABIs require arguments to be zero/sign
