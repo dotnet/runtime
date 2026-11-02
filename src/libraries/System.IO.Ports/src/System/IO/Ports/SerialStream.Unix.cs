@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Ports;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -20,7 +21,7 @@ namespace System.IO.Ports
         private const int IOLoopIdleTimeout = 2000;
         private bool _ioLoopFinished;
 
-        private SafeSerialDeviceHandle _handle;
+        private SafeSerialDeviceHandle? _handle;
         private int _baudRate;
         private StopBits _stopBits;
         private Parity _parity;
@@ -29,7 +30,7 @@ namespace System.IO.Ports
         private int _readTimeout;
         private int _writeTimeout;
         private readonly byte[] _tempBuf = new byte[1];
-        private Task _ioLoop;
+        private Task? _ioLoop;
         private readonly object _ioLoopLock = new object();
         // Use a Queue with locking instead of ConcurrentQueue because ConcurrentQueue preserves segments for
         // observation when using TryPeek(). These segments will not clear out references after a dequeue
@@ -45,8 +46,8 @@ namespace System.IO.Ports
         private long _lastTotalBytesAvailable;
 
         // called when one character is received.
-        private SerialDataReceivedEventHandler _dataReceived;
-        internal event SerialDataReceivedEventHandler DataReceived
+        private SerialDataReceivedEventHandler? _dataReceived;
+        internal event SerialDataReceivedEventHandler? DataReceived
         {
             add
             {
@@ -65,8 +66,8 @@ namespace System.IO.Ports
         }
 
         // called when any of the pin/ring-related triggers occurs
-        private SerialPinChangedEventHandler _pinChanged;
-        internal event SerialPinChangedEventHandler PinChanged
+        private SerialPinChangedEventHandler? _pinChanged;
+        internal event SerialPinChangedEventHandler? PinChanged
         {
             add
             {
@@ -388,6 +389,7 @@ namespace System.IO.Ports
         }
 #pragma warning restore IDE0060
 
+        [MemberNotNullWhen(true, nameof(_handle))]
         internal bool IsOpen => _handle != null;
 
 
@@ -1086,7 +1088,7 @@ namespace System.IO.Ports
                 _parent = parent;
                 _cancellationTokenRegistration = ct.Register(s =>
                 {
-                    var request = (SerialStreamIORequest)s;
+                    var request = (SerialStreamIORequest)s!;
                     request.TrySetCanceled();
                     request._parent.HasCancelledTasksToProcess = true;
                 }, this);

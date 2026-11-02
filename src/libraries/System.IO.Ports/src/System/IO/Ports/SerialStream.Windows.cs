@@ -34,12 +34,12 @@ namespace System.IO.Ports
         private const int infiniteTimeoutConst = -2;
 
         // called when one character is received.
-        internal event SerialDataReceivedEventHandler DataReceived;
+        internal event SerialDataReceivedEventHandler? DataReceived;
 
         // called when any of the pin/ring-related triggers occurs
-        internal event SerialPinChangedEventHandler PinChanged;
+        internal event SerialPinChangedEventHandler? PinChanged;
 
-        private SafeFileHandle _handle;
+        private SafeFileHandle? _handle;
 
         // members supporting properties exposed to SerialPort
         private byte _parityReplace = (byte)'?';
@@ -238,6 +238,7 @@ namespace System.IO.Ports
             }
         }
 
+        [MemberNotNullWhen(true, nameof(_handle))]
         internal bool IsOpen => _handle != null && !_eventRunner.ShutdownLoop;
 
         internal Parity Parity
@@ -791,7 +792,7 @@ namespace System.IO.Ports
         // -----SECTION: all public methods ------------------*
 
         // User-accessible async read method.  Returns SerialStreamAsyncResult : IAsyncResult
-        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
+        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback? userCallback, object? stateObject)
         {
             CheckReadWriteArguments(array, offset, numBytes);
 
@@ -816,7 +817,7 @@ namespace System.IO.Ports
         // User-accessible async write method.  Returns SerialStreamAsyncResult : IAsyncResult
         // Throws an exception if port is in break state.
         public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes,
-            AsyncCallback userCallback, object stateObject)
+            AsyncCallback? userCallback, object? stateObject)
         {
             CheckWriteArguments(array, offset, numBytes);
 
@@ -1343,7 +1344,7 @@ namespace System.IO.Ports
 
         // ----SUBSECTION: internal methods supporting public read/write methods-------*
 
-        private unsafe SerialStreamAsyncResult BeginReadCore(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
+        private unsafe SerialStreamAsyncResult BeginReadCore(byte[] array, int offset, int numBytes, AsyncCallback? userCallback, object? stateObject)
         {
             // Create and store async stream class library specific data in the
             // async result
@@ -1389,7 +1390,7 @@ namespace System.IO.Ports
             return asyncResult;
         }
 
-        private unsafe SerialStreamAsyncResult BeginWriteCore(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
+        private unsafe SerialStreamAsyncResult BeginWriteCore(byte[] array, int offset, int numBytes, AsyncCallback? userCallback, object? stateObject)
         {
             // Create and store async stream class library specific data in the
             // async result
@@ -1835,21 +1836,21 @@ namespace System.IO.Ports
         internal sealed unsafe class SerialStreamAsyncResult : IAsyncResult
         {
             // User code callback
-            internal AsyncCallback _userCallback;
+            internal AsyncCallback? _userCallback;
 
-            internal object _userStateObject;
+            internal object? _userStateObject;
 
             internal bool _isWrite;     // Whether this is a read or a write
             internal bool _isComplete;
             internal bool _completedSynchronously;  // Which thread called callback
 
-            internal ManualResetEvent _waitHandle;
+            internal ManualResetEvent? _waitHandle;
             internal int _EndXxxCalled;   // Whether we've called EndXxx already.
             internal int _numBytes;     // number of bytes read OR written
             internal int _errorCode;
             internal NativeOverlapped* _overlapped;
 
-            public object AsyncState
+            public object? AsyncState
             {
                 get { return _userStateObject; }
             }

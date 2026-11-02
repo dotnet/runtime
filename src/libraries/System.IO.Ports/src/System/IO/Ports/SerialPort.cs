@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft.Win32;
 
@@ -56,23 +57,23 @@ namespace System.IO.Ports
         private int _writeBufferSize = DefaultWriteBufferSize;
 
         // ---------- members for internal support ---------*
-        private SerialStream _internalSerialStream;
+        private SerialStream? _internalSerialStream;
         private byte[] _inBuffer = new byte[DefaultBufferSize];
         private int _readPos;    // position of next byte to read in the read buffer.  readPos <= readLen
         private int _readLen;    // position of first unreadable byte => CachedBytesToRead is the number of readable bytes left.
         private readonly char[] _oneChar = new char[1];
-        private char[] _singleCharBuffer;
+        private char[]? _singleCharBuffer;
 
-        public event SerialErrorReceivedEventHandler ErrorReceived;
+        public event SerialErrorReceivedEventHandler? ErrorReceived;
 
         // handlers for the underlying stream
         private readonly SerialDataReceivedEventHandler _dataReceivedHandler;
         private readonly SerialPinChangedEventHandler _pinChangedHandler;
 
-        private SerialDataReceivedEventHandler _dataReceived;
-        private SerialPinChangedEventHandler _pinChanged;
+        private SerialDataReceivedEventHandler? _dataReceived;
+        private SerialPinChangedEventHandler? _pinChanged;
 
-        public event SerialDataReceivedEventHandler DataReceived
+        public event SerialDataReceivedEventHandler? DataReceived
         {
             add
             {
@@ -101,7 +102,7 @@ namespace System.IO.Ports
             }
         }
 
-        public event SerialPinChangedEventHandler PinChanged
+        public event SerialPinChangedEventHandler? PinChanged
         {
             add
             {
@@ -335,6 +336,7 @@ namespace System.IO.Ports
             }
         }
 
+        [MemberNotNullWhen(true, nameof(_internalSerialStream))]
         public bool IsOpen
         {
             // true only if the Open() method successfully called on this SerialPort object, without Close() being called more recently.
@@ -1235,8 +1237,8 @@ namespace System.IO.Ports
         // Plus, this enforces the requirement on the received event that the number of buffered bytes >= receivedBytesThreshold
         private void CatchErrorEvents(object src, SerialErrorReceivedEventArgs e)
         {
-            SerialErrorReceivedEventHandler eventHandler = ErrorReceived;
-            SerialStream stream = _internalSerialStream;
+            SerialErrorReceivedEventHandler? eventHandler = ErrorReceived;
+            SerialStream? stream = _internalSerialStream;
 
             if ((eventHandler != null) && (stream != null))
             {
@@ -1250,8 +1252,8 @@ namespace System.IO.Ports
 
         private void CatchPinChangedEvents(object src, SerialPinChangedEventArgs e)
         {
-            SerialPinChangedEventHandler eventHandler = _pinChanged;
-            SerialStream stream = _internalSerialStream;
+            SerialPinChangedEventHandler? eventHandler = _pinChanged;
+            SerialStream? stream = _internalSerialStream;
 
             if ((eventHandler != null) && (stream != null))
             {
@@ -1265,8 +1267,8 @@ namespace System.IO.Ports
 
         private void CatchReceivedEvents(object src, SerialDataReceivedEventArgs e)
         {
-            SerialDataReceivedEventHandler eventHandler = _dataReceived;
-            SerialStream stream = _internalSerialStream;
+            SerialDataReceivedEventHandler? eventHandler = _dataReceived;
+            SerialStream? stream = _internalSerialStream;
 
             if ((eventHandler != null) && (stream != null))
             {

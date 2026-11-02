@@ -95,9 +95,9 @@ namespace System.IO.Ports
         public System.IO.Ports.StopBits StopBits { get { throw null; } set { } }
         public int WriteBufferSize { get { throw null; } set { } }
         public int WriteTimeout { get { throw null; } set { } }
-        public event System.IO.Ports.SerialDataReceivedEventHandler DataReceived { add { } remove { } }
-        public event System.IO.Ports.SerialErrorReceivedEventHandler ErrorReceived { add { } remove { } }
-        public event System.IO.Ports.SerialPinChangedEventHandler PinChanged { add { } remove { } }
+        public event System.IO.Ports.SerialDataReceivedEventHandler? DataReceived { add { } remove { } }
+        public event System.IO.Ports.SerialErrorReceivedEventHandler? ErrorReceived { add { } remove { } }
+        public event System.IO.Ports.SerialPinChangedEventHandler? PinChanged { add { } remove { } }
         public void Close() { }
         public void DiscardInBuffer() { }
         public void DiscardOutBuffer() { }
