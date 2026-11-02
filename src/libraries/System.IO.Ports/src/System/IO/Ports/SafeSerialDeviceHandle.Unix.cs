@@ -6,12 +6,19 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Ports
 {
-    internal sealed class SafeSerialDeviceHandle : SafeHandleMinusOneIsInvalid
+    internal sealed partial class SafeSerialDeviceHandle : SafeHandleMinusOneIsInvalid
     {
+        // When the user calls Dispose, some operations for a pending read event might be in flight.
+        // If these use the handle, the user Dispose call won't actually release the handle immediately
+        // which causes opening the port after the Dispose to fail (EBUSY).
+        // DisposeLock guards these operations so that they can not happen concurrent with the Dispose.
+        private object DisposeLock => this;
+
         public SafeSerialDeviceHandle() : base(ownsHandle: true)
         {
         }
@@ -32,6 +39,44 @@ namespace System.IO.Ports
             }
 
             return handle;
+        }
+
+        // Gets the amount input data buffered by the handle.
+        partial void GetBufferedCount(ref int count);
+
+        // Get the amount of bytes that can be read from the handle plus the amount buffered by the caller.
+        // When throwOnDispose is false, returns 0 when disposed instead of throwing.
+        internal int GetBytesToRead(int buffered, bool throwOnDispose = true)
+        {
+            lock (DisposeLock)
+            {
+                if (!throwOnDispose && IsClosed)
+                {
+                    return 0;
+                }
+
+                try
+                {
+                    return buffered + BytesToRead;
+                }
+                catch (ObjectDisposedException) when (!throwOnDispose)
+                {
+                    return 0;
+                }
+            }
+        }
+
+        // Gets the amount of bytes that can be read from the handle.
+        private int BytesToRead
+        {
+            get
+            {
+                Debug.Assert(Monitor.IsEntered(DisposeLock));
+
+                int buffered = 0;
+                GetBufferedCount(ref buffered);
+                return Math.Max(Interop.Termios.TermiosGetAvailableBytes(this, true), 0) + buffered;
+            }
         }
 
         protected override bool ReleaseHandle()
