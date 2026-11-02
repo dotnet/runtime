@@ -2797,21 +2797,15 @@ namespace Internal.JitInterface
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN:
                     if (!pResult->exactContextNeedsRuntimeLookup)
                     {
-                        MethodWithToken virtualFunctionTarget = ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false);
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.DynamicHelperCell(virtualFunctionTarget, useInstantiatingStub));
+                            _compilation.NodeFactory.DynamicHelperCell(
+                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false),
+                                useInstantiatingStub));
 
                         // Wasm routes virtual calls that cannot use a pregenerated dispatch thunk through
                         // LDVIRTFTN, so the call sig may carry a type arg (e.g., MD-array intrinsics);
                         // instParamLookup is set up by the post-switch block below.
                         Debug.Assert(!pResult->sig.hasTypeArg() || _compilation.NodeFactory.Target.IsWasm);
-
-                        // The Wasm JIT calls CORINFO_HELP_VIRTUAL_FUNC_PTR instead of using the dynamic helper cell,
-                        // so add the dependencies of the cell's VirtualEntry signature here.
-                        if (_compilation.NodeFactory.Target.IsWasm)
-                        {
-                            MethodFixupSignature.AddVirtualEntryDependencies(_additionalDependencies, _compilation.NodeFactory, virtualFunctionTarget.Method);
-                        }
                     }
                     break;
 
@@ -4092,6 +4086,16 @@ namespace Internal.JitInterface
                         AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
                     }
                 }
+            }
+        }
+
+        private void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
+        {
+            // The Wasm JIT calls CORINFO_HELP_VIRTUAL_FUNC_PTR instead of using the VirtualEntry dynamic helper cell,
+            // so add the dependencies of the cell's signature for each lookup that survives to lowering.
+            if (_compilation.NodeFactory.Target.IsWasm)
+            {
+                MethodFixupSignature.AddVirtualEntryDependencies(_additionalDependencies, _compilation.NodeFactory, HandleToObject(method));
             }
         }
 
