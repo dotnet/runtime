@@ -284,8 +284,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     await connection.ReadRequestDataAsync();
                     cts.Cancel();
 
-                    AggregateException ag = Assert.Throws<AggregateException>(() => t.Wait());
-                    Assert.IsType<TaskCanceledException>(ag.InnerException);
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => t);
                 });
             });
         }
