@@ -9068,6 +9068,16 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_S(INS_tzcnt_apx, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_S(INS_lzcnt_apx, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_S(INS_popcnt_apx, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_tzcnt_apx, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_lzcnt_apx, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_popcnt_apx, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_AR(INS_tzcnt_apx, EA_8BYTE, REG_R12, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_lzcnt_apx, EA_8BYTE, REG_R12, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_popcnt_apx, EA_8BYTE, REG_R12, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_tzcnt_apx, EA_4BYTE, REG_R12, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_lzcnt_apx, EA_4BYTE, REG_R12, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_popcnt_apx, EA_4BYTE, REG_R12, REG_R16, 0x14);
 
     theEmitter->emitIns_R_R_R(INS_add, EA_2BYTE, REG_R12, REG_R13, REG_R11,
                               (insOpts)(INS_OPTS_EVEX_nf | INS_OPTS_EVEX_nd));
@@ -9113,6 +9123,20 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_R(INS_crc32_apx, EA_8BYTE, REG_R16, REG_R17);
     theEmitter->emitIns_R_A(INS_crc32_apx, EA_8BYTE, REG_R18, &loadGPR);
     theEmitter->emitIns_R_S(INS_crc32_apx, EA_8BYTE, REG_R18, 0, 0);
+    theEmitter->emitIns_R_S(INS_crc32_apx, EA_4BYTE, REG_R18, 0, 0);
+    theEmitter->emitIns_R_S(INS_crc32_apx, EA_2BYTE, REG_R18, 0, 0);
+    theEmitter->emitIns_R_S(INS_crc32_apx, EA_1BYTE, REG_R18, 0, 0);
+    theEmitter->emitIns_R_AR(INS_crc32_apx, EA_8BYTE, REG_R18, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_crc32_apx, EA_2BYTE, REG_R18, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_crc32_apx, EA_1BYTE, REG_R18, REG_R16, 0x14);
+
+    // MOVBE needs the EVEX encoding when the address uses an extended GPR.
+    theEmitter->emitIns_R_AR(INS_movbe_apx, EA_8BYTE, REG_R17, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_movbe_apx, EA_4BYTE, REG_R17, REG_R16, 0x14);
+    theEmitter->emitIns_R_AR(INS_movbe_apx, EA_2BYTE, REG_R17, REG_R16, 0x14);
+    theEmitter->emitIns_AR_R(INS_movbe_apx, EA_8BYTE, REG_R17, REG_R16, 0x14);
+    theEmitter->emitIns_AR_R(INS_movbe_apx, EA_4BYTE, REG_R17, REG_R16, 0x14);
+    theEmitter->emitIns_AR_R(INS_movbe_apx, EA_2BYTE, REG_R17, REG_R16, 0x14);
 
     // Note that BZHI has a reversed src operands due to special handling at import.
     theEmitter->emitIns_R_R_R(INS_bzhi, EA_4BYTE, REG_R16, REG_R18, REG_R17);
@@ -9460,6 +9484,25 @@ void CodeGen::genAmd64EmitterUnitTestsCCMP()
     theEmitter->emitIns_R_I(INS_ccmpe, EA_1BYTE, REG_RAX, 270, INS_OPTS_EVEX_dfv_cf);
 
     // ============
+    // Test RA form
+    // ============
+    theEmitter->emitIns_R_AR(INS_ccmpe, EA_4BYTE, REG_RAX, REG_RCX, 0x14);
+    theEmitter->emitIns_R_AR(INS_ccmpe, EA_8BYTE, REG_RAX, REG_RCX, 0x14);
+    theEmitter->emitIns_R_AR(INS_ccmpe, EA_2BYTE, REG_RAX, REG_RCX, 0x14);
+    theEmitter->emitIns_R_AR(INS_ccmpe, EA_1BYTE, REG_RAX, REG_RCX, 0x14);
+    theEmitter->emitIns_R_AR(INS_ccmpe, EA_4BYTE, REG_R17, REG_R16, 0x14);
+
+    // ============
+    // Test MI form (test small and large sizes and constants)
+    // ============
+    theEmitter->emitIns_I_AR(INS_ccmpe, EA_4BYTE, 123, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_I_AR(INS_ccmpe, EA_4BYTE, 270, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_I_AR(INS_ccmpe, EA_8BYTE, 123, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_I_AR(INS_ccmpe, EA_8BYTE, 270, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_I_AR(INS_ccmpe, EA_2BYTE, 270, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_I_AR(INS_ccmpe, EA_1BYTE, 123, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+
+    // ============
     // Test RC form
     // ============
 
@@ -9540,6 +9583,15 @@ void CodeGen::genAmd64EmitterUnitTestsCTEST()
     theEmitter->emitIns_I_AR(INS_cteste, EA_2BYTE, 123, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
     theEmitter->emitIns_I_AR(INS_cteste, EA_4BYTE, 123, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
     theEmitter->emitIns_I_AR(INS_cteste, EA_8BYTE, 123, REG_R18, 2, INS_OPTS_EVEX_dfv_cf);
+
+    // ============
+    // Test SR form
+    // ============
+
+    theEmitter->emitIns_S_R(INS_cteste, EA_1BYTE, REG_ECX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_S_R(INS_cteste, EA_2BYTE, REG_ECX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_S_R(INS_cteste, EA_4BYTE, REG_ECX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_S_R(INS_cteste, EA_8BYTE, REG_ECX, 0, 0, INS_OPTS_EVEX_dfv_cf);
 }
 #endif // defined(DEBUG) && defined(TARGET_AMD64)
 

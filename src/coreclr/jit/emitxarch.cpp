@@ -771,6 +771,25 @@ bool emitter::HasRegularWideForm(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// HasRegularWideFormForOneByteOpcode: As above in HasRegularWideForm, for an instruction whose
+// opcode has no escape byte: a legacy map 0 opcode, or the map 4 opcode of an APX-only instruction.
+//
+// Legacy instructions with such an opcode are assumed to follow the regular form, including some
+// that are not marked with INS_FLAGS_HasWBit (e.g. push and pop). APX-only instructions often do
+// not follow it (e.g. CFCMOV encodes the condition in the low opcode bits and MOVBE encodes the
+// direction there), so they set the 'w' bit only when they are marked with INS_FLAGS_HasWBit.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction has a regular form where the 'w' bit needs to be set.
+bool emitter::HasRegularWideFormForOneByteOpcode(instruction ins)
+{
+    return !IsApxOnlyInstruction(ins) || HasRegularWideForm(ins);
+}
+
+//------------------------------------------------------------------------
 // HasRegularWideImmediateForm: As above in HasRegularWideForm, many instructions taking
 // immediates have a regular form used to encode whether the instruction takes a sign-extended
 // 1-byte immediate or a (in 64-bit sign-extended) 4-byte immediate, by respectively setting and
@@ -10645,6 +10664,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int va
 
     assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
     SetEvexEmbMaskIfNeeded(id, instOptions);
+    SetEvexDFVIfNeeded(id, instOptions);
 
     sz = emitInsSizeSV(id, insCodeMR(ins), varx, offs);
 
@@ -14420,10 +14440,8 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_4BYTE:
 #ifdef TARGET_AMD64
             case EA_8BYTE:
-                // EVEX.MOVBE is assigned with RM opcode that does not follow the following rule, and
-                // the opcode for CFCMOV encodes the condition in its low bits.
-                if ((ins != INS_movbe_apx) && !IsCFCMOV(ins))
 #endif
+                if (HasRegularWideFormForOneByteOpcode(ins))
                 {
                     /* Set the 'w' bit to get the large version */
                     code |= 0x1;
@@ -15295,8 +15313,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 FALLTHROUGH;
 
             case EA_4BYTE:
-                // The opcode for CFCMOV encodes the condition in its low bits.
-                if (!IsCFCMOV(ins))
+                if (HasRegularWideFormForOneByteOpcode(ins))
                 {
                     code |= 0x01;
                 }
@@ -15314,9 +15331,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                         assert(hasEvexPrefix(code));
                         code = AddRexWPrefix(id, code);
                     }
-                    if ((ins != INS_lzcnt_apx) && (ins != INS_tzcnt_apx) && (ins != INS_popcnt_apx) &&
-                        !IsCFCMOV(ins))
-                    // These instructions do not support 1-byte inputs and the opcode is exact.
+                    if (HasRegularWideFormForOneByteOpcode(ins))
                     {
                         code |= 0x01;
                     }
@@ -15862,10 +15877,9 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 #ifdef TARGET_AMD64
             case EA_8BYTE:
 #endif
-                // Set the 'w' bit to get the large version. The opcode for CFCMOV encodes the
-                // condition in its low bits instead.
-                if (!IsCFCMOV(ins))
+                if (HasRegularWideFormForOneByteOpcode(ins))
                 {
+                    // Set the 'w' bit to get the large version
                     code |= 0x1;
                 }
                 break;
@@ -16645,8 +16659,10 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     dst += emitOutputByte(dst, 0x66);
                 }
 
-                if (!IsCFCMOV(ins))
+                if (HasRegularWideFormForOneByteOpcode(ins))
+                {
                     code |= 0x1;
+                }
                 break;
 
             case EA_4BYTE:
@@ -16660,8 +16676,10 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     assert((code & EXTENDED_EVEX_PP_BITS) == 0);
                 }
 #endif
-                if (!IsCFCMOV(ins))
+                if (HasRegularWideFormForOneByteOpcode(ins))
+                {
                     code |= 0x1;
+                }
                 break;
 
 #ifdef TARGET_AMD64
@@ -16678,8 +16696,10 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 }
 
                 // Set the 'w' bit to get the large version
-                if (!IsCFCMOV(ins))
+                if (HasRegularWideFormForOneByteOpcode(ins))
+                {
                     code |= 0x1;
+                }
                 break;
 
 #endif // TARGET_AMD64
@@ -16872,7 +16892,10 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
             case EA_2BYTE:
             case EA_4BYTE:
                 // Set the 'w' bit to get the large version
-                code = (insIsCMOV(ins) || IsCFCMOV(ins)) ? code : (code | (0x01));
+                if (HasRegularWideForm(ins))
+                {
+                    code |= 0x01;
+                }
                 break;
 
 #ifdef TARGET_AMD64
@@ -16882,7 +16905,10 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
                 code = AddRexWPrefix(id, code); // TODO-APX : Revisit. does xor or other cases need to be handled
                                                 // differently? see emitOutputRR
                 // Set the 'w' bit to get the large version
-                code = (insIsCMOV(ins) || IsCFCMOV(ins)) ? code : (code | (0x01));
+                if (HasRegularWideForm(ins))
+                {
+                    code |= 0x01;
+                }
                 break;
 
 #endif // TARGET_AMD64
@@ -17198,8 +17224,11 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             FALLTHROUGH;
 
         case EA_4BYTE:
-            // Set the 'w' bit to get the large version
-            code |= 0x1;
+            if (HasRegularWideFormForOneByteOpcode(ins))
+            {
+                // Set the 'w' bit to get the large version
+                code |= 0x1;
+            }
             break;
 
 #ifdef TARGET_AMD64
@@ -17208,7 +17237,10 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             /* and the REX.W bit to get the really large version */
 
             code = AddRexWPrefix(id, code);
-            code |= 0x1;
+            if (HasRegularWideFormForOneByteOpcode(ins))
+            {
+                code |= 0x1;
+            }
             break;
 #endif
 

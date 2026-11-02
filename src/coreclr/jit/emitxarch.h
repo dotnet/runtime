@@ -721,6 +721,7 @@ bool        IsDstSrcSrcAVXInstruction(instruction ins) const;
 bool        IsThreeOperandAVXInstruction(instruction ins) const;
 bool        IsAvxCommutative(instruction ins) const;
 static bool HasRegularWideForm(instruction ins);
+static bool HasRegularWideFormForOneByteOpcode(instruction ins);
 static bool HasRegularWideImmediateForm(instruction ins);
 static bool DoesWriteZeroFlagForResult(instruction ins);
 static bool DoesWriteParityFlag(instruction ins);
