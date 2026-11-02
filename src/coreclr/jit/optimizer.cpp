@@ -4772,7 +4772,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                         if (!treeIsHoistable)
                         {
                             // Does this helper call throw?
-                            if (!s_helperCallProperties.NoThrow(helpFunc))
+                            if (call->CallExceptions(m_compiler) != ExceptionSetFlags::None)
                             {
                                 m_canHoistSideEffects = false;
                             }
