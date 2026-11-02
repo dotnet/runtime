@@ -1543,8 +1543,8 @@ void CordbProcess::EnableInteropDebugging()
     m_state |= PS_WIN32_ATTACHED;
     if (GetDCB() != NULL)
     {
-        GetDCB()->m_rightSideIsWin32Debugger = true;
-        UpdateLeftSideDCBField(&(GetDCB()->m_rightSideIsWin32Debugger), sizeof(GetDCB()->m_rightSideIsWin32Debugger));
+        GetDCB()->m_dcb2.m_rightSideIsWin32Debugger = true;
+        UpdateLeftSideDCBField(&(GetDCB()->m_dcb2.m_rightSideIsWin32Debugger), sizeof(GetDCB()->m_dcb2.m_rightSideIsWin32Debugger));
     }
 
     // Tell the Shim we're interop-debugging.
@@ -5652,13 +5652,13 @@ HRESULT CordbProcess::GetHelperThreadID(DWORD *pThreadID)
     {
         *pThreadID = m_helperThreadId;
     }
-    else if ((GetDCB() != NULL) && (GetDCB()->m_helperThreadId != 0))
+    else if ((GetDCB() != NULL) && (GetDCB()->m_dcb2.m_helperThreadId != 0))
     {
         EX_TRY
         {
             // be sure we have the latest information
             UpdateRightSideDCB();
-            *pThreadID = GetDCB()->m_helperThreadId;
+            *pThreadID = GetDCB()->m_dcb2.m_helperThreadId;
         }
         EX_CATCH_HRESULT(hr);
 
@@ -6981,8 +6981,6 @@ void CordbProcess::GetEventBlock(BOOL * pfBlockExists)
             // Ensure that we have a DAC interface.
             _ASSERTE(m_pDacPrimitives != NULL);
 
-            // This is not technically necessary for Mac debugging.  The event channel doesn't rely on
-            // knowing the target address of the DCB on the LS.
             CORDB_ADDRESS pLeftSideDCB = (CORDB_ADDRESS)NULL;
             IfFailThrow(GetDAC()->GetDebuggerControlBlockAddress(&pLeftSideDCB));
             if (pLeftSideDCB == (CORDB_ADDRESS)NULL)
@@ -7023,27 +7021,32 @@ void CordbProcess::GetEventBlock(BOOL * pfBlockExists)
 
 //
 // Verify that the version info in the control block matches what we expect. The minimum supported protocol from the
-// Left Side must be greater or equal to the minimum required protocol of the Right Side. Note: its the Left Side's job
-// to conform to whatever protocol the Right Side requires, so long as minimum is supported.
+// Runtime must be between the minimum required and the current protocol of the debugger.
 //
 void CordbProcess::VerifyControlBlock()
 {
     INTERNAL_API_ENTRY(this);
     _ASSERTE(m_pShim != NULL);
 
-    if (GetDCB()->m_DCBSize == 0)
+    if (GetDCB()->m_version < CorDB_DebuggerProtocolMinSupported ||
+        GetDCB()->m_version > CorDB_DebuggerProtocolCurrent)
+    {
+        ThrowHR(CORDBG_E_INCOMPATIBLE_PROTOCOL);
+    }
+
+    if (GetDCB()->m_dcb2.m_DCBSize == 0)
     {
         // the LS is still initializing the DCB
         ThrowHR(CORDBG_E_DEBUGGING_NOT_POSSIBLE);
     }
 
-    // Fill in the protocol numbers for the Right Side and update the LS DCB.
-    GetDCB()->m_rightSideProtocolCurrent = CorDB_RightSideProtocolCurrent;
-    UpdateLeftSideDCBField(&(GetDCB()->m_rightSideProtocolCurrent), sizeof(GetDCB()->m_rightSideProtocolCurrent));
+    // Fill in the protocol numbers for the debugger and update the runtime DCB.
+    GetDCB()->m_dcb2.m_debuggerProtocolCurrent      = CorDB_DebuggerProtocolCurrent;
+    UpdateLeftSideDCBField(&(GetDCB()->m_dcb2.m_debuggerProtocolCurrent), sizeof(GetDCB()->m_dcb2.m_debuggerProtocolCurrent));
 
-    GetDCB()->m_rightSideProtocolMinSupported = CorDB_RightSideProtocolMinSupported;
-    UpdateLeftSideDCBField(&(GetDCB()->m_rightSideProtocolMinSupported),
-                           sizeof(GetDCB()->m_rightSideProtocolMinSupported));
+    GetDCB()->m_dcb2.m_debuggerProtocolMinSupported = CorDB_DebuggerProtocolMinSupported;
+    UpdateLeftSideDCBField(&(GetDCB()->m_dcb2.m_debuggerProtocolMinSupported),
+                           sizeof(GetDCB()->m_dcb2.m_debuggerProtocolMinSupported));
 
     // Dbi and Wks have a more flexible versioning allowed, as described by the Debugger
     // Version Protocol String in DEBUGGER_PROTOCOL_STRING in DbgIpcEvents.h. This allows different build
@@ -7055,24 +7058,17 @@ void CordbProcess::VerifyControlBlock()
 
     // The Debug Manager should properly match LS & RS, and thus guarantee that this assert should never fire.
     // But just in case the installation is corrupted, we'll check it.
-    if (GetDCB()->m_DCBSize != sizeof(DebuggerIPCControlBlock))
+    if (GetDCB()->m_dcb2.m_DCBSize != sizeof(DebuggerIPCControlBlock_2))
     {
         CONSISTENCY_CHECK_MSGF(false, ("DCB in LS is %d bytes, in RS is %d bytes. Version mismatch!!\n",
-                               GetDCB()->m_DCBSize, sizeof(DebuggerIPCControlBlock)));
+                               GetDCB()->m_dcb2.m_DCBSize, sizeof(DebuggerIPCControlBlock_2)));
         ThrowHR(CORDBG_E_INCOMPATIBLE_PROTOCOL);
     }
 
-    // The Left Side has to support at least our minimum required protocol.
-    if (GetDCB()->m_leftSideProtocolCurrent < GetDCB()->m_rightSideProtocolMinSupported)
+    // The runtime protocol version must be within the range supported by the debugger.
+    ULONG runtimeProtocol = GetDCB()->m_dcb2.m_runtimeProtocol;
+    if (runtimeProtocol < GetDCB()->m_dcb2.m_debuggerProtocolMinSupported || runtimeProtocol > GetDCB()->m_dcb2.m_debuggerProtocolCurrent)
     {
-        _ASSERTE(GetDCB()->m_leftSideProtocolCurrent >= GetDCB()->m_rightSideProtocolMinSupported);
-        ThrowHR(CORDBG_E_INCOMPATIBLE_PROTOCOL);
-    }
-
-    // The Left Side has to be able to emulate at least our minimum required protocol.
-    if (GetDCB()->m_leftSideProtocolMinSupported > GetDCB()->m_rightSideProtocolCurrent)
-    {
-        _ASSERTE(GetDCB()->m_leftSideProtocolMinSupported <= GetDCB()->m_rightSideProtocolCurrent);
         ThrowHR(CORDBG_E_INCOMPATIBLE_PROTOCOL);
     }
 
@@ -7085,7 +7081,7 @@ void CordbProcess::VerifyControlBlock()
         ThrowHR(CORDBG_E_INCOMPATIBLE_PROTOCOL);
 #endif
 
-    _ASSERTE(!GetDCB()->m_rightSideShouldCreateHelperThread);
+    _ASSERTE(!GetDCB()->m_dcb2.m_rightSideShouldCreateHelperThread);
 } // CordbProcess::VerifyControlBlock
 
 //-----------------------------------------------------------------------------
@@ -7107,7 +7103,7 @@ HRESULT CordbProcess::GetRuntimeOffsets()
 
     // If we got this far w/o failing, then we should be able to get the helper thread handle.
     // RS will handle not having the helper-thread handle, so we just make a best effort here.
-    DWORD dwHelperTid = GetDCB()->m_realHelperThreadId;
+    DWORD dwHelperTid = GetDCB()->m_dcb2.m_realHelperThreadId;
     _ASSERTE(dwHelperTid != 0);
 
 
@@ -7121,7 +7117,7 @@ HRESULT CordbProcess::GetRuntimeOffsets()
     }
 
     // get the remote address of the runtime offsets structure and read the structure itself
-    HRESULT hrRead = SafeReadStruct(PTR_TO_CORDB_ADDRESS(GetDCB()->m_pRuntimeOffsets), &m_runtimeOffsets);
+    HRESULT hrRead = SafeReadStruct(PTR_TO_CORDB_ADDRESS(GetDCB()->m_dcb2.m_pRuntimeOffsets), &m_runtimeOffsets);
 
     if (FAILED(hrRead))
     {
@@ -7989,12 +7985,12 @@ void CordbProcess::UnrecoverableError(HRESULT errorHR,
     // right thing.
     if (GetDCB() != NULL)
     {
-        GetDCB()->m_errorHR = errorHR;
-        GetDCB()->m_errorCode = errorCode;
+        GetDCB()->m_dcb2.m_errorHR = errorHR;
+        GetDCB()->m_dcb2.m_errorCode = errorCode;
         EX_TRY
         {
-            UpdateLeftSideDCBField(&(GetDCB()->m_errorHR), sizeof(GetDCB()->m_errorHR));
-            UpdateLeftSideDCBField(&(GetDCB()->m_errorCode), sizeof(GetDCB()->m_errorCode));
+            UpdateLeftSideDCBField(&(GetDCB()->m_dcb2.m_errorHR), sizeof(GetDCB()->m_dcb2.m_errorHR));
+            UpdateLeftSideDCBField(&(GetDCB()->m_dcb2.m_errorCode), sizeof(GetDCB()->m_dcb2.m_errorCode));
         }
         EX_CATCH
         {
@@ -8028,13 +8024,13 @@ HRESULT CordbProcess::CheckForUnrecoverableError()
         // be sure we have the latest information
         UpdateRightSideDCB();
 
-        if (GetDCB()->m_errorHR != S_OK)
+        if (GetDCB()->m_dcb2.m_errorHR != S_OK)
         {
-            UnrecoverableError(GetDCB()->m_errorHR,
-                               GetDCB()->m_errorCode,
+            UnrecoverableError(GetDCB()->m_dcb2.m_errorHR,
+                               GetDCB()->m_dcb2.m_errorCode,
                            __FILE__, __LINE__);
 
-            hr = GetDCB()->m_errorHR;
+            hr = GetDCB()->m_dcb2.m_errorHR;
         }
     }
 
@@ -8873,7 +8869,7 @@ void CordbProcess::FinishInitializeIPCChannelWorker()
         IfFailThrow(m_pEventChannel->Init(UnsafeGetProcessHandle()));
 
 #if defined(FEATURE_INTEROP_DEBUGGING)
-        DuplicateHandleToLocalProcess(&m_leftSideUnmanagedWaitEvent, &GetDCB()->m_leftSideUnmanagedWaitEvent);
+        DuplicateHandleToLocalProcess(&m_leftSideUnmanagedWaitEvent, &GetDCB()->m_dcb2.m_leftSideUnmanagedWaitEvent);
 #endif // FEATURE_INTEROP_DEBUGGING
 
         // Read the Runtime Offsets struct out of the debuggee.
@@ -8885,8 +8881,8 @@ void CordbProcess::FinishInitializeIPCChannelWorker()
         // we don't overwrite any fields that the LS is writing. We need to be sure we only write to RS
         // status fields.
         m_initialized = true;
-        GetDCB()->m_rightSideIsWin32Debugger = IsInteropDebugging();
-        UpdateLeftSideDCBField(&(GetDCB()->m_rightSideIsWin32Debugger), sizeof(GetDCB()->m_rightSideIsWin32Debugger));
+        GetDCB()->m_dcb2.m_rightSideIsWin32Debugger = IsInteropDebugging();
+        UpdateLeftSideDCBField(&(GetDCB()->m_dcb2.m_rightSideIsWin32Debugger), sizeof(GetDCB()->m_dcb2.m_rightSideIsWin32Debugger));
 
         LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::HFRCE: ...went fine\n", GetCurrentThreadId()));
         _ASSERTE(SUCCEEDED(hr));
@@ -11452,11 +11448,11 @@ CordbUnmanagedThread * CordbProcess::GetUnmanagedThreadFromEvent(const DEBUG_EVE
             {
                 // get the latest LS DCB information
                 UpdateRightSideDCB();
-                if ((this->GetDCB()->m_helperThreadStartAddr != NULL) && (pUnmanagedThread != NULL))
+                if ((this->GetDCB()->m_dcb2.m_helperThreadStartAddr != NULL) && (pUnmanagedThread != NULL))
                 {
                     void * pStartAddr = pEvent->u.CreateThread.lpStartAddress;
 
-                    if (pStartAddr == this->GetDCB()->m_helperThreadStartAddr)
+                    if (pStartAddr == this->GetDCB()->m_dcb2.m_helperThreadStartAddr)
                     {
                         // Remember the ID of the helper thread.
                         this->m_helperThreadId = pEvent->dwThreadId;
@@ -12440,7 +12436,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
     if (this->m_initialized && (this->GetDCB() != NULL))
     {
         UpdateRightSideDCB();
-        if (this->GetDCB()->m_shutdownBegun)
+        if (this->GetDCB()->m_dcb2.m_shutdownBegun)
         {
             STRESS_LOG0(LF_CORDB, LL_INFO1000, "W32ET::W32EL: shutdown begun...\n");
             this->m_initialized = false;
@@ -13406,8 +13402,8 @@ bool CordbProcess::IsHelperThreadWorked(DWORD tid)
     // get the latest information from the LS DCB
     UpdateRightSideDCB();
     return
-        (tid == pDCB->m_realHelperThreadId) ||
-        (tid == pDCB->m_temporaryHelperThreadId);
+        (tid == pDCB->m_dcb2.m_realHelperThreadId) ||
+        (tid == pDCB->m_dcb2.m_temporaryHelperThreadId);
 
 }
 
@@ -13427,8 +13423,8 @@ void CordbProcess::CleanupHalfBakedLeftSide()
     {
         EX_TRY
         {
-            GetDCB()->m_rightSideIsWin32Debugger = false;
-            UpdateLeftSideDCBField(&(GetDCB()->m_rightSideIsWin32Debugger), sizeof(GetDCB()->m_rightSideIsWin32Debugger));
+            GetDCB()->m_dcb2.m_rightSideIsWin32Debugger = false;
+            UpdateLeftSideDCBField(&(GetDCB()->m_dcb2.m_rightSideIsWin32Debugger), sizeof(GetDCB()->m_dcb2.m_rightSideIsWin32Debugger));
 
             if (m_pEventChannel != NULL)
             {

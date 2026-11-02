@@ -88,7 +88,7 @@ DbgTransportSession::~DbgTransportSession()
 #ifdef RIGHT_SIDE_COMPILE
 HRESULT DbgTransportSession::Init(const ProcessDescriptor& pd, const WaitHandle& processExited)
 #else // RIGHT_SIDE_COMPILE
-HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
+HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock_2 *pDCB)
 #endif // RIGHT_SIDE_COMPILE
 {
     _ASSERTE(m_eState == SS_Closed);
@@ -425,7 +425,8 @@ void DbgTransportSession::GetNextEvent(DebuggerIPCEvent *pEvent, DWORD cbEvent)
 
 
 
-void MarshalDCBTransportToDCB(DebuggerIPCControlBlockTransport* pIn, DebuggerIPCControlBlock* pOut)
+#ifndef RIGHT_SIDE_COMPILE
+void MarshalDCBTransportToDCB(DebuggerIPCControlBlockTransport* pIn, DebuggerIPCControlBlock_2* pOut)
 {
     pOut->m_DCBSize =                         pIn->m_DCBSize;
     pOut->m_verMajor =                        pIn->m_verMajor;
@@ -434,11 +435,11 @@ void MarshalDCBTransportToDCB(DebuggerIPCControlBlockTransport* pIn, DebuggerIPC
     pOut->padding2 =                          pIn->padding2;
     pOut->padding3 =                          pIn->padding3;
 
-    pOut->m_leftSideProtocolCurrent =         pIn->m_leftSideProtocolCurrent;
-    pOut->m_leftSideProtocolMinSupported =    pIn->m_leftSideProtocolMinSupported;
+    pOut->m_runtimeProtocol =                 pIn->m_runtimeProtocol;
+    pOut->m_runtimeProtocolMinSupported =     pIn->m_runtimeProtocolMinSupported;
 
-    pOut->m_rightSideProtocolCurrent =        pIn->m_rightSideProtocolCurrent;
-    pOut->m_rightSideProtocolMinSupported =   pIn->m_rightSideProtocolMinSupported;
+    pOut->m_debuggerProtocolCurrent =         pIn->m_debuggerProtocolCurrent;
+    pOut->m_debuggerProtocolMinSupported =    pIn->m_debuggerProtocolMinSupported;
 
     pOut->m_errorHR =                         pIn->m_errorHR;
     pOut->m_errorCode =                       pIn->m_errorCode;
@@ -478,7 +479,7 @@ void MarshalDCBTransportToDCB(DebuggerIPCControlBlockTransport* pIn, DebuggerIPC
 
 }
 
-void MarshalDCBToDCBTransport(DebuggerIPCControlBlock* pIn, DebuggerIPCControlBlockTransport* pOut)
+void MarshalDCBToDCBTransport(DebuggerIPCControlBlock_2* pIn, DebuggerIPCControlBlockTransport* pOut)
 {
     pOut->m_DCBSize =                         pIn->m_DCBSize;
     pOut->m_verMajor =                        pIn->m_verMajor;
@@ -487,11 +488,11 @@ void MarshalDCBToDCBTransport(DebuggerIPCControlBlock* pIn, DebuggerIPCControlBl
     pOut->padding2 =                          pIn->padding2;
     pOut->padding3 =                          pIn->padding3;
 
-    pOut->m_leftSideProtocolCurrent =         pIn->m_leftSideProtocolCurrent;
-    pOut->m_leftSideProtocolMinSupported =    pIn->m_leftSideProtocolMinSupported;
+    pOut->m_runtimeProtocol =                 pIn->m_runtimeProtocol;
+    pOut->m_runtimeProtocolMinSupported =     pIn->m_runtimeProtocolMinSupported;
 
-    pOut->m_rightSideProtocolCurrent =        pIn->m_rightSideProtocolCurrent;
-    pOut->m_rightSideProtocolMinSupported =   pIn->m_rightSideProtocolMinSupported;
+    pOut->m_debuggerProtocolCurrent =         pIn->m_debuggerProtocolCurrent;
+    pOut->m_debuggerProtocolMinSupported =    pIn->m_debuggerProtocolMinSupported;
 
     pOut->m_errorHR =                         pIn->m_errorHR;
     pOut->m_errorCode =                       pIn->m_errorCode;
@@ -518,6 +519,8 @@ void MarshalDCBToDCBTransport(DebuggerIPCControlBlock* pIn, DebuggerIPCControlBl
 }
 
 
+
+#endif // !RIGHT_SIDE_COMPILE
 
 #ifdef RIGHT_SIDE_COMPILE
 // Read and write memory on the LS from the RS.
@@ -557,35 +560,6 @@ HRESULT DbgTransportSession::WriteMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, 
     // If we reached here the send was successful but the actual memory operation may not have been (due to
     // unmapped memory or page protections etc.). So the final result comes back to us in the reply.
     return sMessage.m_sHeader.TypeSpecificData.MemoryAccess.m_hrResult;
-}
-
-// Read and write the debugger control block on the LS from the RS.
-HRESULT DbgTransportSession::GetDCB(DebuggerIPCControlBlock *pDCB)
-{
-    DbgTransportLog(LC_Requests, "Sending 'GetDCB'");
-    DBG_TRANSPORT_INC_STAT(SentGetDCB);
-
-    Message sMessage;
-    DebuggerIPCControlBlockTransport dcbt;
-    sMessage.Init(MT_GetDCB, NULL, 0, (PBYTE)&dcbt, sizeof(DebuggerIPCControlBlockTransport));
-    HRESULT ret = SendRequestMessageAndWait(&sMessage);
-
-    MarshalDCBTransportToDCB(&dcbt, pDCB);
-    return ret;
-}
-
-HRESULT DbgTransportSession::SetDCB(DebuggerIPCControlBlock *pDCB)
-{
-    DbgTransportLog(LC_Requests, "Sending 'SetDCB'");
-    DBG_TRANSPORT_INC_STAT(SentSetDCB);
-
-    DebuggerIPCControlBlockTransport dcbt;
-    MarshalDCBToDCBTransport(pDCB, &dcbt);
-
-    Message sMessage;
-    sMessage.Init(MT_SetDCB, (PBYTE)&dcbt, sizeof(DebuggerIPCControlBlockTransport));
-    return SendRequestMessageAndWait(&sMessage);
-
 }
 
 #endif // RIGHT_SIDE_COMPILE

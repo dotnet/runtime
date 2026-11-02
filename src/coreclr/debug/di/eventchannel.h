@@ -17,7 +17,7 @@
 //---------------------------------------------------------------------------------------
 //
 // This is the abstract base class for the old-style "IPC" event channel.  (Despite the name, these events are
-// no longer transmitted in an IPC shared memory block.)  The event channel owns the DebuggerIPCControlBlock.
+// no longer transmitted in an IPC shared memory block.)  The event channel owns the versioned DCB.
 //
 // Assumptions:
 //    This class is NOT thread-safe.  Caller is assumed to have taken the appropriate measures for
@@ -113,7 +113,20 @@ public:
     //    S_OK if successful, otherwise whatever failure HR returned by the actual write operation
     //
 
-    virtual HRESULT UpdateLeftSideDCBField(void * rsFieldAddr, SIZE_T size) = 0;
+    virtual HRESULT UpdateLeftSideDCBField(void * rsFieldAddr, SIZE_T size)
+    {
+        switch (m_pDCBBuffer->m_version)
+        {
+            case 2:
+            {
+                BYTE * pField = static_cast<BYTE *>(rsFieldAddr);
+                SIZE_T offset = pField - reinterpret_cast<BYTE *>(&m_pDCBBuffer->m_dcb2);
+                return SafeWriteBuffer(TargetBuffer(m_pLeftSideDCB + offset, static_cast<ULONG32>(size)), pField);
+            }
+            default:
+                return CORDBG_E_INCOMPATIBLE_PROTOCOL;
+        }
+    }
 
     //
     // Update the entire RS copy of the debugger control block by reading the LS copy. The RS copy is treated as
@@ -126,7 +139,40 @@ public:
     //    S_OK if successful, otherwise whatever failure HR returned by the actual read operation
     //
 
-    virtual HRESULT UpdateRightSideDCB() = 0;
+    virtual HRESULT UpdateRightSideDCB()
+    {
+        HRESULT hr = S_OK;
+        SIZE_T size = 0;
+        IfFailRet(SafeReadBuffer(TargetBuffer(m_pLeftSideDCB, sizeof(size)), reinterpret_cast<BYTE *>(&size)));
+        if (size == 0)
+        {
+            return CORDBG_E_DEBUGGING_NOT_POSSIBLE;
+        }
+        if (size != sizeof(DebuggerIPCControlBlock_2))
+        {
+            return CORDBG_E_INCOMPATIBLE_PROTOCOL;
+        }
+
+        NewArrayHolder<BYTE> buffer(new (nothrow) BYTE[size]);
+        if (buffer == nullptr)
+        {
+            return E_OUTOFMEMORY;
+        }
+        IfFailRet(SafeReadBuffer(TargetBuffer(m_pLeftSideDCB, static_cast<ULONG32>(size)), buffer));
+
+        const DebuggerIPCControlBlock_2 * pDCB = reinterpret_cast<const DebuggerIPCControlBlock_2 *>(buffer.GetValue());
+        switch (pDCB->m_runtimeProtocol)
+        {
+            case 2:
+                m_pDCBBuffer->m_dcb2 = *pDCB;
+                break;
+            default:
+                return CORDBG_E_INCOMPATIBLE_PROTOCOL;
+        }
+
+        m_pDCBBuffer->m_version = pDCB->m_runtimeProtocol;
+        return S_OK;
+    }
 
     //
     // Get the pointer to the RS DCB.  The LS copy isn't updated until UpdateLeftSideDCBField() is called.
@@ -136,7 +182,7 @@ public:
     //    Return a pointer to the RS DCB.  The memory is owned by the event channel.
     //
 
-    virtual DebuggerIPCControlBlock * GetDCB() = 0;
+    virtual DebuggerIPCControlBlock * GetDCB() { return m_pDCBBuffer; }
 
     //
     // Check whether we need to wait for an acknowledgement from the LS after sending an IPC event.
@@ -239,6 +285,32 @@ public:
     //
 
     virtual HRESULT GetEventFromLeftSide(DebuggerIPCEvent * pLocalManagedEvent) = 0;
+
+protected:
+    HRESULT SafeWriteBuffer(TargetBuffer tb, const BYTE * pLocalBuffer)
+    {
+        return m_pMutableDataTarget->WriteVirtual(tb.pAddress, pLocalBuffer, tb.cbSize);
+    }
+
+    HRESULT SafeReadBuffer(TargetBuffer tb, BYTE * pLocalBuffer)
+    {
+        ULONG32 cbRead;
+        HRESULT hr = m_pMutableDataTarget->ReadVirtual(tb.pAddress, pLocalBuffer, tb.cbSize, &cbRead);
+        if (FAILED(hr))
+        {
+            return CORDBG_E_READVIRTUAL_FAILURE;
+        }
+        if (cbRead != tb.cbSize)
+        {
+            return HRESULT_FROM_WIN32(ERROR_PARTIAL_COPY);
+        }
+
+        return S_OK;
+    }
+
+    CORDB_ADDRESS m_pLeftSideDCB;
+    DebuggerIPCControlBlock * m_pDCBBuffer;
+    RSExtSmartPtr<ICorDebugMutableDataTarget> m_pMutableDataTarget;
 };
 
 //-----------------------------------------------------------------------------

@@ -3827,8 +3827,7 @@ public:
     // The DCB is essentially a buffer area used to temporarily hold information read from the debugger
     // control block residing on the LS helper thread. We make no assumptions about the validity of this
     // information over time, so before using a value from it on the RS, we will always update this buffer
-    // with a call to UpdateRightSideDCB. This uses a ReadProcessMemory to get the current information from
-    // the LS DCB.
+    // with a call to UpdateRightSideDCB. This reads the current information from the LS DCB through the data target.
     DebuggerIPCControlBlock * GetDCB() {return ((m_pEventChannel == NULL) ? NULL : m_pEventChannel->GetDCB());}
 
 
