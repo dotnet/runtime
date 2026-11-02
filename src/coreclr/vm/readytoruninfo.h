@@ -14,6 +14,7 @@
 #include "inlinetracking.h"
 #include "wellknownattributes.h"
 #include "nativeimage.h"
+#include "auxiliaryentrypointsera.h"
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
@@ -201,6 +202,17 @@ class ReadyToRunInfo
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
     TADDR                           m_pLoadedImageBase;
 
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    PTR_DWORD                       m_pAuxiliaryModuleActivationFlag = 0;
+    PTR_DWORD                       m_pAuxiliaryEntryPointsModuleStatus = 0;
+
+    // Starts at 1 so a recorded era is never 0, which callers use to mean "not awaiting EntryPoints".
+    inline static DWORD             s_auxiliaryEntryPointsEra = 1;
+    // TODO: Remove once auxiliary EntryPoints modules are downloaded. Stands in for the EntryPoints module status
+    // of every composite image; (DWORD)-1 means not yet read from config.
+    inline static DWORD             s_simulatedAuxiliaryEntryPointsCallsRemaining = (DWORD)-1;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
 
@@ -248,6 +260,95 @@ public:
     }
     void RegisterVirtualIPRange(Module* pModule);
 #endif // TARGET_WASM
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    PTR_DWORD GetAuxiliaryModuleActivationFlag(MethodDesc* pMD) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        // The simulation has one code module per composite image, so every method shares this flag.
+        return m_pAuxiliaryModuleActivationFlag;
+    }
+
+    static AuxiliaryEntryPointsEra GetCurrentAuxiliaryEntryPointsEra()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return AuxiliaryEntryPointsEra(VolatileLoad(&s_auxiliaryEntryPointsEra));
+    }
+
+    static bool IsAuxiliaryEntryPointsEraStale(AuxiliaryEntryPointsEra era)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(era.IsAwaiting());
+        return era.m_value != VolatileLoad(&s_auxiliaryEntryPointsEra);
+    }
+
+    static void IncrementAuxiliaryEntryPointsEra()
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&s_auxiliaryEntryPointsEra, VolatileLoad(&s_auxiliaryEntryPointsEra) + 1);
+    }
+
+    PTR_DWORD GetAuxiliaryEntryPointsModuleStatus() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pAuxiliaryEntryPointsModuleStatus;
+    }
+
+    static bool IsAuxiliaryEntryPointsModuleActivated(PTR_DWORD pModuleStatus)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pModuleStatus != nullptr);
+        return VolatileLoad(pModuleStatus) == 0;
+    }
+
+    bool IsAuxiliaryEntryPointsModuleActivated() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsAuxiliaryEntryPointsModuleActivated(m_pAuxiliaryEntryPointsModuleStatus);
+    }
+
+    // Centralize the readiness test so callers do not depend on the simulated countdown encoding.
+    static bool IsAuxiliaryModuleActivated(PTR_DWORD pActivationFlag)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pActivationFlag != nullptr);
+        return VolatileLoad(pActivationFlag) == 0;
+    }
+
+    // TODO: Remove once auxiliary modules are downloaded. Each check counts down until the module is ready.
+    static void AdvanceSimulatedAuxiliaryModuleDownload(PTR_DWORD pActivationFlag)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pActivationFlag != nullptr);
+        if (!IsAuxiliaryModuleActivated(pActivationFlag))
+            VolatileStore(pActivationFlag, VolatileLoad(pActivationFlag) - 1);
+    }
+
+    // TODO: Remove the simulation once auxiliary EntryPoints modules are downloaded.
+    static void EnsureAuxiliaryEntryPointsModuleStatus()
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (s_simulatedAuxiliaryEntryPointsCallsRemaining == (DWORD)-1)
+        {
+            s_simulatedAuxiliaryEntryPointsCallsRemaining =
+                CLRConfig::IsConfigOptionSpecified(W("R2RDelayedEntryPointsActivationCallCount"))
+                    ? CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_R2RDelayedEntryPointsActivationCallCount)
+                    : CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_R2RDelayedActivationCallCount);
+        }
+    }
+
+    // Completion of the shared countdown can make earlier lookup misses succeed.
+    static void AdvanceSimulatedAuxiliaryEntryPointsDownload()
+    {
+        LIMITED_METHOD_CONTRACT;
+        EnsureAuxiliaryEntryPointsModuleStatus();
+        if (s_simulatedAuxiliaryEntryPointsCallsRemaining == 0)
+            return;
+
+        if (--s_simulatedAuxiliaryEntryPointsCallsRemaining == 0)
+            IncrementAuxiliaryEntryPointsEra();
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
     void RegisterResumptionStub(PCODE stubEntryPoint);
 
