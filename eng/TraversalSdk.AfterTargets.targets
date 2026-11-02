@@ -4,6 +4,12 @@
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
   </PropertyGroup>
 
+  <!-- Traversal invokes MSBuild directly, which consumes per-item UndefineProperties. -->
+  <ItemGroup>
+    <ProjectReference Update="@(ProjectReference)"
+                      UndefineProperties="%(UndefineProperties);%(GlobalPropertiesToRemove)" />
+  </ItemGroup>
+
   <!-- Uses the Microsoft.DotNet.Build.Tasks.TargetFramework package to filter out target frameworks from ProjectReferences. -->
   <PropertyGroup Condition="'$(FilterTraversalProjectReferences)' == 'true'">
     <BuildDependsOn>$(BuildDependsOn);ResolveP2PReferences</BuildDependsOn>
