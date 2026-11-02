@@ -118,6 +118,13 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         [InlineData(".mscorlib\n.assembly System.Runtime { }", "System.Enum", "System.ValueType")]
         [InlineData(".mscorlib\n.assembly System.Runtime { }", "System.Enum", "[mscorlib]System.ValueType")]
         [InlineData(".assembly mscorlib { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly System.Private.CoreLib { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly System.Runtime { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly netstandard { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly MSCORLIB { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly SYSTEM.PRIVATE.CORELIB { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly SYSTEM.RUNTIME { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly NETSTANDARD { }", "System.Enum", "System.ValueType")]
         [InlineData(".mscorlib\n.assembly test { }", "System.Enum", "System.ValueType")]
         public void SystemEnumInCoreLibrary_IsNotSealed(string assembly, string name, string baseType)
         {
@@ -142,7 +149,8 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         [Theory]
         [InlineData(".assembly test { }", ".class public abstract System.Enum")]
         [InlineData(".assembly extern mscorlib { }\n.assembly test { }", ".class public abstract System.Enum")]
-        [InlineData(".assembly System.Runtime { }", ".class public abstract System.Enum")]
+        [InlineData(".assembly System.Runtime.Other { }", ".class public abstract System.Enum")]
+        [InlineData(".assembly extern System.Runtime { }\n.assembly test { }", ".class public abstract System.Enum")]
         [InlineData(".mscorlib\n.assembly test { }", ".class public abstract Other.Enum")]
         [InlineData(".mscorlib\n.assembly test { }", ".class public abstract System.Other")]
         [InlineData(".mscorlib\n.assembly test { }", ".class public Outer { .class nested public abstract System.Enum", "}")]

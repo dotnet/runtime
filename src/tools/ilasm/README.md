@@ -22,11 +22,4 @@ This will update the generated files before building the main project.
 
 ---
 
-## Core Library Compatibility
-
-As in native ilasm, `.mscorlib` or an assembly declaration named `mscorlib` identifies
-a core library for the `System.Enum` sealing check. Its top-level `System.Enum`
-definition remains unsealed despite extending `System.ValueType`. Other value types
-retain their existing sealing diagnostics.
-
 For more details, see the main repository README or contact the maintainers.
