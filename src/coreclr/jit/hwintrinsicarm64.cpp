@@ -1665,6 +1665,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
+    if (retNode != nullptr && (retType == TYP_SIMD || retType == TYP_MASK))
+    {
+        assert(retNode->TypeIs(retType));
+    }
+
     assert(!isScalar || isValidScalarIntrinsic);
     return retNode;
 }
