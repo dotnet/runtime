@@ -20,6 +20,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("wasm-opt")]
         public Task ProjectWithNativeReference(Configuration config, bool aot) =>
             ProjectWithNativeReferenceCore(config, aot);
 
