@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.NET.Sdk.WebAssembly;
@@ -68,6 +69,13 @@ namespace Wasm.Build.Tests
         public Task PublishRunAllPagesComposite(Configuration config, bool trimmed, bool nativeRelink)
             => PublishRunAllPagesCore(config, trimmed, nativeRelink, composite: true);
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [TestCategory("no-workload")]
+        public Task PublishRunAllPagesAuxiliary(bool nativeRelink)
+            => PublishRunAllPagesCore(Configuration.Release, trimmed: true, nativeRelink, composite: true, auxiliaryModules: true);
+
         // CoreCLR relinks dotnet.native.wasm for Blazor when WasmBuildNative=true; the relink is driven by the
         // IsBrowserWasmProject triggers in BrowserWasmApp.CoreCLR.targets. AssertBundle(isNativeBuild: true)
         // proves the served dotnet.native.wasm was relinked rather than the runtime-pack prebuilt.
@@ -78,11 +86,11 @@ namespace Wasm.Build.Tests
         public Task PublishRunAllPagesNativeRelink(Configuration config, bool trimmed)
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: true, composite: false);
 
-        private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink, bool composite)
+        private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink, bool composite, bool auxiliaryModules = false)
         {
             // Publish runs per-app crossgen2 for the whole closure, trimmed or not: even the untrimmed CoreLib
             // is a per-app image, not the runtime pack's. nativeRelink also relinks dotnet.native.wasm.
-            string label = $"r2r_pub_{(trimmed ? "trim" : "notrim")}{(nativeRelink ? "_native" : "")}{(composite ? "_composite" : "")}";
+            string label = $"r2r_pub_{(trimmed ? "trim" : "notrim")}{(nativeRelink ? "_native" : "")}{(composite ? "_composite" : "")}{(auxiliaryModules ? "_auxiliary" : "")}";
             string extraItems = composite
                 ? """<ProjectReference Include="../R2rSuffixLibrary/R2rSuffixLibrary.csproj" />"""
                 : string.Empty;
@@ -92,6 +100,8 @@ namespace Wasm.Build.Tests
             if (composite)
                 LogR2RSuffixLibraryMarker();
             string extraArgs = GetR2RBuildArgs(config, composite);
+            if (auxiliaryModules)
+                extraArgs += " -p:WasmEnableAuxiliaryR2RModules=true";
             if (nativeRelink)
             {
                 // CoreCLR relinks dotnet.native.wasm via the in-tree targets + EMSDK_PATH, not the browser
@@ -113,14 +123,26 @@ namespace Wasm.Build.Tests
             AssertNoManagedAssembliesOutsideFramework(frameworkDir);
             AssertTrimmedClosureIsFullyStaged(config, frameworkDir);
             AssertPerAppCrossgenRan(config, expected: true);
+            if (auxiliaryModules)
+                AssertAuxiliaryModulesStaged(config, frameworkDir);
 
             if (trimmed && !nativeRelink)
             {
+                string? removedSidecar = auxiliaryModules
+                    ? Directory.EnumerateFiles(GetObjSubDir(config, "R2R"), "*.entrypoints.wasm").Single()
+                    : null;
+                if (removedSidecar is not null)
+                    File.Delete(removedSidecar);
                 BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: extraArgs));
+                if (removedSidecar is not null)
+                {
+                    Assert.True(File.Exists(removedSidecar), $"Missing auxiliary output '{removedSidecar}' was not recompiled.");
+                    AssertAuxiliaryModulesStaged(config, frameworkDir);
+                }
                 if (composite)
                     AssertCompositeReadyToRun(frameworkDir);
                 AssertNoDuplicateAssemblies(frameworkDir);
-                if (composite)
+                if (composite && !auxiliaryModules)
                     AssertSwitchingCompositeModeRecompiles(info, config, extraArgs, frameworkDir);
             }
 
@@ -476,6 +498,25 @@ namespace Wasm.Build.Tests
             Assert.True(GetReadyToRunTableSize(compositePath) > 0, $"Expected compiled methods in '{compositePath}'.");
             Assert.True(Directory.EnumerateFiles(frameworkDir, "System.Private.CoreLib*.wasm").Any(),
                 $"Expected a component stub for System.Private.CoreLib in '{frameworkDir}'.");
+        }
+
+        private void AssertAuxiliaryModulesStaged(Configuration config, string frameworkDir)
+        {
+            string manifest = Assert.Single(Directory.EnumerateFiles(GetObjSubDir(config, "R2R"), "*.auxiliary.json"));
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(manifest));
+            string[] filenames = document.RootElement.GetProperty("modules").EnumerateArray()
+                .Select(module => module.GetString()!)
+                .Prepend(document.RootElement.GetProperty("entrypoints").GetString()!)
+                .OrderBy(name => name, System.StringComparer.Ordinal)
+                .ToArray();
+            AssetsData assets = (AssetsData)_provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).resources;
+            Assert.NotNull(assets.auxiliaryAssembly);
+            Assert.Equal(filenames, assets.auxiliaryAssembly.Select(asset => asset.virtualPath).OrderBy(name => name, System.StringComparer.Ordinal));
+            foreach (GeneralAsset sidecar in assets.auxiliaryAssembly)
+            {
+                Assert.True(File.Exists(Path.Combine(frameworkDir, sidecar.name)), $"Missing published sidecar '{sidecar.name}'.");
+                Assert.DoesNotContain(assets.coreAssembly.Concat(assets.assembly), asset => asset.virtualPath == sidecar.virtualPath);
+            }
         }
 
         private const string SuffixLibraryLoadedMessage = "Loaded R2rSuffixLibrary.r2r: 42";

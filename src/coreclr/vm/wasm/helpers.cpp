@@ -14,6 +14,13 @@
 #define WASM_STRINGIFY_HELPER(value) #value
 #define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
 
+extern "C" void dotnet_wasm_notify_auxiliary_entrypoints_activated()
+{
+    LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    ReadyToRunInfo::IncrementAuxiliaryEntryPointsEra();
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+}
 
 extern "C" void STDCALL CallCountingStubCode()
 {

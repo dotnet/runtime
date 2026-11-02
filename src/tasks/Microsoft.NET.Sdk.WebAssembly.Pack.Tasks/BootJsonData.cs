@@ -191,6 +191,9 @@ public class ResourcesData
     public ResourceHashesByNameDictionary jsModuleDiagnostics { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleAuxiliaryWorker { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleNative { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
@@ -214,6 +217,9 @@ public class ResourcesData
     /// "assembly" (.dll) resources
     /// </summary>
     public ResourceHashesByNameDictionary assembly { get; set; } = new ResourceHashesByNameDictionary();
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary auxiliaryAssembly { get; set; }
 
     /// <summary>
     /// "debug" (.pdb) resources needed to start MonoVM
@@ -289,6 +295,9 @@ public class AssetsData
     public List<JsAsset> jsModuleDiagnostics { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> jsModuleAuxiliaryWorker { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
     public List<JsAsset> jsModuleNative { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
@@ -312,6 +321,9 @@ public class AssetsData
     /// "assembly" (.dll) resources
     /// </summary>
     public List<WebcilAsset> assembly { get; set; } = new();
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<GeneralAsset> auxiliaryAssembly { get; set; }
 
     /// <summary>
     /// "debug" (.pdb) resources needed to start MonoVM
@@ -368,6 +380,7 @@ public class JsAsset
 {
     public string name { get; set; }
     public string moduleExports { get; set; }
+    public string resolvedUrl { get; set; }
 }
 
 [DataContract]

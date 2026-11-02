@@ -91,6 +91,93 @@ IMAGE_DATA_DIRECTORY * ReadyToRunCoreInfo::FindSection(ReadyToRunSectionType typ
     return NULL;
 }
 
+#ifdef TARGET_WASM
+DWORD ReadyToRunInfo::GetRuntimeFunctionRangeEnd(DWORD index) const
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(index < m_nRuntimeFunctions);
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    if (m_pAuxiliaryModuleMetadata != nullptr)
+    {
+        PTR_READYTORUN_AUXILIARY_MODULE entry = GetAuxiliaryModule(index);
+        return entry == nullptr ? m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount :
+            entry->RelativeTableBase + entry->MethodCount;
+    }
+#endif
+    return m_nRuntimeFunctions;
+}
+
+bool ReadyToRunInfo::IsRuntimeFunctionActive(DWORD index) const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (index >= m_nRuntimeFunctions)
+        return false;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    if (m_pAuxiliaryModuleMetadata != nullptr)
+    {
+        PTR_DWORD activationFlag = GetAuxiliaryModuleActivationFlag(index);
+        return activationFlag == nullptr || IsAuxiliaryModuleActivated(activationFlag);
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+    return true;
+}
+
+int ReadyToRunInfo::FindRuntimeFunction(DWORD relativeVirtualIP) const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    DWORD rangeCount = 1;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    PTR_READYTORUN_AUXILIARY_MODULE entries = nullptr;
+    if (m_pAuxiliaryModuleMetadata != nullptr)
+    {
+        rangeCount += m_pAuxiliaryModuleMetadata->AuxiliaryModuleCount;
+        entries = dac_cast<PTR_READYTORUN_AUXILIARY_MODULE>(
+            dac_cast<TADDR>(m_pAuxiliaryModuleMetadata) + sizeof(READYTORUN_AUXILIARY_MODULE_METADATA));
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
+    for (DWORD range = 0; range < rangeCount; range++)
+    {
+        DWORD first = 0;
+        DWORD count = m_nRuntimeFunctions;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        if (entries != nullptr)
+        {
+            if (range == 0)
+                count = m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount;
+            else
+            {
+                if (!IsAuxiliaryModuleActivated(&entries[range - 1].ActivationStatus))
+                    continue;
+                first = entries[range - 1].RelativeTableBase;
+                count = entries[range - 1].MethodCount;
+            }
+        }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+        if (count == 0 || relativeVirtualIP < RUNTIME_FUNCTION__BeginAddress(m_pRuntimeFunctions + first))
+            continue;
+
+        DWORD low = first;
+        DWORD high = first + count;
+        while (low + 1 < high)
+        {
+            DWORD middle = low + (high - low) / 2;
+            if (RUNTIME_FUNCTION__BeginAddress(m_pRuntimeFunctions + middle) <= relativeVirtualIP)
+                low = middle;
+            else
+                high = middle;
+        }
+
+        // The following entry can belong to an absent module. Read this function's own unwind data instead.
+        if (relativeVirtualIP < RUNTIME_FUNCTION__EndAddress(m_pRuntimeFunctions + low,
+                dac_cast<TADDR>(GetImage()->GetBase())))
+            return static_cast<int>(low);
+    }
+    return -1;
+}
+#endif // TARGET_WASM
+
 PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPoint(PCODE entryPoint)
 {
     CONTRACTL
@@ -720,6 +807,7 @@ bool ReadyToRunInfo::IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModu
 // tightly associated with the module itself.
 ReadyToRunInfo* s_pGlobalR2RModules = NULL;
 PTR_ReadyToRunInfo ReadyToRunInfo::GetUnrelatedR2RModules() { return s_pGlobalR2RModules; }
+
 void ReadyToRunInfo::RegisterUnrelatedR2RModule()
 {
     LIMITED_METHOD_CONTRACT; // This function takes no locks, and can never fail
@@ -744,10 +832,17 @@ void ReadyToRunInfo::RegisterUnrelatedR2RModule()
                 oldGlobalValue = s_pGlobalR2RModules;
                 m_pNextR2RForUnrelatedCode = dac_cast<PTR_ReadyToRunInfo>(dac_cast<TADDR>(oldGlobalValue) | 0x1);
             }
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+            // Generic methods that missed in every image searched so far may have code in this new image.
+            IncrementAuxiliaryEntryPointsEra();
+#endif // FEATURE_AUXILIARY_R2R_MODULES
         }
     }
     else
     {
+        // Publish only a tenured component, so failed module initialization cannot leave a dangling context.
+        InterlockedCompareExchangeT(&m_pCompositeInfo->m_pEntryPointModule, m_pModule, nullptr);
         m_pCompositeInfo->RegisterUnrelatedR2RModule();
     }
 }
@@ -822,6 +917,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::ComputeAlternateGenericLocationForR2RCode(Met
 
 ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage *pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker)
     : m_pModule(pModule),
+    m_pEntryPointModule(pModule),
     m_pHeader(pHeader),
     m_pNativeImage(pModule != NULL ? pNativeImage: NULL), // m_pNativeImage is only set for composite image components, not the composite R2R info itself
     m_readyToRunCodeDisabled(FALSE),
@@ -920,6 +1016,53 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     {
         m_nRuntimeFunctions = 0;
     }
+
+    IMAGE_DATA_DIRECTORY* pAuxiliaryMetadataDir = m_pComposite->FindSection(ReadyToRunSectionType::AuxiliaryModuleMetadata);
+    if (pAuxiliaryMetadataDir != nullptr)
+    {
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        if (pAuxiliaryMetadataDir->Size < sizeof(READYTORUN_AUXILIARY_MODULE_METADATA) ||
+            (pAuxiliaryMetadataDir->VirtualAddress & (alignof(DWORD) - 1)) != 0 ||
+            (pNativeImage == nullptr && !m_isComponentAssembly) ||
+            HasStrippedILBodies())
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+        m_pAuxiliaryModuleMetadata = dac_cast<PTR_READYTORUN_AUXILIARY_MODULE_METADATA>(
+            m_pComposite->GetLayout()->GetDirectoryData(pAuxiliaryMetadataDir));
+        if (m_pAuxiliaryModuleMetadata->AuxiliaryModuleCount >
+                (pAuxiliaryMetadataDir->Size - sizeof(READYTORUN_AUXILIARY_MODULE_METADATA)) / sizeof(READYTORUN_AUXILIARY_MODULE) ||
+            m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount > m_nRuntimeFunctions ||
+            m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus > 1)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+        PTR_READYTORUN_AUXILIARY_MODULE entries = dac_cast<PTR_READYTORUN_AUXILIARY_MODULE>(
+            dac_cast<TADDR>(m_pAuxiliaryModuleMetadata) + sizeof(READYTORUN_AUXILIARY_MODULE_METADATA));
+        DWORD nextFunction = m_pAuxiliaryModuleMetadata->PrimaryModuleMethodCount;
+        for (DWORD i = 0; i < m_pAuxiliaryModuleMetadata->AuxiliaryModuleCount; i++)
+        {
+            if (entries[i].RelativeTableBase != nextFunction ||
+                entries[i].MethodCount > m_nRuntimeFunctions - nextFunction ||
+                entries[i].ActivationStatus > 1)
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            nextFunction += entries[i].MethodCount;
+        }
+        if (nextFunction != m_nRuntimeFunctions)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+#else
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+    }
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    else if (!m_isComponentAssembly && pNativeImage != nullptr)
+    {
+        EnsureAuxiliaryEntryPointsModuleStatus();
+        m_pAuxiliaryEntryPointsModuleStatus = &s_simulatedAuxiliaryEntryPointsCallsRemaining;
+        m_pAuxiliaryModuleActivationFlag = (PTR_DWORD)pamTracker->Track(
+            pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DWORD))));
+        DWORD callsRemaining = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_R2RDelayedActivationCallCount);
+        *m_pAuxiliaryModuleActivationFlag = callsRemaining == UINT32_MAX ? callsRemaining : callsRemaining + 1;
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
 #ifdef TARGET_WASM
     // For WASM, the min function table index is stored as a u32 immediately after the
@@ -1184,6 +1327,34 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
     return true;
 }
 
+static bool TryGetEntryPointOffset(
+    MethodDesc* pMD, Module* pModule, NativeArray& methodDefEntryPoints,
+    NativeHashtable& instanceEntryPoints, uint* pOffset)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (!pMD->HasClassOrMethodInstantiation() &&
+        !pMD->IsAsyncVariantMethod() && !pMD->IsUnboxingStub())
+        return methodDefEntryPoints.TryGetAt(RidFromToken(pMD->GetMemberDef()) - 1, pOffset);
+
+    if (instanceEntryPoints.IsNull())
+        return false;
+
+    NativeHashtable::Enumerator lookup = instanceEntryPoints.Lookup(GetVersionResilientMethodHashCode(pMD));
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
+        SigPointer sig(pBlob);
+        if (SigMatchesMethodDesc(pMD, sig, pModule))
+        {
+            *pOffset = entryParser.GetOffset() + static_cast<uint>(sig.GetPtr() - pBlob);
+            return true;
+        }
+    }
+    return false;
+}
+
 bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocatedMemory, ICorJitInfo::PgoInstrumentationSchema**ppSchema, UINT *pcSchema, BYTE** pInstrumentationData)
 {
     STANDARD_VM_CONTRACT;
@@ -1314,15 +1485,21 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #endif
 
     PCODE pEntryPoint = (PCODE)NULL;
+    Module* entryPointModule = m_pEntryPointModule;
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    bool mayDelayR2RCode = false;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
     mdToken token = pMD->GetMemberDef();
     int rid = RidFromToken(token);
     if (rid == 0)
         goto done;
     // If R2R code is disabled for this module, simply behave as if it is never found
     if (ReadyToRunCodeDisabled())
+        goto done;
+    if (entryPointModule == nullptr)
         goto done;
 
     // Return-dropping async thunks are VM-synthesized. They share the same metadata
@@ -1335,39 +1512,69 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    // There are conditions where we cannot delay the use of R2R code. In the future, the compiler
+    // should ensure these conditions for us.
+    mayDelayR2RCode = pConfig != NULL
+        && pConfig->MayDelayAuxiliaryModule()
+        && !HasStrippedILBodies()
+        && pMD->IsIL()
+        && !pMD->IsWrapperStub()
+        && (!pMD->GetModule()->IsReadyToRun() || !pMD->GetModule()->GetReadyToRunInfo()->HasStrippedILBodies())
+        && !pMD->HasUnmanagedCallersOnlyAttribute();
+
+    // The EntryPoints for this method may be in an auxiliary EntryPoints module that is not yet activated.
+    if (mayDelayR2RCode && m_pCompositeInfo->m_pAuxiliaryModuleMetadata == nullptr &&
+        !m_pCompositeInfo->IsAuxiliaryEntryPointsModuleActivated())
+    {
+        goto done;
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
     uint offset;
-    // Async variants and unboxing stubs are stored in the instance methods table.
-    if (pMD->HasClassOrMethodInstantiation()
-        || pMD->IsAsyncVariantMethod()
-        || pMD->IsUnboxingStub())
+    if (!TryGetEntryPointOffset(pMD, entryPointModule, m_methodDefEntryPoints, m_instMethodEntryPoints, &offset))
     {
-        if (m_instMethodEntryPoints.IsNull())
-            goto done;
-
-        NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pMD));
-        NativeParser entryParser;
-        offset = (uint)-1;
-        while (lookup.GetNext(entryParser))
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        if (m_pAuxiliaryModuleMetadata != nullptr && m_pCompositeInfo->IsAuxiliaryEntryPointsModuleActivated())
         {
-            PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
-            SigPointer sig(pBlob);
-            if (SigMatchesMethodDesc(pMD, sig, m_pModule))
+            NativeArray auxiliaryMethodDefs;
+            NativeHashtable auxiliaryInstances;
+            IMAGE_DATA_DIRECTORY* methodDefs = m_component.FindSection(ReadyToRunSectionType::AuxiliaryMethodDefEntryPoints);
+            if (methodDefs != nullptr)
+                auxiliaryMethodDefs = NativeArray(&m_nativeReader, methodDefs->VirtualAddress);
+            IMAGE_DATA_DIRECTORY* instances = m_pComposite->FindSection(ReadyToRunSectionType::AuxiliaryInstanceMethodEntryPoints);
+            if (instances != nullptr)
             {
-                // Get the updated SigPointer location, so we can calculate the size of the blob,
-                // in order to skip the blob and find the entry point data.
-                offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
-                break;
+                NativeParser parser(&m_nativeReader, instances->VirtualAddress);
+                auxiliaryInstances = NativeHashtable(parser);
             }
+            if (!TryGetEntryPointOffset(pMD, entryPointModule, auxiliaryMethodDefs, auxiliaryInstances, &offset))
+                goto done;
         }
+        else
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+            goto done;
+    }
 
-        if (offset == (uint)-1)
-            goto done;
-    }
-    else
+    uint id;
+    offset = m_nativeReader.DecodeUnsigned(offset, &id);
+    uint runtimeFunctionIndex;
+    runtimeFunctionIndex = (id & 1) != 0 ? id >> 2 : id >> 1;
+    if (runtimeFunctionIndex >= m_nRuntimeFunctions)
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
     {
-        if (!m_methodDefEntryPoints.TryGetAt(rid - 1, &offset))
+        PTR_DWORD activationFlag = m_pCompositeInfo->GetAuxiliaryModuleActivationFlag(runtimeFunctionIndex);
+        if (activationFlag != nullptr && !IsAuxiliaryModuleActivated(activationFlag) &&
+            (m_pAuxiliaryModuleMetadata != nullptr || mayDelayR2RCode))
+        {
+            if (mayDelayR2RCode)
+                pConfig->SetAuxiliaryModuleActivationFlag(activationFlag);
             goto done;
+        }
     }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
 #ifdef PROFILING_SUPPORTED
         {
@@ -1388,9 +1595,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         }
 #endif // PROFILING_SUPPORTED
 
-    uint id;
-    offset = m_nativeReader.DecodeUnsigned(offset, &id);
-
     if (id & 1)
     {
         if (id & 2)
@@ -1405,7 +1609,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
             BOOL mayUsePrecompiledPInvokeMethods = TRUE;
             mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
 
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
+            if (!entryPointModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
             {
                 pConfig->SetReadyToRunRejectedPrecompiledCode();
                 goto done;
@@ -1552,25 +1756,64 @@ BOOL ReadyToRunInfo::MethodIterator::Next()
     if (m_pInfo->ReadyToRunCodeDisabled())
         return FALSE;
 
-    // Enumerate non-generic methods
-    while (++m_methodDefIndex < (int)m_pInfo->m_methodDefEntryPoints.GetCount())
+    for (;;)
     {
-        uint offset;
-        if (m_pInfo->m_methodDefEntryPoints.TryGetAt(m_methodDefIndex, &offset))
+        // Enumerate non-generic methods.
+        while (++m_methodDefIndex < (int)m_methodDefEntryPoints.GetCount())
         {
+            uint offset;
+            if (!m_methodDefEntryPoints.TryGetAt(m_methodDefIndex, &offset))
+                continue;
+#ifdef TARGET_WASM
+            uint id;
+            m_pInfo->m_nativeReader.DecodeUnsigned(offset, &id);
+            if (!m_pInfo->IsRuntimeFunctionActive((id & 1) != 0 ? id >> 2 : id >> 1))
+                continue;
+#endif // TARGET_WASM
             return TRUE;
         }
-    }
 
-    // Enumerate generic instantiations
-    m_genericParser = m_genericEnum.GetNext();
-    if (!m_genericParser.IsNull())
-    {
-        ParseGenericMethodSignatureAndRid(&m_genericCurrentOffset, &m_genericCurrentRid);
-        return TRUE;
-    }
+        // Enumerate generic instantiations.
+        while (!(m_genericParser = m_genericEnum.GetNext()).IsNull())
+        {
+            ParseGenericMethodSignatureAndRid(&m_genericCurrentOffset, &m_genericCurrentRid);
+#ifdef TARGET_WASM
+            if (m_genericCurrentOffset != static_cast<uint>(-1))
+            {
+                uint id;
+                m_pInfo->m_nativeReader.DecodeUnsigned(m_genericCurrentOffset, &id);
+                if (!m_pInfo->IsRuntimeFunctionActive((id & 1) != 0 ? id >> 2 : id >> 1))
+                    continue;
+            }
+#endif // TARGET_WASM
+            return TRUE;
+        }
 
-    return FALSE;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        if (!m_enumeratingAuxiliary && m_pInfo->m_pAuxiliaryModuleMetadata != nullptr &&
+            m_pInfo->m_pCompositeInfo->IsAuxiliaryEntryPointsModuleActivated())
+        {
+            m_enumeratingAuxiliary = true;
+            m_methodDefIndex = -1;
+            m_methodDefEntryPoints = NativeArray();
+            m_instMethodEntryPoints = NativeHashtable();
+            IMAGE_DATA_DIRECTORY* methodDefs = m_pInfo->m_component.FindSection(ReadyToRunSectionType::AuxiliaryMethodDefEntryPoints);
+            if (methodDefs != nullptr)
+                m_methodDefEntryPoints = NativeArray(&m_pInfo->m_nativeReader, methodDefs->VirtualAddress);
+            IMAGE_DATA_DIRECTORY* instances = m_pInfo->m_pComposite->FindSection(ReadyToRunSectionType::AuxiliaryInstanceMethodEntryPoints);
+            if (instances != nullptr)
+            {
+                NativeParser parser(&m_pInfo->m_nativeReader, instances->VirtualAddress);
+                m_instMethodEntryPoints = NativeHashtable(parser);
+            }
+            NativeFormat::PTR_NativeHashtable hash = m_instMethodEntryPoints.IsNull()
+                ? nullptr : NativeFormat::PTR_NativeHashtable(&m_instMethodEntryPoints);
+            m_genericEnum = NativeHashtable::AllEntriesEnumerator(hash);
+            continue;
+        }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+        return FALSE;
+    }
 }
 
 MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc()
@@ -1578,15 +1821,15 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc()
     STANDARD_VM_CONTRACT;
 
     mdMethodDef methodToken = mdTokenNil;
-    if (m_methodDefIndex < (int)m_pInfo->m_methodDefEntryPoints.GetCount())
+    if (m_methodDefIndex < (int)m_methodDefEntryPoints.GetCount())
     {
         methodToken = mdtMethodDef | (m_methodDefIndex + 1);
-        return MemberLoader::GetMethodDescFromMethodDef(m_pInfo->m_pModule, methodToken, FALSE);
+        return MemberLoader::GetMethodDescFromMethodDef(m_pInfo->m_pEntryPointModule, methodToken, FALSE);
     }
     else
     {
         _ASSERTE(m_genericCurrentOffset > 0 && m_genericCurrentSig != NULL);
-        return ZapSig::DecodeMethod(m_pInfo->m_pModule, m_pInfo->m_pModule, m_genericCurrentSig);
+        return ZapSig::DecodeMethod(m_pInfo->m_pEntryPointModule, m_pInfo->m_pEntryPointModule, m_genericCurrentSig);
     }
 
 }
@@ -1602,9 +1845,9 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
     CONTRACTL_END;
 
     uint offset;
-    if (m_methodDefIndex < (int)m_pInfo->m_methodDefEntryPoints.GetCount())
+    if (m_methodDefIndex < (int)m_methodDefEntryPoints.GetCount())
     {
-        if (!m_pInfo->m_methodDefEntryPoints.TryGetAt(m_methodDefIndex, &offset))
+        if (!m_methodDefEntryPoints.TryGetAt(m_methodDefIndex, &offset))
         {
             return NULL;
         }

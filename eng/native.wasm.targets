@@ -137,6 +137,7 @@
       <EmccExportedFunction Include="___stack_pointer" />
       <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
       <EmccExportedFunction Include="___async_continuation" />
+      <EmccExportedFunction Include="_dotnet_wasm_notify_auxiliary_entrypoints_activated" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
     </ItemGroup>
 
     <!-- Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare aborts a debug build early. -->

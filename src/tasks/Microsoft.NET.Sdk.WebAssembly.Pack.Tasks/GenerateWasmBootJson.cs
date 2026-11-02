@@ -295,6 +295,12 @@ public class GenerateWasmBootJson : Task
                     }
                 }
                 else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals("readyToRunAuxiliary", assetTraitValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
+                    resourceList = resourceData.auxiliaryAssembly ??= new ResourceHashesByNameDictionary();
+                }
+                else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase)
                     && string.Equals("readyToRunComposite", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
                     MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
@@ -422,7 +428,8 @@ public class GenerateWasmBootJson : Task
                     bool isWebcilInWasmAssembly = IsTargeting110OrLater()
                         && string.Equals(fileExtension, ".wasm", StringComparison.OrdinalIgnoreCase)
                         && !(string.Equals(assetTraitName, "WasmResource", StringComparison.OrdinalIgnoreCase)
-                             && string.Equals(assetTraitValue, "native", StringComparison.OrdinalIgnoreCase));
+                             && (string.Equals(assetTraitValue, "native", StringComparison.OrdinalIgnoreCase)
+                                 || string.Equals(assetTraitValue, "readyToRunAuxiliary", StringComparison.OrdinalIgnoreCase)));
 
                     if (isWebcilInWasmAssembly)
                     {

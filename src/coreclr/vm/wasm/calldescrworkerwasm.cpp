@@ -43,7 +43,15 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
 
     MethodDesc* pMethod = PortableEntryPoint::GetMethodDesc(pCallDescrData->pTarget);
     InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
-    if (targetIp == NULL && pMethod->ShouldCallPrestub())
+    bool activateDelayedR2RCode = false;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    if (targetIp != NULL)
+    {
+        activateDelayedR2RCode = targetIp->Method->auxiliaryMethodInfo.ShouldTryActivateMethod();
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
+    if ((targetIp == NULL && pMethod->ShouldCallPrestub()) || activateDelayedR2RCode)
     {
         // DoPrestub may trigger a GC. Report the arguments through a PrestubMethodFrame, as the
         // prestub does for calls from managed code. DispatchCallSimple provides no TransitionBlock,

@@ -25,6 +25,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int Offset => 0;
 
         private ArrayBuilder<byte> _ehInfoBuilder;
+        public readonly List<(int Offset, int Length)> AuxiliaryDataRanges = new();
 
         public EHInfoNode()
         {
@@ -98,7 +99,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (ehInfo != null && ehInfo.Data.Length != 0)
                 {
                     _methodNodes.Add(method);
-                    _ehInfoOffsets.Add(_ehInfoNode.AddEHInfo(ehInfo.Data));
+                    int offset = _ehInfoNode.AddEHInfo(ehInfo.Data);
+                    _ehInfoOffsets.Add(offset);
+                    if (_nodeFactory.IsAuxiliaryMethod(method))
+                        _ehInfoNode.AuxiliaryDataRanges.Add((offset, ehInfo.Data.Length));
                 }
             }
         }

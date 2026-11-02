@@ -13,6 +13,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public HashSet<MethodGCInfoNode> Deduplicator;
+        public readonly List<(int Offset, int Length)> AuxiliaryDataRanges = new();
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 

@@ -54,6 +54,7 @@
     <RuntimeFlavor Condition="'$(Nested_RuntimeFlavor)' != ''">$(Nested_RuntimeFlavor)</RuntimeFlavor>
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(Nested_PublishReadyToRun)' != ''">$(Nested_PublishReadyToRun)</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">false</PublishReadyToRun>
+    <WasmEnableAuxiliaryR2RModules Condition="'$(Nested_WasmEnableAuxiliaryR2RModules)' != ''">$(Nested_WasmEnableAuxiliaryR2RModules)</WasmEnableAuxiliaryR2RModules>
   </PropertyGroup>
 
   <!-- Import late, so properties like $(ArtifactsBinDir) are set -->

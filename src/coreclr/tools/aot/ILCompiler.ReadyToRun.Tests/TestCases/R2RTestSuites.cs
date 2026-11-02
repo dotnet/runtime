@@ -1,16 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+extern alias crossgen2;
+
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.PortableExecutable;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using crossgen2::ILCompiler;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
 using Internal.Runtime;
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+using TypeSystemMetadataEmitter = crossgen2::Internal.TypeSystem.TypeSystemMetadataEmitter;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -29,6 +37,125 @@ public class R2RTestSuites
     public R2RTestSuites(ITestOutputHelper output)
     {
         _output = output;
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(0, 1)]
+    [InlineData(0, 2)]
+    [InlineData(1, 1)]
+    [InlineData(1, 2)]
+    [InlineData(2, 1)]
+    [InlineData(2, 2)]
+    public void AuxiliaryModulesUseMibcMethodMembership(int profileMode, int parallelism)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(AuxiliaryModulesUseMibcMethodMembership),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+        List<string> args = ["--wasm-auxiliary-modules", "--wasm-debug-info", "all",
+            "--optimize-disabled", "--parallelism", parallelism.ToString()];
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AuxiliaryModulesUseMibcMethodMembership),
+            [
+                new(nameof(AuxiliaryModulesUseMibcMethodMembership), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite],
+                    AdditionalArgs = args,
+                    OutputFileExtension = ".wasm",
+                    BeforeCompile = PrepareProfiles,
+                    Validate = reader => WasmR2RAssert.AssertAuxiliaryProfileSelection(reader,
+                        hasHotMethods: profileMode != 0, hasHotValueTypes: profileMode == 2),
+                },
+            ]));
+
+        void PrepareProfiles()
+        {
+            string directory = Path.GetDirectoryName(input.FilePath)!;
+            WriteProfile(Path.Combine(directory, "startup.mibc"), includePrivate: profileMode != 0,
+                includeGenerics: profileMode == 1, useCanon: false);
+            if (profileMode == 2)
+                WriteProfile(Path.Combine(directory, "generics.mibc"), includePrivate: false,
+                    includeGenerics: true, useCanon: true);
+        }
+
+        void WriteProfile(string path, bool includePrivate, bool includeGenerics, bool useCanon)
+        {
+            TargetDetails target = new(TargetArchitecture.Wasm32, TargetOS.Browser, TargetAbi.NativeAot);
+            CompilerTypeSystemContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes)
+            {
+                InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [input.AssemblyName] = input.FilePath,
+                    ["System.Private.CoreLib"] = TestPaths.SystemPrivateCoreLibPath,
+                },
+                ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+            };
+            context.SetSystemModule((EcmaModule)context.GetModuleForSimpleName("System.Private.CoreLib"));
+            EcmaModule module = (EcmaModule)context.GetModuleForSimpleName(input.AssemblyName);
+            MetadataType type = module.GetType("Webcil"u8, "WasmWebcilModule"u8);
+            TypeSystemMetadataEmitter emitter = new(new AssemblyNameInfo(Path.GetFileName(path)), context);
+            emitter.InjectSystemPrivateCanon();
+            emitter.AllowUseOfAddGlobalMethod();
+            InstructionEncoder group = new(new BlobBuilder());
+            if (includePrivate)
+                AddMethod(type.GetMethod("AuxiliaryMethod"u8, null));
+            if (includeGenerics)
+            {
+                List<TypeDesc> arguments = [useCanon ? context.CanonType : context.GetWellKnownType(WellKnownType.String)];
+                if (useCanon)
+                    arguments.Add(context.GetWellKnownType(WellKnownType.Int32));
+                foreach (TypeDesc argument in arguments)
+                {
+                    AddMethod(type.GetMethod("ProfiledGeneric"u8, null).MakeInstantiatedMethod(new Instantiation(argument)));
+                    MetadataType holder = type.GetNestedType("ProfiledHolder`1"u8);
+                    AddMethod(holder.MakeInstantiatedType(argument).GetMethod("Hot"u8, null));
+                }
+            }
+            group.OpCode(ILOpCode.Ret);
+            MethodDefinitionHandle groupHandle = emitter.AddGlobalMethod("Startup", group, maxStack: 1);
+            InstructionEncoder dictionary = new(new BlobBuilder());
+            dictionary.LoadString(emitter.Builder.GetOrAddUserString(input.AssemblyName + ";"));
+            dictionary.OpCode(ILOpCode.Ldtoken);
+            dictionary.Token(groupHandle);
+            dictionary.OpCode(ILOpCode.Pop);
+            dictionary.OpCode(ILOpCode.Ret);
+            emitter.AddGlobalMethod("AssemblyDictionary", dictionary, maxStack: 2);
+            using (FileStream output = File.Create(path))
+                emitter.SerializeToStream(output);
+            args.AddRange(["--mibc", path]);
+
+            void AddMethod(MethodDesc method)
+            {
+                group.OpCode(ILOpCode.Ldtoken);
+                group.Token(emitter.GetMethodRef(method));
+                group.OpCode(ILOpCode.Pop);
+            }
+        }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AuxiliaryModulesSeparateEntryPointsAndColdData(bool optimize)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(AuxiliaryModulesSeparateEntryPointsAndColdData),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AuxiliaryModulesSeparateEntryPointsAndColdData),
+            [
+                new(nameof(AuxiliaryModulesSeparateEntryPointsAndColdData), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite],
+                    AdditionalArgs = ["--wasm-auxiliary-modules", "--wasm-debug-info", "all",
+                        optimize ? "--optimize" : "--optimize-disabled"],
+                    OutputFileExtension = ".wasm",
+                    Validate = WasmR2RAssert.AssertAuxiliaryModuleLayout,
+                },
+            ]));
     }
 
     [Theory]
@@ -502,6 +629,35 @@ public class R2RTestSuites
             Assert.Contains(eagerHelperSignatures, signature =>
                 signature.Contains("System.Threading.Thread.PollGC()", StringComparison.Ordinal));
         }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void WasmManagedHelpersAreLocalToEachBodyModule(int parallelism)
+    {
+        var input = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmManagedHelpersAreLocalToEachBodyModule),
+            SourceResourceNames = ["ManagedHelpers/HelperCalls.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmManagedHelpersAreLocalToEachBodyModule),
+            [
+                new(nameof(WasmManagedHelpersAreLocalToEachBodyModule), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs =
+                    [
+                        "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath,
+                        "--wasm-auxiliary-modules",
+                        "--parallelism", parallelism.ToString(),
+                    ],
+                    OutputFileExtension = ".wasm",
+                    Validate = WasmR2RAssert.AssertAuxiliaryManagedHelpers,
+                },
+            ]));
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]

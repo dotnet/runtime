@@ -45,6 +45,7 @@
     <NestedBuildProperty Include="WasmPerformanceInstrumentation" />
     <NestedBuildProperty Include="RuntimeFlavor" />
     <NestedBuildProperty Include="WasmEnableWebcil" />
+    <NestedBuildProperty Include="WasmEnableAuxiliaryR2RModules" />
     <NestedBuildProperty Include="EnableAggressiveTrimming" />
     <NestedBuildProperty Include="TrimMode" />
     <NestedBuildProperty Include="WasmTestSupport" />

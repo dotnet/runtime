@@ -123,9 +123,11 @@ namespace Microsoft.NET.Sdk.WebAssembly
             }
 
             AddDictionary(sb, resources.assembly);
+            AddDictionary(sb, resources.auxiliaryAssembly);
             AddDictionary(sb, resources.coreAssembly);
 
             AddDictionary(sb, resources.jsModuleWorker);
+            AddDictionary(sb, resources.jsModuleAuxiliaryWorker);
             AddDictionary(sb, resources.jsModuleDiagnostics);
             AddDictionary(sb, resources.jsModuleNative);
             AddDictionary(sb, resources.jsModuleRuntime);
@@ -161,7 +163,9 @@ namespace Microsoft.NET.Sdk.WebAssembly
             ResourcesData resources = (ResourcesData)bootConfig.resources;
 
             string resourceExtension = Path.GetExtension(resourceName);
-            if (TargetFrameworkVersion < version110 && resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".mjs", StringComparison.OrdinalIgnoreCase))
+            if (resourceName.StartsWith("dotnet.auxiliary.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
+                return resources.jsModuleAuxiliaryWorker ??= new();
+            else if (TargetFrameworkVersion < version110 && resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".mjs", StringComparison.OrdinalIgnoreCase))
                 return resources.jsModuleWorker ??= new();
             else if (resourceName.StartsWith("dotnet.diagnostics", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return resources.jsModuleDiagnostics ??= new();
@@ -224,6 +228,17 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.jsModuleRuntime = MapJsAssets(resources.jsModuleRuntime);
             assets.jsModuleNative = MapJsAssets(resources.jsModuleNative);
             assets.jsModuleWorker = MapJsAssets(resources.jsModuleWorker);
+            assets.jsModuleAuxiliaryWorker = resources.jsModuleAuxiliaryWorker?.Select(a =>
+            {
+                var asset = new JsAsset() { name = a.Key };
+                if (bundlerFriendly)
+                {
+                    string escaped = EscapeName(a.Key);
+                    imports.Add($"const {escaped} = new URL(\"./{a.Key}\", import.meta.url).href;");
+                    asset.resolvedUrl = EncodeJavascriptVariableInJson(escaped);
+                }
+                return asset;
+            }).ToList();
             assets.jsModuleDiagnostics = MapJsAssets(resources.jsModuleDiagnostics);
 
             assets.wasmNative = resources.wasmNative?.Select(a =>
@@ -254,6 +269,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.icu = MapGeneralAssets(resources.icu);
             assets.coreAssembly = MapWebcilAssets(resources.coreAssembly);
             assets.assembly = MapWebcilAssets(resources.assembly);
+            assets.auxiliaryAssembly = MapGeneralAssets(resources.auxiliaryAssembly);
             assets.corePdb = MapGeneralAssets(resources.corePdb);
             assets.pdb = MapGeneralAssets(resources.pdb);
             assets.lazyAssembly = MapWebcilAssets(resources.lazyAssembly);

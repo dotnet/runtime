@@ -22,10 +22,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly NodeFactory _factory;
         private bool _materializedSignature;
+        private int _entryPointsOffset;
+        public bool IsAuxiliary { get; }
+        public override int Offset => _entryPointsOffset;
 
-        public InstanceEntryPointTableNode(NodeFactory factory)
+        public InstanceEntryPointTableNode(NodeFactory factory, bool auxiliary = false)
         {
             _factory = factory;
+            IsAuxiliary = auxiliary;
             _factory.ManifestMetadataTable.RegisterEmitter(this);
         }
 
@@ -51,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunInstanceEntryPointTable"u8);
+            sb.Append(IsAuxiliary ? "__ReadyToRunAuxiliaryInstanceEntryPointTable"u8 : "__ReadyToRunInstanceEntryPointTable"u8);
         }
 
         public static byte[] BuildSignatureForMethodDefinedInModule(MethodDesc method, NodeFactory factory)
@@ -100,6 +104,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             NativeWriter hashtableWriter = new NativeWriter();
 
+            Section fixupsSection = IsAuxiliary ? hashtableWriter.NewSection() : null;
             Section hashtableSection = hashtableWriter.NewSection();
             VertexHashtable vertexHashtable = new VertexHashtable();
             hashtableSection.Place(vertexHashtable);
@@ -109,6 +114,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods(null, CompiledMethodCategory.Instantiated))
             {
+                if (factory.IsAuxiliaryMethod(method) != IsAuxiliary)
+                    continue;
+
                 // Resumption stubs are discovered via READYTORUN_FIXUP_ResumptionStubEntryPoint fixups
                 // on their parent async variant methods, so they do not need entries in the InstanceEntryPointTable.
                 if (method.Method is AsyncResumptionStub)
@@ -136,6 +144,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     fixupBlob = new BlobVertex(fixup);
                     uniqueFixups.Add(fixup, fixupBlob);
+                    fixupsSection?.Place(fixupBlob);
                 }
 
                 EntryPointVertex entryPointVertex = new EntryPointWithBlobVertex((uint)methodIndex, fixupBlob, signatureBlob);
@@ -150,6 +159,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             MemoryStream hashtableContent = new MemoryStream();
             hashtableWriter.Save(hashtableContent);
+            _entryPointsOffset = vertexHashtable.VertexOffset;
             return new ObjectData(
                 data: hashtableContent.ToArray(),
                 relocs: null,
@@ -157,6 +167,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 definedSymbols: new ISymbolDefinitionNode[] { this });
         }
 
-        public override int ClassCode => -348722540;
+        public override int ClassCode => IsAuxiliary ? -348722539 : -348722540;
     }
 }

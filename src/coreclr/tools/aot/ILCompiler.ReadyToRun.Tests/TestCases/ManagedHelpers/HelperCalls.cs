@@ -13,4 +13,12 @@ public static class HelperCalls
 
         return result;
     }
+
+    private static int SumCold(int count, object value)
+    {
+        int result = ((string)value).Length;
+        for (int i = 0; i < count; i++)
+            result = checked(result + i);
+        return result;
+    }
 }

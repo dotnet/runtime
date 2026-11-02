@@ -217,7 +217,9 @@ public class ComputeWasmPublishAssets : Task
             {
                 var extension = ".js";
                 var baseName = Path.GetFileNameWithoutExtension(key);
-                if (baseName.StartsWith("dotnet.native.worker")) {
+                if (baseName.StartsWith("dotnet.auxiliary.worker"))
+                    baseName = "dotnet.auxiliary.worker";
+                else if (baseName.StartsWith("dotnet.native.worker")) {
                     baseName = "dotnet.native.worker";
                     extension = ".mjs";
                 } else if (baseName.StartsWith("dotnet.native"))

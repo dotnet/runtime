@@ -24,6 +24,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public Signature Signature => ImportSignature.Target;
 
+        internal void SetPartition(bool coldExclusive)
+        {
+            // Both arrays must use the same partition key before assigning any indices or offsets.
+            CustomSort = ImportSignature.CustomSort = coldExclusive ? 1 : 0;
+        }
+
         public Import(ImportSectionNode tableNode, Signature importSignature, MethodDesc callingMethod = null, bool sortLast = false)
         {
             Table = tableNode;

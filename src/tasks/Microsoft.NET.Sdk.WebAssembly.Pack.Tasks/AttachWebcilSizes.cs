@@ -65,7 +65,9 @@ public class AttachWebcilSizes : Task
         if (!string.Equals(candidate.GetMetadata("Extension"), ".wasm", StringComparison.OrdinalIgnoreCase))
             return false;
 
+        string traitValue = candidate.GetMetadata("AssetTraitValue");
         return !(string.Equals(candidate.GetMetadata("AssetTraitName"), "WasmResource", StringComparison.OrdinalIgnoreCase)
-                 && string.Equals(candidate.GetMetadata("AssetTraitValue"), "native", StringComparison.OrdinalIgnoreCase));
+                 && (string.Equals(traitValue, "native", StringComparison.OrdinalIgnoreCase)
+                     || string.Equals(traitValue, "readyToRunAuxiliary", StringComparison.OrdinalIgnoreCase)));
     }
 }

@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Text.Json;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.NET.Sdk.WebAssembly;
@@ -361,6 +362,102 @@ public class WebcilInWasmSizesTests
         Assert.Equal(0, tableSize);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("missing")]
+    [InlineData("path")]
+    [InlineData("duplicate")]
+    [InlineData("invalid-json")]
+    public void AuxiliaryModules_AreCollectedFromManifest(string? failure)
+    {
+        using var directory = new TempDirectory();
+        string primary = Path.Combine(directory.Path, "unusual.primary.dll");
+        string entrypoints = "arbitrary-mapping.wasm";
+        string body = failure is "path" ? "../escape.wasm" : failure is "duplicate" ? entrypoints : "arbitrary-body.wasm";
+        File.WriteAllText(Path.ChangeExtension(primary, ".auxiliary.json"),
+            failure is "invalid-json" ? "invalid" : JsonSerializer.Serialize(new { entrypoints, modules = new[] { body } }));
+        File.WriteAllBytes(Path.Combine(directory.Path, entrypoints), [0]);
+        if (failure is null)
+            File.WriteAllBytes(Path.Combine(directory.Path, body), [0]);
+
+        var engine = new TestBuildEngine { AllowErrors = failure is not null };
+        var task = new CollectWasmAuxiliaryR2RModules { BuildEngine = engine, PrimaryImages = [new TaskItem(primary)] };
+        Assert.Equal(failure is null, task.Execute());
+        if (failure is not null)
+        {
+            Assert.Single(engine.Errors);
+            return;
+        }
+        Assert.Equal(new[] { entrypoints, body }, task.Modules.Select(item => Path.GetFileName(item.ItemSpec)));
+        Assert.All(task.Modules, item => Assert.Equal("_framework/" + Path.GetFileName(item.ItemSpec), item.GetMetadata("RelativePath")));
+        Assert.Equal(3, task.FileWrites.Length);
+    }
+
+    [Fact]
+    public void AuxiliaryModules_AreNotParsedAsWebcilOrAddedToManagedAssemblies()
+    {
+        using var directory = new TempDirectory();
+        string path = Path.Combine(directory.Path, "arbitrary-body.wasm");
+        File.WriteAllBytes(path, [0]);
+        var resource = new TaskItem(path);
+        resource.SetMetadata("OriginalItemSpec", path);
+        resource.SetMetadata("AssetTraitName", "WasmResource");
+        resource.SetMetadata("AssetTraitValue", "readyToRunAuxiliary");
+        resource.SetMetadata("Integrity", "sidecar-hash");
+        var sizes = new AttachWebcilSizes { BuildEngine = new TestBuildEngine(), Candidates = [resource] };
+        Assert.True(sizes.Execute());
+        Assert.Equal(string.Empty, Assert.Single(sizes.CandidatesWithSizes).GetMetadata("PayloadSize"));
+
+        var endpoint = new TaskItem("_framework/arbitrary-body.fingerprint.wasm");
+        endpoint.SetMetadata("AssetFile", path);
+        string output = Path.Combine(directory.Path, "boot.json");
+        var boot = new GenerateWasmBootJson
+        {
+            BuildEngine = new TestBuildEngine(),
+            AssemblyPath = typeof(WebcilInWasmSizesTests).Assembly.Location,
+            Resources = sizes.CandidatesWithSizes,
+            Endpoints = [endpoint],
+            FingerprintAssets = true,
+            InvariantGlobalization = "true",
+            TargetFrameworkVersion = "v11.0",
+            UseMonoRuntime = "false",
+            OutputPath = output,
+        };
+        Assert.True(boot.Execute());
+        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(output));
+        JsonElement resources = document.RootElement.GetProperty("resources");
+        JsonElement auxiliary = Assert.Single(resources.GetProperty("auxiliaryAssembly").EnumerateArray());
+        Assert.Equal("arbitrary-body.wasm", auxiliary.GetProperty("virtualPath").GetString());
+        Assert.Equal("arbitrary-body.fingerprint.wasm", auxiliary.GetProperty("name").GetString());
+        Assert.Equal("sha256-sidecar-hash", auxiliary.GetProperty("hash").GetString());
+        Assert.False(auxiliary.TryGetProperty("payloadSize", out _));
+        Assert.Empty(resources.GetProperty("assembly").EnumerateArray());
+        Assert.Empty(resources.GetProperty("coreAssembly").EnumerateArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AuxiliaryModules_MissingOutputsInvalidateIncrementalCompilation(bool missingManifest)
+    {
+        using var directory = new TempDirectory();
+        string primary = Path.Combine(directory.Path, "app.wasm");
+        string manifest = Path.ChangeExtension(primary, ".auxiliary.json");
+        if (!missingManifest)
+        {
+            File.WriteAllText(manifest, """{"entrypoints":"mapping.wasm","modules":["body.wasm"]}""");
+            File.WriteAllBytes(Path.Combine(directory.Path, "mapping.wasm"), [0]);
+        }
+        var task = new CollectWasmAuxiliaryR2RModules
+        {
+            BuildEngine = new TestBuildEngine(),
+            PrimaryImages = [new TaskItem(primary)],
+            AllowMissingFiles = true,
+        };
+        Assert.True(task.Execute());
+        Assert.Equal(missingManifest ? manifest : Path.Combine(directory.Path, "body.wasm"), Assert.Single(task.MissingOutputs).ItemSpec);
+    }
+
     private const byte SectionCustom = 0x00;
     private const byte SectionType = 0x01;
     private const byte SectionFunction = 0x03;
@@ -642,6 +739,8 @@ public class WebcilInWasmSizesTests
 
     private sealed class TestBuildEngine : IBuildEngine
     {
+        public bool AllowErrors { get; set; }
+        public List<string> Errors { get; } = [];
         public bool ContinueOnError => false;
         public int LineNumberOfTaskNode => 0;
         public int ColumnNumberOfTaskNode => 0;
@@ -654,7 +753,13 @@ public class WebcilInWasmSizesTests
         {
         }
 
-        public void LogErrorEvent(BuildErrorEventArgs e) => Assert.Fail(e.Message ?? "Build error");
+        public void LogErrorEvent(BuildErrorEventArgs e)
+        {
+            if (AllowErrors)
+                Errors.Add(e.Message ?? "Build error");
+            else
+                Assert.Fail(e.Message ?? "Build error");
+        }
 
         public void LogMessageEvent(BuildMessageEventArgs e)
         {

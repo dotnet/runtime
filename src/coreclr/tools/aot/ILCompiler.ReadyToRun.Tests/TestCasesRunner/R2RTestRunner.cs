@@ -89,6 +89,8 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     /// </summary>
     public List<string> AdditionalArgs { get; init; } = new();
 
+    public Action? BeforeCompile { get; init; }
+
     /// <summary>
     /// Optional validator for this compilation's R2R output image.
     /// </summary>
@@ -212,6 +214,7 @@ internal sealed class R2RTestRunner
 
             foreach(var compilation in testCase.Compilations)
             {
+                compilation.BeforeCompile?.Invoke();
                 string outputPath = RunCrossgenCompilation(
                     testCase.Name, compilation, driver, compilation.FilePath, assemblyPaths);
 

@@ -186,14 +186,17 @@ namespace Wasm.Build.Tests
         }
 
         // Verify that explicit PGO items remain available to the SDK ReadyToRun pipeline and enable
-        // --partial only when ReadyToRun is on. Stops before crossgen2; the compiler arguments only let
-        // restore resolve a compiler (in-build when BASE_DIR is set, SDK pack otherwise).
+        // --partial only when ReadyToRun is on without auxiliary modules. Stops before crossgen2;
+        // the compiler arguments only let restore resolve a compiler (in-build when BASE_DIR is set,
+        // SDK pack otherwise).
         [Theory]
-        [InlineData(/*profileSet*/ true,  /*r2r*/ true,  /*expectPartial*/ true)]
-        [InlineData(/*profileSet*/ false, /*r2r*/ true,  /*expectPartial*/ false)]
-        [InlineData(/*profileSet*/ true,  /*r2r*/ false, /*expectPartial*/ false)]
-        [InlineData(/*profileSet*/ false, /*r2r*/ false, /*expectPartial*/ false)]
-        public void PublishReadyToRunPgoFilesControlsPartialCompilation(bool profileSet, bool r2r, bool expectPartial)
+        [InlineData(/*profileSet*/ true,  /*r2r*/ true,  /*auxiliary*/ false, /*expectPartial*/ true)]
+        [InlineData(/*profileSet*/ false, /*r2r*/ true,  /*auxiliary*/ false, /*expectPartial*/ false)]
+        [InlineData(/*profileSet*/ true,  /*r2r*/ false, /*auxiliary*/ false, /*expectPartial*/ false)]
+        [InlineData(/*profileSet*/ false, /*r2r*/ false, /*auxiliary*/ false, /*expectPartial*/ false)]
+        [InlineData(/*profileSet*/ true,  /*r2r*/ true,  /*auxiliary*/ true,  /*expectPartial*/ false)]
+        [InlineData(/*profileSet*/ false, /*r2r*/ true,  /*auxiliary*/ true,  /*expectPartial*/ false)]
+        public void PublishReadyToRunPgoFilesControlsPartialCompilation(bool profileSet, bool r2r, bool auxiliary, bool expectPartial)
         {
             Configuration config = Configuration.Release;
             string profilePath = Path.Combine(BuildEnvironment.TestDataPath, "DotNet_Blazor_Wasm.mibc");
@@ -211,8 +214,12 @@ namespace Wasm.Build.Tests
                 config,
                 aot: false,
                 TestAsset.WasmBasicTestApp,
-                $"coreclr_r2r_profile_{profileSet}_{r2r}",
-                extraProperties: $"<PublishReadyToRun>{r2r}</PublishReadyToRun>",
+                $"coreclr_r2r_profile_{profileSet}_{r2r}_{auxiliary}",
+                extraProperties: $"""
+                    <PublishReadyToRun>{r2r}</PublishReadyToRun>
+                    <PublishReadyToRunComposite>{auxiliary}</PublishReadyToRunComposite>
+                    <WasmEnableAuxiliaryR2RModules>{auxiliary}</WasmEnableAuxiliaryR2RModules>
+                    """,
                 extraItems: profileItem,
                 insertAtEnd: printValueTarget);
 

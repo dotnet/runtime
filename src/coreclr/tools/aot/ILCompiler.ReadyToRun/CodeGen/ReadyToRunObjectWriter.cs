@@ -281,6 +281,21 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (!succeeded)
                 {
+                    if (_nodeFactory.UsesWasmAuxiliaryModules)
+                    {
+                        string stem = Path.Combine(Path.GetDirectoryName(_objectFilePath),
+                            Path.GetFileNameWithoutExtension(_objectFilePath));
+                        foreach (string suffix in new[] { ".entrypoints.wasm", ".1.wasm", ".auxiliary.json" })
+                        {
+                            try
+                            {
+                                File.Delete(stem + suffix);
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
                     // If there was an exception while generating the OBJ file, make sure we don't leave the unfinished
                     // object file around.
                     try

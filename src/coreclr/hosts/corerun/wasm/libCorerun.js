@@ -20,6 +20,145 @@ function libCoreRunFactory() {
     }
     const mergeCoreRun = {
         $CORERUN: {
+            auxiliaryModuleLoads: [],
+            waitForAuxiliaryModules: async () => {
+                await Promise.resolve();
+                await Promise.all(CORERUN.auxiliaryModuleLoads);
+            },
+            installAuxiliaryModuleGates: () => {
+                if (ENV["DOTNET_WasmAuxiliaryManualActivation"] !== "1") return;
+                const releases = {};
+                CORERUN.auxiliaryModuleGates = {};
+                CORERUN.auxiliaryModuleCompletions = { ENTRYPOINTS: [], MODULES: [] };
+                const requested = new Set();
+                let preceding = Promise.resolve();
+                for (const stage of ["ENTRYPOINTS", "MODULES"]) {
+                    CORERUN.auxiliaryModuleGates[stage] = new Promise(resolve => releases[stage] = resolve);
+                }
+                const observeLine = message => {
+                    for (const stage of ["ENTRYPOINTS", "MODULES"]) {
+                        if (message.trim() === "AUXILIARY_R2R_ACTIVATE_" + stage && !requested.has(stage)) {
+                            requested.add(stage);
+                            const previous = preceding;
+                            preceding = Promise.all(CORERUN.auxiliaryModuleCompletions[stage]);
+                            // Console.WriteLine may still have native frames on the stack.
+                            setTimeout(() => releases[stage](previous), 0);
+                        }
+                    }
+                };
+                const originalOut = out;
+                out = message => {
+                    originalOut(message);
+                    observeLine(message);
+                };
+                const installWriteObserver = () => {
+                    const write = FS.write;
+                    const decoder = new TextDecoder();
+                    let pending = "";
+                    FS.write = (stream, buffer, offset, length, ...args) => {
+                        const written = write.call(FS, stream, buffer, offset, length, ...args);
+                        if (stream.fd === 1) {
+                            const lines = (pending + decoder.decode(buffer.subarray(offset, offset + written), { stream: true })).split("\n");
+                            pending = lines.pop();
+                            lines.forEach(observeLine);
+                        }
+                        return written;
+                    };
+                };
+                // NODERAWFS bypasses out, and replaces FS.write after library postsets run.
+                const preRun = Module["preRun"];
+                Module["preRun"] = typeof preRun === "function"
+                    ? [preRun, installWriteObserver]
+                    : [...preRun || [], installWriteObserver];
+            },
+            queueAuxiliaryModules: (instance, imports, payloadPtr, payloadSize, tableSize, wasmPath) => {
+                if (instance.exports.getAuxiliaryModuleMetadata === undefined) return;
+                if (typeof instance.exports.getAuxiliaryModuleMetadata !== "function") throw new Error("Invalid getAuxiliaryModuleMetadata export");
+                const address = instance.exports.getAuxiliaryModuleMetadata() >>> 0;
+                if (address === 0) return;
+                const end = payloadPtr + payloadSize;
+                const heap = new Uint8Array(wasmMemory.buffer);
+                if (end > heap.length || address < payloadPtr || address % 4 !== 0 || address + 16 > end) {
+                    throw new Error("Auxiliary R2R module metadata is outside the primary payload");
+                }
+                const view = new DataView(wasmMemory.buffer);
+                const count = view.getUint32(address + 8, true);
+                if (count > (end - address - 16) / 16) throw new Error("Truncated auxiliary R2R module metadata");
+                const modules = [];
+                const names = new Set();
+                const addModule = (filenameRva, statusAddress, entrypoints) => {
+                    const start = payloadPtr + filenameRva;
+                    if (view.getUint32(statusAddress, true) > 1 || start >= end) throw new Error("Invalid auxiliary R2R module metadata");
+                    let filenameEnd = start;
+                    while (filenameEnd < end && heap[filenameEnd] !== 0) filenameEnd++;
+                    if (filenameEnd === end) throw new Error("Unterminated auxiliary R2R module filename");
+                    const name = new TextDecoder("utf-8", { fatal: true }).decode(heap.subarray(start, filenameEnd));
+                    if (!/^[^./\\][^/\\?#:]*\.wasm$/.test(name) || names.has(name)) throw new Error(`Invalid auxiliary R2R module filename '${name}'`);
+                    names.add(name);
+                    modules.push({ name, statusAddress, entrypoints });
+                };
+                addModule(view.getUint32(address + 12, true), address, true);
+                let nextTableIndex = view.getUint32(address + 4, true);
+                if (nextTableIndex > tableSize) throw new Error("Invalid primary R2R module table range");
+                for (let i = 0; i < count; i++) {
+                    const entry = address + 16 + i * 16;
+                    const tableBase = view.getUint32(entry + 4, true);
+                    const methodCount = view.getUint32(entry + 8, true);
+                    if (tableBase !== nextTableIndex || tableBase + methodCount > tableSize) {
+                        throw new Error("Invalid auxiliary R2R module table range");
+                    }
+                    nextTableIndex += methodCount;
+                    addModule(view.getUint32(entry, true), entry + 12, false);
+                }
+                // Native registration finishes after the synchronous probe returns. Never activate in the probe.
+                const directory = wasmPath.substring(0, wasmPath.lastIndexOf("/") + 1);
+                const operations = modules.map(module => Promise.resolve().then(async () => {
+                    try {
+                        if (new DataView(wasmMemory.buffer).getUint32(module.statusAddress, true) === 1) return;
+                        if (CORERUN.auxiliaryModuleGates) {
+                            await CORERUN.auxiliaryModuleGates[module.entrypoints ? "ENTRYPOINTS" : "MODULES"];
+                        }
+                        const delayName = module.entrypoints
+                            ? "DOTNET_WasmAuxiliaryEntryPointsDelayMilliseconds"
+                            : "DOTNET_WasmAuxiliaryModuleDelayMilliseconds";
+                        const delay = Number(ENV[delayName] || 0);
+                        if (!Number.isInteger(delay) || delay < 0 || delay > 2147483647) {
+                            throw new Error(`Invalid ${delayName}: ${ENV[delayName]}`);
+                        }
+                        if (delay !== 0) await new Promise(resolve => setTimeout(resolve, delay));
+                        const bytes = FS.readFile(directory + module.name);
+                        const { instance } = await WebAssembly.instantiate(bytes, imports);
+                        if (typeof instance.exports.ActivateModule !== "function") throw new Error("Missing ActivateModule export");
+                        if (new DataView(wasmMemory.buffer).getUint32(module.statusAddress, true) === 0) {
+                            instance.exports.ActivateModule();
+                            if (new DataView(wasmMemory.buffer).getUint32(module.statusAddress, true) !== 1) {
+                                throw new Error("ActivateModule did not publish its activation status");
+                            }
+                            if (module.entrypoints) {
+                                if (typeof wasmExports.dotnet_wasm_notify_auxiliary_entrypoints_activated !== "function") {
+                                    throw new Error("Runtime does not support auxiliary R2R modules");
+                                }
+                                wasmExports.dotnet_wasm_notify_auxiliary_entrypoints_activated();
+                            }
+                        }
+                    } catch (reason) {
+                        const error = new Error(`Failed to load auxiliary R2R module '${module.name}': ${reason instanceof Error ? reason.message : String(reason)}`);
+                        err(error.message);
+                        return error;
+                    }
+                }));
+                if (CORERUN.auxiliaryModuleCompletions) {
+                    for (let i = 0; i < modules.length; i++) {
+                        CORERUN.auxiliaryModuleCompletions[modules[i].entrypoints ? "ENTRYPOINTS" : "MODULES"].push(operations[i]);
+                    }
+                }
+                const completion = Promise.all(operations).then(errors => {
+                    const error = errors.find(error => error !== undefined);
+                    if (error) throw error;
+                });
+                CORERUN.auxiliaryModuleLoads.push(completion);
+                void completion.catch(() => {});
+            },
             selfInitialize: () => {
                 const browserVirtualAppBase = "/";// keep in sync other places that define browserVirtualAppBase
                 FS.createPath("/", browserVirtualAppBase, true, true);
@@ -32,6 +171,8 @@ function libCoreRunFactory() {
                 }
 
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
+                Module["waitForAuxiliaryModules"] = CORERUN.waitForAuxiliaryModules;
+                CORERUN.installAuxiliaryModuleGates();
 
                 if (ENVIRONMENT_IS_NODE) {
                     const original_proc_exit = _proc_exit;
@@ -226,6 +367,7 @@ function libCoreRunFactory() {
 
             var payloadPtr = 0;
             var wasmInstance;
+            var imports;
             const sp = stackSave();
             try {
                 const ptrPtr = stackAlloc(4);
@@ -242,7 +384,7 @@ function libCoreRunFactory() {
                     throw new Error("__async_continuation was not preserved by the linker or optimizer");
                 }
                 payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
-                wasmInstance = new WebAssembly.Instance(wasmModule, {
+                imports = {
                     webcil: {
                         memory: wasmMemory,
                         __stack_pointer: wasmExports.__stack_pointer,
@@ -253,7 +395,8 @@ function libCoreRunFactory() {
                         // Runtime-async continuation return value, shared with the runtime module.
                         __async_continuation: wasmExports.__async_continuation
                     }
-                });
+                };
+                wasmInstance = new WebAssembly.Instance(wasmModule, imports);
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
                 console.error("Failed to construct WebAssembly instance for Webcil image:", { wasmPath, errorMessage });
@@ -281,6 +424,7 @@ function libCoreRunFactory() {
             HEAPU32[outDataStartPtr >>> 2 >>> 0] = payloadPtr;
             HEAPU32[outSize >>> 2 >>> 0] = payloadSize;
             HEAPU32[(outSize + 4) >>> 2 >>> 0] = 0;
+            CORERUN.queueAuxiliaryModules(wasmInstance, imports, payloadPtr, payloadSize, tableSize, wasmPath);
             return true;
         }
     };

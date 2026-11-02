@@ -5980,6 +5980,8 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
     ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
 
     DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
+    if (!pR2RInfo->IsRuntimeFunctionActive(localIndex))
+        return 0;
     do
     {
         PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
@@ -6051,32 +6053,11 @@ TADDR ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP)
         return 0;
     }
 
-    DWORD localVirtualIP32 = (DWORD)localVirtualIP;
-    PTR_RUNTIME_FUNCTION pRuntimeFunctions = pR2RInfo->GetRuntimeFunctions();
-
-    // Find the function entry with the greatest BeginAddress <= localVirtualIP.
-    DWORD low = 0;
-    DWORD high = runtimeFunctionCount;
-    while (low + 1 < high)
-    {
-        DWORD mid = low + ((high - low) / 2);
-        DWORD beginAddress = RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + mid);
-        if (beginAddress <= localVirtualIP32)
-        {
-            low = mid;
-        }
-        else
-        {
-            high = mid;
-        }
-    }
-
-    if (RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + low) > localVirtualIP32)
-    {
+    int functionIndex = pR2RInfo->FindRuntimeFunction(static_cast<DWORD>(localVirtualIP));
+    if (functionIndex < 0)
         return 0;
-    }
 
-    return pR2RInfo->GetMinFunctionTableIndex() + low;
+    return pR2RInfo->GetMinFunctionTableIndex() + static_cast<DWORD>(functionIndex);
 }
 #endif // TARGET_WASM
 
@@ -6508,14 +6489,14 @@ DONE:
 #endif // !DACCESS_COMPILE
 
 static void GetFuncletStartOffsetsHelper(PCODE pCodeStart, SIZE_T size, SIZE_T ofsAdj,
-    PTR_RUNTIME_FUNCTION pFunctionEntry, TADDR moduleBase,
+    PTR_RUNTIME_FUNCTION pFunctionEntry, PTR_RUNTIME_FUNCTION pFunctionTableEnd, TADDR moduleBase,
     DWORD * pnFunclets, DWORD* pStartFuncletOffsets, DWORD dwLength)
 {
     _ASSERTE(FitsInU4((pCodeStart + size) - moduleBase));
     DWORD endAddress = (DWORD)((pCodeStart + size) - moduleBase);
 
-    // Entries are sorted and terminated by sentinel value (DWORD)-1
-    for (; RUNTIME_FUNCTION__BeginAddress(pFunctionEntry) < endAddress; pFunctionEntry++)
+    // An auxiliary module's next range may not be installed yet.
+    for (; pFunctionEntry < pFunctionTableEnd && RUNTIME_FUNCTION__BeginAddress(pFunctionEntry) < endAddress; pFunctionEntry++)
     {
 #ifdef TARGET_AMD64
         _ASSERTE((pFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0);
@@ -7220,13 +7201,17 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
     Module * pModule = pRangeSection->_pR2RModule;
     ReadyToRunInfo * pInfo = pModule->GetReadyToRunInfo();
 
-    COUNT_T nRuntimeFunctions = pInfo->m_nRuntimeFunctions;
     PTR_RUNTIME_FUNCTION pRuntimeFunctions = pInfo->m_pRuntimeFunctions;
 
+#ifdef TARGET_WASM
+    int MethodIndex = pInfo->FindRuntimeFunction(RelativePc);
+#else
+    COUNT_T nRuntimeFunctions = pInfo->m_nRuntimeFunctions;
     int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(RelativePc,
                                                                              pRuntimeFunctions,
                                                                              0,
                                                                              nRuntimeFunctions - 1);
+#endif // TARGET_WASM
 
     if (MethodIndex < 0)
         return FALSE;
@@ -7315,6 +7300,12 @@ TADDR ReadyToRunJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
 DWORD ReadyToRunJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
 {
     PTR_RUNTIME_FUNCTION pFirstFuncletFunctionEntry = dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader) + 1;
+    ReadyToRunInfo* pInfo = JitTokenToReadyToRunInfo(MethodToken);
+    DWORD rangeEnd = pInfo->GetRuntimeFunctionCount();
+#ifdef TARGET_WASM
+    rangeEnd = pInfo->GetRuntimeFunctionRangeEnd(
+        static_cast<DWORD>(pFirstFuncletFunctionEntry - pInfo->GetRuntimeFunctions() - 1));
+#endif
 
     TADDR moduleBase = JitTokenToModuleFunctionsBase(MethodToken);
     DWORD nFunclets = 0;
@@ -7327,13 +7318,12 @@ DWORD ReadyToRunJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToke
     // fragments until the first funclet, if any, is found.
 
     GetFuncletStartOffsetsHelper(regionInfo.hotStartAddress, regionInfo.hotSize, 0,
-        pFirstFuncletFunctionEntry, moduleBase,
+        pFirstFuncletFunctionEntry, pInfo->GetRuntimeFunctions() + rangeEnd, moduleBase,
         &nFunclets, pStartFuncletOffsets, dwLength);
 
     // Technically, the cold code is not a funclet, but it looks like the debugger wants it
     if (regionInfo.coldSize > 0)
     {
-        ReadyToRunInfo * pInfo = JitTokenToReadyToRunInfo(MethodToken);
         PTR_RUNTIME_FUNCTION pRuntimeFunctions = pInfo->m_pRuntimeFunctions;
         int i = 0;
         while (true)
@@ -7347,7 +7337,7 @@ DWORD ReadyToRunJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToke
         }
 
         GetFuncletStartOffsetsHelper(regionInfo.coldStartAddress, regionInfo.coldSize, 0,
-            pFirstFuncletFunctionEntry, moduleBase,
+            pFirstFuncletFunctionEntry, pRuntimeFunctions + pInfo->GetRuntimeFunctionCount(), moduleBase,
             &nFunclets, pStartFuncletOffsets, dwLength);
     }
 
