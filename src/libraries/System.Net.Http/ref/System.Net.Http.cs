@@ -114,6 +114,10 @@ namespace System.Net.Http
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> QueryAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> QueryAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> QueryAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> QueryAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
