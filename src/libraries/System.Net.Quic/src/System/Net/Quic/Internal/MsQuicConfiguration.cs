@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
@@ -229,11 +228,14 @@ internal static partial class MsQuicConfiguration
         MsQuicConfigurationSafeHandle configurationHandle = new MsQuicConfigurationSafeHandle(handle);
 
         SslStreamCertificateContext? context = null;
-        SafeHandle? certificateHandle = null;
-        bool addedRef = false;
 
         try
         {
+            // The copy retains the underlying certificate handle while MsQuic loads the credentials.
+            using X509Certificate? certificateCopy = MsQuicApi.UsesSChannelBackend && certificate is not null
+                ? new X509Certificate(certificate)
+                : null;
+
             if (certificate is X509Certificate2 cert && intermediates is null)
             {
                 // Build the local chain after the configuration cache check. Avoid OCSP fetches
@@ -254,16 +256,12 @@ internal static partial class MsQuicConfiguration
                 config.Type = QUIC_CREDENTIAL_TYPE.NONE;
                 status = MsQuicApi.Api.ConfigurationLoadCredential(configurationHandle, &config);
             }
-#if TARGET_WINDOWS
             else if (MsQuicApi.UsesSChannelBackend)
             {
-                certificateHandle = CertificateValidation.GetCertificateSafeHandle(certificate);
-                certificateHandle.DangerousAddRef(ref addedRef);
                 config.Type = QUIC_CREDENTIAL_TYPE.CERTIFICATE_CONTEXT;
-                config.CertificateContext = (void*)certificateHandle.DangerousGetHandle();
+                config.CertificateContext = (void*)certificateCopy!.Handle;
                 status = MsQuicApi.Api.ConfigurationLoadCredential(configurationHandle, &config);
             }
-#endif
             else
             {
                 config.Type = QUIC_CREDENTIAL_TYPE.CERTIFICATE_PKCS12;
@@ -309,9 +307,9 @@ internal static partial class MsQuicConfiguration
             // server certificates and SEC_E_UNKNOWN_CREDENTIALS for client certificates when the
             // private key is ephemeral, which is not supported on Windows.
             if ((status == MsQuic.QUIC_STATUS_CERT_NO_CERT || (Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.UnknownCredentials) &&
-                certificateHandle is not null && certificate is not null && certificate.HasPrivateKey())
+                certificateCopy is not null && certificate is not null && certificate.HasPrivateKey())
             {
-                using Microsoft.Win32.SafeHandles.SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificateHandle!.DangerousGetHandle());
+                using Microsoft.Win32.SafeHandles.SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificateCopy.Handle);
                 if (safeCertContextHandle.HasEphemeralPrivateKey)
                 {
                     throw new AuthenticationException(SR.net_auth_ephemeral);
@@ -328,11 +326,6 @@ internal static partial class MsQuicConfiguration
         }
         finally
         {
-            if (addedRef)
-            {
-                certificateHandle!.DangerousRelease();
-            }
-
             if (context is not null)
             {
                 ReleaseResources(context);
