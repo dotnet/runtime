@@ -10558,7 +10558,14 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     int       varNum   = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
     int       lastOffs = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
 
-    const bool hasSideEffect = HasSideEffect(ins, size);
+    bool hasSideEffect = HasSideEffect(ins, size);
+
+    if ((fmt == IF_RWR_SRD) && ((ins == INS_movss) || (ins == INS_movsd_simd)))
+    {
+        // A load from memory always clears the upper bits, even for legacy SSE encoding. HasSideEffect
+        // only models the register form, which preserves them when not using VEX encoding.
+        hasSideEffect = true;
+    }
 
     // Check if the last instruction and current instructions use the same register and local memory.
     if (varNum == varx && lastReg1 == ireg && lastOffs == offs)
