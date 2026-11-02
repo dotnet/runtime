@@ -227,9 +227,15 @@ InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
-// Filter to ignore SEH exceptions representing C++ exceptions.
-LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
+// Filter to ignore SEH exceptions representing C++ exceptions or all exceptions when the thread
+// is marked to skip the managed personality routine. That means that the EH has found that the
+// exception is not handled by managed code and it should propagate to the host. 
+LONG ExceptionDispatchFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 {
+    Thread *pThread = GetThread();
+    if (pThread->HasThreadStateNC(Thread::TSNC_SkipManagedPersonalityRoutine))
+        return EXCEPTION_CONTINUE_SEARCH;
+
     return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
         ? EXCEPTION_CONTINUE_SEARCH
         : EXCEPTION_EXECUTE_HANDLER;
@@ -248,7 +254,7 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
     {
         pParam->result = pParam->function();
     }
-    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    PAL_EXCEPT_FILTER(ExceptionDispatchFilter)
     {
         // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
         // from the called method's call chain.
@@ -293,7 +299,7 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
         InvokeManagedMethod(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget, NULL);
         GCX_PREEMP_NO_DTOR_END();
     }
-    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    PAL_EXCEPT_FILTER(ExceptionDispatchFilter)
     {
         // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
         // from the native method (QCALL) call chain.
@@ -594,7 +600,12 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
         pContinuationRet = &continuationUnused;
     }
 
-    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
+    // The target may still be a prestub, whose compilation can raise a managed SEH exception.
+    CallWithSEHWrapper(
+        [&]() {
+            pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
+            return 0;
+        });
 }
 
 InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
