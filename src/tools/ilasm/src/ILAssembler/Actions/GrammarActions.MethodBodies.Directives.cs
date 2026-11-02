@@ -40,6 +40,7 @@ internal sealed partial class GrammarActions
         finally
         {
             _explicitLocalSlots.Clear();
+            _localNameTokens.Clear();
         }
     }
 

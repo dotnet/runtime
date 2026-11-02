@@ -516,7 +516,6 @@ namespace Internal.JitInterface
 
         private void AddAdditionalDependency(ISymbolNode node, string reason)
         {
-            _additionalDependencies ??= new DependencyList();
             _additionalDependencies.Add(node, reason);
         }
 
@@ -1394,6 +1393,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GCPoll;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_WASM_PROF_SAMPLEPOINT:
+                    id = ReadyToRunHelper.WasmProfSamplepoint;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
                     id = ReadyToRunHelper.GetCurrentManagedThreadId;
                     break;
@@ -1903,6 +1906,7 @@ namespace Internal.JitInterface
             if (field.IsStatic)
             {
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
+                CORINFO_FIELD_ACCESSOR intrinsicAccessor;
 
                 if (field.FieldType.IsValueType && field.HasGCStaticBase && !field.HasRva)
                 {
@@ -1925,6 +1929,13 @@ namespace Internal.JitInterface
                     {
                         fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                     }
+                }
+                else if (field.IsIntrinsic &&
+                    (flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
+                    (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
+                {
+                    fieldAccessor = intrinsicAccessor;
+                    pResult->helper = CorInfoHelpFunc.CORINFO_HELP_UNDEF;
                 }
                 else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) || _compilation.NodeFactory.Target.IsWasm)
                 {
@@ -1955,14 +1966,7 @@ namespace Internal.JitInterface
                     pResult->helper = CorInfoHelpFunc.CORINFO_HELP_UNDEF;
 
                     ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
-                    CORINFO_FIELD_ACCESSOR intrinsicAccessor;
-                    if (field.IsIntrinsic &&
-                        (flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
-                        (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
-                    {
-                        fieldAccessor = intrinsicAccessor;
-                    }
-                    else if (IsThreadStaticForTarget(field))
+                    if (IsThreadStaticForTarget(field))
                     {
                         if (field.HasGCStaticBase)
                         {
@@ -2556,12 +2560,6 @@ namespace Internal.JitInterface
                     classMustBeLoadedBeforeCodeIsRun(type);
                 }
             }
-        }
-
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-        {
-            TypeDesc type = HandleToObject(cls);
-            classMustBeLoadedBeforeCodeIsRun(type);
         }
 
         private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)

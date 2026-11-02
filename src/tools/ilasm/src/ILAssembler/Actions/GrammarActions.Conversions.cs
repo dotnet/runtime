@@ -34,7 +34,9 @@ namespace ILAssembler
 
         // Record the mapped field data directly into the blob to ensure we preserve ordering
         private readonly BlobBuilder _mappedFieldData = new();
-        private readonly Dictionary<string, int> _mappedFieldDataNames = new();
+        private readonly BlobBuilder _tlsData = new();
+        private readonly BlobBuilder _cilData = new();
+        private readonly Dictionary<string, DataLocation> _mappedFieldDataNames = new();
         private readonly List<CILParser.DataLabelReferenceValue> _mappedFieldDataReferenceFixups = new();
         private readonly BlobBuilder _manifestResources = new();
         private int _syntaxErrorCount;
@@ -44,9 +46,12 @@ namespace ILAssembler
         private Guid _currentLanguageVendorGuid = Guid.Empty;
         private Guid _currentDocumentTypeGuid = Guid.Empty;
         private readonly PdbDocumentTable _pdbDocuments;
-        // The index in _pdbDocuments of the current document: the input file being parsed, or the file named by
-        // the last .line or #line directive applied since its parsing began. -1 before the first input file.
-        private int _currentDocument = -1;
+        // The .line state of each source of the input file being parsed: the input file and each inclusion of an
+        // #include'd file, keyed by the token source (lexer) that reads it. See SourceLineState.
+        private readonly Dictionary<ITokenSource, SourceLineState> _sourceLineStates = new();
+        // The span of the last sequence point recorded, across methods and input files, or null when a .line or
+        // #line directive has been applied since. An instruction gets a point only when its span differs.
+        private SequencePointSpan? _lastSequencePointSpan;
         private readonly MetadataBuilder _pdbBuilder = new();
         private readonly List<VTableFixupDeclaration> _vtableFixups = new();
         private readonly Dictionary<EntityRegistry.MethodDefinitionEntity, ParserRuleContext> _exportDirectiveContexts = new();
@@ -68,7 +73,7 @@ namespace ILAssembler
         private readonly record struct ValidatedVTableFixup(
             int OriginalIndex,
             VTableFixupSupport.VTableFixupEntry Entry,
-            int DataOffset);
+            DataLocation DataLocation);
 
         private readonly record struct ValidatedVTableAssociation(
             EntityRegistry.MethodDefinitionEntity Method,
@@ -130,6 +135,9 @@ namespace ILAssembler
                 message,
                 Location.From(token, _documents)));
         }
+
+        private void ReportError(string id, string message, Location location)
+            => _diagnostics.Add(new Diagnostic(id, DiagnosticSeverity.Error, message, location));
 
         private void ReportWarning(string id, string message, Antlr4.Runtime.ParserRuleContext context)
             => ReportDiagnostic(DiagnosticSeverity.Warning, id, message, context);
@@ -204,6 +212,8 @@ namespace ILAssembler
             }
 
             public EntityRegistry.MethodDefinitionEntity Definition { get; }
+
+            public SequencePointSpan? LastRejectedSequencePointSpan { get; set; }
 
             public Dictionary<string, LabelHandle> Labels { get; } = new();
 

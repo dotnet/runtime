@@ -3351,8 +3351,7 @@ void ComMethodTable::GenerateIID()
     CONTRACTL_END;
 
     // Metadata generation can throw and trigger GC, so do it outside the commit lock.
-    IID iid;
-    GenerateClassItfGuid(TypeHandle(m_pMT), &iid);
+    IID iid = GenerateClassItfGuid(TypeHandle(m_pMT));
 
     CrstHolder ch(&g_CreateWrapperTemplateCrst);
     if (!(VolatileLoad(&m_Flags) & enum_GuidGenerated))
@@ -4337,7 +4336,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
 
         // If the class is visible from COM, then give out the IClassX IID.
         if (pRetTemplate->m_pClassComMT->IsComVisible())
-            GenerateClassItfGuid(thClass, &IClassXIID);
+            IClassXIID = GenerateClassItfGuid(thClass);
 
 #if defined(_DEBUG)
         CHAR rIID[MINIPAL_GUID_BUFFER_LEN];

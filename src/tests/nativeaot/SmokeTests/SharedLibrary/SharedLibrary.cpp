@@ -38,6 +38,7 @@ int main(int argc, char* argv[])
         return 1;
 
 #ifdef TARGET_WINDOWS
+    f_ReturnsPrimitiveInt thisMethodMustBeCalledFirst = (f_ReturnsPrimitiveInt)GetProcAddress(handle, "ThisMethodMustBeCalledFirst");
     f_ReturnsPrimitiveInt returnsPrimitiveInt = (f_ReturnsPrimitiveInt)GetProcAddress(handle, "ReturnsPrimitiveInt");
     f_ReturnsPrimitiveBool returnsPrimitiveBool = (f_ReturnsPrimitiveBool)GetProcAddress(handle, "ReturnsPrimitiveBool");
     f_ReturnsPrimitiveChar returnsPrimitiveChar = (f_ReturnsPrimitiveChar)GetProcAddress(handle, "ReturnsPrimitiveChar");
@@ -45,6 +46,7 @@ int main(int argc, char* argv[])
     f_ReturnsPrimitiveInt checkSimpleGCCollect = (f_ReturnsPrimitiveInt)GetProcAddress(handle, "CheckSimpleGCCollect");
     f_ReturnsPrimitiveInt checkSimpleExceptionHandling = (f_ReturnsPrimitiveInt)GetProcAddress(handle, "CheckSimpleExceptionHandling");
 #else
+    f_ReturnsPrimitiveInt thisMethodMustBeCalledFirst = (f_ReturnsPrimitiveInt)dlsym(handle, "ThisMethodMustBeCalledFirst");
     f_ReturnsPrimitiveInt returnsPrimitiveInt = (f_ReturnsPrimitiveInt)dlsym(handle, "ReturnsPrimitiveInt");
     f_ReturnsPrimitiveBool returnsPrimitiveBool = (f_ReturnsPrimitiveBool)dlsym(handle, "ReturnsPrimitiveBool");
     f_ReturnsPrimitiveChar returnsPrimitiveChar = (f_ReturnsPrimitiveChar)dlsym(handle, "ReturnsPrimitiveChar");
@@ -52,6 +54,13 @@ int main(int argc, char* argv[])
     f_ReturnsPrimitiveInt checkSimpleGCCollect = (f_ReturnsPrimitiveInt)dlsym(handle, "CheckSimpleGCCollect");
     f_ReturnsPrimitiveInt checkSimpleExceptionHandling = (f_ReturnsPrimitiveInt)dlsym(handle, "CheckSimpleExceptionHandling");
 #endif
+
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // !!!!!      This must be the first managed method called in this test      !!!!!
+    // !!!!! Regression test for https://github.com/dotnet/runtime/issues/136201 !!!!!
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if (!thisMethodMustBeCalledFirst || thisMethodMustBeCalledFirst() != 100)
+        return 6;
 
     if (returnsPrimitiveInt() != 10)
         return 1;

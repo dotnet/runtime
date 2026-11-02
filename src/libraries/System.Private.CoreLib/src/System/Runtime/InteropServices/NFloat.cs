@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -980,10 +981,12 @@ namespace System.Runtime.InteropServices
         public static NFloat Ceiling(NFloat x) => new NFloat(NativeType.Ceiling(x._value));
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToInteger<TInteger>(NFloat value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToIntegerNative<TInteger>(NFloat value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
@@ -1219,6 +1222,7 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static NFloat CreateChecked<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1238,6 +1242,7 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static NFloat CreateSaturating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1257,6 +1262,7 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static NFloat CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1318,6 +1324,7 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<NFloat>.TryConvertFromChecked<TOther>(TOther value, out NFloat result)
         {
             return TryConvertFrom(value, out result);
@@ -1325,6 +1332,7 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<NFloat>.TryConvertFromSaturating<TOther>(TOther value, out NFloat result)
         {
             return TryConvertFrom(value, out result);
@@ -1332,12 +1340,14 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<NFloat>.TryConvertFromTruncating<TOther>(TOther value, out NFloat result)
         {
             return TryConvertFrom(value, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFrom<TOther>(TOther value, out NFloat result)
             where TOther : INumberBase<TOther>
         {
@@ -1452,6 +1462,7 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<NFloat>.TryConvertToChecked<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
             if (typeof(TOther) == typeof(byte))
@@ -1565,6 +1576,7 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<NFloat>.TryConvertToSaturating<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo(value, out result);
@@ -1572,12 +1584,14 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<NFloat>.TryConvertToTruncating<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo(value, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertTo<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {

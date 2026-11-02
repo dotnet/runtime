@@ -287,7 +287,7 @@ namespace System.IO.Hashing
             ulong bitflip = (DefaultSecretUInt64_2 ^ DefaultSecretUInt64_3) + seed;
             ulong keyed = input64 ^ bitflip;
 
-            ulong m128High = Multiply64To128(keyed, Prime64_1 + (length << 2), out ulong m128Low);
+            ulong m128High = Math.BigMul(keyed, Prime64_1 + (length << 2), out ulong m128Low);
 
             m128High += (m128Low << 1);
             m128Low ^= (m128High >> 3);
@@ -308,7 +308,7 @@ namespace System.IO.Hashing
             ulong bitfliph = (DefaultSecretUInt64_6 ^ DefaultSecretUInt64_7) + seed;
             ulong inputLo = ReadUInt64LE(source);
             ulong inputHi = ReadUInt64LE(source + length - 8);
-            ulong m128High = Multiply64To128(inputLo ^ inputHi ^ bitflipl, Prime64_1, out ulong m128Low);
+            ulong m128High = Math.BigMul(inputLo ^ inputHi ^ bitflipl, Prime64_1, out ulong m128Low);
 
             m128Low += (ulong)(length - 1) << 54;
             inputHi ^= bitfliph;
@@ -319,7 +319,7 @@ namespace System.IO.Hashing
 
             m128Low ^= BinaryPrimitives.ReverseEndianness(m128High);
 
-            ulong h128High = Multiply64To128(m128Low, Prime64_2, out ulong h128Low);
+            ulong h128High = Math.BigMul(m128Low, Prime64_2, out ulong h128Low);
             h128High += m128High * (ulong)Prime64_2;
 
             h128Low = Avalanche(h128Low);

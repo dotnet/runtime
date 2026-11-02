@@ -13,8 +13,8 @@ namespace System.Net.Http.Functional.Tests
 {
     // GZip is supported on every platform (including browser/wasi), so the gzip tests and the shared
     // helpers live in this file, which is compiled for all targets. Brotli and Zstandard are not
-    // supported on browser/wasi; their tests live in CompressedContentTest.NonBrowser.cs, which is
-    // excluded from those builds.
+    // supported on browser; their tests live in CompressedContentTest.NonBrowser.cs, which is
+    // excluded from that build.
     public partial class CompressedContentTest
     {
         [Fact]

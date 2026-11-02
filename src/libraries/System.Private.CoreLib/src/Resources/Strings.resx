@@ -3722,6 +3722,9 @@
   <data name="TypeLoad_AssemblySealedParentTypeError" xml:space="preserve">
     <value>Could not load type '{0}' from assembly '{1}' because the parent type is sealed.</value>
   </data>
+  <data name="TypeLoad_AssemblyTypeNotCreatedError" xml:space="preserve">
+    <value>Could not load type '{0}' from assembly '{1}' because it has not been created. Call CreateType() on its TypeBuilder or EnumBuilder before using it.</value>
+  </data>
   <data name="TypeLoad_ResolveNestedType" xml:space="preserve">
     <value>Could not resolve nested type '{0}' in type "{1}'.</value>
   </data>

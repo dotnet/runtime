@@ -25,7 +25,6 @@ public sealed class ExecutionManager_1 : IExecutionManager
     public TargetCodePointer GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer entryPoint) => _executionManagerCore.GetDiagnosticCodeStartFromEntryPoint(entryPoint);
     public bool IsFunclet(CodeBlockHandle codeInfoHandle) => _executionManagerCore.IsFunclet(codeInfoHandle);
     public bool IsFilterFunclet(CodeBlockHandle codeInfoHandle) => _executionManagerCore.IsFilterFunclet(codeInfoHandle);
-    public bool TryGetUnwindInfo(TargetCodePointer controlPC, out TargetPointer runtimeFunction, out TargetPointer unwindInfoBaseAddress) => _executionManagerCore.TryGetUnwindInfo(controlPC, out runtimeFunction, out unwindInfoBaseAddress);
     public TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetUnwindInfo(codeInfoHandle);
     public TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetUnwindInfoBaseAddress(codeInfoHandle);
     public TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte) => _executionManagerCore.GetDebugInfo(codeInfoHandle, out hasFlagByte);

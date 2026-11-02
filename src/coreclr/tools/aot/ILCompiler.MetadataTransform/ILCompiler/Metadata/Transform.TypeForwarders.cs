@@ -10,10 +10,6 @@ using Cts = Internal.TypeSystem;
 using Ecma = System.Reflection.Metadata;
 
 using Debug = System.Diagnostics.Debug;
-using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
-using AssemblyContentType = System.Reflection.AssemblyContentType;
-using AssemblyNameFlags = System.Reflection.AssemblyNameFlags;
-using AssemblyFlags = System.Reflection.AssemblyFlags;
 
 namespace ILCompiler.Metadata
 {
@@ -62,20 +58,10 @@ namespace ILCompiler.Metadata
                 case Ecma.HandleKind.AssemblyReference:
                     {
                         string ns = reader.GetString(exportedType.Namespace);
-                        NamespaceDefinition namespaceDefinition = HandleNamespaceDefinition(module, ns);
+                        Cts.ModuleDesc targetModule = (Cts.ModuleDesc)module.GetObject(exportedType.Implementation);
+                        record.Namespace = HandleNamespaceReference(targetModule, ns);
 
-                        Ecma.AssemblyReference assemblyRef = reader.GetAssemblyReference((Ecma.AssemblyReferenceHandle)exportedType.Implementation);
-                        AssemblyNameInfo refName = new AssemblyNameInfo
-                        (
-                            name: reader.GetString(assemblyRef.Name),
-                            version: assemblyRef.Version,
-                            cultureName: reader.GetString(assemblyRef.Culture),
-                            flags: (AssemblyNameFlags)assemblyRef.Flags,
-                            publicKeyOrToken: reader.GetBlobContent(assemblyRef.PublicKeyOrToken)
-                        );
-                        record.Scope = HandleScopeReference(refName);
-
-                        namespaceDefinition.TypeForwarders.Add(record);
+                        HandleScopeDefinition(module).TypeForwarders.Add(record);
                     }
                     break;
 
@@ -83,7 +69,7 @@ namespace ILCompiler.Metadata
                     {
                         TypeForwarder scope = HandleTypeForwarder(module, (Ecma.ExportedTypeHandle)exportedType.Implementation);
 
-                        record.Scope = scope.Scope;
+                        record.Namespace = scope.Namespace;
 
                         scope.NestedTypes.Add(record);
                     }

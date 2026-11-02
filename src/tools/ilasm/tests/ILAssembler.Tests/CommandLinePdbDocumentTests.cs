@@ -211,6 +211,106 @@ public sealed class CommandLinePdbDocumentTests : IDisposable
         Assert.Equal("X", reader.GetMethodDocumentName("Bar"));
     }
 
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(false, 1)]
+    [InlineData(false, 2)]
+    [InlineData(true, 0)]
+    [InlineData(true, 1)]
+    [InlineData(true, 2)]
+    public void IncludeLookup_PrefersAsWrittenThenFirstInputDirectoryThenIncludePath(bool nested, int firstExistingLocation)
+    {
+        string includeDirectory = Path.Combine(_directory, "includes");
+        string relativeDirectory = Path.GetFileName(_currentDirectorySubdirectory);
+        string relativePath = Path.Combine(relativeDirectory, "selected.il");
+        string[] candidates =
+        [
+            Path.Combine(Environment.CurrentDirectory, relativePath),
+            Path.Combine(_directory, "src", relativePath),
+            Path.Combine(includeDirectory, relativePath),
+        ];
+        string directive = $"#include \"{relativePath.Replace("\\", "\\\\")}\"";
+        string input = WriteSource("Main.il", FirstInput + Environment.NewLine +
+            (nested ? "#include \"nested/parent.il\"" : directive));
+
+        for (int i = firstExistingLocation; i < candidates.Length; i++)
+        {
+            WriteInclude(candidates[i], $"Candidate{i}");
+        }
+
+        if (nested)
+        {
+            string parentDirectory = Path.Combine(_directory, "src", "nested");
+            Directory.CreateDirectory(parentDirectory);
+            File.WriteAllText(Path.Combine(parentDirectory, "parent.il"), directive);
+            WriteInclude(Path.Combine(parentDirectory, relativePath), "IncludingFileRelative");
+        }
+
+        using PortablePdbTestReader reader = RunIlasm($"-include={includeDirectory}", input);
+
+        Assert.Equal(new[] { "Foo", $"Candidate{firstExistingLocation}" },
+            reader.Image.MethodDefinitions.Select(handle => reader.Image.GetString(reader.Image.GetMethodDefinition(handle).Name)));
+        Assert.Contains(candidates[firstExistingLocation], reader.DocumentNames);
+        foreach (string unused in candidates.Where((_, index) => index != firstExistingLocation))
+        {
+            Assert.DoesNotContain(unused, reader.DocumentNames);
+        }
+        Assert.DoesNotContain(Path.Combine(_directory, "src", "nested", relativePath), reader.DocumentNames);
+    }
+
+    [Fact]
+    public void IncludeLookup_InLaterInput_UsesFirstInputDirectory()
+    {
+        string childName = Path.GetRandomFileName() + ".il";
+        string firstInput = WriteSource("Main.il", FirstInput);
+        string firstInputChild = Path.Combine(_directory, "src", childName);
+        string laterDirectory = Path.Combine(_directory, "later");
+        WriteInclude(firstInputChild, "FirstInputDirectory");
+        WriteInclude(Path.Combine(laterDirectory, childName), "LaterInputDirectory");
+        string laterInput = Path.Combine(laterDirectory, "Later.il");
+        File.WriteAllText(laterInput, $"#include \"{childName}\"");
+
+        using PortablePdbTestReader reader = RunIlasm(firstInput, laterInput);
+
+        Assert.Equal(new[] { "Foo", "FirstInputDirectory" },
+            reader.Image.MethodDefinitions.Select(handle => reader.Image.GetString(reader.Image.GetMethodDefinition(handle).Name)));
+        Assert.Contains(firstInputChild, reader.DocumentNames);
+        Assert.DoesNotContain(Path.Combine(laterDirectory, childName), reader.DocumentNames);
+    }
+
+    [Fact]
+    public void NestedIncludeLookup_DoesNotFallBackToIncludingFileDirectory()
+    {
+        string childName = Path.GetRandomFileName() + ".il";
+        string parentDirectory = Path.Combine(_directory, "src", "nested");
+        Directory.CreateDirectory(parentDirectory);
+        File.WriteAllText(Path.Combine(parentDirectory, "parent.il"), $"#include \"{childName}\"");
+        WriteInclude(Path.Combine(parentDirectory, childName), "IncludingFileRelative");
+        string input = WriteSource("Main.il", FirstInput + "\n#include \"nested/parent.il\"");
+        string output = Path.Combine(_directory, "out", "Output.dll");
+        var command = new IlasmRootCommand();
+        ParseResult result = command.Parse(NativeCommandLine.Normalize(
+            ["-nologo", "-quiet", "-dll", $"-output={output}", input], command));
+
+        Assert.Empty(result.Errors);
+        Assert.Equal(1, new Program(command, result).Run());
+        Assert.False(File.Exists(output));
+    }
+
+    private static void WriteInclude(string path, string methodName)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, $$"""
+            .class public {{methodName}}Type
+            {
+                .method public static void {{methodName}}() cil managed
+                {
+                    ret
+                }
+            }
+            """);
+    }
+
     // A sequence point as (IL offset, start line, end line, start column, end column, document name).
     private static (int, int, int, int, int, string) Describe(PortablePdbTestReader reader, SequencePoint point)
         => (point.Offset, point.StartLine, point.EndLine, point.StartColumn, point.EndColumn, reader.GetDocumentName(point.Document));

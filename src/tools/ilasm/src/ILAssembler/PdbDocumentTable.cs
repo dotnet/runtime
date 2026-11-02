@@ -11,11 +11,11 @@ namespace ILAssembler;
 /// </summary>
 /// <remarks>
 /// <para>
-/// As in native ilasm, a document is defined when the assembler first meets its name: each input file when its
-/// parsing begins, and each file named by a <c>.line</c> or <c>#line</c> directive when the directive is applied,
+/// A document is defined when the assembler first meets its name: each input file when its parsing
+/// begins, and each file named by a <c>.line</c> or <c>#line</c> directive when the directive is applied,
 /// whether or not a sequence point ever refers to it. A document is identified by its name alone, after
-/// <see cref="Options.PathMap"/>; defining it again returns the existing document, which keeps the language it was
-/// first defined with.
+/// <see cref="Options.PathMap"/>; defining it again returns the existing document, which keeps the language
+/// it was first defined with.
 /// </para>
 /// <para>
 /// Sequence points refer to a document by its index in this table
@@ -27,7 +27,7 @@ internal sealed class PdbDocumentTable
 {
     /// <summary>
     /// The language of a document defined before any <c>.language</c> directive: IL assembly
-    /// (<c>CorSym_LanguageType_ILAssembly</c> in src/coreclr/inc/corsym.idl), as in native ilasm.
+    /// (<c>CorSym_LanguageType_ILAssembly</c> in src/coreclr/inc/corsym.idl).
     /// </summary>
     public static readonly Guid ILAssemblyLanguage = new("af046cd3-d0e1-11d2-977c-00a0c9b4d50c");
 

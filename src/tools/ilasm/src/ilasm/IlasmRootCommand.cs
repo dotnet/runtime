@@ -67,6 +67,9 @@ internal sealed class IlasmRootCommand : RootCommand
     public Option<string> IncludePath { get; } =
         new("--include", "-I") { Description = "Set path to search for #include'd files" };
 
+    public Option<string> ResourceFile { get; } =
+        new("--resource") { Description = "Embed Win32 resources from a .res or COFF .obj file" };
+
     public Option<string[]> PathMap { get; } =
         new("--pathmap") { Description = "Map a path prefix to the path written in the PDB and the image: <path>=<sourcePath>[,<path>=<sourcePath>...], as the C# compiler's -pathmap" };
 
@@ -140,6 +143,7 @@ internal sealed class IlasmRootCommand : RootCommand
         Options.Add(KeyFile);
         Options.Add(AssemblyName);
         Options.Add(IncludePath);
+        Options.Add(ResourceFile);
         Options.Add(PathMap);
         Options.Add(Subsystem);
         Options.Add(SubsystemVersion);

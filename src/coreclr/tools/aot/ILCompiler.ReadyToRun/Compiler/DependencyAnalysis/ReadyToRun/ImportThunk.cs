@@ -5,6 +5,7 @@ using Internal.ReadyToRunConstants;
 using Internal.Text;
 using Internal.TypeSystem;
 using System.Diagnostics;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -94,12 +95,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_helperCell, otherNode._helperCell);
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            Debug.Assert(base.ComputeNonRelocationBasedDependencies(factory) == null);
-            DependencyList dependencies = new DependencyList();
-            dependencies.Add(factory.DelayLoadMethodCallThunks, "MethodCallThunksList");
-            return dependencies;
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
+            sink.Add(factory.DelayLoadMethodCallThunks, "MethodCallThunksList");
         }
 
         protected override void OnMarked(NodeFactory factory)

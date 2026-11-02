@@ -67,7 +67,7 @@
 #define LOG(x)
 
 // Adapter for GC's view of Array
-class ArrayBase : Array
+class ArrayBase : public Array
 {
 public:
     DWORD GetNumComponents()

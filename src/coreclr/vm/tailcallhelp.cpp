@@ -293,7 +293,8 @@ bool TailCallHelp::GenerateGCDescriptor(
         TypeHandle tyHnd = val.TyHnd;
         if (tyHnd.IsValueType())
         {
-            if (!tyHnd.GetMethodTable()->ContainsGCPointers())
+            // Byref-like structs (e.g. Span<T>) have no GC series but can contain byref fields.
+            if (!tyHnd.GetMethodTable()->ContainsGCPointers() && !tyHnd.GetMethodTable()->IsByRefLike())
             {
 #ifndef TARGET_X86
                 // The generic instantiation arg is right after this pointer

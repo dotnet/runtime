@@ -13,7 +13,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -53,7 +52,7 @@ namespace TestTLSWithLoadedDlls
             if (OperatingSystem.IsWindows()) // Windows does not have a really long command line length limit, and doesn't have a problem with many TLS using images used
                 CountOfLibTlsToLoad = 10;
 
-            StringBuilder arguments = new();
+            ProcessStartInfo startInfo = new ProcessStartInfo(GetCorerunPath());
 
             (string prefix, string suffix) = GetSharedLibraryPrefixSuffix();
 
@@ -74,25 +73,18 @@ namespace TestTLSWithLoadedDlls
                         finalUseTlsPath);
                 }
 
-                arguments.Append(" -l ");
-                arguments.Append(finalUseTlsPath);
+                startInfo.ArgumentList.Add("-l");
+                startInfo.ArgumentList.Add(finalUseTlsPath);
             }
 
-            arguments.Append(' ');
-            arguments.Append(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            arguments.Append(" RunLotsOfTasks");
+            startInfo.ArgumentList.Add(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            startInfo.ArgumentList.Add("RunLotsOfTasks");
+            startInfo.InheritedHandles = [];
+            startInfo.EnvironmentVariables["DOTNET_AssertNotStaticTlsResolver"] = "1";
 
-            Process process = new Process();
-            process.StartInfo.FileName = GetCorerunPath();
-            process.StartInfo.Arguments = arguments.ToString();
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.EnvironmentVariables["DOTNET_AssertNotStaticTlsResolver"] = "1";
+            Console.WriteLine($"Launching {startInfo.FileName} {string.Join(" ", startInfo.ArgumentList)}");
 
-            Console.WriteLine($"Launching {process.StartInfo.FileName} {process.StartInfo.Arguments}");
-
-            process.Start();
-            process.WaitForExit();
-            return process.ExitCode;
+            return Process.Run(startInfo).ExitCode;
         }
 
         private static string GetCorerunPath()

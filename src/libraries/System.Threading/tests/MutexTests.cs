@@ -59,6 +59,41 @@ namespace System.Threading.Tests
             Assert.Throws<ApplicationException>(() => m.ReleaseMutex());
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SingleThreadedNamedHandlesShareOwnershipAndLifetime(bool initiallyOwned)
+        {
+            string name = Guid.NewGuid().ToString("N");
+            using Mutex original = new(initiallyOwned, name, out bool createdNew);
+            Assert.True(createdNew);
+            if (!initiallyOwned)
+            {
+                Assert.True(original.WaitOne(0));
+            }
+
+            using Mutex alias = new(initiallyOwned: true, name, out createdNew);
+            Assert.False(createdNew);
+            Assert.Throws<DuplicateWaitObjectException>(() => WaitHandle.WaitAll([original, alias], 0));
+            Assert.Equal(0, WaitHandle.WaitAny([original, alias], 0));
+            alias.ReleaseMutex();
+            original.Dispose();
+
+            alias.ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => alias.ReleaseMutex());
+            using Mutex opened = Mutex.OpenExisting(name);
+            alias.Dispose();
+            Assert.True(opened.WaitOne(0));
+            opened.ReleaseMutex();
+            opened.Dispose();
+            Assert.False(Mutex.TryOpenExisting(name, out _));
+
+            using Mutex recreated = new(initiallyOwned: true, name, out createdNew);
+            Assert.True(createdNew);
+            recreated.ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => recreated.ReleaseMutex());
+        }
+
         [Fact]
         public void WaitTest()
         {
