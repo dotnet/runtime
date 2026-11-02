@@ -41,7 +41,7 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        public unsafe ReadOnlySpan<byte> ReadStringAsBytes(uint offset)
+        public unsafe ReadOnlySpan<byte> ReadLengthPrefixedBytes(uint offset)
         {
             uint numBytes;
             offset = DecodeUnsigned(offset, out numBytes);

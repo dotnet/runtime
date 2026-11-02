@@ -3043,12 +3043,13 @@ mdToken GetTokenForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
 }
 
 //=================================================================================
+#ifdef FEATURE_IJW
 void SetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry, BYTE *pTarget)
 {
     STANDARD_VM_CONTRACT;
 
     DWORD oldProtect;
-    if (!ClrVirtualProtect(ppVTEntry, sizeof(BYTE*), PAGE_READWRITE, &oldProtect))
+    if (!VirtualProtect(ppVTEntry, sizeof(BYTE*), PAGE_READWRITE, &oldProtect))
     {
         // This is very bad.  We are not going to be able to update header.
         _ASSERTE(!"SetTargetForVTableEntry(): VirtualProtect() changing IJW thunk vtable to R/W failed.\n");
@@ -3058,12 +3059,13 @@ void SetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry, BYTE *pTarget)
     *ppVTEntry = pTarget;
 
     DWORD ignore;
-    if (!ClrVirtualProtect(ppVTEntry, sizeof(BYTE*), oldProtect, &ignore))
+    if (!VirtualProtect(ppVTEntry, sizeof(BYTE*), oldProtect, &ignore))
     {
         // This is not so bad, we're already done the update, we just didn't return the thunk table to read only
         _ASSERTE(!"SetTargetForVTableEntry(): VirtualProtect() changing IJW thunk vtable back to RO failed.\n");
     }
 }
+#endif // FEATURE_IJW
 
 //=================================================================================
 BYTE * GetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
