@@ -8,14 +8,13 @@ namespace System.Runtime.Caching
 {
     internal sealed class MemoryCacheEqualityComparer : IEqualityComparer
     {
-        bool IEqualityComparer.Equals(object x, object y)
+        bool IEqualityComparer.Equals(object? x, object? y)
         {
             Debug.Assert(x != null && x is MemoryCacheKey);
             Debug.Assert(y != null && y is MemoryCacheKey);
 
-            MemoryCacheKey a, b;
-            a = (MemoryCacheKey)x;
-            b = (MemoryCacheKey)y;
+            MemoryCacheKey a = (MemoryCacheKey)x!;
+            MemoryCacheKey b = (MemoryCacheKey)y!;
 
             return string.Equals(a.Key, b.Key, StringComparison.Ordinal);
         }

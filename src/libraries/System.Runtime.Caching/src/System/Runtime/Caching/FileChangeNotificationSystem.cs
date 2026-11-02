@@ -24,7 +24,7 @@ namespace System.Runtime.Caching
 
         internal sealed class DirectoryMonitor
         {
-            internal FileSystemWatcher Fsw;
+            internal FileSystemWatcher? Fsw;
         }
 
         internal sealed class FileChangeEventTarget
@@ -35,7 +35,7 @@ namespace System.Runtime.Caching
             private readonly ErrorEventHandler _errorHandler;
             private readonly RenamedEventHandler _renamedHandler;
 
-            private static bool EqualsIgnoreCase(string s1, string s2)
+            private static bool EqualsIgnoreCase(string? s1, string? s2)
             {
                 if (string.IsNullOrEmpty(s1) && string.IsNullOrEmpty(s2))
                 {
@@ -95,8 +95,8 @@ namespace System.Runtime.Caching
             ArgumentNullException.ThrowIfNull(onChangedCallback);
 
             FileInfo fileInfo = new FileInfo(filePath);
-            string dir = Path.GetDirectoryName(filePath);
-            DirectoryMonitor dirMon = _dirMonitors[dir] as DirectoryMonitor;
+            string dir = Path.GetDirectoryName(filePath) ?? string.Empty;
+            DirectoryMonitor? dirMon = _dirMonitors[dir] as DirectoryMonitor;
             if (dirMon == null)
             {
                 lock (_lock)
@@ -106,13 +106,13 @@ namespace System.Runtime.Caching
                     {
                         dirMon = new DirectoryMonitor();
                         dirMon.Fsw = new FileSystemWatcher(dir);
-                        dirMon.Fsw.NotifyFilter = NotifyFilters.FileName
+                        dirMon.Fsw!.NotifyFilter = NotifyFilters.FileName
                                                   | NotifyFilters.DirectoryName
                                                   | NotifyFilters.CreationTime
                                                   | NotifyFilters.Size
                                                   | NotifyFilters.LastWrite
                                                   | NotifyFilters.Security;
-                        dirMon.Fsw.EnableRaisingEvents = true;
+                        dirMon.Fsw!.EnableRaisingEvents = true;
                     }
                     _dirMonitors[dir] = dirMon;
                 }
@@ -122,11 +122,11 @@ namespace System.Runtime.Caching
 
             lock (dirMon)
             {
-                dirMon.Fsw.Changed += target.ChangedHandler;
-                dirMon.Fsw.Created += target.ChangedHandler;
-                dirMon.Fsw.Deleted += target.ChangedHandler;
-                dirMon.Fsw.Error += target.ErrorHandler;
-                dirMon.Fsw.Renamed += target.RenamedHandler;
+                dirMon.Fsw!.Changed += target.ChangedHandler;
+                dirMon.Fsw!.Created += target.ChangedHandler;
+                dirMon.Fsw!.Deleted += target.ChangedHandler;
+                dirMon.Fsw!.Error += target.ErrorHandler;
+                dirMon.Fsw!.Renamed += target.RenamedHandler;
             }
 
             state = target;
@@ -139,22 +139,22 @@ namespace System.Runtime.Caching
             ArgumentNullException.ThrowIfNull(filePath);
             ArgumentNullException.ThrowIfNull(state);
 
-            FileChangeEventTarget target = state as FileChangeEventTarget;
+            FileChangeEventTarget? target = state as FileChangeEventTarget;
             if (target == null)
             {
                 throw new ArgumentException(SR.Invalid_state, nameof(state));
             }
-            string dir = Path.GetDirectoryName(filePath);
-            DirectoryMonitor dirMon = _dirMonitors[dir] as DirectoryMonitor;
+            string dir = Path.GetDirectoryName(filePath) ?? string.Empty;
+            DirectoryMonitor? dirMon = _dirMonitors[dir] as DirectoryMonitor;
             if (dirMon != null)
             {
                 lock (dirMon)
                 {
-                    dirMon.Fsw.Changed -= target.ChangedHandler;
-                    dirMon.Fsw.Created -= target.ChangedHandler;
-                    dirMon.Fsw.Deleted -= target.ChangedHandler;
-                    dirMon.Fsw.Error -= target.ErrorHandler;
-                    dirMon.Fsw.Renamed -= target.RenamedHandler;
+                    dirMon.Fsw!.Changed -= target.ChangedHandler;
+                    dirMon.Fsw!.Created -= target.ChangedHandler;
+                    dirMon.Fsw!.Deleted -= target.ChangedHandler;
+                    dirMon.Fsw!.Error -= target.ErrorHandler;
+                    dirMon.Fsw!.Renamed -= target.RenamedHandler;
                 }
             }
         }
