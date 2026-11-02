@@ -314,6 +314,7 @@ protected:
 
     DAC_ALIGNAS(UINT64) // Align the first member to alignof(m_nLoaderAllocator). Windows does this by default, force Linux to match.
     BYTE *              m_InitialReservedMemForLoaderHeaps;
+    size_t              m_InitialReservedMemForLoaderHeapsSize;
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
 #ifdef HAS_FIXUP_PRECODE
@@ -389,7 +390,9 @@ protected:
     Volatile<PgoManager *> m_pgoManager;
 #endif // FEATURE_PGO
 
+#ifdef FEATURE_MULTITHREADING
     SArray<TLSIndex> m_tlsIndices;
+#endif // FEATURE_MULTITHREADING
 
 public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
@@ -434,11 +437,13 @@ protected:
 
     PTR_VirtualCallStubManager m_pVirtualCallStubManager;
 
+#ifdef FEATURE_MULTITHREADING
 public:
     SArray<TLSIndex>& GetTLSIndexList()
     {
         return m_tlsIndices;
     }
+#endif // FEATURE_MULTITHREADING
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;

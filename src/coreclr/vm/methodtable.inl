@@ -6,7 +6,9 @@
 
 #include "methodtable.h"
 #include "genericdict.h"
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 //==========================================================================================
 // DO NOT ADD ANY ASSERTS OR ANY OTHER CODE TO THIS METHOD.
@@ -1143,6 +1145,7 @@ inline PTR_BYTE MethodTable::GetGCStaticsBasePointer()
     }
 }
 
+#ifdef FEATURE_MULTITHREADING
 #ifndef DACCESS_COMPILE
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer()
@@ -1201,6 +1204,7 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer(PTR_Thread pThread)
 
     return (PTR_BYTE)GetThreadLocalStaticBaseNoCreate(pThread, tlsIndex);
 }
+#endif // FEATURE_MULTITHREADING
 
 //==========================================================================================
 inline OBJECTREF MethodTable::AllocateNoChecks()

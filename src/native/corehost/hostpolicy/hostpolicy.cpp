@@ -4,6 +4,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <pal.h>
 #include "args.h"
 #include <trace.h>
@@ -166,7 +167,13 @@ namespace
 
         {
             std::lock_guard<std::mutex> lock{ g_context_lock };
-            g_context.reset(context_local.release());
+            g_context.reset(context_local.release(), [](hostpolicy_context_t* context)
+            {
+                // Before runtime load, release the context when its last owner goes away.
+                // After runtime load, retain it for callbacks and values that should survive for the process lifetime.
+                if (context->coreclr == nullptr)
+                    delete context;
+            });
         }
 
         return StatusCode::Success;
@@ -965,10 +972,9 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
 
     // For now intentionally don't process .runtimeconfig.json since we don't perform framework resolution.
 
-    // Call parse_runtime_config since it initializes the defaults for various settings
-    // but we don't have any .runtimeconfig.json for the component, so pass in empty paths.
+    // Initialize the runtime config without processing a .runtimeconfig.json for the component.
     // Empty paths is a valid case and the method will simply skip parsing anything.
-    app->parse_runtime_config(pal::string_t(), pal::string_t(), runtime_config_t::settings_t());
+    app->parse_runtime_config(pal::string_t(), pal::string_t(), std::nullopt);
     if (!app->get_runtime_config().is_valid())
     {
         // This should really never happen, but fail gracefully if it does anyway.

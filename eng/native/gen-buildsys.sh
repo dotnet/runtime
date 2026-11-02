@@ -63,8 +63,8 @@ done
 cmake_extra_defines=
 if [[ "$CROSSCOMPILE" == "1" ]]; then
     platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
-    # OSX doesn't use rootfs
-    if ! [[ -n "$ROOTFS_DIR" || "$platform" == "darwin" ]]; then
+    # OSX doesn't use rootfs; OpenHarmony uses its NDK toolchain
+    if ! [[ -n "$ROOTFS_DIR" || "$platform" == "darwin" || "$target_os" == "openharmony" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
     fi
@@ -76,6 +76,9 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
 
     if [[ "$platform" == "darwin" ]]; then
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_SYSTEM_NAME=Darwin"
+    elif [[ "$target_os" == "openharmony" ]]; then
+        # OpenHarmony NDK toolchain is injected by build-commons.sh; do not override it.
+        true
     else
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/../common/cross/toolchain.cmake"
     fi
@@ -108,6 +111,20 @@ if [[ "$host_arch" == "wasm" ]]; then
         # The -C flag must be early in the command line to be effective
         cmake_extra_defines="-C $scriptroot/tryrun.browser.cmake $cmake_extra_defines"
     elif [[ "$target_os" == "wasi" ]]; then
+        # Like eng/AcquireWasiSdk.targets, only use $WASI_SDK_PATH when it is the expected version,
+        # so native code built here links with the runtime built by MSBuild.
+        if [[ -n "$WASI_SDK_PATH" ]]; then
+            wasi_sdk_expected_version="$(tr -d '[:space:]' < "$reporoot"/eng/wasm/wasi-sdk-version.txt)"
+            wasi_sdk_actual_version=
+            if [[ -f "$WASI_SDK_PATH/VERSION" ]]; then
+                read -r wasi_sdk_actual_version _ < "$WASI_SDK_PATH/VERSION"
+            fi
+            if [[ "$wasi_sdk_actual_version" != "$wasi_sdk_expected_version" ]] && \
+                wasi_sdk_cache_path="$(wasm_tool_cache_dir wasi-sdk "$reporoot"/eng/wasm/wasi-sdk-version.txt "$reporoot")"; then
+                echo "WASI_SDK_PATH is version '$wasi_sdk_actual_version', not '$wasi_sdk_expected_version'; using $wasi_sdk_cache_path"
+                export WASI_SDK_PATH="$wasi_sdk_cache_path"
+            fi
+        fi
         if [[ -z "$WASI_SDK_PATH" ]]; then
             if WASI_SDK_PATH="$(wasm_tool_cache_dir wasi-sdk "$reporoot"/eng/wasm/wasi-sdk-version.txt "$reporoot")"; then
                 export WASI_SDK_PATH
@@ -123,7 +140,40 @@ if [[ "$host_arch" == "wasm" ]]; then
     fi
 fi
 
+# CMake detects the compiler only on a build directory's first configure. Later configures keep the
+# cached compiler even when the toolchain file, CC/CXX or a cmake wrapper such as emcmake now select a
+# different one, for example a new SDK version in the versioned wasm tool cache. Record those inputs
+# next to the cache and reconfigure from scratch when they change.
+compiler_inputs="CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE:-}"$'\n'"CC=${CC:-}"$'\n'"CXX=${CXX:-}"
+for arg in $cmake_extra_defines "${__UnprocessedCMakeArgs[@]}" "${cmake_extra_defines_wasm[@]}"; do
+    case "$arg" in
+        -DCMAKE_TOOLCHAIN_FILE=*|-DCMAKE_TOOLCHAIN_FILE:*=*) compiler_inputs+=$'\n'"$arg" ;;
+    esac
+done
+# The compiler's version, which changes when the compiler behind an unchanged path is replaced, e.g. by an
+# Xcode update (/usr/bin/clang is a shim) or a distro package upgrade.
+if [[ -n "${CC:-}" ]]; then
+    compiler_inputs+=$'\n'"$("$CC" --version 2>/dev/null | head -n 1)"
+fi
+# The cmake command, including any wrapper such as emcmake or scan-build, resolved to full paths.
+for tool in $cmake_command; do
+    compiler_inputs+=$'\n'"$(command -v "$tool" || echo "$tool")"
+done
+
+compiler_inputs_file="$2/cmake_compiler_inputs.txt"
+cmake_fresh=()
+if [[ -f "$2/CMakeCache.txt" && "$(cat "$compiler_inputs_file" 2>/dev/null)" != "$compiler_inputs" ]]; then
+    echo "CMake compiler inputs changed since $2 was last configured; reconfiguring from scratch."
+    cmake_fresh=("--fresh")
+    # Also delete the previous compiler's outputs: ninja and make rebuild an object only when its command
+    # line changes, which it doesn't when the compiler at the same path is replaced (e.g. an Xcode update).
+    if [[ -f "$compiler_inputs_file" ]]; then
+        cmake --build "$2" --target clean
+    fi
+fi
+
 $cmake_command \
+  "${cmake_fresh[@]}" \
   --no-warn-unused-cli \
   -G "$generator" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
@@ -132,6 +182,7 @@ $cmake_command \
   "${__UnprocessedCMakeArgs[@]}" \
   "${cmake_extra_defines_wasm[@]}" \
   -S "$1" \
-  -B "$2"
+  -B "$2" \
+  && printf '%s\n' "$compiler_inputs" > "$compiler_inputs_file"
 
 # don't add anything after this line so the cmake exit code gets propagated correctly

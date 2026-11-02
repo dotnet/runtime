@@ -51,7 +51,7 @@ namespace System.Security.Cryptography
                     ReadOnlySpan<byte> y = new(pExportedSpan + blobHeaderSize + ElementSize, ElementSize);
 
                     // y shouldn't have a value.
-                    if (y.IndexOfAnyExcept((byte)0) >= 0)
+                    if (y.ContainsAnyExcept((byte)0))
                     {
                         throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
                     }

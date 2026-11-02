@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Build.Framework;
+using Microsoft.NET.Build.Tasks;
 using Mono.Linker;
 using Mono.Linker.Steps;
 
@@ -17,6 +18,23 @@ namespace ILLink.Tasks.Tests
     {
 
         public List<(MessageImportance Importance, string Line)> Messages { get; } = new List<(MessageImportance Importance, string Line)>();
+
+        public string GetResponseFileCommands() => GenerateResponseFileCommands();
+
+        public bool TryGetCacheKey(string pathToTool, out string key)
+        {
+            // Match the normalization ToolTask.Execute applies before calling ExecuteTool.
+            string commandLine = GenerateCommandLineCommands();
+            commandLine = string.IsNullOrEmpty(commandLine) ? string.Empty : " " + commandLine;
+            object[] arguments = {
+                pathToTool,
+                AdjustCommandsForOperatingSystem(GenerateResponseFileCommands()),
+                AdjustCommandsForOperatingSystem(commandLine)
+            };
+            var invocation = (InvocationDescription)typeof(ILLink).GetMethod("DescribeInvocation", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(this, arguments);
+            key = string.Empty;
+            return invocation is not null && InvocationCache.TryComputeKey(Log, "ILLink", invocation, out key);
+        }
 
         public MockTask()
         {
@@ -77,9 +95,11 @@ namespace ILLink.Tasks.Tests
     public class MockBuildEngine : IBuildEngine
     {
         public List<BuildErrorEventArgs> Errors { get; } = new List<BuildErrorEventArgs>();
+        public List<BuildMessageEventArgs> Messages { get; } = new();
+
         public void LogErrorEvent(BuildErrorEventArgs e) => Errors.Add(e);
         public void LogWarningEvent(BuildWarningEventArgs e) { }
-        public void LogMessageEvent(BuildMessageEventArgs e) { }
+        public void LogMessageEvent(BuildMessageEventArgs e) => Messages.Add(e);
         public void LogCustomEvent(CustomBuildEventArgs e) { }
         public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs) => false;
         public bool ContinueOnError => false;

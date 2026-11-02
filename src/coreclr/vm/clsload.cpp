@@ -1941,6 +1941,10 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                             name.SetTokenNotToLoad(tdAllAssemblies);
                             typeHnd = pAssembly->GetLoader()->LoadTypeHandleThrowing(&name, level);
                         }
+                        else if (fNotFoundAction == ThrowIfNotFound)
+                        {
+                            pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDef, IDS_CLASSLOAD_TYPE_NOT_CREATED);
+                        }
                     }
                 }
             }
@@ -2993,6 +2997,9 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(const TypeKey *pTypeKey,
     }
     CONTRACTL_END
 
+    // A missed signature dependency must fail before a stack walk enters the blocking loader.
+    _ASSERTE_ALL_BUILDS(!IsGCThread() && !IsStackWalkerThread());
+
     GCX_PREEMP();
 
 #ifdef _DEBUG
@@ -3049,6 +3056,8 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(const TypeKey *pTypeKey,
         PRECONDITION(targetLevel >= 0 && targetLevel <= CLASS_LOADED);
     }
     CONTRACTL_END
+
+    _ASSERTE_ALL_BUILDS(!IsGCThread() && !IsStackWalkerThread());
 
     GCX_PREEMP();
 
@@ -4048,6 +4057,7 @@ static BOOL AssemblyOrFriendAccessAllowed(Assembly       *pAccessingAssembly,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pAccessingAssembly));
         PRECONDITION(CheckPointer(pTargetAssembly));
     }

@@ -258,28 +258,12 @@ namespace Internal.StackTraceMetadata
         private void EmitNamespaceReferenceName(NamespaceReferenceHandle namespaceRefHandle)
         {
             NamespaceReference namespaceRef = _metadataReader.GetNamespaceReference(namespaceRefHandle);
-            if (!namespaceRef.ParentScopeOrNamespace.IsNil &&
-                namespaceRef.ParentScopeOrNamespace.HandleType == HandleType.NamespaceReference)
-            {
-                int charsWritten = _outputBuilder.Length;
-                EmitNamespaceReferenceName(namespaceRef.ParentScopeOrNamespace.ToNamespaceReferenceHandle(_metadataReader));
-                if (_outputBuilder.Length - charsWritten > 0)
-                    _outputBuilder.Append('.');
-            }
             EmitString(namespaceRef.Name);
         }
 
         private void EmitNamespaceDefinitionName(NamespaceDefinitionHandle namespaceDefHandle)
         {
             NamespaceDefinition namespaceDef = _metadataReader.GetNamespaceDefinition(namespaceDefHandle);
-            if (!namespaceDef.ParentScopeOrNamespace.IsNil &&
-                namespaceDef.ParentScopeOrNamespace.HandleType == HandleType.NamespaceDefinition)
-            {
-                int charsWritten = _outputBuilder.Length;
-                EmitNamespaceDefinitionName(namespaceDef.ParentScopeOrNamespace.ToNamespaceDefinitionHandle(_metadataReader));
-                if (_outputBuilder.Length - charsWritten > 0)
-                    _outputBuilder.Append('.');
-            }
             EmitString(namespaceDef.Name);
         }
 

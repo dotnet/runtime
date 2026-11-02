@@ -1880,7 +1880,7 @@ private:
             {
                 // Only a setter so make the invoke a set which maps to
                 // INVOKE_PROPERTYPUT | INVOKE_PROPERTYPUTREF.
-                binderFlags = BINDER_SetProperty;
+                binderFlags |= BINDER_SetProperty;
             }
             break;
         }
@@ -5925,7 +5925,7 @@ namespace
             void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
 #ifdef _DEBUG
             CONSISTENCY_CHECK_MSGF(pvTarget != nullptr,
-                ("%s::%s is not registered using DllImportEntry macro in qcallentrypoints.cpp",
+                ("%s::%s is not registered in the QCall entrypoint table",
                 pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
             pMD->SetPInvokeTarget(pvTarget);
@@ -6019,9 +6019,7 @@ void PInvoke::ResolvePInvokeTarget(PInvokeMethodDesc* pNMD)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pNMD));
     }
@@ -6180,13 +6178,7 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 {
     PreserveLastErrorHolder preserveLastError;
 
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame());
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;

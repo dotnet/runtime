@@ -26,6 +26,9 @@
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
+      <Link>Common\Internal\VersionResilientHashCode.cs</Link>
+    </Compile>
     <Compile Include="$(CommonSourcePath)Internal\LowLevelLinq\LowLevelEnumerable.cs" />
   </ItemGroup>
   <ItemGroup>

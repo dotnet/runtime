@@ -6,7 +6,10 @@ if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
 endif()
 
-if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+# Brotli is excluded on browser to keep the download size down (the browser has its own Brotli
+# support). WASI apps relink the native runtime with a P/Invoke table generated from the app's
+# trimmed assemblies, so Brotli is only linked into apps that use it.
+if(NOT CLR_CMAKE_TARGET_BROWSER)
     if (CLR_CMAKE_USE_SYSTEM_BROTLI)
         find_library(BROTLIDEC brotlidec REQUIRED)
         find_library(BROTLIENC brotlienc REQUIRED)
@@ -127,7 +130,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         ${NATIVE_LIBS_EXTRA}
     )
 
-    if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    if (NOT CLR_CMAKE_TARGET_BROWSER)
         target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
 

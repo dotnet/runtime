@@ -23,8 +23,8 @@
 //*****************************************************************************
 STDMETHODIMP RegMeta::TranslateSigWithScope(    // S_OK or error.
     IMetaDataAssemblyImport *pAssemImport, // [IN] importing assembly interface
-    const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
-    ULONG       cbHashValue,            // [IN] Count of bytes.
+    const void  *,                      // [IN] Hash Blob for Assembly.
+    ULONG,                              // [IN] Count of bytes.
     IMetaDataImport *pImport,           // [IN] importing interface
     PCCOR_SIGNATURE pbSigBlob,          // [IN] signature in the importing scope
     ULONG       cbSigBlob,              // [IN] count of bytes of signature
@@ -37,22 +37,13 @@ STDMETHODIMP RegMeta::TranslateSigWithScope(    // S_OK or error.
 #ifdef FEATURE_METADATA_EMIT
     HRESULT     hr = S_OK;
 
-    IMDCommon   *pAssemImportMDCommon = NULL;
     IMDCommon   *pImportMDCommon = NULL;
 
-    ReleaseHolder<IMDInternalEmit> pInternalAssemEmit;
     ReleaseHolder<IMDInternalEmit> pInternalEmit;
-    RegMeta     *pRegMetaAssemEmit = NULL;
     RegMeta     *pRegMetaEmit = NULL;
 
     CQuickBytes qkSigEmit;
     ULONG       cbEmit;
-
-    if (pAssemEmit != NULL)
-    {
-        IfFailGo(pAssemEmit->QueryInterface(IID_IMDInternalEmit, (void **)&pInternalAssemEmit));
-        pRegMetaAssemEmit = static_cast<RegMeta*>((IMDInternalEmit *)pInternalAssemEmit);
-    }
 
     IfFailGo(pEmit->QueryInterface(IID_IMDInternalEmit, (void **)&pInternalEmit));
     pRegMetaEmit = static_cast<RegMeta*>((IMDInternalEmit *)pInternalEmit);
@@ -65,21 +56,11 @@ STDMETHODIMP RegMeta::TranslateSigWithScope(    // S_OK or error.
 
         _ASSERTE(pvTranslatedSig && pcbTranslatedSig);
 
-        if (pAssemImport)
-        {
-            IfFailGo(pAssemImport->QueryInterface(IID_IMDCommon, (void**)&pAssemImportMDCommon));
-        }
-        IMetaModelCommon *pAssemImportMetaModelCommon = pAssemImportMDCommon ? pAssemImportMDCommon->GetMetaModelCommon() : 0;
-
         IfFailGo(pImport->QueryInterface(IID_IMDCommon, (void**)&pImportMDCommon));
         IMetaModelCommon *pImportMetaModelCommon = pImportMDCommon->GetMetaModelCommon();
 
         IfFailGo( ImportHelper::MergeUpdateTokenInSig(  // S_OK or error.
-                pRegMetaAssemEmit ? &(pRegMetaAssemEmit->m_pStgdb->m_MiniMd) : 0, // The assembly emit scope.
                 &(pRegMetaEmit->m_pStgdb->m_MiniMd),    // The emit scope.
-                pAssemImportMetaModelCommon,            // Assembly where the signature is from.
-                pbHashValue,                            // Hash value for the import assembly.
-                cbHashValue,                            // Size in bytes.
                 pImportMetaModelCommon,                 // The scope where signature is from.
                 pbSigBlob,                              // signature from the imported scope
                 &qkSigEmit,                             // [OUT] translated signature
@@ -93,8 +74,6 @@ STDMETHODIMP RegMeta::TranslateSigWithScope(    // S_OK or error.
     }
 
 ErrExit:
-    if (pAssemImportMDCommon)
-        pAssemImportMDCommon->Release();
     if (pImportMDCommon)
         pImportMDCommon->Release();
 

@@ -505,6 +505,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         // Finish loading process
         // <TODO> would be REALLY nice to unify this with main loading loop </TODO>
         pAssem->Begin();
+        pAssem->BeforeTypeLoad();
         pAssem->DeliverSyncEvents();
         pAssem->DeliverAsyncEvents();
         pAssem->FinishLoad();
@@ -777,7 +778,9 @@ Module * Assembly::FindModuleByTypeRef(
                 // Either we're not supposed to load, or we're doing a GC or stackwalk
                 // in which case we shouldn't need to load.  So just look up the module
                 // and return what we find.
-                return pModule->LookupModule(tkType);
+                Module* pLoadedModule = pModule->LookupModule(tkType);
+                _ASSERTE_ALL_BUILDS(pLoadedModule != NULL || loadFlag != Loader::Load);
+                return pLoadedModule;
             }
 
 #ifndef DACCESS_COMPILE
@@ -1585,6 +1588,7 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1933,6 +1937,7 @@ void Assembly::RequireLoadLevel(FileLoadLevel targetLevel)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1952,6 +1957,7 @@ void Assembly::SetError(Exception *ex)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -2102,29 +2108,22 @@ void Assembly::BeforeTypeLoad()
     }
     CONTRACTL_END;
 
-#ifdef PROFILING_SUPPORTED
     // After this point, it is possible to load types.
     // We need to notify the profiler now because the profiler may need to inject methods into
     // the module, and to do so reliably, it must have the chance to do so before
     // any types are loaded from the module.
-    //
-    // In the past we only allowed injecting types/methods on non-NGEN images so notifying here
-    // worked ok, but for NGEN images this is pretty ugly. Rejitting often occurs in this callback,
-    // but then during fixup the results of LoadedMethodDesc iterator would change and we would
-    // need to re-iterate everything. Aside from Rejit other code often wasn't designed to handle
-    // running before Fixup. A concrete example VS recently hit, calling GetClassLayout using
-    // a MethodTable which doesn't need restore but its parent pointer isn't fixed up yet.
-    // We've already set the rules so that profilers can't modify the member list of types in NGEN images
-    // so it doesn't matter if types are pre-loaded. We only need the guarantee that code for the
-    // loaded types won't execute yet. For NGEN images we deliver the load notification in
-    // FILE_LOAD_DELIVER_EVENTS.
-    if (!IsProfilerNotified())
-    {
-        SetProfilerNotified();
-        GetModule()->NotifyProfilerLoadFinished(S_OK);
-    }
+    _ASSERTE(!IsProfilerNotified());
 
-#endif
+    // This flag also marks the assembly as available to code versioning enumerators.
+    SetProfilerNotified();
+
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
+    GetModule()->CaptureInitialTypeCounts();
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
+
+#ifdef PROFILING_SUPPORTED
+    GetModule()->NotifyProfilerLoadFinished(S_OK);
+#endif // PROFILING_SUPPORTED
 }
 
 void Assembly::EagerFixups()
@@ -2278,14 +2277,6 @@ void Assembly::DeliverSyncEvents()
     CONTRACTL_END;
 
     GetModule()->NotifyEtwLoadFinished(S_OK);
-
-#ifdef PROFILING_SUPPORTED
-    if (!IsProfilerNotified())
-    {
-        SetProfilerNotified();
-        GetModule()->NotifyProfilerLoadFinished(S_OK);
-    }
-#endif
 
 #ifdef DEBUGGING_SUPPORTED
     GCX_COOP();

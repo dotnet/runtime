@@ -237,6 +237,7 @@ protected:
 
     void genEmitStartBlock(BasicBlock* block);
     void genEmitEndBlock(BasicBlock* block);
+    bool genIsCatchRetTargetWithoutCode(BasicBlock* block);
 
 public:
 #if HAS_FIXED_REGISTER_SET
@@ -647,6 +648,7 @@ protected:
 
 #if defined(TARGET_AMD64)
     void genAmd64EmitterUnitTestsSse2();
+    void genAmd64EmitterUnitTestsLea();
     void genAmd64EmitterUnitTestsApx();
     void genAmd64EmitterUnitTestsAvx10v2();
     void genAmd64EmitterUnitTestsCCMP();

@@ -132,7 +132,8 @@ internal sealed class WriterGen : CsWriter
         byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes(record.Name);
         byte[] hashBytes = System.Security.Cryptography.SHA256.HashData(nameBytes);
         int hashSeed = System.BitConverter.ToInt32(hashBytes, 0);
-        WriteLine($"int hash = {hashSeed};");
+        WriteLine("var hash = new HashCode();");
+        WriteLine($"hash.Add({hashSeed});");
 
         foreach (var member in record.Members)
         {
@@ -142,17 +143,10 @@ internal sealed class WriterGen : CsWriter
             if ((record.Flags & RecordDefFlags.CustomCompare) != 0 && (member.Flags & MemberDefFlags.Compare) == 0)
                 continue;
 
-            if (member.TypeName as string == "ConstantStringValue")
-            {
-                WriteLine($"hash = ((hash << 13) - (hash >> 19)) ^ ({member.Name} == null ? 0 : {member.Name}.GetHashCode());");
-            }
-            else
             if ((member.Flags & MemberDefFlags.Array) != 0)
             {
                 WriteLine($"for (int i = 0; i < {member.Name}.Length; i++)");
-                WriteLine("{");
-                WriteLine($"    hash = ((hash << 13) - (hash >> 19)) ^ {member.Name}[i].GetHashCode();");
-                WriteLine("}");
+                WriteLine($"    hash.Add({member.Name}[i]);");
             }
             else
             if ((member.Flags & (MemberDefFlags.List | MemberDefFlags.Map)) != 0)
@@ -161,24 +155,42 @@ internal sealed class WriterGen : CsWriter
                     continue;
 
                 WriteLine($"for (int i = 0; i < {member.Name}.Count; i++)");
-                WriteLine("{");
-                WriteLine($"    hash = ((hash << 13) - (hash >> 19)) ^ ({member.Name}[i] == null ? 0 : {member.Name}[i].GetHashCode());");
-                WriteLine("}");
-            }
-            else
-            if ((member.Flags & MemberDefFlags.RecordRef) != 0 || isConstantStringValue)
-            {
-                WriteLine($"hash = ((hash << 13) - (hash >> 19)) ^ ({member.Name} == null ? 0 : {member.Name}.GetHashCode());");
+                WriteLine($"    hash.Add({member.Name}[i]);");
             }
             else
             {
-                WriteLine($"hash = ((hash << 13) - (hash >> 19)) ^ {member.Name}.GetHashCode();");
+                WriteLine($"hash.Add({member.Name});");
             }
         }
         WriteLine("LeaveGetHashCode();");
-        WriteLine("_hash = hash;");
+        WriteLine("_hash = hash.ToHashCode();");
         WriteLine("return _hash;");
         CloseScope("GetHashCode");
+
+        bool hasHashtables = false;
+        foreach (var member in record.Members)
+        {
+            hasHashtables |= (member.Flags & MemberDefFlags.HashTable) != 0;
+        }
+
+        if (hasHashtables)
+        {
+            OpenScope("internal override void PlaceHashtables(Section section)");
+            foreach (var member in record.Members)
+            {
+                if ((member.Flags & MemberDefFlags.HashTable) == 0)
+                    continue;
+
+                string fieldName = member.GetMemberFieldName() + "Hashtable";
+                WriteLine($"Debug.Assert({fieldName} is null);");
+                WriteLine($"{fieldName} = new VertexHashtable();");
+                OpenScope($"foreach ({member.TypeName} record in {member.Name})");
+                WriteLine($"{fieldName}.Append((uint)record.GetLookupHashCode(), record);");
+                CloseScope();
+                WriteLine($"section.Place({fieldName});");
+            }
+            CloseScope("PlaceHashtables");
+        }
 
         OpenScope("internal override void Save(NativeWriter writer)");
         if (isConstantStringValue)
@@ -210,7 +222,10 @@ internal sealed class WriterGen : CsWriter
                             + ((i == typeSet.Length - 1) ? ");" : " ||"));
                 }
             }
-            WriteLine($"writer.Write({member.Name});");
+            if ((member.Flags & MemberDefFlags.HashTable) != 0)
+                WriteLine($"writer.WriteRelativeOffset({member.GetMemberFieldName()}Hashtable);");
+            else
+                WriteLine($"writer.Write({member.Name});");
         }
         CloseScope("Save");
 
@@ -256,6 +271,9 @@ internal sealed class WriterGen : CsWriter
             {
                 WriteLine($"public {fieldType} {member.Name};");
             }
+
+            if ((member.Flags & MemberDefFlags.HashTable) != 0)
+                WriteLine($"private VertexHashtable {member.GetMemberFieldName()}Hashtable;");
         }
 
         CloseScope(record.Name);

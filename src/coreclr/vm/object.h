@@ -1170,11 +1170,13 @@ private:
     OBJECTREF     m_ExecutionContext;
     OBJECTREF     m_SynchronizationContext;
     STRINGREF     m_Name;
+#ifdef FEATURE_MULTITHREADING
     OBJECTREF     m_StartHelper;
-#ifdef TARGET_UNIX
+#endif // FEATURE_MULTITHREADING
+#if defined(TARGET_UNIX) && defined(FEATURE_MULTITHREADING)
     OBJECTREF     m_WaitInfo;
     OBJECTREF     m_joinEvent;
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && FEATURE_MULTITHREADING
 
     // The next field (m_InternalThread) is declared as IntPtr in the managed
     // definition of Thread.  The loader will sort it next.
@@ -1194,6 +1196,11 @@ private:
     bool          m_IsDead;
 
     bool          m_IsThreadPool;
+
+#ifndef FEATURE_MULTITHREADING
+    bool          m_IsBackground;
+    bool          m_IsPendingInterrupt;
+#endif // !FEATURE_MULTITHREADING
 
 protected:
     // the ctor and dtor can do no useful work.
@@ -1229,11 +1236,13 @@ public:
 
     void      InitExisting();
 
+#ifdef FEATURE_MULTITHREADING
     void ResetStartHelper()
     {
         LIMITED_METHOD_CONTRACT
         m_StartHelper = NULL;
     }
+#endif // FEATURE_MULTITHREADING
 
     void SetPriority(INT32 priority)
     {

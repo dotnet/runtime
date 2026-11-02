@@ -11,7 +11,6 @@ namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties to compress data using Zstandard compression.</summary>
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardEncoder : IDisposable
     {
         internal SafeZstdCompressHandle _context;
@@ -397,6 +396,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>Resets the encoder session, allowing reuse for the next compression operation.</summary>
+        /// <remarks>Clears any prefix and restores the dictionary supplied when the encoder was constructed.</remarks>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
         /// <exception cref="IOException">Failed to reset the encoder session.</exception>
         public void Reset()
@@ -409,7 +409,9 @@ namespace System.IO.Compression
 
         /// <summary>References a prefix for the next compression operation.</summary>
         /// <remarks>
-        /// The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the compression operation.
+        /// The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called.
+        /// The prefix replaces any dictionary supplied when the encoder was constructed until <see cref="Reset"/> restores that dictionary.
+        /// The referenced data must remain valid and unmodified for the duration of the compression operation.
         /// When compressing with a prefix larger than ~32 MB at high quality levels, set <see cref="ZstandardCompressionOptions.HashLog2"/> so the entire prefix is indexed.
         /// </remarks>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>

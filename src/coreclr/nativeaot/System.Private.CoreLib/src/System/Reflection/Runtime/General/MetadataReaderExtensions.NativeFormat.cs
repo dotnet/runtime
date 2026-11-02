@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 using Internal.LowLevelLinq;
 using Internal.Metadata.NativeFormat;
@@ -39,19 +38,6 @@ namespace System.Reflection.Runtime.General
             unsafe
             {
                 return *(int*)&methodHandle;
-            }
-        }
-
-        // Conversion where a invalid handle type indicates bad metadata rather a mistake by the caller.
-        public static NamespaceReferenceHandle ToExpectedNamespaceReferenceHandle(this Handle handle, MetadataReader reader)
-        {
-            try
-            {
-                return handle.ToNamespaceReferenceHandle(reader);
-            }
-            catch (ArgumentException)
-            {
-                throw new BadImageFormatException();
             }
         }
 
@@ -172,7 +158,7 @@ namespace System.Reflection.Runtime.General
         //
         public static bool IsCustomAttributeOfType(this CustomAttributeHandle customAttributeHandle,
                                                    MetadataReader reader,
-                                                   ReadOnlySpan<string> namespaceParts,
+                                                   string namespaceName,
                                                    string name)
         {
             Handle typeHandle = customAttributeHandle.GetCustomAttribute(reader).GetAttributeTypeHandle(reader);
@@ -185,21 +171,8 @@ namespace System.Reflection.Runtime.General
                 Handle namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
                 if (namespaceOrEnclosingType.HandleType != HandleType.NamespaceDefinition)
                     return false;
-                NamespaceDefinitionHandle nsHandle = namespaceOrEnclosingType.ToNamespaceDefinitionHandle(reader);
-                int idx = namespaceParts.Length;
-                while (idx-- != 0)
-                {
-                    string namespacePart = namespaceParts[idx];
-                    NamespaceDefinition namespaceDefinition = nsHandle.GetNamespaceDefinition(reader);
-                    if (!namespaceDefinition.Name.StringOrNullEquals(namespacePart, reader))
-                        return false;
-                    if (namespaceDefinition.ParentScopeOrNamespace.HandleType != HandleType.NamespaceDefinition)
-                        return false;
-                    nsHandle = namespaceDefinition.ParentScopeOrNamespace.ToNamespaceDefinitionHandle(reader);
-                }
-                if (!nsHandle.GetNamespaceDefinition(reader).Name.StringOrNullEquals(null, reader))
-                    return false;
-                return true;
+                NamespaceDefinition namespaceDefinition = namespaceOrEnclosingType.ToNamespaceDefinitionHandle(reader).GetNamespaceDefinition(reader);
+                return namespaceDefinition.Name.StringOrNullEquals(namespaceName, reader);
             }
             else if (handleType == HandleType.TypeReference)
             {
@@ -209,21 +182,8 @@ namespace System.Reflection.Runtime.General
                 Handle namespaceOrEnclosingType = typeReference.NamespaceOrEnclosingType;
                 if (namespaceOrEnclosingType.HandleType != HandleType.NamespaceReference)
                     return false;
-                NamespaceReferenceHandle nsHandle = namespaceOrEnclosingType.ToNamespaceReferenceHandle(reader);
-                int idx = namespaceParts.Length;
-                while (idx-- != 0)
-                {
-                    string namespacePart = namespaceParts[idx];
-                    NamespaceReference namespaceReference = nsHandle.GetNamespaceReference(reader);
-                    if (!namespaceReference.Name.StringOrNullEquals(namespacePart, reader))
-                        return false;
-                    if (namespaceReference.ParentScopeOrNamespace.HandleType != HandleType.NamespaceReference)
-                        return false;
-                    nsHandle = namespaceReference.ParentScopeOrNamespace.ToNamespaceReferenceHandle(reader);
-                }
-                if (!nsHandle.GetNamespaceReference(reader).Name.StringOrNullEquals(null, reader))
-                    return false;
-                return true;
+                NamespaceReference namespaceReference = namespaceOrEnclosingType.ToNamespaceReferenceHandle(reader).GetNamespaceReference(reader);
+                return namespaceReference.Name.StringOrNullEquals(namespaceName, reader);
             }
             else if (handleType == HandleType.TypeSpecification)
                 return false;
@@ -234,54 +194,7 @@ namespace System.Reflection.Runtime.General
 
         public static string ToNamespaceName(this NamespaceDefinitionHandle namespaceDefinitionHandle, MetadataReader reader)
         {
-            string ns = "";
-            for (; ; )
-            {
-                NamespaceDefinition currentNamespaceDefinition = namespaceDefinitionHandle.GetNamespaceDefinition(reader);
-                string name = currentNamespaceDefinition.Name.GetStringOrNull(reader);
-                if (name != null)
-                {
-                    if (ns.Length != 0)
-                        ns = "." + ns;
-                    ns = name + ns;
-                }
-                Handle nextHandle = currentNamespaceDefinition.ParentScopeOrNamespace;
-                HandleType handleType = nextHandle.HandleType;
-                if (handleType == HandleType.ScopeDefinition)
-                    break;
-                if (handleType == HandleType.NamespaceDefinition)
-                {
-                    namespaceDefinitionHandle = nextHandle.ToNamespaceDefinitionHandle(reader);
-                    continue;
-                }
-
-                throw new BadImageFormatException();
-            }
-            return ns;
-        }
-
-        public static IEnumerable<NamespaceDefinitionHandle> GetTransitiveNamespaces(this MetadataReader reader, IEnumerable<NamespaceDefinitionHandle> namespaceHandles)
-        {
-            foreach (NamespaceDefinitionHandle namespaceHandle in namespaceHandles)
-            {
-                yield return namespaceHandle;
-
-                NamespaceDefinition namespaceDefinition = namespaceHandle.GetNamespaceDefinition(reader);
-                foreach (NamespaceDefinitionHandle childNamespaceHandle in GetTransitiveNamespaces(reader, namespaceDefinition.NamespaceDefinitions.AsEnumerable()))
-                    yield return childNamespaceHandle;
-            }
-        }
-
-        public static IEnumerable<TypeDefinitionHandle> GetTopLevelTypes(this MetadataReader reader, IEnumerable<NamespaceDefinitionHandle> namespaceHandles)
-        {
-            foreach (NamespaceDefinitionHandle namespaceHandle in namespaceHandles)
-            {
-                NamespaceDefinition namespaceDefinition = namespaceHandle.GetNamespaceDefinition(reader);
-                foreach (TypeDefinitionHandle typeDefinitionHandle in namespaceDefinition.TypeDefinitions)
-                {
-                    yield return typeDefinitionHandle;
-                }
-            }
+            return namespaceDefinitionHandle.GetNamespaceDefinition(reader).Name.GetStringOrNull(reader) ?? string.Empty;
         }
 
         public static IEnumerable<TypeDefinitionHandle> GetTransitiveTypes(this MetadataReader reader, IEnumerable<TypeDefinitionHandle> typeDefinitionHandles, bool publicOnly)
@@ -304,53 +217,21 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        /// <summary>
-        /// Reverse len characters in a StringBuilder starting at offset index
-        /// </summary>
-        private static void ReverseStringInStringBuilder(StringBuilder builder, int index, int len)
-        {
-            int back = index + len - 1;
-            int front = index;
-            while (front < back)
-            {
-                char temp = builder[front];
-                builder[front] = builder[back];
-                builder[back] = temp;
-                front++;
-                back--;
-            }
-        }
-
         public static string ToFullyQualifiedTypeName(this NamespaceReferenceHandle namespaceReferenceHandle, string typeName, MetadataReader reader)
         {
-            StringBuilder fullName = new StringBuilder(64);
-            NamespaceReference namespaceReference;
-            for (; ; )
-            {
-                namespaceReference = namespaceReferenceHandle.GetNamespaceReference(reader);
-                string namespacePart = namespaceReference.Name.GetStringOrNull(reader);
-                if (namespacePart == null)
-                    break;
-                fullName.Append('.');
-                int index = fullName.Length;
-                fullName.Append(namespacePart);
-                ReverseStringInStringBuilder(fullName, index, namespacePart.Length);
-                namespaceReferenceHandle = namespaceReference.ParentScopeOrNamespace.ToExpectedNamespaceReferenceHandle(reader);
-            }
-            ReverseStringInStringBuilder(fullName, 0, fullName.Length);
-            fullName.Append(typeName);
-            return fullName.ToString();
-        }
-
-        public static IEnumerable<NamespaceDefinitionHandle> AsEnumerable(this NamespaceDefinitionHandleCollection collection)
-        {
-            foreach (NamespaceDefinitionHandle handle in collection)
-                yield return handle;
+            string namespaceName = namespaceReferenceHandle.GetNamespaceReference(reader).Name.GetStringOrNull(reader);
+            return namespaceName is null ? typeName : namespaceName + "." + typeName;
         }
 
         public static IEnumerable<TypeDefinitionHandle> AsEnumerable(this TypeDefinitionHandleCollection collection)
         {
             foreach (TypeDefinitionHandle handle in collection)
+                yield return handle;
+        }
+
+        public static IEnumerable<TypeDefinitionHandle> AsEnumerable(this TypeDefinitionHandleHashtable hashtable)
+        {
+            foreach (TypeDefinitionHandle handle in hashtable)
                 yield return handle;
         }
 

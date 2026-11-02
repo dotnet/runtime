@@ -198,6 +198,8 @@ public readonly struct DebugVarInfo
 IEnumerable<DebugVarInfo> GetMethodVarInfo(TargetCodePointer pCode, out uint codeOffset);
 ```
 
+`codeOffset` is `pCode` minus the method's code start. The code start is the entry point of the native code version containing `pCode` (`ICodeVersions.GetNativeCode`), mapped by `IExecutionManager.GetDiagnosticCodeStartFromEntryPoint`: to the interpreter bytecode for an interpreted method, and on portable-entrypoint targets to the R2R virtual IP. Native `ClrDataAccess::GetMethodVarInfo` maps only interpreter entry points (`GetInterpreterCodeFromEntryPointIfPresent`); the R2R portable-entrypoint mapping follows the runtime's `GetDiagnosticCodeStartFromEntryPoint`.
+
 ### Vars Data Encoding
 
 Each variable entry in the Vars section is nibble-encoded as follows:

@@ -598,10 +598,15 @@ HRESULT GCHeap::Initialize()
 #endif //USE_REGIONS
     if (hr == S_OK)
     {
+#ifdef BACKGROUND_GC
+        bool concurrent_p = gc_heap::gc_can_use_concurrent;
+#else //BACKGROUND_GC
+        bool concurrent_p = false;
+#endif //BACKGROUND_GC
 #ifdef MULTIPLE_HEAPS
-        dprintf (6666, ("conserve mem %d, concurent %d, max heap %d", gc_heap::conserve_mem_setting, gc_heap::gc_can_use_concurrent, gc_heap::n_heaps));
+        dprintf (6666, ("conserve mem %d, concurent %d, max heap %d", gc_heap::conserve_mem_setting, concurrent_p, gc_heap::n_heaps));
 #else
-        dprintf (6666, ("conserve mem %d, concurent %d, WKS", gc_heap::conserve_mem_setting, gc_heap::gc_can_use_concurrent));
+        dprintf (6666, ("conserve mem %d, concurent %d, WKS", gc_heap::conserve_mem_setting, concurrent_p));
 #endif
 
 #ifdef DYNAMIC_HEAP_COUNT

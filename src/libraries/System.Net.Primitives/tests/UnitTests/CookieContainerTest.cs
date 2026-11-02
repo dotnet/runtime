@@ -364,6 +364,73 @@ namespace System.Net.Primitives.Unit.Tests
         }
 
         [Theory]
+        [InlineData("", "", 0)]
+        [InlineData("", "\"\"", 0)]
+        [InlineData("\"", "\"\"", -1)]
+        [InlineData("", "/", 1)]
+        [InlineData("/", "/a", 1)]
+        [InlineData("/a", "/a/b", 1)]
+        [InlineData("/a", "/b", -1)]
+        [InlineData("\"/a\"", "/b", -1)]
+        [InlineData("/a", "\"/b\"", -1)]
+        [InlineData("\"/a\"", "\"/b\"", -1)]
+        [InlineData("/a", "\"/a\"", 0)]
+        [InlineData("\"/a\"", "\"/a/b\"", 1)]
+        [InlineData("\"\"", "\"/a\"", 1)]
+        [InlineData("/A", "/a", -1)]
+        [InlineData("/a", "/B", 1)]
+        [InlineData("/a\0b", "/ab", -1)]
+        [InlineData("/a\"", "/a", -1)]
+        [InlineData("\"/a", "/a", -1)]
+        [InlineData("\"\"/a\"\"", "\"/a\"", -1)]
+        [InlineData("/\uD800\uDC00", "/\uE000", -1)]
+        [InlineData("/abcdefghijklmnopqrstuvwxyz/a", "/abcdefghijklmnopqrstuvwxyz/b", -1)]
+        [InlineData("\"/abcdefghijklmnopqrstuvwxyz\"", "/abcdefghijklmnopqrstuvwxyz/a", 1)]
+        public void PathList_Paths_OrdersOrdinallyWithLongerPrefixesFirst(string left, string right, int expectedSign)
+        {
+            VerifyOrder(left, right, expectedSign);
+            VerifyOrder(right, left, -expectedSign);
+
+            static void VerifyOrder(string left, string right, int expectedSign)
+            {
+                var paths = new PathList();
+                var leftCookies = new CookieCollection();
+                var rightCookies = new CookieCollection();
+                paths[left] = leftCookies;
+                paths[right] = rightCookies;
+
+                Assert.Same(rightCookies, paths[right]);
+                if (expectedSign == 0)
+                {
+                    Assert.Equal(1, paths.Count);
+                    Assert.Same(rightCookies, paths[left]);
+                }
+                else
+                {
+                    Assert.Equal(2, paths.Count);
+                    Assert.Same(leftCookies, paths[left]);
+                    Assert.Equal(expectedSign < 0 ? left : right, paths.List.GetKey(0));
+                    Assert.Equal(expectedSign < 0 ? right : left, paths.List.GetKey(1));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GetCookieHeader_PathPrefixes_OrdersLongestFirst(bool quoted)
+        {
+            var container = new CookieContainer();
+            var uri = new Uri("http://contoso.com/a/b");
+            foreach (string path in new[] { "/", "/a", "/a/b" })
+            {
+                container.Add(uri, new Cookie("name", path, quoted ? $"\"{path}\"" : path, "contoso.com"));
+            }
+
+            Assert.Equal("name=/a/b; name=/a; name=/", container.GetCookieHeader(uri));
+        }
+
+        [Theory]
         [MemberData(nameof(SetCookiesData))]
         public void SetCookies_Success(Uri uri, string cookieHeader, Cookie[] expected)
         {
@@ -939,6 +1006,12 @@ namespace System.Net.Primitives.Unit.Tests
             {false, new [] {"//"}, "/", 0},
             {false, new [] {"//"}, "//", 1},
             {false, new [] {"", "/", "//", "///"}, "///", 4},
+            {false, new [] {"\"\""}, "/", 1},
+            {false, new [] {"\"/a\""}, "/a", 1},
+            {false, new [] {"\"/a\""}, "/a/b", 1},
+            {false, new [] {"\"/a/\""}, "/a/b", 1},
+            {false, new [] {"\"/a\""}, "/abc", 0},
+            {false, new [] {"\"/A\""}, "/a", 0},
 
             // Should not match the second half of the criteria:
             // "The cookie-path is a prefix of the request-path, and the first
