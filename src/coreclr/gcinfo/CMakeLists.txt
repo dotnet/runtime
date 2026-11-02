@@ -52,6 +52,16 @@ function(create_gcinfo_lib)
   set_target_definitions_to_custom_os_and_arch(${ARGN})
 endfunction()
 
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+  create_gcinfo_lib(TARGET gcinfo_unix_wasm OS browser ARCH wasm)
+  install_clr(TARGETS gcinfo_unix_wasm DESTINATIONS sharedFramework COMPONENT runtime)
+endif()
+
+# Wasm needs the interpreter's GC-info encoder, but cannot run JITs or cross-compilers.
+if (CLR_CMAKE_HOST_ARCH_WASM)
+  return()
+endif()
+
 if (CLR_CMAKE_TARGET_UNIX)
 set(TARGET_OS_NAME unix)
 else()
@@ -92,7 +102,5 @@ if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
 endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
 
 if (CLR_CMAKE_TARGET_ARCH_WASM)
-  create_gcinfo_lib(TARGET gcinfo_unix_wasm OS browser ARCH wasm)
   create_gcinfo_lib(TARGET gcinfo_universal_wasm OS universal ARCH wasm)
-  install_clr(TARGETS gcinfo_unix_wasm DESTINATIONS sharedFramework COMPONENT runtime)
 endif (CLR_CMAKE_TARGET_ARCH_WASM)

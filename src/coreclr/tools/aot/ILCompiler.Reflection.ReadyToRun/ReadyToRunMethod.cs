@@ -636,26 +636,32 @@ namespace ILCompiler.Reflection.ReadyToRun
                     curOffset = coldOffset;
                     runtimeFunctionId = coldRuntimeFunctionId;
                 }
-                int startRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
+                int startRva;
+                int unwindRva;
                 bool isFunclet = false;
-                if (_readyToRunReader.Machine == Machine.ArmThumb2)
-                {
-                    // The low bit of this address is set since the function contains thumb code.
-                    // Clear this bit in order to get the "real" RVA of the start of the function.
-                    startRva = (int)(startRva & ~1);
-                }
-                else if (_readyToRunReader.Machine == WasmMachine.Wasm32)
-                {
-                    // On WASM, bit 31 is the funclet flag and bits 30:0 are the virtual IP.
-                    isFunclet = (startRva & unchecked((int)0x80000000)) != 0;
-                    startRva = (int)(startRva & 0x7FFFFFFF);
-                }
                 int endRva = -1;
-                if (_readyToRunReader.Machine == Machine.Amd64)
+                if (_readyToRunReader.Machine == WasmMachine.Wasm32)
                 {
-                    endRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
+                    while (!_readyToRunReader.TryReadWasmRuntimeFunction(runtimeFunctionId, out startRva, out unwindRva, out isFunclet))
+                    {
+                        runtimeFunctionId++;
+                    }
                 }
-                int unwindRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
+                else
+                {
+                    startRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
+                    if (_readyToRunReader.Machine == Machine.ArmThumb2)
+                    {
+                        // The low bit of this address is set since the function contains thumb code.
+                        // Clear this bit in order to get the "real" RVA of the start of the function.
+                        startRva = (int)(startRva & ~1);
+                    }
+                    if (_readyToRunReader.Machine == Machine.Amd64)
+                    {
+                        endRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
+                    }
+                    unwindRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
+                }
                 int unwindOffset = _readyToRunReader.CompositeReader.GetOffset(unwindRva);
 
                 BaseUnwindInfo unwindInfo = null;

@@ -3259,6 +3259,16 @@ public:
         return GetJitManager()->JitTokenToModuleFunctionsBase(GetMethodToken());
     }
 
+#ifdef TARGET_WASM
+    TADDR       GetUnwindInfoBase();
+#else // TARGET_WASM
+    TADDR       GetUnwindInfoBase()
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetModuleBase();
+    }
+#endif // TARGET_WASM
+
     PTR_RUNTIME_FUNCTION GetFunctionEntry();
     BOOL        IsFunclet();
     EECodeInfo  GetMainFunctionInfo();

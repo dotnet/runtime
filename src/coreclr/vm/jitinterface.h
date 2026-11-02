@@ -768,6 +768,7 @@ public:
     void WriteCodeBytes();
     void WriteCode(EECodeGenManager * jitMgr) override;
 
+#ifndef TARGET_WASM
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override;
 
     void allocUnwindInfo (
@@ -779,6 +780,7 @@ public:
             uint8_t * pUnwindBlock,          /* IN */
             CorJitFuncKind funcKind       /* IN */
             ) override;
+#endif // !TARGET_WASM
 
     void recordCallSite(
             uint32_t                     instrOffset,  /* IN */
