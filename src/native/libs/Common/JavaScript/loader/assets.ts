@@ -404,7 +404,7 @@ const noRetryStatusCodes = new Set<number>([400, 401, 403, 404, 405, 406, 409, 4
 async function loadResourceRetry(asset: AssetEntryInternal): Promise<Response> {
     let response: Response;
     response = await loadResourceAttempt();
-    if (response.ok || asset.isOptional || noRetryStatusCodes.has(response.status)) {
+    if (response.ok || asset.isOptional || asset.cacheReloadAttempted || noRetryStatusCodes.has(response.status)) {
         return response;
     }
     // second attempt only after all first attempts are queued
@@ -415,7 +415,7 @@ async function loadResourceRetry(asset: AssetEntryInternal): Promise<Response> {
     }
     dotnetLogger.debug(`Retrying download '${asset.name}'`);
     response = await loadResourceAttempt();
-    if (response.ok || noRetryStatusCodes.has(response.status)) {
+    if (response.ok || asset.cacheReloadAttempted || noRetryStatusCodes.has(response.status)) {
         return response;
     }
     await delay(100); // wait 100ms before the last retry
@@ -544,6 +544,26 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
     }
 
     dotnetLogger.debug(`Attempting to download '${sanitizeUrl(asset.resolvedUrl!)}'`);
+    return fetchResourceWithCacheRecovery(asset, fetchOptions, expectedContentType);
+}
+
+async function fetchResourceWithCacheRecovery(asset: AssetEntryInternal, fetchOptions: RequestInit, expectedContentType: string): Promise<Response> {
+    try {
+        const response = await fetchLike(asset.resolvedUrl!, fetchOptions, expectedContentType);
+        if (fetchOptions.cache !== "force-cache" ||
+            asset.cacheReloadAttempted ||
+            (response.ok && response.headers.get("Content-Length") !== "0")) {
+            return response;
+        }
+    } catch (err) {
+        if (fetchOptions.cache !== "force-cache" || asset.cacheReloadAttempted) {
+            throw err;
+        }
+    }
+
+    dotnetLogger.debug(`Retrying download '${asset.name}' with cache reload`);
+    asset.cacheReloadAttempted = true;
+    fetchOptions.cache = "reload";
     return fetchLike(asset.resolvedUrl!, fetchOptions, expectedContentType);
 }
 
