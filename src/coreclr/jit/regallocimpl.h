@@ -13,3 +13,7 @@
 #ifdef TARGET_WASM
 #include "regallocwasm.h"
 #endif
+
+#ifdef TARGET_INTERP
+#include "regallocinterp.h"
+#endif

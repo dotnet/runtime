@@ -4850,7 +4850,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                                             GenCondition* cond,
                                             bool          allowMultipleFlagsChecks)
 {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM) || defined(TARGET_INTERP)
     // These architectures have no status/flag register.
     return false;
 #else
@@ -4951,7 +4951,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
 
         *cond = condition->AsCC()->gtCondition;
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM) && !defined(TARGET_INTERP)
         if (!allowMultipleFlagsChecks)
         {
             const GenConditionDesc& desc = GenConditionDesc::Get(*cond);
@@ -8631,6 +8631,9 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         // TODO-WASM: it is not clear this whole transformation is profitable on WASM, since it increases
         // code size while the WASM VM should be perfectly capable of expanding the DIV/MOD by itself.
         NYI_WASM("Lowering::TryLowerConstIntDivOrMod");
+#elif defined(TARGET_INTERP)
+        // The interpreter has no GT_MULHI; it executes DIV/MOD directly.
+        return false;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -12117,7 +12120,8 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
 
     ind->ChangeType(m_compiler->gtTypeForNullCheck(ind));
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM) ||         \
+    defined(TARGET_INTERP)
     bool useNullCheck = true;
 #elif defined(TARGET_ARM)
     bool useNullCheck = false;

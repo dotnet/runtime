@@ -454,7 +454,7 @@ CodeGen::CodeGen(Compiler* theCompiler)
 // 2. Everything else goes into codegenlinear.cpp.
 // 3. codegenlinear.cpp gets renamed to codegennative.cpp.
 //
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 #if defined(TARGET_X86) || defined(TARGET_ARM)
 
 //---------------------------------------------------------------------
@@ -595,7 +595,7 @@ void CodeGen::genPrepForCompiler()
     m_compiler->Metrics.BasicBlocksAtCodegen = m_compiler->fgBBcount;
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 //------------------------------------------------------------------------
 // genMarkLabelsForCodegen: Mark labels required for codegen.
 //
@@ -772,7 +772,7 @@ void CodeGen::genMarkLabelsForCodegen()
     }
 #endif // DEBUG
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 void CodeGenInterface::genUpdateLife(GenTree* tree)
 {
@@ -801,7 +801,7 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int reg
     varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 // Return the register mask for the given register variable
 // inline
 regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
@@ -867,7 +867,7 @@ bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
     return op1Skip->OperIs(GT_LCL_VAR) && op2Skip->OperIs(GT_LCL_VAR) &&
            (op1Skip->AsLclVar()->GetLclNum() == op2Skip->AsLclVar()->GetLclNum());
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 // The given lclVar is either going live (being born) or dying.
 // It might be both going live and dying (that is, it is a dead store) under MinOpts.
@@ -910,7 +910,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 #endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 //----------------------------------------------------------------------
 // compHelperCallKillSet: Gets a register mask that represents the kill set for a helper call.
 // Not all JIT Helper calls follow the standard ABI on the target architecture.
@@ -979,7 +979,7 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
             return RBM_CALLEE_TRASH;
     }
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 //------------------------------------------------------------------------
 // compChangeLife: Compare the given "newLife" with last set of live variables and update
@@ -1052,7 +1052,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         bool isByRef    = varDsc->TypeIs(TYP_BYREF);
         bool isInReg    = varDsc->lvIsInReg();
         bool isInMemory = !isInReg || varDsc->IsAlwaysAliveInMemory();
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
         if (isInReg)
         {
             // TODO-Cleanup: Move the code from compUpdateLifeVar to genUpdateRegLife that updates the
@@ -1068,7 +1068,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             }
             codeGen->genUpdateRegLife(varDsc, false /*isBorn*/, true /*isDying*/ DEBUGARG(nullptr));
         }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
        // Update the gcVarPtrSetCur if it is in memory.
         if (isInMemory && (isGCRef || isByRef))
         {
@@ -1092,7 +1092,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         bool isByRef = varDsc->TypeIs(TYP_BYREF);
         if (varDsc->lvIsInReg())
         {
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
             // If this variable is going live in a register, it is no longer live on the stack,
             // unless it is an EH/"spill at single-def" var, which always remains live on the stack.
             if (!varDsc->IsAlwaysAliveInMemory())
@@ -1115,7 +1115,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             {
                 codeGen->gcInfo.gcRegByrefSetCur |= regMask;
             }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
         }
         else if (lvaIsGCTracked(varDsc))
         {
@@ -1132,7 +1132,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
 // Need an explicit instantiation.
 template void Compiler::compChangeLife<true>(VARSET_VALARG_TP newLife);
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 /*****************************************************************************
  *
  *  Generate a spill.
@@ -1179,7 +1179,7 @@ TempDsc* CodeGenInterface::getSpillTempDsc(GenTree* tree)
     TempDsc* temp = regSet.rsGetSpillTempWord(tree->GetRegNum(), spillDsc, prevDsc);
     return temp;
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 /*****************************************************************************
  *
@@ -1252,7 +1252,7 @@ void CodeGen::genDefineTempLabel(BasicBlock* label)
         GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 // genDefineInlineTempLabel: Define an inline label that does not affect the GC
 // info.
 //
@@ -1268,7 +1268,7 @@ void CodeGen::genDefineInlineTempLabel(BasicBlock* label)
     genLogLabel(label);
     label->bbEmitCookie = GetEmitter()->emitAddInlineLabel();
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 //------------------------------------------------------------------------
 // genAdjustStackLevel: Adjust the stack level, if required, for a throw helper block
@@ -1285,7 +1285,7 @@ void CodeGen::genDefineInlineTempLabel(BasicBlock* label)
 //
 void CodeGen::genAdjustStackLevel(BasicBlock* block)
 {
-#if !FEATURE_FIXED_OUT_ARGS && !defined(TARGET_WASM)
+#if !FEATURE_FIXED_OUT_ARGS && !defined(TARGET_WASM) && !defined(TARGET_INTERP)
     // Check for inserted throw blocks and adjust genStackLevel.
 
 #if defined(UNIX_X86_ABI)
@@ -1316,7 +1316,7 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
 #endif // TARGET_X86
         }
     }
-#endif // !FEATURE_FIXED_OUT_ARGS && !defined(TARGET_WASM)
+#endif // !FEATURE_FIXED_OUT_ARGS && !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 }
 
 //------------------------------------------------------------------------
@@ -1952,7 +1952,7 @@ void CodeGen::genExitCode(BasicBlock* block)
 
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
 
-#if EMIT_GENERATE_GCINFO && defined(DEBUG) && !defined(TARGET_WASM)
+#if EMIT_GENERATE_GCINFO && defined(DEBUG) && !defined(TARGET_WASM) && !defined(TARGET_INTERP)
     // For returnining epilogs do some validation that the GC info looks right.
     if (!block->HasFlag(BBF_HAS_JMP))
     {
@@ -1974,7 +1974,7 @@ void CodeGen::genExitCode(BasicBlock* block)
             }
         }
     }
-#endif // EMIT_GENERATE_GCINFO && defined(DEBUG) && !defined(TARGET_WASM)
+#endif // EMIT_GENERATE_GCINFO && defined(DEBUG) && !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 
     if (m_compiler->getNeedsGSSecurityCookie())
     {
@@ -1984,7 +1984,7 @@ void CodeGen::genExitCode(BasicBlock* block)
     genReserveEpilog(block);
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 //------------------------------------------------------------------------
 // genJumpToThrowHlpBlk: Generate code for an out-of-line exception.
 //
@@ -2121,7 +2121,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
     genJumpToThrowHlpBlk(jumpKind, SCK_OVERFLOW);
 }
 #endif
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 /*****************************************************************************
  *
@@ -2430,7 +2430,7 @@ void CodeGen::genGenerateMachineCode()
     // check to see if any jumps can be removed
     GetEmitter()->emitRemoveJumpToNextInst();
 
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
     /* Bind jump distances */
     GetEmitter()->emitJumpDistBind();
 #endif
@@ -2720,7 +2720,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 #endif // DISPLAY_SIZES
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 //----------------------------------------------------------------------
 // genReportEH: create and report EH info to the VM
 //
@@ -2788,7 +2788,7 @@ void CodeGen::genReportEH()
     genReportEHClauses(clauses);
 }
 
-#endif // !defined(TARGET_WASM)
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 //----------------------------------------------------------------------
 // genReportEH: create and report EH info to the VM
@@ -2844,7 +2844,7 @@ void CodeGen::genReportEHClauses(EHClauseInfo* clauses)
     }
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 
 //----------------------------------------------------------------------
 // genUseOptimizedWriteBarriers: Determine if an optimized write barrier
@@ -2891,7 +2891,7 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTreeStoreInd* store)
     return false;
 #endif
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 //----------------------------------------------------------------------
 // genWriteBarrierHelperForWriteBarrierForm: Given a write barrier form
@@ -2923,7 +2923,7 @@ CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInf
     }
 }
 
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 
 #ifdef DEBUG
 // -----------------------------------------------------------------------------
@@ -3018,7 +3018,7 @@ regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall, GenTreeCall* t
 #endif
 }
 
-#endif // !defined(TARGET_WASM)
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 //----------------------------------------------------------------------
 // genGCWriteBarrier: Generate a write barrier.
@@ -3035,7 +3035,7 @@ void CodeGen::genGCWriteBarrier(GCInfo::WriteBarrierForm wbf)
                       EA_PTRSIZE); // retSize
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3278,7 +3278,7 @@ public:
     }
 #endif
 };
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 // -----------------------------------------------------------------------------
 // genParamStackType: Get the type that a part of a parameter passed in a
@@ -3348,7 +3348,7 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
     }
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 // -----------------------------------------------------------------------------
 // genSpillOrAddRegisterParam: Handle a register parameter either by homing it
 // to stack immediately, or by adding it to the register graph.
@@ -3680,7 +3680,7 @@ regMaskTP CodeGen::genGetParameterHomingTempRegisterCandidates()
     regs &= ~regSet.rsMaskResvd;
     return regs;
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 /*****************************************************************************
  * If any incoming stack arguments live in registers, load them.
@@ -4030,7 +4030,7 @@ void CodeGen::genCheckUseBlockInit()
 #endif // TARGET_ARM
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 /*****************************************************************************
  *
  *  initFltRegs -- The mask of float regs to be zeroed.
@@ -4550,7 +4550,7 @@ void CodeGen::genHomeSwiftStructStackParameters()
     }
 }
 #endif
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 //-----------------------------------------------------------------------------
 // genHomeStackPartOfSplitParameter: Home the tail (stack) portion of a split parameter next to where the head
@@ -4601,7 +4601,7 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 /*-----------------------------------------------------------------------------
  *
  *  Save the generic context argument.
@@ -4705,7 +4705,7 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
                                m_compiler->lvaCachedGenericContextArgOffset());
 #endif // !ARM64 !ARM !LOONGARCH64 !RISCV64
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 /*****************************************************************************
 
@@ -5285,7 +5285,10 @@ void CodeGen::genFnProlog()
     // GC spill temps are not produced on wasm today.
     assert(regSet.tmpAllFree());
     assert(regSet.tmpListBeg() == nullptr);
-#else // !TARGET_WASM
+#elif defined(TARGET_INTERP)
+    // The interpreter zero-initializes its own frames; there is no native prolog for this target.
+    unreached();
+#else // !TARGET_WASM && !TARGET_INTERP
     unsigned   varNum;
     LclVarDsc* varDsc;
 
@@ -5444,7 +5447,7 @@ void CodeGen::genFnProlog()
             untrLclHi = hiOffs;
         }
     }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
     // TODO-Cleanup: Add suitable assert for the OSR case.
     assert(m_compiler->opts.IsOSR() || ((genInitStkLclCnt > 0) == hasUntrLcl));
@@ -5460,7 +5463,7 @@ void CodeGen::genFnProlog()
     }
 #endif
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 #ifdef TARGET_ARM
     // On the ARM we will spill any incoming struct args in the first instruction in the prolog
     // Ditto for all enregistered user arguments in a varargs method.
@@ -5758,7 +5761,7 @@ void CodeGen::genFnProlog()
     // Save the generic context arg in the prolog so GetParamTypeArg can report it.
     genReportGenericContextArg(initReg, &initRegZeroed);
 
-#ifndef TARGET_WASM // TODO-WASM: enable as needed.
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP) // TODO-WASM: enable as needed.
 
 #ifdef JIT32_GCENCODER
     // Initialize the LocalAllocSP slot if there is localloc in the function.
@@ -5779,7 +5782,7 @@ void CodeGen::genFnProlog()
         genProfilingEnterCallback(initReg, &initRegZeroed);
     }
 #endif // PROFILING_SUPPORTED
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
     // For OSR we may have a zero-length prolog. That's not supported
     // when the method must report a generics context,/ so add a nop if so.
@@ -5856,7 +5859,7 @@ void CodeGen::genFnProlog()
         genEnregisterIncomingStackArgs();
     }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
     /* Initialize any must-init registers variables now */
 
     if (initRegs)
@@ -5904,7 +5907,7 @@ void CodeGen::genFnProlog()
 
         genZeroInitFltRegs(initFltRegs, initDblRegs, initReg);
     }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
     //-----------------------------------------------------------------------------
 
@@ -5998,7 +6001,7 @@ void CodeGen::genFnProlog()
     GetEmitter()->emitEndProlog();
 }
 
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 //----------------------------------------------------------------------------------
 // genBeginFnProlog: target-specific prolog generation hook.
 //
@@ -6047,7 +6050,7 @@ unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
     emit->emitDataGenEnd();
     return jmpTabBase;
 }
-#endif // !defined(TARGET_WASM)
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 //----------------------------------------------------------------------------------
 // genEmitAsyncResumeInfoTable:
@@ -6159,7 +6162,7 @@ regNumber CodeGen::getCallIndirectionCellReg(GenTreeCall* call)
     return result;
 }
 
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 
 //------------------------------------------------------------------------
 // genDefinePendingLabel - If necessary, define the pending call label after a
@@ -6199,7 +6202,7 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     genDefineInlineTempLabel(genPendingCallLabel);
     genPendingCallLabel = nullptr;
 }
-#endif // !defined(TARGET_WASM)
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 /*****************************************************************************
  *
@@ -6355,7 +6358,7 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
 #endif // TARGET_ARM64
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 //------------------------------------------------------------------------------------------------ //
 // getFirstArgWithStackSlot - returns the first argument with stack slot on the caller's frame.
 //
@@ -6410,7 +6413,7 @@ void CodeGen::genSinglePush()
     AddStackLevel(REGSIZE_BYTES);
 }
 
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 #ifdef DEBUG
 
@@ -7074,7 +7077,7 @@ void CodeGen::genReportAsyncDebugInfo()
  *============================================================================
  */
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 #if defined(LATE_DISASM)
 #if !defined(DEBUG)
 
@@ -7160,7 +7163,7 @@ void CodeGen::genLongReturn(GenTree* treeNode)
     inst_Mov(targetType, REG_LNGRET_HI, hiRetVal->GetRegNum(), /* canSkip */ true, emitActualTypeSize(TYP_INT));
 }
 #endif // TARGET_X86 || TARGET_ARM
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 //------------------------------------------------------------------------
 // genReturn: Generates code for return statement.
@@ -7311,7 +7314,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 #ifdef SWIFT_SUPPORT
 //------------------------------------------------------------------------
 // genSwiftErrorReturn: Generates code for returning the normal return value,
@@ -7460,7 +7463,7 @@ void CodeGen::genCodeForAsyncContinuation(GenTree* tree)
 
     genProduceReg(tree);
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 //------------------------------------------------------------------------
 // isStructReturn: Returns whether the 'treeNode' is returning a struct.
@@ -7495,7 +7498,7 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
 #endif
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 //------------------------------------------------------------------------
 // genStructReturn: Generates code for returning a struct.
 //
@@ -8300,14 +8303,14 @@ void CodeGen::genLoadLocalIntoReg(regNumber regNum, unsigned lclNum)
     var_types  regType = varDsc->GetStackSlotHomeType();
     GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, lclNum, 0);
 }
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 unsigned CodeGenInterface::getCurrentStackLevel() const
 {
     return genStackLevel;
 }
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 //-----------------------------------------------------------------------------
 // genPoisonFrame: Generate code that places a recognizable value into address exposed variables.
 //
@@ -8558,4 +8561,4 @@ void CodeGen::genCodeForSwiftErrorReg(GenTree* tree)
     genProduceReg(tree);
 }
 #endif // SWIFT_SUPPORT
-#endif // !TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP

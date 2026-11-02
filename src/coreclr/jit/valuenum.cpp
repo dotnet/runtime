@@ -48,6 +48,13 @@ struct FloatTraits
 #elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
         // WASM uses the canonical NaN payload, matching ARM.
         unsigned bits = 0x7FC00000u;
+#elif defined(TARGET_INTERP)
+        // Interpreter arithmetic runs on the host, so the default NaN is the host's.
+#if defined(HOST_AMD64) || defined(HOST_X86)
+        unsigned bits = 0xFFC00000u;
+#else
+        unsigned bits = 0x7FC00000u;
+#endif
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -75,6 +82,13 @@ struct DoubleTraits
 #elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
         // WASM uses the canonical NaN payload, matching ARM.
         unsigned long long bits = 0x7FF8000000000000ull;
+#elif defined(TARGET_INTERP)
+        // Interpreter arithmetic runs on the host, so the default NaN is the host's.
+#if defined(HOST_AMD64) || defined(HOST_X86)
+        unsigned long long bits = 0xFFF8000000000000ull;
+#else
+        unsigned long long bits = 0x7FF8000000000000ull;
+#endif
 #else
 #error Unsupported or unset target architecture
 #endif
