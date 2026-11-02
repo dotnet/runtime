@@ -83,6 +83,14 @@ recorded zero verifications".
 - **[FAIL]** — cDAC differs from the runtime on a Frame that *should* be implemented,
   or cDAC's `GetStackReferences` failed at the API boundary
 
+ARGITER can report `[ARG_SKIP] reason=runtime-type-not-loaded` when a value-type layout
+needed to reconstruct the argument map has not been loaded. These skips require
+frame-appropriate GC support: native GC info for a frameless method, an R2R-supplied
+argument map for `ExternalMethodFrame`, `StubDispatchFrame`, `PrestubMethodFrame`, or
+`CallCountingHelperFrame`, or frame-specific root protection for other explicit frames.
+The log records the verified `fallback`, and the method remains eligible for retry.
+A missing required fallback produces `[ARG_ERROR]`, not a tolerated skip.
+
 See [known-issues.md § Log Format](known-issues.md#log-format) for the per-frame log shape.
 
 ## Running Tests
@@ -135,8 +143,9 @@ $env:CORE_ROOT = "path\to\Core_Root"
 
 ## Adding a New Debuggee
 
-1. Create a folder under `Debuggees/` with a `.csproj` and `Program.cs`
-2. The `.csproj` just needs: `<Project Sdk="Microsoft.NET.Sdk" />`
+1. Create a folder under `Debuggees/` with a `.csproj` or `.ilproj` and its source
+2. C# projects only need `<Project Sdk="Microsoft.NET.Sdk" />`; IL projects use
+   `<Project Sdk="Microsoft.NET.Sdk.IL">`
    (inherits OutputType=Exe and TFM from `Directory.Build.props`)
 3. `Main()` must return `100` on success
 4. Use `[MethodImpl(MethodImplOptions.NoInlining)]` on methods to prevent inlining
@@ -156,6 +165,7 @@ $env:CORE_ROOT = "path\to\Core_Root"
 | **Comprehensive** | All-in-one: every scenario in a single run |
 | **StructScenarios** | Struct returns, by-ref params |
 | **DynamicMethods** | DynamicMethod / IL emit |
+| **InlineArrayByRefLike** | IL-defined byref-like inline array containing two `int32&` values, passed by value |
 | **CallSignatures** | Wide signature surface for the ARGITER sub-check (primitives, byref/ptr, structs, generics) |
 | **CrossModule** | Calls across multiple assemblies exercising cross-module type references |
 | **NotYetLoadedArgType** | Regression coverage for the cDAC dropping a GC-root whose argument type is not yet loaded when a `PrestubMethodFrame` is scanned. |

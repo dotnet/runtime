@@ -39,6 +39,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             TestScenario: "DownloadResourceProgressTest",
             BrowserQueryString: new NameValueCollection { {"failAssemblyDownload", failAssemblyDownload.ToString().ToLowerInvariant() } }
         ));
+        Assert.Contains("onDotnetReady called", result.TestOutput);
         Assert.True(
             result.TestOutput.Any(m => m.Contains("DownloadResourceProgress: Finished")),
             "The download progress test didn't emit expected error message"
@@ -73,6 +74,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             TestScenario: "DownloadResourceProgressTest",
             BrowserQueryString: new NameValueCollection { {"failAssemblyDownload", "true" } }
         ));
+        Assert.Contains("onDotnetReady called", result.TestOutput);
         Assert.True(
             result.TestOutput.Any(m => m.Contains("DownloadResourceProgress: Finished")),
             "Download progress didn't finish after retries"

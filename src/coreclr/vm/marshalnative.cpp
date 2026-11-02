@@ -397,12 +397,9 @@ FCIMPL2(FC_BOOL_RET, MarshalNative::GCHandleInternalTryGetBridgeWait, OBJECTHAND
 {
     FCALL_CONTRACT;
 
-    if (Interop::IsGCBridgeActive())
-    {
+    if (!Interop::TryGetObjectFromHandleWithoutBridgeWait(handle, pObjResult))
         FC_RETURN_BOOL(false);
-    }
 
-    *pObjResult = OBJECTREFToObject(ObjectFromHandle(handle));
     FC_RETURN_BOOL(true);
 }
 FCIMPLEND

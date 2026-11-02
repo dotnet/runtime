@@ -241,7 +241,11 @@ namespace System.Security.Cryptography
                     Interop.NCrypt.NCryptBuffer* buffers = stackalloc Interop.NCrypt.NCryptBuffer[3];
 
                     Interop.NCrypt.PBE_PARAMS pbeParams = default;
+#if NET
+                    Span<byte> salt = pbeParams.rgbSalt;
+#else
                     Span<byte> salt = new Span<byte>(pbeParams.rgbSalt, Interop.NCrypt.PBE_PARAMS.RgbSaltSize);
+#endif
                     RngFill(salt);
                     pbeParams.Params.cbSalt = salt.Length;
                     pbeParams.Params.iIterations = kdfCount;

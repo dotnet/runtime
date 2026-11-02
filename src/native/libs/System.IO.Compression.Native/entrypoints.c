@@ -6,7 +6,7 @@
 // Include System.IO.Compression.Native headers
 #include "pal_zlib.h"
 
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_BROWSER)
 #include <brotli/decode.h>
 #include <brotli/encode.h>
 #include <brotli/port.h>
@@ -15,16 +15,17 @@
 #define ZSTD_STATIC_LINKING_ONLY
 #include <zstd.h>
 #include <zdict.h>
-#endif // !TARGET_WASM
+#endif // !TARGET_BROWSER
 
 static const Entry s_compressionNative[] =
 {
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_BROWSER)
     DllImportEntry(BrotliDecoderCreateInstance)
     DllImportEntry(BrotliDecoderDecompress)
     DllImportEntry(BrotliDecoderDecompressStream)
     DllImportEntry(BrotliDecoderDestroyInstance)
     DllImportEntry(BrotliDecoderIsFinished)
+    DllImportEntry(BrotliDecoderSetParameter)
     DllImportEntry(BrotliEncoderCompress)
     DllImportEntry(BrotliEncoderCompressStream)
     DllImportEntry(BrotliEncoderCreateInstance)
@@ -32,7 +33,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(BrotliEncoderHasMoreOutput)
     DllImportEntry(BrotliEncoderMaxCompressedSize)
     DllImportEntry(BrotliEncoderSetParameter)
-#endif // !TARGET_WASM
+#endif // !TARGET_BROWSER
     DllImportEntry(CompressionNative_Crc32)
     DllImportEntry(CompressionNative_Deflate)
     DllImportEntry(CompressionNative_DeflateEnd)
@@ -43,7 +44,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(CompressionNative_InflateInit2_)
     DllImportEntry(CompressionNative_InflateReset2_)
     DllImportEntry(CompressionNative_CompressBound)
-#if !defined(TARGET_WASM)
+#if !defined(TARGET_BROWSER)
     DllImportEntry(ZSTD_createCCtx)
     DllImportEntry(ZSTD_createDCtx)
     DllImportEntry(ZSTD_freeCCtx)
@@ -76,7 +77,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(ZSTD_CCtx_refPrefix)
     DllImportEntry(ZSTD_CCtx_setPledgedSrcSize)
     DllImportEntry(ZDICT_trainFromBuffer)
-#endif // !TARGET_WASM
+#endif // !TARGET_BROWSER
 };
 
 EXTERN_C const void* CompressionResolveDllImport(const char* name);

@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // CGENCPU.H -
 //
 // Various helper routines for generating AMD64 assembly code.
 //
 // DO NOT INCLUDE THIS FILE DIRECTLY - ALWAYS USE CGENSYS.H INSTEAD
-//
-
-
 
 #ifndef TARGET_AMD64
 #error Should only include "AMD64\cgencpu.h" for AMD64 builds
@@ -486,21 +484,24 @@ inline TADDR GetSecondArgReg(CONTEXT *context)
 
 extern "C" void* GetCurrentSP();
 
-// Emits:
-//  mov r10, pv1
-//  mov rax, pTarget
-//  jmp rax
-void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget);
+// true when the APX jmpabs instruction is available; set by EEJitManager::SetCpuInfo() at startup. A DAC global.
+GVAL_DECL(bool, g_isJmpAbsAvailable);
 
+inline bool IsJmpAbsAvailable()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return g_isJmpAbsAvailable;
+}
 
-// Get Rel32 destination, emit jumpStub if necessary
+// Get Rel32 destination, emit jumpStub if necessary. Returns 0 if allocation within range fails.
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
-    LoaderAllocator *pLoaderAllocator = NULL, bool throwOnOutOfMemoryWithinRange = true);
-
-// Get Rel32 destination, emit jumpStub if necessary into a preallocated location
-INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddr, PCODE jumpStubAddrRW, bool emitJump);
+    LoaderAllocator *pLoaderAllocator = NULL);
 
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
+
+// Emits raw 11-byte jmpabs instruction
+// Caller must ensure IsJmpAbsAvailable() == true.
+void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
 bool isBackToBackJump(PCODE pCode);
 PCODE decodeBackToBackJump(PCODE pCode);
@@ -539,14 +540,6 @@ struct HijackArgs
         size_t ReturnAddress;
     };
 };
-
-#ifndef DACCESS_COMPILE
-
-DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
-                               PT_RUNTIME_FUNCTION   pFunctionEntry,
-                               int                 offsetNum = 1);
-
-#endif // DACCESS_COMPILE
 
 // ClrFlushInstructionCache is used when we want to call FlushInstructionCache
 // for a specific architecture in the common code, but not for other architectures.

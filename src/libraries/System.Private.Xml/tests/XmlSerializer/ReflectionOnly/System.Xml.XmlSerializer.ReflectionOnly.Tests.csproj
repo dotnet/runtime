@@ -8,7 +8,7 @@
     <PublishReadyToRunStripILBodies>false</PublishReadyToRunStripILBodies>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
+  <PropertyGroup Condition="('$(TargetsAppleMobile)' == 'true' or '$(TargetsWasi)' == 'true') and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
     <OverrideDefaultValueAndDesignerHostSupport>true</OverrideDefaultValueAndDesignerHostSupport>
   </PropertyGroup>
 

@@ -70,7 +70,17 @@ int LinearScan::BuildNode(GenTree* tree)
     // floating type generates AVX instruction (vmovss etc.), set the flag
     if (!varTypeUsesIntReg(tree->TypeGet()))
     {
-        SetContainsAVXFlags();
+        unsigned simdSize = 0;
+#ifdef FEATURE_SIMD
+        // Track producers and possible register copies rather than memory stores. Intrinsics
+        // account for their actual instruction widths in BuildHWIntrinsic.
+        if (varTypeIsSIMD(tree) && !tree->OperIs(GT_STOREIND, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD) &&
+            !tree->OperIsHWIntrinsic() && !tree->IsVectorZero())
+        {
+            simdSize = genTypeSize(tree->TypeGet());
+        }
+#endif // FEATURE_SIMD
+        SetContainsAVXFlags(simdSize);
     }
 
     switch (tree->OperGet())
@@ -2042,7 +2052,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // or non-AVX intrinsics that will use VEX encoding if it is available on the target).
     if (intrinsicTree->isSIMD())
     {
-        SetContainsAVXFlags(intrinsicTree->GetSimdSize());
+        unsigned simdSize = intrinsicTree->GetSimdSize();
+        if ((category == HW_Category_MemoryStore) || (intrinsicId == NI_Vector_CreateScalar) ||
+            (intrinsicId == NI_Vector_CreateScalarUnsafe))
+        {
+            // Stores do not dirty upper lanes; scalar creation writes at most an XMM register.
+            simdSize = XMM_REGSIZE_BYTES;
+        }
+        else if ((intrinsicId == NI_Vector_GetLower) || (intrinsicId == NI_Vector_GetLower128))
+        {
+            simdSize = genTypeSize(intrinsicTree->TypeGet());
+        }
+        SetContainsAVXFlags(simdSize);
     }
 
     int srcCount = 0;
@@ -2778,6 +2799,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_Vector_op_Division:
             {
+                if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    // Integer division converts to doubles in registers twice the input width.
+                    SetContainsAVXFlags(2 * intrinsicTree->GetSimdSize());
+                }
+
                 srcCount = BuildOperandUses(op1, lowSIMDRegs());
                 srcCount += BuildOperandUses(op2, lowSIMDRegs());
 
@@ -3127,10 +3154,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
 
 #ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(indirTree))
-    {
-        SetContainsAVXFlags(genTypeSize(indirTree->TypeGet()));
-    }
     buildInternalRegisterUses();
 #endif // FEATURE_SIMD
 

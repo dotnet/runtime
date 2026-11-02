@@ -14,7 +14,7 @@ public class Async2Synchronized
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public static void FaultedAwaitable(bool useValueTask, bool callerHoldsLock)
+    public static async Task FaultedAwaitable(bool useValueTask, bool callerHoldsLock)
     {
         Async2Synchronized p = new();
         InvalidOperationException expected = new("boom");
@@ -27,17 +27,9 @@ public class Async2Synchronized
 
         try
         {
-            InvalidOperationException actual = Assert.Throws<InvalidOperationException>(() =>
-            {
-                if (useValueTask)
-                {
-                    p.FooValueTask(new ValueTask(task)).GetAwaiter().GetResult();
-                }
-                else
-                {
-                    p.Foo(task).GetAwaiter().GetResult();
-                }
-            });
+            Task faulted = useValueTask ? p.FooValueTask(new ValueTask(task)).AsTask() : p.Foo(task);
+            Assert.True(faulted.IsFaulted);
+            InvalidOperationException actual = await Assert.ThrowsAsync<InvalidOperationException>(() => faulted);
 
             Assert.Same(expected, actual);
             Assert.Equal(callerHoldsLock, Monitor.IsEntered(p));
@@ -52,12 +44,7 @@ public class Async2Synchronized
     }
 
     [Fact]
-    public static void TestEntryPoint()
-    {
-        TestEntryPointAsync().GetAwaiter().GetResult();
-    }
-
-    private static async Task TestEntryPointAsync()
+    public static async Task TestEntryPointAsync()
     {
         Async2Synchronized p = new();
         TaskCompletionSource tcs = new();
@@ -81,12 +68,7 @@ public class Async2Synchronized
     }
 
     [Fact]
-    public static void TestEntryPointValueTask()
-    {
-        TestEntryPointValueTaskAsync().GetAwaiter().GetResult();
-    }
-
-    private static async ValueTask TestEntryPointValueTaskAsync()
+    public static async ValueTask TestEntryPointValueTaskAsync()
     {
         Async2Synchronized p = new();
         TaskCompletionSource tcs = new();

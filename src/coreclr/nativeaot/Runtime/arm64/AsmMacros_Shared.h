@@ -5,7 +5,21 @@
 
 #ifdef TARGET_WINDOWS
 #include "AsmMacros.h"
+
+#define G_TRAP_THREADS RhpTrapThreads
+
+    EXTERN RhpGcPollRare
+
+    MACRO
+        TAILCALL_GC_POLL_RARE
+
+        b       RhpGcPollRare
+    MEND
 #else
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
+
+.macro TAILCALL_GC_POLL_RARE
+        b       C_FUNC(RhpGcPollRare)
+.endm
 #endif

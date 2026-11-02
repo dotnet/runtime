@@ -10,6 +10,12 @@ internal static class BitConverterPolyfills
 {
     extension(BitConverter)
     {
+        public static unsafe int SingleToInt32Bits(float value) => *(int*)&value;
+
+        public static unsafe float Int32BitsToSingle(int value) => *(float*)&value;
+
+        public static float UInt32BitsToSingle(uint value) => BitConverter.Int32BitsToSingle((int)value);
+
         public static uint SingleToUInt32Bits(float value)
         {
             unsafe

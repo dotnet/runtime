@@ -9,10 +9,10 @@ using Xunit;
 
 public class StrengthReductionTest
 {
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static int TestEntryPoint()
+    [Fact]
+    public static async Task<int> TestEntryPoint()
     {
-        return StrengthReduction(Enumerable.Range(0, 1000).ToArray()).Result - 499400;
+        return (await StrengthReduction(Enumerable.Range(0, 1000).ToArray())) - 499400;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

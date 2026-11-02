@@ -9,9 +9,10 @@
     <DebuggeeConfiguration Condition="'$(DebuggeeConfiguration)' == ''">Release</DebuggeeConfiguration>
   </PropertyGroup>
 
-  <!-- Auto-discover debuggee .csproj files -->
+  <!-- Auto-discover debuggee projects -->
   <ItemGroup>
     <DebuggeeProject Include="$(DebuggeeDir)*/*.csproj" />
+    <DebuggeeProject Include="$(DebuggeeDir)*/*.ilproj" />
   </ItemGroup>
 
   <!-- Build all debuggees before running tests -->

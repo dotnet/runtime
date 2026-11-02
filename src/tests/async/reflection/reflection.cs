@@ -14,8 +14,8 @@ using Xunit;
 
 public class Async2Reflection
 {
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void MethodInfo_Invoke_TaskReturning()
+    [Fact]
+    public static async Task MethodInfo_Invoke_TaskReturning()
     {
         var mi = typeof(Async2Reflection).GetMethod("Foo", BindingFlags.Static | BindingFlags.NonPublic)!;
         Task<int> r = (Task<int>)mi.Invoke(null, null)!;
@@ -24,15 +24,15 @@ public class Async2Reflection
         if (TestLibrary.Utilities.IsNativeAot)
         {
             mi = typeof(Async2Reflection).GetMethod("Bar", BindingFlags.Instance | BindingFlags.NonPublic)!;
-            barResult = ((Task<int>)mi.Invoke(new Async2Reflection(), null)!).Result;
+            barResult = await (Task<int>)mi.Invoke(new Async2Reflection(), null)!;
         }
         else
         {
             dynamic d = new Async2Reflection();
-            barResult = d.Bar().Result;
+            barResult = await d.Bar();
         }
 
-        Assert.Equal(100, (int)(r.Result + barResult));
+        Assert.Equal(100, await r + barResult);
     }
 
     [Fact]
@@ -68,13 +68,13 @@ public class Async2Reflection
     }
 
     [Fact]
-    public static void AwaitTaskReturningExpressionLambda()
+    public static async Task AwaitTaskReturningExpressionLambda()
     {
         var expr1 = (Expression<Func<Task<int>>>)(() => Task.FromResult(42));
         var del = expr1.Compile();
-        Assert.Equal(42, del().Result);
+        Assert.Equal(42, await del());
 
-        AwaitF(42, del).GetAwaiter().GetResult();
+        await AwaitF(42, del);
     }
 
     static async Task AwaitF<T>(T expected, Func<Task<T>> f)
@@ -234,28 +234,9 @@ public class Async2Reflection
         public extern static Task<T> accessor<T>(PrivateAsync2 o, int i);
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void UnsafeAccessors()
-    {
-        PrivateAsync1<int>.s = 0;
-        PrivateAsync2.s = 0;
-
-        Accessors2.accessor<int>(null, 7).GetAwaiter().GetResult();
-        Assert.Equal(4, PrivateAsync1<int>.s);
-        Assert.Equal(4, PrivateAsync2.s);
-
-        Accessors1<int>.accessor(null, 7).GetAwaiter().GetResult();
-        Assert.Equal(8, PrivateAsync1<int>.s);
-        Assert.Equal(8, PrivateAsync2.s);
-    }
-
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void UnsafeAccessorsAsync()
-    {
-        UnsafeAccessorsAsyncInner().GetAwaiter().GetResult();
-    }
-
-    private static async Task UnsafeAccessorsAsyncInner()
+    [Fact]
+    [RuntimeAsyncMethodGeneration(false)]
+    public static async Task UnsafeAccessors()
     {
         PrivateAsync1<int>.s = 0;
         PrivateAsync2.s = 0;
@@ -269,15 +250,30 @@ public class Async2Reflection
         Assert.Equal(8, PrivateAsync2.s);
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void CurrentMethod()
+    [Fact]
+    public static async Task UnsafeAccessorsAsyncInner()
+    {
+        PrivateAsync1<int>.s = 0;
+        PrivateAsync2.s = 0;
+
+        await Accessors2.accessor<int>(null, 7);
+        Assert.Equal(4, PrivateAsync1<int>.s);
+        Assert.Equal(4, PrivateAsync2.s);
+
+        await Accessors1<int>.accessor(null, 7);
+        Assert.Equal(8, PrivateAsync1<int>.s);
+        Assert.Equal(8, PrivateAsync2.s);
+    }
+
+    [Fact]
+    public static async Task CurrentMethod()
     {
         // Note: async1 leaks implementation details here and returns "Void MoveNext()"
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAsync().Result);
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAwait().Result);
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", await GetCurrentMethodAsync());
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", await GetCurrentMethodAwait());
 
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodTask().Result);
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodAwaitTask().Result);
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", await GetCurrentMethodTask());
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", await GetCurrentMethodAwaitTask());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -307,12 +303,12 @@ public class Async2Reflection
         return await GetCurrentMethodTask();
     }
 
-    [ConditionalTheory(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
+    [Theory]
     [InlineData(0)]
     [InlineData(1)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void FromStack(int level)
+    public static async Task FromStack(int level)
     {
         // StackFrame.GetMethod() is not supported on NativeAOT
         if (TestLibrary.Utilities.IsNativeAot)
@@ -323,23 +319,23 @@ public class Async2Reflection
         if (level == 0)
         {
             // Note: async1 leaks implementation details here and returns "Void MoveNext()"
-            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync(Int32)", FromStackAsync(0).Result);
-            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync(Int32)", FromStackAwait(0).Result);
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync(Int32)", await FromStackAsync(0));
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync(Int32)", await FromStackAwait(0));
 
-            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask(Int32)", FromStackTask(0).Result);
-            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask(Int32)", FromStackAwaitTask(0).Result);
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask(Int32)", await FromStackTask(0));
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask(Int32)", await FromStackAwaitTask(0));
         }
         else
         {
             // Note: we go through suspend/resume, that is why we see dispatcher as the caller.
             //       we do not see the resume stub though.
-            Assert.Equal("Void DispatchContinuations()", FromStackAsync(1).Result);
-            Assert.Equal("Void DispatchContinuations()", FromStackAwait(1).Result);
+            Assert.Equal("Void DispatchContinuations()", await FromStackAsync(1));
+            Assert.Equal("Void DispatchContinuations()", await FromStackAwait(1));
 
-            Assert.Equal("Void FromStack(Int32)", FromStackTask(1).Result);
+            Assert.Equal("System.Threading.Tasks.Task FromStack(Int32)", await FromStackTask(1));
             // Note: we do not go through suspend/resume, that is why we see the actual caller.
             //       we do not see the async->Task thunk though.
-            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAwaitTask(Int32)", FromStackAwaitTask(1).Result);
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAwaitTask(Int32)", await FromStackAwaitTask(1));
         }
     }
 
@@ -374,32 +370,32 @@ public class Async2Reflection
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
-    [ConditionalTheory(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
+    [Theory]
     [InlineData(0)]
     [InlineData(1)]
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void FromStackDMI(int level)
+    public static async Task FromStackDMI(int level)
     {
         if (level == 0)
         {
             // Note: async1 leaks implementation details here and returns "Void MoveNext()"
-            Assert.Equal("FromStackDMIAsync", FromStackDMIAsync(0).Result);
-            Assert.Equal("FromStackDMIAsync", FromStackDMIAwait(0).Result);
+            Assert.Equal("FromStackDMIAsync", await FromStackDMIAsync(0));
+            Assert.Equal("FromStackDMIAsync", await FromStackDMIAwait(0));
 
-            Assert.Equal("FromStackDMITask", FromStackDMITask(0).Result);
-            Assert.Equal("FromStackDMITask", FromStackDMIAwaitTask(0).Result);
+            Assert.Equal("FromStackDMITask", await FromStackDMITask(0));
+            Assert.Equal("FromStackDMITask", await FromStackDMIAwaitTask(0));
         }
         else
         {
             // Note: we go through suspend/resume, that is why we see dispatcher as the caller.
             //       we do not see the resume stub though.
-            Assert.Equal("DispatchContinuations", FromStackDMIAsync(1).Result);
-            Assert.Equal("DispatchContinuations", FromStackDMIAwait(1).Result);
+            Assert.Equal("DispatchContinuations", await FromStackDMIAsync(1));
+            Assert.Equal("DispatchContinuations", await FromStackDMIAwait(1));
 
-            Assert.Equal("FromStackDMI", FromStackDMITask(1).Result);
+            Assert.Equal("FromStackDMI", await FromStackDMITask(1));
             // Note: we do not go through suspend/resume, that is why we see the actual caller.
             //       we do not see the async->Task thunk though.
-            Assert.Equal("FromStackDMIAwaitTask", FromStackDMIAwaitTask(1).Result);
+            Assert.Equal("FromStackDMIAwaitTask", await FromStackDMIAwaitTask(1));
         }
     }
 

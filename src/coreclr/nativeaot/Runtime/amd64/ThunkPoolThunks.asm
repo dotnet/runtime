@@ -42,95 +42,32 @@ endm
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  STUBS & DATA SECTIONS  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-THUNK_CODESIZE                      equ 10h     ;; 7-byte lea, 6-byte jmp, 3 bytes of nops
+THUNK_CODESIZE                      equ 10h     ;; 7-byte mov, 6-byte jmp, 3 bytes of nops
 THUNK_DATASIZE                      equ 010h    ;; 2 qwords
 
-THUNK_POOL_NUM_THUNKS_PER_PAGE      equ 0FAh    ;; 250 thunks per page
+THUNK_POOL_NUM_THUNKS_PER_PAGE      equ 100h    ;; 256 thunks per page
 
 PAGE_SIZE                           equ 01000h  ;; 4K
 POINTER_SIZE                        equ 08h
 
 
-LOAD_DATA_ADDRESS macro groupIndex, index, thunkPool
+THUNK macro index, thunkPool
         ALIGN   10h                             ;; make sure we align to 16-byte boundary for CFG table
 
-        ;; set r10 to beginning of data page : r10 <- [thunkPool] + PAGE_SIZE
-        ;; fix offset of the data           : r10 <- r10 + (THUNK_DATASIZE * current thunk's index)
-        lea     r10, [thunkPool + PAGE_SIZE + (groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * index)]
-endm
-
-JUMP_TO_COMMON macro groupIndex, index, thunkPool
-        ;; jump to the location pointed at by the last qword in the data page
-        jmp     qword ptr[thunkPool + PAGE_SIZE + PAGE_SIZE - POINTER_SIZE]
-endm
-
-TenThunks macro groupIndex, thunkPool
-        ;; Each thunk will load the address of its corresponding data (from the page that immediately follows)
-        ;; and call a common stub. The address of the common stub is setup by the caller (first qword
-        ;; in the thunks data section, hence the +8's below) depending on the 'kind' of thunks needed (interop,
-        ;; fat function pointers, etc...)
-
         ;; Each data block used by a thunk consists of two qword values:
-        ;;      - Context: some value given to the thunk as context (passed in r10). Example for fat-fptrs: context = generic dictionary
+        ;;      - Context: a value passed to the thunk target in r10.
         ;;      - Target : target code that the thunk eventually jumps to.
 
-        LOAD_DATA_ADDRESS groupIndex,0,thunkPool
-        JUMP_TO_COMMON    groupIndex,0,thunkPool
-
-        LOAD_DATA_ADDRESS groupIndex,1,thunkPool
-        JUMP_TO_COMMON    groupIndex,1,thunkPool
-
-        LOAD_DATA_ADDRESS groupIndex,2,thunkPool
-        JUMP_TO_COMMON    groupIndex,2,thunkPool
-
-        LOAD_DATA_ADDRESS groupIndex,3,thunkPool
-        JUMP_TO_COMMON    groupIndex,3,thunkPool
-
-        LOAD_DATA_ADDRESS groupIndex,4,thunkPool
-        JUMP_TO_COMMON    groupIndex,4,thunkPool
-
-        LOAD_DATA_ADDRESS groupIndex,5,thunkPool
-        JUMP_TO_COMMON    groupIndex,5,thunkPool
-
-        LOAD_DATA_ADDRESS groupIndex,6,thunkPool
-        JUMP_TO_COMMON    groupIndex,6,thunkPool
-
-        LOAD_DATA_ADDRESS groupIndex,7,thunkPool
-        JUMP_TO_COMMON    groupIndex,7,thunkPool
-
-        LOAD_DATA_ADDRESS groupIndex,8,thunkPool
-        JUMP_TO_COMMON    groupIndex,8,thunkPool
-
-        LOAD_DATA_ADDRESS groupIndex,9,thunkPool
-        JUMP_TO_COMMON    groupIndex,9,thunkPool
+        mov     r10, qword ptr [thunkPool + PAGE_SIZE + (THUNK_DATASIZE * index)]
+        jmp     qword ptr [thunkPool + PAGE_SIZE + POINTER_SIZE + (THUNK_DATASIZE * index)]
 endm
 
 THUNKS_PAGE_BLOCK macro thunkPool
-        TenThunks 0,thunkPool
-        TenThunks 1,thunkPool
-        TenThunks 2,thunkPool
-        TenThunks 3,thunkPool
-        TenThunks 4,thunkPool
-        TenThunks 5,thunkPool
-        TenThunks 6,thunkPool
-        TenThunks 7,thunkPool
-        TenThunks 8,thunkPool
-        TenThunks 9,thunkPool
-        TenThunks 10,thunkPool
-        TenThunks 11,thunkPool
-        TenThunks 12,thunkPool
-        TenThunks 13,thunkPool
-        TenThunks 14,thunkPool
-        TenThunks 15,thunkPool
-        TenThunks 16,thunkPool
-        TenThunks 17,thunkPool
-        TenThunks 18,thunkPool
-        TenThunks 19,thunkPool
-        TenThunks 20,thunkPool
-        TenThunks 21,thunkPool
-        TenThunks 22,thunkPool
-        TenThunks 23,thunkPool
-        TenThunks 24,thunkPool
+ThunkIndex = 0
+    while ThunkIndex lt THUNK_POOL_NUM_THUNKS_PER_PAGE
+        THUNK ThunkIndex, thunkPool
+ThunkIndex = ThunkIndex + 1
+    endm
 endm
 
 ;;
@@ -167,9 +104,8 @@ NAMED_READONLY_DATA_SECTION PaddingFor64KAlignment14, ".pad14"
 
 ;;
 ;; Thunk Stubs
-;; NOTE: Keep number of blocks in sync with macro/constant named 'NUM_THUNK_BLOCKS' in:
-;;      - ndp\FxCore\src\System.Private.CoreLib\System\Runtime\InteropServices\ThunkPool.cs
-;;      - ndp\rh\src\tools\rhbind\zapimage.h
+;; NOTE: Keep the number of thunk blocks in sync with the value returned by
+;; RhpGetNumThunkBlocksPerMapping below.
 ;;
 NAMED_LEAF_ENTRY ThunkPool, TKS0, ".tks0"
     THUNKS_PAGE_BLOCK ThunkPool

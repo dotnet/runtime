@@ -145,6 +145,7 @@
 #include "cordbpriv.h"
 #include "comdelegate.h"
 #include "appdomain.hpp"
+#include "externalmemoryhandle.h"
 #include "eventtrace.h"
 #include "corhost.h"
 #include "binder.h"
@@ -165,6 +166,7 @@
 #include "cdacplatformmetadata.hpp"
 #include "minipal/time.h"
 #include "minipal/random.h"
+#include <minipal.h>
 
 #ifdef FEATURE_INTERPRETER
 #include "callstubgenerator.h"
@@ -476,33 +478,34 @@ void InitGSCookie()
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
 #ifdef FEATURE_READONLY_GS_COOKIE
-    // The GS cookie is stored in a read only data segment
+#ifdef TARGET_WINDOWS
     DWORD oldProtection;
-    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
+    if (!VirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
     {
         ThrowLastError();
     }
 
-#ifdef TARGET_UNIX
-    // PAL layer is unable to extract old protection for regions that were not allocated using VirtualAlloc
-    oldProtection = PAGE_READONLY;
-#endif // TARGET_UNIX
-#endif // FEATURE_READONLY_GS_COOKIE
-
-#ifndef TARGET_UNIX
     // The GSCookie cannot be in a writeable page
     assert(((oldProtection & (PAGE_READWRITE|PAGE_WRITECOPY|PAGE_EXECUTE_READWRITE|
                               PAGE_EXECUTE_WRITECOPY|PAGE_WRITECOMBINE)) == 0));
+#else // TARGET_WINDOWS
+    if (!VMToOSInterface::ProtectMemory((LPVOID)pGSCookiePtr, sizeof(GSCookie), VMToOSInterface::MemoryProtection::ReadWrite))
+    {
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+    }
+#endif // TARGET_WINDOWS
+#endif // FEATURE_READONLY_GS_COOKIE
 
+#ifdef TARGET_WINDOWS
     // Forces VC cookie to be initialized.
     void * pf = &__security_check_cookie;
     pf = NULL;
 
     GSCookie val = (GSCookie)(__security_cookie ^ minipal_hires_ticks());
-#else // !TARGET_UNIX
+#else // TARGET_WINDOWS
     GSCookie val;
     minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&val, sizeof(val));
-#endif // !TARGET_UNIX
+#endif // TARGET_WINDOWS
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie
@@ -515,10 +518,18 @@ void InitGSCookie()
     *pGSCookiePtr = val;
 
 #ifdef FEATURE_READONLY_GS_COOKIE
-    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), oldProtection, &oldProtection))
+#ifdef TARGET_WINDOWS
+    DWORD currentProtection;
+    if (!VirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), oldProtection, &currentProtection))
     {
         ThrowLastError();
     }
+#else // TARGET_WINDOWS
+    if (!VMToOSInterface::ProtectMemory((LPVOID)pGSCookiePtr, sizeof(GSCookie), VMToOSInterface::MemoryProtection::ReadOnly))
+    {
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+    }
+#endif // TARGET_WINDOWS
 #endif // FEATURE_READONLY_GS_COOKIE
 }
 
@@ -660,6 +671,14 @@ void EEStartupHelper()
 
         PendingTypeLoadTable::Init();
 
+#if defined(TARGET_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
+        if (!VMToOSInterface::InitializeExecutableMemoryAllocator(
+                CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InitialExecMemoryPercent)))
+        {
+            IfFailGo(E_OUTOFMEMORY);
+        }
+#endif // TARGET_UNIX && FEATURE_DYNAMIC_CODE_COMPILED
+
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
         if (g_pConfig != NULL)
@@ -673,7 +692,9 @@ void EEStartupHelper()
         InitCallStubGenerator();
 #endif // FEATURE_INTERPRETER
 
+#ifdef FEATURE_INLINE_TRACKING
         JITInlineTrackingMap::StaticInitialize();
+#endif // FEATURE_INLINE_TRACKING
         MethodDescBackpatchInfoTracker::StaticInitialize();
 
 #ifdef FEATURE_CODE_VERSIONING
@@ -854,6 +875,8 @@ void EEStartupHelper()
         g_pEEShutDownEvent = new CLREvent();
         g_pEEShutDownEvent->CreateManualEvent(FALSE);
 
+        ExecutionManager::Init();
+
         VirtualCallStubManager::InitStatic();
 
         // Setup the domains. Threads are started in a default domain.
@@ -862,8 +885,6 @@ void EEStartupHelper()
         SystemDomain::Attach();
 
         COMDelegate::Init();
-
-        ExecutionManager::Init();
 
 #ifdef FEATURE_PERFMAP
         PerfMap::SignalDependenciesReady();
@@ -918,6 +939,8 @@ void EEStartupHelper()
 
         // Set up the sync block
         SyncBlockCache::Start();
+
+        ExternalMemoryHandle::Init();
 
         // This isn't done as part of InitializeGarbageCollector() above because it
         // requires write barriers to have been set up on x86, which happens as part
@@ -1019,7 +1042,18 @@ void EEStartupHelper()
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
+#ifdef FEATURE_MULTITHREADING
         InitializeThreadStaticData();
+#else
+        {
+            // There is only one thread, so publish its managed Thread object for Thread.CurrentThread.
+            GCX_COOP();
+            g_pThreadClass->CheckRunClassInitThrowing();
+            FieldDesc* pCurrentThreadField = CoreLibBinder::GetField(FIELD__THREAD__CURRENT_THREAD);
+            OBJECTREF exposedThread = GetThread()->GetExposedObject();
+            pCurrentThreadField->SetStaticOBJECTREF(exposedThread);
+        }
+#endif // FEATURE_MULTITHREADING
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
@@ -1030,8 +1064,8 @@ void EEStartupHelper()
         // contribute to the process' working set. it is needed only as a "shadow" for a mini-metadata
         // buffer that will be set up and reported / updated in the Watson process (the
         // DacStreamsManager class coordinates this)
-        g_MiniMetaDataBuffAddress = (TADDR) ClrVirtualAlloc(NULL,
-                                                g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
+        g_MiniMetaDataBuffAddress = (TADDR) VMToOSInterface::AllocateMemory(NULL,
+                                                g_MiniMetaDataBuffMaxSize, VMToOSInterface::MemoryProtection::ReadWrite);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
         g_fEEStarted = TRUE;
@@ -1692,11 +1726,13 @@ static void RuntimeThreadShutdown(void* thread)
 #endif // TARGET_UNIX
         pThread->DetachThread(TRUE);
     }
+#ifdef FEATURE_MULTITHREADING
     else
     {
         // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
         AssertThreadStaticDataFreed();
     }
+#endif // FEATURE_MULTITHREADING
 
     ThreadDetaching();
 }

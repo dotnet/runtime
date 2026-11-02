@@ -1341,7 +1341,6 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtLIRFlags = 0;
 #ifdef DEBUG
     gtDebugFlags = GTF_DEBUG_NONE;
-    gtMorphCount = 0;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
     ClearAssertion();
@@ -1730,8 +1729,6 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen)
 {
     assert(arrLen->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH));
-    static_assert(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
-    static_assert(GTF_MDARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
     arrLen->SetIndirExceptionFlags(this);
 }
 
@@ -1788,7 +1785,6 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
 {
     GenTreeMDArr* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArr(GT_MDARR_LOWER_BOUND, arrayOp, dim, rank);
 
-    static_assert(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
     arrOp->SetIndirExceptionFlags(this);
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
@@ -2750,7 +2746,7 @@ inline
     bool fConservative = false;
     if (varNum >= 0)
     {
-        assert(!lvaIsUnknownSizeLocal(varNum));
+        assert(!lvaLocalIsOnUnknownSizeFrame(varNum));
         LclVarDsc* varDsc          = lvaGetDesc(varNum);
         bool       isPrespilledArg = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
@@ -3298,6 +3294,12 @@ inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
             // assume that we have a safe point.
             return true;
         }
+    }
+
+    // A tree that may throw can call a throw helper, which is a gc safe point.
+    if ((tree->gtFlags & GTF_EXCEPT) != 0)
+    {
+        return true;
     }
 
     // TYP_STRUCT-typed stores might be converted into calls (with gc safe points) in Lower.
@@ -4161,8 +4163,7 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
     bool       result = varDsc->lvIsParam || varDsc->lvIsParamRegTarget || lvaIsOSRLocal(varNum) ||
-                  (varNum == lvaGSSecurityCookie) || (varNum == lvaInlinedPInvokeFrameVar) ||
-                  (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
+                  (varNum == lvaGSSecurityCookie) || (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaRetAddrVar);
 
 #ifdef TARGET_ARM64
     result = result || (varNum == lvaFfrRegister);
@@ -4412,10 +4413,19 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             return VisitResult::Continue;
         }
 
+#ifdef TARGET_ARM64
+        case GT_SELECT_NEG:
+        case GT_SELECT_INV:
+        case GT_SELECT_INC:
+#endif
         case GT_SELECT:
         {
             GenTreeConditional* const cond = this->AsConditional();
             RETURN_IF_ABORT(visitor(&cond->gtCond));
+            if (cond->gtOp2 == nullptr)
+            {
+                return visitor(&cond->gtOp1);
+            }
             RETURN_IF_ABORT(visitor(&cond->gtOp1));
             return visitor(&cond->gtOp2);
         }
@@ -4998,6 +5008,35 @@ inline bool GenTree::HasAnyLocalDefs(Compiler* comp)
     return VisitPhysicalLocalDefNodes(comp, [](GenTreeLclVarCommon* lcl) {
         return GenTree::VisitResult::Abort;
     }) == GenTree::VisitResult::Abort;
+}
+
+//------------------------------------------------------------------------
+// VisitLogicalLocalOccurrencesViaLocalsTreeList:
+//   Visit occurrences in locals-list order without expanding promoted parents.
+//
+// Arguments:
+//   visitor - Generic functor accepting a local occurrence provider.
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+// Remarks:
+//   The callback may abort the walk, but must not change the list and continue.
+//
+template <typename TVisitor>
+GenTree::VisitResult Statement::VisitLogicalLocalOccurrencesViaLocalsTreeList(TVisitor visitor)
+{
+    assert(JitTls::GetCompiler()->fgNodeThreading == NodeThreading::AllLocals);
+
+    for (GenTree* node : LocalsTreeList())
+    {
+        if (visitor(LocalOccurrence(node->AsLclVarCommon())) == GenTree::VisitResult::Abort)
+        {
+            return GenTree::VisitResult::Abort;
+        }
+    }
+
+    return GenTree::VisitResult::Continue;
 }
 
 /*****************************************************************************

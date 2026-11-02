@@ -12,9 +12,9 @@ using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    // Brotli and Zstandard rely on native libraries that are not available on browser/wasi, so both
-    // types are annotated [UnsupportedOSPlatform("browser"/"wasi")]. This file is excluded from those
-    // builds; the gzip tests and shared helpers live in CompressedContentTest.cs.
+    // Brotli and Zstandard rely on native libraries that are not available on browser, so both
+    // types are annotated [UnsupportedOSPlatform("browser")]. This file is excluded from that
+    // build; the gzip tests and shared helpers live in CompressedContentTest.cs.
     public partial class CompressedContentTest
     {
         [Fact]

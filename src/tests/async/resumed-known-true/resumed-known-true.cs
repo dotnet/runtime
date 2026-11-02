@@ -10,44 +10,21 @@ using Xunit;
 // no merge in between. The helpers emitted on the later await's suspension path
 // (RestoreContextsOnSuspension, the inlined frame transition captures) no-op
 // when the indicator is set, so they could be folded away entirely.
-[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2ResumedKnownTrue
 {
-    [Fact]
-    public static void TestTwoYields()
-    {
-        TwoYields().GetAwaiter().GetResult();
-    }
-
-    [Fact]
-    public static void TestYieldThenAwaitTask()
-    {
-        YieldThenAwaitTask().GetAwaiter().GetResult();
-    }
-
-    [Fact]
-    public static void TestYieldThenAwaitInlinedFrame()
-    {
-        YieldThenAwaitInlinedFrame().GetAwaiter().GetResult();
-    }
-
-    [Fact]
-    public static void TestYieldThenAwaitResumedInlinedFrame()
-    {
-        YieldThenAwaitResumedInlinedFrame().GetAwaiter().GetResult();
-    }
-
     // The second Yield's suspension path sees the indicator defined by the
     // first, which always suspends.
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task TwoYields()
+    public static async Task TwoYields()
     {
         await Task.Yield();
         await Task.Yield();
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task YieldThenAwaitTask()
+    public static async Task YieldThenAwaitTask()
     {
         await Task.Yield();
         await Task.Delay(1);
@@ -55,8 +32,9 @@ public class Async2ResumedKnownTrue
 
     // Same, but the later await sits in an inlined async frame, so its
     // suspension tail runs the enclosing frames' transition captures too.
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task YieldThenAwaitInlinedFrame()
+    public static async Task YieldThenAwaitInlinedFrame()
     {
         await Task.Yield();
         await Inner();
@@ -70,8 +48,9 @@ public class Async2ResumedKnownTrue
 
     // Here the inlined frame's own indicator is set as well by the time it suspends, so
     // none of the frame transition handling is needed.
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task YieldThenAwaitResumedInlinedFrame()
+    public static async Task YieldThenAwaitResumedInlinedFrame()
     {
         await Task.Yield();
         await InnerYieldThenAwait();

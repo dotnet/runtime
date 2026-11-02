@@ -8,11 +8,8 @@ using Xunit;
 
 public class Async2Small
 {
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestEntryPoint()
-    {
-        SmallType(123).Wait();
-    }
+    [Fact]
+    public static Task TestEntryPoint() => SmallType(123);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task SmallType(byte arg)

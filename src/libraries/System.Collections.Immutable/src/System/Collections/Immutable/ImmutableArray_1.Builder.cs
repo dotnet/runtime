@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -591,17 +590,10 @@ namespace System.Collections.Immutable
 
                 if (index + length < this._count)
                 {
-
-#if NET
-                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                    {
-                        Array.Clear(_elements, index, length); // Clear the elements so that the gc can reclaim the references.
-                    }
-#endif
                     Array.Copy(_elements, index + length, _elements, index, this.Count - index - length);
                 }
 
-                this._count -= length;
+                this.Count -= length;
             }
 
             /// <summary>
@@ -922,23 +914,7 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Reverse()
             {
-#if NET || NETSTANDARD2_1_OR_GREATER
                 Array.Reverse<T>(_elements, 0, _count);
-#else
-                // The non-generic Array.Reverse is not used because it does not perform
-                // well for non-primitive value types.
-                int i = 0;
-                int j = _count - 1;
-                T[] array = _elements;
-                while (i < j)
-                {
-                    T temp = array[i];
-                    array[i] = array[j];
-                    array[j] = temp;
-                    i++;
-                    j--;
-                }
-#endif
             }
 
             /// <summary>
@@ -1095,7 +1071,7 @@ namespace System.Collections.Immutable
 
                 Array.Copy(_elements, copied + removed, _elements, copied, _elements.Length - (copied + removed));
 
-                _count -= indicesToRemove.Count;
+                this.Count -= indicesToRemove.Count;
             }
 
             /// <summary>Gets a <see cref="Memory{T}"/> for the filled portion of the backing array.</summary>

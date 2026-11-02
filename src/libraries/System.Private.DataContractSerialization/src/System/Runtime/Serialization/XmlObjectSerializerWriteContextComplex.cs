@@ -241,7 +241,7 @@ namespace System.Runtime.Serialization
 
             if (writeXsiType)
             {
-                declaredType = Globals.TypeOfObject;
+                declaredType = typeof(object);
                 SerializeWithXsiType(xmlWriter, obj, objTypeHandle, objType, -1, declaredType.TypeHandle, declaredType);
             }
             else if (declaredTypeHandle.Equals(objTypeHandle))

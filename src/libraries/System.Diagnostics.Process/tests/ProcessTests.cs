@@ -2637,6 +2637,27 @@ namespace System.Diagnostics.Tests
             AssertExtensions.Throws<ArgumentNullException>("ArgumentList[0]", () => testProcess.Start());
         }
 
+        [Fact]
+        public void ArgumentsContainingNullThrowsOnStart()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo("unused")
+            {
+                Arguments = "argument\0suffix"
+            };
+
+            AssertExtensions.Throws<ArgumentException>("Arguments", () => Process.Start(psi));
+        }
+
+        [Fact]
+        public void ArgumentListArgumentContainingNullThrowsOnStart()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo("unused");
+            psi.ArgumentList.Add("valid");
+            psi.ArgumentList.Add("argument\0suffix");
+
+            AssertExtensions.Throws<ArgumentException>("ArgumentList[1]", () => Process.Start(psi));
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartProcessWithSameArgumentList()

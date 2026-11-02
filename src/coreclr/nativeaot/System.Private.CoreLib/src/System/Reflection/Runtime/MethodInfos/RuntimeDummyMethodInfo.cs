@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Core.Execution;
@@ -39,7 +38,8 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override int MetadataToken { get { throw NotImplemented.ByDesign; } }
         public sealed override RuntimeMethodHandle MethodHandle { get { throw NotImplemented.ByDesign; } }
         protected sealed override MethodBaseInvoker UncachedMethodInvoker { get { throw NotImplemented.ByDesign; } }
-        internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter) { throw NotImplemented.ByDesign; }
+        internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod) { throw NotImplemented.ByDesign; }
+        internal sealed override RuntimeParameterInfo GetRuntimeReturnParameter(RuntimeMethodInfo contextMethod) { throw NotImplemented.ByDesign; }
         internal sealed override RuntimeTypeInfo RuntimeDeclaringType { get { throw NotImplemented.ByDesign; } }
         internal sealed override string RuntimeName { get { throw NotImplemented.ByDesign; } }
         internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters { get { throw NotImplemented.ByDesign; } }
