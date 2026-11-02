@@ -19821,7 +19821,9 @@ GenTree* Compiler::gtExtractSideEffectsFromUnusedNode(GenTree* node)
         return node;
     }
 
-    if (node->OperIs(GT_INTRINSIC) && (node->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType))
+    // When these values are unused, only their receiver null checks and operand effects remain.
+    if ((node->OperIs(GT_FIELD_ADDR) && node->AsFieldAddr()->IsInstance()) || node->OperIs(GT_ARR_LENGTH) ||
+        (node->OperIs(GT_INTRINSIC) && (node->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType)))
     {
         GenTree* obj = node->gtGetOp1();
         if (!fgAddrCouldBeNull(obj))
@@ -19829,7 +19831,8 @@ GenTree* Compiler::gtExtractSideEffectsFromUnusedNode(GenTree* node)
             return nullptr;
         }
 
-        JITDUMP("Replace an unused GetType node [%06d] with a NULLCHECK\n", dspTreeID(node));
+        JITDUMP("Replace an unused %s node [%06d] with a NULLCHECK\n", GenTree::OpName(node->OperGet()),
+                dspTreeID(node));
         ValueNumPair vnPair = node->gtVNPair;
         node                = gtNewNullCheck(obj);
         if ((vnStore != nullptr) && vnPair.BothDefined())
