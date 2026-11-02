@@ -3,6 +3,8 @@
 
 #include <ep-shared-config.h>
 
+#ifndef EP_CUSTOM_RT_CONFIG
+
 #if !defined(FEATURE_CORECLR) && !defined(FEATURE_NATIVEAOT)
 
 #include <config.h>
@@ -69,6 +71,7 @@
 #define DS_RT_TYPES_H <eventpipe/ds-rt-types-aot.h>
 
 #endif
+#endif /* !EP_CUSTOM_RT_CONFIG */
 
 #ifndef EP_NO_RT_DEPENDENCY
 #include EP_RT_CONFIG_H

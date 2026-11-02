@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #if defined(_MSC_VER) && defined(_DEBUG)
 #include "ep-tests-debug.h"
 #endif
@@ -6,7 +9,7 @@
 #include <eventpipe/ep-config.h>
 #include <eventpipe/ep-event.h>
 #include <eventpipe/ep-session.h>
-#include <eglib/test/test.h>
+#include "test.h"
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 #define TEST_FILE "./ep_test_create_file.txt"
@@ -46,13 +49,15 @@ test_create_delete_session (void)
 			NULL,
 			EP_SESSION_TYPE_FILE,
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
-			false,
+			0,
+			true,
 			1,
 			current_provider_config,
 			1,
 			NULL,
 			NULL,
-			0);
+			0,
+			EP_BUFFERING_MODE_DROP);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (test_session != NULL);
@@ -89,13 +94,15 @@ test_add_session_providers (void)
 			NULL,
 			EP_SESSION_TYPE_FILE,
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
-			false,
+			0,
+			true,
 			1,
 			current_provider_config,
 			1,
 			NULL,
 			NULL,
-			0);
+			0,
+			EP_BUFFERING_MODE_DROP);
 
 		ep_raise_error_if_nok_holding_lock (test_session != NULL, section1);
 
@@ -173,13 +180,15 @@ test_session_special_get_set (void)
 			NULL,
 			EP_SESSION_TYPE_FILE,
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
-			false,
+			0,
+			true,
 			1,
 			current_provider_config,
 			1,
 			NULL,
 			NULL,
-			0);
+			0,
+			EP_BUFFERING_MODE_DROP);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (test_session != NULL);

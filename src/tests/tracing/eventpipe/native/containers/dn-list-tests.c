@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #if defined(_MSC_VER) && defined(_DEBUG)
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
 #endif
 
-#include <eglib/test/test.h>
+#include "test.h"
 #include <containers/dn-list.h>
 
 
@@ -813,7 +816,7 @@ test_list_reverse (void)
 	dn_list_reverse (list);
 
 	DN_LIST_FOREACH_BEGIN (void *, data, list) {
-		if (POINTER_TO_INT32 (data) != count - 1)
+		if (POINTER_TO_INT32 (data) != (int32_t)count - 1)
 			return FAILED ("reverse failed #1");
 		count--;
 	} DN_LIST_FOREACH_END;
@@ -960,11 +963,11 @@ test_list_find_erase (void)
 
 	dn_list_t *list = dn_list_alloc ();
 
-	dn_list_push_front (list, items [2]);
-	dn_list_push_front (list, items [1]);
-	dn_list_push_front (list, items [0]);
+	dn_list_push_front (list, (char *)items [2]);
+	dn_list_push_front (list, (char *)items [1]);
+	dn_list_push_front (list, (char *)items [0]);
 
-	dn_list_insert (dn_list_end (list), items [3]);
+	dn_list_insert (dn_list_end (list), (char *)items [3]);
 
 	dn_list_it_t found = dn_list_find (list, items [1]);
 	if (dn_list_it_end (found))
@@ -997,7 +1000,7 @@ test_list_iterator (void)
 		dn_list_insert (dn_list_end (list), INT32_TO_POINTER (i));
 
 	DN_LIST_FOREACH_BEGIN (void *, data, list) {
-		if (POINTER_TO_INT32 (data) != count)
+		if (POINTER_TO_INT32 (data) != (int32_t)count)
 			return FAILED ("foreach iterator failed #1");
 		count++;
 	} DN_LIST_FOREACH_END;
@@ -1021,7 +1024,7 @@ test_list_rev_iterator (void)
 		dn_list_insert (dn_list_end (list), INT32_TO_POINTER (i));
 
 	DN_LIST_FOREACH_RBEGIN (void *, data, list) {
-		if (POINTER_TO_INT32 (data) != count - 1)
+		if (POINTER_TO_INT32 (data) != (int32_t)count - 1)
 			return FAILED ("foreach rev iterator failed #1");
 		count--;
 	} DN_LIST_FOREACH_END;
