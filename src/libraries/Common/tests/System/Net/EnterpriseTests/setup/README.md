@@ -40,7 +40,7 @@ docker-compose build
 docker-compose up -d
 
 There should be three server containers and client:
-- kdc serves as Kerberos key center and Primary Domain Controller using Samba
+- kdc serves as a Kerberos key center using MIT Kerberos (it does not issue Active Directory PAC data)
 - apacheweb runs standard web server on port 80 and has various authentication methods enabled
 - altweb is identical container but running web on non-standard port. This primarily matters for Kerberos and SPN calculation
 - linuxclient is container where the tests actually run

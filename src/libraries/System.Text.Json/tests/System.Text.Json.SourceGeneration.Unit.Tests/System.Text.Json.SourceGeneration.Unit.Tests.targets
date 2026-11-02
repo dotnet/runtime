@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <MemorySafetyRulesVersion>2</MemorySafetyRulesVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI> 
   </PropertyGroup>

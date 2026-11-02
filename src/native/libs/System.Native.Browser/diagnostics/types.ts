@@ -216,6 +216,10 @@ export const enum Keywords {
     WaitHandle = 0x40000000000,
     //
     // Summary:
+    //     Diagnostic events carrying JIT/interpreter PGO instrumentation data (block counts).
+    JitInstrumentationData = 0x10000000000,
+    //
+    // Summary:
     //     Recommend default flags (good compromise on verbosity).
     Default = 0x14C14FCCBD,
     //

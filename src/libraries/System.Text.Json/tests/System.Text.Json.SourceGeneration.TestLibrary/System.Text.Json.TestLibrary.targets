@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <MemorySafetyRulesVersion>2</MemorySafetyRulesVersion>
   </PropertyGroup>
 
   <ItemGroup>

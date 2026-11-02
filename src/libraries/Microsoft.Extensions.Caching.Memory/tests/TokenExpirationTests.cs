@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Null(expirationToken.Registration);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void FireTokenRemovesItem()
         {
             var cache = CreateCache();
@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ExpiredLazyTokenRemovesItemOnNextAccess()
         {
             var cache = CreateCache();
@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ExpiredLazyTokenRemovesItemInBackground()
         {
             var clock = new TestClock();
@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.False(found);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void RemoveItemDisposesTokenRegistration()
         {
             var cache = CreateCache();
@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ClearingCacheDisposesTokenRegistration()
         {
             var cache = (MemoryCache)CreateCache();
@@ -187,7 +187,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddExpiredTokenPreventsCaching()
         {
             var cache = CreateCache();
@@ -232,7 +232,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Null(result);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void PostEvictionCallbacksGetInvokedWhenMemoryCacheEntriesExpireWithAnActiveChangeToken()
         {
             using var cache = new MemoryCache(new MemoryCacheOptions());

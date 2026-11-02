@@ -784,6 +784,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66118", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public void MinMaxLengthIsCorrect_HugeDepth()
         {
             const int Depth = 10_000;

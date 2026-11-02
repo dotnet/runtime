@@ -63,10 +63,21 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public SampleProfile GetProfile(MethodDesc md)
             => _methodInf.GetValueOrDefault(md)?.Profile;
 
-        public void SmoothAllProfiles()
+        public void SmoothAllProfiles(Action<string> warningLogger)
         {
-            foreach (PerMethodInfo pmi in _methodInf.Values)
-                pmi.Profile.SmoothFlow();
+            foreach ((MethodDesc method, PerMethodInfo pmi) in _methodInf)
+            {
+                try
+                {
+                    pmi.Profile.SmoothFlow();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    // Do not expose an unsmoothed profile to schema generation.
+                    _methodInf.Remove(method);
+                    warningLogger?.Invoke($"Skipping sample profile for {method}: flow smoothing failed: {ex.Message}");
+                }
+            }
         }
 
         public void AttributeSamplesToIP(ulong ip, long numSamples)

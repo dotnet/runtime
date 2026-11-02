@@ -11,6 +11,7 @@ using System.Runtime.Intrinsics.Arm;
 namespace System.Runtime.Intrinsics
 {
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 64-bit vectors.</summary>
+    [SuppressReadyToRunCanonicalRooting]
     public static class Vector64
     {
         internal const int Size = 8;
@@ -2190,11 +2191,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsEvenIntegerSingle<Vector64<float>, Vector64<uint>>(vector.AsSingle()).As<float, T>();
+                return VectorMath.IsEvenInteger<Vector64<float>, float>(vector.AsSingle()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsEvenIntegerDouble<Vector64<double>, Vector64<ulong>>(vector.AsDouble()).As<double, T>();
+                return VectorMath.IsEvenInteger<Vector64<double>, double>(vector.AsDouble()).As<double, T>();
             }
             return IsZero(vector & Vector64<T>.One);
         }
@@ -2234,7 +2235,7 @@ namespace System.Runtime.Intrinsics
         {
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
-                return IsFinite(vector) & Equals(vector, Truncate(vector));
+                return IsZero(vector - Truncate(vector));
             }
             return Vector64<T>.AllBitsSet;
         }
@@ -2313,11 +2314,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsOddIntegerSingle<Vector64<float>, Vector64<uint>>(vector.AsSingle()).As<float, T>();
+                return VectorMath.IsOddInteger<Vector64<float>, float>(vector.AsSingle()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsOddIntegerDouble<Vector64<double>, Vector64<ulong>>(vector.AsDouble()).As<double, T>();
+                return VectorMath.IsOddInteger<Vector64<double>, double>(vector.AsDouble()).As<double, T>();
             }
             return ~IsZero(vector & Vector64<T>.One);
         }
@@ -2830,6 +2831,16 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
+#if !MONO
+                if (typeof(T) == typeof(float))
+                {
+                    return MaxNative(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                if (typeof(T) == typeof(double))
+                {
+                    return MaxNative(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+#endif
                 return ConditionalSelect(GreaterThan(left, right), left, right);
             }
             else
@@ -2945,6 +2956,16 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
+#if !MONO
+                if (typeof(T) == typeof(float))
+                {
+                    return MinNative(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                if (typeof(T) == typeof(double))
+                {
+                    return MinNative(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+#endif
                 return ConditionalSelect(LessThan(left, right), left, right);
             }
             else

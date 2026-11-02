@@ -291,17 +291,16 @@ struct REGDISPLAY
 
 struct REGDISPLAY
 {
-    // TODO: WebAssembly doesn't really have registers. What exactly do we need here?
-
     uintptr_t   SP;
-    PCODE        IP;
+    uintptr_t   FP;
+    PCODE       IP;
 
-    inline PCODE GetIP() { return NULL; }
-    inline uintptr_t GetSP() { return 0; }
-    inline uintptr_t GetFP() { return 0; }
+    inline PCODE GetIP() { return IP; }
+    inline uintptr_t GetSP() { return SP; }
+    inline uintptr_t GetFP() { return FP; }
 
-    inline void SetIP(PCODE IP) { }
-    inline void SetSP(uintptr_t SP) { }
+    inline void SetIP(PCODE IP) { this->IP = IP; }
+    inline void SetSP(uintptr_t SP) { this->SP = SP; }
 };
 #endif
 

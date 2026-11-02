@@ -28,6 +28,8 @@ namespace System
         "TVOS"
 #elif TARGET_ANDROID
         "ANDROID"
+#elif TARGET_OPENHARMONY
+        "OPENHARMONY"
 #elif TARGET_LINUX
         "LINUX"
 #elif TARGET_FREEBSD
@@ -221,6 +223,17 @@ namespace System
         [NonVersionable]
         internal static bool IsHaiku() =>
 #if TARGET_HAIKU
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Indicates whether the current application is running on OpenHarmony.
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsOpenHarmony() =>
+#if TARGET_OPENHARMONY
             true;
 #else
             false;

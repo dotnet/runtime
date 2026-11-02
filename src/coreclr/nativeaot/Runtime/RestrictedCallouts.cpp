@@ -180,11 +180,6 @@ void RestrictedCallouts::InvokeGcCallouts(GcRestrictedCalloutKind eKind, uint32_
     Thread * pThread = ThreadStore::GetCurrentThread();
     pThread->SetDoNotTriggerGc();
 
-    // Due to the above we have better suppress GC stress.
-    bool fGcStressWasSuppressed = pThread->IsSuppressGcStressSet();
-    if (!fGcStressWasSuppressed)
-        pThread->SetSuppressGcStress();
-
     GcRestrictedCallout * pCurrCallout = s_rgGcRestrictedCallouts[eKind];
     while (pCurrCallout)
     {
@@ -193,10 +188,6 @@ void RestrictedCallouts::InvokeGcCallouts(GcRestrictedCalloutKind eKind, uint32_
 
         pCurrCallout = pCurrCallout->m_pNext;
     }
-
-    // Revert GC stress mode if we changed it.
-    if (!fGcStressWasSuppressed)
-        pThread->ClearSuppressGcStress();
 
     pThread->ClearDoNotTriggerGc();
 }
@@ -213,11 +204,6 @@ bool RestrictedCallouts::InvokeRefCountedHandleCallbacks(Object * pObject)
     // It is illegal for any of the callouts to trigger a GC.
     Thread * pThread = ThreadStore::GetCurrentThread();
     pThread->SetDoNotTriggerGc();
-
-    // Due to the above we have better suppress GC stress.
-    bool fGcStressWasSuppressed = pThread->IsSuppressGcStressSet();
-    if (!fGcStressWasSuppressed)
-        pThread->SetSuppressGcStress();
 
     HandleTableRestrictedCallout * pCurrCallout = s_pHandleTableRestrictedCallouts;
     while (pCurrCallout)
@@ -236,10 +222,6 @@ bool RestrictedCallouts::InvokeRefCountedHandleCallbacks(Object * pObject)
     }
 
   Done:
-    // Revert GC stress mode if we changed it.
-    if (!fGcStressWasSuppressed)
-        pThread->ClearSuppressGcStress();
-
     pThread->ClearDoNotTriggerGc();
 
     return fResult;

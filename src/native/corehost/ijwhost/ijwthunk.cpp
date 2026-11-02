@@ -120,8 +120,8 @@ extern "C" std::uintptr_t __stdcall start_runtime_and_get_target_address(std::ui
     load_in_memory_assembly_fn loadInMemoryAssembly;
     pal::dll_t moduleHandle = pThunk->get_dll_handle();
 
-    void* load_context = nullptr;
-    pal::hresult_t status = get_load_in_memory_assembly_delegate(moduleHandle, &loadInMemoryAssembly, &load_context);
+    load_context_storage load_context;
+    pal::hresult_t status = get_load_in_memory_assembly_delegate(moduleHandle, &loadInMemoryAssembly, load_context);
 
     if (status != StatusCode::Success)
     {
@@ -147,7 +147,7 @@ extern "C" std::uintptr_t __stdcall start_runtime_and_get_target_address(std::ui
 #pragma warning (pop)
     }
 
-    loadInMemoryAssembly(moduleHandle, app_path.c_str(), load_context);
+    loadInMemoryAssembly(moduleHandle, app_path.c_str(), load_context.get());
 
     std::uintptr_t thunkAddress = *(pThunk->get_slot_address());
 

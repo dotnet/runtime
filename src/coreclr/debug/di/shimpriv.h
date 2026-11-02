@@ -11,6 +11,7 @@
 #ifndef SHIMPRIV_H
 #define SHIMPRIV_H
 
+#include "CLREventBase.h"
 #include "helpers.h"
 
 #include "shimdatatarget.h"
@@ -20,6 +21,7 @@
 // Forward declarations
 class CordbWin32EventThread;
 class Cordb;
+struct IDacDbiInterface;
 
 class ShimStackWalk;
 class ShimChain;
@@ -503,8 +505,8 @@ protected:
     // Synchronization events to ensure that AttachPending bit is marked before DebugActiveProcess
     // returns or debugger is detaching
     //
-    HANDLE  m_markAttachPendingEvent;
-    HANDLE  m_terminatingEvent;
+    CLREventBase m_markAttachPendingEvent;
+    CLREventBase m_terminatingEvent;
 
     //
     // Event Queues

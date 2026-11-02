@@ -24,8 +24,8 @@ namespace Internal.Runtime
         void EmitNaturalInt(int emit);
 
         /// <summary>
-        /// Emits an integer that has half of the natural size on the target platform (e.g. 32 bits on 64 bit platforms).
+        /// Emits an unsigned integer that has half of the natural size on the target platform (e.g. 32 bits on 64 bit platforms).
         /// </summary>
-        void EmitHalfNaturalInt(short emit);
+        void EmitHalfNaturalUInt(ushort emit);
     }
 }

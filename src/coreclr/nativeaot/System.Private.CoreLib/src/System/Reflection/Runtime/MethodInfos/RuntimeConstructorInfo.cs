@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
@@ -32,12 +31,17 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override Type DeclaringType { get; }
 
-        public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object), inherit);
+        public sealed override object[] GetCustomAttributes(bool inherit) =>
+            RuntimeCustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object));
 
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
@@ -49,7 +53,11 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override bool IsDefined(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType);
         }
 
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]

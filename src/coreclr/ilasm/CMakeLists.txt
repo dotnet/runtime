@@ -74,6 +74,10 @@ add_executable_clr(ilasm
   ${ILASM_RESOURCES}
 )
 
+if(CLR_CMAKE_TARGET_OSX)
+  set_macos_bundle_identifier(ilasm com.microsoft.dotnet.ilasm)
+endif()
+
 set(ILASM_LINK_LIBRARIES
   utilcodestaticnohost
   mscorpe

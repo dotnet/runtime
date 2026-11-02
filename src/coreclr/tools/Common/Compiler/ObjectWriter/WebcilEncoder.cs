@@ -57,7 +57,7 @@ namespace ILCompiler.ObjectWriter
             if ((WebcilVersion)header.VersionMajor >= WebcilVersion.Version1)
             {
                 // TableBase is always written as 0 in the file, as the spec requires it to be filled
-                // in by the getWebcilPayload function at runtime.
+                // in by the patchWebcilHeader function at runtime.
                 BinaryPrimitives.WriteUInt32LittleEndian(headerBuffer.Slice(28, 4), 0); 
             }
 

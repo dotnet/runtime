@@ -177,6 +177,62 @@ namespace System.Tests
             throw new Exception("Boom!");
         }
 
+        [Fact]
+        public static void FirstCatch_ThrowFromCatch_HandledByOuterCatch()
+        {
+            // Seed the frame slot with a valid resume ID from a previous invocation.
+            ThrowFromCatch(catchCount: 1, throwFromCatch: null);
+
+            bool caught = false;
+
+            try
+            {
+                ThrowFromCatch(catchCount: 1, throwFromCatch: 0);
+            }
+            catch (InvalidOperationException)
+            {
+                caught = true;
+            }
+
+            Assert.True(caught);
+        }
+
+        [Fact]
+        public static void RepeatedCatch_ThrowFromSecondCatch_HandledByOuterCatch()
+        {
+            bool caught = false;
+
+            try
+            {
+                ThrowFromCatch(catchCount: 2, throwFromCatch: 1);
+            }
+            catch (InvalidOperationException)
+            {
+                caught = true;
+            }
+
+            Assert.True(caught);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowFromCatch(int catchCount, int? throwFromCatch)
+        {
+            for (int i = 0; i < catchCount; i++)
+            {
+                try
+                {
+                    throw new Exception();
+                }
+                catch
+                {
+                    if (i == throwFromCatch)
+                    {
+                        throw new InvalidOperationException();
+                    }
+                }
+            }
+        }
+
         private static void VerifyCallStack(
             (string CallerMemberName, string SourceFilePath, int SourceLineNumber) expectedStackFrame,
             string reportedCallStack, int skipFrames)

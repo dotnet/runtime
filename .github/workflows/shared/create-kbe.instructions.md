@@ -19,6 +19,19 @@ responsible for:
   review, and
 - formatting the final report back to the user.
 
+These shared analysis and template instructions do not grant permission to
+publish. The caller must follow the repository's
+[GitHub publication authorization rules](../../copilot-instructions.md#github-publication-authorization):
+ordinary interactive and coding sessions require explicit authorization. In an
+interactive session, advance permission covering the proposed publication is
+sufficient; do not ask again. An executing user-requested or enabled workflow
+may publish the operations its documented publication contract authorizes for
+its currently authorized actions, without another approval step unless the
+contract requires one. A repository-configured agentic workflow may publish
+only the operations authorized by its purpose and configured outputs, through
+its configured output mechanism. Without authorization, leave a draft and
+report the pending decision. Dry-run mode never publishes.
+
 <a id="shared-kbe-rules"></a>
 
 ## Shared rules
@@ -40,12 +53,28 @@ responsible for:
 ## Search for an existing KBE
 
 Search open `dotnet/runtime` issues with the `Known Build Error` label. Try
-these variations in order, scanning the first ~10 results of each. GitHub
-best-match ranking can place noisier hits above the correct one.
+these variations in order and inspect every returned candidate. Narrow overly
+broad queries instead of truncating results. GitHub best-match ranking can
+place noisier hits above the correct one.
 
-For every `search_issues` call in this flow, include `user` in the requested
-`fields`, even when the author is not otherwise needed. The integrity gateway
-uses `user.login` to recognize trusted bots before filtering search results.
+Use the lookup tools required by the caller; this shared file does not change
+its tool policy. For GitHub MCP lookups, use `search_issues` for issues and
+`search_pull_requests` for PRs. When supplying a `fields` filter, include
+`user` and `labels` alongside `number`, `title`, and `state`; otherwise retain
+the full response. The integrity gateway uses `user.login` to recognize
+trusted bots before filtering results.
+
+Preserve the complete lookup response before extracting candidate numbers or
+titles. Never pipe it through `grep`, `head`, or a projection that discards
+filtered markers, errors, author metadata, or result counts. A failed,
+malformed, incomplete, or unreadable lookup is not an empty result. Report the
+retrieval failure to the caller and do not create a KBE for that signature
+while the lookup remains inconclusive.
+These rules also apply to candidate body and comments reads. Do not switch
+retrieval paths to work around an integrity-filtered or denied read.
+When the caller provides a bounded issue-search wrapper, use that wrapper for
+every issue query and read every returned candidate through the caller's
+full-issue transport before making a duplicate decision.
 
 1. Full `[FAIL]` line.
 2. Assertion text.
@@ -112,14 +141,21 @@ If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
 `skipped: ambiguous dup #<a>/#<b>, needs human review` and stop.
 
-If a KBE-labeled search returns a `[Filtered]` marker, treat it as a likely
+If an issue search fails, or a full candidate read fails or returns a
+`[Filtered]` marker for a KBE-oriented search, treat it as a likely
 existing-KBE hit and record
 `skipped: integrity-filtered candidate, needs human review` instead of creating
 a fresh KBE.
 
-If variation 5 returns a `[Filtered]` marker, record
-`linked-tracker: integrity-filtered, needs human review` for cross-linking, but
-do not treat it as a KBE substitute.
+If a full read fails or returns a `[Filtered]` marker for a plain tracker
+candidate, stop the search and record
+`skipped: integrity-filtered tracker candidate, needs human review`. Do not
+continue to issue creation.
+
+If any other lookup returns a `[Filtered]` or `[DIFC-FILTERED]` marker, treat it
+as a possible existing candidate and record
+`skipped: integrity-filtered candidate, needs human review`. A hidden result
+does not establish whether the issue is an unlabeled tracker or a KBE.
 
 On any visible hit whose title or body references the same test class on any
 platform, record `existing-kbe #<n>` (or `linked-tracker #<n>` for variation 5
@@ -133,7 +169,8 @@ it does not end the inspection.
 The existing-KBE search above is open-only, so a `[ci-scan]` KBE already closed
 as fixed, duplicate, or stale is invisible and a recurring signature gets
 re-filed from scratch. After the open search misses, also scan recently-closed
-candidates:
+candidates, then read every returned candidate before comparing its contents or
+`closed_at`:
 
 - `is:issue is:closed label:"Known Build Error" "<assertion-or-test-name>" closed:>=<30-days-ago>`
 - `is:issue is:closed in:title "<test-name>" closed:>=<30-days-ago>` to catch a
@@ -156,8 +193,23 @@ search misses, also search recently closed KBEs with the same pair:
 Apply the closed-candidate timing and full candidate-verification rules below
 to any pair match.
 
-On a closed-candidate hit, compare the failing AzDO build's `finishTime` (read
-it from the build metadata, not the queue time) against the issue's `closed_at`:
+Read each candidate's body and comments before applying the recurrence rules.
+If a candidate is identified as a duplicate, follow only explicit duplicate
+links and read each linked issue's body and comments through
+the same permitted tools until reaching an original that is not itself a
+duplicate. Track visited issues. If a link is missing or ambiguous, the chain
+is cyclic, or any read is inconclusive, report the incomplete lookup and do
+not file.
+
+Apply the full candidate verification to the original. Use only its issue
+number, state, and `closed_at` for the timing and recurring-signature rules
+below, counting each original once. Reuse a matching open KBE rather than
+filing a recurrence against its closed duplicate. A duplicate closure does
+not establish that the failure was fixed.
+
+On a verified closed-original hit, compare the failing AzDO build's `finishTime`
+(read it from the build metadata, not the queue time) against that original's
+`closed_at`:
 
 - Closed **after** the failing build finished, or closed within the last 7 days:
   the failure is already handled or under active triage. Record
@@ -186,7 +238,7 @@ fall back to the post-close recurrence rule above.
 
 ## Search for an area-team tracker
 
-Search for a plain tracker with:
+Search for a plain tracker, then read every returned candidate:
 
 - `is:issue is:open in:title "<test-name>"`
 - `in:body "<test-file-path>"`
@@ -207,6 +259,10 @@ A plain tracker is **not** a KBE substitute. Build Analysis only matches
 <a id="search-existing-prs"></a>
 
 ## Search for existing PRs already handling the failure
+
+Use the PR search and full-PR read transports available in the caller's
+environment. Do not decide that a PR handles the failure from search metadata
+alone.
 
 ### Existing test-disable PR
 
@@ -255,10 +311,10 @@ hit, record `existing-PR #<n>`.
 
 ### Integrity-filtered PR candidate
 
-If any PR search above returns a `[Filtered]` marker for a candidate whose
-title, source symbol, or assertion slice overlaps the failing signature, do
-**not** assume no fix exists and file a fresh KBE. The filter hides a real PR
-you are not permitted to read, and it may already handle this failure. Record
+If any PR search above returns a `[Filtered]` or `[DIFC-FILTERED]` marker, do
+**not** assume no fix exists and file a fresh KBE. Do not require visible
+title, source-symbol, or assertion overlap before stopping, since filtering
+may hide those fields. The hidden PR may already handle this failure. Record
 `skipped: integrity-filtered candidate, needs human review` and stop for this
 signature. A human can confirm whether the hidden PR fixes the failure; filing a
 duplicate KBE that is immediately closed as "fixed by" the hidden PR is a

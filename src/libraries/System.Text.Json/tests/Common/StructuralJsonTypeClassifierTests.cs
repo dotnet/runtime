@@ -196,6 +196,103 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData("42", 42)]
+        [InlineData("\"hello\"", "hello")]
+        [InlineData("\"42\"", "42")]
+        public async Task StructuralClassifier_StrictNumberHandlingOverridesWebDefaults(string json, object expectedValue)
+        {
+            JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
+            {
+                TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
+            };
+
+            StrictNumericStringUnion? value = await Serializer.DeserializeWrapper<StrictNumericStringUnion>(json, options);
+            Assert.Equal(expectedValue, GetUnionValue(value));
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonTestHelper.GetUnionCaseNumberHandlingPrecedenceTestData), MemberType = typeof(JsonTestHelper))]
+        public async Task StructuralClassifier_NumberHandlingHonorsMetadataOverrides(
+            JsonNumberHandling globalHandling, JsonNumberHandling? unionHandling, JsonNumberHandling? caseHandling, JsonNumberHandling expectedHandling)
+        {
+            foreach ((Type unionType, Type numberType) in new[] { (typeof(NumericStringUnion), typeof(int)), (typeof(NullableNumericStringUnion), typeof(int?)) })
+            {
+                JsonSerializerOptions options = Serializer.CreateOptions(
+                    configure: options => options.NumberHandling = globalHandling,
+                    modifier: typeInfo =>
+                    {
+                        if (typeInfo.Type == unionType)
+                        {
+                            typeInfo.NumberHandling = unionHandling;
+                        }
+                        else if (typeInfo.Type == numberType)
+                        {
+                            typeInfo.NumberHandling = caseHandling;
+                        }
+                    });
+
+                if ((expectedHandling & JsonNumberHandling.AllowReadingFromString) != 0)
+                {
+                    await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("\"42\"", unionType, options));
+                }
+                else
+                {
+                    object value = await Serializer.DeserializeWrapper("\"42\"", unionType, options);
+                    Assert.Equal("42", ((IUnion)value).Value);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(JsonNumberHandling.AllowReadingFromString, JsonNumberHandling.Strict)]
+        [InlineData(JsonNumberHandling.Strict, JsonNumberHandling.AllowReadingFromString)]
+        public async Task StructuralClassifier_NullableCasePreservesElementOverride(JsonNumberHandling globalHandling, JsonNumberHandling elementHandling)
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(
+                configure: options => options.NumberHandling = globalHandling,
+                modifier: typeInfo =>
+                {
+                    if (typeInfo.Type == typeof(int))
+                    {
+                        typeInfo.NumberHandling = elementHandling;
+                    }
+                });
+
+            if ((elementHandling & JsonNumberHandling.AllowReadingFromString) != 0)
+            {
+                await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<NullableNumericStringUnion>("\"42\"", options));
+            }
+            else
+            {
+                NullableNumericStringUnion? value = await Serializer.DeserializeWrapper<NullableNumericStringUnion>("\"42\"", options);
+                Assert.Equal("42", GetUnionValue(value));
+            }
+        }
+
+        [Theory]
+        [InlineData("42", 42)]
+        [InlineData("\"42\"", "42")]
+        [InlineData("\"hello\"", "hello")]
+        public async Task StructuralClassifier_UsesSuppliedTypeInfoNumberHandling(string json, object expectedValue)
+        {
+            foreach (Type unionType in new[] { typeof(NumericStringUnion), typeof(NullableNumericStringUnion) })
+            {
+                JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
+                {
+                    TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
+                };
+
+                JsonTypeInfo typeInfo = Serializer.GetTypeInfo(unionType, options, mutable: true);
+                Assert.False(typeInfo.IsReadOnly);
+                typeInfo.NumberHandling = JsonNumberHandling.Strict;
+
+                object value = await Serializer.DeserializeWrapper(json, typeInfo);
+                Assert.Equal(expectedValue, ((IUnion)value).Value);
+                Assert.True(typeInfo.IsReadOnly);
+            }
+        }
+
+        [Theory]
         [InlineData(typeof(PolymorphicOrStringUnion), nameof(PolyAnimal))]
         [InlineData(typeof(PolymorphicCollectionOrStringUnion), nameof(PolymorphicIntList))]
         [InlineData(typeof(CaseSensitiveDiscriminatorUnion), nameof(LowercaseDiscriminatorBase))]
@@ -663,6 +760,13 @@ namespace System.Text.Json.Serialization.Tests
 
         [JsonUnion(TypeClassifier = typeof(JsonUnionTypeStructuralClassifier))]
         public union NumericStringUnion(int, string);
+
+        [JsonNumberHandling(JsonNumberHandling.Strict)]
+        [JsonUnion(TypeClassifier = typeof(JsonUnionTypeStructuralClassifier))]
+        public union StrictNumericStringUnion(int, string);
+
+        [JsonUnion(TypeClassifier = typeof(JsonUnionTypeStructuralClassifier))]
+        public union NullableNumericStringUnion(int?, string);
 
         [JsonUnion(TypeClassifier = typeof(JsonUnionTypeStructuralClassifier))]
         public union StringUnion(Guid, string);

@@ -9,9 +9,7 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.ExceptionServices;
-using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
-using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,8 +31,6 @@ namespace System.Net.Mail
 
         private readonly ICredentialsByHost? _credentials;
         private string[]? _extensions;
-        private bool _enableSsl;
-        private X509CertificateCollection? _clientCertificates;
 
         internal SmtpConnection(SmtpTransport parent, SmtpClient client, ICredentialsByHost? credentials, ISmtpAuthenticationModule[] authenticationModules)
         {
@@ -54,29 +50,7 @@ namespace System.Net.Mail
 
         internal SmtpReplyReaderFactory? Reader => _responseReader;
 
-        internal bool EnableSsl
-        {
-            get
-            {
-                return _enableSsl;
-            }
-            set
-            {
-                _enableSsl = value;
-            }
-        }
-
-        internal X509CertificateCollection? ClientCertificates
-        {
-            get
-            {
-                return _clientCertificates;
-            }
-            set
-            {
-                _clientCertificates = value;
-            }
-        }
+        internal SslClientAuthenticationOptions? SslOptions { get; set; }
 
         internal void InitializeConnection(string host, int port)
         {
@@ -144,7 +118,7 @@ namespace System.Net.Mail
             }
 
             // Handle SSL/TLS
-            if (_enableSsl)
+            if (SslOptions is SslClientAuthenticationOptions sslOptions)
             {
                 if (!_serverSupportsStartTls)
                 {
@@ -157,30 +131,19 @@ namespace System.Net.Mail
 
                 await StartTlsCommand.SendAsync<TIOAdapter>(this, cancellationToken).ConfigureAwait(false);
 
-#pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
-                SslStream sslStream = new SslStream(_stream!, false, ServicePointManager.ServerCertificateValidationCallback);
+                SslStream sslStream = new SslStream(_stream!);
+                _stream = sslStream;
                 if (isAsync)
                 {
                     // If we are using async, we need to use the async version of AuthenticateAsClientAsync
-                    await sslStream.AuthenticateAsClientAsync(
-                        new SslClientAuthenticationOptions
-                        {
-                            TargetHost = host,
-                            ClientCertificates = _clientCertificates,
-                            EnabledSslProtocols = (SslProtocols)ServicePointManager.SecurityProtocol, // enums use same values
-                            CertificateRevocationCheckMode = ServicePointManager.CheckCertificateRevocationList ?
-                                X509RevocationMode.Online : X509RevocationMode.NoCheck,
-                        },
-                        cancellationToken).ConfigureAwait(false);
+                    await sslStream.AuthenticateAsClientAsync(sslOptions, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
                     // Synchronous version
-                    sslStream.AuthenticateAsClient(host, _clientCertificates, (SslProtocols)ServicePointManager.SecurityProtocol, ServicePointManager.CheckCertificateRevocationList);
+                    sslStream.AuthenticateAsClient(sslOptions);
                 }
-#pragma warning restore SYSLIB0014 // ServicePointManager is obsolete
 
-                _stream = sslStream;
                 _responseReader = new SmtpReplyReaderFactory(_stream);
 
                 // According to RFC 3207: The client SHOULD send an EHLO command

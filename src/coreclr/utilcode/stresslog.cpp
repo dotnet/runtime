@@ -1,20 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*************************************************************************************/
-/*                                   StressLog.cpp                                   */
-/*************************************************************************************/
-
-/*************************************************************************************/
-
 #include "stdafx.h"			// precompiled headers
 
 #include "switches.h"
 #include "stresslog.h"
 #include "clrhost.h"
 #include "ex.h"
-#define DONOT_DEFINE_ETW_CALLBACK
+#ifndef SELF_NO_HOST
 #include "eventtracebase.h"
+#endif // !SELF_NO_HOST
 #include "minipal/time.h"
 
  #if !defined(STRESS_LOG_READONLY)
@@ -389,7 +384,7 @@ void StressLog::Terminate(BOOL fProcessDetach) {
                 // threads are out of logMsg.  In practice, since they can no longer enter logMsg
                 // and there are no blocking operations in logMsg, simply sleeping will ensure
                 // that everyone gets out.
-        ClrSleepEx(2, FALSE);
+        minipal_sleep(2);
         lockh.Acquire();
     }
 
@@ -710,26 +705,6 @@ BOOL StressLog::ReserveStressLogChunks (unsigned chunksToReserve)
     return msgs->chunkListLength >= (LONG)chunksToReserve;
 }
 
-void (*FSwitchToSOTolerant)();
-void (*FSwitchToSOIntolerant)();
-void TrackSO(BOOL tolerance)
-{
-    if (tolerance)
-    {
-        if (FSwitchToSOTolerant)
-        {
-            FSwitchToSOTolerant();
-        }
-    }
-    else
-    {
-        if (FSwitchToSOIntolerant)
-        {
-            FSwitchToSOIntolerant();
-        }
-    }
-}
-
 /*********************************************************************************/
 /* fetch a buffer that can be used to write a stress message, it is thread safe */
 FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const char* format, va_list Args)
@@ -999,4 +974,3 @@ void __cdecl ThreadStressLog::operator delete(void* p)
 #endif //MEMORY_MAPPED_STRESSLOG
 
 #endif // STRESS_LOG
-

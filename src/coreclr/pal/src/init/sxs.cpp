@@ -15,7 +15,6 @@
 #include "pal/module.h"
 #include "pal/process.h"
 #include "pal/seh.hpp"
-#include "pal/signal.hpp"
 
 using namespace CorUnix;
 
@@ -88,9 +87,6 @@ AllocatePalThread(CPalThread **ppThread)
     // thread handle, since we're not returning it to anyone who will
     // possibly release it.
     (void)g_pObjectManager->RevokeHandle(pThread, hThread);
-
-    // Unmask the activation signal so that GC can suspend this thread
-    UnmaskActivationSignal();
 
 exit:
     *ppThread = pThread;

@@ -687,8 +687,8 @@ namespace System.Net
 
             object asyncState;
 
-            // See if it's an IP Address.
-            if (NameResolutionPal.SupportsGetNameInfo && IPAddress.TryParse(hostName, out IPAddress? ipAddress))
+            // See if it's an IP Address. Returning the parsed IP doesn't need a reverse lookup, so it doesn't require getnameinfo support.
+            if ((justReturnParsedIp || NameResolutionPal.SupportsGetNameInfo) && IPAddress.TryParse(hostName, out IPAddress? ipAddress))
             {
                 if (throwOnIIPAny && (ipAddress.Equals(IPAddress.Any) || ipAddress.Equals(IPAddress.IPv6Any)))
                 {

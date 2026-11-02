@@ -256,6 +256,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
     const jitQueue : TrampolineInfo[] = [];
     let methodPtr = <MonoMethod><any>0;
     while ((methodPtr = <any>cwraps.mono_jiterp_tlqueue_next(JitQueue.InterpEntry)) != 0) {
+        methodPtr = methodPtr as any >>> 0 as any;
         const info = infoTable[<any>methodPtr];
         if (!info) {
             mono_log_info(`Failed to find corresponding info for method ptr ${methodPtr} from jit queue!`);

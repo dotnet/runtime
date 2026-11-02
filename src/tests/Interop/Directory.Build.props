@@ -9,4 +9,8 @@
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
     <InteropCommonDir>$(MSBuildThisFileDirectory)common/</InteropCommonDir>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(IgnoreCoreCLRTestLibraryDependency)' != 'true'">
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

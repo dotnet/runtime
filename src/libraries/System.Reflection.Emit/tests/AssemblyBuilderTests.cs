@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -249,6 +250,83 @@ namespace System.Reflection.Emit.Tests
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
             ConstructorInfo constructor = typeof(IntAllAttribute).GetConstructor(new Type[] { typeof(int) });
             AssertExtensions.Throws<ArgumentNullException>("binaryAttribute", () => assembly.SetCustomAttribute(constructor, null));
+        }
+
+        [Fact]
+        public void SetCustomAttribute_ConstructorInfo_ByteArray_DuplicateNamedField_LastAssignmentWins()
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            ConstructorInfo constructor = typeof(IntAllAttribute).GetConstructor(new Type[] { typeof(int) });
+
+            // Two named "Field _i" entries with different values. C# cannot express a duplicate named
+            // attribute argument (CS0643 at compile time), so this can only be built as a raw blob.
+            byte[] blob = CustomAttributeBlob.Concat(
+                CustomAttributeBlob.Prolog,
+                CustomAttributeBlob.I4(1),
+                CustomAttributeBlob.U2(2),
+                new byte[] { CustomAttributeBlob.TagField, CustomAttributeBlob.TagInt32 }, CustomAttributeBlob.PackedString("_i"), CustomAttributeBlob.I4(10),
+                new byte[] { CustomAttributeBlob.TagField, CustomAttributeBlob.TagInt32 }, CustomAttributeBlob.PackedString("_i"), CustomAttributeBlob.I4(20));
+            assembly.SetCustomAttribute(constructor, blob);
+
+            IntAllAttribute attribute = (IntAllAttribute)assembly.GetCustomAttributes().Single();
+            Assert.Equal(20, attribute._i);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(127)]
+        [InlineData(128)]
+        [InlineData(16383)]
+        [InlineData(16384)]
+        public void SetCustomAttribute_PackedStringBoundaries(int length)
+        {
+            string expected = new string('x', length);
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            assembly.SetCustomAttribute(typeof(ObjectAllAttribute).GetConstructor(new[] { typeof(object) }),
+                CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new[] { CustomAttributeBlob.TagString },
+                    CustomAttributeBlob.PackedString(expected), CustomAttributeBlob.U2(0)));
+
+            ObjectAllAttribute attribute = Assert.IsType<ObjectAllAttribute>(assembly.GetCustomAttributes().Single());
+            Assert.Equal(expected, attribute._o);
+        }
+
+        [Theory]
+        [InlineData(true, 0x80000000L)]
+        [InlineData(true, 0x7fc01234L)]
+        [InlineData(true, 0x7f800000L)]
+        [InlineData(false, long.MinValue)]
+        [InlineData(false, 0x7ff8000000001234L)]
+        [InlineData(false, 0x7ff0000000000000L)]
+        public void SetCustomAttribute_FloatingPointBits(bool single, long bits)
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            byte tag = single ? CustomAttributeBlob.TagFloat : CustomAttributeBlob.TagDouble;
+            byte[] value = single ? CustomAttributeBlob.I4(unchecked((int)bits)) : CustomAttributeBlob.U8(unchecked((ulong)bits));
+            assembly.SetCustomAttribute(typeof(ObjectAllAttribute).GetConstructor(new[] { typeof(object) }),
+                CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog, new[] { tag }, value, CustomAttributeBlob.U2(0)));
+
+            object actual = Assert.IsType<ObjectAllAttribute>(assembly.GetCustomAttributes().Single())._o;
+            if (single)
+            {
+                Assert.Equal(unchecked((int)bits), BitConverter.SingleToInt32Bits(Assert.IsType<float>(actual)));
+            }
+            else
+            {
+                Assert.Equal(bits, BitConverter.DoubleToInt64Bits(Assert.IsType<double>(actual)));
+            }
+        }
+
+        [Fact]
+        public void SetCustomAttribute_InvalidUtf8String()
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            assembly.SetCustomAttribute(typeof(ObjectAllAttribute).GetConstructor(new[] { typeof(object) }),
+                CustomAttributeBlob.Concat(CustomAttributeBlob.Prolog,
+                    new[] { CustomAttributeBlob.TagString, (byte)1, (byte)0xff },
+                    CustomAttributeBlob.U2(0)));
+
+            ObjectAllAttribute attribute = Assert.IsType<ObjectAllAttribute>(assembly.GetCustomAttributes().Single());
+            Assert.Equal("\ufffd", attribute._o);
         }
 
         [Theory]

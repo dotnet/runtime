@@ -807,6 +807,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task NonDisposedSocket_SafeHandlesCollected(bool clientAsync)
         {
             TimeSpan timeout = TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout);
