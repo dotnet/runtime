@@ -445,10 +445,7 @@ namespace System.Data.Common
             Verify(b);
 #endif
             List<string> newlist = new List<string>(a.Length + b.Length);
-            for (int i = 0; i < a.Length; ++i)
-            {
-                newlist.Add(a[i]);
-            }
+            newlist.AddRange(a);
             for (int i = 0; i < b.Length; ++i)
             { // find duplicates
                 if (0 > Array.BinarySearch(a, b[i], StringComparer.Ordinal))

@@ -50,11 +50,7 @@ namespace System.Data
             if (copyColumns)
             {
                 // Need to make a copy of all columns
-                _columns = new DataColumn[columns.Length];
-                for (int i = 0; i < columns.Length; i++)
-                {
-                    _columns[i] = columns[i];
-                }
+                _columns = new ReadOnlySpan<DataColumn>(columns).ToArray();
             }
             else
             {
