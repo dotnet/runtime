@@ -478,7 +478,7 @@ bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cns
 // GetComparisonBase: Match a local, optionally with an unchecked constant offset.
 // First-comparison effects are retained separately by the caller.
 //
-static bool GetComparisonBase(GenTree* value, GenTree** base, uint64_t* offset)
+static bool GetComparisonBase(GenTree* value, GenTree** base, target_size_t* offset)
 {
     *offset       = 0;
     GenTree* node = value->gtEffectiveVal();
@@ -490,7 +490,7 @@ static bool GetComparisonBase(GenTree* value, GenTree** base, uint64_t* offset)
         {
             return false;
         }
-        *offset = static_cast<uint64_t>(constant->AsIntCon()->IconValue());
+        *offset = static_cast<target_size_t>(constant->AsIntCon()->IconValue());
         if (node->OperIs(GT_SUB))
         {
             *offset = 0 - *offset;
@@ -501,7 +501,7 @@ static bool GetComparisonBase(GenTree* value, GenTree** base, uint64_t* offset)
     return node->OperIs(GT_LCL_VAR, GT_LCL_FLD) && node->TypeIs(value->TypeGet());
 }
 
-static GenTreeIntCon* NewRangeConstant(Compiler* comp, uint64_t bits, var_types type)
+static GenTreeIntCon* NewRangeConstant(Compiler* comp, target_size_t bits, var_types type)
 {
     ssize_t value = type == TYP_INT ? static_cast<int32_t>(bits) : static_cast<ssize_t>(bits);
     return comp->gtNewIconNode(value, type);
@@ -526,22 +526,22 @@ static GenTree* FoldComparisons(
         return nullptr;
     }
 
-    GenTree* base1;
-    uint64_t offset1;
+    GenTree*      base1;
+    target_size_t offset1;
     if (!GetComparisonBase(value1, &base1, &offset1))
     {
         return nullptr;
     }
 
-    uint64_t mask      = value1->TypeIs(TYP_INT) ? UINT32_MAX : UINT64_MAX;
+    target_size_t mask = value1->TypeIs(TYP_INT) ? UINT32_MAX : static_cast<target_size_t>(-1);
     op1                = cmp1IsReversed ? GenTree::ReverseRelop(op1) : op1;
     ModularRange first = ModularRange::FromComparison(op1, bound1->IconValue(), cmp1->IsUnsigned(), mask, offset1);
     ModularRange second;
     GenTree*     symbolicBound = nullptr;
     if (IsConstantRangeTest(cmp2, &value2, &bound2, &op2))
     {
-        GenTree* base2;
-        uint64_t offset2;
+        GenTree*      base2;
+        target_size_t offset2;
         if (!value2->TypeIs(value1->TypeGet()) || bound2->IsIconHandle() || ((value2->gtFlags & GTF_OBS_EFFECT) != 0) ||
             !GetComparisonBase(value2, &base2, &offset2) || !GenTree::Compare(base1, base2))
         {
@@ -600,11 +600,11 @@ static GenTree* FoldComparisons(
         return cmp1;
     }
 
-    var_types  type = value1->TypeGet();
-    GenTree*   value;
-    uint64_t   constant;
-    genTreeOps oper;
-    bool       isUnsigned = false;
+    var_types     type = value1->TypeGet();
+    GenTree*      value;
+    target_size_t constant;
+    genTreeOps    oper;
+    bool          isUnsigned = false;
     if (range.IsEmpty() || range.IsFull(mask))
     {
         // Only the first expression is guaranteed to execute in the original chain.
@@ -612,10 +612,10 @@ static GenTree* FoldComparisons(
         return comp->gtWrapWithSideEffects(comp->gtNewIconNode(result ? 1 : 0), value1, GTF_OBS_EFFECT);
     }
 
-    uint64_t lower   = range.Lower();
-    uint64_t upper   = range.Upper();
-    uint64_t signBit = (mask >> 1) + 1;
-    value            = base1;
+    target_size_t lower   = range.Lower();
+    target_size_t upper   = range.Upper();
+    target_size_t signBit = (mask >> 1) + 1;
+    value                 = base1;
     if (lower == upper)
     {
         oper     = GT_EQ;

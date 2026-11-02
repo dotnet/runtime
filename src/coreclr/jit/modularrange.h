@@ -14,13 +14,13 @@ class ModularRange
     // signed type. Its payload is an opaque identity, not an integer value.
     struct Bound
     {
-        uint64_t value;
-        bool     isSymbolic  = false;
-        bool     isExclusive = false;
+        target_size_t value;
+        bool          isSymbolic  = false;
+        bool          isExclusive = false;
     };
-    uint64_t m_lower = 0;
-    Bound    m_upper = {0};
-    bool     m_empty = true;
+    target_size_t m_lower = 0;
+    Bound         m_upper = {0};
+    bool          m_empty = true;
 
 public:
     enum class Intersection
@@ -32,7 +32,7 @@ public:
     };
 
     ModularRange() = default;
-    ModularRange(uint64_t lower, uint64_t upper)
+    ModularRange(target_size_t lower, target_size_t upper)
         : m_lower(lower)
         , m_upper{upper}
         , m_empty(false)
@@ -43,32 +43,32 @@ public:
     {
         return m_empty;
     }
-    uint64_t Lower() const
+    target_size_t Lower() const
     {
         assert(!m_empty);
         return m_lower;
     }
-    uint64_t Upper() const
+    target_size_t Upper() const
     {
         assert(!m_empty);
         assert(!HasSymbolicUpper());
         return m_upper.value;
     }
-    uint64_t Width(uint64_t mask) const
+    target_size_t Width(target_size_t mask) const
     {
         assert(!m_empty);
         assert(!HasSymbolicUpper());
         return (m_upper.value - m_lower) & mask;
     }
-    bool IsFull(uint64_t mask) const
+    bool IsFull(target_size_t mask) const
     {
         return !m_empty && !HasSymbolicUpper() && Width(mask) == mask;
     }
-    bool Contains(uint64_t value, uint64_t mask) const
+    bool Contains(target_size_t value, target_size_t mask) const
     {
         return !m_empty && (((value - m_lower) & mask) <= Width(mask));
     }
-    bool Equals(const ModularRange& other, uint64_t mask) const
+    bool Equals(const ModularRange& other, target_size_t mask) const
     {
         return m_empty ? other.m_empty
                        : !other.m_empty && ((m_lower == other.m_lower && m_upper.value == other.m_upper.value &&
@@ -81,7 +81,7 @@ public:
     {
         return m_upper.isSymbolic;
     }
-    uint64_t UpperIdentity() const
+    target_size_t UpperIdentity() const
     {
         assert(HasSymbolicUpper());
         return m_upper.value;
@@ -93,7 +93,10 @@ public:
 
     // Describe X < bound or X <= bound, where bound is a nonnegative symbolic
     // value. Retain strictness instead of forming bound - 1: bound can be zero.
-    static ModularRange FromNonNegativeBound(genTreeOps oper, uint64_t identity, bool isUnsigned, uint64_t mask)
+    static ModularRange FromNonNegativeBound(genTreeOps    oper,
+                                             target_size_t identity,
+                                             bool          isUnsigned,
+                                             target_size_t mask)
     {
         assert(oper == GT_LT || oper == GT_LE);
         assert(mask != 0 && (mask & (mask + 1)) == 0);
@@ -105,13 +108,13 @@ public:
     // Describe all X satisfying (X + offset) oper bound. Signed ordering is
     // unsigned ordering rotated by the sign bit; all arithmetic here wraps.
     static ModularRange FromComparison(
-        genTreeOps oper, uint64_t bound, bool isUnsigned, uint64_t mask, uint64_t offset = 0)
+        genTreeOps oper, target_size_t bound, bool isUnsigned, target_size_t mask, target_size_t offset = 0)
     {
         assert(mask != 0 && (mask & (mask + 1)) == 0);
-        uint64_t bias  = isUnsigned ? 0 : (mask >> 1) + 1;
-        uint64_t limit = (bound + bias) & mask;
-        uint64_t lower = 0;
-        uint64_t upper = mask;
+        target_size_t bias  = isUnsigned ? 0 : (mask >> 1) + 1;
+        target_size_t limit = (bound + bias) & mask;
+        target_size_t lower = 0;
+        target_size_t upper = mask;
         switch (oper)
         {
             case GT_LT:
@@ -146,7 +149,7 @@ public:
 
     // Rotate the first range to [0, width]. The second range then has either
     // one linear piece or two. Decline intersections with two disjoint pieces.
-    Intersection Intersect(const ModularRange& other, uint64_t mask, ModularRange* result) const
+    Intersection Intersect(const ModularRange& other, target_size_t mask, ModularRange* result) const
     {
         if (m_empty || other.m_empty)
         {
@@ -181,7 +184,7 @@ public:
 
             const ModularRange& symbolic = HasSymbolicUpper() ? *this : other;
             const ModularRange& constant = HasSymbolicUpper() ? other : *this;
-            uint64_t            signBit  = (mask >> 1) + 1;
+            target_size_t       signBit  = (mask >> 1) + 1;
             if (constant.m_lower == 0 && constant.Upper() == signBit - 1)
             {
                 // [0, MAX] intersect [MIN, length) is [0, length).
@@ -198,9 +201,9 @@ public:
             return Intersection::Unknown;
         }
 
-        uint64_t width = Width(mask);
-        uint64_t lower = (other.m_lower - m_lower) & mask;
-        uint64_t upper = (other.m_upper.value - m_lower) & mask;
+        target_size_t width = Width(mask);
+        target_size_t lower = (other.m_lower - m_lower) & mask;
+        target_size_t upper = (other.m_upper.value - m_lower) & mask;
         if (lower <= upper)
         {
             upper = std::min(upper, width);

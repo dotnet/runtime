@@ -187,7 +187,7 @@ RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, target_ssize_t bound1, genTree
         return RelopResult::Unknown;
     }
 
-    uint64_t mask = TARGET_POINTER_SIZE == 4 ? UINT32_MAX : UINT64_MAX;
+    target_size_t mask = static_cast<target_size_t>(-1);
     // Use singleton ranges for the equality/exclusion implications of NE below.
     ModularRange first  = ModularRange::FromComparison(oper1 == GT_NE ? GT_EQ : oper1, bound1, false, mask);
     ModularRange second = ModularRange::FromComparison(oper2 == GT_NE ? GT_EQ : oper2, bound2, false, mask);
