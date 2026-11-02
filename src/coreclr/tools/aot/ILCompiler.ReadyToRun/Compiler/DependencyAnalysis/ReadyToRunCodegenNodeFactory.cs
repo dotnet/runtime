@@ -624,6 +624,7 @@ namespace ILCompiler.DependencyAnalysis
         public ImportSectionNode StringImports;
 
         public ImportSectionNode HelperImports;
+        public ImportSectionNode DelegateCtorImports;
 
         public ImportSectionNode PrecodeImports;
 
@@ -1306,6 +1307,15 @@ namespace ILCompiler.DependencyAnalysis
                 emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(HelperImports);
 
+            DelegateCtorImports = new ImportSectionNode(
+                "DelegateCtorImports",
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.PCode,
+                (byte)Target.PointerSize,
+                emitPrecode: false,
+                emitGCRefMap: true);
+            ImportSectionsTable.AddEmbeddedObject(DelegateCtorImports);
+
             PrecodeImports = new ImportSectionNode(
                 "PrecodeImports",
                 ReadyToRunImportSectionType.Unknown,
@@ -1330,6 +1340,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(MethodImports, "Method imports are always generated");
             graph.AddRoot(DispatchImports, "Dispatch imports are always generated");
             graph.AddRoot(HelperImports, "Helper imports are always generated");
+            graph.AddRoot(DelegateCtorImports, "Delegate constructor imports are always generated");
             graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
             graph.AddRoot(ILBodyPrecodeImports, "IL body precode imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");

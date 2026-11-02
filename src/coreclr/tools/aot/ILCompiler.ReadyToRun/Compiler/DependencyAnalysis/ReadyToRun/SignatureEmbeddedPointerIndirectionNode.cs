@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             dataBuilder.RequireInitialPointerAlignment();
             int delta = _import.Table.EmitGCRefMap && !relocsOnly
-                ? -((MethodFixupSignature)Target).GetGCRefMap(factory).Length
+                ? -((GCRefMapSignature)Target).GetGCRefMap(factory).Length
                 : 0;
             dataBuilder.EmitReloc(Target, RelocType.IMAGE_REL_BASED_ADDR32NB, delta);
         }
