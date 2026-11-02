@@ -6657,10 +6657,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
 
-            // Only x86 has optional extended registers; other platforms always return the full size.
-            *pSize = hasExtendedRegisters == Interop.BOOL.FALSE
-                ? ctx.SizeWithoutExtendedRegisters
-                : ctx.Size;
+            ctx.RawContextFlags = hasExtendedRegisters == Interop.BOOL.FALSE ? ctx.FullContextFlags : ctx.AllContextFlags;
+            *pSize = ctx.GetSize();
         }
         catch (System.Exception ex)
         {
@@ -6694,16 +6692,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (contextBuffer.contextSize < ctx.Size)
                 throw new ArgumentException("Context buffer too small", nameof(contextBuffer));
 
-            if (ctx.ExtendedRegistersFlag == 0)
-            {
-                *pResult = Interop.BOOL.FALSE;
-            }
-            else
-            {
-                ctx.FillFromBuffer(new Span<byte>(contextBuffer.pContextBytes, (int)ctx.Size));
-                bool hasExtended = (ctx.RawContextFlags & ctx.ExtendedRegistersFlag) == ctx.ExtendedRegistersFlag;
-                *pResult = hasExtended ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-            }
+            ctx.FillFromBuffer(new Span<byte>(contextBuffer.pContextBytes, (int)ctx.Size));
+            uint size = ctx.GetSize();
+            ctx.RawContextFlags = 0;
+            *pResult = size > ctx.GetSize() ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
@@ -6766,33 +6758,26 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
-        IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
 #if DEBUG
+        IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
         // Capture the untouched destination image so the legacy cross-check below can
         // replay the same copy from an identical starting state.
-        byte[]? originalDst = (destinationContext.pContextBytes is not null && destinationContext.contextSize >= ctx.Size)
-            ? new ReadOnlySpan<byte>(destinationContext.pContextBytes, (int)ctx.Size).ToArray()
+        byte[]? originalDst = (destinationContext.pContextBytes is not null && destinationContext.contextSize >= ctx.GetSize())
+            ? new ReadOnlySpan<byte>(destinationContext.pContextBytes, (int)Math.Min(destinationContext.contextSize, ctx.Size)).ToArray()
             : null;
 #endif
         try
         {
-            if (destinationContext.pContextBytes is null || sourceContext.pContextBytes is null)
-                throw new ArgumentNullException(destinationContext.pContextBytes is null ? nameof(destinationContext) : nameof(sourceContext));
-
-            if (destinationContext.contextSize < ctx.Size || sourceContext.contextSize < ctx.Size)
-                throw new ArgumentException("Context buffer too small");
-
-            Span<byte> dst = new Span<byte>(destinationContext.pContextBytes, (int)ctx.Size);
-            Span<byte> src = new Span<byte>(sourceContext.pContextBytes, (int)ctx.Size);
-
-            IPlatformAgnosticContext dstCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
-            dstCtx.FillFromBuffer(dst);
-            IPlatformAgnosticContext srcCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
-            srcCtx.FillFromBuffer(src);
-
             if (copyMode != ContextCopyMode.UseExplicitFlags && flags != 0)
                 throw new ArgumentException("Flags are only valid when explicit context flags are requested.", nameof(flags));
 
+            if (sourceContext.pContextBytes is null || destinationContext.pContextBytes is null)
+                throw new ArgumentNullException(sourceContext.pContextBytes is null ? nameof(sourceContext) : nameof(destinationContext));
+
+            IPlatformAgnosticContext srcCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            srcCtx.FillFromBuffer(new Span<byte>(sourceContext.pContextBytes, (int)Math.Min(sourceContext.contextSize, srcCtx.Size)));
+            IPlatformAgnosticContext dstCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            dstCtx.FillFromBuffer(new Span<byte>(destinationContext.pContextBytes, (int)Math.Min(destinationContext.contextSize, dstCtx.Size)));
             switch (copyMode)
             {
                 case ContextCopyMode.PreserveDestinationFlags:
@@ -6807,25 +6792,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     throw new ArgumentException("Invalid context copy mode.", nameof(copyMode));
             }
 
-            uint dstFlags = dstCtx.RawContextFlags;
-            uint srcFlags = srcCtx.RawContextFlags;
+            if (sourceContext.contextSize < srcCtx.GetSize() || destinationContext.contextSize < dstCtx.GetSize())
+                throw new ArgumentException("Context buffer too small");
 
-            // Integer/control/segment registers copy by name; wide floating-point/debug/
-            // extended state copies as a raw byte span. A group is copied only when its flag
-            // is set in both the source and destination contexts.
-            foreach ((uint flag, string name) in dstCtx.GetScalarRegisters())
-            {
-                if ((dstFlags & srcFlags & flag) == flag && srcCtx.TryReadRegister(name, out TargetNUInt value))
-                    dstCtx.TrySetRegister(name, value);
-            }
-
-            dstCtx.GetBytes().AsSpan(0, (int)ctx.Size).CopyTo(dst);
-
-            foreach ((uint flag, int start, int end) in dstCtx.GetWideSpans())
-            {
-                if ((dstFlags & srcFlags & flag) == flag)
-                    src.Slice(start, end - start).CopyTo(dst.Slice(start));
-            }
+            dstCtx.CopyContext(srcCtx);
+            int destinationSize = (int)Math.Min(destinationContext.contextSize, dstCtx.Size);
+            dstCtx.GetBytes().AsSpan(0, destinationSize).CopyTo(new Span<byte>(destinationContext.pContextBytes, destinationSize));
         }
         catch (System.Exception ex)
         {
@@ -6833,19 +6805,19 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 #if DEBUG
         if (_legacy is not null && originalDst is not null &&
-            sourceContext.pContextBytes is not null && sourceContext.contextSize >= ctx.Size)
+            sourceContext.pContextBytes is not null && sourceContext.contextSize >= ctx.GetSize())
         {
             byte[] scratchDst = (byte[])originalDst.Clone();
-            byte[] scratchSrc = new ReadOnlySpan<byte>(sourceContext.pContextBytes, (int)ctx.Size).ToArray();
+            byte[] scratchSrc = new ReadOnlySpan<byte>(sourceContext.pContextBytes, (int)Math.Min(sourceContext.contextSize, ctx.Size)).ToArray();
             fixed (byte* pScratchDst = scratchDst)
             fixed (byte* pScratchSrc = scratchSrc)
             {
-                ContextBuffer scratchDestination = new() { pContextBytes = pScratchDst, contextSize = ctx.Size };
-                ContextBuffer scratchSource = new() { pContextBytes = pScratchSrc, contextSize = ctx.Size };
+                ContextBuffer scratchDestination = new() { pContextBytes = pScratchDst, contextSize = (uint)scratchDst.Length };
+                ContextBuffer scratchSource = new() { pContextBytes = pScratchSrc, contextSize = (uint)scratchSrc.Length };
                 int hrLocal = _legacy.CopyContext(scratchDestination, scratchSource, copyMode, flags);
                 Debug.ValidateHResult(hr, hrLocal);
                 if (hr == HResults.S_OK)
-                    Debug.Assert(new ReadOnlySpan<byte>(destinationContext.pContextBytes, (int)ctx.Size).SequenceEqual(scratchDst.AsSpan(0, (int)ctx.Size)),
+                    Debug.Assert(new ReadOnlySpan<byte>(destinationContext.pContextBytes, scratchDst.Length).SequenceEqual(scratchDst),
                                  "cDAC and DAC produced different copied contexts");
             }
         }

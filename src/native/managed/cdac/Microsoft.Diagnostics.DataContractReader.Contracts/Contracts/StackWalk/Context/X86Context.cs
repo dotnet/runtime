@@ -40,9 +40,9 @@ public struct X86Context : IPlatformContext
 
     public readonly uint Size => 0x2cc;
 
-    public readonly uint SizeWithoutExtendedRegisters => 0xcc;
-
-    public readonly uint ExtendedRegistersFlag => (uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS;
+    public readonly uint GetSize() => (ContextFlags & (uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS
+        ? Size
+        : (uint)Marshal.OffsetOf<X86Context>(nameof(ExtendedRegisters));
 
     public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
 
@@ -232,43 +232,53 @@ public struct X86Context : IPlatformContext
         uint floatStackTop = 7 - rawTop;
         if ((uint)logicalIndex > floatStackTop)
             return false;
-        uint physIdx = (rawTop + (floatStackTop - (uint)logicalIndex)) & 0x7;
-        offset = (int)Marshal.OffsetOf<X86Context>(nameof(ST0)) + ((int)physIdx * Float80Size);
+        // FNSAVE stores logical ST(0), ST(1), ... rather than physical register numbers.
+        uint slotIndex = floatStackTop - (uint)logicalIndex;
+        offset = (int)Marshal.OffsetOf<X86Context>(nameof(ST0)) + ((int)slotIndex * Float80Size);
         return true;
     }
 
-    public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
-    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
-
-    private static readonly (uint Flag, string Name)[] s_scalarRegisters =
-    [
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "ebp"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "eip"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "cs"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "eflags"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "esp"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "ss"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "edi"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "esi"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "ebx"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "edx"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "ecx"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "eax"),
-        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "gs"),
-        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "fs"),
-        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "es"),
-        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "ds"),
-    ];
-
-    private static readonly (uint Flag, int Start, int End)[] s_wideSpans =
-    [
-        ((uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS,
-            (int)Marshal.OffsetOf<X86Context>(nameof(Dr0)), (int)Marshal.OffsetOf<X86Context>(nameof(ControlWord))),
-        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
-            (int)Marshal.OffsetOf<X86Context>(nameof(ControlWord)), (int)Marshal.OffsetOf<X86Context>(nameof(Gs))),
-        ((uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS,
-            (int)Marshal.OffsetOf<X86Context>(nameof(ExtendedRegisters)), (int)Marshal.OffsetOf<X86Context>(nameof(ExtendedRegisters)) + 512),
-    ];
+    public void CopyContext(ReadOnlySpan<byte> source)
+    {
+        uint flags = RawContextFlags & MemoryMarshal.Read<X86Context>(source).RawContextFlags;
+        Span<byte> destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_CONTROL) == (uint)ContextFlagsValues.CONTEXT_CONTROL)
+        {
+            int start = (int)Marshal.OffsetOf<X86Context>(nameof(Ebp));
+            int end = (int)Marshal.OffsetOf<X86Context>(nameof(ExtendedRegisters));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_INTEGER) == (uint)ContextFlagsValues.CONTEXT_INTEGER)
+        {
+            int start = (int)Marshal.OffsetOf<X86Context>(nameof(Edi));
+            int end = (int)Marshal.OffsetOf<X86Context>(nameof(Ebp));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_SEGMENTS) == (uint)ContextFlagsValues.CONTEXT_SEGMENTS)
+        {
+            int start = (int)Marshal.OffsetOf<X86Context>(nameof(Gs));
+            int end = (int)Marshal.OffsetOf<X86Context>(nameof(Edi));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS)
+        {
+            int start = (int)Marshal.OffsetOf<X86Context>(nameof(Dr0));
+            int end = (int)Marshal.OffsetOf<X86Context>(nameof(ControlWord));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT) == (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT)
+        {
+            int start = (int)Marshal.OffsetOf<X86Context>(nameof(ControlWord));
+            int end = (int)Marshal.OffsetOf<X86Context>(nameof(Gs));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS)
+        {
+            int start = (int)Marshal.OffsetOf<X86Context>(nameof(ExtendedRegisters));
+            int end = (int)Size;
+            source[start..end].CopyTo(destination[start..end]);
+        }
+    }
 
     // Control flags
 

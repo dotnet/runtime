@@ -9,9 +9,7 @@ public interface IPlatformContext
 {
     uint Size { get; }
 
-    uint SizeWithoutExtendedRegisters => Size;
-
-    uint ExtendedRegistersFlag => 0;
+    uint GetSize() => Size;
 
     uint ContextControlFlags { get; }
     uint FullContextFlags { get; }
@@ -42,6 +40,5 @@ public interface IPlatformContext
     bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value);
     bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value);
 
-    (uint Flag, string Name)[] GetScalarRegisters();
-    (uint Flag, int Start, int End)[] GetWideSpans();
+    void CopyContext(ReadOnlySpan<byte> source);
 }

@@ -6583,8 +6583,8 @@ namespace
 
         // REGISTER_X86_FPSTACK_0 names the bottom of the logical stack, so a
         // logical index counts up from the bottom: ST(i) with i = top - logical.
-        ULONG32 physIdx = (rawTop + (floatStackTop - logical)) & 0x7;
-        *pValue = X87ExtendedToDouble((const BYTE *)pFp->RegisterArea + physIdx * 10);
+        ULONG32 slotIndex = floatStackTop - logical;
+        *pValue = X87ExtendedToDouble((const BYTE *)pFp->RegisterArea + slotIndex * 10);
         return true;
 #elif defined(TARGET_AMD64)
         if ((int)reg < REGISTER_AMD64_XMM0 || (int)reg > REGISTER_AMD64_XMM0 + 15)
@@ -6651,9 +6651,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WriteFloatRegisterToContext(
         return E_INVALIDARG;
 
     // REGISTER_X86_FPSTACK_0 names the bottom of the logical stack: ST(i) with
-    // i = top - logical. Map to the physical RegisterArea slot and re-encode.
-    ULONG32 physIdx = (rawTop + (floatStackTop - logical)) & 0x7;
-    BYTE * slot     = (BYTE *)pFp->RegisterArea + physIdx * 10;
+    // i = top - logical. FNSAVE stores slots in logical ST order.
+    ULONG32 slotIndex = floatStackTop - logical;
+    BYTE * slot      = (BYTE *)pFp->RegisterArea + slotIndex * 10;
     double d = (valueSize == sizeof(float)) ? (double)(*(const float *)pValue)
                                             : *(const double *)pValue;
     X87DoubleToExtended(d, slot);

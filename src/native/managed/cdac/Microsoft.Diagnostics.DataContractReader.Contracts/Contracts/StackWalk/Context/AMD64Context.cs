@@ -206,50 +206,57 @@ internal struct AMD64Context : IPlatformContext
     public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
         => SimdRegisterAccess.TryWriteRegister(context, (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)), XmmRegisterStride, XmmRegisterCount, index, value);
 
-
-    public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
-    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
-
-    private static readonly (uint Flag, string Name)[] s_scalarRegisters =
-    [
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "cs"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "ss"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "eflags"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "rsp"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rax"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rcx"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rdx"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rbx"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rbp"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rsi"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rdi"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r8"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r9"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r10"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r11"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r12"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r13"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r14"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r15"),
-        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "ds"),
-        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "es"),
-        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "fs"),
-        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "gs"),
-    ];
-
-    private static readonly (uint Flag, int Start, int End)[] s_wideSpans =
-    [
-        // Matches native CORDbgCopyThreadContext's CONTROL chunk [Rip, Xmm0), which
-        // copies Rip together with the legacy x87 save area that has no named field here.
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL,
-            (int)Marshal.OffsetOf<AMD64Context>(nameof(Rip)), (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm))),
-        ((uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS,
-            (int)Marshal.OffsetOf<AMD64Context>(nameof(Dr0)), (int)Marshal.OffsetOf<AMD64Context>(nameof(Rax))),
-        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
-            (int)Marshal.OffsetOf<AMD64Context>(nameof(MxCsr)), (int)Marshal.OffsetOf<AMD64Context>(nameof(Cs))),
-        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
-            (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)), (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)) + (16 * 2 * sizeof(ulong))),
-    ];
+    public void CopyContext(ReadOnlySpan<byte> source)
+    {
+        uint flags = RawContextFlags & MemoryMarshal.Read<AMD64Context>(source).RawContextFlags;
+        Span<byte> destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_CONTROL) == (uint)ContextFlagsValues.CONTEXT_CONTROL)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Cs));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Ds));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Ss));
+            end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Dr0));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rsp));
+            end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rbp));
+            source[start..end].CopyTo(destination[start..end]);
+            // Native CORDbgCopyThreadContext includes the unnamed legacy x87 save area.
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rip));
+            end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_INTEGER) == (uint)ContextFlagsValues.CONTEXT_INTEGER)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rax));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rsp));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rbp));
+            end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rip));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_SEGMENTS) == (uint)ContextFlagsValues.CONTEXT_SEGMENTS)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Ds));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Ss));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Dr0));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Rax));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT) == (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT)
+        {
+            int start = (int)Marshal.OffsetOf<AMD64Context>(nameof(MxCsr));
+            int end = (int)Marshal.OffsetOf<AMD64Context>(nameof(Cs));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm));
+            end = start + (XmmRegisterCount * XmmRegisterStride);
+            source[start..end].CopyTo(destination[start..end]);
+        }
+    }
 
     [FieldOffset(0x0)]
     public ulong P1Home;

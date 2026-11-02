@@ -238,50 +238,38 @@ internal struct RISCV64Context : IPlatformContext
     public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
         => SimdRegisterAccess.TryWriteRegister(context, (int)Marshal.OffsetOf<RISCV64Context>(nameof(F)), FRegisterStride, FRegisterCount, index, value);
 
-    public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
-    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
-
-    private static readonly (uint Flag, string Name)[] s_scalarRegisters =
-    [
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "ra"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "sp"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "fp"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "pc"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "gp"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "tp"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t0"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t1"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t2"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s1"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a0"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a1"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a2"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a3"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a4"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a5"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a6"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a7"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s2"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s3"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s4"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s5"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s6"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s7"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s8"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s9"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s10"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s11"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t3"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t4"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t5"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t6"),
-    ];
-
-    private static readonly (uint Flag, int Start, int End)[] s_wideSpans =
-    [
-        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
-            (int)Marshal.OffsetOf<RISCV64Context>(nameof(F)), (int)Marshal.OffsetOf<RISCV64Context>(nameof(Fcsr)) + sizeof(uint)),
-    ];
+    public void CopyContext(ReadOnlySpan<byte> source)
+    {
+        uint flags = RawContextFlags & MemoryMarshal.Read<RISCV64Context>(source).RawContextFlags;
+        Span<byte> destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_CONTROL) == (uint)ContextFlagsValues.CONTEXT_CONTROL)
+        {
+            int start = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Ra));
+            int end = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Gp));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Fp));
+            end = (int)Marshal.OffsetOf<RISCV64Context>(nameof(S1));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Pc));
+            end = start + sizeof(ulong);
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_INTEGER) == (uint)ContextFlagsValues.CONTEXT_INTEGER)
+        {
+            int start = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Gp));
+            int end = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Fp));
+            source[start..end].CopyTo(destination[start..end]);
+            start = (int)Marshal.OffsetOf<RISCV64Context>(nameof(S1));
+            end = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Pc));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT) == (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT)
+        {
+            int start = (int)Marshal.OffsetOf<RISCV64Context>(nameof(F));
+            int end = (int)Marshal.OffsetOf<RISCV64Context>(nameof(Fcsr)) + sizeof(uint);
+            source[start..end].CopyTo(destination[start..end]);
+        }
+    }
 
     // Control flags
 

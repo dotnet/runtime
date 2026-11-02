@@ -424,7 +424,7 @@ public:
         return CORDB_ADDRESS_TO_PTR((CORDB_ADDRESS)m_ptr);
     }
 
-    CORDB_ADDRESS UnsafeGetAddr()
+    CORDB_ADDRESS GetRawAddr()
     {
         return (CORDB_ADDRESS)m_ptr;
     }

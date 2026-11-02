@@ -12784,7 +12784,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
                     _ASSERTE(fcd.pLeftSideContext != NULL);
                     LOG((LF_CORDB, LL_INFO10000, "W32ET::W32EL: updating LS context at 0x%p\n", fcd.pLeftSideContext));
                     // write the new context over the old one on the LS
-                    SafeWriteThreadContext(fcd.pLeftSideContext.UnsafeGetAddr(), &tempContext);
+                    SafeWriteThreadContext(fcd.pLeftSideContext.GetRawAddr(), &tempContext);
                 }
 
                 // Write the new Fcd data to the LS

@@ -180,7 +180,5 @@ internal struct WasmContext : IPlatformContext
     }
 
     public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value) => false;
-
-    public readonly (uint Flag, string Name)[] GetScalarRegisters() => Array.Empty<(uint Flag, string Name)>();
-    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => Array.Empty<(uint Flag, int Start, int End)>();
+    public readonly void CopyContext(ReadOnlySpan<byte> source) { }
 }

@@ -1045,18 +1045,16 @@ public unsafe class DacDbiImplTests
         destinationContext.RawContextFlags = destinationContext.ContextControlFlags;
         sourceContext.RawContextFlags = sourceContext.FullContextFlags;
 
-        string? sourceOnlyRegister = null;
-        foreach ((uint flag, string name) in sourceContext.GetScalarRegisters())
+        string sourceOnlyRegister = targetArch switch
         {
-            if ((sourceContext.FullContextFlags & flag) == flag &&
-                (destinationContext.ContextControlFlags & flag) != flag)
-            {
-                sourceOnlyRegister = name;
-                break;
-            }
-        }
-
-        Assert.NotNull(sourceOnlyRegister);
+            "x86" => "edi",
+            "x64" => "rax",
+            "arm" => "r0",
+            "arm64" => "x0",
+            "loongarch64" => "a0",
+            "riscv64" => "gp",
+            _ => throw new InvalidOperationException(targetArch),
+        };
         TargetNUInt expectedValue = new(0x1234);
         Assert.True(sourceContext.TrySetRegister(sourceOnlyRegister, expectedValue));
 

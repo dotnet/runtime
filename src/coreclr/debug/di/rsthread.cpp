@@ -3192,7 +3192,7 @@ HRESULT CordbUnmanagedThread::GetThreadContext(T_CONTEXT* pContext)
         T_CONTEXT tempContext = { 0 };
         ContextBuffer contextBuffer = { reinterpret_cast<BYTE *>(&tempContext), sizeof(tempContext) };
 
-        hr = GetProcess()->SafeReadThreadContext(m_pLeftSideContext.UnsafeGetAddr(), contextBuffer);
+        hr = GetProcess()->SafeReadThreadContext(m_pLeftSideContext.GetRawAddr(), contextBuffer);
 
         if (SUCCEEDED(hr))
             CORDbgCopyThreadContext(reinterpret_cast<BYTE *>(pContext), sizeof(T_CONTEXT),

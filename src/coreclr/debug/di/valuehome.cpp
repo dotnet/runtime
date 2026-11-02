@@ -675,6 +675,7 @@ void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
 
     // Set the thread's modified context.
     IfFailThrow(frame->m_pThread->SetManagedContext(updatedContext));
+    memcpy(frame->GetContext().pContextBytes, updatedContext.pContextBytes, cbCtx);
 } // RegisterValueHome::SetEnregisteredValue
 
 

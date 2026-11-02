@@ -172,37 +172,35 @@ internal struct ARMContext : IPlatformContext
     public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
         => SimdRegisterAccess.TryWriteRegister(context, (int)Marshal.OffsetOf<ARMContext>(nameof(D)), DRegisterStride, DRegisterCount, index, value);
 
-    public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
-    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
-
-    private static readonly (uint Flag, string Name)[] s_scalarRegisters =
-    [
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "sp"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "lr"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "pc"),
-        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "cpsr"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r0"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r1"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r2"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r3"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r4"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r5"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r6"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r7"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r8"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r9"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r10"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r11"),
-        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r12"),
-    ];
-
-    private static readonly (uint Flag, int Start, int End)[] s_wideSpans =
-    [
-        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
-            (int)Marshal.OffsetOf<ARMContext>(nameof(Fpscr)), (int)Marshal.OffsetOf<ARMContext>(nameof(Bvr))),
-        ((uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS,
-            (int)Marshal.OffsetOf<ARMContext>(nameof(Bvr)), (int)Marshal.OffsetOf<ARMContext>(nameof(Wcr)) + sizeof(uint)),
-    ];
+    public void CopyContext(ReadOnlySpan<byte> source)
+    {
+        uint flags = RawContextFlags & MemoryMarshal.Read<ARMContext>(source).RawContextFlags;
+        Span<byte> destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_CONTROL) == (uint)ContextFlagsValues.CONTEXT_CONTROL)
+        {
+            int start = (int)Marshal.OffsetOf<ARMContext>(nameof(Sp));
+            int end = (int)Marshal.OffsetOf<ARMContext>(nameof(Fpscr));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_INTEGER) == (uint)ContextFlagsValues.CONTEXT_INTEGER)
+        {
+            int start = (int)Marshal.OffsetOf<ARMContext>(nameof(R0));
+            int end = (int)Marshal.OffsetOf<ARMContext>(nameof(Sp));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT) == (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT)
+        {
+            int start = (int)Marshal.OffsetOf<ARMContext>(nameof(Fpscr));
+            int end = (int)Marshal.OffsetOf<ARMContext>(nameof(Bvr));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS)
+        {
+            int start = (int)Marshal.OffsetOf<ARMContext>(nameof(Bvr));
+            int end = (int)Marshal.OffsetOf<ARMContext>(nameof(Wcr)) + sizeof(uint);
+            source[start..end].CopyTo(destination[start..end]);
+        }
+    }
 
     // Control flags
 
