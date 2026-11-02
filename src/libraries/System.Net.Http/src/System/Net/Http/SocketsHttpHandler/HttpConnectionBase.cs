@@ -117,7 +117,7 @@ namespace System.Net.Http
                 Debug.Assert(_pool.Settings._metrics is not null);
 
                 SocketsHttpHandlerMetrics metrics = _pool.Settings._metrics!;
-                if (metrics.OpenConnections.Enabled || metrics.ConnectionDuration.Enabled)
+                if (metrics.OpenConnectionsTracker.Enabled || metrics.ConnectionDuration.Enabled)
                 {
                     // While requests may report HTTP/1.0 as the protocol, we treat all HTTP/1.X connections as HTTP/1.1.
                     string protocol =
