@@ -162,9 +162,6 @@ public:
     FCDECL0(static INT64,    GetAllocatedBytesForCurrentThread);
     FCDECL0(static INT64,    GetTotalAllocatedBytesApproximate);
 
-    NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
-    static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
-
     static void RemoveMemoryPressure(UINT64 bytesAllocated);
     static void AddMemoryPressure(UINT64 bytesAllocated);
 
@@ -196,10 +193,6 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
 extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC, QCallExceptionStatus* qcallError);
 
 extern "C" int QCALLTYPE GCInterface_EndNoGCRegion(QCallExceptionStatus* qcallError);
-
-extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError);
-
-extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj, QCallExceptionStatus* qcallError);
 

@@ -1070,26 +1070,6 @@ extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleO
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    GCInterface::SendEtwAddMemoryPressureEvent(bytesAllocated);
-    STRESS_LOG1(LF_GCINFO, LL_INFO10000, "AMP Add: %llu", static_cast<unsigned long long>(bytesAllocated));
-    END_QCALL;
-}
-
-extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    GCInterface::SendEtwRemoveMemoryPressureEvent(bytesAllocated);
-    STRESS_LOG1(LF_GCINFO, LL_INFO10000, "AMP Remove: %llu", static_cast<unsigned long long>(bytesAllocated));
-    END_QCALL;
-}
-
 extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
@@ -1204,41 +1184,6 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
     GCX_COOP();
     UnmanagedCallersOnlyCaller caller(METHOD__GC__REMOVE_MEMORY_PRESSURE);
     caller.InvokeThrowing(static_cast<INT64>(bytesAllocated));
-}
-
-inline void GCInterface::SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    FireEtwIncreaseMemoryPressure(bytesAllocated, GetClrInstanceId());
-}
-
-// Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
-NOINLINE void GCInterface::SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    EX_TRY
-    {
-        FireEtwDecreaseMemoryPressure(bytesAllocated, GetClrInstanceId());
-    }
-    EX_CATCH
-    {
-        // Ignore failures
-    }
-    EX_END_CATCH
 }
 
 //

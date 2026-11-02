@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Threading;
 
 namespace System
@@ -65,9 +66,11 @@ namespace System
             CheckCollectionCount();
             uint p = s_iteration % PressureCount;
             long newMemValue = InterlockedAddMemoryPressure(ref s_addPressure[p], bytesAllocated);
-#if CORECLR
-            _AddMemoryPressure((ulong)bytesAllocated);
-#endif
+            if (NativeRuntimeEventSource.Log.IsEnabled() &&
+                NativeRuntimeEventSource.Log.IsEnabled(EventLevel.Verbose, NativeRuntimeEventSource.Keywords.GCKeyword))
+            {
+                NativeRuntimeEventSource.Log.IncreaseMemoryPressure((ulong)bytesAllocated);
+            }
 
             Debug.Assert(PressureCount == 4, "GC.AddMemoryPressure contains unrolled loops which depend on the PressureCount");
 
@@ -124,9 +127,11 @@ namespace System
 
             CheckCollectionCount();
             uint p = s_iteration % PressureCount;
-#if CORECLR
-            _RemoveMemoryPressure((ulong)bytesAllocated);
-#endif
+            if (NativeRuntimeEventSource.Log.IsEnabled() &&
+                NativeRuntimeEventSource.Log.IsEnabled(EventLevel.Verbose, NativeRuntimeEventSource.Keywords.GCKeyword))
+            {
+                NativeRuntimeEventSource.Log.DecreaseMemoryPressure((ulong)bytesAllocated);
+            }
             InterlockedAddMemoryPressure(ref s_removePressure[p], bytesAllocated);
         }
 #endif

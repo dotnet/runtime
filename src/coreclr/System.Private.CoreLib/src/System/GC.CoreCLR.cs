@@ -147,16 +147,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe ulong GetGenerationSize(int gen);
 
-        /// <safety>QCall that emits added-memory-pressure diagnostics; it accesses no caller-supplied memory.</safety>
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AddMemoryPressure")]
-        private static safe partial void _AddMemoryPressure(ulong bytesAllocated);
-
-        /// <safety>QCall that emits removed-memory-pressure diagnostics; it accesses no caller-supplied memory.</safety>
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RemoveMemoryPressure")]
-        private static safe partial void _RemoveMemoryPressure(ulong bytesAllocated);
-
         /// <safety>FCall that returns a scalar heap-size estimate without accessing caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern safe long GetCurrentObjSize();

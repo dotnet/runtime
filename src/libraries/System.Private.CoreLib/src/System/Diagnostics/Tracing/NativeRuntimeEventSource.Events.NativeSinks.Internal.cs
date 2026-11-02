@@ -141,6 +141,20 @@ namespace System.Diagnostics.Tracing
 #if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
 #endif
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogIncreaseMemoryPressure")]
+        private static partial void LogIncreaseMemoryPressure(ulong BytesAllocated);
+
+        [NonEvent]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogDecreaseMemoryPressure")]
+        private static partial void LogDecreaseMemoryPressure(ulong BytesFreed);
+
+        [NonEvent]
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogWaitHandleWaitStart")]
         private static partial void LogWaitHandleWaitStart(
             WaitHandleWaitSourceMap WaitSource,

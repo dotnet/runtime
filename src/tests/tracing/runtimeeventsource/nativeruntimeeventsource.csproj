@@ -3,6 +3,7 @@
     <!-- Needed for UnloadabilityIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EventSourceSupport>true</EventSourceSupport>
     <!-- This test has a secondary thread with an infinite loop -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
