@@ -323,55 +323,119 @@ namespace System.Reflection.Emit
 
             Debug.Assert(clsArgument != null);
 
+            if (IsEncodedModifiedType(clsArgument))
+            {
+                if (requiredCustomModifiers == null && optionalCustomModifiers == null)
+                {
+                    AddModifiedTypeCustomModifiers(clsArgument);
+                }
+                else
+                {
+                    // As in PersistedAssemblyBuilder, an array replaces the type's own modifiers of its kind.
+                    if (requiredCustomModifiers != null)
+                        AddReflectedCustomModifiers(requiredCustomModifiers, required: true, nameof(requiredCustomModifiers));
+                    else
+                        AddReflectedCustomModifiers(clsArgument.GetRequiredCustomModifiers(), required: true, paramName: null);
+
+                    if (optionalCustomModifiers != null)
+                        AddReflectedCustomModifiers(optionalCustomModifiers, required: false, nameof(optionalCustomModifiers));
+                    else
+                        AddReflectedCustomModifiers(clsArgument.GetOptionalCustomModifiers(), required: false, paramName: null);
+                }
+
+                // Not AddOneArgTypeHelper: it would add the type's own modifiers to the ones written above.
+                AddOneArgTypeHelperWorker(clsArgument, false, null);
+                return;
+            }
+
+            // Each array is in signature order, as this API takes them. Arrays passed with a modified type are read
+            // as reflection returns them, in reverse.
             if (optionalCustomModifiers != null)
             {
                 for (int i = 0; i < optionalCustomModifiers.Length; i++)
-                {
-                    Type t = optionalCustomModifiers[i];
-                    ArgumentNullException.ThrowIfNull(t, nameof(optionalCustomModifiers));
-
-                    if (t.HasElementType)
-                        throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(optionalCustomModifiers));
-
-                    if (t.ContainsGenericParameters)
-                        throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(optionalCustomModifiers));
-
-                    AddElementType(CorElementType.ELEMENT_TYPE_CMOD_OPT);
-
-                    int token = m_module!.GetTypeMetadataToken(t);
-                    Debug.Assert(!MetadataToken.IsNullToken(token));
-                    AddToken(token);
-                }
+                    AddCustomModifier(optionalCustomModifiers[i], required: false, nameof(optionalCustomModifiers));
             }
 
             if (requiredCustomModifiers != null)
             {
                 for (int i = 0; i < requiredCustomModifiers.Length; i++)
-                {
-                    Type t = requiredCustomModifiers[i];
-
-                    ArgumentNullException.ThrowIfNull(t, nameof(requiredCustomModifiers));
-
-                    if (t.HasElementType)
-                        throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(requiredCustomModifiers));
-
-                    if (t.ContainsGenericParameters)
-                        throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(requiredCustomModifiers));
-
-                    AddElementType(CorElementType.ELEMENT_TYPE_CMOD_REQD);
-
-                    int token = m_module!.GetTypeMetadataToken(t);
-                    Debug.Assert(!MetadataToken.IsNullToken(token));
-                    AddToken(token);
-                }
+                    AddCustomModifier(requiredCustomModifiers[i], required: true, nameof(requiredCustomModifiers));
             }
 
             AddOneArgTypeHelper(clsArgument);
         }
 
-        private void AddOneArgTypeHelper(Type clsArgument, DynamicScope? scope = null) { AddOneArgTypeHelperWorker(clsArgument, false, scope); }
+        // Modifier tokens come from m_module, which a DynamicMethod's signature doesn't have.
+        private bool IsEncodedModifiedType(Type type) =>
+            m_module != null && type is ModifiedType or SignatureModifiedType;
+
+        // Modifier order is part of the signature: an override copied with it changed doesn't match its declaration.
+        // Without a known order, required modifiers come first, as PersistedAssemblyBuilder writes them.
+        private void AddModifiedTypeCustomModifiers(Type type)
+        {
+            Type[] requiredCustomModifiers = type.GetRequiredCustomModifiers();
+            Type[] optionalCustomModifiers = type.GetOptionalCustomModifiers();
+
+            // The counts differ when ELEMENT_TYPE_CMOD_INTERNAL or ELEMENT_TYPE_SENTINEL sits among the modifiers:
+            // the kinds stop there, while reflection counts the first and steps over the second.
+            bool[]? kinds = (type as ModifiedType)?.GetCustomModifierKinds();
+            if (kinds == null || kinds.Length != requiredCustomModifiers.Length + optionalCustomModifiers.Length)
+            {
+                AddReflectedCustomModifiers(requiredCustomModifiers, required: true, paramName: null);
+                AddReflectedCustomModifiers(optionalCustomModifiers, required: false, paramName: null);
+                return;
+            }
+
+            // Reflection returns each kind's modifiers in reverse signature order.
+            int required = requiredCustomModifiers.Length;
+            int optional = optionalCustomModifiers.Length;
+            foreach (bool isRequired in kinds)
+            {
+                Type customModifier = isRequired ? requiredCustomModifiers[--required] : optionalCustomModifiers[--optional];
+                AddCustomModifier(customModifier, isRequired, paramName: null);
+            }
+        }
+
+        // customModifiers is in reflection order, the reverse of signature order.
+        private void AddReflectedCustomModifiers(Type[] customModifiers, bool required, string? paramName)
+        {
+            for (int i = customModifiers.Length - 1; i >= 0; i--)
+                AddCustomModifier(customModifiers[i], required, paramName);
+        }
+
+        private void AddCustomModifier(Type customModifier, bool required, string? paramName)
+        {
+            ArgumentNullException.ThrowIfNull(customModifier, paramName);
+
+            if (customModifier.HasElementType)
+                throw new ArgumentException(SR.Argument_ArraysInvalid, paramName);
+
+            if (customModifier.ContainsGenericParameters)
+                throw new ArgumentException(SR.Argument_GenericsInvalid, paramName);
+
+            AddElementType(required ? CorElementType.ELEMENT_TYPE_CMOD_REQD : CorElementType.ELEMENT_TYPE_CMOD_OPT);
+
+            int token = m_module!.GetTypeMetadataToken(customModifier);
+            Debug.Assert(!MetadataToken.IsNullToken(token));
+            AddToken(token);
+        }
+
+        private void AddOneArgTypeHelper(Type clsArgument, DynamicScope? scope = null)
+        {
+            if (IsEncodedModifiedType(clsArgument))
+                AddModifiedTypeCustomModifiers(clsArgument);
+
+            AddOneArgTypeHelperWorker(clsArgument, false, scope);
+        }
+
         private void AddOneArgTypeHelperWorker(Type clsArgument, bool lastWasGenericInst, DynamicScope? scope)
         {
+            // For a modified type in a module's signature, the caller has written its modifiers. UnderlyingSystemType
+            // would also drop the modifiers of an element or type argument, so arrays, pointers, by-refs and
+            // constructed generic types stay wrapped.
+            if (IsEncodedModifiedType(clsArgument) && !clsArgument.HasElementType && !clsArgument.IsConstructedGenericType)
+                clsArgument = clsArgument.UnderlyingSystemType;
+
             if (clsArgument.IsGenericParameter)
             {
                 if (clsArgument.DeclaringMethod != null)

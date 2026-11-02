@@ -346,6 +346,33 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
+        public void DefineField_ModifiedSignatureType_ModifiersRoundTrip()
+        {
+            Type fieldType = Type.MakeModifiedSignatureType(typeof(int), [typeof(IsVolatile), typeof(IsConst)], [typeof(IsLong)]);
+
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.DefineField("F", fieldType, FieldAttributes.Public | FieldAttributes.Static);
+            FieldInfo field = type.CreateType().GetField("F");
+
+            Assert.Equal(typeof(int), field.FieldType);
+            Assert.Equal([typeof(IsVolatile), typeof(IsConst)], field.GetModifiedFieldType().GetRequiredCustomModifiers());
+            Assert.Equal([typeof(IsLong)], field.GetModifiedFieldType().GetOptionalCustomModifiers());
+        }
+
+        [Theory]
+        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
+        [InlineData(typeof(int[]))]
+        [InlineData(typeof(List<>))]
+        public void DefineField_ModifiedSignatureTypeWithInvalidModifier_ThrowsArgumentException(Type customModifier)
+        {
+            Type fieldType = Type.MakeModifiedSignatureType(typeof(int), [customModifier], null);
+
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineField("F", fieldType, FieldAttributes.Public | FieldAttributes.Static));
+        }
+
+        [Fact]
         public void GetField_TypeNotCreated_ThrowsNotSupportedException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

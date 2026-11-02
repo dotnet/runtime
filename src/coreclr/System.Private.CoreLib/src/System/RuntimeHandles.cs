@@ -2254,6 +2254,30 @@ namespace System
                 ObjectHandleOnStack.Create(ref result));
             return result!;
         }
+
+        // The GetCustomModifiersAtOffset QCall returns each kind separately, without their interleaving.
+        internal bool[] GetCustomModifierKindsAtOffset(int offset)
+        {
+            Debug.Assert(offset >= 0 && offset <= _csig);
+            ReadOnlySpan<byte> sig = new ReadOnlySpan<byte>(_sig, _csig).Slice(offset);
+
+            int count = 0;
+            for (int i = 0; i < sig.Length && IsCustomModifier(sig[i]); i += CustomModifierLength(sig, i))
+                count++;
+
+            bool[] kinds = new bool[count];
+            for (int i = 0, k = 0; k < count; i += CustomModifierLength(sig, i), k++)
+                kinds[k] = sig[i] == (byte)CorElementType.ELEMENT_TYPE_CMOD_REQD;
+            return kinds;
+
+            static bool IsCustomModifier(byte b) =>
+                b is (byte)CorElementType.ELEMENT_TYPE_CMOD_REQD or (byte)CorElementType.ELEMENT_TYPE_CMOD_OPT;
+
+            // The element type and the compressed TypeDefOrRefOrSpec token that follows it, 1, 2 or 4 bytes long by the
+            // high bits of its first byte (ECMA-335 II.23.2).
+            static int CustomModifierLength(ReadOnlySpan<byte> sig, int i) =>
+                1 + ((i + 1 < sig.Length ? sig[i + 1] : 0) switch { < 0x80 => 1, < 0xC0 => 2, _ => 4 });
+        }
         #endregion
     }
 
