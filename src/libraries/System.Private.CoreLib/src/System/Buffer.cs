@@ -151,9 +151,9 @@ namespace System
 
         // The maximum block size to for BulkMoveWithWriteBarrierInternal FCall. This is required to avoid GC starvation.
 #if DEBUG // Stress the mechanism in debug builds
-        private const uint BulkMoveWithWriteBarrierChunk = 0x400;
+        internal const uint BulkMoveWithWriteBarrierChunk = 0x400;
 #else
-        private const uint BulkMoveWithWriteBarrierChunk = 0x4000;
+        internal const uint BulkMoveWithWriteBarrierChunk = 0x4000;
 #endif
 
         internal static void BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
