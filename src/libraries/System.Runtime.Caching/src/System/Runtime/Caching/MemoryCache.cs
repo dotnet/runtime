@@ -401,7 +401,7 @@ namespace System.Runtime.Caching
             return entry?.Value;
         }
 
-        public override CacheEntryChangeMonitor? CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string? regionName = null)
+        public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string? regionName = null)
         {
             if (regionName != null)
             {
@@ -525,6 +525,7 @@ namespace System.Runtime.Caching
         }
 
         //Default indexer property
+        [DisallowNull]
         public override object? this[string key]
         {
             get
