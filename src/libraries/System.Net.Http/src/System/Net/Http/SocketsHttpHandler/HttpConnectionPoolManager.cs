@@ -243,6 +243,7 @@ namespace System.Net.Http
         }
 
         public HttpConnectionSettings Settings => _settings;
+        internal bool AvoidStoringConnections => _cleaningTimer is null;
         public ICredentials? ProxyCredentials => _proxyCredentials;
 
         private HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri? proxyUri, bool isProxyConnect)

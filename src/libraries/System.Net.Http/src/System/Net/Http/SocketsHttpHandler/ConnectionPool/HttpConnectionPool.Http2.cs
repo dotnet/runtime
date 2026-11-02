@@ -437,9 +437,9 @@ namespace System.Net.Http
                         {
                             Debug.Assert((_availableHttp2Connections?.Count ?? 0) == 0, $"With {(_availableHttp2Connections?.Count ?? 0)} available HTTP2 connections, we shouldn't have a waiter.");
                         }
-                        else if (_disposed)
+                        else if (_disposed || _poolManager.AvoidStoringConnections)
                         {
-                            // The pool has been disposed. We will dispose this connection below outside the lock.
+                            // The pool is disposed or untracked. Do not cache the connection.
                             // We do this check after processing the request queue so that any queued requests will be handled by existing connections if possible.
                             _associatedHttp2ConnectionCount--;
                         }
@@ -473,9 +473,17 @@ namespace System.Net.Http
                         }
                         else
                         {
-                            Debug.Assert(_disposed);
-                            if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing HTTP2 connection returned to pool. Pool was disposed.");
-                            connection.Dispose();
+                            if (_disposed)
+                            {
+                                if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing HTTP2 connection returned to pool. Pool was disposed.");
+                                connection.Dispose();
+                            }
+                            else
+                            {
+                                Debug.Assert(_poolManager.AvoidStoringConnections);
+                                if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing HTTP2 connection when its assigned streams complete. Pool is untracked.");
+                                connection.DisposeWhenIdle();
+                            }
                             return;
                         }
                     }
