@@ -18,27 +18,27 @@ namespace System.Diagnostics
     /// </summary>
     public sealed class PerformanceCounter : Component, ISupportInitialize
     {
-        private string _machineName;
-        private string _categoryName;
-        private string _counterName;
-        private string _instanceName;
+        private string _machineName = null!;
+        private string _categoryName = null!;
+        private string _counterName = null!;
+        private string? _instanceName;
         private PerformanceCounterInstanceLifetime _instanceLifetime = PerformanceCounterInstanceLifetime.Global;
 
         private bool _isReadOnly;
         private bool _initialized;
-        private string _helpMsg;
+        private string? _helpMsg;
         private int _counterType = -1;
 
         // Cached old sample
         private CounterSample _oldSample = CounterSample.Empty;
 
         // Cached IP Shared Performanco counter
-        private SharedPerformanceCounter _sharedCounter;
+        private SharedPerformanceCounter? _sharedCounter;
 
         [Obsolete("PerformanceCounter.DefaultFileMappingSize has been deprecated and is not used. Use machine.config or an application configuration file to set the size of the PerformanceCounter file mapping instead.")]
         public static int DefaultFileMappingSize = 524288;
 
-        private object _instanceLockObject;
+        private object? _instanceLockObject;
         private object InstanceLockObject
         {
             get
@@ -240,7 +240,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _instanceName;
+                return _instanceName ?? string.Empty;
             }
             set
             {
@@ -322,7 +322,7 @@ namespace System.Diagnostics
                 {
                     Initialize();
 
-                    return _sharedCounter.Value;
+                    return _sharedCounter!.Value;
                 }
             }
             set
@@ -332,7 +332,7 @@ namespace System.Diagnostics
 
                 Initialize();
 
-                _sharedCounter.Value = value;
+                _sharedCounter!.Value = value;
             }
         }
 
@@ -390,7 +390,7 @@ namespace System.Diagnostics
 
             Initialize();
 
-            return _sharedCounter.Decrement();
+            return _sharedCounter!.Decrement();
         }
 
         /// <summary>
@@ -413,7 +413,7 @@ namespace System.Diagnostics
 
             Initialize();
 
-            return _sharedCounter.IncrementBy(value);
+            return _sharedCounter!.IncrementBy(value);
         }
 
         /// <summary>
@@ -426,7 +426,7 @@ namespace System.Diagnostics
 
             Initialize();
 
-            return _sharedCounter.Increment();
+            return _sharedCounter!.Increment();
         }
 
         private static void ThrowReadOnly()
@@ -517,7 +517,7 @@ namespace System.Diagnostics
                         if (string.IsNullOrEmpty(_instanceName) && InstanceLifetime == PerformanceCounterInstanceLifetime.Process)
                             throw new InvalidOperationException(SR.InstanceLifetimeProcessforSingleInstance);
 
-                        _sharedCounter = new SharedPerformanceCounter(currentCategoryName.ToLowerInvariant(), _counterName.ToLowerInvariant(), _instanceName.ToLowerInvariant(), _instanceLifetime);
+                        _sharedCounter = new SharedPerformanceCounter(currentCategoryName.ToLowerInvariant(), _counterName.ToLowerInvariant(), _instanceName?.ToLowerInvariant(), _instanceLifetime);
                         _initialized = true;
                     }
                 }
@@ -588,7 +588,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.ReadOnlyRemoveInstance);
 
             Initialize();
-            _sharedCounter.RemoveInstance(_instanceName.ToLowerInvariant(), _instanceLifetime);
+            _sharedCounter!.RemoveInstance(_instanceName!.ToLowerInvariant(), _instanceLifetime);
         }
     }
 }

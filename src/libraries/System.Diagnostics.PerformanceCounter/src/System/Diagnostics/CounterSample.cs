@@ -155,7 +155,7 @@ namespace System.Diagnostics
             return CounterSampleCalculator.ComputeCounterValue(counterSample, nextCounterSample);
         }
 
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
             return (o is CounterSample) && Equals((CounterSample)o);
         }

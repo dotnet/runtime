@@ -26,7 +26,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return ((CounterCreationData)(List[index]));
+                return ((CounterCreationData)(List[index]!));
             }
             set
             {

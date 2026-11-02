@@ -47,7 +47,7 @@ namespace System.Diagnostics
         public static float Calculate(System.Diagnostics.CounterSample counterSample) { throw null; }
         public static float Calculate(System.Diagnostics.CounterSample counterSample, System.Diagnostics.CounterSample nextCounterSample) { throw null; }
         public bool Equals(System.Diagnostics.CounterSample sample) { throw null; }
-        public override bool Equals(object o) { throw null; }
+        public override bool Equals(object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Diagnostics.CounterSample a, System.Diagnostics.CounterSample b) { throw null; }
         public static bool operator !=(System.Diagnostics.CounterSample a, System.Diagnostics.CounterSample b) { throw null; }
@@ -236,8 +236,8 @@ namespace System.Diagnostics.PerformanceData
     public sealed partial class CounterSetInstanceCounterDataSet : System.IDisposable
     {
         internal CounterSetInstanceCounterDataSet() { }
-        public System.Diagnostics.PerformanceData.CounterData this[int counterId] { get { throw null; } }
-        public System.Diagnostics.PerformanceData.CounterData this[string counterName] { get { throw null; } }
+        public System.Diagnostics.PerformanceData.CounterData? this[int counterId] { get { throw null; } }
+        public System.Diagnostics.PerformanceData.CounterData? this[string counterName] { get { throw null; } }
         public void Dispose() { }
         ~CounterSetInstanceCounterDataSet() { }
     }

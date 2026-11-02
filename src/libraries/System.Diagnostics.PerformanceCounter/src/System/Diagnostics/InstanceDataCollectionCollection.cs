@@ -26,7 +26,7 @@ namespace System.Diagnostics
                     throw new ArgumentNullException(nameof(counterName));
 
                 object objectName = counterName.ToLowerInvariant();
-                return (InstanceDataCollection)Dictionary[objectName];
+                return (InstanceDataCollection)Dictionary[objectName]!;
             }
         }
 

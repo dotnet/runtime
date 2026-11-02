@@ -48,7 +48,7 @@ namespace System.Diagnostics
                     instanceName = PerformanceCounterLib.SingleInstanceName;
 
                 string objectName = instanceName.ToLowerInvariant();
-                return (InstanceData)Dictionary[objectName];
+                return (InstanceData)Dictionary[objectName]!;
             }
         }
 

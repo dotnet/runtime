@@ -15,8 +15,8 @@ namespace System.Diagnostics
     /// </summary>
     public sealed class PerformanceCounterCategory
     {
-        private string _categoryName;
-        private string _categoryHelp;
+        private string? _categoryName;
+        private string? _categoryHelp;
         private string _machineName;
         internal const int MaxCategoryNameLength = 80;
         internal const int MaxCounterNameLength = 32767;
@@ -62,7 +62,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _categoryName;
+                return _categoryName ?? string.Empty;
             }
 
             set
@@ -97,7 +97,7 @@ namespace System.Diagnostics
         {
             get
             {
-                using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(_machineName, _categoryName))
+                using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(_machineName, _categoryName!))
                 {
 
                     // If we get MultiInstance, we can be confident it is correct.  If it is single instance, though
@@ -107,8 +107,8 @@ namespace System.Diagnostics
                         return PerformanceCounterCategoryType.MultiInstance;
                     else
                     {
-                        if (PerformanceCounterLib.IsCustomCategory(".", _categoryName))
-                            return PerformanceCounterLib.GetCategoryType(".", _categoryName);
+                        if (PerformanceCounterLib.IsCustomCategory(".", _categoryName!))
+                            return PerformanceCounterLib.GetCategoryType(".", _categoryName!);
                         else
                             return PerformanceCounterCategoryType.SingleInstance;
                     }
@@ -216,7 +216,7 @@ namespace System.Diagnostics
             }
             string machineName = ".";
 
-            Mutex mutex = null;
+            Mutex? mutex = null;
             try
             {
                 NetFrameworkUtils.EnterMutex(PerfMutexName, ref mutex);
@@ -370,7 +370,7 @@ namespace System.Diagnostics
 
             categoryName = categoryName.ToLowerInvariant();
 
-            Mutex mutex = null;
+            Mutex? mutex = null;
             try
             {
                 NetFrameworkUtils.EnterMutex(PerfMutexName, ref mutex);
@@ -516,7 +516,7 @@ namespace System.Diagnostics
             if (_categoryName == null)
                 throw new InvalidOperationException(SR.CategoryNameNotSet);
 
-            using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(_machineName, _categoryName))
+            using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(_machineName, _categoryName!))
             {
                 return categorySample._instanceNameTable.ContainsKey(instanceName);
             }
@@ -557,7 +557,7 @@ namespace System.Diagnostics
             if (_categoryName == null)
                 throw new InvalidOperationException(SR.CategoryNameNotSet);
 
-            using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(_machineName, _categoryName))
+            using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(_machineName, _categoryName!))
             {
                 return categorySample.ReadCategory();
             }
