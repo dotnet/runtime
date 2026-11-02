@@ -82,7 +82,7 @@ on both CoreCLR and Mono:
   a managed byte array. Later VFS writes do not change the retained bytes.
 - On Mono, byte access continues to read the current VFS contents.
 
-For CoreCLR applications targeting .NET 11 or later, the manifest contains
+For CoreCLR applications targeting .NET 12 or later, the manifest contains
 `resources.appsettings` assets with a `loadIntoVfs` flag.
 `_WasmFilesystemUsageDetected` defaults to `true`, preserving existing VFS
 placement, including Blazor versions that read configuration through managed file
@@ -95,13 +95,25 @@ Older target frameworks and Mono retain the top-level appsettings list.
 CoreCLR also accepts legacy manifests and continues installing those settings
 into VFS while retaining their downloaded bytes.
 
-`AppSettingsWithoutFilesystem` covers both placement modes, explicit overrides,
-legacy manifests, custom resource loaders, and download-before-create. It runs in
-the CoreCLR no-workload lane. Its flag-only incremental publish case disables
-trimming to isolate manifest invalidation from incremental trimmed assembly
-staging; the fresh-publish cases retain trimming. `Blazor.AppsettingsTests` checks
-that default settings remain available through managed VFS access. Managed JSON
-parsing remains the consumer's responsibility.
+`AppSettingsWithoutFilesystem` runs in the CoreCLR no-workload lane. Its .NET 11
+browser fixture supplies the new asset schema through `withConfigLoaded`, using
+the filesystem-detection value reported by the real build/publish targets.
+It covers both placement modes, explicit overrides, custom resource loaders, and
+download-before-create without requiring .NET 12 runtime assemblies. The legacy
+case and existing environment-selection tests consume the generated .NET 11
+manifest without this conversion.
+
+Manifest-generation theories invoke the task directly to verify .NET 12+ assets,
+the .NET 11 compatibility boundary, and unchanged Mono output. End-to-end .NET 12
+project-to-browser coverage is deferred until runtime retargeting is complete.
+These browser fixtures test the loader and filesystem detection, not .NET 12
+manifest generation.
+
+The flag-only incremental publish case disables trimming to isolate filesystem
+detection from incremental trimmed assembly staging; fresh-publish cases
+retain trimming. `Blazor.AppsettingsTests` checks that default settings remain
+available through managed VFS access. Managed JSON parsing remains the
+consumer's responsibility.
 
 ## How to add tests
 

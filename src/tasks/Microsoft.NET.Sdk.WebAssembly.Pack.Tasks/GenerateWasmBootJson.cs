@@ -527,7 +527,7 @@ public class GenerateWasmBootJson : Task
 
         string? imports = null;
         if (IsTargeting100OrLater())
-            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes, compositeImages, !isMonoRuntime && IsTargeting110OrLater(), FilesystemUsageDetected);
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes, compositeImages, !isMonoRuntime && IsTargeting120OrLater(), FilesystemUsageDetected);
 
         helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 
@@ -587,6 +587,7 @@ public class GenerateWasmBootJson : Task
     private static readonly Version version90 = new Version(9, 0);
     private static readonly Version version100 = new Version(10, 0);
     private static readonly Version version110 = new Version(11, 0);
+    private static readonly Version version120 = new Version(12, 0);
 
     private Version? parsedTargetFrameworkVersion;
     private Version ParsedTargetFrameworkVersion
@@ -614,6 +615,7 @@ public class GenerateWasmBootJson : Task
     private bool IsTargeting90OrLater() => ParsedTargetFrameworkVersion >= version90;
     private bool IsTargeting100OrLater() => ParsedTargetFrameworkVersion >= version100;
     private bool IsTargeting110OrLater() => ParsedTargetFrameworkVersion >= version110;
+    private bool IsTargeting120OrLater() => ParsedTargetFrameworkVersion >= version120;
 
     /// <summary>
     /// Reads the main runtimeconfig.json and merges <c>configProperties</c> from the companion

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -41,7 +42,13 @@ public class AppSettingsTests : WasmTemplateTestsBase
     public async Task AppSettingsWithoutFilesystem(bool publish, bool includeVfsFiles, bool forceVfs, bool expectedVfs, string? mode)
     {
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "AppSettingsMemoryTest");
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "AppSettingsMemoryTest",
+            insertAtEnd: """
+                <Target Name="_ReportAppSettingsFilesystemUsage"
+                        AfterTargets="ComputeWasmVfs;_WriteWasmPublishBootJsonPropertyStamp">
+                  <Message Importance="High" Text="Appsettings filesystem usage: $(_WasmFilesystemUsageDetected)" />
+                </Target>
+                """);
         if (!includeVfsFiles)
             AddItemsPropertiesToProject(info.ProjectFilePath, extraItems: """<WasmFilesToIncludeInFileSystem Remove="@(WasmFilesToIncludeInFileSystem)" />""");
         if (mode == "empty-file")
@@ -56,14 +63,19 @@ public class AppSettingsTests : WasmTemplateTestsBase
         string args = mode == "default" ? string.Empty : $"-p:_WasmFilesystemUsageDetected={forceVfs.ToString().ToLowerInvariant()}";
         if (publish && forceVfs && !includeVfsFiles)
             args += " -p:PublishTrimmed=false";
-        if (publish)
-            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: args, UseCache: false));
-        else
-            BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: args, UseCache: false));
+        (string _, string buildOutput) = publish
+            ? PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: args, UseCache: false))
+            : BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: args, UseCache: false));
+        MatchCollection detection = Regex.Matches(buildOutput, @"Appsettings filesystem usage: (true|false)");
+        Assert.NotEmpty(detection);
+        string filesystemUsage = detection[detection.Count - 1].Groups[1].Value;
+        Assert.Equal((includeVfsFiles || forceVfs || mode == "default").ToString().ToLowerInvariant(), filesystemUsage);
 
         BrowserRunOptions options = new(config, TestScenario: "AppSettingsTest",
             BrowserQueryString: new NameValueCollection {
                 { "settingsVfs", expectedVfs.ToString().ToLowerInvariant() },
+                { "settingsAssets", (mode != "legacy").ToString().ToLowerInvariant() },
+                { "settingsFilesystemUsage", filesystemUsage },
                 { "legacySettings", (mode == "legacy").ToString().ToLowerInvariant() },
                 { "settingsDownload", mode is "memory" or "cache" ? mode : null },
                 { "settingsLoader", mode is "null" or "response" or "url" ? mode : null },

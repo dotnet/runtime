@@ -85,10 +85,18 @@ switch (testCase) {
         if (applicationEnvironment) {
             dotnet.withApplicationEnvironment(applicationEnvironment);
         }
-        if (params.get("legacySettings") === "true") {
+        if (params.get("settingsAssets") === "true") {
             dotnet.withConfigLoaded(config => {
-                config.appsettings = config.resources.appsettings.map(asset => asset.name);
-                delete config.resources.appsettings;
+                // Exercise the new loader schema on net11 until the runtime can run net12 apps.
+                if (!Array.isArray(config.appsettings)) {
+                    throw new Error("Expected the net11 generator to emit legacy appsettings");
+                }
+                config.resources.appsettings = config.appsettings.map(name => ({
+                    name,
+                    virtualPath: name.substring(name.lastIndexOf("/") + 1),
+                    loadIntoVfs: params.get("settingsFilesystemUsage") === "true",
+                }));
+                delete config.appsettings;
             });
         }
         if (params.get("noSettings") === "true") {
@@ -366,7 +374,7 @@ try {
         case "AppSettingsTest":
             const inMemorySettings = !INTERNAL.monoStringToStringUnsafe;
             const expectSettingsVfs = params.get("settingsVfs") !== "false";
-            if (inMemorySettings && params.get("legacySettings") !== "true") {
+            if (inMemorySettings && params.get("settingsVfs") !== null && params.get("legacySettings") !== "true") {
                 if (!config.resources.appsettings || config.appsettings !== undefined) {
                     throw new Error("Expected resources.appsettings instead of the legacy manifest list");
                 }

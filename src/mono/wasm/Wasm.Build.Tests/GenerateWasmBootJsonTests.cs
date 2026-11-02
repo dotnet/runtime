@@ -21,8 +21,12 @@ namespace Wasm.Build.Tests;
     public class GenerateWasmBootJsonTests
     {
         [Theory]
-        [InlineData("v11.0", false, false, true)]
-        [InlineData("v11.0", false, true, true)]
+        [InlineData("v12.0", false, false, true)]
+        [InlineData("v12.0", false, true, true)]
+        [InlineData("v13.0", false, false, true)]
+        [InlineData("v12.0", true, false, false)]
+        [InlineData("v11.0", false, false, false)]
+        [InlineData("v11.0", false, true, false)]
         [InlineData("v11.0", true, false, false)]
         [InlineData("v10.0", false, false, false)]
         [InlineData("v9.0", true, false, false)]
@@ -72,7 +76,7 @@ namespace Wasm.Build.Tests;
             string[] names = ["../appsettings.json", "../appsettings.Development.json"];
             var config = new BootJsonData { appsettings = names.ToList() };
             var task = new GenerateWasmBootJson();
-            var helper = new BootJsonBuilderHelper(task.Log, "0", false, false, new Version(11, 0), false);
+            var helper = new BootJsonBuilderHelper(task.Log, "0", false, false, new Version(12, 0), false);
             string imports = helper.TransformResourcesToAssets(config, bundlerFriendly,
                 useAppSettingsAssets: useAssets, filesystemUsageDetected: filesystemUsage);
             var assets = Assert.IsType<AssetsData>(config.resources);
