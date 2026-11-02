@@ -849,9 +849,9 @@ namespace System.IO.Ports
         private static int DoIORequest(Queue<SerialStreamIORequest> q, object queueLock, RequestProcessor op)
         {
             // assumes dequeue-ing happens on a single thread
-            while (TryPeekNextRequest(out SerialStreamIORequest r))
+            while (TryPeekNextRequest(out SerialStreamIORequest? r))
             {
-                int ret = op(r);
+                int ret = op(r!);
                 Debug.Assert(ret >= 0);
 
                 if (r.IsCompleted)
