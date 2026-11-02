@@ -119,6 +119,31 @@ namespace System.SpanTests
             Assert.Equal(expectedValues, values.ToArray());
         }
 
+        [Theory]
+        [InlineData(16, false)]
+        [InlineData(16, true)]
+        [InlineData(17, false)]
+        [InlineData(17, true)]
+        [InlineData(499, false)]
+        [InlineData(499, true)]
+        public static void Sort_PairedSpans_StructComparer(int length, bool reverseInput)
+        {
+            int[] keys = Enumerable.Range(0, length).ToArray();
+            if (reverseInput)
+            {
+                Array.Reverse(keys);
+            }
+
+            int[] items = keys.Select(key => key + length).ToArray();
+            int[] expectedKeys = Enumerable.Range(0, length).ToArray();
+            int[] expectedItems = expectedKeys.Select(key => key + length).ToArray();
+
+            MemoryExtensions.Sort<int, int, StructIntComparer>(keys.AsSpan(), items.AsSpan(), new StructIntComparer());
+
+            Assert.Equal(expectedKeys, keys);
+            Assert.Equal(expectedItems, items);
+        }
+
         public static IEnumerable<object[]> Sort_MemberData()
         {
             var rand = new Random(42);
@@ -142,6 +167,11 @@ namespace System.SpanTests
 
                 T[] CreateArray<T>(Func<int, T> getValue) => Enumerable.Range(0, length).Select(_ => getValue(rand.Next())).ToArray();
             }
+        }
+
+        private readonly struct StructIntComparer : IComparer<int>
+        {
+            public int Compare(int x, int y) => x.CompareTo(y);
         }
     }
 }

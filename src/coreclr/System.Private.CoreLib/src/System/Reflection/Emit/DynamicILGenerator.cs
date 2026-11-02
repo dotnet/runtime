@@ -504,11 +504,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal override void RecordTokenFixup()
-        {
-            // DynamicMethod doesn't need fixup.
-        }
-
         #region GetTokenFor helpers
         private int GetTokenFor(RuntimeType rtType)
         {

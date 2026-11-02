@@ -106,7 +106,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 #else // !DACCESS_COMPILE
 
 #if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
-void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CHECK*/))
+void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CHECK*/)) noexcept
 {
     //-------------------------------------------------------------------------------------------
     // What, no CONTRACT?
@@ -237,7 +237,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 //-----------------------------------------------------------------
 // Release the lock.
 //-----------------------------------------------------------------
-void CrstBase::Leave()
+void CrstBase::Leave() noexcept
 {
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_NOTHROW;

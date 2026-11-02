@@ -33,12 +33,12 @@ EXTERN_C
 #endif
 PLATFORM_THREAD_LOCAL ThreadLocalInfo t_CurrentThreadInfo;
 
-inline Thread* GetThreadNULLOk()
+inline Thread* GetThreadNULLOk() noexcept
 {
     return t_CurrentThreadInfo.m_pThread;
 }
 
-inline Thread* GetThread()
+inline Thread* GetThread() noexcept
 {
     Thread* pThread = t_CurrentThreadInfo.m_pThread;
     _ASSERTE(pThread);

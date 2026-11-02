@@ -251,7 +251,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 return;
             }
 
-            if (ReferenceEquals(pr._dtType, Converter.s_typeofString))
+            if (ReferenceEquals(pr._dtType, typeof(string)))
             {
                 // String as a top level object
                 if (pr._value != null)
@@ -307,7 +307,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (objectPr._objectPositionEnum == InternalObjectPositionE.Top)
             {
-                if (ReferenceEquals(objectPr._dtType, Converter.s_typeofString))
+                if (ReferenceEquals(objectPr._dtType, typeof(string)))
                 {
                     objectPr._newObj = objectPr._value;
                     TopObject = objectPr._newObj;
@@ -406,13 +406,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 bool couldBeValueType = true;
                 if ((pr._lowerBoundA == null) || (pr._lowerBoundA[0] == 0))
                 {
-                    if (ReferenceEquals(pr._arrayElementType, Converter.s_typeofString))
+                    if (ReferenceEquals(pr._arrayElementType, typeof(string)))
                     {
                         pr._objectA = new string[pr._lengthA[0]];
                         pr._newObj = pr._objectA;
                         couldBeValueType = false;
                     }
-                    else if (ReferenceEquals(pr._arrayElementType, Converter.s_typeofObject))
+                    else if (ReferenceEquals(pr._arrayElementType, typeof(object)))
                     {
                         pr._objectA = new object[pr._lengthA[0]];
                         pr._newObj = pr._objectA;
@@ -622,7 +622,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             else if (pr._memberValueEnum == InternalMemberValueE.InlineValue)
             {
-                if ((ReferenceEquals(objectPr._arrayElementType, Converter.s_typeofString)) || (ReferenceEquals(pr._dtType, Converter.s_typeofString)))
+                if ((ReferenceEquals(objectPr._arrayElementType, typeof(string))) || (ReferenceEquals(pr._dtType, typeof(string))))
                 {
                     // String in either a string array, or a string element of an object array
                     ParseString(pr, objectPr);
@@ -646,7 +646,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
                     object? var;
 
-                    if (ReferenceEquals(pr._dtType, Converter.s_typeofString))
+                    if (ReferenceEquals(pr._dtType, typeof(string)))
                     {
                         ParseString(pr, objectPr);
                         var = pr._value;
@@ -780,7 +780,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             else if (pr._memberValueEnum == InternalMemberValueE.InlineValue)
             {
                 // Primitive type or String
-                if (ReferenceEquals(pr._dtType, Converter.s_typeofString))
+                if (ReferenceEquals(pr._dtType, typeof(string)))
                 {
                     ParseString(pr, objectPr);
                     objectPr._objectInfo.AddValue(pr._name, pr._value, ref objectPr._si, ref objectPr._memberData);
@@ -793,7 +793,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         Debug.Assert(pr._value != null);
                         objectPr._objectInfo.AddValue(pr._name, Convert.FromBase64String(pr._value), ref objectPr._si, ref objectPr._memberData);
                     }
-                    else if (ReferenceEquals(pr._dtType, Converter.s_typeofObject))
+                    else if (ReferenceEquals(pr._dtType, typeof(object)))
                     {
                         throw new SerializationException(SR.Format(SR.Serialization_TypeMissing, pr._name));
                     }
@@ -802,7 +802,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         ParseString(pr, objectPr); // Register the object if it has an objectId
                         // Object Class with no memberInfo data
                         // only special case where AddValue is needed?
-                        if (ReferenceEquals(pr._dtType, Converter.s_typeofSystemVoid))
+                        if (ReferenceEquals(pr._dtType, typeof(void)))
                         {
                             objectPr._objectInfo.AddValue(pr._name, pr._dtType, ref objectPr._si, ref objectPr._memberData);
                         }

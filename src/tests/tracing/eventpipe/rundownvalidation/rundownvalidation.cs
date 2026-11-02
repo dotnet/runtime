@@ -419,7 +419,7 @@ namespace Tracing.Tests.RundownValidation
                 Path.Combine(
                     AppContext.BaseDirectory,
                     typeof(RundownValidation).Assembly.GetName().Name + ".dll"));
-            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.InheritedHandles = [];
             process.StartInfo.Environment[LcgJumpStubChildEnvironmentVariable] = "1";
             process.StartInfo.Environment["DOTNET_EnableEventPipe"] = "1";
             process.StartInfo.Environment["DOTNET_EventPipeConfig"] =
@@ -433,17 +433,16 @@ namespace Tracing.Tests.RundownValidation
             string tracePath = outputPathPattern.Replace("{pid}", process.Id.ToString());
             try
             {
-                if (!process.WaitForExit(5 * 60 * 1000))
+                ProcessExitStatus status = process.SafeHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMinutes(5));
+                if (status.Canceled)
                 {
-                    process.Kill();
-                    process.WaitForExit();
                     Logger.logger.Log("LCG jump-stub child process timed out.");
                     return -1;
                 }
 
-                if (process.ExitCode != 100 || !File.Exists(tracePath))
+                if (status.ExitCode != 100 || !File.Exists(tracePath))
                 {
-                    Logger.logger.Log($"LCG jump-stub child exited with {process.ExitCode}; trace exists: {File.Exists(tracePath)}.");
+                    Logger.logger.Log($"LCG jump-stub child exited with {status.ExitCode}; trace exists: {File.Exists(tracePath)}.");
                     return -1;
                 }
 

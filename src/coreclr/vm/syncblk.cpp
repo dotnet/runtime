@@ -124,7 +124,7 @@ RCW* InteropSyncBlockInfo::GetRCWAndIncrementUseCount()
         }
 
         // somebody else holds the lock, retry
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
     }
 }
 
@@ -164,7 +164,7 @@ void InteropSyncBlockInfo::SetRawRCW(RCW* pRCW)
             }
 
             // somebody else holds the lock, retry
-            __SwitchToThread(0, ++dwSwitchCount);
+            minipal_switch_to_thread(++dwSwitchCount);
         }
     }
 }
@@ -819,29 +819,6 @@ void    SyncBlockCache::DeleteSyncBlockMemory(SyncBlock *psb)
 
 }
 
-// free a used sync block
-void SyncBlockCache::GCDeleteSyncBlock(SyncBlock *psb)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Destruct the SyncBlock, but don't reclaim its memory.  (Overridden
-    // operator delete).
-    delete psb;
-
-    m_ActiveCount--;
-    m_FreeCount++;
-
-    psb->m_pNext = m_FreeBlockList;
-    m_FreeBlockList = psb;
-}
-
 void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
 {
     CONTRACTL
@@ -952,8 +929,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
                     if (((size_t) *keyv & 1) == 0)
                     {
                         (*scanProc) (keyv, NULL, lp1, lp2);
-                        SyncBlock   *pSB = syncTableShadow[nb].m_SyncBlock;
-                        if (*keyv != 0 && (!pSB || !pSB->IsIDisposable()))
+                        if (*keyv != 0)
                         {
                             if (syncTableShadow[nb].m_Object != SyncTableEntry::GetSyncTableEntry()[nb].m_Object)
                                 DebugBreak ();
@@ -1059,9 +1035,9 @@ BOOL SyncBlockCache::GCWeakPtrScanElement (int nb, HANDLESCANPROC scanProc, LPAR
 #endif
 
         (*scanProc) (keyv, NULL, lp1, lp2);
-        SyncBlock   *pSB = SyncTableEntry::GetSyncTableEntry()[nb].m_SyncBlock;
-        if ((*keyv == 0 ) || (pSB && pSB->IsIDisposable()))
+        if (*keyv == 0)
         {
+            SyncBlock   *pSB = SyncTableEntry::GetSyncTableEntry()[nb].m_SyncBlock;
 #ifdef VERIFY_HEAP
             if (g_pConfig->GetHeapVerifyLevel () & EEConfig::HEAPVERIFY_SYNCBLK)
             {
@@ -1070,19 +1046,11 @@ BOOL SyncBlockCache::GCWeakPtrScanElement (int nb, HANDLESCANPROC scanProc, LPAR
             }
 #endif
 
-            if (*keyv)
+            if (pSB)
             {
-                _ASSERTE (pSB);
-                GCDeleteSyncBlock(pSB);
-                //clean the object syncblock header
-                ((Object*)(*keyv))->GetHeader()->GCResetIndex();
-            }
-            else if (pSB)
-            {
-
                 cleanup = TRUE;
                 // insert block into cleanup list
-                InsertCleanupSyncBlock (SyncTableEntry::GetSyncTableEntry()[nb].m_SyncBlock);
+                InsertCleanupSyncBlock (pSB);
 #ifdef DUMP_SB
                 LogSpewAlways("       Cleaning up block at %4.4d\n", nb);
 #endif
@@ -1212,7 +1180,7 @@ void SyncBlockCache::VerifySyncTableEntry()
                 {
                     break;
                 }
-                __SwitchToThread(0, CALLER_LIMITS_SPINNING);
+                minipal_switch_to_thread(0);
             }
 
             DWORD idx = o->GetHeader()->GetHeaderSyncBlockIndex();
@@ -1336,10 +1304,10 @@ namespace
                     YieldProcessorNormalized(); // indicate to the processor that we are spinning
                 }
                 if  (*pLock & BIT_SBLK_SPIN_LOCK)
-                    __SwitchToThread(0, ++dwSwitchCount);
+                    minipal_switch_to_thread(++dwSwitchCount);
             }
             else
-                __SwitchToThread(0, ++dwSwitchCount);
+                minipal_switch_to_thread(++dwSwitchCount);
         }
     }
 
@@ -1408,57 +1376,6 @@ DEBUG_NOINLINE void ObjHeader::ReleaseSpinLock()
     ::ReleaseSpinLock(std::addressof(m_SyncBlockValue));
 }
 
-DWORD ObjHeader::GetSyncBlockIndex()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DWORD   indx;
-
-    if ((indx = GetHeaderSyncBlockIndex()) == 0)
-    {
-        BOOL fMustCreateSyncBlock = FALSE;
-        {
-            //Need to get it from the cache
-            SyncBlockCache::LockHolder lh(SyncBlockCache::GetSyncBlockCache());
-
-            //Try one more time
-            if (GetHeaderSyncBlockIndex() == 0)
-            {
-                EnterSpinLock();
-                // Now the header will be stable - check whether hashcode, appdomain index or lock information is stored in it.
-                DWORD bits = GetBits();
-                if (((bits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) == (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) ||
-                    ((bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) == 0))
-                {
-                    // Need a sync block to store this info
-                    fMustCreateSyncBlock = TRUE;
-                }
-                else
-                {
-                    SetIndex(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | SyncBlockCache::GetSyncBlockCache()->NewSyncBlockSlot(GetBaseObject()));
-                }
-                ReleaseSpinLock();
-            }
-            // SyncBlockCache::LockHolder goes out of scope here
-        }
-
-        if (fMustCreateSyncBlock)
-            GetSyncBlock();
-
-        if ((indx = GetHeaderSyncBlockIndex()) == 0)
-            COMPlusThrowOM();
-    }
-
-    return indx;
-}
-
 #if defined (VERIFY_HEAP)
 
 BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
@@ -1467,7 +1384,7 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    DWORD bits = GetBits ();
+    DWORD bits = GetBitsAcquire ();
     Object * obj = GetBaseObject ();
     BOOL bVerifyMore = g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_SYNCBLK;
     //the highest 2 bits have reloaded meaning
@@ -1556,14 +1473,13 @@ SyncBlock *ObjHeader::GetSyncBlock()
 
     PTR_SyncBlock syncBlock = GetBaseObject()->PassiveGetSyncBlock();
     DWORD      indx = 0;
-    BOOL indexHeld = FALSE;
-
     if (syncBlock)
     {
 #ifdef _DEBUG
         // Has our backpointer been correctly updated through every GC?
+        DWORD index = GetBitsAcquire() & MASK_SYNCBLOCKINDEX;
         PTR_SyncTableEntry pEntries(SyncTableEntry::GetSyncTableEntry());
-        _ASSERTE(pEntries[GetHeaderSyncBlockIndex()].m_Object == GetBaseObject());
+        _ASSERTE(pEntries[index].m_Object == GetBaseObject());
 #endif // _DEBUG
         return syncBlock;
     }
@@ -1575,9 +1491,9 @@ SyncBlock *ObjHeader::GetSyncBlock()
         //Try one more time
         syncBlock = GetBaseObject()->PassiveGetSyncBlock();
         if (syncBlock)
-            {
-                return syncBlock;
-            }
+        {
+            return syncBlock;
+        }
 
         SyncBlockMemoryHolder syncBlockMemoryHolder(SyncBlockCache::GetSyncBlockCache()->GetNextFreeSyncBlock());
         syncBlock = syncBlockMemoryHolder;
@@ -1586,12 +1502,6 @@ SyncBlock *ObjHeader::GetSyncBlock()
         {
             indx = SyncBlockCache::GetSyncBlockCache()->NewSyncBlockSlot(GetBaseObject());
         }
-        else
-        {
-            //We already have an index, we need to hold the syncblock
-            indexHeld = TRUE;
-        }
-
         {
             //! NewSyncBlockSlot has side-effects that we don't have backout for - thus, that must be the last
             //! failable operation called.
@@ -1627,7 +1537,8 @@ SyncBlock *ObjHeader::GetSyncBlock()
                     }
                 }
 
-                SyncTableEntry::GetSyncTableEntry() [indx].m_SyncBlock = syncBlock;
+                // Publish the fully initialized block before any reader can discover it.
+                VolatileStore(&SyncTableEntry::GetSyncTableEntry()[indx].m_SyncBlock, syncBlock);
 
                 // in order to avoid a race where some thread tries to get the AD index and we've already zapped it,
                 // make sure the syncblock etc is all setup with the AD index prior to replacing the index
@@ -1637,11 +1548,6 @@ SyncBlock *ObjHeader::GetSyncBlock()
                     // We have transferred the AppDomain into the syncblock above.
                     SetIndex(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | indx);
                 }
-
-                //If we had already an index, hold the syncblock
-                //for the lifetime of the object.
-                if (indexHeld)
-                    syncBlock->SetPrecious();
 
                 ReleaseSpinLock();
             }
@@ -1661,8 +1567,6 @@ SyncBlock *ObjHeader::GetSyncBlock()
 bool SyncBlock::SetInteropInfo(InteropSyncBlockInfo* pInteropInfo)
 {
     WRAPPER_NO_CONTRACT;
-    SetPrecious();
-
     // We could be agile, but not have noticed yet.  We can't assert here
     //  that we live in any given domain, nor is this an appropriate place
     //  to re-parent the syncblock.
@@ -1682,9 +1586,6 @@ bool SyncBlock::SetInteropInfo(InteropSyncBlockInfo* pInteropInfo)
 void SyncBlock::SetEnCInfo(EnCSyncBlockInfo *pEnCInfo)
 {
     WRAPPER_NO_CONTRACT;
-
-    // We can't recreate the field contents, so this SyncBlock can never go away
-    SetPrecious();
 
     // Store the field info (should only ever happen once)
     _ASSERTE( m_pEnCInfo == NULL );
@@ -1716,8 +1617,6 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
     {
         return existingLock;
     }
-
-    SetPrecious();
 
     // We'll likely need to put this lock object into the sync block.
     // Create the handle here.

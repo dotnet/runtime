@@ -5,8 +5,6 @@
   <PropertyGroup>
     <DebugType>Full</DebugType>
     <Optimize>False</Optimize>
-    <!-- Managed ilasm consumes excessive amount of memory -->
-    <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="HugeField2.cs" />

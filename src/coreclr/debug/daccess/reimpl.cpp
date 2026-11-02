@@ -49,7 +49,7 @@ DacGetThread(ULONG32 osThread)
         return NULL;
     }
 
-    Thread* thread = ThreadStore::s_pThreadStore->m_ThreadList.GetHead();
+    Thread* thread = ThreadStore::GetAllThreadList(NULL, 0, 0);
     while (thread)
     {
         if (thread->GetOSThreadId() == osThread)
@@ -57,13 +57,13 @@ DacGetThread(ULONG32 osThread)
             return thread;
         }
 
-        thread = ThreadStore::s_pThreadStore->m_ThreadList.GetNext(thread);
+        thread = ThreadStore::GetAllThreadList(thread, 0, 0);
     }
 
     return NULL;
 }
 
-Thread* GetThread()
+Thread* GetThread() noexcept
 {
     // In dac mode it's unlikely that the thread calling dac
     // is actually the same "current thread" that the runtime cares
@@ -75,7 +75,7 @@ Thread* GetThread()
     return NULL;
 }
 
-Thread* GetThreadNULLOk()
+Thread* GetThreadNULLOk() noexcept
 {
     return GetThread();
 }
@@ -116,4 +116,3 @@ DacGetThreadContext(Thread* thread, T_CONTEXT* context)
 
     return TRUE;
 }
-

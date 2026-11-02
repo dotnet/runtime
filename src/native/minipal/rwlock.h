@@ -6,6 +6,12 @@
 
 #include <stdbool.h>
 
+#ifdef __cplusplus
+#define MINIPAL_RWLOCK_NOEXCEPT noexcept
+#else
+#define MINIPAL_RWLOCK_NOEXCEPT
+#endif
+
 #ifdef HOST_WINDOWS
 #include <windows.h>
 typedef SRWLOCK MINIPAL_RWLOCK_IMPL;
@@ -25,25 +31,27 @@ typedef struct _minipal_rwlock
 } minipal_rwlock;
 
 // Initialize the read-write lock.
-bool minipal_rwlock_init(minipal_rwlock* rwlock);
+bool minipal_rwlock_init(minipal_rwlock* rwlock) MINIPAL_RWLOCK_NOEXCEPT;
 
 // Destroy the read-write lock.
-void minipal_rwlock_destroy(minipal_rwlock* rwlock);
+void minipal_rwlock_destroy(minipal_rwlock* rwlock) MINIPAL_RWLOCK_NOEXCEPT;
 
 // Enter the read-write lock in shared mode. Blocks until the lock can be entered.
-bool minipal_rwlock_enter_read(minipal_rwlock* rwlock);
+bool minipal_rwlock_enter_read(minipal_rwlock* rwlock) MINIPAL_RWLOCK_NOEXCEPT;
 
 // Leave the read-write lock from shared mode.
-void minipal_rwlock_leave_read(minipal_rwlock* rwlock);
+void minipal_rwlock_leave_read(minipal_rwlock* rwlock) MINIPAL_RWLOCK_NOEXCEPT;
 
 // Enter the read-write lock in exclusive mode. Blocks until the lock can be entered.
-bool minipal_rwlock_enter_write(minipal_rwlock* rwlock);
+bool minipal_rwlock_enter_write(minipal_rwlock* rwlock) MINIPAL_RWLOCK_NOEXCEPT;
 
 // Leave the read-write lock from exclusive mode.
-void minipal_rwlock_leave_write(minipal_rwlock* rwlock);
+void minipal_rwlock_leave_write(minipal_rwlock* rwlock) MINIPAL_RWLOCK_NOEXCEPT;
 
 #ifdef __cplusplus
 }
 #endif // __cplusplus
+
+#undef MINIPAL_RWLOCK_NOEXCEPT
 
 #endif // HAVE_MINIPAL_RWLOCK_H

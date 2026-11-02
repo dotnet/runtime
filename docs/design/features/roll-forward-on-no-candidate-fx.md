@@ -1,5 +1,10 @@
 # Roll Forward On No Candidate Fx
 
+> [!NOTE]
+> This document describes historical behavior. Starting in .NET 12, `rollForwardOnNoCandidateFx`,
+> `applyPatches`, `--roll-forward-on-no-candidate-fx`, and `DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX` are
+> ignored or no longer recognized. Use `rollForward`, `--roll-forward`, or `DOTNET_ROLL_FORWARD` instead.
+
 ## Default Behavior
 
 The desired framework version is defined through a configuration json file (appname.runtimeconfig.json).

@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
 // Disassembler
-//
+
 #include "ildasmpch.h"
 
 #include "debugmacros.h"
@@ -191,28 +190,6 @@ void printLine(void* GUICookie, _In_ __nullterminated const char* string)
         }
         else sz = (char*)wz;
     }
-    ToGUIOrFile(sz,GUICookie);
-}
-
-void printLineW(void* GUICookie, _In_ __nullterminated const WCHAR* string)
-{
-    const char* sz = (const char*)string;
-
-    if (GUICookie == NULL)
-    {
-        UnicodeToConsoleOrMsgBox(string);
-        return;
-    }
-    if(g_uCodePage == 0xFFFFFFFF)
-    {
-        UnicodeToFile(string,(FILE*)GUICookie);
-        return;
-    }
-    else if(g_uCodePage == CP_UTF8)
-        sz = UnicodeToUtf(string);
-    else if(g_uCodePage == g_uConsoleCP)
-        sz = UnicodeToAnsi(string);
-
     ToGUIOrFile(sz,GUICookie);
 }
 

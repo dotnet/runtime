@@ -37,6 +37,9 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
+using DependencyNode = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 
 #pragma warning disable IDE0060
 
@@ -452,6 +455,12 @@ namespace Internal.JitInterface
             if (compilationCompleteBehavior == CompilationResult.CompilationRetryRequested)
                 return compilationCompleteBehavior;
 
+#if READYTORUN
+            // Helper probes run the full JIT pipeline but discard all generated nodes and dependencies.
+            if (_isCompilationProbe)
+                return CompilationResult.CompilationComplete;
+#endif
+
             PublishCode();
             PublishROData();
             PublishRWData();
@@ -463,6 +472,32 @@ namespace Internal.JitInterface
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result);
         partial void PublishWasmMethodVirtualIPFixups();
         partial void ClearWasmMethodVirtualIPFixups();
+
+        private static FuncletKind[] GetWasmFuncletKinds(CORINFO_EH_CLAUSE[] clauses)
+        {
+            ArrayBuilder<FuncletKind> funcletKinds = new(clauses.Length);
+            foreach (CORINFO_EH_CLAUSE clause in clauses)
+            {
+                if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FINALLY) != 0)
+                {
+                    funcletKinds.Add(FuncletKind.Finally);
+                }
+                else if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FAULT) != 0)
+                {
+                    funcletKinds.Add(FuncletKind.Fault);
+                }
+                else
+                {
+                    if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER) != 0)
+                    {
+                        funcletKinds.Add(FuncletKind.Filter);
+                    }
+                    funcletKinds.Add(FuncletKind.CatchOrFilterHandler);
+                }
+            }
+
+            return funcletKinds.ToArray();
+        }
 
         private void PublishCode()
         {
@@ -521,6 +556,10 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeDebugEHClauseInfos(debugEHClauseInfos);
             _methodCodeNode.InitializeGCInfo(_gcInfo);
             _methodCodeNode.InitializeEHInfo(ehInfo);
+            if (_compilation.NodeFactory.Target.IsWasm && _ehClauses is not null)
+            {
+                _methodCodeNode.InitializeFuncletKinds(GetWasmFuncletKinds(_ehClauses));
+            }
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
@@ -538,25 +577,7 @@ namespace Internal.JitInterface
             }
             _methodCodeNode.InitializeInliningInfo(inlineeArray, _compilation.NodeFactory);
 
-            // Detect cases where the instruction set support used is a superset of the baseline instruction set specification
-            var baselineSupport = _compilation.InstructionSetSupport;
-            bool needPerMethodInstructionSetFixup = false;
-            foreach (var instructionSet in _actualInstructionSetSupported)
-            {
-                if (!baselineSupport.IsInstructionSetSupported(instructionSet))
-                {
-                    needPerMethodInstructionSetFixup = true;
-                }
-            }
-            foreach (var instructionSet in _actualInstructionSetUnsupported)
-            {
-                if (!baselineSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
-                {
-                    needPerMethodInstructionSetFixup = true;
-                }
-            }
-
-            if (needPerMethodInstructionSetFixup)
+            if (RequiresInstructionSetSupportFixup())
             {
                 TargetArchitecture architecture = _compilation.TypeSystemContext.Target.Architecture;
                 _actualInstructionSetSupported.ExpandInstructionSetByImplication(architecture);
@@ -576,17 +597,7 @@ namespace Internal.JitInterface
                 {
                     if (computedNodes.Add(fixup))
                     {
-                        if (fixup is IMethodNode methodNode)
-                        {
-                            try
-                            {
-                                _compilation.NodeFactory.DetectGenericCycles(_methodCodeNode.Method, methodNode.Method);
-                            }
-                            catch (TypeLoadException)
-                            {
-                                throw new RequiresRuntimeJitException("Requires runtime JIT - potential generic cycle detected");
-                            }
-                        }
+                        ValidatePrecodeFixup(fixup);
                         _methodCodeNode.Fixups.Add(fixup);
                     }
                 }
@@ -595,11 +606,11 @@ namespace Internal.JitInterface
             if (_synthesizedPgoDependencies != null)
             {
                 Debug.Assert(_compilation.NodeFactory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to be non-null with synthesized PGO data to embed");
-                _compilation.NodeFactory.InstrumentationDataTable.EmbedSynthesizedPgoDataForMethods(ref _additionalDependencies, _synthesizedPgoDependencies);
+                _compilation.NodeFactory.InstrumentationDataTable.EmbedSynthesizedPgoDataForMethods(_additionalDependencies, _synthesizedPgoDependencies);
             }
 #else
             var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(_additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
             _methodCodeNode.InitializeDebugInfo(_debugInfo);
 
             LocalVariableDefinition[] locals = methodIL.GetLocals();
@@ -610,8 +621,32 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeLocalTypes(localTypes);
 #endif
 
-            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
+            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies.TakeDependencies());
         }
+
+#if READYTORUN
+        private bool RequiresInstructionSetSupportFixup()
+        {
+            InstructionSetSupport baselineSupport = _compilation.InstructionSetSupport;
+            foreach (InstructionSet instructionSet in _actualInstructionSetSupported)
+            {
+                if (!baselineSupport.IsInstructionSetSupported(instructionSet))
+                {
+                    return true;
+                }
+            }
+
+            foreach (InstructionSet instructionSet in _actualInstructionSetUnsupported)
+            {
+                if (!baselineSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+#endif
 
         private void PublishROData()
         {
@@ -723,7 +758,7 @@ namespace Internal.JitInterface
 
             _gcInfo = null;
             _ehClauses = null;
-            _additionalDependencies = null;
+            _additionalDependencies.Clear();
 
 #if !READYTORUN
             _debugInfo = null;
@@ -760,6 +795,7 @@ namespace Internal.JitInterface
 
         private const int handleMultiplier = 8;
         private const int handleBase = 0x420000;
+        private void* InvalidHandle => (void*)(handleBase - handleMultiplier);
 
         private IntPtr ObjectToHandle(object obj)
         {
@@ -785,6 +821,7 @@ namespace Internal.JitInterface
         private object HandleToObject(void* handle)
         {
             Debug.Assert(handle != null);
+            Debug.Assert(handle != InvalidHandle);
             int index = ((int)handle - handleBase) / handleMultiplier;
             return _handleToObject[index];
         }
@@ -1422,6 +1459,14 @@ namespace Internal.JitInterface
         private void reportTailCallDecision(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
 #pragma warning restore CA1822 // Mark members as static
         {
+#if READYTORUN
+            // R2R/interpreter transitions do not preserve tail calls, and explicit tail calls that cannot be
+            // fast are demoted to regular calls. Leave methods with explicit tail calls to the interpreter.
+            if (fIsTailPrefix && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
+            {
+                throw new RequiresRuntimeJitException(nameof(reportTailCallDecision));
+            }
+#endif
         }
 
         private void getEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, ref CORINFO_EH_CLAUSE clause)
@@ -1855,12 +1900,6 @@ namespace Internal.JitInterface
         private PatchpointInfo* getOSRInfo(ref uint ilOffset)
         { throw new NotImplementedException("getOSRInfo"); }
 
-#pragma warning disable CA1822 // Mark members as static
-        private void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_STRUCT_* method)
-#pragma warning restore CA1822 // Mark members as static
-        {
-        }
-
         private static object ResolveTokenWithSubstitution(MethodILScope methodIL, mdToken token, Instantiation typeInst, Instantiation methodInst)
         {
             // Grab the generic definition of the method IL, resolve the token within the definition,
@@ -2037,7 +2076,7 @@ namespace Internal.JitInterface
                     ValidateSafetyOfUsingTypeEquivalenceInSignature(method.Signature);
                 }
 #else
-                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(_additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
 #endif
 
                 if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)
@@ -2078,7 +2117,7 @@ namespace Internal.JitInterface
 #endif
 
 #if !READYTORUN
-                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(_additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
 #else
                 ValidateSafetyOfUsingTypeEquivalenceOfType(field.FieldType);
 #endif
@@ -2286,6 +2325,16 @@ namespace Internal.JitInterface
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
         {
             return HandleToObject(cls).IsValueType;
+        }
+
+        private bool isByRefLike(CORINFO_CLASS_STRUCT_* cls)
+        {
+            return HandleToObject(cls).IsByRefLike;
+        }
+
+        private bool isSharedInst(CORINFO_CLASS_STRUCT_* cls)
+        {
+            return HandleToObject(cls).IsCanonicalSubtype(CanonicalFormKind.Any);
         }
 
         private uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)
@@ -3145,8 +3194,8 @@ namespace Internal.JitInterface
             // In R2R it is a breaking change for a previously positive
             // cast to become negative, but not for a previously negative
             // cast to become positive. So in R2R a negative result is
-            // always reported back as May.
-            if (result == TypeCompareState.MustNot)
+            // reported back as May, unless it can't change across versions.
+            if (result == TypeCompareState.MustNot && !IsNegativeCastResultVersionResilient(fromType, toType))
             {
                 result = TypeCompareState.May;
             }
@@ -4097,32 +4146,46 @@ namespace Internal.JitInterface
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
 
-        private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
+        private Dictionary<CorInfoHelpFunc, (ISymbolNode EntryPoint, MethodDesc Method)> _helperCache =
+            new Dictionary<CorInfoHelpFunc, (ISymbolNode EntryPoint, MethodDesc Method)>();
+
+        internal void ClearHelperCache()
+        {
+            _helperCache.Clear();
+        }
+
         private void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
         {
-            // We never return a method handle from the managed implementation of this method today
-            if (pMethod != null)
-                *pMethod = null;
+            if (!_helperCache.TryGetValue(ftnNum, out (ISymbolNode EntryPoint, MethodDesc Method) helper))
+            {
+                ISymbolNode entryPoint = GetHelperFtnUncached(ftnNum, out MethodDesc method);
+                helper = (entryPoint, method);
+                _helperCache.Add(ftnNum, helper);
+            }
+
+#if READYTORUN
+            if (helper.Method is not null)
+            {
+                AddManagedHelperDependency(helper.Method);
+            }
+#endif
 
             if (pNativeEntrypoint != null)
             {
-                ISymbolNode entryPoint;
-                if (!_helperCache.TryGetValue(ftnNum, out entryPoint))
+                if (helper.EntryPoint.RepresentsIndirectionCell)
                 {
-                    entryPoint = GetHelperFtnUncached(ftnNum);
-                    _helperCache.Add(ftnNum, entryPoint);
-                }
-                if (entryPoint.RepresentsIndirectionCell)
-                {
-                    pNativeEntrypoint->addr = (void*)ObjectToHandle(entryPoint);
+                    pNativeEntrypoint->addr = (void*)ObjectToHandle(helper.EntryPoint);
                     pNativeEntrypoint->accessType = InfoAccessType.IAT_PVALUE;
                 }
                 else
                 {
-                    pNativeEntrypoint->addr = (void*)ObjectToHandle(entryPoint);
+                    pNativeEntrypoint->addr = (void*)ObjectToHandle(helper.EntryPoint);
                     pNativeEntrypoint->accessType = InfoAccessType.IAT_VALUE;
                 }
             }
+
+            if (pMethod != null)
+                *pMethod = helper.Method is null ? null : ObjectToHandle(helper.Method);
         }
 
         public static ReadyToRunHelperId GetReadyToRunHelperFromStaticBaseHelper(CorInfoHelpFunc helper)
@@ -4228,8 +4291,6 @@ namespace Internal.JitInterface
 
         private uint getFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
         { throw new NotImplementedException("getFieldThreadLocalStoreID"); }
-        private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
-        { throw new NotImplementedException("GetDelegateCtor"); }
         private void MethodCompileComplete(CORINFO_METHOD_STRUCT_* methHnd)
         { throw new NotImplementedException("MethodCompileComplete"); }
 
@@ -4272,7 +4333,47 @@ namespace Internal.JitInterface
         private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
 
-        private DependencyList _additionalDependencies;
+        private sealed class AdditionalDependencyList : IDependencySink
+        {
+            private DependencyList _dependencies;
+
+            public void Add(DependencyNode node, string reason)
+            {
+                (_dependencies ??= new DependencyList()).Add(node, reason);
+            }
+
+            public void Add(object node, string reason)
+            {
+                (_dependencies ??= new DependencyList()).Add(node, reason);
+            }
+
+            public void Add(DependencyListEntry dependency)
+            {
+                (_dependencies ??= new DependencyList()).Add(dependency);
+            }
+
+            public void AddRange(params ReadOnlySpan<DependencyListEntry> dependencies)
+            {
+                foreach (DependencyListEntry dependency in dependencies)
+                {
+                    Add(dependency);
+                }
+            }
+
+            public DependencyList TakeDependencies()
+            {
+                DependencyList dependencies = _dependencies;
+                _dependencies = null;
+                return dependencies;
+            }
+
+            public void Clear()
+            {
+                _dependencies = null;
+            }
+        }
+
+        private readonly AdditionalDependencyList _additionalDependencies = new AdditionalDependencyList();
 
         private void allocMem(ref AllocMemArgs args)
         {
@@ -4634,6 +4735,7 @@ namespace Internal.JitInterface
                 CorInfoReloc.WASM_TYPE_INDEX_LEB => RelocType.WASM_TYPE_INDEX_LEB,
                 CorInfoReloc.WASM_GLOBAL_INDEX_LEB => RelocType.WASM_GLOBAL_INDEX_LEB,
                 CorInfoReloc.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB => RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB,
+                CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB => RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
             };
 
@@ -4932,6 +5034,10 @@ namespace Internal.JitInterface
             if (this.MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
+                if (_methodCodeNode.IsJitHelper)
+                {
+                    flags.Set(CorJitFlag.CORJIT_FLAG_WASM_MANAGED_HELPER);
+                }
             }
 #endif
 

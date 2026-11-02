@@ -187,7 +187,11 @@ namespace System.Diagnostics
         public string DisplayName
         {
             get => _displayName ?? OperationName;
-            set => _displayName = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _displayName = value;
+            }
         }
 
         /// <summary>Get the ActivitySource object associated with this Activity.</summary>
@@ -1197,7 +1201,10 @@ namespace System.Diagnostics
             activity.IdFormat = idFormat;
             activity._traceState = traceState;
 
-            if (links != null)
+            // Links and creation tags are unnecessary for activities sampled as PropagationData, so skip copying them.
+            bool copyData = request is ActivitySamplingResult.AllData or ActivitySamplingResult.AllDataAndRecorded;
+
+            if (copyData && links != null)
             {
                 using (IEnumerator<ActivityLink> enumerator = links.GetEnumerator())
                 {
@@ -1208,7 +1215,7 @@ namespace System.Diagnostics
                 }
             }
 
-            if (tags != null)
+            if (copyData && tags != null)
             {
                 using (IEnumerator<KeyValuePair<string, object?>> enumerator = tags.GetEnumerator())
                 {

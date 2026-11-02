@@ -684,6 +684,8 @@ NESTED_ENTRY BackPatchWorkerAsmStub, _TEXT, NoHandler
     ret
 NESTED_END BackPatchWorkerAsmStub, _TEXT
 
+#ifdef PROFILING_SUPPORTED
+
 NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
     push    esi
     push    edi
@@ -881,6 +883,8 @@ NESTED_END ProfileTailcallNaked, _TEXT
 NESTED_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT, NoHandler
     ret
 NESTED_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
+
+#endif // PROFILING_SUPPORTED
 
 #ifdef FEATURE_TIERED_COMPILATION
 

@@ -3476,6 +3476,12 @@ void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
                         assert((simdSize == 16) || (simdSize == 32));
                         break;
                     }
+
+                    case NI_X86Base_DivRem:
+                    case NI_X86Base_X64_DivRem:
+                    {
+                        break;
+                    }
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)
@@ -3597,12 +3603,10 @@ void Compiler::fgDebugCheckType(GenTree* node)
 // and then calls gtDispFlags to display the rest.
 //
 // Arguments:
-//    tree       - Tree whose flags are being checked
-//    dispFlags  - the first argument for gtDispFlags (flags to display),
-//                 including GTF_IND_INVARIANT, GTF_IND_NONFAULTING, GTF_IND_NONNULL
-//    debugFlags - the second argument to gtDispFlags
+//    tree      - Tree whose flags are being checked
+//    dispFlags - Flags to display, including GTF_IND_INVARIANT, GTF_IND_NONFAULTING, GTF_IND_NONNULL
 //
-void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags)
+void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags)
 {
     if (tree->OperIs(GT_IND))
     {
@@ -3610,7 +3614,7 @@ void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenT
         printf("%c", (dispFlags & GTF_IND_NONFAULTING) ? 'n' : '-');
         printf("%c", (dispFlags & GTF_IND_NONNULL) ? '@' : '-');
     }
-    GenTree::gtDispFlags(dispFlags, debugFlags);
+    GenTree::gtDispFlags(dispFlags);
 }
 
 //------------------------------------------------------------------------------
@@ -3627,7 +3631,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
     {
         // Print the tree so we can see it in the log.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
-        Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags, GTF_DEBUG_NONE);
+        Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags);
         printf("\n");
         gtDispTree(tree);
 
@@ -3635,7 +3639,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
 
         // Print the tree again so we can see it right after we hook up the debugger.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
-        Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags, GTF_DEBUG_NONE);
+        Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags);
         printf("\n");
         gtDispTree(tree);
     }
@@ -3666,7 +3670,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
             {
                 // Print the tree so we can see it in the log.
                 printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-                Compiler::fgDebugCheckDispFlags(tree, extraFlags, GTF_DEBUG_NONE);
+                Compiler::fgDebugCheckDispFlags(tree, extraFlags);
                 printf("\n");
                 gtDispTree(tree);
             }
@@ -3681,7 +3685,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
 
             // Print the tree again so we can see it right after we hook up the debugger.
             printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-            Compiler::fgDebugCheckDispFlags(tree, extraFlags, GTF_DEBUG_NONE);
+            Compiler::fgDebugCheckDispFlags(tree, extraFlags);
             printf("\n");
             gtDispTree(tree);
         }

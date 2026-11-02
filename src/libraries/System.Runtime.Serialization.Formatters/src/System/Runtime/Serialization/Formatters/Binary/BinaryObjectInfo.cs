@@ -167,7 +167,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _cache = new SerObjectInfoCache(objectType);
                 _isSi = true;
             }
-            else if (!ReferenceEquals(objectType, Converter.s_typeofObject) && Converter.s_typeofISerializable.IsAssignableFrom(objectType))
+            else if (!ReferenceEquals(objectType, typeof(object)) && typeof(ISerializable).IsAssignableFrom(objectType))
             {
                 _si = new SerializationInfo(objectType, converter);
                 _cache = new SerObjectInfoCache(objectType);
@@ -456,7 +456,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 _isSi = true;
             }
-            else if (!ReferenceEquals(objectType, Converter.s_typeofObject) && Converter.s_typeofISerializable.IsAssignableFrom(objectType))
+            else if (!ReferenceEquals(objectType, typeof(object)) && typeof(ISerializable).IsAssignableFrom(objectType))
             {
                 _isSi = true;
             }
