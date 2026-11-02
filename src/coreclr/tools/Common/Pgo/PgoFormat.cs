@@ -54,6 +54,7 @@ namespace Internal.Pgo
         ValueHistogramIntCount = (DescriptorMin * 8) | FourByte | AlignPointer,
         ValueHistogramLongCount = (DescriptorMin * 8) | EightByte,
         ValueHistogram = (DescriptorMin * 9) | EightByte,
+        MethodEntryIntCount = (DescriptorMin * 10) | FourByte, // logical method entries, not a complete block profile
     }
 
     public interface IPgoSchemaDataLoader<TType, TMethod>
@@ -250,7 +251,10 @@ namespace Internal.Pgo
                             lastDataValue += value;
                         else
                             lastDataValue = value;
-                        curSchema.DataLong = lastDataValue;
+                        // The runtime's four-byte wire values are sign-extended; entry counts are unsigned.
+                        curSchema.DataLong = curSchema.InstrumentationKind == PgoInstrumentationKind.MethodEntryIntCount && lastDataValue < 0
+                            ? unchecked((uint)checked((int)lastDataValue))
+                            : lastDataValue;
                     }
                     else
                     {
@@ -582,6 +586,7 @@ namespace Internal.Pgo
                     switch (existingSchemaItem.InstrumentationKind)
                     {
                         case PgoInstrumentationKind.BasicBlockIntCount:
+                        case PgoInstrumentationKind.MethodEntryIntCount:
                         case PgoInstrumentationKind.BasicBlockLongCount:
                         case PgoInstrumentationKind.EdgeIntCount:
                         case PgoInstrumentationKind.EdgeLongCount:

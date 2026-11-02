@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -497,6 +496,7 @@ namespace Internal.JitInterface
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
         private List<MethodDesc> _ilBodiesNeeded;
+        private bool _methodEntryCounterTokenMissing;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
         private List<(ISymbolNode Location, int Offset)> _wasmMethodVirtualIPFixups;
@@ -722,6 +722,7 @@ namespace Internal.JitInterface
         {
             if (!_isCompilationProbe &&
                 (_ilBodiesNeeded == null) &&
+                !_methodEntryCounterTokenMissing &&
                 _compilation.NodeFactory.OptimizationFlags.DeterminismStress > 0)
             {
                 HashCode hashCode = default(HashCode);
@@ -755,7 +756,7 @@ namespace Internal.JitInterface
             }
 
             // If any il bodies need to be recomputed, force recompilation
-            if ((_ilBodiesNeeded != null) ||
+            if ((_ilBodiesNeeded != null) || _methodEntryCounterTokenMissing ||
                 (!_isCompilationProbe && (InfiniteCompileStress.Enabled || result == CompilationResult.CompilationRetryRequested)))
             {
                 if (!_isCompilationProbe)
@@ -3409,9 +3410,28 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("expandRawHandleIntrinsic"); }
 
         private byte[] _bbCounts;
+        private readonly Dictionary<MethodDesc, (byte[] Cell, ISymbolNode Import)> _wasmMethodEntryCounters = new();
+
+        private ISymbolNode FindWasmMethodEntryCounter(void* address)
+        {
+            foreach (var counter in _wasmMethodEntryCounters.Values)
+            {
+                if (address == (void*)GetPin(counter.Cell))
+                    return counter.Import;
+            }
+
+            return null;
+        }
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset)
         {
+            if (FindWasmMethodEntryCounter(location) is not null)
+            {
+                offset = 0;
+                blockType = BlockType.BBCounts;
+                return;
+            }
+
             if (_bbCounts != null)
             {
                 fixed (byte* pBBCountData = _bbCounts)
@@ -3533,6 +3553,39 @@ namespace Internal.JitInterface
             CORJIT_FLAGS flags = default(CORJIT_FLAGS);
             getJitFlags(ref flags, 0);
             *pInstrumentationData = null;
+
+            MethodDesc entryMethod = HandleToObject(ftnHnd);
+            if (_compilation.NodeFactory.Target.IsWasm && countSchemaItems == 1 &&
+                pSchema[0].InstrumentationKind == PgoInstrumentationKind.MethodEntryIntCount)
+            {
+                entryMethod = entryMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (entryMethod.GetTypicalMethodDefinition() is not EcmaMethod ecmaEntry ||
+                    ecmaEntry.IsPInvoke || ecmaEntry.IsInternalCall || ecmaEntry.IsRuntimeImplemented ||
+                    ecmaEntry.Module.MetadataReader.GetMethodDefinition(ecmaEntry.Handle).RelativeVirtualAddress == 0)
+                    return HRESULT.E_NOTIMPL;
+
+                if (!_wasmMethodEntryCounters.TryGetValue(entryMethod, out var counter))
+                {
+                    ModuleToken token = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(
+                        entryMethod, allowDynamicallyCreatedReference: true, throwIfNotFound: false);
+                    if (token.IsNull)
+                    {
+                        _compilation.RequestMethodEntryCounterToken(entryMethod);
+                        _methodEntryCounterTokenMissing = true;
+                        return HRESULT.E_NOTIMPL;
+                    }
+                    MethodWithToken method = new MethodWithToken(entryMethod, token, null, false, null);
+                    ISymbolNode import = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                        ReadyToRunHelperId.MethodEntryCounter, method);
+                    counter = (new byte[4], import);
+                    _wasmMethodEntryCounters.Add(entryMethod, counter);
+                }
+
+                AddPrecodeFixup(counter.Import);
+                pSchema[0].Offset = IntPtr.Zero;
+                *pInstrumentationData = (byte*)GetPin(counter.Cell);
+                return HRESULT.S_OK;
+            }
 
             if (flags.IsSet(CorJitFlag.CORJIT_FLAG_IL_STUB))
             {

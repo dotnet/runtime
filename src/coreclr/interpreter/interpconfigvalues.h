@@ -39,6 +39,7 @@ RELEASE_CONFIG_INTEGER(DisplayMemStats, "JitMemStats", 0); // Display interprete
 RELEASE_CONFIG_METHODSET(WasmPerformanceInstrumentation, "WasmPerformanceInstrumentation") // Method filter for WASM performance instrumentation profiler. Uses standard MethodSet pattern format.
 RELEASE_CONFIG_INTEGER(InterpPGO, "InterpPGO", 0); // Instrument interpreted methods with block counters and make the profile available for offline PGO (e.g. dotnet-pgo).
 RELEASE_CONFIG_METHODSET(InterpPGOMethods, "InterpPGOMethods") // Optional method filter scoping InterpPGO instrumentation (empty = all methods). Uses standard MethodSet pattern format.
+RELEASE_CONFIG_METHODSET(WasmPgoInstrumentation, "WasmPgoInstrumentation") // Entry-only profile shared with R2R code.
 
 #undef CONFIG_STRING
 #undef RELEASE_CONFIG_STRING

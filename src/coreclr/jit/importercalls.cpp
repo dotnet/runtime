@@ -319,6 +319,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     bool checkForSmallType  = false;
     bool bIntrinsicImported = false;
+#ifdef TARGET_WASM
+    GenTree* pendingIntrinsicEntry = nullptr;
+#endif // TARGET_WASM
 
     NamedIntrinsic ni = NI_Illegal;
 
@@ -464,9 +467,45 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
 #endif // FEATURE_READYTORUN
 
+#ifdef TARGET_WASM
+            GenTree*   entryCounter       = nullptr;
+            GenTree*   entryReceiver      = nullptr;
+            Statement* intrinsicEntryStmt = nullptr;
+            if (!JitConfig.WasmPgoInstrumentation().isEmpty() &&
+                JitConfig.WasmPgoInstrumentation().contains(methHnd, clsHnd, sig))
+            {
+                entryCounter = fgMethodEntryCount(methHnd);
+                if (entryCounter != nullptr)
+                {
+                    // Finish argument evaluation before recording the logical invocation.
+                    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("method-entry intrinsic arguments"));
+                    if (opcode == CEE_CALLVIRT && (mflags & CORINFO_FLG_STATIC) == 0 &&
+                        (clsFlags & CORINFO_FLG_VALUECLASS) == 0)
+                    {
+                        impSpillStackEntry(stackState.esStackDepth - sig->numArgs - 1,
+                                           BAD_VAR_NUM DEBUGARG(false) DEBUGARG("method-entry receiver"));
+                        entryReceiver = gtCloneExpr(impStackTop(sig->numArgs).val);
+                    }
+
+                    // Intrinsic import can append executable body statements before returning its result.
+                    // Reserve the entry position, but only populate it if the call is actually expanded.
+                    intrinsicEntryStmt = impAppendTree(gtNewNothingNode(), CHECK_SPILL_NONE, impCurStmtDI);
+                }
+            }
+#endif // TARGET_WASM
+
             call = impIntrinsic(clsHnd, methHnd, sig, mflags, pResolvedToken, isReadonlyCall, isTailCall,
                                 opcode == CEE_CALLVIRT, pConstrainedResolvedToken,
                                 callInfo->thisTransform R2RARG(&entryPoint), &ni, &isSpecialIntrinsic);
+
+#ifdef TARGET_WASM
+            if (call == nullptr && entryCounter != nullptr && isSpecialIntrinsic)
+            {
+                // A later fold could erase this invocation without retaining its entry probe.
+                JITDUMP("Preserving method-entry PGO for deferred intrinsic\n");
+                isSpecialIntrinsic = false;
+            }
+#endif // TARGET_WASM
 
             if (compDonotInline())
             {
@@ -475,6 +514,20 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (call != nullptr)
             {
+#ifdef TARGET_WASM
+                pendingIntrinsicEntry = entryCounter;
+                if (entryCounter != nullptr &&
+                    (!call->IsCall() || call->AsCall()->IsHelperCall() || call->AsCall()->gtCallMethHnd != methHnd))
+                {
+                    GenTree* entry = entryCounter;
+                    if (entryReceiver != nullptr)
+                    {
+                        entry = gtNewOperNode(GT_COMMA, TYP_VOID, gtNewNullCheck(entryReceiver), entry);
+                    }
+                    intrinsicEntryStmt->SetRootNode(entry);
+                    pendingIntrinsicEntry = nullptr;
+                }
+#endif // TARGET_WASM
                 bIntrinsicImported = true;
                 goto DONE_CALL;
             }
@@ -1162,7 +1215,21 @@ DEVIRT:
 
                 // If we devirtualized to an intrinsic, assume this is one of the special cases.
                 //
-                if ((callInfo->methodFlags & CORINFO_FLG_INTRINSIC) != 0)
+                bool canExpandIntrinsic = (callInfo->methodFlags & CORINFO_FLG_INTRINSIC) != 0;
+#ifdef TARGET_WASM
+                if (canExpandIntrinsic && !JitConfig.WasmPgoInstrumentation().isEmpty())
+                {
+                    CORINFO_SIG_INFO targetSig;
+                    info.compCompHnd->getMethodSig(methHnd, &targetSig);
+                    CORINFO_CLASS_HANDLE targetClass = info.compCompHnd->getMethodClass(methHnd);
+                    if (JitConfig.WasmPgoInstrumentation().contains(methHnd, targetClass, &targetSig) &&
+                        fgMethodEntryCount(methHnd) != nullptr)
+                    {
+                        canExpandIntrinsic = false;
+                    }
+                }
+#endif // TARGET_WASM
+                if (canExpandIntrinsic)
                 {
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
 
@@ -1535,7 +1602,8 @@ DONE:
 
 DONE_CALL:
     // Collect value profiles in optimized instrumented tiers too, before wrapping inline candidates.
-    if (opts.IsInstrumented() && JitConfig.JitProfileValues() && call->IsCall() && call->AsCall()->IsSpecialIntrinsic())
+    if (compCanCollectHistogramProfile() && JitConfig.JitProfileValues() && call->IsCall() &&
+        call->AsCall()->IsSpecialIntrinsic())
     {
         const NamedIntrinsic ni = lookupNamedIntrinsic(call->AsCall()->gtCallMethHnd);
         if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
@@ -1575,7 +1643,17 @@ DONE_CALL:
         {
             if (call->IsCall() && call->AsCall()->IsSpecialIntrinsic(this, NI_System_ArgumentNullException_ThrowIfNull))
             {
+#ifdef TARGET_WASM
+                GenTree* originalCall = call;
+#endif // TARGET_WASM
                 call = impThrowIfNull(call->AsCall());
+#ifdef TARGET_WASM
+                if (pendingIntrinsicEntry != nullptr && call != originalCall)
+                {
+                    impAppendTree(pendingIntrinsicEntry, CHECK_SPILL_ALL, impCurStmtDI);
+                    pendingIntrinsicEntry = nullptr;
+                }
+#endif // TARGET_WASM
             }
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
         }
@@ -10722,6 +10800,31 @@ void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 }
 
 //------------------------------------------------------------------------
+// compCanCollectHistogramProfile: Check whether this compilation supports
+//   histogram probes. Individual histogram kinds have additional config gates.
+//
+// Returns:
+//   True if histogram probes can be collected.
+//
+bool Compiler::compCanCollectHistogramProfile()
+{
+    if (!opts.IsInstrumented() || IsAot())
+    {
+        return false;
+    }
+
+#ifdef TARGET_WASM
+    // Entry-only instrumentation uses NonInstrumentor for both handle and value histograms.
+    if (!JitConfig.WasmPgoInstrumentation().isEmpty())
+    {
+        return false;
+    }
+#endif // TARGET_WASM
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // compClassifyGDVProbeType:
 //   Classify the type of GDV probe to use for a call site.
 //
@@ -10733,7 +10836,7 @@ void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 //
 Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
 {
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || IsAot())
+    if (!compCanCollectHistogramProfile())
     {
         return GDVProbeType::None;
     }

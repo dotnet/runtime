@@ -19,6 +19,7 @@ public:
     static void Initialize();
     static void LogInstrumentationData();
     static void Shutdown();
+    static uint32_t* GetMethodEntryCounter(MethodDesc* method);
 
 #endif // FEATURE_PGO
 
@@ -107,7 +108,7 @@ public:
             return hashpair.Hash();
         }
 
-        void Init(MethodDesc *pMD, unsigned codehash, unsigned ilSize, unsigned countsOffset);
+        void Init(MethodDesc *pMD, unsigned methodhash, unsigned codehash, unsigned ilSize, unsigned countsOffset);
         void HashInit(unsigned methodhash, unsigned codehash, unsigned ilSize, unsigned countsOffset)
         {
             method = NULL;

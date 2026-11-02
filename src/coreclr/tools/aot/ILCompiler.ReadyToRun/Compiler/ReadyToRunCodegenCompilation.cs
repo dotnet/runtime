@@ -312,6 +312,7 @@ namespace ILCompiler
         private readonly ProfileDataManager _profileData;
         private readonly FileLayoutOptimizer _fileLayoutOptimizer;
         private readonly HashSet<MethodDesc> _methodsWhichNeedMutableILBodies = new HashSet<MethodDesc>();
+        private readonly HashSet<MethodDesc> _methodEntryCounterTokensNeeded = new HashSet<MethodDesc>();
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
         private HashSet<MethodDesc> _directManagedHelpers;
         private bool _directManagedHelpersInitialized;
@@ -735,6 +736,14 @@ namespace ILCompiler
             }
         }
 
+        public void RequestMethodEntryCounterToken(MethodDesc method)
+        {
+            lock (_methodsToRecompile)
+            {
+                _methodEntryCounterTokensNeeded.Add(method.GetTypicalMethodDefinition());
+            }
+        }
+
         private struct WorkerState
         {
             public CorInfoImpl CorInfoImpl;
@@ -882,6 +891,17 @@ namespace ILCompiler
 
             void ProcessMutableMethodBodiesList()
             {
+                // Manifest references must be created deterministically outside parallel compilation.
+                MethodDesc[] counterMethods = new MethodDesc[_methodEntryCounterTokensNeeded.Count];
+                _methodEntryCounterTokensNeeded.CopyTo(counterMethods);
+                _methodEntryCounterTokensNeeded.Clear();
+                Array.Sort(counterMethods, TypeSystemComparer.Instance);
+                foreach (var method in counterMethods)
+                {
+                    var module = ((EcmaMethod)method).Module;
+                    _tokenManager.EnsureDefTokensAreAvailable(method, module, false);
+                }
+
                 MethodDesc[] mutableMethodBodyNeedList = new MethodDesc[_methodsWhichNeedMutableILBodies.Count];
                 _methodsWhichNeedMutableILBodies.CopyTo(mutableMethodBodyNeedList);
                 _methodsWhichNeedMutableILBodies.Clear();

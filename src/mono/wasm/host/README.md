@@ -2,6 +2,9 @@
 
 WasmAppHost is used when `dotnet run` executes for projects targeting wasm.
 
+The host itself does not enable SDK Hot Reload browser tools. Hot Reload for the
+hosted application is configured by that application's SDK.
+
 ## Command line arguments
 
 - **--debug** | **-d**: Whether to start debug server. [More on debugging](../debugger/debugger.md).

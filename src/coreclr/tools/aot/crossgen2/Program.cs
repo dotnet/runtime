@@ -479,6 +479,16 @@ namespace ILCompiler
                         throw new Exception(SR.ErrorStripILBodiesRequiresComposite);
                     }
 
+                    string wasmPgoFilter = string.Empty;
+                    const string wasmPgoOption = "WasmPgoInstrumentation=";
+                    foreach (string option in Get(_command.CodegenOptions))
+                    {
+                        if (option.StartsWith(wasmPgoOption, StringComparison.OrdinalIgnoreCase))
+                            wasmPgoFilter = option.Substring(wasmPgoOption.Length);
+                    }
+                    if (Get(_command.StripILBodies) && wasmPgoFilter.Length != 0)
+                        throw new CommandLineException(SR.ErrorWasmPgoRequiresIL);
+
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();

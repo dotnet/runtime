@@ -177,6 +177,9 @@
   <data name="ErrorStripILBodiesRequiresComposite" xml:space="preserve">
     <value>Error: --strip-il-bodies requires --composite.</value>
   </data>
+  <data name="ErrorWasmPgoRequiresIL" xml:space="preserve">
+    <value>Error: WasmPgoInstrumentation requires IL bodies for profile identity and cannot be combined with --strip-il-bodies.</value>
+  </data>
   <data name="ErrorReadyToRunHeaderSymbolNameEmpty" xml:space="preserve">
     <value>Error: --rtr-header-symbol-name must not be empty or whitespace.</value>
   </data>

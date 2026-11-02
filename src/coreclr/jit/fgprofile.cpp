@@ -775,6 +775,63 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
 }
 
 //------------------------------------------------------------------------
+#ifdef TARGET_WASM
+static GenTree* MethodEntryCounterIncrement(Compiler* comp, uint8_t* cell)
+{
+    auto address = [comp, cell]() {
+        return comp->gtNewIndOfIconHandleNode(TYP_I_IMPL, reinterpret_cast<size_t>(cell), GTF_ICON_BBC_PTR);
+    };
+    GenTree* value = comp->gtNewIndir(TYP_INT, address(), GTF_IND_NONFAULTING);
+    GenTree* sum   = comp->gtNewOperNode(GT_ADD, TYP_INT, value, comp->gtNewIconNode(1));
+    return comp->gtNewStoreIndNode(TYP_INT, address(), sum, GTF_IND_NONFAULTING);
+}
+
+GenTree* Compiler::fgMethodEntryCount(CORINFO_METHOD_HANDLE method)
+{
+    ICorJitInfo::PgoInstrumentationSchema schema = {};
+    schema.InstrumentationKind                   = ICorJitInfo::PgoInstrumentationKind::MethodEntryIntCount;
+    schema.Count                                 = 1;
+    uint8_t* cell                                = nullptr;
+    HRESULT  result = info.compCompHnd->allocPgoInstrumentationBySchema(method, &schema, 1, &cell);
+    if (result == E_NOTIMPL)
+        return nullptr;
+    noway_assert(SUCCEEDED(result));
+    return MethodEntryCounterIncrement(this, cell);
+}
+
+class WasmEntryCountInstrumentor final : public Instrumentor
+{
+public:
+    WasmEntryCountInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
+    {
+    }
+
+    bool ShouldProcess(BasicBlock* block) override
+    {
+        return block == m_compiler->fgFirstBB;
+    }
+
+    void BuildSchemaElements(BasicBlock* block, Schema& schema) override
+    {
+        ICorJitInfo::PgoInstrumentationSchema entry = {};
+        entry.InstrumentationKind                   = ICorJitInfo::PgoInstrumentationKind::MethodEntryIntCount;
+        entry.ILOffset                              = 0;
+        entry.Count                                 = 1;
+        schema.push_back(entry);
+        m_schemaCount++;
+    }
+
+    void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override
+    {
+        // The method's fixups resolve this image cell before execution reaches the probe.
+        GenTree* store = MethodEntryCounterIncrement(m_compiler, profileMemory);
+        m_compiler->fgNewStmtAtBeg(block, store);
+        m_instrCount++;
+    }
+};
+#endif // TARGET_WASM
+
 // SpanningTreeVisitor: abstract class for computations done while
 //   evolving a spanning tree.
 //
@@ -2548,6 +2605,20 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+#ifdef TARGET_WASM
+    if (!JitConfig.WasmPgoInstrumentation().isEmpty())
+    {
+        const bool selected     = JitConfig.WasmPgoInstrumentation().contains(info.compMethodHnd, info.compClassHnd,
+                                                                              &info.compMethodInfo->args);
+        fgCountInstrumentor     = selected
+                                      ? static_cast<Instrumentor*>(new (this, CMK_Pgo) WasmEntryCountInstrumentor(this))
+                                      : static_cast<Instrumentor*>(new (this, CMK_Pgo) NonInstrumentor(this));
+        fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+        fgValueInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif // TARGET_WASM
+
     // Choose instrumentation technology.
     //
     // We enable edge profiling by default, except when:
@@ -2982,13 +3053,18 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     JITDUMP("Have %s: %d schema records (schema at %p, data at %p)\n", compGetPgoSourceName(), fgPgoSchemaCount,
             dspPtr(fgPgoSchema), dspPtr(fgPgoData));
 
-    fgNumProfileRuns      = 0;
-    unsigned otherRecords = 0;
+    fgNumProfileRuns           = 0;
+    unsigned otherRecords      = 0;
+    unsigned methodEntrySchema = UINT_MAX;
 
     for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
     {
         switch (fgPgoSchema[iSchema].InstrumentationKind)
         {
+            case ICorJitInfo::PgoInstrumentationKind::MethodEntryIntCount:
+                methodEntrySchema = iSchema;
+                break;
+
             case ICorJitInfo::PgoInstrumentationKind::NumRuns:
                 fgNumProfileRuns += fgPgoSchema[iSchema].Other;
                 break;
@@ -3051,6 +3127,25 @@ PhaseStatus Compiler::fgIncorporateProfileData()
             "other records\n",
             fgNumProfileRuns, fgPgoBlockCounts, fgPgoEdgeCounts, fgPgoClassProfiles, fgPgoMethodProfiles, otherRecords);
 
+    bool haveMethodEntries = methodEntrySchema != UINT_MAX && fgPgoBlockCounts == 0 && fgPgoEdgeCounts == 0;
+    if (haveMethodEntries && fgPgoSchema[methodEntrySchema].ILOffset == 0 && fgPgoSchema[methodEntrySchema].Count == 1)
+    {
+        const uint32_t entries = *reinterpret_cast<uint32_t*>(fgPgoData + fgPgoSchema[methodEntrySchema].Offset);
+        if (entries == 0)
+        {
+            JITDUMP("Method-entry PGO: zero or wrapped count; retaining unknown hotness\n");
+            fgPgoHaveWeights = false;
+            fgApplyProfileScale();
+            return PhaseStatus::MODIFIED_NOTHING;
+        }
+
+        fgCanonicalizeFirstBB();
+        fgFirstBB->setBBProfileWeight(static_cast<weight_t>(entries));
+        JITDUMP("Method-entry PGO: %u logical entries; synthesizing, not measuring, internal flow\n", entries);
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::ResetAndSynthesize);
+        fgApplyProfileScale();
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
     const bool haveBlockCounts = fgPgoBlockCounts > 0;
     const bool haveEdgeCounts  = fgPgoEdgeCounts > 0;
 

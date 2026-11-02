@@ -646,6 +646,7 @@ private:
 #endif // PERFTRACING_DISABLE_THREADS
 
     bool m_emitInterpPGO;
+    bool m_emitMethodEntryPGO;
 
     void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
     {

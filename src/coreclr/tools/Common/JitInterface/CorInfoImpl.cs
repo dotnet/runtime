@@ -744,6 +744,7 @@ namespace Internal.JitInterface
             _rwDataRelocs = default(ArrayBuilder<Relocation>);
             ClearWasmMethodVirtualIPFixups();
 #if READYTORUN
+            _wasmMethodEntryCounters.Clear();
             _coldCodeRelocs = default(ArrayBuilder<Relocation>);
 #endif
             _numFrameInfos = 0;
@@ -776,6 +777,7 @@ namespace Internal.JitInterface
             _stashedPrecodeFixups.Clear();
             _stashedInlinedMethods.Clear();
             _ilBodiesNeeded = null;
+            _methodEntryCounterTokenMissing = false;
             _synthesizedPgoDependencies = null;
 #endif
 
@@ -4801,7 +4803,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
                     case BlockType.BBCounts:
-                        relocTarget = null;
+                        relocTarget = FindWasmMethodEntryCounter(target);
                         break;
 #endif
 
@@ -5031,6 +5033,12 @@ namespace Internal.JitInterface
             }
 
 #if READYTORUN
+            if (_compilation.NodeFactory.Target.IsWasm &&
+                JitConfigProvider.Instance.GetStringConfigValue("WasmPgoInstrumentation").Length != 0)
+            {
+                flags.Set(CorJitFlag.CORJIT_FLAG_BBINSTR);
+            }
+
             if (this.MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
@@ -5123,6 +5131,28 @@ namespace Internal.JitInterface
             {
 #if READYTORUN
                 PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData.GetAllowSynthesis(_compilation, methodDesc, out bool isSynthesized)?.SchemaData;
+
+                if (pgoResultsSchemas is null)
+                {
+                    MethodDesc canonical = methodDesc.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    PgoSchemaElem[] sharedSchema = _compilation.ProfileData[canonical]?.SchemaData;
+                    if (sharedSchema is not null)
+                    {
+                        bool hasEntries = false;
+                        bool entryOnly = true;
+                        foreach (PgoSchemaElem element in sharedSchema)
+                        {
+                            hasEntries |= element.InstrumentationKind == PgoInstrumentationKind.MethodEntryIntCount;
+                            entryOnly &= element.InstrumentationKind is PgoInstrumentationKind.MethodEntryIntCount
+                                or PgoInstrumentationKind.NumRuns or PgoInstrumentationKind.Version;
+                        }
+                        if (hasEntries && entryOnly)
+                        {
+                            pgoResultsSchemas = sharedSchema;
+                            isSynthesized = false;
+                        }
+                    }
+                }
 
                 if (pgoResultsSchemas != null && isSynthesized && _compilation.ProfileData.EmbedPgoDataInR2RImage)
                 {

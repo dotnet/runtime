@@ -2247,9 +2247,12 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
 
-    m_emitInterpPGO = s_interpPgoEnabled
+    const bool methodEntryPgo = !InterpConfig.WasmPgoInstrumentation().isEmpty();
+    m_emitMethodEntryPGO = methodEntryPgo
+        && InterpConfig.WasmPgoInstrumentation().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args);
+    m_emitInterpPGO = methodEntryPgo ? m_emitMethodEntryPGO : (s_interpPgoEnabled
         && (InterpConfig.InterpPGOMethods().isEmpty()
-            || InterpConfig.InterpPGOMethods().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args));
+            || InterpConfig.InterpPGOMethods().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args)));
 
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
@@ -3641,6 +3644,24 @@ void InterpCompiler::EmitPushSyncObject()
     }
 }
 
+
+static uint8_t* AllocMethodEntryCounter(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE method)
+{
+    ICorJitInfo::PgoInstrumentationSchema schema = {};
+    schema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::MethodEntryIntCount;
+    schema.Count = 1;
+    uint8_t* data = nullptr;
+    HRESULT hr = compHnd->allocPgoInstrumentationBySchema(method, &schema, 1, &data);
+    if (hr == E_NOTIMPL)
+    {
+        INTERP_DUMP("Method-entry PGO requires an eligible metadata-backed IL method\n");
+        return nullptr;
+    }
+    if (FAILED(hr) || data == nullptr)
+        NO_WAY("Failed to allocate method-entry profile counter");
+
+    return data + schema.Offset;
+}
 
 bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
@@ -5237,8 +5258,49 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     ni == NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
-                if (EmitNamedIntrinsicCall(ni, callInfo.kind == CORINFO_CALL, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+                uint8_t* entryCounter = nullptr;
+                bool canExpand = true;
+                if (callInfo.hMethod != m_methodHnd &&
+                    !InterpConfig.WasmPgoInstrumentation().isEmpty() &&
+                    InterpConfig.WasmPgoInstrumentation().contains(m_compHnd, callInfo.hMethod,
+                        m_compHnd->getMethodClass(callInfo.hMethod), &callInfo.sig))
                 {
+                    // Allocation checks IL eligibility and canonicalizes shared generic callees.
+                    // Ineligible intrinsics must still expand, but have no logical IL entry to count.
+                    entryCounter = AllocMethodEntryCounter(m_compHnd, callInfo.hMethod);
+                    canExpand = entryCounter == nullptr ||
+                        callInfo.thisTransform == CORINFO_NO_THIS_TRANSFORM;
+                }
+
+                InterpBasicBlock* intrinsicBB = m_pCBB;
+                InterpInst* beforeIntrinsic = intrinsicBB->pLastIns;
+                int32_t receiverVar = -1;
+                if (entryCounter != nullptr && isVirtual && callInfo.sig.hasThis())
+                {
+                    CHECK_STACK(callInfo.sig.numArgs + 1);
+                    StackInfo* receiver = m_pStackPointer - callInfo.sig.numArgs - 1;
+                    if (receiver->GetStackType() == StackTypeO)
+                        receiverVar = receiver->var;
+                }
+
+                if (canExpand &&
+                    EmitNamedIntrinsicCall(ni, callInfo.kind == CORINFO_CALL, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+                {
+                    if (entryCounter != nullptr)
+                    {
+                        // Arguments are already evaluated. Validate callvirt before counting, but count
+                        // before any instructions emitted by the intrinsic body, including its throws.
+                        if (receiverVar != -1)
+                        {
+                            InterpInst* nullCheck = InsertInsBB(intrinsicBB, beforeIntrinsic, INTOP_NULLCHECK);
+                            nullCheck->SetSVar(receiverVar);
+                            beforeIntrinsic = nullCheck;
+                        }
+                        InterpInst* probe = InsertInsBB(intrinsicBB, beforeIntrinsic, INTOP_PGO_COUNT);
+                        probe->ilOffset = -1;
+                        probe->data[0] = GetDataItemIndex(entryCounter);
+                        m_pLastNewIns = m_pCBB->pLastIns;
+                    }
                     return;
                 }
             }
@@ -8734,6 +8796,18 @@ void InterpCompiler::CreateSynchronizedRetValVar()
 // JitInstrumentationDataVerbose events, which dotnet-pgo consumes to build an .mibc.
 void InterpCompiler::InstrumentBlockCounts()
 {
+    if (m_emitMethodEntryPGO)
+    {
+        uint8_t* counter = AllocMethodEntryCounter(m_compHnd, m_methodHnd);
+        if (counter == nullptr)
+            return;
+
+        InterpInst* probe = InsertInsBB(m_pEntryBB, nullptr, INTOP_PGO_COUNT);
+        probe->ilOffset = -1;
+        probe->data[0] = GetDataItemIndex(counter);
+        return;
+    }
+
     // Probe the same points as the sampling profiler - method entry and loop heads (targets of backward
     // branches) - but with an exact counter rather than a sample. This yields exact method invocation and
     // loop trip counts; acyclic branch structure is deliberately not profiled here, since mapping the

@@ -430,16 +430,67 @@ globalThis.getDotnetRuntime(0).collectCpuSamples({durationSeconds: 60})
 
 The counters could be opened in VS or in `PerfView.exe`
 
+#### Profile-guided ReadyToRun publishing on CoreCLR
+
+Publish a single-threaded Browser/CoreCLR application with method-entry instrumentation:
+
+```xml
+<PropertyGroup>
+  <UseMonoRuntime>false</UseMonoRuntime>
+  <PublishReadyToRun>true</PublishReadyToRun>
+  <EnableDiagnostics>true</EnableDiagnostics>
+  <WasmEnableThreads>false</WasmEnableThreads>
+  <WasmPgoInstrumentation>all</WasmPgoInstrumentation>
+</PropertyGroup>
+<ItemGroup>
+  <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="js://pgo" />
+</ItemGroup>
+```
+
+```console
+dotnet publish -c Release
+```
+
+`WasmPgoInstrumentation` is a standard MethodSet filter; empty disables it and `all` is normalized
+to `*`. It selects methods, not a profiling granularity. Publishing instruments the application
+and framework ReadyToRun closure, including methods inlined across assembly boundaries. Both a
+packaged wasm-capable crossgen2 and `Crossgen2InBuildDir` are supported. Use matching crossgen2 and
+runtime builds supporting the additive ReadyToRun format version 33.2 and its `MethodEntryCounter`
+fixup (`0x3C`). Development builds, Mono, disabled diagnostics, disabled
+ReadyToRun publishing, and `WasmEnableThreads=true` are rejected rather than silently publishing
+uninstrumented code. Scope the property to the profiling publish if you also use `dotnet build`.
+
+The filter is forwarded as `--codegenopt:WasmPgoInstrumentation=<filter>` to crossgen2 and as
+`DOTNET_WasmPgoInstrumentation=<filter>` to the runtime so interpreter fallback shares the
+entry-only counters. `WasmPerformanceInstrumentation` controls CPU sampling independently; either feature
+can be enabled alone, or both can be enabled in the same publish.
+
+Eligible targets are metadata-backed managed methods with IL bodies; native or runtime-provided
+methods without IL bodies are not entry-counter targets. Counts represent **logical method
+invocations**, including inlinees. Regular inlining retains in-body logical entry probes;
+intrinsic expansions of eligible IL methods use call-site probes after argument evaluation and,
+for `callvirt`, the receiver null check. Shared generic instantiations may aggregate into the same
+count. Counters are 32-bit and wrap on overflow; keep training runs
+bounded. This is entry-only data: it does not measure branch frequencies, block counts, CPU samples,
+or `ExclusiveWeight`. The profile uses `PgoInstrumentationKind.MethodEntryIntCount`, not
+`BasicBlockIntCount`, to preserve its provenance. The consumer automatically recognizes this schema
+and conservatively synthesizes profile data; no separate consumption mode or option is needed.
+
+Load the published application, exercise a representative scenario, and export the trace:
+
 ```js
 globalThis.getDotnetRuntime(0).collectPgoTrace()
 // stops and downloads automatically after 10s; pass a different duration with:
 globalThis.getDotnetRuntime(0).collectPgoTrace({durationSeconds: 30})
 ```
 
-This captures a startup PGO trace on the CoreCLR interpreter. To arm the trace before the first
-managed method compiles, set `DOTNET_DiagnosticPorts=js://pgo`. The trace always contains the method
-list; to also capture **block counts** the interpreter must be instrumented, which is enabled with
-`DOTNET_InterpPGO=1`:
+This is a startup-cumulative, one-shot snapshot, not an interval counter or a counter reset:
+counts include activity since startup, including activity before `collectPgoTrace()` is called.
+`DOTNET_DiagnosticPorts=js://pgo` arms tracing before managed startup. Reload the application for
+another training run.
+
+For interpreter-only block-count collection, the existing `DOTNET_InterpPGO=1` mode remains
+available separately:
 
 ```xml
 <ItemGroup>
@@ -448,37 +499,62 @@ list; to also capture **block counts** the interpreter must be instrumented, whi
 </ItemGroup>
 ```
 
-Instrumentation can be scoped to a subset of methods with `DOTNET_InterpPGOMethods` (standard MethodSet
-filter format; empty = all methods) to bound overhead during bring-up.
+That interpreter block-count mode can be scoped with `DOTNET_InterpPGOMethods` (standard MethodSet
+filter format; empty = all methods). It is not the entry-only `WasmPgoInstrumentation` mode.
 
-Convert the downloaded `xxx.nettrace` into an `.mibc` with `dotnet-pgo` (installed via
-`dotnet tool install --global dotnet-pgo`, or from `artifacts/bin/coreclr/<host-os>.<arch>.<config>/dotnet-pgo/`
-in a runtime build):
+Convert the downloaded `xxx.nettrace` into an `.mibc` with a matching `dotnet-pgo` build. Prefer the
+in-tree tool from `artifacts/bin/coreclr/<host-os>.<arch>.<config>/dotnet-pgo/`, or a tool version
+explicitly supporting `MethodEntryIntCount`. An older globally installed `dotnet-pgo` does not
+provide full support for the new tag, including named dump and merge diagnostics.
 
 ```console
 dotnet-pgo create-mibc --trace xxx.nettrace --reference <trimmed-IL-dlls>/*.dll --output app.mibc
 ```
 
-The resulting `.mibc` drives a profile-guided crossgen2 build.
+For the second publish, clear instrumentation and supply the resulting `.mibc` through the existing
+SDK **item** (not a property or an extra consumer switch):
+
+```xml
+<PropertyGroup>
+  <WasmPgoInstrumentation></WasmPgoInstrumentation>
+</PropertyGroup>
+<ItemGroup>
+  <PublishReadyToRunPgoFiles Include="app.mibc" />
+</ItemGroup>
+```
+
+```console
+dotnet publish -c Release -p:WasmPgoInstrumentation=
+```
+
+Keep `PublishReadyToRun=true` and the same application inputs and trimming settings. The SDK
+forwards `@(PublishReadyToRunPgoFiles)` to crossgen2; the Browser/CoreCLR targets also enable
+`--partial` when this item is present. Changing the instrumentation filter or disabling it
+invalidates the previous ReadyToRun outputs, so the second publish cannot reuse instrumented images.
 
 #### Referencing the right (IL-trimmed) assemblies
 
 `--reference` must point at assemblies whose **MVID** matches the modules recorded in the trace, otherwise
-`dotnet-pgo` reports `Dll mismatch ...` (or `Unknown ModuleID` for the affected methods). On browser/wasm
-the assemblies loaded by the runtime are the **IL-trimmed** ones: `PublishTrimmed`/ILLink rewrites each
+`dotnet-pgo` reports `Dll mismatch ...` (or `Unknown ModuleID` for the affected methods). With
+`PublishTrimmed=true`, the assemblies loaded by the runtime are the **IL-trimmed** ones: ILLink rewrites each
 assembly and **generates a fresh MVID**, then those trimmed DLLs are converted to the fingerprinted
 `*.wasm` files in `_framework` (webcil preserves the MVID byte-for-byte). So the trace records the
 **trimmed** MVIDs, which do **not** match the untrimmed assemblies in the runtime pack
 (`microsoft.netcore.app.runtime.browser-wasm/.../runtimes/browser-wasm/native/*.dll`).
 
-Point `--reference` at the ILLink trim output instead:
+For `PublishTrimmed=true`, point `--reference` at the ILLink trim output:
 
 - Published app: `obj/<Config>/<TFM>/browser-wasm/linked/*.dll`
 - In this repo's WASM samples: `artifacts/obj/mono/<App>/browser.wasm.<Config>/linked/*.dll`
 
+For `PublishTrimmed=false`, use the actual untrimmed IL assemblies corresponding to the published
+application and framework, with MVIDs matching those recorded in the trace; do not use stale trim
+output from a previous publish.
+
 If a method's assembly is not among the references, `dotnet-pgo` skips it with an `Unknown ModuleID`
 warning; pass every trimmed assembly the app exercised to capture all of them. `dotnet-pgo dump --input app.mibc`
-lists the methods and their block counts.
+lists the methods and their profile data. Preserve these matching trimmed IL assemblies alongside
+the trace before another publish overwrites them.
 
 
 ### Profiling in the browser dev tools

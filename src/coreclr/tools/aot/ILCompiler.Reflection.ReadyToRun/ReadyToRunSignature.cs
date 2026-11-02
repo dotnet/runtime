@@ -1211,6 +1211,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(" (METHOD_HANDLE)");
                     break;
 
+                case ReadyToRunFixupKind.MethodEntryCounter:
+                    ParseMethod(builder);
+                    builder.Append(" (METHOD_ENTRY_COUNTER)");
+                    break;
+
                 case ReadyToRunFixupKind.FieldHandle:
                     ParseField(builder);
                     builder.Append(" (FIELD_HANDLE)");

@@ -12614,21 +12614,39 @@ HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
     STANDARD_VM_CONTRACT;
 
     HRESULT hr = E_FAIL;
+    *pInstrumentationData = nullptr;
 
     JIT_TO_EE_TRANSITION();
 
 #ifdef FEATURE_PGO
 
-    // Only try instrumenting tiering-eligible methods, unless interpreter PGO is enabled, in
-    // which case we instrument every method for offline profile collection.
-    MethodDesc* pMD = (MethodDesc*)ftnHnd;
-    if (pMD->IsEligibleForTieredCompilation() || InterpreterPgoInstrumentationEnabled())
+    if (countSchemaItems == 1 && pSchema[0].InstrumentationKind == PgoInstrumentationKind::MethodEntryIntCount)
     {
-        hr = PgoManager::allocPgoInstrumentationBySchema(pMD, m_ILHeader, pSchema, countSchemaItems, pInstrumentationData);
+        MethodDesc* method = reinterpret_cast<MethodDesc*>(ftnHnd);
+        if (method->IsDynamicMethod() || method->IsILStub() || !method->IsIL() || method->GetILHeader() == nullptr)
+        {
+            hr = E_NOTIMPL;
+        }
+        else
+        {
+            *pInstrumentationData = reinterpret_cast<BYTE*>(PgoManager::GetMethodEntryCounter(method));
+            pSchema[0].Offset = 0;
+            hr = S_OK;
+        }
     }
     else
     {
-        hr = E_NOTIMPL;
+        // Only try instrumenting tiering-eligible methods, unless interpreter PGO is enabled, in
+        // which case we instrument every method for offline profile collection.
+        MethodDesc* pMD = (MethodDesc*)ftnHnd;
+        if (pMD->IsEligibleForTieredCompilation() || InterpreterPgoInstrumentationEnabled())
+        {
+            hr = PgoManager::allocPgoInstrumentationBySchema(pMD, m_ILHeader, pSchema, countSchemaItems, pInstrumentationData);
+        }
+        else
+        {
+            hr = E_NOTIMPL;
+        }
     }
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEECodeGenInfo!");
@@ -13985,6 +14003,19 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
             result = (size_t)pMD;
+        }
+        break;
+
+    case READYTORUN_FIXUP_MethodEntryCounter:
+        {
+#if defined(FEATURE_PGO) && defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+            MethodDesc* method = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+            if (g_fEEStarted)
+                method->EnsureActive();
+            result = reinterpret_cast<size_t>(PgoManager::GetMethodEntryCounter(method));
+#else
+            COMPlusThrowHR(COR_E_PLATFORMNOTSUPPORTED);
+#endif
         }
         break;
 

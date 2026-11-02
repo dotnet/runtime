@@ -104,6 +104,9 @@ public:
     StackSArray<uint8_t> byteData;
     StackSArray<TypeHandle> typeHandlesEncountered;
     StackSArray<MethodDesc*> methodsEncountered;
+    bool hasMethodEntries = false;
+    bool hasNonzeroEntries = false;
+    bool hasOtherData = false;
 private:
     const PgoManager::HeaderList *pgoData;
     SArrayByteWriterFunctor byteWriter;
@@ -118,6 +121,17 @@ public:
 
     bool operator()(const ICorJitInfo::PgoInstrumentationSchema &schema)
     {
+        if (schema.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::MethodEntryIntCount)
+        {
+            hasMethodEntries = true;
+            hasNonzeroEntries |= *reinterpret_cast<const uint32_t*>(pgoData->header.GetData() + schema.Offset) != 0;
+        }
+        else if (schema.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::NumRuns &&
+                 schema.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::Version)
+        {
+            hasOtherData = true;
+        }
+
         if (!writer.AppendSchema(schema))
             return false;
 
@@ -170,6 +184,9 @@ void PgoManager::LogInstrumentationData()
             SchemaWriterFunctor schemaWriter(pgoData);
             if (ReadInstrumentationSchemaWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, schemaWriter))
             {
+                // Zero can mean unexecuted or wrapped; neither establishes measured coldness.
+                if (schemaWriter.hasMethodEntries && !schemaWriter.hasNonzeroEntries && !schemaWriter.hasOtherData)
+                    return true;
                 if (!schemaWriter.writer.Finish())
                     return false;
                 ETW::MethodLog::LogMethodInstrumentationData(
@@ -647,13 +664,31 @@ void PgoManager::CreatePgoManager(PgoManager* volatile* ppMgr, bool loaderAlloca
     VolatileStore((PgoManager**)ppMgr, newManager);
 }
 
-void PgoManager::Header::Init(MethodDesc *pMD, unsigned codehash, unsigned ilSize, unsigned countsOffset)
+void PgoManager::Header::Init(MethodDesc *pMD, unsigned methodhash, unsigned codehash, unsigned ilSize, unsigned countsOffset)
 {
     this->codehash = codehash;
-    this->methodhash = pMD->GetStableHash();
+    this->methodhash = methodhash;
     this->ilSize = ilSize;
     this->method = pMD;
     this->countsOffset = countsOffset;
+}
+
+uint32_t* PgoManager::GetMethodEntryCounter(MethodDesc* method)
+{
+    STANDARD_VM_CONTRACT;
+
+    method = method->GetOrdinaryVariant();
+    COR_ILMETHOD* il = method->GetILHeader();
+    if (il == nullptr)
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+    COR_ILMETHOD_DECODER header(il);
+    ICorJitInfo::PgoInstrumentationSchema schema = {};
+    schema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::MethodEntryIntCount;
+    schema.Count = 1;
+    BYTE* data;
+    IfFailThrow(allocPgoInstrumentationBySchema(method, &header, &schema, 1, &data));
+    return reinterpret_cast<uint32_t*>(data + schema.Offset);
 }
 
 HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, const COR_ILMETHOD_DECODER* ilHeader, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData)
@@ -752,6 +787,8 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
     }
 
     HeaderList* pHeaderList = NULL;
+    // Computing the hash can load enclosing types and must precede CrstPgoData.
+    unsigned methodhash = pMD->GetStableHash();
 
     if (pMD->IsDynamicMethod())
     {
@@ -772,7 +809,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         pHeaderList = (HeaderList*)pMD->AsDynamicMethodDesc()->GetResolver()->GetJitMetaHeap()->New(unsafeAllocationSize);
 
         memset(pHeaderList, 0, unsafeAllocationSize);
-        pHeaderList->header.Init(pMD, codehash, ilSize, offsetOfInstrumentationDataFromStartOfDataRegion);
+        pHeaderList->header.Init(pMD, methodhash, codehash, ilSize, offsetOfInstrumentationDataFromStartOfDataRegion);
         *pInstrumentationData = pHeaderList->header.GetData();
         if (!WriteInstrumentationSchema(pSchema, countSchemaItems, *pInstrumentationData, pHeaderList->header.countsOffset))
         {
@@ -818,7 +855,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         AllocMemTracker loaderHeapAllocation;
         pHeaderList = (HeaderList*)loaderHeapAllocation.Track(pMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(allocationSize));
         memset(pHeaderList, 0, unsafeAllocationSize);
-        pHeaderList->header.Init(pMD, codehash, ilSize, offsetOfInstrumentationDataFromStartOfDataRegion);
+        pHeaderList->header.Init(pMD, methodhash, codehash, ilSize, offsetOfInstrumentationDataFromStartOfDataRegion);
         pHeaderList->next = m_pgoHeaders;
         *pInstrumentationData = pHeaderList->header.GetData();
         if (!WriteInstrumentationSchema(pSchema, countSchemaItems, *pInstrumentationData, pHeaderList->header.countsOffset))
