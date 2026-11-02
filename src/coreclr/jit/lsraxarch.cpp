@@ -1315,8 +1315,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
         if (call->IsFastTailCall())
         {
             // Fast tail call - make sure that call target is always computed in volatile registers
-            // that will not be restored in the epilog sequence.
-            ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
+            // that will not be restored in the epilog sequence. The jump must also not need a REX2
+            // prefix, since the unwinder only recognizes REX-prefixed jumps as part of the epilog.
+            ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet() & lowGprRegs;
             if (m_compiler->getNeedsGSSecurityCookie())
             {
                 ctrlExprCandidates &=
