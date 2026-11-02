@@ -1815,6 +1815,16 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         id->idOpSize(EA_SIZE(opsz));
     }
 
+#ifdef TARGET_AMD64
+    if ((opsz & EA_8BYTE_DST) != 0)
+    {
+        // The caller assigns the opcode after allocating the descriptor.
+        id->idSetMovsx64();
+    }
+#elif defined(TARGET_X86)
+    assert((opsz & EA_8BYTE_DST) == 0);
+#endif
+
     // Amd64: ip-relative addressing is supported even when not generating relocatable AOT code
     if (EA_IS_DSP_RELOC(opsz)
 #ifndef TARGET_AMD64
