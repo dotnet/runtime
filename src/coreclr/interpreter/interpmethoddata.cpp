@@ -29,7 +29,7 @@ InterpMethodDataBuilder::~InterpMethodDataBuilder()
 {
 }
 
-InterpSectionRef InterpMethodDataBuilder::AllocateInSection(InterpMethodDataSection section, uint32_t size, uint32_t alignment)
+void InterpMethodDataBuilder::AllocateInSection(InterpMethodDataSection section, uint32_t size, uint32_t alignment)
 {
     assert(!m_finalized);
     InterpSectionData& sectionData = m_sections[(int)section];
@@ -42,8 +42,6 @@ InterpSectionRef InterpMethodDataBuilder::AllocateInSection(InterpMethodDataSect
     // Align the current size
     uint32_t alignedOffset = AlignUp(sectionData.size, alignment);
     sectionData.size = alignedOffset + size;
-
-    return InterpSectionRef(section, alignedOffset);
 }
 
 void InterpMethodDataBuilder::SetBytecodeSize(uint32_t sizeInBytes)
@@ -110,22 +108,22 @@ void* InterpMethodDataBuilder::GetWritablePointer(void* baseAddressRW, InterpSec
     return (uint8_t*)baseAddressRW + m_sections[(int)ref.section].finalOffset + ref.offset;
 }
 
-InterpSectionRef InterpMethodDataBuilder::AllocateInterpMethod()
+void InterpMethodDataBuilder::AllocateInterpMethod()
 {
-    return AllocateInSection(InterpMethodDataSection::InterpMethod, sizeof(InterpMethod));
+    AllocateInSection(InterpMethodDataSection::InterpMethod, sizeof(InterpMethod));
 }
 
-InterpSectionRef InterpMethodDataBuilder::AllocateDataItems(int32_t count)
+void InterpMethodDataBuilder::AllocateDataItems(int32_t count)
 {
-    return AllocateInSection(InterpMethodDataSection::DataItems, count * sizeof(void*));
+    AllocateInSection(InterpMethodDataSection::DataItems, count * sizeof(void*));
 }
 
-InterpSectionRef InterpMethodDataBuilder::AllocateAsyncSuspendData()
+void InterpMethodDataBuilder::AllocateAsyncSuspendData()
 {
-    return AllocateInSection(InterpMethodDataSection::AsyncSuspendData, sizeof(InterpAsyncSuspendData));
+    AllocateInSection(InterpMethodDataSection::AsyncSuspendData, sizeof(InterpAsyncSuspendData));
 }
 
-InterpSectionRef InterpMethodDataBuilder::AllocateIntervalMap(int32_t count)
+void InterpMethodDataBuilder::AllocateIntervalMap(int32_t count)
 {
-    return AllocateInSection(InterpMethodDataSection::IntervalMaps, count * sizeof(InterpIntervalMapEntry));
+    AllocateInSection(InterpMethodDataSection::IntervalMaps, count * sizeof(InterpIntervalMapEntry));
 }

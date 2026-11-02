@@ -101,26 +101,6 @@ const char* CEEOpName(OPCODE op)
     return ((const char*)&g_CEEOpNameCharacters) + g_CEEOpNameOffsets[op];
 }
 
-// Also updates ip to skip over prefix, if any
-OPCODE CEEDecodeOpcode(const uint8_t **pIp)
-{
-    OPCODE res;
-    const uint8_t *ip = *pIp;
-
-    if (*ip == 0xFE)
-    {
-        // Double byte encoding, offset
-        ip++;
-        res = (OPCODE)(*ip + CEE_ARGLIST);
-    }
-    else
-    {
-        res = (OPCODE)*ip;
-    }
-    *pIp = ip;
-    return res;
-}
-
 int32_t CEEOpcodeSize(const uint8_t *ip, const uint8_t *codeEnd)
 {
     const uint8_t *p = ip;
