@@ -69,6 +69,24 @@
     <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
     <TargetsUnix Condition="'$(TargetsOpenBSD)' == 'true' or '$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true' or '$(TargetsHaiku)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
+  <!-- Values of the public OperatingSystem.IsXxx() checks for the TargetOS. These must match the
+       TARGET_* conditions in System.Private.CoreLib's OperatingSystem.cs. -->
+  <ItemGroup Label="TargetOperatingSystemChecks">
+    <TargetOperatingSystemCheck Include="IsAndroid" Value="$([MSBuild]::ValueOrDefault('$(TargetsAndroid)', 'false'))" />
+    <TargetOperatingSystemCheck Include="IsBrowser" Value="$([MSBuild]::ValueOrDefault('$(TargetsBrowser)', 'false'))" />
+    <TargetOperatingSystemCheck Include="IsFreeBSD" Value="$([MSBuild]::ValueOrDefault('$(TargetsFreeBSD)', 'false'))" />
+    <TargetOperatingSystemCheck Include="IsIOS" Value="true" Condition="'$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'" />
+    <TargetOperatingSystemCheck Include="IsIOS" Value="false" Condition="'$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true'" />
+    <TargetOperatingSystemCheck Include="IsLinux" Value="true" Condition="'$(TargetsLinux)' == 'true' and '$(TargetsAndroid)' != 'true'" />
+    <TargetOperatingSystemCheck Include="IsLinux" Value="false" Condition="'$(TargetsLinux)' != 'true' or '$(TargetsAndroid)' == 'true'" />
+    <TargetOperatingSystemCheck Include="IsMacCatalyst" Value="$([MSBuild]::ValueOrDefault('$(TargetsMacCatalyst)', 'false'))" />
+    <TargetOperatingSystemCheck Include="IsMacOS" Value="$([MSBuild]::ValueOrDefault('$(TargetsOSX)', 'false'))" />
+    <TargetOperatingSystemCheck Include="IsOpenBSD" Value="$([MSBuild]::ValueOrDefault('$(TargetsOpenBSD)', 'false'))" />
+    <TargetOperatingSystemCheck Include="IsTvOS" Value="$([MSBuild]::ValueOrDefault('$(TargetstvOS)', 'false'))" />
+    <TargetOperatingSystemCheck Include="IsWasi" Value="$([MSBuild]::ValueOrDefault('$(TargetsWasi)', 'false'))" />
+    <TargetOperatingSystemCheck Include="IsWatchOS" Value="false" />
+    <TargetOperatingSystemCheck Include="IsWindows" Value="$([MSBuild]::ValueOrDefault('$(TargetsWindows)', 'false'))" />
+  </ItemGroup>
   <PropertyGroup>
     <_ImportedRuntimeIdentifierProps>true</_ImportedRuntimeIdentifierProps>
   </PropertyGroup>
