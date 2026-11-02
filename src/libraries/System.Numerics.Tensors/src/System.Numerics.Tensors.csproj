@@ -63,6 +63,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.AcosPi.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Add.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.AddMultiply.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.AndNot.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Asin.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Asinh.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.AsinPi.cs" />

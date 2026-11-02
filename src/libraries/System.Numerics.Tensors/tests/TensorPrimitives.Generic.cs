@@ -319,6 +319,198 @@ namespace System.Numerics.Tensors.Tests
     {
         protected override void AssertEqualTolerance(Half expected, Half actual, Half? tolerance = null) =>
             base.AssertEqualTolerance(expected, actual, tolerance ?? Half.CreateTruncating(0.001));
+
+        #region AndNot
+        [Fact]
+        public void AndNot_Half_SpanSpan_AllLengths()
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                using BoundedMemory<Half> x = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<Half> y = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<Half> destination = CreateTensor(tensorLength);
+
+                TensorPrimitives.AndNot<Half>(x, y, destination);
+
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    short expected = (short)(BitConverter.HalfToInt16Bits(x.Span[i]) & ~BitConverter.HalfToInt16Bits(y.Span[i]));
+                    Assert.Equal(expected, BitConverter.HalfToInt16Bits(destination.Span[i]));
+                }
+            });
+        }
+
+        [Fact]
+        public void AndNot_Half_ScalarSpan_AllLengths()
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                Half x = NextRandom();
+                using BoundedMemory<Half> y = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<Half> destination = CreateTensor(tensorLength);
+
+                TensorPrimitives.AndNot<Half>(x, y, destination);
+
+                short xBits = BitConverter.HalfToInt16Bits(x);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    short expected = (short)(xBits & ~BitConverter.HalfToInt16Bits(y.Span[i]));
+                    Assert.Equal(expected, BitConverter.HalfToInt16Bits(destination.Span[i]));
+                }
+            });
+        }
+
+        [Fact]
+        public void AndNot_Half_BitPatterns()
+        {
+            // Verify raw bit patterns including subnormals, signed zeros, NaNs, and infinities
+            short[] testBits = new short[]
+            {
+                0x0000, // +0.0
+                unchecked((short)0x8000), // -0.0
+                0x0001, // Smallest positive subnormal
+                0x03FF, // Largest positive subnormal
+                unchecked((short)0x8001), // Smallest negative subnormal
+                0x3C00, // 1.0
+                0x4000, // 2.0
+                unchecked((short)0xBC00), // -1.0
+                0x7C00, // Positive infinity
+                unchecked((short)0xFC00), // Negative infinity
+                0x7E00, // Quiet NaN
+                unchecked((short)0xFE00), // Negative quiet NaN
+                0x7D00, // Signaling NaN
+                unchecked((short)0xFD00), // Negative signaling NaN
+                unchecked((short)0xAAAA), // 1010101010101010
+                0x5555, // 0101010101010101
+                unchecked((short)0xFFFF), // All ones (-1)
+            };
+
+            Half[] xValues = new Half[testBits.Length];
+            Half[] yValues = new Half[testBits.Length];
+            for (int i = 0; i < testBits.Length; i++)
+            {
+                xValues[i] = BitConverter.Int16BitsToHalf(testBits[i]);
+                yValues[i] = BitConverter.Int16BitsToHalf(testBits[(i + 3) % testBits.Length]);
+            }
+
+            Half[] destSpan = new Half[testBits.Length];
+            TensorPrimitives.AndNot<Half>(xValues, yValues, destSpan);
+            for (int i = 0; i < testBits.Length; i++)
+            {
+                short expected = (short)(BitConverter.HalfToInt16Bits(xValues[i]) & ~BitConverter.HalfToInt16Bits(yValues[i]));
+                Assert.Equal(expected, BitConverter.HalfToInt16Bits(destSpan[i]));
+            }
+
+            Half scalarX = BitConverter.Int16BitsToHalf(unchecked((short)0xCAFE));
+            short scalarXBits = BitConverter.HalfToInt16Bits(scalarX);
+            TensorPrimitives.AndNot<Half>(scalarX, yValues, destSpan);
+            for (int i = 0; i < testBits.Length; i++)
+            {
+                short expected = (short)(scalarXBits & ~BitConverter.HalfToInt16Bits(yValues[i]));
+                Assert.Equal(expected, BitConverter.HalfToInt16Bits(destSpan[i]));
+            }
+        }
+
+        [Fact]
+        public void AndNot_Half_NonCommutative()
+        {
+            Half xVal = BitConverter.Int16BitsToHalf(0b1100);
+            Half yVal = BitConverter.Int16BitsToHalf(0b1010);
+            short expectedXY = 0b1100 & ~0b1010; // 0b0100 = 4
+            short expectedYX = 0b1010 & ~0b1100; // 0b0010 = 2
+
+            Assert.NotEqual(expectedXY, expectedYX);
+
+            Half[] xArray = new Half[] { xVal, xVal, xVal, xVal };
+            Half[] yArray = new Half[] { yVal, yVal, yVal, yVal };
+            Half[] destXY = new Half[4];
+            Half[] destYX = new Half[4];
+
+            TensorPrimitives.AndNot<Half>(xArray, yArray, destXY);
+            TensorPrimitives.AndNot<Half>(yArray, xArray, destYX);
+
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.Equal(expectedXY, BitConverter.HalfToInt16Bits(destXY[i]));
+                Assert.Equal(expectedYX, BitConverter.HalfToInt16Bits(destYX[i]));
+            }
+
+            Half[] destScalarXY = new Half[4];
+            TensorPrimitives.AndNot<Half>(xVal, yArray, destScalarXY);
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.Equal(expectedXY, BitConverter.HalfToInt16Bits(destScalarXY[i]));
+            }
+        }
+
+        [Fact]
+        public void AndNot_Half_InPlace()
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                using BoundedMemory<Half> x = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<Half> y = CreateAndFillTensor(tensorLength);
+                Half[] xOrig = x.Span.ToArray();
+                Half[] yOrig = y.Span.ToArray();
+
+                // Destination == x
+                TensorPrimitives.AndNot<Half>(x.Span, y.Span, x.Span);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    short expected = (short)(BitConverter.HalfToInt16Bits(xOrig[i]) & ~BitConverter.HalfToInt16Bits(yOrig[i]));
+                    Assert.Equal(expected, BitConverter.HalfToInt16Bits(x.Span[i]));
+                }
+
+                // Destination == y
+                xOrig.CopyTo(x.Span);
+                TensorPrimitives.AndNot<Half>(x.Span, y.Span, y.Span);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    short expected = (short)(BitConverter.HalfToInt16Bits(xOrig[i]) & ~BitConverter.HalfToInt16Bits(yOrig[i]));
+                    Assert.Equal(expected, BitConverter.HalfToInt16Bits(y.Span[i]));
+                }
+
+                // Scalar-span: destination == y
+                yOrig.CopyTo(y.Span);
+                Half scalarX = NextRandom();
+                short scalarXBits = BitConverter.HalfToInt16Bits(scalarX);
+                TensorPrimitives.AndNot<Half>(scalarX, y.Span, y.Span);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    short expected = (short)(scalarXBits & ~BitConverter.HalfToInt16Bits(yOrig[i]));
+                    Assert.Equal(expected, BitConverter.HalfToInt16Bits(y.Span[i]));
+                }
+            });
+        }
+
+        [Fact]
+        public void AndNot_Half_Throws()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                using BoundedMemory<Half> x = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<Half> y = CreateAndFillTensor(tensorLength - 1);
+                using BoundedMemory<Half> destination = CreateTensor(tensorLength);
+
+                // Mismatched lengths
+                Assert.Throws<ArgumentException>(() => TensorPrimitives.AndNot<Half>(x.Span, y.Span, destination.Span));
+                Assert.Throws<ArgumentException>(() => TensorPrimitives.AndNot<Half>(y.Span, x.Span, destination.Span));
+
+                // Destination too short
+                using BoundedMemory<Half> yEqual = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<Half> shortDest = CreateTensor(tensorLength - 1);
+                AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AndNot<Half>(x.Span, yEqual.Span, shortDest.Span));
+                AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AndNot<Half>(x.Span[0], yEqual.Span, shortDest.Span));
+            });
+
+            // Overlap validation
+            Half[] array = new Half[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AndNot<Half>(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AndNot<Half>(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AndNot<Half>((Half)default, array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AndNot<Half>((Half)default, array.AsSpan(4, 2), array.AsSpan(5, 2)));
+        }
+        #endregion
     }
 
     [OuterLoop]
@@ -2191,6 +2383,7 @@ namespace System.Numerics.Tensors.Tests
         #region Span,Span -> Destination
         public static IEnumerable<object[]> SpanSpanDestinationFunctionsToTest()
         {
+            yield return Create(TensorPrimitives.AndNot, (x, y) => x & ~y);
             yield return Create(TensorPrimitives.BitwiseAnd, (x, y) => x & y);
             yield return Create(TensorPrimitives.BitwiseOr, (x, y) => x | y);
             yield return Create(TensorPrimitives.Xor, (x, y) => x ^ y);
@@ -2273,6 +2466,111 @@ namespace System.Numerics.Tensors.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(2, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(4, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(6, 2)));
+        }
+        #endregion
+
+        #region Scalar,Span -> Destination
+        public static IEnumerable<object[]> IntegerScalarSpanDestinationFunctionsToTest()
+        {
+            yield return Create(TensorPrimitives.AndNot, (x, y) => x & ~y);
+
+            static object[] Create(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod)
+                => new object[] { tensorPrimitivesMethod, expectedMethod };
+        }
+
+        [Theory]
+        [MemberData(nameof(IntegerScalarSpanDestinationFunctionsToTest))]
+        public void IntegerScalarSpanDestination_AllLengths(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod)
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                T x = NextRandom();
+                using BoundedMemory<T> y = CreateTensor(tensorLength);
+                FillTensor(y.Span, default);
+                using BoundedMemory<T> destination = CreateTensor(tensorLength);
+
+                tensorPrimitivesMethod(x, y, destination);
+
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    AssertEqualTolerance(expectedMethod(x, y[i]), destination[i]);
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(IntegerScalarSpanDestinationFunctionsToTest))]
+        public void IntegerScalarSpanDestination_InPlace(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod)
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                T x = NextRandom();
+                using BoundedMemory<T> y = CreateTensor(tensorLength);
+                FillTensor(y.Span, default);
+                T[] yOrig = y.Span.ToArray();
+
+                tensorPrimitivesMethod(x, y.Span, y.Span);
+
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    AssertEqualTolerance(expectedMethod(x, yOrig[i]), y[i]);
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(IntegerScalarSpanDestinationFunctionsToTest))]
+        public void IntegerScalarSpanDestination_ThrowsForTooShortDestination(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> _)
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                T x = NextRandom();
+                using BoundedMemory<T> y = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<T> destination = CreateTensor(tensorLength - 1);
+
+                AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(x, y, destination));
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(IntegerScalarSpanDestinationFunctionsToTest))]
+        public void IntegerScalarSpanDestination_ThrowsForOverlappingInputsWithOutputs(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> _)
+        {
+            T[] array = new T[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(default, array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(default, array.AsSpan(4, 2), array.AsSpan(5, 2)));
+        }
+
+        [Fact]
+        public void AndNot_NonCommutative()
+        {
+            T xVal = T.CreateTruncating(0b1100);
+            T yVal = T.CreateTruncating(0b1010);
+            T expectedXY = T.CreateTruncating(0b1100 & ~0b1010); // 0b0100 = 4
+            T expectedYX = T.CreateTruncating(0b1010 & ~0b1100); // 0b0010 = 2
+
+            Assert.NotEqual(expectedXY, expectedYX);
+
+            T[] xArray = new T[] { xVal, xVal, xVal, xVal };
+            T[] yArray = new T[] { yVal, yVal, yVal, yVal };
+            T[] destXY = new T[4];
+            T[] destYX = new T[4];
+
+            TensorPrimitives.AndNot<T>(xArray, yArray, destXY);
+            TensorPrimitives.AndNot<T>(yArray, xArray, destYX);
+
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.Equal(expectedXY, destXY[i]);
+                Assert.Equal(expectedYX, destYX[i]);
+            }
+
+            T[] destScalarXY = new T[4];
+            TensorPrimitives.AndNot<T>(xVal, yArray, destScalarXY);
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.Equal(expectedXY, destScalarXY[i]);
+            }
         }
         #endregion
 
