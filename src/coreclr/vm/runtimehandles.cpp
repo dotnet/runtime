@@ -1533,10 +1533,16 @@ extern "C" void QCALLTYPE Signature_GetCustomModifiersAtOffset(
     gc.pSig = (SIGNATURENATIVEREF)sigObj.Get();
     gc.retVal = NULL;
     GCPROTECT_BEGIN(gc);
+    DWORD sigSize = gc.pSig->GetCorSigSize();
+    if (offset < 0 || (DWORD)offset >= sigSize)
+    {
+        COMPlusThrowArgumentOutOfRange(W("offset"), W("ArgumentOutOfRange_IndexMustBeLess"));
+    }
+
     SigTypeContext typeContext;
     gc.pSig->GetTypeContext(&typeContext);
 
-    SigPointer argument(gc.pSig->GetCorSig() + offset, gc.pSig->GetCorSigSize() - offset);
+    SigPointer argument(gc.pSig->GetCorSig() + offset, sigSize - offset);
 
     SigPointer sp = argument;
     Module* pModule = gc.pSig->GetModule();

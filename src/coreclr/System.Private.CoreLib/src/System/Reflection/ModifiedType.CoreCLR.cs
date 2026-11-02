@@ -29,7 +29,7 @@ namespace System.Reflection
             });
 
         private Type[] GetCustomModifiers(bool isOptional) =>
-             (_typeSignature._signature != null) ?
+             (_typeSignature._signature != null && _typeSignature._offset >= 0) ?
                 _typeSignature._signature.GetCustomModifiersAtOffset(_typeSignature._offset, isOptional) : [];
     }
 }
