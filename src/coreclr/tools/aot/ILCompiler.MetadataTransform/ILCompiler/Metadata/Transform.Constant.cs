@@ -3,56 +3,42 @@
 
 using System;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Metadata.NativeFormat.Writer;
 
 using Cts = Internal.TypeSystem;
 using Ecma = System.Reflection.Metadata;
-using ConstantTypeCode = System.Reflection.Metadata.ConstantTypeCode;
+using Constant = Internal.Metadata.NativeFormat.Writer.Constant;
 
 namespace ILCompiler.Metadata
 {
     internal partial class Transform<TPolicy>
     {
-        private MetadataRecord HandleConstant(Cts.Ecma.EcmaModule module, Ecma.ConstantHandle constantHandle)
+        private Constant HandleConstant(Cts.Ecma.EcmaModule module, Ecma.ConstantHandle constantHandle)
         {
             Ecma.MetadataReader reader = module.MetadataReader;
             Ecma.Constant constant = reader.GetConstant(constantHandle);
-
             Ecma.BlobReader blob = reader.GetBlobReader(constant.Value);
+            Constant result = new Constant { TypeCode = (ConstantTypeCode)constant.TypeCode };
 
-            switch (constant.TypeCode)
+            // ECMA-335 II.22.9, with NativeFormat string handles and no null-reference payload.
+            if (constant.TypeCode == Ecma.ConstantTypeCode.String)
+                result.Blob.WriteString(HandleString(blob.ReadUTF16(blob.Length)));
+            else
             {
-                case ConstantTypeCode.Boolean:
-                    return new ConstantBooleanValue { Value = blob.ReadBoolean() };
-                case ConstantTypeCode.Byte:
-                    return new ConstantByteValue { Value = blob.ReadByte() };
-                case ConstantTypeCode.Char:
-                    return new ConstantCharValue { Value = blob.ReadChar() };
-                case ConstantTypeCode.Double:
-                    return new ConstantDoubleValue { Value = blob.ReadDouble() };
-                case ConstantTypeCode.Int16:
-                    return new ConstantInt16Value { Value = blob.ReadInt16() };
-                case ConstantTypeCode.Int32:
-                    return new ConstantInt32Value { Value = blob.ReadInt32() };
-                case ConstantTypeCode.Int64:
-                    return new ConstantInt64Value { Value = blob.ReadInt64() };
-                case ConstantTypeCode.SByte:
-                    return new ConstantSByteValue { Value = blob.ReadSByte() };
-                case ConstantTypeCode.Single:
-                    return new ConstantSingleValue { Value = blob.ReadSingle() };
-                case ConstantTypeCode.String:
-                    return HandleString(blob.ReadUTF16(blob.Length));
-                case ConstantTypeCode.UInt16:
-                    return new ConstantUInt16Value { Value = blob.ReadUInt16() };
-                case ConstantTypeCode.UInt32:
-                    return new ConstantUInt32Value { Value = blob.ReadUInt32() };
-                case ConstantTypeCode.UInt64:
-                    return new ConstantUInt64Value { Value = blob.ReadUInt64() };
-                case ConstantTypeCode.NullReference:
-                    return new ConstantReferenceValue();
-                default:
-                    throw new BadImageFormatException();
+                int size = constant.TypeCode switch
+                {
+                    Ecma.ConstantTypeCode.Boolean or Ecma.ConstantTypeCode.SByte or Ecma.ConstantTypeCode.Byte => sizeof(byte),
+                    Ecma.ConstantTypeCode.Char or Ecma.ConstantTypeCode.Int16 or Ecma.ConstantTypeCode.UInt16 => sizeof(short),
+                    Ecma.ConstantTypeCode.Int32 or Ecma.ConstantTypeCode.UInt32 or Ecma.ConstantTypeCode.Single => sizeof(int),
+                    Ecma.ConstantTypeCode.Int64 or Ecma.ConstantTypeCode.UInt64 or Ecma.ConstantTypeCode.Double => sizeof(long),
+                    Ecma.ConstantTypeCode.NullReference => 0,
+                    _ => throw new BadImageFormatException(),
+                };
+                result.Blob.WriteBytes(blob.ReadBytes(size));
             }
+
+            return result;
         }
     }
 }

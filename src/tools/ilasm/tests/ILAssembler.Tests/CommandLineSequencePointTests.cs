@@ -5,6 +5,7 @@ using System;
 using System.CommandLine;
 using System.IO;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using Xunit;
 
 namespace ILAssembler.Tests;
@@ -169,6 +170,40 @@ public sealed class CommandLineSequencePointTests : IDisposable
     // The point of an instruction on that line of that document with no .line directive in effect.
     private static (int, int, int, int, int, string) OnLine(int offset, int line, string document)
         => (offset, line, 1, line, 2, document);
+
+    [Theory]
+    [InlineData("10,9 : 1,2", false)]
+    [InlineData("10,9 : 1,2", true)]
+    [InlineData("10,10 : 1,70000", false)]
+    [InlineData("10,10 : 1,70000", true)]
+    [InlineData("0xFEEFEE,0xFEEFEE : 1,2", false)]
+    [InlineData("0xFEEFEE,0xFEEFEE : 1,2", true)]
+    public void InvalidSequencePoint_RequiresErrorToleranceToWriteOutput(string coordinates, bool errorTolerant)
+    {
+        string source = DocumentCompilerTestHelpers.MethodSource($".line {coordinates} 'a.cs'\nnop\nret");
+        string input = WriteSource("invalid.il", source);
+        string dll = Path.Combine(_directory, "out", "Test.dll");
+        string pdbPath = Path.ChangeExtension(dll, ".pdb");
+        string[] args = ["-nologo", "-quiet", "-dll", "-debug", $"-output={dll}", input];
+        if (errorTolerant)
+        {
+            args = [.. args, "-error"];
+        }
+
+        var command = new IlasmRootCommand();
+        ParseResult result = command.Parse(NativeCommandLine.Normalize(args, command));
+        Assert.Empty(result.Errors);
+        Assert.Equal(errorTolerant ? 0 : 1, new Program(command, result).Run());
+        Assert.Equal(errorTolerant, File.Exists(dll));
+        Assert.Equal(errorTolerant, File.Exists(pdbPath));
+        if (errorTolerant)
+        {
+            using var pdb = PortablePdbTestReader.Open(dll, pdbPath);
+            Assert.Empty(pdb.GetSequencePoints("M"));
+            using var pe = new PEReader(File.OpenRead(dll));
+            Assert.Equal(new byte[] { 0, 0x2a }, DocumentCompilerTestHelpers.GetMethodBody(pe).GetILBytes());
+        }
+    }
 
     // The input's implicit points are in a document named by the input's full path, whatever path the command line
     // gives: a path relative to the current directory (read, never set: it is process-wide), or a full path with a

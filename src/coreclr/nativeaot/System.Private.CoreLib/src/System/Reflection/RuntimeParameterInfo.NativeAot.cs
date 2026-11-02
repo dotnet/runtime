@@ -120,7 +120,7 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
     {
         Debug.Assert(_scope is not null && !_tkParamDef.IsNil);
         Type parameterType = ParameterType;
-        Handle constantHandle = _scope.GetParameter(_tkParamDef).DefaultValue;
+        ConstantHandle constantHandle = _scope.GetParameter(_tkParamDef).DefaultValue;
         if (constantHandle.IsNil)
             return DBNull.Value;
 

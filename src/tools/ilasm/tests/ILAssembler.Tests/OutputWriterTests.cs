@@ -224,16 +224,16 @@ public class OutputWriterTests
         Assert.DoesNotContain(nameof(IOutputStreams.TryDeletePdb), output.Calls);
     }
 
-    public static TheoryData<Type> OpenFailures { get; } = new() { typeof(IOException), typeof(UnauthorizedAccessException) };
-
     [Theory]
-    [MemberData(nameof(OpenFailures))]
-    public void Write_WithoutPdb_KeepsAPdbWhenTheReplacedOutputCannotBeOpened(Type exceptionType)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Write_WithoutPdb_KeepsAPdbWhenTheReplacedOutputCannotBeOpened(bool unauthorizedAccess)
     {
+        Exception exception = unauthorizedAccess ? new UnauthorizedAccessException() : new IOException();
         var output = new MemoryOutputStreams
         {
             Pdb = s_pair.Pdb.ToArray(),
-            OpenExistingOutputOverride = () => throw (Exception)Activator.CreateInstance(exceptionType)!,
+            OpenExistingOutputOverride = () => throw exception,
         };
 
         OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
@@ -243,13 +243,15 @@ public class OutputWriterTests
     }
 
     [Theory]
-    [MemberData(nameof(OpenFailures))]
-    public void Write_WithoutPdb_KeepsAPdbThatCannotBeOpened(Type exceptionType)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Write_WithoutPdb_KeepsAPdbThatCannotBeOpened(bool unauthorizedAccess)
     {
+        Exception exception = unauthorizedAccess ? new UnauthorizedAccessException() : new IOException();
         var output = new MemoryOutputStreams
         {
             Output = s_pair.Image.ToArray(),
-            OpenExistingPdbOverride = () => throw (Exception)Activator.CreateInstance(exceptionType)!,
+            OpenExistingPdbOverride = () => throw exception,
         };
 
         OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);

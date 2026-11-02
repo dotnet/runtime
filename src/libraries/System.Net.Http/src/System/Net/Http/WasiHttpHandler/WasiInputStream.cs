@@ -24,7 +24,10 @@ namespace System.Net.Http
         private bool otherSideClosed;
         internal bool isClosed;
 
-        public override bool CanRead => true;
+        // Canceled before the stream is dropped, so that a pending read's pollable (a child of the stream) is released first.
+        private readonly CancellationTokenSource closeCts = new CancellationTokenSource();
+
+        public override bool CanRead => !isClosed;
         public override bool CanWrite => false;
         public override bool CanSeek => false;
 
@@ -45,6 +48,7 @@ namespace System.Net.Http
             if (!isClosed)
             {
                 isClosed = true;
+                closeCts.Cancel();
                 stream.Dispose();
                 var futureTrailers = IncomingBody.Finish(body); // we just passed body ownership to Finish
                 futureTrailers.Dispose();
@@ -57,6 +61,7 @@ namespace System.Net.Http
             if (!isClosed)
             {
                 isClosed = true;
+                closeCts.Cancel();
                 stream.Dispose();
                 body.Dispose();
             }
@@ -97,7 +102,7 @@ namespace System.Net.Http
                         if (buffer.Length == 0)
                         {
                             cancellationToken.ThrowIfCancellationRequested();
-                            await WasiHttpInterop.RegisterWasiPollable(stream.Subscribe(), cancellationToken).ConfigureAwait(false);
+                            await WaitAsync(stream.Subscribe(), cancellationToken).ConfigureAwait(false);
                             ObjectDisposedException.ThrowIf(isClosed, this);
                         }
                         else
@@ -115,8 +120,7 @@ namespace System.Net.Http
                         }
                         else
                         {
-                            // TODO translate error ?
-                            throw;
+                            throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof, e);
                         }
                     }
                 }
@@ -135,6 +139,21 @@ namespace System.Net.Http
                     return min;
                 }
             }
+        }
+
+        private async Task WaitAsync(IPollImports.Pollable pollable, CancellationToken cancellationToken)
+        {
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, closeCts.Token);
+            try
+            {
+                await WasiHttpInterop.RegisterWasiPollable(pollable, linkedCts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                ObjectDisposedException.ThrowIf(isClosed, this);
+                throw;
+            }
+            ObjectDisposedException.ThrowIf(isClosed, this);
         }
 
         public override async ValueTask<int> ReadAsync(

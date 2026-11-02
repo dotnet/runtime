@@ -18,16 +18,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.WriteUInt8(value);
         }
 
-        public static void Write(this NativeWriter writer, sbyte value)
-        {
-            writer.WriteUInt8((byte)value);
-        }
-
-        public static void Write(this NativeWriter writer, short value)
-        {
-            writer.WriteSigned(value);
-        }
-
         public static void Write(this NativeWriter writer, ushort value)
         {
             writer.WriteUnsigned(value);
@@ -43,35 +33,10 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.WriteUnsigned(value);
         }
 
-        public static void Write(this NativeWriter writer, ulong value)
-        {
-            writer.WriteUnsignedLong(value);
-        }
-
-        public static void Write(this NativeWriter writer, long value)
-        {
-            writer.WriteSignedLong(value);
-        }
-
         public static void Write(this NativeWriter writer, string value)
         {
             Debug.Assert(value != null);
             writer.WriteString(value);
-        }
-
-        public static void Write(this NativeWriter writer, char value)
-        {
-            writer.WriteUnsigned((uint)value);
-        }
-
-        public static void Write(this NativeWriter writer, float value)
-        {
-            writer.WriteFloat(value);
-        }
-
-        public static void Write(this NativeWriter writer, double value)
-        {
-            writer.WriteDouble(value);
         }
 
         public static void Write(this NativeWriter writer, MetadataRecord record)

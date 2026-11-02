@@ -4,6 +4,7 @@
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
 #define EP_IMPL_SESSION_PROVIDER_GETTER_SETTER
+#include "ep-event.h"
 #include "ep-session-provider.h"
 #include "ep-rt.h"
 

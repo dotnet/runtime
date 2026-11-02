@@ -172,11 +172,12 @@ namespace System.DirectoryServices.Protocols
         LDAP_MSG_POLLINGALL = 3 // Not Supported in Linux
     }
 
+    // Matches both the Windows LDAP_TIMEVAL (LONG fields) and the Unix struct timeval (time_t / suseconds_t, i.e. C long).
     [StructLayout(LayoutKind.Sequential)]
     internal struct LDAP_TIMEVAL
     {
-        public int tv_sec;
-        public int tv_usec;
+        public CLong tv_sec;
+        public CLong tv_usec;
     }
 
 #if NET

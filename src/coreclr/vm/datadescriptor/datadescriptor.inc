@@ -23,7 +23,7 @@
 // src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/RuntimeInfo_1.cs
 // to match.
 #ifndef CDAC_RECOMMENDED_READER_VERSION
-#define CDAC_RECOMMENDED_READER_VERSION 2
+#define CDAC_RECOMMENDED_READER_VERSION 3
 #endif
 
 // When changes will break existing diagnostic tools (changes that are incompatible with the existing data contracts)
@@ -579,6 +579,7 @@ CDAC_TYPE_FIELD(MethodTable, T_UINT16, NumInterfaces, cdac_data<MethodTable>::Nu
 CDAC_TYPE_FIELD(MethodTable, T_UINT16, NumVirtuals, cdac_data<MethodTable>::NumVirtuals)
 CDAC_TYPE_FIELD(MethodTable, T_POINTER, PerInstInfo, cdac_data<MethodTable>::PerInstInfo)
 CDAC_TYPE_FIELD(MethodTable, T_POINTER, AuxiliaryData, cdac_data<MethodTable>::AuxiliaryData)
+CDAC_TYPE_FIELD(MethodTable, T_POINTER, InterfaceMap, cdac_data<MethodTable>::InterfaceMap)
 CDAC_TYPE_END(MethodTable)
 
 CDAC_TYPE_BEGIN(DynamicStaticsInfo)
@@ -588,7 +589,7 @@ CDAC_TYPE_FIELD(DynamicStaticsInfo, T_POINTER, NonGCStatics, offsetof(DynamicSta
 CDAC_TYPE_END(DynamicStaticsInfo)
 
 CDAC_TYPE_BEGIN(MethodTableAuxiliaryData)
-CDAC_TYPE_INDETERMINATE(MethodTableAuxiliaryData)
+CDAC_TYPE_SIZE(sizeof(MethodTableAuxiliaryData))
 CDAC_TYPE_FIELD(MethodTableAuxiliaryData, T_POINTER, LoaderModule, offsetof(MethodTableAuxiliaryData, m_pLoaderModule))
 CDAC_TYPE_FIELD(MethodTableAuxiliaryData, T_INT16, OffsetToNonVirtualSlots, offsetof(MethodTableAuxiliaryData, m_offsetToNonVirtualSlots))
 CDAC_TYPE_FIELD(MethodTableAuxiliaryData, T_UINT32, Flags, offsetof(MethodTableAuxiliaryData, m_dwFlags))
@@ -885,6 +886,7 @@ CDAC_TYPE_END(PortableEntryPoint)
 
 CDAC_TYPE_BEGIN(MethodDescCodeData)
 CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
+CDAC_TYPE_FIELD(MethodDescCodeData, T_POINTER, GCRefMap, offsetof(MethodDescCodeData,GCRefMap))
 CDAC_TYPE_FIELD(MethodDescCodeData, TYPE(CodePointer), TemporaryEntryPoint, offsetof(MethodDescCodeData,TemporaryEntryPoint))
 #ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(MethodDescCodeData, T_POINTER, VersioningState, offsetof(MethodDescCodeData,VersioningState))
@@ -1302,6 +1304,7 @@ CDAC_TYPE_BEGIN(FramedMethodFrame)
 CDAC_TYPE_SIZE(sizeof(FramedMethodFrame))
 CDAC_TYPE_FIELD(FramedMethodFrame, T_POINTER, TransitionBlockPtr, cdac_data<FramedMethodFrame>::TransitionBlockPtr)
 CDAC_TYPE_FIELD(FramedMethodFrame, T_POINTER, MethodDescPtr, cdac_data<FramedMethodFrame>::MethodDescPtr)
+CDAC_TYPE_FIELD(FramedMethodFrame, T_POINTER, CachedGCRefMap, cdac_data<FramedMethodFrame>::CachedGCRefMap)
 CDAC_TYPE_END(FramedMethodFrame)
 
 #ifdef FEATURE_INTERPRETER
@@ -1941,7 +1944,7 @@ CDAC_GLOBAL_CONTRACT(RuntimeInfo, c1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, c1)
 CDAC_GLOBAL_CONTRACT(SHash, c1)
 CDAC_GLOBAL_CONTRACT(Signature, c1)
-CDAC_GLOBAL_CONTRACT(StackWalk, c1)
+CDAC_GLOBAL_CONTRACT(StackWalk, c2)
 CDAC_GLOBAL_CONTRACT(StressLog, c2)
 CDAC_GLOBAL_CONTRACT(SyncBlock, c1)
 CDAC_GLOBAL_CONTRACT(Thread, c1)

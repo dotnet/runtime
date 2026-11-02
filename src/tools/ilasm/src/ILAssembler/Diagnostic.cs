@@ -52,6 +52,7 @@ public static class DiagnosticIds
     public const string MissingExportedTypeImplementation = "ILA0031";
     public const string KeyFileError = "ILA0032";
     public const string TooManyGenericParameters = "ILA0033";
+    public const string DuplicateField = "ILA0034";
     public const string GenericParameterConstraintOwnerOutOfRange = "ILA0035";
     public const string InvalidExportOrdinal = "ILA0036";
     public const string ExportOrdinalRangeTooLarge = "ILA0037";
@@ -78,6 +79,7 @@ public static class DiagnosticIds
     public const string LocalScopeWithoutInstructions = "ILA0058";
     public const string LocalNameDeclaredTwiceInScope = "ILA0059";
     public const string LocalSlotNamedTwiceInScope = "ILA0060";
+    public const string InvalidSequencePoint = "ILA0061";
     public const string DuplicateEntryPoint = "ILA0063";
     public const string InstanceEntryPoint = "ILA0064";
 }
@@ -144,6 +146,12 @@ internal static class DiagnosticMessageTemplates
     public const string LocalScopeWithoutInstructions = "Local var '{0}' is declared in a scope that has no instructions; a PDB local scope must not be empty";
     public const string LocalNameDeclaredTwiceInScope = "Local var '{0}' is already declared in this scope";
     public const string LocalSlotNamedTwiceInScope = "Local var '{0}': slot {1} is already named '{2}' in this scope";
+    public const string InvalidHiddenSequencePoint = "A hidden sequence point must have start and end lines 0xFEEFEE and columns 0,0";
+    public const string SequencePointLineOutOfRange = "Sequence point lines must be between 0 and 0x1fffffff";
+    public const string SequencePointColumnOutOfRange = "Sequence point columns must be between 0 and 0xffff";
+    public const string SequencePointReversedRange = "A sequence point must end after it starts";
+    public const string SequencePointLineDeltaOutOfRange = "The start line difference from the previous non-hidden sequence point must be between -0x10000000 and 0x0fffffff";
     public const string DuplicateEntryPoint = "Multiple entry points declared";
     public const string InstanceEntryPoint = "Entry point method must be static";
+    public const string DuplicateField = "Duplicate field definition '{0}'";
 }

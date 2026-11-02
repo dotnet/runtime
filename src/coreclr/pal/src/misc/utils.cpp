@@ -22,8 +22,6 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC); // some headers have code with asserts, so do t
 #include <mach/message.h>
 #endif //HAVE_VM_ALLOCATE
 
-#include <sys/mman.h>
-
 #include "pal/utils.h"
 #include "pal/file.h"
 
@@ -201,46 +199,3 @@ void UTIL_SetLastErrorFromMach(kern_return_t MachReturn)
     }
 }
 #endif //HAVE_VM_ALLOCATE
-
-#ifdef __APPLE__
-
-/*++
-Function:
-  IsRunningOnMojaveHardenedRuntime() - Test if the current process is running on Mojave hardened runtime
---*/
-BOOL IsRunningOnMojaveHardenedRuntime()
-{
-#if defined(TARGET_ARM64)
-    return true;
-#else //  defined(TARGET_ARM64)
-    static volatile int isRunningOnMojaveHardenedRuntime = -1;
-
-    if (isRunningOnMojaveHardenedRuntime == -1)
-    {
-        BOOL mhrDetected = FALSE;
-        int pageSize = sysconf(_SC_PAGE_SIZE);
-        // Try to map a page with read-write-execute protection. It should fail on Mojave hardened runtime.
-        void* testPage = mmap(NULL, pageSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-        if (testPage == MAP_FAILED && (errno == EACCES))
-        {
-            // The mapping has failed with EACCES, check if making the same mapping with MAP_JIT flag works
-            testPage = mmap(NULL, pageSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE | MAP_JIT, -1, 0);
-            if (testPage != MAP_FAILED)
-            {
-                mhrDetected = TRUE;
-            }
-        }
-
-        if (testPage != MAP_FAILED)
-        {
-            munmap(testPage, pageSize);
-        }
-
-        isRunningOnMojaveHardenedRuntime = (int)mhrDetected;
-    }
-
-    return (BOOL)isRunningOnMojaveHardenedRuntime;
-#endif  // defined(TARGET_ARM64)
-}
-
-#endif // __APPLE__

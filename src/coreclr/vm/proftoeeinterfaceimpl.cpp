@@ -10662,7 +10662,8 @@ void __stdcall ProfilerUnmanagedToManagedTransitionMD(MethodDesc *pMD,
 // These do a lot of work for us, setting up Frames, gathering arg info and resolving generics.
   //*******************************************************************************************
 
-HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
+EXTERN_C FCDECL2(void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle);
+FCIMPL2(void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
 
@@ -10835,9 +10836,10 @@ LExit:
 
 #endif // PROFILING_SUPPORTED
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
+EXTERN_C FCDECL2(void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle);
+FCIMPL2(void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
 
@@ -10965,9 +10967,10 @@ LExit:
 
 #endif // PROFILING_SUPPORTED
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL2(EXTERN_C void, ProfileTailcall, UINT_PTR clientData, void * platformSpecificHandle)
+EXTERN_C FCDECL2(void, ProfileTailcall, UINT_PTR clientData, void * platformSpecificHandle);
+FCIMPL2(void, ProfileTailcall, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
 
@@ -11086,4 +11089,4 @@ LExit:
 
 #endif // PROFILING_SUPPORTED
 }
-HCIMPLEND
+FCIMPLEND
