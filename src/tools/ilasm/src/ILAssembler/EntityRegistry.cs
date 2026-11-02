@@ -754,6 +754,16 @@ namespace ILAssembler
             }
         }
 
+        // Unlike SystemValueTypeType, does not create the TypeRef.
+        public bool IsSystemValueType(TypeEntity? type)
+        {
+            return type is TypeReferenceEntity { Namespace: "System", Name: "ValueType", ResolutionScope: AssemblyReferenceEntity scope }
+                && (scope == FindAssemblyReference("System.Private.CoreLib")
+                    || scope == FindAssemblyReference("System.Runtime")
+                    || scope == FindAssemblyReference("mscorlib")
+                    || scope == FindAssemblyReference("netstandard"));
+        }
+
         private TypeEntity? _systemEnum;
         public TypeEntity SystemEnumType
         {

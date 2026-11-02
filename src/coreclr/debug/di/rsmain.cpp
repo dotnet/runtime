@@ -1081,13 +1081,10 @@ HRESULT Cordb::Terminate()
     //
     // Stop the event handling threads.
     //
-    if (m_rcEventThread != NULL)
-    {
-        // Stop may do significant work b/c if it drains the worker queue.
-        m_rcEventThread->Stop();
-        delete m_rcEventThread;
-        m_rcEventThread = NULL;
-    }
+    // Stop may do significant work b/c if it drains the worker queue.
+    m_rcEventThread->Stop();
+    delete m_rcEventThread;
+    m_rcEventThread = NULL;
 
 
 #ifdef _DEBUG

@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 unsafe class FatalErrorHandlerTest
 {
@@ -52,11 +53,13 @@ unsafe class FatalErrorHandlerTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void RunChildLogHandler()
+    static void RunChildLogHandler(string message = "test fatal error")
     {
         ExceptionHandling.SetFatalErrorHandler(GetHandlerWithLog());
-        Environment.FailFast("test fatal error");
+        Environment.FailFast(message);
     }
+
+    static string GetUnicodeLogMessage() => new string('\u20AC', 1100) + "\uD83D\uDE00TAIL";
 
     // Held in a volatile static so the JIT cannot fold the dereference into a
     // null-reference check or optimize the faulting store away. The address is
@@ -216,6 +219,7 @@ unsafe class FatalErrorHandlerTest
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            StandardErrorEncoding = Encoding.UTF8,
         };
         startInfo.Environment["DOTNET_DbgEnableMiniDump"] = "0";
 
@@ -254,14 +258,14 @@ unsafe class FatalErrorHandlerTest
         return handlerInvoked && defaultOutput && singleEmission && exited;
     }
 
-    static bool TestLogHandler()
+    static bool TestLogHandler(string scenario = "log-handler", string expectedMessage = "test fatal error")
     {
-        Console.WriteLine("=== TestLogHandler ===");
-        var (exitCode, stderr) = LaunchChild("log-handler");
+        Console.WriteLine($"=== TestLogHandler ({scenario}) ===");
+        var (exitCode, stderr) = LaunchChild(scenario);
 
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
         bool logReceived = stderr.Contains(LogReceivedMarker);
-        bool logContainsMessage = CallbackLogContains(stderr, "test fatal error");
+        bool logContainsMessage = CallbackLogContains(stderr, expectedMessage);
         bool exited = exitCode != 0;
 
         Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, log received: {logReceived}, log has message: {logContainsMessage}");
@@ -277,20 +281,20 @@ unsafe class FatalErrorHandlerTest
 
     static bool CallbackLogContains(string stderr, string expected)
     {
+        StringBuilder callbackLog = new();
         int searchIndex = 0;
         while ((searchIndex = stderr.IndexOf(LogReceivedMarker, searchIndex, StringComparison.Ordinal)) >= 0)
         {
-            int lineEnd = stderr.IndexOf('\n', searchIndex);
+            int chunkStart = searchIndex + LogReceivedMarker.Length;
+            int lineEnd = stderr.IndexOf('\n', chunkStart);
             if (lineEnd < 0)
                 lineEnd = stderr.Length;
 
-            if (stderr.AsSpan(searchIndex, lineEnd - searchIndex).Contains(expected, StringComparison.Ordinal))
-                return true;
-
+            callbackLog.Append(stderr.AsSpan(chunkStart, lineEnd - chunkStart));
             searchIndex = lineEnd;
         }
 
-        return false;
+        return callbackLog.ToString().Contains(expected, StringComparison.Ordinal);
     }
 
     static bool TestNativeException(string scenario)
@@ -512,6 +516,7 @@ unsafe class FatalErrorHandlerTest
             {
                 case "run-handler":  RunChildRunHandler();  return 1;
                 case "log-handler":  RunChildLogHandler();  return 1;
+                case "log-handler-unicode": RunChildLogHandler(GetUnicodeLogMessage()); return 1;
                 case "native-exception":        RunChildNativeException();         return 1;
                 case "native-code-exception":   RunChildNativeCodeException();      return 1;
                 case "native-thread-exception": RunChildNativeThreadException();    return 1;
@@ -529,6 +534,7 @@ unsafe class FatalErrorHandlerTest
         bool allPassed = true;
         allPassed &= TestRunHandler();
         allPassed &= TestLogHandler();
+        allPassed &= TestLogHandler("log-handler-unicode", GetUnicodeLogMessage());
         allPassed &= TestNativeException("native-exception");
         allPassed &= TestNativeCodeException("native-code-exception");
         allPassed &= TestNativeThreadException();

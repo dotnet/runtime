@@ -655,6 +655,7 @@ EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, intptr_t numEle
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
+#ifndef FEATURE_PORTABLE_HELPERS
     // The allocation fast path is an asm helper that runs in coop mode and handles most allocation cases.
     // The helper can also be tail-called. That is desirable for the fast path.
     //
@@ -680,6 +681,7 @@ EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, intptr_t numEle
     ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
 
 #endif
+#endif // !FEATURE_PORTABLE_HELPERS
 
     pThread->SetDeferredTransitionFrame(pTransitionFrame);
 

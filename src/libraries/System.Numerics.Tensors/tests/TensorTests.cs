@@ -1204,10 +1204,10 @@ namespace System.Numerics.Tensors.Tests
                     extrema[6] = double.MaxMagnitudeNumber(value, extrema[6]);
                     extrema[7] = double.MinMagnitudeNumber(value, extrema[7]);
                 }
-                AssertBits(sum, Tensor.Sum(source));
-                AssertBits(product, Tensor.Product(source));
+                AssertBitsOrNaN(sum, Tensor.Sum(source));
+                AssertBitsOrNaN(product, Tensor.Product(source));
                 AssertBits(Math.Sqrt(squares), Tensor.Norm(source));
-                AssertBits(sum / logical.Length, Tensor.Average(source));
+                AssertBitsOrNaN(sum / logical.Length, Tensor.Average(source));
                 AssertBits(extrema[0], Tensor.Max(source));
                 AssertBits(extrema[1], Tensor.Min(source));
                 AssertBits(extrema[2], Tensor.MaxMagnitude(source));

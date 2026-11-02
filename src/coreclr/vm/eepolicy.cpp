@@ -464,9 +464,12 @@ static void CallbackWriteA(const char* pszString, void* context)
 
 static void CallbackWriteW(const WCHAR* pwzString, void* context)
 {
+    WRAPPER_NO_CONTRACT;
+
     CallbackState* state = static_cast<CallbackState*>(context);
-    MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pUtf8, pwzString, CP_UTF8);
-    state->pfnLogAction(pUtf8, state->userContext);
+    CQuickBytes utf8;
+    utf8.ConvertUnicode_Utf8(pwzString);
+    state->pfnLogAction(static_cast<char*>(utf8.Ptr()), state->userContext);
 }
 
 static void EmitCrashInfo(const CrashInfoWriter& writer, UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)

@@ -15,7 +15,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
 namespace ILAssembler.Tests
 {
@@ -667,6 +666,51 @@ namespace ILAssembler.Tests
             AssertCustomAttributeBlob(reader, Assert.Single(reader.GetCustomAttributes(typeHandle)));
             AssertCustomAttributeBlob(reader, Assert.Single(reader.GetCustomAttributes(fieldHandle)));
             AssertCustomAttributeBlob(reader, Assert.Single(reader.GetCustomAttributes(methodHandle)));
+        }
+
+        [Theory]
+        [InlineData("[Scope]", HandleKind.AssemblyReference, null)]
+        [InlineData("[.module Scope]", HandleKind.ModuleReference, null)]
+        [InlineData("method void [.module Scope]::Target()", HandleKind.MemberReference, "Target")]
+        [InlineData("field int32 [.module Scope]::Value", HandleKind.MemberReference, "Value")]
+        public void CustomAttribute_ScopeOnlyOwners_PreserveMetadataParent(
+            string owner,
+            HandleKind expectedParentKind,
+            string? memberName)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly extern Scope { }
+                .module extern Scope
+                .assembly test { }
+                .custom ({{owner}}) instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var attribute = reader.GetCustomAttribute(Assert.Single(reader.CustomAttributes));
+
+            Assert.Equal(expectedParentKind, attribute.Parent.Kind);
+            EntityHandle scope = attribute.Parent;
+            if (memberName is not null)
+            {
+                var member = reader.GetMemberReference((MemberReferenceHandle)scope);
+                Assert.Equal(memberName, reader.GetString(member.Name));
+                Assert.Equal(
+                    owner.StartsWith("method ", StringComparison.Ordinal) ? MemberReferenceKind.Method : MemberReferenceKind.Field,
+                    member.GetKind());
+                scope = member.Parent;
+                Assert.Equal(HandleKind.ModuleReference, scope.Kind);
+            }
+
+            string scopeName = scope.Kind switch
+            {
+                HandleKind.AssemblyReference => reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)scope).Name),
+                HandleKind.ModuleReference => reader.GetString(reader.GetModuleReference((ModuleReferenceHandle)scope).Name),
+                _ => throw new InvalidOperationException($"Unexpected scope: {scope.Kind}")
+            };
+            Assert.Equal("Scope", scopeName);
+            AssertCustomAttributeBlob(reader, Assert.Single(reader.CustomAttributes));
         }
 
         [Fact]
