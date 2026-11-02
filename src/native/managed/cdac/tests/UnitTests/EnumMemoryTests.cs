@@ -28,6 +28,96 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 public unsafe partial class EnumMemoryTests
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MetadataFiltering_UsesUnionOfRegisteredRanges(bool reverse)
+    {
+        TargetSpan[] ranges =
+        [
+            new(new(100), 100), new(new(150), 100), new(new(250), 50),
+            new(new(140), 10), new(new(100), 120), new(new(40), 20),
+            new(new(40), 30), new(new(0), 100), new(new(100), 0),
+            new(new(400), 20), new(new(450), 10), new(new(420), 30),
+            new(new(320), 40), new(new(300), 20), new(new(480), 20),
+            new(new(100), 100),
+        ];
+        if (reverse)
+            Array.Reverse(ranges);
+
+        using RecordingCallback callback = new(supportsUpdates: false);
+        MemoryRegionEmitter emitter = new(callback.Address, 8);
+        bool[] metadata = new bool[512];
+        int[] sizes = [0, 1, 2, 10, 50, 100, 125, 200, 512];
+        Assert.True(emitter.ShouldEmitTargetRead(100, 10));
+        Assert.True(emitter.ShouldEmitTargetRead(100, 0));
+        foreach (TargetSpan range in ranges)
+        {
+            emitter.RegisterMetadataRange(range);
+            if (range.Address != TargetPointer.Null && range.Size != 0)
+                metadata.AsSpan((int)range.Address.Value, (int)range.Size).Fill(true);
+
+            for (int address = 0; address <= metadata.Length; address++)
+            {
+                foreach (int size in sizes)
+                {
+                    bool covered = size == 0
+                        ? (address < metadata.Length && metadata[address]) || (address > 0 && metadata[address - 1])
+                        : size <= metadata.Length - address && !metadata.AsSpan(address, size).Contains(false);
+                    Assert.Equal(!covered, emitter.ShouldEmitTargetRead((ulong)address, (ulong)size));
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(false, ulong.MaxValue)]
+    [InlineData(true, ulong.MaxValue)]
+    [InlineData(false, ulong.MaxValue - 1)]
+    [InlineData(true, ulong.MaxValue - 1)]
+    public void MetadataFiltering_HandlesAddressSpaceBoundary(bool reverse, ulong end)
+    {
+        TargetSpan[] ranges =
+        [
+            new(new(end - 20), 21),
+            new(new(1), end - 10),
+        ];
+        if (reverse)
+            Array.Reverse(ranges);
+
+        using RecordingCallback callback = new(supportsUpdates: false);
+        MemoryRegionEmitter emitter = new(callback.Address, 8);
+        foreach (TargetSpan range in ranges)
+            emitter.RegisterMetadataRange(range);
+
+        Assert.True(emitter.ShouldEmitTargetRead(0, 1));
+        Assert.False(emitter.ShouldEmitTargetRead(1, end));
+        Assert.True(emitter.ShouldEmitTargetRead(2, end));
+        Assert.False(emitter.ShouldEmitTargetRead(end, 1));
+        Assert.True(emitter.ShouldEmitTargetRead(end, 2));
+        Assert.False(emitter.ShouldEmitTargetRead(end, 0));
+        if (end != ulong.MaxValue)
+        {
+            Assert.False(emitter.ShouldEmitTargetRead(end + 1, 0));
+            Assert.True(emitter.ShouldEmitTargetRead(end + 1, 1));
+        }
+    }
+
+    [Theory]
+    [InlineData(ulong.MaxValue, 2ul)]
+    [InlineData(ulong.MaxValue - 20, 22ul)]
+    [InlineData(2ul, ulong.MaxValue)]
+    public void MetadataFiltering_RejectsOverflowingRanges(ulong address, ulong size)
+    {
+        using RecordingCallback callback = new(supportsUpdates: false);
+        MemoryRegionEmitter emitter = new(callback.Address, 8);
+        emitter.RegisterMetadataRange(new(new(100), 100));
+
+        Assert.Throws<OverflowException>(() => emitter.RegisterMetadataRange(new(new(address), size)));
+        Assert.False(emitter.ShouldEmitTargetRead(100, 100));
+        Assert.True(emitter.ShouldEmitTargetRead(address, 1));
+    }
+
+    [Theory]
     [InlineData(false, 0x1234_5678_9000ul)]
     [InlineData(true, 0x1234_5678_9000ul)]
     [InlineData(false, 0ul)]
