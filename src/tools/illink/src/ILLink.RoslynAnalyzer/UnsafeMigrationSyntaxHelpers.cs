@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -22,22 +22,6 @@ namespace ILLink.RoslynAnalyzer
         /// compiler does not know it.
         /// </summary>
         internal static SyntaxKind SafeKeywordKind => s_safeKeyword;
-
-        /// <summary>
-        /// The compiler feature flag that opts an assembly into the updated memory safety rules.
-        /// </summary>
-        /// <remarks>
-        /// Roslyn does not expose the memory safety rules version through a public API yet
-        /// (https://github.com/dotnet/roslyn/issues/82546), so the same feature flag the compiler itself reads
-        /// is used to determine whether the updated rules are in effect.
-        /// </remarks>
-        private const string UpdatedMemorySafetyRulesFeature = "updated-memory-safety-rules";
-
-        /// <summary>
-        /// Determines whether the compilation a tree belongs to uses the updated memory safety rules.
-        /// </summary>
-        internal static bool UsesUpdatedMemorySafetyRules(SyntaxTree tree) =>
-            tree.Options.Features.ContainsKey(UpdatedMemorySafetyRulesFeature);
 
         internal static SyntaxTokenList GetModifiers(SyntaxNode declaration) =>
             declaration switch
@@ -79,6 +63,57 @@ namespace ILLink.RoslynAnalyzer
 
             return default;
         }
+
+        /// <summary>
+        /// Determines whether an <c>unsafe</c> keyword token introduces an <c>unsafe(...)</c> expression rather
+        /// than a modifier or a block.
+        /// </summary>
+        /// <remarks>
+        /// <c>UnsafeExpressionSyntax</c> is newer than the Roslyn these analyzers compile against, but it derives
+        /// from <see cref="ExpressionSyntax"/>, which is not, so the expression form is recognized by its parent's
+        /// base type. Matching on a following open parenthesis instead would misclassify the modifier on any
+        /// member whose type is a tuple, such as <c>static unsafe (int, int) M()</c>.
+        /// </remarks>
+        internal static bool IsUnsafeExpressionKeyword(SyntaxToken token) =>
+            token.IsKind(SyntaxKind.UnsafeKeyword) && token.Parent is ExpressionSyntax;
+
+        /// <summary>
+        /// Determines whether a node is itself an <c>unsafe(...)</c> expression.
+        /// </summary>
+        /// <remarks>
+        /// Testing only the first token is not enough: a node's first token can belong to a descendant, so the
+        /// enclosing binary expression in <c>unsafe(a) + b</c> also starts with an <c>unsafe</c> keyword. The
+        /// token must therefore be owned by the node being tested.
+        /// </remarks>
+        internal static bool IsUnsafeExpression(SyntaxNode node)
+        {
+            SyntaxToken first = node.GetFirstToken();
+            return IsUnsafeExpressionKeyword(first) && ReferenceEquals(first.Parent, node);
+        }
+
+        /// <summary>
+        /// Determines whether a declaration contains an inactive <c>#if</c> branch with pointer operations, which may
+        /// rely on the lexical unsafe context of the declaration's <c>unsafe</c> modifier in another configuration.
+        /// </summary>
+        /// <remarks>
+        /// Only trivia inside the declaration's own span counts, since its leading trivia can hold the inactive branch
+        /// of a preceding declaration. The inactive text is parsed on its own, so only syntactic pointer operations are
+        /// found; calls to caller-unsafe members can't be told apart from other calls without binding.
+        /// </remarks>
+        internal static bool ContainsInactiveUnsafeCode(SyntaxNode declaration) =>
+            declaration.DescendantTrivia().Any(trivia =>
+                trivia.IsKind(SyntaxKind.DisabledTextTrivia)
+                && declaration.Span.Contains(trivia.Span)
+                && SyntaxFactory.ParseStatement("{" + trivia.ToString() + "\n}", options: declaration.SyntaxTree.Options as CSharpParseOptions)
+                    .DescendantNodesAndSelf()
+                    .Any(static node => node.Kind() is SyntaxKind.PointerIndirectionExpression
+                        or SyntaxKind.PointerMemberAccessExpression
+                        or SyntaxKind.AddressOfExpression
+                        or SyntaxKind.PointerType
+                        or SyntaxKind.FunctionPointerType
+                        or SyntaxKind.StackAllocArrayCreationExpression
+                        or SyntaxKind.ImplicitStackAllocArrayCreationExpression
+                        or SyntaxKind.FixedStatement));
     }
 }
 #endif

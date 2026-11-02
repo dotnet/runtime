@@ -21,11 +21,14 @@ internal partial class StackWalk_1 : IStackWalk
     private readonly GcScanner _gcScanner;
     private readonly FrameHelpers _frameHelpers;
 
-    internal StackWalk_1(Target target)
+    internal int Version { get; }
+
+    internal StackWalk_1(Target target, int version = 2)
     {
         _target = target;
         _eman = target.Contracts.ExecutionManager;
         _gcScanner = new GcScanner(target);
+        Version = version;
         _frameHelpers = new FrameHelpers(target);
     }
 

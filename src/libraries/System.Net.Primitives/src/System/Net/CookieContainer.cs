@@ -749,9 +749,9 @@ namespace System.Net
         // PathMatch("/fooBar, "/foo") == false
         // but:
         // PathMatch("/foo/bar", "/foo") == true, PathMatch("/foo/bar", "/foo/") == true
-        private static bool PathMatch(string requestPath, string cookiePath)
+        private static bool PathMatch(ReadOnlySpan<char> requestPath, ReadOnlySpan<char> cookiePath)
         {
-            cookiePath = CookieParser.CheckQuoted(cookiePath);
+            cookiePath = CookieParser.CheckQuotedSpan(cookiePath);
 
             if (!requestPath.StartsWith(cookiePath, StringComparison.Ordinal))
                 return false;
@@ -949,20 +949,14 @@ namespace System.Net
 
             int IComparer.Compare(object? ol, object? or)
             {
-                string pathLeft = CookieParser.CheckQuoted((string)ol!);
-                string pathRight = CookieParser.CheckQuoted((string)or!);
-                int ll = pathLeft.Length;
-                int lr = pathRight.Length;
-                int length = Math.Min(ll, lr);
+                ReadOnlySpan<char> pathLeft = CookieParser.CheckQuotedSpan((string)ol!);
+                ReadOnlySpan<char> pathRight = CookieParser.CheckQuotedSpan((string)or!);
 
-                for (int i = 0; i < length; ++i)
-                {
-                    if (pathLeft[i] != pathRight[i])
-                    {
-                        return pathLeft[i] - pathRight[i];
-                    }
-                }
-                return lr - ll;
+                int length = Math.Min(pathLeft.Length, pathRight.Length);
+                int result = pathLeft.Slice(0, length).SequenceCompareTo(pathRight.Slice(0, length));
+
+                // Longer paths precede shorter paths when the common prefix is equal.
+                return result != 0 ? result : pathRight.Length - pathLeft.Length;
             }
         }
     }

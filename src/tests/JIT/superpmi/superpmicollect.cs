@@ -188,9 +188,10 @@ namespace SuperPMICollection
             }
 
             Console.WriteLine("Running: " + program + " " + arguments);
-            Process p = Process.Start(program, arguments);
-            p.WaitForExit();
-            return p.ExitCode;
+            return Process.Run(new ProcessStartInfo(program, arguments)
+            {
+                InheritedHandles = [],
+            }).ExitCode;
         }
 
         // Run a single test from the coreclr test binary drop.

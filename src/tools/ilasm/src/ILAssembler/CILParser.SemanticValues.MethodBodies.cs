@@ -25,7 +25,10 @@ public partial class CILParser
         int StartColumn,
         int EndLine,
         int EndColumn,
-        string? DocumentPath);
+        string? DocumentPath)
+    {
+        public bool AppliesToNextLine { get; init; }
+    }
 
     public sealed record LanguageDirectiveValue(
         string Language,

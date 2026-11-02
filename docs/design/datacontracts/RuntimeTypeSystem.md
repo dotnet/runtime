@@ -612,6 +612,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `MethodTable` | `AuxiliaryData` | `pointer` | Pointer to the AuxiliaryData of a method table |
 | `MethodTable` | `BaseSize` | `uint32` | BaseSize of a MethodTable |
 | `MethodTable` | `EEClassOrCanonMT` | `pointer` | Path to both EEClass and canonical MethodTable of a MethodTable |
+| `MethodTable` | `InterfaceMap` | `pointer` | Optional pointer to the array of interface MethodTable pointers used for contextual virtual argument-map lookup |
 | `MethodTable` | `Module` | `pointer` | Module for MethodTable |
 | `MethodTable` | `MTFlags` | `uint32` | One of the flags fields on MethodTable |
 | `MethodTable` | `MTFlags2` | `uint32` | One of the flags fields on MethodTable |

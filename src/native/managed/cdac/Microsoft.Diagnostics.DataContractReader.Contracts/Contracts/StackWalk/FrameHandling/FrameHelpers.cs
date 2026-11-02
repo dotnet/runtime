@@ -3,8 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -119,8 +123,11 @@ internal sealed class FrameHelpers
         const int ImportSectionSize = 20;
         const int SectionVAOffset = 0;
         const int SectionSizeOffset = 4;
+        const int FlagsOffset = 8;
         const int EntrySizeOffset = 11;
+        const int SignaturesOffset = 12;
         const int AuxiliaryDataOffset = 16;
+        const ushort GCRefMapFlag = 0x0008;
 
         TargetPointer sectionsBase = r2rInfo.ImportSections;
         for (uint i = 0; i < r2rInfo.NumImportSections; i++)
@@ -136,6 +143,14 @@ internal sealed class FrameHelpers
                     return TargetPointer.Null;
 
                 uint index = (rva - sectionVA) / entrySize;
+                if ((_target.Read<ushort>(sectionAddr + FlagsOffset) & GCRefMapFlag) != 0)
+                {
+                    uint signaturesRva = _target.Read<uint>(sectionAddr + SignaturesOffset);
+                    TargetPointer signatureEntry = new(imageBase + signaturesRva + index * sizeof(uint));
+                    uint mapRva = _target.Read<uint>(signatureEntry);
+                    return new TargetPointer(imageBase + mapRva);
+                }
+
                 uint auxDataRva = _target.Read<uint>(sectionAddr + AuxiliaryDataOffset);
                 if (auxDataRva == 0)
                     return TargetPointer.Null;
@@ -162,6 +177,106 @@ internal sealed class FrameHelpers
         }
 
         return TargetPointer.Null;
+    }
+
+    public TargetPointer GetGCRefMapFromMethodDesc(TargetPointer methodDescPtr)
+    {
+        if (methodDescPtr == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        Data.MethodDesc methodDesc = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPtr);
+        return methodDesc.CodeData != TargetPointer.Null
+            ? _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(methodDesc.CodeData).GCRefMap ?? TargetPointer.Null
+            : TargetPointer.Null;
+    }
+
+    public TargetPointer GetGCRefMapForFrame(TargetPointer frameAddress)
+    {
+        FrameType kind = GetFrameType(_target.ProcessedData.GetOrAdd<Data.Frame>(frameAddress).Identifier);
+        if (kind is not (FrameType.PrestubMethodFrame or FrameType.CallCountingHelperFrame or FrameType.StubDispatchFrame))
+            return TargetPointer.Null;
+        TargetPointer method = GetMethodDescPtr(frameAddress);
+        if (method == TargetPointer.Null)
+            return TargetPointer.Null;
+        if (!_target.TryGetTypeInfo(nameof(DataType.MethodDesc), out _))
+            return TargetPointer.Null;
+
+        bool supportsVirtualMaps = !_target.Contracts.TryGetContract<IStackWalk>(out IStackWalk? stackWalk) ||
+            stackWalk is not StackWalk_1 implementation || implementation.Version >= 2;
+        if (!supportsVirtualMaps && kind is FrameType.StubDispatchFrame)
+            return TargetPointer.Null;
+        Data.FramedMethodFrame frame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
+        // Marking saves hits and misses before relocating roots. A cold diagnostic walk
+        // can still inspect the receiver; a completed miss must never retry that lookup.
+        if (supportsVirtualMaps && frame.CachedGCRefMap is TargetPointer cachedMap && cachedMap != TargetPointer.Null)
+        {
+            TargetPointer noMap = new(_target.PointerSize == 8 ? ulong.MaxValue : uint.MaxValue);
+            return cachedMap == noMap ? TargetPointer.Null : cachedMap;
+        }
+        TargetPointer cached = GetGCRefMapFromMethodDesc(method);
+        if (!supportsVirtualMaps || !_target.TryGetTypeInfo(nameof(DataType.MethodTable), out _))
+            return cached;
+
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle md = rts.GetMethodDescHandle(method);
+        MethodGCRefMapLookup lookup = new(_target, this);
+        bool dispatch = kind is FrameType.StubDispatchFrame;
+        TargetPointer map = lookup.Find(md, TargetPointer.Null, dispatch);
+        if (map != TargetPointer.Null)
+            return map;
+        if (rts.GetGenericMethodInstantiation(md).Length != 0 ||
+            (!dispatch && rts.GetGenericContextLoc(md) is GenericContextLoc.InstArgMethodDesc or GenericContextLoc.InstArgMethodTable))
+            return TargetPointer.Null;
+
+        TargetPointer owner = rts.GetMethodTable(md);
+        Data.MethodDesc data = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(method);
+        if (((MethodDescFlags_1.MethodDescFlags)data.Flags & MethodDescFlags_1.MethodDescFlags.Static) != 0 ||
+            !CanReadReceiver(md, owner) || (!dispatch && rts.IsValueType(rts.GetTypeHandle(owner)) && !rts.IsUnboxingStub(md)))
+            return TargetPointer.Null;
+
+        Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(frame.TransitionBlockPtr);
+        TargetPointer thisSlot = tb.ArgumentRegisters;
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
+            thisSlot += (uint)_target.PointerSize;
+        TargetPointer thisObject = _target.ReadPointer(thisSlot);
+        if (thisObject == TargetPointer.Null)
+            return TargetPointer.Null;
+        TargetPointer receiver = _target.Contracts.Object.GetMethodTableAddress(thisObject);
+        return lookup.Find(md, receiver, dispatch);
+    }
+
+    private bool CanReadReceiver(MethodDescHandle method, TargetPointer owner)
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        Data.MethodDesc data = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(method.Address);
+        if ((data.Flags & (ushort)MethodDescFlags_1.MethodDescFlags.ClassificationMask) == (ushort)MethodClassification.Array)
+            return !rts.IsArrayMethod(method, out ArrayFunctionType function) || function is not ArrayFunctionType.Constructor;
+        if (!rts.IsString(rts.GetTypeHandle(owner)))
+            return true;
+
+        uint token = rts.GetMethodToken(method);
+        if ((token & 0x00ffffff) == 0)
+            return false;
+        ModuleHandle module = _target.Contracts.Loader.GetModuleHandleFromModulePtr(rts.GetModule(rts.GetTypeHandle(owner)));
+        MetadataReader? metadata = _target.Contracts.EcmaMetadata.GetMetadata(module);
+        // Without String metadata, the saved argument could belong to a constructor's
+        // static factory rather than be a receiver.
+        if (metadata is null)
+            return false;
+        MethodDefinition definition = metadata.GetMethodDefinition((MethodDefinitionHandle)MetadataTokens.Handle((int)token));
+        return (definition.Attributes & MethodAttributes.RTSpecialName) == 0 || !metadata.StringComparer.Equals(definition.Name, ".ctor");
+    }
+
+    public bool ThisIsInterior(TargetPointer frameAddress, bool fallback)
+    {
+        FrameType kind = GetFrameType(_target.ProcessedData.GetOrAdd<Data.Frame>(frameAddress).Identifier);
+        if (kind is FrameType.StubDispatchFrame)
+            return false;
+        if (kind is not (FrameType.PrestubMethodFrame or FrameType.CallCountingHelperFrame))
+            return fallback;
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle md = rts.GetMethodDescHandle(GetMethodDescPtr(frameAddress));
+        return rts.IsValueType(rts.GetTypeHandle(rts.GetMethodTable(md))) && !rts.IsUnboxingStub(md);
     }
 
     public TargetPointer GetMethodDescPtr(TargetPointer framePtr)
