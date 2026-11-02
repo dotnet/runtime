@@ -144,6 +144,21 @@ namespace System.Runtime
         // Miscellaneous helpers.
         //
 
+#if TARGET_AMD64
+        [RuntimeImport(RuntimeLibrary, "CallEHFunclet")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe byte* CallEHFunclet(
+            object? exceptionObj, byte* pHandlerIP, void* pvRegDisplay, UIntPtr* pFuncletCallerSP);
+
+        [RuntimeImport(RuntimeLibrary, "RhpResumeAfterCatch")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe void RhpResumeAfterCatch(void* pvRegDisplay, ref EH.ExInfo exInfo, byte* pResumeIP);
+
+        [RuntimeImport(RuntimeLibrary, "CallEHFilterFunclet")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe int CallEHFilterFunclet(
+            object exceptionObj, UIntPtr parentFP, byte* pFilterIP, UIntPtr* pFuncletCallerSP);
+#else
         [RuntimeImport(RuntimeLibrary, "RhpCallCatchFunclet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe IntPtr RhpCallCatchFunclet(
@@ -157,6 +172,7 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpCallFilterFunclet(
             object exceptionObj, byte* pFilterIP, void* pvRegDisplay);
+#endif
 
 #if FEATURE_OBJCMARSHAL
         [RuntimeImport(RuntimeLibrary, "RhpCallPropagateExceptionCallback")]
