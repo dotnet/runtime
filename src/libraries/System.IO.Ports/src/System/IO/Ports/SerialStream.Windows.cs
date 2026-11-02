@@ -878,7 +878,7 @@ namespace System.IO.Ports
 
             // Obtain the WaitHandle, but don't use public property in case we
             // delay initialize the manual reset event in the future.
-            ManualResetEvent? wh = afsar._waitHandle;
+            ManualResetEvent wh = afsar._waitHandle;
             if (wh != null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
@@ -956,7 +956,7 @@ namespace System.IO.Ports
 
             // Obtain the WaitHandle, but don't use public property in case we
             // delay initialize the manual reset event in the future.
-            ManualResetEvent? wh = afsar._waitHandle;
+            ManualResetEvent wh = afsar._waitHandle;
             if (wh != null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
@@ -1348,15 +1348,11 @@ namespace System.IO.Ports
         {
             // Create and store async stream class library specific data in the
             // async result
-            SerialStreamAsyncResult asyncResult = new SerialStreamAsyncResult();
+            ManualResetEvent waitHandle = new ManualResetEvent(false);
+            SerialStreamAsyncResult asyncResult = new SerialStreamAsyncResult(waitHandle);
             asyncResult._userCallback = userCallback;
             asyncResult._userStateObject = stateObject;
             asyncResult._isWrite = false;
-
-            // For Synchronous IO, I could go with either a callback and using
-            // the managed Monitor class, or I could create a handle and wait on it.
-            ManualResetEvent waitHandle = new ManualResetEvent(false);
-            asyncResult._waitHandle = waitHandle;
 
             NativeOverlapped* intOverlapped = _threadPoolBinding!.AllocateNativeOverlapped(s_IOCallback, asyncResult, array);
 
@@ -1394,15 +1390,11 @@ namespace System.IO.Ports
         {
             // Create and store async stream class library specific data in the
             // async result
-            SerialStreamAsyncResult asyncResult = new SerialStreamAsyncResult();
+            ManualResetEvent waitHandle = new ManualResetEvent(false);
+            SerialStreamAsyncResult asyncResult = new SerialStreamAsyncResult(waitHandle);
             asyncResult._userCallback = userCallback;
             asyncResult._userStateObject = stateObject;
             asyncResult._isWrite = true;
-
-            // For Synchronous IO, I could go with either a callback and using
-            // the managed Monitor class, or I could create a handle and wait on it.
-            ManualResetEvent waitHandle = new ManualResetEvent(false);
-            asyncResult._waitHandle = waitHandle;
 
             NativeOverlapped* intOverlapped = _threadPoolBinding!.AllocateNativeOverlapped(s_IOCallback, asyncResult, array);
 
@@ -1555,7 +1547,7 @@ namespace System.IO.Ports
             // The OS does not signal this event.  We must do it ourselves.
             // But don't close it if the user callback called EndXxx,
             // which then closed the manual reset event already.
-            ManualResetEvent? wh = asyncResult._waitHandle;
+            ManualResetEvent wh = asyncResult._waitHandle;
             if (wh != null)
             {
                 bool r = wh.Set();
@@ -1622,17 +1614,11 @@ namespace System.IO.Ports
                     SerialStreamAsyncResult? asyncResult = null;
                     if (isAsync)
                     {
-                        asyncResult = new SerialStreamAsyncResult();
+                        asyncResult = new SerialStreamAsyncResult(waitCommEventWaitHandle);
                         asyncResult._userCallback = null;
                         asyncResult._userStateObject = null;
                         asyncResult._isWrite = false;
-
-                        // we're going to use _numBytes for something different in this loop.  In this case, both
-                        // freeNativeOverlappedCallback and this thread will decrement that value.  Whichever one decrements it
-                        // to zero will be the one to free the native overlapped.  This guarantees the overlapped gets freed
-                        // after both the callback and GetOverlappedResult have had a chance to use it.
                         asyncResult._numBytes = 2;
-                        asyncResult._waitHandle = waitCommEventWaitHandle;
 
                         waitCommEventWaitHandle.Reset();
                         intOverlapped = threadPoolBinding.AllocateNativeOverlapped(freeNativeOverlappedCallback, asyncResult, null);
@@ -1844,11 +1830,16 @@ namespace System.IO.Ports
             internal bool _isComplete;
             internal bool _completedSynchronously;  // Which thread called callback
 
-            internal ManualResetEvent? _waitHandle;
+            internal readonly ManualResetEvent _waitHandle;
             internal int _EndXxxCalled;   // Whether we've called EndXxx already.
             internal int _numBytes;     // number of bytes read OR written
             internal int _errorCode;
             internal NativeOverlapped* _overlapped;
+
+            internal SerialStreamAsyncResult(ManualResetEvent waitHandle)
+            {
+                _waitHandle = waitHandle;
+            }
 
             public object? AsyncState
             {
@@ -1881,7 +1872,7 @@ namespace System.IO.Ports
                         _waitHandle = mre;
                     }
                     */
-                    return _waitHandle!;
+                    return _waitHandle;
                 }
             }
 
