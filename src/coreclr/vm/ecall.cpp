@@ -165,8 +165,7 @@ static int FindDynamicFCall(MethodDesc* pMD)
     }
     CONTRACTL_END;
 
-    if (pMD->GetMethodTable() != g_pStringClass)
-        return ECall::InvalidDynamicFCallId;
+    _ASSERTE(pMD->GetMethodTable() == g_pStringClass);
 
     DWORD cachedID = ((FCallMethodDesc*)pMD)->GetECallID();
     if (cachedID != 0)
@@ -270,7 +269,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall, bool* pHa
     }
 
     PCODE pImplementation;
-    int iDynamicID = FindDynamicFCall(pMD);
+    int iDynamicID = pMT == g_pStringClass ? FindDynamicFCall(pMD) : InvalidDynamicFCallId;
     if (iDynamicID != InvalidDynamicFCallId)
     {
         *pHasManagedImpl = IsManagedFCall(iDynamicID);

@@ -566,23 +566,6 @@ namespace ILCompiler.PortableCallHelpers
             string externKeyword = pinvoke.WasmLinkage ? "extern " : "";
 
             string nativeSymbol = CEntryPoint(pinvoke);
-            if (pinvoke.Method.IsInternalCall
-                && pinvoke.Method.OwningType is MetadataType type
-                && type.Namespace == "System"u8
-                && (type.Name == "Math"u8 || type.Name == "MathF"u8))
-            {
-                // Math helpers retain the C symbols shared with NativeAOT.
-                string methodName = pinvoke.Method.Name.ToString();
-                string mathName = methodName switch
-                {
-                    "Ceiling" => "ceil",
-                    "FusedMultiplyAdd" => "fma",
-                    _ => methodName.ToLowerInvariant(),
-                };
-                nativeSymbol = methodName.EndsWith("Internal", StringComparison.Ordinal)
-                    ? methodName
-                    : $"Rhp_{mathName}{(type.Name == "MathF"u8 ? "f" : "")}";
-            }
             string symbolAlias = symbolName is null ? "" : $" __asm__(\"{EscapeLiteral(nativeSymbol)}\")";
             return $"    {importAttributes}{externKeyword}{MapType(returnType)} {symbolName ?? nativeSymbol} ({string.Join(", ", parameterTypes)}){symbolAlias};";
         }

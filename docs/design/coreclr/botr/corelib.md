@@ -238,14 +238,19 @@ The CLR resolves QCalls and fixed-address FCalls through one static `Entry` tabl
 an underscore, and the managed method name, preserving case and method-name underscores.
 For example, `String.IsInterned()` resolves `String_IsInterned`. Namespaces are not part of
 the native symbol, so distinct managed identities must not flatten to the same lookup name or
-conflict with a QCall name. Register the native FCall address using `FCallEntry`, which stores
-the direct native function address.
+conflict with a QCall name. Register the native FCall address using `DllImportEntry`, which stores
+the direct native function address. If the lookup name differs from the native symbol, use an
+explicit `Entry` initializer.
+
+Keep the full native table sorted by entrypoint name in case-sensitive `strcmp` order;
+its resolver uses `CBinarySearch` to find entries by name.
 
 QCalls use their declared import entrypoint names and the `DllImportEntry` macro:
 
 ```C++
 DllImportEntry(MyQCall)
-FCallEntry(MyType_MyMethod, MyType_MyMethod)
+DllImportEntry(MyType_MyMethod)
+DllImportEntry(Math_Ceiling)
 ```
 
 Sharing the resolver does not change FCall calling conventions, GC contracts, or exception

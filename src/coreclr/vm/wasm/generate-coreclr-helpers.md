@@ -43,8 +43,7 @@ managed type and method (`Type_Method`); their declarations preserve the FCall A
 the WASM caller-stack pointer, instance receiver where applicable, and portable-entrypoint context.
 The generator sorts entries ordinally, deduplicates compatible entries, and rejects conflicting
 lookup names.
-Math helpers keep the C symbols shared with NativeAOT (`Rhp_*` and the integer division/remainder
-helpers), while their lookup names remain `Math_Method` or `MathF_Method`.
+Math helpers use the same `Math_Method` or `MathF_Method` C symbols in CoreCLR and NativeAOT.
 Browser `memmove` and `memset` use the bulk-memory wrappers in `wasm/helpers.cpp`;
 WASI uses the libc entrypoints directly.
 

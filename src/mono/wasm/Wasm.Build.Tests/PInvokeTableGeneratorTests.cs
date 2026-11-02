@@ -81,9 +81,9 @@ namespace Wasm.Build.Tests
             string table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
             Assert.Contains("const void* QCallResolveDllImport(const char* name)", table);
             Assert.DoesNotContain("{\"QCall\",", table);
-            foreach ((string entryPoint, string symbol) in new[] { ("GCInterface_GetTotalMemory", "GCInterface_GetTotalMemory"), ("Math_Asinh", "Rhp_asinh") })
+            foreach (string entryPoint in new[] { "GCInterface_GetTotalMemory", "Math_Asinh" })
             {
-                Assert.Equal(useEntryPoints, symbols.Split('\n').Any(line => line.TrimEnd('\r').EndsWith($":{symbol}", StringComparison.Ordinal)));
+                Assert.Equal(useEntryPoints, symbols.Split('\n').Any(line => line.TrimEnd('\r').EndsWith($":{entryPoint}", StringComparison.Ordinal)));
                 Assert.Equal(useEntryPoints, table.Contains($"{{ \"{entryPoint}\",", StringComparison.Ordinal));
             }
             Assert.False(File.Exists(Path.Combine(nativeBuildDir, "callhelpers-ecalls.cpp")));

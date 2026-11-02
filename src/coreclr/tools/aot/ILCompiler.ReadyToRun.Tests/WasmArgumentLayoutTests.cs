@@ -1493,10 +1493,10 @@ public class WasmArgumentLayoutTests
             string path = Path.Combine(workingDirectory, PortableCallHelpersGenerator.PInvokeFileName);
             string table = File.ReadAllText(path);
             Assert.Contains("#ifndef CORECLR_PREGENERATED_CALLHELPERS", table);
-            Assert.Contains("double QCall_Math_Ceiling (uintptr_t, double, uintptr_t) __asm__(\"Rhp_ceil\");", table);
-            Assert.Contains("float QCall_MathF_FusedMultiplyAdd (uintptr_t, float, float, float, uintptr_t) __asm__(\"Rhp_fmaf\");", table);
-            Assert.Contains("void QCall_Math_SinCos (uintptr_t, double, void *, void *, uintptr_t) __asm__(\"Rhp_sincos\");", table);
-            Assert.Contains("int32_t QCall_Math_DivInt32Internal (uintptr_t, int32_t, int32_t, uintptr_t) __asm__(\"DivInt32Internal\");", table);
+            Assert.Contains("double QCall_Math_Ceiling (uintptr_t, double, uintptr_t) __asm__(\"Math_Ceiling\");", table);
+            Assert.Contains("float QCall_MathF_FusedMultiplyAdd (uintptr_t, float, float, float, uintptr_t) __asm__(\"MathF_FusedMultiplyAdd\");", table);
+            Assert.Contains("void QCall_Math_SinCos (uintptr_t, double, void *, void *, uintptr_t) __asm__(\"Math_SinCos\");", table);
+            Assert.Contains("int32_t QCall_Math_DivInt32Internal (uintptr_t, int32_t, int32_t, uintptr_t) __asm__(\"Math_DivInt32Internal\");", table);
             Assert.Contains("int32_t QCall_Interlocked_CompareExchange32 (uintptr_t, void *, int32_t, int32_t, uintptr_t)", table);
             Assert.Contains("\"Interlocked_CompareExchange32Pointer\"", table);
             Assert.Contains("\"GCInterface_GetTotalMemory\"", table);
@@ -1515,6 +1515,11 @@ public class WasmArgumentLayoutTests
             Assert.Contains("GCInterface_GetTotalMemory", names);
             Assert.Equal(names.Order(StringComparer.Ordinal), names);
             Assert.Equal(names.Length, names.Distinct(StringComparer.Ordinal).Count());
+            foreach (string name in names.Where(name => name.StartsWith("Math_", StringComparison.Ordinal)
+                || name.StartsWith("MathF_", StringComparison.Ordinal)))
+            {
+                Assert.Contains($"__asm__(\"{name}\");", table);
+            }
 
             DateTime timestamp = File.GetLastWriteTimeUtc(path);
             Assert.True(PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false)) == 0,
