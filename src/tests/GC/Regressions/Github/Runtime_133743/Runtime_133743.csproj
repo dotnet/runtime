@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
+    <Nullable>enable</Nullable>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CLRTestEnvironmentVariable Include="DOTNET_GCDynamicAdaptationMode" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_GCHeapHardLimit" Value="0x20000000" />
+    <CLRTestEnvironmentVariable Include="DOTNET_gcConcurrent" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_gcServer" Value="0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>
