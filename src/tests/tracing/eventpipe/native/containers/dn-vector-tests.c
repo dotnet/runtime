@@ -7,8 +7,9 @@
 #include <crtdbg.h>
 #endif
 
-#include <eglib/test/test.h>
+#include "test.h"
 #include <containers/dn-vector.h>
+#include <minipal/utils.h>
 
 #ifdef _CRTDBG_MAP_ALLOC
 static _CrtMemState dn_vector_memory_start_snapshot;
@@ -506,7 +507,7 @@ test_vector_insert_range (void)
 	dn_vector_insert_range (dn_vector_it_next_n (it, 3), (const uint8_t *)vs2, ARRAY_SIZE (vs2));
 
 	for (uint32_t i = 0; i < vector->size; ++i) {
-		if (i != *dn_vector_index_t (vector, int32_t, i))
+		if ((int32_t)i != *dn_vector_index_t (vector, int32_t, i))
 			return FAILED ("insert failed");
 	}
 
@@ -531,7 +532,7 @@ test_vector_insert_range_end (void)
 	dn_vector_insert_range (dn_vector_end (vector), (const uint8_t *)vs, ARRAY_SIZE (vs));
 
 	for (uint32_t i = 0; i < vector->size; ++i) {
-		if (i != *dn_vector_index_t (vector, int32_t, i))
+		if ((int32_t)i != *dn_vector_index_t (vector, int32_t, i))
 			return FAILED ("insert_range failed");
 	}
 
@@ -636,7 +637,7 @@ test_vector_push_back_2 (void)
 		dn_vector_push_back (vector, i);
 
 	for (uint32_t i = 0; i < vector->size; ++i) {
-		if (i != *dn_vector_index_t (vector, int32_t, i))
+		if ((int32_t)i != *dn_vector_index_t (vector, int32_t, i))
 			return FAILED ("vector push_back failed");
 	}
 
@@ -912,7 +913,7 @@ test_vector_resize (void)
 		return FAILED ("vector size didn't match #2");
 
 	for (uint32_t i = 0; i < vector->size; ++i) {
-		if (i != *dn_vector_index_t (vector, int32_t, i))
+		if ((int32_t)i != *dn_vector_index_t (vector, int32_t, i))
 			return FAILED ("resize didn't preserve data");
 	}
 
@@ -958,7 +959,7 @@ test_vector_resize_2 (void)
 		return FAILED ("vector custom resize failed #1");
 
 	for (uint32_t i = 0; i < vector->size; ++i) {
-		if (i != *dn_vector_index_t (vector, int32_t, i))
+		if ((int32_t)i != *dn_vector_index_t (vector, int32_t, i))
 			return FAILED ("resize didn't preserve data");
 	}
 

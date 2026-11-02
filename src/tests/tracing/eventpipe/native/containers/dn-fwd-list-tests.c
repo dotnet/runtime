@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #if defined(_MSC_VER) && defined(_DEBUG)
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
 #endif
 
-#include <eglib/test/test.h>
+#include "test.h"
 #include <containers/dn-fwd-list.h>
 
 
@@ -718,7 +721,7 @@ test_fwd_list_reverse (void)
 	dn_fwd_list_reverse (list);
 
 	DN_FWD_LIST_FOREACH_BEGIN (void *, data, list) {
-		if (POINTER_TO_INT32 (data) != count - 1)
+		if (POINTER_TO_INT32 (data) != (int32_t)count - 1)
 			return FAILED ("reverse failed #1");
 		count--;
 	} DN_FWD_LIST_FOREACH_END;
@@ -866,7 +869,7 @@ test_fwd_list_iterator (void)
 		dn_fwd_list_insert_after (dn_fwd_list_end (list), INT32_TO_POINTER (i));
 
 	DN_FWD_LIST_FOREACH_BEGIN (void *, data, list) {
-		if (POINTER_TO_INT32 (data) != count)
+		if (POINTER_TO_INT32 (data) != (int32_t)count)
 			return FAILED ("foreach iterator failed #1");
 		count++;
 	} DN_FWD_LIST_FOREACH_END;

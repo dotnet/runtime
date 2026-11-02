@@ -1,9 +1,12 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #if defined(_MSC_VER) && defined(_DEBUG)
 #include "ep-tests-debug.h"
 #endif
 
 #include <eventpipe/ep.h>
-#include <eglib/test/test.h>
+#include "test.h"
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 #define TEST_FILE "./ep_test_create_file.txt"

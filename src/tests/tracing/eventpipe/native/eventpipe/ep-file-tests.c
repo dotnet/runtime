@@ -1,9 +1,12 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-config.h>
 #include <eventpipe/ep-event.h>
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-file.h>
-#include <eglib/test/test.h>
+#include "test.h"
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 #define TEST_FILE "./ep_test_create_file.txt"

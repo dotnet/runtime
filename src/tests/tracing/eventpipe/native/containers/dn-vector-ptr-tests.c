@@ -7,8 +7,9 @@
 #include <crtdbg.h>
 #endif
 
-#include <eglib/test/test.h>
+#include "test.h"
 #include <containers/dn-vector-ptr.h>
+#include <minipal/utils.h>
 
 #ifdef _CRTDBG_MAP_ALLOC
 static _CrtMemState dn_vector_ptr_memory_start_snapshot;
@@ -331,7 +332,7 @@ test_vector_ptr_push_back_2 (void)
 		dn_vector_ptr_push_back (vector, INT32_TO_POINTER (i));
 
 	for (uint32_t i = 0; i < vector->size; ++i) {
-		if (i != POINTER_TO_INT32 (*dn_vector_ptr_index (vector, i)))
+		if ((int32_t)i != POINTER_TO_INT32 (*dn_vector_ptr_index (vector, i)))
 			return FAILED ("vector push_back failed");
 	}
 
@@ -660,7 +661,7 @@ test_vector_ptr_foreach_it (void)
 		dn_vector_ptr_push_back (vector, INT32_TO_POINTER (i));
 
 	DN_VECTOR_PTR_FOREACH_BEGIN (uint32_t *, value, vector) {
-		if (POINTER_TO_INT32 (value) != count)
+		if (POINTER_TO_INT32 (value) != (int32_t)count)
 			return FAILED ("foreach iterator failed #1");
 		count++;
 	} DN_VECTOR_PTR_FOREACH_END;
@@ -686,7 +687,7 @@ test_vector_ptr_foreach_rev_it (void)
 		dn_vector_ptr_push_back (vector, INT32_TO_POINTER (i));
 
 	DN_VECTOR_PTR_FOREACH_RBEGIN (uint32_t *, value, vector) {
-		if (POINTER_TO_INT32 (value) != count - 1)
+		if (POINTER_TO_INT32 (value) != (int32_t)count - 1)
 			return FAILED ("foreach reverse iterator failed #1");
 		count--;
 	} DN_VECTOR_PTR_FOREACH_END;
