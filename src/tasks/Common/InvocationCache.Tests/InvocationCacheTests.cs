@@ -599,12 +599,16 @@ public class InvocationCacheTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void SharedTaskAdapterGatesDescriptionAndUsesCapturedArguments(bool configured, bool eligible)
-        => RemoteExecutor.Invoke(static (enabled, supported) =>
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(false, false, true)]
+    [InlineData(false, true, true)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, true)]
+    public void SharedTaskAdapterGatesDescriptionAndUsesCapturedArguments(bool configured, bool eligible, bool preparedKey)
+        => RemoteExecutor.Invoke(static (enabled, supported, prepared) =>
     {
         bool isConfigured = bool.Parse(enabled);
         bool isEligible = bool.Parse(supported);
@@ -618,9 +622,17 @@ public class InvocationCacheTests
         var events = new List<string>();
         DateTime preparedAt = default;
 
-        int result = InvocationCache.ExecuteCached(test.Log, s_cacheConfiguration,
-            describeInvocation: () => DescribeInvocation("compiler path", "response contents", "command contents"),
-            executeNormally: () => ExecuteNormally("compiler path", "response contents", "command contents"));
+        int result = bool.Parse(prepared)
+            ? InvocationCache.ExecuteCached(test.Log, s_cacheConfiguration,
+                prepareInvocation: () =>
+                {
+                    InvocationDescription? description = DescribeInvocation("compiler path", "response contents", "command contents");
+                    return description is null ? null : new InvocationCacheRequest(InvocationCache.ComputeKey(description), description.Outputs);
+                },
+                executeNormally: () => ExecuteNormally("compiler path", "response contents", "command contents"))
+            : InvocationCache.ExecuteCached(test.Log, s_cacheConfiguration,
+                describeInvocation: () => DescribeInvocation("compiler path", "response contents", "command contents"),
+                executeNormally: () => ExecuteNormally("compiler path", "response contents", "command contents"));
         DateTime completedAt = DateTime.UtcNow;
 
         Assert.Equal(isConfigured && isEligible ? 0 : 42, result);
@@ -654,7 +666,7 @@ public class InvocationCacheTests
             Assert.Equal("response contents", response);
             Assert.Equal("command contents", command);
         }
-    }, configured.ToString(), eligible.ToString()).Dispose();
+    }, configured.ToString(), eligible.ToString(), preparedKey.ToString()).Dispose();
 
     [Fact]
     public void SharedTaskAdapterPropagatesPreparationExceptions() => RemoteExecutor.Invoke(static () =>

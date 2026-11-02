@@ -2,8 +2,8 @@
 
 ILLink opts eligible task invocations into the
 [shared invocation cache](../../../../src/tasks/Common/InvocationCache/README.md). This document
-covers ILLink's input discovery, output ownership, and deliberate omissions; the shared README owns
-hashing, storage, restoration, and concurrency. The feature is experimental and may change or be
+covers ILLink's input discovery, root-aware identity, output ownership, and deliberate omissions;
+the shared README owns storage, restoration, and concurrency. The feature is experimental and may change or be
 removed without notice.
 
 ## Configuration and task boundary
@@ -19,17 +19,57 @@ platform cache location; a path alone never enables caching. See
 [task usage](../../../tools/illink/illink-tasks.md#experimental-task-cache) for configuration and
 maintenance commands.
 
-`ExecuteTool` calls `InvocationCache.ExecuteCached` with parameterless callbacks for the task's
-`DescribeInvocation` and `ExecuteNormally` methods. The description supplies input paths, effective
-arguments/context, and one `InvocationOutputs.FromDirectory` declaration. Eligibility and metadata
-inspection stay in ILLink; content hashing and cache operations stay in the shared layer.
+`ExecuteTool` calls `InvocationCache.ExecuteCached` with a preparation callback that computes a
+root-aware key through `TryComputeCacheKey`, one `InvocationOutputs.FromDirectory` declaration, and a
+normal-execution callback. Eligibility, metadata inspection, and full input-content hashing stay in
+ILLink; publication, restoration, and writer coordination use the shared layer.
+
+## Root identity and execution
+
+Share eligible results across clones/worktrees with equivalent relative layouts. Accept physical
+`SourceRoots` with stable logical `MappedPath` metadata (`/_/`, `/_1/`, etc.). Map known paths to
+tagged logical-root/relative-path identities; retain absolute external paths. Require distinct roots
+and consistent nested mappings. Missing or invalid mappings run uncached.
+
+For one enclosing physical root, run ILLink from that root with known in-root paths rendered
+relative to it. Resolve original relative inputs against the caller's cwd first. Do not change
+process-wide cwd or task inputs. Disjoint-root invocations retain their original execution with
+logical key mapping only. Disabled or bypassed caching leaves execution unchanged.
+
+Use SHA-256 over a length-delimited description in the ILLink key domain. Include
+execution mode, effective working directory, exact generated arguments, logical output identity,
+platform, architecture, culture, and full file hashes sorted by logical input identity. Do not
+replace substrings in raw arguments. Preserve filenames, relative layout, reference precedence,
+sidecar associations, and ordered search directories. Overridden command generation or working
+directories that do not match the model bypass caching.
+
+Runtime per-library, shared-framework, and out-of-band targets supply their repository root with
+logical identity `/_/`. SDK publish targets forward existing `@(SourceRoot)` items without
+initializing or changing their mappings. They must already carry stable logical `MappedPath`
+metadata; the SDK normally produces it when `DeterministicSourcePaths=true`, such as deterministic
+CI builds. Ordinary local SDK builds without usable mappings run uncached. Root forwarding does not
+normalize upstream assemblies or enable symbol preservation or compiler path mapping.
 
 ## Input discovery and eligibility
 
 Hash all supplied assemblies, reference assemblies, and root descriptors. Include adjacent PDBs,
-MDBs, configuration files, and satellite assemblies even when symbols are disabled. Follow assembly
-metadata file entries for linked resources and additional modules. Adding or removing a sidecar
-changes identity.
+configuration files, and satellite assemblies even when symbols are disabled. Adding or removing a
+sidecar changes identity. Bypass additional modules and linked resources rather than approximate
+their resolution. Reject mismatched assembly filenames and path-shaped metadata assembly references.
+Leave root and XML assembly-name validation to ILLink, which treats path-shaped names as unresolved
+rather than probing outside the inventory.
+
+Inspect CodeView paths, portable-PDB document paths, embedded portable PDBs, and custom-debug blobs.
+Accept relative non-escaping paths and conventional synthetic `/_N/` paths; reject physical symbol
+paths, native PDBs, MDBs, malformed symbols, and unsupported debug-directory kinds. External portable
+PDB emission requires explicit `PreserveSymbolPaths=true` with already-normalized inputs. Copy
+actions also require shareable input bytes. Explicit skipped references are metadata-inspected and
+fully hashed, without output-symbol restrictions because their symbols are not emitted.
+
+Conservatively reject literal physical source-root prefixes in emitted-input PE bytes, auxiliary
+files, and portable-PDB custom-debug blobs using UTF-8/UTF-16 spellings. This catches ordinary
+physical `CallerFilePath` strings, but is not a general proof about opaque or compressed application
+data. Compiler and symbol defaults are unchanged.
 
 The inventory includes the task assembly, selected dotnet host executable, and entire linker
 assembly. Hash the linker without loading it or relying on MVID, timestamps, or length; do not scan
@@ -46,7 +86,7 @@ process. Runtime installation changes alone therefore need not invalidate entrie
 requiring that distinction must clear or isolate storage.
 
 Inherited environment variables are not enumerated, hashed, or used as a bypass list. Platform,
-architecture, and culture are part of the shared key, but callers must disable caching when inherited
+architecture, and culture are part of the ILLink key, but callers must disable caching when inherited
 settings introduce untracked dependencies, affect outputs, or require side effects such as startup
 hooks or profiling.
 
@@ -57,13 +97,17 @@ effects.
 For runtime library builds, support `--ignore-link-attributes true` followed by zero or more
 `--link-attributes FILE`, `--substitutions FILE`, or `-d DIRECTORY` pairs. Require the XML files to be
 readable. Inventory every top-level `.dll`, `.exe`, and `.winmd` candidate in each search directory,
-including sidecars, modules, and resources. Preserve directory order and leave linker resolution
+including supported sidecars. Preserve directory order and leave linker resolution
 unchanged; adding, changing, or removing even a shadowed candidate invalidates identity. Other SDK
 options supplied through `ExtraArgs` remain unsupported.
 
+Bypass `ExtraArgs` containing backslashes immediately before quotes, including even-length runs.
+The supported tokenizer does not model the linker's escape rules; leave those invocations
+unchanged rather than reconstruct different argument boundaries.
+
 Unreadable directories, uninspectable assemblies (including PE images without managed metadata), and
-other input-read failures bypass caching with diagnostics. Missing declared files have explicit
-absence markers; normal linking decides whether an invocation can succeed. Inputs must remain stable
+other input-read failures bypass caching with diagnostics. Required files must be readable; normal
+linking decides whether an unsupported invocation can succeed. Inputs must remain stable
 throughout discovery, hashing, and linking.
 
 ## Output preparation and diagnostics
