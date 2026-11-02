@@ -281,6 +281,18 @@ const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith
 // Run the test case
 try {
     switch (testCase) {
+        case "MappedJSExports": {
+            const library = await getAssemblyExports("Library.dll");
+            const again = await getAssemblyExports("Library");
+            if (library.AssemblyProviderTest.Exports.Add(17, 25) !== 42 ||
+                library.AssemblyProviderTest.Exports.Echo("type-map") !== "type-map" ||
+                again.AssemblyProviderTest.Exports.Add(19, 23) !== 42) {
+                throw new Error("Mapped JSExport invocation failed");
+            }
+            testOutput("Mapped JSExports passed");
+            exit(0);
+            break;
+        }
         case "LegacyJSExports": {
             const legacy = (await getAssemblyExports("LegacyExports.dll")).LegacyExports.Exports;
             const check = (condition, message) => {

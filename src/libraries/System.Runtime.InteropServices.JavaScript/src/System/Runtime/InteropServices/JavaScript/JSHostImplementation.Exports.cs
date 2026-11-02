@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -10,23 +9,18 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal static partial class JSHostImplementation
     {
-        // Populated by the generated module initializers. Module initializers can run on any thread
-        // under multi-threading, so this needs to be a concurrent map.
-        private static readonly ConcurrentDictionary<string, Action> s_assemblyExports = new();
-
-        public static void RegisterAssemblyExports(string assemblyName, Action register)
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Generated type-map providers preserve their constructors and directly reference their export wrappers.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "The generated Register override preserves the provider's public parameterless constructor with DynamicDependency.")]
+        private static bool TryBindMappedAssemblyExports(string assemblyName)
         {
-            ArgumentException.ThrowIfNullOrEmpty(assemblyName);
-            s_assemblyExports[assemblyName] = register;
-        }
-
-        public static bool TryBindRegisteredAssemblyExports(string assemblyName)
-        {
-            if (!s_assemblyExports.TryGetValue(assemblyName, out Action? register))
+            var providers = TypeMapping.GetOrCreateExternalTypeMapping<JSExportProvider>();
+            if (!providers.TryGetValue(assemblyName, out Type? providerType))
             {
                 return false;
             }
-            register();
+
+            var provider = (JSExportProvider)Activator.CreateInstance(providerType)!;
+            provider.Register();
             return true;
         }
 

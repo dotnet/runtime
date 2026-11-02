@@ -81,3 +81,9 @@ targeting pack, without the in-tree pack overrides, then references its DLL from
 current-framework browser app. The targeting pack (including its generator) is restored as needed;
 no .NET 10 SDK or browser workload is required. The test runs in the `no-workload` CI lane for
 both runtime flavors.
+
+`LibraryInitializerTests.JSExportFromAssemblyProvider` checks a library reached only from
+JavaScript through a generated assembly type-map provider. It covers multiple exports,
+repeated assembly lookup, and trimmed and untrimmed publication without explicitly rooting
+the library. Untrimmed Mono requires runtime type-map support; its current implementation
+only supports the trimmed, linker-intrinsic path.

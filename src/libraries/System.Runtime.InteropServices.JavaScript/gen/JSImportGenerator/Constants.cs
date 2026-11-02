@@ -17,7 +17,6 @@ namespace Microsoft.Interop.JavaScript
         public const string JSFunctionSignatureGlobal = "global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding";
         public const string JSMarshalerArgumentGlobal = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument";
         public const string JSMarshalerArgument = "System.Runtime.InteropServices.JavaScript.JSMarshalerArgument";
-        public const string ModuleInitializerAttributeGlobal = "global::System.Runtime.CompilerServices.ModuleInitializerAttribute";
         public const string CompilerGeneratedAttributeGlobal = "global::System.Runtime.CompilerServices.CompilerGeneratedAttribute";
         public const string DynamicDependencyAttributeGlobal = "global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute";
         public const string DynamicallyAccessedMemberTypesGlobal = "global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes";
@@ -39,7 +38,8 @@ namespace Microsoft.Interop.JavaScript
         public const string ToManagedBigMethod = "ToManagedBig";
         public const string BindJSFunctionMethod = "BindJSFunction";
         public const string BindCSFunctionMethod = "BindManagedFunction";
-        public const string RegisterAssemblyExportsMethod = "RegisterAssemblyExports";
+        public const string JSExportProvider = "System.Runtime.InteropServices.JavaScript.JSExportProvider";
+        public const string JSExportProviderGlobal = "global::System.Runtime.InteropServices.JavaScript.JSExportProvider";
         public const string JSMarshalerTypeGlobal = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerType";
         public const string JSMarshalerTypeGlobalDot = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.";
     }

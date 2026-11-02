@@ -76,6 +76,53 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         Assert.Contains("resources.libraryInitializers.length=1", result.TestOutput);
     }
 
+    public static IEnumerable<object[]> AssemblyProviderConfigurations()
+    {
+        yield return new object[] { Configuration.Debug, true };
+        yield return new object[] { Configuration.Release, true };
+        if (IsCoreClrRuntime)
+            yield return new object[] { Configuration.Debug, false };
+    }
+
+    [Theory, TestCategory("no-workload")]
+    [MemberData(nameof(AssemblyProviderConfigurations))]
+    public async Task JSExportFromAssemblyProvider(Configuration config, bool trimmed)
+    {
+        string useLocalTargetingPack = $"""
+            <Target Name="UseLocalJSExportTargetingPack" BeforeTargets="ProcessFrameworkReferences">
+                <ItemGroup>
+                    <KnownFrameworkReference Update="@(KnownFrameworkReference)"
+                                             Condition="'%(KnownFrameworkReference.Identity)' == 'Microsoft.NETCore.App' and '%(KnownFrameworkReference.TargetFramework)' == '{DefaultTargetFramework}'">
+                        <TargetingPackVersion>{s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework)}</TargetingPackVersion>
+                    </KnownFrameworkReference>
+                </ItemGroup>
+            </Target>
+            """;
+        ProjectInfo info = CopyTestAsset(
+            config, false, TestAsset.WasmBasicTestApp, "mapped_exports",
+            extraProperties: $"<PublishTrimmed>{trimmed.ToString().ToLowerInvariant()}</PublishTrimmed><EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>",
+            extraItems: """<ProjectReference Include="..\Library\Library.csproj" />""",
+            insertAtEnd: useLocalTargetingPack);
+        File.Copy(
+            Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "JSExportProvider.cs"),
+            Path.Combine(_projectDir, "..", "Library", "Library.cs"),
+            overwrite: true);
+        string libraryDir = Path.Combine(_projectDir, "..", "Library");
+        AddItemsPropertiesToProject(
+            Path.Combine(libraryDir, "Library.csproj"),
+            extraProperties: "<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>",
+            insertAtEnd: useLocalTargetingPack);
+        PublishProject(info, config);
+        string generatedFile = Directory.GetFiles(Path.Combine(libraryDir, "obj"), "JSExports.g.cs", SearchOption.AllDirectories).Single();
+        string generatedCode = File.ReadAllText(generatedFile);
+        Assert.Contains("file sealed class __GeneratedJSExportProvider", generatedCode);
+        Assert.DoesNotContain("ModuleInitializer", generatedCode);
+        string appGeneratedFile = Directory.GetFiles(Path.Combine(_projectDir, "obj"), "JSExports.g.cs", SearchOption.AllDirectories).Single();
+        Assert.Contains("JSExportProvider>(\"Library\")", File.ReadAllText(appGeneratedFile));
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "MappedJSExports"));
+        Assert.Contains("Mapped JSExports passed", result.TestOutput);
+    }
+
     [Theory, TestCategory("no-workload")]
     [InlineData(Configuration.Debug)]
     [InlineData(Configuration.Release)]

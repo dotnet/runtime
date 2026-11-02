@@ -2,6 +2,13 @@
 
 This usually consists of taking the built assemblies, and related files, and generating an app bundle.
 
+JSExport type-map providers need a discovery root before managed `Main` runs.
+Browser builds default `TypeMapEntryAssembly` to the application's assembly name and
+emit the corresponding `System.Runtime.InteropServices.TypeMappingEntryAssembly`
+runtime configuration setting. The JSExport provider linker descriptor preserves
+the native `BindAssemblyExports` entry point, which makes the type-map lookup
+reachable even when JavaScript is the only caller of the application's exports.
+
 Wasm app build can run in two scenarios:
 
 1. After build, eg. when running the app in VS, or `dotnet build foo.csproj`

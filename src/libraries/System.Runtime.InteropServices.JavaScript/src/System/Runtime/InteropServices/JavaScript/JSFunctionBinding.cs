@@ -221,17 +221,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return JSHostImplementation.BindManagedFunction(fullyQualifiedName, signatureHash, signatures, callback);
         }
 
-        /// <summary>
-        /// Registers the exports of an assembly so that they can be bound without reflection.
-        /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
-        /// </summary>
-        /// <param name="assemblyName">The simple name of the assembly.</param>
-        /// <param name="register">The generated registration entry point for the assembly's exports.</param>
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [DebuggerNonUserCode]
-        public static void RegisterAssemblyExports(string assemblyName, Action register)
-            => JSHostImplementation.RegisterAssemblyExports(assemblyName, register);
-
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif

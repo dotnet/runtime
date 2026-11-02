@@ -159,9 +159,15 @@ public sealed class JSFunctionBinding
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures, delegate*<JSMarshalerArgument*, void> callback) { throw null; }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+}
+
+[Versioning.SupportedOSPlatformAttribute("browser")]
+[System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+public abstract class JSExportProvider
+{
+    protected JSExportProvider() { }
     [System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public static void RegisterAssemblyExports(string assemblyName, Action register) { throw null; }
+    public abstract void Register();
 }
 
 [Versioning.SupportedOSPlatformAttribute("browser")]
