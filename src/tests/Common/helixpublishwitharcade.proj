@@ -774,6 +774,8 @@
     <_WorkaroundForNuGetMigrationsForPrepending>$(_WorkaroundForNuGetMigrations) &amp;&amp;</_WorkaroundForNuGetMigrationsForPrepending>
   </PropertyGroup>
 
+  <Import Project="$(RepoRoot)eng/testing/Android/helix.targets" />
+
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
     <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
