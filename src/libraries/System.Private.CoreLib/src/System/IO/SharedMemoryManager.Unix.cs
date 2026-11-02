@@ -781,70 +781,8 @@ namespace System.IO
                     throw Interop.GetExceptionForIoErrno(openError, directoryPathForError);
                 }
 
-                if (ValidateDirectory(directoryHandle, directoryPathForError, id, ref transientRetryCount))
-                {
-                    return directoryHandle;
-                }
-
-                directoryHandle.Dispose();
+                return directoryHandle;
             }
-        }
-
-        private static bool ValidateDirectory(
-            SafeFileHandle directoryHandle,
-            string directoryPathForError,
-            SharedMemoryId id,
-            ref int transientRetryCount)
-        {
-            if (Interop.Sys.FStat(directoryHandle, out Interop.Sys.FileStatus fileStatus) != 0)
-            {
-                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                if ((error.Error == Interop.Error.ENOENT || error.Error == Interop.Error.EACCES) &&
-                    RetryOnTransientPermissionFailure(ref transientRetryCount))
-                {
-                    return false;
-                }
-
-                throw Interop.GetExceptionForIoErrno(error, directoryPathForError);
-            }
-
-            UnixFileMode permissionsMask = id.IsUserScope
-                ? PermissionsMask_OwnerUser_ReadWriteExecute
-                : PermissionsMask_AllUsers_ReadWriteExecute;
-
-            // For non-system directories (such as SharedFilesPath/UserUnscopedRuntimeTempDirectoryName),
-            // require the sufficient permissions, so that shared memory files may be shared according to its scope.
-
-            // For user-scoped directories, verify the owner UID.
-            if (id.IsUserScope && fileStatus.Uid != id.Uid)
-            {
-                if (RetryOnTransientPermissionFailure(ref transientRetryCount))
-                {
-                    return false;
-                }
-
-                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryNotOwnedByUid, directoryPathForError, id.Uid));
-            }
-
-            // Verify the permissions correct.
-            if ((fileStatus.Mode & (int)permissionsMask) == (int)permissionsMask)
-            {
-                return true;
-            }
-
-            if (RetryOnTransientPermissionFailure(ref transientRetryCount))
-            {
-                return false;
-            }
-
-            // We were not able to verify the necessary permissions.
-            // Throw an exception with a message that is specific to the scope of the shared memory data.
-            if (id.IsUserScope)
-            {
-                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryPermissionsIncorrectUserScope, directoryPathForError, Convert.ToString(fileStatus.Mode, 8)));
-            }
-
-            throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryOwnerPermissionsIncorrect, directoryPathForError, Convert.ToString(fileStatus.Mode, 8)));
         }
 
         private static bool RetryOnTransientPermissionFailure(ref int transientRetryCount)
