@@ -394,7 +394,8 @@ function loadResource(asset: AssetEntryInternal): Promise<Response> {
         // no need to retry or throttle local file access
         return loadResourceFetch(asset);
     }
-    if (!loaderConfig.enableDownloadRetry || (noRetry[asset.behavior] && asset.cache !== "force-cache")) {
+    const retryCachedWasm = asset.behavior === "dotnetwasm" && asset.cache === "force-cache";
+    if (!loaderConfig.enableDownloadRetry || (noRetry[asset.behavior] && !retryCachedWasm)) {
         // only throttle, no retry
         return loadResourceThrottle(asset);
     }

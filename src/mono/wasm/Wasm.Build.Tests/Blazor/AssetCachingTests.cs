@@ -299,35 +299,25 @@ public class AssetCachingTests : BlazorWasmTestBase
 
     private void ConfigureClientRuntime()
     {
+        string clientProjectDir = Path.GetFullPath(Path.Combine(_projectDir, "..", "BlazorWebWasm.Client"));
         string extraProperties = "", extraItems = "", insertAtEnd = "";
         AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
         if (IsMonoRuntime)
         {
             string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
-            extraProperties += "<UseMonoRuntime>true</UseMonoRuntime>";
-            insertAtEnd +=
+            extraProperties +=
                 $$"""
-                <Target Name="_UseCurrentMonoRuntimeForCacheTests" BeforeTargets="ProcessFrameworkReferences"
-                        Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
-                    <ItemGroup>
-                        <KnownFrameworkReference Update="Microsoft.NETCore.App"
-                                                 Condition="'%(KnownFrameworkReference.TargetFramework)' == '$(TargetFramework)'">
-                            <LatestRuntimeFrameworkVersion>{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
-                        </KnownFrameworkReference>
-                        <KnownRuntimePack Update="@(KnownRuntimePack)"
-                                          Condition="'%(KnownRuntimePack.TargetFramework)' == '$(TargetFramework)' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">
-                            <LatestRuntimeFrameworkVersion>{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
-                        </KnownRuntimePack>
-                        <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)"
-                                                 Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '$(TargetFramework)'">
-                            <WebAssemblySdkPackVersion>{{runtimePackVersion}}</WebAssemblySdkPackVersion>
-                        </KnownWebAssemblySdkPack>
-                    </ItemGroup>
-                </Target>
+                <UseMonoRuntime>true</UseMonoRuntime>
+                <WBTMonoRuntimePackVersion>{{runtimePackVersion}}</WBTMonoRuntimePackVersion>
                 """;
+            File.Copy(
+                Path.Combine(BuildEnvironment.TestDataPath, "UseCurrentMonoRuntime.targets"),
+                Path.Combine(clientProjectDir, "UseCurrentMonoRuntime.targets"),
+                overwrite: true);
+            insertAtEnd += """<Import Project="UseCurrentMonoRuntime.targets" />""";
         }
         UpdateProjectFile(
-            Path.GetFullPath(Path.Combine(_projectDir, "..", "BlazorWebWasm.Client", "BlazorWebWasm.Client.csproj")),
+            Path.Combine(clientProjectDir, "BlazorWebWasm.Client.csproj"),
             runAnalyzers: true, extraProperties, extraItems, insertAtEnd);
     }
 }

@@ -1,0 +1,19 @@
+<Project>
+  <Target Name="_UseCurrentMonoRuntimeForTests" BeforeTargets="ProcessFrameworkReferences"
+          Condition="'$(WBTMonoRuntimePackVersion)' != '' and '$(RuntimeIdentifier)' == 'browser-wasm'">
+    <ItemGroup>
+      <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                               Condition="'%(KnownFrameworkReference.TargetFramework)' == '$(TargetFramework)'">
+        <LatestRuntimeFrameworkVersion>$(WBTMonoRuntimePackVersion)</LatestRuntimeFrameworkVersion>
+      </KnownFrameworkReference>
+      <KnownRuntimePack Update="@(KnownRuntimePack)"
+                        Condition="'%(KnownRuntimePack.TargetFramework)' == '$(TargetFramework)' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">
+        <LatestRuntimeFrameworkVersion>$(WBTMonoRuntimePackVersion)</LatestRuntimeFrameworkVersion>
+      </KnownRuntimePack>
+      <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)"
+                               Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '$(TargetFramework)'">
+        <WebAssemblySdkPackVersion>$(WBTMonoRuntimePackVersion)</WebAssemblySdkPackVersion>
+      </KnownWebAssemblySdkPack>
+    </ItemGroup>
+  </Target>
+</Project>
