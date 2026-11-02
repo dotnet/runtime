@@ -49,6 +49,11 @@ namespace ILCompiler.DependencyAnalysis
             Section nativeSection = nativeWriter.NewSection();
             nativeSection.Place(hashtable);
 
+            // WASM source-line mappings do not support virtual IPs yet.
+            // Emit a valid empty table so file-info requests safely return no information.
+            if (factory.Target.IsWasm)
+                return new ObjectData(nativeWriter.Save(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
+
             foreach (StackTraceMapping mapping in factory.MetadataManager.GetStackTraceMapping(factory))
             {
                 if ((factory.MetadataManager.StackTracePolicy.GetMethodVisibility(mapping.Method) & MethodStackTraceVisibilityFlags.HasLineNumbers) == 0)
