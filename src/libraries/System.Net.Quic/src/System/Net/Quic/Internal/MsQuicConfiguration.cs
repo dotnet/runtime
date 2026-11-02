@@ -307,7 +307,7 @@ internal static partial class MsQuicConfiguration
             // server certificates and SEC_E_UNKNOWN_CREDENTIALS for client certificates when the
             // private key is ephemeral, which is not supported on Windows.
             if ((status == MsQuic.QUIC_STATUS_CERT_NO_CERT || (Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.UnknownCredentials) &&
-                certificateCopy is not null && certificate is not null && certificate.HasPrivateKey())
+                certificateCopy is not null && certificateCopy.HasPrivateKey())
             {
                 using Microsoft.Win32.SafeHandles.SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificateCopy.Handle);
                 if (safeCertContextHandle.HasEphemeralPrivateKey)
