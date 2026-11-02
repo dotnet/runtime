@@ -191,10 +191,6 @@ namespace System.Diagnostics
                 }
 
                 _returnType = returnType;
-                if (_returnType == typeof(TypedReference))
-                {
-                    throw new ArgumentException(SR.Argument_CannotCreateTypedReference);
-                }
 
                 _invoke = method is RuntimeMethodInfo runtimeMethodInfo
                     ? runtimeMethodInfo.Invoker.GetDebuggerInvokeDelegate()
