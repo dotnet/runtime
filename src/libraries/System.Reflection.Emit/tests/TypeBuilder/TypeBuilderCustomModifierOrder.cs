@@ -49,6 +49,66 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
+        // On CoreCLR, a call to a loaded generic method, or to a method of a loaded generic type, in another module gets
+        // a member reference whose signature the runtime builder writes from the target's reflected custom modifiers;
+        // the call binds only if that signature matches the target's.
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void RuntimeAssemblyBuilder_CallToPersistedAssemblyBuilderMethodWithCustomModifiers(bool onGenericType)
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("CustomModifierOrderCallee"));
+            TypeBuilder calleeType = ab.DefineDynamicModule("CustomModifierOrderCallee").DefineType("Callee",
+                TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
+            MethodBuilder calleeMethod;
+            if (onGenericType)
+            {
+                calleeType.DefineGenericParameters("T");
+                calleeMethod = calleeType.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
+                    typeof(int), s_required, s_optional, [typeof(int)], [s_required], [s_optional]);
+            }
+            else
+            {
+                calleeMethod = calleeType.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static);
+                calleeMethod.DefineGenericParameters("T");
+                calleeMethod.SetSignature(typeof(int), s_required, s_optional, [typeof(int)], [s_required], [s_optional]);
+            }
+            ILGenerator calleeIL = calleeMethod.GetILGenerator();
+            calleeIL.Emit(OpCodes.Ldarg_0);
+            calleeIL.Emit(OpCodes.Ret);
+            calleeType.CreateType();
+            using MemoryStream stream = new MemoryStream();
+            ab.Save(stream);
+            stream.Position = 0;
+
+            TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+            try
+            {
+                Type callee = tlc.LoadFromStream(stream).GetType("Callee");
+                MethodInfo target = onGenericType
+                    ? callee.MakeGenericType(typeof(int)).GetMethod("Method")
+                    : callee.GetMethod("Method").MakeGenericMethod(typeof(int));
+
+                // Collectible, since it references the collectible callee.
+                AssemblyBuilder callerAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("CustomModifierOrderCaller"),
+                    AssemblyBuilderAccess.RunAndCollect);
+                TypeBuilder callerType = callerAssembly.DefineDynamicModule("CustomModifierOrderCaller").DefineType("Caller",
+                    TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
+                ILGenerator callerIL = callerType.DefineMethod("Call", MethodAttributes.Public | MethodAttributes.Static, typeof(int),
+                    Type.EmptyTypes).GetILGenerator();
+                callerIL.Emit(OpCodes.Ldc_I4_5);
+                callerIL.Emit(OpCodes.Call, target);
+                callerIL.Emit(OpCodes.Ret);
+                Type caller = callerType.CreateType();
+
+                Assert.Equal(5, caller.GetMethod("Call").Invoke(null, null));
+            }
+            finally
+            {
+                tlc.Unload();
+            }
+        }
+
         private static TypeBuilder DefineType(ModuleBuilder module)
         {
             TypeBuilder type = module.DefineType("CustomModifierOrder", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
