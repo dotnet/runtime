@@ -40,11 +40,8 @@ namespace Internal.TypeSystem
             int index = _runtimeDeterminedDetailsType.Index;
             _utf8Prefix = new byte[1 + FormattingHelpers.CountDigits((uint)index)];
             _utf8Prefix[0] = (byte)(_runtimeDeterminedDetailsType.Kind == GenericParameterKind.Type ? 'T' : 'M');
-            for (int position = _utf8Prefix.Length - 1; position > 0; position--)
-            {
-                _utf8Prefix[position] = (byte)('0' + (index % 10));
-                index /= 10;
-            }
+            bool formatted = index.TryFormat(_utf8Prefix.AsSpan(1), out int bytesWritten);
+            Debug.Assert(formatted && bytesWritten == _utf8Prefix.Length - 1);
         }
 
         TypeDesc IPrefixMangledType.BaseType => _rawCanonType;
