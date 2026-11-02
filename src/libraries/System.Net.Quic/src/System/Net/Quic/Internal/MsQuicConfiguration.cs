@@ -232,8 +232,8 @@ internal static partial class MsQuicConfiguration
         try
         {
             // The copy retains the underlying certificate handle while MsQuic loads the credentials.
-            using X509Certificate? certificateCopy = MsQuicApi.UsesSChannelBackend && certificate is not null
-                ? new X509Certificate(certificate)
+            using X509Certificate2? certificateCopy = MsQuicApi.UsesSChannelBackend && certificate is not null
+                ? new X509Certificate2(certificate)
                 : null;
 
             if (certificate is X509Certificate2 cert && intermediates is null)
@@ -307,7 +307,7 @@ internal static partial class MsQuicConfiguration
             // server certificates and SEC_E_UNKNOWN_CREDENTIALS for client certificates when the
             // private key is ephemeral, which is not supported on Windows.
             if ((status == MsQuic.QUIC_STATUS_CERT_NO_CERT || (Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.UnknownCredentials) &&
-                certificateCopy is not null && certificateCopy.HasPrivateKey())
+                certificateCopy is not null && certificateCopy.HasPrivateKey)
             {
                 using Microsoft.Win32.SafeHandles.SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificateCopy.Handle);
                 if (safeCertContextHandle.HasEphemeralPrivateKey)
