@@ -453,7 +453,6 @@ private:
     GenTree*         LowerNeg(GenTreeOp* node);
     void             LowerIndexAddr(GenTreeIndexAddr* indexAddr);
     void             LowerCkfinite(GenTreeOp* node);
-    void             RemoveRedundantLocalCopies();
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);

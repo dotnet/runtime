@@ -3731,6 +3731,180 @@ PhaseStatus Compiler::fgWasmProfInstrument()
 }
 
 //-----------------------------------------------------------------------------
+// fgWasmForwardLocalCopies: forward single-use local-to-local copies.
+//
+// Returns:
+//   suitable phase status
+//
+// Notes:
+//   Rewrites "STORE_LCL_VAR<tmp>(LCL_VAR<src>) ... LCL_VAR<tmp>" into a use of
+//   "src" when "tmp" has no other references and "src" is not redefined in
+//   between. CSE commonly leaves such copies behind in place of morph argument
+//   temps. The Wasm register allocator gives every candidate its own local and
+//   does not coalesce, so each copy would otherwise cost a local.get/local.set
+//   pair and a local.
+//
+//   Only blocks recorded by lowering are visited. This runs after late liveness
+//   so that ref counts are exact, and keeps last-use flags up to date.
+//
+PhaseStatus Compiler::fgWasmForwardLocalCopies()
+{
+    if ((m_wasmLocalCopyBlocks == nullptr) || !opts.OptimizationEnabled() || !backendRequiresLocalVarLifetimes())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    struct PendingCopy
+    {
+        GenTreeLclVar* Store;
+        unsigned       SrcLclNum;
+        // The latest read of "src" marked as its last use, if any.
+        GenTree* SrcLastUse;
+    };
+
+    // GC refs are excluded: forwarding could extend a wasm-local GC ref's lifetime across a safepoint.
+    auto isCopyableType = [](var_types type) {
+        return varTypeIsEnregisterable(type) && !varTypeIsStruct(type) && !varTypeIsGC(type) && !varTypeIsSmall(type);
+    };
+
+    // Locals with defs not visible as local stores in IR. Implicitly referenced locals include
+    // the shadow stack pointer, which LCLHEAP updates.
+    auto hasHiddenDefs = [this](LclVarDsc* varDsc) {
+        if (varDsc->lvIsStructField)
+        {
+            LclVarDsc* parentDsc = lvaGetDesc(varDsc->lvParentLcl);
+            if (parentDsc->IsAddressExposed() || parentDsc->lvHasLdAddrOp)
+            {
+                return true;
+            }
+        }
+
+        return varDsc->lvImplicitlyReferenced || varDsc->IsAddressExposed() || varDsc->lvHasLdAddrOp ||
+               varDsc->lvPromoted;
+    };
+
+    ArrayStack<PendingCopy> pending(getAllocator(CMK_Lower));
+    auto                    removePending = [&pending](int index) {
+        pending.BottomRef(index) = pending.Top();
+        pending.Pop();
+    };
+
+    bool modified = false;
+    for (int blockIndex = 0; blockIndex < m_wasmLocalCopyBlocks->Height(); blockIndex++)
+    {
+        BasicBlock* block = m_wasmLocalCopyBlocks->Bottom(blockIndex);
+        if (block->HasFlag(BBF_REMOVED))
+        {
+            continue;
+        }
+
+        LIR::Range& range = LIR::AsRange(block);
+        pending.Reset();
+
+        for (GenTree* node : range)
+        {
+            if (pending.Height() != 0)
+            {
+                if (node->OperIs(GT_LCL_VAR) && !node->isContained())
+                {
+                    unsigned lclNum = node->AsLclVar()->GetLclNum();
+                    for (int i = 0; i < pending.Height(); i++)
+                    {
+                        PendingCopy& copy = pending.BottomRef(i);
+                        if ((copy.SrcLclNum == lclNum) && node->HasLastUse())
+                        {
+                            copy.SrcLastUse = node;
+                            continue;
+                        }
+
+                        if ((copy.Store->GetLclNum() != lclNum) || (node->TypeGet() != copy.Store->TypeGet()))
+                        {
+                            continue;
+                        }
+
+                        JITDUMP("Forwarding V%02u into [%06u] in place of single-use copy V%02u [%06u]\n",
+                                copy.SrcLclNum, dspTreeID(node), lclNum, dspTreeID(copy.Store));
+
+                        // "src" is now read here; move its last-use flag here if it died earlier.
+                        node->gtFlags &= ~GTF_VAR_DEATH;
+                        if (copy.SrcLastUse != nullptr)
+                        {
+                            copy.SrcLastUse->gtFlags &= ~GTF_VAR_DEATH;
+                            node->gtFlags |= GTF_VAR_DEATH;
+                        }
+
+                        range.Remove(copy.Store->Data());
+                        range.Remove(copy.Store);
+                        node->AsLclVar()->SetLclNum(copy.SrcLclNum);
+                        node->AsLclVar()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+
+                        LclVarDsc* tmpDsc = lvaGetDesc(lclNum);
+                        tmpDsc->setLvRefCnt(0);
+                        tmpDsc->setLvRefCntWtd(0);
+
+                        removePending(i);
+                        modified = true;
+                        break;
+                    }
+                }
+                else if (node->OperIs(GT_LCL_ADDR))
+                {
+                    unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
+                    for (int i = pending.Height() - 1; i >= 0; i--)
+                    {
+                        if (pending.Bottom(i).SrcLclNum == lclNum)
+                        {
+                            removePending(i);
+                        }
+                    }
+                }
+
+                node->VisitLogicalLocalDefs(this, [&](const auto& def) {
+                    for (int i = pending.Height() - 1; i >= 0; i--)
+                    {
+                        if (pending.Bottom(i).SrcLclNum == def.GetLclNum())
+                        {
+                            removePending(i);
+                        }
+                    }
+                    return GenTree::VisitResult::Continue;
+                });
+            }
+
+            if (!node->OperIs(GT_STORE_LCL_VAR))
+            {
+                continue;
+            }
+
+            GenTreeLclVar* store   = node->AsLclVar();
+            GenTree*       srcNode = store->Data();
+            if (!srcNode->OperIs(GT_LCL_VAR) || srcNode->isContained() ||
+                ((srcNode->gtLIRFlags & LIR::Flags::MultiplyUsed) != 0))
+            {
+                continue;
+            }
+
+            unsigned   tmpLclNum = store->GetLclNum();
+            unsigned   srcLclNum = srcNode->AsLclVar()->GetLclNum();
+            LclVarDsc* tmpDsc    = lvaGetDesc(tmpLclNum);
+            LclVarDsc* srcDsc    = lvaGetDesc(srcLclNum);
+            var_types  type      = tmpDsc->TypeGet();
+
+            if ((tmpLclNum == srcLclNum) || (tmpDsc->lvRefCnt() != 2) || tmpDsc->lvIsParam || tmpDsc->lvIsStructField ||
+                tmpDsc->lvIsOSRLocal || hasHiddenDefs(tmpDsc) || hasHiddenDefs(srcDsc) || !isCopyableType(type) ||
+                (srcDsc->TypeGet() != type) || (store->TypeGet() != type) || (srcNode->TypeGet() != type))
+            {
+                continue;
+            }
+
+            pending.Push({store, srcLclNum, srcNode->HasLastUse() ? srcNode : nullptr});
+        }
+    }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-----------------------------------------------------------------------------
 // fgWasmVirtualIP: set up virtual IP mapping for EH and calls
 //
 // Returns:
