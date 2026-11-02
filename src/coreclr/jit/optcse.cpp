@@ -5173,8 +5173,6 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             cse->gtVNPair = m_compiler->vnStore->VNPNormalPair(exp->gtVNPair);
         }
 
-        INDEBUG(cse->gtDebugFlags |= GTF_DEBUG_VAR_CSE_REF);
-
         // Now we need to unmark any nested CSE's uses that are found in 'exp'
         // As well we extract any nested CSE defs that are found in 'exp' and
         // these are appended to the sideEffList

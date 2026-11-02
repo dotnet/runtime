@@ -32,8 +32,12 @@ endfunction(generate_module_index)
 
 if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
     generate_module_index(coreclr ${CMAKE_CURRENT_BINARY_DIR}/runtimemoduleindex.h)
-    generate_module_index(mscordaccore ${CMAKE_CURRENT_BINARY_DIR}/dacmoduleindex.h)
-    generate_module_index(mscordbi ${CMAKE_CURRENT_BINARY_DIR}/dbimoduleindex.h)
+    if(CLR_DUMP_ENUMERATOR_PATH)
+        target_compile_definitions(runtimeinfo PRIVATE OMIT_DAC_DBI_INDEX)
+    else()
+        generate_module_index(mscordaccore ${CMAKE_CURRENT_BINARY_DIR}/dacmoduleindex.h)
+        generate_module_index(mscordbi ${CMAKE_CURRENT_BINARY_DIR}/dbimoduleindex.h)
+    endif()
 endif()
 
 # publish runtimeinfo lib

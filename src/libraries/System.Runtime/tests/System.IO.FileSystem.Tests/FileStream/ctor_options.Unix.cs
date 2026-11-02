@@ -26,6 +26,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI does not support Unix file permissions.")]
         [InlineData(FileMode.Append)]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.OpenOrCreate)]
@@ -43,6 +44,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI does not support Unix file permissions.")]
         [InlineData(FileMode.Append, true)]
         [InlineData(FileMode.Create, true)]
         [InlineData(FileMode.CreateNew, true)]

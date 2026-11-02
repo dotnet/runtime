@@ -51,9 +51,8 @@
 #endif // FEATURE_TIERED_COMPILATION
 
 #if defined(HOST_UNIX)
-    // In PAL we have a mechanism that reserves memory on start up that is
-    // close to libcoreclr and intercepts calls to VirtualAlloc to serve back
-    // from this area.
+    // Minipal reserves memory near libcoreclr during startup and serves executable
+    // memory allocations from that pool.
     #define USE_LAZY_PREFERRED_RANGE       0
 #else
     // On Windows we lazily try to reserve memory close to coreclr.dll.
@@ -118,6 +117,10 @@
 #endif // PROFILING_SUPPORTED
 
 #endif // _DEBUG
+
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_REJIT) || defined(FEATURE_CODE_VERSIONING)
+#define FEATURE_INLINE_TRACKING
+#endif
 
 // This controls whether a compilation-timing feature that relies on Windows APIs, if available, else direct
 // hardware instructions (rdtsc), for accessing high-resolution hardware timers is enabled. This is disabled

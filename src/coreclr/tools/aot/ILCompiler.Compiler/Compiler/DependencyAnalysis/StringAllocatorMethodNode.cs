@@ -46,20 +46,15 @@ namespace ILCompiler.DependencyAnalysis
             _constructorMethod = constructorMethod;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList result = new DependencyList();
-
-            result.Add(
+            sink.Add(
                 factory.ConstructedTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
                 "String constructor call");
-            result.Add(
+            sink.Add(
                 factory.MethodEntrypoint(_allocationMethod),
                 "String constructor call");
-
-            factory.MetadataManager.GetDependenciesDueToMethodCodePresence(ref result, factory, _constructorMethod, methodIL: null);
-
-            return result;
+            factory.MetadataManager.GetDependenciesDueToMethodCodePresence(sink, factory, _constructorMethod, methodIL: null);
         }
 
         public override bool HasConditionalStaticDependencies => false;
@@ -67,8 +62,8 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 

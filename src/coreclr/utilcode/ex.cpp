@@ -81,7 +81,7 @@ void Exception::operator delete(void* ptr)
 #endif
 
 //------------------------------------------------------------------------------
-void Exception::Delete(Exception* pvMemory)
+void Exception::Delete(Exception* pvMemory) noexcept
 {
     CONTRACTL
     {
@@ -213,7 +213,7 @@ BOOL Exception::IsTransient(HRESULT hr)
 //------------------------------------------------------------------------------
 // Functions to manage the preallocated exceptions.
 // Virtual
-BOOL Exception::IsPreallocatedException()
+BOOL Exception::IsPreallocatedException() noexcept
 {   // Most exceptions can't be preallocated.  If they can be, their class
     //  should provide a virtual override of this function.
     return FALSE;

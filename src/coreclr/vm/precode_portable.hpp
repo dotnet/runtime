@@ -30,6 +30,7 @@ private:
     MethodDesc* _pMD;
     Volatile<void*> _pInterpreterData;
 
+    // [cDAC] [ExecutionManager]: Contract depends on the value of kPrefersInterpreterEntryPoint.
     enum PortableEntryPointFlag
     {
         kNone = 0,
@@ -54,6 +55,13 @@ public: // static
     static PortableEntryPoint* ToPortableEntryPoint(PCODE addr);
 
 public:
+    MethodDesc* GetMethodDescIfExists() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return _pMD;
+    }
+
     void Init(MethodDesc* pMD);
     void Init(void* nativeEntryPoint);
     void Init_WithInterpreterThunk(void* nativeEntryPoint, MethodDesc* pMD);
@@ -257,7 +265,9 @@ static_assert(offsetof(ClosedStaticRetBufPortableEntryPoint, _entryPoint) == TAR
 template<>
 struct cdac_data<PortableEntryPoint>
 {
+    static constexpr size_t ActualCode = offsetof(PortableEntryPoint, _pActualCode);
     static constexpr size_t MethodDesc = offsetof(PortableEntryPoint, _pMD);
+    static constexpr size_t Flags = offsetof(PortableEntryPoint, _flags);
 
     static_assert(offsetof(PortableEntryPoint, _pActualCode) == 0, "CLR ABI requires _pActualCode to be at offset 0 of PortableEntryPoint");
 };

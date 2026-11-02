@@ -67,7 +67,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
         public TransformManyBlock(Func<TInput, IEnumerable<TOutput>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions)
         {
-            if (transform == null) throw new ArgumentNullException(nameof(transform));
+            ArgumentNullException.ThrowIfNull(transform);
             Initialize(messageWithId => ProcessMessage(transform, messageWithId), dataflowBlockOptions, ref _source, ref _target, ref _reorderingBuffer, TargetCoreOptions.None);
         }
 
@@ -91,7 +91,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
         public TransformManyBlock(Func<TInput, Task<IEnumerable<TOutput>>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions)
         {
-            if (transform == null) throw new ArgumentNullException(nameof(transform));
+            ArgumentNullException.ThrowIfNull(transform);
             Initialize(messageWithId => ProcessMessageWithTask(transform, messageWithId), dataflowBlockOptions, ref _source, ref _target, ref _reorderingBuffer, TargetCoreOptions.UsesAsyncCompletion);
         }
 
@@ -103,7 +103,7 @@ namespace System.Threading.Tasks.Dataflow
             ref ReorderingBuffer<IEnumerable<TOutput>>? reorderingBuffer,
             TargetCoreOptions targetCoreOptions)
         {
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            ArgumentNullException.ThrowIfNull(dataflowBlockOptions);
 
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();

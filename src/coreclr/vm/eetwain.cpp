@@ -2311,7 +2311,9 @@ OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
 {
     PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
     TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
-    return *dac_cast<PTR_OBJECTREF>(baseStackSlot);
+    // Read the slot as a raw pointer: interpreter stack slots are not viewed through checked
+    // OBJECTREFs (see LOCAL_VAR_OBJREF in interpexec.cpp).
+    return ObjectToOBJECTREF(*dac_cast<PTR_PTR_Object>(baseStackSlot));
 }
 
 PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,

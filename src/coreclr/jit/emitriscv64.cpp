@@ -369,6 +369,8 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
         // If immediate does not fit to store immediate 12 bits, construct necessary value in rsRsvdReg()
         // and keep tmpReg hint value unchanged.
         assert(isValidSimm20((imm + 0x800) >> 12));
+        // The value being stored must not live in rsRsvdReg(), it would be overwritten by the address
+        assert(reg1 != codeGen->rsGetRsvdReg());
 
         emitIns_R_I(INS_lui, EA_PTRSIZE, codeGen->rsGetRsvdReg(), (imm + 0x800) >> 12);
         emitIns_R_R_R(INS_add, EA_PTRSIZE, codeGen->rsGetRsvdReg(), codeGen->rsGetRsvdReg(), reg2);
@@ -1865,7 +1867,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         if (doEmit)
         {
             assert(!emitGeneratingPrologOrFuncletProlog() && !emitGeneratingEpilogOrFuncletEpilog());
-            auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
+            auto constAddr = emitDataConst(&originalImm, sizeof(originalImm), sizeof(originalImm), TYP_LONG);
             emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, m_compiler->eeFindJitDataOffs(constAddr));
         }
         return -1;

@@ -43,7 +43,7 @@ using Xunit;
 
 namespace MonoTests.System.Runtime.Caching
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "HostFileChangeMonitor is not supported on Browser/iOS/tvOS")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "HostFileChangeMonitor is not supported on Browser/WASI/iOS/tvOS")]
     public class HostFileChangeMonitorTest
     {
         [Fact]

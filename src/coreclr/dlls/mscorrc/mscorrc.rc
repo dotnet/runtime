@@ -312,6 +312,7 @@ BEGIN
 #endif
 
     IDS_CLASSLOAD_GENERAL                   "Could not load type '%1' from assembly '%2'."
+    IDS_CLASSLOAD_TYPE_NOT_CREATED          "Could not load type '%1' from assembly '%2' because it has not been created. Call CreateType() on its TypeBuilder or EnumBuilder before using it."
     IDS_CLASSLOAD_TYPESPEC                  "Could not load TypeSpec from assembly '%2'."
     IDS_CLASSLOAD_SEALEDPARENT              "Could not load type '%1' from assembly '%2' because the parent type is sealed."
     IDS_CLASSLOAD_BADFORMAT                 "Could not load type '%1' from assembly '%2' because the format is invalid."
@@ -444,8 +445,6 @@ BEGIN
     IDS_EE_THREAD_ABORT                     "Thread was being aborted."
     IDS_EE_THREAD_INTERRUPTED               "Thread was interrupted from a waiting state."
     IDS_EE_OUT_OF_MEMORY                    "Insufficient memory to continue the execution of the program."
-
-    IDS_EE_OUT_OF_MEMORY_WITHIN_RANGE       "Insufficient memory within specified address space range to continue the execution of the program."
 
     IDS_EE_ARRAY_DIMENSIONS_EXCEEDED        "Array dimensions exceeded supported range."
 

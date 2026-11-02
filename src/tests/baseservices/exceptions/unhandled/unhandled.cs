@@ -5,6 +5,7 @@ using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using TestLibrary;
 
@@ -88,6 +89,18 @@ namespace TestUnhandledException
                 Thread t = new Thread(() => throw new ThreadInterruptedException("Test"));
                 t.Start();
                 t.Join();
+            }
+            else if (args[0] == "failfastreport")
+            {
+                Console.OutputEncoding = Encoding.GetEncoding(args[3]);
+                if (bool.Parse(args[2]))
+                {
+                    Environment.FailFast("exception report", new Exception(args[1]));
+                }
+                else
+                {
+                    Environment.FailFast(args[1]);
+                }
             }
         }
     }

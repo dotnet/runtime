@@ -10,7 +10,6 @@ namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties used to compress and decompress streams by using the Zstandard data format specification.</summary>
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed partial class ZstandardStream : Stream
     {
         private const int DefaultInternalBufferSize = 65536; // 64KB default buffer
@@ -66,13 +65,21 @@ namespace System.IO.Compression
             _leaveOpen = leaveOpen;
             _mode = mode;
 
-            if (mode == CompressionMode.Compress)
+            try
             {
-                _encoder = new ZstandardEncoder();
+                if (mode == CompressionMode.Compress)
+                {
+                    _encoder = new ZstandardEncoder();
+                }
+                else
+                {
+                    _decoder = new ZstandardDecoder();
+                }
             }
-            else
+            catch
             {
-                _decoder = new ZstandardDecoder();
+                _buffer.Dispose();
+                throw;
             }
         }
 
@@ -98,13 +105,21 @@ namespace System.IO.Compression
             _mode = mode;
             _leaveOpen = leaveOpen;
 
-            if (mode == CompressionMode.Compress)
+            try
             {
-                _encoder = new ZstandardEncoder(dictionary);
+                if (mode == CompressionMode.Compress)
+                {
+                    _encoder = new ZstandardEncoder(dictionary);
+                }
+                else
+                {
+                    _decoder = new ZstandardDecoder(dictionary);
+                }
             }
-            else
+            catch
             {
-                _decoder = new ZstandardDecoder(dictionary);
+                _buffer.Dispose();
+                throw;
             }
         }
 

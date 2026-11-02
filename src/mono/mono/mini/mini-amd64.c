@@ -4075,6 +4075,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IREM_IMM:
 			mono_decompose_op_imm (cfg, bb, ins);
 			break;
+		case OP_ADD_IMM:
+		case OP_LADD_IMM:
+			if (!amd64_use_imm32 (ins->inst_imm)) {
+				NEW_INS (cfg, ins, temp, OP_I8CONST);
+				temp->inst_c0 = ins->inst_imm;
+				temp->dreg = mono_alloc_ireg (cfg);
+				ins->opcode = OP_LADD;
+				ins->sreg2 = temp->dreg;
+			}
+			break;
 		case OP_COMPARE_IMM:
 		case OP_LCOMPARE_IMM:
 			if (!amd64_use_imm32 (ins->inst_imm)) {

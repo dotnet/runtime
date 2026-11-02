@@ -1822,7 +1822,6 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     //
     GenTree* const stackLocalAddr = m_compiler->gtNewLclAddrNode(lclNum, 0);
     newArr->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(stackLocalAddr).WellKnown(WellKnownArg::StackArrayLocal));
-    newArr->gtCallMoreFlags |= GTF_CALL_M_STACK_ARRAY;
 
     // Retype the call result as an unmanaged pointer
     //
@@ -2340,7 +2339,8 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 }
                 else if (call->IsDelegateInvoke())
                 {
-                    if (tree == call->gtArgs.GetThisArg()->GetNode())
+                    // Explicit tail calls may use helpers that need the delegate after this frame returns.
+                    if (!call->IsTailPrefixedCall() && (tree == call->gtArgs.GetThisArg()->GetNode()))
                     {
                         JITDUMP("Delegate invoke this...\n");
                         canLclVarEscapeViaParentStack = false;

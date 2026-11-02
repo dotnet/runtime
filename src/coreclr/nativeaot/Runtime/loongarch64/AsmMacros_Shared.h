@@ -5,3 +5,7 @@
 
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
+
+.macro TAILCALL_GC_POLL_RARE
+        b       C_FUNC(RhpGcPollRare)
+.endm

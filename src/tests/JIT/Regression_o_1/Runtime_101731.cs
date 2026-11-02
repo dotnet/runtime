@@ -121,4 +121,15 @@ public static class Runtime_101731
         float expectedValue = float.ReciprocalSqrtEstimate(value);
         Assert.Equal(expectedValue, func(value));
     }
+
+    [Theory]
+    [InlineData(4.0f, 0.25f, 0.5f, 2.0f)]
+    public static void TestHalfEstimates(float value, float reciprocal, float reciprocalSqrt, float sqrt)
+    {
+        Half half = (Half)value;
+
+        Assert.InRange((float)Half.ReciprocalEstimate(half), reciprocal - 0.01f, reciprocal + 0.01f);
+        Assert.InRange((float)Half.ReciprocalSqrtEstimate(half), reciprocalSqrt - 0.01f, reciprocalSqrt + 0.01f);
+        Assert.Equal((Half)sqrt, Half.Sqrt(half));
+    }
 }

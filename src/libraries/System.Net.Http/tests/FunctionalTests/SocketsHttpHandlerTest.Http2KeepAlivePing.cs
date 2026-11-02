@@ -32,7 +32,7 @@ namespace System.Net.Http.Functional.Tests
         private TaskCompletionSource _serverFinished = new TaskCompletionSource();
         private bool _sendPingResponse = true;
 
-        private static Http2Options NoAutoPingResponseHttp2Options => new Http2Options() { EnableTransparentPingResponse = false };
+        private static Http2Options NoAutoPingResponseHttp2Options => new Http2Options() { EnableTransparentPingResponse = false, EnsureThreadSafeIO = true };
 
         private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(60);
 
@@ -92,7 +92,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(_pingCounter <= 1);
 
                 await TerminateLoopbackConnectionAsync();
-            });
+            }, new Http2Options { EnsureThreadSafeIO = true });
         }
 
         [OuterLoop("Runs long")]
@@ -566,7 +566,6 @@ namespace System.Net.Http.Functional.Tests
             }
 
             _output?.WriteLine("ProcessIncomingFramesAsync finished");
-            await _connection.DisposeAsync();
         }
 
         private async Task EstablishConnectionAsync(Http2LoopbackServer server, params SettingsEntry[] settingsEntries)
@@ -580,6 +579,7 @@ namespace System.Net.Http.Functional.Tests
             _serverFinished.SetResult();
             _incomingFramesCts.Cancel();
             await _incomingFramesTask;
+            await _connection.DisposeAsync();
         }
 
         private async Task GuardConnectionWriteAsync(Func<Task> action, CancellationToken cancellationToken = default)

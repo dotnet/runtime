@@ -17,6 +17,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     // maps CodeBlockHandle.Address (which is the CodeHeaderAddress) to the CodeBlock
     private readonly Dictionary<TargetPointer, CodeBlock> _codeInfos = new();
+    private readonly Dictionary<TargetCodePointer, RangeSection> _rangeSections = new();
     private readonly TargetPointer _topRangeSectionMapAddress;
     private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionMapLookup;
     private readonly EEJitManager _eeJitManager;
@@ -24,6 +25,13 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     private readonly InterpreterJitManager _interpreterJitManager;
     private readonly CachedValue<TargetPointer> _thePreStub;
     private readonly TargetPointer _virtualIPRangeListAddress;
+    private WasmFunctionTableIndexLookup? _wasmFunctionTableIndexLookup;
+
+    // Mirrors PortableEntryPoint::kPrefersInterpreterEntryPoint in src/coreclr/vm/precode_portable.hpp.
+    private const int PortableEntryPointPrefersInterpreterEntryPoint = 0x4;
+
+    // Mirrors INTERPRETER_CODE_POISON in src/coreclr/vm/method.hpp.
+    private const ulong InterpreterCodePoison = 1;
 
     public ExecutionManagerCore(Target target, TargetPointer topRangeSectionMapAddress)
     {
@@ -46,6 +54,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         _thePreStub.Clear();
         _codeInfos.Clear();
+        _rangeSections.Clear();
     }
 
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
@@ -55,12 +64,14 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         public TargetPointer MethodDescAddress { get; }
         public TargetPointer JitManagerAddress { get; }
         public TargetNUInt RelativeOffset { get; }
-        public CodeBlock(TargetPointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset, TargetPointer jitManagerAddress)
+        public RangeSection RangeSection { get; }
+        public CodeBlock(TargetPointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset, RangeSection rangeSection)
         {
             StartAddress = startAddress;
             MethodDescAddress = methodDesc;
             RelativeOffset = relativeOffset;
-            JitManagerAddress = jitManagerAddress;
+            JitManagerAddress = rangeSection.Data!.JitManager;
+            RangeSection = rangeSection;
         }
 
         public bool Valid => JitManagerAddress != TargetPointer.Null;
@@ -272,6 +283,19 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         }
     }
 
+    private RangeSection FindRangeSection(TargetCodePointer ip)
+    {
+        if (_rangeSections.TryGetValue(ip, out RangeSection? range))
+            return range;
+
+        range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, ip);
+        // Virtual-IP lookup also returns an empty range for unreadable memory. Allow those lookups to retry.
+        if (range.Data is not null)
+            _rangeSections.Add(ip, range);
+
+        return range;
+    }
+
     private JitManager? GetJitManager(RangeSection rangeSection)
     {
         if (rangeSection.IsInterpreter)
@@ -294,7 +318,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     private CodeBlock? GetCodeBlock(TargetCodePointer jittedCodeAddress)
     {
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, jittedCodeAddress);
+        RangeSection range = FindRangeSection(jittedCodeAddress);
         if (range.Data == null)
         {
             return null;
@@ -387,7 +411,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             Data.PortableEntryPoint portableEntryPoint = _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(entrypoint.AsTargetPointer);
             return portableEntryPoint.MethodDesc;
         }
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, entrypoint);
+        RangeSection range = FindRangeSection(entrypoint);
         if (range.Data == null)
             return TargetPointer.Null;
         if (range.IsRangeList)
@@ -416,6 +440,64 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             }
         }
         return TargetPointer.Null;
+    }
+
+    TargetCodePointer IExecutionManager.GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer entryPoint)
+    {
+        if (entryPoint == TargetCodePointer.Null)
+            return entryPoint;
+
+        if (!_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints))
+            return _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(entryPoint);
+
+        try
+        {
+            return GetDiagnosticCodeStartFromPortableEntryPoint(entryPoint);
+        }
+        catch (VirtualReadException)
+        {
+            return entryPoint;
+        }
+    }
+
+    // Mirrors the FEATURE_PORTABLE_ENTRYPOINTS paths of GetInterpreterCodeFromEntryPointIfPresent and
+    // GetDiagnosticCodeStartFromEntryPoint in src/coreclr/vm/precode.cpp.
+    private TargetCodePointer GetDiagnosticCodeStartFromPortableEntryPoint(TargetCodePointer entryPoint)
+    {
+        // An address in a code range (including a Wasm R2R virtual IP) is already a code start.
+        RangeSection range = FindRangeSection(entryPoint);
+        if (range.Data != null)
+            return entryPoint;
+
+        Data.PortableEntryPoint portableEntryPoint = _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(entryPoint.AsTargetPointer);
+        if (portableEntryPoint.MethodDesc == TargetPointer.Null)
+            return entryPoint;
+
+        Data.MethodDesc methodDesc = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(portableEntryPoint.MethodDesc);
+        if (methodDesc.InterpreterCode is TargetPointer interpreterCode
+            && interpreterCode != TargetPointer.Null
+            && interpreterCode.Value != InterpreterCodePoison)
+        {
+            return new TargetCodePointer(interpreterCode);
+        }
+
+        // Native R2R portable entry points store a Wasm function-table index rather than an address
+        // registered with the ExecutionManager. Map it to the corresponding synthetic virtual IP. As in
+        // native code, this applies only to the method's own portable entry point, which is currently
+        // its temporary entry point.
+        if (portableEntryPoint.ActualCode == TargetPointer.Null
+            || (portableEntryPoint.Flags & PortableEntryPointPrefersInterpreterEntryPoint) != 0
+            || methodDesc.CodeData == TargetPointer.Null
+            || _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(methodDesc.CodeData).TemporaryEntryPoint != entryPoint)
+        {
+            return entryPoint;
+        }
+
+        _wasmFunctionTableIndexLookup ??= new WasmFunctionTableIndexLookup(_target);
+        uint functionTableIndex = (uint)portableEntryPoint.ActualCode.Value;
+        return _wasmFunctionTableIndexLookup.TryGetVirtualIPBase(functionTableIndex, out ulong virtualIP)
+            ? new TargetCodePointer(virtualIP)
+            : entryPoint;
     }
 
     bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
@@ -564,7 +646,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         // The R2R range section covers the entire PE image (code + data), so this
         // works for import section addresses used by FindGCRefMap.
         TargetCodePointer codeAddr = CodePointerUtils.CodePointerFromAddress(address, _target);
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, codeAddr);
+        RangeSection range = FindRangeSection(codeAddr);
         if (range.Data is null)
             return TargetPointer.Null;
 
@@ -687,8 +769,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
             throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
 
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, codeInfoHandle.Address.Value);
-        return range;
+        return info.RangeSection;
     }
 
     private static ExceptionClauseInfo.ExceptionClauseFlags GetExceptionClauseFlags(uint flags)
@@ -814,7 +895,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     public CodeKind GetCodeKind(TargetCodePointer codeAddress)
     {
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, codeAddress);
+        RangeSection range = FindRangeSection(codeAddress);
         if (range.Data == null)
         {
             TargetPointer address = new(codeAddress.Value);

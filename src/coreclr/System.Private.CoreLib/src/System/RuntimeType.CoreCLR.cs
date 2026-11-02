@@ -2328,11 +2328,6 @@ namespace System
 #pragma warning restore CA1823
         private IntPtr m_cache;
         internal IntPtr m_handle;
-
-        internal static readonly RuntimeType ValueType = (RuntimeType)typeof(ValueType);
-
-        private static readonly RuntimeType ObjectType = (RuntimeType)typeof(object);
-        private static readonly RuntimeType StringType = (RuntimeType)typeof(string);
         #endregion
 
         #region Constructor
@@ -3264,7 +3259,7 @@ namespace System
             // pretty much everything is a subclass of object, even interfaces
             // notice that interfaces are really odd because they do not have a BaseType
             // yet IsSubclassOf(typeof(object)) returns true
-            if (rtType == ObjectType && rtType != this)
+            if (rtType == typeof(object) && rtType != this)
                 return true;
 
             return false;
@@ -3536,13 +3531,12 @@ namespace System
                 {
                     // The open generic Nullable<> is also classified as Nullable, and a constructed
                     // Nullable<T> instantiated over a generic variable holds a TypeDesc (not a
-                    // MethodTable*) in InstantiationArg0(). Fall back to managed reflection in
-                    // those cases.
+                    // MethodTable*) for its argument. Fall back to managed reflection in those cases.
                     if (pMT->ContainsGenericVariables)
                     {
                         return GetGenericArguments()[0];
                     }
-                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->InstantiationArg0());
+                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->NullableType.AsMethodTable());
                     GC.KeepAlive(this);
                     return result;
                 }

@@ -355,5 +355,59 @@ namespace System.Net.Mime.Tests
                 CultureInfo.CurrentCulture = origCulture;
             }
         }
+
+        [Theory]
+        [InlineData("=?utf-8?B?SGVsbG8=?=")]
+        [InlineData("=?utf-8?Q?Hello=20world?=")]
+        [InlineData("=?utf-8?B?SGVsbG8=?=\r\n =?utf-8?B?d29ybGQ=?=")]
+        [InlineData("=?utf-8?Q?foo?=?bar\"; filename=\"foo.txt")]
+        [InlineData("=?utf-8?B?Zm9v?=\"; filename=\"foo.txt")]
+        [InlineData("=?utf-8?Q?foo\"; filename=\"foo.txt?=")]
+        [InlineData("=?utf-8?Q?foo\"bar?=")]
+        [InlineData("=?utf-8?B?Zm9v?=trailing")]
+        public static void FileName_ParsingSerialization_Roundtrip(string encoded)
+        {
+            var cd = new ContentDisposition();
+            cd.FileName = encoded;
+
+            // Property roundtrip
+            Assert.Equal(encoded, cd.FileName);
+
+            // Serialize/deserialize roundtrip
+            string serialized = cd.ToString();
+            var reparsed = new ContentDisposition(serialized);
+            Assert.Equal(encoded, reparsed.FileName);
+
+            Assert.Equal(cd.Parameters.Count, reparsed.Parameters.Count);
+        }
+
+        [Theory]
+        [InlineData("inline")]
+        [InlineData("attachment")]
+        [InlineData("foo")]
+        [InlineData("foo_bar")]
+        [InlineData("foo@bar")]
+        public void ContentDisposition_Type_Validation_Valid(string dispositionType)
+        {
+            var cd = new ContentDisposition();
+            cd.DispositionType = dispositionType;
+            Assert.Equal(dispositionType, cd.DispositionType);
+        }
+
+        [Theory]
+        [InlineData("foo\rbar")]
+        [InlineData("foo\nbar")]
+        [InlineData("foo\r\nbar")]
+        [InlineData("foo; abc=bar")] // You can pass this to ctor, but not to property of already parsed disposition
+        [InlineData("foo\"bar")]
+        [InlineData("fň")]
+        public void ContentDisposition_Type_Validation_Invalid(string dispositionType)
+        {
+            var cd = new ContentDisposition();
+            Assert.Throws<ArgumentException>(() =>
+            {
+                cd.DispositionType = dispositionType;
+            });
+        }
     }
 }

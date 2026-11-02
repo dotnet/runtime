@@ -87,7 +87,7 @@ namespace System.Runtime.Serialization.Json
                     ReflectionWriteArrayAttribute(jsonWriter);
 
                     PrimitiveDataContract? primitiveContractForType = PrimitiveDataContract.GetPrimitiveDataContract(collectionContract.UnderlyingType);
-                    if (primitiveContractForType != null && primitiveContractForType.UnderlyingType != Globals.TypeOfObject)
+                    if (primitiveContractForType != null && primitiveContractForType.UnderlyingType != typeof(object))
                     {
                         while (enumerator.MoveNext())
                         {

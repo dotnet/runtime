@@ -47,9 +47,6 @@
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT  g_dispatch_cache_chain_success_counter
 #endif
-    IMPORT g_pPollGC
-    IMPORT g_TrapReturningThreads
-
 #ifdef WRITE_BARRIER_CHECK
     SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
     SETALIAS g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
@@ -142,63 +139,6 @@ ThePreStubPatchLabel
         LEAF_END
 
 #ifdef FEATURE_COMINTEROP
-
-; ------------------------------------------------------------------
-; setStubReturnValue
-; w0 - size of floating point return value (MetaSig::GetFPReturnSize())
-; x1 - pointer to the return buffer in the stub frame
-    LEAF_ENTRY setStubReturnValue
-
-        cbz     w0, NoFloatingPointRetVal
-
-        ;; Float return case
-        cmp     x0, #4
-        bne     LNoFloatRetVal
-        ldr     s0, [x1]
-        ret
-LNoFloatRetVal
-
-        ;; Double return case
-        cmp     w0, #8
-        bne     LNoDoubleRetVal
-        ldr     d0, [x1]
-        ret
-LNoDoubleRetVal
-
-        ;; Float HFA return case
-        cmp     w0, #16
-        bne     LNoFloatHFARetVal
-        ldp     s0, s1, [x1]
-        ldp     s2, s3, [x1, #8]
-        ret
-LNoFloatHFARetVal
-
-        ;;Double HFA return case
-        cmp     w0, #32
-        bne     LNoDoubleHFARetVal
-        ldp     d0, d1, [x1]
-        ldp     d2, d3, [x1, #16]
-        ret
-LNoDoubleHFARetVal
-
-        ;;Vector HVA return case
-        cmp     w3, #64
-        bne     LNoVectorHVARetVal
-        ldp     q0, q1, [x1]
-        ldp     q2, q3, [x1, #32]
-        ret
-LNoVectorHVARetVal
-
-        EMIT_BREAKPOINT ; Unreachable
-
-NoFloatingPointRetVal
-
-        ;; Restore the return value from retbuf
-        ldr     x0, [x1]
-        ldr     x1, [x1, #8]
-        ret
-
-    LEAF_END
 
 ; ------------------------------------------------------------------
 ; COM to CLR stub called the first time a particular method is invoked.
@@ -316,39 +256,6 @@ OnHijackTripThreadReturn
     NESTED_END
 
 #endif ; FEATURE_HIJACK
-
-; void* PacStripPtr(void *);
-; This function strips the pointer of PAC info that is passed as an argument.
-; We prefer to strip a pointer where it's not going to be used to branch execution to.
-; It is a no-op on non-PAC enabled machines.
-    NESTED_ENTRY PacStripPtr
-        PROLOG_SAVE_REG_PAIR fp, lr, #-16!
-        mov lr, x0
-        DCD     0xD50320FF  ; xpaclri instruction in binary to avoid requiring PAC-enabled assemblers
-        mov x0, lr
-        EPILOG_RESTORE_REG_PAIR fp, lr, #16!
-        EPILOG_RETURN
-    NESTED_END
-
-; void* PacSignPtr(void *, void *);
-; This function signs the input pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
-    LEAF_ENTRY PacSignPtr
-        mov x17, x0
-        mov x16, x1
-        DCD 0xD503215F  ; pacib1716 instruction in binary to avoid error while compiling with non-PAC enabled compilers
-        mov x0, x17
-        ret
-    LEAF_END PacSignPtr
-
-; void* PacAuthPtr(void *, void *);
-; This function authenticates the input signed-pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
-    LEAF_ENTRY PacAuthPtr
-        mov x17, x0
-        mov x16, x1
-        DCD 0xD50321DF  ; autib1716 instruction in binary to avoid error while compiling with non-PAC enabled compilers
-        mov x0, x17
-        ret
-    LEAF_END PacAuthPtr
 
 ;; ------------------------------------------------------------------
 ;; Redirection Stub for GC in fully interruptible method
@@ -835,17 +742,6 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     NESTED_END
 
 #endif ; FEATURE_SPECIAL_USER_MODE_APC
-
-    LEAF_ENTRY  JIT_PollGC
-        ldr     x9, =g_TrapReturningThreads
-        ldr     w9, [x9]
-        cbnz    w9, JIT_PollGCRarePath
-        ret
-JIT_PollGCRarePath
-        ldr     x9, =g_pPollGC
-        ldr     x9, [x9]
-        br x9
-    LEAF_END
 
 ;x0 -This pointer
 ;x1 -ReturnBuffer
