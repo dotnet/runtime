@@ -30,6 +30,7 @@
 #include "fieldmarshaler.h"
 #include "versionresilienthashcode.h"
 #include "typehashingalgorithms.h"
+#include "contractimpl.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
@@ -324,6 +325,188 @@ InterpreterCalliCookie MethodDesc::GetCalliCookie()
 #endif // FEATURE_INTERPRETER
 
 #endif //!DACCESS_COMPILE
+
+PTR_BYTE MethodDesc::GetGCRefMap()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    PTR_MethodDescCodeData codeData = VolatileLoad(&m_codeData);
+    return codeData != nullptr ? VolatileLoad(&codeData->GCRefMap) : nullptr;
+}
+
+static PTR_BYTE GetShareableGCRefMap(MethodDesc* pMD)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (pMD == nullptr || pMD->HasMethodInstantiation() || pMD->RequiresInstArg())
+        return nullptr;
+    return pMD->GetGCRefMap();
+}
+
+static PTR_BYTE FindGCRefMapForSlot(MethodTable* pMT, DWORD slot)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    do
+    {
+        // Publication stays on the resolved declaration. Overrides can therefore hold
+        // a map even when the method that originally introduced the slot does not.
+        for (MethodTable::IntroducedMethodIterator it(pMT, FALSE); it.IsValid(); it.Next())
+        {
+            MethodDesc* pMD = it.GetMethodDesc();
+            if (pMD->GetSlot() == slot && !pMD->IsUnboxingStub())
+            {
+                PTR_BYTE map = GetShareableGCRefMap(pMD);
+                if (map != nullptr)
+                    return map;
+            }
+        }
+        if (pMT->IsInterface() || slot >= pMT->GetNumVirtuals())
+            break;
+        pMT = pMT->GetParentMethodTable();
+    }
+    while (pMT != nullptr && slot < pMT->GetNumVirtuals());
+
+    return nullptr;
+}
+
+static bool IsSameGCRefMapImplementation(MethodDesc* pMethod, MethodDesc* pCandidate)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return pCandidate != nullptr && pMethod->HasSameMethodDefAs(pCandidate) &&
+        pMethod->GetMethodTable()->GetCanonicalMethodTable() == pCandidate->GetMethodTable()->GetCanonicalMethodTable();
+}
+
+PTR_BYTE MethodDesc::CacheGCRefMapIfCodeDataExists(PTR_BYTE pGCRefMap)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#ifndef DACCESS_COMPILE
+    // Lookup runs under frame/GC contracts: never allocate code data or make pages writable.
+    PTR_MethodDescCodeData codeData = VolatileLoad(&m_codeData);
+    if (codeData != nullptr && !RequiresInstArg())
+        InterlockedCompareExchangeT(&codeData->GCRefMap, pGCRefMap, nullptr);
+#endif // !DACCESS_COMPILE
+    return pGCRefMap;
+}
+
+PTR_BYTE MethodDesc::FindGCRefMap(MethodTable* pReceiverMT, bool isDispatch)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // Dispatch suppresses hidden instantiation arguments; exact method-entry frames do not.
+    PTR_BYTE map = isDispatch ? GetShareableGCRefMap(this) : GetGCRefMap();
+    if (map != nullptr)
+        return map;
+
+    if (HasMethodInstantiation() || (!isDispatch && RequiresInstArg()))
+        return nullptr;
+
+    if (IsStatic())
+        return nullptr;
+
+    MethodTable* pOwner = GetMethodTable();
+    map = FindGCRefMapForSlot(pOwner, GetSlot());
+    if (map != nullptr)
+        return CacheGCRefMapIfCodeDataExists(map);
+
+    if (pReceiverMT == nullptr)
+        pReceiverMT = pOwner;
+    if (pReceiverMT->IsInterface())
+        return nullptr;
+
+    MethodDesc* pImplementation = this;
+    if (pOwner->IsInterface())
+    {
+        // Interface and class slot numbers occupy different spaces. Find the implementation
+        // before looking for other declarations unified with its class slot.
+        bool found = false;
+        for (MethodTable* pMT = pReceiverMT; pMT != nullptr && !found; pMT = pMT->GetParentMethodTable())
+        {
+            for (DispatchMap::EncodedMapIterator it(pMT->GetDispatchMap()); it.IsValid(); it.Next())
+            {
+                DispatchMapEntry* entry = it.Entry();
+                if (entry->GetSlotNumber() == GetSlot() &&
+                    pMT->GetInterfaceMap()[entry->GetTypeID().GetInterfaceNum()].GetMethodTable() == pOwner)
+                {
+                    MethodDesc* pTarget = pReceiverMT->GetMethodDescForSlot_NoThrow(entry->GetTargetSlotNumber());
+                    if (pTarget != nullptr)
+                    {
+                        pImplementation = pTarget;
+                        found = true;
+                    }
+                    break;
+                }
+            }
+        }
+        if (!found)
+            return nullptr;
+        map = FindGCRefMapForSlot(pImplementation->GetMethodTable(), pImplementation->GetSlot());
+        if (map != nullptr)
+            return CacheGCRefMapIfCodeDataExists(map);
+    }
+
+    for (MethodTable* pMT = pReceiverMT; pMT != nullptr; pMT = pMT->GetParentMethodTable())
+    {
+        DispatchMap* dispatchMap = pMT->GetDispatchMap();
+        if (dispatchMap == nullptr)
+            continue;
+
+        UINT32 source, target;
+        DispatchMap::ClassSlotIterator aliases(dispatchMap);
+        while (aliases.Next(&source, &target))
+        {
+            // The current receiver's final vtable incorporates inherited, chained unification.
+            MethodDesc* pSource = pReceiverMT->GetMethodDescForSlot_NoThrow(source);
+            MethodDesc* pTarget = pReceiverMT->GetMethodDescForSlot_NoThrow(target);
+            if (IsSameGCRefMapImplementation(pImplementation, pSource) ||
+                IsSameGCRefMapImplementation(pImplementation, pTarget))
+            {
+                map = FindGCRefMapForSlot(pMT, source);
+                if (map != nullptr)
+                    return CacheGCRefMapIfCodeDataExists(map);
+                map = FindGCRefMapForSlot(pMT, target);
+                if (map != nullptr)
+                    return CacheGCRefMapIfCodeDataExists(map);
+            }
+        }
+
+        for (DispatchMap::EncodedMapIterator it(dispatchMap); it.IsValid(); it.Next())
+        {
+            DispatchMapEntry* entry = it.Entry();
+            MethodDesc* pTarget = pReceiverMT->GetMethodDescForSlot_NoThrow(entry->GetTargetSlotNumber());
+            if (!IsSameGCRefMapImplementation(pImplementation, pTarget))
+                continue;
+            MethodTable* pInterface = pMT->GetInterfaceMap()[entry->GetTypeID().GetInterfaceNum()].GetMethodTable();
+            map = FindGCRefMapForSlot(pInterface, entry->GetSlotNumber());
+            if (map != nullptr)
+                return CacheGCRefMapIfCodeDataExists(map);
+        }
+    }
+    return nullptr;
+}
+
+#ifndef DACCESS_COMPILE
+void MethodDesc::SetGCRefMap(PTR_BYTE pGCRefMap)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+    _ASSERTE(pGCRefMap != nullptr);
+
+    // The map belongs to a non-collectible ReadyToRun image and outlives this MethodDesc.
+    if (GetGCRefMap() == nullptr)
+    {
+        IfFailThrow(EnsureCodeDataExists(nullptr));
+        InterlockedCompareExchangeT(&m_codeData->GCRefMap, pGCRefMap, nullptr);
+    }
+}
+#endif // !DACCESS_COMPILE
 
 #ifdef FEATURE_CODE_VERSIONING
 PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
@@ -1438,8 +1621,7 @@ ReturnKind MethodDesc::GetReturnKind()
             break;
 
         case ELEMENT_TYPE_VOID:
-            // String constructors return objects..
-            if (IsCtor() && GetMethodTable()->HasComponentSize())
+            if (IsObjectReturningCtor())
             {
                 return RT_Object;
             }
@@ -1876,8 +2058,7 @@ UINT MethodDesc::CbStackPop()
     MetaSig msig(this);
     ArgIterator argit(&msig);
 
-    bool fCtorOfVariableSizedObject = msig.HasThis() && (GetMethodTable() == g_pStringClass) && IsCtor();
-    if (fCtorOfVariableSizedObject)
+    if (IsStringCtor())
     {
         msig.ClearHasThis();
     }
@@ -2999,12 +3180,12 @@ void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
     WRAPPER_NO_CONTRACT;
 
     PortableEntryPoint *pep = PortableEntryPoint::ToPortableEntryPoint(entryPoint);
-    if (pep->HasNativeCode())
+    MethodDesc* pMD = pep->GetMethodDescIfExists();
+    if (pMD == nullptr)
     {
+        _ASSERTE(pep->HasNativeCode());
         return;
     }
-
-    MethodDesc* pMD = PortableEntryPoint::GetMethodDesc(entryPoint);
 
 #ifdef FEATURE_READYTORUN
     // R2R disabled: no R2R code can call this method, so no R2R->interpreter thunk is needed.
@@ -3013,6 +3194,18 @@ void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
         return;
     }
 #endif
+
+    if (!pMD->IsWrapperStub() && !pMD->IsVersionable() &&
+        PortableEntryPoint::HasNativeEntryPoint(entryPoint))
+    {
+        return;
+    }
+
+    pMD->PrepareForUseAsADependencyOfANativeImage();
+    if (pep->HasNativeCode())
+    {
+        return;
+    }
 
     void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(pMD);
     if (pPortableEntryPointToInterpreter != nullptr)
@@ -3946,6 +4139,16 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // automatically picks up any prestubs and such.
     GetMethodDescChunk()->EnumMemoryRegions(flags);
 
+    PTR_BYTE pGCRefMap = GetGCRefMap();
+    if (pGCRefMap != nullptr)
+    {
+        PTR_BYTE pEnd = pGCRefMap;
+        while ((*pEnd++ & 0x80) != 0)
+        {
+        }
+        DacEnumMemoryRegion(dac_cast<TADDR>(pGCRefMap), pEnd - pGCRefMap);
+    }
+
     if (HasPrecode())
     {
         GetPrecode()->EnumMemoryRegions(flags);
@@ -4214,11 +4417,6 @@ moveToNextToken:
         // move to next argument token
         IfFailThrowBF(ptr.SkipExactlyOne(), BFA_BAD_SIGNATURE, pModule);
     }
-
-    if (!HaveValueTypeParametersBeenWalked())
-    {
-        SetValueTypeParametersWalked();
-    }
 }
 
 PrecodeType MethodDesc::GetPrecodeType()
@@ -4252,6 +4450,95 @@ PrecodeType MethodDesc::GetPrecodeType()
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
+static void LoadNativeImageSignatureType(const SigPointer& signature, Module* pModule, const SigTypeContext* pTypeContext)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    CorElementType type = signature.PeekElemTypeClosed(pModule, pTypeContext);
+    if (type == ELEMENT_TYPE_VALUETYPE || type == ELEMENT_TYPE_TYPEDBYREF)
+    {
+        TypeHandle th = signature.GetTypeHandleThrowing(pModule, pTypeContext);
+        if (th.IsNull())
+            COMPlusThrowHR(COR_E_TYPELOAD);
+    }
+}
+
+void MethodDesc::PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (HaveNativeImageDependenciesBeenPrepared())
+        return;
+
+    if (!IsWrapperStub())
+    {
+        if (pGCRefMap != nullptr)
+        {
+            SetGCRefMap(pGCRefMap);
+            return;
+        }
+
+        if (GetGCRefMap() != nullptr)
+            return;
+    }
+
+    if (!IsWrapperStub() && !RequiresInstArg() && !HasMethodInstantiation())
+    {
+        if (!IsVersionable())
+        {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            PCODE entryPoint = GetPortableEntryPointIfExists();
+            if (entryPoint != 0 && PortableEntryPoint::HasNativeEntryPoint(entryPoint))
+                return;
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+            if (!IsVtableMethod() && IsPointingToStableNativeCode() &&
+                ExecutionManager::IsReadyToRunCode(GetNativeCode()))
+                return;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+        }
+    }
+
+    // A wrapper's incoming argument layout need not match the wrapped method's entrypoint.
+    PrepareForUseAsADependencyOfANativeImageWorker();
+}
+
+void MethodDesc::PrepareForUseAsAVirtualCallTargetOfANativeImage(PTR_BYTE pGCRefMap)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (HaveNativeImageDependenciesBeenPrepared())
+        return;
+    if (!IsStatic() && !IsCtor() && !HasMethodInstantiation() && !RequiresInstArg())
+    {
+        if (pGCRefMap != nullptr)
+        {
+            SetGCRefMap(pGCRefMap);
+            return;
+        }
+        else if (GetGCRefMap() != nullptr)
+            return;
+    }
+    PrepareForUseAsADependencyOfANativeImage();
+}
+
 void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
 {
     CONTRACTL
@@ -4262,20 +4549,17 @@ void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
     }
     CONTRACTL_END;
 
-    // This function ensures that a method is ready for use as a dependency of a native image
-    // The current requirement is only that valuetypes can be resolved to their type defs as much
-    // as is possible. (If the method is actually called, then this will not throw, but there
-    // are cases where we call this method and we are unaware if this method will actually be called
-    // or accessed as a native image dependency.) Resolving valuetypes may throw and trigger GC,
-    // so this method requires general purpose VM execution, but accepts either GC mode (MODE_ANY).
-    // Nonterminal exceptions are swallowed to avoid introducing failures.
-
-    EX_TRY
+    // Signature-scanning transition frames cannot load value-type layouts during GC.
+    // Publish completion only after the return type and every parameter have loaded successfully.
+    MetaSig sig(this);
+    LoadNativeImageSignatureType(sig.GetReturnProps(), GetModule(), sig.GetSigTypeContext());
+    for (UINT i = 0; i < sig.NumFixedArgs(); i++)
     {
-        WalkValueTypeParameters(this->GetMethodTable(), NULL, NULL);
+        sig.SkipArg();
+        LoadNativeImageSignatureType(sig.GetArgProps(), GetModule(), sig.GetSigTypeContext());
     }
-    EX_SWALLOW_NONTERMINAL
-    _ASSERTE(HaveValueTypeParametersBeenWalked());
+
+    SetNativeImageDependenciesPrepared();
 }
 
 static void CheckForEquivalenceAndLoadType(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)

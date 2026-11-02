@@ -12,6 +12,8 @@
 **
 **============================================================*/
 #include <palsuite.h>
+#include <stdlib.h>
+
 
 #define REGIONSIZE 1024
 
@@ -28,17 +30,11 @@ PALTEST(filemapping_memmgt_ProbeMemory_test1_paltest_probememory_test1, "filemap
        return FAIL;
     }
     
-    /*allocate the virtual memory*/
-    lpProcessAddress = VirtualAlloc(
-            NULL,            /*system determine where to allocate the region*/
-            REGIONSIZE,      /*specify the size*/
-            MEM_COMMIT,      /*allocation type*/
-            PAGE_READWRITE); /*access protection*/
+    lpProcessAddress = malloc(REGIONSIZE);
 
-    if(NULL == lpProcessAddress)
+    if (lpProcessAddress == NULL)
     {
-        Fail("\nFailed to call VirtualAlloc API to allocate "
-                "virtual memory, error code=%u!\n", GetLastError());
+        Fail("\nFailed to allocate memory for ProbeMemory test.\n");
     }
 
     /*probe the memory for read*/
@@ -51,13 +47,7 @@ PALTEST(filemapping_memmgt_ProbeMemory_test1_paltest_probememory_test1, "filemap
     {
         Trace("\nProbeMemory for read access FAILED\n");
 
-        /*decommit the specified region*/
-        err = VirtualFree(lpProcessAddress, REGIONSIZE, MEM_DECOMMIT);
-        if(0 == err)
-        {
-            Fail("\nFailed to call VirtualFree API, error code=%u\n", GetLastError());
-        }
-
+        free(lpProcessAddress);
         Fail("");
     }
 
@@ -71,22 +61,11 @@ PALTEST(filemapping_memmgt_ProbeMemory_test1_paltest_probememory_test1, "filemap
     {
         Trace("\nProbeMemory for write access FAILED\n");
 
-        /*decommit the specified region*/
-        err = VirtualFree(lpProcessAddress, REGIONSIZE, MEM_DECOMMIT);
-        if(0 == err)
-        {
-            Fail("\nFailed to call VirtualFree API, error code=%u\n", GetLastError());
-        }
-
+        free(lpProcessAddress);
         Fail("");
     }
 
-    /*decommit the specified region*/
-    err = VirtualFree(lpProcessAddress, REGIONSIZE, MEM_DECOMMIT);
-    if(0 == err)
-    {
-        Fail("\nFailed to call VirtualFree API, error code=%u\n", GetLastError());
-    }
+    free(lpProcessAddress);
 
     PAL_Terminate();
     return PASS;

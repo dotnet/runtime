@@ -17,9 +17,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Required for running apps built with net11.0 sdk, but the sdk does
-         not yet support *running* with net11.0 sdk -->
+    <!-- Required for running apps and tools targeting previous framework versions. -->
     <AdditionalSharedFrameworkToInstallArguments Include="-Version latest -Channel 10.0 -Quality daily" />
+    <AdditionalSharedFrameworkToInstallArguments Include="-Version latest -Channel 11.0 -Quality daily" />
 
     <DefaultPropertiesForNuGetBuild Include="TargetOS=$(TargetOSForWorkload)" />
     <DefaultPropertiesForNuGetBuild Include="TargetArchitecture=$(TargetArchitectureForWorkload)" />

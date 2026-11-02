@@ -213,6 +213,8 @@ namespace ILAssembler
 
             public EntityRegistry.MethodDefinitionEntity Definition { get; }
 
+            public SequencePointSpan? LastRejectedSequencePointSpan { get; set; }
+
             public Dictionary<string, LabelHandle> Labels { get; } = new();
 
             public Dictionary<string, IToken> UndefinedLabelReferences { get; } = new();

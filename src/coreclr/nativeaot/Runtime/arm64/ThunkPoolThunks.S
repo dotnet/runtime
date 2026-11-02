@@ -41,7 +41,8 @@
 // Thunk pool
     .text
     .p2align PAGE_SIZE_LOG2
-PATCH_LABEL ThunkPool
+    .global C_FUNC(ThunkPool)
+C_FUNC(ThunkPool):
     .rept (THUNKS_MAP_SIZE / PAGE_SIZE)
     .p2align PAGE_SIZE_LOG2
     THUNKS_PAGE_BLOCK

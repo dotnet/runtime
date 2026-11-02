@@ -15,7 +15,7 @@ namespace Wasm.Build.Tests.Blazor;
 public class AssetCachingTests : BlazorWasmTestBase
 {
     public AssetCachingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-        : base(output, buildContext)
+        : base(output, buildContext, DefaultTargetFrameworkForBlazorTemplate)
     {
     }
 
@@ -30,7 +30,12 @@ public class AssetCachingTests : BlazorWasmTestBase
             appendUnicodeToPath: false
         );
 
-        (string projectDir, string output) = BlazorPublish(project, Configuration.Release, new PublishOptions(AssertAppBundle: false));
+        (string projectDir, string output) = BlazorPublish(
+            project,
+            Configuration.Release,
+            new PublishOptions(
+                TargetFramework: DefaultTargetFrameworkForBlazorTemplate,
+                AssertAppBundle: false));
 
         var counterLoaded = new TaskCompletionSource();
 

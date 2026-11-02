@@ -1759,6 +1759,50 @@ bool MethodContext::repIsValueClass(CORINFO_CLASS_HANDLE cls)
     return value != 0;
 }
 
+void MethodContext::recIsByRefLike(CORINFO_CLASS_HANDLE cls, bool result)
+{
+    if (IsByRefLike == nullptr)
+        IsByRefLike = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = result ? 1 : 0;
+    IsByRefLike->Add(key, value);
+    DEBUG_REC(dmpIsByRefLike(key, value));
+}
+void MethodContext::dmpIsByRefLike(DWORDLONG key, DWORD value)
+{
+    printf("IsByRefLike key cls-%016" PRIX64 ", value res-%u", key, value);
+}
+bool MethodContext::repIsByRefLike(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(IsByRefLike, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpIsByRefLike(key, value));
+    return value != 0;
+}
+
+void MethodContext::recIsSharedInst(CORINFO_CLASS_HANDLE cls, bool result)
+{
+    if (IsSharedInst == nullptr)
+        IsSharedInst = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = result ? 1 : 0;
+    IsSharedInst->Add(key, value);
+    DEBUG_REC(dmpIsSharedInst(key, value));
+}
+void MethodContext::dmpIsSharedInst(DWORDLONG key, DWORD value)
+{
+    printf("IsSharedInst key cls-%016" PRIX64 ", value res-%u", key, value);
+}
+bool MethodContext::repIsSharedInst(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(IsSharedInst, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpIsSharedInst(key, value));
+    return value != 0;
+}
+
 void MethodContext::recGetClassSize(CORINFO_CLASS_HANDLE cls, unsigned result)
 {
     if (GetClassSize == nullptr)

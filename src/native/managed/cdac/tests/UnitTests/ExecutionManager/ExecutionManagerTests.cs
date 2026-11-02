@@ -522,8 +522,14 @@ public class ExecutionManagerTests
         Assert.Null(data.DelayLoadMethodCallThunks);
     }
 
-    [Fact]
-    public void GetGCInfo_R2R_WasmVirtualIPUsesLoadedImageBase()
+    [Theory]
+    [InlineData(10, 3u)]
+    [InlineData(11, 4u)]
+    [InlineData(20, 4u)]
+    [InlineData(21, 5u)]
+    [InlineData(32, 5u)]
+    [InlineData(33, 5u)]
+    public void GetGCInfo_R2R_WasmVirtualIPUsesLoadedImageBase(ushort majorVersion, uint expectedGCVersion)
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
 
@@ -545,7 +551,7 @@ public class ExecutionManagerTests
         MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([FunctionBeginAddress], []);
         r2rInfo.MinVirtualIP = VirtualIPRangeStart;
         r2rInfo.LoadedImageBase = LoadedImageBase;
-        r2rInfo.ReadyToRunHeader = emBuilder.AddReadyToRunHeader(majorVersion: 21).Address;
+        r2rInfo.ReadyToRunHeader = emBuilder.AddReadyToRunHeader(majorVersion).Address;
         emBuilder.SetRuntimeFunctionUnwindData(r2rInfo, index: 0, UnwindDataRva);
         emBuilder.Builder.AddHeapFragment(new MockMemorySpace.HeapFragment
         {
@@ -564,7 +570,7 @@ public class ExecutionManagerTests
 
         IGCInfoHandle gcInfoHandle = Mock.Of<IGCInfoHandle>();
         Mock<IGCInfo> gcInfoContract = new(MockBehavior.Strict);
-        gcInfoContract.Setup(c => c.DecodePlatformSpecificGCInfo(new TargetPointer(LoadedImageBase + UnwindDataRva + 3), 5))
+        gcInfoContract.Setup(c => c.DecodePlatformSpecificGCInfo(new TargetPointer(LoadedImageBase + UnwindDataRva + 3), expectedGCVersion))
             .Returns(gcInfoHandle);
         gcInfoContract.Setup(c => c.GetCodeLength(gcInfoHandle)).Returns(32u);
         Target target = CreateTarget(
@@ -579,7 +585,7 @@ public class ExecutionManagerTests
         Assert.NotNull(handle);
         em.GetGCInfo(handle.Value, out TargetPointer gcInfo, out uint gcVersion);
         Assert.Equal(new TargetPointer(LoadedImageBase + UnwindDataRva + 3), gcInfo);
-        Assert.Equal(5u, gcVersion);
+        Assert.Equal(expectedGCVersion, gcVersion);
         Assert.Equal(ExpectedGCInfoByte, target.Read<byte>(gcInfo));
         em.GetMethodRegionInfo(handle.Value, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
         Assert.Equal(32u, hotSize);
