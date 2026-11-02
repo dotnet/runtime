@@ -3044,6 +3044,30 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     {
         if (IsContainableUnaryOrBinaryOp(node, op2))
         {
+            if (node->OperIs(GT_ADD) && op1->OperIs(GT_CAST) && op2->OperIs(GT_CAST))
+            {
+                GenTree* source1 = op1->AsCast()->CastOp();
+                GenTree* source2 = op2->AsCast()->CastOp();
+
+                // Leave a cast with its contained load when the other extension
+                // would otherwise need a separate instruction.
+                bool preserveLoad = source2->isContained() && IsContainableMemoryOp(source2) &&
+                                    !(source1->isContained() && IsContainableMemoryOp(source1));
+
+                // Extending a narrowed long may need a separate register,
+                // whereas zero-extending the other 32-bit operand can reuse its register.
+                bool reuseRegister =
+                    node->TypeIs(TYP_LONG) && op2->IsUnsigned() && source1->TypeIs(TYP_INT) &&
+                    source2->TypeIs(TYP_INT) && source1->OperIs(GT_LCL_VAR) &&
+                    m_compiler->lvaGetDesc(source1->AsLclVar())->TypeIs(TYP_LONG) &&
+                    (!source2->OperIs(GT_LCL_VAR) || !m_compiler->lvaGetDesc(source2->AsLclVar())->TypeIs(TYP_LONG));
+                if ((preserveLoad || reuseRegister) && IsContainableUnaryOrBinaryOp(node, op1))
+                {
+                    std::swap(node->gtOp1, node->gtOp2);
+                    std::swap(op1, op2);
+                }
+            }
+
             if (node->OperIs(GT_ADD, GT_SUB, GT_CMP) && op2->OperIs(GT_CAST))
             {
                 // We want to prefer the combined op here over containment of the cast op
