@@ -35,7 +35,7 @@
         str     r9, [r4, #InlinedCallFrame__m_pSPAfterProlog]
 
         // r0 = GetThread()
-        bl      C_FUNC(GetThreadHelper)
+        INLINE_GETTHREAD
         str     r0, [r4, #InlinedCallFrame__m_pThread]
 
         // pFrame->m_Next = pThread->m_pFrame;
@@ -103,7 +103,7 @@ LOCAL_LABEL(RarePath):
 
         PROLOG_PUSH  "{r0-r4, lr}"
 
-        bl      C_FUNC(GetThreadHelper)
+        INLINE_GETTHREAD
         mov     r5, r0
 
         // set first slot to the value of InlinedCallFrame identifier (checked by runtime code)

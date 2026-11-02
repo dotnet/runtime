@@ -239,7 +239,10 @@ check_stack_helper (TransformData *td, int n)
 #define CHECK_TYPELOAD(klass) \
 	do { \
 		if (!(klass) || mono_class_has_failure (klass)) { \
-			mono_error_set_for_class_failure (error, klass); \
+			if (klass) \
+				mono_error_set_for_class_failure (error, klass); \
+			else \
+				mono_error_set_generic_error (error, "System", "TypeLoadException", ""); \
 			goto exit; \
 		} \
 	} while (0)

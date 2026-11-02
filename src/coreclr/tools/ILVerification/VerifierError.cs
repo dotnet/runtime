@@ -3,8 +3,16 @@
 
 namespace ILVerify
 {
+    /// <summary>
+    /// Identifies a problem that a <see cref="Verifier"/> found in IL or metadata.
+    /// </summary>
+    /// <remarks>
+    /// A result's <see cref="VerificationResult.Message"/> describes the error that its
+    /// <see cref="VerificationResult.Code"/> identifies.
+    /// </remarks>
     public enum VerifierError
     {
+        /// <summary>No error code; <see cref="VerificationResult.Message"/> describes the failure.</summary>
         None = 0,
         UnknownOpcode,         // Unknown opcode.
         MethodFallthrough,              // Fall through end of the method without returning.
@@ -19,7 +27,7 @@ namespace ILVerify
         LeaveOutOfFinally,              // Leave out of finally block.
         LeaveOutOfFault,                // Leave out of fault block.
         Rethrow,                        // Rethrow from outside a catch handler.
-        Endfinally,                     // Endfinally from outside a finally handler.
+        Endfinally,                     // Endfinally/endfault from outside a finally or fault handler.
         Endfilter,                      // Endfilter from outside an exception filter block.
         BranchIntoTry,                  // Branch into try block.
         BranchIntoHandler,              // Branch into exception handler block.
@@ -134,5 +142,7 @@ namespace ILVerify
         EHClauseOrder, // An exception handling clause nested in a try must precede that try's clause.
         EHClauseFilterEnd, // A filter must have exactly one endfilter as its last instruction.
         UnalignedAlignment, // Alignment specified for 'unaligned.' must be 1, 2, or 4.
+        ExpectedSignatureToken, // Expected signature token.
+        ReadOnlyInMkrefany, // A readonly ByRef cannot be used with mkrefany.
     }
 }

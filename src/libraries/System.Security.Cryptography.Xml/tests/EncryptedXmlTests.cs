@@ -1995,7 +1995,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void EncryptedXml_DecryptDocument_MaxCount_Default()
         {
             RemoteExecutor.Invoke(static () =>

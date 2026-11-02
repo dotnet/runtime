@@ -138,8 +138,7 @@ namespace ILCompiler
             }
             protected override DefaultInterfaceMethodImplementationInstantiationThunk CreateValueFromKey(DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey key)
             {
-                TypeDesc owningTypeOfThunks = ((CompilerTypeSystemContext)key.TargetMethod.Context).GeneratedAssembly.GetGlobalModuleType();
-                return new DefaultInterfaceMethodImplementationInstantiationThunk(owningTypeOfThunks, key.TargetMethod, key.InterfaceIndex, key.UseContextFromRuntime);
+                return new DefaultInterfaceMethodImplementationInstantiationThunk(key.TargetMethod, key.InterfaceIndex, key.UseContextFromRuntime);
             }
         }
         private DefaultInterfaceMethodImplementationInstantiationThunkHashtable _dimThunkHashtable = new DefaultInterfaceMethodImplementationInstantiationThunkHashtable();
@@ -166,18 +165,16 @@ namespace ILCompiler
         private sealed partial class DefaultInterfaceMethodImplementationInstantiationThunk : ILStubMethod, IPrefixMangledMethod
         {
             private readonly MethodDesc _targetMethod;
-            private readonly TypeDesc _owningType;
             private readonly int _interfaceIndex;
             private readonly bool _useContextFromRuntime;
             private readonly byte[] _prefix;
             private MethodSignature _signature;
 
-            public DefaultInterfaceMethodImplementationInstantiationThunk(TypeDesc owningType, MethodDesc targetMethod, int interfaceIndex, bool useContextFromRuntime)
+            public DefaultInterfaceMethodImplementationInstantiationThunk(MethodDesc targetMethod, int interfaceIndex, bool useContextFromRuntime)
             {
                 Debug.Assert(targetMethod.OwningType.IsInterface);
                 Debug.Assert(!targetMethod.Signature.IsStatic);
 
-                _owningType = owningType;
                 _targetMethod = targetMethod;
                 _interfaceIndex = interfaceIndex;
                 _useContextFromRuntime = useContextFromRuntime;
@@ -188,7 +185,7 @@ namespace ILCompiler
 
             public override TypeSystemContext Context => _targetMethod.Context;
 
-            public override TypeDesc OwningType => _owningType;
+            public override TypeDesc OwningType => Context.GetWellKnownType(WellKnownType.Object);
 
             public int InterfaceIndex => _interfaceIndex;
 

@@ -151,9 +151,17 @@ class SHash : public TRAITS
 
     element_t Lookup(key_t key) const;
 
-    // Pointer-based flavor of Lookup (allows efficient access to tables of structures)
-
+    // Read-only pointer-based lookup. Use Update to modify an existing element.
+    // The returned pointer refers to table storage and is invalidated by reallocation,
+    // removal of the element, or clearing the table.
     const element_t* LookupPtr(key_t key) const;
+
+    // Update the first matching element in place, returning false if no match exists.
+    // The callback must preserve the key and sentinel state, and must not structurally modify the table.
+    // It must not retain a mutable pointer or reference to the element.
+    // Callers must synchronize updates with other access to the affected element.
+    template <typename Functor>
+    bool Update(key_t key, Functor &&functor);
 
     // Add an element to the hash table.  This will never replace an element; multiple
     // elements may be stored with the same key.
@@ -252,7 +260,7 @@ private:
     // Utility function to find the first element with the given key in
     // the hash table.
 
-    static const element_t* Lookup(PTR_element_t table, count_t tableSize, key_t key);
+    static element_t* Lookup(PTR_element_t table, count_t tableSize, key_t key);
 
     // Utility function to remove the first element with the given key
     // in the hash table.

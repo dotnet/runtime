@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <minipal/descriptorlimit.h>
 
 #if defined(DEBUG) && defined(_WIN32)
@@ -22,6 +23,10 @@
 
 // Wasm currently supports a single compilation unit.
 extern "C" void* __Module;
+extern "C" char __pdata_start;
+extern "C" char __pdata_end;
+extern "C" bool RhRegisterWasmModule(void* pFunctions, uint32_t cbFunctions,
+    void** pClasslibFunctions, uint32_t nClasslibFunctions);
 
 #else // TARGET_WASM
 
@@ -109,7 +114,7 @@ static char& __unbox_z = __stop___unbox;
 
 #endif // TARGET_WASM
 
-extern "C" bool RhInitialize(bool isDll);
+extern "C" bool RhInitialize(bool isLibrary);
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 extern "C" bool RhRegisterOSModule(void * pModule,
@@ -206,9 +211,9 @@ static int InitializeRuntime()
 {
     if (!RhInitialize(
 #ifdef NATIVEAOT_DLL
-        /* isDll */ true
+        /* isLibrary */ true
 #else
-        /* isDll */ false
+        /* isLibrary */ false
 #endif
         ))
         return -1;
@@ -222,6 +227,13 @@ static int InitializeRuntime()
         (void*)&__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
         (void*)&__unbox_a, (uint32_t)((char *)&__unbox_z - (char*)&__unbox_a),
         (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
+    {
+        return -1;
+    }
+#else // TARGET_WASM
+    if (!RhRegisterWasmModule(
+        &__pdata_start, (uint32_t)(&__pdata_end - &__pdata_start),
+        (void**)&c_classlibFunctions, _countof(c_classlibFunctions)))
     {
         return -1;
     }
@@ -260,6 +272,9 @@ int main(int argc, char* argv[])
     int exitCode = __managed__Main(argc, argv);
     _cexit();
     ExitProcess(exitCode);
+#elif defined(TARGET_WASI)
+    // Returning from WASI Preview 2 main reduces the exit code to a boolean result.
+    exit(__managed__Main(argc, argv));
 #else
     return __managed__Main(argc, argv);
 #endif

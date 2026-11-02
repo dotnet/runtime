@@ -773,6 +773,10 @@ namespace ILCompiler
                 if (_disqualifiedTypes.Contains(type))
                     return null;
 
+                // Dynamic interface casts can succeed without a statically declared implementation.
+                if (type.IsInterface && _canHaveDynamicInterfaceImplementations)
+                    return null;
+
                 if (_context.IsArrayVariantCastable(type))
                     return null;
 

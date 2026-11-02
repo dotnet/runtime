@@ -12,10 +12,10 @@ namespace ILAssembler;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The PDB is a separate file beside the output (<see cref="GetPdbPath"/>), as with native ilasm.
-/// <see cref="Write"/> is called only when the assembly produced an image: when it succeeded, or despite errors with
-/// the error-tolerant option (<c>--error</c>, <c>/ERR</c>), in which case the image and PDB are handled exactly as for
-/// a successful assembly. When the assembly produces no image, the tool calls nothing here and leaves the existing
+/// The PDB is a separate file beside the output (<see cref="GetPdbPath"/>). <see cref="Write"/> is called only
+/// when the assembly produced an image: when it succeeded, or despite errors with the error-tolerant option
+/// (<c>--error</c>, <c>/ERR</c>), in which case the image and PDB are handled exactly as for a successful
+/// assembly. When the assembly produces no image, the tool calls nothing here and leaves the existing
 /// output and PDB as they are.
 /// </para>
 /// <para>

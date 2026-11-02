@@ -28,3 +28,9 @@ HRESULT ReadFromDataTarget(ICorDebugDataTarget* pDataTarget,
     ULONG64 addr,
     BYTE* pBuffer,
     ULONG32 bytesToRead);
+
+class PEReader
+{
+public:
+    static bool TryLookupSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+};

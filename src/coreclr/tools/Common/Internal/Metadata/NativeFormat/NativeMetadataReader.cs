@@ -140,20 +140,14 @@ namespace Internal.Metadata.NativeFormat
         }
     }
 
-    /// <summary>
-    /// ConstantReferenceValue can only be used to encapsulate null reference values,
-    /// and therefore does not actually store the value.
-    /// </summary>
-    public readonly partial struct ConstantReferenceValue
+    public readonly partial struct ByteCollection
     {
-        /// Always returns null value.
-        public object Value
-        { get { return null; } }
-    } // ConstantReferenceValue
+        public ReadOnlySpan<byte> AsSpan() => _reader.ReadLengthPrefixedBytes(_offset);
+    }
 
     public readonly partial struct ConstantStringValueHandle
     {
-        public bool StringEquals(string value, MetadataReader reader)
+        public bool StringEquals(ReadOnlySpan<char> value, MetadataReader reader)
         {
             return reader.StringEquals(this, value);
         }
@@ -216,7 +210,7 @@ namespace Internal.Metadata.NativeFormat
             return handle;
         }
 
-        internal bool StringEquals(ConstantStringValueHandle handle, string value)
+        internal bool StringEquals(ConstantStringValueHandle handle, ReadOnlySpan<char> value)
         {
             return _streamReader.StringEquals((uint)handle.Offset, value);
         }
@@ -228,7 +222,7 @@ namespace Internal.Metadata.NativeFormat
                 return [];
             }
 
-            return _streamReader.ReadStringAsBytes((uint)handle.Offset);
+            return _streamReader.ReadLengthPrefixedBytes((uint)handle.Offset);
         }
     }
 
