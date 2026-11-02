@@ -77,6 +77,14 @@ public:
     {
         assert((level >= GCEventLevel_None && level < GCEventLevel_Max) || level == GCEventLevel_LogAlways);
 
+#ifdef BUILD_AS_STANDALONE
+        // Older EEs lack the pause-event sink slot, even if a listener enables all keywords.
+        if (provider == GCEventProvider_Default && g_runtimeSupportedVersion.MajorVersion < GC_PAUSE_EVENT_MINIMUM_EE_VERSION)
+        {
+            keywords = static_cast<GCEventKeyword>(keywords & ~GCEventKeyword_GCPause);
+        }
+#endif // BUILD_AS_STANDALONE
+
         size_t index = static_cast<size_t>(provider);
 
         enabledLevels[index] = level;
