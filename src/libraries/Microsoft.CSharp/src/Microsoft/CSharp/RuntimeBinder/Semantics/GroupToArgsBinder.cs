@@ -301,10 +301,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 dst.carg = src.carg;
                 dst.types = src.types;
                 dst.prgexpr.Clear();
-                for (int i = 0; i < src.prgexpr.Count; i++)
-                {
-                    dst.prgexpr.Add(src.prgexpr[i]);
-                }
+                dst.prgexpr.AddRange(src.prgexpr);
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
@@ -699,10 +696,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // Success. Lets copy them in now.
-                for (int n = 0; n < index; n++)
-                {
-                    _pArguments.prgexpr.Add(pArguments[n]);
-                }
+                _pArguments.prgexpr.AddRange(pArguments.AsSpan(0, index));
                 CType[] prgTypes = new CType[@params.Count];
                 for (int n = 0; n < @params.Count; n++)
                 {

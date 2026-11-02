@@ -428,13 +428,8 @@ namespace System.Runtime.Serialization.DataContracts
                     }
                     Array.Sort(memberNames1);
                     Array.Sort(memberNames2);
-                    for (int i = 0; i < Members.Count; i++)
-                    {
-                        if (memberNames1[i] != memberNames2[i])
-                            return false;
-                    }
 
-                    return (IsFlags == enumContract.IsFlags);
+                    return memberNames1.AsSpan().SequenceEqual(memberNames2) && (IsFlags == enumContract.IsFlags);
                 }
             }
             return false;

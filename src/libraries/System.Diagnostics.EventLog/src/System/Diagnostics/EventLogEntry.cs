@@ -305,20 +305,7 @@ namespace System.Diagnostics
                 return false;
             int ourLen = IntFrom(dataBuf, bufOffset + FieldOffsets.LENGTH);
             int theirLen = IntFrom(otherEntry.dataBuf, otherEntry.bufOffset + FieldOffsets.LENGTH);
-            if (ourLen != theirLen)
-            {
-                return false;
-            }
-            int min = bufOffset;
-            int max = bufOffset + ourLen;
-            int j = otherEntry.bufOffset;
-            for (int i = min; i < max; i++, j++)
-                if (dataBuf[i] != otherEntry.dataBuf[j])
-                {
-                    return false;
-                }
-
-            return true;
+            return dataBuf.AsSpan(bufOffset, ourLen).SequenceEqual(otherEntry.dataBuf.AsSpan(otherEntry.bufOffset, theirLen));
         }
 
         private static int IntFrom(byte[] buf, int offset)

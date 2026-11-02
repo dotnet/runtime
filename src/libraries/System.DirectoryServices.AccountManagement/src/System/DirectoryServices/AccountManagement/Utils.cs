@@ -24,16 +24,7 @@ namespace System.DirectoryServices.AccountManagement
         /// <returns>true if identical, false otherwise</returns>
         internal static bool AreBytesEqual(byte[] src, byte[] tgt)
         {
-            if (src.Length != tgt.Length)
-                return false;
-
-            for (int i = 0; i < src.Length; i++)
-            {
-                if (src[i] != tgt[i])
-                    return false;
-            }
-
-            return true;
+            return src.AsSpan().SequenceEqual(tgt);
         }
 
         internal static void ClearBit(ref int value, uint bitmask)

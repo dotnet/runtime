@@ -847,18 +847,7 @@ namespace System.Xml
 
         private static bool Equals(byte[] buffer1, int offset1, int length1, byte[] buffer2, int offset2, int length2)
         {
-            if (length1 != length2)
-                return false;
-
-            for (int i = 0; i < length1; i++)
-            {
-                if (buffer1[offset1 + i] != buffer2[offset2 + i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return buffer1.AsSpan(offset1, length1).SequenceEqual(buffer2.AsSpan(offset2, length2));
         }
 
         private sealed class AttributeSorter : IComparer

@@ -116,18 +116,8 @@ namespace System.Speech.AudioFormat
             {
                 return false;
             }
-            if (_formatSpecificData.Length != refObj._formatSpecificData.Length)
-            {
-                return false;
-            }
-            for (int i = 0; i < _formatSpecificData.Length; i++)
-            {
-                if (_formatSpecificData[i] != refObj._formatSpecificData[i])
-                {
-                    return false;
-                }
-            }
-            return true;
+
+            return _formatSpecificData.AsSpan().SequenceEqual(refObj._formatSpecificData);
         }
         public override int GetHashCode()
         {

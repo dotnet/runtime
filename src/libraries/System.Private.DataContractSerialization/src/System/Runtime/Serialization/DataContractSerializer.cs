@@ -127,11 +127,7 @@ namespace System.Runtime.Serialization
 
             if (knownTypes != null)
             {
-                _knownTypeList = new List<Type>();
-                foreach (Type knownType in knownTypes)
-                {
-                    _knownTypeList.Add(knownType);
-                }
+                _knownTypeList = new List<Type>(knownTypes);
             }
 
             ArgumentOutOfRangeException.ThrowIfNegative(maxItemsInObjectGraph);

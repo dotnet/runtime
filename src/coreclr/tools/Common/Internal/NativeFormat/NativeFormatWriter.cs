@@ -1355,24 +1355,13 @@ namespace Internal.NativeFormat
                 return false;
 
             if (!Equals(_arrayElementType, other._arrayElementType) ||
-                _rank != other._rank ||
-                _bounds.Length != other._bounds.Length ||
-                _lowerBounds.Length != other._lowerBounds.Length)
+                _rank != other._rank)
             {
                 return false;
             }
-            for (int i = 0; i < _bounds.Length; i++)
-            {
-                if (_bounds[i] != other._bounds[i])
-                    return false;
-            }
-            for (int i = 0; i < _lowerBounds.Length; i++)
-            {
-                if (_lowerBounds[i] != other._lowerBounds[i])
-                    return false;
-            }
 
-            return true;
+            return _bounds.AsSpan().SequenceEqual(other._bounds) &&
+                _lowerBounds.AsSpan().SequenceEqual(other._lowerBounds);
         }
     }
 

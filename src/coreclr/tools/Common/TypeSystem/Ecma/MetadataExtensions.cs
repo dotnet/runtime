@@ -333,15 +333,7 @@ namespace Internal.TypeSystem.Ecma
             if (*(currentChar + otherString.Length) != 0)
                 return false;
 
-            // Compare characters
-            ReadOnlySpan<byte> otherSpan = otherString.AsSpan();
-            for (int i = 0; i < otherString.Length; i++)
-            {
-                if (otherSpan[i] != *(currentChar++))
-                    return false;
-            }
-
-            return true;
+            return new ReadOnlySpan<byte>(currentChar, otherString.Length).SequenceEqual(otherString.AsSpan());
         }
     }
 }
