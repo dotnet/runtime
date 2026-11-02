@@ -20,6 +20,7 @@ namespace System.Runtime.Caching
         public static readonly DateTimeOffset InfiniteAbsoluteExpiration = DateTimeOffset.MaxValue;
         public static readonly TimeSpan NoSlidingExpiration = TimeSpan.Zero;
 
+        [DisallowNull]
         public static IServiceProvider? Host
         {
             get
@@ -42,6 +43,7 @@ namespace System.Runtime.Caching
         public abstract string Name { get; }
 
         //Default indexer property
+        [DisallowNull]
         public abstract object? this[string key] { get; set; }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -78,7 +80,7 @@ namespace System.Runtime.Caching
         }
 
         public abstract object? AddOrGetExisting(string key, object value, DateTimeOffset absoluteExpiration, string? regionName = null);
-        public abstract CacheItem AddOrGetExisting(CacheItem value, CacheItemPolicy? policy);
+        public abstract CacheItem? AddOrGetExisting(CacheItem value, CacheItemPolicy? policy);
 
         public abstract object? AddOrGetExisting(string key, object value, CacheItemPolicy? policy, string? regionName = null);
 
