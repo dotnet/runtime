@@ -2883,7 +2883,9 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
 #ifdef FEATURE_SIMD
     useSimdGetElement = varTypeIsSIMD(value) && !varTypeIsSIMD(fld);
 
-    // Wasm cannot read an f64 local as v128, so it uses the bitcast path below.
+    // A float in the upper half of a double register. A float at offset 0 is retyped below, and a
+    // misaligned float uses the bitcast path. Wasm cannot read an f64 local as v128, so it always uses
+    // the bitcast path.
 #ifndef TARGET_WASM
     if (!useSimdGetElement && varTypeIsFloating(value) && varTypeIsFloating(fld) &&
         (fld->GetLclOffs() != regSegment->Offset) &&

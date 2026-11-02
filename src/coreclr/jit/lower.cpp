@@ -5388,9 +5388,11 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
         }
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-        bool supportsFloatPairInsertion = IsFloatPairFieldListRegister(use, regStart, regEnd, regType);
-#else
-        bool supportsFloatPairInsertion = false;
+        if (IsFloatPairFieldListRegister(use, regStart, regEnd, regType))
+        {
+            use = use->GetNext()->GetNext();
+            continue;
+        }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
         do
@@ -5417,15 +5419,12 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
                 return false;
             }
 
-            // On xarch, a pair of floats can be rebuilt in an 8-byte floating-point register.
+            // float -> float insertions are not yet supported
             if (varTypeUsesFloatReg(use->GetNode()) && varTypeUsesFloatReg(regType) && (fieldStart != regStart))
             {
-                if (!supportsFloatPairInsertion)
-                {
-                    JITDUMP("it is not; field [%06u] requires an insertion into register %u\n",
-                            Compiler::dspTreeID(use->GetNode()), i);
-                    return false;
-                }
+                JITDUMP("it is not; field [%06u] requires an insertion into register %u\n",
+                        Compiler::dspTreeID(use->GetNode()), i);
+                return false;
             }
 
             // int -> float is currently only supported if we can do it as a single bitcast (i.e. without insertions
