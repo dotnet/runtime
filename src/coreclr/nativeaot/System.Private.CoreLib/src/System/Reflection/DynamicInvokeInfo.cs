@@ -389,10 +389,7 @@ namespace System.Reflection
         {
             Debug.Assert(Method.IsConstructor && !_isStatic);
             Debug.Assert(thisObject is not null);
-            if (!IsSupportedSignature)
-            {
-                ThrowForArgCountMismatch();
-            }
+            Debug.Assert(IsSupportedSignature);
 
             scoped ref byte thisArg = ref Unsafe.As<object, byte>(ref thisObject);
             object? returnObject = null;

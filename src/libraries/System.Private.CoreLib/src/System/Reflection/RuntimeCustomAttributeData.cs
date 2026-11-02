@@ -871,14 +871,12 @@ namespace System.Reflection
                 return BinaryPrimitives.ReadDoubleLittleEndian(tmp);
             }
 
-            public ushort GetProlog() => GetU2();
-
             public bool ValidateProlog()
             {
 #if NATIVEAOT
                 return true;
 #else
-                ushort val = GetProlog();
+                ushort val = GetU2();
                 return val == 0x0001;
 #endif
             }
@@ -894,7 +892,7 @@ namespace System.Reflection
                 return handle.GetStringOrNull(_reader);
             }
 
-            public Type? GetTypeValue()
+            public RuntimeType? GetTypeValue()
             {
                 BlobReader blob = new BlobReader(_blob.Slice(_curr));
                 Handle handle = blob.ReadTypeHandle();
@@ -1573,7 +1571,7 @@ namespace System.Reflection
         private static RuntimeType? ReadAttributeTypeName(ref CustomAttributeEncodedArgument.CustomAttributeDataParser parser, ResolutionScope module)
         {
 #if NATIVEAOT
-            return (RuntimeType?)parser.GetTypeValue();
+            return parser.GetTypeValue();
 #else
             ReadOnlySpan<byte> utf8Name = parser.GetStringBytes(out bool isNull);
             if (isNull)
