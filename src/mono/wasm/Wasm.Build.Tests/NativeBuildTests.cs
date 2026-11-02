@@ -22,6 +22,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("wasm-opt")]
         public async Task SimpleNativeBuild(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(

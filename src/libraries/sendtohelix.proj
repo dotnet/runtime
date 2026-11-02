@@ -95,6 +95,7 @@
       <_TestUsingCrossProductValuesTemp Include="@(_TestUsingWorkloadsValues)">
         <Workloads>%(_TestUsingWorkloadsValues.Identity)</Workloads>
         <BundlerFriendly>false</BundlerFriendly>
+        <RunWasmOpt>false</RunWasmOpt>
       </_TestUsingCrossProductValuesTemp>
       <_TestUsingCrossProductValuesTemp2 Include="@(_TestUsingCrossProductValuesTemp)">
         <Webcil>%(_TestUsingWebcilValues.Identity)</Webcil>
@@ -112,6 +113,17 @@
         <Webcil>true</Webcil>
         <Fingerprinting>true</Fingerprinting>
         <BundlerFriendly>true</BundlerFriendly>
+        <RunWasmOpt>false</RunWasmOpt>
+      </_TestUsingCrossProductValues>
+
+      <!-- Add combination for the opt-in WasmRunWasmOpt pass. CoreCLR only: Mono already runs wasm-opt on
+           Release relinks by default (WasmNativeStrip implies WasmRunWasmOpt there). -->
+      <_TestUsingCrossProductValues Include="WasmRunWasmOpt" Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'">
+        <Workloads>true</Workloads>
+        <Webcil>true</Webcil>
+        <Fingerprinting>true</Fingerprinting>
+        <BundlerFriendly>false</BundlerFriendly>
+        <RunWasmOpt>true</RunWasmOpt>
       </_TestUsingCrossProductValues>
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
@@ -121,7 +133,8 @@
           TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);
           WasmEnableWebcil=%(_TestUsingCrossProductValues.Webcil);
           WasmFingerprintAssets=%(_TestUsingCrossProductValues.Fingerprinting);
-          WasmBundlerFriendlyBootConfig=%(_TestUsingCrossProductValues.BundlerFriendly)
+          WasmBundlerFriendlyBootConfig=%(_TestUsingCrossProductValues.BundlerFriendly);
+          WasmRunWasmOpt=%(_TestUsingCrossProductValues.RunWasmOpt)
         </AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BuildWasmAppsProjectsToBuild>

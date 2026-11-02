@@ -24,7 +24,7 @@ namespace Wasm.Build.Tests
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { false })]
         [BuildAndRun(aot: false, config: Configuration.Release, parameters: new object[] { true })]
-        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload"), TestCategory("wasm-opt")]
         public async Task UnusedQCallsAreTrimmed(Configuration config, bool aot, bool useQCall)
         {
             string extraProperties = "<WasmBuildNative>true</WasmBuildNative><WasmEmitSymbolMap>true</WasmEmitSymbolMap>";
