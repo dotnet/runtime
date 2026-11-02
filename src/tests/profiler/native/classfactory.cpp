@@ -15,6 +15,7 @@
 #include "gcheapenumerationprofiler/gcheapenumerationprofiler.h"
 #include "gcprofiler/gcprofiler.h"
 #include "handlesprofiler/handlesprofiler.h"
+#include "hotreloadprofiler/hotreloadprofiler.h"
 #include "ijw/ijwprofiler.h"
 #include "metadatagetdispenser/metadatagetdispenser.h"
 #include "nullprofiler/nullprofiler.h"
@@ -152,6 +153,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == InliningProfiler::GetClsid())
     {
         profiler = new InliningProfiler();
+    }
+    else if (clsid == HotReloadProfiler::GetClsid())
+    {
+        profiler = new HotReloadProfiler();
     }
     else if (clsid == HandlesProfiler::GetClsid())
     {
