@@ -25,6 +25,7 @@ void
 config_compute_keyword_and_level (
 	const EventPipeConfiguration *config,
 	const EventPipeProvider *provider,
+	const EventPipeSession *session_to_exclude,
 	int64_t *keyword_for_all_sessions,
 	EventPipeEventLevel *level_for_all_sessions);
 
@@ -65,6 +66,7 @@ void
 config_compute_keyword_and_level (
 	const EventPipeConfiguration *config,
 	const EventPipeProvider *provider,
+	const EventPipeSession *session_to_exclude,
 	int64_t *keyword_for_all_sessions,
 	EventPipeEventLevel *level_for_all_sessions)
 {
@@ -81,8 +83,8 @@ config_compute_keyword_and_level (
 		// Entering EventPipe lock gave us a barrier, we don't need more of them.
 		EventPipeSession *session = ep_volatile_load_session_without_barrier (i);
 		// Skip sessions that are published but not yet enabled (session init ran but enable holding lock has
-		// not): their allow_write bit is clear. Including them would let a provider observe a session not yet tracing.
-		if (session && (ep_volatile_load_allow_write () & ((uint64_t)1 << i))) {
+		// not), as well as the session currently being disabled.
+		if (session && session != session_to_exclude && (ep_volatile_load_allow_write () & ((uint64_t)1 << i))) {
 			EventPipeSessionProviderList *providers = ep_session_get_providers (session);
 			EP_ASSERT (providers != NULL);
 
@@ -116,7 +118,7 @@ config_register_provider (
 
 	int64_t keyword_for_all_sessions;
 	EventPipeEventLevel level_for_all_sessions;
-	config_compute_keyword_and_level (config, provider, &keyword_for_all_sessions, &level_for_all_sessions);
+	config_compute_keyword_and_level (config, provider, NULL, &keyword_for_all_sessions, &level_for_all_sessions);
 
 	for (int i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; i++) {
 		// Entering EventPipe lock gave us a barrier, we don't need more of them.
@@ -290,7 +292,7 @@ ep_config_create_provider (
 
 	EventPipeProvider *provider = NULL;
 	EP_LOCK_ENTER (section1)
-		provider = config_create_provider (config, provider_name, callback_func, callback_data, provider_callback_data_queue);
+		provider = config_create_provider (config, provider_name, callback_func, callback_data, false, provider_callback_data_queue);
 		ep_raise_error_if_nok_holding_lock (provider != NULL, section1);
 	EP_LOCK_EXIT (section1)
 
@@ -502,6 +504,7 @@ config_create_provider (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
 	void *callback_data,
+	bool callback_data_includes_generation,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	EP_ASSERT (config != NULL);
@@ -509,7 +512,7 @@ config_create_provider (
 
 	ep_requires_lock_held ();
 
-	EventPipeProvider *provider = ep_provider_alloc (config, provider_name, callback_func, callback_data);
+	EventPipeProvider *provider = ep_provider_alloc (config, provider_name, callback_func, callback_data, callback_data_includes_generation);
 	ep_raise_error_if_nok (provider != NULL);
 
 	config_register_provider (config, provider, provider_callback_data_queue);
@@ -590,7 +593,9 @@ config_enable_disable (
 					EventPipeEventLevel level_for_all_sessions;
 					EventPipeProviderCallbackData provider_callback_data;
 					memset (&provider_callback_data, 0, sizeof (provider_callback_data));
-					config_compute_keyword_and_level (config, provider, &keyword_for_all_sessions, &level_for_all_sessions);
+					// When disabling a session, exclude it from the combined keyword/level computation
+					// so that the computed values only reflect the remaining active sessions.
+					config_compute_keyword_and_level (config, provider, enable ? NULL : session, &keyword_for_all_sessions, &level_for_all_sessions);
 					if (enable) {
 						provider_set_config (
 							provider,
