@@ -77,13 +77,18 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual int GetAlignmentRequirement(NodeFactory factory) { return factory.Target.PointerSize; }
 
+        protected virtual void SortNodes(List<TEmbedded> nodes, NodeFactory factory)
+        {
+            if (_sorter != null)
+                nodes.MergeSort(_sorter);
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.RequireInitialAlignment(GetAlignmentRequirement(factory));
 
-            if (_sorter != null)
-                _nestedNodesList.MergeSort(_sorter);
+            SortNodes(_nestedNodesList, factory);
 
             builder.AddSymbol(this);
 

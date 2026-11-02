@@ -491,13 +491,13 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 
         codeInfo.Init(uControlPc);
         pFunctionEntry = codeInfo.GetFunctionEntry();
-        uImageBase = (UINT_PTR)codeInfo.GetModuleBase();
+        uImageBase = (UINT_PTR)codeInfo.GetUnwindInfoBase();
 #endif // !TARGET_UNIX
     }
     else
     {
         pFunctionEntry      = pCodeInfo->GetFunctionEntry();
-        uImageBase          = (UINT_PTR)pCodeInfo->GetModuleBase();
+        uImageBase          = (UINT_PTR)pCodeInfo->GetUnwindInfoBase();
 
         // RUNTIME_FUNCTION of cold code just points to the RUNTIME_FUNCTION of hot code. The unwinder
         // expects this indirection to be resolved, so we use RUNTIME_FUNCTION of the hot code even
