@@ -59,6 +59,9 @@ namespace ILCompiler
         private Flags _flags;
         private int _token1;
         private int _token2;
+        private int _token1Offset;
+        private int _token2Offset;
+        private int _equalityOffset;
 
         public readonly int Token1 => IsTypeEqualityBranch ? _token1 : throw new UnreachableException();
         public readonly int Token2 => IsTwoTokens ? _token2 : throw new UnreachableException();
@@ -68,6 +71,64 @@ namespace ILCompiler
         public readonly bool IsTypeEqualityBranch => _state is State.Branch;
         public readonly bool IsTwoTokens => (_flags & Flags.TwoTokens) != 0;
         public readonly bool IsInequality => (_flags & Flags.Inequality) != 0;
+        public readonly int Token1Offset => _token1Offset;
+        public readonly int Token2Offset => _token2Offset;
+        public readonly int EqualityOffset => IsTypeEqualityBranch ? _equalityOffset : throw new UnreachableException();
+
+        public readonly MetadataType GetConditionalType(MethodIL methodIL)
+        {
+            if (!IsTypeEqualityBranch)
+                return null;
+
+            TypeDesc candidate = (TypeDesc)methodIL.GetObject(Token1);
+            if (IsTwoTokens)
+            {
+                TypeDesc second = (TypeDesc)methodIL.GetObject(Token2);
+                if (candidate.ContainsSignatureVariables() || candidate.IsRuntimeDeterminedSubtype
+                    || candidate.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    candidate = second;
+                else if (!(second.ContainsSignatureVariables() || second.IsRuntimeDeterminedSubtype
+                    || second.IsCanonicalSubtype(CanonicalFormKind.Any)))
+                    return null;
+            }
+
+            // Runtime-created generic and parameterized types need additional conditions.
+            // Validate operand removal only after identifying an eligible literal type.
+            if (candidate is not MetadataType metadata || metadata.IsModuleType || candidate.HasInstantiation || candidate.IsGenericDefinition
+                || candidate.IsCanonicalSubtype(CanonicalFormKind.Any))
+                return null;
+
+            return CanRemoveTypeOperands(methodIL) ? metadata : null;
+        }
+
+        public readonly bool CanRemoveTypeOperands(MethodIL methodIL)
+            => CanRemoveTypeOperand(methodIL, Token1)
+                && (!IsTwoTokens || CanRemoveTypeOperand(methodIL, Token2));
+
+        private static bool CanRemoveTypeOperand(MethodIL methodIL, int token)
+        {
+            // A direct type parameter is already a valid type supplied by the caller. This is
+            // different from forming a new constructed type such as G<T> inside shared code.
+            if (((TypeDesc)methodIL.GetMethodILDefinition().GetObject(token)).IsSignatureVariable)
+                return true;
+
+            TypeDesc type = (TypeDesc)methodIL.GetObject(token);
+            if (type.IsGenericDefinition || type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true) || type.IsRuntimeDeterminedSubtype
+                || type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                return false;
+
+            // Validate closed constructed types before removing their loads. If validation fails,
+            // retain the original comparison and its existing type-loading behavior.
+            try
+            {
+                ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type);
+                return true;
+            }
+            catch (TypeSystemException)
+            {
+                return false;
+            }
+        }
 
         public void Advance(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
         {
@@ -75,7 +136,10 @@ namespace ILCompiler
             {
                 case 0:
                     if (opcode == ILOpcode.ldtoken)
+                    {
                         (_state, _token1) = (State.LdToken, reader.PeekILToken());
+                        _token1Offset = reader.Offset - 1;
+                    }
                     return;
                 case State.LdToken:
                     if (IsTypeGetTypeFromHandle(opcode, reader, methodIL))
@@ -85,13 +149,16 @@ namespace ILCompiler
                     return;
                 case State.TypeOf:
                     if (opcode == ILOpcode.ldtoken)
+                    {
                         (_state, _token2) = (State.TypeOf_LdToken, reader.PeekILToken());
+                        _token2Offset = reader.Offset - 1;
+                    }
                     else if (IsArgumentOrLocalLoad(opcode))
                         _state = State.TypeOf_PushedOne;
                     else if (IsTypeEquals(opcode, reader, methodIL))
-                        _state = State.TypeEqualityCheck;
+                        (_state, _equalityOffset) = (State.TypeEqualityCheck, reader.Offset - 1);
                     else if (IsTypeInequals(opcode, reader, methodIL))
-                        (_state, _flags) = (State.TypeEqualityCheck, _flags | Flags.Inequality);
+                        (_state, _flags, _equalityOffset) = (State.TypeEqualityCheck, _flags | Flags.Inequality, reader.Offset - 1);
                     else
                         break;
                     return;
@@ -107,20 +174,21 @@ namespace ILCompiler
                         // Nothing, state stays the same
                     }
                     else if (IsTypeEquals(opcode, reader, methodIL))
-                        _state = State.TypeEqualityCheck;
+                        (_state, _equalityOffset) = (State.TypeEqualityCheck, reader.Offset - 1);
                     else if (IsTypeInequals(opcode, reader, methodIL))
-                        (_state, _flags) = (State.TypeEqualityCheck, _flags | Flags.Inequality);
+                        (_state, _flags, _equalityOffset) = (State.TypeEqualityCheck, _flags | Flags.Inequality, reader.Offset - 1);
                     else
                         break;
                     return;
                 case State.TypeOf_TypeOf:
                     if (IsTypeEquals(opcode, reader, methodIL))
-                        (_state, _flags) = (State.TypeEqualityCheck, _flags | Flags.TwoTokens);
+                        (_state, _flags, _equalityOffset) = (State.TypeEqualityCheck, _flags | Flags.TwoTokens, reader.Offset - 1);
                     else if (IsTypeInequals(opcode, reader, methodIL))
-                        (_state, _flags) = (State.TypeEqualityCheck, _flags | Flags.TwoTokens | Flags.Inequality);
+                        (_state, _flags, _equalityOffset) = (State.TypeEqualityCheck, _flags | Flags.TwoTokens | Flags.Inequality, reader.Offset - 1);
                     else
                     {
                         _token1 = _token2;
+                        _token1Offset = _token2Offset;
                         goto case State.TypeOf;
                     }
                     return;
