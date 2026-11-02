@@ -2528,4 +2528,59 @@ string lengthAttribute = "";
 #endif // NET
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), src[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
+
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ConditionalEnclosingTypeParameters_CompilesCleanlyWithoutCS1027(bool defineBranch)
+    {
+        string define = defineBranch ? ("#" + "define TRIVIA_BRANCH\n") : "";
+        string source = define + """
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+
+            namespace TriviaValidation
+            {
+                public sealed class OptionsOuterTypeParametersModel
+                {
+                    [Range(0, 10)]
+                    public int Value { get; set; } = 1;
+                }
+
+                public partial class OptionsOuterTypeParameters<
+            """ + "\n#" + """
+                if TRIVIA_BRANCH
+                    T>
+                """ + "\n#" + """
+                else
+                    T>
+                """ + "\n#" + """
+                endif
+                {
+                    [OptionsValidator]
+                    public sealed partial class Validator : IValidateOptions<OptionsOuterTypeParametersModel>
+                    {
+                    }
+                }
+            }
+            """;
+
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source);
+        Assert.Empty(diagnostics);
+
+        foreach (var generatedSourceResult in generatedSources)
+        {
+            Assert.DoesNotContain("TRIVIA_BRANCH", generatedSourceResult.SourceText.ToString());
+        }
+
+        string allSources = source + Environment.NewLine + string.Join(Environment.NewLine, generatedSources.Select(s => s.SourceText.ToString()));
+
+        CSharpCompilation compilation = CreateCompilationForOptionsSource(
+            Path.GetRandomFileName(),
+            allSources);
+
+        using MemoryStream output = new();
+        EmitResult emitResult = compilation.Emit(output);
+        Assert.True(emitResult.Success, string.Join(Environment.NewLine, emitResult.Diagnostics));
+    }
 }

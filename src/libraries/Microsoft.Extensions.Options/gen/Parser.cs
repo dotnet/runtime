@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.Options.Generators
 
                         while (parent is not null && IsAllowedKind(parent.Kind()))
                         {
-                            parents.Add($"partial {GetTypeKeyword(parent)} {parent.Identifier}{parent.TypeParameterList} {parent.ConstraintClauses}");
+                            parents.Add($"partial {GetTypeKeyword(parent)} {parent.Identifier.Text}{GetTypeParameters(parent.TypeParameterList)}");
                             parent = parent.Parent as TypeDeclarationSyntax;
                         }
 
@@ -236,6 +236,18 @@ namespace Microsoft.Extensions.Options.Generators
                 SyntaxKind.RecordStructDeclaration => "record struct",
                 _ => type.Keyword.ValueText,
             };
+
+        private static string GetTypeParameters(TypeParameterListSyntax? typeParameters)
+        {
+            if (typeParameters is null)
+            {
+                return string.Empty;
+            }
+
+            return "<" + string.Join(", ", typeParameters.Parameters.Select(static parameter =>
+                (parameter.VarianceKeyword.RawKind == 0 ? "" : parameter.VarianceKeyword.Text + " ")
+                + parameter.Identifier.Text)) + ">";
+        }
 
         // The namespace flows into namespace declarations and "global::"-qualified references in the generated
         // code, so keyword segments (e.g. a namespace named @class) must be escaped to keep the output compiling.
