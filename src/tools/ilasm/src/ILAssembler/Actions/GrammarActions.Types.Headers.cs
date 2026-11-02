@@ -174,8 +174,11 @@ internal sealed partial class GrammarActions
         }
 
         typeDefinition.BaseType ??= _entityRegistry.ResolveImplicitBaseType(fallbackBase);
+        // System.Enum is a reference type despite extending System.ValueType (ECMA-335 I.8.9.9).
+        bool isSystemEnum = _isCoreLibrary &&
+            typeDefinition is { ContainingType: null, Namespace: "System", Name: "Enum" };
         if (!typeDefinition.Attributes.HasFlag(TypeAttributes.Sealed) &&
-            (requireSealed || _entityRegistry.IsSystemValueType(typeDefinition.BaseType)))
+            (requireSealed || (!isSystemEnum && _entityRegistry.IsSystemValueType(typeDefinition.BaseType))))
         {
             IToken location = header.NameToken ?? context.Start;
             _diagnostics.Add(

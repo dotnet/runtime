@@ -40,6 +40,7 @@ namespace Microsoft.DotNet.ILAssembler
         private readonly List<CILParser.DataLabelReferenceValue> _mappedFieldDataReferenceFixups = new();
         private readonly BlobBuilder _manifestResources = new();
         private int _syntaxErrorCount;
+        private bool _isCoreLibrary;
 
         // Debug info tracking
         private Guid _currentLanguageGuid = PdbDocumentTable.ILAssemblyLanguage;
