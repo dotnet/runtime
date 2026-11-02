@@ -103,6 +103,8 @@ The runtime-pack `dotnet.native.wasm` remains unchanged in the NuGet cache. When
 `$(WasmNativeBuildId)`, the build copies that module to its intermediate output, stamps the copy, and
 uses the copy for that application's static web assets. When the property is empty,
 `runtimeBuildInfo.buildId` is `""` unless the selected runtime module already provides a value.
+When native relinking already produced a project-local module, the build stamps that module in place
+instead of creating another copy.
 
 ## MSBuild properties
 
