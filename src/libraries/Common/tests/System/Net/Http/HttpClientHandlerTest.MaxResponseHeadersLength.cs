@@ -68,7 +68,7 @@ namespace System.Net.Http.Functional.Tests
             server => server.AcceptConnectionSendResponseAndCloseAsync());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(1)]
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
@@ -113,7 +113,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(null, 63 * 1024)]
         [InlineData(null, 65 * 1024)]
         [InlineData(1, 100)]

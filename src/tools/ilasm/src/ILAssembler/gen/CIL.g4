@@ -438,9 +438,7 @@ dottedNamePart returns [string Value]
 @init {_localctx.Value = string.Empty;}
 @after {_localctx.Value = Actions.ParseDottedNamePart(_localctx.Start);}
 :
-	ID
-	| INSTANCE
-	| SQSTRING
+	id
 	| DOTTEDNAME
 	| 'volatile'
 ;
@@ -2038,7 +2036,7 @@ methodDecl:
 	| EMITBYTE value = int32 {Actions.EmitByte($value.start);}
 	| sehBlock
 	| MAXSTACK value = int32 {Actions.SetMaxStack($value.start);}
-	| ENTRYPOINT {Actions.SetEntryPoint();}
+	| directive = ENTRYPOINT {Actions.SetEntryPoint($directive);}
 	| ZEROINIT {Actions.SetZeroInit();}
 	| labelDecl
 	| scopeBlock

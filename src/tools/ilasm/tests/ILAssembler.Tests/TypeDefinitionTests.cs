@@ -15,7 +15,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
 namespace ILAssembler.Tests
 {
@@ -1004,6 +1003,78 @@ namespace ILAssembler.Tests
 
             Assert.Equal("<Module>", reader.GetString(module.Name));
             Assert.True(module.BaseType.IsNil);
+        }
+
+        [Fact]
+        public void ClassOnlyImage_HasNoValueTypeReference()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly test { }
+                .class public C extends [System.Runtime]System.Object { }
+                .class public D { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.DoesNotContain(reader.TypeReferences, handle => reader.GetString(reader.GetTypeReference(handle).Name) == "ValueType");
+        }
+
+        [Theory]
+        [InlineData(".assembly extern MSCORLIB { }", "MSCORLIB")]
+        [InlineData(".assembly extern Other as mscorlib { }", "mscorlib")]
+        [InlineData(".assembly extern System.Private.CoreLib { }", "System.Private.CoreLib")]
+        [InlineData(".assembly extern netstandard { }", "netstandard")]
+        public void UnsealedValueTypeInCoreLibFoundByLookup_IsReported(string coreLib, string scope)
+        {
+            string source = $$"""
+                {{coreLib}}
+                .assembly test { }
+                .class public C { }
+                .class public V extends [{{scope}}]System.ValueType { }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.UnsealedValueType, error.Id);
+        }
+
+        [Theory]
+        [InlineData(".class public C { }")]
+        [InlineData(".class public value sealed W { }")]
+        public void UnsealedValueTypeThroughEarlierTypedef_IsReported(string earlierType)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                {{earlierType}}
+                .typedef [mscorlib]System.ValueType as OldValueType
+                .assembly extern System.Runtime { }
+                .class public V extends OldValueType { }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.UnsealedValueType, error.Id);
+        }
+
+        [Theory]
+        [InlineData(".class public C { }")]
+        [InlineData(".class public value sealed W { }")]
+        public void UnsealedValueTypeAfterLaterCoreLibReference_IsReported(string earlierType)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                {{earlierType}}
+                .assembly extern System.Runtime { }
+                .class public V extends [System.Runtime]System.ValueType { }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.UnsealedValueType, error.Id);
         }
 
         private static string GetBaseTypeName(MetadataReader reader, TypeDefinition type)

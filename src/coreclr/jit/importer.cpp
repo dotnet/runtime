@@ -1049,7 +1049,7 @@ bool Compiler::impIsLegalRetBuf(GenTree* retBuf, GenTreeCall* call)
     }
 
     // The ABI requires the retbuffer to point to stack.
-    return !fgAddrCouldBeHeap(retBuf) || eeIsByrefLike(call->gtRetClsHnd);
+    return !fgAddrCouldBeHeap(retBuf) || eeIsByRefLike(call->gtRetClsHnd);
 }
 
 //------------------------------------------------------------------------
@@ -2604,7 +2604,7 @@ bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
         }
 
         // Check that the argument is not a byref-like for tailcalls.
-        if ((ciType == CORINFO_TYPE_VALUECLASS) && eeIsByrefLike(classHandle))
+        if ((ciType == CORINFO_TYPE_VALUECLASS) && eeIsByRefLike(classHandle))
         {
             return false;
         }
@@ -4235,6 +4235,10 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             isHoistable = !s_helperCallProperties.MayRunCctor(pFieldInfo->helper) ||
                           (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT);
             op1 = gtNewHelperCallNode(pFieldInfo->helper, type, op1);
+            if (isHoistable)
+            {
+                op1->gtFlags |= GTF_CALL_HOISTABLE;
+            }
             if (IsStaticHelperEligibleForExpansion(op1))
             {
                 // Mark the helper call with the initClsHnd so that rewriting it for expansion can reliably fail
@@ -4251,6 +4255,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
 #endif // FEATURE_READYTORUN
             {
                 if ((pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+                    (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED) ||
                     (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2) ||
                     (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT))
                 {
@@ -4258,7 +4263,8 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                 }
                 else
                 {
-                    assert(pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
+                    assert((pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+                           (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED));
                     typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
                 }
             }
@@ -4518,16 +4524,12 @@ void Compiler::impInsertHelperCall(CORINFO_HELPER_DESC* helperInfo)
         switch (helperArg.argType)
         {
             case CORINFO_HELPER_ARG_TYPE_Field:
-                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(
-                    info.compCompHnd->getFieldClass(helperArg.fieldHandle));
                 currentArg = gtNewIconEmbFldHndNode(helperArg.fieldHandle);
                 break;
             case CORINFO_HELPER_ARG_TYPE_Method:
-                info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(helperArg.methodHandle);
                 currentArg = gtNewIconEmbMethHndNode(helperArg.methodHandle);
                 break;
             case CORINFO_HELPER_ARG_TYPE_Class:
-                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(helperArg.classHandle);
                 currentArg = gtNewIconEmbClsHndNode(helperArg.classHandle);
                 break;
             case CORINFO_HELPER_ARG_TYPE_Module:
@@ -10117,7 +10119,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     indirFlags |= GTF_IND_TGT_HEAP;
                 }
                 else if ((lclTyp == TYP_STRUCT) && (fieldInfo.structType != NO_CLASS_HANDLE) &&
-                         eeIsByrefLike(fieldInfo.structType))
+                         eeIsByRefLike(fieldInfo.structType))
                 {
                     // Field's type is a byref-like struct -> address is not on the heap.
                     indirFlags |= GTF_IND_TGT_NOT_HEAP;
@@ -10126,7 +10128,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     // Field's owner is a byref-like struct and the field is not static -> address is not on the heap.
                     CORINFO_CLASS_HANDLE fldOwner = info.compCompHnd->getFieldClass(resolvedToken.hField);
-                    if ((fldOwner != NO_CLASS_HANDLE) && eeIsByrefLike(fldOwner))
+                    if ((fldOwner != NO_CLASS_HANDLE) && eeIsByRefLike(fldOwner))
                     {
                         indirFlags |= GTF_IND_TGT_NOT_HEAP;
                     }
@@ -10926,7 +10928,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     break;
                 }
 
-                bool isByRefLike = eeIsByrefLike(resolvedToken.hClass);
+                bool isByRefLike = eeIsByRefLike(resolvedToken.hClass);
                 if (isByRefLike)
                 {
                     // For ByRefLike types we are required to either fold the
@@ -11259,7 +11261,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp(varTypeIsStruct(op2));
 
                 GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
-                if (eeIsByrefLike(resolvedToken.hClass))
+                if (eeIsByRefLike(resolvedToken.hClass))
                 {
                     indirFlags |= GTF_IND_TGT_NOT_HEAP;
                 }

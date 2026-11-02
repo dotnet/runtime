@@ -202,6 +202,31 @@ public sealed class CommandLinePdbFileTests : IDisposable
         return false;
     }
 
+    [Theory]
+    [InlineData("", false)]
+    [InlineData("-err", true)]
+    [InlineData("-error", true)]
+    public void DuplicateFields_AreWrittenOnlyWithErrorTolerantSwitch(string switches, bool errorTolerant)
+    {
+        string source = """
+            .assembly test { }
+            .class public Test
+            {
+                .field public static int32 Value
+                .field public static int32 Value
+            }
+            """;
+        string dll = OutputPath("DuplicateFields.dll");
+
+        Assert.Equal(errorTolerant ? 0 : 1, RunIlasm(source, "DuplicateFields", dll, switches));
+        Assert.Equal(errorTolerant, File.Exists(dll));
+        if (errorTolerant)
+        {
+            using PEReader pe = ReadImage(dll);
+            Assert.Equal(2, pe.GetMetadataReader().FieldDefinitions.Count);
+        }
+    }
+
     // With -DEBUG or -PDB the PDB is a file beside the output, the CodeView entry names its full path (without -DET)
     // and carries its id, and nothing is embedded in the image.
     [Theory]

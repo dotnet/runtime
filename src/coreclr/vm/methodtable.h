@@ -4178,6 +4178,7 @@ template<> struct cdac_data<MethodTable>
     static constexpr size_t NumInterfaces = offsetof(MethodTable, m_wNumInterfaces);
     static constexpr size_t NumVirtuals = offsetof(MethodTable, m_wNumVirtuals);
     static constexpr size_t PerInstInfo = offsetof(MethodTable, m_pPerInstInfo);
+    static constexpr size_t InterfaceMap = offsetof(MethodTable, m_pInterfaceMap);
 };
 
 #ifndef CROSSBITNESS_COMPILE

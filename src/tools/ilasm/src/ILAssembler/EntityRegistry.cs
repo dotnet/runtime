@@ -107,7 +107,7 @@ namespace ILAssembler
             return Array.Empty<EntityBase>();
         }
 
-        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames, bool deterministic, bool fold)
+        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, DataLocation> mappedFieldDataNames, out ImmutableArray<DataLocation> mappedFields, bool deterministic, bool fold)
         {
             // Set the assembly handle early since DeclarativeSecurityAttribute needs it
             // The assembly definition handle is always row 1 (there's only ever one assembly per module)
@@ -313,6 +313,7 @@ namespace ILAssembler
                 }
             }
 
+            var mappedFieldLocations = ImmutableArray.CreateBuilder<DataLocation>();
             foreach (FieldDefinitionEntity fieldDef in GetSeenEntities(TableIndex.Field))
             {
                 var fieldAttributes = fieldDef.Attributes;
@@ -340,9 +341,10 @@ namespace ILAssembler
                     builder.AddFieldLayout((FieldDefinitionHandle)fieldDef.Handle, fieldDef.Offset.Value);
                 }
 
-                if (fieldDef.DataDeclarationName is not null && mappedFieldDataNames.TryGetValue(fieldDef.DataDeclarationName, out int dataOffset))
+                if (fieldDef.DataDeclarationName is not null && mappedFieldDataNames.TryGetValue(fieldDef.DataDeclarationName, out DataLocation dataLocation))
                 {
-                    builder.AddFieldRelativeVirtualAddress((FieldDefinitionHandle)fieldDef.Handle, dataOffset);
+                    builder.AddFieldRelativeVirtualAddress((FieldDefinitionHandle)fieldDef.Handle, dataLocation.Offset);
+                    mappedFieldLocations.Add(dataLocation);
                 }
 
                 if (fieldDef.MarshallingDescriptor is { Count: > 0 })
@@ -356,6 +358,7 @@ namespace ILAssembler
                 }
             }
 
+            mappedFields = mappedFieldLocations.ToImmutable();
             var bodyStreamEncoder = new MethodBodyStreamEncoder(ilStream);
             Dictionary<byte[], int>? foldedBodies = fold ? new(new MethodBodyContentEqualityComparer()) : null;
 
@@ -751,6 +754,16 @@ namespace ILAssembler
             }
         }
 
+        // Unlike SystemValueTypeType, does not create the TypeRef.
+        public bool IsSystemValueType(TypeEntity? type)
+        {
+            return type is TypeReferenceEntity { Namespace: "System", Name: "ValueType", ResolutionScope: AssemblyReferenceEntity scope }
+                && (scope == FindAssemblyReference("System.Private.CoreLib")
+                    || scope == FindAssemblyReference("System.Runtime")
+                    || scope == FindAssemblyReference("mscorlib")
+                    || scope == FindAssemblyReference("netstandard"));
+        }
+
         private TypeEntity? _systemEnum;
         public TypeEntity SystemEnumType
         {
@@ -1016,9 +1029,14 @@ namespace ILAssembler
             return true;
         }
 
-        public static FieldDefinitionEntity? CreateUnrecordedFieldDefinition(FieldAttributes attributes, TypeDefinitionEntity containingType, string name, BlobBuilder signature)
+        public static FieldDefinitionEntity CreateUnrecordedFieldDefinition(FieldAttributes attributes, TypeDefinitionEntity containingType, string name, BlobBuilder signature)
         {
-            var field = new FieldDefinitionEntity(attributes, containingType, name, signature);
+            return new FieldDefinitionEntity(attributes, containingType, name, signature);
+        }
+
+        public static bool TryAddFieldDefinitionToContainingType(FieldDefinitionEntity field)
+        {
+            // ECMA-335 II.22.15: duplicate identity is owner+name+signature, excluding CompilerControlled fields.
             bool allowDuplicate = (field.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.PrivateScope;
             if (!allowDuplicate)
             {
@@ -1028,12 +1046,12 @@ namespace ILAssembler
                         && fieldDef.Signature.ContentEquals(field.Signature!)
                         && (fieldDef.Attributes & FieldAttributes.FieldAccessMask) != FieldAttributes.PrivateScope)
                     {
-                        return null;
+                        return false;
                     }
                 }
             }
             field.ContainingType.Fields.Add(field);
-            return field;
+            return true;
         }
 
         public static InterfaceImplementationEntity CreateUnrecordedInterfaceImplementation(TypeDefinitionEntity implementingType, TypeEntity interfaceType)

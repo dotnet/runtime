@@ -93,7 +93,7 @@ namespace System.Net.Http
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Cleanup()
         {
-            if (_failedProxies.Count > LargeProxyConfigBoundary && Environment.TickCount64 >= Interlocked.Read(ref _nextFlushTicks))
+            if (Environment.TickCount64 >= Interlocked.Read(ref _nextFlushTicks))
             {
                 CleanupHelper();
             }
@@ -103,9 +103,8 @@ namespace System.Net.Http
         /// Cleans up any old proxies that should no longer be marked as failing.
         /// </summary>
         /// <remarks>
-        /// I expect this to never be called by <see cref="Cleanup"/> in a production system. It is only needed in the case
-        /// that a system has a very large number of proxies that the PAC script cycles through. It is moderately expensive,
-        /// so it's only run periodically and is disabled until we exceed <see cref="LargeProxyConfigBoundary"/> failed proxies.
+        /// Size checks run periodically to avoid dictionary-wide locking on every lookup.
+        /// Scanning is only needed for unusually large proxy configurations.
         /// </remarks>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void CleanupHelper()
@@ -115,6 +114,11 @@ namespace System.Net.Http
             {
                 _flushLock.TryEnter(ref lockTaken);
                 if (!lockTaken)
+                {
+                    return;
+                }
+
+                if (_failedProxies.Count <= LargeProxyConfigBoundary)
                 {
                     return;
                 }

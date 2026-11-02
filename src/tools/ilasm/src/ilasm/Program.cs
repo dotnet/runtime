@@ -182,6 +182,7 @@ internal sealed class Program
             // Assembly options
             options.AssemblyName = Get(_command.AssemblyName);
             options.KeyFile = Get(_command.KeyFile);
+            options.Win32ResourceFile = Get(_command.ResourceFile);
             options.Optimize = Get(_command.Optimize);
             options.PseudoAttributes = Get(_command.PseudoAttributes);
             options.Fold = Get(_command.Fold);
@@ -255,7 +256,7 @@ internal sealed class Program
                 foreach (var diagnostic in diagnostics)
                 {
                     hasErrors |= diagnostic.Severity == DiagnosticSeverity.Error;
-                    Console.WriteLine($"{diagnostic.Severity}: {diagnostic.Location}: {diagnostic.Message}");
+                    Console.WriteLine($"{diagnostic.Location} : {diagnostic.Severity.ToString().ToLowerInvariant()} {diagnostic.Id} : {diagnostic.Message}");
                 }
             }
 

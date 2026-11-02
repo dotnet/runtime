@@ -880,6 +880,38 @@ protected:
     static const INT32 ENCODING_TARGET_SLOT_DELTA = 1;
 
 public:
+    // Class MethodImpl aliases precede the ordinary interface-dispatch encoding.
+    // Keeping slots rather than MethodDesc pointers makes this reusable across instantiations.
+    class ClassSlotIterator
+    {
+        Decoder m_decoder;
+        UINT32 m_remaining;
+
+    public:
+        ClassSlotIterator(DispatchMap* pMap)
+            : m_remaining(0)
+        {
+            LIMITED_METHOD_DAC_CONTRACT;
+            if (pMap != nullptr)
+            {
+                m_decoder.Init(pMap->GetEncodedMapData());
+                if ((m_decoder.Next() & 1) != 0)
+                    m_remaining = m_decoder.Next();
+            }
+        }
+
+        bool Next(UINT32* pSource, UINT32* pTarget)
+        {
+            LIMITED_METHOD_DAC_CONTRACT;
+            if (m_remaining == 0)
+                return false;
+            *pSource = m_decoder.Next();
+            *pTarget = m_decoder.Next();
+            m_remaining--;
+            return true;
+        }
+    };
+
     //------------------------------------------------------------------------
     // Need to make sure that you allocate GetObjectSize(pMap) bytes for any
     // instance of DispatchMap, as this constructor assumes that m_rgMap is
