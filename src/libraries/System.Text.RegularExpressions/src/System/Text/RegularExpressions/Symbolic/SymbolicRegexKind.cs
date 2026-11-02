@@ -36,7 +36,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Marker node that carries with it an indication of how long the fixed-length sequence is until that point.</summary>
         /// <remarks>
-        /// <see cref="SymbolicRegexNode{S}._lower"/> stores the fixed length.  This node is used to avoid the second phase
+        /// The arena node's lower value stores the fixed length. This node is used to avoid the second phase
         /// of matching (for non-IsMatch operations, which only have the first phase).  The first phase determines whether
         /// there is a match and its possible ending position, at which point the second phase matches in reverse to find
         /// the starting position, and then a third phase again matches forward from the now known starting position to
@@ -67,10 +67,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </remarks>
         Effect,
         /// <summary>Indicates the start of a subcapture.</summary>
-        /// <remarks><see cref="SymbolicRegexNode{S}._lower"/> stores the associated capture number.</remarks>
+        /// <remarks>The arena node's lower value stores the associated capture number.</remarks>
         CaptureStart,
         /// <summary>Indicates the end of a subcapture.</summary>
-        /// <remarks><see cref="SymbolicRegexNode{S}._lower"/> stores the associated capture number.</remarks>
+        /// <remarks>The arena node's lower value stores the associated capture number.</remarks>
         CaptureEnd,
 
         /// <summary>

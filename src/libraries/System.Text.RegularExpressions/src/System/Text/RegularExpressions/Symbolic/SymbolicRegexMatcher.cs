@@ -185,6 +185,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 bv64._classifier :
                 ((BitVectorSolver)(object)builder._solver)._classifier;
             _capsize = captureCount;
+            SymbolicRegexInfo patternInfo = builder.GetNodeContext(_pattern)._info;
 
             // Initialize state and nullability arrays.
             _stateArray = new MatchingState<TSet>[InitialDfaStateCapacity];
@@ -215,14 +216,14 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Determine the number of initial states. If there's no anchor, only the default previous
             // character kind 0 is ever going to be used for all initial states.
-            int statesCount = _pattern._info.ContainsSomeAnchor ? CharKind.CharKindCount : 1;
+            int statesCount = patternInfo.ContainsSomeAnchor ? CharKind.CharKindCount : 1;
 
             // The loops below and how character kinds are calculated assume that the "general" character kind is zero
             Debug.Assert(CharKind.General == 0);
 
             // Assign edge case info for quick lookup
-            _containsAnyAnchor = _pattern._info.ContainsSomeAnchor;
-            _containsEndZAnchor = _pattern._info.ContainsEndZAnchor;
+            _containsAnyAnchor = patternInfo.ContainsSomeAnchor;
+            _containsEndZAnchor = patternInfo.ContainsEndZAnchor;
 
             // Create the initial states for the original pattern.
             var initialStates = new MatchingState<TSet>[statesCount];
@@ -266,7 +267,7 @@ namespace System.Text.RegularExpressions.Symbolic
             uint CalculateMintermIdKind(int mintermId)
             {
                 // Only patterns with anchors use anything except the general kind
-                if (_pattern._info.ContainsSomeAnchor)
+                if (patternInfo.ContainsSomeAnchor)
                 {
                     // A minterm ID of -1 represents the positions before the first and after the last character
                     // in the input.
@@ -331,7 +332,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private uint GetCharKind(ReadOnlySpan<char> input, int i) =>
-            !_pattern._info.ContainsSomeAnchor ?
+            !_containsAnyAnchor ?
                 CharKind.General : // The previous character kind is irrelevant when anchors are not used.
                 GetPositionKind(DefaultInputReader.GetPositionId(this, input, i));
 
@@ -1023,7 +1024,7 @@ namespace System.Text.RegularExpressions.Symbolic
             current.Clear();
             next.Clear();
 
-            ForEachNfaState(initialState.Node, initialState.PrevCharKind, (current, initialRegisters),
+            ForEachNfaState(initialState.GetNode(_builder), initialState.PrevCharKind, (current, initialRegisters),
                 static (int nfaId, (SparseIntMap<Registers> Current, Registers InitialRegisters) args) =>
                     args.Current.Add(nfaId, args.InitialRegisters.Clone()));
 
@@ -1086,7 +1087,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (endState.IsNullableFor(GetCharKind(input, iEnd)))
                 {
                     // Apply effects for finishing at the stored end state
-                    endState.Node.ApplyEffects((effect, args) => args.Registers.ApplyEffect(effect, args.Pos),
+                    endState.GetNode(_builder).ApplyEffects(_builder, (effect, args) => args.Registers.ApplyEffect(effect, args.Pos),
                         CharKind.Context(endState.PrevCharKind, GetCharKind(input, iEnd)), (Registers: endRegisters, Pos: iEnd));
                     return endRegisters;
                 }
@@ -1221,7 +1222,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // If the DFA state is a union of multiple DFA states, loop through all of them
                 // adding an NFA state for each.
-                matcher.ForEachNfaState(dfaMatchingState.Node, dfaMatchingState.PrevCharKind, NfaStateSet,
+                matcher.ForEachNfaState(dfaMatchingState.GetNode(matcher._builder), dfaMatchingState.PrevCharKind, NfaStateSet,
                     static (int nfaId, SparseIntMap<int> nfaStateSet) => nfaStateSet.Add(nfaId, out _));
             }
         }
@@ -1656,7 +1657,7 @@ namespace System.Text.RegularExpressions.Symbolic
             public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId)
                 where TStateHandler : struct, IStateHandler
             {
-                Debug.Assert(!matcher._pattern._info.ContainsSomeAnchor);
+                Debug.Assert(!matcher._containsAnyAnchor);
                 return TStateHandler.GetStateFlags(matcher, in state).IsNullable();
             }
         }
@@ -1685,7 +1686,7 @@ namespace System.Text.RegularExpressions.Symbolic
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsNullable(SymbolicRegexMatcher<TSet> matcher, byte stateNullability, char c, byte[] lookup)
             {
-                Debug.Assert(!matcher._pattern._info.ContainsSomeAnchor);
+                Debug.Assert(!matcher._containsAnyAnchor);
                 return stateNullability != 0;
             }
         }

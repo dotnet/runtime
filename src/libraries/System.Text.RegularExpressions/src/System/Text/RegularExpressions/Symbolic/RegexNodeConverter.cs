@@ -234,12 +234,12 @@ namespace System.Text.RegularExpressions.Symbolic
                                     SymbolicRegexNode<BDD> elem = childResult.Count == 1 ?
                                         childResult.FirstElement :
                                         _builder.CreateConcatAlreadyReversed(childResult);
-                                    if (elem.IsNothing(_builder._solver))
+                                    if (elem.IsNothing(_builder))
                                     {
                                         continue;
                                     }
 
-                                    or = elem.IsAnyStar(_builder._solver) ?
+                                    or = elem.IsAnyStar(_builder) ?
                                         elem : // .* is the absorbing element
                                         SymbolicRegexNode<BDD>.CreateAlternate(_builder, elem, or);
                                 }
