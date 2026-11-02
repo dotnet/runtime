@@ -35,21 +35,19 @@ public class ParallelCrashTester
     private static void RunParallelCrash(int arg)
     {
         Console.WriteLine($"Running ParallelCrash test({arg})");
-        Process testProcess = new Process();
-
-        testProcess.StartInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
-        testProcess.StartInfo.Arguments = $"ParallelCrash.dll {arg}";
-        testProcess.StartInfo.UseShellExecute = false;
+        ProcessStartInfo startInfo = new ProcessStartInfo(
+            Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun"),
+            $"ParallelCrash.dll {arg}");
+        startInfo.InheritedHandles = [];
         // Disable crash diagnostics since the target process is expected to crash
-        testProcess.StartInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
-        testProcess.StartInfo.Environment.Remove("DOTNET_EnableCrashReport");
-        testProcess.Start();
-        testProcess.WaitForExit();
+        startInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
+        startInfo.Environment.Remove("DOTNET_EnableCrashReport");
+        ProcessExitStatus status = Process.Run(startInfo);
 
         int expectedExitCode = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? -2146232797 : 128 + 6);
-        if (testProcess.ExitCode != expectedExitCode)
+        if (status.ExitCode != expectedExitCode)
         {
-            throw new Exception($"Exit code = {testProcess.ExitCode}, expected {expectedExitCode}");
+            throw new Exception($"Exit code = {status.ExitCode}, expected {expectedExitCode}");
         }
     }
 }

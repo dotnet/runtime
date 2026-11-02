@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using Antlr4.Runtime;
 
 namespace ILAssembler;
@@ -20,7 +21,9 @@ internal sealed partial class GrammarActions
         IToken? path)
     {
         int lineNumber = ParseInt32(line);
-        return CreateSourceDirective(autoIncrement, lineNumber, 0, lineNumber, 0, path);
+        return CreateSourceDirective(
+            autoIncrement, lineNumber, 0, lineNumber, null, path,
+            appliesToNextLine: autoIncrement && path?.Type == CILLexer.QSTRING);
     }
 
     internal SourceDirectiveValue CreateSourceColumn(
@@ -36,7 +39,7 @@ internal sealed partial class GrammarActions
             lineNumber,
             columnNumber,
             lineNumber,
-            columnNumber,
+            null,
             path);
     }
 
@@ -70,7 +73,7 @@ internal sealed partial class GrammarActions
             ParseInt32(startLine),
             columnNumber,
             ParseInt32(endLine),
-            columnNumber,
+            null,
             path);
     }
 
@@ -94,15 +97,26 @@ internal sealed partial class GrammarActions
         int startLine,
         int startColumn,
         int endLine,
-        int endColumn,
-        IToken? path)
-        => new(
+        int? endColumn,
+        IToken? path,
+        bool appliesToNextLine = false)
+    {
+        // Match Roslyn's column limit for compatibility with existing SRM readers' off-by-one check:
+        // https://github.com/dotnet/roslyn/blob/e3c31f15b79e226656e3b082a921d4d60127b1fa/src/Compilers/Core/Portable/CodeGen/SequencePointList.cs#L182-L186
+        const int DefaultEndColumn = ushort.MaxValue - 1;
+
+        return new(
             autoIncrement,
             startLine,
             startColumn,
             endLine,
-            endColumn,
-            path is null ? null : StringHelpers.ParseQuotedString(path.Text));
+            endColumn ?? (startLine == SequencePoint.HiddenLine && endLine == SequencePoint.HiddenLine &&
+                startColumn == 0 ? 0 : DefaultEndColumn),
+            path is null ? null : StringHelpers.ParseQuotedString(path.Text))
+        {
+            AppliesToNextLine = appliesToNextLine,
+        };
+    }
 
     internal void EndSourceDirective(
         CILParser.ExtSourceSpecContext context,
@@ -135,7 +149,10 @@ internal sealed partial class GrammarActions
     /// inclusion of an <c>#include</c>d file), wherever it is and across methods, and the next instruction always
     /// gets a point. An empty file name (<c>''</c> or <c>""</c>), which ildasm writes for "the same file", and
     /// a missing one keep the source's current document: the source itself until a directive in it names another
-    /// file.
+    /// file. With <c>#line</c>, both line endpoints advance by the number of physical source lines since the
+    /// directive; columns do not change. The line-only form with a double-quoted file name anchors the specified
+    /// line to the following source line; all other forms anchor it to the directive's own line. Hidden sequence
+    /// points stay hidden until another directive, since their line is a marker rather than a source coordinate.
     /// </remarks>
     private void ApplySourceDirective(SourceDirectiveValue value, IToken directiveToken)
     {
@@ -145,14 +162,56 @@ internal sealed partial class GrammarActions
             state.Document = _pdbDocuments.GetOrAdd(value.DocumentPath, _currentLanguageGuid);
         }
 
-        int endColumn = value.EndColumn;
-        if (value.EndLine == value.StartLine && endColumn == value.StartColumn)
+        state.HasInvalidDirective = GeneratesPdb && !ValidateSourceDirective(value, directiveToken);
+        state.DirectiveToken = directiveToken;
+        state.DirectiveCoordinates = (value.StartLine, value.StartColumn, value.EndLine, value.EndColumn);
+        state.AutoIncrementLine = value.AutoIncrement
+            ? (long)directiveToken.Line + (value.AppliesToNextLine ? 1 : 0)
+            : null;
+        _lastSequencePointSpan = null;
+        if (_currentMethod is not null)
         {
-            endColumn++;
+            _currentMethod.LastRejectedSequencePointSpan = null;
+        }
+    }
+
+    private bool ValidateSourceDirective(SourceDirectiveValue value, IToken directiveToken)
+        => ValidateSourceCoordinates(value.StartLine, value.StartColumn, value.EndLine, value.EndColumn, directiveToken);
+
+    private bool ValidateSourceCoordinates(long startLine, int startColumn, long endLine, int endColumn, IToken directiveToken)
+    {
+        // Portable PDB, Sequence Points: docs/design/specs/PortablePdb-Metadata.md#sequence-points-blob.
+        const int MaximumLine = 0x1fffffff;
+        string? message = null;
+        if (startLine == SequencePoint.HiddenLine || endLine == SequencePoint.HiddenLine)
+        {
+            if (startLine != SequencePoint.HiddenLine || endLine != SequencePoint.HiddenLine ||
+                startColumn != 0 || endColumn != 0)
+            {
+                message = DiagnosticMessageTemplates.InvalidHiddenSequencePoint;
+            }
+        }
+        else if ((ulong)startLine > MaximumLine || (ulong)endLine > MaximumLine)
+        {
+            message = DiagnosticMessageTemplates.SequencePointLineOutOfRange;
+        }
+        else if ((uint)startColumn > ushort.MaxValue || (uint)endColumn > ushort.MaxValue)
+        {
+            message = DiagnosticMessageTemplates.SequencePointColumnOutOfRange;
+        }
+        else if (endLine < startLine ||
+            (endLine == startLine && endColumn <= startColumn))
+        {
+            message = DiagnosticMessageTemplates.SequencePointReversedRange;
         }
 
-        state.DirectiveCoordinates = (value.StartLine, value.StartColumn, value.EndLine, endColumn);
-        _lastSequencePointSpan = null;
+        if (message is not null)
+        {
+            ReportError(DiagnosticIds.InvalidSequencePoint, message, directiveToken);
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -184,19 +243,67 @@ internal sealed partial class GrammarActions
         }
 
         SourceLineState state = GetSourceLineState(opcodeToken);
+        if (state.HasInvalidDirective)
+        {
+            // An invalid range may not be representable in the sequence-points blob, even in error-tolerant mode.
+            return;
+        }
+
         int document = state.Document ??= _pdbDocuments.GetOrAdd(state.SourceName, _currentLanguageGuid);
         (int startLine, int startColumn, int endLine, int endColumn) =
             state.DirectiveCoordinates ?? (opcodeToken.Line, 1, opcodeToken.Line, 2);
+        if (state.AutoIncrementLine is long directiveLine && startLine != SequencePoint.HiddenLine)
+        {
+            long delta = (long)opcodeToken.Line - directiveLine;
+            long effectiveStartLine = startLine + delta;
+            long effectiveEndLine = endLine + delta;
+            Debug.Assert(state.DirectiveToken is not null);
+            if (!ValidateSourceCoordinates(effectiveStartLine, startColumn, effectiveEndLine, endColumn, state.DirectiveToken))
+            {
+                state.HasInvalidDirective = true;
+                return;
+            }
+
+            startLine = (int)effectiveStartLine;
+            endLine = (int)effectiveEndLine;
+        }
+
         var span = new SequencePointSpan(document, startLine, startColumn, endLine, endColumn);
-        if (_lastSequencePointSpan == span)
+        if (_lastSequencePointSpan == span || method.LastRejectedSequencePointSpan == span)
         {
             return;
         }
 
-        _lastSequencePointSpan = span;
         int ilOffset = method.Definition.MethodBody.Offset;
         var point = new EntityRegistry.SequencePoint(document, ilOffset, startLine, startColumn, endLine, endColumn);
         List<EntityRegistry.SequencePoint> sequencePoints = method.Definition.DebugInfo.SequencePoints;
+        if (!point.IsHidden)
+        {
+            // Start lines after the first non-hidden point use a signed compressed integer, across documents
+            // and hidden points. Exclude a point at this offset, since it is about to be replaced.
+            for (int i = sequencePoints.Count - 1; i >= 0; i--)
+            {
+                EntityRegistry.SequencePoint previous = sequencePoints[i];
+                if (previous.IsHidden || previous.ILOffset == ilOffset)
+                {
+                    continue;
+                }
+
+                int delta = startLine - previous.StartLine;
+                if (delta is < -0x10000000 or > 0x0fffffff)
+                {
+                    method.LastRejectedSequencePointSpan = span;
+                    ReportError(
+                        DiagnosticIds.InvalidSequencePoint,
+                        DiagnosticMessageTemplates.SequencePointLineDeltaOutOfRange,
+                        state.DirectiveToken ?? opcodeToken);
+                    return;
+                }
+
+                break;
+            }
+        }
+
         Debug.Assert(sequencePoints.Count == 0 || sequencePoints[^1].ILOffset <= ilOffset, "IL offsets never decrease.");
         if (sequencePoints.Count > 0 && sequencePoints[^1].ILOffset == ilOffset)
         {
@@ -208,6 +315,9 @@ internal sealed partial class GrammarActions
         {
             sequencePoints.Add(point);
         }
+
+        _lastSequencePointSpan = span;
+        method.LastRejectedSequencePointSpan = null;
     }
 
     /// <summary>Gets the <c>.line</c> state of the source a token was read from, creating it on first use.</summary>
@@ -250,6 +360,12 @@ internal sealed partial class GrammarActions
         /// source, or <see langword="null"/> when none has been.
         /// </summary>
         public (int StartLine, int StartColumn, int EndLine, int EndColumn)? DirectiveCoordinates { get; set; }
+
+        public bool HasInvalidDirective { get; set; }
+
+        public long? AutoIncrementLine { get; set; }
+
+        public IToken? DirectiveToken { get; set; }
     }
 
     /// <summary>The document and source span of a recorded sequence point.</summary>

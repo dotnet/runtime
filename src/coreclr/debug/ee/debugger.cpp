@@ -10,6 +10,7 @@
 #include "stdafx.h"
 #include "CLREventBase.h"
 #include <minipal/time.h>
+#include <minipal.h>
 #include "debugdebugger.h"
 #include "../inc/common.h"
 #include "eeconfig.h" // This is here even for retail & free builds...
@@ -15071,6 +15072,14 @@ void Debugger::ReleaseDebuggerDataLock(Debugger *pDebugger)
  * Functions for DebuggerHeap executable memory allocations
  * ------------------------------------------------------------------------ */
 
+#ifndef HOST_WINDOWS
+// AllocateMemory requires a multiple of the system page size, which may exceed DEBUGGERHEAP_PAGESIZE.
+static size_t DebuggerHeapAllocationSize()
+{
+    return ALIGN_UP((size_t)DEBUGGERHEAP_PAGESIZE, (size_t)minipal_getpagesize());
+}
+#endif // !HOST_WINDOWS
+
 DebuggerHeapExecutableMemoryAllocator::~DebuggerHeapExecutableMemoryAllocator()
 {
     while (m_pages != NULL)
@@ -15078,7 +15087,11 @@ DebuggerHeapExecutableMemoryAllocator::~DebuggerHeapExecutableMemoryAllocator()
         DebuggerHeapExecutableMemoryPage *temp = m_pages->GetNextPage();
 
         // Free this page
+#ifdef HOST_WINDOWS
         INDEBUG(BOOL ret =) VirtualFree(m_pages, 0, MEM_RELEASE);
+#else
+        INDEBUG(BOOL ret =) VMToOSInterface::ReleaseMemoryReservation(m_pages, DebuggerHeapAllocationSize()) ? TRUE : FALSE;
+#endif
         ASSERT(ret == TRUE);
 
         m_pages = temp;
@@ -15155,7 +15168,15 @@ void DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
 
 DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewPage()
 {
+#ifdef HOST_WINDOWS
     void* newPageAddr = VirtualAlloc(NULL, sizeof(DebuggerHeapExecutableMemoryPage), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+#else
+    void* newPageAddr = VMToOSInterface::AllocateMemory(NULL, DebuggerHeapAllocationSize(), VMToOSInterface::MemoryProtection::ExecuteReadWrite);
+#endif
+    if (newPageAddr == NULL)
+    {
+        return NULL;
+    }
 
     DebuggerHeapExecutableMemoryPage *newPage = new (newPageAddr) DebuggerHeapExecutableMemoryPage;
     CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);

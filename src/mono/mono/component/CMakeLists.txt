@@ -274,7 +274,3 @@ if(NOT MONO_CROSS_COMPILE)
   # without the ../.. the file would go in artifacts/obj/mono/<host>/mono/mini
   configure_file( "${MONO_COMPONENT_PATH}/RuntimeComponentManifest.json.in" "../../build/RuntimeComponentManifest.json")
 endif()
-
-# component tests
-set(MONO_EVENTPIPE_TEST_SOURCE_PATH "${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/test")
-include(${MONO_EVENTPIPE_TEST_SOURCE_PATH}/CMakeLists.txt)
