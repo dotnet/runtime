@@ -12,6 +12,8 @@ public class ModularRanges
     {
         // ARM64: cmp
         // ARM64-NOT: cmp
+        // X64: cmp
+        // X64-NOT: cmp
         if ((uint)x >= 10 && (uint)(x - 10) >= 20) return x;
         return ~x;
     }
@@ -25,6 +27,7 @@ public class ModularRanges
     private static int Empty(int x)
     {
         // ARM64-NOT: cmp
+        // X64-NOT: cmp
         if ((uint)x >= unchecked((uint)-10) && (uint)unchecked(x + 10) >= unchecked((uint)-10)) return x;
         return ~x;
     }
@@ -33,6 +36,8 @@ public class ModularRanges
     {
         // ARM64: cmp
         // ARM64-NOT: cmp
+        // X64: cmp
+        // X64-NOT: cmp
         if ((uint)unchecked(x + 5) <= 10 && (uint)unchecked(x - 3) <= 20) return x;
         return ~x;
     }
@@ -78,6 +83,8 @@ public class ModularRanges
     {
         // ARM64: cmp
         // ARM64-NOT: cmp
+        // X64: cmp
+        // X64-NOT: cmp
         return unchecked(x + int.MinValue) < 0 && x < span.Length;
     }
 
