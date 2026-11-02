@@ -147,7 +147,6 @@ extern bool g_arm64_atomics_present;
 
 #define PAL_INITIALIZE_NONE                         0x00
 #define PAL_INITIALIZE_SYNC_THREAD                  0x01
-#define PAL_INITIALIZE_EXEC_ALLOCATOR               0x02
 #define PAL_INITIALIZE_STD_HANDLES                  0x04
 #define PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER     0x08
 #define PAL_INITIALIZE_DEBUGGER_EXCEPTIONS          0x10
@@ -165,7 +164,6 @@ extern bool g_arm64_atomics_present;
 
 // PAL_InitializeCoreCLR() flags
 #define PAL_INITIALIZE_CORECLR         (PAL_INITIALIZE | \
-                                        PAL_INITIALIZE_EXEC_ALLOCATOR | \
                                         PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER | \
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
@@ -1424,18 +1422,37 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     /* +0x380 */ DWORD64 Wvr[ARM64_MAX_WATCHPOINTS];
 
     /* +0x390 */ DWORD64 XStateFeaturesMask;
-
-    //
-    // Sve Registers
-    //
-    // TODO-SVE: Support Vector register sizes >128bit
-    // For 128bit, Z and V registers fully overlap, so there is no need to load/store both.
-    /* +0x398 */ DWORD Vl;
-    /* +0x39c */ DWORD Ffr;
-    /* +0x3a0 */ DWORD P[16];
-    /* +0x3e0 */
+    /* +0x3a0 */
 
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+// The SVE header immediately follows CONTEXT, when CONTEXT_XSTATE is set and
+// XStateFeaturesMask contains XSTATE_MASK_ARM64_SVE.
+// If CONTEXT_SVE_STATE_HEADER.VectorLengthInBytes != 0, it is immediately
+// followed by the serialized state of the vector/predicate register files,
+// and the first-faulting register, padded to 16-byte alignment. The bottom
+// 128 bits of each Z register are duplicated in CONTEXT::V in this design.
+//
+//  +------------------------------------------+
+//  |                 CONTEXT                  |
+//  +------------------------------------------+
+//  | CONTEXT_SVE_STATE_HEADER (16 bytes)      |
+//  +------------------------------------------+
+//  | Z0..Z31 (32 * VL bytes)                  |
+//  +------------------------------------------+
+//  | P0..P15 (16 * VL/8 bytes)                |
+//  +------------------------------------------+
+//  | FFR (VL/8 bytes)                         |
+//  +------------------------------------------+
+//  | padding to 16-byte alignment             |
+//  +------------------------------------------+
+//
+// TODO-SVE: We should update this layout to conform with Windows XSTATE.
+typedef struct DECLSPEC_ALIGN(16) _CONTEXT_SVE_STATE_HEADER
+{
+    DWORD VectorLengthInBytes;
+    DWORD Reserved[3];
+} CONTEXT_SVE_STATE_HEADER, *PCONTEXT_SVE_STATE_HEADER;
 
 //
 // Nonvolatile context pointer record.
@@ -2122,12 +2139,6 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define MEM_DECOMMIT                    0x4000
 #define MEM_RELEASE                     0x8000
 #define MEM_FREE                        0x10000
-#define MEM_PRIVATE                     0x20000
-#define MEM_MAPPED                      0x40000
-#define MEM_TOP_DOWN                    0x100000
-#define MEM_WRITE_WATCH                 0x200000
-#define MEM_LARGE_PAGES                 0x20000000
-#define MEM_RESERVE_EXECUTABLE          0x40000000 // reserve memory using executable memory allocator
 
 PALIMPORT
 HANDLE
@@ -2213,60 +2224,6 @@ PAL_GetProcAddressDirect(
         IN NATIVE_LIBRARY_HANDLE dl_handle,
         IN LPCSTR lpProcName);
 
-/*++
-Function:
-  PAL_LOADLoadPEFile
-
-Abstract
-  Loads a PE file into memory.  Properly maps all of the sections in the PE file.  Returns a pointer to the
-  loaded base.
-
-Parameters:
-    IN hFile    - The file to load
-    IN offset - offset within hFile where the PE "file" is located
-
-Return value:
-    A valid base address if successful.
-    0 if failure
---*/
-PALIMPORT
-PVOID
-PALAPI
-PAL_LOADLoadPEFile(HANDLE hFile, size_t offset);
-
-/*++
-    PAL_LOADUnloadPEFile
-
-    Unload a PE file that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the file pointer returned by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-PALIMPORT
-BOOL
-PALAPI
-PAL_LOADUnloadPEFile(PVOID ptr);
-
-/*++
-    PAL_LOADMarkSectionAsNotNeeded
-
-    Mark a section as NotNeeded that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the section address mapped by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-BOOL
-PALAPI
-PAL_LOADMarkSectionAsNotNeeded(void * ptr);
-
 PALIMPORT
 FARPROC
 PALAPI
@@ -2315,82 +2272,6 @@ PALIMPORT
 LPCSTR
 PALAPI
 PAL_GetLoadLibraryError();
-
-PALIMPORT
-LPVOID
-PALAPI
-PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
-    IN LPCVOID lpBeginAddress,
-    IN LPCVOID lpEndAddress,
-    IN SIZE_T dwSize,
-    IN BOOL storeAllocationInfo);
-
-PALIMPORT
-void
-PALAPI
-PAL_GetExecutableMemoryAllocatorPreferredRange(
-    OUT PVOID *start,
-    OUT PVOID *end);
-
-PALIMPORT
-LPVOID
-PALAPI
-VirtualAlloc(
-         IN LPVOID lpAddress,
-         IN SIZE_T dwSize,
-         IN DWORD flAllocationType,
-         IN DWORD flProtect);
-
-PALIMPORT
-BOOL
-PALAPI
-VirtualFree(
-        IN LPVOID lpAddress,
-        IN SIZE_T dwSize,
-        IN DWORD dwFreeType);
-
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-
-PALIMPORT
-VOID
-PALAPI
-PAL_JitWriteProtect(bool writeEnable);
-
-#elif defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
-
-// Define empty macro for platforms that don't allow JIT write protection
-#define PAL_JitWriteProtect(writeEnable) do { } while(0)
-
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-
-PALIMPORT
-BOOL
-PALAPI
-VirtualProtect(
-           IN LPVOID lpAddress,
-           IN SIZE_T dwSize,
-           IN DWORD flNewProtect,
-           OUT PDWORD lpflOldProtect);
-
-typedef struct _MEMORY_BASIC_INFORMATION {
-    PVOID BaseAddress;
-    PVOID AllocationBase_PAL_Undefined;
-    DWORD AllocationProtect;
-    SIZE_T RegionSize;
-    DWORD State;
-    DWORD Protect;
-    DWORD Type;
-} MEMORY_BASIC_INFORMATION, *PMEMORY_BASIC_INFORMATION;
-
-PALIMPORT
-SIZE_T
-PALAPI
-VirtualQuery(
-         IN LPCVOID lpAddress,
-         OUT PMEMORY_BASIC_INFORMATION lpBuffer,
-         IN SIZE_T dwLength);
 
 #define MoveMemory memmove
 #define CopyMemory memcpy

@@ -1211,10 +1211,15 @@ void InitThreadManager()
     if (IsWriteBarrierCopyEnabled())
     {
         s_barrierCopy = ExecutableAllocator::Instance()->Reserve(g_SystemInfo.dwAllocationGranularity);
-        ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true);
         if (s_barrierCopy == NULL)
         {
             _ASSERTE(!"Allocation of GC barrier code page failed");
+            COMPlusThrowWin32();
+        }
+
+        if (ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true) == NULL)
+        {
+            _ASSERTE(!"Commit of GC barrier code page failed");
             COMPlusThrowWin32();
         }
 
@@ -4786,7 +4791,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
     {
         MEMORY_BASIC_INFORMATION mbi;
 
-        if (ClrVirtualQuery(getStackHash, &mbi, sizeof(mbi)))
+        if (VirtualQuery(getStackHash, &mbi, sizeof(mbi)))
         {
             moduleBase = (size_t)mbi.AllocationBase;
             moduleTop = (size_t)mbi.BaseAddress + mbi.RegionSize;
@@ -4794,7 +4799,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
         else
         {
             // way bad error, probably just assert and exit
-            _ASSERTE (!"ClrVirtualQuery failed");
+            _ASSERTE (!"VirtualQuery failed");
             moduleBase = 0;
             moduleTop = 0;
         }
@@ -5048,7 +5053,7 @@ void * Thread::GetStackLowerBound()
    MEMORY_BASIC_INFORMATION lowerBoundMemInfo;
     SIZE_T dwRes;
 
-    dwRes = ClrVirtualQuery((const void *)&lowerBoundMemInfo, &lowerBoundMemInfo, sizeof(MEMORY_BASIC_INFORMATION));
+    dwRes = VirtualQuery((const void *)&lowerBoundMemInfo, &lowerBoundMemInfo, sizeof(MEMORY_BASIC_INFORMATION));
 
     if (sizeof(MEMORY_BASIC_INFORMATION) == dwRes)
     {
@@ -5301,7 +5306,7 @@ static void DebugLogMBIFlags(UINT uState, UINT uProtect)
 #endif // !TARGET_UNIX
 }
 
-
+#ifndef TARGET_UNIX
 static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 {
     CONTRACTL
@@ -5319,7 +5324,7 @@ static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 
     while (uStartOfThisRegion < uHighAddress)
     {
-        SIZE_T res = ClrVirtualQuery((const void *)uStartOfThisRegion, &meminfo, sizeof(meminfo));
+        SIZE_T res = VirtualQuery((const void *)uStartOfThisRegion, &meminfo, sizeof(meminfo));
 
         if (sizeof(meminfo) != res)
         {
@@ -5385,6 +5390,7 @@ void Thread::DebugLogStackMBIs()
 
     DebugLogStackRegionMBIs(uStackLimit, uStackBase);
 }
+#endif // !TARGET_UNIX
 #endif // _DEBUG
 
 NOINLINE void AllocateSomeStack(){
@@ -5568,8 +5574,8 @@ BOOL Thread::MarkPageAsGuard(UINT_PTR uGuardPageBase)
 
     DWORD flOldProtect;
 
-    ClrVirtualProtect((LPVOID)uGuardPageBase, 1,
-                      (PAGE_READWRITE | PAGE_GUARD), &flOldProtect);
+    VirtualProtect((LPVOID)uGuardPageBase, 1,
+                   (PAGE_READWRITE | PAGE_GUARD), &flOldProtect);
 
     // Intentionally ignore return value -- if it failed, we'll find out below
     // and keep moving up the stack until we either succeed or we hit the guard
@@ -5582,7 +5588,7 @@ BOOL Thread::MarkPageAsGuard(UINT_PTR uGuardPageBase)
     MEMORY_BASIC_INFORMATION meminfo;
     SIZE_T dwRes;
 
-    dwRes = ClrVirtualQuery((const void *)uGuardPageBase, &meminfo, sizeof(meminfo));
+    dwRes = VirtualQuery((const void *)uGuardPageBase, &meminfo, sizeof(meminfo));
 
     return ((sizeof(meminfo) == dwRes) && (meminfo.Protect & PAGE_GUARD));
 }

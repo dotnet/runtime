@@ -2,9 +2,10 @@
 {
 	"name": "Standard configuration",
 	"build": {
+		"context": "..",
 		"dockerfile": "Dockerfile",
 		"args": {
-			"VARIANT": "8.0-noble"
+			"VARIANT": "11.0-resolute"
 		}
 	},
 	"hostRequirements": {

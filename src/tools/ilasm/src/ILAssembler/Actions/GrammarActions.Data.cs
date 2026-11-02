@@ -34,13 +34,14 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        int declarationOffset = _mappedFieldData.Count;
+        BlobBuilder data = GetDataBuilder(builder.Section);
+        int declarationOffset = data.Count;
         if (builder.Name is not null && !_mappedFieldDataNames.ContainsKey(builder.Name))
         {
-            _mappedFieldDataNames.Add(builder.Name, declarationOffset);
+            _mappedFieldDataNames.Add(builder.Name, new DataLocation(builder.Section, declarationOffset));
         }
 
-        _mappedFieldData.LinkSuffix(builder.Data);
+        data.LinkSuffix(builder.Data);
         if (builder.ReferenceFixups is null)
         {
             return;
@@ -51,6 +52,7 @@ internal sealed partial class GrammarActions
             _mappedFieldDataReferenceFixups.Add(reference with
             {
                 DataOffset = declarationOffset + reference.DataOffset,
+                Section = builder.Section,
             });
         }
     }
@@ -61,7 +63,7 @@ internal sealed partial class GrammarActions
         byte section,
         IToken name)
     {
-        _ = section;
+        builder.Section = (DataSection)section;
         builder.Name = ParseIdentifier(name);
     }
 
@@ -69,22 +71,15 @@ internal sealed partial class GrammarActions
         CILParser.DataDeclarationBuilder builder,
         byte section)
     {
-        _ = builder;
-        _ = section;
+        builder.Section = (DataSection)section;
     }
 
-    internal byte GetMappedDataSection() => 0;
+    internal byte GetMappedDataSection() => (byte)DataSection.Data;
 
     internal byte GetTlsDataSection(CILParser.TlsContext context)
-    {
-        ReportError(
-            DiagnosticIds.UnsupportedTlsData,
-            DiagnosticMessageTemplates.UnsupportedTlsData,
-            context);
-        return 1;
-    }
+        => (byte)DataSection.Tls;
 
-    internal byte GetCilDataSection() => 2;
+    internal byte GetCilDataSection() => (byte)DataSection.Cil;
     internal int ParseDataItemCount(CILParser.DataDeclarationBuilder builder, IToken token)
     {
         int diagnosticCount = _diagnostics.Count;
@@ -224,5 +219,11 @@ internal sealed partial class GrammarActions
     }
 #pragma warning restore CA1822
 
-
+    private BlobBuilder GetDataBuilder(DataSection section) => section switch
+    {
+        DataSection.Data => _mappedFieldData,
+        DataSection.Tls => _tlsData,
+        DataSection.Cil => _cilData,
+        _ => throw new UnreachableException(),
+    };
 }

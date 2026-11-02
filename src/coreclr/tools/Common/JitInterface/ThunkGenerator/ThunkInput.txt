@@ -202,7 +202,6 @@ FUNCTIONS
     CorInfoCallConvExtension getUnmanagedCallConv(            CORINFO_METHOD_HANDLE       method,            CORINFO_SIG_INFO*           callSiteSig, bool* pSuppressGCTransition);
     bool pInvokeMarshalingRequired(        CORINFO_METHOD_HANDLE       method,        CORINFO_SIG_INFO*           callSiteSig        );
     bool satisfiesMethodConstraints(        CORINFO_CLASS_HANDLE        parent,        CORINFO_METHOD_HANDLE       method        );
-    void methodMustBeLoadedBeforeCodeIsRun(        CORINFO_METHOD_HANDLE       method        );
     void getGSCookie(        GSCookie * pCookieVal,        GSCookie ** ppCookieVal        );
     void setPatchpointInfo(PatchpointInfo* patchpointInfo);
     PatchpointInfo* getOSRInfo(unsigned * ilOffset);
@@ -218,6 +217,8 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index)
     size_t printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
     bool isValueClass(CORINFO_CLASS_HANDLE cls)
+    bool isByRefLike(CORINFO_CLASS_HANDLE cls)
+    bool isSharedInst(CORINFO_CLASS_HANDLE cls)
     uint32_t getClassAttribs(CORINFO_CLASS_HANDLE cls)
     const char* getClassAssemblyName(CORINFO_CLASS_HANDLE cls)
     void* LongLifetimeMalloc(size_t sz)
@@ -249,7 +250,6 @@ FUNCTIONS
     bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, REF_CORINFO_CONST_LOOKUP pLookup)
     void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP *pLookup)
     CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context)
-    void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId)
     CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls)
     CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)

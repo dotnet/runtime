@@ -27,6 +27,32 @@ namespace System
         public static bool ContainsAny(this ReadOnlySpan<char> span, ReadOnlySpan<char> values) =>
             span.IndexOfAny(values) >= 0;
 
+        public static int IndexOfAnyExcept(this ReadOnlySpan<byte> span, byte value)
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (span[i] != value)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public static int LastIndexOfAnyExcept(this ReadOnlySpan<byte> span, byte value)
+        {
+            for (int i = span.Length - 1; i >= 0; i--)
+            {
+                if (span[i] != value)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
         public static int Count<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>
         {
             int count = 0;

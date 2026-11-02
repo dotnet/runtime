@@ -2198,6 +2198,9 @@ public:
     // Returns the target's processor architecture, OS family, and pointer size.
     virtual HRESULT STDMETHODCALLTYPE GetTargetInfo(OUT TargetInfo * pTargetInfo) = 0;
 
+    // Returns the target's product major, minor, and patch versions, with dwSubBuild set to zero.
+    virtual HRESULT STDMETHODCALLTYPE GetRuntimeVersion(OUT COR_VERSION * pVersion) = 0;
+
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL
 

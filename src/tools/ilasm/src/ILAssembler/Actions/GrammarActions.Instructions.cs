@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
@@ -252,12 +253,31 @@ internal sealed partial class GrammarActions
         }
     }
 
-    internal void SetEntryPoint()
+    internal void SetEntryPoint(IToken directiveToken)
     {
-        if (_currentMethod is not null)
+        if (_currentMethod is null)
         {
-            _entityRegistry.EntryPoint = _currentMethod.Definition;
+            return;
         }
+
+        if (_entityRegistry.EntryPoint is not null)
+        {
+            ReportError(
+                DiagnosticIds.DuplicateEntryPoint,
+                DiagnosticMessageTemplates.DuplicateEntryPoint,
+                directiveToken);
+            return;
+        }
+
+        if (!_currentMethod.Definition.MethodAttributes.HasFlag(MethodAttributes.Static))
+        {
+            ReportError(
+                DiagnosticIds.InstanceEntryPoint,
+                DiagnosticMessageTemplates.InstanceEntryPoint,
+                directiveToken);
+        }
+
+        _entityRegistry.EntryPoint = _currentMethod.Definition;
     }
 
     internal void SetZeroInit()
@@ -372,8 +392,14 @@ internal sealed partial class GrammarActions
         string normalized = text.Replace('.', '_');
         normalized = normalized switch
         {
+            "brnull" or "brzero" => "brfalse",
+            "brnull_s" or "brzero_s" => "brfalse_s",
+            "brinst" => "brtrue",
+            "brinst_s" => "brtrue_s",
             "ldelem_u8" => "ldelem_i8",
             "ldind_u8" => "ldind_i8",
+            "ldelem_any" => "ldelem",
+            "stelem_any" => "stelem",
             "endfault" => "endfinally",
             _ => normalized
         };

@@ -170,8 +170,7 @@ namespace System.Net.Http.Functional.Tests
         {
             var handler = new SocketsHttpHandler();
 
-            // Browser doesn't support ServerCertificateCustomValidationCallback
-            if (allowAllCertificates && PlatformDetection.IsNotBrowser)
+            if (allowAllCertificates && PlatformDetection.IsTlsSupported)
             {
                 handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
             }

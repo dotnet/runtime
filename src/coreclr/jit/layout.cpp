@@ -522,7 +522,7 @@ bool ClassLayout::HasGCByRef() const
 bool ClassLayout::IsStackOnly(Compiler* comp) const
 {
     // Byref-like structs are stack only
-    if ((m_classHandle != NO_CLASS_HANDLE) && comp->eeIsByrefLike(m_classHandle))
+    if ((m_classHandle != NO_CLASS_HANDLE) && comp->eeIsByRefLike(m_classHandle))
     {
         return true;
     }

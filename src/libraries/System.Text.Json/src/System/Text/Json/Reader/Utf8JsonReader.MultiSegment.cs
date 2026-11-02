@@ -23,7 +23,7 @@ namespace System.Text.Json
         /// </remarks>
         public Utf8JsonReader(ReadOnlySequence<byte> jsonData, bool isFinalBlock, JsonReaderState state)
         {
-            _buffer = jsonData.First.Span;
+            _buffer = jsonData.FirstSpan;
 
             _isFinalBlock = isFinalBlock;
             _isInputSequence = true;
@@ -634,20 +634,7 @@ namespace System.Text.Json
         {
             Debug.Assert(span.Length > 0);
 
-            int indexOfFirstMismatch;
-
-#if NET
-            indexOfFirstMismatch = span.CommonPrefixLength(literal);
-#else
-            int minLength = Math.Min(span.Length, literal.Length);
-            for (indexOfFirstMismatch = 0; indexOfFirstMismatch < minLength; indexOfFirstMismatch++)
-            {
-                if (span[indexOfFirstMismatch] != literal[indexOfFirstMismatch])
-                {
-                    break;
-                }
-            }
-#endif
+            int indexOfFirstMismatch = span.CommonPrefixLength(literal);
 
             Debug.Assert(indexOfFirstMismatch >= 0 && indexOfFirstMismatch < literal.Length);
 
@@ -2206,7 +2193,7 @@ namespace System.Text.Json
                     }
                     else
                     {
-                        ValueSpan = commentSequence.First.Span;
+                        ValueSpan = commentSequence.FirstSpan;
                     }
 
                     if (_tokenType != JsonTokenType.Comment)

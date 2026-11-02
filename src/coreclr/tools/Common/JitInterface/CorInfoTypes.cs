@@ -529,7 +529,7 @@ namespace Internal.JitInterface
                                                // e.g. in R2R scenarios, encoding an offset from $imageBase
         WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
         WASM_METHOD_RELATIVE_VIRTUAL_IP_I32, // Wasm: the current method's virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
-        WASM_METHOD_FRAME_IDENTITY_SLEB, // Wasm: negative odd CoreLib runtime-function identity, encoded as a signed varint32.
+        WASM_METHOD_FRAME_IDENTITY_SLEB, // Wasm: the current method's runtime-specific shadow-frame identity, encoded as a 5-byte varint32.
     }
 
     public enum CorInfoGCType

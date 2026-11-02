@@ -36,11 +36,9 @@ namespace System.Threading
         private StartHelper? _startHelper;
 #endif
 
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+#if FEATURE_MULTITHREADING && !TARGET_WINDOWS
         internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
-#if FEATURE_MULTITHREADING
         private volatile ManualResetEvent? _joinEvent;
-#endif
 #endif
 
         private IntPtr _DONT_USE_InternalThread;
@@ -185,31 +183,13 @@ namespace System.Threading
             Interlocked.And(ref nativeThread->m_State, ~NativeThread.ThreadState.TS_WaitSleepJoin);
         }
 
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
-        internal WaitSubsystem.ThreadWaitInfo WaitInfo
-        {
-            get
-            {
-                return Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
-
-                WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
-                {
-                    Interlocked.CompareExchange(ref _waitInfo, new WaitSubsystem.ThreadWaitInfo(this), null!);
-                    return _waitInfo;
-                }
-            }
-        }
-#endif
-
         private void OnThreadExited()
         {
             // Consider this managed thread as dead.
             // The unmanaged thread is still alive, but will die soon, after cleaning up some state.
-            // We set _isDead = true before calling _waitInfo?.OnThreadExiting() and SetJoinHandle()
-            // so that any threads waiting on this thread to end will correctly see that it is stopped
-            // when we set the join handle.
+            // Mark the thread as stopped before notifying any waiters that it has exited.
             _isDead = true;
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+#if FEATURE_MULTITHREADING && !TARGET_WINDOWS
             // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by
             // the thread.
             _waitInfo?.OnThreadExiting();

@@ -22,6 +22,9 @@ namespace ILCompiler.DependencyAnalysis
         protected override bool CanFold(MethodDesc method)
             => _methodBodyDeduplicator?.CanFold(method) ?? false;
 
+        // WASM stack-trace metadata distinguishes address-taken methods from direct-call targets.
+        protected override bool RequiresAddressTakenTracking => Target.IsWasm;
+
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
             if (method.IsInternalCall)
