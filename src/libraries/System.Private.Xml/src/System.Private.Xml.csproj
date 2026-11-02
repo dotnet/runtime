@@ -305,6 +305,7 @@
     <Compile Include="System\Xml\XPath\Internal\ResettableIterator.cs" />
     <Compile Include="System\Xml\XPath\Internal\ReversePositionQuery.cs" />
     <Compile Include="System\Xml\XPath\Internal\Root.cs" />
+    <Compile Include="System\Xml\XPath\Internal\SiblingInputParents.cs" />
     <Compile Include="System\Xml\XPath\Internal\SortQuery.cs" />
     <Compile Include="System\Xml\XPath\Internal\StringFunctions.cs" />
     <Compile Include="System\Xml\XPath\Internal\ValueQuery.cs" />
