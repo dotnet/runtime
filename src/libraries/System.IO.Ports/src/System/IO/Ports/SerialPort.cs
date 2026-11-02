@@ -1226,7 +1226,7 @@ namespace System.IO.Ports
             _internalSerialStream.Write(buffer, offset, count, _writeTimeout);
         }
 
-        public void WriteLine(string text)
+        public void WriteLine(string? text)
         {
             Write(text + NewLine);
         }
