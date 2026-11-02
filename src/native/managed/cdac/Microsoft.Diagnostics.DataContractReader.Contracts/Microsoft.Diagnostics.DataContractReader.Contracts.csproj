@@ -5,9 +5,8 @@
     <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Do not produce a public package. This ships as part of the runtime -->
     <IsShipping>false</IsShipping>
-    <IsPackable>true</IsPackable>
+    <IsPackable>false</IsPackable>
     <InvariantGlobalization>true</InvariantGlobalization>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
