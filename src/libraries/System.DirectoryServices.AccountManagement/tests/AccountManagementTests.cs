@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using System.DirectoryServices.Tests;
-using System.Linq;
-using Xunit;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.DirectoryServices.Tests;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
+using Xunit;
 
 namespace System.DirectoryServices.AccountManagement.Tests
 {
@@ -677,6 +679,119 @@ namespace System.DirectoryServices.AccountManagement.Tests
                                                         LdapConfiguration.Configuration.ServerName,
                                                         LdapConfiguration.Configuration.UserName,
                                                         LdapConfiguration.Configuration.Password);
+    }
+
+    public class AuthenticablePrincipalTests
+    {
+        private const string FirstCertificate =
+            "MIIBETCBuaADAgECAgkA9StU5ZnBmM4wCgYIKoZIzj0EAwIwDzENMAsGA1UEAxMEdGlueTAeFw0yMTA5MTUyMjAyNDNaFw0yMTA5MTUyMjAyNDNaMA8xDTALBgNVBAMT" +
+            "BHRpbnkwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQZ+baUXzzLi+p3cZEf4f23L/2Dbn5UB/uMCB7L71rWf3UwuCA3Is5uPci/3PQYLNwDkP3m3ZzxyzVCgFVqqYFg" +
+            "MAoGCCqGSM49BAMCA0cAMEQCIHafyKHQhv+03DaOJpuotD+jNu0Nc9pUI9OA8pUY3+qJAiBsqKjtc8LuGtUoqGvxLLQJwJ2QNY/qyEGtaImlqTYg5w==";
+
+        private const string SecondCertificate =
+            "MIIBETCBuaADAgECAgkAg4L3Q2Ro0vcwCgYIKoZIzj0EAwIwDzENMAsGA1UEAxMEdGlueTAeFw0yMTA5MTUyMjA1MTBaFw0yMTA5MTUyMjA1MTBaMA8xDTALBgNVBAMT" +
+            "BHRpbnkwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATaulLpfqjLAxefbhEgamRfHNyIRzCpXRtktpjEQi3kFa39SHJEvoX/LFTeSisw+0sNPGjIKVOLUQvx7+5x0H3F" +
+            "MAoGCCqGSM49BAMCA0cAMEQCIHIweJarpnxQ88gAtGbBq6iFWjGhXP0mfxJtrJKdWqzGAiBqbvlwpNMDKYGB7fwthHKn4SzxQaHYj27TdRuitsNCHg==";
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        [InlineData("ab", "ab", true)]
+        [InlineData("ab", "ba", true)]
+        [InlineData("ab", "aba", false)]
+        [InlineData("ab", "a", false)]
+        [InlineData("ab", "aa", false)]
+        [InlineData("aab", "aba", true)]
+        [InlineData("aab", "abb", false)]
+        public void CertificateCollectionsMatch_ComparesEncodedCertificateMultisets(
+            string originalCertificateOrder,
+            string currentCertificateOrder,
+            bool expected)
+        {
+            using X509Certificate2 firstCertificate = LoadCertificate(FirstCertificate);
+            using X509Certificate2 secondCertificate = LoadCertificate(SecondCertificate);
+
+            List<byte[]> originalCertificateData = CreateOriginalCertificateData(
+                originalCertificateOrder,
+                firstCertificate,
+                secondCertificate);
+            X509Certificate2Collection currentCertificates = CreateCertificateCollection(
+                currentCertificateOrder,
+                firstCertificate,
+                secondCertificate);
+
+            Assert.Equal(expected, CertificateCollectionsMatch(originalCertificateData, currentCertificates));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public void CertificateCollectionsMatch_DetectsEncodedDataDifference()
+        {
+            using X509Certificate2 certificate = LoadCertificate(FirstCertificate);
+            byte[] originalCertificateData = certificate.RawData;
+            originalCertificateData[originalCertificateData.Length - 1] ^= 1;
+
+            Assert.False(CertificateCollectionsMatch(
+                new List<byte[]> { originalCertificateData },
+                new X509Certificate2Collection(certificate)));
+        }
+
+        private static bool CertificateCollectionsMatch(
+            IReadOnlyList<byte[]> originalCertificateData,
+            X509Certificate2Collection currentCertificates)
+        {
+            MethodInfo method = typeof(AuthenticablePrincipal).GetMethod(
+                nameof(CertificateCollectionsMatch),
+                BindingFlags.Static | BindingFlags.NonPublic);
+            return (bool)method.Invoke(null, new object[] { originalCertificateData, currentCertificates });
+        }
+
+        private static List<byte[]> CreateOriginalCertificateData(
+            string certificateOrder,
+            X509Certificate2 firstCertificate,
+            X509Certificate2 secondCertificate)
+        {
+            List<byte[]> certificateData = new List<byte[]>(certificateOrder.Length);
+
+            foreach (char certificateName in certificateOrder)
+            {
+                certificateData.Add(GetCertificate(certificateName, firstCertificate, secondCertificate).RawData);
+            }
+
+            return certificateData;
+        }
+
+        private static X509Certificate2Collection CreateCertificateCollection(
+            string certificateOrder,
+            X509Certificate2 firstCertificate,
+            X509Certificate2 secondCertificate)
+        {
+            X509Certificate2Collection certificates = new X509Certificate2Collection();
+
+            foreach (char certificateName in certificateOrder)
+            {
+                certificates.Add(GetCertificate(certificateName, firstCertificate, secondCertificate));
+            }
+
+            return certificates;
+        }
+
+        private static X509Certificate2 GetCertificate(
+            char certificateName,
+            X509Certificate2 firstCertificate,
+            X509Certificate2 secondCertificate)
+        {
+            return certificateName switch
+            {
+                'a' => firstCertificate,
+                'b' => secondCertificate,
+                _ => throw new ArgumentOutOfRangeException(nameof(certificateName)),
+            };
+        }
+
+        private static X509Certificate2 LoadCertificate(string certificateData)
+        {
+#pragma warning disable SYSLIB0057 // X509Certificate2 constructor is obsolete
+            return new X509Certificate2(Convert.FromBase64String(certificateData));
+#pragma warning restore SYSLIB0057
+        }
     }
 
     internal class UserData
