@@ -533,6 +533,83 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(0, sink.Writes.Count(w => w.LoggerName == typeof(DefaultHttpClientFactory).FullName));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsPreciseGcSupported))]
+        public async Task ServiceProviderDispose_PendingExpiryTimer_DoesNotKeepServiceProviderAlive()
+        {
+            // The handler lifetime is long enough that the expiry timer is still pending when the provider is dropped.
+            WeakReference serviceProvider = CreateAndDisposeServiceProviderWithClientHeldBySingleton(TimeSpan.FromMinutes(2), waitForExpiry: false);
+
+            Assert.True(await WaitForCollectionAsync(serviceProvider), "Service provider collected");
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsPreciseGcSupported))]
+        public async Task ServiceProviderDispose_PendingCleanupOfLiveHandler_DoesNotKeepServiceProviderAlive()
+        {
+            // The handler expires while a singleton still holds a client, so the cleanup cycle can't dispose it
+            // and keeps rescheduling itself. That must not keep the service provider alive after it is dropped.
+            WeakReference serviceProvider = CreateAndDisposeServiceProviderWithClientHeldBySingleton(TimeSpan.FromSeconds(1), waitForExpiry: true);
+
+            Assert.True(await WaitForCollectionAsync(serviceProvider), "Service provider collected");
+        }
+
+        // Separate and synchronous to avoid the service provider getting its lifetime extended by
+        // the state machine of the test.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static WeakReference CreateAndDisposeServiceProviderWithClientHeldBySingleton(TimeSpan handlerLifetime, bool waitForExpiry)
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddHttpClient("test").SetHandlerLifetime(handlerLifetime);
+            serviceCollection.AddSingleton<ClientHolder>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var factory = (DefaultHttpClientFactory)serviceProvider.GetRequiredService<IHttpClientFactory>();
+            serviceProvider.GetRequiredService<ClientHolder>();
+
+            if (waitForExpiry)
+            {
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                while (factory._expiredHandlers.IsEmpty)
+                {
+                    Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30), "Handler expired");
+                    Thread.Sleep(100);
+                }
+            }
+
+            serviceProvider.Dispose();
+            return new WeakReference(serviceProvider);
+        }
+
+        private static async Task<bool> WaitForCollectionAsync(WeakReference weakReference)
+        {
+            // Being pretty conservative here because we want this test to be reliable,
+            // and it depends on the GC and timing.
+            for (var i = 0; i < 5; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+
+                if (!weakReference.IsAlive)
+                {
+                    return true;
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(1));
+            }
+
+            return false;
+        }
+
+        private sealed class ClientHolder
+        {
+            public ClientHolder(IHttpClientFactory factory)
+            {
+                Client = factory.CreateClient("test");
+            }
+
+            public HttpClient Client { get; }
+        }
+
         private class TestHttpClientFactory : DefaultHttpClientFactory
         {
             public TestHttpClientFactory(
