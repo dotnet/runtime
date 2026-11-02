@@ -10,6 +10,93 @@ import { readFile } from "node:fs/promises";
 import ts from "typescript";
 import { createWorkerModuleLoader, seedNativeRequestIds } from "./worker-transport-worker.mjs";
 
+test("native host operations retain INTERNAL names while UI helpers are isolated in TARGET", async () => {
+    const bytes = new Uint8Array(64);
+    const load = createWorkerModuleLoader(createContext({}), {
+        "../../Common/JavaScript/ems-ambient": { _ems_: { _GetDotNetRuntimeContractDescriptor: () => 16, HEAPU8: bytes } },
+    });
+    const module = await load("../../../System.Native.Browser/utils/cdac");
+    await module.evaluate();
+    const runtime = { INTERNAL: { TARGET: { getProperty: () => 42 } } };
+    module.namespace.registerCDAC(runtime);
+    assert.deepEqual(Object.keys(runtime.INTERNAL), ["TARGET", "GetDotNetRuntimeContractDescriptor", "GetDotNetRuntimeHeap"]);
+    assert.equal(runtime.INTERNAL.getProperty, undefined);
+    assert.equal(runtime.INTERNAL.TARGET.getProperty(), 42);
+    assert.equal(runtime.INTERNAL.GetDotNetRuntimeContractDescriptor(), 16);
+    const view = runtime.INTERNAL.GetDotNetRuntimeHeap(16, 8);
+    assert.equal(view.buffer, bytes.buffer);
+    bytes[16] = 68;
+    assert.equal(view[0], 68);
+});
+
+test("diagnostic downloads forward from the native worker without DOM access and preserve returned trace data", async () => {
+    const chunks = [new Uint8Array([78, 101, 116, 116, 114, 97, 99, 101])];
+    let forwarded;
+    const internals = [];
+    internals[10] = { role: "worker", downloadDiagnosticData: messages => forwarded = messages };
+    const globals = {};
+    Object.defineProperty(globals, "document", { get() {
+        throw new Error("Worker attempted a DOM operation");
+    } });
+    const load = createWorkerModuleLoader(createContext(globals), {
+        "../types": { InternalExchangeIndex: { WorkerRuntimeContext: 10 } },
+        "./cross-module": { dotnetApi: {}, dotnetLogger: {}, dotnetInternals: internals },
+    });
+    const module = await load("../../../System.Native.Browser/diagnostics/common");
+    await module.evaluate();
+    module.namespace.downloadBlob(chunks);
+    assert.equal(forwarded, chunks);
+    assert.equal(chunks[0].byteLength, 8);
+    delete internals[10].downloadDiagnosticData;
+    assert.throws(() => module.namespace.downloadBlob(chunks), /forwarding is not initialized/);
+});
+
+test("native host requests preserve UI promises while native-owned assembly and diagnostics work executes remotely", async () => {
+    let adapter;
+    const calls = [];
+    let complete;
+    const local = {
+        loadLazyAssembly: async name => {
+            calls.push(name);
+            if (name === "missing.dll") throw new Error("local assembly missing");
+            if (name === "pending.dll") return new Promise(resolve => complete = resolve);
+            return true;
+        },
+        loadSatelliteAssemblies: async cultures => calls.push(cultures),
+        collectMetrics: async options => {
+            assert.equal(options.skipDownload, true);
+            return [new Uint8Array([78, 101, 116]), new Uint8Array([116, 114, 97, 99, 101])];
+        },
+    };
+    const worker = { postMessage(request, transfers) {
+        void adapter.serveWorkerLocal(structuredClone(request, { transfer: transfers }), local);
+    } };
+    const load = createWorkerModuleLoader(createContext({ Error, MessageChannel, Uint8Array, ArrayBuffer }), {});
+    const module = await load("./worker-local");
+    await module.evaluate();
+    adapter = module.namespace;
+    const abort = new AbortController();
+    const client = adapter.createWorkerLocal(worker, abort.signal, {
+        GetDotNetRuntimeContractDescriptor: () => 128,
+        GetDotNetRuntimeHeap: () => new Uint8Array([1, 2]),
+        connectDSRouter: url => calls.push(url),
+    });
+    assert.equal(await client.loadLazyAssembly("fixture.dll"), true);
+    await client.loadSatelliteAssemblies(["fr-FR"]);
+    await assert.rejects(client.loadLazyAssembly("missing.dll"), /local assembly missing/);
+    const chunks = await client.collectMetrics({ skipDownload: false, durationSeconds: 0.1 });
+    assert.deepEqual(chunks.map(chunk => Array.from(chunk)), [[78, 101, 116], [116, 114, 97, 99, 101]]);
+    assert.equal(client.GetDotNetRuntimeContractDescriptor(), 128);
+    client.connectDSRouter("ws://localhost:9000");
+    assert.deepEqual(calls, ["fixture.dll", ["fr-FR"], "missing.dll", "ws://localhost:9000"]);
+    const pending = client.loadLazyAssembly("pending.dll");
+    while (!complete) await new Promise(resolve => setImmediate(resolve));
+    abort.abort(new Error("LOCAL host exited"));
+    await assert.rejects(pending, /LOCAL host exited/);
+    complete(true);
+    await assert.rejects(client.loadLazyAssembly("late.dll"), /LOCAL host exited/);
+});
+
 test("shared heap I53 reads preserve actual native conversion semantics at signed/unsigned boundaries", async () => {
     const buffer = new SharedArrayBuffer(64);
     const i64 = new BigInt64Array(buffer);
@@ -304,7 +391,7 @@ test("native-worker role initializes only forwarding callbacks without applicati
     assert.equal(current.initialized.includes("initializeMarshalersToCs"), false);
     assert.equal(current.initialized.includes("initializeMarshalersToJs"), false);
     assert.equal(current.api.getAssemblyExports, undefined);
-    assert.equal(current.api.INTERNAL.dynamicImport, undefined);
+    assert.equal(current.api.INTERNAL.TARGET, undefined);
     assert.equal(current.table.length, 8);
     assert.equal(current.table[0](1024), 42);
     current.table[5](7, 2048);

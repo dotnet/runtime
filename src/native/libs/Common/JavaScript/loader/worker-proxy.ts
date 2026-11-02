@@ -4,12 +4,13 @@
 import type { LoaderConfig, RuntimeAPI, VoidPtr } from "./types";
 import { InternalExchangeIndex } from "../types";
 import { scriptUrl } from "./bootstrap";
-import { dotnetApi, dotnetInternals, dotnetRuntimeExports, dotnetLogger, Module } from "./cross-module";
+import { dotnetApi, dotnetInternals, dotnetRuntimeExports, dotnetBrowserUtilsExports, dotnetLogger, Module } from "./cross-module";
 import { runtimeState } from "./exit";
 import { loaderCallbacks } from "./callbacks";
 import { initPolyfillsLoader } from "./polyfills";
 import { loadDotnetModule, loadJSModule, callLibraryInitializerOnRuntimeConfigLoaded, callLibraryInitializerOnRuntimeReady, updateWorkerDownloadProgress } from "./assets";
 import { serveWorkerResource } from "./worker-assets";
+import { createWorkerLocal } from "./worker-local";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { createNativeChannel, NativeOperation } from "./worker-native";
 import {
@@ -121,6 +122,18 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
         ];
         dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext] = {
             role: "ui", invoke: native.invoke, memory: message.wasmMemory, assertNativeCall: native.assertCallAvailable,
+            local: createWorkerLocal(worker, resourceAbort.signal, {
+                GetDotNetRuntimeContractDescriptor: () => native.invoke(NativeOperation.GetRuntimeContractDescriptor) >>> 0,
+                GetDotNetRuntimeHeap: (pointer, length) => dotnetApi.localHeapViewU8().subarray(pointer >>> 0, (pointer >>> 0) + length),
+                connectDSRouter: url => {
+                    const pointer = dotnetBrowserUtilsExports.stringToUTF16Ptr(url);
+                    try {
+                        native.invoke(NativeOperation.ConnectDSRouter, Number(pointer), Number(pointer) + url.length * 2);
+                    } finally {
+                        Module._free(pointer as any);
+                    }
+                },
+            }),
         };
         Object.assign(dotnetApi, {
             runMain: (assembly?: string, args?: string[]) => send(CommandId.RUN_MAIN, assembly, args),
@@ -196,7 +209,15 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
     worker.onmessage = event => {
         if (exited) return;
         const message = event.data as WorkerToMainMessage;
-        if (message.type === "resource") {
+        if (message.type === "diagnostic-download") {
+            try {
+                const download = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.downloadDiagnosticData;
+                if (!download) throw new Error("withWorker(): UI diagnostic download handler is not initialized");
+                download(message.chunks);
+            } catch (error) {
+                terminate(error instanceof Error ? error : new Error(String(error)));
+            }
+        } else if (message.type === "resource") {
             void serveWorkerResource(message, resourceAbort.signal).catch(error => terminate(error instanceof Error ? error : new Error(String(error))));
         } else if (message.type === "download-progress") {
             try {

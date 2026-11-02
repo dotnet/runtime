@@ -41,6 +41,12 @@ export async function setup(runtime) {
         },
         inlineThenableCalls: () => inlineThenableCalls,
         nativeBoundaryProof: () => {
+            const internal = runtime.INTERNAL;
+            check(!internal.LOCAL && !internal.getProperty && !internal.httpFetch, "Obsolete interop namespaces remain");
+            check(internal.TARGET.getProperty(document, "nodeType") === 9, "TARGET property helper did not execute on UI");
+            check(internal.TARGET.getGlobalThis() === globalThis, "TARGET global must remain the UI global");
+            check(typeof internal.loadLazyAssembly === "function" && typeof internal.loadSatelliteAssemblies === "function",
+                "Existing native-host names are missing");
             if (!worker) return true;
             const boundary = runtime.INTERNAL.nativeBoundary;
             check(boundary.role === "ui", "The UI must own normal interop");
@@ -49,7 +55,7 @@ export async function setup(runtime) {
                 "The worker created a second interop handle registry");
             check(!runtime.INTERNAL.workerImports && !runtime.INTERNAL.getWorkerAssemblyExports,
                 "The typed worker interop bridge is still installed");
-            check(runtime.INTERNAL.getProxyCounts()[4] > 0, "UI normal import binders are not populated");
+            check(runtime.INTERNAL.TARGET.getProxyCounts()[4] > 0, "UI normal import binders are not populated");
             const stats = boundary.getStats();
             check(stats.sent > 0 && stats.received > 0, "Native exchange tables were not exercised in both directions");
             return true;

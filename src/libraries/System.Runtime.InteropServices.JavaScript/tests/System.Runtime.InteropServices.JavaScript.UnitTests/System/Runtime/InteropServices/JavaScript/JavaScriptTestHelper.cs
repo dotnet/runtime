@@ -1302,11 +1302,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("setup", "JavaScriptTestHelper")]
         internal static partial Task Setup();
 
-        [JSImport("INTERNAL.forceDisposeProxies")]
+        [JSImport("INTERNAL.TARGET.forceDisposeProxies")]
         internal static partial void ForceDisposeProxies(bool disposeMethods, bool verbose);
 
         // [csOwnedByJsHandle, csOwnedByJsvHandle, jsOwnedRegistered, jsOwnedAlive, importWrappers]
-        [JSImport("INTERNAL.getProxyCounts")]
+        [JSImport("INTERNAL.TARGET.getProxyCounts")]
         internal static partial int[] GetProxyCounts();
 
         [JSImport("forceJsGc", "JavaScriptTestHelper")]

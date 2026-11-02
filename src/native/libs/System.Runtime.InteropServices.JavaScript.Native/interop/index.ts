@@ -79,7 +79,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         setModuleImports,
     };
     Object.assign(runtimeApi, runtimeApiLocal);
-    Object.assign(runtimeApi.INTERNAL, {
+    Object.assign(runtimeApi.INTERNAL.TARGET ??= {}, {
         hasProperty,
         getTypeOfProperty,
         getProperty,
@@ -88,9 +88,8 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         getDotnetInstance,
         dynamicImport,
         bindCsFunction,
-        loadSatelliteAssemblies,
-        loadLazyAssembly,
         getProxyCounts,
+        forceDisposeProxies,
 
         // WebSocket
         wsCreate,
@@ -119,6 +118,17 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         httpGetResponseLength,
         httpGetStreamedResponseBytes,
     });
+    Object.assign(runtimeApi.INTERNAL ??= {}, workerContext?.role === "ui"
+        ? workerContext.local
+        : { loadLazyAssembly, loadSatelliteAssemblies });
+    if (workerContext?.role === "ui") {
+        Object.assign(runtimeApi.INTERNAL, {
+            collectCpuSamples: runtimeApi.collectCpuSamples,
+            collectMetrics: runtimeApi.collectMetrics,
+            collectGcDump: runtimeApi.collectGcDump,
+            collectPgoTrace: runtimeApi.collectPgoTrace,
+        });
+    }
 
     internals[InternalExchangeIndex.RuntimeExportsTable] = runtimeExportsToTable({
         bindJSImportST,

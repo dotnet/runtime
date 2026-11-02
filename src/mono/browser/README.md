@@ -122,8 +122,18 @@ response streams are transferred to the worker without buffering whole WASM
 images. Progress combines UI and worker assets. Native JS modules are imported
 only in the worker, even when their URLs are selected by a UI callback.
 Shutdown aborts loader-owned fetches and cancels late custom response bodies.
-Lazy/satellite resource loading and diagnostics still need their native-host
-adapters and dedicated validation.
+`INTERNAL` selects native-host operations: lazy/satellite assembly loading,
+diagnostic collection/router operations and native contract/heap access. With a
+worker, UI wrappers retain normal interop handles and Task marshaling while the
+native host executes the operation. Without a worker, operations run locally.
+Diagnostic trace data returns to UI for downloads, including native/startup
+collections. Existing public diagnostic methods remain UI wrappers. Native-host
+names retain their existing INTERNAL paths, so ASP.NET Core lazy/culture callers
+do not need a namespace update. UI-owned property/global/module helpers,
+HTTP/WebSocket interop and proxy diagnostics are under `INTERNAL.TARGET`.
+Managed imports and direct JS callers use that explicit target namespace.
+Diagnostics sessions and collection continue to execute in the native host;
+the DOM download is dispatched to UI without moving trace/GC processing there.
 
 The JS interop test project supports an explicit `WasmTestWithWorker` mode.
 It registers its UI imports before managed execution and checks UI-backed

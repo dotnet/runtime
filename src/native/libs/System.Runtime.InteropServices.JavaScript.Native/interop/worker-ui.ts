@@ -13,6 +13,8 @@ import {
     stringsInit, utf16ToString, stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, stringToUTF8, utf8ToStringRelaxed,
 } from "../../System.Native.Browser/utils/strings";
 import { registerRuntime } from "../../System.Native.Browser/utils/runtime-list";
+import { downloadBlob } from "../../System.Native.Browser/diagnostics/common";
+import type { DiagnosticCommandOptions } from "./types";
 
 export function initializeWorkerUI(internals: InternalExchange): void {
     const context = internals[InternalExchangeIndex.WorkerRuntimeContext];
@@ -26,6 +28,23 @@ export function initializeWorkerUI(internals: InternalExchange): void {
     installMemoryAPI(dotnetApi);
     stringsInit(true);
     registerRuntime(dotnetApi);
+    context.downloadDiagnosticData = downloadBlob;
+    Object.assign(dotnetApi.INTERNAL.TARGET ??= {}, { downloadBlob });
+    if (!context.local) throw new Error("withWorker(): native LOCAL operations are missing");
+    const local = context.local;
+    const collect = (operation: "collectCpuSamples" | "collectMetrics" | "collectGcDump" | "collectPgoTrace") =>
+        async (options?: DiagnosticCommandOptions) => {
+            const chunks = await local[operation](options);
+            if (!options?.skipDownload) dotnetApi.INTERNAL.TARGET.downloadBlob(chunks);
+            return chunks;
+        };
+    Object.assign(dotnetApi, {
+        collectCpuSamples: collect("collectCpuSamples"),
+        collectMetrics: collect("collectMetrics"),
+        collectGcDump: collect("collectGcDump"),
+        collectPgoTrace: collect("collectPgoTrace"),
+        connectDSRouter: local.connectDSRouter,
+    });
     class ExitStatus extends Error {
         constructor(public status: number) {
             super(`Process exited with code ${status}`);

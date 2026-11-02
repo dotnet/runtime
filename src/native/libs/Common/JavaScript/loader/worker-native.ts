@@ -6,6 +6,7 @@ import {
     wakeMain, wakeWorker, readSharedError,
 } from "./shared-signaling";
 import type { AssetEntryInternal } from "./types";
+import type { LocalRuntimeAPI } from "./worker-local";
 
 const callCapacity = 16;
 const capacity = callCapacity + 4; // Allocation, release and exception marshaling must survive call saturation.
@@ -25,6 +26,8 @@ export const enum NativeOperation {
     Malloc,
     Free,
     RunBackgroundTimers,
+    GetRuntimeContractDescriptor,
+    ConnectDSRouter,
 }
 
 export interface WorkerRuntimeContext {
@@ -37,6 +40,8 @@ export interface WorkerRuntimeContext {
     exitError?: Error;
     loadResource?: (asset: AssetEntryInternal) => Promise<Response>;
     resolveModuleResource?: (asset: AssetEntryInternal) => Promise<string>;
+    local?: LocalRuntimeAPI;
+    downloadDiagnosticData?: (chunks: Uint8Array[]) => void;
 }
 
 export class NativeCallCapacityError extends Error { }

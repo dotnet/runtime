@@ -15,6 +15,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     [ConditionalClass(typeof(WorkerInteropTest), nameof(IsBrowserDomSupportedOrWorker))]
     public partial class WorkerInteropTest
     {
+        [JSImport("INTERNAL.loadSatelliteAssemblies")]
+        private static partial Task LoadLocalSatellites(string[] cultures);
+
+        [JSImport("INTERNAL.loadLazyAssembly")]
+        private static partial Task<bool> LoadLocalAssembly(string name);
+
+        [Fact]
+        public async Task NativeLocalAssemblyRequests()
+        {
+            await LoadLocalSatellites(Array.Empty<string>());
+            JSException error = await Assert.ThrowsAsync<JSException>(() => LoadLocalAssembly("UnlistedLocalAssembly.dll"));
+            Assert.Contains("BlazorWebAssemblyLazyLoad", error.Message, StringComparison.Ordinal);
+        }
+
         [JSImport("nativeBoundaryProof", nameof(WorkerInteropTest))]
         private static partial bool CheckNativeBoundaryOnUI();
 
@@ -1575,7 +1589,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void CreateFunctionInternal()
         {
-            Func<bool> internals = Utils.CreateFunctionBool("return INTERNAL.getGlobalThis() === globalThis;");
+            Func<bool> internals = Utils.CreateFunctionBool("return INTERNAL.TARGET.getGlobalThis() === globalThis;");
             Assert.True(internals());
         }
 

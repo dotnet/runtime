@@ -8,44 +8,44 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal static unsafe partial class JavaScriptImports
     {
-        [JSImport("INTERNAL.hasProperty")]
+        [JSImport("INTERNAL.TARGET.hasProperty")]
         public static partial bool HasProperty(JSObject self, string propertyName);
-        [JSImport("INTERNAL.getTypeOfProperty")]
+        [JSImport("INTERNAL.TARGET.getTypeOfProperty")]
         public static partial string GetTypeOfProperty(JSObject self, string propertyName);
-        [JSImport("INTERNAL.getProperty")]
+        [JSImport("INTERNAL.TARGET.getProperty")]
         public static partial bool GetPropertyAsBoolean(JSObject self, string propertyName);
-        [JSImport("INTERNAL.getProperty")]
+        [JSImport("INTERNAL.TARGET.getProperty")]
         public static partial int GetPropertyAsInt32(JSObject self, string propertyName);
-        [JSImport("INTERNAL.getProperty")]
+        [JSImport("INTERNAL.TARGET.getProperty")]
         public static partial double GetPropertyAsDouble(JSObject self, string propertyName);
-        [JSImport("INTERNAL.getProperty")]
+        [JSImport("INTERNAL.TARGET.getProperty")]
         public static partial string GetPropertyAsString(JSObject self, string propertyName);
-        [JSImport("INTERNAL.getProperty")]
+        [JSImport("INTERNAL.TARGET.getProperty")]
         public static partial JSObject GetPropertyAsJSObject(JSObject self, string propertyName);
-        [JSImport("INTERNAL.getProperty")]
+        [JSImport("INTERNAL.TARGET.getProperty")]
         public static partial byte[] GetPropertyAsByteArray(JSObject self, string propertyName);
 
-        [JSImport("INTERNAL.setProperty")]
+        [JSImport("INTERNAL.TARGET.setProperty")]
         public static partial void SetPropertyBool(JSObject self, string propertyName, bool value);
-        [JSImport("INTERNAL.setProperty")]
+        [JSImport("INTERNAL.TARGET.setProperty")]
         public static partial void SetPropertyInt(JSObject self, string propertyName, int value);
-        [JSImport("INTERNAL.setProperty")]
+        [JSImport("INTERNAL.TARGET.setProperty")]
         public static partial void SetPropertyDouble(JSObject self, string propertyName, double value);
-        [JSImport("INTERNAL.setProperty")]
+        [JSImport("INTERNAL.TARGET.setProperty")]
         public static partial void SetPropertyString(JSObject self, string propertyName, string value);
-        [JSImport("INTERNAL.setProperty")]
+        [JSImport("INTERNAL.TARGET.setProperty")]
         public static partial void SetPropertyJSObject(JSObject self, string propertyName, JSObject value);
-        [JSImport("INTERNAL.setProperty")]
+        [JSImport("INTERNAL.TARGET.setProperty")]
         public static partial void SetPropertyBytes(JSObject self, string propertyName, byte[] value);
 
-        [JSImport("INTERNAL.getGlobalThis")]
+        [JSImport("INTERNAL.TARGET.getGlobalThis")]
         public static partial JSObject GetGlobalThis();
-        [JSImport("INTERNAL.getDotnetInstance")]
+        [JSImport("INTERNAL.TARGET.getDotnetInstance")]
         public static partial JSObject GetDotnetInstance();
-        [JSImport("INTERNAL.dynamicImport")]
+        [JSImport("INTERNAL.TARGET.dynamicImport")]
         public static partial Task<JSObject> DynamicImport(string moduleName, string moduleUrl);
 
-        [JSImport("INTERNAL.bindCsFunction")]
+        [JSImport("INTERNAL.TARGET.bindCsFunction")]
         public static partial void BindCSFunction(IntPtr methodHandle, string assemblyName, string namespaceName, string shortClassName, string methodName, int signatureHash, IntPtr signature);
 
 #if DEBUG

@@ -3,7 +3,7 @@
 
 import type { LoaderConfig, RuntimeAPI } from "./types";
 import { InternalExchangeIndex } from "../types";
-import { dotnetInternals, dotnetNativeBrowserExports, dotnetInteropJSExports, dotnetBrowserUtilsExports, Module } from "./cross-module";
+import { dotnetApi, dotnetInternals, dotnetNativeBrowserExports, dotnetInteropJSExports, dotnetBrowserUtilsExports, Module } from "./cross-module";
 import { mergeLoaderConfig } from "./config";
 import { HostBuilder } from "./host-builder";
 import { createPromiseCompletionSource } from "./promise-completion-source";
@@ -11,6 +11,9 @@ import { createNativeCallBuffer, createNativeChannel, NativeOperation } from "./
 import { loadWorkerResource, resolveWorkerModule } from "./worker-assets";
 import type { WorkerResourceRequest } from "./worker-assets";
 import { loaderCallbacks } from "./callbacks";
+import { fetchLazyAssembly, fetchSatelliteAssemblies } from "./assets";
+import { serveWorkerLocal } from "./worker-local";
+import type { WorkerLocalRequest } from "./worker-local";
 import {
     createSignalingBuffer, SignalState, CommandId, OFFSET_COMMAND_RESULT, OFFSET_COMMAND_SIGNAL,
     OFFSET_COMMAND_PROMISE_ID, OFFSET_WORKER_STATE, OFFSET_WORKER_ERROR_LENGTH, writeSharedError, wakeMain,
@@ -26,6 +29,7 @@ export type WorkerToMainMessage =
     | { type: "ready", runtimeBuildInfo: RuntimeAPI["runtimeBuildInfo"], workerProxyCounts: number[] }
     | { type: "error", message: string }
     | WorkerResourceRequest
+    | { type: "diagnostic-download"; chunks: Uint8Array[] }
     | { type: "download-progress"; loaded: number; total: number };
 
 export function waitForInitMessage(): Promise<WorkerInitMessage> {
@@ -60,6 +64,8 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
             case NativeOperation.Malloc: return Number(Module._malloc(first));
             case NativeOperation.Free: Module._free(args); break;
             case NativeOperation.RunBackgroundTimers: dotnetBrowserUtilsExports.runBackgroundTimers(); break;
+            case NativeOperation.GetRuntimeContractDescriptor: return dotnetApi.INTERNAL.GetDotNetRuntimeContractDescriptor();
+            case NativeOperation.ConnectDSRouter: dotnetApi.INTERNAL.connectDSRouter(dotnetBrowserUtilsExports.utf16ToString(args, second)); break;
             default: throw new Error(`withWorker(): unknown native operation ${operation}`);
         }
         return 0;
@@ -77,8 +83,17 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
         self.postMessage({ type: "error", message: failure.message });
     }
 
-    self.addEventListener("message", (event: MessageEvent<WorkerCommandMessage | { type: "attached" }>) => {
+    self.addEventListener("message", (event: MessageEvent<WorkerCommandMessage | WorkerLocalRequest | { type: "attached" }>) => {
         const request = event.data;
+        if (request.type === "local") {
+            if (closing || failed) {
+                request.port.postMessage({ type: "error", message: "withWorker(): runtime exited" });
+                request.port.close();
+                return;
+            }
+            void serveWorkerLocal(request, dotnetApi.INTERNAL).catch(fail);
+            return;
+        }
         if (request.type === "attached") {
             attached.resolve();
             return;
@@ -120,6 +135,7 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
 
     dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext] = {
         role: "worker", invoke: channel.invoke, loadResource: loadWorkerResource, resolveModuleResource: resolveWorkerModule,
+        downloadDiagnosticData: chunks => self.postMessage({ type: "diagnostic-download", chunks }),
         beforeRuntimeStart: async () => {
             const wasmMemory = dotnetNativeBrowserExports.getWasmMemory();
             if (!(wasmMemory.buffer instanceof SharedArrayBuffer)) throw new Error("withWorker(): native memory is not shared");
@@ -136,6 +152,10 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
         fail(event.reason);
     });
     try {
+        Object.assign(dotnetApi.INTERNAL ??= {}, {
+            loadLazyAssembly: fetchLazyAssembly,
+            loadSatelliteAssemblies: fetchSatelliteAssemblies,
+        });
         mergeLoaderConfig(message.config);
         runtime = await new HostBuilder().create();
         self.postMessage({ type: "ready", runtimeBuildInfo: runtime.runtimeBuildInfo,

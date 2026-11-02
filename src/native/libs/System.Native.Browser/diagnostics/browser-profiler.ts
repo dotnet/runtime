@@ -3,7 +3,7 @@
 
 import type { VoidPtr } from "../types";
 import { Module, dotnetNativeBrowserExports } from "./cross-module";
-import { ENVIRONMENT_IS_WEB } from "./per-module";
+import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WEB_WORKER } from "./per-module";
 
 
 const hasMeasure = globalThis.performance && typeof globalThis.performance.measure === "function";
@@ -28,7 +28,7 @@ export function ds_rt_browser_performance_measure(methodPtr: VoidPtr, start: num
             methodNameCache.set(key, fnName);
         }
         // NodeJs accepts startTime, browsers accepts start
-        const options = ENVIRONMENT_IS_WEB ? { start: start } : { startTime: start };
+        const options = ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WEB_WORKER ? { start: start } : { startTime: start };
         globalThis.performance.measure(fnName, options);
     } catch {
         // Ignore

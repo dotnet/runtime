@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { VoidPtr } from "../../Common/JavaScript/types/emscripten";
-import { dotnetApi, dotnetLogger } from "./cross-module";
+import { dotnetApi, dotnetInternals, dotnetLogger } from "./cross-module";
+import { InternalExchangeIndex } from "../types";
 
 // Minimum number of consumed entries before compacting the receive queue
 const RECV_QUEUE_COMPACT_THRESHOLD = 128;
@@ -46,6 +47,12 @@ export class DiagnosticConnectionBase {
 }
 
 export function downloadBlob(messages: Uint8Array[]) {
+    const context = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext];
+    if (context?.role === "worker") {
+        if (!context.downloadDiagnosticData) throw new Error("Native host diagnostic download forwarding is not initialized");
+        context.downloadDiagnosticData(messages);
+        return;
+    }
     if (!globalThis.document) return;
 
     const blob = new Blob(messages as BlobPart[], { type: "application/octet-stream" });
