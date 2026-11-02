@@ -147,6 +147,9 @@
   <data name="Argument_ConstraintFailed" xml:space="preserve">
     <value>'{0}', on '{1}' violates the constraint of type '{2}'.</value>
   </data>
+  <data name="Acc_CreateAbstEx" xml:space="preserve">
+    <value>Cannot create an instance of {0} because it is an abstract class.</value>
+  </data>
   <data name="Acc_ReadOnly" xml:space="preserve">
     <value>Cannot set a constant field.</value>
   </data>
