@@ -577,6 +577,19 @@ namespace Internal.Pgo
             {
                 if (dataMerger.TryGetValue(schema, out var existingSchemaItem))
                 {
+                    // Before MIBC format version 1.1, value histograms used 8-byte entries under a kind that
+                    // shares ValueHistogram's descriptor. The JIT ignores that kind, so prefer current-format data.
+                    if ((existingSchemaItem.InstrumentationKind != schema.InstrumentationKind) &&
+                        ((schema.InstrumentationKind & PgoInstrumentationKind.DescriptorMask) ==
+                            (PgoInstrumentationKind.ValueHistogram & PgoInstrumentationKind.DescriptorMask)))
+                    {
+                        if (schema.InstrumentationKind == PgoInstrumentationKind.ValueHistogram)
+                        {
+                            dataMerger[schema] = schema;
+                        }
+                        return;
+                    }
+
                     // Actually merge two schema items
                     PgoSchemaElem mergedElem = existingSchemaItem;
 
@@ -616,12 +629,6 @@ namespace Internal.Pgo
 
                         case PgoInstrumentationKind.ValueHistogram:
                             {
-                                if (schema.InstrumentationKind != PgoInstrumentationKind.ValueHistogram)
-                                {
-                                    throw new Exception($"Unable to merge ValueHistogram with {schema.InstrumentationKind}. " +
-                                        "Are you merging MIBC files with different format versions?");
-                                }
-
                                 mergedElem.Count = existingSchemaItem.Count + schema.Count;
                                 mergedElem.DataObject = (int[])[.. (int[])existingSchemaItem.DataObject, .. (int[])schema.DataObject];
                                 break;
