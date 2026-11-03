@@ -2209,7 +2209,8 @@ void Thread::HandleThreadAbort ()
         PreparingAbortHolder paHolder;
 
 #if defined(TARGET_UNIX) && defined(FEATURE_THREAD_ACTIVATION)
-        // Abort dispatch may bypass the activation signal handler's return through sigreturn.
+        // Abort dispatch may bypass native destructors and the activation signal handler's return through sigreturn.
+        m_hasPendingActivation = false;
         PAL_UnmaskActivationSignal();
 #endif // TARGET_UNIX && FEATURE_THREAD_ACTIVATION
 
@@ -5803,8 +5804,6 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-        // Managed exception dispatch may bypass the native scope's destructor.
-        pThread->m_hasPendingActivation = false;
         pThread->HandleThreadAbort();
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
