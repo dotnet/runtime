@@ -5,7 +5,7 @@ import { Int32Ptr, VoidPtr } from "../types";
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 // char16_t* SystemJS_GetLocaleInfo (const uint16_t* locale, int32_t localeLength, const uint16_t* culture, int32_t cultureLength, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
-export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, locale: number, localeLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
+export function SystemJS_GetLocaleInfo(locale: number, localeLength: number, culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     const OUTER_SEPARATOR = "##";
     try {
         const localeNameOriginal = _ems_.dotnetBrowserUtilsExports.utf16ToString(<any>locale, <any>(locale + 2 * localeLength));

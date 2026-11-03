@@ -56,6 +56,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Http3Support Condition="'$(Http3Support)' == ''">false</Http3Support>
     <!-- Linux Bionic doesn't ship GSSAPI, so enable managed implementation -->
     <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux-bionic'))">true</_UseManagedNtlm>
+    <!-- OpenHarmony also lacks GSSAPI/krb5 in its sysroot, so use the managed implementation -->
+    <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('openharmony'))">true</_UseManagedNtlm>
     <!-- Trim managed NTLM on Linux when it's not explicitly requested -->
     <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux'))">false</_UseManagedNtlm>
     <_ComObjectDescriptorSupport Condition="'$(_ComObjectDescriptorSupport)' == ''">false</_ComObjectDescriptorSupport>

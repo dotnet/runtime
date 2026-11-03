@@ -274,7 +274,7 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  float
         {
             case 2:
             {
-                if ((floatCandidates & v0_v31_mask) != RBM_NONE)
+                if ((floatCandidates & v0_v31_mask) == v0_v31_mask)
                 {
                     consecutiveResult |= SRBM_V31;
                     overallResult |= v0_v31_mask;
@@ -284,14 +284,14 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  float
             case 3:
             {
                 SingleTypeRegSet v0_v30_v31_mask = SRBM_V0 | SRBM_V30 | SRBM_V31;
-                if ((floatCandidates & v0_v30_v31_mask) != RBM_NONE)
+                if ((floatCandidates & v0_v30_v31_mask) == v0_v30_v31_mask)
                 {
                     consecutiveResult |= SRBM_V30;
                     overallResult |= v0_v30_v31_mask;
                 }
 
                 SingleTypeRegSet v0_v1_v31_mask = SRBM_V0 | SRBM_V1 | SRBM_V31;
-                if ((floatCandidates & v0_v1_v31_mask) != RBM_NONE)
+                if ((floatCandidates & v0_v1_v31_mask) == v0_v1_v31_mask)
                 {
                     consecutiveResult |= SRBM_V31;
                     overallResult |= v0_v1_v31_mask;
@@ -301,21 +301,21 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  float
             case 4:
             {
                 SingleTypeRegSet v0_v29_v30_v31_mask = SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31;
-                if ((floatCandidates & v0_v29_v30_v31_mask) != RBM_NONE)
+                if ((floatCandidates & v0_v29_v30_v31_mask) == v0_v29_v30_v31_mask)
                 {
                     consecutiveResult |= SRBM_V29;
                     overallResult |= v0_v29_v30_v31_mask;
                 }
 
-                SingleTypeRegSet v0_v1_v30_v31_mask = SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31;
-                if ((floatCandidates & v0_v1_v30_v31_mask) != RBM_NONE)
+                SingleTypeRegSet v0_v1_v30_v31_mask = SRBM_V0 | SRBM_V1 | SRBM_V30 | SRBM_V31;
+                if ((floatCandidates & v0_v1_v30_v31_mask) == v0_v1_v30_v31_mask)
                 {
                     consecutiveResult |= SRBM_V30;
                     overallResult |= v0_v1_v30_v31_mask;
                 }
 
-                SingleTypeRegSet v0_v1_v2_v31_mask = SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31;
-                if ((floatCandidates & v0_v1_v2_v31_mask) != RBM_NONE)
+                SingleTypeRegSet v0_v1_v2_v31_mask = SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V31;
+                if ((floatCandidates & v0_v1_v2_v31_mask) == v0_v1_v2_v31_mask)
                 {
                     consecutiveResult |= SRBM_V31;
                     overallResult |= v0_v1_v2_v31_mask;

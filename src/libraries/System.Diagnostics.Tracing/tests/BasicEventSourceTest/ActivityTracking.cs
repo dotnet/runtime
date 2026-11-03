@@ -53,7 +53,6 @@ namespace BasicEventSourceTests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/129088", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134963", TestPlatforms.Wasi)]
         public void StartStopCreatesActivity()
         {
             using ActivityEventListener l = new ActivityEventListener();
@@ -70,7 +69,6 @@ namespace BasicEventSourceTests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/129088", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134963", TestPlatforms.Wasi)]
         public async Task ActivityFlowsAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
@@ -120,7 +118,6 @@ namespace BasicEventSourceTests
         // Compare with SetCurrentActivityIdAfterEventDoesNotFlowAsync below.
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/129088", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134963", TestPlatforms.Wasi)]
         public async Task SetCurrentActivityIdBeforeEventFlowsAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
@@ -147,7 +144,6 @@ namespace BasicEventSourceTests
         // Compare with SetCurrentActivityIdBeforeEventFlowsAsync above.
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/129088", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134963", TestPlatforms.Wasi)]
         public async Task SetCurrentActivityIdAfterEventDoesNotFlowAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();

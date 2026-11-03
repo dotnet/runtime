@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using Marshal = System.Runtime.InteropServices.Marshal;
 
 namespace System.IO.Ports
@@ -24,22 +25,26 @@ namespace System.IO.Ports
             return new ObjectDisposedException(null, SR.Port_not_open);
         }
 
+        [DoesNotReturn]
         internal static void FileNotOpen()
         {
             throw FileNotOpenException();
         }
 
+        [DoesNotReturn]
         internal static void WrongAsyncResult()
         {
             throw new ArgumentException(SR.Arg_WrongAsyncResult);
         }
 
+        [DoesNotReturn]
         internal static void EndReadCalledTwice()
         {
             // Should ideally be InvalidOperationExc but we can't maintain parity with Stream and SerialStream without some work
             throw new ArgumentException(SR.InvalidOperation_EndReadCalledMultiple);
         }
 
+        [DoesNotReturn]
         internal static void EndWriteCalledTwice()
         {
             // Should ideally be InvalidOperationExc but we can't maintain parity with Stream and SerialStream without some work

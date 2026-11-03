@@ -16,18 +16,6 @@ check_include_files(sys/membarrier.h HAVE_SYS_MEMBARRIER_H)
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
 check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 
-check_cxx_source_compiles("
-    #include <pthread.h>
-    #include <stdint.h>
-
-    int main()
-    {
-        uint64_t tid;
-        pthread_threadid_np(pthread_self(), &tid);
-        return (int)tid;
-    }
-    " HAVE_PTHREAD_THREADID_NP)
-
 if(HAVE_PTHREAD_NP_H)
   set(PTHREAD_NP_H_INCLUDE "#include <pthread_np.h>")
 endif()

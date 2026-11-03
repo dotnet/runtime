@@ -424,7 +424,8 @@ internal sealed class MockLoaderBuilder
     internal MockLoaderAssembly GetAssembly(MockLoaderModule module) => _assemblies[module.Assembly];
 
     // Adds an AppDomain whose assembly list holds the modules' assemblies, in order, in its first block.
-    internal ulong AddAppDomain(params MockLoaderModule[] modules)
+    // A null module leaves an empty slot, as AppDomain::RemoveAssembly does.
+    internal ulong AddAppDomain(params MockLoaderModule?[] modules)
     {
         TargetTestHelpers helpers = Builder.TargetTestHelpers;
         int assemblyList = AppDomainLayout.GetField("AssemblyList").Offset;
@@ -437,7 +438,7 @@ internal sealed class MockLoaderBuilder
         helpers.Write(appDomain.Data.AsSpan(firstBlock + ArrayListBlockLayout.GetField("Size").Offset), (uint)modules.Length);
         for (int i = 0; i < modules.Length; i++)
         {
-            helpers.WritePointer(appDomain.Data.AsSpan(arrayStart + (i * helpers.PointerSize)), modules[i].Assembly);
+            helpers.WritePointer(appDomain.Data.AsSpan(arrayStart + (i * helpers.PointerSize)), modules[i]?.Assembly ?? 0);
         }
 
         return appDomain.Address;

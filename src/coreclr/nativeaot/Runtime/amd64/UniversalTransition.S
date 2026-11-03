@@ -15,6 +15,8 @@
 
 #define SIZEOF_ARGUMENT_REGISTERS   0x30    // Callee register spill
 
+#define SIZEOF_FP_REGS              0x80    // xmm0-7
+
 //
 // From CallerSP to ChildSP, the stack frame is composed of the following adjacent regions:
 //

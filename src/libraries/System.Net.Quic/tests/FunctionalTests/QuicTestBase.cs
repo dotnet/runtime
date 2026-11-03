@@ -32,6 +32,8 @@ namespace System.Net.Quic.Tests
 
         public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
         public static bool IsNotArm32CoreClrStressTest => !(CoreClrConfigurationDetection.IsStressTest && PlatformDetection.IsArmProcess);
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/133373")]
+        public static bool IsNotOSXMono => !(PlatformDetection.IsOSX && PlatformDetection.IsMonoRuntime);
 
         public static bool IsIPv6Available => Configuration.Sockets.IsIPv6LoopbackAvailable;
 

@@ -15,6 +15,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using DependencyNode = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -34,14 +35,13 @@ namespace ILCompiler.DependencyAnalysis
 
         private CustomAttributeHandle Handle => (CustomAttributeHandle)_handle;
 
-        public static void AddDependenciesDueToCustomAttributes(ref DependencyList dependencies, NodeFactory factory, EcmaModule module, CustomAttributeHandleCollection handles)
+        public static void AddDependenciesDueToCustomAttributes(DependencySink dependencies, NodeFactory factory, EcmaModule module, CustomAttributeHandleCollection handles)
         {
             foreach (CustomAttributeHandle customAttribute in handles)
             {
                 if (factory.Settings.StripSecurity && IsCustomAttributeForSecurity(module, customAttribute))
                     continue;
 
-                dependencies ??= new DependencyList();
                 dependencies.Add(factory.CustomAttribute(module, customAttribute), "Custom attribute");
             }
         }
@@ -66,15 +66,13 @@ namespace ILCompiler.DependencyAnalysis
             return false;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
-
             CustomAttribute customAttribute = _module.MetadataReader.GetCustomAttribute(Handle);
 
             // We decided not to report parent as a dependency because we don't expect custom attributes to be needed outside of their parent references
 
-            dependencies.Add(factory.GetNodeForMethodToken(_module, customAttribute.Constructor), "Custom attribute constructor");
+            sink.Add(factory.GetNodeForMethodToken(_module, customAttribute.Constructor), "Custom attribute constructor");
 
             // Parse the custom attribute value blob and add dependencies from it
             CustomAttributeValue<TypeDesc> decodedValue;
@@ -86,35 +84,33 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Metadata decode failed.
                 _isCorrupted = true;
-                return dependencies;
+                return;
             }
 
             foreach (CustomAttributeTypedArgument<TypeDesc> fixedArg in decodedValue.FixedArguments)
             {
-                GetDependenciesFromCustomAttributeArgument(dependencies, factory, fixedArg.Type, fixedArg.Value);
+                GetDependenciesFromCustomAttributeArgument(sink, factory, fixedArg.Type, fixedArg.Value);
             }
 
             // Resolve the constructor once for the generic argument data flow and the named arguments
             MethodDesc constructor = _module.TryGetMethod(customAttribute.Constructor);
             if (constructor is null)
-                return dependencies;
+                return;
 
-            AddGenericArgumentDataFlowDependencies(ref dependencies, factory, customAttribute.Parent, constructor.OwningType);
+            AddGenericArgumentDataFlowDependencies(sink, factory, customAttribute.Parent, constructor.OwningType);
 
             foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decodedValue.NamedArguments)
             {
                 if (namedArg.Kind == CustomAttributeNamedArgumentKind.Property)
-                    GetDependenciesFromPropertySetter(dependencies, factory, constructor.OwningType, namedArg.Name);
+                    GetDependenciesFromPropertySetter(sink, factory, constructor.OwningType, namedArg.Name);
                 else if (namedArg.Kind == CustomAttributeNamedArgumentKind.Field)
-                    GetDependenciesFromField(dependencies, factory, constructor.OwningType, namedArg.Name);
+                    GetDependenciesFromField(sink, factory, constructor.OwningType, namedArg.Name);
 
-                GetDependenciesFromCustomAttributeArgument(dependencies, factory, namedArg.Type, namedArg.Value);
+                GetDependenciesFromCustomAttributeArgument(sink, factory, namedArg.Type, namedArg.Value);
             }
-
-            return dependencies;
         }
 
-        private void AddGenericArgumentDataFlowDependencies(ref DependencyList dependencies, NodeFactory factory, EntityHandle attributeTarget, TypeDesc attributeType)
+        private void AddGenericArgumentDataFlowDependencies(DependencySink dependencies, NodeFactory factory, EntityHandle attributeTarget, TypeDesc attributeType)
         {
             if (!GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(factory.FlowAnnotations, attributeType))
                 return;
@@ -148,7 +144,7 @@ namespace ILCompiler.DependencyAnalysis
                     break;
             }
 
-            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, origin, attributeType, typeContext, methodContext);
+            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(dependencies, factory, origin, attributeType, typeContext, methodContext);
         }
 
         /// <summary>
@@ -179,7 +175,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private static void GetDependenciesFromCustomAttributeArgument(DependencyList dependencies, NodeFactory factory, TypeDesc type, object value)
+        private static void GetDependenciesFromCustomAttributeArgument(DependencySink dependencies, NodeFactory factory, TypeDesc type, object value)
         {
             // Report the type itself (e.g. enum types that need to be kept for boxing)
             dependencies.Add(factory.ReflectedType(type), "Custom attribute blob");
@@ -207,7 +203,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private static void GetDependenciesFromPropertySetter(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, string propertyName)
+        private static void GetDependenciesFromPropertySetter(DependencySink dependencies, NodeFactory factory, TypeDesc attributeType, string propertyName)
         {
             if (attributeType.GetTypeDefinition() is not EcmaType ecmaType)
                 return;
@@ -236,7 +232,7 @@ namespace ILCompiler.DependencyAnalysis
                 GetDependenciesFromPropertySetter(dependencies, factory, baseType, propertyName);
         }
 
-        private static void GetDependenciesFromField(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, string fieldName)
+        private static void GetDependenciesFromField(DependencySink dependencies, NodeFactory factory, TypeDesc attributeType, string fieldName)
         {
             FieldDesc field = attributeType.GetField(Encoding.UTF8.GetBytes(fieldName));
             if (field is not null)

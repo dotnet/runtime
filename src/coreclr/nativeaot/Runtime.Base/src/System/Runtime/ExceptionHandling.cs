@@ -604,9 +604,6 @@ namespace System.Runtime
             ref ExInfo exInfo = ref *pExInfo;
 #endif
 #if NATIVEAOT
-            // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
-            GCStress.TriggerGC();
-
             InternalCalls.RhpValidateExInfoStack();
 #endif
             IntPtr faultingCodeAddress = exInfo._pExContext->IP;
@@ -701,9 +698,6 @@ namespace System.Runtime
             InternalCalls.RhpFirstChanceExceptionNotification();
 #endif // TARGET_WINDOWS
 
-            // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
-            GCStress.TriggerGC();
-
             InternalCalls.RhpValidateExInfoStack();
 #endif // NATIVEAOT
 
@@ -741,9 +735,6 @@ namespace System.Runtime
             // Alert the debugger that we threw an exception.
             InternalCalls.RhpFirstChanceExceptionNotification();
 #endif // TARGET_WINDOWS
-
-            // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
-            GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
 #endif // NATIVEAOT

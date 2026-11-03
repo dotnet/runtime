@@ -8,8 +8,9 @@
              TaskFactory="TaskHostFactory" />
 
   <ItemGroup>
+    <!-- A test that links its own native code keeps its own host (corerun.wasm) beside the stubs. -->
     <_ComponentStub Include="$(ComponentStubsDirectory)/*.wasm"
-                    Exclude="$(CompositePath)" />
+                    Exclude="$(CompositePath);$(ComponentPath)" />
   </ItemGroup>
 
   <Target Name="Compose">

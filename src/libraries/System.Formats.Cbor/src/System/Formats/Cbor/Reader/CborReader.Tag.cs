@@ -127,7 +127,7 @@ namespace System.Formats.Cbor
                         }
 
                         TimeSpan timespan = TimeSpan.FromSeconds(seconds);
-                        return CborHelpers.UnixEpoch + timespan;
+                        return DateTimeOffset.UnixEpoch + timespan;
 
                     default:
                         throw new CborContentException(SR.Cbor_Reader_InvalidUnixTimeEncoding);

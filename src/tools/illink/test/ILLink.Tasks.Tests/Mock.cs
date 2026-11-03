@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Build.Framework;
+using Microsoft.NET.Build.Tasks;
 using Mono.Linker;
 using Mono.Linker.Steps;
 
@@ -27,13 +28,12 @@ namespace ILLink.Tasks.Tests
             commandLine = string.IsNullOrEmpty(commandLine) ? string.Empty : " " + commandLine;
             object[] arguments = {
                 pathToTool,
-                AdjustCommandsForOperatingSystem(commandLine),
                 AdjustCommandsForOperatingSystem(GenerateResponseFileCommands()),
-                null
+                AdjustCommandsForOperatingSystem(commandLine)
             };
-            bool result = (bool)typeof(ILLink).GetMethod("TryComputeCacheKey", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(this, arguments);
-            key = (string)arguments[3];
-            return result;
+            var invocation = (InvocationDescription)typeof(ILLink).GetMethod("DescribeInvocation", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(this, arguments);
+            key = string.Empty;
+            return invocation is not null && InvocationCache.TryComputeKey(Log, "ILLink", invocation, out key);
         }
 
         public MockTask()

@@ -15,7 +15,6 @@ using Xunit;
 
 namespace Microsoft.Gen.OptionsValidation.Test;
 
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Roslyn workspaces block on SemaphoreSlim
 public class EmitterTests
 {
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]

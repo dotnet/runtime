@@ -642,8 +642,8 @@ namespace ILCompiler
 
             if (VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(defType))
             {
-                // Vector<T> always needs a layout check
-                return false;
+                // Non-optimistic Vector<T> support fixes the SIMD width at compile time.
+                return !InstructionSetSupport.IsVectorTOptimistic;
             }
 
             if (!NodeFactory.CompilationModuleGroup.VersionsWithModule(defType.Module))
