@@ -1542,9 +1542,9 @@ void AsyncTransformation::Transform(BasicBlock*               block,
 
     CreateLiveSetForSuspension(block, call, defs, analyses, layoutBuilder);
 
-    BuildContinuation(block, call, ContinuationNeedsKeepAlive(analyses), layoutBuilder);
-
     CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, &analyses);
+
+    BuildContinuation(block, call, callDefInfo, ContinuationNeedsKeepAlive(analyses), layoutBuilder);
 
     const AsyncState* reusedState =
         FindReusableSuspension(block, call, callDefInfo, layoutBuilder, resumeReachable, mutatedSinceResumption);
@@ -1835,16 +1835,22 @@ public:
 // Parameters:
 //   block          - The block containing the async call.
 //   call           - The async call.
+//   callDefInfo    - Information about the definition of the call's result.
 //   needsKeepAlive - Whether a KeepAlive field is needed to keep a
 //                    LoaderAllocator alive.
 //   layoutBuilder  - The continuation layout builder to configure.
 //
 void AsyncTransformation::BuildContinuation(BasicBlock*                block,
                                             GenTreeCall*               call,
+                                            const CallDefinitionInfo&  callDefInfo,
                                             bool                       needsKeepAlive,
                                             ContinuationLayoutBuilder* layoutBuilder)
 {
-    if (call->gtReturnType != TYP_VOID)
+    // Calls to the always-suspending helpers never resume a callee frame that writes the
+    // result; instead the runtime stores the awaited result into the continuation and
+    // tolerates it having no result storage. So when the result is unused, skip it.
+    if ((call->gtReturnType != TYP_VOID) &&
+        ((callDefInfo.DefinitionNode != nullptr) || !call->GetAsyncInfo().AlwaysSuspends))
     {
         ClassLayout* layout =
             call->gtReturnType == TYP_STRUCT ? m_compiler->typGetObjLayout(call->gtRetClsHnd) : nullptr;
@@ -2886,7 +2892,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
                     CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS);
     }
 
-    if (call->gtReturnType != TYP_VOID)
+    if (subLayout.HasReturn())
     {
         const ReturnInfo* returnInfo = layout.FindReturn(m_compiler, call);
         assert(returnInfo != nullptr);
@@ -4006,7 +4012,7 @@ void AsyncTransformation::CreateResumption(BasicBlock*                      call
         storeResultBB = RethrowExceptionOnResumption(callBlock, layout, resumeBB);
     }
 
-    if (call->gtReturnType != TYP_VOID)
+    if (subLayout.HasReturn())
     {
         const ReturnInfo* retInfo = layout.FindReturn(m_compiler, call);
         assert(retInfo != nullptr);

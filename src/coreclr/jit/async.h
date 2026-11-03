@@ -160,6 +160,10 @@ public:
         return m_needsExecutionContext;
     }
     void AddReturn(const ReturnTypeInfo& info);
+    bool HasReturn() const
+    {
+        return !m_returns.empty();
+    }
     void AddLocal(unsigned lclNum);
     bool ContainsLocal(unsigned lclNum) const;
 
@@ -453,6 +457,7 @@ class AsyncTransformation
 
     void BuildContinuation(BasicBlock*                block,
                            GenTreeCall*               call,
+                           const CallDefinitionInfo&  callDefInfo,
                            bool                       needsKeepAlive,
                            ContinuationLayoutBuilder* layoutBuilder);
 
