@@ -37,7 +37,7 @@ public class Runtime_136000
 
         Func<Task, Task<bool>> test = type.CreateType().GetMethod("Test").CreateDelegate<Func<Task, Task<bool>>>();
 
-                var completion = new TaskCompletionSource();
+        var completion = new TaskCompletionSource();
         Task<bool> result = test(completion.Task);
         Assert.False(result.IsCompleted);
         completion.SetResult();
