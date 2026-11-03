@@ -927,7 +927,14 @@ namespace System.Runtime.CompilerServices
                         // Result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
                         // These never have special continuation context handling.
                         Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
-                        critNotifier.UnsafeOnCompleted(GetContinuationAction());
+                        if (critNotifier is RuntimeAsyncYielder && !TplEventSource.Log.IsEnabled())
+                        {
+                            RuntimeAsyncYielder.Yield(this);
+                        }
+                        else
+                        {
+                            critNotifier.UnsafeOnCompleted(GetContinuationAction());
+                        }
                     }
                     else if (stackState->AwaitedTask is { } awaitedTask)
                     {

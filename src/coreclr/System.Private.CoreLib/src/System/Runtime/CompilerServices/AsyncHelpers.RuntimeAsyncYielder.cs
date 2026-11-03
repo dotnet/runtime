@@ -28,8 +28,12 @@ namespace System.Runtime.CompilerServices
                     continuationTarget != null &&
                     continuationTarget.GetType().HasSameMetadataDefinitionAs(typeof(RuntimeAsyncTask<>)));
 
-                Task raTask = (Task)continuationTarget;
+                Yield((Task)continuationTarget);
+            }
 
+            // Schedules the runtime async task to continue after a Task.Yield, without needing its continuation Action.
+            public static void Yield(Task raTask)
+            {
                 SynchronizationContext? syncCtx = SynchronizationContext.Current;
                 if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
