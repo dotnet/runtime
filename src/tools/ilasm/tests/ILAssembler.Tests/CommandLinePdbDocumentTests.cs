@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using Xunit;
 
-namespace ILAssembler.Tests;
+namespace Microsoft.DotNet.ILAssembler.Tests;
 
 /// <summary>
 /// Runs the ilasm command line (<see cref="Program"/>) in process, end to end, and checks the documents of the PDB it

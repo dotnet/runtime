@@ -87,7 +87,7 @@ Work item: <work item name, e.g., HardwareIntrinsics_Arm_ro>
 
 Title: Test Failure: <failures.test_name>
 Labels: <area-CodeGen-coreclr>, <os-label>, <arch-label>, <stress-label>, blocking-clean-ci-optional
-Milestone: 11.0.0
+Milestone: 12.0.0
 
 Body (paste as-is into GitHub issue):
 <<<

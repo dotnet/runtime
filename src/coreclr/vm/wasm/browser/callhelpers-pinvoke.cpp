@@ -330,3 +330,601 @@ const void* callhelpers_pinvoke_override(const char* library_name, const char* e
 
     return nullptr;
 }
+extern "C" {
+    void QCall_AppContext_SetFirstChanceExceptionHandler () __asm__("AppContext_SetFirstChanceExceptionHandler");
+    int32_t QCall_AppContext_TryGetHostPropertyValue (void *, void *, void *) __asm__("AppContext_TryGetHostPropertyValue");
+    void QCall_AppDomain_CreateDynamicAssembly (void *, void *, int32_t, int32_t, void *, void *) __asm__("AppDomain_CreateDynamicAssembly");
+    void QCall_AppendExceptionStackFrame (void *, void *, void *, int32_t, void *, void *) __asm__("AppendExceptionStackFrame");
+    void QCall_Array_CreateInstance (void *, int32_t, void *, void *, int32_t, void *, void *) __asm__("Array_CreateInstance");
+    void QCall_Array_Ctor (void *, uint32_t, void *, void *, void *) __asm__("Array_Ctor");
+    void * QCall_Array_GetElementConstructorEntrypoint (void *, void *) __asm__("Array_GetElementConstructorEntrypoint");
+    void QCall_AssemblyHandle_GetManifestModuleSlow (void *, void *, void *) __asm__("AssemblyHandle_GetManifestModuleSlow");
+    void QCall_AssemblyName_InitializeAssemblySpec (void *, void *, void *) __asm__("AssemblyName_InitializeAssemblySpec");
+    void QCall_AssemblyNative_ApplyUpdate (void *, void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("AssemblyNative_ApplyUpdate");
+    int32_t QCall_AssemblyNative_GetCodeBase (void *, void *, void *) __asm__("AssemblyNative_GetCodeBase");
+    void QCall_AssemblyNative_GetEntryAssembly (void *, void *) __asm__("AssemblyNative_GetEntryAssembly");
+    void QCall_AssemblyNative_GetEntryPoint (void *, void *, void *) __asm__("AssemblyNative_GetEntryPoint");
+    void QCall_AssemblyNative_GetExecutingAssembly (void *, void *, void *) __asm__("AssemblyNative_GetExecutingAssembly");
+    void QCall_AssemblyNative_GetExportedTypes (void *, void *, void *) __asm__("AssemblyNative_GetExportedTypes");
+    int32_t QCall_AssemblyNative_GetFlags (void *, void *) __asm__("AssemblyNative_GetFlags");
+    void QCall_AssemblyNative_GetForwardedType (void *, int32_t, void *, void *) __asm__("AssemblyNative_GetForwardedType");
+    void QCall_AssemblyNative_GetFullName (void *, void *, void *) __asm__("AssemblyNative_GetFullName");
+    int32_t QCall_AssemblyNative_GetHashAlgorithm (void *, void *) __asm__("AssemblyNative_GetHashAlgorithm");
+    void QCall_AssemblyNative_GetImageRuntimeVersion (void *, void *, void *) __asm__("AssemblyNative_GetImageRuntimeVersion");
+    void * QCall_AssemblyNative_GetLoadContextForAssembly (void *, void *) __asm__("AssemblyNative_GetLoadContextForAssembly");
+    void QCall_AssemblyNative_GetLoadedAssemblies (void *, void *) __asm__("AssemblyNative_GetLoadedAssemblies");
+    void QCall_AssemblyNative_GetLocale (void *, void *, void *) __asm__("AssemblyNative_GetLocale");
+    void QCall_AssemblyNative_GetLocation (void *, void *, void *) __asm__("AssemblyNative_GetLocation");
+    int32_t QCall_AssemblyNative_GetManifestResourceInfo (void *, void *, void *, void *, void *) __asm__("AssemblyNative_GetManifestResourceInfo");
+    void QCall_AssemblyNative_GetManifestResourceNames (void *, void *, void *) __asm__("AssemblyNative_GetManifestResourceNames");
+    void QCall_AssemblyNative_GetModule (void *, void *, void *, void *) __asm__("AssemblyNative_GetModule");
+    void QCall_AssemblyNative_GetModules (void *, int32_t, int32_t, void *, void *) __asm__("AssemblyNative_GetModules");
+    void QCall_AssemblyNative_GetPublicKey (void *, void *, void *) __asm__("AssemblyNative_GetPublicKey");
+    void QCall_AssemblyNative_GetReferencedAssemblies (void *, void *, void *) __asm__("AssemblyNative_GetReferencedAssemblies");
+    void * QCall_AssemblyNative_GetResource (void *, void *, void *, void *) __asm__("AssemblyNative_GetResource");
+    void QCall_AssemblyNative_GetSimpleName (void *, void *, void *) __asm__("AssemblyNative_GetSimpleName");
+    void QCall_AssemblyNative_GetTypeCore (void *, void *, void *, int32_t, void *, void *) __asm__("AssemblyNative_GetTypeCore");
+    void QCall_AssemblyNative_GetTypeCoreIgnoreCase (void *, void *, void *, int32_t, void *, void *) __asm__("AssemblyNative_GetTypeCoreIgnoreCase");
+    void QCall_AssemblyNative_GetVersion (void *, void *, void *, void *, void *, void *) __asm__("AssemblyNative_GetVersion");
+    void * QCall_AssemblyNative_InitializeAssemblyLoadContext (void *, int32_t, int32_t, void *) __asm__("AssemblyNative_InitializeAssemblyLoadContext");
+    void QCall_AssemblyNative_InternalLoad (void *, void *, void *, int32_t, void *, void *, void *) __asm__("AssemblyNative_InternalLoad");
+    int32_t QCall_AssemblyNative_InternalTryGetRawMetadata (void *, void *, void *, void *) __asm__("AssemblyNative_InternalTryGetRawMetadata");
+    int32_t QCall_AssemblyNative_IsApplyUpdateSupported (void *) __asm__("AssemblyNative_IsApplyUpdateSupported");
+    void QCall_AssemblyNative_LoadFromPath (void *, void *, void *, void *) __asm__("AssemblyNative_LoadFromPath");
+    void QCall_AssemblyNative_LoadFromStream (void *, void *, int32_t, void *, int32_t, void *, void *) __asm__("AssemblyNative_LoadFromStream");
+    void QCall_AssemblyNative_PrepareForAssemblyLoadContextRelease (void *, void *, void *) __asm__("AssemblyNative_PrepareForAssemblyLoadContextRelease");
+    void QCall_AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked (void *, int32_t, void *, void *, void *) __asm__("AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked");
+    void QCall_AssemblyNative_TraceAssemblyResolveHandlerInvoked (void *, void *, void *, void *, void *) __asm__("AssemblyNative_TraceAssemblyResolveHandlerInvoked");
+    void QCall_AssemblyNative_TraceResolvingHandlerInvoked (void *, void *, void *, void *, void *, void *) __asm__("AssemblyNative_TraceResolvingHandlerInvoked");
+    void QCall_AsyncHelpers_AddContinuationToExInternal (void *, void *, void *) __asm__("AsyncHelpers_AddContinuationToExInternal");
+    uint32_t QCall_CallFilterFunclet (void *, void *, void *, void *) __asm__("CallFilterFunclet");
+    int32_t QCall_CustomAttribute_ParseAttributeUsageAttribute (void *, int32_t, void *, void *, void *) __asm__("CustomAttribute_ParseAttributeUsageAttribute");
+    void QCall_DebugDebugger_Break (void *) __asm__("DebugDebugger_Break");
+    void QCall_DebugDebugger_CustomNotification (void *, void *) __asm__("DebugDebugger_CustomNotification");
+    int32_t QCall_DebugDebugger_IsLoggingHelper () __asm__("DebugDebugger_IsLoggingHelper");
+    int32_t QCall_DebugDebugger_IsManagedDebuggerAttached () __asm__("DebugDebugger_IsManagedDebuggerAttached");
+    int32_t QCall_DebugDebugger_Launch () __asm__("DebugDebugger_Launch");
+    void QCall_DebugDebugger_Log (int32_t, void *, void *) __asm__("DebugDebugger_Log");
+    void * QCall_Delegate_AdjustTarget (void *, void *, void *) __asm__("Delegate_AdjustTarget");
+    int32_t QCall_Delegate_BindToMethodInfo (void *, void *, void *, void *, int32_t, void *, void *, void *) __asm__("Delegate_BindToMethodInfo");
+    int32_t QCall_Delegate_BindToMethodName (void *, void *, void *, void *, int32_t, void *, void *, void *) __asm__("Delegate_BindToMethodName");
+    void QCall_Delegate_Construct (void *, void *, void *, void *, void *) __asm__("Delegate_Construct");
+    void QCall_Delegate_CreateMethodInfo (void *, void *, void *) __asm__("Delegate_CreateMethodInfo");
+    void * QCall_Delegate_GetMethodDesc (void *, void *) __asm__("Delegate_GetMethodDesc");
+    void * QCall_Delegate_GetMulticastInvokeSlow (void *, void *) __asm__("Delegate_GetMulticastInvokeSlow");
+    void QCall_Delegate_InitializeVirtualCallStub (void *, void *, void *) __asm__("Delegate_InitializeVirtualCallStub");
+    void * QCall_DependentHandle_InternalAllocWithGCTransition (void *, void *, void *) __asm__("DependentHandle_InternalAllocWithGCTransition");
+    void QCall_DependentHandle_InternalFreeWithGCTransition (void *, void *) __asm__("DependentHandle_InternalFreeWithGCTransition");
+    uint32_t QCall_EHEnumInitFromStackFrameIterator (void *, void *, void *) __asm__("EHEnumInitFromStackFrameIterator");
+    uint32_t QCall_EHEnumNext (void *, void *, void *) __asm__("EHEnumNext");
+    void QCall_Enum_GetValuesAndNames (void *, void *, void *, int32_t, void *) __asm__("Enum_GetValuesAndNames");
+    void QCall_Environment_Exit (int32_t, void *) __asm__("Environment_Exit");
+    void QCall_Environment_FailFast (void *, void *, void *, void *, void *) __asm__("Environment_FailFast");
+    void * QCall_EventPipeInternal_CreateProvider (void *, void *, void *, void *) __asm__("EventPipeInternal_CreateProvider");
+    void * QCall_EventPipeInternal_DefineEvent (void *, uint32_t, int64_t, uint32_t, uint32_t, void *, uint32_t, void *) __asm__("EventPipeInternal_DefineEvent");
+    void QCall_EventPipeInternal_DeleteProvider (void *, void *) __asm__("EventPipeInternal_DeleteProvider");
+    void QCall_EventPipeInternal_Disable (uint64_t, void *) __asm__("EventPipeInternal_Disable");
+    uint64_t QCall_EventPipeInternal_Enable (void *, int32_t, uint32_t, void *, uint32_t, void *) __asm__("EventPipeInternal_Enable");
+    int32_t QCall_EventPipeInternal_EventActivityIdControl (uint32_t, void *, void *) __asm__("EventPipeInternal_EventActivityIdControl");
+    int32_t QCall_EventPipeInternal_GetNextEvent (uint64_t, void *, void *) __asm__("EventPipeInternal_GetNextEvent");
+    void * QCall_EventPipeInternal_GetProvider (void *, void *) __asm__("EventPipeInternal_GetProvider");
+    int32_t QCall_EventPipeInternal_GetSessionInfo (uint64_t, void *, void *) __asm__("EventPipeInternal_GetSessionInfo");
+    int32_t QCall_EventPipeInternal_SignalSession (uint64_t, void *) __asm__("EventPipeInternal_SignalSession");
+    void QCall_EventPipeInternal_WriteEventData (void *, void *, uint32_t, void *, void *, void *) __asm__("EventPipeInternal_WriteEventData");
+    void QCall_ExceptionNative_GetFrozenStackTrace (void *, void *, void *) __asm__("ExceptionNative_GetFrozenStackTrace");
+    void QCall_ExceptionNative_GetMessageFromNativeResources (int32_t, void *, void *) __asm__("ExceptionNative_GetMessageFromNativeResources");
+    void QCall_ExceptionNative_GetMethodFromStackTrace (void *, void *, void *) __asm__("ExceptionNative_GetMethodFromStackTrace");
+    void QCall_ExceptionNative_ThrowAmbiguousResolutionException (void *, void *, void *, void *) __asm__("ExceptionNative_ThrowAmbiguousResolutionException");
+    void QCall_ExceptionNative_ThrowClassAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowClassAccessException");
+    void QCall_ExceptionNative_ThrowEntryPointNotFoundException (void *, void *, void *, void *) __asm__("ExceptionNative_ThrowEntryPointNotFoundException");
+    void QCall_ExceptionNative_ThrowFieldAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowFieldAccessException");
+    void QCall_ExceptionNative_ThrowMethodAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowMethodAccessException");
+    void QCall_FileLoadException_GetMessageForHR (int32_t, void *, void *) __asm__("FileLoadException_GetMessageForHR");
+    int32_t QCall_FreeEnvironmentStringsW (void *) __asm__("FreeEnvironmentStringsW");
+    void * QCall_GCHandle_InternalAllocWithGCTransition (void *, int32_t, void *) __asm__("GCHandle_InternalAllocWithGCTransition");
+    void QCall_GCHandle_InternalFreeWithGCTransition (void *, void *) __asm__("GCHandle_InternalFreeWithGCTransition");
+    void QCall_GCInterface_AddMemoryPressure (uint64_t, void *) __asm__("GCInterface_AddMemoryPressure");
+    void QCall_GCInterface_AllocateNewArray (void *, int32_t, int32_t, void *, void *) __asm__("GCInterface_AllocateNewArray");
+    void QCall_GCInterface_Collect (int32_t, int32_t, uint32_t, void *) __asm__("GCInterface_Collect");
+    int32_t QCall_GCInterface_EnableNoGCRegionCallback (void *, int64_t, void *) __asm__("GCInterface_EnableNoGCRegionCallback");
+    int32_t QCall_GCInterface_EndNoGCRegion (void *) __asm__("GCInterface_EndNoGCRegion");
+    void QCall_GCInterface_EnumerateConfigurationValues (void *, void *, void *) __asm__("GCInterface_EnumerateConfigurationValues");
+    void * QCall_GCInterface_GetNextFinalizableObject (void *, void *) __asm__("GCInterface_GetNextFinalizableObject");
+    int64_t QCall_GCInterface_GetTotalAllocatedBytesPrecise (void *) __asm__("GCInterface_GetTotalAllocatedBytesPrecise");
+    int64_t QCall_GCInterface_GetTotalMemory (void *) __asm__("GCInterface_GetTotalMemory");
+    void QCall_GCInterface_ReRegisterForFinalize (void *, void *) __asm__("GCInterface_ReRegisterForFinalize");
+    int32_t QCall_GCInterface_RefreshMemoryLimit (void *, void *) __asm__("GCInterface_RefreshMemoryLimit");
+    void * QCall_GCInterface_RegisterFrozenSegment (void *, void *, void *) __asm__("GCInterface_RegisterFrozenSegment");
+    void QCall_GCInterface_RemoveMemoryPressure (uint64_t, void *) __asm__("GCInterface_RemoveMemoryPressure");
+    int32_t QCall_GCInterface_StartNoGCRegion (int64_t, int32_t, int64_t, int32_t, void *) __asm__("GCInterface_StartNoGCRegion");
+    void QCall_GCInterface_UnregisterFrozenSegment (void *, void *) __asm__("GCInterface_UnregisterFrozenSegment");
+    int32_t QCall_GCInterface_WaitForFullGCApproach (int32_t, void *) __asm__("GCInterface_WaitForFullGCApproach");
+    int32_t QCall_GCInterface_WaitForFullGCComplete (int32_t, void *) __asm__("GCInterface_WaitForFullGCComplete");
+    void QCall_GCInterface_WaitForPendingFinalizers (void *) __asm__("GCInterface_WaitForPendingFinalizers");
+    void * QCall_GenericHandleWorker (void *, void *, void *, uint32_t, void *, void *) __asm__("GenericHandleWorker");
+    void * QCall_GetCurrentExInfo () __asm__("GetCurrentExInfo");
+    void * QCall_GetEnvironmentStringsW () __asm__("GetEnvironmentStringsW");
+    uint32_t QCall_GetEnvironmentVariableW (void *, void *, uint32_t) __asm__("GetEnvironmentVariableW");
+    void QCall_GetFileLoadExceptionMessage (int32_t, void *, void *) __asm__("GetFileLoadExceptionMessage");
+    void QCall_GetTypeLoadExceptionMessage (int32_t, void *, void *) __asm__("GetTypeLoadExceptionMessage");
+    void QCall_InitClassHelper (void *, void *) __asm__("InitClassHelper");
+    void QCall_Interlocked_MemoryBarrierProcessWide () __asm__("Interlocked_MemoryBarrierProcessWide");
+    int32_t QCall_IsInstanceOf_NoCacheLookup (void *, int32_t, void *, void *) __asm__("IsInstanceOf_NoCacheLookup");
+    int32_t QCall_LoaderAllocator_Destroy (void *, void *) __asm__("LoaderAllocator_Destroy");
+    void QCall_MarshalNative_GetDelegateForFunctionPointerInternal (void *, void *, void *, void *) __asm__("MarshalNative_GetDelegateForFunctionPointerInternal");
+    void QCall_MarshalNative_GetExceptionForHR (int32_t, void *, void *, void *) __asm__("MarshalNative_GetExceptionForHR");
+    void * QCall_MarshalNative_GetFunctionPointerForDelegateInternal (void *, void *) __asm__("MarshalNative_GetFunctionPointerForDelegateInternal");
+    int32_t QCall_MarshalNative_HasLayout (void *, void *, void *, void *) __asm__("MarshalNative_HasLayout");
+    void * QCall_MarshalNative_OffsetOf (void *, void *) __asm__("MarshalNative_OffsetOf");
+    void QCall_MarshalNative_Prelink (void *, void *) __asm__("MarshalNative_Prelink");
+    int32_t QCall_MarshalNative_SizeOfHelper (void *, int32_t, void *) __asm__("MarshalNative_SizeOfHelper");
+    int32_t QCall_MdUtf8String_EqualsCaseInsensitive (void *, void *, int32_t, void *) __asm__("MdUtf8String_EqualsCaseInsensitive");
+    void QCall_MetadataImport_Enum (void *, int32_t, int32_t, void *, void *, void *, void *) __asm__("MetadataImport_Enum");
+    int32_t QCall_MetadataImport_GetMarshalAs (void *, int32_t, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) __asm__("MetadataImport_GetMarshalAs");
+    void * QCall_MethodBase_GetCurrentMethod (void *, void *) __asm__("MethodBase_GetCurrentMethod");
+    int32_t QCall_MethodTable_CanCompareBitsOrUseFastGetHashCode (void *, void *) __asm__("MethodTable_CanCompareBitsOrUseFastGetHashCode");
+    int32_t QCall_ModuleBuilder_GetArrayMethodToken (void *, int32_t, void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetArrayMethodToken");
+    int32_t QCall_ModuleBuilder_GetMemberRef (void *, void *, int32_t, int32_t, void *) __asm__("ModuleBuilder_GetMemberRef");
+    int32_t QCall_ModuleBuilder_GetMemberRefFromSignature (void *, int32_t, void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetMemberRefFromSignature");
+    int32_t QCall_ModuleBuilder_GetMemberRefOfFieldInfo (void *, int32_t, void *, int32_t, void *) __asm__("ModuleBuilder_GetMemberRefOfFieldInfo");
+    int32_t QCall_ModuleBuilder_GetMemberRefOfMethodInfo (void *, int32_t, void *, void *) __asm__("ModuleBuilder_GetMemberRefOfMethodInfo");
+    int32_t QCall_ModuleBuilder_GetStringConstant (void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetStringConstant");
+    int32_t QCall_ModuleBuilder_GetTokenFromTypeSpec (void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetTokenFromTypeSpec");
+    int32_t QCall_ModuleBuilder_GetTypeRef (void *, void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetTypeRef");
+    void QCall_ModuleBuilder_SetFieldRVAContent (void *, int32_t, void *, int32_t, void *) __asm__("ModuleBuilder_SetFieldRVAContent");
+    void QCall_ModuleHandle_GetDynamicMethod (void *, void *, void *, int32_t, void *, void *, void *) __asm__("ModuleHandle_GetDynamicMethod");
+    int32_t QCall_ModuleHandle_GetMDStreamVersion (void *) __asm__("ModuleHandle_GetMDStreamVersion");
+    void QCall_ModuleHandle_GetModuleType (void *, void *, void *) __asm__("ModuleHandle_GetModuleType");
+    void QCall_ModuleHandle_GetPEKind (void *, void *, void *, void *) __asm__("ModuleHandle_GetPEKind");
+    int32_t QCall_ModuleHandle_GetToken (void *) __asm__("ModuleHandle_GetToken");
+    void QCall_ModuleHandle_ResolveField (void *, int32_t, void *, int32_t, void *, int32_t, void *, void *) __asm__("ModuleHandle_ResolveField");
+    void * QCall_ModuleHandle_ResolveMethod (void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("ModuleHandle_ResolveMethod");
+    void QCall_ModuleHandle_ResolveType (void *, int32_t, void *, int32_t, void *, int32_t, void *, void *) __asm__("ModuleHandle_ResolveType");
+    void * QCall_NativeLibrary_LoadByName (void *, void *, int32_t, uint32_t, int32_t, void *) __asm__("NativeLibrary_LoadByName");
+    void QCall_NativeRuntimeEventSource_LogContentionLockCreated (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogContentionLockCreated");
+    void QCall_NativeRuntimeEventSource_LogContentionStart (uint32_t, uint32_t, void *, void *, uint64_t, void *) __asm__("NativeRuntimeEventSource_LogContentionStart");
+    void QCall_NativeRuntimeEventSource_LogContentionStop (uint32_t, uint32_t, double, void *) __asm__("NativeRuntimeEventSource_LogContentionStop");
+    void QCall_NativeRuntimeEventSource_LogThreadPoolIODequeue (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIODequeue");
+    void QCall_NativeRuntimeEventSource_LogThreadPoolIOEnqueue (void *, void *, int32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOEnqueue");
+    void QCall_NativeRuntimeEventSource_LogThreadPoolIOPack (void *, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolIOPack");
+    void QCall_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolMinMaxThreads");
+    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment (double, uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment");
+    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample (double, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample");
+    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats (double, double, double, double, double, double, double, double, double, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats");
+    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart (uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart");
+    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop (uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop");
+    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait (uint32_t, uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait");
+    void QCall_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount (uint32_t, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount");
+    void QCall_NativeRuntimeEventSource_LogWaitHandleWaitStart (uint32_t, void *, uint32_t, void *) __asm__("NativeRuntimeEventSource_LogWaitHandleWaitStart");
+    void QCall_NativeRuntimeEventSource_LogWaitHandleWaitStop (uint32_t, void *) __asm__("NativeRuntimeEventSource_LogWaitHandleWaitStop");
+    void QCall_ObjectHeader_GetOrCreateLockObject (void *, void *, void *) __asm__("ObjectHeader_GetOrCreateLockObject");
+    void QCall_ObjectNative_AllocateUninitializedClone (void *, void *) __asm__("ObjectNative_AllocateUninitializedClone");
+    int32_t QCall_ObjectNative_GetHashCodeSlow (void *, void *) __asm__("ObjectNative_GetHashCodeSlow");
+    void * QCall_QCall_FreeGCHandleForTypeHandle (void *, void *, void *) __asm__("QCall_FreeGCHandleForTypeHandle");
+    void * QCall_QCall_GetGCHandleForTypeHandle (void *, int32_t, void *) __asm__("QCall_GetGCHandleForTypeHandle");
+    void QCall_ReflectionInvocation_CompileMethod (void *, void *) __asm__("ReflectionInvocation_CompileMethod");
+    void QCall_ReflectionInvocation_GetBoxInfo (void *, void *, void *, void *, void *, void *) __asm__("ReflectionInvocation_GetBoxInfo");
+    void QCall_ReflectionInvocation_GetGuid (void *, void *, void *) __asm__("ReflectionInvocation_GetGuid");
+    void QCall_ReflectionInvocation_PrepareDelegate (void *, void *) __asm__("ReflectionInvocation_PrepareDelegate");
+    void QCall_ReflectionInvocation_PrepareMethod (void *, void *, int32_t, void *) __asm__("ReflectionInvocation_PrepareMethod");
+    void QCall_ReflectionInvocation_RunClassConstructor (void *, void *) __asm__("ReflectionInvocation_RunClassConstructor");
+    void QCall_ReflectionInvocation_RunModuleConstructor (void *, void *) __asm__("ReflectionInvocation_RunModuleConstructor");
+    int32_t QCall_ReflectionInvocation_SizeOf (void *) __asm__("ReflectionInvocation_SizeOf");
+    void QCall_ReflectionSerialization_GetCreateUninitializedObjectInfo (void *, void *, void *, void *) __asm__("ReflectionSerialization_GetCreateUninitializedObjectInfo");
+    void * QCall_ResolveVirtualFunctionPointer (void *, void *, void *, void *) __asm__("ResolveVirtualFunctionPointer");
+    void * QCall_RuntimeFieldHandle_GetEnCFieldAddr (void *, void *, void *) __asm__("RuntimeFieldHandle_GetEnCFieldAddr");
+    void QCall_RuntimeFieldHandle_GetFieldDataReference (void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetFieldDataReference");
+    int32_t QCall_RuntimeFieldHandle_GetRVAFieldInfo (void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetRVAFieldInfo");
+    void QCall_RuntimeFieldHandle_GetValue (void *, void *, void *, void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetValue");
+    void QCall_RuntimeFieldHandle_GetValueDirect (void *, void *, void *, void *, void *, void *) __asm__("RuntimeFieldHandle_GetValueDirect");
+    void QCall_RuntimeFieldHandle_SetValue (void *, void *, void *, void *, void *, void *, void *) __asm__("RuntimeFieldHandle_SetValue");
+    void QCall_RuntimeFieldHandle_SetValueDirect (void *, void *, void *, void *, void *, void *) __asm__("RuntimeFieldHandle_SetValueDirect");
+    void QCall_RuntimeMethodHandle_ConstructInstantiation (void *, int32_t, void *, void *) __asm__("RuntimeMethodHandle_ConstructInstantiation");
+    void QCall_RuntimeMethodHandle_Destroy (void *, void *) __asm__("RuntimeMethodHandle_Destroy");
+    void * QCall_RuntimeMethodHandle_GetDiagnosticCodeStart (void *, void *) __asm__("RuntimeMethodHandle_GetDiagnosticCodeStart");
+    void * QCall_RuntimeMethodHandle_GetFunctionPointer (void *, void *) __asm__("RuntimeMethodHandle_GetFunctionPointer");
+    void QCall_RuntimeMethodHandle_GetMethodBody (void *, void *, void *, void *) __asm__("RuntimeMethodHandle_GetMethodBody");
+    void QCall_RuntimeMethodHandle_GetMethodInstantiation (void *, void *, int32_t, void *) __asm__("RuntimeMethodHandle_GetMethodInstantiation");
+    void * QCall_RuntimeMethodHandle_GetStubIfNeededSlow (void *, void *, void *, void *) __asm__("RuntimeMethodHandle_GetStubIfNeededSlow");
+    void QCall_RuntimeMethodHandle_GetTypicalMethodDefinition (void *, void *, void *) __asm__("RuntimeMethodHandle_GetTypicalMethodDefinition");
+    void * QCall_RuntimeMethodHandle_GetVirtualFunctionPointer (void *, void *, void *, void *) __asm__("RuntimeMethodHandle_GetVirtualFunctionPointer");
+    int32_t QCall_RuntimeMethodHandle_IsCAVisibleFromDecoratedType (void *, void *, void *, void *, void *) __asm__("RuntimeMethodHandle_IsCAVisibleFromDecoratedType");
+    void QCall_RuntimeMethodHandle_StripMethodInstantiation (void *, void *, void *) __asm__("RuntimeMethodHandle_StripMethodInstantiation");
+    void QCall_RuntimeModule_GetFullyQualifiedName (void *, void *, void *) __asm__("RuntimeModule_GetFullyQualifiedName");
+    void QCall_RuntimeModule_GetScopeName (void *, void *, void *) __asm__("RuntimeModule_GetScopeName");
+    void QCall_RuntimeModule_GetTypes (void *, void *, void *, void *) __asm__("RuntimeModule_GetTypes");
+    void * QCall_RuntimeTypeHandle_AllocateTypeAssociatedMemory (void *, uint32_t, void *) __asm__("RuntimeTypeHandle_AllocateTypeAssociatedMemory");
+    void * QCall_RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned (void *, uint32_t, uint32_t, void *) __asm__("RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned");
+    void QCall_RuntimeTypeHandle_ConstructName (void *, int32_t, void *, void *) __asm__("RuntimeTypeHandle_ConstructName");
+    void QCall_RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter (void *, void *, int32_t, void *, void *) __asm__("RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter");
+    void QCall_RuntimeTypeHandle_GetActivationInfo (void *, void *, void *, void *, void *, void *, void *) __asm__("RuntimeTypeHandle_GetActivationInfo");
+    void QCall_RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer (void *, void *, void *) __asm__("RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer");
+    void QCall_RuntimeTypeHandle_GetAssemblySlow (void *, void *, void *) __asm__("RuntimeTypeHandle_GetAssemblySlow");
+    void QCall_RuntimeTypeHandle_GetConstraints (void *, void *, void *) __asm__("RuntimeTypeHandle_GetConstraints");
+    void QCall_RuntimeTypeHandle_GetDeclaringMethodForGenericParameter (void *, void *, void *) __asm__("RuntimeTypeHandle_GetDeclaringMethodForGenericParameter");
+    void * QCall_RuntimeTypeHandle_GetDeclaringTypeHandle (void *, void *) __asm__("RuntimeTypeHandle_GetDeclaringTypeHandle");
+    void * QCall_RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable (void *, void *) __asm__("RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable");
+    int32_t QCall_RuntimeTypeHandle_GetFields (void *, void *, void *, void *) __asm__("RuntimeTypeHandle_GetFields");
+    void QCall_RuntimeTypeHandle_GetGenericTypeDefinition (void *, void *, void *) __asm__("RuntimeTypeHandle_GetGenericTypeDefinition");
+    void QCall_RuntimeTypeHandle_GetInstantiation (void *, void *, int32_t, void *) __asm__("RuntimeTypeHandle_GetInstantiation");
+    void * QCall_RuntimeTypeHandle_GetInterfaceMethodImplementation (void *, void *, void *, void *) __asm__("RuntimeTypeHandle_GetInterfaceMethodImplementation");
+    void QCall_RuntimeTypeHandle_GetInterfaces (void *, void *, void *) __asm__("RuntimeTypeHandle_GetInterfaces");
+    void * QCall_RuntimeTypeHandle_GetMethodAt (void *, int32_t, void *) __asm__("RuntimeTypeHandle_GetMethodAt");
+    void QCall_RuntimeTypeHandle_GetModuleSlow (void *, void *, void *) __asm__("RuntimeTypeHandle_GetModuleSlow");
+    int32_t QCall_RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals (void *, void *) __asm__("RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals");
+    void QCall_RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow (void *, void *, void *) __asm__("RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow");
+    void QCall_RuntimeTypeHandle_Instantiate (void *, void *, int32_t, void *, void *) __asm__("RuntimeTypeHandle_Instantiate");
+    void QCall_RuntimeTypeHandle_InternalAlloc (void *, void *, void *) __asm__("RuntimeTypeHandle_InternalAlloc");
+    void QCall_RuntimeTypeHandle_InternalAllocNoChecks (void *, void *, void *) __asm__("RuntimeTypeHandle_InternalAllocNoChecks");
+    int32_t QCall_RuntimeTypeHandle_IsVisible (void *, void *) __asm__("RuntimeTypeHandle_IsVisible");
+    void QCall_RuntimeTypeHandle_MakeArray (void *, int32_t, void *, void *) __asm__("RuntimeTypeHandle_MakeArray");
+    void QCall_RuntimeTypeHandle_MakeByRef (void *, void *, void *) __asm__("RuntimeTypeHandle_MakeByRef");
+    void QCall_RuntimeTypeHandle_MakeFunctionPointer (void *, int32_t, int32_t, void *, void *) __asm__("RuntimeTypeHandle_MakeFunctionPointer");
+    void QCall_RuntimeTypeHandle_MakePointer (void *, void *, void *) __asm__("RuntimeTypeHandle_MakePointer");
+    void QCall_RuntimeTypeHandle_MakeSZArray (void *, void *, void *) __asm__("RuntimeTypeHandle_MakeSZArray");
+    void QCall_RuntimeTypeHandle_RegisterCollectibleTypeDependency (void *, void *, void *) __asm__("RuntimeTypeHandle_RegisterCollectibleTypeDependency");
+    int32_t QCall_RuntimeTypeHandle_SatisfiesConstraints (void *, void *, void *, void *, void *) __asm__("RuntimeTypeHandle_SatisfiesConstraints");
+    void QCall_RuntimeTypeHandle_VerifyInterfaceIsImplemented (void *, void *, void *) __asm__("RuntimeTypeHandle_VerifyInterfaceIsImplemented");
+    int32_t QCall_SetEnvironmentVariableW (void *, void *) __asm__("SetEnvironmentVariableW");
+    uint32_t QCall_SfiInit (void *, void *, uint32_t, void *, void *) __asm__("SfiInit");
+    uint32_t QCall_SfiNext (void *, void *, void *, void *, void *) __asm__("SfiNext");
+    int32_t QCall_Signature_AreEqual (void *, int32_t, void *, void *, int32_t, void *, void *) __asm__("Signature_AreEqual");
+    void QCall_Signature_GetCustomModifiersAtOffset (void *, int32_t, int32_t, void *, void *) __asm__("Signature_GetCustomModifiersAtOffset");
+    void QCall_Signature_Init (void *, void *, int32_t, void *, void *, void *) __asm__("Signature_Init");
+    void * QCall_StackFrame_GetMethodDescFromNativeIP (void *, void *) __asm__("StackFrame_GetMethodDescFromNativeIP");
+    void QCall_StackTrace_GetStackFramesInternal (void *, int32_t, void *, void *) __asm__("StackTrace_GetStackFramesInternal");
+    int32_t QCall_Stream_HasOverriddenSlow (void *, int32_t, void *) __asm__("Stream_HasOverriddenSlow");
+    void QCall_String_Intern (void *, void *) __asm__("String_Intern");
+    void QCall_String_IsInterned (void *, void *) __asm__("String_IsInterned");
+    void QCall_StubHelpers_CreateCustomMarshaler (void *, int32_t, void *, void *, void *) __asm__("StubHelpers_CreateCustomMarshaler");
+    void QCall_StubHelpers_CreateLayoutClassMarshalStubs (void *, void *, void *, void *, void *) __asm__("StubHelpers_CreateLayoutClassMarshalStubs");
+    void QCall_StubHelpers_MulticastDebuggerTraceHelper (void *, int32_t, void *) __asm__("StubHelpers_MulticastDebuggerTraceHelper");
+    void QCall_StubHelpers_ThrowInteropException (int32_t, int32_t, void *) __asm__("StubHelpers_ThrowInteropException");
+    void QCall_StubHelpers_ThrowInteropParamException (int32_t, int32_t, void *) __asm__("StubHelpers_ThrowInteropParamException");
+    void QCall_StubHelpers_ValidateByref (void *, void *, void *) __asm__("StubHelpers_ValidateByref");
+    void QCall_StubHelpers_ValidateObject (void *, void *, void *) __asm__("StubHelpers_ValidateObject");
+    void QCall_SystemJS_MarkAsyncMain () __asm__("SystemJS_MarkAsyncMain");
+    void QCall_SystemJS_RejectMainPromise (void *, int32_t, void *, int32_t) __asm__("SystemJS_RejectMainPromise");
+    void QCall_SystemJS_ResolveMainPromise (int32_t) __asm__("SystemJS_ResolveMainPromise");
+    void QCall_SystemJS_ScheduleBackgroundJob () __asm__("SystemJS_ScheduleBackgroundJob");
+    void QCall_SystemJS_ScheduleTimer (int32_t) __asm__("SystemJS_ScheduleTimer");
+    void * QCall_TailCallHelp_AllocTailCallArgBufferInternal (int32_t, void *) __asm__("TailCallHelp_AllocTailCallArgBufferInternal");
+    void QCall_ThreadNative_Abort (void *, void *) __asm__("ThreadNative_Abort");
+    void QCall_ThreadNative_GetQCallSpecialException (void *, void *, void *) __asm__("ThreadNative_GetQCallSpecialException");
+    int32_t QCall_ThreadNative_GetThreadState (void *) __asm__("ThreadNative_GetThreadState");
+    void QCall_ThreadNative_ResetAbort () __asm__("ThreadNative_ResetAbort");
+    void QCall_ThrowInvalidCastException (void *, void *, void *) __asm__("ThrowInvalidCastException");
+    void QCall_TypeBuilder_AddInterfaceImpl (void *, int32_t, int32_t, void *) __asm__("TypeBuilder_AddInterfaceImpl");
+    void QCall_TypeBuilder_DefineCustomAttribute (void *, int32_t, int32_t, void *, int32_t, void *) __asm__("TypeBuilder_DefineCustomAttribute");
+    int32_t QCall_TypeBuilder_DefineEvent (void *, int32_t, void *, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineEvent");
+    int32_t QCall_TypeBuilder_DefineField (void *, int32_t, void *, void *, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineField");
+    int32_t QCall_TypeBuilder_DefineGenericParam (void *, void *, int32_t, int32_t, int32_t, void *, void *) __asm__("TypeBuilder_DefineGenericParam");
+    int32_t QCall_TypeBuilder_DefineMethod (void *, int32_t, void *, void *, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineMethod");
+    void QCall_TypeBuilder_DefineMethodImpl (void *, int32_t, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineMethodImpl");
+    void QCall_TypeBuilder_DefineMethodSemantics (void *, int32_t, int32_t, int32_t, void *) __asm__("TypeBuilder_DefineMethodSemantics");
+    int32_t QCall_TypeBuilder_DefineMethodSpec (void *, int32_t, void *, int32_t, void *) __asm__("TypeBuilder_DefineMethodSpec");
+    int32_t QCall_TypeBuilder_DefineProperty (void *, int32_t, void *, int32_t, void *, int32_t, void *) __asm__("TypeBuilder_DefineProperty");
+    int32_t QCall_TypeBuilder_DefineType (void *, void *, int32_t, int32_t, int32_t, void *, void *) __asm__("TypeBuilder_DefineType");
+    int32_t QCall_TypeBuilder_GetTokenFromSig (void *, void *, int32_t, void *) __asm__("TypeBuilder_GetTokenFromSig");
+    void QCall_TypeBuilder_SetClassLayout (void *, int32_t, int32_t, int32_t, void *) __asm__("TypeBuilder_SetClassLayout");
+    void QCall_TypeBuilder_SetConstantValue (void *, int32_t, int32_t, void *, void *) __asm__("TypeBuilder_SetConstantValue");
+    void QCall_TypeBuilder_SetFieldLayoutOffset (void *, int32_t, int32_t, void *) __asm__("TypeBuilder_SetFieldLayoutOffset");
+    void QCall_TypeBuilder_SetMethodIL (void *, int32_t, int32_t, void *, int32_t, void *, int32_t, int32_t, void *, int32_t, void *) __asm__("TypeBuilder_SetMethodIL");
+    void QCall_TypeBuilder_SetMethodImpl (void *, int32_t, int32_t, void *) __asm__("TypeBuilder_SetMethodImpl");
+    void QCall_TypeBuilder_SetPInvokeData (void *, void *, void *, int32_t, int32_t, void *) __asm__("TypeBuilder_SetPInvokeData");
+    int32_t QCall_TypeBuilder_SetParamInfo (void *, int32_t, int32_t, int32_t, void *, void *) __asm__("TypeBuilder_SetParamInfo");
+    void QCall_TypeBuilder_SetParentType (void *, int32_t, int32_t, void *) __asm__("TypeBuilder_SetParentType");
+    void QCall_TypeBuilder_TermCreateClass (void *, int32_t, void *, void *) __asm__("TypeBuilder_TermCreateClass");
+    int32_t QCall_TypeHandle_CanCastTo_NoCacheLookup (void *, void *, void *) __asm__("TypeHandle_CanCastTo_NoCacheLookup");
+    int32_t QCall_TypeHandle_GetCorElementType (void *) __asm__("TypeHandle_GetCorElementType");
+    void * QCall_TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry (void *, void *, void *, void *) __asm__("TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry");
+    void * QCall_TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry (void *, void *, void *, void *) __asm__("TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry");
+    void QCall_TypeMapLazyDictionary_ProcessAttributes (void *, void *, void *, void *, void *, void *, void *, void *) __asm__("TypeMapLazyDictionary_ProcessAttributes");
+    void * QCall_UnsafeAccessors_ResolveGenericParamToTypeHandle (void *, int32_t, uint32_t, void *) __asm__("UnsafeAccessors_ResolveGenericParamToTypeHandle");
+    int32_t QCall_ValueType_GetHashCodeStrategy (void *, void *, void *, void *, void *, void *) __asm__("ValueType_GetHashCodeStrategy");
+    int32_t QCall_VersionResilientHashCode_TypeHashCode (void *, void *) __asm__("VersionResilientHashCode_TypeHashCode");
+    void* QCall_memmove(void* dest, const void* src, size_t len);
+    void* QCall_memset(void* dest, int value, size_t len);
+} // extern "C"
+
+static const Entry s_QCall[] = {
+    { "AppContext_SetFirstChanceExceptionHandler", (void*)&QCall_AppContext_SetFirstChanceExceptionHandler },
+    { "AppContext_TryGetHostPropertyValue", (void*)&QCall_AppContext_TryGetHostPropertyValue },
+    { "AppDomain_CreateDynamicAssembly", (void*)&QCall_AppDomain_CreateDynamicAssembly },
+    { "AppendExceptionStackFrame", (void*)&QCall_AppendExceptionStackFrame },
+    { "Array_CreateInstance", (void*)&QCall_Array_CreateInstance },
+    { "Array_Ctor", (void*)&QCall_Array_Ctor },
+    { "Array_GetElementConstructorEntrypoint", (void*)&QCall_Array_GetElementConstructorEntrypoint },
+    { "AssemblyHandle_GetManifestModuleSlow", (void*)&QCall_AssemblyHandle_GetManifestModuleSlow },
+    { "AssemblyName_InitializeAssemblySpec", (void*)&QCall_AssemblyName_InitializeAssemblySpec },
+    { "AssemblyNative_ApplyUpdate", (void*)&QCall_AssemblyNative_ApplyUpdate },
+    { "AssemblyNative_GetCodeBase", (void*)&QCall_AssemblyNative_GetCodeBase },
+    { "AssemblyNative_GetEntryAssembly", (void*)&QCall_AssemblyNative_GetEntryAssembly },
+    { "AssemblyNative_GetEntryPoint", (void*)&QCall_AssemblyNative_GetEntryPoint },
+    { "AssemblyNative_GetExecutingAssembly", (void*)&QCall_AssemblyNative_GetExecutingAssembly },
+    { "AssemblyNative_GetExportedTypes", (void*)&QCall_AssemblyNative_GetExportedTypes },
+    { "AssemblyNative_GetFlags", (void*)&QCall_AssemblyNative_GetFlags },
+    { "AssemblyNative_GetForwardedType", (void*)&QCall_AssemblyNative_GetForwardedType },
+    { "AssemblyNative_GetFullName", (void*)&QCall_AssemblyNative_GetFullName },
+    { "AssemblyNative_GetHashAlgorithm", (void*)&QCall_AssemblyNative_GetHashAlgorithm },
+    { "AssemblyNative_GetImageRuntimeVersion", (void*)&QCall_AssemblyNative_GetImageRuntimeVersion },
+    { "AssemblyNative_GetLoadContextForAssembly", (void*)&QCall_AssemblyNative_GetLoadContextForAssembly },
+    { "AssemblyNative_GetLoadedAssemblies", (void*)&QCall_AssemblyNative_GetLoadedAssemblies },
+    { "AssemblyNative_GetLocale", (void*)&QCall_AssemblyNative_GetLocale },
+    { "AssemblyNative_GetLocation", (void*)&QCall_AssemblyNative_GetLocation },
+    { "AssemblyNative_GetManifestResourceInfo", (void*)&QCall_AssemblyNative_GetManifestResourceInfo },
+    { "AssemblyNative_GetManifestResourceNames", (void*)&QCall_AssemblyNative_GetManifestResourceNames },
+    { "AssemblyNative_GetModule", (void*)&QCall_AssemblyNative_GetModule },
+    { "AssemblyNative_GetModules", (void*)&QCall_AssemblyNative_GetModules },
+    { "AssemblyNative_GetPublicKey", (void*)&QCall_AssemblyNative_GetPublicKey },
+    { "AssemblyNative_GetReferencedAssemblies", (void*)&QCall_AssemblyNative_GetReferencedAssemblies },
+    { "AssemblyNative_GetResource", (void*)&QCall_AssemblyNative_GetResource },
+    { "AssemblyNative_GetSimpleName", (void*)&QCall_AssemblyNative_GetSimpleName },
+    { "AssemblyNative_GetTypeCore", (void*)&QCall_AssemblyNative_GetTypeCore },
+    { "AssemblyNative_GetTypeCoreIgnoreCase", (void*)&QCall_AssemblyNative_GetTypeCoreIgnoreCase },
+    { "AssemblyNative_GetVersion", (void*)&QCall_AssemblyNative_GetVersion },
+    { "AssemblyNative_InitializeAssemblyLoadContext", (void*)&QCall_AssemblyNative_InitializeAssemblyLoadContext },
+    { "AssemblyNative_InternalLoad", (void*)&QCall_AssemblyNative_InternalLoad },
+    { "AssemblyNative_InternalTryGetRawMetadata", (void*)&QCall_AssemblyNative_InternalTryGetRawMetadata },
+    { "AssemblyNative_IsApplyUpdateSupported", (void*)&QCall_AssemblyNative_IsApplyUpdateSupported },
+    { "AssemblyNative_LoadFromPath", (void*)&QCall_AssemblyNative_LoadFromPath },
+    { "AssemblyNative_LoadFromStream", (void*)&QCall_AssemblyNative_LoadFromStream },
+    { "AssemblyNative_PrepareForAssemblyLoadContextRelease", (void*)&QCall_AssemblyNative_PrepareForAssemblyLoadContextRelease },
+    { "AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked", (void*)&QCall_AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked },
+    { "AssemblyNative_TraceAssemblyResolveHandlerInvoked", (void*)&QCall_AssemblyNative_TraceAssemblyResolveHandlerInvoked },
+    { "AssemblyNative_TraceResolvingHandlerInvoked", (void*)&QCall_AssemblyNative_TraceResolvingHandlerInvoked },
+    { "AsyncHelpers_AddContinuationToExInternal", (void*)&QCall_AsyncHelpers_AddContinuationToExInternal },
+    { "CallFilterFunclet", (void*)&QCall_CallFilterFunclet },
+    { "CustomAttribute_ParseAttributeUsageAttribute", (void*)&QCall_CustomAttribute_ParseAttributeUsageAttribute },
+    { "DebugDebugger_Break", (void*)&QCall_DebugDebugger_Break },
+    { "DebugDebugger_CustomNotification", (void*)&QCall_DebugDebugger_CustomNotification },
+    { "DebugDebugger_IsLoggingHelper", (void*)&QCall_DebugDebugger_IsLoggingHelper },
+    { "DebugDebugger_IsManagedDebuggerAttached", (void*)&QCall_DebugDebugger_IsManagedDebuggerAttached },
+    { "DebugDebugger_Launch", (void*)&QCall_DebugDebugger_Launch },
+    { "DebugDebugger_Log", (void*)&QCall_DebugDebugger_Log },
+    { "Delegate_AdjustTarget", (void*)&QCall_Delegate_AdjustTarget },
+    { "Delegate_BindToMethodInfo", (void*)&QCall_Delegate_BindToMethodInfo },
+    { "Delegate_BindToMethodName", (void*)&QCall_Delegate_BindToMethodName },
+    { "Delegate_Construct", (void*)&QCall_Delegate_Construct },
+    { "Delegate_CreateMethodInfo", (void*)&QCall_Delegate_CreateMethodInfo },
+    { "Delegate_GetMethodDesc", (void*)&QCall_Delegate_GetMethodDesc },
+    { "Delegate_GetMulticastInvokeSlow", (void*)&QCall_Delegate_GetMulticastInvokeSlow },
+    { "Delegate_InitializeVirtualCallStub", (void*)&QCall_Delegate_InitializeVirtualCallStub },
+    { "DependentHandle_InternalAllocWithGCTransition", (void*)&QCall_DependentHandle_InternalAllocWithGCTransition },
+    { "DependentHandle_InternalFreeWithGCTransition", (void*)&QCall_DependentHandle_InternalFreeWithGCTransition },
+    { "EHEnumInitFromStackFrameIterator", (void*)&QCall_EHEnumInitFromStackFrameIterator },
+    { "EHEnumNext", (void*)&QCall_EHEnumNext },
+    { "Enum_GetValuesAndNames", (void*)&QCall_Enum_GetValuesAndNames },
+    { "Environment_Exit", (void*)&QCall_Environment_Exit },
+    { "Environment_FailFast", (void*)&QCall_Environment_FailFast },
+    { "EventPipeInternal_CreateProvider", (void*)&QCall_EventPipeInternal_CreateProvider },
+    { "EventPipeInternal_DefineEvent", (void*)&QCall_EventPipeInternal_DefineEvent },
+    { "EventPipeInternal_DeleteProvider", (void*)&QCall_EventPipeInternal_DeleteProvider },
+    { "EventPipeInternal_Disable", (void*)&QCall_EventPipeInternal_Disable },
+    { "EventPipeInternal_Enable", (void*)&QCall_EventPipeInternal_Enable },
+    { "EventPipeInternal_EventActivityIdControl", (void*)&QCall_EventPipeInternal_EventActivityIdControl },
+    { "EventPipeInternal_GetNextEvent", (void*)&QCall_EventPipeInternal_GetNextEvent },
+    { "EventPipeInternal_GetProvider", (void*)&QCall_EventPipeInternal_GetProvider },
+    { "EventPipeInternal_GetSessionInfo", (void*)&QCall_EventPipeInternal_GetSessionInfo },
+    { "EventPipeInternal_SignalSession", (void*)&QCall_EventPipeInternal_SignalSession },
+    { "EventPipeInternal_WriteEventData", (void*)&QCall_EventPipeInternal_WriteEventData },
+    { "ExceptionNative_GetFrozenStackTrace", (void*)&QCall_ExceptionNative_GetFrozenStackTrace },
+    { "ExceptionNative_GetMessageFromNativeResources", (void*)&QCall_ExceptionNative_GetMessageFromNativeResources },
+    { "ExceptionNative_GetMethodFromStackTrace", (void*)&QCall_ExceptionNative_GetMethodFromStackTrace },
+    { "ExceptionNative_ThrowAmbiguousResolutionException", (void*)&QCall_ExceptionNative_ThrowAmbiguousResolutionException },
+    { "ExceptionNative_ThrowClassAccessException", (void*)&QCall_ExceptionNative_ThrowClassAccessException },
+    { "ExceptionNative_ThrowEntryPointNotFoundException", (void*)&QCall_ExceptionNative_ThrowEntryPointNotFoundException },
+    { "ExceptionNative_ThrowFieldAccessException", (void*)&QCall_ExceptionNative_ThrowFieldAccessException },
+    { "ExceptionNative_ThrowMethodAccessException", (void*)&QCall_ExceptionNative_ThrowMethodAccessException },
+    { "FileLoadException_GetMessageForHR", (void*)&QCall_FileLoadException_GetMessageForHR },
+    { "FreeEnvironmentStringsW", (void*)&QCall_FreeEnvironmentStringsW },
+    { "GCHandle_InternalAllocWithGCTransition", (void*)&QCall_GCHandle_InternalAllocWithGCTransition },
+    { "GCHandle_InternalFreeWithGCTransition", (void*)&QCall_GCHandle_InternalFreeWithGCTransition },
+    { "GCInterface_AddMemoryPressure", (void*)&QCall_GCInterface_AddMemoryPressure },
+    { "GCInterface_AllocateNewArray", (void*)&QCall_GCInterface_AllocateNewArray },
+    { "GCInterface_Collect", (void*)&QCall_GCInterface_Collect },
+    { "GCInterface_EnableNoGCRegionCallback", (void*)&QCall_GCInterface_EnableNoGCRegionCallback },
+    { "GCInterface_EndNoGCRegion", (void*)&QCall_GCInterface_EndNoGCRegion },
+    { "GCInterface_EnumerateConfigurationValues", (void*)&QCall_GCInterface_EnumerateConfigurationValues },
+    { "GCInterface_GetNextFinalizableObject", (void*)&QCall_GCInterface_GetNextFinalizableObject },
+    { "GCInterface_GetTotalAllocatedBytesPrecise", (void*)&QCall_GCInterface_GetTotalAllocatedBytesPrecise },
+    { "GCInterface_GetTotalMemory", (void*)&QCall_GCInterface_GetTotalMemory },
+    { "GCInterface_ReRegisterForFinalize", (void*)&QCall_GCInterface_ReRegisterForFinalize },
+    { "GCInterface_RefreshMemoryLimit", (void*)&QCall_GCInterface_RefreshMemoryLimit },
+    { "GCInterface_RegisterFrozenSegment", (void*)&QCall_GCInterface_RegisterFrozenSegment },
+    { "GCInterface_RemoveMemoryPressure", (void*)&QCall_GCInterface_RemoveMemoryPressure },
+    { "GCInterface_StartNoGCRegion", (void*)&QCall_GCInterface_StartNoGCRegion },
+    { "GCInterface_UnregisterFrozenSegment", (void*)&QCall_GCInterface_UnregisterFrozenSegment },
+    { "GCInterface_WaitForFullGCApproach", (void*)&QCall_GCInterface_WaitForFullGCApproach },
+    { "GCInterface_WaitForFullGCComplete", (void*)&QCall_GCInterface_WaitForFullGCComplete },
+    { "GCInterface_WaitForPendingFinalizers", (void*)&QCall_GCInterface_WaitForPendingFinalizers },
+    { "GenericHandleWorker", (void*)&QCall_GenericHandleWorker },
+    { "GetCurrentExInfo", (void*)&QCall_GetCurrentExInfo },
+    { "GetEnvironmentStringsW", (void*)&QCall_GetEnvironmentStringsW },
+    { "GetEnvironmentVariableW", (void*)&QCall_GetEnvironmentVariableW },
+    { "GetFileLoadExceptionMessage", (void*)&QCall_GetFileLoadExceptionMessage },
+    { "GetTypeLoadExceptionMessage", (void*)&QCall_GetTypeLoadExceptionMessage },
+    { "InitClassHelper", (void*)&QCall_InitClassHelper },
+    { "Interlocked_MemoryBarrierProcessWide", (void*)&QCall_Interlocked_MemoryBarrierProcessWide },
+    { "IsInstanceOf_NoCacheLookup", (void*)&QCall_IsInstanceOf_NoCacheLookup },
+    { "LoaderAllocator_Destroy", (void*)&QCall_LoaderAllocator_Destroy },
+    { "MarshalNative_GetDelegateForFunctionPointerInternal", (void*)&QCall_MarshalNative_GetDelegateForFunctionPointerInternal },
+    { "MarshalNative_GetExceptionForHR", (void*)&QCall_MarshalNative_GetExceptionForHR },
+    { "MarshalNative_GetFunctionPointerForDelegateInternal", (void*)&QCall_MarshalNative_GetFunctionPointerForDelegateInternal },
+    { "MarshalNative_HasLayout", (void*)&QCall_MarshalNative_HasLayout },
+    { "MarshalNative_OffsetOf", (void*)&QCall_MarshalNative_OffsetOf },
+    { "MarshalNative_Prelink", (void*)&QCall_MarshalNative_Prelink },
+    { "MarshalNative_SizeOfHelper", (void*)&QCall_MarshalNative_SizeOfHelper },
+    { "MdUtf8String_EqualsCaseInsensitive", (void*)&QCall_MdUtf8String_EqualsCaseInsensitive },
+    { "MetadataImport_Enum", (void*)&QCall_MetadataImport_Enum },
+    { "MetadataImport_GetMarshalAs", (void*)&QCall_MetadataImport_GetMarshalAs },
+    { "MethodBase_GetCurrentMethod", (void*)&QCall_MethodBase_GetCurrentMethod },
+    { "MethodTable_CanCompareBitsOrUseFastGetHashCode", (void*)&QCall_MethodTable_CanCompareBitsOrUseFastGetHashCode },
+    { "ModuleBuilder_GetArrayMethodToken", (void*)&QCall_ModuleBuilder_GetArrayMethodToken },
+    { "ModuleBuilder_GetMemberRef", (void*)&QCall_ModuleBuilder_GetMemberRef },
+    { "ModuleBuilder_GetMemberRefFromSignature", (void*)&QCall_ModuleBuilder_GetMemberRefFromSignature },
+    { "ModuleBuilder_GetMemberRefOfFieldInfo", (void*)&QCall_ModuleBuilder_GetMemberRefOfFieldInfo },
+    { "ModuleBuilder_GetMemberRefOfMethodInfo", (void*)&QCall_ModuleBuilder_GetMemberRefOfMethodInfo },
+    { "ModuleBuilder_GetStringConstant", (void*)&QCall_ModuleBuilder_GetStringConstant },
+    { "ModuleBuilder_GetTokenFromTypeSpec", (void*)&QCall_ModuleBuilder_GetTokenFromTypeSpec },
+    { "ModuleBuilder_GetTypeRef", (void*)&QCall_ModuleBuilder_GetTypeRef },
+    { "ModuleBuilder_SetFieldRVAContent", (void*)&QCall_ModuleBuilder_SetFieldRVAContent },
+    { "ModuleHandle_GetDynamicMethod", (void*)&QCall_ModuleHandle_GetDynamicMethod },
+    { "ModuleHandle_GetMDStreamVersion", (void*)&QCall_ModuleHandle_GetMDStreamVersion },
+    { "ModuleHandle_GetModuleType", (void*)&QCall_ModuleHandle_GetModuleType },
+    { "ModuleHandle_GetPEKind", (void*)&QCall_ModuleHandle_GetPEKind },
+    { "ModuleHandle_GetToken", (void*)&QCall_ModuleHandle_GetToken },
+    { "ModuleHandle_ResolveField", (void*)&QCall_ModuleHandle_ResolveField },
+    { "ModuleHandle_ResolveMethod", (void*)&QCall_ModuleHandle_ResolveMethod },
+    { "ModuleHandle_ResolveType", (void*)&QCall_ModuleHandle_ResolveType },
+    { "NativeLibrary_LoadByName", (void*)&QCall_NativeLibrary_LoadByName },
+    { "NativeRuntimeEventSource_LogContentionLockCreated", (void*)&QCall_NativeRuntimeEventSource_LogContentionLockCreated },
+    { "NativeRuntimeEventSource_LogContentionStart", (void*)&QCall_NativeRuntimeEventSource_LogContentionStart },
+    { "NativeRuntimeEventSource_LogContentionStop", (void*)&QCall_NativeRuntimeEventSource_LogContentionStop },
+    { "NativeRuntimeEventSource_LogThreadPoolIODequeue", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIODequeue },
+    { "NativeRuntimeEventSource_LogThreadPoolIOEnqueue", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIOEnqueue },
+    { "NativeRuntimeEventSource_LogThreadPoolIOPack", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolIOPack },
+    { "NativeRuntimeEventSource_LogThreadPoolMinMaxThreads", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait },
+    { "NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount", (void*)&QCall_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount },
+    { "NativeRuntimeEventSource_LogWaitHandleWaitStart", (void*)&QCall_NativeRuntimeEventSource_LogWaitHandleWaitStart },
+    { "NativeRuntimeEventSource_LogWaitHandleWaitStop", (void*)&QCall_NativeRuntimeEventSource_LogWaitHandleWaitStop },
+    { "ObjectHeader_GetOrCreateLockObject", (void*)&QCall_ObjectHeader_GetOrCreateLockObject },
+    { "ObjectNative_AllocateUninitializedClone", (void*)&QCall_ObjectNative_AllocateUninitializedClone },
+    { "ObjectNative_GetHashCodeSlow", (void*)&QCall_ObjectNative_GetHashCodeSlow },
+    { "QCall_FreeGCHandleForTypeHandle", (void*)&QCall_QCall_FreeGCHandleForTypeHandle },
+    { "QCall_GetGCHandleForTypeHandle", (void*)&QCall_QCall_GetGCHandleForTypeHandle },
+    { "ReflectionInvocation_CompileMethod", (void*)&QCall_ReflectionInvocation_CompileMethod },
+    { "ReflectionInvocation_GetBoxInfo", (void*)&QCall_ReflectionInvocation_GetBoxInfo },
+    { "ReflectionInvocation_GetGuid", (void*)&QCall_ReflectionInvocation_GetGuid },
+    { "ReflectionInvocation_PrepareDelegate", (void*)&QCall_ReflectionInvocation_PrepareDelegate },
+    { "ReflectionInvocation_PrepareMethod", (void*)&QCall_ReflectionInvocation_PrepareMethod },
+    { "ReflectionInvocation_RunClassConstructor", (void*)&QCall_ReflectionInvocation_RunClassConstructor },
+    { "ReflectionInvocation_RunModuleConstructor", (void*)&QCall_ReflectionInvocation_RunModuleConstructor },
+    { "ReflectionInvocation_SizeOf", (void*)&QCall_ReflectionInvocation_SizeOf },
+    { "ReflectionSerialization_GetCreateUninitializedObjectInfo", (void*)&QCall_ReflectionSerialization_GetCreateUninitializedObjectInfo },
+    { "ResolveVirtualFunctionPointer", (void*)&QCall_ResolveVirtualFunctionPointer },
+    { "RuntimeFieldHandle_GetEnCFieldAddr", (void*)&QCall_RuntimeFieldHandle_GetEnCFieldAddr },
+    { "RuntimeFieldHandle_GetFieldDataReference", (void*)&QCall_RuntimeFieldHandle_GetFieldDataReference },
+    { "RuntimeFieldHandle_GetRVAFieldInfo", (void*)&QCall_RuntimeFieldHandle_GetRVAFieldInfo },
+    { "RuntimeFieldHandle_GetValue", (void*)&QCall_RuntimeFieldHandle_GetValue },
+    { "RuntimeFieldHandle_GetValueDirect", (void*)&QCall_RuntimeFieldHandle_GetValueDirect },
+    { "RuntimeFieldHandle_SetValue", (void*)&QCall_RuntimeFieldHandle_SetValue },
+    { "RuntimeFieldHandle_SetValueDirect", (void*)&QCall_RuntimeFieldHandle_SetValueDirect },
+    { "RuntimeMethodHandle_ConstructInstantiation", (void*)&QCall_RuntimeMethodHandle_ConstructInstantiation },
+    { "RuntimeMethodHandle_Destroy", (void*)&QCall_RuntimeMethodHandle_Destroy },
+    { "RuntimeMethodHandle_GetDiagnosticCodeStart", (void*)&QCall_RuntimeMethodHandle_GetDiagnosticCodeStart },
+    { "RuntimeMethodHandle_GetFunctionPointer", (void*)&QCall_RuntimeMethodHandle_GetFunctionPointer },
+    { "RuntimeMethodHandle_GetMethodBody", (void*)&QCall_RuntimeMethodHandle_GetMethodBody },
+    { "RuntimeMethodHandle_GetMethodInstantiation", (void*)&QCall_RuntimeMethodHandle_GetMethodInstantiation },
+    { "RuntimeMethodHandle_GetStubIfNeededSlow", (void*)&QCall_RuntimeMethodHandle_GetStubIfNeededSlow },
+    { "RuntimeMethodHandle_GetTypicalMethodDefinition", (void*)&QCall_RuntimeMethodHandle_GetTypicalMethodDefinition },
+    { "RuntimeMethodHandle_GetVirtualFunctionPointer", (void*)&QCall_RuntimeMethodHandle_GetVirtualFunctionPointer },
+    { "RuntimeMethodHandle_IsCAVisibleFromDecoratedType", (void*)&QCall_RuntimeMethodHandle_IsCAVisibleFromDecoratedType },
+    { "RuntimeMethodHandle_StripMethodInstantiation", (void*)&QCall_RuntimeMethodHandle_StripMethodInstantiation },
+    { "RuntimeModule_GetFullyQualifiedName", (void*)&QCall_RuntimeModule_GetFullyQualifiedName },
+    { "RuntimeModule_GetScopeName", (void*)&QCall_RuntimeModule_GetScopeName },
+    { "RuntimeModule_GetTypes", (void*)&QCall_RuntimeModule_GetTypes },
+    { "RuntimeTypeHandle_AllocateTypeAssociatedMemory", (void*)&QCall_RuntimeTypeHandle_AllocateTypeAssociatedMemory },
+    { "RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned", (void*)&QCall_RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned },
+    { "RuntimeTypeHandle_ConstructName", (void*)&QCall_RuntimeTypeHandle_ConstructName },
+    { "RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter", (void*)&QCall_RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter },
+    { "RuntimeTypeHandle_GetActivationInfo", (void*)&QCall_RuntimeTypeHandle_GetActivationInfo },
+    { "RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer", (void*)&QCall_RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer },
+    { "RuntimeTypeHandle_GetAssemblySlow", (void*)&QCall_RuntimeTypeHandle_GetAssemblySlow },
+    { "RuntimeTypeHandle_GetConstraints", (void*)&QCall_RuntimeTypeHandle_GetConstraints },
+    { "RuntimeTypeHandle_GetDeclaringMethodForGenericParameter", (void*)&QCall_RuntimeTypeHandle_GetDeclaringMethodForGenericParameter },
+    { "RuntimeTypeHandle_GetDeclaringTypeHandle", (void*)&QCall_RuntimeTypeHandle_GetDeclaringTypeHandle },
+    { "RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable", (void*)&QCall_RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable },
+    { "RuntimeTypeHandle_GetFields", (void*)&QCall_RuntimeTypeHandle_GetFields },
+    { "RuntimeTypeHandle_GetGenericTypeDefinition", (void*)&QCall_RuntimeTypeHandle_GetGenericTypeDefinition },
+    { "RuntimeTypeHandle_GetInstantiation", (void*)&QCall_RuntimeTypeHandle_GetInstantiation },
+    { "RuntimeTypeHandle_GetInterfaceMethodImplementation", (void*)&QCall_RuntimeTypeHandle_GetInterfaceMethodImplementation },
+    { "RuntimeTypeHandle_GetInterfaces", (void*)&QCall_RuntimeTypeHandle_GetInterfaces },
+    { "RuntimeTypeHandle_GetMethodAt", (void*)&QCall_RuntimeTypeHandle_GetMethodAt },
+    { "RuntimeTypeHandle_GetModuleSlow", (void*)&QCall_RuntimeTypeHandle_GetModuleSlow },
+    { "RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals", (void*)&QCall_RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals },
+    { "RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow", (void*)&QCall_RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow },
+    { "RuntimeTypeHandle_Instantiate", (void*)&QCall_RuntimeTypeHandle_Instantiate },
+    { "RuntimeTypeHandle_InternalAlloc", (void*)&QCall_RuntimeTypeHandle_InternalAlloc },
+    { "RuntimeTypeHandle_InternalAllocNoChecks", (void*)&QCall_RuntimeTypeHandle_InternalAllocNoChecks },
+    { "RuntimeTypeHandle_IsVisible", (void*)&QCall_RuntimeTypeHandle_IsVisible },
+    { "RuntimeTypeHandle_MakeArray", (void*)&QCall_RuntimeTypeHandle_MakeArray },
+    { "RuntimeTypeHandle_MakeByRef", (void*)&QCall_RuntimeTypeHandle_MakeByRef },
+    { "RuntimeTypeHandle_MakeFunctionPointer", (void*)&QCall_RuntimeTypeHandle_MakeFunctionPointer },
+    { "RuntimeTypeHandle_MakePointer", (void*)&QCall_RuntimeTypeHandle_MakePointer },
+    { "RuntimeTypeHandle_MakeSZArray", (void*)&QCall_RuntimeTypeHandle_MakeSZArray },
+    { "RuntimeTypeHandle_RegisterCollectibleTypeDependency", (void*)&QCall_RuntimeTypeHandle_RegisterCollectibleTypeDependency },
+    { "RuntimeTypeHandle_SatisfiesConstraints", (void*)&QCall_RuntimeTypeHandle_SatisfiesConstraints },
+    { "RuntimeTypeHandle_VerifyInterfaceIsImplemented", (void*)&QCall_RuntimeTypeHandle_VerifyInterfaceIsImplemented },
+    { "SetEnvironmentVariableW", (void*)&QCall_SetEnvironmentVariableW },
+    { "SfiInit", (void*)&QCall_SfiInit },
+    { "SfiNext", (void*)&QCall_SfiNext },
+    { "Signature_AreEqual", (void*)&QCall_Signature_AreEqual },
+    { "Signature_GetCustomModifiersAtOffset", (void*)&QCall_Signature_GetCustomModifiersAtOffset },
+    { "Signature_Init", (void*)&QCall_Signature_Init },
+    { "StackFrame_GetMethodDescFromNativeIP", (void*)&QCall_StackFrame_GetMethodDescFromNativeIP },
+    { "StackTrace_GetStackFramesInternal", (void*)&QCall_StackTrace_GetStackFramesInternal },
+    { "Stream_HasOverriddenSlow", (void*)&QCall_Stream_HasOverriddenSlow },
+    { "String_Intern", (void*)&QCall_String_Intern },
+    { "String_IsInterned", (void*)&QCall_String_IsInterned },
+    { "StubHelpers_CreateCustomMarshaler", (void*)&QCall_StubHelpers_CreateCustomMarshaler },
+    { "StubHelpers_CreateLayoutClassMarshalStubs", (void*)&QCall_StubHelpers_CreateLayoutClassMarshalStubs },
+    { "StubHelpers_MulticastDebuggerTraceHelper", (void*)&QCall_StubHelpers_MulticastDebuggerTraceHelper },
+    { "StubHelpers_ThrowInteropException", (void*)&QCall_StubHelpers_ThrowInteropException },
+    { "StubHelpers_ThrowInteropParamException", (void*)&QCall_StubHelpers_ThrowInteropParamException },
+    { "StubHelpers_ValidateByref", (void*)&QCall_StubHelpers_ValidateByref },
+    { "StubHelpers_ValidateObject", (void*)&QCall_StubHelpers_ValidateObject },
+    { "SystemJS_MarkAsyncMain", (void*)&QCall_SystemJS_MarkAsyncMain },
+    { "SystemJS_RejectMainPromise", (void*)&QCall_SystemJS_RejectMainPromise },
+    { "SystemJS_ResolveMainPromise", (void*)&QCall_SystemJS_ResolveMainPromise },
+    { "SystemJS_ScheduleBackgroundJob", (void*)&QCall_SystemJS_ScheduleBackgroundJob },
+    { "SystemJS_ScheduleTimer", (void*)&QCall_SystemJS_ScheduleTimer },
+    { "TailCallHelp_AllocTailCallArgBufferInternal", (void*)&QCall_TailCallHelp_AllocTailCallArgBufferInternal },
+    { "ThreadNative_Abort", (void*)&QCall_ThreadNative_Abort },
+    { "ThreadNative_GetQCallSpecialException", (void*)&QCall_ThreadNative_GetQCallSpecialException },
+    { "ThreadNative_GetThreadState", (void*)&QCall_ThreadNative_GetThreadState },
+    { "ThreadNative_ResetAbort", (void*)&QCall_ThreadNative_ResetAbort },
+    { "ThrowInvalidCastException", (void*)&QCall_ThrowInvalidCastException },
+    { "TypeBuilder_AddInterfaceImpl", (void*)&QCall_TypeBuilder_AddInterfaceImpl },
+    { "TypeBuilder_DefineCustomAttribute", (void*)&QCall_TypeBuilder_DefineCustomAttribute },
+    { "TypeBuilder_DefineEvent", (void*)&QCall_TypeBuilder_DefineEvent },
+    { "TypeBuilder_DefineField", (void*)&QCall_TypeBuilder_DefineField },
+    { "TypeBuilder_DefineGenericParam", (void*)&QCall_TypeBuilder_DefineGenericParam },
+    { "TypeBuilder_DefineMethod", (void*)&QCall_TypeBuilder_DefineMethod },
+    { "TypeBuilder_DefineMethodImpl", (void*)&QCall_TypeBuilder_DefineMethodImpl },
+    { "TypeBuilder_DefineMethodSemantics", (void*)&QCall_TypeBuilder_DefineMethodSemantics },
+    { "TypeBuilder_DefineMethodSpec", (void*)&QCall_TypeBuilder_DefineMethodSpec },
+    { "TypeBuilder_DefineProperty", (void*)&QCall_TypeBuilder_DefineProperty },
+    { "TypeBuilder_DefineType", (void*)&QCall_TypeBuilder_DefineType },
+    { "TypeBuilder_GetTokenFromSig", (void*)&QCall_TypeBuilder_GetTokenFromSig },
+    { "TypeBuilder_SetClassLayout", (void*)&QCall_TypeBuilder_SetClassLayout },
+    { "TypeBuilder_SetConstantValue", (void*)&QCall_TypeBuilder_SetConstantValue },
+    { "TypeBuilder_SetFieldLayoutOffset", (void*)&QCall_TypeBuilder_SetFieldLayoutOffset },
+    { "TypeBuilder_SetMethodIL", (void*)&QCall_TypeBuilder_SetMethodIL },
+    { "TypeBuilder_SetMethodImpl", (void*)&QCall_TypeBuilder_SetMethodImpl },
+    { "TypeBuilder_SetPInvokeData", (void*)&QCall_TypeBuilder_SetPInvokeData },
+    { "TypeBuilder_SetParamInfo", (void*)&QCall_TypeBuilder_SetParamInfo },
+    { "TypeBuilder_SetParentType", (void*)&QCall_TypeBuilder_SetParentType },
+    { "TypeBuilder_TermCreateClass", (void*)&QCall_TypeBuilder_TermCreateClass },
+    { "TypeHandle_CanCastTo_NoCacheLookup", (void*)&QCall_TypeHandle_CanCastTo_NoCacheLookup },
+    { "TypeHandle_GetCorElementType", (void*)&QCall_TypeHandle_GetCorElementType },
+    { "TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry", (void*)&QCall_TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry },
+    { "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry", (void*)&QCall_TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry },
+    { "TypeMapLazyDictionary_ProcessAttributes", (void*)&QCall_TypeMapLazyDictionary_ProcessAttributes },
+    { "UnsafeAccessors_ResolveGenericParamToTypeHandle", (void*)&QCall_UnsafeAccessors_ResolveGenericParamToTypeHandle },
+    { "ValueType_GetHashCodeStrategy", (void*)&QCall_ValueType_GetHashCodeStrategy },
+    { "VersionResilientHashCode_TypeHashCode", (void*)&QCall_VersionResilientHashCode_TypeHashCode },
+    { "memmove", (void*)&QCall_memmove },
+    { "memset", (void*)&QCall_memset },
+};
+
+const void* QCallResolveDllImport(const char* name)
+{
+    return minipal_resolve_dllimport(s_QCall, sizeof(s_QCall) / sizeof(s_QCall[0]), name);
+}

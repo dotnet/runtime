@@ -798,7 +798,7 @@ internal static class WasmR2RAssert
             .Single(entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.InjectStringThunks);
 
         ReadOnlySpan<byte> image = reader.Image;
-        int offset = reader.GetOffset(checked((int)entry.SignatureRVA));
+        int offset = entry.GetSignatureOffset(reader);
         if (image[offset++] != (byte)ReadyToRunFixupKind.InjectStringThunks)
         {
             throw new BadImageFormatException("Invalid InjectStringThunks signature.");

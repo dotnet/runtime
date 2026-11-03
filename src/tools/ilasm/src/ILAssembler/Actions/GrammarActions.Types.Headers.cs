@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed partial class GrammarActions
 {
@@ -175,7 +175,7 @@ internal sealed partial class GrammarActions
 
         typeDefinition.BaseType ??= _entityRegistry.ResolveImplicitBaseType(fallbackBase);
         if (!typeDefinition.Attributes.HasFlag(TypeAttributes.Sealed) &&
-            (requireSealed || _entityRegistry.SystemValueTypeType.Equals(typeDefinition.BaseType)))
+            (requireSealed || _entityRegistry.IsSystemValueType(typeDefinition.BaseType)))
         {
             IToken location = header.NameToken ?? context.Start;
             _diagnostics.Add(

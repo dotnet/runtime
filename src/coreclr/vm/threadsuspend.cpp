@@ -3531,6 +3531,12 @@ void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
     // you may have to change routine GCHeapUtilities::SafeToRestartManagedThreads
     // as well.
     //
+    // Fire the "restart end" event right before the threads are released. Once they are released,
+    // this thread may be preempted for a long time under CPU load, which would be wrongly reported
+    // as a part of the EE suspension.
+    //
+    FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
+
     ThreadStore::UnsetThreadTrapForSuspension();
     g_pSuspensionThread    = 0;
 
@@ -3692,7 +3698,18 @@ ThrowControlForThread(
 
     OBJECTREF throwable = ExInfo::CreateThrowable(&exceptionRecord, TRUE);
     pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    TADDR resumeSSP = ssp;
+#else
+    TADDR resumeSSP = 0;
+#endif
+
+    // The abort can be caught by an interpreted frame further up the stack. Resuming there unwinds the native frames
+    // with a ResumeAfterCatchException, which must not run into the managed frames this thread was redirected from.
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_INTERRUPTED_CONTEXT(pfef->GetExceptionContext(), resumeSSP);
     DispatchManagedException(throwable, pfef->GetExceptionContext());
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -5453,8 +5470,6 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
         }
     }
 #endif // FEATURE_MULTITHREADING
-
-    FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 
 #ifdef TIME_SUSPEND
     g_SuspendStatistics.EndRestart();

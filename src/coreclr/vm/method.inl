@@ -59,6 +59,24 @@ inline SigPointer MethodDesc::GetSigPointer()
     return SigPointer(pSig, cSig);
 }
 
+inline bool MethodDesc::IsStringCtor()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // String's only instance FCalls are constructors. Startup validates this invariant
+    // so runtime paths can recognize their factory ABI without metadata access.
+    return IsFCall() && !IsStatic() && GetMethodTable()->IsString();
+}
+
+inline bool MethodDesc::IsObjectReturningCtor()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // String and array construction returns the allocated object despite a void metadata return type.
+    return IsStringCtor() ||
+        (IsArray() && dac_cast<PTR_ArrayMethodDesc>(this)->GetArrayFuncIndex() >= ArrayMethodDesc::ARRAY_FUNC_CTOR);
+}
+
 inline PTR_DynamicResolver DynamicMethodDesc::GetResolver()
 {
     LIMITED_METHOD_CONTRACT;
