@@ -98,8 +98,7 @@ public class StackWalkDumpTests : DumpTestBase
         IStackDataFrameHandle? firstFrame = frames.FirstOrDefault();
         Assert.NotNull(firstFrame);
 
-        byte[] context = stackWalk.GetRawContext(firstFrame);
-        Assert.NotNull(context);
+        ReadOnlySpan<byte> context = stackWalk.GetRawContext(firstFrame);
         Assert.True(context.Length > 0, "Expected non-empty raw context for stack frame");
     }
 
@@ -115,7 +114,7 @@ public class StackWalkDumpTests : DumpTestBase
         IStackDataFrameHandle frame = DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread)
             .First(frame => stackWalk.GetMethodDescPtr(frame) != TargetPointer.Null);
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(Target);
-        context.FillFromBuffer(stackWalk.GetRawContext(frame));
+        context.FillFromBuffer(stackWalk.GetRawContext(frame).ToArray());
 
         Assert.Equal(context.StackPointer, stackWalk.GetStackPointer(frame));
         Assert.Equal(context.FramePointer, stackWalk.GetContextFramePointer(frame));
