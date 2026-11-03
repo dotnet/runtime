@@ -142,10 +142,10 @@ public partial class ZipArchiveEntry
                         : OpenInReadModeAsync(checkOpenable: true, password, cancellationToken),
                     FileAccess.Write => usePassword
                         ? OpenInUpdateModeWithPasswordAsync(loadExistingContent: false, password, cancellationToken)
-                        : CastToStreamAsync(OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken)),
+                        : Task<Stream>.CastUp(OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken)),
                     _ => usePassword
                         ? OpenInUpdateModeWithPasswordAsync(loadExistingContent: true, password, cancellationToken)
-                        : CastToStreamAsync(OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken)),
+                        : Task<Stream>.CastUp(OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken)),
                 };
         }
     }
@@ -562,10 +562,8 @@ public partial class ZipArchiveEntry
             throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
         }
 
-        return CastToStreamAsync(OpenInUpdateModeAsync(loadExistingContent, cancellationToken));
+        return Task<Stream>.CastUp(OpenInUpdateModeAsync(loadExistingContent, cancellationToken));
     }
-
-    private static async Task<Stream> CastToStreamAsync(Task<WrappedStream> task) => await task.ConfigureAwait(false);
 
     private async Task<Stream> DecryptAndStoreForUpdateWithZipCryptoAsync(ZipCryptoKeys keys, byte checkByte, CancellationToken cancellationToken)
     {
