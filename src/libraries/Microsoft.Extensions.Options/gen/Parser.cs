@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.Options.Generators
 
                         while (parent is not null && IsAllowedKind(parent.Kind()))
                         {
-                            parents.Add($"partial {GetTypeKeyword(parent)} {parent.Identifier.Text}{GetTypeParameters(parent.TypeParameterList)}");
+                            parents.Add($"partial {GetTypeKeyword(parent)} {parent.Identifier}{GetTypeParameters(parent.TypeParameterList)} {parent.ConstraintClauses}");
                             parent = parent.Parent as TypeDeclarationSyntax;
                         }
 
