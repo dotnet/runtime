@@ -186,7 +186,8 @@ namespace System.Runtime.Caching
             }
         }
 
-        [MemberNotNull(nameof(_storeRefs), nameof(_stats))]
+        [MemberNotNull(nameof(_storeRefs))]
+        [MemberNotNull(nameof(_stats))]
         private void InitDisposableMembers(NameValueCollection? config)
         {
             bool dispose = true;
