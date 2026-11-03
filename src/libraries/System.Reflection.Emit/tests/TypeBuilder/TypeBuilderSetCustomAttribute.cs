@@ -3,7 +3,6 @@
 
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -63,27 +62,21 @@ namespace System.Reflection.Emit.Tests
         // must be used to resolve an unqualified Type-tagged CA argument. A type visible only inside the
         // dynamic module proves that; RunAndCollect additionally exercises a collectible-assembly lookup,
         // with a GC interleaved to confirm the resolved type/module stay reachable through materialization.
-        // Runs out of process: tests running in parallel in this process (for example ones calling
-        // AppDomain.GetAssemblies()) can transiently keep the collectible assembly alive.
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Theory]
         [InlineData(AssemblyBuilderAccess.Run)]
         [InlineData(AssemblyBuilderAccess.RunAndCollect)]
         public void SetCustomAttribute_ConstructorInfo_ByteArray_TypeArgument_ResolvesAgainstDecoratedModule(AssemblyBuilderAccess access)
         {
-            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (string accessName) =>
+            WeakReference assembly = MaterializeTypeArgument(access);
+            if (access == AssemblyBuilderAccess.RunAndCollect && PlatformDetection.IsCoreCLR)
             {
-                AssemblyBuilderAccess remoteAccess = Enum.Parse<AssemblyBuilderAccess>(accessName);
-                WeakReference assembly = MaterializeTypeArgument(remoteAccess);
-                if (remoteAccess == AssemblyBuilderAccess.RunAndCollect && PlatformDetection.IsCoreCLR)
+                for (int i = 0; i < 10 && assembly.IsAlive; i++)
                 {
-                    for (int i = 0; i < 10 && assembly.IsAlive; i++)
-                    {
-                        GC.Collect();
-                        GC.WaitForPendingFinalizers();
-                    }
-                    Assert.False(assembly.IsAlive);
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
                 }
-            }, access.ToString());
+                Assert.False(assembly.IsAlive);
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

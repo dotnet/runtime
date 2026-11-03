@@ -572,16 +572,21 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<MethodAccessException>(() => d());
         }
 
-        [Fact]
+        // Runs out of process: AppDomain.GetAssemblies() holds strong references to every loaded assembly,
+        // which can keep collectible assemblies created by tests running in parallel alive.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DefineDynamicAssembly_AssemblyBuilderLocationIsEmpty_InternalAssemblyBuilderLocationIsEmpty()
         {
-            AssemblyBuilder assembly = Helpers.DynamicAssembly(nameof(DefineDynamicAssembly_AssemblyBuilderLocationIsEmpty_InternalAssemblyBuilderLocationIsEmpty));
-            Assembly internalAssemblyBuilder = AppDomain.CurrentDomain.GetAssemblies()
-                    .FirstOrDefault(a => a.FullName == assembly.FullName);
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                AssemblyBuilder assembly = Helpers.DynamicAssembly(nameof(DefineDynamicAssembly_AssemblyBuilderLocationIsEmpty_InternalAssemblyBuilderLocationIsEmpty));
+                Assembly internalAssemblyBuilder = AppDomain.CurrentDomain.GetAssemblies()
+                        .FirstOrDefault(a => a.FullName == assembly.FullName);
 
-            Assert.Empty(assembly.Location);
-            Assert.NotNull(internalAssemblyBuilder);
-            Assert.Empty(internalAssemblyBuilder.Location);
+                Assert.Empty(assembly.Location);
+                Assert.NotNull(internalAssemblyBuilder);
+                Assert.Empty(internalAssemblyBuilder.Location);
+            });
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
