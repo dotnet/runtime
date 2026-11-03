@@ -126,7 +126,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // On WASM, record the function table index of the method if it can be observed at runtime: either
                 // the method's address was taken, or the method is the target of an unboxing stub (so that results
-                // of RuntimeAugments.GetCodeTarget can be mapped back to the method).
+                // of RuntimeAugments.GetTargetOfWrapperStub can be mapped back to the method).
                 ISymbolNode functionPointerNode = null;
                 if (factory.Target.IsWasm)
                 {

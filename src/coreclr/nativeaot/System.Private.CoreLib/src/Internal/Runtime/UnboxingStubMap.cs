@@ -17,42 +17,28 @@ namespace Internal.Runtime
     {
         private sealed class Map
         {
-            public IntPtr[] SimpleKeys = Array.Empty<IntPtr>();
-            public IntPtr[] SimpleValues = Array.Empty<IntPtr>();
-            public IntPtr[] InstantiatingKeys = Array.Empty<IntPtr>();
-            public IntPtr[] InstantiatingValues = Array.Empty<IntPtr>();
+            public IntPtr[] Keys = Array.Empty<IntPtr>();
+            public IntPtr[] Values = Array.Empty<IntPtr>();
+            public int SimpleCount;
         }
 
         private static Map? s_map;
 
-        public static bool TryGetSimpleTarget(IntPtr stub, out IntPtr target)
+        public static IntPtr GetTarget(IntPtr stub, bool includeInstantiatingStubs)
         {
             Map map = GetMap();
-            return TryLookup(map.SimpleKeys, map.SimpleValues, stub, out target);
-        }
-
-        public static bool TryGetInstantiatingTarget(IntPtr stub, out IntPtr target)
-        {
-            Map map = GetMap();
-            return TryLookup(map.InstantiatingKeys, map.InstantiatingValues, stub, out target);
-        }
-
-        private static bool TryLookup(IntPtr[] keys, IntPtr[] values, IntPtr stub, out IntPtr target)
-        {
-            int index = Array.BinarySearch(keys, stub);
-            if (index >= 0)
+            int index = Array.BinarySearch(map.Keys, 0, map.SimpleCount, stub);
+            if (index < 0 && includeInstantiatingStubs)
             {
-                target = values[index];
-                return true;
+                index = Array.BinarySearch(map.Keys, map.SimpleCount, map.Keys.Length - map.SimpleCount, stub);
             }
 
-            target = IntPtr.Zero;
-            return false;
+            return index >= 0 ? map.Values[index] : stub;
         }
 
         private static Map GetMap()
         {
-            return s_map ?? BuildMap();
+            return Volatile.Read(ref s_map) ?? BuildMap();
         }
 
         private static Map BuildMap()
@@ -70,16 +56,14 @@ namespace Internal.Runtime
                 }
             }
 
-            var map = new Map();
+            var map = new Map { SimpleCount = simpleCount };
             if (simpleCount + instantiatingCount > 0)
             {
-                map.SimpleKeys = new IntPtr[simpleCount];
-                map.SimpleValues = new IntPtr[simpleCount];
-                map.InstantiatingKeys = new IntPtr[instantiatingCount];
-                map.InstantiatingValues = new IntPtr[instantiatingCount];
+                map.Keys = new IntPtr[simpleCount + instantiatingCount];
+                map.Values = new IntPtr[simpleCount + instantiatingCount];
 
                 int simpleIndex = 0;
-                int instantiatingIndex = 0;
+                int instantiatingIndex = simpleCount;
                 foreach (TypeManagerHandle module in modules)
                 {
                     if (!TryGetBlob(module, out uint* pBlob))
@@ -91,21 +75,21 @@ namespace Internal.Runtime
 
                     for (uint i = 0; i < moduleSimpleCount; i++, pPairs += 2)
                     {
-                        map.SimpleKeys[simpleIndex] = (IntPtr)pPairs[0];
-                        map.SimpleValues[simpleIndex] = (IntPtr)pPairs[1];
+                        map.Keys[simpleIndex] = (IntPtr)pPairs[0];
+                        map.Values[simpleIndex] = (IntPtr)pPairs[1];
                         simpleIndex++;
                     }
 
                     for (uint i = 0; i < moduleInstantiatingCount; i++, pPairs += 2)
                     {
-                        map.InstantiatingKeys[instantiatingIndex] = (IntPtr)pPairs[0];
-                        map.InstantiatingValues[instantiatingIndex] = (IntPtr)pPairs[1];
+                        map.Keys[instantiatingIndex] = (IntPtr)pPairs[0];
+                        map.Values[instantiatingIndex] = (IntPtr)pPairs[1];
                         instantiatingIndex++;
                     }
                 }
 
-                Array.Sort(map.SimpleKeys, map.SimpleValues);
-                Array.Sort(map.InstantiatingKeys, map.InstantiatingValues);
+                Array.Sort(map.Keys, map.Values, 0, simpleCount);
+                Array.Sort(map.Keys, map.Values, simpleCount, instantiatingCount);
             }
 
             return Interlocked.CompareExchange(ref s_map, map, null) ?? map;

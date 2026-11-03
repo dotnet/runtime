@@ -329,16 +329,12 @@ namespace System
                 unsafe
                 {
                     GenericMethodDescriptor* realTargetData = FunctionPointerOps.ConvertToGenericDescriptor(ldftnResult);
-                    functionPointer = RuntimeAugments.GetCodeTarget(realTargetData->MethodFunctionPointer);
+                    functionPointer = RuntimeAugments.GetTargetOfWrapperStub(realTargetData->MethodFunctionPointer, includeInstantiatingStubs: false);
                 }
             }
             else
             {
-                nint unboxedPointer = RuntimeAugments.GetCodeTarget(ldftnResult);
-                if (unboxedPointer == ldftnResult)
-                    unboxedPointer = RuntimeAugments.GetTargetOfUnboxingAndInstantiatingStub(ldftnResult);
-
-                functionPointer = unboxedPointer != 0 ? unboxedPointer : ldftnResult;
+                functionPointer = RuntimeAugments.GetTargetOfWrapperStub(ldftnResult, includeInstantiatingStubs: true);
             }
             return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromFunctionPointer(functionPointer);
         }
