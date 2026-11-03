@@ -425,7 +425,6 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_fixedPointMapSels(alloc, 8)
     , m_checkedBoundVNs(alloc)
     , m_checkedBoundIndexVNs(alloc)
-    , m_vnEquivalences(alloc)
     , m_chunks(alloc, 8)
     , m_intCnsMap(nullptr)
     , m_longCnsMap(nullptr)
@@ -8006,22 +8005,22 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn, bool isIndex)
 //
 ValueNum ValueNumStore::VNCanonical(ValueNum vn)
 {
-    if ((m_vnEquivalences.Count() == 0) || (vn == NoVN))
+    if ((m_vnEquivalences == nullptr) || (vn == NoVN))
     {
         return vn;
     }
 
     ValueNum root = vn;
     ValueNum next;
-    while (m_vnEquivalences.TryGetValue(root, &next))
+    while (m_vnEquivalences->TryGetValue(root, &next))
     {
         root = next;
     }
 
     // Compress the path so later lookups take one step.
-    while ((vn != root) && m_vnEquivalences.TryGetValue(vn, &next))
+    while ((vn != root) && m_vnEquivalences->TryGetValue(vn, &next))
     {
-        m_vnEquivalences.AddOrUpdate(vn, root);
+        m_vnEquivalences->AddOrUpdate(vn, root);
         vn = next;
     }
     return root;
@@ -8075,7 +8074,11 @@ void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
         return;
     }
 
-    m_vnEquivalences.AddOrUpdate(fromRoot, toRoot);
+    if (m_vnEquivalences == nullptr)
+    {
+        m_vnEquivalences = new (m_alloc) VNEquivalenceMap(m_alloc);
+    }
+    m_vnEquivalences->AddOrUpdate(fromRoot, toRoot);
 }
 
 #ifdef FEATURE_HW_INTRINSICS
