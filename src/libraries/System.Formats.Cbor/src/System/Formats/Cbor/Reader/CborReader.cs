@@ -3,12 +3,17 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.Formats.Cbor
 {
     /// <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborReader
     {
+        private const int DefaultMaxDepth = 64;
+        private const string MaxDepthAppContextSwitchName = "System.Formats.Cbor.CborReader.MaxDepth";
+        private static readonly int s_maxDepth = GetMaxDepth();
+
         private ReadOnlyMemory<byte> _data;
         private int _offset;
 
@@ -171,8 +176,36 @@ namespace System.Formats.Cbor
             }
         }
 
+        private static int GetMaxDepth()
+        {
+            object? configuredValue =
+#if NETFRAMEWORK
+                AppDomain.CurrentDomain.GetData(MaxDepthAppContextSwitchName);
+#else
+                AppContext.GetData(MaxDepthAppContextSwitchName);
+#endif
+
+            return configuredValue switch
+            {
+                int value when value >= 0 => value,
+                long value when value is >= 0 and <= int.MaxValue => (int)value,
+                string value when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int maxDepth) && maxDepth >= 0 => maxDepth,
+                _ => DefaultMaxDepth,
+            };
+        }
+
+        private void EnsureMaxDepthNotExceeded()
+        {
+            if (CurrentDepth >= s_maxDepth)
+            {
+                throw new CborContentException(SR.Format(SR.Cbor_Reader_MaximumDepthExceeded, s_maxDepth));
+            }
+        }
+
         private void PushDataItem(CborMajorType majorType, int? definiteLength)
         {
+            Debug.Assert(CurrentDepth < s_maxDepth);
+
             _nestedDataItems ??= new Stack<StackFrame>();
 
             var frame = new StackFrame(

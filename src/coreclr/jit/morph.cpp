@@ -9982,7 +9982,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (newMode != mode)
                         {
                             ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
-                            cmpOp3->AsIntConCommon()->SetIntegralValue(static_cast<uint8_t>(mode));
+                            cmpOp3->AsIntConCommon()->SetIntegralValue(static_cast<uint8_t>(newMode));
                             return fgMorphHWIntrinsicRequired(op1Intrin);
                         }
                         break;
