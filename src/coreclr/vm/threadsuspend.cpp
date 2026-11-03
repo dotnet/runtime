@@ -5798,6 +5798,8 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
+        // Managed exception dispatch may bypass the native scope's destructor.
+        pThread->m_hasPendingActivation = false;
         pThread->HandleThreadAbort();
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;

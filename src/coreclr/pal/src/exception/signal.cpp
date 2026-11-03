@@ -965,6 +965,9 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
         {
             g_inject_activation_context_locvar_offset = (int)((char*)&winContext - (char*)__builtin_frame_address(0));
             int savedErrNo = errno; // Make sure that errno is not modified
+            // A thread abort may unwind out of the handler without returning through sigreturn,
+            // so unblock the activation signal before invoking managed exception handling.
+            PAL_UnmaskActivationSignal();
             InvokeActivationHandler(&winContext);
             errno = savedErrNo;
 
