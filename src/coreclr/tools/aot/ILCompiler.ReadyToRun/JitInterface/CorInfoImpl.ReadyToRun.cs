@@ -538,7 +538,14 @@ namespace Internal.JitInterface
             if (relocTarget is MethodWithGCInfo method &&
                 _relocationDrivenPrecodeFixups?.TryGetValue(method, out ISymbolNode fixup) == true)
             {
-                AddPrecodeFixup(fixup);
+                if (fixup is Import { Table.IsEager: true })
+                {
+                    AddAdditionalDependency(fixup, "Eager ReadyToRun direct-call target");
+                }
+                else
+                {
+                    AddPrecodeFixup(fixup);
+                }
                 _methodCodeNode.AddDirectCallTarget(method);
             }
         }
@@ -2822,7 +2829,8 @@ namespace Internal.JitInterface
                             !useInstantiatingStub &&
                             (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0 &&
                             _compilation.CanUseDirectCall(
-                                nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)))
+                                nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific),
+                                out ReadyToRunMethodCompilationInfo compilationInfo))
                         {
                             MethodDesc compilableTarget =
                                 nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
@@ -2837,7 +2845,9 @@ namespace Internal.JitInterface
                                 _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
                             AddRelocationDrivenPrecodeFixup(
                                 targetCodeNode,
-                                _compilation.SymbolNodeFactory.PrecodeReadyToRunMethodEntry(targetMethodWithToken));
+                                compilationInfo.IsEager
+                                    ? _compilation.SymbolNodeFactory.EagerReadyToRunMethodEntry(targetMethodWithToken)
+                                    : _compilation.SymbolNodeFactory.PrecodeReadyToRunMethodEntry(targetMethodWithToken));
                             pResult->codePointerOrStubLookup.constLookup =
                                 CreateConstLookupToSymbol(targetCodeNode);
                         }

@@ -12,12 +12,16 @@ namespace ILCompiler
 {
     internal readonly struct ReadyToRunMethodCompilationInfo
     {
-        public ReadyToRunMethodCompilationInfo(int codeSize)
+        public ReadyToRunMethodCompilationInfo(int codeSize, int level, bool isEager = false)
         {
             CodeSize = codeSize;
+            Level = level;
+            IsEager = isEager;
         }
 
         public int CodeSize { get; }
+        public int Level { get; }
+        public bool IsEager { get; }
     }
 
     internal sealed class ReadyToRunCallGraphBuilder
@@ -38,10 +42,14 @@ namespace ILCompiler
     public sealed class ReadyToRunCompilationPlan
     {
         private readonly MethodDesc[][] _methodsByLevel;
+        private readonly MethodDesc[] _methods;
+        private readonly int[][] _adjacency;
 
-        private ReadyToRunCompilationPlan(MethodDesc[][] methodsByLevel)
+        private ReadyToRunCompilationPlan(MethodDesc[] methods, int[][] adjacency, bool includeColdCalls)
         {
-            _methodsByLevel = methodsByLevel;
+            _methods = methods;
+            _adjacency = adjacency;
+            _methodsByLevel = ComputeMethodsByLevel(methods, adjacency, includeColdCalls);
         }
 
         internal int LevelCount => _methodsByLevel.Length;
@@ -49,6 +57,83 @@ namespace ILCompiler
         internal IReadOnlyList<MethodDesc> GetMethodsAtLevel(int level)
         {
             return _methodsByLevel[level];
+        }
+
+        internal ReadyToRunCompilationPlan CreateEagerPlan(HashSet<MethodDesc> roots)
+        {
+            bool[] included = new bool[_methods.Length];
+            var pending = new Stack<int>();
+            for (int i = 0; i < _methods.Length; i++)
+            {
+                if (roots.Contains(_methods[i]))
+                {
+                    pending.Push(i);
+                }
+            }
+
+            while (pending.TryPop(out int method))
+            {
+                if (included[method])
+                {
+                    continue;
+                }
+
+                included[method] = true;
+                foreach (int callee in _adjacency[method])
+                {
+                    pending.Push(callee);
+                }
+            }
+
+            return CreateSubset(included, includeColdCalls: true);
+        }
+
+        internal ReadyToRunCompilationPlan CreateNonEagerPlan(HashSet<MethodDesc> compiledEagerMethods)
+        {
+            bool[] included = new bool[_methods.Length];
+            for (int i = 0; i < _methods.Length; i++)
+            {
+                included[i] = !compiledEagerMethods.Contains(_methods[i]);
+            }
+
+            return CreateSubset(included, includeColdCalls: false);
+        }
+
+        private ReadyToRunCompilationPlan CreateSubset(bool[] included, bool includeColdCalls)
+        {
+            var methods = new List<MethodDesc>();
+            int[] indices = new int[_methods.Length];
+            Array.Fill(indices, -1);
+            for (int i = 0; i < _methods.Length; i++)
+            {
+                if (included[i])
+                {
+                    indices[i] = methods.Count;
+                    methods.Add(_methods[i]);
+                }
+            }
+
+            int[][] adjacency = new int[methods.Count][];
+            for (int i = 0; i < _methods.Length; i++)
+            {
+                if (!included[i])
+                {
+                    continue;
+                }
+
+                var callees = new List<int>();
+                foreach (int callee in _adjacency[i])
+                {
+                    if (included[callee])
+                    {
+                        callees.Add(indices[callee]);
+                    }
+                }
+
+                adjacency[indices[i]] = callees.ToArray();
+            }
+
+            return new ReadyToRunCompilationPlan(methods.ToArray(), adjacency, includeColdCalls);
         }
 
         internal static int[] ComputeLevelsForTest(int[][] adjacency)
@@ -99,6 +184,31 @@ namespace ILCompiler
                 adjacency[i] = calleeIndices.ToArray();
             }
 
+            return new ReadyToRunCompilationPlan(methods.ToArray(), adjacency, includeColdCalls: false);
+        }
+
+        private static MethodDesc[][] ComputeMethodsByLevel(MethodDesc[] methods, int[][] adjacency, bool includeColdCalls)
+        {
+            if (!includeColdCalls)
+            {
+                int[][] hotAdjacency = new int[adjacency.Length][];
+                for (int i = 0; i < adjacency.Length; i++)
+                {
+                    var callees = new List<int>();
+                    foreach (int callee in adjacency[i])
+                    {
+                        if (!methods[callee].IsNoInlining && !methods[callee].IsNoOptimization)
+                        {
+                            callees.Add(callee);
+                        }
+                    }
+
+                    hotAdjacency[i] = callees.ToArray();
+                }
+
+                adjacency = hotAdjacency;
+            }
+
             int[] components = ComputeStronglyConnectedComponents(adjacency, out int componentCount);
             int[] componentLevels = ComputeComponentLevels(adjacency, components, componentCount);
 
@@ -114,7 +224,7 @@ namespace ILCompiler
                 methodsByLevel[i] = new List<MethodDesc>();
             }
 
-            for (int i = 0; i < methods.Count; i++)
+            for (int i = 0; i < methods.Length; i++)
             {
                 int level = componentLevels[components[i]];
                 methodsByLevel[level].Add(methods[i]);
@@ -126,7 +236,7 @@ namespace ILCompiler
                 resultLevels[i] = methodsByLevel[i].ToArray();
             }
 
-            return new ReadyToRunCompilationPlan(resultLevels);
+            return resultLevels;
         }
 
         private static int[] ComputeStronglyConnectedComponents(int[][] adjacency, out int componentCount)

@@ -31,7 +31,7 @@ public class R2RTestSuites
         _output = output;
     }
 
-    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.SupportsTwoPhaseDirectCalls))]
     [InlineData(1)]
     [InlineData(2)]
     public void DirectCalleesCoverRelocationPrecodeFixups(int parallelism)
@@ -52,8 +52,9 @@ public class R2RTestSuites
                     [
                         "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath,
                         "--two-phase-compilation", "--parallelism", parallelism.ToString(),
+                        "--codegenopt", "JitNoInline=1",
                     ],
-                    OutputFileExtension = ".wasm",
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
                     Validate = Validate,
                 },
             ]));
@@ -61,12 +62,15 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
-            foreach (string name in new[] { "FixupLeaf", "FixupMiddle", "FixupOuter", "UncoveredFixup" })
+            foreach (string name in new[]
+            {
+                "FixupLeaf", "FixupMiddle", "FixupOuter", "FixupAtDepthLimit", "FixupBeyondDepthLimit", "UncoveredFixup",
+            })
             {
                 ReadyToRunMethod method = Assert.Single(methods,
                     method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
                 IReadOnlyList<FixupCell> fixups = method.Fixups ?? Array.Empty<FixupCell>();
-                if (name is "FixupMiddle" or "FixupOuter")
+                if (name is "FixupMiddle" or "FixupOuter" or "FixupAtDepthLimit")
                 {
                     Assert.DoesNotContain(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.StringHandle);
                     Assert.Contains(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun);
@@ -75,12 +79,58 @@ public class R2RTestSuites
                 {
                     Assert.Single(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.StringHandle);
                 }
+                if (name == "FixupBeyondDepthLimit")
+                {
+                    Assert.DoesNotContain(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun);
+                }
+            }
+
+            foreach (string name in new[] { "HotFixupLeaf", "UnoptimizedFixupLeaf", "HotFixupCaller", "UnoptimizedFixupCaller" })
+            {
+                ReadyToRunMethod method = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+                IReadOnlyList<FixupCell> fixups = method.Fixups ?? Array.Empty<FixupCell>();
+                if (name.EndsWith("Caller", StringComparison.Ordinal))
+                {
+                    Assert.Contains(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun);
+                }
+                else
+                {
+                    Assert.DoesNotContain(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun);
+                }
+            }
+
+            foreach ((string name, bool direct) in new[]
+            {
+                ("CollectionDepthExemptCaller", true),
+                ("EnumerableDepthExemptCaller", true),
+                ("InheritedEnumerableDepthExemptCaller", true),
+                ("EnumeratorDepthExemptCaller", true),
+                ("ColdCollectionDepthExemptCaller", false),
+                ("UnoptimizedCollectionDepthExemptCaller", false),
+            })
+            {
+                ReadyToRunMethod method = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+                IReadOnlyList<FixupCell> fixups = method.Fixups ?? Array.Empty<FixupCell>();
+                if (direct)
+                {
+                    Assert.Contains(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun);
+                    Assert.DoesNotContain(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.StringHandle);
+                }
+                else
+                {
+                    Assert.DoesNotContain(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun);
+                    Assert.Single(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.StringHandle);
+                }
             }
         }
     }
 
-    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
-    public void StartupEagerMethodsHaveNoPrecodeFixups()
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StartupEagerMethodsHaveNoPrecodeFixups(bool rootCoreLib)
     {
         CompiledAssembly input = new()
         {
@@ -94,7 +144,10 @@ public class R2RTestSuites
                 new(nameof(StartupEagerMethodsHaveNoPrecodeFixups), [new CrossgenAssembly(input)])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
-                    AdditionalArgs = [TestPaths.SystemPrivateCoreLibPath, "--parallelism", "2"],
+                    AdditionalArgs = rootCoreLib
+                        ? [TestPaths.SystemPrivateCoreLibPath, "--parallelism", "2", "--codegenopt", "JitNoInline=1"]
+                        : ["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath, "--parallelism", "2",
+                            "--codegenopt", "JitNoInline=1"],
                     OutputFileExtension = ".wasm",
                     Validate = Validate,
                 },
@@ -124,6 +177,66 @@ public class R2RTestSuites
             Assert.Empty(arrayHelper.Fixups ?? Array.Empty<FixupCell>());
 
             SignatureFormattingOptions formattingOptions = new();
+            HashSet<string> compiledSignatures = new(methods.Select(method => method.SignatureString));
+            List<string> eagerSpanConstructors = new();
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                if ((section.Flags & ReadyToRunImportSectionFlags.Eager) == 0)
+                {
+                    continue;
+                }
+
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    if (entry.Signature?.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun)
+                    {
+                        string signature = entry.Signature.ToString(formattingOptions);
+                        if (signature.Contains("System.ReadOnlySpan`1", StringComparison.Ordinal) &&
+                            signature.Contains("..ctor(void*, int)", StringComparison.Ordinal))
+                        {
+                            eagerSpanConstructors.Add(
+                                signature[..signature.LastIndexOf(" (METHOD_ENTRY_READYTORUN)", StringComparison.Ordinal)]);
+                        }
+                    }
+                }
+            }
+            Assert.NotEmpty(eagerSpanConstructors);
+            Assert.All(eagerSpanConstructors, signature =>
+                Assert.True(compiledSignatures.Contains(signature),
+                    $"Eager entry must identify a compiled method: {signature}"));
+
+            foreach ((string caller, string callee, bool direct) in new[]
+            {
+                ("EagerDepthLeaf", "System.ArgumentException..ctor", true),
+                ("EagerDepthMiddle", "HelperCalls.EagerDepthLeaf", true),
+                ("EagerDepthOuter", "HelperCalls.EagerDepthMiddle", true),
+                ("EagerDepthAtLimit", "HelperCalls.EagerDepthOuter", true),
+                ("EagerDepthBeyondLimit", "HelperCalls.EagerDepthAtLimit", false),
+                ("Crc32C", "System.Numerics.BitOperations.Crc32C", true),
+            })
+            {
+                ReadyToRunMethod method = Assert.Single(methods,
+                    method => method.SignatureString.Contains($"HelperCalls.{caller}(", StringComparison.Ordinal));
+                bool hasDirectFixup = (method.Fixups ?? Array.Empty<FixupCell>()).Any(fixup =>
+                    fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun &&
+                    fixup.Signature.ToString(formattingOptions).Contains($"{callee}(", StringComparison.Ordinal));
+                if (caller == "EagerDepthLeaf")
+                {
+                    // The target's entry is module-eager, so it is absent from the caller's precode.
+                    Assert.False(hasDirectFixup);
+                    Assert.DoesNotContain(method.Fixups ?? Array.Empty<FixupCell>(), fixup =>
+                        fixup.Signature.ToString(formattingOptions).Contains($"{callee}(", StringComparison.Ordinal));
+                    Assert.Contains(reader.ImportSections, section =>
+                        (section.Flags & ReadyToRunImportSectionFlags.Eager) != 0 &&
+                        section.Entries.Any(entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun &&
+                            entry.Signature.ToString(formattingOptions).Contains($"{callee}(", StringComparison.Ordinal)));
+                }
+                else
+                {
+                    Assert.Equal(direct, hasDirectFixup);
+                }
+            }
+
             List<ReadyToRunImportSection> argumentExceptionSections = new();
             foreach (ReadyToRunImportSection section in reader.ImportSections)
             {
@@ -144,6 +257,22 @@ public class R2RTestSuites
                 section.Type == ReadyToRunImportSectionType.StringHandle &&
                 (section.Flags & ReadyToRunImportSectionFlags.Eager) != 0 &&
                 section.Entries.Count > 0);
+
+            WebcilImageReader webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            foreach ((string name, byte opcode) in new[]
+            {
+                ("uint", (byte)0x68),
+                ("ulong", (byte)0x7A),
+            })
+            {
+                ReadyToRunMethod method = Assert.Single(methods,
+                    method => method.SignatureString.Contains(
+                        $"HelperCalls.TrailingZeroCount{(name == "uint" ? "32" : "64")}(", StringComparison.Ordinal));
+                WebcilImageReader.WasmFunctionInfo body = ResolveWasmBody(reader, webcilReader, method);
+                Assert.True(body.Image.AsSpan().Slice(body.InstructionOffset, body.InstructionLength)
+                    .IndexOf(new byte[] { 0x20, 0x01, opcode }) >= 0,
+                    $"TrailingZeroCount({name}) must use the Wasm intrinsic, not call its standalone fallback body.");
+            }
         }
     }
 
@@ -298,7 +427,9 @@ public class R2RTestSuites
             }
             foreach (string type in tokenDependentTypes)
             {
-                ValidateTypeHandle(type, tokenDependent, eager: false);
+                bool startupEager = TestPaths.IsWasmTarget && composite && optimize && includeCoreLib &&
+                    type is "System.DayOfWeek" or "System.Decimal" or "System.Nullable`1<int>";
+                ValidateTypeHandle(type, tokenDependent, eager: startupEager);
             }
 
             void ValidateTypeHandle(string type, ReadyToRunMethod method, bool eager)
@@ -968,19 +1099,10 @@ public class R2RTestSuites
                             IReadOnlyList<FixupCell> fixups = method.Fixups ?? Array.Empty<FixupCell>();
                             bool needsCheck = targetAllowsRuntimeCodeGeneration ||
                                 (!composite && name is "EchoVectorPair" or "EchoVectorTriple");
-                            if (needsCheck && TestPaths.IsWasmTarget && composite &&
-                                name is "CallEchoVectorT" or "CallEchoWrappedVectorT")
+                            if (name is "CallEchoVectorT" or "CallEchoWrappedVectorT")
                             {
-                                // The direct callee guarantees the caller's identical layout check.
-                                ReadyToRunMethod callee = Assert.Single(methods,
-                                    candidate => candidate.SignatureString.Contains($".{name[4..]}(", StringComparison.Ordinal));
                                 Assert.DoesNotContain(fixups,
-                                    fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.Check_TypeLayout);
-                                Assert.Contains(fixups, fixup =>
-                                    fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun &&
-                                    fixup.Signature.ToString(new SignatureFormattingOptions())
-                                        .Contains(callee.SignatureString, StringComparison.Ordinal));
-                                fixups = callee.Fixups ?? Array.Empty<FixupCell>();
+                                    fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun);
                             }
                             if (needsCheck)
                             {

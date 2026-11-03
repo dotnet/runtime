@@ -29,6 +29,125 @@ namespace ILCompiler.ReadyToRun.Tests;
 public class ReadyToRunLibraryRootProviderTests
 {
     [Theory]
+    [InlineData("System", "Boolean", true)]
+    [InlineData("System", "Char", true)]
+    [InlineData("System", "SByte", true)]
+    [InlineData("System", "Byte", true)]
+    [InlineData("System", "Int16", true)]
+    [InlineData("System", "UInt16", true)]
+    [InlineData("System", "Int32", true)]
+    [InlineData("System", "UInt32", true)]
+    [InlineData("System", "Int64", true)]
+    [InlineData("System", "UInt64", true)]
+    [InlineData("System", "IntPtr", true)]
+    [InlineData("System", "UIntPtr", true)]
+    [InlineData("System", "Single", true)]
+    [InlineData("System", "Double", true)]
+    [InlineData("System", "Object", true)]
+    [InlineData("System", "String", true)]
+    [InlineData("System", "Decimal", false)]
+    [InlineData("System", "Half", false)]
+    [InlineData("System", "Enum", false)]
+    [InlineData("System.Collections", "ArrayList", true)]
+    [InlineData("System.Collections.Generic", "List`1", true)]
+    [InlineData("System.Collections.Generic", "Dictionary`2", true)]
+    [InlineData("System.Collections.Concurrent", "ConcurrentDictionary`2", true)]
+    [InlineData("System.Collections.Generic", "List`1+Enumerator", true)]
+    [InlineData("System.Collections.Generic", "Dictionary`2+Enumerator", true)]
+    [InlineData("System.Reflection", "Assembly", false)]
+    public void DirectCallDepthExemptionsFollowOwningType(string namespaceName, string typeName, bool expected)
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        string[] nestedNames = typeName.Split('+');
+        MetadataType type = context.SystemModule.GetType(Encoding.UTF8.GetBytes(namespaceName), Encoding.UTF8.GetBytes(nestedNames[0]));
+        for (int i = 1; i < nestedNames.Length; i++)
+        {
+            type = type.GetNestedType(Encoding.UTF8.GetBytes(nestedNames[i]));
+        }
+
+        Assert.Equal(expected, ReadyToRunCodegenCompilation.IsDirectCallDepthExempt(type));
+    }
+
+    [Theory]
+    [InlineData("NoInlining")]
+    [InlineData("NoOptimization")]
+    public void EagerCompilationRemovesCalleeDepthFromNonEagerLevels(string coldMethodOption)
+    {
+        string source = $$"""
+            using System.Runtime.CompilerServices;
+            namespace Tests;
+            public static class EagerCalls
+            {
+                public static void EagerLeaf() { }
+                [MethodImpl(MethodImplOptions.{{coldMethodOption}})]
+                public static void EagerCold() { }
+                public static void EagerMiddle() { }
+                public static void EagerRoot() { }
+                public static void NonEagerLeaf() { }
+                public static void NonEagerCaller() { }
+                public static void CycleLeft() { }
+                public static void CycleRight() { }
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            string assemblyPath = Path.Combine(workingDirectory, "EagerCalls.dll");
+            R2RTestCaseCompiler compiler = new([TestPaths.SystemPrivateCoreLibPath]);
+            compiler.CompileAssembly("EagerCalls", [source], assemblyPath);
+            ReadyToRunCompilerContext context = CreateContext(assemblyPath);
+            MetadataType type = context.GetModuleForSimpleName("EagerCalls").GetType("Tests"u8, "EagerCalls"u8);
+            MethodDesc eagerLeaf = type.GetMethod("EagerLeaf"u8, null);
+            MethodDesc eagerCold = type.GetMethod("EagerCold"u8, null);
+            MethodDesc eagerMiddle = type.GetMethod("EagerMiddle"u8, null);
+            MethodDesc eagerRoot = type.GetMethod("EagerRoot"u8, null);
+            MethodDesc nonEagerLeaf = type.GetMethod("NonEagerLeaf"u8, null);
+            MethodDesc nonEagerCaller = type.GetMethod("NonEagerCaller"u8, null);
+            MethodDesc cycleLeft = type.GetMethod("CycleLeft"u8, null);
+            MethodDesc cycleRight = type.GetMethod("CycleRight"u8, null);
+            ReadyToRunCallGraphBuilder graph = new();
+            graph.AddCall(eagerRoot, eagerMiddle);
+            graph.AddCall(eagerMiddle, eagerCold);
+            graph.AddCall(eagerCold, eagerLeaf);
+            graph.AddCall(nonEagerLeaf, eagerRoot);
+            graph.AddCall(nonEagerLeaf, eagerCold);
+            graph.AddCall(nonEagerCaller, nonEagerLeaf);
+            graph.AddCall(cycleLeft, cycleRight);
+            graph.AddCall(cycleRight, cycleLeft);
+            graph.AddCall(cycleRight, eagerRoot);
+            ReadyToRunCompilationPlan plan = graph.CreatePlan(
+                [eagerLeaf, eagerCold, eagerMiddle, eagerRoot, nonEagerLeaf, nonEagerCaller, cycleLeft, cycleRight]);
+
+            ReadyToRunCompilationPlan eagerPlan = plan.CreateEagerPlan([eagerRoot]);
+            Assert.Equal(4, eagerPlan.LevelCount);
+            Assert.Same(eagerLeaf, Assert.Single(eagerPlan.GetMethodsAtLevel(0)));
+            Assert.Same(eagerCold, Assert.Single(eagerPlan.GetMethodsAtLevel(1)));
+            Assert.Same(eagerMiddle, Assert.Single(eagerPlan.GetMethodsAtLevel(2)));
+            Assert.Same(eagerRoot, Assert.Single(eagerPlan.GetMethodsAtLevel(3)));
+
+            HashSet<MethodDesc> compiledEagerMethods = [eagerLeaf, eagerCold, eagerMiddle, eagerRoot];
+            ReadyToRunCompilationPlan nonEagerPlan = plan.CreateNonEagerPlan(compiledEagerMethods);
+            Assert.Equal(2, nonEagerPlan.LevelCount);
+            Assert.True(new HashSet<MethodDesc>(nonEagerPlan.GetMethodsAtLevel(0))
+                .SetEquals([nonEagerLeaf, cycleLeft, cycleRight]));
+            Assert.Same(nonEagerCaller, Assert.Single(nonEagerPlan.GetMethodsAtLevel(1)));
+
+            compiledEagerMethods.Remove(eagerRoot);
+            ReadyToRunCompilationPlan failedRootPlan = plan.CreateNonEagerPlan(compiledEagerMethods);
+            Assert.Equal(3, failedRootPlan.LevelCount);
+            Assert.Same(eagerRoot, Assert.Single(failedRootPlan.GetMethodsAtLevel(0)));
+            Assert.Contains(nonEagerLeaf, failedRootPlan.GetMethodsAtLevel(1));
+            Assert.Same(nonEagerCaller, Assert.Single(failedRootPlan.GetMethodsAtLevel(2)));
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void ResolverReleasesCompilationMetadata(bool mutableModule)

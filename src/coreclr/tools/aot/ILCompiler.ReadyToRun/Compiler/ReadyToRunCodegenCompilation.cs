@@ -298,6 +298,8 @@ namespace ILCompiler
 
         private readonly int _parallelism;
 
+        private const int DefaultMaxDirectCallActivationDepth = 4;
+
         private readonly bool _generateMapFile;
         private readonly bool _generateMapCsvFile;
         private readonly bool _generatePdbFile;
@@ -321,6 +323,7 @@ namespace ILCompiler
         private readonly Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo> _previousCompilationInfo;
         private readonly bool _isCoreLibCompilation;
         private readonly HashSet<MethodDesc> _startupEagerMethods;
+        private bool _compilingEagerMethods;
 
         public ProfileDataManager ProfileData => _profileData;
 
@@ -535,25 +538,35 @@ namespace ILCompiler
                 return;
             }
 
-            var methodsByLevel = new List<DependencyNodeCore<NodeFactory>>[_compilationPlan.LevelCount];
+            var methodNodes = new List<MethodWithGCInfo>();
             var managedHelpers = new List<MethodWithGCInfo>();
             var compiledMethods = new HashSet<MethodDesc>();
-            for (int level = 0; level < methodsByLevel.Length; level++)
+            var eagerRoots = new HashSet<MethodDesc>();
+            if (_startupEagerMethods is not null)
+            {
+                foreach (MethodDesc method in _startupEagerMethods)
+                {
+                    eagerRoots.Add(method);
+                    _dependencyGraph.AddRoot(NodeFactory.CompiledMethodNode(method), "Native-facing startup method");
+                }
+            }
+
+            for (int level = 0; level < _compilationPlan.LevelCount; level++)
             {
                 IReadOnlyList<MethodDesc> methodsAtLevel = _compilationPlan.GetMethodsAtLevel(level);
-                var methodNodes = new List<DependencyNodeCore<NodeFactory>>(methodsAtLevel.Count);
                 foreach (MethodDesc method in methodsAtLevel)
                 {
-                    compiledMethods.Add(method);
                     MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
                     methodNodes.Add(methodNode);
                     if (methodNode.IsJitHelper)
                     {
                         managedHelpers.Add(methodNode);
+                        if (_startupEagerMethods is not null)
+                        {
+                            eagerRoots.Add(method);
+                        }
                     }
                 }
-
-                methodsByLevel[level] = methodNodes;
             }
 
             if (managedHelpers.Count > 0)
@@ -562,35 +575,67 @@ namespace ILCompiler
                 _directManagedHelpersInitialized = true;
             }
 
-            for (int level = 0; level < methodsByLevel.Length; level++)
+            ReadyToRunCompilationPlan eagerPlan = _compilationPlan.CreateEagerPlan(eagerRoots);
+            _compilingEagerMethods = true;
+            PrecompileMethods(eagerPlan, isEager: true);
+            _compilingEagerMethods = false;
+
+            // Only successful eager compilations are available before non-eager level zero.
+            var compiledEagerMethods = new HashSet<MethodDesc>(compiledMethods);
+            ReadyToRunCompilationPlan nonEagerPlan = _compilationPlan.CreateNonEagerPlan(compiledEagerMethods);
+            PrecompileMethods(nonEagerPlan, isEager: false);
+
+            ValidateManagedHelpers(managedHelpers);
+            PromoteModuleEagerFixups(methodNodes, compiledMethods, compiledEagerMethods);
+
+            void PrecompileMethods(ReadyToRunCompilationPlan plan, bool isEager)
             {
-                List<DependencyNodeCore<NodeFactory>> methodsAtLevel = methodsByLevel[level];
-                if (methodsAtLevel.Count == 0)
+                for (int level = 0; level < plan.LevelCount; level++)
                 {
-                    continue;
-                }
-
-                if (Logger.IsVerbose)
-                {
-                    Logger.Writer.WriteLine($"Precompiling two-phase level {level} with {methodsAtLevel.Count} methods");
-                }
-
-                ComputeDependencyNodeDependencies(methodsAtLevel);
-
-                foreach (DependencyNodeCore<NodeFactory> dependency in methodsAtLevel)
-                {
-                    var method = (MethodWithGCInfo)dependency;
-                    if (!method.IsEmpty)
+                    IReadOnlyList<MethodDesc> methodsAtLevel = plan.GetMethodsAtLevel(level);
+                    if (methodsAtLevel.Count == 0)
                     {
-                        _previousCompilationInfo.Add(
-                            method.Method,
-                            new ReadyToRunMethodCompilationInfo(method.Size));
+                        continue;
+                    }
+
+                    var dependencies = new List<DependencyNodeCore<NodeFactory>>(methodsAtLevel.Count);
+                    foreach (MethodDesc method in methodsAtLevel)
+                    {
+                        MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
+                        if (!methodNode.StaticDependenciesAreComputed)
+                        {
+                            dependencies.Add(methodNode);
+                        }
+                    }
+
+                    string phase = isEager ? "eager" : "non-eager";
+                    if (Logger.IsVerbose)
+                    {
+                        Logger.Writer.WriteLine($"Precompiling two-phase {phase} level {level} with {methodsAtLevel.Count} methods");
+                    }
+
+                    ComputeDependencyNodeDependencies(dependencies);
+
+                    int compiledCount = 0;
+                    foreach (DependencyNodeCore<NodeFactory> dependency in dependencies)
+                    {
+                        var method = (MethodWithGCInfo)dependency;
+                        if (!method.IsEmpty)
+                        {
+                            compiledMethods.Add(method.Method);
+                            _previousCompilationInfo.Add(
+                                method.Method,
+                                new ReadyToRunMethodCompilationInfo(method.Size, level, isEager));
+                            compiledCount++;
+                        }
+                    }
+
+                    if (Logger.IsVerbose)
+                    {
+                        Logger.Writer.WriteLine($"Precompiled two-phase {phase} level {level}: {compiledCount} compiled methods");
                     }
                 }
             }
-
-            ValidateManagedHelpers(managedHelpers);
-            PromoteModuleEagerFixups(methodsByLevel, compiledMethods, managedHelpers);
         }
 
         private HashSet<MethodDesc> GetStartupEagerMethods()
@@ -617,14 +662,17 @@ namespace ILCompiler
                 }
 
                 Debug.Assert(foundMethod is not null);
-                methods.Add(foundMethod);
+                if (CompilationModuleGroup.ContainsMethodBody(foundMethod, unboxingStub: false))
+                {
+                    methods.Add(foundMethod);
+                }
             }
         }
 
         private void PromoteModuleEagerFixups(
-            List<DependencyNodeCore<NodeFactory>>[] methodsByLevel,
+            List<MethodWithGCInfo> methods,
             HashSet<MethodDesc> compiledMethods,
-            List<MethodWithGCInfo> managedHelpers)
+            HashSet<MethodDesc> compiledEagerMethods)
         {
             if (_startupEagerMethods is null)
             {
@@ -635,39 +683,21 @@ namespace ILCompiler
             var methodsToVisit = new Stack<MethodWithGCInfo>();
             var eagerFixups = new HashSet<Import>();
 
-            // Helpers are compilation roots and can be registered eagerly by any live caller,
-            // not just by the native-facing startup methods.
-            foreach (MethodWithGCInfo helper in managedHelpers)
+            // Every method compiled in the eager phase is available before non-eager callers.
+            foreach (MethodDesc method in compiledEagerMethods)
             {
-                Debug.Assert(helper.Marked);
-                if (!helper.IsEmpty)
-                {
-                    methodsToVisit.Push(helper);
-                }
-            }
-
-            foreach (MethodDesc method in _startupEagerMethods)
-            {
-                if (!compiledMethods.Contains(method))
-                {
-                    continue;
-                }
-
                 MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
-                if (methodNode.IsEmpty)
-                {
-                    continue;
-                }
+                Debug.Assert(!methodNode.IsEmpty);
 
                 MethodWithToken methodWithToken = new MethodWithToken(
                     method,
                     NodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true),
                     constrainedType: null,
                     unboxing: false,
-                    genericContextObject: method);
+                    genericContextObject: null);
                 _dependencyGraph.AddRoot(
                     SymbolNodeFactory.EagerReadyToRunMethodEntry(methodWithToken),
-                    "Startup method is always invoked");
+                    "Eager-phase method is already activated");
 
                 methodsToVisit.Push(methodNode);
             }
@@ -723,16 +753,12 @@ namespace ILCompiler
                 _dependencyGraph.AddRoot(fixup, "Eager method precode fixup is module-eager");
             }
 
-            foreach (List<DependencyNodeCore<NodeFactory>> methodsAtLevel in methodsByLevel)
+            foreach (MethodWithGCInfo method in methods)
             {
-                foreach (DependencyNodeCore<NodeFactory> dependency in methodsAtLevel)
+                if (!method.IsEmpty)
                 {
-                    var method = (MethodWithGCInfo)dependency;
-                    if (!method.IsEmpty)
-                    {
-                        method.ApplyModuleEagerFixups(eagerFixups);
-                        Debug.Assert(!eagerMethodClosure.Contains(method) || method.Fixups.Count == 0);
-                    }
+                    method.ApplyModuleEagerFixups(eagerFixups);
+                    Debug.Assert(!eagerMethodClosure.Contains(method) || method.Fixups.Count == 0);
                 }
             }
         }
@@ -741,6 +767,13 @@ namespace ILCompiler
         {
             Debug.Assert(_callGraphBuilder is null);
             _callGraphBuilder = new ReadyToRunCallGraphBuilder();
+            if (_isCoreLibCompilation)
+            {
+                foreach (MethodDesc method in GetStartupEagerMethods())
+                {
+                    _dependencyGraph.AddRoot(NodeFactory.CompiledMethodNode(method), "Native-facing startup method");
+                }
+            }
             _dependencyGraph.ComputeMarkedNodes();
 
             var methods = new List<MethodDesc>();
@@ -797,12 +830,40 @@ namespace ILCompiler
             return _previousCompilationInfo.TryGetValue(method, out compilationInfo);
         }
 
-        internal bool CanUseDirectCall(MethodDesc method)
+        internal bool CanUseDirectCall(MethodDesc method, out ReadyToRunMethodCompilationInfo compilationInfo)
         {
+            compilationInfo = default;
             TargetArchitecture architecture = NodeFactory.Target.Architecture;
             return _isCoreLibCompilation &&
                 architecture is TargetArchitecture.X86 or TargetArchitecture.X64 or TargetArchitecture.Wasm32 &&
-                TryGetPreviousCompilationInfo(method, out _);
+                TryGetPreviousCompilationInfo(method, out compilationInfo) &&
+                (compilationInfo.IsEager || _compilingEagerMethods ||
+                    (!method.IsNoInlining && !method.IsNoOptimization &&
+                        // Include the caller and the level-zero leaf in the activation depth.
+                        (compilationInfo.Level < DefaultMaxDirectCallActivationDepth - 1 ||
+                            IsDirectCallDepthExempt(method.OwningType))));
+        }
+
+        internal static bool IsDirectCallDepthExempt(TypeDesc type)
+        {
+            if (type.IsPrimitive || type.IsObject || type.IsString)
+            {
+                return true;
+            }
+
+            // Generic collection and enumeration interfaces inherit these non-generic interfaces.
+            foreach (DefType interfaceType in type.GetTypeDefinition().RuntimeInterfaces)
+            {
+                if (interfaceType is MetadataType metadataType &&
+                    metadataType.Module == type.Context.SystemModule &&
+                    metadataType.Namespace == "System.Collections"u8 &&
+                    (metadataType.Name == "IEnumerable"u8 || metadataType.Name == "IEnumerator"u8))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName, HashSet<MethodDesc> compiledMethodDefs)
