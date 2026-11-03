@@ -437,7 +437,7 @@ namespace System.Runtime.CompilerServices
                 // Ensure that state object isn't published out for others to see.
                 Debug.Assert((m_stateFlags & (int)InternalTaskOptions.PromiseTask) != 0, "Expected state flags to already be configured.");
                 Debug.Assert(m_stateObject is null, "Expected to be able to use the state object field for ExecutionContext.");
-                m_stateFlags |= (int)InternalTaskOptions.HiddenState;
+                m_stateFlags |= (int)(InternalTaskOptions.HiddenState | InternalTaskOptions.AsyncStateMachineBox);
             }
 
             /// <summary>Debugger-only display string for the async state machine.</summary>
