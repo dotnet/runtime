@@ -104,7 +104,7 @@ namespace System.Runtime.Caching
                     return true;
                 }
                 // if the monitors have changed we need to dispose them
-                if (hasChanged)
+                if (hasChanged && changeMonitors != null)
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {

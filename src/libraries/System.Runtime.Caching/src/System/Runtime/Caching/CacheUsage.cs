@@ -731,10 +731,13 @@ namespace System.Runtime.Caching
 
                         UsageEntryRef prev1 = (new UsageEntryRef((prev).PageIndex, (prev).Ref2Index));
                         cacheEntry = entries[entryIndex]._cacheEntry;
-                        Debug.Assert(cacheEntry.UsageEntryRef == prev1, "cacheEntry.UsageEntryRef == prev1");
-                        Dbg.Trace("CacheUsageFlushUnderUsedItem", "Flushing underused items, item=" + cacheEntry.Key + ", bucket=" + _bucket);
+                        if (cacheEntry != null)
+                        {
+                            Debug.Assert(cacheEntry.UsageEntryRef == prev1, "cacheEntry.UsageEntryRef == prev1");
+                            Dbg.Trace("CacheUsageFlushUnderUsedItem", "Flushing underused items, item=" + cacheEntry.Key + ", bucket=" + _bucket);
 
-                        cacheEntry.UsageEntryRef = UsageEntryRef.INVALID;
+                            cacheEntry.UsageEntryRef = UsageEntryRef.INVALID;
+                        }
 
                         RemoveEntryFromLastRefList(prev1);
 
