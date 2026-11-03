@@ -958,16 +958,19 @@ namespace System.Runtime.CompilerServices
 
             private Continuation MoveContinuationState()
             {
+                // The continuation is left installed while dispatching; when this task suspends again it's commonly
+                // on the same (reused) continuation, which then needn't be stored again. It's cleared upon completion.
                 object? stateObject = m_stateObject;
                 Debug.Assert(stateObject is Continuation);
-                m_stateObject = null;
                 return Unsafe.As<Continuation>(stateObject);
             }
 
             private void SetContinuationState(Continuation value)
             {
-                Debug.Assert(m_stateObject == null);
-                m_stateObject = value;
+                if (m_stateObject != value)
+                {
+                    m_stateObject = value;
+                }
             }
 
             internal unsafe bool HandleSuspended(ref RuntimeAsyncAwaitState state)
@@ -1220,6 +1223,7 @@ namespace System.Runtime.CompilerServices
                         if (handlerContinuation == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
+                            m_stateObject = null;
                             bool successfullySet = TrySetRuntimeAsyncException(ex);
 
                             contexts.Pop(awaitState.CurrentThread!);
@@ -1240,6 +1244,7 @@ namespace System.Runtime.CompilerServices
 
                     if (asyncDispatcherInfo.NextContinuation == null)
                     {
+                        m_stateObject = null;
                         bool successfullySet = TrySetRuntimeAsyncResult();
 
                         contexts.Pop(awaitState.CurrentThread!);
@@ -1370,6 +1375,7 @@ namespace System.Runtime.CompilerServices
                             RuntimeAsyncInstrumentationHelpers.UnwindRuntimeAsyncMethodUnhandledException(ref asyncDispatcherInfo, flags, ex, curContinuation, unwindedFrames);
 
                             // Tail of AsyncTaskMethodBuilderT.SetException
+                            m_stateObject = null;
                             bool successfullySet = TrySetRuntimeAsyncException(ex);
 
                             contexts.Pop(awaitState.CurrentThread!);
@@ -1394,6 +1400,7 @@ namespace System.Runtime.CompilerServices
                     {
                         RuntimeAsyncInstrumentationHelpers.CompleteRuntimeAsyncContext(ref asyncDispatcherInfo, flags);
 
+                        m_stateObject = null;
                         bool successfullySet = TrySetRuntimeAsyncResult();
 
                         contexts.Pop(awaitState.CurrentThread!);
