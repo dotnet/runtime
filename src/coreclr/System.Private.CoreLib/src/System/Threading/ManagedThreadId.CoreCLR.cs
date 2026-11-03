@@ -24,9 +24,11 @@ namespace System.Threading
         }
 #else
         // The runtime always assigns ID 1 to the only thread.
-        internal static int CurrentManagedThreadIdUnchecked => 1;
+        internal const int SingleThreadId = 1;
 
-        public static int Current => 1;
+        internal static int CurrentManagedThreadIdUnchecked => SingleThreadId;
+
+        public static int Current => SingleThreadId;
 #endif // FEATURE_MULTITHREADING
     }
 }

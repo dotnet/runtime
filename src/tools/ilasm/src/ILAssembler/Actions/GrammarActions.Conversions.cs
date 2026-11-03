@@ -18,9 +18,9 @@ using System.Security.Cryptography;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
-using LabelHandle = ILAssembler.MethodBodyWriter.Label;
+using LabelHandle = Microsoft.DotNet.ILAssembler.MethodBodyWriter.Label;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     internal sealed partial class GrammarActions
     {
@@ -34,10 +34,13 @@ namespace ILAssembler
 
         // Record the mapped field data directly into the blob to ensure we preserve ordering
         private readonly BlobBuilder _mappedFieldData = new();
-        private readonly Dictionary<string, int> _mappedFieldDataNames = new();
+        private readonly BlobBuilder _tlsData = new();
+        private readonly BlobBuilder _cilData = new();
+        private readonly Dictionary<string, DataLocation> _mappedFieldDataNames = new();
         private readonly List<CILParser.DataLabelReferenceValue> _mappedFieldDataReferenceFixups = new();
         private readonly BlobBuilder _manifestResources = new();
         private int _syntaxErrorCount;
+        private bool _isCoreLibrary;
 
         // Debug info tracking
         private Guid _currentLanguageGuid = PdbDocumentTable.ILAssemblyLanguage;
@@ -71,7 +74,7 @@ namespace ILAssembler
         private readonly record struct ValidatedVTableFixup(
             int OriginalIndex,
             VTableFixupSupport.VTableFixupEntry Entry,
-            int DataOffset);
+            DataLocation DataLocation);
 
         private readonly record struct ValidatedVTableAssociation(
             EntityRegistry.MethodDefinitionEntity Method,
@@ -210,6 +213,8 @@ namespace ILAssembler
             }
 
             public EntityRegistry.MethodDefinitionEntity Definition { get; }
+
+            public SequencePointSpan? LastRejectedSequencePointSpan { get; set; }
 
             public Dictionary<string, LabelHandle> Labels { get; } = new();
 

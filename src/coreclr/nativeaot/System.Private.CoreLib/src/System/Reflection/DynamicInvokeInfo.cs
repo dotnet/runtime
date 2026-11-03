@@ -382,6 +382,22 @@ namespace System.Reflection
                 ReturnTransform(ref ret, wrapInTargetInvocationException: false) : returnObject;
         }
 
+        // The constructor and argument types are validated by the caller, which also owns GC reporting for the byrefs.
+        [DebuggerGuidedStepThrough]
+        [CLSCompliant(false)]
+        public unsafe void InvokeDirectByRef(object thisObject, IntPtr methodToCall, IntPtr* arguments)
+        {
+            Debug.Assert(Method.IsConstructor && !_isStatic);
+            Debug.Assert(thisObject is not null);
+            Debug.Assert(IsSupportedSignature);
+
+            scoped ref byte thisArg = ref Unsafe.As<object, byte>(ref thisObject);
+            object? returnObject = null;
+            scoped ref byte ret = ref Unsafe.As<object?, byte>(ref returnObject);
+            RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, arguments);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+        }
+
         private void ThrowForArgCountMismatch()
         {
             if (_argumentCount < 0)

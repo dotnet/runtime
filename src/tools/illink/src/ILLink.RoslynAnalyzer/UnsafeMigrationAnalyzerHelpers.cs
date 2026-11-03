@@ -1,12 +1,13 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ILLink.RoslynAnalyzer
@@ -86,10 +87,20 @@ namespace ILLink.RoslynAnalyzer
         }
 
         /// <summary>
-        /// Determines whether removing unsafe must be suppressed to avoid recreating CS9392.
+        /// Determines whether the declaration must keep an explicit <c>safe</c> or <c>unsafe</c> modifier, so removing
+        /// <c>unsafe</c> would only recreate <c>CS9389</c>, <c>SYSLIB1064</c> or <c>CS9392</c> for another fixer to
+        /// add it back.
         /// </summary>
         internal static bool RequiresExplicitSafetyModifier(SyntaxNode declaration, ISymbol symbol)
         {
+            if (symbol is IMethodSymbol method
+                && (method.IsExtern
+                    || UnsafeMigrationSyntaxHelpers.HasModifier(declaration, SyntaxKind.ExternKeyword)
+                    || HasLibraryImportAttribute(method)))
+            {
+                return true;
+            }
+
             if (declaration is AccessorDeclarationSyntax || symbol.ContainingType is not { } containingType)
                 return false;
 
@@ -103,8 +114,15 @@ namespace ILLink.RoslynAnalyzer
                 _ => false,
             };
 
-            return hasInstanceField && HasExplicitOrExtendedLayout(containingType);
+            return hasInstanceField && HasLayoutRequiringFieldSafety(containingType);
         }
+
+        // The attribute is on the part the user wrote; the generated part is an extern or a wrapper.
+        private static bool HasLibraryImportAttribute(IMethodSymbol method) =>
+            new[] { method, method.PartialDefinitionPart, method.PartialImplementationPart }.Any(static part =>
+                part is not null
+                && part.GetAttributes().Any(static attribute =>
+                    attribute.AttributeClass?.IsTypeOf("System.Runtime.InteropServices", "LibraryImportAttribute") == true));
 
         internal static Location GetIdentifierLocation(SyntaxNode declaration) =>
             declaration switch
@@ -196,13 +214,20 @@ namespace ILLink.RoslynAnalyzer
                 .Any(field => !field.IsStatic
                     && SymbolEqualityComparer.Default.Equals(field.AssociatedSymbol, associatedSymbol));
 
-        private static bool HasExplicitOrExtendedLayout(INamedTypeSymbol type) =>
+        /// <summary>
+        /// Mirrors the compiler's <c>CS9392</c> rule: instance fields need an explicit <c>safe</c> or <c>unsafe</c> in
+        /// types with explicit or extended layout, or a nonzero packing size or size (dotnet/roslyn#85921).
+        /// </summary>
+        private static bool HasLayoutRequiringFieldSafety(INamedTypeSymbol type) =>
             type.GetAttributes().Any(static attribute =>
                 attribute.AttributeClass is { } attributeType
                 && (attributeType.IsTypeOf("System.Runtime.InteropServices", "ExtendedLayoutAttribute")
                     || (attributeType.IsTypeOf("System.Runtime.InteropServices", nameof(StructLayoutAttribute))
-                        && attribute.ConstructorArguments is [{ Value: int layoutKind }]
-                        && layoutKind == (int)LayoutKind.Explicit)));
+                        && ((attribute.ConstructorArguments is [{ Value: int layoutKind }] && layoutKind == (int)LayoutKind.Explicit)
+                            || attribute.NamedArguments.Any(static argument =>
+                                argument.Key is nameof(StructLayoutAttribute.Pack) or nameof(StructLayoutAttribute.Size)
+                                && argument.Value.Value is int value
+                                && value != 0)))));
     }
 }
 #endif

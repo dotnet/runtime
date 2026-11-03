@@ -128,7 +128,7 @@ internal static partial class Interop
         internal static partial void SslSetAcceptMovingWriteBuffer(SafeSslHandle ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
-        internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
+        internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error, [MarshalAs(UnmanagedType.Bool)] bool processPeer);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslHandshake", SetLastError = true)]
         internal static unsafe partial int SslHandshake(

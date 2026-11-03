@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-GPTR_DECL(MethodTable, g_pFreeObjectEEType);
+GPTR_DECL(MethodTable, g_pFreeObjectMethodTable);
 GPTR_DECL(StressLog, g_pStressLog);
 GPTR_DECL(RuntimeInstance, g_pTheRuntimeInstance);
 
