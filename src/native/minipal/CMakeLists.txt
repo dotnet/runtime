@@ -2,6 +2,10 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 
 include(configure.cmake)
 
+if (CLR_CMAKE_RUNTIME_MONO)
+    add_definitions(-DMONO)
+endif ()
+
 set(SOURCES
     conditionvariable.c
     cpufeatures.c
