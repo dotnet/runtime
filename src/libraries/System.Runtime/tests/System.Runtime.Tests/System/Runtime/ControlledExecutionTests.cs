@@ -4,6 +4,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 // Disable warnings for ControlledExecution.Run
@@ -72,12 +73,14 @@ namespace System.Runtime.Tests
             }
         }
 
-        public static bool IsRepeatedCancellationSupported =>
-            PlatformDetection.IsNotMonoRuntime && PlatformDetection.IsNotNativeAot && RemoteExecutor.IsSupported;
-
-        [ConditionalFact(nameof(IsRepeatedCancellationSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void CancelRepeatedlyOnSameThread()
         {
+            if (!RemoteExecutor.IsSupported)
+            {
+                throw new SkipTestException("RemoteExecutor is not supported on this platform.");
+            }
+
             RemoteExecutor.Invoke(() =>
             {
                 for (int i = 0; i < 3; i++)
