@@ -112,8 +112,8 @@ export type BindingClosureCS = {
 }
 
 export type DeferredBindingCS = {
-    providerKey: string,
-    bind?: (providerKey: string) => void,
+    methodId: string,
+    bind?: (methodId: string) => void,
     boundFn?: Function,
     wrapper?: Function,
     isBinding: boolean,

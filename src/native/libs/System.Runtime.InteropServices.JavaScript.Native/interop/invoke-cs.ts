@@ -28,7 +28,7 @@ export async function getAssemblyExports(assemblyName: string): Promise<any> {
     return exportsByAssembly.get(assemblyName) || {};
 }
 
-export function registerLazyCsFunctions(assemblyName: string, descriptors: string[], bind: (providerKey: string) => void): void {
+export function registerLazyCsFunctions(assemblyName: string, descriptors: string[], bind: (methodId: string) => void): void {
     assertRuntimeRunning();
     // The binder is runtime infrastructure, not an application delegate proxy.
     Object.assign(bind, { [doNotForceDispose]: true });
@@ -41,7 +41,7 @@ export function registerLazyCsFunctions(assemblyName: string, descriptors: strin
     const descriptorSize = 6;
     dotnetAssert.check(descriptors.length % descriptorSize === 0, "Invalid deferred JSExport descriptors");
     for (let index = 0; index < descriptors.length; index += descriptorSize) {
-        const providerKey = descriptors[index];
+        const methodId = descriptors[index];
         const namespaceName = descriptors[index + 1];
         const shortClassName = descriptors[index + 2];
         const methodName = descriptors[index + 3];
@@ -55,23 +55,23 @@ export function registerLazyCsFunctions(assemblyName: string, descriptors: strin
             continue;
         }
 
-        const binding: DeferredBindingCS = { providerKey, bind, isBinding: false, isDisposed: false };
+        const binding: DeferredBindingCS = { methodId, bind, isBinding: false, isDisposed: false };
         const deferredFn = function (this: unknown, ...args: unknown[]) {
             assertRuntimeRunning();
-            dotnetAssert.check(!binding.isDisposed, `The JSExport '${providerKey}' is disposed.`);
+            dotnetAssert.check(!binding.isDisposed, `The JSExport '${key}' is disposed.`);
             if (!binding.boundFn) {
-                dotnetAssert.check(!binding.isBinding, `Reentrant binding of JSExport '${providerKey}'.`);
+                dotnetAssert.check(!binding.isBinding, `Reentrant binding of JSExport '${key}'.`);
                 const bind = binding.bind;
-                dotnetAssert.check(bind, `Missing binder for JSExport '${providerKey}'.`);
+                dotnetAssert.check(bind, `Missing binder for JSExport '${key}'.`);
                 binding.isBinding = true;
                 try {
-                    bind(providerKey);
+                    bind(methodId);
                 } finally {
                     binding.isBinding = false;
                 }
             }
             const boundFn = binding.boundFn;
-            dotnetAssert.check(boundFn, `JSExport '${providerKey}' did not publish its binding.`);
+            dotnetAssert.check(boundFn, `JSExport '${key}' did not publish its binding.`);
             return boundFn.apply(this, args);
         };
         binding.wrapper = deferredFn;

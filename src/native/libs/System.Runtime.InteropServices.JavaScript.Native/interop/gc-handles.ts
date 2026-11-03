@@ -39,7 +39,7 @@ let nextGcvHandle = -2;
 export const jsImportWrapperByFnHandle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 export const exportsByAssembly: Map<string, any> = new Map();
 export const deferredCsFunctions = new Map<string, DeferredBindingCS>();
-export const deferredCsBinders = new Set<(providerKey: string) => void>();
+export const deferredCsBinders = new Set<(methodId: string) => void>();
 
 // GCVHandle is like GCHandle, but it's not tracked and allocated by the coreCLR GC, but just by JS.
 // It's used when we need to create GCHandle-like identity ahead of time, before calling coreCLR.

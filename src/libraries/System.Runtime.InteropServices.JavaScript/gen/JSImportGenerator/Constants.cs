@@ -37,8 +37,6 @@ namespace Microsoft.Interop.JavaScript
         public const string BindCSFunctionMethod = "BindManagedFunction";
         public const string JSExportProvider = "System.Runtime.InteropServices.JavaScript.JSExportProvider";
         public const string JSExportProviderGlobal = "global::System.Runtime.InteropServices.JavaScript.JSExportProvider";
-        public const string JSExportCatalog = "System.Runtime.InteropServices.JavaScript.JSExportCatalog";
-        public const string JSExportCatalogGlobal = "global::System.Runtime.InteropServices.JavaScript.JSExportCatalog";
         public const string JSMarshalerTypeGlobal = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerType";
         public const string JSMarshalerTypeGlobalDot = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.";
     }

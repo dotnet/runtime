@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -11,38 +12,33 @@ namespace System.Runtime.InteropServices.JavaScript
     internal static partial class JSHostImplementation
     {
         private static readonly Lazy<IReadOnlyDictionary<string, Type>> s_exportProviders = new(CreateExportProviderMap);
-        private static readonly Lazy<IReadOnlyDictionary<string, Type>> s_exportCatalogs = new(CreateExportCatalogMap);
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Generated type-map providers preserve their constructors and directly reference their export wrappers.")]
         private static IReadOnlyDictionary<string, Type> CreateExportProviderMap()
             => TypeMapping.GetOrCreateExternalTypeMapping<JSExportProvider>();
 
-        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Generated catalogs preserve their constructors and return literal export keys.")]
-        private static IReadOnlyDictionary<string, Type> CreateExportCatalogMap()
-            => TypeMapping.GetOrCreateExternalTypeMapping<JSExportCatalog>();
-
-        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "The generated GetExportNames override preserves the catalog's public parameterless constructor with DynamicDependency.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "The generated GetExportNames override preserves the provider's public parameterless constructor with DynamicDependency.")]
         private static bool TryBindMappedAssemblyExports(string assemblyName)
         {
-            if (!s_exportCatalogs.Value.TryGetValue(assemblyName, out Type? catalogType))
+            if (!s_exportProviders.Value.TryGetValue(assemblyName, out Type? providerType))
                 return false;
 
-            var catalog = (JSExportCatalog)Activator.CreateInstance(catalogType)!;
-            IReadOnlyDictionary<string, Type> providers = s_exportProviders.Value;
+            var provider = (JSExportProvider)Activator.CreateInstance(providerType)!;
+            string[] names = provider.GetExportNames();
+            var aliases = new HashSet<string>(StringComparer.Ordinal);
             string prefix = $"[{assemblyName}]";
             var descriptors = new List<string>();
-            foreach (string key in catalog.GetExportNames())
+            for (int index = 0; index < names.Length; index++)
             {
+                string key = names[index];
                 int hashIndex = key.LastIndexOf('#');
                 if (hashIndex < 0 || !key.StartsWith(prefix, StringComparison.Ordinal))
                     throw new InvalidOperationException($"Invalid JSExport catalog key '{key}' for assembly '{assemblyName}'.");
-                if (!providers.TryGetValue(key, out Type? providerType))
-                    throw new MissingMethodException($"No JSExport provider is registered for catalog key '{key}'.");
 
                 string name = key.Substring(0, hashIndex);
                 var (_, nameSpace, shortClassName, methodName) = ParseFQN(name);
-                bool isDefault = providers.TryGetValue(name, out Type? aliasType) && aliasType == providerType;
-                descriptors.Add(key);
+                bool isDefault = aliases.Add(name);
+                descriptors.Add(index.ToString(CultureInfo.InvariantCulture));
                 descriptors.Add(nameSpace);
                 descriptors.Add(shortClassName);
                 descriptors.Add(methodName);
@@ -50,7 +46,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 descriptors.Add(isDefault ? "1" : "0");
             }
 #if CORECLR
-            JavaScriptImports.RegisterLazyCSFunctions(assemblyName, descriptors.ToArray(), BindMappedExport);
+            JavaScriptImports.RegisterLazyCSFunctions(assemblyName, descriptors.ToArray(), provider.Bind);
 #else
             // Bind default overloads first so Mono preserves the unqualified aliases.
             const int DescriptorSize = 6;
@@ -59,21 +55,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 for (int index = 0; index < descriptors.Count; index += DescriptorSize)
                 {
                     if ((descriptors[index + 5] == "1") == (pass == 0))
-                        BindMappedExport(descriptors[index]);
+                        provider.Bind(descriptors[index]);
                 }
             }
 #endif
             return true;
-        }
-
-        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "The generated Bind override preserves the provider's public parameterless constructor with DynamicDependency.")]
-        private static void BindMappedExport(string providerKey)
-        {
-            if (!s_exportProviders.Value.TryGetValue(providerKey, out Type? providerType))
-                throw new MissingMethodException($"No JSExport provider is registered for '{providerKey}'.");
-
-            var provider = (JSExportProvider)Activator.CreateInstance(providerType)!;
-            provider.Bind();
         }
 
         // This function pointer based approach is used by JSExport assemblies generated by Net11 or above.

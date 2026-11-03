@@ -100,10 +100,9 @@ namespace Microsoft.Interop.JavaScript
                 if (assembly.GetAttributes().Any(static attribute =>
                     attribute.AttributeClass is { Name: "TypeMapAttribute" or "TypeMapAssemblyTargetAttribute", TypeArguments.Length: 1 } type
                     && type.ContainingNamespace.ToDisplayString() == "System.Runtime.InteropServices"
-                    && type.TypeArguments[0].ToDisplayString() is Constants.JSExportProvider or Constants.JSExportCatalog))
+                    && type.TypeArguments[0].ToDisplayString() == Constants.JSExportProvider))
                 {
                     writer.WriteLine($"[assembly: global::System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute<{Constants.JSExportProviderGlobal}>({CodeWriterHelpers.StringLiteral(assembly.Name)})]");
-                    writer.WriteLine($"[assembly: global::System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute<{Constants.JSExportCatalogGlobal}>({CodeWriterHelpers.StringLiteral(assembly.Name)})]");
                 }
             }
             return writer.ToString();
@@ -153,33 +152,21 @@ namespace Microsoft.Interop.JavaScript
             string assemblyName)
         {
             const string GeneratedNamespace = "System.Runtime.InteropServices.JavaScript";
-            const string CatalogClass = "__GeneratedJSExportCatalog";
-            writer.WriteLine($"[assembly: global::System.Runtime.InteropServices.TypeMapAttribute<{Constants.JSExportCatalogGlobal}>({CodeWriterHelpers.StringLiteral(assemblyName)}, typeof(global::{GeneratedNamespace}.{CatalogClass}))]");
-            var aliases = new HashSet<string>(StringComparer.Ordinal);
-            for (int i = 0; i < methods.Length; i++)
-            {
-                var method = methods[i];
-                string providerClass = $"__GeneratedJSExportProvider_{i}";
-                string key = $"{method.Name}#{method.Hash.ToString(CultureInfo.InvariantCulture)}";
-                writer.WriteLine($"[assembly: global::System.Runtime.InteropServices.TypeMapAttribute<{Constants.JSExportProviderGlobal}>({CodeWriterHelpers.StringLiteral(key)}, typeof(global::{GeneratedNamespace}.{providerClass}))]");
-                if (aliases.Add(method.Name))
-                {
-                    writer.WriteLine($"[assembly: global::System.Runtime.InteropServices.TypeMapAttribute<{Constants.JSExportProviderGlobal}>({CodeWriterHelpers.StringLiteral(method.Name)}, typeof(global::{GeneratedNamespace}.{providerClass}))]");
-                }
-            }
+            const string ProviderClass = "__GeneratedJSExportProvider";
+            writer.WriteLine($"[assembly: global::System.Runtime.InteropServices.TypeMapAttribute<{Constants.JSExportProviderGlobal}>({CodeWriterHelpers.StringLiteral(assemblyName)}, typeof(global::{GeneratedNamespace}.{ProviderClass}))]");
             writer.WriteLine($"namespace {GeneratedNamespace}");
             using (writer.WriteBlock())
             {
                 writer.WriteLine($"[{Constants.CompilerGeneratedAttributeGlobal}]");
-                writer.WriteLine($"file sealed class {CatalogClass} : {Constants.JSExportCatalogGlobal}");
+                writer.WriteLine($"file sealed class {ProviderClass} : {Constants.JSExportProviderGlobal}");
                 using (writer.WriteBlock())
                 {
-                    writer.WriteLine($"public {CatalogClass}()");
+                    writer.WriteLine($"public {ProviderClass}()");
                     using (writer.WriteBlock())
                     {
                     }
                     writer.WriteLine();
-                    writer.WriteLine($"[{Constants.DynamicDependencyAttributeGlobal}({Constants.DynamicallyAccessedMemberTypesGlobal}.PublicParameterlessConstructor, typeof({CatalogClass}))]");
+                    writer.WriteLine($"[{Constants.DynamicDependencyAttributeGlobal}({Constants.DynamicallyAccessedMemberTypesGlobal}.PublicParameterlessConstructor, typeof({ProviderClass}))]");
                     writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
                     writer.WriteLine("public override string[] GetExportNames()");
                     using (writer.WriteBlock())
@@ -188,34 +175,37 @@ namespace Microsoft.Interop.JavaScript
                             CodeWriterHelpers.StringLiteral($"{method.Name}#{method.Hash.ToString(CultureInfo.InvariantCulture)}")));
                         writer.WriteLine($"return [{names}];");
                     }
-                }
-                for (int i = 0; i < methods.Length; i++)
-                {
-                    var method = methods[i];
-                    string providerClass = $"__GeneratedJSExportProvider_{i}";
-                    writer.WriteLine($"[{Constants.CompilerGeneratedAttributeGlobal}]");
-                    writer.WriteLine($"file sealed class {providerClass} : {Constants.JSExportProviderGlobal}");
-                    using (writer.WriteBlock())
+                    writer.WriteLine();
+                    foreach (var method in methods)
                     {
-                        writer.WriteLine($"public {providerClass}()");
-                        using (writer.WriteBlock())
-                        {
-                        }
-                        writer.WriteLine();
                         if (method.Attribute is not null)
                         {
                             writer.WriteLine($"[{method.Attribute}]");
                         }
-                        writer.WriteLine($"[{Constants.DynamicDependencyAttributeGlobal}({Constants.DynamicallyAccessedMemberTypesGlobal}.PublicParameterlessConstructor, typeof({providerClass}))]");
-                        writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
-                        writer.WriteLine("public override void Bind()");
+                    }
+                    writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
+                    writer.WriteLine("public override void Bind(string methodId)");
+                    using (writer.WriteBlock())
+                    {
+                        writer.WriteLine("switch (methodId)");
                         using (writer.WriteBlock())
                         {
-                            writer.WriteLine("unsafe");
-                            using (writer.WriteBlock())
+                            for (int i = 0; i < methods.Length; i++)
                             {
-                                writer.WriteLine(method.Registration);
+                                writer.WriteLine($"case {CodeWriterHelpers.StringLiteral(i.ToString(CultureInfo.InvariantCulture))}:");
+                                writer.Indent++;
+                                writer.WriteLine("unsafe");
+                                using (writer.WriteBlock())
+                                {
+                                    writer.WriteLine(methods[i].Registration);
+                                }
+                                writer.WriteLine("return;");
+                                writer.Indent--;
                             }
+                            writer.WriteLine("default:");
+                            writer.Indent++;
+                            writer.WriteLine("throw new global::System.ArgumentOutOfRangeException(nameof(methodId), methodId, null);");
+                            writer.Indent--;
                         }
                     }
                 }

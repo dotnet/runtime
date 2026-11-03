@@ -127,7 +127,12 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         PublishProject(info, config);
         string generatedFile = Directory.GetFiles(Path.Combine(libraryDir, "obj"), "JSExports.g.cs", SearchOption.AllDirectories).Single();
         string generatedCode = File.ReadAllText(generatedFile);
-        Assert.Contains("file sealed class __GeneratedJSExportProvider", generatedCode);
+        Assert.Contains("file sealed class __GeneratedJSExportProvider : ", generatedCode);
+        Assert.Contains("JSExportProvider>(\"Library\", typeof(", generatedCode);
+        Assert.Contains("public override string[] GetExportNames()", generatedCode);
+        Assert.Contains("public override void Bind(string methodId)", generatedCode);
+        Assert.DoesNotContain("__GeneratedJSExportProvider_", generatedCode);
+        Assert.DoesNotContain("JSExportCatalog", generatedCode);
         Assert.DoesNotContain("ModuleInitializer", generatedCode);
         string appGeneratedFile = Directory.GetFiles(Path.Combine(_projectDir, "obj"), "JSExports.g.cs", SearchOption.AllDirectories).Single();
         Assert.Contains("JSExportProvider>(\"Library\")", File.ReadAllText(appGeneratedFile));
@@ -136,7 +141,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         if (IsCoreClrRuntime)
         {
             Assert.Equal(
-                new[] { "lazy:discovered", "lazy:read", "lazy:constructor", "lazy:bind", "lazy:first", "lazy:repeated" },
+                new[] { "lazy:constructor", "lazy:discovered", "lazy:read", "lazy:bind", "lazy:first", "lazy:repeated" },
                 result.TestOutput.Where(static message => message.StartsWith("lazy:", StringComparison.Ordinal)));
         }
     }

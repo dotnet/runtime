@@ -9,13 +9,16 @@ runtime configuration setting. The JSExport provider linker descriptor preserves
 the native `BindAssemblyExports` entry point, which makes the type-map lookup
 reachable even when JavaScript is the only caller of the application's exports.
 
-Per-method providers use a fully qualified export name plus signature hash as the
-type-map key; plain-name entries identify the default overload. A separate generated
-catalog supplies the name list because lazy type maps do not support enumeration.
-Discovery activates only that catalog and publishes deferred functions without
-activating method providers. CoreCLR invokes a shared
-managed delegate to bind a method synchronously on its first call, preserving
+One generated provider per assembly uses the assembly name as its type-map key.
+Its `GetExportNames()` catalog supplies fully qualified, hash-qualified names without
+enumerating the type map. Discovery activates the provider and publishes deferred
+functions without binding methods. The first overload in catalog order supplies
+the plain-name alias. CoreCLR invokes the same provider's `Bind(string methodId)`
+synchronously on the first call, preserving
 synchronous return values and stable function identities without JavaScript proxies.
+Method IDs are invariant decimal catalog indexes, local to the generated assembly
+build rather than stable names or signature hashes. A generated string switch binds
+only the selected method. Mono retains eager binding in this prototype.
 Legacy assemblies retain their existing registration path.
 
 Wasm app build can run in two scenarios:

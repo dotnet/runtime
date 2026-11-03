@@ -83,10 +83,11 @@ no .NET 10 SDK or browser workload is required. The test runs in the `no-workloa
 both runtime flavors.
 
 `LibraryInitializerTests.JSExportFromAssemblyProvider` checks a library reached only from
-JavaScript through generated per-method type-map providers. It covers multiple exports,
+JavaScript through one generated type-map provider per assembly. It covers multiple exports,
 overloads, repeated assembly lookup, and trimmed and untrimmed publication without explicitly
-rooting the library. A name-only assembly catalog supports discovery without enumerating
-the type maps. On CoreCLR, counting providers verify no method-provider activation at discovery or
-property read, exactly one activation/binding on first invocation, stable aliases, and an
-unused provider that must never be activated. Mono retains eager binding in this prototype;
+rooting the library. The provider's string catalog supports discovery without enumerating
+the type map, and `Bind(string methodId)` dispatches on invariant decimal catalog indexes.
+On CoreCLR, a counting provider verifies one activation at discovery, no binding at discovery or
+property read, exactly one binding on first invocation, stable aliases, and an
+unused method that must never be bound. Mono retains eager binding in this prototype;
 untrimmed Mono still requires runtime type-map support.
