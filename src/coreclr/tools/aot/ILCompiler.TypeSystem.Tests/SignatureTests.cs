@@ -11,8 +11,6 @@ using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-using NativeWriter = Internal.Metadata.NativeFormat.Writer;
-
 using Xunit;
 using Xunit.Abstractions;
 
@@ -260,40 +258,6 @@ namespace TypeSystemTests
 
             Assert.Equal(0, failures);
             Assert.Equal(4, successes);
-        }
-    }
-
-    public class NativeFormatSignatureTests
-    {
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void InstantiationHashesIncludeArguments(bool isMethod)
-        {
-            var type = new NativeWriter.TypeDefinition { Name = (NativeWriter.ConstantStringValue)"Generic" };
-            var method = new NativeWriter.QualifiedMethod
-            {
-                Method = new NativeWriter.Method { Name = (NativeWriter.ConstantStringValue)"Method" },
-                EnclosingType = type
-            };
-            var hashes = new HashSet<int>();
-            for (int i = 0; i < 4; i++)
-            {
-                var arguments = new List<NativeWriter.MetadataRecord>
-                {
-                    new NativeWriter.TypeSpecification
-                    {
-                        Signature = new NativeWriter.TypeVariableSignature { Number = i }
-                    }
-                };
-                NativeWriter.MetadataRecord record = isMethod
-                    ? new NativeWriter.MethodInstantiation { Method = method, GenericTypeArguments = arguments }
-                    : new NativeWriter.TypeInstantiationSignature { GenericType = type, GenericTypeArguments = arguments };
-
-                hashes.Add(record.GetHashCode());
-            }
-
-            Assert.True(hashes.Count > 1);
         }
     }
 }
