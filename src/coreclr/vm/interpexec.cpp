@@ -1489,7 +1489,7 @@ static InterpByteCodeStart* ResolveInterpreterCode(MethodDesc*& targetMethod, In
     // A declaration can still cache its implementation's interpreter code after the implementation's R2R
     // code is published. Keep this check so calls through that alias reach the published code.
     if (targetIp != nullptr
-        && targetIp->Method->auxiliaryMethodInfo.ShouldTryDelayedActivation())
+        && targetIp->Method->methodHnd->GetAuxiliaryMethodState().ShouldTryDelayedActivation())
     {
         pFrame->ip = ip;
         pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);

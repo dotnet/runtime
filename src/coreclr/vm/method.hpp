@@ -2380,7 +2380,8 @@ public:
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
     void TryActivateDelayedR2RCode(CallerGCMode callerGCMode);
-    void RecordDelayedR2RCode(PrepareCodeConfig* pConfig, PCODE pCode);
+    void RecordDelayedR2RCode(PrepareCodeConfig* pConfig);
+    AuxiliaryMethodState GetAuxiliaryMethodState();
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
 private:

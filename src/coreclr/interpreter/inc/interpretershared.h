@@ -48,9 +48,6 @@ struct InterpMethod
     bool initLocals;
     bool unmanagedCallersOnly;
     bool publishSecretStubParam;
-#ifdef FEATURE_AUXILIARY_R2R_MODULES
-    AuxiliaryMethodState auxiliaryMethodInfo;
-#endif // FEATURE_AUXILIARY_R2R_MODULES
     int32_t codeSize; // size in int32_t slots
 
     // Maps Continuation.State (suspension-point index) to the byte offset of the matching

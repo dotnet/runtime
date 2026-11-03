@@ -61,7 +61,7 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
     {
         pTargetMethod = targetIp->Method->methodHnd;
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-        activateDelayedR2RCode = targetIp->Method->auxiliaryMethodInfo.ShouldTryDelayedActivation();
+        activateDelayedR2RCode = targetIp->Method->methodHnd->GetAuxiliaryMethodState().ShouldTryDelayedActivation();
 #endif // FEATURE_AUXILIARY_R2R_MODULES
     }
 
