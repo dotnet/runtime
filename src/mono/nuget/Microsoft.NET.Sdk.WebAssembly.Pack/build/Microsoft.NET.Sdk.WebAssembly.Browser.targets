@@ -182,10 +182,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmStampBuildId>
 
-    <ItemGroup Condition="@(_WasmBuildIdRuntimePackBuildSource->Count()) != 0">
-      <ReferenceCopyLocalPaths Remove="@(_WasmBuildIdRuntimePackBuildSource)" />
-      <ReferenceCopyLocalPaths Include="@(_WasmStampedBuildWasm)" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_GatherWasmFilesToBuild">
@@ -357,6 +353,10 @@ Copyright (c) .NET Foundation. All rights reserved.
                                     Condition="'$(UseMonoRuntime)' == 'false' and '@(_DebugSymbolsIntermediatePath)' != '' and Exists('%(_WasmProjectAssemblyBuild.RootDir)%(_WasmProjectAssemblyBuild.Directory)%(_WasmProjectAssemblyBuild.FileName).pdb')" />
       <_WasmProjectAssemblyBuild Include="@(IntermediateAssembly)" Condition="@(_WasmProjectAssemblyBuild->Count()) == 0" />
       <_WasmBuildAssetCandidates Include="@(ReferenceCopyLocalPaths)" />
+      <_WasmBuildAssetCandidates Remove="@(_WasmBuildIdRuntimePackBuildSource)"
+                                 Condition="@(_WasmBuildIdRuntimePackBuildSource->Count()) != 0" />
+      <_WasmBuildAssetCandidates Include="@(_WasmStampedBuildWasm)"
+                                 Condition="@(_WasmBuildIdRuntimePackBuildSource->Count()) != 0" />
       <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" WasmNativeBuildOutput="true" />
       <_WasmBuildAssetCandidates Include="@(WasmAssembliesFinal)" />
       <_WasmBuildAssetCandidates Remove="@(_WasmProjectAssemblyBuild)" />

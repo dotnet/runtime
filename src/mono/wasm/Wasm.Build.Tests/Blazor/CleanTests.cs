@@ -66,7 +66,7 @@ public class CleanTests : BlazorWasmTestBase
             TestAsset.BlazorBasicTestApp,
             "clean_build_id",
             extraProperties: $"<WasmNativeBuildId>{buildId}</WasmNativeBuildId>");
-        BlazorBuild(info, config, isNativeBuild: false);
+        BlazorBuild(info, config, new BuildOptions(AssertAppBundle: false), isNativeBuild: false);
 
         string stampedDirectory = Path.Combine(
             _projectDir,
@@ -76,6 +76,16 @@ public class CleanTests : BlazorWasmTestBase
             "wasm-build-id",
             "for-build");
         Assert.True(File.Exists(Path.Combine(stampedDirectory, "dotnet.native.wasm")));
+
+        string materializedDirectory = Path.Combine(
+            _projectDir,
+            "obj",
+            config.ToString(),
+            DefaultTargetFrameworkForBlazor,
+            "fx",
+            info.ProjectName,
+            "_framework");
+        Assert.True(File.Exists(Path.Combine(materializedDirectory, "dotnet.native.wasm")));
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, info.ProjectName, $"{info.ProjectName}-clean.binlog");
         using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
