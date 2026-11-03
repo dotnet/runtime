@@ -8065,7 +8065,9 @@ ValueNum ValueNumStore::VNCanonical(ValueNum vn)
 // Notes:
 //    The representative, available through VNCanonical, is the number that says the most
 //    about the value: a constant, else a phi definition or a function, else whichever
-//    number was recorded last. A constant never keys the map.
+//    number was recorded last. A constant never keys the map. Facts recorded before CSE
+//    under either value number are transferred to the representative, and facts recorded
+//    afterwards are keyed by it.
 //
 void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
 {
@@ -8110,6 +8112,22 @@ void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
     assert(FindVNPair(m_vnEquivalences->entries, fromRoot) < 0);
     m_vnEquivalences->members.Set(fromRoot);
     m_vnEquivalences->entries.Push({fromRoot, toRoot});
+
+    // Checked-bound membership is recorded during value numbering, before CSE, so carry it
+    // to the representative rather than relying on later canonicalization. A constant needs
+    // none: assertion prop reads constants directly.
+    if (IsVNConstant(toRoot))
+    {
+        return;
+    }
+    if (IsVNCheckedBound(fromRoot))
+    {
+        SetVNIsCheckedBound(toRoot);
+    }
+    if (IsVNCheckedBoundIndex(fromRoot))
+    {
+        SetVNIsCheckedBound(toRoot, /* isIndex */ true);
+    }
 }
 
 #ifdef FEATURE_HW_INTRINSICS

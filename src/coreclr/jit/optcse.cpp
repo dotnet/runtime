@@ -5297,19 +5297,12 @@ void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, co
     lcl->gtVNPair              = ssaDsc->m_vnPair;
 
     // The use now carries the reaching definition's value number. Other nodes still
-    // carry the old one, so record that both denote the same value.
+    // carry the old one, so record that both denote the same value: assertions and
+    // checked-bound facts recorded under either must be visible through the other.
     ValueNum newConservativeVN = ssaDsc->m_vnPair.GetConservative();
     if (oldConservativeVN != newConservativeVN)
     {
         m_compiler->vnStore->RecordVNEquivalence(oldConservativeVN, newConservativeVN);
-    }
-
-    // If the old VN was flagged as a checked bound then propagate that to the
-    // new VN to make sure assertion prop will pay attention to this VN.
-    if ((oldConservativeVN != newConservativeVN) && m_compiler->vnStore->IsVNCheckedBound(oldConservativeVN) &&
-        !m_compiler->vnStore->IsVNConstant(newConservativeVN))
-    {
-        m_compiler->vnStore->SetVNIsCheckedBound(newConservativeVN);
     }
 }
 

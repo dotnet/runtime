@@ -172,7 +172,7 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
         return;
     }
 
-    ValueNum op1VN = comp->vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    ValueNum op1VN = comp->vnStore->VNCanonicalConservativeNormalValue(op1->gtVNPair);
 
     auto vnVisitor = [comp, tree](ValueNum vn) -> ValueNumStore::VNVisit {
         if (vn == ValueNumStore::NoVN)
@@ -1210,7 +1210,7 @@ ValueNum Compiler::optConservativeNormalVN(const GenTree* tree)
     }
 
     assert(vnStore != nullptr);
-    return vnStore->VNConservativeNormalValue(tree->gtVNPair);
+    return vnStore->VNCanonicalConservativeNormalValue(tree->gtVNPair);
 }
 
 //------------------------------------------------------------------------
@@ -2246,8 +2246,8 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
     else if (!optLocalAssertionProp)
     {
-        ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
-        ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+        ValueNum op1VN = vnStore->VNCanonicalConservativeNormalValue(op1->gtVNPair);
+        ValueNum op2VN = vnStore->VNCanonicalConservativeNormalValue(op2->gtVNPair);
 
         if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
         {
@@ -2677,6 +2677,7 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
 //
 bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget)
 {
+    objVN = vnStore->VNCanonical(objVN);
     if ((budget <= 0) || (objVN == ValueNumStore::NoVN))
     {
         return false;
@@ -4290,7 +4291,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         return;
     }
 
-    const ValueNum  treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+    const ValueNum  treeVN = vnStore->VNCanonicalConservativeNormalValue(tree->gtVNPair);
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
@@ -4584,6 +4585,7 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions,
 //
 bool Compiler::optIsNeverNegativeCheckedBound(ValueNum vn, ASSERT_VALARG_TP assertions)
 {
+    vn = vnStore->VNCanonical(vn);
     if (!vnStore->IsVNCheckedBound(vn))
     {
         return false;
@@ -4604,6 +4606,7 @@ bool Compiler::optIsNeverNegativeCheckedBound(ValueNum vn, ASSERT_VALARG_TP asse
 //
 ValueNum Compiler::optGetPreferredBoundForRange(ValueNum vn, ASSERT_VALARG_TP assertions)
 {
+    vn = vnStore->VNCanonical(vn);
     if (BitVecOps::MayBeUninit(assertions) || !optAssertionHasAssertionsForVN(vn))
     {
         return ValueNumStore::NoVN;
@@ -4729,7 +4732,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 ValueNum addOp;
                 int      addCns;
                 if (vnStore->IsVNBinFuncWithConst(op1VN, VNF_ADD, &addOp, &addCns) && (addCns == 1) &&
-                    (addOp == curAssertion.GetOp1().GetVN()))
+                    (vnStore->VNCanonical(addOp) == curAssertion.GetOp1().GetVN()))
                 {
                     newTree = gtNewIconNode(tree->OperIs(GT_LE) ? 1 : 0);
                 }
@@ -4795,7 +4798,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                     if (vnStore->IsVNBinFunc(op1VN, VNF_SUB, &bndVN) &&
                         optIsNeverNegativeCheckedBound(bndVN, assertions))
                     {
-                        op1Rng = GetBoundMinusXRange(this, op1, block, bndVN);
+                        op1Rng = GetBoundMinusXRange(this, op1, block, vnStore->VNCanonical(bndVN));
                     }
 
                     if (op1Rng.LowerLimit().IsUnknown())
@@ -4845,7 +4848,9 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     VNFuncApp funcApp;
     if (op1->TypeIs(TYP_I_IMPL) && vnStore->GetVNFunc(op1VN, &funcApp) && funcApp.FuncIs(VNF_InvariantNonNullLoad))
     {
-        op1ObjVN = funcApp.GetArg(0);
+        // The receiver comes from the VN function, which may predate CSE's rewrite of the receiver's
+        // value number, so canonicalize it before matching exact-type assertions.
+        op1ObjVN = vnStore->VNCanonical(funcApp.GetArg(0));
     }
 
     // Find an equal or not equal assertion involving "op1" and "op2".
@@ -5199,7 +5204,7 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
     // If local assertion prop use lcl comparison, else use VN comparison.
     if (!optLocalAssertionProp)
     {
-        ValueNum vn = vnStore->VNConservativeNormalValue(op->gtVNPair);
+        ValueNum vn = vnStore->VNCanonicalConservativeNormalValue(op->gtVNPair);
         return optAssertionVNIsNonNull(vn, assertions);
     }
     else
@@ -5249,6 +5254,7 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 //
 bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget)
 {
+    vn = vnStore->VNCanonical(vn);
     if ((vn == ValueNumStore::NoVN) || !varTypeIsI(vnStore->TypeOfVN(vn)))
     {
         return false;
@@ -5262,6 +5268,8 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
     ValueNum       vnBase = vn;
     target_ssize_t offset = 0;
     vnStore->PeelOffsets(&vnBase, &offset);
+    // The peeled base comes from the VN function, not from a tree, so canonicalize it too.
+    vnBase = vnStore->VNCanonical(vnBase);
     if ((offset < 0) || fgIsBigOffset(static_cast<size_t>(offset)))
     {
         // A non-null base does not imply a non-null address for these offsets.
@@ -5723,6 +5731,9 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
     ValueNum idxOp0, idxOp1;
     if (vnStore->IsVNBinFunc(vnCurIdx, VNF_ADD, &idxOp0, &idxOp1))
     {
+        // Operands come from the VN function, so canonicalize them before comparing with the length.
+        idxOp0 = vnStore->VNCanonical(idxOp0);
+        idxOp1 = vnStore->VNCanonical(idxOp1);
         if (!vnStore->IsVNInt32Constant(idxOp1))
         {
             // Normalize constants to be on the right side
@@ -5743,7 +5754,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
             }
         }
     }
-    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_UMOD, &idxOp0, &idxOp1) && (idxOp1 == vnCurLen))
+    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_UMOD, &idxOp0, &idxOp1) && (vnStore->VNCanonical(idxOp1) == vnCurLen))
     {
         // If arr.Length is 0 we technically should keep the bounds check, but since the expression
         // has to throw DivideByZeroException anyway - no special handling needed.
