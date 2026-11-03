@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using SampleMetadata;
@@ -123,5 +124,58 @@ namespace System.Reflection.Tests
                 Assert.Equal(UnmanagedType.I4, ma.Value);
             }
         }
+
+#if NET
+        [Theory]
+        [InlineData(typeof(int[]))]
+        [InlineData(typeof(List<int>))]
+        [InlineData(typeof(Dictionary<string, List<int[]>>))]
+        public static void TestModifiedParameterTypeOfSubstitutedGenericParameter(Type argumentType)
+        {
+            const BindingFlags bf = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+
+            // ClassWithMethods1<T>.Method1(int x, T t) with T substituted by the argument type.
+            Type projectedArgument = argumentType.Project();
+            Type t = typeof(ClassWithMethods1<>).Project().MakeGenericType(projectedArgument);
+            ParameterInfo classParameter = t.GetMethod("Method1", bf).GetParameters()[1];
+            Assert.Equal(projectedArgument, classParameter.ParameterType);
+            VerifyModifiedType(projectedArgument, classParameter.GetModifiedParameterType());
+
+            // GenericClassWithGenericMethods1<T, U>.GenericMethod1<M, N>(GenericClass5<N, M[], IEnumerable<U>, T[,], int> g)
+            // with both the type and the method generic parameters substituted.
+            Type gt = typeof(GenericClassWithGenericMethods1<,>).Project().MakeGenericType(projectedArgument, typeof(string).Project());
+            MethodInfo gm = gt.GetMethod("GenericMethod1", bf).MakeGenericMethod(typeof(object).Project(), projectedArgument);
+            ParameterInfo methodParameter = gm.GetParameters()[0];
+            Type expected = typeof(GenericClass5<,,,,>).Project().MakeGenericType(
+                projectedArgument,
+                typeof(object).Project().MakeArrayType(),
+                typeof(IEnumerable<>).Project().MakeGenericType(typeof(string).Project()),
+                projectedArgument.MakeArrayType(2),
+                typeof(int).Project());
+            Assert.Equal(expected, methodParameter.ParameterType);
+            VerifyModifiedType(expected, methodParameter.GetModifiedParameterType());
+        }
+
+        private static void VerifyModifiedType(Type expected, Type modified)
+        {
+            Assert.NotNull(modified);
+            Assert.NotSame(expected, modified);
+            Assert.Same(expected, modified.UnderlyingSystemType);
+            Assert.Empty(modified.GetRequiredCustomModifiers());
+            Assert.Empty(modified.GetOptionalCustomModifiers());
+            if (expected.HasElementType)
+            {
+                VerifyModifiedType(expected.GetElementType(), modified.GetElementType());
+            }
+            else if (expected.IsGenericType)
+            {
+                Type[] expectedArguments = expected.GetGenericArguments();
+                Type[] modifiedArguments = modified.GetGenericArguments();
+                Assert.Equal(expectedArguments.Length, modifiedArguments.Length);
+                for (int i = 0; i < expectedArguments.Length; i++)
+                    VerifyModifiedType(expectedArguments[i], modifiedArguments[i]);
+            }
+        }
+#endif
     }
 }
