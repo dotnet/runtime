@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -264,20 +265,24 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal("9B1C96B2000BA1F84A40605AC70C46C8FE339796BC7F82EDCA9A71CEF69A396B", okm.ByteArrayToHex());
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(Sha3TestCases))]
-        public void Sha3Tests(HkdfTestCase test)
+        public void Sha3_Supported(HkdfTestCase test)
         {
-            if (SupportsSha3)
-            {
-                byte[] okm = DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info);
-                Assert.Equal(test.Okm, okm);
-            }
-            else
-            {
-                Assert.Throws<PlatformNotSupportedException>(() =>
-                    DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info));
-            }
+            SkipTestException.ThrowUnless(SupportsSha3);
+
+            byte[] okm = DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info);
+            Assert.Equal(test.Okm, okm);
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(Sha3TestCases))]
+        public void Sha3_Unupported(HkdfTestCase test)
+        {
+            SkipTestException.ThrowWhen(SupportsSha3);
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info));
         }
 
         public static IEnumerable<object[]> GetHkdfTestCases()
