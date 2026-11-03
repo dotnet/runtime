@@ -1115,7 +1115,8 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS; // For GetXxxException
+        // Self-abort and reentrant waits can collect; a native debugger helper does neither.
+        if (GetThreadNULLOk() != nullptr) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -4527,6 +4528,7 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
 #endif
 
 #ifndef TARGET_X86
+#if defined(FEATURE_INTERPRETER) || defined(_DEBUG)
     // Except for x86, no registers are scanned as part of the HijackFrame on top of the stack.
     // This still allows scanning of the return value because the registers in question are
     // scanned as part of the calling method's roots. The problem arises if we are returning to
@@ -4539,11 +4541,6 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
     hijackedReturnAddress = (PCODE)PacStripPtr((void*)hijackedReturnAddress);
 #endif // TARGET_ARM64
 
-    if (IsCallDescrWorkerInternalReturnAddress(hijackedReturnAddress))
-    {
-        return;
-    }
-#if defined(FEATURE_INTERPRETER) || defined(_DEBUG)
     EECodeInfo codeInfo(hijackedReturnAddress);
     if (!codeInfo.IsValid())
     {
@@ -5675,8 +5672,8 @@ retry_for_debugger:
 
         LOG((LF_GCROOTS | LF_GC | LF_CORDB, LL_INFO10, "The EE is free now...\n"));
 
-        // If someone's trying to suspend *this* thread, this is a good opportunity.
-        if (pCurThread && pCurThread->CatchAtSafePoint())
+        // Only cooperative threads need to rendezvous; preemptive threads are already safe for suspension.
+        if (pCurThread && pCurThread->PreemptiveGCDisabled() && pCurThread->CatchAtSafePoint())
         {
             pCurThread->PulseGCMode();  // Go suspend myself.
         }

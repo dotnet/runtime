@@ -21,12 +21,6 @@ ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord,
                     IN OUT PT_CONTEXT            pContextRecord,
                     IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
 
-EXTERN_C EXCEPTION_DISPOSITION __cdecl
-CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD     pExceptionRecord,
-                                       IN     PVOID                 pEstablisherFrame,
-                                       IN OUT PT_CONTEXT            pContextRecord,
-                                       IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
-
 void NormalizeThrownObject(OBJECTREF *ppThrowable);
 
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExInfo *pExInfo);
@@ -37,8 +31,6 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException();
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionContext);
 
 void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo);
-
-bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
 

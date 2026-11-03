@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
-namespace ILAssembler.Tests;
+namespace Microsoft.DotNet.ILAssembler.Tests;
 
 /// <summary>
 /// The rules of <see cref="PathMap"/>, which follow the C# compiler's <c>-pathmap</c>: the syntax of the text, the

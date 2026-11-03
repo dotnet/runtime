@@ -9,7 +9,7 @@ using System.Reflection.Metadata.Ecma335;
 using Internal.IL;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class MemberReferenceTests
     {
