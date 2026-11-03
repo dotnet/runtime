@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -76,15 +77,13 @@ namespace TestLibrary
             private GCHandle inHandle;
             private ulong alignment;
 
-            private void Alloc(T[] data, int alignment)
+            private void Alloc(T[] data)
             {
                 unsafe
                 {
                     int sizeOfinArray1 = data.Length * sizeof(T);
-                    if (!int.IsPow2(alignment))
-                    {
-                        throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}");
-                    }
+                    int alignment = Vector<byte>.Count;
+                    Debug.Assert(int.IsPow2(alignment));
 
                     buf = new byte[sizeOfinArray1 + alignment - 1];
                     inHandle = GCHandle.Alloc(buf, GCHandleType.Pinned);
@@ -93,19 +92,19 @@ namespace TestLibrary
                 }
             }
 
-            public PinnedVector(T[] data, int alignment)
+            public PinnedVector(T[] data)
             {
-                Alloc(data, alignment);
+                Alloc(data);
             }
 
-            public PinnedVector(Vector<T> inVector, int alignment)
+            public PinnedVector(Vector<T> inVector)
             {
                 long tsize = sizeof(T);
                 long vsize = sizeof(Vector<T>);
                 long count = vsize / tsize;
                 T[] data = new T[count];
                 VectorToArray(ref data, inVector);
-                Alloc(data, alignment);
+                Alloc(data);
             }
 
             public unsafe void* Ptr => Align((byte*)inHandle.AddrOfPinnedObject().ToPointer(), alignment);

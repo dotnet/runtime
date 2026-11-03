@@ -135,7 +135,7 @@ namespace {Namespace}
             }
         }
 
-        private static readonly int LargestVectorSize = Math.Max({LargestVectorSize}, (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count));
+        private static readonly int VectorAlignment = (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count);
 
         private static readonly int Op1ElementCount = sizeof(Vector<{VectorBaseType}>) / sizeof({VectorBaseType});
         private static readonly int RetElementCount = sizeof(Vector<{VectorBaseType}>) / sizeof({VectorBaseType});
@@ -160,7 +160,7 @@ namespace {Namespace}
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector<{VectorBaseType}>, byte>(ref _falseFld), ref Unsafe.As<{VectorBaseType}, byte>(ref _data1[0]), (uint)sizeof(Vector<{VectorBaseType}>));
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            _dataTable = new DataTable(_data1, new {VectorBaseType}[RetElementCount], LargestVectorSize);
+            _dataTable = new DataTable(_data1, new {VectorBaseType}[RetElementCount], VectorAlignment);
         }
 
         public bool IsSupported => Sve.IsSupported;

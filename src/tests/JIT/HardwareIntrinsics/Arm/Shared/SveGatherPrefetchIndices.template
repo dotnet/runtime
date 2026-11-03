@@ -158,7 +158,7 @@ namespace {Namespace}
             }
         }
 
-        private static readonly int LargestVectorSize = Math.Max({LargestVectorSize}, (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count));
+        private static readonly int VectorAlignment = (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count);
 
         // A large enough buffer to hold many values. Op3 will index into Op2.
         private static readonly int Op2ElementCount = 1024;
@@ -192,7 +192,7 @@ namespace {Namespace}
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3VectorType}<{Op3BaseType}>, byte>(ref _fld3), ref Unsafe.As<{Op3BaseType}, byte>(ref _data3[0]), (uint)sizeof({Op3VectorType}<{Op3BaseType}>));
 
-            _dataTable = new DataTable(_data1, _data2, _data3, LargestVectorSize);
+            _dataTable = new DataTable(_data1, _data2, _data3, VectorAlignment);
 
             _fld2 = (byte*)_dataTable.inArray2Ptr;
         }

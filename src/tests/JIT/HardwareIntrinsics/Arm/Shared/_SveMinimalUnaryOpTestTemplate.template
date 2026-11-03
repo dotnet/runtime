@@ -143,7 +143,7 @@ namespace {Namespace}
             }
         }
 
-        private static readonly int LargestVectorSize = Math.Max({LargestVectorSize}, (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count));
+        private static readonly int VectorAlignment = (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count);
 
         private static readonly int Op1ElementCount = sizeof({Op1VectorType}<{Op1BaseType}>) / sizeof({Op1BaseType});
         private static readonly int RetElementCount = sizeof({RetVectorType}<{RetBaseType}>) / sizeof({RetBaseType});
@@ -170,13 +170,13 @@ namespace {Namespace}
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
 
-            if (LargestVectorSize < sizeof({Op1VectorType}<{Op1BaseType}>) ||
-                 LargestVectorSize < sizeof({RetVectorType}<{RetBaseType}>))
+            if (VectorAlignment < sizeof({Op1VectorType}<{Op1BaseType}>) ||
+                 VectorAlignment < sizeof({RetVectorType}<{RetBaseType}>))
             {
-                throw new ArgumentException("Invalid value of LargestVectorSize");
+                throw new ArgumentException("Invalid value of VectorAlignment");
             }
 
-            _dataTable = new DataTable(_data1, new {RetBaseType}[RetElementCount], LargestVectorSize);
+            _dataTable = new DataTable(_data1, new {RetBaseType}[RetElementCount], VectorAlignment);
         }
 
         public bool IsSupported => {Isa}.IsSupported;
