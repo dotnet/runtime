@@ -42,11 +42,7 @@ namespace System.Xml.Schema
 
         public void Clear()
         {
-            int bitsLength = _bits.Length;
-            for (int i = bitsLength; i-- > 0;)
-            {
-                _bits[i] = 0;
-            }
+            Array.Clear(_bits);
         }
 
         public void Set(int index)
@@ -160,37 +156,10 @@ namespace System.Xml.Schema
                 }
                 BitSet other = (BitSet)obj;
 
-                int bitsLength = _bits.Length;
-                int setLength = other._bits.Length;
-                int n = (bitsLength > setLength) ? setLength : bitsLength;
-                for (int i = n; i-- > 0;)
-                {
-                    if (_bits[i] != other._bits[i])
-                    {
-                        return false;
-                    }
-                }
-                if (bitsLength > n)
-                {
-                    for (int i = bitsLength; i-- > n;)
-                    {
-                        if (_bits[i] != 0)
-                        {
-                            return false;
-                        }
-                    }
-                }
-                else
-                {
-                    for (int i = setLength; i-- > n;)
-                    {
-                        if (other._bits[i] != 0)
-                        {
-                            return false;
-                        }
-                    }
-                }
-                return true;
+                int length = Math.Min(_bits.Length, other._bits.Length);
+                return _bits.AsSpan(0, length).SequenceEqual(other._bits.AsSpan(0, length)) &&
+                    !_bits.AsSpan(length).ContainsAnyExcept(0u) &&
+                    !other._bits.AsSpan(length).ContainsAnyExcept(0u);
             }
             return false;
         }
@@ -201,18 +170,7 @@ namespace System.Xml.Schema
         }
 
 
-        public bool IsEmpty
-        {
-            get
-            {
-                uint k = 0;
-                for (int i = 0; i < _bits.Length; i++)
-                {
-                    k |= _bits[i];
-                }
-                return k == 0;
-            }
-        }
+        public bool IsEmpty => !_bits.AsSpan().ContainsAnyExcept(0u);
 
         public bool Intersects(BitSet other)
         {

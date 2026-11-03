@@ -80,11 +80,7 @@ namespace System.Text.RegularExpressions
             _textbeg = 0;
             _textend = textLength;
 
-            int[] matchcount = _matchcount;
-            for (int i = 0; i < matchcount.Length; i++)
-            {
-                matchcount[i] = 0;
-            }
+            Array.Clear(_matchcount);
 
             _balancing = false;
             _groupcoll?.Reset();

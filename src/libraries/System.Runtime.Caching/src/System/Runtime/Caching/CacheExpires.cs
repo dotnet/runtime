@@ -131,10 +131,7 @@ namespace System.Runtime.Caching
             _utcLastCountReset = utcNow;
             _utcMinExpires = DateTime.MaxValue;
 
-            for (int i = 0; i < _counts.Length; i++)
-            {
-                _counts[i] = 0;
-            }
+            Array.Clear(_counts);
         }
 
         private int GetCountIndex(DateTime utcExpires)

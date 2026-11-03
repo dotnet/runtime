@@ -387,10 +387,7 @@ namespace System.Data.ProviderBase
         internal void LoadDataRowWithClear()
         {
             // for FillErrorEvent to ensure no values leftover from previous row
-            for (int i = 0; i < _readerDataValues!.Length; ++i)
-            {
-                _readerDataValues[i] = null;
-            }
+            Array.Clear(_readerDataValues!);
             LoadDataRow();
         }
 
