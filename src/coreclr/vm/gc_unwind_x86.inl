@@ -2251,13 +2251,13 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
             }
             else
             {
-                // In .NET 5.0 and later JIT emits a call to JIT_StackProbe helper.
+                // In .NET 5.0 and later JIT emits a call to RhpStackProbe helper.
 
                 if (pushedStubParam)
                 {
                     // lea eax, [esp-size+4]
                     offset = SKIP_LEA_EAX_ESP(-size + 4, base, offset);
-                    // call JIT_StackProbe
+                    // call RhpStackProbe
                     offset = SKIP_HELPER_CALL(base, offset);
                     // pop eax
                     offset = SKIP_POP_REG(base, offset);
@@ -2268,7 +2268,7 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
                 {
                     // lea eax, [esp-size]
                     offset = SKIP_LEA_EAX_ESP(-size, base, offset);
-                    // call JIT_StackProbe
+                    // call RhpStackProbe
                     offset = SKIP_HELPER_CALL(base, offset);
                     // mov esp, eax
                     return SKIP_MOV_REG_REG(base, offset);

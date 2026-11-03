@@ -96,7 +96,7 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
 
         if (fReleaseMemory)
         {
-            ExecutableAllocator::Instance()->Release(pVirtualAddress);
+            ExecutableAllocator::Instance()->Release(pVirtualAddress, pSearch->dwVirtualSize);
         }
 
         delete pSearch;
@@ -104,7 +104,7 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
 
     if (m_reservedBlock.m_fReleaseMemory)
     {
-        ExecutableAllocator::Instance()->Release(m_reservedBlock.pVirtualAddress);
+        ExecutableAllocator::Instance()->Release(m_reservedBlock.pVirtualAddress, m_reservedBlock.dwVirtualSize);
     }
 }
 
@@ -209,7 +209,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     {
         // This method reserved the memory (or the caller asked us to release the
         // provided block), so own it for automatic cleanup on the error paths below.
-        pDataHolder = pData;
+        pDataHolder = ReservedMemoryBlock{ pData, dwSizeToReserve };
     }
 
     size_t dwSizeToCommitPart = dwSizeToCommit;
@@ -429,7 +429,7 @@ again:
     }
 
     // Need to commit some more pages in reserved region.
-    // If we run out of pages in the reserved region, ClrVirtualAlloc some more pages
+    // If we run out of pages in the reserved region, reserve some more pages
     if (GetMoreCommittedPages(dwSize))
         goto again;
 

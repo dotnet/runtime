@@ -97,8 +97,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             if (readyToRunMajorVersion < 21)
                 return 4;
 
-            // R2R 33.0+ uses GCInfo v6.
-            return readyToRunMajorVersion >= 33 ? 6 : 5;
+            // R2R 34.0+ uses GCInfo v6.
+            return readyToRunMajorVersion >= 34 ? 6 : 5;
         }
     }
 

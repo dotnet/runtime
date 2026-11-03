@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using Xunit;
 
-namespace ILAssembler.Tests.GeneratedCases
+namespace Microsoft.DotNet.ILAssembler.Tests.GeneratedCases
 {
     /// <summary>A method of a generated program, with an optional <c>.line</c> directive.</summary>
     public sealed record GeneratedMethod(string? Document, int Line)
@@ -612,7 +612,7 @@ namespace ILAssembler.Tests.GeneratedCases
         private const int CaseCount = 100;
 
         private static readonly string[] s_documents = ["a.cs", "b.cs", "dir/c.cs"];
-        private static readonly DebugMode?[] s_debugModes = [null, ILAssembler.DebugMode.Impl, ILAssembler.DebugMode.Opt];
+        private static readonly DebugMode?[] s_debugModes = [null, Microsoft.DotNet.ILAssembler.DebugMode.Impl, Microsoft.DotNet.ILAssembler.DebugMode.Opt];
         private static readonly string?[] s_outputFileNames = [null, "Output.dll", "Output.exe", "Output", "Out.put.dll"];
         private static readonly string?[] s_pdbFilePaths = [null, "/out/Output.pdb", "C:\\out\\Output.pdb", "Output.pdb"];
 

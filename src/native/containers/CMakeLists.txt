@@ -19,6 +19,11 @@ set(SOURCES
 add_library(dn-containers OBJECT ${SOURCES})
 add_library(dn-containers-no-lto OBJECT ${SOURCES})
 
+if(CLR_CMAKE_HOST_UNIX)
+    target_link_libraries(dn-containers PUBLIC m)
+    target_link_libraries(dn-containers-no-lto PUBLIC m)
+endif()
+
 configure_file(dn-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/dn-config.h)
 
 target_include_directories(dn-containers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -71,7 +71,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 }
             }
 
-            info = new CodeBlock(startAddress, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
+            info = new CodeBlock(startAddress, methodDesc, relativeOffset, rangeSection);
             return true;
         }
 
@@ -197,10 +197,10 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         {
             Data.ReadyToRunHeader header = Target.ProcessedData.GetOrAdd<Data.ReadyToRunHeader>(r2rInfo.ReadyToRunHeader);
 
-            // see readytorun.h for the versioning details
+            // Retain historical mappings for older target dumps; see readytorun.h for versioning details.
             return header.MajorVersion switch
             {
-                >= 33 => 6,
+                >= 34 => 6,
                 >= 21 => 5,
                 >= 11 => 4,
                  < 11 => 3,

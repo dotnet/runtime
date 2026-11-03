@@ -234,6 +234,7 @@ namespace ILCompiler
             public const int SveSm4 = (1 << 15);
             public const int Cssc = (1 << 16);
             public const int Fp16 = (1 << 17);
+            public const int SvePmull128 = (1 << 18);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -273,6 +274,8 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("cssc");
                 if ((flags & Fp16) != 0)
                     builder.AddSupportedInstructionSet("fp16");
+                if ((flags & SvePmull128) != 0)
+                    builder.AddSupportedInstructionSet("sve_pmull128");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -319,6 +322,8 @@ namespace ILCompiler
                     InstructionSet.ARM64_SveSm4 => SveSm4,
                     InstructionSet.ARM64_SveSm4_Arm64 => SveSm4,
                     InstructionSet.ARM64_Cssc => Cssc,
+                    InstructionSet.ARM64_SvePmull128 => SvePmull128,
+                    InstructionSet.ARM64_SvePmull128_Arm64 => SvePmull128,
 
                     // Vector<T> Sizes
                     InstructionSet.ARM64_VectorT128 => 0,

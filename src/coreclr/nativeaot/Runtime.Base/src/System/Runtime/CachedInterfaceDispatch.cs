@@ -198,9 +198,14 @@ namespace System.Runtime
                                                                                     DispatchResolve.ResolveFlags.IDynamicInterfaceCastable,
                                                                                     ppGenericContext);
 
-            if ((result & (nint)DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag) != 0)
+#if TARGET_WASM
+            const int RequiresInstantiatingThunkFlag = DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlagWasm;
+#else
+            const int RequiresInstantiatingThunkFlag = DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag;
+#endif
+            if ((result & (nint)RequiresInstantiatingThunkFlag) != 0)
             {
-                result &= ~(nint)DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag;
+                result &= ~(nint)RequiresInstantiatingThunkFlag;
             }
             else
             {

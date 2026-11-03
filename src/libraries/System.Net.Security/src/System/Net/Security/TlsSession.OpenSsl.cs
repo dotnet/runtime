@@ -254,7 +254,7 @@ namespace System.Net.Security
                 return;
             }
 
-            int ret = Interop.Ssl.SslDoHandshake(ssl, out Interop.Ssl.SslErrorCode err);
+            int ret = Interop.Ssl.SslDoHandshake(ssl, out Interop.Ssl.SslErrorCode err, processPeer: true);
             if (ret == 1)
             {
                 OnHandshakeCompleted();
@@ -289,7 +289,10 @@ namespace System.Net.Security
                 return TlsOperationStatus.NeedMoreData;
             }
 
-            int ret = Interop.Ssl.SslDoHandshake(ssl, out Interop.Ssl.SslErrorCode err);
+            // Keep sending the request separate from processing the answer: a fast peer can
+            // otherwise finish the exchange on this first call, leaving no readable data
+            // for the next call to observe after flushingRequest forces NeedMoreData.
+            int ret = Interop.Ssl.SslDoHandshake(ssl, out Interop.Ssl.SslErrorCode err, processPeer: !flushingRequest);
             bool writeBlocked = err == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE;
             // Track a write-side stall so the next call re-enters to finish the flush even if
             // the peer sends nothing in the meantime (OpenSSL may still owe handshake bytes

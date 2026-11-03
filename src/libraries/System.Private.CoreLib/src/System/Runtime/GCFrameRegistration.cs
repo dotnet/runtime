@@ -37,6 +37,12 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
+#elif NATIVEAOT
+        internal static void RegisterForGCReporting(GCFrameRegistration* pRegistration) =>
+            RuntimeImports.RhRegisterForGCReporting(pRegistration);
+
+        internal static void UnregisterForGCReporting(GCFrameRegistration* pRegistration) =>
+            RuntimeImports.RhUnregisterForGCReporting(pRegistration);
 #endif
     }
 }

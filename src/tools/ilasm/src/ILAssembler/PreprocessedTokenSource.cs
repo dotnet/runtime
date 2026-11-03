@@ -8,7 +8,7 @@ using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     public sealed class PreprocessedTokenSource : ITokenSource
     {

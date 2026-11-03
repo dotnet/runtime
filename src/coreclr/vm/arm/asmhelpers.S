@@ -19,120 +19,6 @@
         bx      lr
     LEAF_END GetCurrentSP, _TEXT
 
-//-----------------------------------------------------------------------------
-// This helper routine enregisters the appropriate arguments and makes the
-// actual call.
-//-----------------------------------------------------------------------------
-//void CallDescrWorkerInternal(CallDescrData * pCallDescrData)//
-        NESTED_ENTRY CallDescrWorkerInternal,_TEXT,NoHandler
-        PROLOG_PUSH         "{r4,r5,r7,lr}"
-        PROLOG_STACK_SAVE_OFFSET   r7, #8
-
-        mov     r5,r0 // save pCallDescrData in r5
-
-        ldr     r1, [r5,#CallDescrData__numStackSlots]
-        cbz     r1, LOCAL_LABEL(Ldonestack)
-
-        // Add frame padding to ensure frame size is a multiple of 8 (a requirement of the OS ABI).
-        // We push four registers (above) and numStackSlots arguments (below). If this comes to an odd number
-        // of slots we must pad with another. This simplifies to "if the low bit of numStackSlots is set,
-        // extend the stack another four bytes".
-        lsls    r2, r1, #2
-        and     r3, r2, #4
-        sub     sp, sp, r3
-
-        // This loop copies numStackSlots words
-        // from [pSrcEnd-4,pSrcEnd-8,...] to [sp-4,sp-8,...]
-        ldr     r0, [r5,#CallDescrData__pSrc]
-        add     r0,r0,r2
-LOCAL_LABEL(Lstackloop):
-        ldr     r2, [r0,#-4]!
-        str     r2, [sp,#-4]!
-        subs    r1, r1, #1
-        bne     LOCAL_LABEL(Lstackloop)
-LOCAL_LABEL(Ldonestack):
-
-        // If FP arguments are supplied in registers (r3 != NULL) then initialize all of them from the pointer
-        // given in r3. Do not use "it" since it faults in floating point even when the instruction is not executed.
-        ldr     r3, [r5,#CallDescrData__pFloatArgumentRegisters]
-        cbz     r3, LOCAL_LABEL(LNoFloatingPoint)
-        vldm    r3, {s0-s15}
-LOCAL_LABEL(LNoFloatingPoint):
-
-        // Copy [pArgumentRegisters, ..., pArgumentRegisters + 12]
-        // into r0, ..., r3
-
-        ldr     r4, [r5,#CallDescrData__pArgumentRegisters]
-        ldm     r4, {r0-r3}
-
-        CHECK_STACK_ALIGNMENT
-
-        // call pTarget
-        // Note that remoting expect target in r4.
-        ldr     r4, [r5,#CallDescrData__pTarget]
-        blx     r4
-LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
-
-        ldr     r3, [r5,#CallDescrData__fpReturnSize]
-
-        // Save FP return value if appropriate
-        cbz     r3, LOCAL_LABEL(LFloatingPointReturnDone)
-
-        // Float return case
-        // Do not use "it" since it faults in floating point even when the instruction is not executed.
-        cmp     r3, #4
-        bne     LOCAL_LABEL(LNoFloatReturn)
-        vmov    r0, s0
-        b       LOCAL_LABEL(LFloatingPointReturnDone)
-LOCAL_LABEL(LNoFloatReturn):
-
-        // Double return case
-        // Do not use "it" since it faults in floating point even when the instruction is not executed.
-        cmp     r3, #8
-        bne     LOCAL_LABEL(LNoDoubleReturn)
-        vmov    r0, r1, s0, s1
-        b       LOCAL_LABEL(LFloatingPointReturnDone)
-LOCAL_LABEL(LNoDoubleReturn):
-
-        add     r2, r5, #CallDescrData__returnValue
-
-        cmp     r3, #16
-        bne     LOCAL_LABEL(LNoFloatHFAReturn)
-        vstm    r2, {s0-s3}
-        b       LOCAL_LABEL(LReturnDone)
-LOCAL_LABEL(LNoFloatHFAReturn):
-
-        cmp     r3, #32
-        bne     LOCAL_LABEL(LNoDoubleHFAReturn)
-        vstm    r2, {d0-d3}
-        b       LOCAL_LABEL(LReturnDone)
-LOCAL_LABEL(LNoDoubleHFAReturn):
-
-        EMIT_BREAKPOINT // Unreachable
-
-LOCAL_LABEL(LFloatingPointReturnDone):
-
-        // Save return value into retbuf
-        str     r0, [r5, #(CallDescrData__returnValue + 0)]
-        str     r1, [r5, #(CallDescrData__returnValue + 4)]
-
-LOCAL_LABEL(LReturnDone):
-
-#ifdef _DEBUG
-        // trash the floating point registers to ensure that the HFA return values
-        // won't survive by accident
-        vldm    sp, {d0-d3}
-#endif
-
-        EPILOG_STACK_RESTORE_OFFSET   r7, #8
-        EPILOG_POP              "{r4,r5,r7,pc}"
-
-CallDescrWorkerInternalReturnAddressOffset:
-    .global CallDescrWorkerInternalReturnAddressOffset
-    .word LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
-
-        NESTED_END CallDescrWorkerInternal,_TEXT
-
 // ------------------------------------------------------------------
 
 //
@@ -774,42 +660,6 @@ DelayLoad_Helper\suffix:
         NESTED_END OnHijackTripThread, _TEXT
 #endif
 
-// ------------------------------------------------------------------
-// The following helper will access ("probe") a word on each page of the stack
-// starting with the page right beneath sp down to the one pointed to by r4.
-// The procedure is needed to make sure that the "guard" page is pushed down below the allocated stack frame.
-// The call to the helper will be emitted by JIT in the function/funclet prolog when stack frame is larger than an OS page.
-// On entry:
-//   r4 - points to the lowest address on the stack frame being allocated (i.e. [InitialSp - FrameSize])
-//   sp - points to some byte on the last probed page
-// On exit:
-//   r4 - is preserved
-//   r5 - is not preserved
-//
-// NOTE: this helper will probe at least one page below the one pointed to by sp.
-#define PROBE_PAGE_SIZE      4096
-#define PROBE_PAGE_SIZE_LOG2 12
-
-        LEAF_ENTRY JIT_StackProbe, _TEXT
-        PROLOG_PUSH "{r7}"
-        PROLOG_STACK_SAVE r7
-
-        mov r5, sp                         // r5 points to some byte on the last probed page
-        bfc r5, #0, #PROBE_PAGE_SIZE_LOG2  // r5 points to the **lowest address** on the last probed page
-        mov sp, r5
-
-ProbeLoop:
-                                           // Immediate operand for the following instruction can not be greater than 4095.
-        sub sp, #(PROBE_PAGE_SIZE - 4)     // sp points to the **fourth** byte on the **next page** to probe
-        ldr r5, [sp, #-4]!                 // sp points to the lowest address on the **last probed** page
-        cmp sp, r4
-        bhi ProbeLoop                      // If (sp > r4), then we need to probe at least one more page.
-
-        EPILOG_STACK_RESTORE r7
-        EPILOG_POP "{r7}"
-        EPILOG_BRANCH_REG lr
-        LEAF_END_MARKED JIT_StackProbe, _TEXT
-
 #ifdef FEATURE_TIERED_COMPILATION
 
     NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
@@ -825,30 +675,6 @@ ProbeLoop:
     NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
-
-    LEAF_ENTRY JIT_PollGC, _TEXT
-#if defined(__clang__)
-        ldr     r2, =g_TrapReturningThreads-(1f+4)
-1:
-        add     r2, pc
-#else
-        ldr     r2, =g_TrapReturningThreads
-#endif
-        ldr     r2, [r2]
-        cbnz    r2, LOCAL_LABEL(JIT_PollGCRarePath)
-        bx lr
-LOCAL_LABEL(JIT_PollGCRarePath):
-#if defined(__clang__)
-        ldr     r2, =g_pPollGC-(1f+4)
-1:
-        add     r2, pc
-#else
-        ldr     r2, =g_pPollGC
-#endif
-        ldr     r2, [r2]
-        EPILOG_BRANCH_REG r2
-    LEAF_END JIT_PollGC, _TEXT
-
 
 //x0 -This pointer
 //x1 -ReturnBuffer

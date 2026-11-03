@@ -50,6 +50,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCache.Configuration.cs" Link="InvocationCache\InvocationCache.Configuration.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCache.cs" Link="InvocationCache\InvocationCache.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCache.Identity.cs" Link="InvocationCache\InvocationCache.Identity.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCache.Outputs.cs" Link="InvocationCache\InvocationCache.Outputs.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCacheConfiguration.cs" Link="InvocationCache\InvocationCacheConfiguration.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCacheEntry.cs" Link="InvocationCache\InvocationCacheEntry.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationOutputs.cs" Link="InvocationCache\InvocationOutputs.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationDescription.cs" Link="InvocationCache\InvocationDescription.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationInputs.cs" Link="InvocationCache\InvocationInputs.cs" />
     <InternalsVisibleTo Include="ILLink.Tasks.Tests" />
 
     <ProjectReference Include="..\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
