@@ -1357,11 +1357,6 @@ NamedIntrinsic HWIntrinsicInfo::resolveId(Compiler*              comp,
             return NI_Illegal;
         }
     }
-    else if (isa == InstructionSet_VectorT)
-    {
-        // Scalable Vector<T> has no intrinsic table implementation yet.
-        return NI_Illegal;
-    }
 #endif
 
     return id;
