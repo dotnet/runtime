@@ -1190,8 +1190,17 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
     }
 
     StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
-    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, 0, &schemaArray))
+    const size_t countsOffset = found->header.countsOffset;
+    // Must match the writer's layout: entry alignment is relative to countsOffset, which is only size_t aligned.
+    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), countsOffset, countsOffset, &schemaArray))
     {
+        // Rebase the offsets so they are relative to the copied instrumentation data.
+        for (COUNT_T iSchema = 0; iSchema < schemaArray.GetCount(); iSchema++)
+        {
+            _ASSERTE(schemaArray[iSchema].Offset >= countsOffset);
+            schemaArray[iSchema].Offset -= countsOffset;
+        }
+
         size_t schemaDataSize = AlignUp(schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema), sizeof(size_t));
         size_t instrumentationDataSize = 0;
         if (schemaArray.GetCount() > 0)
