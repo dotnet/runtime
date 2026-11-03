@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include "caparser.h"
 
 bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
 {
@@ -80,6 +81,42 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
     *methodILDecoder = ilResolver->FinalizeILStub(&sl);
     *resolver = ilResolver.Detach();
     return true;
+}
+
+// Determines whether the method is attributed with [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+// or [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))].
+static bool HasPoolingAsyncMethodBuilder(MethodDesc* pMD)
+{
+    STANDARD_VM_CONTRACT;
+
+    const void* pData;
+    ULONG cbData;
+    HRESULT hr = pMD->GetMDImport()->GetCustomAttributeByName(pMD->GetMemberDef(),
+        "System.Runtime.CompilerServices.AsyncMethodBuilderAttribute", &pData, &cbData);
+    if (hr != S_OK)
+        return false;
+
+    CustomAttributeParser cap(pData, cbData);
+    LPCUTF8 typeName;
+    ULONG typeNameLen;
+    if (FAILED(cap.ValidateProlog()) || FAILED(cap.GetNonNullString(&typeName, &typeNameLen)))
+        return false;
+
+    static const char poolingBuilderName[] = "System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder";
+    const ULONG poolingBuilderNameLen = (ULONG)(sizeof(poolingBuilderName) - 1);
+    if (typeNameLen < poolingBuilderNameLen || strncmp(typeName, poolingBuilderName, poolingBuilderNameLen) != 0)
+        return false;
+
+    // The name may be followed by a generic arity and/or an assembly qualification.
+    LPCUTF8 rest = typeName + poolingBuilderNameLen;
+    ULONG restLen = typeNameLen - poolingBuilderNameLen;
+    if (restLen >= 2 && rest[0] == '`' && rest[1] == '1')
+    {
+        rest += 2;
+        restLen -= 2;
+    }
+
+    return restLen == 0 || rest[0] == ',';
 }
 
 // Provided an async method, emits a Task-returning wrapper.
@@ -239,11 +276,17 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
 
         pCode->EmitLabel(suspendedLabel);
 
+        // Honor [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))] by backing the returned
+        // ValueTask with a pooled, reusable IValueTaskSource rather than a new Task for each suspension.
+        bool usePooling = isValueTask && HasPoolingAsyncMethodBuilder(this);
+
         int createRuntimeAsyncTaskToken;
         if (logicalResultLocal != UINT_MAX)
         {
             MethodDesc* md;
-            if (isValueTask)
+            if (usePooling)
+                md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CREATE_POOLED_RUNTIME_ASYNC_VALUE_TASK_1);
+            else if (isValueTask)
                 md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CREATE_RUNTIME_ASYNC_VALUE_TASK_1);
             else
                 md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CREATE_RUNTIME_ASYNC_TASK_1);
@@ -254,7 +297,9 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
         else
         {
             MethodDesc* md;
-            if (isValueTask)
+            if (usePooling)
+                md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CREATE_POOLED_RUNTIME_ASYNC_VALUE_TASK);
+            else if (isValueTask)
                 md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CREATE_RUNTIME_ASYNC_VALUE_TASK);
             else
                 md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CREATE_RUNTIME_ASYNC_TASK);

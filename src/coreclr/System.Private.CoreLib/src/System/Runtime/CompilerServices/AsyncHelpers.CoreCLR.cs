@@ -10,6 +10,7 @@ using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
+using Internal;
 
 #if NATIVEAOT
 using Internal.Runtime;
@@ -725,7 +726,7 @@ namespace System.Runtime.CompilerServices
 
         // Represents execution of a chain of suspended and resuming runtime
         // async functions.
-        private sealed class RuntimeAsyncTask<T> : Task<T>
+        private class RuntimeAsyncTask<T> : Task<T>
         {
             // When suspended on a Task, this RuntimeAsyncTask is registered directly as that task's
             // continuation (rather than via an intermediate continuation object). While registered,
@@ -865,6 +866,15 @@ namespace System.Runtime.CompilerServices
 
             // Lazily created, as it's only needed when suspending on something other than a Task.
             private Action GetContinuationAction() => Unsafe.As<Action>(m_action ??= new Action(DispatchContinuations));
+
+            // Completes the operation with the result stored in m_result.
+            internal virtual bool TrySetRuntimeAsyncResult() => TrySetResult(m_result);
+
+            // Completes the operation with the specified exception (canceled if it's an OperationCanceledException).
+            internal virtual bool TrySetRuntimeAsyncException(Exception ex) =>
+                ex is OperationCanceledException oce ?
+                    TrySetCanceled(oce.CancellationToken, oce) :
+                    TrySetException(ex);
 
             private Continuation MoveContinuationState()
             {
@@ -1121,9 +1131,7 @@ namespace System.Runtime.CompilerServices
                         if (handlerContinuation == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
-                            bool successfullySet = ex is OperationCanceledException oce ?
-                                TrySetCanceled(oce.CancellationToken, oce) :
-                                TrySetException(ex);
+                            bool successfullySet = TrySetRuntimeAsyncException(ex);
 
                             contexts.Pop(awaitState.CurrentThread!);
                             awaitState.Pop();
@@ -1143,7 +1151,7 @@ namespace System.Runtime.CompilerServices
 
                     if (asyncDispatcherInfo.NextContinuation == null)
                     {
-                        bool successfullySet = TrySetResult(m_result);
+                        bool successfullySet = TrySetRuntimeAsyncResult();
 
                         contexts.Pop(awaitState.CurrentThread!);
                         awaitState.Pop();
@@ -1270,9 +1278,7 @@ namespace System.Runtime.CompilerServices
                             RuntimeAsyncInstrumentationHelpers.UnwindRuntimeAsyncMethodUnhandledException(ref asyncDispatcherInfo, flags, ex, curContinuation, unwindedFrames);
 
                             // Tail of AsyncTaskMethodBuilderT.SetException
-                            bool successfullySet = ex is OperationCanceledException oce ?
-                                TrySetCanceled(oce.CancellationToken, oce) :
-                                TrySetException(ex);
+                            bool successfullySet = TrySetRuntimeAsyncException(ex);
 
                             contexts.Pop(awaitState.CurrentThread!);
                             awaitState.Pop();
@@ -1296,7 +1302,7 @@ namespace System.Runtime.CompilerServices
                     {
                         RuntimeAsyncInstrumentationHelpers.CompleteRuntimeAsyncContext(ref asyncDispatcherInfo, flags);
 
-                        bool successfullySet = TrySetResult(m_result);
+                        bool successfullySet = TrySetRuntimeAsyncResult();
 
                         contexts.Pop(awaitState.CurrentThread!);
                         awaitState.Pop();
@@ -1487,6 +1493,165 @@ namespace System.Runtime.CompilerServices
         private static ValueTask CreateRuntimeAsyncValueTask(ref RuntimeAsyncAwaitState state)
         {
             return new ValueTask(CreateRuntimeAsyncTask(ref state));
+        }
+
+        // Used instead of CreateRuntimeAsyncValueTask by thunks for methods attributed with
+        // [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))], mirroring that builder's pooling.
+        private static ValueTask<T?> CreatePooledRuntimeAsyncValueTask<T>(ref RuntimeAsyncAwaitState state)
+        {
+            if ((AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out _)) || Task.s_asyncDebuggingEnabled)
+            {
+                // Diagnostics track the operation by its Task identity, so don't reuse it.
+                return CreateRuntimeAsyncValueTask<T>(ref state);
+            }
+
+            PooledRuntimeAsyncValueTaskSource<T?> source = PooledRuntimeAsyncValueTaskSource<T?>.RentFromCache();
+            short token = source.Version;
+            FinalizeRuntimeAsyncTask(ref state, source.Task);
+            return new ValueTask<T?>(source, token);
+        }
+
+        private static ValueTask CreatePooledRuntimeAsyncValueTask(ref RuntimeAsyncAwaitState state)
+        {
+            if ((AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out _)) || Task.s_asyncDebuggingEnabled)
+            {
+                return CreateRuntimeAsyncValueTask(ref state);
+            }
+
+            PooledRuntimeAsyncValueTaskSource<VoidTaskResult> source = PooledRuntimeAsyncValueTaskSource<VoidTaskResult>.RentFromCache();
+            short token = source.Version;
+            FinalizeRuntimeAsyncTask(ref state, source.Task);
+            return new ValueTask(source, token);
+        }
+
+        // A RuntimeAsyncTask that's never exposed or completed as a Task. Its Task-ness is used only to dispatch
+        // continuations; its completion is instead reported to the owning pooled value task source.
+        private sealed class PooledRuntimeAsyncTask<T> : RuntimeAsyncTask<T>
+        {
+            internal readonly PooledRuntimeAsyncValueTaskSource<T> _source;
+
+            internal PooledRuntimeAsyncTask(PooledRuntimeAsyncValueTaskSource<T> source) => _source = source;
+
+            internal override bool TrySetRuntimeAsyncResult()
+            {
+                T result = m_result!;
+                m_result = default;
+                _source.SetResult(result);
+                return true;
+            }
+
+            internal override bool TrySetRuntimeAsyncException(Exception ex)
+            {
+                m_result = default;
+                _source.SetException(ex);
+                return true;
+            }
+        }
+
+        // The IValueTaskSource backing a ValueTask returned from a pooling runtime async method. It can't itself be
+        // the RuntimeAsyncTask, as ValueTask treats any Task it wraps as a Task. It's reused (along with its task)
+        // once its result has been consumed.
+        private sealed class PooledRuntimeAsyncValueTaskSource<T> : IValueTaskSource<T>, IValueTaskSource
+        {
+            // Kept free of static initializers so that accessing it doesn't require class initialization checks.
+            [ThreadStatic]
+            private static PooledRuntimeAsyncValueTaskSource<T>? t_tlsCache;
+
+            internal readonly PooledRuntimeAsyncTask<T> Task;
+
+            private ManualResetValueTaskSourceCore<T> _valueTaskSource;
+
+            private PooledRuntimeAsyncValueTaskSource() => Task = new PooledRuntimeAsyncTask<T>(this);
+
+            public short Version => _valueTaskSource.Version;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal static PooledRuntimeAsyncValueTaskSource<T> RentFromCache()
+            {
+                PooledRuntimeAsyncValueTaskSource<T>? source = t_tlsCache;
+                if (source is not null)
+                {
+                    t_tlsCache = null;
+                }
+                else
+                {
+                    ref PooledRuntimeAsyncValueTaskSource<T>? slot = ref PerCoreCacheSlot;
+                    if (slot is null ||
+                        (source = Interlocked.Exchange(ref slot, null)) is null)
+                    {
+                        source = new PooledRuntimeAsyncValueTaskSource<T>();
+                    }
+                }
+
+                return source;
+            }
+
+            private void ReturnToCache()
+            {
+                _valueTaskSource.Reset();
+
+                if (t_tlsCache is null)
+                {
+                    t_tlsCache = this;
+                }
+                else
+                {
+                    ref PooledRuntimeAsyncValueTaskSource<T>? slot = ref PerCoreCacheSlot;
+                    if (slot is null)
+                    {
+                        Volatile.Write(ref slot, this);
+                    }
+                }
+            }
+
+            private static ref PooledRuntimeAsyncValueTaskSource<T>? PerCoreCacheSlot
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    int i = (int)((uint)Thread.GetCurrentProcessorId() % (uint)Environment.ProcessorCount);
+                    return ref Unsafe.As<object?, PooledRuntimeAsyncValueTaskSource<T>?>(ref PerCoreCache.s_cache[i].Object);
+                }
+            }
+
+            private static class PerCoreCache
+            {
+                // Per-core cache of sources, with each element padded to a cache line to minimize false sharing.
+                internal static readonly PaddedReference[] s_cache = new PaddedReference[Environment.ProcessorCount];
+            }
+
+            internal void SetResult(T result) => _valueTaskSource.SetResult(result);
+
+            internal void SetException(Exception ex) => _valueTaskSource.SetException(ex);
+
+            public ValueTaskSourceStatus GetStatus(short token) => _valueTaskSource.GetStatus(token);
+
+            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) =>
+                _valueTaskSource.OnCompleted(continuation, state, token, flags);
+
+            T IValueTaskSource<T>.GetResult(short token)
+            {
+                try
+                {
+                    return _valueTaskSource.GetResult(token);
+                }
+                finally
+                {
+                    ReturnToCache();
+                }
+            }
+
+            void IValueTaskSource.GetResult(short token)
+            {
+                try
+                {
+                    _valueTaskSource.GetResult(token);
+                }
+                finally
+                {
+                    ReturnToCache();
+                }
+            }
         }
 
         private static Task<T?> TaskFromException<T>(Exception ex)
