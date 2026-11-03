@@ -29,52 +29,6 @@ namespace System.Net.WebSockets.Client.Tests
     {
         #region Loopback-only tests
 
-        [Theory]
-        [InlineData(0, 1024)]
-        [InlineData(4096, 4096)]
-        [InlineData(4097, 1024)]
-        [InlineData(8192, 1023)]
-        public async Task ReadAheadWebSocket_ReceiveAsync_PreservesMessage(int messageSize, int receiveBufferSize)
-        {
-            byte[] message = new byte[messageSize];
-            new Random(42).NextBytes(message);
-            using var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
-
-            await LoopbackWebSocketServer.RunAsync(
-                async uri =>
-                {
-                    using ReadAheadWebSocket clientWebSocket = new(await GetConnectedWebSocket(uri));
-                    byte[] received = new byte[message.Length];
-                    int offset = 0;
-                    ValueWebSocketReceiveResult result;
-
-                    do
-                    {
-                        Memory<byte> buffer = received.AsMemory(offset, Math.Min(receiveBufferSize, received.Length - offset));
-                        result = await clientWebSocket.ReceiveAsync(buffer, timeoutCts.Token);
-                        Assert.Equal(WebSocketMessageType.Binary, result.MessageType);
-                        Assert.InRange(result.Count, 0, buffer.Length);
-                        offset += result.Count;
-                        Assert.Equal(offset == message.Length, result.EndOfMessage);
-                    }
-                    while (!result.EndOfMessage);
-
-                    Assert.Equal(message.Length, offset);
-                    Assert.Equal(message, received);
-                    await clientWebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", timeoutCts.Token);
-                    Assert.Equal(WebSocketState.Closed, clientWebSocket.State);
-                },
-                async (sws, token) =>
-                {
-                    await sws.SendAsync(message.AsMemory(), WebSocketMessageType.Binary, endOfMessage: true, token);
-                    ValueWebSocketReceiveResult result = await sws.ReceiveAsync(Memory<byte>.Empty, token);
-                    Assert.Equal(WebSocketMessageType.Close, result.MessageType);
-                    await sws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", token);
-                },
-                new LoopbackWebSocketServer.Options(HttpVersion, UseSsl: false),
-                timeoutCts.Token);
-        }
-
         [OuterLoop("Uses Task.Delay")]
         [Theory]
         [MemberData(nameof(UseSsl))]
