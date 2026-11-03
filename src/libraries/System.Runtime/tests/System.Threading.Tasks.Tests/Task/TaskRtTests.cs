@@ -1004,6 +1004,73 @@ namespace System.Threading.Tasks.Tests
               () => { taskWithResult.ContinueWith<int>((t, s) => 2, null, CancellationToken.None, TaskContinuationOptions.None, null); });
         }
 
+        [Fact]
+        public static void CastUp_NullTask_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("task", () => Task<object>.CastUp<string>(null));
+        }
+
+        [Fact]
+        public static void CastUp_SameType_ReturnsSameTask()
+        {
+            Task<object> task = Task.FromResult(new object());
+            Assert.Same(task, Task<object>.CastUp(task));
+        }
+
+        [Fact]
+        public static void CastUp_Completed_HasResult()
+        {
+            Task<object> task = Task<object>.CastUp(Task.FromResult("hello"));
+            Assert.Equal(TaskStatus.RanToCompletion, task.Status);
+            Assert.Equal("hello", task.Result);
+        }
+
+        [Fact]
+        public static void CastUp_CompletesLater_HasResult()
+        {
+            var tcs = new TaskCompletionSource<string>();
+            Task<object> task = Task<object>.CastUp(tcs.Task);
+            Assert.False(task.IsCompleted);
+
+            tcs.SetResult("hello");
+            Assert.Equal("hello", task.Result);
+            Assert.Equal(TaskStatus.RanToCompletion, task.Status);
+        }
+
+        [Fact]
+        public static void CastUp_Faulted_HasAllExceptions()
+        {
+            var tcs = new TaskCompletionSource<string>();
+            Task<object> task = Task<object>.CastUp(tcs.Task);
+            var e1 = new FormatException();
+            var e2 = new InvalidOperationException();
+
+            tcs.SetException([e1, e2]);
+            Assert.Throws<AggregateException>(() => task.Wait());
+            Assert.Equal(TaskStatus.Faulted, task.Status);
+            Assert.Equal([e1, e2], task.Exception.InnerExceptions);
+        }
+
+        [Fact]
+        public static async Task CastUp_Canceled_IsCanceled()
+        {
+            var tcs = new TaskCompletionSource<string>();
+            Task<object> task = Task<object>.CastUp(tcs.Task);
+            var token = new CancellationToken(true);
+
+            tcs.SetCanceled(token);
+            TaskCanceledException tce = await Assert.ThrowsAsync<TaskCanceledException>(() => task);
+            Assert.Equal(TaskStatus.Canceled, task.Status);
+            Assert.Equal(token, tce.CancellationToken);
+        }
+
+        [Fact]
+        public static void CastUp_IsTaskOfResultType()
+        {
+            object task = Task<object>.CastUp(new TaskCompletionSource<string>().Task);
+            Assert.IsAssignableFrom<Task<object>>(task);
+        }
+
         #region Helper Methods / Classes
 
         private static int NestedLevels(Exception e)

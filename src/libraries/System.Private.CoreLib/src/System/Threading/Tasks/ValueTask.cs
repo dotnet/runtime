@@ -598,6 +598,24 @@ namespace System.Threading.Tasks
             return GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource<TResult>>(obj));
         }
 
+        /// <summary>Gets a <see cref="ValueTask{TResult}"/> that represents the same operation as a <see cref="ValueTask{TDerived}"/>.</summary>
+        /// <typeparam name="TDerived">The type of the result of <paramref name="task"/>.</typeparam>
+        /// <param name="task">The value task to cast.</param>
+        /// <returns>A <see cref="ValueTask{TResult}"/> that completes with the same result, exceptions or cancellation as <paramref name="task"/>.</returns>
+        public static ValueTask<TResult> CastUp<TDerived>(ValueTask<TDerived> task) where TDerived : class?, TResult
+        {
+            object? obj = task._obj;
+            Debug.Assert(obj == null || obj is Task<TDerived> || obj is IValueTaskSource<TDerived>);
+
+            if (obj is Task<TDerived> t)
+            {
+                obj = Task<TResult>.CastUp(t);
+            }
+
+            // An IValueTaskSource<TDerived> is an IValueTaskSource<TResult>, as TResult is covariant.
+            return new ValueTask<TResult>(obj, task._result, task._token, task._continueOnCapturedContext);
+        }
+
         /// <summary>Gets a <see cref="ValueTask{TResult}"/> that may be used at any point in the future.</summary>
         public ValueTask<TResult> Preserve() => _obj == null ? this : new ValueTask<TResult>(AsTask());
 
