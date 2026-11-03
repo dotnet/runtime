@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Runtime.Caching
@@ -33,7 +32,7 @@ namespace System.Runtime.Caching
         protected int _pressureLow;       // low pressure level - slow growth here
 
         protected int _i0;
-        protected int[] _pressureHist;
+        protected int[] _pressureHist = null!;
         protected int _pressureTotal;
 
 #pragma warning disable CA1802, CS0649 // some builds initialize these to other values in a static cctor
@@ -57,7 +56,6 @@ namespace System.Runtime.Caching
 
         internal abstract int GetPercentToTrim(DateTime lastTrimTime, int lastTrimPercent);
 
-        [MemberNotNull(nameof(_pressureHist))]
         protected void InitHistory()
         {
             Debug.Assert(_pressureHigh > 0, "_pressureHigh > 0");

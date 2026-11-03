@@ -29,10 +29,10 @@ namespace System.Runtime.Caching
         private static readonly object s_initLock = new object();
         private static MemoryCache? s_defaultCache;
         private static readonly CacheEntryRemovedCallback s_sentinelRemovedCallback = new CacheEntryRemovedCallback(SentinelEntry.OnCacheEntryRemovedCallback);
-        private GCHandleRef<MemoryCacheStore>[] _storeRefs;
+        private GCHandleRef<MemoryCacheStore>[] _storeRefs = null!;
         private int _storeCount;
         private int _disposed;
-        private MemoryCacheStatistics _stats;
+        private MemoryCacheStatistics _stats = null!;
         private readonly string _name;
         private Counters? _perfCounters;
         private readonly bool _configLess;
@@ -186,8 +186,6 @@ namespace System.Runtime.Caching
             }
         }
 
-        [MemberNotNull(nameof(_storeRefs))]
-        [MemberNotNull(nameof(_stats))]
         private void InitDisposableMembers(NameValueCollection? config)
         {
             bool dispose = true;
@@ -566,9 +564,8 @@ namespace System.Runtime.Caching
         public override CacheItem AddOrGetExisting(CacheItem item, CacheItemPolicy? policy)
         {
             ArgumentNullException.ThrowIfNull(item);
-            ArgumentNullException.ThrowIfNull(item.Value);
 
-            return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value, policy));
+            return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value!, policy));
         }
 
         public override object? AddOrGetExisting(string key, object value, CacheItemPolicy? policy, string? regionName = null)
@@ -605,9 +602,8 @@ namespace System.Runtime.Caching
         public override void Set(CacheItem item, CacheItemPolicy? policy)
         {
             ArgumentNullException.ThrowIfNull(item);
-            ArgumentNullException.ThrowIfNull(item.Value);
 
-            Set(item.Key, item.Value, policy);
+            Set(item.Key, item.Value!, policy);
         }
 
         public override void Set(string key, object value, CacheItemPolicy? policy, string? regionName = null)
