@@ -168,7 +168,7 @@ static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_AD
         case REGISTER_AMD64_XMM13:
         case REGISTER_AMD64_XMM14:
         case REGISTER_AMD64_XMM15:
-            ret = *(SIZE_T*)(&pDE->m_context.Xmm0 + (reg - REGISTER_AMD64_XMM0));
+            ret = (&pDE->m_context.Xmm0)[reg - REGISTER_AMD64_XMM0].Low;
             break;
 
 #elif defined(TARGET_ARM64)
@@ -242,7 +242,7 @@ static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_AD
         case REGISTER_ARM64_V29:
         case REGISTER_ARM64_V30:
         case REGISTER_ARM64_V31:
-            ret = *(SIZE_T*)&pDE->m_context.V[reg - REGISTER_ARM64_V0];
+            ret = pDE->m_context.V[reg - REGISTER_ARM64_V0].Low;
             break;
 
 #endif // !TARGET_X86 && !TARGET_AMD64 && !TARGET_ARM64
@@ -386,9 +386,9 @@ static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_ADDR
         case REGISTER_AMD64_XMM14:
         case REGISTER_AMD64_XMM15:
         {
-            SIZE_T* pSpillSlot = (SIZE_T*)(&pDE->m_context.Xmm0 + (reg - REGISTER_AMD64_XMM0));
-            pSpillSlot[0] = newValue;
-            pSpillSlot[1] = 0;
+            M128A& xmm = (&pDE->m_context.Xmm0)[reg - REGISTER_AMD64_XMM0];
+            xmm.Low = newValue;
+            xmm.High = 0;
             break;
         }
 
@@ -464,9 +464,9 @@ static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_ADDR
         case REGISTER_ARM64_V30:
         case REGISTER_ARM64_V31:
         {
-            SIZE_T* pSpillSlot = (SIZE_T*)&pDE->m_context.V[reg - REGISTER_ARM64_V0];
-            pSpillSlot[0] = newValue;
-            pSpillSlot[1] = 0;
+            NEON128& v = pDE->m_context.V[reg - REGISTER_ARM64_V0];
+            v.Low = newValue;
+            v.High = 0;
             break;
         }
 
