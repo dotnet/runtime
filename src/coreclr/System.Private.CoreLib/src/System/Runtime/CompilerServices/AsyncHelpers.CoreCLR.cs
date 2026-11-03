@@ -58,8 +58,7 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct ResumeInfo
     {
         public delegate*<Continuation, ref byte, Continuation?> Resume;
-        // IP to use for diagnostics. Can be null for hand-rolled continuations
-        // like ValueTaskSourceContinuation.
+        // IP to use for diagnostics. Can be null for hand-rolled continuations.
         // For normal JIT-created continuations this points into the jitted
         // suspension code.
         // For debug codegen the IP resolves via an ASYNC native->IL mapping to
@@ -474,10 +473,9 @@ namespace System.Runtime.CompilerServices
 
             vtsCont.Initialize(source, token);
 
-            sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskSourceContinuation = vtsCont;
             state.CaptureContexts();
-            AsyncSuspend(vtsCont);
+            AsyncSuspend(sentinelContinuation);
         }
 
         [Intrinsic]
@@ -511,11 +509,10 @@ namespace System.Runtime.CompilerServices
                 vtsCont.Flags |= ContinuationFlags.ContinueOnThreadPool;
             }
 
-            sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskSourceContinuation = vtsCont;
 
             state.CaptureContexts();
-            AsyncSuspend(vtsCont);
+            AsyncSuspend(sentinelContinuation);
         }
 
         [Intrinsic]
@@ -538,10 +535,9 @@ namespace System.Runtime.CompilerServices
 
             vtsCont.Initialize<T>(source, token);
 
-            sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskSourceContinuation = vtsCont;
             state.CaptureContexts();
-            AsyncSuspend(vtsCont);
+            AsyncSuspend(sentinelContinuation);
             return default!;
         }
 
@@ -576,11 +572,10 @@ namespace System.Runtime.CompilerServices
                 vtsCont.Flags |= ContinuationFlags.ContinueOnThreadPool;
             }
 
-            sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskSourceContinuation = vtsCont;
 
             state.CaptureContexts();
-            AsyncSuspend(vtsCont);
+            AsyncSuspend(sentinelContinuation);
             return default!;
         }
 
@@ -732,7 +727,9 @@ namespace System.Runtime.CompilerServices
             // continuation (rather than via an intermediate continuation object). While registered,
             // this holds where to resume, encoded as described by EncodeAwaitedContinuationContext.
             // Once the awaited task completes, it instead holds that completed task until the
-            // dispatcher consumes it. It is null otherwise.
+            // dispatcher consumes it. When suspended on an IValueTaskSource, it holds the
+            // ValueTaskSourceContinuation describing the source until the dispatcher consumes it.
+            // It is null otherwise.
             private object? _awaitedState;
 
             public RuntimeAsyncTask()
@@ -832,19 +829,36 @@ namespace System.Runtime.CompilerServices
                 return true;
             }
 
-            // Takes the awaited task (if this dispatch is resuming from a Task await), clearing the
-            // field so that the task isn't retained.
+            // Takes the awaited Task or ValueTaskSourceContinuation (if this dispatch is resuming from
+            // such an await), clearing the field so that it isn't retained.
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private Task? MoveAwaitedTask()
+            private object? MoveAwaitedState()
             {
-                object? awaitedTask = _awaitedState;
-                if (awaitedTask != null)
+                object? awaitedState = _awaitedState;
+                if (awaitedState != null)
                 {
-                    Debug.Assert(awaitedTask is Task);
+                    Debug.Assert(awaitedState is Task or ValueTaskSourceContinuation);
                     _awaitedState = null;
                 }
 
-                return Unsafe.As<Task?>(awaitedTask);
+                return awaitedState;
+            }
+
+            // Completes the await of the awaited Task or IValueTaskSource by propagating its result into the
+            // storage of the continuation that awaited it. If the awaited operation didn't complete successfully,
+            // returns the exception the await must propagate (or throws it).
+            [StackTraceHidden]
+            private static Exception? GetAwaitedResult(ref RuntimeAsyncAwaitState awaitState, object awaitedState, Continuation awaitingContinuation)
+            {
+                if (awaitedState is ValueTaskSourceContinuation vtsCont)
+                {
+                    Debug.Assert((vtsCont.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+                    awaitState.CachedValueTaskSourceContinuation = vtsCont;
+                    vtsCont.GetResult(ref awaitingContinuation.GetResultStorageOrNull());
+                    return null;
+                }
+
+                return GetAwaitedTaskResult(Unsafe.As<Task>(awaitedState), awaitingContinuation);
             }
 
             // Completes the await of the awaited task by propagating its result into the storage of the
@@ -918,7 +932,11 @@ namespace System.Runtime.CompilerServices
                 {
                     if (stackState->ValueTaskSourceContinuation is { } valueTaskSourceCont)
                     {
-                        Debug.Assert(headContinuation == valueTaskSourceCont);
+                        // The ValueTaskSourceContinuation isn't linked into the continuation chain. Instead, like
+                        // when awaiting a Task, the dispatcher fetches the source's result directly into the head
+                        // continuation when it resumes.
+                        Debug.Assert(headContinuation != valueTaskSourceCont);
+                        _awaitedState = valueTaskSourceCont;
                         object? source = valueTaskSourceCont.Source;
                         Debug.Assert(source != null);
                         // The awaiter must inform the ValueTaskSource on whether the continuation
@@ -935,7 +953,9 @@ namespace System.Runtime.CompilerServices
                         // awaiting either an async thunk for a ValueTask-returning method or
                         // the direct AsyncHelpers.Await(ValueTask/ValueTask<T>) path.
                         // In either case, that can only happen in nontransparent/user code.
-                        Continuation contWithContinueFlags = valueTaskSourceCont;
+                        Continuation contWithContinueFlags = (valueTaskSourceCont.Flags & ContinuationFlags.AllContinuationFlags) != 0 ?
+                            valueTaskSourceCont :
+                            headContinuation;
                         while ((contWithContinueFlags.Flags & (ContinuationFlags.AllContinuationFlags | ContinuationFlags.ValueTaskAdaptedToTask)) == 0 &&
                                contWithContinueFlags.Next != null)
                         {
@@ -1072,7 +1092,7 @@ namespace System.Runtime.CompilerServices
                 asyncDispatcherInfo.CurrentTask = this;
                 refDispatcherInfo = &asyncDispatcherInfo;
 
-                Task? awaitedTask = MoveAwaitedTask();
+                object? awaitedState = MoveAwaitedState();
 
                 while (true)
                 {
@@ -1080,15 +1100,15 @@ namespace System.Runtime.CompilerServices
                     Exception? exception = null;
                     try
                     {
-                        if (awaitedTask != null)
+                        if (awaitedState != null)
                         {
-                            // Resuming from a Task await: complete the await by storing the awaited task's
-                            // result into the awaiting continuation, which is then resumed by the next iteration.
-                            // If the awaited task didn't complete successfully, its exception is instead
+                            // Resuming from a Task or IValueTaskSource await: complete the await by storing the
+                            // awaited result into the awaiting continuation, which is then resumed by the next iteration.
+                            // If the awaited operation didn't complete successfully, its exception is instead
                             // propagated (generally without needing to be thrown) as if that continuation threw it.
-                            Task t = awaitedTask;
-                            awaitedTask = null;
-                            exception = GetAwaitedTaskResult(t, asyncDispatcherInfo.NextContinuation);
+                            object s = awaitedState;
+                            awaitedState = null;
+                            exception = GetAwaitedResult(ref awaitState, s, asyncDispatcherInfo.NextContinuation);
                         }
                         else
                         {
@@ -1211,24 +1231,24 @@ namespace System.Runtime.CompilerServices
                 asyncDispatcherInfo.NextContinuation = MoveContinuationState();
                 refDispatcherInfo = &asyncDispatcherInfo;
 
-                Task? awaitedTask = MoveAwaitedTask();
+                object? awaitedState = MoveAwaitedState();
 
-                RuntimeAsyncInstrumentationHelpers.ResumeRuntimeAsyncContext(this, ref asyncDispatcherInfo, flags, awaitedTask);
+                RuntimeAsyncInstrumentationHelpers.ResumeRuntimeAsyncContext(this, ref asyncDispatcherInfo, flags, awaitedState as Task);
 
                 while (true)
                 {
                     Debug.Assert(asyncDispatcherInfo.NextContinuation != null);
                     Continuation curContinuation = asyncDispatcherInfo.NextContinuation;
                     // Number of frames the current step accounts for if it throws: zero when completing
-                    // the await of a Task (no frame is running), one when resuming a continuation.
+                    // the await of a Task or IValueTaskSource (no frame is running), one when resuming a continuation.
                     uint currentFrames = 0;
                     try
                     {
-                        if (awaitedTask != null)
+                        if (awaitedState != null)
                         {
-                            Task t = awaitedTask;
-                            awaitedTask = null;
-                            if (GetAwaitedTaskResult(t, curContinuation) is Exception awaitException)
+                            object s = awaitedState;
+                            awaitedState = null;
+                            if (GetAwaitedResult(ref awaitState, s, curContinuation) is Exception awaitException)
                             {
                                 throw awaitException;
                             }
