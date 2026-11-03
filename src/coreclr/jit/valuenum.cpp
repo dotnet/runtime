@@ -7247,24 +7247,25 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
             return VNVisit::Abort;
         }
 
-        // Array length can never be negative.
-        if (IsVNArrLen(vn))
-        {
-            return VNVisit::Continue;
-        }
-
         // TODO-VN: Recognize Span.Length
         // Handle more intrinsics such as Math.Max(neverNegative1, neverNegative2)
 
         VNFuncApp funcApp;
         if (GetVNFunc(vn, &funcApp))
         {
+            // Array length can never be negative.
+            if (funcApp.FuncIs(VNF_ARR_LENGTH, VNF_MDArrLength))
+            {
+                return VNVisit::Continue;
+            }
+
             // Some HWIntrinsic functions have known result ranges that can be queried via flags.
 #if defined(FEATURE_HW_INTRINSICS)
             NamedIntrinsic id;
             unsigned       simdSize;
             var_types      simdBaseType;
-            if (IsVNHWIntrinsicFunc(vn, &funcApp, &id, &simdSize, &simdBaseType))
+            if ((funcApp.GetFunc() >= VNF_HWI_FIRST) && (funcApp.GetFunc() <= VNF_HWI_LAST) &&
+                IsVNHWIntrinsicFunc(vn, &funcApp, &id, &simdSize, &simdBaseType))
             {
                 if (HWIntrinsicInfo::ReturnsBoolean(id))
                 {
@@ -13578,6 +13579,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // An untracked local, and other odd cases.
                     lclFld->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclFld->TypeGet()));
                 }
+
+                // Known nonnegative loads can serve as symbolic bounds.
+                if (tree->TypeIs(TYP_INT) && IntegralRange::ForNode(tree, this).IsNonNegative())
+                {
+                    ValueNum lenVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+                    if (!vnStore->IsVNConstant(lenVN))
+                    {
+                        vnStore->SetVNIsCheckedBound(lenVN);
+                    }
+                }
             }
             break;
 
@@ -13805,6 +13816,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
 
                 tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+            }
+
+            // Known nonnegative loads can serve as symbolic bounds.
+            if (tree->TypeIs(TYP_INT) && IntegralRange::ForNode(tree, this).IsNonNegative())
+            {
+                ValueNum lenVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+                if (!vnStore->IsVNConstant(lenVN))
+                {
+                    vnStore->SetVNIsCheckedBound(lenVN);
+                }
             }
         }
         else if (tree->OperIs(GT_CAST))
