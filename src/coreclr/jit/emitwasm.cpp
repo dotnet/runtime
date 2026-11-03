@@ -1039,7 +1039,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(m_compiler->IsNativeAot() || id->idIsCnsReloc());
             dst += emitOutputOpcode(dst, ins);
             void* target = m_compiler->IsNativeAot() ? static_cast<void*>(emitCodeBlock)
-                                                    : reinterpret_cast<void*>(emitGetInsSC(id));
+                                                     : reinterpret_cast<void*>(emitGetInsSC(id));
             emitRecordRelocation(dst, target, CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
             dst += emitOutputPaddedReloc(dst);
             break;

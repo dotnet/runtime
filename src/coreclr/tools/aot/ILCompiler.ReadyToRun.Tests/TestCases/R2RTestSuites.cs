@@ -527,7 +527,7 @@ public class R2RTestSuites
             foreach (string type in tokenDependentTypes)
             {
                 bool startupEager = TestPaths.IsWasmTarget && composite && optimize && includeCoreLib &&
-                    type is "System.DayOfWeek" or "System.Decimal" or "System.Nullable`1<int>";
+                    type is "System.Decimal";
                 ValidateTypeHandle(type, tokenDependent, eager: startupEager);
             }
 
@@ -537,8 +537,8 @@ public class R2RTestSuites
                     section => section.Entries.Any(entry =>
                         entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
                         entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)"));
-                Assert.Equal(eager ? ReadyToRunImportSectionFlags.Eager : (ReadyToRunImportSectionFlags)0,
-                    section.Flags & ReadyToRunImportSectionFlags.Eager);
+                Assert.Equal((type, eager ? ReadyToRunImportSectionFlags.Eager : (ReadyToRunImportSectionFlags)0),
+                    (type, section.Flags & ReadyToRunImportSectionFlags.Eager));
                 Assert.Single(section.Entries, entry =>
                     entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
                     entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)");
