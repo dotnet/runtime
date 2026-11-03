@@ -225,12 +225,11 @@ namespace System.Runtime.CompilerServices
             public ValueTaskSourceContinuation? ValueTaskSourceContinuation;
 
             // When suspending on a Task, the RuntimeAsyncTask registers itself directly as the
-            // awaited task's continuation. These describe the task and how to resume after it.
-            // AwaitedTaskGetResult/AwaitedFlags are only valid when AwaitedTask is non-null.
+            // awaited task's continuation. These describe the task and where to resume after it.
+            // AwaitedContinuationContext is only valid when AwaitedTask is non-null, and is encoded
+            // as described by EncodeAwaitedContinuationContext.
             public Task? AwaitedTask;
             public object? AwaitedContinuationContext;
-            public delegate*<Task, ref byte, void> AwaitedTaskGetResult;
-            public ContinuationFlags AwaitedFlags;
 
             public delegate*<Continuation, int, Action, void> AwaiterContinuation;
             public int AwaiterOffset;
@@ -373,7 +372,7 @@ namespace System.Runtime.CompilerServices
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
-            SetAwaitedTask(state.StackState, task, &GetTaskResult, options);
+            SetAwaitedTask(state.StackState, task, options);
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
@@ -385,13 +384,13 @@ namespace System.Runtime.CompilerServices
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
-            SetAwaitedTask(state.StackState, task, &GetTaskResult<T>, options);
+            SetAwaitedTask(state.StackState, task, options);
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
             return default!;
         }
 
-        private static unsafe void SetAwaitedTask(RuntimeAsyncStackState* stackState, Task task, delegate*<Task, ref byte, void> getResult, ConfigureAwaitOptions options)
+        private static unsafe void SetAwaitedTask(RuntimeAsyncStackState* stackState, Task task, ConfigureAwaitOptions options)
         {
             object? continuationContext = null;
             ContinuationFlags flags = 0;
@@ -405,25 +404,29 @@ namespace System.Runtime.CompilerServices
             }
 
             stackState->AwaitedTask = task;
-            stackState->AwaitedTaskGetResult = getResult;
-            stackState->AwaitedContinuationContext = continuationContext;
-            stackState->AwaitedFlags = flags;
+            stackState->AwaitedContinuationContext = EncodeAwaitedContinuationContext(continuationContext, flags);
         }
 
-        [StackTraceHidden]
-        private static void GetTaskResult(Task task, ref byte result)
+        // Encodes where to continue after an awaited Task completes into a single object, so that
+        // RuntimeAsyncTask needs only one field for it:
+        //   null                   => no continuation flags (transparent)
+        //   TaskScheduler.Default  => ContinuationFlags.ContinueOnThreadPool (CaptureContinuationContext
+        //                             never captures the default scheduler, so it's free to use as a marker)
+        //   SynchronizationContext => ContinuationFlags.ContinueOnCapturedSynchronizationContext
+        //   TaskScheduler          => ContinuationFlags.ContinueOnCapturedTaskScheduler
+        private static object? EncodeAwaitedContinuationContext(object? continuationContext, ContinuationFlags flags)
         {
-            TaskAwaiter.ValidateEnd(task);
-        }
+            Debug.Assert((flags & ~ContinuationFlags.AllContinuationFlags) == 0);
 
-        [StackTraceHidden]
-        private static void GetTaskResult<T>(Task task, ref byte result)
-        {
-            Debug.Assert(task is Task<T>);
+            if ((flags & ContinuationFlags.ContinueOnThreadPool) != 0)
+            {
+                return TaskScheduler.Default;
+            }
 
-            Task<T> taskOfT = Unsafe.As<Task, Task<T>>(ref task);
-            TaskAwaiter.ValidateEnd(taskOfT);
-            Unsafe.As<byte, T>(ref result) = taskOfT.ResultOnSuccess;
+            Debug.Assert(flags == 0 ? continuationContext is null :
+                (flags & ContinuationFlags.ContinueOnCapturedSynchronizationContext) != 0 ? continuationContext is SynchronizationContext :
+                continuationContext is TaskScheduler && continuationContext != TaskScheduler.Default);
+            return continuationContext;
         }
 
         [Intrinsic]
@@ -570,9 +573,7 @@ namespace System.Runtime.CompilerServices
 
             RuntimeAsyncStackState* stackState = state.StackState;
             stackState->AwaitedTask = task;
-            stackState->AwaitedTaskGetResult = &GetTaskResult;
             stackState->AwaitedContinuationContext = null;
-            stackState->AwaitedFlags = 0;
 
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
@@ -592,9 +593,7 @@ namespace System.Runtime.CompilerServices
 
             RuntimeAsyncStackState* stackState = state.StackState;
             stackState->AwaitedTask = task;
-            stackState->AwaitedTaskGetResult = &GetTaskResult<T>;
             stackState->AwaitedContinuationContext = null;
-            stackState->AwaitedFlags = 0;
 
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
@@ -705,12 +704,11 @@ namespace System.Runtime.CompilerServices
         private sealed class RuntimeAsyncTask<T> : Task<T>
         {
             // When suspended on a Task, this RuntimeAsyncTask is registered directly as that task's
-            // continuation (rather than via an intermediate continuation object). These fields
-            // describe the awaited task, how to get its result, and where to resume.
-            private Task? _awaitedTask;
-            private object? _awaitedContinuationContext;
-            private unsafe delegate*<Task, ref byte, void> _awaitedTaskGetResult;
-            private ContinuationFlags _awaitedFlags;
+            // continuation (rather than via an intermediate continuation object). While registered,
+            // this holds where to resume, encoded as described by EncodeAwaitedContinuationContext.
+            // Once the awaited task completes, it instead holds that completed task until the
+            // dispatcher consumes it. It is null otherwise.
+            private object? _awaitedState;
 
             public RuntimeAsyncTask()
             {
@@ -728,12 +726,14 @@ namespace System.Runtime.CompilerServices
 
             // Invoked by the awaited task's completion (Task.RunContinuations) or directly when the
             // awaited task had already completed by the time we tried to register.
-            internal override void ExecuteRuntimeAsyncAwaitContinuation(bool canInline)
+            internal override void ExecuteRuntimeAsyncAwaitContinuation(Task completedTask, bool canInline)
             {
-                Debug.Assert(_awaitedTask != null);
+                // Swap the continuation context for the completed task before possibly handing this
+                // task to another thread, which will consume it in DispatchContinuations.
+                object? continuationContext = _awaitedState;
+                _awaitedState = completedTask;
 
-                ContinuationFlags flags = _awaitedFlags;
-                if (flags == 0 || !QueueAwaitContinuationIfNecessary(flags, canInline))
+                if (continuationContext is null || !QueueAwaitContinuationIfNecessary(continuationContext, canInline))
                 {
                     if (canInline)
                     {
@@ -746,15 +746,9 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            private bool QueueAwaitContinuationIfNecessary(ContinuationFlags flags, bool canInline)
+            private bool QueueAwaitContinuationIfNecessary(object continuationContext, bool canInline)
             {
-                // Consume the context before possibly handing this task to another thread, which may
-                // resume and suspend again (overwriting these fields).
-                object? continuationContext = _awaitedContinuationContext;
-                _awaitedContinuationContext = null;
-                _awaitedFlags = 0;
-
-                if ((flags & ContinuationFlags.ContinueOnThreadPool) != 0)
+                if (continuationContext == TaskScheduler.Default)
                 {
                     SynchronizationContext? ctx = Thread.CurrentThread._synchronizationContext;
                     if (ctx == null || ctx.GetType() == typeof(SynchronizationContext))
@@ -771,39 +765,30 @@ namespace System.Runtime.CompilerServices
                     return true;
                 }
 
-                if ((flags & ContinuationFlags.ContinueOnCapturedSynchronizationContext) != 0)
+                if (continuationContext is TaskScheduler sched2)
                 {
-                    Debug.Assert(continuationContext is SynchronizationContext { });
-                    SynchronizationContext continuationSyncCtx = (SynchronizationContext)continuationContext;
-
-                    if (canInline && continuationSyncCtx == Thread.CurrentThread._synchronizationContext)
-                    {
-                        return false;
-                    }
-
-                    try
-                    {
-                        continuationSyncCtx.Post(s_postCallback, this);
-                    }
-                    catch (Exception ex)
-                    {
-                        Task.ThrowAsync(ex, targetContext: null);
-                    }
-
+                    TaskSchedulerAwaitTaskContinuation.RunOrScheduleAction(GetContinuationAction(), sched2, capturedContext: null, allowInlining: canInline);
                     return true;
                 }
 
-                if ((flags & ContinuationFlags.ContinueOnCapturedTaskScheduler) != 0)
+                Debug.Assert(continuationContext is SynchronizationContext { });
+                SynchronizationContext continuationSyncCtx = Unsafe.As<SynchronizationContext>(continuationContext);
+
+                if (canInline && continuationSyncCtx == Thread.CurrentThread._synchronizationContext)
                 {
-                    Debug.Assert(continuationContext is TaskScheduler { });
-                    TaskScheduler sched = (TaskScheduler)continuationContext;
-
-                    TaskSchedulerAwaitTaskContinuation.RunOrScheduleAction(GetContinuationAction(), sched, capturedContext: null, allowInlining: canInline);
-
-                    return true;
+                    return false;
                 }
 
-                return false;
+                try
+                {
+                    continuationSyncCtx.Post(s_postCallback, this);
+                }
+                catch (Exception ex)
+                {
+                    Task.ThrowAsync(ex, targetContext: null);
+                }
+
+                return true;
             }
 
             // Takes the awaited task (if this dispatch is resuming from a Task await), clearing the
@@ -811,21 +796,22 @@ namespace System.Runtime.CompilerServices
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private Task? MoveAwaitedTask()
             {
-                Task? awaitedTask = _awaitedTask;
+                object? awaitedTask = _awaitedState;
                 if (awaitedTask != null)
                 {
-                    _awaitedTask = null;
+                    Debug.Assert(awaitedTask is Task);
+                    _awaitedState = null;
                 }
 
-                return awaitedTask;
+                return Unsafe.As<Task?>(awaitedTask);
             }
 
             // Completes the await of the awaited task by propagating its result (or exception)
             // into the storage of the continuation that awaited it.
             [StackTraceHidden]
-            private unsafe void GetAwaitedTaskResult(Task awaitedTask, Continuation awaitingContinuation)
+            private static void GetAwaitedTaskResult(Task awaitedTask, Continuation awaitingContinuation)
             {
-                _awaitedTaskGetResult(awaitedTask, ref awaitingContinuation.GetResultStorageOrNull());
+                awaitedTask.GetRuntimeAsyncAwaitResult(ref awaitingContinuation.GetResultStorageOrNull());
             }
 
             // Lazily created, as it's only needed when suspending on something other than a Task.
@@ -939,13 +925,10 @@ namespace System.Runtime.CompilerServices
                         // Awaiting a Task. Register this task directly as its continuation; the
                         // dispatcher will fetch the awaited task's result into the head
                         // continuation when it resumes.
-                        _awaitedTaskGetResult = stackState->AwaitedTaskGetResult;
-                        _awaitedContinuationContext = stackState->AwaitedContinuationContext;
-                        _awaitedFlags = stackState->AwaitedFlags;
-                        _awaitedTask = awaitedTask;
+                        _awaitedState = stackState->AwaitedContinuationContext;
                         if (!awaitedTask.AddTaskContinuation(this, addBeforeOthers: false))
                         {
-                            ExecuteRuntimeAsyncAwaitContinuation(canInline: false);
+                            ExecuteRuntimeAsyncAwaitContinuation(awaitedTask, canInline: false);
                         }
                     }
                     else
@@ -1667,9 +1650,7 @@ namespace System.Runtime.CompilerServices
 
             RuntimeAsyncStackState* stackState = state.StackState;
             stackState->AwaitedTask = Task.CompletedTask;
-            stackState->AwaitedTaskGetResult = &GetTaskResult;
-            stackState->AwaitedContinuationContext = continuationContext;
-            stackState->AwaitedFlags = flags;
+            stackState->AwaitedContinuationContext = EncodeAwaitedContinuationContext(continuationContext, flags);
 
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
