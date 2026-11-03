@@ -189,12 +189,13 @@ public struct X86Context : IPlatformContext
     private static int Float80Size
         => (int)Marshal.OffsetOf<X86Context>(nameof(ST1)) - (int)Marshal.OffsetOf<X86Context>(nameof(ST0));
 
-    public readonly bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value)
+    public readonly bool TryReadFloatingPointRegister(int index, out double value)
     {
         value = 0.0;
         if ((uint)index >= X87RegisterCount)
             return false;
 
+        ReadOnlySpan<byte> context = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in this, 1));
         // The availability mask exposes all 8 slots even when the live stack is shallower;
         // out-of-depth slots read as 0.
         if (!TryGetX87SlotOffset(context, index, out int offset))
@@ -205,11 +206,12 @@ public struct X86Context : IPlatformContext
         return true;
     }
 
-    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, double value)
+    public bool TryWriteFloatingPointRegister(int index, double value)
     {
         if ((uint)index >= X87RegisterCount)
             return false;
 
+        Span<byte> context = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
         // Writing an out-of-depth (or otherwise unresolvable) slot is not supported.
         if (!TryGetX87SlotOffset(context, index, out int offset) || offset + Float80Size > context.Length)
             return false;

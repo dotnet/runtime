@@ -37,8 +37,8 @@ public interface IPlatformContext
 
     bool TrySetRegister(int number, TargetNUInt value);
     bool TryReadRegister(int number, out TargetNUInt value);
-    bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value);
-    bool TryWriteFloatingPointRegister(Span<byte> context, int index, double value);
+    bool TryReadFloatingPointRegister(int index, out double value);
+    bool TryWriteFloatingPointRegister(int index, double value);
 
     void CopyContext(ReadOnlySpan<byte> source);
 }

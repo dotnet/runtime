@@ -6892,7 +6892,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw new ArgumentException("Context buffer too small", nameof(contextBuffer));
 
             ctx.FillFromBuffer(new Span<byte>(contextBuffer.pContextBytes, (int)ctx.Size));
-            ReadOnlySpan<byte> buf = new ReadOnlySpan<byte>(contextBuffer.pContextBytes, (int)ctx.Size);
 
             RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
             for (uint i = 0; i < nRegs; i++)
@@ -6903,7 +6902,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     // Integer register: zero-extend the pointer-sized value to 64 bits.
                     pValues[i] = (ulong)v.Value;
                 }
-                else if (TryReadFloatRegister(ctx, buf, arch, regs[i], out double floatValue))
+                else if (TryReadFloatRegister(ctx, arch, regs[i], out double floatValue))
                 {
                     // Float / SIMD register: its scalar 64-bit double bit pattern.
                     pValues[i] = (ulong)BitConverter.DoubleToInt64Bits(floatValue);
@@ -6938,13 +6937,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     // Reads a single float / SIMD register's scalar 64-bit value (as a double) from the target context.
-    private static bool TryReadFloatRegister(IPlatformAgnosticContext ctx, ReadOnlySpan<byte> context,
+    private static bool TryReadFloatRegister(IPlatformAgnosticContext ctx,
                                              RuntimeInfoArchitecture arch, CorDebugRegister reg, out double value)
     {
         value = 0.0;
         if (!TryGetFloatRegisterIndex(arch, reg, out int index))
             return false;
-        return ctx.TryReadFloatingPointRegister(context, index, out value);
+        return ctx.TryReadFloatingPointRegister(index, out value);
     }
 
     private static bool TryGetFloatRegisterIndex(RuntimeInfoArchitecture arch, CorDebugRegister reg, out int index)
@@ -7069,6 +7068,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw new ArgumentException("Context buffer too small", nameof(contextBuffer));
 
             Span<byte> buf = new Span<byte>(contextBuffer.pContextBytes, (int)ctx.Size);
+            ctx.FillFromBuffer(buf);
 
             RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
             ReadOnlySpan<byte> valueBytes = new ReadOnlySpan<byte>(pValue, (int)valueSize);
@@ -7082,16 +7082,17 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             else
             {
                 // R4 writes must preserve the other four bytes of the scalar SIMD value.
-                if (valueSize == sizeof(float) && !ctx.TryReadFloatingPointRegister(buf, index, out value))
+                if (valueSize == sizeof(float) && !ctx.TryReadFloatingPointRegister(index, out value))
                     throw new ArgumentException($"Register {reg} is not a float register", nameof(reg));
 
                 valueBytes.CopyTo(MemoryMarshal.AsBytes(new Span<double>(ref value)));
             }
 
-            if (!ctx.TryWriteFloatingPointRegister(buf, index, value))
+            if (!ctx.TryWriteFloatingPointRegister(index, value))
             {
                 throw new ArgumentException($"Register {reg} is not a float register", nameof(reg));
             }
+            ctx.GetBytes().AsSpan().CopyTo(buf);
         }
         catch (System.Exception ex)
         {

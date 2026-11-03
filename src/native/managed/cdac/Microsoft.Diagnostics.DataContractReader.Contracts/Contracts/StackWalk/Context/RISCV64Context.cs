@@ -232,11 +232,13 @@ internal struct RISCV64Context : IPlatformContext
     private const int FRegisterCount = 32;
     private const int FRegisterStride = 8;
 
-    public readonly bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value)
-        => SimdRegisterAccess.TryReadRegister(context, (int)Marshal.OffsetOf<RISCV64Context>(nameof(F)), FRegisterStride, FRegisterCount, index, out value);
+    public readonly bool TryReadFloatingPointRegister(int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in this, 1)),
+            (int)Marshal.OffsetOf<RISCV64Context>(nameof(F)), FRegisterStride, FRegisterCount, index, out value);
 
-    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, double value)
-        => SimdRegisterAccess.TryWriteRegister(context, (int)Marshal.OffsetOf<RISCV64Context>(nameof(F)), FRegisterStride, FRegisterCount, index, value);
+    public bool TryWriteFloatingPointRegister(int index, double value)
+        => SimdRegisterAccess.TryWriteRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1)),
+            (int)Marshal.OffsetOf<RISCV64Context>(nameof(F)), FRegisterStride, FRegisterCount, index, value);
 
     public void CopyContext(ReadOnlySpan<byte> source)
     {

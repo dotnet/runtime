@@ -30,8 +30,8 @@ public interface IPlatformAgnosticContext
     public abstract bool TryReadRegister(string fieldName, out TargetNUInt value);
     public abstract bool TrySetRegister(int number, TargetNUInt value);
     public abstract bool TryReadRegister(int number, out TargetNUInt value);
-    public abstract bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value);
-    public abstract bool TryWriteFloatingPointRegister(Span<byte> context, int index, double value);
+    public abstract bool TryReadFloatingPointRegister(int index, out double value);
+    public abstract bool TryWriteFloatingPointRegister(int index, double value);
     public abstract void CopyContext(IPlatformAgnosticContext source);
 
     public abstract void Unwind(Target target);
