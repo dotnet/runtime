@@ -76,7 +76,13 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(source is IValueTaskSource<T>);
                 IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
-                Unsafe.As<byte, T>(ref result) = typedSource.GetResult(token);
+                T value = typedSource.GetResult(token);
+
+                // The awaiting continuation has no result storage if it ignores the result.
+                if (!Unsafe.IsNullRef(ref result))
+                {
+                    Unsafe.As<byte, T>(ref result) = value;
+                }
             }
         }
     }
