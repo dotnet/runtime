@@ -83,30 +83,6 @@ class ComCallMethodDesc;
 
 #define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
 
-inline
-ARG_SLOT FPSpillToR8(void* pSpillSlot)
-{
-    LIMITED_METHOD_CONTRACT;
-    return *(SIZE_T*)pSpillSlot;
-}
-
-inline
-void     R4ToFPSpill(void* pSpillSlot, DWORD  srcFloatAsDWORD)
-{
-    LIMITED_METHOD_CONTRACT;
-    *(SIZE_T*)pSpillSlot = (SIZE_T)srcFloatAsDWORD;
-    *((SIZE_T*)pSpillSlot + 1) = 0;
-}
-
-inline
-void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
-{
-    LIMITED_METHOD_CONTRACT;
-    *(SIZE_T*)pSpillSlot = srcDoubleAsSIZE_T;
-    *((SIZE_T*)pSpillSlot + 1) = 0;
-}
-
-
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
 

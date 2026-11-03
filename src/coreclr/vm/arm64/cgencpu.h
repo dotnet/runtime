@@ -80,21 +80,6 @@ extern "C" void* PacStripPtr(void* ptr);
 // this is the offset by which it should be decremented to arrive at the callsite.
 #define STACKWALK_CONTROLPC_ADJUST_OFFSET 4
 
-inline
-ARG_SLOT FPSpillToR8(void* pSpillSlot)
-{
-    LIMITED_METHOD_CONTRACT;
-    return *(SIZE_T*)pSpillSlot;
-}
-
-inline
-void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
-{
-    LIMITED_METHOD_CONTRACT;
-    *(SIZE_T*)pSpillSlot = srcDoubleAsSIZE_T;
-    *((SIZE_T*)pSpillSlot + 1) = 0;
-}
-
 //**********************************************************************
 // Parameter size
 //**********************************************************************
