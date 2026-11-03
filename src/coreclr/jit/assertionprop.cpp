@@ -2415,7 +2415,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, /*equals*/ false);
             }
-            else if (tree->OperIs(GT_IND) && tree->TypeIs(TYP_INT) && !optLocalAssertionProp &&
+            else if (!optLocalAssertionProp && tree->OperIs(GT_IND) && tree->TypeIs(TYP_INT) &&
                      IntegralRange::ForNode(tree, this).IsNonNegative())
             {
                 // Create "IND >= 0" assertion for int indirections that are known to be non-negative.
