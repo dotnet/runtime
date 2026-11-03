@@ -74,8 +74,6 @@ public class AppSettingsTests : WasmTemplateTestsBase
         BrowserRunOptions options = new(config, TestScenario: "AppSettingsTest",
             BrowserQueryString: new NameValueCollection {
                 { "settingsVfs", expectedVfs.ToString().ToLowerInvariant() },
-                { "settingsAssets", (mode != "legacy").ToString().ToLowerInvariant() },
-                { "settingsFilesystemUsage", filesystemUsage },
                 { "legacySettings", (mode == "legacy").ToString().ToLowerInvariant() },
                 { "settingsDownload", mode is "memory" or "cache" ? mode : null },
                 { "settingsLoader", mode is "null" or "response" or "url" ? mode : null },

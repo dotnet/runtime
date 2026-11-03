@@ -85,18 +85,10 @@ switch (testCase) {
         if (applicationEnvironment) {
             dotnet.withApplicationEnvironment(applicationEnvironment);
         }
-        if (params.get("settingsAssets") === "true") {
+        if (params.get("legacySettings") === "true") {
             dotnet.withConfigLoaded(config => {
-                // Exercise the new loader schema on net11 until the runtime can run net12 apps.
-                if (!Array.isArray(config.appsettings)) {
-                    throw new Error("Expected the net11 generator to emit legacy appsettings");
-                }
-                config.resources.appsettings = config.appsettings.map(name => ({
-                    name,
-                    virtualPath: name.substring(name.lastIndexOf("/") + 1),
-                    loadIntoVfs: params.get("settingsFilesystemUsage") === "true",
-                }));
-                delete config.appsettings;
+                config.appsettings = config.resources.appsettings.map(asset => asset.name);
+                delete config.resources.appsettings;
             });
         }
         if (params.get("noSettings") === "true") {
@@ -427,7 +419,7 @@ try {
             if (JSON.stringify(INTERNAL.getAppSettingsFiles()) !== JSON.stringify(expectedFiles)) {
                 throw new Error("Mutating the returned appsettings list changed subsequent results");
             }
-            config.appsettings = originalAppsettings.filter(url => !url.endsWith("/appsettings.json"));
+            config.appsettings = originalAppsettings.filter(url => url.substring(url.lastIndexOf("/") + 1) !== "appsettings.json");
             if (JSON.stringify(INTERNAL.getAppSettingsFiles()) !== JSON.stringify(expectedFiles.slice(1))) {
                 throw new Error("Unexpected appsettings selection without base settings");
             }

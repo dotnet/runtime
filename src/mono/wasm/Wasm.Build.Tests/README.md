@@ -95,25 +95,25 @@ Older target frameworks and Mono retain the top-level appsettings list.
 CoreCLR also accepts legacy manifests and continues installing those settings
 into VFS while retaining their downloaded bytes.
 
-`AppSettingsWithoutFilesystem` runs in the CoreCLR no-workload lane. Its .NET 11
-browser fixture supplies the new asset schema through `withConfigLoaded`, using
-the filesystem-detection value reported by the real build/publish targets.
+`AppSettingsWithoutFilesystem` runs in the CoreCLR no-workload lane. Its .NET 12
+browser fixture consumes the generated asset schema and checks the
+filesystem-detection value reported by the real build/publish targets.
 It covers both placement modes, explicit overrides, custom resource loaders, and
-download-before-create without requiring .NET 12 runtime assemblies. The legacy
-case and existing environment-selection tests consume the generated .NET 11
-manifest without this conversion.
+download-before-create. The legacy case converts the generated asset list to
+the old manifest representation before startup.
 
 Manifest-generation theories invoke the task directly to verify .NET 12+ assets,
-the .NET 11 compatibility boundary, and unchanged Mono output. End-to-end .NET 12
-project-to-browser coverage is deferred until runtime retargeting is complete.
-These browser fixtures test the loader and filesystem detection, not .NET 12
-manifest generation.
+the .NET 11 compatibility boundary, and unchanged Mono output. CoreCLR browser
+tests additionally cover .NET 12 project-to-browser manifest generation and
+loading end to end.
 
 The flag-only incremental publish case disables trimming to isolate filesystem
 detection from incremental trimmed assembly staging; fresh-publish cases
 retain trimming. `Blazor.AppsettingsTests` checks that default settings remain
-available through managed VFS access. Managed JSON parsing remains the
-consumer's responsibility.
+available through managed VFS access on the template's target framework.
+`Blazor.CurrentRuntimeAppsettingsTests` checks the internal APIs against the
+locally built current runtime, not a released runtime from an older template.
+Managed JSON parsing remains the consumer's responsibility.
 
 ## How to add tests
 
