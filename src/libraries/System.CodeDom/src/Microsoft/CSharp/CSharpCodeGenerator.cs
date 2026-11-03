@@ -830,20 +830,11 @@ namespace Microsoft.CSharp
         {
             _generatingForLoop = true;
             Output.Write("for (");
-            if (e.InitStatement != null)
-            {
-                GenerateStatement(e.InitStatement);
-            }
+            GenerateStatement(e.InitStatement!);
             Output.Write("; ");
-            if (e.TestExpression != null)
-            {
-                GenerateExpression(e.TestExpression);
-            }
+            GenerateExpression(e.TestExpression!);
             Output.Write("; ");
-            if (e.IncrementStatement != null)
-            {
-                GenerateStatement(e.IncrementStatement);
-            }
+            GenerateStatement(e.IncrementStatement!);
             Output.Write(')');
             OutputStartingBrace();
             _generatingForLoop = false;

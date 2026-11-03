@@ -164,10 +164,7 @@ namespace System.CodeDom.Compiler
             foreach (CodeAttributeDeclaration current in attributes)
             {
                 ValidateTypeName(current, nameof(current.Name), current.Name);
-                if (current.AttributeType != null)
-                {
-                    ValidateTypeReference(current.AttributeType);
-                }
+                ValidateTypeReference(current.AttributeType!);
 
                 foreach (CodeAttributeArgument arg in current.Arguments)
                 {
@@ -182,10 +179,7 @@ namespace System.CodeDom.Compiler
             {
                 ValidateIdentifier(arg, nameof(arg.Name), arg.Name);
             }
-            if (arg.Value != null)
-            {
-                ValidateExpression(arg.Value);
-            }
+            ValidateExpression(arg.Value!);
         }
 
         private void ValidateTypes(CodeNamespace e)
@@ -475,26 +469,14 @@ namespace System.CodeDom.Compiler
 
         private void ValidateExpressionStatement(CodeExpressionStatement e)
         {
-            if (e.Expression != null)
-            {
-                ValidateExpression(e.Expression);
-            }
+            ValidateExpression(e.Expression!);
         }
 
         private void ValidateIterationStatement(CodeIterationStatement e)
         {
-            if (e.InitStatement != null)
-            {
-                ValidateStatement(e.InitStatement);
-            }
-            if (e.TestExpression != null)
-            {
-                ValidateExpression(e.TestExpression);
-            }
-            if (e.IncrementStatement != null)
-            {
-                ValidateStatement(e.IncrementStatement);
-            }
+            ValidateStatement(e.InitStatement!);
+            ValidateExpression(e.TestExpression!);
+            ValidateStatement(e.IncrementStatement!);
             ValidateStatements(e.Statements);
         }
 
@@ -516,10 +498,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateConditionStatement(CodeConditionStatement e)
         {
-            if (e.Condition != null)
-            {
-                ValidateExpression(e.Condition);
-            }
+            ValidateExpression(e.Condition!);
             ValidateStatements(e.TrueStatements);
 
             CodeStatementCollection falseStatements = e.FalseStatements;
@@ -552,32 +531,20 @@ namespace System.CodeDom.Compiler
 
         private void ValidateAssignStatement(CodeAssignStatement e)
         {
-            if (e.Left != null)
-            {
-                ValidateExpression(e.Left);
-            }
-            if (e.Right != null)
-            {
-                ValidateExpression(e.Right);
-            }
+            ValidateExpression(e.Left!);
+            ValidateExpression(e.Right!);
         }
 
         private void ValidateAttachEventStatement(CodeAttachEventStatement e)
         {
             ValidateEventReferenceExpression(e.Event);
-            if (e.Listener != null)
-            {
-                ValidateExpression(e.Listener);
-            }
+            ValidateExpression(e.Listener!);
         }
 
         private void ValidateRemoveEventStatement(CodeRemoveEventStatement e)
         {
             ValidateEventReferenceExpression(e.Event);
-            if (e.Listener != null)
-            {
-                ValidateExpression(e.Listener);
-            }
+            ValidateExpression(e.Listener!);
         }
 
         private static void ValidateGotoStatement(CodeGotoStatement e)
@@ -824,23 +791,14 @@ namespace System.CodeDom.Compiler
 
         private void ValidateBinaryOperatorExpression(CodeBinaryOperatorExpression e)
         {
-            if (e.Left != null)
-            {
-                ValidateExpression(e.Left);
-            }
-            if (e.Right != null)
-            {
-                ValidateExpression(e.Right);
-            }
+            ValidateExpression(e.Left!);
+            ValidateExpression(e.Right!);
         }
 
         private void ValidateCastExpression(CodeCastExpression e)
         {
             ValidateTypeReference(e.TargetType);
-            if (e.Expression != null)
-            {
-                ValidateExpression(e.Expression);
-            }
+            ValidateExpression(e.Expression!);
         }
 
         private static void ValidateDefaultValueExpression(CodeDefaultValueExpression e)
@@ -851,10 +809,7 @@ namespace System.CodeDom.Compiler
         private void ValidateDelegateCreateExpression(CodeDelegateCreateExpression e)
         {
             ValidateTypeReference(e.DelegateType);
-            if (e.TargetObject != null)
-            {
-                ValidateExpression(e.TargetObject);
-            }
+            ValidateExpression(e.TargetObject!);
             ValidateIdentifier(e, nameof(e.MethodName), e.MethodName);
         }
 
@@ -879,10 +834,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateIndexerExpression(CodeIndexerExpression e)
         {
-            if (e.TargetObject != null)
-            {
-                ValidateExpression(e.TargetObject);
-            }
+            ValidateExpression(e.TargetObject!);
             foreach (CodeExpression exp in e.Indices)
             {
                 ValidateExpression(exp);
@@ -891,10 +843,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateArrayIndexerExpression(CodeArrayIndexerExpression e)
         {
-            if (e.TargetObject != null)
-            {
-                ValidateExpression(e.TargetObject);
-            }
+            ValidateExpression(e.TargetObject!);
             foreach (CodeExpression exp in e.Indices)
             {
                 ValidateExpression(exp);
@@ -954,10 +903,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateDirectionExpression(CodeDirectionExpression e)
         {
-            if (e.Expression != null)
-            {
-                ValidateExpression(e.Expression);
-            }
+            ValidateExpression(e.Expression!);
         }
 
         private void ValidatePropertyReferenceExpression(CodePropertyReferenceExpression e)

@@ -796,22 +796,13 @@ namespace Microsoft.VisualBasic
 
         protected override void GenerateIterationStatement(CodeIterationStatement e)
         {
-            if (e.InitStatement != null)
-            {
-                GenerateStatement(e.InitStatement);
-            }
+            GenerateStatement(e.InitStatement!);
             Output.Write("Do While ");
-            if (e.TestExpression != null)
-            {
-                GenerateExpression(e.TestExpression);
-            }
+            GenerateExpression(e.TestExpression!);
             Output.WriteLine();
             Indent++;
             GenerateVBStatements(e.Statements);
-            if (e.IncrementStatement != null)
-            {
-                GenerateStatement(e.IncrementStatement);
-            }
+            GenerateStatement(e.IncrementStatement!);
             Indent--;
             Output.WriteLine("Loop");
         }
