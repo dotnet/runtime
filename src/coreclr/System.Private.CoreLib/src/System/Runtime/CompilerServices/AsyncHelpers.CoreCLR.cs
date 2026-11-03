@@ -772,10 +772,16 @@ namespace System.Runtime.CompilerServices
             {
                 if (continuationContext == TaskScheduler.Default)
                 {
+                    if (!canInline)
+                    {
+                        ThreadPool.UnsafeQueueUserWorkItemInternal(this, preferLocal: true);
+                        return true;
+                    }
+
                     SynchronizationContext? ctx = Thread.CurrentThread._synchronizationContext;
                     if (ctx == null || ctx.GetType() == typeof(SynchronizationContext))
                     {
-                        TaskScheduler? sched = TaskScheduler.InternalCurrent;
+                        TaskScheduler? sched = GetCurrentTaskScheduler();
                         if (sched == null || sched == TaskScheduler.Default)
                         {
                             // Can inline
@@ -868,7 +874,14 @@ namespace System.Runtime.CompilerServices
             [StackTraceHidden]
             private static unsafe Exception? GetAwaitedTaskResult(Task awaitedTask, Continuation awaitingContinuation)
             {
-                Exception? ex = awaitedTask.GetRuntimeAsyncAwaitResult(ref awaitingContinuation.GetResultStorageOrNull());
+                ref byte resultStorage = ref awaitingContinuation.GetResultStorageOrNull();
+                if (Unsafe.IsNullRef(ref resultStorage) && !awaitedTask.IsWaitNotificationEnabledOrNotRanToCompletion)
+                {
+                    // Successfully completed and there's no result to store.
+                    return null;
+                }
+
+                Exception? ex = awaitedTask.GetRuntimeAsyncAwaitResult(ref resultStorage);
                 if (ex is not null && (awaitingContinuation.ResumeInfo == null || awaitingContinuation.ResumeInfo->DiagnosticIP == null))
                 {
                     // Restoring the exception's dispatch state is only completed by appending a frame to its
@@ -882,8 +895,10 @@ namespace System.Runtime.CompilerServices
             // Lazily created, as it's only needed when suspending on something other than a Task.
             private Action GetContinuationAction() => Unsafe.As<Action>(m_action ??= new Action(DispatchContinuations));
 
-            // Completes the operation with the result stored in m_result.
-            internal virtual bool TrySetRuntimeAsyncResult() => TrySetResult(m_result);
+            // Completes the operation with the result stored in m_result. The result was already written
+            // there by the final continuation and nothing else can complete this task, so the result-less
+            // completion can be used, publishing the result with a single atomic state transition.
+            internal virtual bool TrySetRuntimeAsyncResult() => TrySetResult();
 
             // Completes the operation with the specified exception (canceled if it's an OperationCanceledException).
             internal virtual bool TrySetRuntimeAsyncException(Exception ex) =>
@@ -1186,7 +1201,7 @@ namespace System.Runtime.CompilerServices
                         return;
                     }
 
-                    if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation))
+                    if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation, awaitState.CurrentThread!))
                     {
                         contexts.Pop(awaitState.CurrentThread!);
                         awaitState.Pop();
@@ -1337,7 +1352,7 @@ namespace System.Runtime.CompilerServices
                         return;
                     }
 
-                    if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation))
+                    if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation, awaitState.CurrentThread!))
                     {
                         RuntimeAsyncInstrumentationHelpers.QueueSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, asyncDispatcherInfo.NextContinuation);
 
@@ -1374,14 +1389,37 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            private bool QueueContinuationFollowUpActionIfNecessary(Continuation continuation)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private bool QueueContinuationFollowUpActionIfNecessary(Continuation continuation, Thread currentThread)
+            {
+                ContinuationFlags flags = continuation.Flags;
+
+                // Fast path for the common case of a continuation that may run on any thread pool thread
+                // when no synchronization context or task is current, such that it can be run inline.
+                if ((flags & ContinuationFlags.ContinueOnThreadPool) != 0)
+                {
+                    if (currentThread._synchronizationContext is null && Task.t_currentTask is null)
+                    {
+                        return false;
+                    }
+                }
+                else if ((flags & (ContinuationFlags.ContinueOnCapturedSynchronizationContext | ContinuationFlags.ContinueOnCapturedTaskScheduler)) == 0)
+                {
+                    return false;
+                }
+
+                return QueueContinuationFollowUpActionIfNecessarySlow(continuation);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private bool QueueContinuationFollowUpActionIfNecessarySlow(Continuation continuation)
             {
                 if ((continuation.Flags & ContinuationFlags.ContinueOnThreadPool) != 0)
                 {
                     SynchronizationContext? ctx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
                     if (ctx == null || ctx.GetType() == typeof(SynchronizationContext))
                     {
-                        TaskScheduler? sched = TaskScheduler.InternalCurrent;
+                        TaskScheduler? sched = GetCurrentTaskScheduler();
                         if (sched == null || sched == TaskScheduler.Default)
                         {
                             // Can inline
@@ -1780,6 +1818,10 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        // Equivalent to TaskScheduler.InternalCurrent, but avoids the call when no task is current (the common case).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TaskScheduler? GetCurrentTaskScheduler() => Task.t_currentTask is null ? null : TaskScheduler.InternalCurrent;
+
         private static void CaptureContinuationContext(ref object? continuationContext, ref ContinuationFlags flags)
         {
             SynchronizationContext? syncCtx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
@@ -1790,7 +1832,7 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
-            TaskScheduler? sched = TaskScheduler.InternalCurrent;
+            TaskScheduler? sched = GetCurrentTaskScheduler();
             if (sched != null && sched != TaskScheduler.Default)
             {
                 flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
@@ -1811,7 +1853,7 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
-            TaskScheduler? sched = TaskScheduler.InternalCurrent;
+            TaskScheduler? sched = GetCurrentTaskScheduler();
             if (sched != null && sched != TaskScheduler.Default)
             {
                 flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
@@ -1856,7 +1898,7 @@ namespace System.Runtime.CompilerServices
                 SynchronizationContext? syncCtx = currentThread._synchronizationContext;
                 if (syncCtx is null || syncCtx.GetType() == typeof(SynchronizationContext))
                 {
-                    TaskScheduler? sched = TaskScheduler.InternalCurrent;
+                    TaskScheduler? sched = GetCurrentTaskScheduler();
                     if (sched is null || sched == TaskScheduler.Default)
                     {
                         return;
@@ -2032,7 +2074,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                TaskScheduler? sched = TaskScheduler.InternalCurrent;
+                TaskScheduler? sched = GetCurrentTaskScheduler();
                 if (sched != null && sched != TaskScheduler.Default)
                 {
                     flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
