@@ -85,7 +85,7 @@ safe-outputs:
             throw new Error('Documentation output is invalid: ' + JSON.stringify(output.errors));
           }
           const failures = output.items.filter(item =>
-            ['report_missing_tool', 'report_missing_data', 'missing_tool', 'missing_data', 'report_incomplete'].includes(item.type));
+            ['report_missing_tool', 'report_missing_data', 'report_incomplete'].includes(item.type));
           if (failures.length) {
             throw new Error('Documentation could not be completed: ' + JSON.stringify(failures));
           }
