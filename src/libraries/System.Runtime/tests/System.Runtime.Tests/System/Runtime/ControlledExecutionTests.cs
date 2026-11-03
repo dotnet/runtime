@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 // Disable warnings for ControlledExecution.Run
@@ -69,6 +70,29 @@ namespace System.Runtime.Tests
                 RunInfiniteLoop();
                 _finishedExecution = true;
             }
+        }
+
+        public static bool IsRepeatedCancellationSupported =>
+            PlatformDetection.IsNotMonoRuntime && PlatformDetection.IsNotNativeAot && RemoteExecutor.IsSupported;
+
+        [ConditionalFact(nameof(IsRepeatedCancellationSupported))]
+        public void CancelRepeatedlyOnSameThread()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    using var cts = new CancellationTokenSource();
+                    OperationCanceledException exception = Assert.Throws<OperationCanceledException>(() =>
+                        ControlledExecution.Run(() =>
+                        {
+                            cts.CancelAfter(100);
+                            // Avoid calls in the loop so cancellation requires thread activation.
+                            while (true) { }
+                        }, cts.Token));
+                    Assert.Equal(cts.Token, exception.CancellationToken);
+                }
+            }).Dispose();
         }
 
         // Tests that an infinite loop may be aborted, that the ThreadAbortException is automatically rethrown,
