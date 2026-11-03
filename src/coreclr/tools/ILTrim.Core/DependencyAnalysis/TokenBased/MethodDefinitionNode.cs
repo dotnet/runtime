@@ -12,6 +12,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Mono.Linker;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -39,55 +40,53 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             MetadataReader reader = _module.MetadataReader;
             MethodDefinition methodDef = reader.GetMethodDefinition(Handle);
             TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
 
-            DependencyList dependencies = new DependencyList();
-
             EcmaSignatureAnalyzer.AnalyzeMethodSignature(
                 _module,
                 reader.GetBlobReader(methodDef.Signature),
                 factory,
-                dependencies);
+                sink);
 
-            dependencies.Add(factory.TypeDefinition(_module, declaringType), "Method owning type");
+            sink.Add(factory.TypeDefinition(_module, declaringType), "Method owning type");
 
             if (!IsInstanceMethodOnReferenceType)
             {
                 // Static methods and methods on value types are not subject to the unused method body optimization.
-                dependencies.Add(factory.MethodBody(_module, Handle), "Method body");
+                sink.Add(factory.MethodBody(_module, Handle), "Method body");
             }
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, methodDef.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, methodDef.GetCustomAttributes());
 
             foreach (ParameterHandle parameter in methodDef.GetParameters())
             {
-                dependencies.Add(factory.Parameter(_module, parameter), "Parameter of method");
+                sink.Add(factory.Parameter(_module, parameter), "Parameter of method");
             }
 
             foreach (GenericParameterHandle parameter in methodDef.GetGenericParameters())
             {
-                dependencies.Add(factory.GenericParameter(_module, parameter), "Generic Parameter of method");
+                sink.Add(factory.GenericParameter(_module, parameter), "Generic Parameter of method");
             }
 
             if ((methodDef.Attributes & MethodAttributes.PinvokeImpl) != 0)
             {
                 MethodImport import = methodDef.GetImport();
-                dependencies.Add(factory.ModuleReference(_module, import.Module), "DllImport");
+                sink.Add(factory.ModuleReference(_module, import.Module), "DllImport");
 
                 EcmaMethod method = (EcmaMethod)_module.GetMethod(Handle);
                 if (method.Signature.ReturnType.GetTypeDefinition() is EcmaType ecmaReturnType)
-                    AddInteropAllocatedType(factory, dependencies, ecmaReturnType);
+                    AddInteropAllocatedType(factory, sink, ecmaReturnType);
                 foreach (var parameter in method.Signature)
                 {
                     if (parameter.IsByRef && ((ByRefType)parameter).ParameterType.GetTypeDefinition() is EcmaType ecmaByRefParam)
-                        AddInteropAllocatedType(factory, dependencies, ecmaByRefParam);
+                        AddInteropAllocatedType(factory, sink, ecmaByRefParam);
                 }
 
-                static void AddInteropAllocatedType(NodeFactory factory, DependencyList dependencies, EcmaType type)
+                static void AddInteropAllocatedType(NodeFactory factory, DependencySink dependencies, EcmaType type)
                 {
                     dependencies.Add(factory.ConstructedType(type), "Interop-allocated instance");
                     if (type.GetParameterlessConstructor() is EcmaMethod ctorMethod && factory.IsModuleTrimmed(ctorMethod.Module))
@@ -99,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
                 reader.StringComparer.Equals(methodDef.Name, ".ctor"))
             {
                 EcmaMethod method = (EcmaMethod)_module.GetMethod(Handle);
-                dependencies.Add(factory.ConstructedType((EcmaType)method.OwningType), "Type with a kept constructor");
+                sink.Add(factory.ConstructedType((EcmaType)method.OwningType), "Type with a kept constructor");
             }
 
             // TODO-SIZE: Property/event metadata is not strictly necessary for accessor method calls —
@@ -113,7 +112,7 @@ namespace ILCompiler.DependencyAnalysis
                     PropertyAccessors propertyAccessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
                     if (propertyAccessors.Getter == Handle || propertyAccessors.Setter == Handle)
                     {
-                        dependencies.Add(factory.PropertyDefinition(_module, propertyHandle), "Owning property of accessor method");
+                        sink.Add(factory.PropertyDefinition(_module, propertyHandle), "Owning property of accessor method");
                         break;
                     }
                 }
@@ -122,7 +121,7 @@ namespace ILCompiler.DependencyAnalysis
                     EventAccessors eventAccessors = reader.GetEventDefinition(eventHandle).GetAccessors();
                     if (eventAccessors.Adder == Handle || eventAccessors.Remover == Handle || eventAccessors.Raiser == Handle)
                     {
-                        dependencies.Add(factory.EventDefinition(_module, eventHandle), "Owning event of accessor method");
+                        sink.Add(factory.EventDefinition(_module, eventHandle), "Owning event of accessor method");
                         break;
                     }
                 }
@@ -141,27 +140,25 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     var pairMethod = ecmaOwningType.GetMethod(methodPairName, null) as EcmaMethod;
                     if (pairMethod != null)
-                        dependencies.Add(factory.MethodDefinition(_module, pairMethod.Handle), "Delegate BeginInvoke/EndInvoke pair");
+                        sink.Add(factory.MethodDefinition(_module, pairMethod.Handle), "Delegate BeginInvoke/EndInvoke pair");
                 }
             }
-
-            return dependencies;
         }
 
         // Instance methods on reference types conditionally depend on their bodies.
         public override bool HasConditionalStaticDependencies => IsInstanceMethodOnReferenceType;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             MethodDefinition methodDef = _module.MetadataReader.GetMethodDefinition(Handle);
             TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
             var ecmaType = (EcmaType)_module.GetObject(declaringType);
 
             // Conditionally depend on the method body if the declaring type was constructed.
-            yield return new(
+            sink.Add(new CombinedDependencyListEntry(
                 factory.MethodBody(_module, Handle),
                 factory.ConstructedType(ecmaType),
-                "Method body on constructed type");
+                "Method body on constructed type"));
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

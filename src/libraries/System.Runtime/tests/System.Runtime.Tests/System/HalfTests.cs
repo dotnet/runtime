@@ -28,15 +28,24 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ExplicitConversion_FromDecimal_TestData()
         {
-            // The conversion must be correctly rounded. Several of these values round differently when the
-            // conversion goes through float first (double rounding), since float's 24-bit significand only
-            // just meets the 2 * 11 + 2 bound needed for the second rounding to Half to be innocuous.
+            // Decimal values can be arbitrarily close to a Half midpoint, so rounding through another
+            // floating-point format can lose which side of the midpoint the value is on.
             yield return new object[] { 29.101563197521766818810399014m, (ushort)0x4F47 };
             yield return new object[] { 31.61718659002636828475762054m, (ushort)0x4FE7 };
             yield return new object[] { -0.2764892618124898818101803106m, (ushort)0xB46D };
             yield return new object[] { 2174.9999823571306366729268181m, (ushort)0x683F };
             yield return new object[] { -11.800781577718180009007584962m, (ushort)0xC9E7 };
             yield return new object[] { -19752.000968250648361227086248m, (ushort)0xF4D3 };
+
+            // Decimal values just above or below Half midpoints must round to the nearer neighbor.
+            yield return new object[] { 1.0004882812500000000000000001m, (ushort)0x3C01 };
+            yield return new object[] { 1.0014648437499999999999999999m, (ushort)0x3C01 };
+            yield return new object[] { 0.0000610649585723877m, (ushort)0x0401 };
+            yield return new object[] { 0.0000000298023223876953125001m, (ushort)0x0001 };
+
+            // Exact ties outside the fast path's tie-to-even exponent range must still round to even.
+            yield return new object[] { 0.0004885196685791015625m, (ushort)0x1000 };
+            yield return new object[] { 0.0004894733428955078125m, (ushort)0x1002 };
 
             // Subnormal, subnormal/normal boundary, and overflow.
             yield return new object[] { 0.00003m, (ushort)0x01F7 };
@@ -883,6 +892,8 @@ namespace System.Tests
             yield return new object[] { "5.004000000000000000", defaultStyle, invariantFormat, 5.004f };
             yield return new object[] { "5.0040000000000000000", defaultStyle, invariantFormat, 5.004f };
             yield return new object[] { "5.040", defaultStyle, invariantFormat, 5.04f };
+            yield return new object[] { "0.0004885196685791015625", defaultStyle, invariantFormat, 0.0004885196685791015625f };
+            yield return new object[] { "0.0004894733428955078125", defaultStyle, invariantFormat, 0.0004894733428955078125f };
 
             yield return new object[] { "5004.000000000000000", defaultStyle, invariantFormat, 5004.0f };
             yield return new object[] { "50040.0", defaultStyle, invariantFormat, 50040.0f };
@@ -1307,6 +1318,26 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0.00031415927f, "F4", "0.0003")]
+        [InlineData(0.00031415927f, "F5", "0.00031")]
+        [InlineData(0.00031415927f, "F6", "0.000314")]
+        [InlineData(-0.00031415927f, "F5", "-0.00031")]
+        [InlineData(0.00031415927f, "C5", "\u00A40.00031")]
+        [InlineData(0.00031415927f, "N5", "0.00031")]
+        [InlineData(0.00031415927f, "P3", "0.031 %")]
+        [InlineData(0.00031415927f, "P5", "0.03142 %")]
+        [InlineData(5.9604645E-08f, "F5", "0.00000")]
+        [InlineData(-5.9604645E-08f, "F5", "-0.00000")]
+        [InlineData(0.0f, "F5", "0.00000")]
+        [InlineData(-0.0f, "F5", "-0.00000")]
+        public static void ToString_FractionalPrecision(float value, string format, string expected)
+        {
+            Half h = (Half)value;
+            Assert.Equal(expected, h.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(h, format, NumberFormatInfo.InvariantInfo, expected);
+        }
+
+        [Theory]
         [InlineData(1.0f, "x", "0x1p+0")]
         [InlineData(1.5f, "x", "0x1.8p+0")]
         [InlineData(2.0f, "x", "0x1p+1")]
@@ -1371,6 +1402,68 @@ namespace System.Tests
 
             Assert.True(Half.TryParse(input, NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo, out result));
             Assert.True(Half.IsNegative(result) && result == (Half)0.0f);
+        }
+
+        [Theory]
+        [InlineData(0.0f, "x", "plus", "minus", "0x0pplus0")]
+        [InlineData(-0.0f, "X", "plus", "minus", "minus0X0Pplus0")]
+        [InlineData(0.0f, "x3", "plus", "minus", "0x0.000pplus0")]
+        [InlineData(-0.0f, "X3", "plus", "minus", "minus0X0.000Pplus0")]
+        [InlineData(3.0f, "x", "plus", "minus", "0x1.8pplus1")]
+        [InlineData(-0.75f, "X", "plus", "minus", "minus0X1.8Pminus1")]
+        [InlineData(3.0f, "X", "\u200E+", "\u200E-", "0X1.8P\u200E+1")]
+        [InlineData(-0.75f, "x", "\u200E+", "\u200E-", "\u200E-0x1.8p\u200E-1")]
+        [InlineData(3.0f, "x", "\u061C+", "\u061C-", "0x1.8p\u061C+1")]
+        [InlineData(-0.75f, "X", "\u061C+", "\u061C-", "\u061C-0X1.8P\u061C-1")]
+        [InlineData(0.75f, "x", "+", "\u2212", "0x1.8p\u22121")]
+        [InlineData(3.0f, "X", "", "~", "0X1.8P1")]
+        [InlineData(3.0f, "x", "-+", "-", "0x1.8p-+1")]
+        [InlineData(3.0f, "X", "-", "-+", "0X1.8P-1")]
+        [InlineData(3.0f, "x", "-", "+", "0x1.8p-1")]
+        [InlineData(0.75f, "X", "-", "+", "0X1.8P+1")]
+        [InlineData(-3.0f, "X", "-", "+", "+0X1.8P-1")]
+        [InlineData(-3.0f, "x", "-+", "-", "-0x1.8p-+1")]
+        [InlineData(-3.0f, "X", "-", "-+", "-+0X1.8P-1")]
+        [InlineData(-0.75f, "x", "-", "-+", "-+0x1.8p-+1")]
+        [InlineData(0.75f, "x", "-", "-+", "0x1.8p-+1")]
+        public static void ToStringHexFloat_CustomSigns(float f, string format, string positiveSign, string negativeSign, string expected)
+        {
+            Half value = (Half)f;
+            var info = new NumberFormatInfo { PositiveSign = positiveSign, NegativeSign = negativeSign };
+            Assert.Equal(expected, value.ToString(format, info));
+            NumberFormatTestHelper.TryFormatNumberTest(value, format, info, expected, formatCasingMatchesOutput: false);
+
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(Half.Parse(expected, NumberStyles.HexFloat, info)));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(Half.Parse(expected.AsSpan(), NumberStyles.HexFloat, info)));
+            byte[] utf8 = Encoding.UTF8.GetBytes(expected);
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(Half.Parse(utf8, NumberStyles.HexFloat, info)));
+
+            Assert.True(Half.TryParse(expected, NumberStyles.HexFloat, info, out Half result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+            Assert.True(Half.TryParse(expected.AsSpan(), NumberStyles.HexFloat, info, out result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+            Assert.True(Half.TryParse(utf8, NumberStyles.HexFloat, info, out result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+        }
+
+        [Theory]
+        [InlineData(-3.0f, "E-0")]
+        [InlineData(-0.75f, "E-+")]
+        public static void ToStringE_CustomSignPrefixes(float f, string exponentSign)
+        {
+            Half value = (Half)f;
+            var info = new NumberFormatInfo { PositiveSign = "-", NegativeSign = "-+" };
+            string formatted = value.ToString("E", info);
+            Assert.StartsWith("-+", formatted);
+            Assert.Contains(exponentSign, formatted);
+
+            Assert.True(Half.TryParse(formatted, NumberStyles.Float, info, out Half result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+            Assert.True(Half.TryParse(formatted.AsSpan(), NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+            byte[] utf8 = Encoding.UTF8.GetBytes(formatted);
+            Assert.True(Half.TryParse(utf8, NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
         }
 
         [Fact]

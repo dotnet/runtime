@@ -157,7 +157,7 @@ docker run --rm \
   -v <RUNTIME_REPO_PATH>:/runtime \
   -w /runtime \
   -e ROOTFS_DIR=/crossrootfs/arm64 \
-  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-arm64 \
+  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net11.0-cross-arm64 \
   ./build.sh --subset clr --cross --arch arm64
 ```
 
@@ -170,7 +170,7 @@ docker run --rm \
   -v <RUNTIME_REPO_PATH>:/runtime \
   -w /runtime \
   -e ROOTFS_DIR=/crossrootfs/x64 \
-  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-freebsd-14-amd64 \
+  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net11.0-cross-freebsd-14-amd64 \
   ./build.sh --subset clr --cross --os freebsd
 ```
 
@@ -201,7 +201,7 @@ docker run --rm -it \
   -v $(pwd):/runtime \
   -w /runtime \
   -e ROOTFS_DIR=/crossrootfs/arm64 \
-  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-freebsd-14-arm64 \
+  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net11.0-cross-freebsd-14-arm64 \
   bash
 ```
 
@@ -260,8 +260,8 @@ Libraries tests need the test host (`artifacts/bin/testhost/...`) plus the per-l
 
 ```bash
 # Pack and upload the test host.
-tar -czf testhost_net11.0-freebsd-Debug-arm64.tar.gz artifacts/bin/testhost/net11.0-freebsd-Debug-arm64
-scp testhost_net11.0-freebsd-Debug-arm64.tar.gz $TargetMachine:/tmp
+tar -czf testhost_net12.0-freebsd-Debug-arm64.tar.gz artifacts/bin/testhost/net12.0-freebsd-Debug-arm64
+scp testhost_net12.0-freebsd-Debug-arm64.tar.gz $TargetMachine:/tmp
 
 # Copy a specific test's archive (paths and names vary; this example uses System.Text.RegularExpressions).
 scp artifacts/helix/tests/freebsd.AnyCPU.Debug/System.Text.RegularExpressions.Unit.Tests.zip $TargetMachine:/tmp
@@ -273,12 +273,12 @@ On the target machine:
 ssh $TargetMachine
 
 mkdir testhost
-tar -xzf /tmp/testhost_net11.0-freebsd-Debug-arm64.tar.gz -C testhost
+tar -xzf /tmp/testhost_net12.0-freebsd-Debug-arm64.tar.gz -C testhost
 
 mkdir regex-tests && cd $_
 unzip /tmp/System.Text.RegularExpressions.Unit.Tests.zip
 
-./RunTests.sh --runtime-path ~/testhost/artifacts/bin/testhost/net11.0-freebsd-Debug-arm64
+./RunTests.sh --runtime-path ~/testhost/artifacts/bin/testhost/net12.0-freebsd-Debug-arm64
 ```
 
 #### Notes

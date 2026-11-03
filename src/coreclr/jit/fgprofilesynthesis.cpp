@@ -152,14 +152,6 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
             AssignLikelihoods();
             break;
 
-        case ProfileSynthesisOption::ReverseLikelihoods:
-            ReverseLikelihoods();
-            break;
-
-        case ProfileSynthesisOption::RandomLikelihoods:
-            RandomizeLikelihoods();
-            break;
-
         case ProfileSynthesisOption::RepairLikelihoods:
             RepairLikelihoods();
             break;
@@ -250,13 +242,15 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
-    // If a method has just one edge, we simulate having PGO data for it since we typically
-    // don't instrument such methods. To avoid giving excessive inlining boost to large and/or
-    // infrequently executed methods, we apply the following heuristics to exclude:
-    //
+    // We don't normally instrument single-edge methods, so treat their synthetic profiles as trusted.
+    // For roots, require observed hotness or an explicit speed preference to avoid over-inlining.
     const bool preferSize   = m_comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
     const bool isCctor      = (m_comp->info.compFlags & FLG_CCTOR) == FLG_CCTOR;
-    m_comp->fgPgoSingleEdge = !isCctor && !preferSize && (m_comp->opts.callInstrCount < 10);
+    const bool eligibleRoot = ((m_comp->info.compFlags & CORINFO_FLG_AGGRESSIVE_OPT) != 0) ||
+                              m_comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT) ||
+                              m_comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    m_comp->fgPgoSingleEdge =
+        !isCctor && !preferSize && (m_comp->compIsForInlining() || eligibleRoot) && (m_comp->opts.callInstrCount < 10);
 
     if (m_comp->fgPgoSingleEdge)
     {
@@ -771,85 +765,6 @@ void ProfileSynthesis::ClearLikelihoods()
             succEdge->clearLikelihood();
         }
     }
-}
-
-//------------------------------------------------------------------------
-// ReverseLikelihoods: for all blocks, reverse likelihoods on all edges
-//   from the block
-//
-void ProfileSynthesis::ReverseLikelihoods()
-{
-#ifdef DEBUG
-    JITDUMP("Reversing likelihoods\n");
-    WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
-    for (BasicBlock* const block : m_comp->Blocks())
-    {
-        SumOutgoingLikelihoods(block, &likelihoods);
-
-        if (likelihoods.size() < 2)
-        {
-            continue;
-        }
-
-        for (size_t i = 0; i < likelihoods.size() / 2; i++)
-        {
-            size_t   j     = likelihoods.size() - i - 1;
-            weight_t t     = likelihoods[i];
-            likelihoods[i] = likelihoods[j];
-            likelihoods[j] = t;
-        }
-
-        size_t k = 0;
-        for (FlowEdge* const succEdge : block->SuccEdges())
-        {
-            succEdge->setLikelihood(likelihoods[k++]);
-        }
-    }
-#endif // DEBUG
-}
-
-//------------------------------------------------------------------------
-// RandomizeLikelihoods: for all blocks, randomize likelihoods on all edges
-//   from the block
-//
-// Notes:
-//   total outgoing likelihood for each block remains at 1.0
-//
-void ProfileSynthesis::RandomizeLikelihoods()
-{
-#ifdef DEBUG
-    // todo: external seed
-    JITDUMP("Randomizing likelihoods\n");
-    WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
-    CLRRandom    random;
-
-    random.Init(m_comp->info.compMethodHash());
-
-    for (BasicBlock* const block : m_comp->Blocks())
-    {
-        unsigned const N = block->NumSucc();
-        likelihoods.clear();
-        likelihoods.resize(N, 0);
-
-        weight_t sum = 0;
-        unsigned i   = 0;
-
-        // Consider: something other than uniform distribution.
-        // As is, this will rarely set likelihoods to zero.
-        //
-        for (i = 0; i < N; i++)
-        {
-            likelihoods[i] = (weight_t)random.NextDouble();
-            sum += likelihoods[i];
-        }
-
-        i = 0;
-        for (FlowEdge* const succEdge : block->SuccEdges())
-        {
-            succEdge->setLikelihood(likelihoods[i++] / sum);
-        }
-    }
-#endif // DEBUG
 }
 
 //------------------------------------------------------------------------

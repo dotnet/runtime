@@ -59,10 +59,6 @@ uint32_t WINAPI FinalizerStart(void* pContext)
     ThreadStore::AttachCurrentThread();
     Thread * pThread = ThreadStore::GetCurrentThread();
 
-    // Disallow gcstress on this thread to work around the current implementation's limitation that it will
-    // get into an infinite loop if performed on the finalizer thread.
-    pThread->SetSuppressGcStress();
-
     g_pFinalizerThread = PTR_Thread(pThread);
 
     // Wait for a finalization request.
@@ -103,9 +99,11 @@ bool RhInitializeFinalization()
     }
 #endif
 
+#ifdef FEATURE_MULTITHREADING
     // Create the finalizer thread itself.
     if (!PalStartFinalizerThread(FinalizerStart, &g_FinalizerEvent))
         return false;
+#endif // FEATURE_MULTITHREADING
 
     return true;
 }

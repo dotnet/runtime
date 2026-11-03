@@ -82,8 +82,6 @@ extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
                                                   UINT16 maxStackSize,
                                                   ExceptionInstance * pExceptions,
                                                   INT32 numExceptions,
-                                                  INT32 * pTokenFixups,
-                                                  INT32 numTokenFixups,
                                                   QCallExceptionStatus* qcallError);
 
 

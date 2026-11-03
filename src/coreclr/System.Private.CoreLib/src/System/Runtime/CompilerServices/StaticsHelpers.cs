@@ -11,14 +11,6 @@ namespace System.Runtime.CompilerServices
     [DebuggerStepThrough]
     internal static unsafe partial class StaticsHelpers
     {
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void GetThreadStaticsByIndex(ByteRefOnStack result, int index, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
-
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
-
         [Intrinsic]
         private static ref byte VolatileReadAsByref(ref IntPtr address) => ref VolatileReadAsByref(ref address);
 
@@ -82,7 +74,37 @@ namespace System.Runtime.CompilerServices
                 return ref gcStaticBase;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct StaticFieldAddressArgs
+        {
+            public delegate*<IntPtr, ref byte> staticBaseHelper; // Function pointer to get the static base address
+            public IntPtr arg0; // Argument to pass to the staticBaseHelper function
+            public nint offset; // Offset from the static base address
+        }
+
+        [DebuggerHidden]
+        private static unsafe ref byte StaticFieldAddress_Dynamic(StaticFieldAddressArgs* pArgs)
+        {
+            return ref Unsafe.Add(ref pArgs->staticBaseHelper(pArgs->arg0), pArgs->offset);
+        }
+
+        [DebuggerHidden]
+        private static unsafe ref byte StaticFieldAddressUnbox_Dynamic(StaticFieldAddressArgs* pArgs)
+        {
+            object boxedObject = Unsafe.As<byte, object>(ref Unsafe.Add(ref pArgs->staticBaseHelper(pArgs->arg0), pArgs->offset));
+            return ref boxedObject.GetRawData();
+        }
+
+#if FEATURE_MULTITHREADING
         // Thread static helpers
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall)]
+        private static partial void GetThreadStaticsByIndex(ByteRefOnStack result, int index, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall)]
+        private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
 
         /// <summary>
         /// Return beginning of the object as a reference to byte
@@ -271,26 +293,6 @@ namespace System.Runtime.CompilerServices
         {
             return ref GetThreadLocalStaticBaseByIndex(index, true);
         }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct StaticFieldAddressArgs
-        {
-            public delegate*<IntPtr, ref byte> staticBaseHelper; // Function pointer to get the static base address
-            public IntPtr arg0; // Argument to pass to the staticBaseHelper function
-            public nint offset; // Offset from the static base address
-        }
-
-        [DebuggerHidden]
-        private static unsafe ref byte StaticFieldAddress_Dynamic(StaticFieldAddressArgs* pArgs)
-        {
-            return ref Unsafe.Add(ref pArgs->staticBaseHelper(pArgs->arg0), pArgs->offset);
-        }
-
-        [DebuggerHidden]
-        private static unsafe ref byte StaticFieldAddressUnbox_Dynamic(StaticFieldAddressArgs* pArgs)
-        {
-            object boxedObject = Unsafe.As<byte, object>(ref Unsafe.Add(ref pArgs->staticBaseHelper(pArgs->arg0), pArgs->offset));
-            return ref boxedObject.GetRawData();
-        }
+#endif // FEATURE_MULTITHREADING
     }
 }

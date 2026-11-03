@@ -19,11 +19,6 @@ namespace Internal.Runtime.TypeLoader
     public struct FieldAccessMetadata
     {
         /// <summary>
-        /// Module containing the relevant metadata, null when not found
-        /// </summary>
-        public TypeManagerHandle MappingTableModule;
-
-        /// <summary>
         /// Cookie for field access. This field is set to IntPtr.Zero when the value is not available.
         /// </summary>
         public IntPtr Cookie;
@@ -108,7 +103,6 @@ namespace Internal.Runtime.TypeLoader
                             fieldOffset = (int)entryParser.GetUnsigned();
                     }
 
-                    fieldAccessMetadata.MappingTableModule = mappingTableModule.Handle;
                     fieldAccessMetadata.Cookie = fieldAddressCookie;
                     fieldAccessMetadata.Flags = entryFlags;
                     fieldAccessMetadata.Offset = fieldOffset;

@@ -55,6 +55,11 @@ System.Formats.Cbor.CborWriter</PackageDescription>
     <Compile Include="$(CommonPath)Polyfills\HashCodePolyfills.cs" Link="Common\Polyfills\HashCodePolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BinaryPrimitivesPolyfills.cs" Link="Common\Polyfills\BinaryPrimitivesPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DecimalPolyfills.cs" Link="Common\Polyfills\DecimalPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StackPolyfills.cs" Link="Common\Polyfills\StackPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StringPolyfills.cs" Link="Common\Polyfills\StringPolyfills.cs" />
+    <Compile Include="$(CommonPath)System\Buffers\SpanAction.cs" Link="Common\System\Buffers\SpanAction.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

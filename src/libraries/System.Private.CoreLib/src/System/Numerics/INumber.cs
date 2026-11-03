@@ -3,11 +3,13 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 
 namespace System.Numerics
 {
     /// <summary>Defines a number type.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
+    [SuppressReadyToRunCanonicalRooting]
     public interface INumber<TSelf>
         : IComparable,
           IComparable<TSelf>,

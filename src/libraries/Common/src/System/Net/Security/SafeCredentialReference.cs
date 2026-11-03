@@ -22,7 +22,15 @@ namespace System.Net.Security
                 return null;
             }
 
-            return new SafeCredentialReference(target);
+            try
+            {
+                return new SafeCredentialReference(target);
+            }
+            catch (ObjectDisposedException)
+            {
+                // Another owner may release the last reference after the checks above.
+                return null;
+            }
         }
 
         private SafeCredentialReference(SafeFreeCredentials target)

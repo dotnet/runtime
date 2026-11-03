@@ -91,11 +91,7 @@ void PerfMap::InitializeConfiguration()
 
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
 {
-    CONTRACTL
-    {
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     if (type == PerfMapType::DISABLED)
     {
@@ -326,9 +322,7 @@ void PerfMap::WriteLine(SString& line)
 void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
 {
     CONTRACTL{
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(pMethod != nullptr);
         PRECONDITION(pCode != nullptr);
         PRECONDITION(codeSize > 0);
@@ -378,12 +372,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
 // Log a pre-compiled method to the perfmap.
 void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 {
-    CONTRACTL
-    {
-        THROWS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     if (!s_enabled)
     {
@@ -439,10 +428,9 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 // register in InterpExecMethod
 void PerfMap::LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t irSize)
 {
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
         PRECONDITION(pMethod != nullptr);
         PRECONDITION(irAddress != nullptr);
         PRECONDITION(irSize > 0);

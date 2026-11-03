@@ -112,15 +112,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
         internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
 
-#if FEATURE_GC_STRESS
-        //
-        // internal calls for GC stress
-        //
-        [RuntimeImport(RuntimeLibrary, "RhpInitializeGcStress")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpInitializeGcStress();
-#endif // FEATURE_GC_STRESS
-
         [RuntimeImport(RuntimeLibrary, "RhpEHEnumInitFromStackFrameIterator")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpEHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, out EH.MethodRegionInfo pMethodRegionInfo, void* pEHEnum);
@@ -198,10 +189,6 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
 #endif
-
-        [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhCurrentNativeThreadId();
 
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls

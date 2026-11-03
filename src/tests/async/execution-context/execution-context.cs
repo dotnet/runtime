@@ -9,20 +9,10 @@ using Xunit;
 
 public class Async2ExecutionContext
 {
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestDefaultFlow()
-    {
-        Test().GetAwaiter().GetResult();
-    }
-
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestSuppressedFlow()
-    {
-        TestNoFlowOuter().GetAwaiter().GetResult();
-    }
-
     public static AsyncLocal<long?> s_local = new AsyncLocal<long?>();
-    private static async Task Test()
+
+    [Fact]
+    public static async Task Test()
     {
         s_local.Value = 42;
         await ChangeThenReturn();
@@ -57,7 +47,8 @@ public class Async2ExecutionContext
         Assert.Equal(46, s_local.Value);
     }
 
-    private static async Task TestNoFlowOuter()
+    [Fact]
+    public static async Task TestNoFlowOuter()
     {
         s_local.Value = 7;
         await TestNoFlowInner();
@@ -120,14 +111,10 @@ public class Async2ExecutionContext
         s_local.Value = 123;
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static int TestRestoreTier0ContextInOsr()
-    {
-        return TestRestoreTier0ContextInOsrAsync().GetAwaiter().GetResult();
-    }
-
     private static AsyncLocal<int> s_osrLocal = new AsyncLocal<int>();
-    private static async Task<int> TestRestoreTier0ContextInOsrAsync()
+
+    [Fact]
+    public static async Task<int> TestRestoreTier0ContextInOsrAsync()
     {
         s_osrLocal.Value = 100;
 
@@ -154,12 +141,7 @@ public class Async2ExecutionContext
     }
 
     [Fact]
-    public static void TestValueTask()
-    {
-        TestValueTaskAsync().GetAwaiter().GetResult();
-    }
-
-    private static async ValueTask TestValueTaskAsync()
+    public static async ValueTask TestValueTaskAsync()
     {
         s_local.Value = 42;
         await ChangeThenReturnValueTask();
@@ -179,12 +161,7 @@ public class Async2ExecutionContext
     // region (before the caller itself suspends); a suspension in the caller
     // would otherwise mask the leak via the caller's own context restore.
     [Fact]
-    public static void TestNoExecutionContextLeakOnSuspension()
-    {
-        TestNoExecutionContextLeakOnSuspensionAsync().GetAwaiter().GetResult();
-    }
-
-    private static async Task TestNoExecutionContextLeakOnSuspensionAsync()
+    public static async Task TestNoExecutionContextLeakOnSuspensionAsync()
     {
         s_leakLocal.Value = 100;
 

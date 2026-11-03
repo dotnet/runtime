@@ -12,13 +12,8 @@ public class CustomStructAwaiters
     private static int s_safeAwaiterValue;
     private static int s_unsafeAwaiterValue;
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestEntryPoint()
-    {
-        Run().Wait();
-    }
-
-    private static async Task Run()
+    [Fact]
+    public static async Task Run()
     {
         Volatile.Write(ref s_safeAwaiterValue, 0);
         await new SafeAwaitable(42);

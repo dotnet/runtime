@@ -304,6 +304,35 @@ namespace mdarray
             return sum;
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void NegativeConstantDimensions(bool useMinValue)
+        {
+            int[,] a = new int[3, 4];
+            Assert.Throws<IndexOutOfRangeException>(() => GetLengthNegative(a, useMinValue));
+            Assert.Throws<IndexOutOfRangeException>(() => GetLowerBoundNegative(a, useMinValue));
+            Assert.Throws<IndexOutOfRangeException>(() => GetUpperBoundNegative(a, useMinValue));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        private static int GetLengthNegative(int[,] a, bool useMinValue)
+        {
+            return useMinValue ? a.GetLength(int.MinValue) : a.GetLength(-1);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        private static int GetLowerBoundNegative(int[,] a, bool useMinValue)
+        {
+            return useMinValue ? a.GetLowerBound(int.MinValue) : a.GetLowerBound(-1);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        private static int GetUpperBoundNegative(int[,] a, bool useMinValue)
+        {
+            return useMinValue ? a.GetUpperBound(int.MinValue) : a.GetUpperBound(-1);
+        }
+
         ///////////////////////////////////////////////////////////////////
 
         private const int PASS = 100;

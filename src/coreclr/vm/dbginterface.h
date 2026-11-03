@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
 // CLR Debug Interface Header
-//
-
-
 
 #ifndef _dbgInterface_h_
 #define _dbgInterface_h_
@@ -42,12 +39,6 @@ public:
     virtual HRESULT Startup(void) = 0;
 
     virtual HRESULT StartupPhase2(Thread * pThread) = 0;
-
-    // Some callers into the debugger (e.g., ETW rundown) know they will need the lazy
-    // data initialized but cannot afford to have it initialized unpredictably or inside a
-    // lock.  They can use this function to force the data to be initialized at a
-    // controlled point in time
-    virtual void InitializeLazyDataIfNecessary() = 0;
 
     virtual void SetEEInterface(EEDebugInterface* i) = 0;
 
@@ -293,17 +284,11 @@ public:
 
     virtual void LockDebuggerForShutdown(void) = 0;
 
-    virtual void DisableDebugger(void) = 0;
-
     virtual HRESULT NameChangeEvent(AppDomain *pAppDomain,
                                     Thread *pThread) = 0;
 
     // send an event to the RS indicating that there's a Ctrl-C or Ctrl-Break
     virtual BOOL SendCtrlCToDebugger(DWORD dwCtrlType) = 0;
-
-    // Allows the debugger to keep an up to date list of special threads
-    virtual HRESULT UpdateSpecialThreadList(DWORD cThreadArrayLength,
-                                            DWORD *rgdwThreadIDArray) = 0;
 
     virtual DWORD GetRCThreadId(void) = 0;
 
@@ -352,7 +337,6 @@ public:
 
     virtual HRESULT ReDaclEvents(PSECURITY_DESCRIPTOR securityDescriptor) = 0;
 
-    virtual BOOL ShouldAutoAttach() = 0;
     virtual BOOL FallbackJITAttachPrompt() = 0;
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -377,7 +361,6 @@ public:
 
 #ifndef DACCESS_COMPILE
     virtual HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef) = 0;
-    virtual HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult) = 0;
     virtual void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count) = 0;
     virtual void ExternalMethodFixupNextStep(PCODE address) = 0;
     virtual void ProcessAnyPendingEvals(Thread* pThread) = 0;

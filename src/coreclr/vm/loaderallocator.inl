@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #ifndef _LOADER_ALLOCATOR_I
 #define _LOADER_ALLOCATOR_I
 
@@ -138,23 +137,6 @@ FORCEINLINE BOOL LoaderAllocator::GetHandleValueFastPhase2(LOADERHANDLE handle, 
     return TRUE;
 }
 
-FORCEINLINE OBJECTREF LoaderAllocator::GetHandleValueFastCannotFailType2(LOADERHANDLE handle)
-{
-    SUPPORTS_DAC;
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    /* This is lockless access to the handle table, be careful */
-    OBJECTREF loaderAllocatorAsObjectRef = ObjectFromHandle(m_hLoaderAllocatorObjectHandle);
-    LOADERALLOCATORREF loaderAllocator = dac_cast<LOADERALLOCATORREF>(loaderAllocatorAsObjectRef);
-    PTRARRAYREF handleTable = loaderAllocator->DangerousGetHandleTable();
-    UINT_PTR index = (((UINT_PTR)handle) >> 1) - 1;
-
-    return handleTable->GetAt(index);
-}
-
 inline bool SegmentedHandleIndexStack::Push(DWORD value)
 {
     LIMITED_METHOD_CONTRACT;
@@ -229,4 +211,3 @@ inline bool SegmentedHandleIndexStack::IsEmpty()
 }
 
 #endif //  _LOADER_ALLOCATOR_I
-

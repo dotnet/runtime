@@ -182,7 +182,7 @@ namespace System.IO.Hashing
                 ulong* accumulators = stackalloc ulong[AccumulatorCount];
                 CopyAccumulators(ref _state, accumulators);
 
-                fixed (byte* secret = _state.Secret)
+                fixed (byte* secret = &_state.Secret[0])
                 {
                     DigestLong(ref _state, accumulators, secret);
                     current = MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, _state.TotalLength * Prime64_1);
@@ -190,7 +190,7 @@ namespace System.IO.Hashing
             }
             else
             {
-                fixed (byte* buffer = _state.Buffer)
+                fixed (byte* buffer = &_state.Buffer[0])
                 {
                     current = HashToUInt64(new ReadOnlySpan<byte>(buffer, (int)_state.TotalLength), (long)_state.Seed);
                 }

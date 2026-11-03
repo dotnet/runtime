@@ -101,9 +101,6 @@ public:
 
     static bool Initialize(HANDLE hPalInstance);
     void Destroy();
-
-    bool ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP);
-    bool ShouldHijackLoopForGcStress(uintptr_t CallsiteIP);
 };
 typedef DPTR(RuntimeInstance) PTR_RuntimeInstance;
 

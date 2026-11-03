@@ -319,9 +319,9 @@ namespace System.Runtime.Serialization
                 typeCode == TypeCode.DateTime || typeCode == TypeCode.Decimal)
             {
                 LoadDefaultValue(type);
-                ConvertValue(type, Globals.TypeOfObject);
+                ConvertValue(type, typeof(object));
                 Load(value);
-                ConvertValue(type, Globals.TypeOfObject);
+                ConvertValue(type, typeof(object));
                 Call(ObjectEquals);
                 IfNot();
             }
@@ -542,7 +542,7 @@ namespace System.Runtime.Serialization
         internal void StoreArrayElement(object obj, object arrayIndex, object value)
         {
             Type arrayType = GetVariableType(obj);
-            if (arrayType == Globals.TypeOfArray)
+            if (arrayType == typeof(Array))
             {
                 Call(obj, ArraySetValue, value, arrayIndex);
             }
@@ -1303,7 +1303,7 @@ namespace System.Runtime.Serialization
 
         internal void ToString(Type type)
         {
-            if (type != Globals.TypeOfString)
+            if (type != typeof(string))
             {
                 if (type.IsValueType)
                 {

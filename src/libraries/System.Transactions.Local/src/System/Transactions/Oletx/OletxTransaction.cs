@@ -1014,7 +1014,7 @@ namespace System.Transactions.Oletx
                     throw TransactionException.Create(SR.TransactionAlreadyOver, null, DistributedTxId);
                 }
 
-                // If the transaciton is already aborted, we can get out now.  Calling Rollback on an already aborted transaction
+                // If the transaction is already aborted, we can get out now.  Calling Rollback on an already aborted transaction
                 // is legal.
                 if (TransactionStatus.Aborted == Status)
                 {
@@ -1053,7 +1053,7 @@ namespace System.Transactions.Oletx
             }
             catch (COMException comException)
             {
-                // If the ErrorCode is XACT_E_ALREADYINPROGRESS and the transaciton is already doomed, we must be
+                // If the ErrorCode is XACT_E_ALREADYINPROGRESS and the transaction is already doomed, we must be
                 // the root transaction and we have already called Commit - ignore the exception.  The
                 // Rollback is allowed and one of the enlistments that hasn't voted yet will make sure it is
                 // aborted.
@@ -1128,7 +1128,7 @@ namespace System.Transactions.Oletx
             }
 
 #pragma warning disable IDE0031 // Null check can be simplified
-            // Let the InternalTransaciton know about the outcome.
+            // Let the InternalTransaction know about the outcome.
             if (InternalTransaction != null)
             {
                 InternalTransaction.DistributedTransactionOutcome(InternalTransaction, Status);

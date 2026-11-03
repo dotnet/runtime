@@ -285,19 +285,19 @@ namespace {Namespace}
 
         private void ValidateConditionalSelectResult(
             Vector<{Op1BaseType}> maskOp,
-            Vector<{Op1BaseType}> left,
+            Vector<{Op1BaseType}> leftOp,
             Vector<{Op1BaseType}> cond,
             Vector<{RetBaseType}> output,
             bool trueMode = true,
             [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] mask = new {Op1BaseType}[Op1ElementCount];
-            {Op1BaseType}[] leftOp = new {Op1BaseType}[Op1ElementCount];
+            {Op1BaseType}[] left = new {Op1BaseType}[Op1ElementCount];
             {Op1BaseType}[] condVal = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] result = new {RetBaseType}[RetElementCount];
 
             TestLibrary.Vectors.VectorToArray(ref mask, maskOp);
-            TestLibrary.Vectors.VectorToArray(ref leftOp, left);
+            TestLibrary.Vectors.VectorToArray(ref left, leftOp);
             TestLibrary.Vectors.VectorToArray(ref condVal, cond);
             TestLibrary.Vectors.VectorToArray(ref result, output);
 
@@ -318,7 +318,7 @@ namespace {Namespace}
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>(Vector<{Op1BaseType}>, Vector<{Op1BaseType}>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    mask: ({string.Join(", ", mask)})");
-                TestLibrary.TestFramework.LogInformation($"  leftOp: ({string.Join(", ", leftOp)})");
+                TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"    cond: ({string.Join(", ", condVal)})");
                 TestLibrary.TestFramework.LogInformation($"expected: ({string.Join(", ", expected)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
@@ -331,8 +331,10 @@ namespace {Namespace}
         private void ValidateResult(Vector<{Op1BaseType}> leftOp, Vector<{RetBaseType}> result, [CallerMemberName] string method = "")
         {
             {RetBaseType}[] expected = new {RetBaseType}[RetElementCount];
+            {Op1BaseType}[] left = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] resultArr = new {RetBaseType}[RetElementCount];
 
+            TestLibrary.Vectors.VectorToArray(ref left, leftOp);
             TestLibrary.Vectors.VectorToArray(ref resultArr, result);
 
             for (int i = 0; i < resultArr.Length; i++)
@@ -343,7 +345,7 @@ namespace {Namespace}
             if (!expected.SequenceEqual(resultArr))
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>(Vector<{Op1BaseType}>): {method} failed:");
-                TestLibrary.TestFramework.LogInformation($"  leftOp: ({string.Join(", ", leftOp)})");
+                TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"expected: ({string.Join(", ", expected)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);

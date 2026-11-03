@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _context = factory.TypeSystemContext;
             _wasmSignature = wasmSignature;
             _typeNode = factory.WasmTypeNode(wasmSignature);
-            _lookupString = GetLookupString(wasmSignature.FuncType);
+            _lookupString = GetLookupString("V", wasmSignature.FuncType);
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -56,7 +56,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return sb.ToString();
         }
 
-        public override int ClassCode => 115732791;
+        // Keep virtual dispatch thunks after compiled methods and the existing Wasm transition thunks.
+        public override int ClassCode => 948271451;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
@@ -64,49 +65,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _wasmSignature.FuncType.CompareTo(otherNode._wasmSignature.FuncType);
         }
 
-        private static string GetLookupString(WasmFuncType funcType)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            Utf8StringBuilder sb = new Utf8StringBuilder();
-            sb.Append('V');
-
-            if (funcType.Returns.Types.Length == 0)
-            {
-                sb.Append('v');
-            }
-            else
-            {
-                foreach (WasmValueType type in funcType.Returns.Types)
-                {
-                    AppendTypeCode(sb, type);
-                }
-            }
-
-            foreach (WasmValueType type in funcType.Params.Types)
-            {
-                AppendTypeCode(sb, type);
-            }
-
-            return sb.ToString();
-        }
-
-        private static void AppendTypeCode(Utf8StringBuilder sb, WasmValueType type)
-        {
-            sb.Append(type switch
-            {
-                WasmValueType.I32 => 'i',
-                WasmValueType.I64 => 'l',
-                WasmValueType.F32 => 'f',
-                WasmValueType.F64 => 'd',
-                WasmValueType.V128 => 'V',
-                _ => throw new UnreachableException()
-            });
-        }
-
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            DependencyList dependencies = base.ComputeNonRelocationBasedDependencies(factory);
-            dependencies.Add(_typeNode, "Wasm virtual dispatch thunk requires type node");
-            return dependencies;
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
+            sink.Add(_typeNode, "Wasm virtual dispatch thunk requires type node");
         }
 
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)

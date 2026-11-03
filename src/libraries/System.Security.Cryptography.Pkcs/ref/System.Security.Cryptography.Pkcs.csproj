@@ -4,6 +4,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The old bootstrap targeting pack predates required .NET 11 APIs; leave newer packs unchanged. -->
+    <!-- TODO: Remove after rebootstrap replaces the old .NET 11 RC1 targeting pack. -->
+    <KnownFrameworkReference Update="Microsoft.NETCore.App">
+      <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == 'net11.0' and '%(KnownFrameworkReference.TargetingPackVersion)' == '11.0.0-rc.1.26420.103'">11.0.0-rc.2.26478.114</TargetingPackVersion>
+    </KnownFrameworkReference>
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="System.Security.Cryptography.Pkcs.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" />
     <Compile Include="System.Security.Cryptography.Pkcs.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
     <Compile Include="System.Security.Cryptography.Pkcs.netstandard21.cs" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
