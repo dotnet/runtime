@@ -85,7 +85,7 @@ safe-outputs:
             throw new Error('Documentation output is invalid: ' + JSON.stringify(output.errors));
           }
           const failures = output.items.filter(item =>
-            ['missing_tool', 'missing_data', 'report_incomplete'].includes(item.type));
+            ['report_missing_tool', 'report_missing_data', 'missing_tool', 'missing_data', 'report_incomplete'].includes(item.type));
           if (failures.length) {
             throw new Error('Documentation could not be completed: ' + JSON.stringify(failures));
           }
@@ -224,7 +224,7 @@ valid JSON string, preserving its contents exactly. Do not chain commands
 or pipe JSON from another command into `safeoutputs`. If the invocation
 fails, correct it and retry this single-command form once. If publication
 still fails, emit `report_incomplete` with the actual error; do not report
-only `missing_tool`, silently finish with drafts, or substitute a `noop`
+only `report_missing_tool`, silently finish with drafts, or substitute a `noop`
 for a failed publication.
 
 If the skill's uncertainty gate prevents publication, retain the drafts
