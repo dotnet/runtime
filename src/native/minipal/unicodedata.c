@@ -2247,8 +2247,14 @@ static const UnicodeDataRec UnicodeData[] =
     { 0xA7CB, UPPER_CASE, 0x264 },
     { 0xA7CC, UPPER_CASE, 0xA7CD },
     { 0xA7CD, LOWER_CASE, 0xA7CC },
+    { 0xA7CE, UPPER_CASE, 0xA7CF },
+    { 0xA7CF, LOWER_CASE, 0xA7CE },
     { 0xA7D0, UPPER_CASE, 0xA7D1 },
     { 0xA7D1, LOWER_CASE, 0xA7D0 },
+    { 0xA7D2, UPPER_CASE, 0xA7D3 },
+    { 0xA7D3, LOWER_CASE, 0xA7D2 },
+    { 0xA7D4, UPPER_CASE, 0xA7D5 },
+    { 0xA7D5, LOWER_CASE, 0xA7D4 },
     { 0xA7D6, UPPER_CASE, 0xA7D7 },
     { 0xA7D7, LOWER_CASE, 0xA7D6 },
     { 0xA7D8, UPPER_CASE, 0xA7D9 },
@@ -2393,7 +2399,7 @@ static const UnicodeDataRec UnicodeData[] =
     { 0xFF5A, LOWER_CASE, 0xFF3A },
 };
 
-#define UNICODE_DATA_SIZE 2369
+#define UNICODE_DATA_SIZE 2375
 
 static int LIBC_CALLBACK UnicodeDataComp(const void *opposingCode, const void *elem)
 {
