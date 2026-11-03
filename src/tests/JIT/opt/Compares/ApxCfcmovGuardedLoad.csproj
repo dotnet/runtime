@@ -20,6 +20,6 @@
     <CLRTestEnvironmentVariable Include="DOTNET_EnableApxZU" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_EnableApxPPHint" Value="1" />
     <CLRTestEnvironmentVariable Include="DOTNET_EnableApxPP2" Value="1" />
-    <CLRTestEnvironmentVariable Include="DOTNET_JitApxCfcmov" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_EnableApxCfcmov" Value="1" />
   </ItemGroup>
 </Project>

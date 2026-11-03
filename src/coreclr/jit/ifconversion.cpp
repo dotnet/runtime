@@ -272,7 +272,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperati
 bool OptIfConversionDsc::IfConvertIsGuardedLoad(GenTree* value)
 {
 #ifdef TARGET_AMD64
-    if ((JitConfig.JitApxCfcmov() & 0x1) == 0)
+    if (JitConfig.EnableApxCfcmov() == 0)
     {
         return false;
     }
