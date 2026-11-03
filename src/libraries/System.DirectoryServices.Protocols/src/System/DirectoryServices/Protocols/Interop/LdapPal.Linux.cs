@@ -98,7 +98,7 @@ namespace System.DirectoryServices.Protocols
 
             return Interop.Ldap.ldap_search(ldapHandle, dn, scope, filter, attributes, attributeOnly, servercontrol, clientcontrol, searchTimeout, sizelimit, ref messageNumber);
         }
-        internal static int SetBoolOption(ConnectionHandle ld, LdapOption option, bool value) => Interop.Ldap.ldap_set_option_bool(ld, option, value);
+        internal static int SetBoolOption(ConnectionHandle ld, LdapOption option, bool value) => Interop.Ldap.ldap_set_option_bool(ld, option, value ? (IntPtr)1 : IntPtr.Zero);
 
         // This option is not supported in Linux, so it would most likely throw.
         internal static int SetClientCertOption(ConnectionHandle ldapHandle, LdapOption option, QUERYCLIENTCERT outValue) => Interop.Ldap.ldap_set_option_clientcert(ldapHandle, option, outValue);
