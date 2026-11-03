@@ -17,10 +17,9 @@ namespace System.Runtime.CompilerServices
             internal delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> OnCompletedValueTaskSource;
             private delegate*<object, short, ref byte, void> _getResult;
 
-            public ValueTaskSourceContinuation()
-            {
-                ResumeInfo = (ResumeInfo*)Unsafe.AsPointer(in ValueTaskSourceContinuationResume.ResumeInfo);
-            }
+            // This is never linked into a continuation chain or resumed. Instead, the suspended
+            // RuntimeAsyncTask holds it while awaiting the source, and the dispatcher calls GetResult
+            // to store the result directly into the awaiting continuation.
 
             [StackTraceHidden]
             public void GetResult(ref byte returnValue)
@@ -78,30 +77,6 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(source is IValueTaskSource<T>);
                 IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
                 Unsafe.As<byte, T>(ref result) = typedSource.GetResult(token);
-            }
-
-            private static class ValueTaskSourceContinuationResume
-            {
-                [FixedAddressValueType]
-                public static readonly ResumeInfo ResumeInfo = new ResumeInfo
-                {
-                    DiagnosticIP = null,
-                    Resume = &ResumeValueTaskSourceContinuation,
-                };
-
-                [StackTraceHidden]
-                private static Continuation? ResumeValueTaskSourceContinuation(Continuation cont, ref byte result)
-                {
-                    var vtsCont = (ValueTaskSourceContinuation)cont;
-                    vtsCont.Next = null;
-
-                    Debug.Assert((vtsCont.Flags & ContinuationFlags.AllContinuationFlags) == 0);
-
-                    t_runtimeAsyncAwaitState.CachedValueTaskSourceContinuation = vtsCont;
-
-                    vtsCont.GetResult(ref result);
-                    return null;
-                }
             }
         }
     }
