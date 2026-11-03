@@ -26,26 +26,56 @@ public class AssetCachingTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [InlineData(true, "empty", false, true, 2, true, "assembly")]
-    [InlineData(true, "not-found", false, true, 2, true, "assembly")]
-    [InlineData(true, "integrity", false, true, 2, true, "assembly")]
-    [InlineData(true, "empty", true, true, 2, true, "assembly")]
-    [InlineData(true, "not-found", true, true, 2, true, "assembly")]
-    [InlineData(true, "empty,unavailable", false, true, 3, true, "assembly")]
-    [InlineData(true, "empty,empty,empty", false, true, 3, false, "assembly")]
-    [InlineData(true, "empty,empty,empty", true, true, 3, false, "assembly")]
-    [InlineData(true, "not-found,not-found", true, true, 2, false, "assembly")]
-    [InlineData(true, "empty", false, false, 1, false, "assembly")]
-    [InlineData(false, "empty,unavailable,unavailable,unavailable", false, true, 3, false, "assembly")]
-    [InlineData(true, "empty", false, true, 2, true, "native")]
-    [InlineData(true, "not-found", true, true, 2, true, "native")]
-    [InlineData(true, "not-found", true, true, 2, true, "native-default")]
-    [InlineData(true, "empty", true, true, 2, true, "icu")]
-    [InlineData(true, "not-found", true, true, 2, true, "icu")]
-    public async Task BlazorApp_RetriesInvalidCachedAssets(
-        bool fingerprintAssets, string failures, bool disableIntegrityCheck,
+    [InlineData("empty", false, true, 2, true, "assembly")]
+    [InlineData("not-found", false, true, 2, true, "assembly")]
+    [InlineData("integrity", false, true, 2, true, "assembly")]
+    [InlineData("empty", true, true, 2, true, "assembly")]
+    [InlineData("not-found", true, true, 2, true, "assembly")]
+    [InlineData("empty,unavailable", false, true, 3, true, "assembly")]
+    [InlineData("empty,empty,empty", false, true, 3, false, "assembly")]
+    [InlineData("empty,empty,empty", true, true, 3, false, "assembly")]
+    [InlineData("not-found,not-found", true, true, 2, false, "assembly")]
+    [InlineData("empty", false, false, 1, false, "assembly")]
+    [InlineData("empty", false, true, 2, true, "native")]
+    [InlineData("not-found", true, true, 2, true, "native")]
+    [InlineData("not-found", true, true, 2, true, "native-default")]
+    [InlineData("empty", true, true, 2, true, "icu")]
+    [InlineData("not-found", true, true, 2, true, "icu")]
+    public Task BlazorApp_RetriesInvalidCachedAssets(
+        string failures, bool disableIntegrityCheck,
+        bool enableDownloadRetry, int expectedAttempts, bool expectSuccess, string assetKind)
+        => RunInvalidCachedAssets(failures, disableIntegrityCheck, enableDownloadRetry, expectedAttempts, expectSuccess, assetKind);
+
+    [Fact, TestCategory("no-fingerprinting")]
+    public Task BlazorApp_RetryFailuresFollowFingerprintingConfiguration()
+        => RunInvalidCachedAssets("empty,unavailable,unavailable,unavailable",
+            disableIntegrityCheck: false, enableDownloadRetry: true, expectedAttempts: 3, expectSuccess: false, assetKind: "assembly");
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("http://127.0.0.1:12345")]
+    public void ServerEnvironmentPreservesExplicitUrls(string? urls)
+    {
+        var original = urls is null ? null : new Dictionary<string, string>
+        {
+            ["ASPNETCORE_URLS"] = urls,
+            ["CACHE_TEST_SETTING"] = "preserved"
+        };
+        var environment = GetServerEnvironment(original);
+        Assert.Equal(urls ?? "http://127.0.0.1:0", environment["ASPNETCORE_URLS"]);
+        if (original is not null)
+        {
+            Assert.NotSame(original, environment);
+            Assert.Equal(2, original.Count);
+            Assert.Equal("preserved", environment["CACHE_TEST_SETTING"]);
+        }
+    }
+
+    private async Task RunInvalidCachedAssets(
+        string failures, bool disableIntegrityCheck,
         bool enableDownloadRetry, int expectedAttempts, bool expectSuccess, string assetKind)
     {
+        bool fingerprintAssets = EnvironmentVariables.UseFingerprinting;
         var project = CopyTestAsset(
             Configuration.Release, aot: false, TestAsset.BlazorWebWasm,
             "CacheRecovery", appendUnicodeToPath: false);
@@ -53,11 +83,7 @@ public class AssetCachingTests : BlazorWasmTestBase
         var publishOptions = new PublishOptions(
             TargetFramework: DefaultTargetFrameworkForBlazorTemplate,
             AssertAppBundle: false,
-            ExtraMSBuildArgs: CacheTestPublishArgs,
-            ExtraBuildEnvironmentVariables: new Dictionary<string, string>
-            {
-                ["WasmFingerprintAssets"] = fingerprintAssets.ToString()
-            });
+            ExtraMSBuildArgs: CacheTestPublishArgs);
         (string projectDir, string buildOutput) = BlazorPublish(project, Configuration.Release, publishOptions);
         string runtimePack = Assert.IsType<string>(ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(buildOutput));
         string packName = s_buildEnv.IsCoreClrRuntime
@@ -198,7 +224,7 @@ public class AssetCachingTests : BlazorWasmTestBase
 
         using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
             .WithWorkingDirectory(publishedAppPath)
-            .WithEnvironmentVariable("ASPNETCORE_URLS", "http://127.0.0.1:0")
+            .WithEnvironmentVariables(GetServerEnvironment(runOptions.ServerEnvironment))
             .WithEnvironmentVariable("BLAZOR_CACHE_TEST_FAILURES", failures)
             .WithEnvironmentVariable("BLAZOR_CACHE_TEST_ASSET", assetName);
         await BrowserRun(cmd, $"exec {project.ProjectName}.dll", runOptions);
@@ -293,7 +319,7 @@ public class AssetCachingTests : BlazorWasmTestBase
         var publishedAppDllFileName = $"{project.ProjectName}.dll";
         using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
             .WithWorkingDirectory(publishedAppPath)
-            .WithEnvironmentVariable("ASPNETCORE_URLS", "http://127.0.0.1:0");
+            .WithEnvironmentVariables(GetServerEnvironment(runOptions.ServerEnvironment));
         var result = await BrowserRun(cmd, $"exec {publishedAppDllFileName}", runOptions);
     }
 
@@ -311,10 +337,10 @@ public class AssetCachingTests : BlazorWasmTestBase
                 <WBTMonoRuntimePackVersion>{{runtimePackVersion}}</WBTMonoRuntimePackVersion>
                 """;
             File.Copy(
-                Path.Combine(BuildEnvironment.TestDataPath, "UseCurrentMonoRuntime.targets"),
-                Path.Combine(clientProjectDir, "UseCurrentMonoRuntime.targets"),
+                BuildEnvironment.WasmOverridePacksTargetsPath,
+                Path.Combine(clientProjectDir, "WasmOverridePacks.targets"),
                 overwrite: true);
-            insertAtEnd += """<Import Project="UseCurrentMonoRuntime.targets" />""";
+            insertAtEnd += """<Import Project="WasmOverridePacks.targets" />""";
         }
         UpdateProjectFile(
             Path.Combine(clientProjectDir, "BlazorWebWasm.Client.csproj"),

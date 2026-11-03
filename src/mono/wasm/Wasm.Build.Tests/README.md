@@ -91,12 +91,18 @@ Cache-reuse assertions use the small client assembly; browser cache retention
 of large runtime binaries is discretionary.
 Assembly selection follows `UseWebcil`: run the cache tests with
 `-p:WasmEnableWebcil=false` to cover DLL resources as well as Webcil, and run
-the healthy-cache control with `-p:WasmFingerprintAssets=false` to cover
-conditional revalidation.
+the class with `-p:WasmFingerprintAssets=false` to cover conditional revalidation
+and bounded failed-download retries without cache reloads in the existing lane.
+The tests follow the lane's fingerprinting configuration rather than overriding
+it per theory row. Hosted builds and published apps share the Blazor server's
+ephemeral-loopback URL default, while explicit per-test URLs are preserved.
 The generated Mono client explicitly selects the current built runtime and
 WebAssembly SDK pack, even when Blazor targets the previous framework.
-It imports `UseCurrentMonoRuntime.targets` and sets `WBTMonoRuntimePackVersion`;
-the test does not inject an MSBuild target.
+It imports `WasmOverridePacks.targets` and sets `WBTMonoRuntimePackVersion`;
+the test does not inject an MSBuild target. This opt-in selects current packs
+before SDK resolution without enabling the legacy resolved-path overrides.
+Existing imports without the opt-in retain their previous behavior, and
+previous-runtime compatibility tests are not globally pinned to current packs.
 The shared client project remains unchanged. After a framework retargeting,
 rebuild the runtime packages and recreate the constructed workload SDK before
 validating: an older manifest can map the previous framework to the current
