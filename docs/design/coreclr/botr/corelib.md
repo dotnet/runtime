@@ -108,9 +108,9 @@ partial class Foo
 
 Do not replicate the comments into your actual QCall implementation.
 
-The QCall entrypoint has to be registered in [vm\qcallentrypoints.cpp][qcall-entrypoints] using the `DllImportEntry` macro. See ["Registering your QCall or FCall Method"](#register) below.
+The QCall entrypoint has to be registered in [vm\runtimehelpers.cpp][runtime-helpers] using the `DllImportEntry` macro. See ["Registering your QCall or FCall Method"](#register) below.
 
-[qcall-entrypoints]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/qcallentrypoints.cpp
+[runtime-helpers]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/runtimehelpers.cpp
 
 ```C++
 // All QCalls should be free functions and tagged with QCALLTYPE and extern "C"
@@ -211,7 +211,7 @@ public partial sealed class String
 ### FCall example – unmanaged
 
 Fixed-address FCalls use C-linkage implementations and share the static entrypoint table
-in [vm\qcallentrypoints.cpp][qcall-entrypoints] with QCalls. See
+in [vm\runtimehelpers.cpp][runtime-helpers] with QCalls. See
 ["Registering your QCall or FCall Method"](#register). The native declaration must give the
 function C linkage while retaining the appropriate `FCDECL`/`FCIMPL` calling convention.
 
@@ -233,8 +233,8 @@ FCIMPLEND
 
 ## <a name="register"></a> Registering your QCall or FCall method
 
-The CLR resolves QCalls and fixed-address FCalls through one static `Entry` table in
-[qcallentrypoints.cpp][qcall-entrypoints]. For an FCall, the lookup name is the managed type name,
+The CLR resolves QCalls and fixed-address FCalls through one static `Entry` table, `s_RuntimeHelpers`, in
+[runtimehelpers.cpp][runtime-helpers]. For an FCall, the lookup name is the managed type name,
 an underscore, and the managed method name, preserving case and method-name underscores.
 For example, `String.IsInterned()` resolves `String_IsInterned`. Namespaces are not part of
 the native symbol, so distinct managed identities must not flatten to the same lookup name or
@@ -338,9 +338,9 @@ When the CLR starts up, CoreLib is loaded by a method called `SystemDomain::Load
 
 For FCalls, look in [fcall.h][fcall] for calling-convention infrastructure, `ecall.cpp` for
 resolution and the separate dynamic String mechanism, and
-[qcallentrypoints.cpp][qcall-entrypoints] for the shared static table.
+[runtimehelpers.cpp][runtime-helpers] for the shared static table.
 
-For QCalls, look in [qcall.h][qcall] for associated infrastructure, and [qcallentrypoints.cpp][qcall-entrypoints] to properly inform the runtime about your QCall method.
+For QCalls, look in [qcall.h][qcall] for associated infrastructure, and [runtimehelpers.cpp][runtime-helpers] to properly inform the runtime about your QCall method.
 
 More general infrastructure and some native type definitions can be found in [object.h][object.h]. The binder uses `mscorlib.h` to associate managed and native classes.
 

@@ -98,7 +98,7 @@ extern "C" void* QCall_memset(void* dest, int value, size_t len);
 #endif // TARGET_BROWSER
 
 // Keep entries sorted by name using strcmp ordering for binary search.
-static const Entry s_QCall[] =
+static const Entry s_RuntimeHelpers[] =
 {
     DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
     DllImportEntry(AppContext_TryGetHostPropertyValue)
@@ -846,10 +846,10 @@ static const Entry s_QCall[] =
 #endif // TARGET_SUNOS
 };
 
-class QCallEntrySearch final : public CBinarySearch<Entry>
+class RuntimeHelperSearch final : public CBinarySearch<Entry>
 {
 public:
-    QCallEntrySearch(const Entry* entries, int count) : CBinarySearch<Entry>(entries, count)
+    RuntimeHelperSearch(const Entry* entries, int count) : CBinarySearch<Entry>(entries, count)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -863,7 +863,7 @@ public:
 
 const void* QCallResolveDllImport(const char* name)
 {
-    QCallEntrySearch search(s_QCall, ARRAY_SIZE(s_QCall));
+    RuntimeHelperSearch search(s_RuntimeHelpers, ARRAY_SIZE(s_RuntimeHelpers));
     const Entry key = { name, nullptr };
     const Entry* entry = search.Find(&key);
     return entry != nullptr ? entry->method : nullptr;

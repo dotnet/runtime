@@ -1116,7 +1116,7 @@ extern "C" {
     int32_t QCall_WasiFinalizer_TryClearPending (void *) __asm__("WasiFinalizer_TryClearPending");
 } // extern "C"
 
-static const Entry s_QCall[] = {
+static const Entry s_RuntimeHelpers[] = {
     { "AppContext_SetFirstChanceExceptionHandler", (void*)&QCall_AppContext_SetFirstChanceExceptionHandler },
     { "AppContext_TryGetHostPropertyValue", (void*)&QCall_AppContext_TryGetHostPropertyValue },
     { "AppDomain_CreateDynamicAssembly", (void*)&QCall_AppDomain_CreateDynamicAssembly },
@@ -1617,6 +1617,6 @@ static const Entry s_QCall[] = {
 
 const void* QCallResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_QCall, sizeof(s_QCall) / sizeof(s_QCall[0]), name);
+    return minipal_resolve_dllimport(s_RuntimeHelpers, sizeof(s_RuntimeHelpers) / sizeof(s_RuntimeHelpers[0]), name);
 }
 #endif // !CORECLR_PREGENERATED_CALLHELPERS

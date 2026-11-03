@@ -1371,7 +1371,7 @@ public class WasmArgumentLayoutTests
             Assert.Contains("DllImportEntry(Native_Test)", table);
             Assert.DoesNotContain("{\"QCall\",", table);
             Assert.DoesNotContain("QCall_Unavailable", table);
-            Assert.Contains("static const Entry s_QCall", table);
+            Assert.Contains("static const Entry s_RuntimeHelpers", table);
 
             Assert.Contains("int64_t QCall_QCall_Test (int32_t, void *) __asm__(\"QCall_Test\");", table);
             Assert.Equal(1, table.Split("{ \"QCall_Test\", (void*)&QCall_QCall_Test }").Length - 1);
@@ -1456,7 +1456,7 @@ public class WasmArgumentLayoutTests
             string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
             Assert.Contains("DllImportEntry(Native_Test)", table);
             Assert.Contains("const void* QCallResolveDllImport(const char* name)", table);
-            Assert.DoesNotContain("static const Entry s_QCall", table);
+            Assert.DoesNotContain("static const Entry s_RuntimeHelpers", table);
             Assert.DoesNotContain("QCall_NonCoreLib", table);
             Assert.DoesNotContain("{\"QCall\",", table);
         }
@@ -1505,7 +1505,7 @@ public class WasmArgumentLayoutTests
             Assert.DoesNotContain("RuntimeHelpers_NewobjHelperDummy", table);
             Assert.False(File.Exists(Path.Combine(workingDirectory, "callhelpers-ecalls.cpp")));
 
-            string entries = table.Split("static const Entry s_QCall[] = {", StringSplitOptions.None)[1]
+            string entries = table.Split("static const Entry s_RuntimeHelpers[] = {", StringSplitOptions.None)[1]
                 .Split("};", StringSplitOptions.None)[0];
             string[] names = entries.Split('\n')
                 .Where(line => line.TrimStart().StartsWith("{ \"", StringComparison.Ordinal))

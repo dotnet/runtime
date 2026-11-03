@@ -47,7 +47,7 @@ Math helpers use the same `Math_Method` or `MathF_Method` C symbols in CoreCLR a
 Browser `memmove` and `memset` use the bulk-memory wrappers in `wasm/helpers.cpp`;
 WASI uses the libc entrypoints directly.
 
-Prebuilt runtimes use the full native table in `qcallentrypoints.cpp`, including
+Prebuilt runtimes use the full native `s_RuntimeHelpers` table in `runtimehelpers.cpp`, including
 configuration-specific entries. The checked-in P/Invoke helpers define
 `CORECLR_PREGENERATED_CALLHELPERS` to exclude their metadata-derived table and resolver.
 The native table belongs to the replaceable `libcoreclr_gen_static.a`, so app relinking

@@ -63,7 +63,7 @@
 // QCall example - unmanaged part (do not replicate the comments into your actual QCall implementation):
 // -----------------------------------------------------------------------------------------------------
 //
-// The entrypoints of all QCalls has to be registered in tables in vm\qcallentrypoints.cpp using the DllImportEntry macro,
+// The entrypoints of all QCalls has to be registered in tables in vm\runtimehelpers.cpp using the DllImportEntry macro,
 // For example: DllImportEntry(FooNative_Bar)
 // WebAssembly generates the shared QCall/FCall table in callhelpers-pinvoke.cpp from the managed closure.
 //

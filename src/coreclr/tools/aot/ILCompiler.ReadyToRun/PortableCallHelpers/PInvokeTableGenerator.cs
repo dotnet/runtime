@@ -288,7 +288,7 @@ namespace ILCompiler.PortableCallHelpers
             }
             w.WriteLine("} // extern \"C\"");
             w.WriteLine();
-            w.WriteLine("static const Entry s_QCall[] = {");
+            w.WriteLine("static const Entry s_RuntimeHelpers[] = {");
             foreach (PInvokeInfo qcall in qcalls)
             {
                 if (target.OperatingSystem == TargetOS.Browser && qcall.EntryPoint is "memmove" or "memset")
@@ -304,7 +304,7 @@ namespace ILCompiler.PortableCallHelpers
 
                 const void* QCallResolveDllImport(const char* name)
                 {
-                    return minipal_resolve_dllimport(s_QCall, sizeof(s_QCall) / sizeof(s_QCall[0]), name);
+                    return minipal_resolve_dllimport(s_RuntimeHelpers, sizeof(s_RuntimeHelpers) / sizeof(s_RuntimeHelpers[0]), name);
                 }
                 """);
         }
