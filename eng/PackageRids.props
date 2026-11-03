@@ -55,7 +55,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageRID Include="$(NETCoreSdkRuntimeIdentifier)" Platform="$(BuildArchitecture)" Exclude="@(PackageRID)" Condition="'$(NETCoreSdkRuntimeIdentifier)' != ''" />
-    <PackageRID Include="$(TargetRid)" Platform="$(TargetArchitecture)" Exclude="@(PackageRID)" Condition="'$(TargetRid)' != ''" />
+    <PackageRID Include="$(NETCoreSdkRuntimeIdentifier)" Platform="$(BuildArchitecture)" IsOfficial="false" Exclude="@(PackageRID)" Condition="'$(NETCoreSdkRuntimeIdentifier)' != ''" />
+    <PackageRID Include="$(TargetRid)" Platform="$(TargetArchitecture)" IsOfficial="false" Exclude="@(PackageRID)" Condition="'$(TargetRid)' != ''" />
   </ItemGroup>
 </Project>
