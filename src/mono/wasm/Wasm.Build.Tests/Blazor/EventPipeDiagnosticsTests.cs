@@ -318,8 +318,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         }
 
         string compilerArgs = GetR2RBuildArgs(compilerConfiguration);
-        Assert.Contains("-p:Crossgen2InBuildDir=", compilerArgs);
-        _testOutput.WriteLine($"Method-entry PGO compiler configuration: {compilerConfiguration}; {compilerArgs}");
+        // Helix deploys compiler NuGets, not the checkout's in-build compiler directories.
+        // Local runs still require the override so app Release does not select a stale package.
+        if (!EnvironmentVariables.IsRunningOnCI)
+            Assert.Contains("-p:Crossgen2InBuildDir=", compilerArgs);
+        _testOutput.WriteLine($"Method-entry PGO compiler configuration: {compilerConfiguration}; " +
+            (string.IsNullOrEmpty(compilerArgs) ? "SDK-resolved crossgen2 package" : compilerArgs));
 
         return $"{compilerArgs} -p:UsingBrowserRuntimeWorkload=false";
     }
