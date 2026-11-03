@@ -2437,12 +2437,14 @@ namespace System.Threading.Tasks
         internal virtual void ExecuteRuntimeAsyncAwaitContinuation(Task completedTask, bool canInline) => Debug.Fail("Only expected to be called on runtime async tasks.");
 
         /// <summary>
-        /// Completes a runtime async await of this completed task, throwing its exception if it didn't
-        /// complete successfully, and otherwise storing its result (if any) into <paramref name="result"/>.
+        /// Completes a runtime async await of this completed task. If the task completed successfully,
+        /// stores its result (if any) into <paramref name="result"/> and returns null. Otherwise, returns
+        /// (rather than throws) the exception the await should propagate, prepared as if by
+        /// <see cref="ExceptionDispatchInfo.Throw()"/> such that it must be propagated by the caller immediately.
         /// </summary>
         /// <param name="result">The awaiter's result storage, or a null reference if the awaiter has none.</param>
-        [StackTraceHidden]
-        internal virtual void GetRuntimeAsyncAwaitResult(ref byte result) => TaskAwaiter.ValidateEnd(this);
+        internal virtual Exception? GetRuntimeAsyncAwaitResult(ref byte result) =>
+            IsWaitNotificationEnabledOrNotRanToCompletion ? TaskAwaiter.GetExceptionForNonSuccessAndDebuggerNotification(this) : null;
 #endif
 
         internal void ExecuteEntryUnsafe(Thread? threadPoolThread) // used instead of ExecuteEntry() when we don't have to worry about double-execution prevent

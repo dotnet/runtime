@@ -806,12 +806,21 @@ namespace System.Runtime.CompilerServices
                 return Unsafe.As<Task?>(awaitedTask);
             }
 
-            // Completes the await of the awaited task by propagating its result (or exception)
-            // into the storage of the continuation that awaited it.
+            // Completes the await of the awaited task by propagating its result into the storage of the
+            // continuation that awaited it. If the awaited task didn't complete successfully, returns the
+            // exception the await must propagate (or throws it, if it can't be propagated without throwing).
             [StackTraceHidden]
-            private static void GetAwaitedTaskResult(Task awaitedTask, Continuation awaitingContinuation)
+            private static unsafe Exception? GetAwaitedTaskResult(Task awaitedTask, Continuation awaitingContinuation)
             {
-                awaitedTask.GetRuntimeAsyncAwaitResult(ref awaitingContinuation.GetResultStorageOrNull());
+                Exception? ex = awaitedTask.GetRuntimeAsyncAwaitResult(ref awaitingContinuation.GetResultStorageOrNull());
+                if (ex is not null && (awaitingContinuation.ResumeInfo == null || awaitingContinuation.ResumeInfo->DiagnosticIP == null))
+                {
+                    // Restoring the exception's dispatch state is only completed by appending a frame to its
+                    // stack trace, which UnwindToPossibleHandler won't immediately do for this continuation.
+                    throw ex;
+                }
+
+                return ex;
             }
 
             // Lazily created, as it's only needed when suspending on something other than a Task.
@@ -1011,16 +1020,18 @@ namespace System.Runtime.CompilerServices
                 while (true)
                 {
                     Debug.Assert(asyncDispatcherInfo.NextContinuation != null);
+                    Exception? exception = null;
                     try
                     {
                         if (awaitedTask != null)
                         {
                             // Resuming from a Task await: complete the await by storing the awaited task's
-                            // result (or throwing its exception) into the awaiting continuation. That
-                            // continuation is then resumed by the next iteration.
+                            // result into the awaiting continuation, which is then resumed by the next iteration.
+                            // If the awaited task didn't complete successfully, its exception is instead
+                            // propagated (generally without needing to be thrown) as if that continuation threw it.
                             Task t = awaitedTask;
                             awaitedTask = null;
-                            GetAwaitedTaskResult(t, asyncDispatcherInfo.NextContinuation);
+                            exception = GetAwaitedTaskResult(t, asyncDispatcherInfo.NextContinuation);
                         }
                         else
                         {
@@ -1052,6 +1063,12 @@ namespace System.Runtime.CompilerServices
                     }
                     catch (Exception ex)
                     {
+                        exception = ex;
+                    }
+
+                    if (exception != null)
+                    {
+                        Exception ex = exception;
                         uint unwindedFrames = 1; // Count current frame.
                         Continuation? handlerContinuation = UnwindToPossibleHandler(asyncDispatcherInfo.NextContinuation, ex, ref unwindedFrames);
                         if (handlerContinuation == null)
@@ -1156,7 +1173,10 @@ namespace System.Runtime.CompilerServices
                         {
                             Task t = awaitedTask;
                             awaitedTask = null;
-                            GetAwaitedTaskResult(t, curContinuation);
+                            if (GetAwaitedTaskResult(t, curContinuation) is Exception awaitException)
+                            {
+                                throw awaitException;
+                            }
                         }
                         else
                         {
