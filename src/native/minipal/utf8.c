@@ -25,13 +25,13 @@ static bool IsHighSurrogate(CHAR16_T c)
 }
 
 // Test if the wide character is a low surrogate
-static bool IsLowSurrogate(const CHAR16_T c)
+static bool IsLowSurrogate(CHAR16_T c)
 {
     return (c & 0xFC00) == LOW_SURROGATE_START;
 }
 
 // Test if the wide character is a surrogate half
-static bool IsSurrogate(const CHAR16_T c)
+static bool IsSurrogate(CHAR16_T c)
 {
     return (c & 0xF800) == HIGH_SURROGATE_START;
 }
