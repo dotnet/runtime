@@ -384,8 +384,9 @@ public static class Entrypoints
         ICorDebugDataTarget dataTarget = targetObject as ICorDebugDataTarget ?? throw new ArgumentException(
             $"Data target does not implement {nameof(ICorDebugDataTarget)}", nameof(targetObject));
         ICorDebugMutableDataTarget? mutableDataTarget = targetObject as ICorDebugMutableDataTarget;
+        CorDebugMetadataReader? metadataReader = null;
 
-        return ContractDescriptorTarget.Create(
+        ContractDescriptorTarget target = ContractDescriptorTarget.Create(
             contractAddress,
             (address, buffer) =>
             {
@@ -393,6 +394,12 @@ public static class Entrypoints
                 {
                     uint bytesRead;
                     int hr = dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
+                    if ((hr < 0 || bytesRead != (uint)buffer.Length)
+                        && metadataReader is not null
+                        && metadataReader.TryReadMemory(address, buffer))
+                    {
+                        return HResults.S_OK;
+                    }
                     return hr >= 0 && bytesRead != (uint)buffer.Length
                         ? CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE
                         : hr;
@@ -469,5 +476,8 @@ public static class Entrypoints
             },
             [Contracts.CoreCLRContracts.Register],
             runtimeBase);
+        if (targetObject is ICorDebugMetaDataLocator locator)
+            metadataReader = new CorDebugMetadataReader(target, locator);
+        return target;
     }
 }

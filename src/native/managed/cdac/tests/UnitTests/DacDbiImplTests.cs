@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+extern alias cdac_universal;
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -8,20 +10,236 @@ using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using ILCompiler.Reflection.ReadyToRun;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure.ContractDescriptor;
 using Moq;
 using Xunit;
 using ModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
+using CorDebugMetadataReader = cdac_universal::Microsoft.Diagnostics.DataContractReader.CorDebugMetadataReader;
+using ICorDebugMetaDataLocator = cdac_universal::Microsoft.Diagnostics.DataContractReader.ICorDebugMetaDataLocator;
+using Entrypoints = cdac_universal::Microsoft.Diagnostics.DataContractReader.Entrypoints;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class DacDbiImplTests
 {
+    private const int MetadataLocatorInsufficientBuffer = unchecked((int)0x8007007A);
+
+    private sealed class MetadataTestImage : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.GetTempFileName();
+        public byte[] Metadata { get; }
+        public uint TimeStamp { get; }
+        public uint ImageSize { get; }
+
+        public MetadataTestImage()
+        {
+            MetadataBuilder metadata = new();
+            metadata.AddModule(0, metadata.GetOrAddString("MetadataFallback"),
+                metadata.GetOrAddGuid(new Guid("E9F87431-B235-481A-B208-718536A841AB")), default, default);
+            metadata.AddTypeDefinition(default, default, metadata.GetOrAddString("<Module>"), default,
+                MetadataTokens.FieldDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
+            foreach (byte convention in new byte[] { 0, 5 })
+            {
+                metadata.AddMethodDefinition(MethodAttributes.Public | MethodAttributes.Static, MethodImplAttributes.IL,
+                    metadata.GetOrAddString(convention == 0 ? "Ordinary" : "VarArgs"),
+                    metadata.GetOrAddBlob(new byte[] { convention, 0, 1 }), -1, MetadataTokens.ParameterHandle(1));
+            }
+            ManagedPEBuilder pe = new(new PEHeaderBuilder(), new MetadataRootBuilder(metadata), new BlobBuilder());
+            BlobBuilder image = new();
+            pe.Serialize(image);
+            File.WriteAllBytes(Path, image.ToArray());
+            using PEReader reader = new(File.OpenRead(Path));
+            Metadata = reader.GetMetadata().GetContent().AsSpan().ToArray();
+            TimeStamp = unchecked((uint)reader.PEHeaders.CoffHeader.TimeDateStamp);
+            ImageSize = (uint)Assert.IsType<PEHeader>(reader.PEHeaders.PEHeader).SizeOfImage;
+        }
+
+        public void Dispose() => File.Delete(Path);
+    }
+
+    private sealed class TestMetadataLocator(string path) : ICorDebugMetaDataLocator, ICorDebugDataTarget
+    {
+        public string Path { get; set; } = path;
+        public int Calls { get; private set; }
+        public uint MinimumBufferLength { get; set; }
+        public MockMemorySpace.MemoryContext? Memory { get; set; }
+
+        public int GetPlatform(int* platform) => throw new NotImplementedException();
+
+        public int GetThreadContext(uint threadId, uint flags, uint size, byte* context)
+            => throw new NotImplementedException();
+
+        public int ReadVirtual(ulong address, byte* buffer, uint size, uint* bytesRead)
+        {
+            *bytesRead = 0;
+            int hr = Memory is null ? CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE
+                : Memory.ReadFromTarget(address, new Span<byte>(buffer, checked((int)size)));
+            if (hr >= 0)
+                *bytesRead = size;
+            return hr;
+        }
+
+        public int GetMetaData(char* imagePath, uint timeStamp, uint imageSize,
+            uint pathBufferLength, uint* pathLength, char* pathBuffer)
+        {
+            Calls++;
+            *pathLength = Math.Max((uint)Path.Length + 1, MinimumBufferLength);
+            if (*pathLength > pathBufferLength)
+                return MetadataLocatorInsufficientBuffer;
+            Path.AsSpan().CopyTo(new Span<char>(pathBuffer, (int)pathBufferLength));
+            pathBuffer[Path.Length] = '\0';
+            *pathLength = (uint)Path.Length + 1;
+            return System.HResults.S_OK;
+        }
+    }
+
+    private static CorDebugMetadataReader CreateMetadataReader(MockTarget.Architecture arch,
+        MetadataTestImage image, TestMetadataLocator locator, bool dynamicModule = false,
+        bool readWriteMetadata = false, uint? timeStamp = null, uint? imageSize = null)
+    {
+        ModuleHandle module = new(new TargetPointer(0x1000));
+        TargetPointer assembly = new(0x2000);
+        Mock<ILoader> loader = new();
+        loader.Setup(l => l.GetModuleHandles(It.IsAny<TargetPointer>(), It.IsAny<AssemblyIterationFlags>()))
+            .Returns([module]);
+        loader.Setup(l => l.GetPEAssembly(module)).Returns(assembly);
+        loader.Setup(l => l.IsDynamic(module)).Returns(dynamicModule);
+        loader.Setup(l => l.GetPath(module)).Returns(image.Path);
+        uint expectedTimeStamp = timeStamp ?? image.TimeStamp;
+        uint expectedImageSize = imageSize ?? image.ImageSize;
+        loader.Setup(l => l.GetFileHeadersInfo(module, out expectedTimeStamp, out expectedImageSize)).Returns(true);
+        Mock<IEcmaMetadata> metadata = new();
+        metadata.Setup(m => m.HasReadWriteMetadata(assembly)).Returns(readWriteMetadata);
+        metadata.Setup(m => m.GetReadOnlyMetadataAddress(module)).Returns(new TargetSpan(0x10000, (ulong)image.Metadata.Length));
+        Target target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(loader)
+            .AddMockContract(metadata)
+            .Build();
+        return new CorDebugMetadataReader(target, locator);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void MetadataReadFallback_CorDebugTargetResolvesOmittedMetadata(MockTarget.Architecture arch)
+    {
+        using MetadataTestImage image = new();
+        ContractDescriptorBuilder builder = new(new TargetTestHelpers(arch));
+        ulong descriptorAddress = new ContractDescriptorBuilder.DescriptorBuilder(builder)
+            .SetContracts(new Dictionary<string, string>
+            {
+                [nameof(Loader)] = "c999",
+                [nameof(EcmaMetadata)] = "c999",
+            })
+            .CreateSubDescriptor(0x30000, 0x31000, 0x32000);
+        TestMetadataLocator locator = new(image.Path) { Memory = builder.GetMemoryContext() };
+        Target target = Entrypoints.CreateTargetFromCorDebugDataTarget(locator, descriptorAddress, 0);
+        ModuleHandle module = new(new TargetPointer(0x1000));
+        TargetPointer assembly = new(0x2000);
+        Mock<ILoader> loader = new();
+        loader.Setup(l => l.GetModuleHandles(It.IsAny<TargetPointer>(), It.IsAny<AssemblyIterationFlags>()))
+            .Returns([module]);
+        loader.Setup(l => l.GetPEAssembly(module)).Returns(assembly);
+        loader.Setup(l => l.GetPath(module)).Returns(image.Path);
+        uint timeStamp = image.TimeStamp;
+        uint imageSize = image.ImageSize;
+        loader.Setup(l => l.GetFileHeadersInfo(module, out timeStamp, out imageSize)).Returns(true);
+        Mock<IEcmaMetadata> metadata = new();
+        metadata.Setup(m => m.GetReadOnlyMetadataAddress(module)).Returns(new TargetSpan(0x10000, (ulong)image.Metadata.Length));
+        target.Contracts.Register<ILoader>("c999", _ => loader.Object);
+        target.Contracts.Register<IEcmaMetadata>("c999", _ => metadata.Object);
+        byte[] buffer = new byte[image.Metadata.Length];
+
+        target.ReadBuffer(0x10000, buffer);
+
+        Assert.Equal(image.Metadata, buffer);
+        Assert.Equal(1, locator.Calls);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void MetadataReadFallback_RecoversOrdinaryAndVarArgsSignatures(MockTarget.Architecture arch)
+    {
+        using MetadataTestImage image = new();
+        TestMetadataLocator locator = new(image.Path) { MinimumBufferLength = 300 };
+        CorDebugMetadataReader reader = CreateMetadataReader(arch, image, locator);
+        byte[] buffer = new byte[image.Metadata.Length];
+
+        Assert.True(reader.TryReadMemory(0x10000, buffer));
+        Assert.Equal(image.Metadata, buffer);
+        Assert.Equal(2, locator.Calls);
+        using MetadataReaderProvider provider = MetadataReaderProvider.FromMetadataImage(ImmutableArray.Create(buffer));
+        MetadataReader metadata = provider.GetMetadataReader();
+        Assert.Equal(SignatureCallingConvention.Default,
+            metadata.GetBlobReader(metadata.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(1)).Signature).ReadSignatureHeader().CallingConvention);
+        Assert.Equal(SignatureCallingConvention.VarArgs,
+            metadata.GetBlobReader(metadata.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(2)).Signature).ReadSignatureHeader().CallingConvention);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void MetadataReadFallback_RejectsMismatchedImage(bool changeTimeStamp)
+    {
+        using MetadataTestImage image = new();
+        TestMetadataLocator locator = new(image.Path);
+        CorDebugMetadataReader reader = CreateMetadataReader(new() { Is64Bit = true, IsLittleEndian = true },
+            image, locator, timeStamp: changeTimeStamp ? image.TimeStamp ^ 1 : null,
+            imageSize: changeTimeStamp ? null : image.ImageSize + 1);
+        byte[] buffer = [0xA5];
+
+        Assert.False(reader.TryReadMemory(0x10000, buffer));
+        Assert.Equal(new byte[] { 0xA5 }, buffer);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void MetadataReadFallback_DoesNotSubstituteMutableMetadata(bool dynamicModule)
+    {
+        using MetadataTestImage image = new();
+        TestMetadataLocator locator = new(image.Path);
+        CorDebugMetadataReader reader = CreateMetadataReader(new() { Is64Bit = true, IsLittleEndian = true },
+            image, locator, dynamicModule: dynamicModule, readWriteMetadata: !dynamicModule);
+
+        Assert.False(reader.TryReadMemory(0x10000, new byte[1]));
+        Assert.Equal(0, locator.Calls);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void MetadataReadFallback_DoesNotSubstituteOtherMemory(bool beforeMetadata)
+    {
+        using MetadataTestImage image = new();
+        TestMetadataLocator locator = new(image.Path);
+        CorDebugMetadataReader reader = CreateMetadataReader(new() { Is64Bit = true, IsLittleEndian = true }, image, locator);
+        ulong address = beforeMetadata ? 0xFFFF : 0x10000UL + (ulong)image.Metadata.Length;
+
+        Assert.False(reader.TryReadMemory(address, new byte[1]));
+        Assert.Equal(0, locator.Calls);
+    }
+
+    [Fact]
+    public void MetadataReadFallback_MissingImageDoesNotPreventLaterResolution()
+    {
+        using MetadataTestImage image = new();
+        TestMetadataLocator locator = new(image.Path + ".missing");
+        CorDebugMetadataReader reader = CreateMetadataReader(new() { Is64Bit = true, IsLittleEndian = true }, image, locator);
+        byte[] buffer = new byte[image.Metadata.Length];
+
+        Assert.False(reader.TryReadMemory(0x10000, buffer));
+        locator.Path = image.Path;
+        Assert.True(reader.TryReadMemory(0x10000, buffer));
+        Assert.Equal(image.Metadata, buffer);
+    }
+
     private const uint IsEditAndContinue = 0x00000008;
     private const uint IsEncCapable = 0x00000200;
     private const uint DebuggerAllowJitOptsPriv = 0x00000800;

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+extern alias cdac_universal;
+
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -22,6 +24,7 @@ using Microsoft.Diagnostics.DataContractReader.TestInfrastructure.ContractDescri
 using Microsoft.Diagnostics.Runtime;
 using Moq;
 using Xunit;
+using Entrypoints = cdac_universal::Microsoft.Diagnostics.DataContractReader.Entrypoints;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
