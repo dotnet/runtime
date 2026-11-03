@@ -390,18 +390,31 @@ namespace System.Runtime.CompilerServices
             return default!;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void SetAwaitedTask(RuntimeAsyncStackState* stackState, Task task, ConfigureAwaitOptions options)
         {
-            object? continuationContext = null;
-            ContinuationFlags flags = 0;
-            if ((options & ConfigureAwaitOptions.ContinueOnCapturedContext) != 0)
+            object? encodedContext;
+            if ((options & ConfigureAwaitOptions.ContinueOnCapturedContext) == 0)
             {
-                CaptureContinuationContext(ref continuationContext, ref flags);
+                // Nothing to capture; continue on the thread pool.
+                encodedContext = (options & ConfigureAwaitOptions.SuppressThrowing) != 0 ?
+                    SuppressThrowingAwaitContext.ThreadPool :
+                    TaskScheduler.Default;
             }
             else
             {
-                flags = ContinuationFlags.ContinueOnThreadPool;
+                encodedContext = CaptureEncodedAwaitedContinuationContext(options);
             }
+
+            stackState->AwaitedTask = task;
+            stackState->AwaitedContinuationContext = encodedContext;
+        }
+
+        private static object? CaptureEncodedAwaitedContinuationContext(ConfigureAwaitOptions options)
+        {
+            object? continuationContext = null;
+            ContinuationFlags flags = 0;
+            CaptureContinuationContext(ref continuationContext, ref flags);
 
             object? encodedContext = EncodeAwaitedContinuationContext(continuationContext, flags);
             if ((options & ConfigureAwaitOptions.SuppressThrowing) != 0)
@@ -409,8 +422,7 @@ namespace System.Runtime.CompilerServices
                 encodedContext = SuppressThrowingAwaitContext.Create(encodedContext);
             }
 
-            stackState->AwaitedTask = task;
-            stackState->AwaitedContinuationContext = encodedContext;
+            return encodedContext;
         }
 
         // Wraps the encoded continuation context of a (non-generic) Task await configured with
@@ -418,7 +430,7 @@ namespace System.Runtime.CompilerServices
         private sealed class SuppressThrowingAwaitContext
         {
             private static readonly SuppressThrowingAwaitContext s_transparent = new(null);
-            private static readonly SuppressThrowingAwaitContext s_threadPool = new(TaskScheduler.Default);
+            public static readonly SuppressThrowingAwaitContext ThreadPool = new(TaskScheduler.Default);
 
             public readonly object? EncodedContext;
 
@@ -426,7 +438,7 @@ namespace System.Runtime.CompilerServices
 
             public static SuppressThrowingAwaitContext Create(object? encodedContext) =>
                 encodedContext is null ? s_transparent :
-                encodedContext == TaskScheduler.Default ? s_threadPool :
+                encodedContext == TaskScheduler.Default ? ThreadPool :
                 new SuppressThrowingAwaitContext(encodedContext);
         }
 
@@ -793,12 +805,6 @@ namespace System.Runtime.CompilerServices
                     return true;
                 }
 
-                if (continuationContext is TaskScheduler sched2)
-                {
-                    TaskSchedulerAwaitTaskContinuation.RunOrScheduleAction(GetContinuationAction(), sched2, capturedContext: null, allowInlining: canInline);
-                    return true;
-                }
-
                 if (continuationContext is SuppressThrowingAwaitContext suppressThrowingContext)
                 {
                     // Like TaskAwaiter.ValidateEnd with SuppressThrowing, observe any failure, and have the
@@ -814,6 +820,12 @@ namespace System.Runtime.CompilerServices
 
                     return suppressThrowingContext.EncodedContext is { } encodedContext &&
                         QueueAwaitContinuationIfNecessary(encodedContext, canInline);
+                }
+
+                if (continuationContext is TaskScheduler sched2)
+                {
+                    TaskSchedulerAwaitTaskContinuation.RunOrScheduleAction(GetContinuationAction(), sched2, capturedContext: null, allowInlining: canInline);
+                    return true;
                 }
 
                 Debug.Assert(continuationContext is SynchronizationContext { });
