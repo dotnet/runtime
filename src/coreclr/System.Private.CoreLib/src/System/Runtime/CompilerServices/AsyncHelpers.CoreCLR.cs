@@ -403,8 +403,31 @@ namespace System.Runtime.CompilerServices
                 flags = ContinuationFlags.ContinueOnThreadPool;
             }
 
+            object? encodedContext = EncodeAwaitedContinuationContext(continuationContext, flags);
+            if ((options & ConfigureAwaitOptions.SuppressThrowing) != 0)
+            {
+                encodedContext = SuppressThrowingAwaitContext.Create(encodedContext);
+            }
+
             stackState->AwaitedTask = task;
-            stackState->AwaitedContinuationContext = EncodeAwaitedContinuationContext(continuationContext, flags);
+            stackState->AwaitedContinuationContext = encodedContext;
+        }
+
+        // Wraps the encoded continuation context of a (non-generic) Task await configured with
+        // ConfigureAwaitOptions.SuppressThrowing, such that a failed awaited task isn't propagated.
+        private sealed class SuppressThrowingAwaitContext
+        {
+            private static readonly SuppressThrowingAwaitContext s_transparent = new(null);
+            private static readonly SuppressThrowingAwaitContext s_threadPool = new(TaskScheduler.Default);
+
+            public readonly object? EncodedContext;
+
+            private SuppressThrowingAwaitContext(object? encodedContext) => EncodedContext = encodedContext;
+
+            public static SuppressThrowingAwaitContext Create(object? encodedContext) =>
+                encodedContext is null ? s_transparent :
+                encodedContext == TaskScheduler.Default ? s_threadPool :
+                new SuppressThrowingAwaitContext(encodedContext);
         }
 
         // Encodes where to continue after an awaited Task completes into a single object, so that
@@ -414,6 +437,7 @@ namespace System.Runtime.CompilerServices
         //                             never captures the default scheduler, so it's free to use as a marker)
         //   SynchronizationContext => ContinuationFlags.ContinueOnCapturedSynchronizationContext
         //   TaskScheduler          => ContinuationFlags.ContinueOnCapturedTaskScheduler
+        // SetAwaitedTask may additionally wrap the result in a SuppressThrowingAwaitContext.
         private static object? EncodeAwaitedContinuationContext(object? continuationContext, ContinuationFlags flags)
         {
             Debug.Assert((flags & ~ContinuationFlags.AllContinuationFlags) == 0);
@@ -769,6 +793,22 @@ namespace System.Runtime.CompilerServices
                 {
                     TaskSchedulerAwaitTaskContinuation.RunOrScheduleAction(GetContinuationAction(), sched2, capturedContext: null, allowInlining: canInline);
                     return true;
+                }
+
+                if (continuationContext is SuppressThrowingAwaitContext suppressThrowingContext)
+                {
+                    // Like TaskAwaiter.ValidateEnd with SuppressThrowing, observe any failure, and have the
+                    // dispatcher complete the await from a successful task so that nothing is thrown.
+                    Debug.Assert(_awaitedState is Task { IsCompleted: true });
+                    Task awaitedTask = Unsafe.As<Task>(_awaitedState);
+                    if (!awaitedTask.IsCompletedSuccessfully)
+                    {
+                        awaitedTask.MarkExceptionsAsHandled();
+                        _awaitedState = Task.CompletedTask;
+                    }
+
+                    return suppressThrowingContext.EncodedContext is { } encodedContext &&
+                        QueueAwaitContinuationIfNecessary(encodedContext, canInline);
                 }
 
                 Debug.Assert(continuationContext is SynchronizationContext { });
