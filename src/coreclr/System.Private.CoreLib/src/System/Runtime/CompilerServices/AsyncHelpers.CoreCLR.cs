@@ -995,10 +995,18 @@ namespace System.Runtime.CompilerServices
 
                 SetContinuationState(headContinuation);
 
+                SuspensionNotifierKind notifierKind = stackState->NotifierKind;
+                if (_awaitedState is not null && notifierKind != SuspensionNotifierKind.ValueTaskSource)
+                {
+                    // Only reuse a ValueTaskSourceContinuation for consecutive source awaits; don't keep
+                    // its consumed source alive across waits on something else.
+                    ReleaseValueTaskSourceContinuation(ref state);
+                }
+
                 try
                 {
                     object? notifier = stackState->Notifier;
-                    switch (stackState->NotifierKind)
+                    switch (notifierKind)
                     {
                         case SuspensionNotifierKind.AwaitedTask:
                             // Awaiting a Task. Register this task directly as its continuation; the
@@ -1006,11 +1014,6 @@ namespace System.Runtime.CompilerServices
                             // continuation when it resumes.
                             Debug.Assert(notifier is Task);
                             Task awaitedTask = Unsafe.As<Task>(notifier);
-                            if (_awaitedState is not null)
-                            {
-                                ReleaseValueTaskSourceContinuation(ref state);
-                            }
-
                             _awaitedState = stackState->AwaitedContinuationContext;
                             if (!awaitedTask.AddTaskContinuation(this, addBeforeOthers: false))
                             {
@@ -1242,6 +1245,9 @@ namespace System.Runtime.CompilerServices
                                 refDispatcherInfo = asyncDispatcherInfo.Next;
                                 return;
                             }
+
+                            // The frame completed, so stop keeping its continuation (and everything it captured) alive.
+                            m_stateObject = null;
                         }
                     }
                     catch (Exception ex)
@@ -1277,6 +1283,7 @@ namespace System.Runtime.CompilerServices
                             return;
                         }
 
+                        m_stateObject = null;
                         handlerContinuation.SetException(ex);
                         asyncDispatcherInfo.NextContinuation = handlerContinuation;
                     }
@@ -1408,6 +1415,9 @@ namespace System.Runtime.CompilerServices
                             }
 
                             RuntimeAsyncInstrumentationHelpers.CompleteRuntimeAsyncMethod(ref asyncDispatcherInfo, flags, curContinuation);
+
+                            // The frame completed, so stop keeping its continuation (and everything it captured) alive.
+                            m_stateObject = null;
                         }
                     }
                     catch (Exception ex)
@@ -1441,6 +1451,7 @@ namespace System.Runtime.CompilerServices
 
                         RuntimeAsyncInstrumentationHelpers.UnwindRuntimeAsyncMethodHandledException(ref asyncDispatcherInfo, flags, curContinuation, unwindedFrames);
 
+                        m_stateObject = null;
                         handlerContinuation.SetException(ex);
                         asyncDispatcherInfo.NextContinuation = handlerContinuation;
                     }
