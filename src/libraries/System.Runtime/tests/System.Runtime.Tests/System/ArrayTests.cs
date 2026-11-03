@@ -4635,6 +4635,9 @@ namespace System.Tests
         [InlineData(0, 10)]
         [InlineData(5, 10)]
         [InlineData(1000, 10)]
+        [InlineData(0, 0)]
+        [InlineData(5, 0)]
+        [InlineData(1000, 0)]
         public void CreateFilled_Value_ValueType(int length, int value)
         {
             int[] array = Array.CreateFilled(length, value);
@@ -4647,14 +4650,34 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(5)]
-        [InlineData(1000)]
-        public void CreateFilled_Value_ReferenceType(int length)
+        [InlineData(0, 10)]
+        [InlineData(5, 10)]
+        [InlineData(1000, 10)]
+        [InlineData(0, null)]
+        [InlineData(5, null)]
+        [InlineData(1000, null)]
+        public void CreateFilled_Value_NullableValueType(int length, int? value)
         {
-            var value = new object();
-            object[] array = Array.CreateFilled(length, value);
-            var expected = new object[length];
+            int?[] array = Array.CreateFilled(length, value);
+            var expected = new int?[length];
+            for (int i = 0; i < expected.Length; i++)
+                expected[i] = value;
+
+            Assert.Equal(length, array.Length);
+            Assert.Equal(expected, array);
+        }
+
+        [Theory]
+        [InlineData(0, "test")]
+        [InlineData(5, "test")]
+        [InlineData(1000, "test")]
+        [InlineData(0, null)]
+        [InlineData(5, null)]
+        [InlineData(1000, null)]
+        public void CreateFilled_Value_ReferenceType(int length, string? value)
+        {
+            string?[] array = Array.CreateFilled(length, value);
+            var expected = new string?[length];
             for (int i = 0; i < expected.Length; i++)
                 expected[i] = value;
 

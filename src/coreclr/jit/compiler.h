@@ -7029,6 +7029,7 @@ public:
     PhaseStatus fgWasmVirtualIP();
     PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
+    PhaseStatus fgWasmProfInstrument();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();

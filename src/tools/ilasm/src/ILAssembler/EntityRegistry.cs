@@ -8,9 +8,9 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
-using LabelHandle = ILAssembler.MethodBodyWriter.Label;
+using LabelHandle = Microsoft.DotNet.ILAssembler.MethodBodyWriter.Label;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     internal sealed class EntityRegistry
     {
@@ -795,9 +795,12 @@ namespace ILAssembler
                 ?? GetOrCreateAssemblyReference("mscorlib", new Version(0, 0, 0, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
         }
 
-        private static bool IsCoreLibAssemblyName(string name)
+        internal static bool IsCoreLibAssemblyName(string name)
         {
-            return name is "mscorlib" or "System.Runtime" or "System.Private.CoreLib" or "netstandard";
+            return string.Equals(name, "mscorlib", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "System.Runtime", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "netstandard", StringComparison.OrdinalIgnoreCase);
         }
 
         public interface IHasHandle
