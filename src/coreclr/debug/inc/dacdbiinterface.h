@@ -2166,7 +2166,7 @@ public:
     //    serialized metadata size.
     virtual HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetTargetContextSize(BOOL hasExtendedRegisters, OUT ULONG32 * pSize) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetTargetContextSize(ULONG32 contextFlags, OUT ULONG32 * pSize) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE WriteRegistersToContext(
         IN ContextBuffer contextBuffer,

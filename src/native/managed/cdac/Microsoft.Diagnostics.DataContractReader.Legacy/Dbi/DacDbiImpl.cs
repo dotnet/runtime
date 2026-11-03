@@ -6646,7 +6646,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetTargetContextSize(Interop.BOOL hasExtendedRegisters, uint* pSize)
+    public int GetTargetContextSize(uint contextFlags, uint* pSize)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
@@ -6657,7 +6657,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
 
-            ctx.RawContextFlags = hasExtendedRegisters == Interop.BOOL.FALSE ? ctx.FullContextFlags : ctx.AllContextFlags;
+            ctx.RawContextFlags = contextFlags;
             *pSize = ctx.GetSize();
         }
         catch (System.Exception ex)
@@ -6668,7 +6668,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null)
         {
             uint sizeLocal;
-            int hrLocal = _legacy.GetTargetContextSize(hasExtendedRegisters, &sizeLocal);
+            int hrLocal = _legacy.GetTargetContextSize(contextFlags, &sizeLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*pSize == sizeLocal, $"cDAC: {*pSize}, DAC: {sizeLocal}");

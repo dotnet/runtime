@@ -59,9 +59,10 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
 // respecting the ContextFlags of both contexts.
 //
 // The source and destination are opaque byte buffers with an associated size.
-// They only need to be at least sizeof(DT_CONTEXT) bytes and may be larger
-// (for example a full T_CONTEXT that carries trailing XSTATE/SVE state which is
-// not part of DT_CONTEXT); only the DT_CONTEXT portion is ever read or written.
+// Each buffer must satisfy CheckContextSizeForBuffer for its ContextFlags.
+// On x86, the trailing ExtendedRegisters region may be omitted when
+// CONTEXT_EXTENDED_REGISTERS is not set. Only flagged regions within DT_CONTEXT
+// are copied; any trailing XSTATE/SVE state is left untouched.
 //
 
 extern void CORDbgCopyThreadContext(BYTE* pDst, ULONG32 cbDst, const BYTE* pSrc, ULONG32 cbSrc);

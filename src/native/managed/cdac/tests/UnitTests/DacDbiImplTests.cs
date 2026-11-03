@@ -992,12 +992,13 @@ public unsafe class DacDbiImplTests
         Target target = RuntimeInfoTests.CreateTarget(new() { IsLittleEndian = true, Is64Bit = targetArch != "x86" },
             [(Constants.Globals.Architecture, targetArch)]);
         DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
         uint size;
 
-        Assert.Equal(System.HResults.S_OK, dacDbi.GetTargetContextSize(Interop.BOOL.FALSE, &size));
+        Assert.Equal(System.HResults.S_OK, dacDbi.GetTargetContextSize(context.FullContextFlags, &size));
         Assert.Equal(expectedBaseSize, size);
-        Assert.Equal(System.HResults.S_OK, dacDbi.GetTargetContextSize(Interop.BOOL.TRUE, &size));
-        Assert.Equal(IPlatformAgnosticContext.GetContextForPlatform(target).Size, size);
+        Assert.Equal(System.HResults.S_OK, dacDbi.GetTargetContextSize(context.AllContextFlags, &size));
+        Assert.Equal(context.Size, size);
     }
 
     [Theory]

@@ -1106,7 +1106,7 @@ public unsafe partial interface IDacDbiInterface
     int FillReadWriteMetadata(ulong vmModule, byte* pBuffer, uint cbBuffer);
 
     [PreserveSig]
-    int GetTargetContextSize(Interop.BOOL hasExtendedRegisters, uint* pSize);
+    int GetTargetContextSize(uint contextFlags, uint* pSize);
 
     [PreserveSig]
     int WriteRegistersToContext(ContextBuffer contextBuffer, CorDebugRegister* regs, uint nRegs, nuint* values);

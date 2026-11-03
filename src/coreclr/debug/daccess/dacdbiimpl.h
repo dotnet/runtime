@@ -155,7 +155,7 @@ public:
     HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex);
     HRESULT STDMETHODCALLTYPE GetReadWriteMetadataSize(VMPTR_Module vmModule, OUT ULONG32 * pSize);
     HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer);
-    HRESULT STDMETHODCALLTYPE GetTargetContextSize(BOOL hasExtendedRegisters, OUT ULONG32 * pSize);
+    HRESULT STDMETHODCALLTYPE GetTargetContextSize(ULONG32 contextFlags, OUT ULONG32 * pSize);
 
     HRESULT STDMETHODCALLTYPE WriteRegistersToContext(IN ContextBuffer contextBuffer, IN const CorDebugRegister * regs, IN ULONG32 nRegs, IN const TADDR * values);
     HRESULT STDMETHODCALLTYPE ReadRegistersFromContext(IN ContextBuffer contextBuffer, IN const CorDebugRegister * regs, IN ULONG32 nRegs, OUT CORDB_REGISTER * pValues);
