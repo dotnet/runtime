@@ -21,7 +21,7 @@ namespace System.CodeDom
 
         public CodeDirective this[int index]
         {
-            get => (CodeDirective)List[index];
+            get => (CodeDirective)List[index]!;
             set => List[index] = value;
         }
 

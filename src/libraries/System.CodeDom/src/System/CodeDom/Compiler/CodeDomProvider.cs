@@ -20,14 +20,14 @@ namespace System.CodeDom.Compiler
         static CodeDomProvider()
         {
             // C#
-            AddCompilerInfo(new CompilerInfo(new CompilerParameters() { WarningLevel = 4 }, typeof(CSharpCodeProvider).FullName)
+            AddCompilerInfo(new CompilerInfo(new CompilerParameters() { WarningLevel = 4 }, typeof(CSharpCodeProvider).FullName!)
             {
                 _compilerLanguages = new string[] { "c#", "cs", "csharp" },
                 _compilerExtensions = new string[] { ".cs", "cs" }
             });
 
             // VB
-            AddCompilerInfo(new CompilerInfo(new CompilerParameters() { WarningLevel = 4 }, typeof(VBCodeProvider).FullName)
+            AddCompilerInfo(new CompilerInfo(new CompilerParameters() { WarningLevel = 4 }, typeof(VBCodeProvider).FullName!)
             {
                 _compilerLanguages = new string[] { "vb", "vbs", "visualbasic", "vbscript" },
                 _compilerExtensions = new string[] { ".vb", "vb" }
@@ -64,7 +64,7 @@ namespace System.CodeDom.Compiler
 
         public static string GetLanguageFromExtension(string extension)
         {
-            CompilerInfo compilerInfo = GetCompilerInfoForExtensionNoThrow(extension);
+            CompilerInfo? compilerInfo = GetCompilerInfoForExtensionNoThrow(extension);
             if (compilerInfo == null)
             {
                 throw new ConfigurationErrorsException(SR.CodeDomProvider_NotDefined);
@@ -78,7 +78,7 @@ namespace System.CodeDom.Compiler
 
         public static CompilerInfo GetCompilerInfo(string language)
         {
-            CompilerInfo compilerInfo = GetCompilerInfoForLanguageNoThrow(language);
+            CompilerInfo? compilerInfo = GetCompilerInfoForLanguageNoThrow(language);
             if (compilerInfo == null)
             {
                 throw new ConfigurationErrorsException(SR.CodeDomProvider_NotDefined);
@@ -86,20 +86,20 @@ namespace System.CodeDom.Compiler
             return compilerInfo;
         }
 
-        private static CompilerInfo GetCompilerInfoForLanguageNoThrow(string language)
+        private static CompilerInfo? GetCompilerInfoForLanguageNoThrow(string language)
         {
             ArgumentNullException.ThrowIfNull(language);
 
-            CompilerInfo value;
+            CompilerInfo? value;
             s_compilerLanguages.TryGetValue(language.Trim(), out value);
             return value;
         }
 
-        private static CompilerInfo GetCompilerInfoForExtensionNoThrow(string extension)
+        private static CompilerInfo? GetCompilerInfoForExtensionNoThrow(string extension)
         {
             ArgumentNullException.ThrowIfNull(extension);
 
-            CompilerInfo value;
+            CompilerInfo? value;
             s_compilerExtensions.TryGetValue(extension.Trim(), out value);
             return value;
         }
@@ -123,7 +123,7 @@ namespace System.CodeDom.Compiler
         public abstract ICodeCompiler CreateCompiler();
 
         [Obsolete("ICodeParser has been deprecated. Use the methods directly on the CodeDomProvider class instead. Classes inheriting from CodeDomProvider must still implement this interface, and should suppress this warning or also mark this method as obsolete.")]
-        public virtual ICodeParser CreateParser() => null;
+        public virtual ICodeParser? CreateParser() => null;
 
         public virtual TypeConverter GetConverter(Type type) => TypeDescriptor.GetConverter(type);
 
@@ -197,7 +197,7 @@ namespace System.CodeDom.Compiler
 
         private ICodeParser CreateParserHelper()
         {
-            ICodeParser parser = CreateParser();
+            ICodeParser? parser = CreateParser();
             if (parser == null)
             {
                 throw new NotImplementedException(SR.NotSupported_CodeDomAPI);

@@ -15,22 +15,22 @@ namespace System.CodeDom.Compiler
         private static FileStream CreateInheritedFile(string file) =>
             new FileStream(file, FileMode.CreateNew, FileAccess.Write, FileShare.Read | FileShare.Inheritable);
 
-        public static void ExecWait(string cmd, TempFileCollection tempFiles)
+        public static void ExecWait(string? cmd, TempFileCollection? tempFiles)
         {
-            string outputName = null, errorName = null;
+            string? outputName = null, errorName = null;
             ExecWaitWithCapture(cmd, tempFiles, ref outputName, ref errorName);
         }
 
-        public static int ExecWaitWithCapture(IntPtr userToken, string cmd, TempFileCollection tempFiles, ref string outputName, ref string errorName) =>
+        public static int ExecWaitWithCapture(IntPtr userToken, string? cmd, TempFileCollection? tempFiles, ref string? outputName, ref string? errorName) =>
             ExecWaitWithCapture(userToken, cmd, Environment.CurrentDirectory, tempFiles, ref outputName, ref errorName);
 
-        public static int ExecWaitWithCapture(string cmd, string currentDir, TempFileCollection tempFiles, ref string outputName, ref string errorName) =>
+        public static int ExecWaitWithCapture(string? cmd, string? currentDir, TempFileCollection? tempFiles, ref string? outputName, ref string? errorName) =>
             ExecWaitWithCapture(IntPtr.Zero, cmd, currentDir, tempFiles, ref outputName, ref errorName);
 
-        public static int ExecWaitWithCapture(string cmd, TempFileCollection tempFiles, ref string outputName, ref string errorName) =>
+        public static int ExecWaitWithCapture(string? cmd, TempFileCollection? tempFiles, ref string? outputName, ref string? errorName) =>
             ExecWaitWithCapture(IntPtr.Zero, cmd, Environment.CurrentDirectory, tempFiles, ref outputName, ref errorName);
 
-        public static int ExecWaitWithCapture(IntPtr userToken, string cmd, string currentDir, TempFileCollection tempFiles, ref string outputName, ref string errorName)
+        public static int ExecWaitWithCapture(IntPtr userToken, string? cmd, string? currentDir, TempFileCollection? tempFiles, ref string? outputName, ref string? errorName)
         {
             if (userToken != IntPtr.Zero)
             {
@@ -39,12 +39,12 @@ namespace System.CodeDom.Compiler
 
             if (string.IsNullOrEmpty(outputName))
             {
-                outputName = tempFiles.AddExtension("out");
+                outputName = tempFiles!.AddExtension("out");
             }
 
             if (string.IsNullOrEmpty(errorName))
             {
-                errorName = tempFiles.AddExtension("err");
+                errorName = tempFiles!.AddExtension("err");
             }
 
             using (var outputWriter = new StreamWriter(CreateInheritedFile(outputName), Encoding.UTF8))
@@ -57,42 +57,47 @@ namespace System.CodeDom.Compiler
                 outputWriter.WriteLine();
                 outputWriter.WriteLine();
 
-                var psi = new ProcessStartInfo(cmd)
+                var psi = new ProcessStartInfo(cmd!)
                 {
                     WorkingDirectory = currentDir,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true
                 };
 
-                using (Process p = Process.Start(psi))
+                using (Process? p = Process.Start(psi))
                 {
-                    p.OutputDataReceived += (s, e) =>
+                    if (p != null)
                     {
-                        if (e.Data != null)
+                        p.OutputDataReceived += (s, e) =>
                         {
-                            outputWriter.WriteLine(e.Data);
-                        }
-                    };
-                    p.ErrorDataReceived += (s, e) =>
-                    {
-                        if (e.Data != null)
+                            if (e.Data != null)
+                            {
+                                outputWriter.WriteLine(e.Data);
+                            }
+                        };
+                        p.ErrorDataReceived += (s, e) =>
                         {
-                            errorWriter.WriteLine(e.Data);
+                            if (e.Data != null)
+                            {
+                                errorWriter.WriteLine(e.Data);
+                            }
+                        };
+
+                        p.BeginOutputReadLine();
+                        p.BeginErrorReadLine();
+
+                        if (!p.WaitForExit(ProcessTimeOut))
+                        {
+                            const int WAIT_TIMEOUT = 0x102;
+                            throw new ExternalException(SR.Format(SR.ExecTimeout, cmd), WAIT_TIMEOUT);
                         }
-                    };
 
-                    p.BeginOutputReadLine();
-                    p.BeginErrorReadLine();
+                        p.WaitForExit();
 
-                    if (!p.WaitForExit(ProcessTimeOut))
-                    {
-                        const int WAIT_TIMEOUT = 0x102;
-                        throw new ExternalException(SR.Format(SR.ExecTimeout, cmd), WAIT_TIMEOUT);
+                        return p.ExitCode;
                     }
 
-                    p.WaitForExit();
-
-                    return p.ExitCode;
+                    return -1;
                 }
             }
         }

@@ -7,13 +7,13 @@ namespace System.CodeDom
     {
         public CodeDirectionExpression() { }
 
-        public CodeDirectionExpression(FieldDirection direction, CodeExpression expression)
+        public CodeDirectionExpression(FieldDirection direction, CodeExpression? expression)
         {
             Expression = expression;
             Direction = direction;
         }
 
-        public CodeExpression Expression { get; set; }
+        public CodeExpression? Expression { get; set; }
 
         public FieldDirection Direction { get; set; }
     }

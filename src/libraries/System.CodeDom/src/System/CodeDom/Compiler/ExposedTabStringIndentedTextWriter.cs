@@ -30,7 +30,7 @@ namespace System.CodeDom.Compiler
     {
         private readonly ExposedTabStringIndentedTextWriter _writer;
         private readonly int _indent;
-        private string _s;
+        private string? _s;
 
         internal Indentation(ExposedTabStringIndentedTextWriter writer, int indent)
         {

@@ -7,11 +7,11 @@ namespace System.CodeDom
     {
         public CodeThrowExceptionStatement() { }
 
-        public CodeThrowExceptionStatement(CodeExpression toThrow)
+        public CodeThrowExceptionStatement(CodeExpression? toThrow)
         {
             ToThrow = toThrow;
         }
 
-        public CodeExpression ToThrow { get; set; }
+        public CodeExpression? ToThrow { get; set; }
     }
 }

@@ -7,14 +7,14 @@ namespace System.CodeDom
     {
         public CodeAssignStatement() { }
 
-        public CodeAssignStatement(CodeExpression left, CodeExpression right)
+        public CodeAssignStatement(CodeExpression? left, CodeExpression? right)
         {
             Left = left;
             Right = right;
         }
 
-        public CodeExpression Left { get; set; }
+        public CodeExpression? Left { get; set; }
 
-        public CodeExpression Right { get; set; }
+        public CodeExpression? Right { get; set; }
     }
 }

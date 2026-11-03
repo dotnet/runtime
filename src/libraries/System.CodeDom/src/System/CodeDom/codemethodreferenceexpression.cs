@@ -1,19 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.CodeDom
 {
     public class CodeMethodReferenceExpression : CodeExpression
     {
         public CodeMethodReferenceExpression() { }
 
-        public CodeMethodReferenceExpression(CodeExpression targetObject, string methodName)
+        public CodeMethodReferenceExpression(CodeExpression? targetObject, string? methodName)
         {
             TargetObject = targetObject;
             MethodName = methodName;
         }
 
-        public CodeMethodReferenceExpression(CodeExpression targetObject, string methodName, params CodeTypeReference[] typeParameters)
+        public CodeMethodReferenceExpression(CodeExpression? targetObject, string? methodName, params CodeTypeReference[] typeParameters)
         {
             TargetObject = targetObject;
             MethodName = methodName;
@@ -23,8 +25,9 @@ namespace System.CodeDom
             }
         }
 
-        public CodeExpression TargetObject { get; set; }
+        public CodeExpression? TargetObject { get; set; }
 
+        [AllowNull]
         public string MethodName
         {
             get => field ?? string.Empty;

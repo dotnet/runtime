@@ -10,19 +10,19 @@ namespace System.CodeDom.Compiler
     public abstract class CodeGenerator : ICodeGenerator
     {
         private const int ParameterMultilineThreshold = 15;
-        private ExposedTabStringIndentedTextWriter _output;
-        private CodeGeneratorOptions _options;
+        private ExposedTabStringIndentedTextWriter? _output;
+        private CodeGeneratorOptions? _options;
 
-        private CodeTypeDeclaration _currentClass;
-        private CodeTypeMember _currentMember;
+        private CodeTypeDeclaration? _currentClass;
+        private CodeTypeMember? _currentMember;
 
         private bool _inNestedBinary;
 
-        protected CodeTypeDeclaration CurrentClass => _currentClass;
+        protected CodeTypeDeclaration? CurrentClass => _currentClass;
 
         protected string CurrentTypeName => _currentClass != null ? _currentClass.Name : "<% unknown %>";
 
-        protected CodeTypeMember CurrentMember => _currentMember;
+        protected CodeTypeMember? CurrentMember => _currentMember;
 
         protected string CurrentMemberName => _currentMember != null ? _currentMember.Name : "<% unknown %>";
 
@@ -38,15 +38,15 @@ namespace System.CodeDom.Compiler
 
         protected int Indent
         {
-            get => _output.Indent;
-            set => _output.Indent = value;
+            get => _output!.Indent;
+            set => _output!.Indent = value;
         }
 
         protected abstract string NullToken { get; }
 
-        protected TextWriter Output => _output;
+        protected TextWriter Output => _output!;
 
-        protected CodeGeneratorOptions Options => _options;
+        protected CodeGeneratorOptions Options => _options!;
 
         private void GenerateType(CodeTypeDeclaration e)
         {
@@ -106,14 +106,14 @@ namespace System.CodeDom.Compiler
 
         private void GenerateTypeMember(CodeTypeMember member, CodeTypeDeclaration declaredType)
         {
-            if (_options.BlankLinesBetweenMembers)
+            if (Options.BlankLinesBetweenMembers)
             {
                 Output.WriteLine();
             }
 
             if (member is CodeTypeDeclaration)
             {
-                ((ICodeGenerator)this).GenerateCodeFromType((CodeTypeDeclaration)member, _output.InnerWriter, _options);
+                ((ICodeGenerator)this).GenerateCodeFromType((CodeTypeDeclaration)member, _output!.InnerWriter, Options);
 
                 // Nested types clobber the current class, so reset it.
                 _currentClass = declaredType;
@@ -203,7 +203,7 @@ namespace System.CodeDom.Compiler
                 {
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -228,7 +228,7 @@ namespace System.CodeDom.Compiler
         {
             foreach (CodeNamespace n in e.Namespaces)
             {
-                ((ICodeGenerator)this).GenerateCodeFromNamespace(n, _output.InnerWriter, _options);
+                ((ICodeGenerator)this).GenerateCodeFromNamespace(n, _output!.InnerWriter, Options);
             }
         }
 
@@ -238,11 +238,11 @@ namespace System.CodeDom.Compiler
 
             foreach (CodeTypeDeclaration c in e.Types)
             {
-                if (_options.BlankLinesBetweenMembers)
+                if (Options.BlankLinesBetweenMembers)
                 {
                     Output.WriteLine();
                 }
-                ((ICodeGenerator)this).GenerateCodeFromType(c, _output.InnerWriter, _options);
+                ((ICodeGenerator)this).GenerateCodeFromType(c, _output!.InnerWriter, Options);
             }
         }
 
@@ -438,7 +438,7 @@ namespace System.CodeDom.Compiler
                 {
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -473,7 +473,7 @@ namespace System.CodeDom.Compiler
                 {
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -617,7 +617,7 @@ namespace System.CodeDom.Compiler
                 {
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -654,7 +654,7 @@ namespace System.CodeDom.Compiler
                     hasSnippet = true;
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -729,7 +729,7 @@ namespace System.CodeDom.Compiler
                 {
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -769,12 +769,12 @@ namespace System.CodeDom.Compiler
             {
                 if (current is CodeTypeDeclaration)
                 {
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
                     CodeTypeDeclaration currentClass = (CodeTypeDeclaration)current;
-                    ((ICodeGenerator)this).GenerateCodeFromType(currentClass, _output.InnerWriter, _options);
+                    ((ICodeGenerator)this).GenerateCodeFromType(currentClass, _output!.InnerWriter, Options);
                 }
             }
         }
@@ -827,7 +827,7 @@ namespace System.CodeDom.Compiler
                 {
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -954,7 +954,7 @@ namespace System.CodeDom.Compiler
 
             foreach (CodeStatement stmt in stmts)
             {
-                ((ICodeGenerator)this).GenerateCodeFromStatement(stmt, _output.InnerWriter, _options);
+                ((ICodeGenerator)this).GenerateCodeFromStatement(stmt, _output!.InnerWriter, Options);
             }
         }
 
@@ -1012,7 +1012,7 @@ namespace System.CodeDom.Compiler
                 OutputIdentifier(arg.Name);
                 Output.Write('=');
             }
-            ((ICodeGenerator)this).GenerateCodeFromExpression(arg.Value, _output.InnerWriter, _options);
+            ((ICodeGenerator)this).GenerateCodeFromExpression(arg.Value!, _output!.InnerWriter, Options);
         }
 
         protected virtual void OutputDirection(FieldDirection dir)
@@ -1193,7 +1193,7 @@ namespace System.CodeDom.Compiler
                     else
                         Output.Write(", ");
                 }
-                ((ICodeGenerator)this).GenerateCodeFromExpression(current, _output.InnerWriter, _options);
+                ((ICodeGenerator)this).GenerateCodeFromExpression(current, _output!.InnerWriter, Options);
             }
             Indent--;
         }
@@ -1298,7 +1298,7 @@ namespace System.CodeDom.Compiler
             bool indentedExpression = false;
             Output.Write('(');
 
-            GenerateExpression(e.Left);
+            GenerateExpression(e.Left!);
             Output.Write(' ');
 
             if (e.Left is CodeBinaryOperatorExpression || e.Right is CodeBinaryOperatorExpression)
@@ -1318,7 +1318,7 @@ namespace System.CodeDom.Compiler
             OutputOperator(e.Operator);
 
             Output.Write(' ');
-            GenerateExpression(e.Right);
+            GenerateExpression(e.Right!);
 
             Output.Write(')');
             if (indentedExpression)
@@ -1363,7 +1363,7 @@ namespace System.CodeDom.Compiler
             ArgumentNullException.ThrowIfNull(e);
 
             OutputDirection(e.Direction);
-            GenerateExpression(e.Expression);
+            GenerateExpression(e.Expression!);
         }
 
         protected virtual void GeneratePrimitiveExpression(CodePrimitiveExpression e)

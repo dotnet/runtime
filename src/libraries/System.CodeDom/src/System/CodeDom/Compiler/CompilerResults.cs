@@ -8,16 +8,16 @@ namespace System.CodeDom.Compiler
 {
     public partial class CompilerResults
     {
-        private Assembly _compiledAssembly;
+        private Assembly? _compiledAssembly;
 
-        public CompilerResults(TempFileCollection tempFiles)
+        public CompilerResults(TempFileCollection? tempFiles)
         {
             TempFiles = tempFiles;
         }
 
-        public TempFileCollection TempFiles { get; set; }
+        public TempFileCollection? TempFiles { get; set; }
 
-        public Assembly CompiledAssembly
+        public Assembly? CompiledAssembly
         {
             get
             {
@@ -33,7 +33,7 @@ namespace System.CodeDom.Compiler
 
         public StringCollection Output { get; } = new StringCollection();
 
-        public string PathToAssembly { get; set; }
+        public string? PathToAssembly { get; set; }
 
         public int NativeCompilerReturnValue { get; set; }
     }

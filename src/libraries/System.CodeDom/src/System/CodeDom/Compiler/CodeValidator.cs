@@ -16,7 +16,7 @@ namespace System.CodeDom.Compiler
         private static readonly SearchValues<char> s_newLineChars = SearchValues.Create("\r\n\u2028\u2029\u0085");
         private static readonly SearchValues<char> s_invalidPathChars = SearchValues.Create(Path.GetInvalidPathChars());
 
-        private CodeTypeDeclaration _currentClass;
+        private CodeTypeDeclaration? _currentClass;
 
         internal void ValidateIdentifiers(CodeObject e)
         {
@@ -164,7 +164,10 @@ namespace System.CodeDom.Compiler
             foreach (CodeAttributeDeclaration current in attributes)
             {
                 ValidateTypeName(current, nameof(current.Name), current.Name);
-                ValidateTypeReference(current.AttributeType);
+                if (current.AttributeType != null)
+                {
+                    ValidateTypeReference(current.AttributeType);
+                }
 
                 foreach (CodeAttributeArgument arg in current.Arguments)
                 {
@@ -179,7 +182,10 @@ namespace System.CodeDom.Compiler
             {
                 ValidateIdentifier(arg, nameof(arg.Name), arg.Name);
             }
-            ValidateExpression(arg.Value);
+            if (arg.Value != null)
+            {
+                ValidateExpression(arg.Value);
+            }
         }
 
         private void ValidateTypes(CodeNamespace e)
@@ -194,7 +200,7 @@ namespace System.CodeDom.Compiler
         {
             // This function can be called recursively and will modify the global variable currentClass
             // We will save currentClass to a local, modify it to do whatever we want and restore it back when we exit so that it is re-entrant.
-            CodeTypeDeclaration savedClass = _currentClass;
+            CodeTypeDeclaration? savedClass = _currentClass;
             _currentClass = e;
 
             ValidateTypeStart(e);
@@ -469,14 +475,26 @@ namespace System.CodeDom.Compiler
 
         private void ValidateExpressionStatement(CodeExpressionStatement e)
         {
-            ValidateExpression(e.Expression);
+            if (e.Expression != null)
+            {
+                ValidateExpression(e.Expression);
+            }
         }
 
         private void ValidateIterationStatement(CodeIterationStatement e)
         {
-            ValidateStatement(e.InitStatement);
-            ValidateExpression(e.TestExpression);
-            ValidateStatement(e.IncrementStatement);
+            if (e.InitStatement != null)
+            {
+                ValidateStatement(e.InitStatement);
+            }
+            if (e.TestExpression != null)
+            {
+                ValidateExpression(e.TestExpression);
+            }
+            if (e.IncrementStatement != null)
+            {
+                ValidateStatement(e.IncrementStatement);
+            }
             ValidateStatements(e.Statements);
         }
 
@@ -498,7 +516,10 @@ namespace System.CodeDom.Compiler
 
         private void ValidateConditionStatement(CodeConditionStatement e)
         {
-            ValidateExpression(e.Condition);
+            if (e.Condition != null)
+            {
+                ValidateExpression(e.Condition);
+            }
             ValidateStatements(e.TrueStatements);
 
             CodeStatementCollection falseStatements = e.FalseStatements;
@@ -531,20 +552,32 @@ namespace System.CodeDom.Compiler
 
         private void ValidateAssignStatement(CodeAssignStatement e)
         {
-            ValidateExpression(e.Left);
-            ValidateExpression(e.Right);
+            if (e.Left != null)
+            {
+                ValidateExpression(e.Left);
+            }
+            if (e.Right != null)
+            {
+                ValidateExpression(e.Right);
+            }
         }
 
         private void ValidateAttachEventStatement(CodeAttachEventStatement e)
         {
             ValidateEventReferenceExpression(e.Event);
-            ValidateExpression(e.Listener);
+            if (e.Listener != null)
+            {
+                ValidateExpression(e.Listener);
+            }
         }
 
         private void ValidateRemoveEventStatement(CodeRemoveEventStatement e)
         {
             ValidateEventReferenceExpression(e.Event);
-            ValidateExpression(e.Listener);
+            if (e.Listener != null)
+            {
+                ValidateExpression(e.Listener);
+            }
         }
 
         private static void ValidateGotoStatement(CodeGotoStatement e)
@@ -791,14 +824,23 @@ namespace System.CodeDom.Compiler
 
         private void ValidateBinaryOperatorExpression(CodeBinaryOperatorExpression e)
         {
-            ValidateExpression(e.Left);
-            ValidateExpression(e.Right);
+            if (e.Left != null)
+            {
+                ValidateExpression(e.Left);
+            }
+            if (e.Right != null)
+            {
+                ValidateExpression(e.Right);
+            }
         }
 
         private void ValidateCastExpression(CodeCastExpression e)
         {
             ValidateTypeReference(e.TargetType);
-            ValidateExpression(e.Expression);
+            if (e.Expression != null)
+            {
+                ValidateExpression(e.Expression);
+            }
         }
 
         private static void ValidateDefaultValueExpression(CodeDefaultValueExpression e)
@@ -809,7 +851,10 @@ namespace System.CodeDom.Compiler
         private void ValidateDelegateCreateExpression(CodeDelegateCreateExpression e)
         {
             ValidateTypeReference(e.DelegateType);
-            ValidateExpression(e.TargetObject);
+            if (e.TargetObject != null)
+            {
+                ValidateExpression(e.TargetObject);
+            }
             ValidateIdentifier(e, nameof(e.MethodName), e.MethodName);
         }
 
@@ -834,7 +879,10 @@ namespace System.CodeDom.Compiler
 
         private void ValidateIndexerExpression(CodeIndexerExpression e)
         {
-            ValidateExpression(e.TargetObject);
+            if (e.TargetObject != null)
+            {
+                ValidateExpression(e.TargetObject);
+            }
             foreach (CodeExpression exp in e.Indices)
             {
                 ValidateExpression(exp);
@@ -843,7 +891,10 @@ namespace System.CodeDom.Compiler
 
         private void ValidateArrayIndexerExpression(CodeArrayIndexerExpression e)
         {
-            ValidateExpression(e.TargetObject);
+            if (e.TargetObject != null)
+            {
+                ValidateExpression(e.TargetObject);
+            }
             foreach (CodeExpression exp in e.Indices)
             {
                 ValidateExpression(exp);
@@ -903,7 +954,10 @@ namespace System.CodeDom.Compiler
 
         private void ValidateDirectionExpression(CodeDirectionExpression e)
         {
-            ValidateExpression(e.Expression);
+            if (e.Expression != null)
+            {
+                ValidateExpression(e.Expression);
+            }
         }
 
         private void ValidatePropertyReferenceExpression(CodePropertyReferenceExpression e)

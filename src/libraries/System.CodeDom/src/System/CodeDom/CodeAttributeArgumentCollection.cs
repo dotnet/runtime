@@ -21,7 +21,7 @@ namespace System.CodeDom
 
         public CodeAttributeArgument this[int index]
         {
-            get => (CodeAttributeArgument)List[index];
+            get => (CodeAttributeArgument)List[index]!;
             set => List[index] = value;
         }
 

@@ -1,20 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.CodeDom
 {
     public class CodeLinePragma
     {
-        private string _fileName;
+        private string? _fileName;
 
         public CodeLinePragma() { }
 
-        public CodeLinePragma(string fileName, int lineNumber)
+        public CodeLinePragma(string? fileName, int lineNumber)
         {
             FileName = fileName;
             LineNumber = lineNumber;
         }
 
+        [AllowNull]
         public string FileName
         {
             get => _fileName ?? string.Empty;

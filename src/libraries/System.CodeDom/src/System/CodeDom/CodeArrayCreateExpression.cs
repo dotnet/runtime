@@ -1,24 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.CodeDom
 {
     public class CodeArrayCreateExpression : CodeExpression
     {
         private readonly CodeExpressionCollection _initializers = new CodeExpressionCollection();
-        private CodeTypeReference _createType;
+        private CodeTypeReference? _createType;
 
         public CodeArrayCreateExpression()
         {
         }
 
-        public CodeArrayCreateExpression(CodeTypeReference createType, params CodeExpression[] initializers)
+        public CodeArrayCreateExpression(CodeTypeReference? createType, params CodeExpression[] initializers)
         {
             _createType = createType;
             _initializers.AddRange(initializers);
         }
 
-        public CodeArrayCreateExpression(string createType, params CodeExpression[] initializers)
+        public CodeArrayCreateExpression(string? createType, params CodeExpression[] initializers)
         {
             _createType = new CodeTypeReference(createType);
             _initializers.AddRange(initializers);
@@ -30,13 +32,13 @@ namespace System.CodeDom
             _initializers.AddRange(initializers);
         }
 
-        public CodeArrayCreateExpression(CodeTypeReference createType, int size)
+        public CodeArrayCreateExpression(CodeTypeReference? createType, int size)
         {
             _createType = createType;
             Size = size;
         }
 
-        public CodeArrayCreateExpression(string createType, int size)
+        public CodeArrayCreateExpression(string? createType, int size)
         {
             _createType = new CodeTypeReference(createType);
             Size = size;
@@ -48,24 +50,25 @@ namespace System.CodeDom
             Size = size;
         }
 
-        public CodeArrayCreateExpression(CodeTypeReference createType, CodeExpression size)
+        public CodeArrayCreateExpression(CodeTypeReference? createType, CodeExpression? size)
         {
             _createType = createType;
             SizeExpression = size;
         }
 
-        public CodeArrayCreateExpression(string createType, CodeExpression size)
+        public CodeArrayCreateExpression(string? createType, CodeExpression? size)
         {
             _createType = new CodeTypeReference(createType);
             SizeExpression = size;
         }
 
-        public CodeArrayCreateExpression(Type createType, CodeExpression size)
+        public CodeArrayCreateExpression(Type createType, CodeExpression? size)
         {
             _createType = new CodeTypeReference(createType);
             SizeExpression = size;
         }
 
+        [AllowNull]
         public CodeTypeReference CreateType
         {
             get => _createType ??= new CodeTypeReference("");
@@ -76,6 +79,6 @@ namespace System.CodeDom
 
         public int Size { get; set; }
 
-        public CodeExpression SizeExpression { get; set; }
+        public CodeExpression? SizeExpression { get; set; }
     }
 }

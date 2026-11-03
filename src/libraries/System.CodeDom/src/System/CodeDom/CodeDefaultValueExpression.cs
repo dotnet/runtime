@@ -1,19 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.CodeDom
 {
     public class CodeDefaultValueExpression : CodeExpression
     {
-        private CodeTypeReference _type;
+        private CodeTypeReference? _type;
 
         public CodeDefaultValueExpression() { }
 
-        public CodeDefaultValueExpression(CodeTypeReference type)
+        public CodeDefaultValueExpression(CodeTypeReference? type)
         {
             _type = type;
         }
 
+        [AllowNull]
         public CodeTypeReference Type
         {
             get => _type ??= new CodeTypeReference("");

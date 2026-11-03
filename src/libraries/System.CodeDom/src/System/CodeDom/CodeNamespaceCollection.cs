@@ -21,7 +21,7 @@ namespace System.CodeDom
 
         public CodeNamespace this[int index]
         {
-            get => (CodeNamespace)List[index];
+            get => (CodeNamespace)List[index]!;
             set => List[index] = value;
         }
 

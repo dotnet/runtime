@@ -23,7 +23,7 @@ namespace System.CodeDom
 
         public CodeAttributeDeclaration this[int index]
         {
-            get => ((CodeAttributeDeclaration)(List[index]));
+            get => (CodeAttributeDeclaration)List[index]!;
             set => List[index] = value;
         }
 
