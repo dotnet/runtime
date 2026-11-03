@@ -83,12 +83,6 @@ struct AuxiliaryMethodState
         return state;
     }
 
-    bool MayActivateMethod() const
-    {
-        return discriminator == AuxiliaryMethodStateDiscriminator::CheckAuxiliaryModuleActivationFlag
-            || discriminator == AuxiliaryMethodStateDiscriminator::CheckAuxiliaryEntryPointsEra;
-    }
-
     // Defined in the VM's interpexec.h, since it needs ReadyToRunInfo.
     inline bool ShouldTryDelayedActivation() const;
 };

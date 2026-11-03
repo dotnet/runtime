@@ -10,7 +10,7 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
 // Mirrors the exception handling of PreStubWorker for a call from CallDescrWorkerInternal: exceptions are
 // rethrown to the native caller, and the called method is added to the exception's stack trace. pPrepareMethod is
 // the method to prepare, which differs from pMethod when pMethod's interpreter code belongs to another method.
-static void RunPrestub(MethodDesc* pMethod, MethodDesc* pPrepareMethod, bool activateDelayedR2RCode, UINT_PTR stackTraceSP)
+static void ActivateOrRunPrestub(MethodDesc* pMethod, MethodDesc* pPrepareMethod, UINT_PTR stackTraceSP, bool activateDelayedR2RCode = false)
 {
     EX_TRY
     {
@@ -19,14 +19,17 @@ static void RunPrestub(MethodDesc* pMethod, MethodDesc* pPrepareMethod, bool act
 
         {
             GCX_PREEMP();
+            {
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-            if (activateDelayedR2RCode)
-            {
-                pPrepareMethod->TryActivateDelayedR2RCode(CallerGCMode::Coop);
-            }
-            else
+                if (activateDelayedR2RCode)
+                {
+                    pPrepareMethod->TryActivateDelayedR2RCode(CallerGCMode::Coop);
+                    if (pPrepareMethod->HasNativeCode())
+                    {
+                        return;
+                    }
+                }
 #endif // FEATURE_AUXILIARY_R2R_MODULES
-            {
                 (void)pPrepareMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
             }
         }
@@ -79,12 +82,12 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
             Thread* pThread = GetThread();
             PrestubMethodFrame frame(pTransitionBlock, pMethod);
             frame.Push(pThread);
-            RunPrestub(pMethod, pTargetMethod, activateDelayedR2RCode, (UINT_PTR)pTransitionBlock);
+            ActivateOrRunPrestub(pMethod, pTargetMethod, (UINT_PTR)pTransitionBlock, activateDelayedR2RCode);
             frame.Pop(pThread);
         }
         else
         {
-            RunPrestub(pMethod, pTargetMethod, activateDelayedR2RCode, (UINT_PTR)pCallDescrData->pSrc);
+            ActivateOrRunPrestub(pMethod, pTargetMethod, (UINT_PTR)pCallDescrData->pSrc, activateDelayedR2RCode);
         }
         targetIp = pTargetMethod->GetInterpreterCode();
     }
