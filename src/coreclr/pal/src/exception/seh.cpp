@@ -25,7 +25,6 @@ Abstract:
 #include "pal/init.h"
 #include "pal/process.h"
 #include "pal/signal.hpp"
-#include "pal/virtual.h"
 
 #if HAVE_MACH_EXCEPTIONS
 #include "machexception.h"

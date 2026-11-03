@@ -858,7 +858,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                 mdToken tkConstraintType, tkParam;
                 if (FAILED(pInternalImport->GetGenericParamConstraintProps(tkConstraint, &tkParam, &tkConstraintType)))
                 {
-                    GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
+                    GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT != NULL ? pMT->GetCl() : defToken, IDS_CLASSLOAD_BADFORMAT);
                 }
                 _ASSERTE(tkParam == GetToken());
                 TypeHandle thConstraint;
@@ -872,7 +872,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
 
                     if (FAILED(pInternalImport->GetTypeSpecFromToken(tkConstraintType, &pSig, &cSig)))
                     {
-                        GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
+                        GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT != NULL ? pMT->GetCl() : defToken, IDS_CLASSLOAD_BADFORMAT);
                     }
 
                     SigPointer investigatePtr(pSig, cSig);

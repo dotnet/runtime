@@ -113,7 +113,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader XXssProtection = new("X-XSS-Protection", ["1; mode=block", "0", "1"]);
 
 #if TARGET_BROWSER || TARGET_WASI
-        private static HttpHeaderParser? GetAltSvcHeaderParser() => null; // Allow for the AltSvcHeaderParser to be trimmed on Browser since Alt-Svc is only for SocketsHttpHandler, which isn't used on Browser.
+        private static HttpHeaderParser? GetAltSvcHeaderParser() => null; // Allow for the AltSvcHeaderParser to be trimmed on Browser and WASI since Alt-Svc is only used by SocketsHttpHandler for HTTP/3, which isn't available there.
 #else
         private static AltSvcHeaderParser? GetAltSvcHeaderParser() => AltSvcHeaderParser.Parser;
 #endif
