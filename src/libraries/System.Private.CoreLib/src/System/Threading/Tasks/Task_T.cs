@@ -446,14 +446,20 @@ namespace System.Threading.Tasks
         }
 
 #if !MONO
-        [StackTraceHidden]
-        internal override void GetRuntimeAsyncAwaitResult(ref byte result)
+        internal override Exception? GetRuntimeAsyncAwaitResult(ref byte result)
         {
-            TaskAwaiter.ValidateEnd(this);
+            if (IsWaitNotificationEnabledOrNotRanToCompletion &&
+                TaskAwaiter.GetExceptionForNonSuccessAndDebuggerNotification(this) is Exception e)
+            {
+                return e;
+            }
+
             if (!Unsafe.IsNullRef(ref result))
             {
                 Unsafe.As<byte, TResult>(ref result) = ResultOnSuccess;
             }
+
+            return null;
         }
 #endif
 

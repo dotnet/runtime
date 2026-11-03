@@ -53,6 +53,15 @@ namespace System.Runtime.ExceptionServices
             throw _exception;
         }
 
+        // Does everything Throw does other than the throw itself. The returned exception must
+        // be propagated (e.g. thrown, or have a stack frame appended) on the current thread
+        // before anything else is thrown on it.
+        internal Exception PrepareForPropagation()
+        {
+            _exception.RestoreDispatchState(_dispatchState);
+            return _exception;
+        }
+
         // Throws the source exception, maintaining the original bucketing details and augmenting
         // rather than replacing the original stack trace.
         [DoesNotReturn]
