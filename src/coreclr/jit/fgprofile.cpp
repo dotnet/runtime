@@ -3083,6 +3083,15 @@ PhaseStatus Compiler::fgIncorporateProfileData()
             ProfileSynthesis::Run(this, ProfileSynthesisOption::ResetAndSynthesize);
         }
     }
+    else if (fgPgoDynamic)
+    {
+        // Minimal profiling does not add count probes to single-block methods, so methods
+        // with only class/method probes (e.g. straight-line async methods) end up here.
+        // Synthesize just as we would have if there were no profile data at all.
+        //
+        JITDUMP("Dynamic PGO has no count data, synthesizing profile data\n");
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
+    }
 
 #ifdef DEBUG
     // Optionally blend and recompute counts.
