@@ -32,6 +32,7 @@ namespace System.Runtime.CompilerServices
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
             state.StackState->Notifier = awaiter;
+            state.StackState->NotifierKind = SuspensionNotifierKind.Notifier;
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
@@ -46,6 +47,7 @@ namespace System.Runtime.CompilerServices
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
             state.StackState->AwaiterContinuation = &AwaiterOnCompletedFromContinuation<TAwaiter>;
             state.StackState->AwaiterOffset = offset;
+            state.StackState->NotifierKind = SuspensionNotifierKind.AwaiterContinuation;
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
@@ -82,11 +84,12 @@ namespace System.Runtime.CompilerServices
             // for this case.
             if (typeof(TAwaiter) == typeof(YieldAwaitable.YieldAwaiter))
             {
-                state.StackState->CriticalNotifier = RuntimeAsyncYielder.Instance;
+                state.StackState->NotifierKind = SuspensionNotifierKind.Yield;
             }
             else
             {
-                state.StackState->CriticalNotifier = awaiter;
+                state.StackState->Notifier = awaiter;
+                state.StackState->NotifierKind = SuspensionNotifierKind.CriticalNotifier;
             }
 
             state.CaptureContexts();
@@ -103,6 +106,7 @@ namespace System.Runtime.CompilerServices
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
             state.StackState->AwaiterContinuation = &UnsafeAwaiterOnCompletedFromContinuation<TAwaiter>;
             state.StackState->AwaiterOffset = offset;
+            state.StackState->NotifierKind = SuspensionNotifierKind.AwaiterContinuation;
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }

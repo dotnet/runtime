@@ -217,31 +217,40 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         private ref struct RuntimeAsyncStackState
         {
-            // The following are the possible introducers of asynchrony into a chain of awaits.
-            // In other words - when we build a chain of continuations it would be logicaly attached
-            // to one of these notifiers.
-            public ICriticalNotifyCompletion? CriticalNotifier;
-            public INotifyCompletion? Notifier;
-
-            // When suspending on an IValueTaskSource, the source being awaited. The rest of what's needed to
-            // await it is stored in the RuntimeAsyncAwaitState.
-            public object? ValueTaskSource;
-
-            // When suspending on a Task, the RuntimeAsyncTask registers itself directly as the
-            // awaited task's continuation. These describe the task and where to resume after it.
-            // AwaitedContinuationContext is only valid when AwaitedTask is non-null, and is encoded
-            // as described by EncodeAwaitedContinuationContext.
-            public Task? AwaitedTask;
+            // The introducer of asynchrony into the chain of awaits, i.e. what the chain of continuations is
+            // logically attached to. How it's interpreted is determined by NotifierKind:
+            // - CriticalNotifier: an ICriticalNotifyCompletion.
+            // - Notifier: an INotifyCompletion.
+            // - ValueTaskSource: the IValueTaskSource being awaited. The rest of what's needed to await it is
+            //   stored in the RuntimeAsyncAwaitState.
+            // - AwaitedTask: the Task being awaited. The RuntimeAsyncTask registers itself directly as the
+            //   awaited task's continuation, and AwaitedContinuationContext (encoded as described by
+            //   EncodeAwaitedContinuationContext) describes where to resume after it.
+            // - Yield: unused; the suspension is for "await Task.Yield()".
+            // - AwaiterContinuation: unused; AwaiterContinuation and AwaiterOffset describe the awaiter.
+            public object? Notifier;
             public object? AwaitedContinuationContext;
 
             public delegate*<Continuation, int, Action, void> AwaiterContinuation;
             public int AwaiterOffset;
+            public SuspensionNotifierKind NotifierKind;
 
             // When we suspend in the leaf, the contexts are captured into these fields.
             public ExecutionContext? LeafExecutionContext;
             public SynchronizationContext? LeafSynchronizationContext;
 
             public unsafe RuntimeAsyncStackState* Next;
+        }
+
+        private enum SuspensionNotifierKind
+        {
+            None,
+            AwaitedTask,
+            ValueTaskSource,
+            CriticalNotifier,
+            Notifier,
+            Yield,
+            AwaiterContinuation,
         }
 
         // Used during suspensions to hold the continuation chain and on what we are waiting.
@@ -285,8 +294,7 @@ namespace System.Runtime.CompilerServices
             [NonVersionable]
             public void Push(RuntimeAsyncStackState* stackState)
             {
-                stackState->AwaiterContinuation = null;
-                stackState->AwaiterOffset = 0;
+                stackState->NotifierKind = SuspensionNotifierKind.None;
                 stackState->Next = StackState;
                 StackState = stackState;
                 CurrentThread ??= Thread.CurrentThread;
@@ -417,8 +425,9 @@ namespace System.Runtime.CompilerServices
                 encodedContext = CaptureEncodedAwaitedContinuationContext(options);
             }
 
-            stackState->AwaitedTask = task;
+            stackState->Notifier = task;
             stackState->AwaitedContinuationContext = encodedContext;
+            stackState->NotifierKind = SuspensionNotifierKind.AwaitedTask;
         }
 
         private static object? CaptureEncodedAwaitedContinuationContext(ConfigureAwaitOptions options)
@@ -551,7 +560,8 @@ namespace System.Runtime.CompilerServices
             delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> onCompleted,
             delegate*<object, short, ref byte, void> getResult)
         {
-            state.StackState->ValueTaskSource = source;
+            state.StackState->Notifier = source;
+            state.StackState->NotifierKind = SuspensionNotifierKind.ValueTaskSource;
             state.ValueTaskSourceToken = token;
             state.ValueTaskSourceFlags = flags;
             state.ValueTaskSourceOnCompleted = onCompleted;
@@ -585,8 +595,9 @@ namespace System.Runtime.CompilerServices
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
 
             RuntimeAsyncStackState* stackState = state.StackState;
-            stackState->AwaitedTask = task;
+            stackState->Notifier = task;
             stackState->AwaitedContinuationContext = null;
+            stackState->NotifierKind = SuspensionNotifierKind.AwaitedTask;
 
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
@@ -605,8 +616,9 @@ namespace System.Runtime.CompilerServices
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
 
             RuntimeAsyncStackState* stackState = state.StackState;
-            stackState->AwaitedTask = task;
+            stackState->Notifier = task;
             stackState->AwaitedContinuationContext = null;
+            stackState->NotifierKind = SuspensionNotifierKind.AwaitedTask;
 
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
@@ -985,53 +997,68 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    if (stackState->ValueTaskSource is { } source)
+                    object? notifier = stackState->Notifier;
+                    switch (stackState->NotifierKind)
                     {
-                        SuspendOnValueTaskSource(ref state, headContinuation, source);
-                    }
-                    else if (stackState->AwaiterContinuation != null)
-                    {
-                        // The awaiter is stored in the continuation for the caller of
-                        // AwaitAwaiterInContinuation or UnsafeAwaitAwaiterInContinuation.
-                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
-                        stackState->AwaiterContinuation(
-                            headContinuation, stackState->AwaiterOffset, GetContinuationAction());
-                    }
-                    else if (stackState->CriticalNotifier is { } critNotifier)
-                    {
-                        // Result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
-                        // These never have special continuation context handling.
-                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
-                        if (critNotifier is RuntimeAsyncYielder && !TplEventSource.Log.IsEnabled())
-                        {
-                            RuntimeAsyncYielder.Yield(this);
-                        }
-                        else
-                        {
-                            critNotifier.UnsafeOnCompleted(GetContinuationAction());
-                        }
-                    }
-                    else if (stackState->AwaitedTask is { } awaitedTask)
-                    {
-                        // Awaiting a Task. Register this task directly as its continuation; the
-                        // dispatcher will fetch the awaited task's result into the head
-                        // continuation when it resumes.
-                        if (_awaitedState is not null)
-                        {
-                            ReleaseValueTaskSourceContinuation(ref state);
-                        }
+                        case SuspensionNotifierKind.AwaitedTask:
+                            // Awaiting a Task. Register this task directly as its continuation; the
+                            // dispatcher will fetch the awaited task's result into the head
+                            // continuation when it resumes.
+                            Debug.Assert(notifier is Task);
+                            Task awaitedTask = Unsafe.As<Task>(notifier);
+                            if (_awaitedState is not null)
+                            {
+                                ReleaseValueTaskSourceContinuation(ref state);
+                            }
 
-                        _awaitedState = stackState->AwaitedContinuationContext;
-                        if (!awaitedTask.AddTaskContinuation(this, addBeforeOthers: false))
-                        {
-                            ExecuteRuntimeAsyncAwaitContinuation(awaitedTask, canInline: false);
-                        }
-                    }
-                    else
-                    {
-                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
-                        Debug.Assert(stackState->Notifier != null);
-                        stackState->Notifier!.OnCompleted(GetContinuationAction());
+                            _awaitedState = stackState->AwaitedContinuationContext;
+                            if (!awaitedTask.AddTaskContinuation(this, addBeforeOthers: false))
+                            {
+                                ExecuteRuntimeAsyncAwaitContinuation(awaitedTask, canInline: false);
+                            }
+                            break;
+
+                        case SuspensionNotifierKind.ValueTaskSource:
+                            Debug.Assert(notifier is not null);
+                            SuspendOnValueTaskSource(ref state, headContinuation, notifier);
+                            break;
+
+                        case SuspensionNotifierKind.Yield:
+                            // Result of async call to UnsafeAwaitAwaiter for "await Task.Yield()".
+                            Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+                            if (!TplEventSource.Log.IsEnabled())
+                            {
+                                RuntimeAsyncYielder.Yield(this);
+                            }
+                            else
+                            {
+                                RuntimeAsyncYielder.Instance.UnsafeOnCompleted(GetContinuationAction());
+                            }
+                            break;
+
+                        case SuspensionNotifierKind.CriticalNotifier:
+                            // Result of async call to UnsafeAwaitAwaiter.
+                            // These never have special continuation context handling.
+                            Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+                            Debug.Assert(notifier is ICriticalNotifyCompletion);
+                            Unsafe.As<ICriticalNotifyCompletion>(notifier).UnsafeOnCompleted(GetContinuationAction());
+                            break;
+
+                        case SuspensionNotifierKind.AwaiterContinuation:
+                            // The awaiter is stored in the continuation for the caller of
+                            // AwaitAwaiterInContinuation or UnsafeAwaitAwaiterInContinuation.
+                            Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+                            stackState->AwaiterContinuation(
+                                headContinuation, stackState->AwaiterOffset, GetContinuationAction());
+                            break;
+
+                        default:
+                            // Result of async call to AwaitAwaiter.
+                            Debug.Assert(stackState->NotifierKind == SuspensionNotifierKind.Notifier);
+                            Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+                            Debug.Assert(notifier is INotifyCompletion);
+                            Unsafe.As<INotifyCompletion>(notifier).OnCompleted(GetContinuationAction());
+                            break;
                     }
 
                     return true;
@@ -1114,7 +1141,8 @@ namespace System.Runtime.CompilerServices
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
                     Continuation? nextContinuation = state.SentinelContinuation!.Next;
-                    Task? awaitedTask = state.StackState->AwaitedTask;
+                    RuntimeAsyncStackState* stackState = state.StackState;
+                    Task? awaitedTask = stackState->NotifierKind == SuspensionNotifierKind.AwaitedTask ? Unsafe.As<Task>(stackState->Notifier) : null;
                     AsyncDebugger.HandleSuspended(this, nextContinuation, awaitedTask);
 
                     if (!HandleSuspended(ref state))
@@ -2033,8 +2061,9 @@ namespace System.Runtime.CompilerServices
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
 
             RuntimeAsyncStackState* stackState = state.StackState;
-            stackState->AwaitedTask = Task.CompletedTask;
+            stackState->Notifier = Task.CompletedTask;
             stackState->AwaitedContinuationContext = EncodeAwaitedContinuationContext(continuationContext, flags);
+            stackState->NotifierKind = SuspensionNotifierKind.AwaitedTask;
 
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
