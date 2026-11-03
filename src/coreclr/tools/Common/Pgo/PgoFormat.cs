@@ -50,10 +50,11 @@ namespace Internal.Pgo
         GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
         GetLikelyMethod = (DescriptorMin * 7) | MethodHandle, // Compressed get likely method data
 
-        // Same as type/method histograms, but for generic integer values
+        // Same as type/method histograms, but for generic integer values.
+        // Values are recorded as 32-bit ints on all targets (wider values are truncated).
         ValueHistogramIntCount = (DescriptorMin * 8) | FourByte | AlignPointer,
         ValueHistogramLongCount = (DescriptorMin * 8) | EightByte,
-        ValueHistogram = (DescriptorMin * 9) | EightByte,
+        ValueHistogram = (DescriptorMin * 9) | FourByte, // Was EightByte before MIBC format version 1.1
     }
 
     public interface IPgoSchemaDataLoader<TType, TMethod>
@@ -615,20 +616,14 @@ namespace Internal.Pgo
 
                         case PgoInstrumentationKind.ValueHistogram:
                             {
-                                if (mergedElem.DataObject.GetType() != schema.DataObject.GetType())
+                                if (schema.InstrumentationKind != PgoInstrumentationKind.ValueHistogram)
                                 {
-                                    throw new Exception($"Unable to merge ValueHistogram {mergedElem.DataObject} " +
-                                        $"with {schema.DataObject}. Are you merging 32bit MIBC with 64bit MIBC?");
+                                    throw new Exception($"Unable to merge ValueHistogram with {schema.InstrumentationKind}. " +
+                                        "Are you merging MIBC files with different format versions?");
                                 }
 
                                 mergedElem.Count = existingSchemaItem.Count + schema.Count;
-                                mergedElem.DataObject = mergedElem.DataObject switch
-                                    {
-                                        // Concat two int[] or long[] arrays
-                                        int[] mergedIntHistogram => (int[])[.. mergedIntHistogram, .. (int[])schema.DataObject],
-                                        long[] mergedLongHistogram => (long[])[.. mergedLongHistogram, .. (long[])schema.DataObject],
-                                        _ => throw new Exception("ValueHistogram is expected to be either int[] or long[]")
-                                    };
+                                mergedElem.DataObject = (int[])[.. (int[])existingSchemaItem.DataObject, .. (int[])schema.DataObject];
                                 break;
                             }
 
