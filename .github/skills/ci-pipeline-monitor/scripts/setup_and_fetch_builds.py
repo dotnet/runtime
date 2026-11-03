@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS failures (
     github_issue_state    TEXT,
     github_issue_assigned TEXT,
     labels                TEXT,
-    milestone             TEXT DEFAULT '11.0.0',
+    milestone             TEXT DEFAULT '12.0.0',
     FOREIGN KEY (source_test_result_id) REFERENCES test_results(id)
 );
 

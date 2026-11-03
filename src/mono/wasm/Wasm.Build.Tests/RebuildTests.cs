@@ -75,6 +75,9 @@ namespace Wasm.Build.Tests
             UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
 
             BuildProjectWithoutAssert(config, info.ProjectName, new PublishOptions(Label: "first"));
+            string linkedDir = Path.Combine(GetObjDir(config), "linked");
+            string[] firstLinkedAssemblies = Directory.GetFiles(linkedDir, "*.dll").Order(StringComparer.Ordinal).ToArray();
+            Assert.NotEmpty(firstLinkedAssemblies);
 
             // modify app source to trigger recompilation
             string programPath = Path.Combine(_projectDir, "Common", "Program.cs");
@@ -84,6 +87,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"Second publish binlog: {secondBinlog}");
 
             AssertTargetRan(secondBinlog, "GeneratePublishWasmBootJson");
+            Assert.Equal(firstLinkedAssemblies, Directory.GetFiles(linkedDir, "*.dll").Order(StringComparer.Ordinal).ToArray());
         }
 
         [Theory]

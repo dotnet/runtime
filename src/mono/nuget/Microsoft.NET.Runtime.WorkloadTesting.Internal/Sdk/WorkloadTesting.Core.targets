@@ -226,4 +226,30 @@
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />
   </Target>
+
+  <Target Name="_InstallTargetingPackForWorkloadTesting"
+          AfterTargets="_InstallWorkloads"
+          Condition="'$(_SdkWithNoWorkloadPath)' != ''">
+    <PropertyGroup>
+      <_TargetingPackPackagePath>$([MSBuild]::NormalizePath('$(BuiltNugetsDir)', 'Microsoft.NETCore.App.Ref.$(PackageVersionForWorkloadManifests).nupkg'))</_TargetingPackPackagePath>
+    </PropertyGroup>
+    <ItemGroup>
+      <_TargetingPackInstall Include="$(_SdkWithNoWorkloadPath)" />
+      <_TargetingPackInstall Include="@(_SdkWithWorkloadToInstall->'%(InstallPath)')" />
+      <_TargetingPackInstall Update="@(_TargetingPackInstall)">
+        <DestinationPath>$([MSBuild]::NormalizeDirectory('%(Identity)', 'packs', 'Microsoft.NETCore.App.Ref', '$(PackageVersionForWorkloadManifests)'))</DestinationPath>
+      </_TargetingPackInstall>
+    </ItemGroup>
+
+    <Error Text="Cannot find targeting pack $(_TargetingPackPackagePath)" Condition="!Exists('$(_TargetingPackPackagePath)')" />
+    <RemoveDir Directories="%(_TargetingPackInstall.DestinationPath)" />
+    <Unzip SourceFiles="$(_TargetingPackPackagePath)"
+           DestinationFolder="%(_TargetingPackInstall.DestinationPath)"
+           OverwriteReadOnlyFiles="true" />
+    <Delete Files="%(_TargetingPackInstall.DestinationPath)Microsoft.NETCore.App.Ref.nuspec;
+                   %(_TargetingPackInstall.DestinationPath)[Content_Types].xml;
+                   %(_TargetingPackInstall.DestinationPath).signature.p7s" />
+    <RemoveDir Directories="%(_TargetingPackInstall.DestinationPath)_rels;
+                            %(_TargetingPackInstall.DestinationPath)package" />
+  </Target>
 </Project>

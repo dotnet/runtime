@@ -76,7 +76,6 @@ class Thread;
 class Assembly;
 class AssemblyNative;
 class WaitHandleNative;
-class ArgDestination;
 
 struct RCW;
 
@@ -405,7 +404,6 @@ inline void ClearObjectReference(OBJECTREF* dst)
 // CopyValueClass sets a value class field
 
 void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
-void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
 
 inline void InitValueClass(void *dest, MethodTable *pMT)
 {
@@ -415,7 +413,6 @@ inline void InitValueClass(void *dest, MethodTable *pMT)
 
 #define SetObjectReference(_d,_r)        SetObjectReferenceUnchecked(_d, _r)
 #define CopyValueClass(_d,_s,_m)         CopyValueClassUnchecked(_d,_s,_m)
-#define CopyValueClassArg(_d,_s,_m,_o)   CopyValueClassArgUnchecked(_d,_s,_m,_o)
 
 #include <pshpack4.h>
 
@@ -1173,12 +1170,10 @@ private:
 #ifdef FEATURE_MULTITHREADING
     OBJECTREF     m_StartHelper;
 #endif // FEATURE_MULTITHREADING
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && defined(FEATURE_MULTITHREADING)
     OBJECTREF     m_WaitInfo;
-#ifdef FEATURE_MULTITHREADING
     OBJECTREF     m_joinEvent;
-#endif // FEATURE_MULTITHREADING
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && FEATURE_MULTITHREADING
 
     // The next field (m_InternalThread) is declared as IntPtr in the managed
     // definition of Thread.  The loader will sort it next.
@@ -1198,6 +1193,11 @@ private:
     bool          m_IsDead;
 
     bool          m_IsThreadPool;
+
+#ifndef FEATURE_MULTITHREADING
+    bool          m_IsBackground;
+    bool          m_IsPendingInterrupt;
+#endif // !FEATURE_MULTITHREADING
 
 protected:
     // the ctor and dtor can do no useful work.

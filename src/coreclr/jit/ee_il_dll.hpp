@@ -54,15 +54,15 @@ bool Compiler::eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 FORCEINLINE
-bool Compiler::eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd)
+bool Compiler::eeIsByRefLike(CORINFO_CLASS_HANDLE clsHnd)
 {
-    return (info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_BYREF_LIKE) != 0;
+    return info.compCompHnd->isByRefLike(clsHnd);
 }
 
 FORCEINLINE
 bool Compiler::eeIsSharedInst(CORINFO_CLASS_HANDLE clsHnd)
 {
-    return (info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_SHAREDINST) != 0;
+    return info.compCompHnd->isSharedInst(clsHnd);
 }
 
 FORCEINLINE

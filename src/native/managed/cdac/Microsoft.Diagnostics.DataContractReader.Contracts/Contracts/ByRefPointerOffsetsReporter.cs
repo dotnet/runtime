@@ -12,11 +12,13 @@ internal sealed class ByRefPointerOffsetsReporter
 
     private readonly IRuntimeTypeSystem _rts;
     private readonly uint _pointerSize;
+    private readonly bool _allowPartialResults;
 
-    public ByRefPointerOffsetsReporter(Target target)
+    public ByRefPointerOffsetsReporter(Target target, bool allowPartialResults = true)
     {
         _rts = target.Contracts.RuntimeTypeSystem;
         _pointerSize = (uint)target.PointerSize;
+        _allowPartialResults = allowPartialResults;
     }
 
     public IEnumerable<ulong> Find(ITypeHandle typeHandle)
@@ -27,11 +29,11 @@ internal sealed class ByRefPointerOffsetsReporter
             foreach (ulong offset in FindCore(typeHandle, baseOffset: 0, depth: 0))
                 offsets.Add(offset);
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException) when (_allowPartialResults)
         {
             return [];
         }
-        catch (VirtualReadException)
+        catch (VirtualReadException) when (_allowPartialResults)
         {
             return [];
         }
@@ -53,6 +55,9 @@ internal sealed class ByRefPointerOffsetsReporter
         if (fieldType == CorElementType.ValueType)
         {
             ITypeHandle? fieldTypeHandle = _rts.GetFieldDescApproxTypeHandle(fieldDesc);
+            if (fieldTypeHandle is null && !_allowPartialResults)
+                throw new NotImplementedException($"Runtime layout is unavailable for field {fieldDesc}.");
+
             if (fieldTypeHandle is not null && _rts.IsByRefLike(fieldTypeHandle))
             {
                 foreach (ulong slot in FindCore(fieldTypeHandle, baseOffset + fieldOffset, depth + 1))
@@ -68,7 +73,12 @@ internal sealed class ByRefPointerOffsetsReporter
     private IEnumerable<ulong> FindCore(ITypeHandle typeHandle, ulong baseOffset, int depth)
     {
         if (depth > MaxByRefLikeRecursionDepth)
+        {
+            if (!_allowPartialResults)
+                throw new NotImplementedException("Byref-like field nesting exceeds the supported depth.");
+
             yield break;
+        }
 
         bool isInlineArray = _rts.IsInlineArray(typeHandle);
         foreach (TargetPointer fieldDesc in _rts.GetFieldDescList(typeHandle))
@@ -86,7 +96,12 @@ internal sealed class ByRefPointerOffsetsReporter
                     ? _pointerSize
                     : fieldTypeHandle is not null ? _rts.GetNumInstanceFieldBytes(fieldTypeHandle) : 0;
                 if (elementSize == 0)
+                {
+                    if (!_allowPartialResults)
+                        throw new NotImplementedException($"Runtime layout is unavailable for inline-array field {fieldDesc}.");
+
                     continue;
+                }
 
                 uint totalSize = _rts.GetNumInstanceFieldBytes(typeHandle);
                 for (uint offset = 0; offset < totalSize; offset += elementSize)

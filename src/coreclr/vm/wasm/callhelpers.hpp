@@ -25,6 +25,7 @@
 
 // A sentinel value to indicate to the stack walker that this frame is NOT R2R generated managed code,
 // and it should look for the next Frame in the Frame chain to make further progress.
+// Keep in sync with WasmEHFrame::Identity in src\coreclr\nativeaot\Runtime\wasm\ExceptionHandling.h.
 #define TERMINATE_R2R_STACK_WALK 1
 
 struct StringToPortableSigThunk

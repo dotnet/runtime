@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -196,6 +197,139 @@ public class SignatureTypeInfoProviderTests
         Assert.Equal(16, exact.GetFieldAlignment());
         Assert.Equal(target.PointerSize, unresolved.GetFieldAlignment());
         rts.Verify(r => r.GetClassAlignmentRequirement(exactTypeHandle), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("c1", new byte[] { 0xc0, 0x0b })]
+    [InlineData("c2", new byte[] { 0xc0, 0x33 })]
+    public void VarArgMapPreservesTargetCookieEncoding(string stackWalkVersion, byte[] expected)
+    {
+        using MetadataReaderProvider metadataProvider = BuildMetadataWithGenericField();
+        ModuleHandle moduleHandle = new(0x4000);
+        Mock<ILoader> loader = new();
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(0x3000))).Returns(moduleHandle);
+        Mock<IEcmaMetadata> metadata = new();
+        metadata.Setup(m => m.GetMetadata(moduleHandle)).Returns(metadataProvider.GetMetadataReader());
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(RuntimeInfoArchitecture.X86);
+        runtimeInfo.Setup(r => r.GetTargetOperatingSystem()).Returns(RuntimeInfoOperatingSystem.Windows);
+        IRuntimeTypeSystem rts = new SignatureTestTypeSystem();
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(
+            new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false })
+            .AddMockContract(loader)
+            .AddMockContract(metadata)
+            .AddMockContract(runtimeInfo)
+            .AddMockContract(rts)
+            .AddMockContract(Mock.Of<IExecutionManager>())
+            .AddMockContract(Mock.Of<IGCInfo>())
+            .AddContract<IStackWalk>(version: stackWalkVersion)
+            .Build();
+
+        Assert.True(new CallingConvention_1(target).TryComputeArgGCRefMapBlob(
+            new MethodDescHandle(new TargetPointer(0x1000)), out byte[] blob));
+        Assert.Equal(expected, blob);
+        GCRefMapDecoder decoder = new(blob, legacyTokens: GCRefMapDecoder.UsesLegacyTokens(target));
+        Assert.Equal(0u, decoder.ReadStackPop());
+        Assert.Equal(GCRefMapToken.Skip, decoder.ReadToken());
+        Assert.Equal(GCRefMapToken.Skip, decoder.ReadToken());
+        Assert.Equal(GCRefMapToken.VASigCookie, decoder.ReadToken());
+        Assert.True(decoder.AtEnd);
+    }
+
+    [Theory]
+    [InlineData(false, true, new byte[] { 0x08 })]
+    [InlineData(false, false, new byte[] { })]
+    [InlineData(true, true, new byte[] { 0x22 })]
+    [InlineData(true, false, new byte[] { })]
+    public void NestedByRefLikeMapRequiresCompleteFieldLayout(
+        bool inlineArray, bool nestedTypeAvailable, byte[] expected)
+    {
+        // ARM32 passes the struct by value. An unresolved nested Span-like field must
+        // decline the map, not turn its interior pointer into a non-GC slot.
+        using MetadataReaderProvider metadataProvider = BuildMetadataWithGenericField();
+        ModuleHandle moduleHandle = new(0x4000);
+        Mock<ILoader> loader = new();
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(0x3000))).Returns(moduleHandle);
+        TargetNUInt flags = default;
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle, ModuleLookupMapKind.TypeDefToMethodTable, 0x02000001, out flags))
+            .Returns(new TargetPointer((ulong)CorElementType.ValueType));
+        Mock<IEcmaMetadata> metadata = new();
+        metadata.Setup(m => m.GetMetadata(moduleHandle)).Returns(metadataProvider.GetMetadataReader());
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(RuntimeInfoArchitecture.Arm);
+        runtimeInfo.Setup(r => r.GetTargetOperatingSystem()).Returns(RuntimeInfoOperatingSystem.Unix);
+        IRuntimeTypeSystem rts = new SignatureTestTypeSystem(
+            byRefLikeStruct: true, nestedTypeAvailable, inlineArray);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(
+            new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false })
+            .AddMockContract(loader)
+            .AddMockContract(metadata)
+            .AddMockContract(runtimeInfo)
+            .AddMockContract(rts)
+            .Build();
+
+        bool success = new CallingConvention_1(target).TryComputeArgGCRefMapBlob(
+            new MethodDescHandle(new TargetPointer(0x1000)), out byte[] blob);
+
+        Assert.Equal(nestedTypeAvailable, success);
+        Assert.Equal(expected, blob);
+        if (!nestedTypeAvailable)
+        {
+            Assert.Empty(new ByRefPointerOffsetsReporter(target).Find(
+                rts.GetTypeHandle(new TargetPointer((ulong)CorElementType.ValueType))));
+        }
+    }
+
+    private sealed class SignatureTestTypeSystem(
+        bool byRefLikeStruct = false, bool nestedTypeAvailable = true, bool inlineArray = false) : IRuntimeTypeSystem
+    {
+        private sealed record TypeHandle(CorElementType ElementType, bool Nested = false) : ITypeHandle
+        {
+            public TargetPointer Address => new((ulong)ElementType + (Nested ? 0x100ul : 0));
+        }
+
+        private static readonly ITypeHandle s_nestedType = new TypeHandle(CorElementType.ValueType, Nested: true);
+
+        public TargetPointer GetMethodTable(MethodDescHandle method) => new((ulong)CorElementType.Object);
+        public ITypeHandle GetTypeHandle(TargetPointer address) => new TypeHandle((CorElementType)address.Value);
+        public TargetPointer GetModule(ITypeHandle type) => new(0x3000);
+        public ReadOnlySpan<ITypeHandle> GetInstantiation(ITypeHandle type) => [];
+        public CorElementType GetSignatureCorElementType(ITypeHandle type) => ((TypeHandle)type).ElementType;
+        public ITypeHandle GetPrimitiveType(CorElementType type) => new TypeHandle(type);
+        public TargetPointer GetWellKnownMethodTable(WellKnownMethodTable type) => new((ulong)CorElementType.Object);
+        public GenericContextLoc GetGenericContextLoc(MethodDescHandle method) => GenericContextLoc.None;
+        public bool IsAsyncMethod(MethodDescHandle method) => false;
+        public bool IsValueType(ITypeHandle type) => ((TypeHandle)type).ElementType == CorElementType.ValueType;
+        public CorElementType GetInternalCorElementType(ITypeHandle type) => ((TypeHandle)type).ElementType;
+        public uint GetBaseSize(ITypeHandle type) => 24;
+        public bool RequiresAlign8(ITypeHandle type) => false;
+        public bool TryGetHFAElementSize(ITypeHandle type, out int size)
+        {
+            size = 0;
+            return false;
+        }
+        public bool IsByRefLike(ITypeHandle type) => IsValueType(type);
+        public bool ContainsGCPointers(ITypeHandle type) => false;
+        public bool IsInlineArray(ITypeHandle type) => inlineArray && type != s_nestedType;
+        public uint GetNumInstanceFieldBytes(ITypeHandle type) => type == s_nestedType ? 8u : 16u;
+        public IEnumerable<TargetPointer> GetFieldDescList(ITypeHandle type)
+            => type == s_nestedType ? [new(0x6000)] : [new(0x5000)];
+        public bool IsFieldDescStatic(TargetPointer field) => false;
+        public CorElementType GetFieldDescType(TargetPointer field)
+            => field.Value == 0x5000 ? CorElementType.ValueType : CorElementType.Byref;
+        public uint GetFieldDescOffset(TargetPointer field, FieldDefinition? fieldDef)
+            => field.Value == 0x5000 && !inlineArray ? 4u : 0u;
+        public ITypeHandle? GetFieldDescApproxTypeHandle(TargetPointer field)
+            => nestedTypeAvailable ? s_nestedType : null;
+
+        public bool TryGetMethodSignature(MethodDescHandle method, out ReadOnlySpan<byte> signature)
+        {
+            signature = byRefLikeStruct
+                ? [0x00, 0x01, 0x01, 0x11, 0x04] // static void (valuetype TypeDef1)
+                : [0x05, 0x00, 0x01]; // static vararg void ()
+            return true;
+        }
     }
 
     private static SignatureTypeInfoProvider CreateProvider(

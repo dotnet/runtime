@@ -179,7 +179,8 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext)
         {
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+            // Native startup waits for the new thread to initialize, so starting a thread can block the caller.
+            RuntimeFeature.ThrowIfBlockingIsNotSupported();
 
             StartHelper? startHelper = _startHelper;
 
@@ -202,7 +203,8 @@ namespace System.Threading
 
         private void Start(bool captureContext)
         {
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+            // Native startup waits for the new thread to initialize, so starting a thread can block the caller.
+            RuntimeFeature.ThrowIfBlockingIsNotSupported();
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)

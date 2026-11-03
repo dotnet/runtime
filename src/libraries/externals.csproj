@@ -120,6 +120,18 @@
     <Error Condition="'$(SwapNativeForIL)' == 'true' and '@(CoreCLRILFiles)' == ''" Text="Could not locate CoreCLR IL files." />
   </Target>
 
+  <Target Name="OverrideBrowserHost"
+          DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild"
+          AfterTargets="AfterResolveReferences"
+          Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)"
+                               Condition="'%(LibrariesRuntimeFiles.IsNative)' == 'true'">
+        <DestinationSubDirectory Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' != ''">%(LibrariesRuntimeFiles.NativeSubDirectory)\</DestinationSubDirectory>
+      </ReferenceCopyLocalPaths>
+    </ItemGroup>
+  </Target>
+
   <Target Name="OverrideRuntimeMono"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences"
