@@ -7,7 +7,7 @@
 #define _INTERPRETERSHARED_H_
 
 #include "intopsshared.h"
-#include "auxiliaryentrypointsera.h"
+#include "auxiliarymethods.h"
 
 #ifdef _MSC_VER
 #define INTERP_API
@@ -33,32 +33,6 @@ class MethodTable;
 
 struct CallStubHeader;
 
-#ifdef FEATURE_AUXILIARY_R2R_MODULES
-enum class AuxiliaryMethodInfoDiscriminator : uint8_t
-{
-    InterpretOnly,
-    CheckAuxiliaryModuleActivationFlag,
-    CheckAuxiliaryEntryPointsEra
-};
-
-// Caches information to determine whether to reattempt method activation.
-struct AuxiliaryMethodInfo
-{
-    union
-    {
-        COMPILER_SHARED_TYPE(uint32_t*, PTR_DWORD, auxiliaryModuleActivationFlag);
-        AuxiliaryEntryPointsEra auxiliaryEntryPointsEra;
-    };
-    AuxiliaryMethodInfoDiscriminator discriminator;
-
-    AuxiliaryMethodInfo() : auxiliaryModuleActivationFlag(nullptr), discriminator(AuxiliaryMethodInfoDiscriminator::InterpretOnly) {}
-
-    bool MayActivateMethod() const { return discriminator != AuxiliaryMethodInfoDiscriminator::InterpretOnly; }
-
-    // Defined in the VM's interpexec.h, since it needs ReadyToRunInfo.
-    inline bool ShouldTryActivateMethod() const;
-};
-#endif // FEATURE_AUXILIARY_R2R_MODULES
 
 struct InterpMethod
 {
@@ -75,7 +49,7 @@ struct InterpMethod
     bool unmanagedCallersOnly;
     bool publishSecretStubParam;
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    AuxiliaryMethodInfo auxiliaryMethodInfo;
+    AuxiliaryMethodState auxiliaryMethodInfo;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
     int32_t codeSize; // size in int32_t slots
 

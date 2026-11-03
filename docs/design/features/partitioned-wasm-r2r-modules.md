@@ -60,7 +60,7 @@ InterpOrR2R DiscoverMethod(PEP pep)
         {
             // Found, but the code has not arrived. Stop searching: this is the image that owns the method.
             EnsureInterpreterFallback(pep);
-            pep.InterpreterData.AuxiliaryMethodInfo = CheckActivationFlag(&auxModule.ActivationStatus);
+            pep.InterpreterData.AuxiliaryMethodState = CheckActivationFlag(&auxModule.ActivationStatus);
             pep.SetFlag(kPendingAuxiliaryModule);
             return InterpOrR2R.Interp;
         }
@@ -70,7 +70,7 @@ InterpOrR2R DiscoverMethod(PEP pep)
 
     // Nothing found. An Auxiliary EntryPoints Module activated later, or an image registered later, may have the code.
     EnsureInterpreterFallback(pep);
-    pep.InterpreterData.AuxiliaryMethodInfo = CheckEra(era);
+    pep.InterpreterData.AuxiliaryMethodState = CheckEra(era);
     pep.SetFlag(kAwaitingAuxiliaryEntryPoints);
     return InterpOrR2R.Interp;
 }
@@ -86,7 +86,7 @@ InterpOrR2R ReenterDiscoveredMethod(PEP pep)
         return InterpOrR2R.R2R;
     }
 
-    var info = pep.InterpreterData.AuxiliaryMethodInfo;
+    var info = pep.InterpreterData.AuxiliaryMethodState;
     bool ready = info.Kind switch
     {
         CheckActivationFlag => IsActivated(info.ActivationFlagAddress),
@@ -367,15 +367,19 @@ The prototype simulates both phases of the flow above and is compiled with `FEAT
 
 **Eligibility.** Delay applies to IL methods in a composite image whose IL bodies are retained, including when generic code is found outside its defining assembly. Wrapper stubs, `UnmanagedCallersOnly` methods, methods whose defining module has stripped IL, and lookups for direct calls from R2R code (which cannot wait) keep their existing preparation paths. Non-composite images and images with stripped IL are unchanged. This is decided once, before the EntryPoints-activation check in the R2R lookup, so an ineligible method is never kept interpreted merely because its image's EntryPoints are inactive.
 
-**Phase 1: awaiting EntryPoints.** While an image's EntryPoints module is inactive, the lookup treats its methods as not found. When any lookup misses, the method records the era read before the lookup began and waits for the era to advance. The era is a static field next to the list of unrelated R2R modules. It advances when the EntryPoints simulation completes and when a new image is registered for unrelated generics, since either can make a previous miss succeed. The era is an opaque type in `auxiliaryentrypointsera.h`, shared with the interpreter compiler because `InterpMethod` stores it; only `ReadyToRunInfo` creates or compares eras. Because a miss always waits, interpreted methods with no R2R code do a cheap era check on each call and repeat their lookup once per era advance.
+**Phase 1: awaiting EntryPoints.** While an image's EntryPoints module is inactive, the lookup treats its methods as not found. When any lookup misses, the method records the era read before the lookup began and waits for the era to advance. The era is a static field next to the list of unrelated R2R modules. It advances when the EntryPoints simulation completes and when a new image is registered for unrelated generics, since either can make a previous miss succeed. The era is an opaque type in `auxiliarymethods.h`, shared with the interpreter compiler because `InterpMethod` stores it; only `ReadyToRunInfo` creates or compares eras. Because a miss always waits, interpreted methods with no R2R code do a cheap era check on each call and repeat their lookup once per era advance.
 
 **Phase 2: pending module.** When the lookup finds the method in an image whose auxiliary module is not yet activated, it records a pointer to that image's activation flag and stops searching other images. Generic code found outside the defining assembly records the code-owning image's flag, not the defining module's.
 
-**Cached state.** The state is cached in an `AuxiliaryMethodInfo` on `InterpMethod`, a discriminated union of the activation flag pointer and the era. `ShouldTryActivateMethod()` advances the corresponding simulated countdown and reports whether the call should try activation. The method's portable entrypoint also carries `kPendingAuxiliaryModule` or `kAwaitingAuxiliaryEntryPoints`, and the method's runtime code data holds the same pointer or era for the prestub.
+**Cached state.** The state is cached in an `AuxiliaryMethodState` on `InterpMethod`, a discriminated union of the activation flag pointer and the era. `ShouldTryDelayedActivation()` advances the corresponding simulated countdown and reports whether the call should try activation. The method's portable entrypoint also carries `kPendingAuxiliaryModule` or `kAwaitingAuxiliaryEntryPoints`, and `MethodDescCodeData` holds the same `AuxiliaryMethodState` for activation. Neither method representation stores a request.
+
+New method code data starts in `Uninitialized`, meaning no R2R lookup result has been recorded. `InterpretOnly` is a lookup result with no activation retry. Neither state triggers activation checks; initial preparation still performs an R2R lookup using a pending request.
+
+**Preparation request.** `PrepareCodeConfig` carries an `AuxiliaryMethodStateRequest` instead of separate activation flag, era, and delay-policy fields. Preparation and activation create a pending request from the method's cached state. A pending request allows a lookup to wait; lookup resolves it to a module-flag wait, an EntryPoints-era wait, `Activated` when code is found, or `InterpretOnly` when code is rejected. Direct R2R call fixups start with a resolved `Uninitialized` request so their targets are loaded eagerly without implying an existing lookup result. Interpreted preparation copies only the resulting state to `MethodDescCodeData` and `InterpMethod`.
 
 **Activation.** Once ready, activation runs synchronously, repeating the lookup with the existing R2R fixup processing before publishing native code through the method's portable entrypoint. Call sites check readiness, then call `MethodDesc::TryActivateDelayedR2RCode` directly. The prestub is only for methods that have not been prepared yet. Readiness is checked at call boundaries, before the callee's interpreter frame exists. Interpreter-to-interpreter calls (including `calli` and delegate calls) check in `ResolveInterpreterCode`. Calls from R2R code arrive through the R2R-to-interpreter thunk, which checks in `ExecuteInterpretedMethodWithArgs_PortableEntryPoint` and activates under a `PrestubMethodFrame` so the incoming arguments stay reported to the GC. Debugger function evaluation, the remaining caller of `CallDescrWorkerInternal`, checks there and activates the same way. When activation succeeds, the call that observed readiness runs the native code. Resuming an interpreter continuation or executing an exception clause never checks readiness, so a method with a suspended interpreted continuation activates on its next fresh call. A method prepared for the first time after activation uses ordinary eager R2R resolution. Interpreter dispatch caches are bypassed after publication, while active interpreter frames and suspended interpreter continuations retain their bytecode.
 
-**Failure.** The pending and awaiting flags are cleared before the lookup and fixups to prevent reentrant activation. If the lookup finds no R2R body again, the method records the new era or flag and keeps waiting. If fixups reject the R2R body or throw, the method stays interpreted, its cached `AuxiliaryMethodInfo` is reset so later calls skip the prestub, and activation is not retried.
+**Failure.** The pending and awaiting flags are cleared before the lookup and fixups to prevent reentrant activation. If the lookup finds no R2R body again, the method records the new era or flag and keeps waiting. If fixups reject the R2R body or throw, the method stays interpreted, its cached `AuxiliaryMethodState` is reset so later calls skip the prestub, and activation is not retried.
 
 ### 2. Split InstanceMethodEntryPoints and MethodDefEntryPoints sections out
 

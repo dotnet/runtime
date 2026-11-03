@@ -1370,7 +1370,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
     // Delay only when interpreter fallback is available and the caller can wait for R2R code.
     mayDelayR2RCode = pConfig != NULL
-        && pConfig->MayDelayAuxiliaryModule()
+        && pConfig->GetAuxiliaryMethodStateRequest().IsPending()
         && !HasStrippedILBodies()
         && pMD->IsIL()
         && !pMD->IsWrapperStub()
@@ -1425,7 +1425,8 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         && !IsAuxiliaryModuleActivated(m_pCompositeInfo->GetAuxiliaryModuleActivationFlag(pMD)))
     {
         // Stop searching once the method's code module is known; retry when its countdown reaches zero.
-        pConfig->SetAuxiliaryModuleActivationFlag(m_pCompositeInfo->GetAuxiliaryModuleActivationFlag(pMD));
+        AuxiliaryMethodState state = AuxiliaryMethodState::CheckAuxiliaryModuleActivationFlag(m_pCompositeInfo->GetAuxiliaryModuleActivationFlag(pMD));
+        pConfig->SetAuxiliaryMethodStateRequest(AuxiliaryMethodStateRequest::Resolved(state));
         goto done;
     }
 #endif // FEATURE_AUXILIARY_R2R_MODULES
@@ -1500,6 +1501,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     pEntryPoint = pMD->GetTemporaryEntryPoint();
     PortableEntryPoint::SetActualCode(pEntryPoint, actualEntryPoint);
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(virtualEntrypointIP, pMD);
+    pConfig->SetAuxiliaryMethodStateRequest(AuxiliaryMethodStateRequest::Resolved(AuxiliaryMethodState::Activated()));
 #else
 #error "ReadyToRun and PortableEntryPoints are not currently compatible on non-WASM targets, as the R2R image layout would need to be changed to support this scenario."
 #endif

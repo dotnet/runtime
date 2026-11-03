@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include "eeconfig.h"
 #include "precode.h"
+#include "auxiliarymethods.h"
 #ifdef FEATURE_INTERPRETER
 #include "callstubgenerator.h"
 #endif // FEATURE_INTERPRETER
@@ -280,10 +281,7 @@ struct MethodDescCodeData final
     InterpreterCalliCookie CalliCookie;
 #endif // FEATURE_INTERPRETER
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    // A null pointer means no known code module; a zero countdown means the module is ready.
-    // TODO: Use the auxiliary module's activation flag instead of the simulated shared countdown.
-    PTR_DWORD AuxiliaryModuleActivationFlag;
-    AuxiliaryEntryPointsEra AuxiliaryEntryPointsEra;
+    AuxiliaryMethodState AuxiliaryState;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 #if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
     PatchpointInfo *AltJitPatchpointInfo;
@@ -2470,70 +2468,16 @@ public:
     void SetCallerGCMode(CallerGCMode mode);
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    // TODO: Use the auxiliary module's activation flag instead of the simulated shared countdown.
-    PTR_DWORD GetAuxiliaryModuleActivationFlag() const
+    const AuxiliaryMethodStateRequest& GetAuxiliaryMethodStateRequest() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pAuxiliaryModuleActivationFlag;
+        return m_auxiliaryMethodStateRequest;
     }
 
-    bool HasKnownAuxiliaryModuleDependency() const
+    void SetAuxiliaryMethodStateRequest(AuxiliaryMethodStateRequest request)
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pAuxiliaryModuleActivationFlag != nullptr;
-    }
-
-    bool IsAuxiliaryModuleActivated() const
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            PRECONDITION(m_pAuxiliaryModuleActivationFlag != nullptr);
-        }
-        CONTRACTL_END;
-
-        return ReadyToRunInfo::IsAuxiliaryModuleActivated(m_pAuxiliaryModuleActivationFlag);
-    }
-
-    void SetAuxiliaryModuleActivationFlag(PTR_DWORD pAuxiliaryModuleActivationFlag)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(pAuxiliaryModuleActivationFlag != nullptr && m_pAuxiliaryModuleActivationFlag == nullptr);
-        m_pAuxiliaryModuleActivationFlag = pAuxiliaryModuleActivationFlag;
-    }
-
-    // Lookups that commit a method to R2R code for direct calls from R2R callers cannot wait for activation.
-    bool MayDelayAuxiliaryModule() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_mayDelayAuxiliaryModule;
-    }
-
-    void DisableAuxiliaryModuleDelay()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_mayDelayAuxiliaryModule = false;
-    }
-
-    bool GetIsAwaitingAuxiliaryModuleEntryPoints() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_auxiliaryEntryPointsEra.IsAwaiting();
-    }
-
-    AuxiliaryEntryPointsEra GetAuxiliaryEntryPointsEra() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_auxiliaryEntryPointsEra;
-    }
-
-    void SetIsAwaitingAuxiliaryModuleEntryPoints(AuxiliaryEntryPointsEra era)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(era.IsAwaiting());
-        m_auxiliaryEntryPointsEra = era;
+        m_auxiliaryMethodStateRequest = request;
     }
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
@@ -2670,9 +2614,7 @@ protected:
     CallerGCMode m_callerGCMode;
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    PTR_DWORD m_pAuxiliaryModuleActivationFlag = nullptr;
-    bool m_mayDelayAuxiliaryModule = true;
-    AuxiliaryEntryPointsEra m_auxiliaryEntryPointsEra;
+    AuxiliaryMethodStateRequest m_auxiliaryMethodStateRequest = AuxiliaryMethodStateRequest::Pending(AuxiliaryMethodState::Uninitialized());
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
 #ifdef FEATURE_MULTICOREJIT

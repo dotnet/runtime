@@ -14,7 +14,7 @@
 #include "inlinetracking.h"
 #include "wellknownattributes.h"
 #include "nativeimage.h"
-#include "auxiliaryentrypointsera.h"
+#include "auxiliarymethods.h"
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 

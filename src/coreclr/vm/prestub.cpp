@@ -314,8 +314,7 @@ PCODE MethodDesc::PrepareInitialCode(CallerGCMode callerGCMode)
     PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
     config.SetCallerGCMode(callerGCMode);
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    if (m_codeData->AuxiliaryModuleActivationFlag != nullptr)
-        config.SetAuxiliaryModuleActivationFlag(m_codeData->AuxiliaryModuleActivationFlag);
+    config.SetAuxiliaryMethodStateRequest(AuxiliaryMethodStateRequest::Pending(m_codeData->AuxiliaryState));
 #endif
     return PrepareCode(&config);
 }
@@ -500,6 +499,7 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 #ifdef FEATURE_READYTORUN
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
     AuxiliaryEntryPointsEra searchedEra = ReadyToRunInfo::GetCurrentAuxiliaryEntryPointsEra();
+    const AuxiliaryMethodStateRequest& auxiliaryRequest = pConfig->GetAuxiliaryMethodStateRequest();
 #endif
 
     ReadyToRunInfo* pAlreadyExaminedInfos[2] = {NULL, NULL};
@@ -512,7 +512,8 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
     // A known code module owns this method, so do not search other images while it is unavailable.
-    if (pConfig->HasKnownAuxiliaryModuleDependency())
+    if (auxiliaryRequest.IsResolved() && auxiliaryRequest.GetAuxMethodState().discriminator ==
+        AuxiliaryMethodStateDiscriminator::CheckAuxiliaryModuleActivationFlag)
         return (PCODE)NULL;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
@@ -529,7 +530,8 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
         }
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-        if (pConfig->HasKnownAuxiliaryModuleDependency())
+        if (auxiliaryRequest.IsResolved() && auxiliaryRequest.GetAuxMethodState().discriminator ==
+            AuxiliaryMethodStateDiscriminator::CheckAuxiliaryModuleActivationFlag)
             return (PCODE)NULL;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
@@ -546,7 +548,8 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 
                 pCode = pUnrelatedInfo->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-                if (pConfig->HasKnownAuxiliaryModuleDependency())
+                if (auxiliaryRequest.IsResolved() && auxiliaryRequest.GetAuxMethodState().discriminator ==
+                    AuxiliaryMethodStateDiscriminator::CheckAuxiliaryModuleActivationFlag)
                     return (PCODE)NULL;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
             }
@@ -554,10 +557,21 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
     }
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    if (pCode == (PCODE)NULL && !pConfig->ReadyToRunRejectedPrecompiledCode())
+    if (auxiliaryRequest.IsPending())
     {
-        // A later EntryPoints activation may make a lookup succeed next time.
-        pConfig->SetIsAwaitingAuxiliaryModuleEntryPoints(searchedEra);
+        // When code is found, the finder should set the aux method request to resolved.
+        _ASSERTE(pCode == (PCODE)NULL);
+        if (pConfig->ReadyToRunRejectedPrecompiledCode())
+        {
+            // Code was rejected - don't try again later
+            pConfig->SetAuxiliaryMethodStateRequest(AuxiliaryMethodStateRequest::Resolved(AuxiliaryMethodState::InterpretOnly()));
+        }
+        else
+        {
+            // A new EntryPoints module may make a lookup succeed next time.
+            AuxiliaryMethodState state = AuxiliaryMethodState::CheckAuxiliaryEntryPointsEra(searchedEra);
+            pConfig->SetAuxiliaryMethodStateRequest(AuxiliaryMethodStateRequest::Resolved(state));
+        }
     }
 #endif
 
@@ -589,7 +603,6 @@ bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-// Record either the unavailable code module or, for an unresolved lookup, the era to retry from.
 void MethodDesc::RecordDelayedR2RCode(PrepareCodeConfig* pConfig, PCODE pCode)
 {
     STANDARD_VM_CONTRACT;
@@ -597,6 +610,7 @@ void MethodDesc::RecordDelayedR2RCode(PrepareCodeConfig* pConfig, PCODE pCode)
     if (!PortableEntryPoint::PrefersInterpreterEntryPoint(pCode))
         return;
 
+    _ASSERTE(pConfig->GetAuxiliaryMethodStateRequest().IsResolved());
     _ASSERTE(pCode == GetPortableEntryPoint());
     _ASSERTE(m_codeData != nullptr);
     PortableEntryPoint* entryPoint = PortableEntryPoint::ToPortableEntryPoint(pCode);
@@ -604,37 +618,26 @@ void MethodDesc::RecordDelayedR2RCode(PrepareCodeConfig* pConfig, PCODE pCode)
         ? static_cast<InterpByteCodeStart*>(PortableEntryPoint::GetInterpreterData(pCode))->Method
         : nullptr;
 
-    // R2R code that was rejected is never retried, so the method stays interpreted.
-    if (pConfig->ReadyToRunRejectedPrecompiledCode())
-    {
-        if (pInterpMethod != nullptr)
-            pInterpMethod->auxiliaryMethodInfo = AuxiliaryMethodInfo();
-        return;
-    }
-
     // Keep the cached state after publication: a declaration may still cache this method's interpreter code
     // and must redirect calls to its published R2R code.
-    if (pConfig->HasKnownAuxiliaryModuleDependency())
+    AuxiliaryMethodState state = pConfig->GetAuxiliaryMethodStateRequest().GetAuxMethodState();
+    m_codeData->AuxiliaryState = state;
+    if (pInterpMethod != nullptr)
+        pInterpMethod->auxiliaryMethodInfo = state;
+    if (state.discriminator == AuxiliaryMethodStateDiscriminator::CheckAuxiliaryModuleActivationFlag)
     {
-        m_codeData->AuxiliaryModuleActivationFlag = pConfig->GetAuxiliaryModuleActivationFlag();
-        m_codeData->AuxiliaryEntryPointsEra = AuxiliaryEntryPointsEra();
         entryPoint->ClearAwaitingAuxiliaryEntryPoints();
         entryPoint->SetPendingAuxiliaryModule();
-        if (pInterpMethod != nullptr)
-        {
-            pInterpMethod->auxiliaryMethodInfo.auxiliaryModuleActivationFlag = pConfig->GetAuxiliaryModuleActivationFlag();
-            pInterpMethod->auxiliaryMethodInfo.discriminator = AuxiliaryMethodInfoDiscriminator::CheckAuxiliaryModuleActivationFlag;
-        }
     }
-    else if (pConfig->GetIsAwaitingAuxiliaryModuleEntryPoints())
+    else if (state.discriminator == AuxiliaryMethodStateDiscriminator::CheckAuxiliaryEntryPointsEra)
     {
-        m_codeData->AuxiliaryEntryPointsEra = pConfig->GetAuxiliaryEntryPointsEra();
+        entryPoint->ClearPendingAuxiliaryModule();
         entryPoint->SetAwaitingAuxiliaryEntryPoints();
-        if (pInterpMethod != nullptr)
-        {
-            pInterpMethod->auxiliaryMethodInfo.auxiliaryEntryPointsEra = pConfig->GetAuxiliaryEntryPointsEra();
-            pInterpMethod->auxiliaryMethodInfo.discriminator = AuxiliaryMethodInfoDiscriminator::CheckAuxiliaryEntryPointsEra;
-        }
+    }
+    else
+    {
+        entryPoint->ClearPendingAuxiliaryModule();
+        entryPoint->ClearAwaitingAuxiliaryEntryPoints();
     }
 }
 
@@ -657,10 +660,11 @@ void MethodDesc::TryActivateDelayedR2RCode(CallerGCMode callerGCMode)
     if (!entryPoint->PrefersInterpreterEntryPoint())
         return;
 
+    AuxiliaryMethodState state = m_codeData->AuxiliaryState;
     bool moduleActivated = entryPoint->IsPendingAuxiliaryModule()
-        && ReadyToRunInfo::IsAuxiliaryModuleActivated(m_codeData->AuxiliaryModuleActivationFlag);
+        && ReadyToRunInfo::IsAuxiliaryModuleActivated(state.auxiliaryModuleActivationFlag);
     bool entryPointsEraStale = entryPoint->IsAwaitingAuxiliaryEntryPoints()
-        && ReadyToRunInfo::IsAuxiliaryEntryPointsEraStale(m_codeData->AuxiliaryEntryPointsEra);
+        && ReadyToRunInfo::IsAuxiliaryEntryPointsEraStale(state.auxiliaryEntryPointsEra);
     if (!moduleActivated && !entryPointsEraStale)
         return;
 
@@ -670,6 +674,7 @@ void MethodDesc::TryActivateDelayedR2RCode(CallerGCMode callerGCMode)
     {
         PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
         config.SetCallerGCMode(callerGCMode);
+        config.SetAuxiliaryMethodStateRequest(AuxiliaryMethodStateRequest::Pending(state));
         PCODE code = GetPrecompiledCode(&config, false);
         if (code != (PCODE)NULL)
         {
@@ -686,14 +691,16 @@ void MethodDesc::TryActivateDelayedR2RCode(CallerGCMode callerGCMode)
     {
         // Nonterminal lookup or fixup failures leave the method interpreted without retry.
         RethrowTerminalExceptions();
+        m_codeData->AuxiliaryState = AuxiliaryMethodState::InterpretOnly();
         if (PortableEntryPoint::HasInterpreterData(temporaryEntryPoint))
         {
             static_cast<InterpByteCodeStart*>(PortableEntryPoint::GetInterpreterData(temporaryEntryPoint))->Method->auxiliaryMethodInfo =
-                AuxiliaryMethodInfo();
+                m_codeData->AuxiliaryState;
         }
     }
     EX_END_CATCH
 }
+
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
 PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0)
@@ -2375,7 +2382,7 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
         // A declaration may still cache its implementation's interpreter code after R2R publication;
         // check the implementation's state so the call reaches its published code.
-        enterPrestubPortion = targetIp->Method->auxiliaryMethodInfo.ShouldTryActivateMethod();
+        enterPrestubPortion = targetIp->Method->auxiliaryMethodInfo.ShouldTryDelayedActivation();
 #endif // FEATURE_AUXILIARY_R2R_MODULES
     }
 
