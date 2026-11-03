@@ -88,6 +88,8 @@ private:
     static const WCHAR * const Names[];
     static const int NamesCount;
 
+    int _propertySetterRegressionTest = 0;
+
 public: // IDispatch
         virtual HRESULT STDMETHODCALLTYPE GetTypeInfoCount(
             /* [out] */ __RPC__out uint32_t *pctinfo)
@@ -199,6 +201,13 @@ public: // IDispatch
             case 11:
             {
                 return AcceptExpectedArray_Proxy(pDispParams, pVarResult);
+            }
+            case 12:
+            {
+                if ((wFlags & DISPATCH_PROPERTYPUT) != 0)
+                    return PropertySetterRegressionTest_Put_Proxy(pDispParams, pVarResult);
+
+                return PropertySetterRegressionTest_Get_Proxy(pVarResult);
             }
             case 1000:
             {
@@ -763,6 +772,45 @@ private:
         return S_OK;
     }
 
+    HRESULT PropertySetterRegressionTest_Put_Proxy(_In_ DISPPARAMS *pDispParams, _Inout_opt_ VARIANT *pVarResult)
+    {
+        HRESULT hr;
+
+        size_t expectedArgCount = 1;
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
+
+        size_t argIdx = expectedArgCount - 1;
+
+        VARIANTARG *currArg = NextArg(pDispParams->rgvarg, argIdx);
+        RETURN_IF_FAILED(VerifyValues(VARENUM(VT_I4), VARENUM(currArg->vt)));
+
+        _propertySetterRegressionTest = V_I4(currArg);
+
+        // Automation servers may fill the return VARIANT even on a property put.
+        // Setters are void-returning, so the runtime must leave pVarResult null;
+        // if it doesn't, converting this value to System.Void fails.
+        if (pVarResult != nullptr)
+        {
+            RETURN_IF_FAILED(::VariantClear(pVarResult));
+            V_VT(pVarResult) = VT_I4;
+            V_I4(pVarResult) = _propertySetterRegressionTest;
+        }
+
+        return S_OK;
+    }
+
+    HRESULT PropertySetterRegressionTest_Get_Proxy(_Inout_ VARIANT *pVarResult)
+    {
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        HRESULT hr;
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
+        V_VT(pVarResult) = VT_I4;
+        V_I4(pVarResult) = _propertySetterRegressionTest;
+        return S_OK;
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,
@@ -787,7 +835,8 @@ const WCHAR * const DispatchTesting::Names[] =
     W("Sum_IntArray_SafeArray"),
     W("ModifyStaticVariantArray"),
     W("CreateUnrelatedArrayElement"),
-    W("AcceptExpectedArray")
+    W("AcceptExpectedArray"),
+    W("PropertySetterRegressionTest")
 };
 
 const int DispatchTesting::NamesCount = ARRAY_SIZE(DispatchTesting::Names);
