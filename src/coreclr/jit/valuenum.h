@@ -1169,6 +1169,21 @@ public:
     // to a GT_BOUNDS_CHECK node.
     void SetVNIsCheckedBound(ValueNum vn, bool isIndex = false);
 
+    // Record that two conservative value numbers denote the same value. CSE establishes
+    // this when it rewrites a use to its reaching definition, whose conservative value
+    // number can differ from the one the use carried before.
+    void RecordVNEquivalence(ValueNum fromVN, ValueNum toVN);
+
+    // Return the representative of the value's equivalence class: the number known to say
+    // the most about the value, a constant if one is known. Facts recorded after the
+    // equivalence are keyed by this representative, so producers and consumers agree.
+    ValueNum VNCanonical(ValueNum vn);
+
+    ValueNum VNCanonicalConservativeNormalValue(const ValueNumPair& vnp)
+    {
+        return VNCanonical(VNConservativeNormalValue(vnp));
+    }
+
     // Information about the individual components of a value number representing an unsigned
     // comparison of some value against a checked bound VN.
     struct UnsignedCompareCheckedBoundInfo
@@ -1751,6 +1766,11 @@ private:
     // These are the value numbers flagged as length and index arguments to bounds checks.
     CheckedBoundVNSet m_checkedBoundVNs;
     CheckedBoundVNSet m_checkedBoundIndexVNs;
+
+    // Union-find over conservative value numbers that CSE has proven equal. Empty for most
+    // methods; entries exist only where a use's value number actually changed.
+    typedef SmallHashTable<ValueNum, ValueNum, 8U> VNEquivalenceMap;
+    VNEquivalenceMap                               m_vnEquivalences;
 
     // This is a map from "chunk number" to the attributes of the chunk.
     JitExpandArrayStack<Chunk*> m_chunks;

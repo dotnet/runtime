@@ -425,6 +425,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_fixedPointMapSels(alloc, 8)
     , m_checkedBoundVNs(alloc)
     , m_checkedBoundIndexVNs(alloc)
+    , m_vnEquivalences(alloc)
     , m_chunks(alloc, 8)
     , m_intCnsMap(nullptr)
     , m_longCnsMap(nullptr)
@@ -7992,6 +7993,89 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn, bool isIndex)
     // directly about constants.
     assert(!IsVNConstant(vn));
     (isIndex ? m_checkedBoundIndexVNs : m_checkedBoundVNs).AddOrUpdate(vn, true);
+}
+
+//------------------------------------------------------------------------
+// VNCanonical: Return the representative of a value number's equivalence class.
+//
+// Arguments:
+//    vn - the value number
+//
+// Return Value:
+//    The value number itself when no equivalence was recorded for it.
+//
+ValueNum ValueNumStore::VNCanonical(ValueNum vn)
+{
+    if ((m_vnEquivalences.Count() == 0) || (vn == NoVN))
+    {
+        return vn;
+    }
+
+    ValueNum root = vn;
+    ValueNum next;
+    while (m_vnEquivalences.TryGetValue(root, &next))
+    {
+        root = next;
+    }
+
+    // Compress the path so later lookups take one step.
+    while ((vn != root) && m_vnEquivalences.TryGetValue(vn, &next))
+    {
+        m_vnEquivalences.AddOrUpdate(vn, root);
+        vn = next;
+    }
+    return root;
+}
+
+//------------------------------------------------------------------------
+// RecordVNEquivalence: Record that two value numbers denote the same value.
+//
+// Arguments:
+//    fromVN - the value number a use carried before CSE rewrote it
+//    toVN   - the value number of the reaching definition it now uses
+//
+// Notes:
+//    The representative, available through VNCanonical, is the number that says the most
+//    about the value: a constant, else a phi definition or a function, else whichever
+//    number was recorded last. A constant never keys the map.
+//
+void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
+{
+    if ((fromVN == NoVN) || (toVN == NoVN) || (TypeOfVN(fromVN) != TypeOfVN(toVN)))
+    {
+        return;
+    }
+
+    ValueNum fromRoot = VNCanonical(fromVN);
+    ValueNum toRoot   = VNCanonical(toVN);
+    if (fromRoot == toRoot)
+    {
+        return;
+    }
+
+    // Prefer the representative that says the most about the value: a constant needs no
+    // reasoning; a phi definition can be walked to its reaching values; a function can be
+    // decomposed. An opaque value number offers none of these, and the reaching
+    // definition's number can be one.
+    auto rank = [this](ValueNum vn) -> int {
+        if (IsVNConstant(vn))
+        {
+            return 2;
+        }
+        VNFuncApp funcApp;
+        return (IsPhiDef(vn) || (GetVNFunc(vn, &funcApp) && !funcApp.FuncIs(VNF_MemOpaque))) ? 1 : 0;
+    };
+    if (rank(fromRoot) > rank(toRoot))
+    {
+        std::swap(fromRoot, toRoot);
+    }
+    if (IsVNConstant(fromRoot))
+    {
+        // Two different constants: the path cannot be taken, and a constant never keys the map.
+        return;
+    }
+
+    m_vnEquivalences.AddOrUpdate(fromRoot, toRoot);
 }
 
 #ifdef FEATURE_HW_INTRINSICS
