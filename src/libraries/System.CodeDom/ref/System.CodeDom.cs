@@ -41,6 +41,7 @@ namespace System.CodeDom
     {
         public CodeArgumentReferenceExpression() { }
         public CodeArgumentReferenceExpression(string? parameterName) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string ParameterName { get { throw null; } set { } }
     }
     public partial class CodeArrayCreateExpression : System.CodeDom.CodeExpression
@@ -55,6 +56,7 @@ namespace System.CodeDom
         public CodeArrayCreateExpression(System.Type createType, System.CodeDom.CodeExpression? size) { }
         public CodeArrayCreateExpression(System.Type createType, params System.CodeDom.CodeExpression[] initializers) { }
         public CodeArrayCreateExpression(System.Type createType, int size) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeTypeReference CreateType { get { throw null; } set { } }
         public System.CodeDom.CodeExpressionCollection Initializers { get { throw null; } }
         public int Size { get { throw null; } set { } }
@@ -79,6 +81,7 @@ namespace System.CodeDom
         public CodeAttachEventStatement() { }
         public CodeAttachEventStatement(System.CodeDom.CodeEventReferenceExpression? eventRef, System.CodeDom.CodeExpression? listener) { }
         public CodeAttachEventStatement(System.CodeDom.CodeExpression? targetObject, string? eventName, System.CodeDom.CodeExpression? listener) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeEventReferenceExpression Event { get { throw null; } set { } }
         public System.CodeDom.CodeExpression? Listener { get { throw null; } set { } }
     }
@@ -87,6 +90,7 @@ namespace System.CodeDom
         public CodeAttributeArgument() { }
         public CodeAttributeArgument(System.CodeDom.CodeExpression? value) { }
         public CodeAttributeArgument(string? name, System.CodeDom.CodeExpression? value) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
         public System.CodeDom.CodeExpression? Value { get { throw null; } set { } }
     }
@@ -114,6 +118,7 @@ namespace System.CodeDom
         public CodeAttributeDeclaration(string? name, params System.CodeDom.CodeAttributeArgument[] arguments) { }
         public System.CodeDom.CodeAttributeArgumentCollection Arguments { get { throw null; } }
         public System.CodeDom.CodeTypeReference? AttributeType { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
     }
     public partial class CodeAttributeDeclarationCollection : System.Collections.CollectionBase
@@ -170,6 +175,7 @@ namespace System.CodeDom
         public CodeCastExpression(string? targetType, System.CodeDom.CodeExpression? expression) { }
         public CodeCastExpression(System.Type targetType, System.CodeDom.CodeExpression? expression) { }
         public System.CodeDom.CodeExpression? Expression { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeTypeReference TargetType { get { throw null; } set { } }
     }
     public partial class CodeCatchClause
@@ -178,7 +184,9 @@ namespace System.CodeDom
         public CodeCatchClause(string? localName) { }
         public CodeCatchClause(string? localName, System.CodeDom.CodeTypeReference? catchExceptionType) { }
         public CodeCatchClause(string? localName, System.CodeDom.CodeTypeReference? catchExceptionType, params System.CodeDom.CodeStatement[] statements) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeTypeReference CatchExceptionType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string LocalName { get { throw null; } set { } }
         public System.CodeDom.CodeStatementCollection Statements { get { throw null; } }
     }
@@ -203,6 +211,7 @@ namespace System.CodeDom
         public CodeChecksumPragma(string? fileName, System.Guid checksumAlgorithmId, byte[]? checksumData) { }
         public System.Guid ChecksumAlgorithmId { get { throw null; } set { } }
         public byte[]? ChecksumData { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string FileName { get { throw null; } set { } }
     }
     public partial class CodeComment : System.CodeDom.CodeObject
@@ -211,6 +220,7 @@ namespace System.CodeDom
         public CodeComment(string? text) { }
         public CodeComment(string? text, bool docComment) { }
         public bool DocComment { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Text { get { throw null; } set { } }
     }
     public partial class CodeCommentStatement : System.CodeDom.CodeStatement
@@ -264,13 +274,16 @@ namespace System.CodeDom
     {
         public CodeDefaultValueExpression() { }
         public CodeDefaultValueExpression(System.CodeDom.CodeTypeReference? type) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeTypeReference Type { get { throw null; } set { } }
     }
     public partial class CodeDelegateCreateExpression : System.CodeDom.CodeExpression
     {
         public CodeDelegateCreateExpression() { }
         public CodeDelegateCreateExpression(System.CodeDom.CodeTypeReference? delegateType, System.CodeDom.CodeExpression? targetObject, string? methodName) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeTypeReference DelegateType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string MethodName { get { throw null; } set { } }
         public System.CodeDom.CodeExpression? TargetObject { get { throw null; } set { } }
     }
@@ -316,6 +329,7 @@ namespace System.CodeDom
     {
         public CodeEventReferenceExpression() { }
         public CodeEventReferenceExpression(System.CodeDom.CodeExpression? targetObject, string? eventName) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string EventName { get { throw null; } set { } }
         public System.CodeDom.CodeExpression? TargetObject { get { throw null; } set { } }
     }
@@ -348,6 +362,7 @@ namespace System.CodeDom
     {
         public CodeFieldReferenceExpression() { }
         public CodeFieldReferenceExpression(System.CodeDom.CodeExpression? targetObject, string? fieldName) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string FieldName { get { throw null; } set { } }
         public System.CodeDom.CodeExpression? TargetObject { get { throw null; } set { } }
     }
@@ -378,6 +393,7 @@ namespace System.CodeDom
         public CodeLabeledStatement() { }
         public CodeLabeledStatement(string? label) { }
         public CodeLabeledStatement(string? label, System.CodeDom.CodeStatement? statement) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Label { get { throw null; } set { } }
         public System.CodeDom.CodeStatement? Statement { get { throw null; } set { } }
     }
@@ -385,6 +401,7 @@ namespace System.CodeDom
     {
         public CodeLinePragma() { }
         public CodeLinePragma(string? fileName, int lineNumber) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string FileName { get { throw null; } set { } }
         public int LineNumber { get { throw null; } set { } }
     }
@@ -393,6 +410,7 @@ namespace System.CodeDom
         public CodeMemberEvent() { }
         public System.CodeDom.CodeTypeReferenceCollection ImplementationTypes { get { throw null; } }
         public System.CodeDom.CodeTypeReference? PrivateImplementationType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeTypeReference Type { get { throw null; } set { } }
     }
     public partial class CodeMemberField : System.CodeDom.CodeTypeMember
@@ -402,6 +420,7 @@ namespace System.CodeDom
         public CodeMemberField(string? type, string? name) { }
         public CodeMemberField(System.Type type, string? name) { }
         public System.CodeDom.CodeExpression? InitExpression { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeTypeReference Type { get { throw null; } set { } }
     }
     public partial class CodeMemberMethod : System.CodeDom.CodeTypeMember
@@ -410,6 +429,7 @@ namespace System.CodeDom
         public System.CodeDom.CodeTypeReferenceCollection ImplementationTypes { get { throw null; } }
         public System.CodeDom.CodeParameterDeclarationExpressionCollection Parameters { get { throw null; } }
         public System.CodeDom.CodeTypeReference? PrivateImplementationType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeTypeReference ReturnType { get { throw null; } set { } }
         public System.CodeDom.CodeAttributeDeclarationCollection ReturnTypeCustomAttributes { get { throw null; } }
         public System.CodeDom.CodeStatementCollection Statements { get { throw null; } }
@@ -428,6 +448,7 @@ namespace System.CodeDom
         public System.CodeDom.CodeParameterDeclarationExpressionCollection Parameters { get { throw null; } }
         public System.CodeDom.CodeTypeReference? PrivateImplementationType { get { throw null; } set { } }
         public System.CodeDom.CodeStatementCollection SetStatements { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeTypeReference Type { get { throw null; } set { } }
     }
     public partial class CodeMethodInvokeExpression : System.CodeDom.CodeExpression
@@ -435,6 +456,7 @@ namespace System.CodeDom
         public CodeMethodInvokeExpression() { }
         public CodeMethodInvokeExpression(System.CodeDom.CodeExpression? targetObject, string? methodName, params System.CodeDom.CodeExpression[] parameters) { }
         public CodeMethodInvokeExpression(System.CodeDom.CodeMethodReferenceExpression? method, params System.CodeDom.CodeExpression[] parameters) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeMethodReferenceExpression Method { get { throw null; } set { } }
         public System.CodeDom.CodeExpressionCollection Parameters { get { throw null; } }
     }
@@ -443,6 +465,7 @@ namespace System.CodeDom
         public CodeMethodReferenceExpression() { }
         public CodeMethodReferenceExpression(System.CodeDom.CodeExpression? targetObject, string? methodName) { }
         public CodeMethodReferenceExpression(System.CodeDom.CodeExpression? targetObject, string? methodName, params System.CodeDom.CodeTypeReference[] typeParameters) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string MethodName { get { throw null; } set { } }
         public System.CodeDom.CodeExpression? TargetObject { get { throw null; } set { } }
         public System.CodeDom.CodeTypeReferenceCollection TypeArguments { get { throw null; } }
@@ -459,6 +482,7 @@ namespace System.CodeDom
         public CodeNamespace(string? name) { }
         public System.CodeDom.CodeCommentStatementCollection Comments { get { throw null; } }
         public System.CodeDom.CodeNamespaceImportCollection Imports { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
         public System.CodeDom.CodeTypeDeclarationCollection Types { get { throw null; } }
         public event System.EventHandler? PopulateComments { add { } remove { } }
@@ -485,6 +509,7 @@ namespace System.CodeDom
         public CodeNamespaceImport() { }
         public CodeNamespaceImport(string? nameSpace) { }
         public System.CodeDom.CodeLinePragma? LinePragma { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Namespace { get { throw null; } set { } }
     }
     public partial class CodeNamespaceImportCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
@@ -562,6 +587,7 @@ namespace System.CodeDom
     {
         public CodePropertyReferenceExpression() { }
         public CodePropertyReferenceExpression(System.CodeDom.CodeExpression? targetObject, string? propertyName) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string PropertyName { get { throw null; } set { } }
         public System.CodeDom.CodeExpression? TargetObject { get { throw null; } set { } }
     }
@@ -574,6 +600,7 @@ namespace System.CodeDom
         public CodeRegionDirective() { }
         public CodeRegionDirective(System.CodeDom.CodeRegionMode regionMode, string? regionText) { }
         public System.CodeDom.CodeRegionMode RegionMode { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string RegionText { get { throw null; } set { } }
     }
     public enum CodeRegionMode
@@ -587,6 +614,7 @@ namespace System.CodeDom
         public CodeRemoveEventStatement() { }
         public CodeRemoveEventStatement(System.CodeDom.CodeEventReferenceExpression? eventRef, System.CodeDom.CodeExpression? listener) { }
         public CodeRemoveEventStatement(System.CodeDom.CodeExpression? targetObject, string? eventName, System.CodeDom.CodeExpression? listener) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeEventReferenceExpression Event { get { throw null; } set { } }
         public System.CodeDom.CodeExpression? Listener { get { throw null; } set { } }
     }
@@ -595,24 +623,28 @@ namespace System.CodeDom
         public CodeSnippetCompileUnit() { }
         public CodeSnippetCompileUnit(string? value) { }
         public System.CodeDom.CodeLinePragma? LinePragma { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Value { get { throw null; } set { } }
     }
     public partial class CodeSnippetExpression : System.CodeDom.CodeExpression
     {
         public CodeSnippetExpression() { }
         public CodeSnippetExpression(string? value) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Value { get { throw null; } set { } }
     }
     public partial class CodeSnippetStatement : System.CodeDom.CodeStatement
     {
         public CodeSnippetStatement() { }
         public CodeSnippetStatement(string? value) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Value { get { throw null; } set { } }
     }
     public partial class CodeSnippetTypeMember : System.CodeDom.CodeTypeMember
     {
         public CodeSnippetTypeMember() { }
         public CodeSnippetTypeMember(string? text) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Text { get { throw null; } set { } }
     }
     public partial class CodeStatement : System.CodeDom.CodeObject
@@ -704,9 +736,11 @@ namespace System.CodeDom
         public CodeTypeMember() { }
         public System.CodeDom.MemberAttributes Attributes { get { throw null; } set { } }
         public System.CodeDom.CodeCommentStatementCollection Comments { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeAttributeDeclarationCollection CustomAttributes { get { throw null; } set { } }
         public System.CodeDom.CodeDirectiveCollection EndDirectives { get { throw null; } }
         public System.CodeDom.CodeLinePragma? LinePragma { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
         public System.CodeDom.CodeDirectiveCollection StartDirectives { get { throw null; } }
     }
@@ -740,6 +774,7 @@ namespace System.CodeDom
         public System.CodeDom.CodeTypeReferenceCollection Constraints { get { throw null; } }
         public System.CodeDom.CodeAttributeDeclarationCollection CustomAttributes { get { throw null; } }
         public bool HasConstructorConstraint { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
     }
     public partial class CodeTypeParameterCollection : System.Collections.CollectionBase
@@ -816,13 +851,16 @@ namespace System.CodeDom
         public CodeVariableDeclarationStatement(System.Type type, string? name) { }
         public CodeVariableDeclarationStatement(System.Type type, string? name, System.CodeDom.CodeExpression? initExpression) { }
         public System.CodeDom.CodeExpression? InitExpression { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.CodeTypeReference Type { get { throw null; } set { } }
     }
     public partial class CodeVariableReferenceExpression : System.CodeDom.CodeExpression
     {
         public CodeVariableReferenceExpression() { }
         public CodeVariableReferenceExpression(string? variableName) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string VariableName { get { throw null; } set { } }
     }
     public enum FieldDirection
@@ -1043,8 +1081,10 @@ namespace System.CodeDom.Compiler
     {
         public CodeGeneratorOptions() { }
         public bool BlankLinesBetweenMembers { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string BracingStyle { get { throw null; } set { } }
         public bool ElseOnClosing { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string IndentString { get { throw null; } set { } }
         public object? this[string index] { get { throw null; } set { } }
         public bool VerbatimOrder { get { throw null; } set { } }
@@ -1112,6 +1152,7 @@ namespace System.CodeDom.Compiler
         public string? MainClass { get { throw null; } set { } }
         public string? OutputAssembly { get { throw null; } set { } }
         public System.Collections.Specialized.StringCollection ReferencedAssemblies { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.CodeDom.Compiler.TempFileCollection TempFiles { get { throw null; } set { } }
         public bool TreatWarningsAsErrors { get { throw null; } set { } }
         public nint UserToken { get { throw null; } set { } }
