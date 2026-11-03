@@ -7968,15 +7968,13 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
     {
         asyncInfo.IsValueTaskAsTask = (prefixFlags & PREFIX_IS_ADAPTED_FROM_VALUETASK) != 0;
 
-        if (opts.Tier0OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
-            (call->gtReturnType == info.compRetType) && !asyncInfo.IsValueTaskAsTask)
-        {
-            CORINFO_METHOD_HANDLE exactCalleeHnd =
-                ((call->AsCall()->gtCallType != CT_USER_FUNC) || call->AsCall()->IsVirtual()) ? nullptr : methHnd;
-
-            asyncInfo.IsTailAwait =
-                info.compCompHnd->canTailCall(info.compMethodHnd, methHnd, exactCalleeHnd, /* fIsTailPrefix */ false);
-        }
+        // A tail await only returns the callee's continuation instead of creating one for
+        // this frame. It does not require a real tail call, so the VM's tail call
+        // restrictions (which exist to keep the caller's frame on the stack) are applied
+        // separately when deciding whether to also turn this into a fast tail call.
+        asyncInfo.IsTailAwait = opts.Tier0OptimizationEnabled() &&
+                                ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
+                                (call->gtReturnType == info.compRetType) && !asyncInfo.IsValueTaskAsTask;
     }
 
     unsigned newSourceTypes = ICorDebugInfo::ASYNC;
