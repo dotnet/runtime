@@ -32,6 +32,27 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>Computes the element-wise bitwise AND-NOT of numbers in the specified tensors.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a scalar.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = <paramref name="x" />[i] &amp; ~<paramref name="y" /></c>.
+        /// </para>
+        /// </remarks>
+        public static void AndNot<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
+            where T : IBitwiseOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryBitwiseInvokeHalfAsInt16<T, AndNotOperator<short>>(x, y, destination))
+            {
+                return;
+            }
+
+            InvokeSpanScalarIntoSpan<T, AndNotOperator<T>>(x, y, destination);
+        }
+        /// <summary>Computes the element-wise bitwise AND-NOT of numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a scalar.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>

@@ -360,6 +360,27 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
+        
+        [Fact]
+        public void AndNot_Half_SpanScalar_AllLengths()
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                using BoundedMemory<Half> x = CreateAndFillTensor(tensorLength);
+                Half y = NextRandom();
+                using BoundedMemory<Half> destination = CreateTensor(tensorLength);
+
+                TensorPrimitives.AndNot<Half>(x.Span, y, destination.Span);
+
+                short yBits = BitConverter.HalfToInt16Bits(y);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    short expected = (short)(BitConverter.HalfToInt16Bits(x.Span[i]) & ~yBits);
+                    Assert.Equal(expected, BitConverter.HalfToInt16Bits(destination.Span[i]));
+                }
+            });
+        }
+
         [Fact]
         public void AndNot_Half_BitPatterns()
         {
@@ -2577,6 +2598,7 @@ namespace System.Numerics.Tensors.Tests
         #region Span,Scalar -> Destination
         public static IEnumerable<object[]> SpanScalarDestinationFunctionsToTest()
         {
+            yield return Create(TensorPrimitives.AndNot, (x, y) => x & ~y);
             yield return Create(TensorPrimitives.BitwiseAnd, (x, y) => x & y);
             yield return Create(TensorPrimitives.BitwiseOr, (x, y) => x | y);
             yield return Create(TensorPrimitives.Max, T.Max);
