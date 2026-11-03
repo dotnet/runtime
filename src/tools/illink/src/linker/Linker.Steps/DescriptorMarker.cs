@@ -25,6 +25,10 @@ namespace Mono.Linker.Steps
         static readonly char[] _accessorsSep = new char[] { ';' };
 
         protected readonly HashSet<object> _preservedMembers;
+        IMemberDefinition? _conditionalSource;
+
+        DependencyInfo DescriptorReason => new DependencyInfo(DependencyKind.XmlDescriptor,
+            _conditionalSource is null ? _xmlDocumentLocation : (object)_conditionalSource);
 
         public DescriptorMarker(LinkContext context, Stream documentStream, string xmlDocumentLocation)
             : base(context, documentStream, xmlDocumentLocation)
@@ -66,6 +70,78 @@ namespace Mono.Linker.Steps
             {
                 ProcessTypes(assembly, nav, warnOnUnresolvedTypes);
                 ProcessNamespaces(assembly, nav);
+                ProcessConditionalDependencies(assembly, nav, warnOnUnresolvedTypes);
+            }
+        }
+
+        void ProcessConditionalDependencies(AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
+        {
+            foreach (XPathNavigator conditional in nav.SelectChildren("conditional", XmlNamespace))
+            {
+                if (!ShouldProcessElement(conditional))
+                    continue;
+
+                string typeName = GetAttribute(conditional, "type");
+                string methodName = GetAttribute(conditional, "method");
+                string fieldName = GetAttribute(conditional, "field");
+                if (methodName.Length != 0 && fieldName.Length != 0)
+                    throw new InvalidOperationException("A conditional descriptor cannot specify both a method and a field trigger.");
+
+                TypeDefinition? type = assembly.MainModule.GetType(typeName);
+                if (type is null)
+                {
+                    if (warnOnUnresolvedTypes)
+                        LogWarning(conditional, DiagnosticId.XmlCouldNotResolveType, typeName);
+                    continue;
+                }
+
+                var triggers = new List<IMemberDefinition>();
+                if (methodName.Length != 0)
+                {
+                    foreach (MethodDefinition method in type.Methods)
+                        if (method.Name == methodName)
+                            triggers.Add(method);
+                    if (triggers.Count == 0)
+                        LogWarning(conditional, DiagnosticId.XmlCouldNotFindMethodOnType, methodName, type.GetDisplayName());
+                }
+                else if (fieldName.Length != 0)
+                {
+                    foreach (FieldDefinition field in type.Fields)
+                        if (field.Name == fieldName)
+                            triggers.Add(field);
+                    if (triggers.Count == 0)
+                        LogWarning(conditional, DiagnosticId.XmlCouldNotFindFieldOnType, fieldName, type.GetDisplayName());
+                }
+                else
+                {
+                    triggers.Add(type);
+                }
+
+                bool activated = false;
+                XPathNavigator block = conditional.Clone();
+                foreach (IMemberDefinition trigger in triggers)
+                {
+                    _context.Annotations.AddConditionalRoot(trigger, () => {
+                        if (activated)
+                            return;
+                        activated = true;
+                        IMemberDefinition? previousSource = _conditionalSource;
+                        _conditionalSource = trigger;
+                        try
+                        {
+                            ProcessTypes(assembly, block, warnOnUnresolvedTypes);
+                        }
+                        catch (Exception ex) when (ex is not LinkerFatalErrorException)
+                        {
+                            throw new LinkerFatalErrorException(MessageContainer.CreateErrorMessage(null,
+                                DiagnosticId.ErrorProcessingXmlLocation, _xmlDocumentLocation), ex);
+                        }
+                        finally
+                        {
+                            _conditionalSource = previousSource;
+                        }
+                    });
+                }
             }
         }
 
@@ -96,7 +172,7 @@ namespace Mono.Linker.Steps
 
         void MarkAndPreserveAll(TypeDefinition type, XPathNavigator nav)
         {
-            _context.Annotations.Mark(type, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
+            _context.Annotations.Mark(type, DescriptorReason, GetMessageOriginForPosition(nav));
             _context.Annotations.SetPreserve(type, TypePreserve.All);
 
             if (!type.HasNestedTypes)
@@ -108,7 +184,7 @@ namespace Mono.Linker.Steps
 
         protected override TypeDefinition? ProcessExportedType(ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav)
         {
-            _context.MarkingHelpers.MarkExportedType(exported, assembly.MainModule, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
+            _context.MarkingHelpers.MarkExportedType(exported, assembly.MainModule, DescriptorReason, GetMessageOriginForPosition(nav));
 
             // If a nested exported type is marked, then the declaring type must also be marked otherwise cecil will write out an invalid exported type table
             // and anything that tries to read the assembly with cecil will crash
@@ -162,7 +238,7 @@ namespace Mono.Linker.Steps
             if (preserve is TypePreserve.Nothing)
                 _context.Annotations.MarkPendingReflectionVisibleType(type, GetMessageOriginForPosition(nav));
 
-            _context.Annotations.Mark(type, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
+            _context.Annotations.Mark(type, DescriptorReason, GetMessageOriginForPosition(nav));
 
             if (type.IsNested)
             {
@@ -192,7 +268,7 @@ namespace Mono.Linker.Steps
             if (!_preservedMembers.Add(field))
                 LogDuplicatePreserve(field.FullName, nav);
 
-            var reason = new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation);
+            var reason = DescriptorReason;
             var origin = GetMessageOriginForPosition(nav);
             _context.Annotations.MarkPendingReflectionVisibleField(field, origin);
             _context.Annotations.Mark(field, reason, origin);
@@ -212,7 +288,7 @@ namespace Mono.Linker.Steps
             }
             else
             {
-                var reason = new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation);
+                var reason = DescriptorReason;
                 var origin = GetMessageOriginForPosition(nav);
                 _context.Annotations.MarkPendingReflectionVisibleMethod(method, origin);
                 _context.Annotations.Mark(method, reason, origin);

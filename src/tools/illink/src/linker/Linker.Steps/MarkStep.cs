@@ -388,6 +388,7 @@ namespace Mono.Linker.Steps
         {
             while (ProcessPrimaryQueue() ||
                 ProcessMarkedPending() ||
+                Annotations.ProcessConditionalRoots() ||
                 ProcessLazyAttributes() ||
                 ProcessLateMarkedAttributes() ||
                 MarkFullyPreservedAssemblies()) ;

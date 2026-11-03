@@ -74,6 +74,7 @@ namespace Mono.Linker
         readonly List<(MethodDefinition Method, MessageOrigin Origin)> pending_reflection_visible_methods = new();
         readonly List<(FieldDefinition Field, MessageOrigin Origin)> pending_reflection_visible_fields = new();
         readonly List<(TypeDefinition Type, MessageOrigin Origin)> pending_reflection_visible_types = new();
+        readonly Dictionary<IMemberDefinition, List<Action>> conditional_roots = new();
         AssemblyDefinition? entry_assembly;
 
         public AnnotationStore(LinkContext context)
@@ -190,6 +191,32 @@ namespace Mono.Linker
         public bool IsMarked(IMetadataTokenProvider provider)
         {
             return processed.Contains(provider) || marked_pending.ContainsKey(provider);
+        }
+
+        internal void AddConditionalRoot(IMemberDefinition trigger, Action mark)
+        {
+            if (!conditional_roots.TryGetValue(trigger, out var roots))
+                conditional_roots.Add(trigger, roots = new List<Action>());
+            roots.Add(mark);
+        }
+
+        internal bool ProcessConditionalRoots()
+        {
+            if (conditional_roots.Count == 0)
+                return false;
+
+            bool activated = false;
+            foreach (var (trigger, roots) in conditional_roots.ToArray())
+            {
+                if (!IsMarked(trigger))
+                    continue;
+
+                conditional_roots.Remove(trigger);
+                activated = true;
+                foreach (Action mark in roots)
+                    mark();
+            }
+            return activated;
         }
 
         public bool IsMarked(CustomAttribute attribute)

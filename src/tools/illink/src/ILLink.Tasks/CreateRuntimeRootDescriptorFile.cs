@@ -94,6 +94,9 @@ namespace ILLink.Tasks
 
         readonly Dictionary<string, string> namespaceDictionary = new Dictionary<string, string>();
         readonly Dictionary<string, string> classIdsToClassNames = new Dictionary<string, string>();
+        readonly Dictionary<string, (string ClassId, string Name)> methodIdsToMembers = new();
+        readonly Dictionary<string, (string ClassId, string Name)> fieldIdsToMembers = new();
+        readonly List<(string ClassId, string MemberKind, string MemberName, string TriggerKind, string TriggerId, FeatureSwitchMembers? FeatureSwitch)> conditionalDependencies = new();
         readonly Dictionary<string, ClassMembers> classNamesToClassMembers = new Dictionary<string, ClassMembers>();
         readonly Dictionary<FeatureSwitchMembers, Dictionary<string, ClassMembers>> featureSwitchMembers = new();
         readonly HashSet<string> defineConstants = new HashSet<string>(StringComparer.Ordinal);
@@ -140,6 +143,8 @@ namespace ILLink.Tasks
             ProcessNamespaces(namespaceFilePath);
 
             ProcessMscorlib(mscorlibFilePath);
+            if (Log.HasLoggedErrors)
+                return false;
 
             ProcessCoreTypes(cortypeFilePath);
 
@@ -150,7 +155,7 @@ namespace ILLink.Tasks
 
             OutputXml(iLLinkTrimXmlFilePath, RuntimeRootDescriptorFilePath.ItemSpec);
 
-            return true;
+            return !Log.HasLoggedErrors;
         }
 
         void ProcessNamespaces(string namespaceFile)
@@ -213,15 +218,29 @@ namespace ILLink.Tasks
                     defElements = def.Split(separators, StringSplitOptions.RemoveEmptyEntries);
                 }
 
+                int conditionalArgumentCount = defElements?[0] switch {
+                    "DEFINE_CLASS_CONDITIONAL" or "DEFINE_FIELD_CONDITIONAL" => 6,
+                    "DEFINE_METHOD_CONDITIONAL" => 7,
+                    _ => 0
+                };
+                if (conditionalArgumentCount != 0 && defElements.Length < conditionalArgumentCount)
+                {
+                    Log.LogError($"Conditional declaration is missing arguments in '{typeFile}': {def}.");
+                    return;
+                }
+
                 if (def.StartsWith("DEFINE_CLASS(") || def.StartsWith("// DEFINE_CLASS(") ||
-                    def.StartsWith("DEFINE_CLASS_OPTIONAL(") || def.StartsWith("// DEFINE_CLASS_OPTIONAL("))
+                    def.StartsWith("DEFINE_CLASS_OPTIONAL(") || def.StartsWith("// DEFINE_CLASS_OPTIONAL(") ||
+                    def.StartsWith("DEFINE_CLASS_CONDITIONAL("))
                 {
                     // E.g., DEFINE_CLASS(APP_DOMAIN,            System,                 AppDomain)
                     classId = defElements[1];               // APP_DOMAIN
                     string classNamespace = defElements[2]; // System
                     string className = defElements[3];      // AppDomain
                     AddClass(classNamespace, className, classId, false, currentFeatureSwitch,
-                        optional: defElements[0] == "DEFINE_CLASS_OPTIONAL");
+                        optional: defElements[0] != "DEFINE_CLASS");
+                    if (defElements[0] == "DEFINE_CLASS_CONDITIONAL")
+                        conditionalDependencies.Add((classId, null, null, defElements[4], defElements[5], currentFeatureSwitch));
                 }
                 else if (def.StartsWith("DEFINE_CLASS_U(") || def.StartsWith("DEFINE_CLASS_U_OPTIONAL("))
                 {
@@ -235,19 +254,27 @@ namespace ILLink.Tasks
                     AddClass(classNamespace, className, classId, keepAllFields, currentFeatureSwitch,
                         optional: defElements[0] == "DEFINE_CLASS_U_OPTIONAL");
                 }
-                else if (def.StartsWith("DEFINE_FIELD("))
+                else if (def.StartsWith("DEFINE_FIELD(") || def.StartsWith("DEFINE_FIELD_CONDITIONAL("))
                 {
                     // E.g., DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, IP,                _ip)
                     classId = defElements[1];          // ACCESS_VIOLATION_EXCEPTION
                     string fieldName = defElements[3]; // _ip
-                    AddField(fieldName, classId, currentFeatureSwitch);
+                    fieldIdsToMembers[classId + "__" + defElements[2]] = (classId, fieldName);
+                    if (defElements[0] == "DEFINE_FIELD_CONDITIONAL")
+                        conditionalDependencies.Add((classId, "field", fieldName, defElements[4], defElements[5], currentFeatureSwitch));
+                    else
+                        AddField(fieldName, classId, currentFeatureSwitch);
                 }
-                else if (def.StartsWith("DEFINE_METHOD("))
+                else if (def.StartsWith("DEFINE_METHOD(") || def.StartsWith("DEFINE_METHOD_CONDITIONAL("))
                 {
                     // E.g., DEFINE_METHOD(APP_DOMAIN,           ON_ASSEMBLY_LOAD,       OnAssemblyLoadEvent,        IM_Assembly_RetVoid)
                     string methodName = defElements[3]; // OnAssemblyLoadEvent
                     classId = defElements[1];           // APP_DOMAIN
-                    AddMethod(methodName, classId, null, null, currentFeatureSwitch);
+                    methodIdsToMembers[classId + "__" + defElements[2]] = (classId, methodName);
+                    if (defElements[0] == "DEFINE_METHOD_CONDITIONAL")
+                        conditionalDependencies.Add((classId, "method", methodName, defElements[5], defElements[6], currentFeatureSwitch));
+                    else
+                        AddMethod(methodName, classId, null, null, currentFeatureSwitch);
                 }
                 else if (def.StartsWith("DEFINE_PROPERTY(") || def.StartsWith("DEFINE_STATIC_PROPERTY("))
                 {
@@ -255,13 +282,16 @@ namespace ILLink.Tasks
                     // or    DEFINE_STATIC_PROPERTY(THREAD,      CURRENT_THREAD,         CurrentThread,              Thread)
                     string propertyName = defElements[3];          // Length or CurrentThread
                     classId = defElements[1];                      // ARRAY or THREAD
+                    methodIdsToMembers[classId + "__GET_" + defElements[2]] = (classId, "get_" + propertyName);
                     AddMethod("get_" + propertyName, classId, null, null, currentFeatureSwitch);
                 }
-                else if (def.StartsWith("DEFINE_SET_PROPERTY("))
+                else if (def.StartsWith("DEFINE_SET_PROPERTY(") || def.StartsWith("DEFINE_STATIC_SET_PROPERTY("))
                 {
                     // E.g., DEFINE_SET_PROPERTY(THREAD,         UI_CULTURE,             CurrentUICulture,           CultureInfo)
                     string propertyName = defElements[3]; // CurrentUICulture
                     classId = defElements[1];             // THREAD
+                    methodIdsToMembers[classId + "__GET_" + defElements[2]] = (classId, "get_" + propertyName);
+                    methodIdsToMembers[classId + "__SET_" + defElements[2]] = (classId, "set_" + propertyName);
                     AddMethod("get_" + propertyName, classId, null, null, currentFeatureSwitch);
                     AddMethod("set_" + propertyName, classId, null, null, currentFeatureSwitch);
                 }
@@ -331,6 +361,8 @@ namespace ILLink.Tasks
             }
 
             XmlElement linkerNode = doc["linker"];
+            XmlNode assemblyNode = linkerNode["assembly"];
+            var featureAssemblies = new Dictionary<FeatureSwitchMembers, XmlElement>();
 
             if (featureSwitchMembers.Count > 0)
             {
@@ -339,39 +371,92 @@ namespace ILLink.Tasks
                     if (members.Count == 0)
                         continue;
 
-                    // <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="true" featuredefault="true">
-                    XmlElement featureAssemblyNode = doc.CreateElement("assembly");
-                    XmlAttribute featureAssemblyFullName = doc.CreateAttribute("fullname");
-                    featureAssemblyFullName.Value = "System.Private.CoreLib";
-                    featureAssemblyNode.Attributes.Append(featureAssemblyFullName);
-
-                    XmlAttribute featureName = doc.CreateAttribute("feature");
-                    featureName.Value = fs.Feature;
-                    featureAssemblyNode.Attributes.Append(featureName);
-
-                    XmlAttribute featureValue = doc.CreateAttribute("featurevalue");
-                    featureValue.Value = fs.FeatureValue;
-                    featureAssemblyNode.Attributes.Append(featureValue);
-
-                    XmlAttribute featureDefault = doc.CreateAttribute("featuredefault");
-                    featureDefault.Value = fs.FeatureDefault;
-                    featureAssemblyNode.Attributes.Append(featureDefault);
+                    XmlElement featureAssemblyNode = CreateFeatureAssembly(doc, fs);
 
                     foreach (var type in members)
                     {
                         AddXmlTypeNode(doc, featureAssemblyNode, type.Key, type.Value);
                     }
                     linkerNode.AppendChild(featureAssemblyNode);
+                    featureAssemblies.Add(fs, featureAssemblyNode);
                 }
             }
-
-            XmlNode assemblyNode = linkerNode["assembly"];
 
             foreach (var type in classNamesToClassMembers)
             {
                 AddXmlTypeNode(doc, assemblyNode, type.Key, type.Value);
             }
-            doc.Save(outputFileName);
+            foreach (var dependency in conditionalDependencies)
+            {
+                string triggerClassId;
+                string triggerMemberName = null;
+                string triggerMemberKind = null;
+                if (dependency.TriggerKind == "CLASS")
+                {
+                    triggerClassId = dependency.TriggerId;
+                }
+                else if (dependency.TriggerKind == "METHOD" || dependency.TriggerKind == "FIELD")
+                {
+                    var members = dependency.TriggerKind == "METHOD" ? methodIdsToMembers : fieldIdsToMembers;
+                    if (!members.TryGetValue(dependency.TriggerId, out var trigger))
+                    {
+                        Log.LogError($"Unknown conditional dependency trigger: {dependency.TriggerKind} {dependency.TriggerId}.");
+                        continue;
+                    }
+                    triggerClassId = trigger.ClassId;
+                    triggerMemberName = trigger.Name;
+                    triggerMemberKind = dependency.TriggerKind == "METHOD" ? "method" : "field";
+                }
+                else
+                {
+                    Log.LogError($"Unknown conditional dependency trigger kind: {dependency.TriggerKind}.");
+                    continue;
+                }
+
+                if (!classIdsToClassNames.TryGetValue(triggerClassId, out string triggerType) ||
+                    !classIdsToClassNames.TryGetValue(dependency.ClassId, out string targetType))
+                {
+                    Log.LogError($"Unknown class in conditional dependency: {dependency.ClassId} <- {triggerClassId}.");
+                    continue;
+                }
+
+                XmlNode parent = assemblyNode;
+                if (dependency.FeatureSwitch is FeatureSwitchMembers feature)
+                {
+                    if (!featureAssemblies.TryGetValue(feature, out XmlElement featureAssembly))
+                    {
+                        featureAssembly = CreateFeatureAssembly(doc, feature);
+                        featureAssemblies.Add(feature, featureAssembly);
+                        linkerNode.AppendChild(featureAssembly);
+                    }
+                    parent = featureAssembly;
+                }
+
+                XmlElement conditional = doc.CreateElement("conditional");
+                conditional.SetAttribute("type", triggerType);
+                if (triggerMemberKind is not null)
+                    conditional.SetAttribute(triggerMemberKind, triggerMemberName);
+
+                var target = new ClassMembers { required = true };
+                if (dependency.MemberKind == "method")
+                    target.methods = new HashSet<string> { dependency.MemberName };
+                else if (dependency.MemberKind == "field")
+                    target.fields = new HashSet<string> { dependency.MemberName };
+                AddXmlTypeNode(doc, conditional, targetType, target);
+                parent.AppendChild(conditional);
+            }
+            if (!Log.HasLoggedErrors)
+                doc.Save(outputFileName);
+        }
+
+        static XmlElement CreateFeatureAssembly(XmlDocument doc, FeatureSwitchMembers feature)
+        {
+            XmlElement assembly = doc.CreateElement("assembly");
+            assembly.SetAttribute("fullname", "System.Private.CoreLib");
+            assembly.SetAttribute("feature", feature.Feature);
+            assembly.SetAttribute("featurevalue", feature.FeatureValue);
+            assembly.SetAttribute("featuredefault", feature.FeatureDefault);
+            return assembly;
         }
 
         static void AddXmlTypeNode(XmlDocument doc, XmlNode assemblyNode, string typeName, ClassMembers members)

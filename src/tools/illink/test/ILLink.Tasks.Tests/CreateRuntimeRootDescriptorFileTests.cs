@@ -16,6 +16,41 @@ namespace ILLink.Tasks.Tests
 {
     public class CreateRuntimeRootDescriptorFileTests
     {
+        [Fact]
+        public void ConditionalEdgesResolveForwardReferencesAndFeatureGroups()
+        {
+            using var test = new DescriptorTest();
+            XDocument descriptor = test.Generate(new[] {
+                "DEFINE_CLASS_CONDITIONAL(TARGET, TestNS, Target, METHOD, TRIGGER__ACTIVATE)",
+                "DEFINE_CLASS_U_OPTIONAL(TestNS, Target, NativeTarget)",
+                "DEFINE_FIELD(TARGET, LAYOUT, Layout)",
+                "BEGIN_ILLINK_FEATURE_SWITCH(TestFeature, true, true)",
+                "DEFINE_METHOD_CONDITIONAL(TARGET, CALLBACK, Callback, NoSig, FIELD, TRIGGER__SIGNAL)",
+                "END_ILLINK_FEATURE_SWITCH()",
+                "DEFINE_CLASS_OPTIONAL(TRIGGER, TestNS, Container+Trigger)",
+                "DEFINE_METHOD_CONDITIONAL(TRIGGER, ACTIVATE, Activate, NoSig, CLASS, TARGET)",
+                "DEFINE_FIELD_CONDITIONAL(TRIGGER, SIGNAL, Signal, CLASS, TARGET)"
+            });
+
+            XElement assembly = descriptor.Root.Elements("assembly").Single(a => a.Attribute("feature") is null);
+            XElement target = assembly.Elements("type").Single(t => (string)t.Attribute("fullname") == "TestNS.Target");
+            Assert.Equal("false", (string)target.Attribute("required"));
+            Assert.Equal("fields", (string)target.Attribute("preserve"));
+            Assert.Empty(target.Elements());
+            XElement classEdge = assembly.Elements("conditional").Single(e => e.Attribute("method") is not null);
+            Assert.Equal("TestNS.Container/Trigger", (string)classEdge.Attribute("type"));
+            Assert.Equal("Activate", (string)classEdge.Attribute("method"));
+            Assert.Equal("TestNS.Target", (string)classEdge.Element("type").Attribute("fullname"));
+            Assert.Equal("nothing", (string)classEdge.Element("type").Attribute("preserve"));
+            Assert.Null(classEdge.Element("type").Attribute("required"));
+            XElement feature = descriptor.Root.Elements("assembly").Single(a => a.Attribute("feature") is not null);
+            Assert.Equal("TestFeature", (string)feature.Attribute("feature"));
+            XElement methodEdge = Assert.Single(feature.Elements("conditional"));
+            Assert.Equal("TestNS.Container/Trigger", (string)methodEdge.Attribute("type"));
+            Assert.Equal("Signal", (string)methodEdge.Attribute("field"));
+            Assert.Equal("Callback", (string)methodEdge.Element("type").Element("method").Attribute("name"));
+        }
+
         [Theory]
         [InlineData(false, false, false)]
         [InlineData(false, false, true)]
@@ -232,14 +267,207 @@ namespace ILLink.Tasks.Tests
             }
         }
 
+        [Theory]
+        [InlineData("CLASS", "none", false, false)]
+        [InlineData("CLASS", "target-type", false, false)]
+        [InlineData("CLASS", "type", false, true)]
+        [InlineData("CLASS", "signature", false, true)]
+        [InlineData("CLASS", "field-type", false, true)]
+        [InlineData("CLASS", "xml-type", false, true)]
+        [InlineData("CLASS", "method", false, true)]
+        [InlineData("CLASS", "field", false, true)]
+        [InlineData("CLASS", "feature-off", false, false)]
+        [InlineData("CLASS", "feature-on", false, true)]
+        [InlineData("CLASS", "feature-off", true, true)]
+        [InlineData("CLASS", "second", false, true)]
+        [InlineData("METHOD", "none", false, false)]
+        [InlineData("METHOD", "target-type", false, false)]
+        [InlineData("METHOD", "type", false, false)]
+        [InlineData("METHOD", "method", false, true)]
+        [InlineData("METHOD", "field", false, false)]
+        [InlineData("METHOD", "xml-type", false, false)]
+        [InlineData("METHOD", "xml-method", false, true)]
+        [InlineData("METHOD", "xml-field", false, false)]
+        [InlineData("FIELD", "none", false, false)]
+        [InlineData("FIELD", "target-type", false, false)]
+        [InlineData("FIELD", "type", false, false)]
+        [InlineData("FIELD", "method", false, false)]
+        [InlineData("FIELD", "field", false, true)]
+        [InlineData("FIELD", "xml-type", false, false)]
+        [InlineData("FIELD", "xml-field", false, true)]
+        [InlineData("FIELD", "xml-method", false, false)]
+        [InlineData("CLASS", "none", true, true)]
+        [InlineData("METHOD", "none", true, true)]
+        [InlineData("FIELD", "none", true, true)]
+        public void LinkerActivatesCrossTypeDependencies(string triggerKind, string root, bool mandatory, bool expected)
+        {
+            using var test = new DescriptorTest();
+            string trigger = triggerKind switch {
+                "CLASS" => "TRIGGER",
+                "METHOD" => "TRIGGER__ACTIVATE",
+                "FIELD" => "TRIGGER__SIGNAL",
+                _ => throw new InvalidOperationException(triggerKind)
+            };
+            XDocument descriptor = test.Generate(new[] {
+                "DEFINE_CLASS_OPTIONAL(NEVER, TestNS, Never)",
+                "DEFINE_CLASS_OPTIONAL(TRIGGER, TestNS, Trigger)",
+                "DEFINE_METHOD_CONDITIONAL(TRIGGER, ACTIVATE, Activate, NoSig, CLASS, NEVER)",
+                "DEFINE_FIELD_CONDITIONAL(TRIGGER, SIGNAL, Signal, CLASS, NEVER)",
+                "DEFINE_CLASS_OPTIONAL(TARGET, TestNS, Target)",
+                root.StartsWith("feature-", StringComparison.Ordinal) ? "BEGIN_ILLINK_FEATURE_SWITCH(TestFeature, true, true)" : "",
+                $"DEFINE_METHOD_CONDITIONAL(TARGET, CALLBACK, Callback, NoSig, {triggerKind}, {trigger})",
+                $"DEFINE_FIELD_CONDITIONAL(TARGET, VALUE, Value, {triggerKind}, {trigger})",
+                $"DEFINE_CLASS_CONDITIONAL(CLASS_TARGET, TestNS, ClassTarget, {triggerKind}, {trigger})",
+                root.StartsWith("feature-", StringComparison.Ordinal) ? "END_ILLINK_FEATURE_SWITCH()" : "",
+                "DEFINE_CLASS_U_OPTIONAL(TestNS, ClassTarget, NativeClassTarget)",
+                "DEFINE_CLASS_OPTIONAL(SECOND, TestNS, Second)",
+                "DEFINE_METHOD_CONDITIONAL(TARGET, SECOND_CALLBACK, Callback, NoSig, CLASS, SECOND)",
+                "DEFINE_FIELD_CONDITIONAL(TARGET, SECOND_VALUE, Value, CLASS, SECOND)",
+                "DEFINE_CLASS_CONDITIONAL(SECOND_CLASS_TARGET, TestNS, ClassTarget, CLASS, SECOND)",
+                "DEFINE_CLASS_CONDITIONAL(CASCADE, TestNS, Cascade, METHOD, TARGET__CALLBACK)",
+                "DEFINE_CLASS_CONDITIONAL(DEAD_A, TestNS, DeadA, CLASS, DEAD_B)",
+                "DEFINE_CLASS_CONDITIONAL(DEAD_B, TestNS, DeadB, CLASS, DEAD_A)",
+                mandatory ? "DEFINE_CLASS(TARGET_ALIAS, TestNS, Target)" : "",
+                mandatory ? "DEFINE_METHOD(TARGET_ALIAS, CALLBACK, Callback, NoSig)" : "",
+                mandatory ? "DEFINE_FIELD(TARGET_ALIAS, VALUE, Value)" : "",
+                mandatory ? "DEFINE_CLASS(CLASS_TARGET_ALIAS, TestNS, ClassTarget)" : "",
+                root == "signature" ? "DEFINE_CLASS(PROGRAM, TestNS, Program)" : "",
+                root == "signature" ? "DEFINE_METHOD(PROGRAM, SIGNATURE, Signature, NoSig)" : "",
+                root == "field-type" ? "DEFINE_CLASS(PROGRAM, TestNS, Program)" : "",
+                root == "field-type" ? "DEFINE_FIELD(PROGRAM, SIGNATURE, SignatureField)" : "",
+                root.StartsWith("xml-", StringComparison.Ordinal) ? "DEFINE_CLASS(TRIGGER_ALIAS, TestNS, Trigger)" : "",
+                root == "xml-method" ? "DEFINE_METHOD(TRIGGER_ALIAS, ACTIVATE, Activate, NoSig)" : "",
+                root == "xml-field" ? "DEFINE_FIELD(TRIGGER_ALIAS, SIGNAL, Signal)" : ""
+            });
+            foreach (XElement feature in descriptor.Root.Elements("assembly").Where(a => a.Attribute("feature") is not null))
+                feature.SetAttributeValue("fullname", "Input");
+            descriptor.Save(test.DescriptorPath);
+
+            string input = Path.Combine(test.DirectoryPath, "Input.dll");
+            using (AssemblyDefinition assembly = AssemblyDefinition.CreateAssembly(
+                new AssemblyNameDefinition("Input", new Version(1, 0)), "Input", ModuleKind.Console))
+            {
+                ModuleDefinition module = assembly.MainModule;
+                TypeReference objectType = module.ImportReference(typeof(object));
+                AddType(module, "Never");
+                TypeDefinition triggerType = AddType(module, "Trigger");
+                MethodDefinition activate = AddMethod(triggerType, "Activate");
+                var signal = new FieldDefinition("Signal", FieldAttributes.Public | FieldAttributes.Static, objectType);
+                triggerType.Fields.Add(signal);
+                TypeDefinition target = AddType(module, "Target");
+                AddMethod(target, "Callback");
+                AddMethod(target, "Callback").Parameters.Add(new ParameterDefinition(triggerType));
+                AddMethod(target, "Unused");
+                target.Fields.Add(new FieldDefinition("Value", FieldAttributes.Public | FieldAttributes.Static, objectType));
+                target.Fields.Add(new FieldDefinition("Unused", FieldAttributes.Public | FieldAttributes.Static, objectType));
+                TypeDefinition classTarget = AddType(module, "ClassTarget");
+                classTarget.Fields.Add(new FieldDefinition("Layout", FieldAttributes.Private, objectType));
+                TypeDefinition second = AddType(module, "Second");
+                AddType(module, "Cascade");
+                AddType(module, "DeadA");
+                AddType(module, "DeadB");
+                TypeDefinition program = AddType(module, "Program");
+                AddMethod(program, "Signature").Parameters.Add(new ParameterDefinition(triggerType));
+                program.Fields.Add(new FieldDefinition("SignatureField", FieldAttributes.Public | FieldAttributes.Static, triggerType));
+                MethodDefinition main = AddMethod(program, "Main");
+                main.Body.Instructions.Clear();
+                if (root == "target-type")
+                {
+                    main.Body.Instructions.Add(Instruction.Create(OpCodes.Ldtoken, target));
+                    main.Body.Instructions.Add(Instruction.Create(OpCodes.Pop));
+                }
+                else if (root is "type" or "feature-off" or "feature-on" or "second")
+                {
+                    main.Body.Instructions.Add(Instruction.Create(OpCodes.Ldtoken, root == "second" ? second : triggerType));
+                    main.Body.Instructions.Add(Instruction.Create(OpCodes.Pop));
+                }
+                else if (root == "method")
+                    main.Body.Instructions.Add(Instruction.Create(OpCodes.Call, activate));
+                else if (root == "field")
+                {
+                    main.Body.Instructions.Add(Instruction.Create(OpCodes.Ldsfld, signal));
+                    main.Body.Instructions.Add(Instruction.Create(OpCodes.Pop));
+                }
+                main.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
+                module.EntryPoint = main;
+                assembly.Write(input);
+            }
+
+            string output = Path.Combine(test.DirectoryPath, "linked");
+            using var driver = new Driver(new Queue<string>(new[] {
+                "-a", "Input", "entrypoint", "-reference", input, "-x", test.DescriptorPath, "-out", output,
+                "--feature", "TestFeature", root == "feature-off" ? "false" : "true",
+                "-reference", typeof(object).Assembly.Location, "--action", "skip", "System.Private.CoreLib"
+            }));
+            var logger = new MockDriver.CustomLogger();
+            Assert.True(driver.Run(logger) == 0, string.Join(Environment.NewLine, logger.Messages));
+            using AssemblyDefinition linked = AssemblyDefinition.ReadAssembly(Path.Combine(output, "Input.dll"));
+            TypeDefinition retained = linked.MainModule.GetType("TestNS.Target");
+            Assert.Equal(expected || root == "target-type", retained is not null);
+            if (expected)
+            {
+                Assert.Equal(2, retained.Methods.Count(m => m.Name == "Callback"));
+                Assert.Equal(2, retained.Methods.Count);
+                Assert.Equal("Value", Assert.Single(retained.Fields).Name);
+            }
+            else if (root == "target-type")
+            {
+                Assert.Empty(retained.Methods);
+                Assert.Empty(retained.Fields);
+                Assert.Null(linked.MainModule.GetType("TestNS.Trigger"));
+            }
+            Assert.Equal(expected, linked.MainModule.GetType("TestNS.ClassTarget") is not null);
+            if (expected)
+                Assert.Equal("Layout", Assert.Single(linked.MainModule.GetType("TestNS.ClassTarget").Fields).Name);
+            Assert.Equal(expected, linked.MainModule.GetType("TestNS.Cascade") is not null);
+            Assert.Null(linked.MainModule.GetType("TestNS.DeadA"));
+            Assert.Null(linked.MainModule.GetType("TestNS.DeadB"));
+            Assert.Null(linked.MainModule.GetType("TestNS.Never"));
+
+            static TypeDefinition AddType(ModuleDefinition module, string name)
+            {
+                var type = new TypeDefinition("TestNS", name, TypeAttributes.Public, module.ImportReference(typeof(object)));
+                module.Types.Add(type);
+                return type;
+            }
+
+            static MethodDefinition AddMethod(TypeDefinition type, string name)
+            {
+                var method = new MethodDefinition(name, MethodAttributes.Public | MethodAttributes.Static, type.Module.ImportReference(typeof(void)));
+                method.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
+                type.Methods.Add(method);
+                return method;
+            }
+        }
+
+        [Theory]
+        [InlineData("DEFINE_CLASS_CONDITIONAL(TARGET, TestNS, Target, UNKNOWN, TRIGGER)")]
+        [InlineData("DEFINE_CLASS_CONDITIONAL(TARGET, TestNS, Target, CLASS, UNKNOWN)")]
+        [InlineData("DEFINE_METHOD_CONDITIONAL(TARGET, CALLBACK, Callback, NoSig, METHOD, TRIGGER__ABSENT)")]
+        [InlineData("DEFINE_FIELD_CONDITIONAL(TARGET, VALUE, Value, FIELD, TRIGGER__ABSENT)")]
+        [InlineData("DEFINE_METHOD_CONDITIONAL(UNKNOWN, CALLBACK, Callback, NoSig, CLASS, TRIGGER)")]
+        [InlineData("DEFINE_METHOD_CONDITIONAL(TARGET, CALLBACK)")]
+        public void InvalidConditionalDeclarationsDoNotPublishDescriptors(string declaration)
+        {
+            using var test = new DescriptorTest();
+            Assert.Null(test.Generate(new[] {
+                "DEFINE_CLASS_OPTIONAL(TRIGGER, TestNS, Trigger)",
+                "DEFINE_CLASS_OPTIONAL(TARGET, TestNS, Target)",
+                declaration
+            }, expectSuccess: false));
+            Assert.Single(test.BuildEngine.Errors);
+            Assert.False(File.Exists(test.DescriptorPath));
+        }
+
         sealed class DescriptorTest : IDisposable
         {
             public string DirectoryPath { get; } = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             public string DescriptorPath => Path.Combine(DirectoryPath, "descriptor.xml");
+            public MockBuildEngine BuildEngine { get; } = new MockBuildEngine();
 
             public DescriptorTest() => Directory.CreateDirectory(DirectoryPath);
 
-            public XDocument Generate(string[] declarations, string coreTypes = "", string exceptions = "")
+            public XDocument Generate(string[] declarations, string coreTypes = "", string exceptions = "", bool expectSuccess = true)
             {
                 File.WriteAllLines(Path.Combine(DirectoryPath, "corelib.h"), declarations);
                 File.WriteAllText(Path.Combine(DirectoryPath, "namespace.h"), "#define g_TestNS \"TestNS\"" + Environment.NewLine);
@@ -248,6 +476,7 @@ namespace ILLink.Tasks.Tests
                 string template = Path.Combine(DirectoryPath, "template.xml");
                 File.WriteAllText(template, "<linker><assembly fullname=\"Input\" /></linker>");
                 var task = new CreateRuntimeRootILLinkDescriptorFile {
+                    BuildEngine = BuildEngine,
                     NamespaceFilePath = new TaskItem(Path.Combine(DirectoryPath, "namespace.h")),
                     MscorlibFilePath = new TaskItem(Path.Combine(DirectoryPath, "corelib.h")),
                     CortypeFilePath = new TaskItem(Path.Combine(DirectoryPath, "cortypeinfo.h")),
@@ -255,8 +484,8 @@ namespace ILLink.Tasks.Tests
                     ILLinkTrimXmlFilePath = new TaskItem(template),
                     RuntimeRootDescriptorFilePath = new TaskItem(DescriptorPath)
                 };
-                Assert.True(task.Execute());
-                return XDocument.Load(DescriptorPath);
+                Assert.Equal(expectSuccess, task.Execute());
+                return expectSuccess ? XDocument.Load(DescriptorPath) : null;
             }
 
             public void Dispose() => Directory.Delete(DirectoryPath, recursive: true);

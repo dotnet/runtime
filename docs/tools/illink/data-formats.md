@@ -41,7 +41,7 @@ Descriptor XML can also be passed to the trimmer on the command via the [`-x` pa
   <assembly fullname="AssemblyA" preserve="all" />
 
   <!-- No "preserve" attribute and no types specified means preserve all -->
-  <assembly fullname="AssemblyB"/> 
+  <assembly fullname="AssemblyB"/>
 </linker>
 ```
 
@@ -63,12 +63,12 @@ The `required` attribute specifies that if the type is not marked, during the ma
 <linker>
   <assembly fullname="Assembly">
     <type fullname="Assembly.A" preserve="all" />
-    
+
     <!-- No "preserve" attribute and no members specified means preserve all members -->
-    <type fullname="Assembly.B" /> 
-    
+    <type fullname="Assembly.B" />
+
     <!-- Preserve the type declaration only -->
-    <type fullname="Assembly.C" preserve="nothing" /> 
+    <type fullname="Assembly.C" preserve="nothing" />
 
     <!-- Preserve a nested type -->
     <type fullname="Assembly.D/Nested" preserve="all" />
@@ -85,17 +85,52 @@ The `required` attribute specifies that if the type is not marked, during the ma
 </linker>
 ```
 
+### Conditional dependencies
+
+ILLink supports assembly-scoped `conditional` blocks. The `type` attribute names an
+exact metadata type in that assembly, using `/` for nested types. An optional `method`
+or `field` attribute selects a member by name; at most one may be specified. A method
+name matches all overloads, and retention of any matching overload activates the block.
+Without a member selector, retention of the type itself activates it, including
+retention through signatures and fields without a call to a constructor.
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <conditional type="Assembly.Trigger">
+      <type fullname="Assembly.Helpers" preserve="nothing">
+        <method name="Callback" />
+      </type>
+    </conditional>
+    <conditional type="Assembly.Trigger" field="State">
+      <type fullname="Assembly.OtherHelper" preserve="nothing" />
+    </conditional>
+  </assembly>
+</linker>
+```
+
+The block contains ordinary type descriptors. None of their roots or preservation
+policies apply until the trigger is marked. Blocks do not root their triggers, so
+unreachable cycles remain removable. Alternative blocks combine with OR semantics,
+and activated dependencies can trigger further blocks. Ordinary unconditional
+descriptors take precedence by independently rooting their targets.
+
+Feature conditions may be placed on the enclosing assembly, on the block, or on its
+type/member children, and must all be satisfied. Missing trigger types or members
+produce the same diagnostics as unresolved ordinary descriptor entries. This extension
+is specific to ILLink; it is not supported by NativeAOT descriptors.
+
 ### Preserve all methods or all fields on a type
 
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    
+
     <!-- Preserve all fields on a type -->
     <type fullname="Assembly.A" preserve="fields" />
-    
+
     <!-- Preserve all methods on a type -->
-    <type fullname="Assembly.B" preserve="methods" /> 
+    <type fullname="Assembly.B" preserve="methods" />
   </assembly>
 </linker>
 ```
@@ -105,12 +140,12 @@ The `required` attribute specifies that if the type is not marked, during the ma
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    
+
     <!-- Preserves all types who's fully qualified type name matches the regular expression -->
     <type fullname="Assembly.Namespace*" />
-    
+
     <!-- Preserve all types within the specified namespace -->
-    <namespace fullname="Assembly.Namespace" /> 
+    <namespace fullname="Assembly.Namespace" />
   </assembly>
 </linker>
 ```
@@ -122,7 +157,7 @@ The `required` attribute specifies that if the type is not marked, during the ma
   <assembly fullname="Assembly">
     <type fullname="Assembly.A">
       <field signature="System.Int32 field1" />
-      
+
       <!-- Field by name rather than signature -->
       <field name="field2" />
 
@@ -161,17 +196,17 @@ The `required` attribute specifies that if the type is not marked, during the ma
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <type fullname="Assembly.A">      
-      <!-- Preserve the property, its backing field (if present), getter, and setter methods -->    
+    <type fullname="Assembly.A">
+      <!-- Preserve the property, its backing field (if present), getter, and setter methods -->
       <property signature="System.Int32 Property1" />
 
       <property signature="System.Int32 Property2" accessors="all" />
-     
+
       <!-- Preserve the property, its backing field (if present), and getter method -->
       <property signature="System.Int32 Property3" accessors="get" />
-      
+
       <!--Preserve a property, it's backing field (if present), and setter method -->
-      <property signature="System.Int32 Property4" accessors="set" /> 
+      <property signature="System.Int32 Property4" accessors="set" />
 
       <!-- Preserve a property by name rather than signature -->
       <property name="Property5" />

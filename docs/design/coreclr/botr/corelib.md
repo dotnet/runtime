@@ -66,12 +66,49 @@ through `UnmanagedType.AsAny`; the declaration expresses the native reachability
 regardless of whether it saves space. `CriticalHandle` and `SafeHandle` are also conditional.
 Their marshalling classification checks use a non-loading lookup: a loaded subtype has
 already loaded its base, so unrelated signatures need not load either base type. Actual
-handle marshalling still uses the strict binder field/class lookups. Mandatory
-`StubHelpers` and `HandleMarshaler` method signatures independently retain `SafeHandle`;
-its conditional declaration expresses intent rather than guaranteeing a size reduction.
+handle marshalling still uses the strict binder field/class lookups. The
+`StubHelpers` and `HandleMarshaler` SafeHandle helper roots are conditional on
+`SafeHandle` retention, rather than independently retaining it through their signatures.
+The CriticalHandle field-change helper is similarly conditional on `CriticalHandle`.
 The compiler's interop classification also allows either handle base type to be absent,
 including during ReadyToRun blittability checks after trimming. Compiler lookups for
 actual handle marshalling remain strict.
+
+These helper edges do not guarantee removal of `SafeHandle`. On Windows, mandatory
+assembly-load-context satellite probing reaches `FileSystem.FileExists` and file handles,
+independently retaining it even for an otherwise empty application.
+
+Cross-type dependencies use `DEFINE_CLASS_CONDITIONAL`, `DEFINE_METHOD_CONDITIONAL`,
+and `DEFINE_FIELD_CONDITIONAL`. Their last two arguments are a trigger kind (`CLASS`,
+`METHOD`, or `FIELD`) and the corresponding binder ID without its kind prefix.
+For example:
+
+```cpp
+DEFINE_METHOD_CONDITIONAL(STUBHELPERS, SAFE_HANDLE_RELEASE, SafeHandleRelease, SM_SafeHandle_RetVoid, CLASS, SAFE_HANDLE)
+```
+
+Method and field triggers use `classId__memberId`. Declarations may refer to later
+triggers. Native consumers still see exactly one ordinary declaration, in the same
+position; there are no new binder lookup failure modes or release-time dependency
+tables. Additional aliases can supply alternative triggers without duplicating an ID.
+
+The generator emits ILLink `conditional` blocks inside the existing feature-switch
+assembly groups. A trigger's actual marking activates the enclosed roots, including
+when a type is retained only by a field or method signature. Merely declaring an edge
+does not mark either endpoint. Multiple edges are alternatives, cascades reach a fixed
+point, and cycles with no independently reachable entry stay dead. Unconditional roots
+remain authoritative regardless of conditional aliases or disabled features.
+Class dependencies root the type; its ordinary optional member and layout obligations
+still apply whenever that type survives, even through another path. A conditional member
+roots its declaring type as well as that member. Method triggers and targets match by
+name, including all overloads, just like ordinary binder descriptor declarations.
+
+Debug checks inspect trigger metadata without loading it. Missing active targets are
+still errors; an inactive conditional member can be absent even when its declaring type
+survives. A conditional class with a native layout alias must use `DEFINE_CLASS_U_OPTIONAL`
+unless an independent mandatory layout obligation is intended. This is CoreCLR's ILLink
+descriptor mechanism, not a NativeAOT native dependency graph; NativeAOT builds its own
+CoreLib and does not generate roots from `corelib.h`.
 
 `DynamicMethod`, `DynamicResolver`, and `Resolver` are conditional together. The reflection
 caller stack walker checks `DynamicMethod` without loading it for unrelated frames.

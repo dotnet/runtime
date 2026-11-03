@@ -43,6 +43,19 @@
 #define DEFINE_FIELD(classId, id, stringName)
 #endif
 
+// Conditional roots use a CLASS, METHOD, or FIELD binder ID as a reachability trigger.
+#ifndef DEFINE_CLASS_CONDITIONAL
+#define DEFINE_CLASS_CONDITIONAL(id, nameSpace, stringName, triggerKind, triggerId) DEFINE_CLASS(id, nameSpace, stringName)
+#endif
+
+#ifndef DEFINE_METHOD_CONDITIONAL
+#define DEFINE_METHOD_CONDITIONAL(classId, id, stringName, gSign, triggerKind, triggerId) DEFINE_METHOD(classId, id, stringName, gSign)
+#endif
+
+#ifndef DEFINE_FIELD_CONDITIONAL
+#define DEFINE_FIELD_CONDITIONAL(classId, id, stringName, triggerKind, triggerId) DEFINE_FIELD(classId, id, stringName)
+#endif
+
 #ifndef DEFINE_PROPERTY
 #define DEFINE_PROPERTY(classId, id, stringName, gSign) DEFINE_METHOD(classId, GET_ ## id, get_ ## stringName, IM_Ret ## gSign)
 #endif
@@ -80,7 +93,7 @@
 
 //
 // BEGIN_ILLINK_FEATURE_SWITCH and END_ILLINK_FEATURE_SWITCH allow IL linker to guard types behind a feature switch.
-// Current support is only around class scope and not for standalone members of classes.
+// Ordinary declarations group at class scope; conditional member roots may also be grouped independently.
 // See usage in this file itself and on the link (the assembly name for feature switch in this file will be System.Private.CoreLib),
 // https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md#generate-the-right-input-for-the-linker-in-sdk
 //
@@ -1046,7 +1059,7 @@ DEFINE_METHOD(STUBHELPERS,          CLEAR_LAST_ERROR,       ClearLastError,     
 
 DEFINE_METHOD(STUBHELPERS,          THROW_INTEROP_PARAM_EXCEPTION, ThrowInteropParamException,   SM_Int_Int_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          THROW_INTEROP_EXCEPTION,    ThrowInteropException,        SM_Int_Int_RetVoid)
-DEFINE_METHOD(STUBHELPERS,          ADD_TO_CLEANUP_LIST_SAFEHANDLE,    AddToCleanupList,           SM_RefCleanupWorkListElement_SafeHandle_RetIntPtr)
+DEFINE_METHOD_CONDITIONAL(STUBHELPERS, ADD_TO_CLEANUP_LIST_SAFEHANDLE, AddToCleanupList, SM_RefCleanupWorkListElement_SafeHandle_RetIntPtr, CLASS, SAFE_HANDLE)
 DEFINE_METHOD(STUBHELPERS,          DESTROY_CLEANUP_LIST,   DestroyCleanupList,         SM_RefCleanupWorkListElement_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_HR_EXCEPTION_OBJECT, GetHRExceptionObject,      SM_Int_RetException)
 DEFINE_METHOD(STUBHELPERS,          GET_PENDING_EXCEPTION_OBJECT, GetPendingExceptionObject,      SM_RetException)
@@ -1102,8 +1115,8 @@ DEFINE_METHOD(STUBHELPERS,          VALIDATE_OBJECT,                    Validate
 DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     ValidateByref,                  SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinnedArgument,              SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          NEXT_CALL_RETURN_ADDRESS,           NextCallReturnAddress,          SM_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_ADD_REF,    SafeHandleAddRef,           SM_SafeHandle_RefBool_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,          SM_SafeHandle_RetVoid)
+DEFINE_METHOD_CONDITIONAL(STUBHELPERS, SAFE_HANDLE_ADD_REF, SafeHandleAddRef, SM_SafeHandle_RefBool_RetIntPtr, CLASS, SAFE_HANDLE)
+DEFINE_METHOD_CONDITIONAL(STUBHELPERS, SAFE_HANDLE_RELEASE, SafeHandleRelease, SM_SafeHandle_RetVoid, CLASS, SAFE_HANDLE)
 
 #ifdef PROFILING_SUPPORTED
 DEFINE_METHOD(STUBHELPERS,          PROFILER_BEGIN_TRANSITION_CALLBACK, ProfilerBeginTransitionCallback, SM_PtrVoid_RetPtrVoid)
@@ -1203,10 +1216,10 @@ DEFINE_METHOD(ASANY_MARSHALER,           CONVERT_TO_NATIVE,           ConvertToN
 DEFINE_METHOD(ASANY_MARSHALER,           CONVERT_TO_MANAGED,          ConvertToManaged,           IM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(ASANY_MARSHALER,           CLEAR_NATIVE,                ClearNative,                IM_IntPtr_RetVoid)
 
-DEFINE_CLASS(HANDLE_MARSHALER,           StubHelpers,                 HandleMarshaler)
-DEFINE_METHOD(HANDLE_MARSHALER,          CONVERT_SAFEHANDLE_TO_NATIVE,ConvertSafeHandleToNative,  SM_SafeHandle_RefCleanupWorkListElement_RetIntPtr)
-DEFINE_METHOD(HANDLE_MARSHALER,          THROW_SAFEHANDLE_FIELD_CHANGED, ThrowSafeHandleFieldChanged, SM_RetVoid)
-DEFINE_METHOD(HANDLE_MARSHALER,          THROW_CRITICALHANDLE_FIELD_CHANGED, ThrowCriticalHandleFieldChanged, SM_RetVoid)
+DEFINE_CLASS_CONDITIONAL(HANDLE_MARSHALER, StubHelpers, HandleMarshaler, CLASS, SAFE_HANDLE)
+DEFINE_METHOD_CONDITIONAL(HANDLE_MARSHALER, CONVERT_SAFEHANDLE_TO_NATIVE, ConvertSafeHandleToNative, SM_SafeHandle_RefCleanupWorkListElement_RetIntPtr, CLASS, SAFE_HANDLE)
+DEFINE_METHOD_CONDITIONAL(HANDLE_MARSHALER, THROW_SAFEHANDLE_FIELD_CHANGED, ThrowSafeHandleFieldChanged, SM_RetVoid, CLASS, SAFE_HANDLE)
+DEFINE_METHOD_CONDITIONAL(HANDLE_MARSHALER, THROW_CRITICALHANDLE_FIELD_CHANGED, ThrowCriticalHandleFieldChanged, SM_RetVoid, CLASS, CRITICAL_HANDLE)
 
 DEFINE_CLASS(STRUCTURE_MARSHALER,  StubHelpers,               StructureMarshaler`1)
 DEFINE_CLASS(BLITTABLE_ARRAY_MARSHALER, StubHelpers,          BlittableArrayMarshaler`1)
@@ -1420,8 +1433,11 @@ DEFINE_FIELD_U(_generationInfo, GCMemoryInfoData, generationInfo)
 
 #undef DEFINE_CLASS
 #undef DEFINE_CLASS_OPTIONAL
+#undef DEFINE_CLASS_CONDITIONAL
 #undef DEFINE_METHOD
+#undef DEFINE_METHOD_CONDITIONAL
 #undef DEFINE_FIELD
+#undef DEFINE_FIELD_CONDITIONAL
 #undef DEFINE_CLASS_U
 #undef DEFINE_CLASS_U_OPTIONAL
 #undef DEFINE_FIELD_U

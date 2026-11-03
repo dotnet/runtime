@@ -564,27 +564,10 @@ namespace
             Configuration::GetKnobBooleanValue(featureSwitch, defaultValue) != enabledValue;
     }
 
-    bool IsOptionalTypeAbsent(LPCSTR nameSpace, LPCSTR className)
+    mdTypeDef FindTypeDefinition(LPCSTR nameSpace, LPCSTR className)
     {
         STANDARD_VM_CONTRACT;
 
-        bool disabled = false;
-        bool optional = false;
-        bool required = false;
-        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) disabled = FeatureSwitchDisabled(W(#s), e, d);
-        #define END_ILLINK_FEATURE_SWITCH() disabled = false;
-        #define MATCHES_TYPE(ns, n) (!disabled && strcmp(nameSpace, g_ ## ns ## NS) == 0 && strcmp(className, #n) == 0)
-        #define DEFINE_CLASS(i, ns, n) if (MATCHES_TYPE(ns, n)) required = true;
-        #define DEFINE_CLASS_U(ns, n, u) if (MATCHES_TYPE(ns, n)) required = true;
-        #define DEFINE_CLASS_OPTIONAL(i, ns, n) if (MATCHES_TYPE(ns, n)) optional = true;
-        #define DEFINE_CLASS_U_OPTIONAL(ns, n, u) if (MATCHES_TYPE(ns, n)) optional = true;
-        #include "corelib.h"
-        #undef MATCHES_TYPE
-
-        if (!optional || required)
-            return false;
-
-        // A cache miss only means "not loaded"; trimming must be checked against metadata.
         IMDInternalImport* import = CoreLibBinder::GetModule()->GetMDImport();
         mdTypeDef token;
         LPCSTR nested = strchr(className, '+');
@@ -602,10 +585,90 @@ namespace
         }
 
         if (hr == CLDB_E_RECORD_NOTFOUND)
-            return true;
+            return mdTypeDefNil;
 
         IfFailThrow(hr);
+        return token;
+    }
+
+    bool IsDependencyTriggerPresent(BinderClassID classId)
+    {
+        STANDARD_VM_CONTRACT;
+
+        return FindTypeDefinition(CoreLibBinder::GetClassNameSpace(classId), CoreLibBinder::GetClassName(classId)) != mdTypeDefNil;
+    }
+
+    bool IsMetadataMemberPresent(BinderClassID classId, LPCSTR memberName, CorTokenType kind)
+    {
+        STANDARD_VM_CONTRACT;
+
+        mdTypeDef type = FindTypeDefinition(CoreLibBinder::GetClassNameSpace(classId), CoreLibBinder::GetClassName(classId));
+        if (type == mdTypeDefNil)
+            return false;
+
+        IMDInternalImport* import = CoreLibBinder::GetModule()->GetMDImport();
+        HENUMInternalHolder members(import);
+        members.EnumInit(kind, type);
+        mdToken token;
+        while (import->EnumNext(&members, &token))
+        {
+            LPCSTR name;
+            if (kind == mdtMethodDef)
+                IfFailThrow(import->GetNameOfMethodDef(token, &name));
+            else
+                IfFailThrow(import->GetNameOfFieldDef(token, &name));
+            if (strcmp(memberName, name) == 0)
+                return true;
+        }
         return false;
+    }
+
+    bool IsDependencyTriggerPresent(BinderMethodID methodId)
+    {
+        STANDARD_VM_CONTRACT;
+
+        #define DEFINE_METHOD(c, i, s, g) if (methodId == METHOD__ ## c ## __ ## i) \
+            return IsMetadataMemberPresent(CLASS__ ## c, #s, mdtMethodDef);
+        #include "corelib.h"
+        _ASSERTE(!"Unknown method dependency trigger");
+        return false;
+    }
+
+    bool IsDependencyTriggerPresent(BinderFieldID fieldId)
+    {
+        STANDARD_VM_CONTRACT;
+
+        #define DEFINE_FIELD(c, i, s) if (fieldId == FIELD__ ## c ## __ ## i) \
+            return IsMetadataMemberPresent(CLASS__ ## c, #s, mdtFieldDef);
+        #include "corelib.h"
+        _ASSERTE(!"Unknown field dependency trigger");
+        return false;
+    }
+
+    bool IsOptionalTypeAbsent(LPCSTR nameSpace, LPCSTR className)
+    {
+        STANDARD_VM_CONTRACT;
+
+        bool disabled = false;
+        bool optional = false;
+        bool required = false;
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) disabled = FeatureSwitchDisabled(W(#s), e, d);
+        #define END_ILLINK_FEATURE_SWITCH() disabled = false;
+        #define MATCHES_TYPE(ns, n) (!disabled && strcmp(nameSpace, g_ ## ns ## NS) == 0 && strcmp(className, #n) == 0)
+        #define MATCHES_CLASS(c) (!disabled && strcmp(nameSpace, CoreLibBinder::GetClassNameSpace(CLASS__ ## c)) == 0 && strcmp(className, CoreLibBinder::GetClassName(CLASS__ ## c)) == 0)
+        #define DEFINE_CLASS(i, ns, n) if (MATCHES_TYPE(ns, n)) required = true;
+        #define DEFINE_CLASS_U(ns, n, u) if (MATCHES_TYPE(ns, n)) required = true;
+        #define DEFINE_CLASS_OPTIONAL(i, ns, n) if (MATCHES_TYPE(ns, n)) optional = true;
+        #define DEFINE_CLASS_U_OPTIONAL(ns, n, u) if (MATCHES_TYPE(ns, n)) optional = true;
+        #define DEFINE_CLASS_CONDITIONAL(i, ns, n, k, t) if (MATCHES_TYPE(ns, n)) { optional = true; required |= IsDependencyTriggerPresent(k ## __ ## t); }
+        #define DEFINE_METHOD_CONDITIONAL(c, i, s, g, k, t) if (MATCHES_CLASS(c)) required |= IsDependencyTriggerPresent(k ## __ ## t);
+        #define DEFINE_FIELD_CONDITIONAL(c, i, s, k, t) if (MATCHES_CLASS(c)) required |= IsDependencyTriggerPresent(k ## __ ## t);
+        #include "corelib.h"
+        #undef MATCHES_CLASS
+        #undef MATCHES_TYPE
+
+        // A cache miss only means "not loaded"; trimming must be checked against metadata.
+        return optional && !required && FindTypeDefinition(nameSpace, className) == mdTypeDefNil;
     }
 
     bool IsTrimmed(LPCSTR nameSpace, LPCSTR className)
@@ -1009,11 +1072,15 @@ namespace
 {
     bool IsTrimmed(BinderClassID classId)
     {
+        STANDARD_VM_CONTRACT;
+
         LPCWSTR featureSwitch = nullptr;
         bool enabledValue = true;
         bool defaultValue = true;
         #define DEFINE_CLASS(i,n,s) if (classId == CLASS__ ## i) \
             return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
+        #define DEFINE_CLASS_CONDITIONAL(i,n,s,k,t) if (classId == CLASS__ ## i) \
+            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue) || !IsDependencyTriggerPresent(k ## __ ## t);
         #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;
         #define END_ILLINK_FEATURE_SWITCH() featureSwitch = nullptr;
         #include "corelib.h"
@@ -1023,11 +1090,15 @@ namespace
 
     bool IsTrimmed(BinderMethodID methodId)
     {
+        STANDARD_VM_CONTRACT;
+
         LPCWSTR featureSwitch = nullptr;
         bool enabledValue = true;
         bool defaultValue = true;
         #define DEFINE_METHOD(c,i,s,g) if (methodId == METHOD__ ## c ## __ ## i) \
             return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
+        #define DEFINE_METHOD_CONDITIONAL(c,i,s,g,k,t) if (methodId == METHOD__ ## c ## __ ## i) \
+            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue) || !IsDependencyTriggerPresent(k ## __ ## t);
         #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;
         #define END_ILLINK_FEATURE_SWITCH() featureSwitch = nullptr;
         #include "corelib.h"
@@ -1037,11 +1108,15 @@ namespace
 
     extern bool IsTrimmed(BinderFieldID fieldId)
     {
+        STANDARD_VM_CONTRACT;
+
         LPCWSTR featureSwitch = nullptr;
         bool enabledValue = true;
         bool defaultValue = true;
         #define DEFINE_FIELD(c,i,s) if (fieldId == FIELD__ ## c ## __ ## i) \
             return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
+        #define DEFINE_FIELD_CONDITIONAL(c,i,s,k,t) if (fieldId == FIELD__ ## c ## __ ## i) \
+            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue) || !IsDependencyTriggerPresent(k ## __ ## t);
         #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;
         #define END_ILLINK_FEATURE_SWITCH() featureSwitch = nullptr;
         #include "corelib.h"
