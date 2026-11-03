@@ -2429,6 +2429,14 @@ namespace System.Threading.Tasks
         /// </summary>
         internal virtual void ExecuteDirectly(Thread? threadPoolThread) => ExecuteEntryUnsafe(threadPoolThread);
 
+#if !MONO
+        /// <summary>
+        /// Resumes a runtime async task that registered itself directly as a continuation on a Task it awaited.
+        /// Only invoked on tasks with <see cref="InternalTaskOptions.RuntimeAsyncTask"/> set.
+        /// </summary>
+        internal virtual void ExecuteRuntimeAsyncAwaitContinuation(bool canInline) => Debug.Fail("Only expected to be called on runtime async tasks.");
+#endif
+
         internal void ExecuteEntryUnsafe(Thread? threadPoolThread) // used instead of ExecuteEntry() when we don't have to worry about double-execution prevent
         {
             // Remember that we started running the task delegate.
@@ -3493,13 +3501,12 @@ namespace System.Threading.Tasks
             switch (continuationObject)
             {
 #if !MONO
-                // Runtime async continuation is very cheap to check for since
-                // it is sealed. Its semantics cannot be described by
-                // ITaskCompletionAction because it should be inlined when
-                // there is only one, but run in parallel when there are
-                // multiple.
-                case RuntimeAsyncTaskContinuation tc:
-                    tc.Execute(canInline: canInlineContinuations);
+                // Runtime async tasks register themselves directly as the continuation of a
+                // Task they await. This is cheap to check for. Its semantics cannot be described
+                // by ITaskCompletionAction because it should be inlined when there is only one,
+                // but run in parallel when there are multiple.
+                case Task t when (t.m_stateFlags & (int)InternalTaskOptions.RuntimeAsyncTask) != 0:
+                    t.ExecuteRuntimeAsyncAwaitContinuation(canInline: canInlineContinuations);
                     LogFinishCompletionNotification();
                     return;
 #endif
@@ -3585,8 +3592,8 @@ namespace System.Threading.Tasks
                             switch (currentContinuation)
                             {
 #if !MONO
-                                case RuntimeAsyncTaskContinuation tc:
-                                    tc.Execute(canInline: false);
+                                case Task t when (t.m_stateFlags & (int)InternalTaskOptions.RuntimeAsyncTask) != 0:
+                                    t.ExecuteRuntimeAsyncAwaitContinuation(canInline: false);
                                     break;
 #endif
 
@@ -3624,8 +3631,8 @@ namespace System.Threading.Tasks
                 switch (currentContinuation)
                 {
 #if !MONO
-                    case RuntimeAsyncTaskContinuation tc:
-                        tc.Execute(canInlineContinuations);
+                    case Task t when (t.m_stateFlags & (int)InternalTaskOptions.RuntimeAsyncTask) != 0:
+                        t.ExecuteRuntimeAsyncAwaitContinuation(canInlineContinuations);
                         break;
 #endif
 
@@ -7089,7 +7096,13 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Denotes that Dispose should be a complete nop for a Task.  Used when constructing tasks that are meant to be cached/reused.
         /// </summary>
-        DoNotDispose = 0x4000
+        DoNotDispose = 0x4000,
+
+        /// <summary>
+        /// Denotes that the Task is a runtime async task, which may be registered directly as a continuation
+        /// on a Task it is awaiting.
+        /// </summary>
+        RuntimeAsyncTask = 0x8000,
     }
 
     /// <summary>
