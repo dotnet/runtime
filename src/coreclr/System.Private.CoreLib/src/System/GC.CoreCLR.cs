@@ -147,19 +147,19 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe ulong GetGenerationSize(int gen);
 
-        /// <safety>FCall that returns a scalar heap-size estimate without accessing caller-supplied memory.</safety>
+        /// <safety>Returns a scalar heap-size estimate without accessing caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern safe long GetCurrentObjSize();
 
-        /// <safety>FCall that returns a scalar GC clock value without accessing caller-supplied memory.</safety>
+        /// <safety>Returns a scalar GC clock value without accessing caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern safe long GetGCNow();
 
-        /// <safety>FCall that returns the gen2 GC start time without accessing caller-supplied memory.</safety>
+        /// <safety>Returns the gen2 GC start time without accessing caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern safe long GetLastGCStartTime();
 
-        /// <safety>FCall that returns the gen2 GC duration without accessing caller-supplied memory.</safety>
+        /// <safety>Returns the gen2 GC duration without accessing caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern safe long GetLastGCDuration();
 
