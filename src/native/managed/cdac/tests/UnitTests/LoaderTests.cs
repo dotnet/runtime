@@ -859,6 +859,95 @@ public unsafe class LoaderTests
         Assert.Equal((TargetPointer)(imageBase + 0x2700u), contract.GetILAddr(peAssemblyAddr, 0x4500));
     }
 
+    public static IEnumerable<object[]> GetModuleHandles_ProfilerNotifiedData()
+    {
+        const AssemblyIterationFlags Loaded = AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution;
+        const AssemblyIterationFlags AvailableToProfilers = AssemblyIterationFlags.IncludeAvailableToProfilers | AssemblyIterationFlags.IncludeExecution;
+        foreach (object[] archData in new MockTarget.StdArch())
+        {
+            var arch = (MockTarget.Architecture)archData[0];
+            // Profiler notified, still loading: not a loaded assembly
+            yield return [arch, true, false, Loaded, false];
+            // Profiler notified, still loading: available to profilers
+            yield return [arch, true, false, AvailableToProfilers, true];
+            // Profiler notified, loaded: a loaded assembly
+            yield return [arch, true, true, Loaded, true];
+            // Profiler notified, loaded: available to profilers
+            yield return [arch, true, true, AvailableToProfilers, true];
+            // Not notified, still loading: not available to profilers
+            yield return [arch, false, false, AvailableToProfilers, false];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetModuleHandles_ProfilerNotifiedData))]
+    public void GetModuleHandles_ProfilerNotified(
+        MockTarget.Architecture arch,
+        bool profilerNotified,
+        bool isLoaded,
+        AssemblyIterationFlags iterationFlags,
+        bool expected)
+    {
+        const uint ProfilerNotified = 0x1; // ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED
+        TargetPointer appDomain = default;
+        TargetPointer moduleAddress = default;
+
+        (ILoader contract, _) = CreateLoaderContractWithTarget(arch, (loader, targetBuilder) =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            MockLoaderAssembly assembly = loader.GetAssembly(module);
+            assembly.NotifyFlags = profilerNotified ? ProfilerNotified : 0;
+            assembly.IsLoaded = isLoaded;
+            moduleAddress = module.Address;
+            appDomain = loader.AddAppDomain(module);
+            targetBuilder.AddTypes(CreateAppDomainTypes(loader));
+        });
+
+        List<TargetPointer> modules = [];
+        foreach (Contracts.ModuleHandle handle in contract.GetModuleHandles(appDomain, iterationFlags))
+        {
+            modules.Add(handle.Address);
+        }
+
+        TargetPointer[] expectedModules = expected ? [moduleAddress] : [];
+        Assert.Equal(expectedModules, modules);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetModuleHandles_SkipsEmptySlots(MockTarget.Architecture arch)
+    {
+        TargetPointer appDomain = default;
+        TargetPointer[] expectedModules = [];
+
+        (ILoader contract, _) = CreateLoaderContractWithTarget(arch, (loader, targetBuilder) =>
+        {
+            MockLoaderModule first = loader.AddModule();
+            MockLoaderModule second = loader.AddModule();
+            loader.GetAssembly(first).IsLoaded = true;
+            loader.GetAssembly(second).IsLoaded = true;
+            expectedModules = [first.Address, second.Address];
+            appDomain = loader.AddAppDomain(null, first, null, second, null);
+            targetBuilder.AddTypes(CreateAppDomainTypes(loader));
+        });
+
+        List<TargetPointer> modules = [];
+        foreach (Contracts.ModuleHandle handle in contract.GetModuleHandles(appDomain, AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+        {
+            modules.Add(handle.Address);
+        }
+
+        Assert.Equal(expectedModules, modules);
+    }
+
+    private static Dictionary<DataType, Target.TypeInfo> CreateAppDomainTypes(MockLoaderBuilder loader)
+        => new()
+        {
+            [DataType.AppDomain] = TargetTestHelpers.CreateTypeInfo(loader.AppDomainLayout),
+            [DataType.ArrayListBase] = TargetTestHelpers.CreateTypeInfo(loader.ArrayListBaseLayout),
+            [DataType.ArrayListBlock] = TargetTestHelpers.CreateTypeInfo(loader.ArrayListBlockLayout),
+        };
+
     public static IEnumerable<object[]> IsModuleMappedData()
     {
         foreach (object[] archData in new MockTarget.StdArch())

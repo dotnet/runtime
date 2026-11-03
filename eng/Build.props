@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
-    <GenerateRestoreUseStaticGraphEvaluationBinlog>true</GenerateRestoreUseStaticGraphEvaluationBinlog>
   </PropertyGroup>
   <ItemGroup>
     <ProjectToBuild Include="$(RepoRoot)Build.proj" />

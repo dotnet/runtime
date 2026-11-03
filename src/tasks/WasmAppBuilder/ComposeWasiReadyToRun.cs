@@ -40,6 +40,9 @@ public sealed class ComposeWasiReadyToRun : Task
     public int FunctionCount { get; private set; }
 
     [Output]
+    public int TableSlotCount { get; private set; }
+
+    [Output]
     public int PayloadSize { get; private set; }
 
     [Output]
@@ -49,8 +52,13 @@ public sealed class ComposeWasiReadyToRun : Task
     {
         try
         {
-            WasiR2RComposition.InspectComposite(CompositePath, out int functionCount, out int payloadSize);
+            WasiR2RComposition.InspectComposite(
+                CompositePath,
+                out int functionCount,
+                out int tableSlotCount,
+                out int payloadSize);
             FunctionCount = functionCount;
+            TableSlotCount = tableSlotCount;
             PayloadSize = payloadSize;
 
             if (InspectOnly)
@@ -75,7 +83,7 @@ public sealed class ComposeWasiReadyToRun : Task
                 out int reservedTableStart,
                 out int compositeNameBase,
                 out int compositeNameCapacity);
-            int compositeTableEnd = checked(tableBase + FunctionCount);
+            int compositeTableEnd = checked(tableBase + TableSlotCount);
             if (compositeTableEnd > reservedTableStart)
                 throw new LogAsErrorException(
                     $"The composite needs table slots {tableBase}..{compositeTableEnd - 1}, " +
@@ -97,7 +105,8 @@ public sealed class ComposeWasiReadyToRun : Task
 
             Log.LogMessage(MessageImportance.High,
                 $"WASI R2R composition: imageBase={imageBase} tableBase={tableBase} " +
-                $"reservedSlots={reservedTableStart} compositeFuncs={FunctionCount} payload={PayloadSize} cap={imageCapacity} " +
+                $"reservedSlots={reservedTableStart} compositeFuncs={FunctionCount} compositeTableSlots={TableSlotCount} " +
+                $"payload={PayloadSize} cap={imageCapacity} " +
                 $"composite='{compositeName}'");
 
             string shimWatPath = Path.Combine(OutputDirectory!, "shim.wat");

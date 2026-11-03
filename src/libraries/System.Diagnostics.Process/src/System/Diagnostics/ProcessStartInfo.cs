@@ -258,7 +258,8 @@ namespace System.Diagnostics
         /// Only <see cref="SafeFileHandle"/> and <see cref="SafePipeHandle"/> are supported in this list.
         /// </para>
         /// <para>
-        /// Setting this property on Unix systems that do not have native support for controlling handle inheritance can severely degrade process start performance.
+        /// Setting this property on Unix systems that do not have native support for controlling handle inheritance
+        /// causes <see cref="Process.Start(ProcessStartInfo)"/> to throw <see cref="PlatformNotSupportedException"/>.
         /// </para>
         /// <para>
         /// Handles in this list should not have inheritance enabled beforehand.

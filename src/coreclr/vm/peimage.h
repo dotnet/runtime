@@ -1,11 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// --------------------------------------------------------------------------------
-// PEImage.h
-//
-
-// --------------------------------------------------------------------------------
-
 
 #ifndef PEIMAGE_H_
 #define PEIMAGE_H_
@@ -146,7 +140,8 @@ public:
     BOOL IsCompressed(INT64* uncompressedSize = NULL) const;
 
 #ifndef DACCESS_COMPILE
-    HANDLE GetFileHandle();
+    VMToOSInterface::MemoryMapHandle GetFileHandle();
+    // Callers already holding m_pLayoutLock pass false; external callers use the locking default.
     HRESULT TryOpenFile(bool takeLock = false);
 #endif
 
@@ -167,7 +162,6 @@ public:
     void GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
 
     BOOL IsILOnly();
-    BOOL IsReferenceAssembly();
     BOOL IsComponentAssembly();
 
     PTR_CVOID GetNativeManifestMetadata(COUNT_T* pSize = NULL);
@@ -298,8 +292,8 @@ private:
     // If m_probeExtensionResult is valid, it takes precedence over m_path for loading.
     ProbeExtensionResult m_probeExtensionResult;
 
-    // valid handle if we tried to open the file/path and succeeded.
-    HANDLE m_hFile;
+    // Valid file descriptor or handle if opening the file/path succeeded.
+    VMToOSInterface::MemoryMapHandle m_hFile;
 
     DWORD m_dwPEKind;
     DWORD m_dwMachine;

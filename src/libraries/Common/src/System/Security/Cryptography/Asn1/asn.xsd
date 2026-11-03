@@ -91,12 +91,11 @@
   <xs:complexType name="IntegerType">
     <xs:complexContent>
       <xs:extension base="FieldBase">
-        <xs:attribute name="backingType" default="BigInteger">
+        <xs:attribute name="backingType" use="required">
           <xs:simpleType>
             <xs:restriction base="xs:string">
               <xs:enumeration value="byte" />
               <xs:enumeration value="int" />
-              <xs:enumeration value="BigInteger" />
               <xs:enumeration value="ReadOnlyMemory" />
             </xs:restriction>
           </xs:simpleType>
@@ -106,11 +105,10 @@
   </xs:complexType>
 
   <xs:complexType name="IntegerCollectionType">
-    <xs:attribute name="backingType" default="BigInteger">
+    <xs:attribute name="backingType" use="required">
       <xs:simpleType>
         <xs:restriction base="xs:string">
           <xs:enumeration value="int" />
-          <xs:enumeration value="BigInteger" />
           <xs:enumeration value="ReadOnlyMemory" />
         </xs:restriction>
       </xs:simpleType>

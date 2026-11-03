@@ -5,9 +5,6 @@
  * Generational GC handle manager.  Core Table Implementation.
  *
  * Implementation of core table management routines.
- *
-
- *
  */
 
 #include "common.h"
@@ -527,29 +524,6 @@ TableSegment *SegmentAlloc(HandleTable *pTable)
 
     // all done
     return pSegment;
-}
-
-/*
- * Check if a handle is part of a HandleTable
- */
-BOOL TableContainHandle(HandleTable *pTable, OBJECTHANDLE handle)
-{
-    _ASSERTE (handle);
-
-    // get the segment for this handle
-    TableSegment *pSegment = (TableSegment *)HandleFetchSegmentPointer(handle);
-
-    CrstHolder ch(&pTable->Lock);
-    TableSegment *pWorkerSegment = pTable->pSegmentList;
-    while (pWorkerSegment)
-    {
-        if (pWorkerSegment == pSegment)
-        {
-            return TRUE;
-        }
-        pWorkerSegment = pWorkerSegment->pNextSegment;
-    }
-    return FALSE;
 }
 
 /*

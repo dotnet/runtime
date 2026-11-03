@@ -21,7 +21,8 @@ public static class CoreCLRContracts
         registry.Register<IEcmaMetadata>("c1", static t => new EcmaMetadata_1(t));
         registry.Register<IDacStreams>("c1", static t => new DacStreams_1(t));
         registry.Register<ICodeVersions>("c1", static t => new CodeVersions_1(t));
-        registry.Register<IStackWalk>("c1", static t => new StackWalk_1(t));
+        registry.Register<IStackWalk>("c1", static t => new StackWalk_1(t, 1));
+        registry.Register<IStackWalk>("c2", static t => new StackWalk_1(t));
         registry.Register<IRuntimeInfo>("c1", static t => new RuntimeInfo_1(t));
         registry.Register<IComWrappers>("c1", static t => new ComWrappers_1(t));
         registry.Register<ISHash>("c1", static t => new SHash_1(t));
@@ -52,7 +53,6 @@ public static class CoreCLRContracts
         registry.Register<IFeatureFlags>("c1", static t => new FeatureFlags_1(t));
 
         registry.Register<IPrecodeStubs>("c1", static t => new PrecodeStubs_1(t));
-        registry.Register<IPrecodeStubs>("c2", static t => new PrecodeStubs_2(t));
 
         registry.Register<IReJIT>("c1", static t => new ReJIT_1(t));
 
@@ -63,13 +63,13 @@ public static class CoreCLRContracts
             RuntimeInfoArchitecture arch = t.Contracts.RuntimeInfo.GetTargetArchitecture();
             return arch switch
             {
-                RuntimeInfoArchitecture.X64 => new GCInfo_1<AMD64GCInfoTraits>(t),
-                RuntimeInfoArchitecture.X86 => new GCInfoX86_1(t),
-                RuntimeInfoArchitecture.Arm64 => new GCInfo_1<ARM64GCInfoTraits>(t),
-                RuntimeInfoArchitecture.Arm => new GCInfo_1<ARMGCInfoTraits>(t),
-                RuntimeInfoArchitecture.LoongArch64 => new GCInfo_1<LoongArch64GCInfoTraits>(t),
-                RuntimeInfoArchitecture.RiscV64 => new GCInfo_1<RISCV64GCInfoTraits>(t),
-                RuntimeInfoArchitecture.Wasm => new GCInfo_1<WasmGCInfoTraits>(t),
+                RuntimeInfoArchitecture.X64 when TargetArchitectureSupport.IsX64Supported => new GCInfo_1<AMD64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.X86 when TargetArchitectureSupport.IsX86Supported => new GCInfoX86_1(t),
+                RuntimeInfoArchitecture.Arm64 when TargetArchitectureSupport.IsArm64Supported => new GCInfo_1<ARM64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.Arm when TargetArchitectureSupport.IsArmSupported => new GCInfo_1<ARMGCInfoTraits>(t),
+                RuntimeInfoArchitecture.LoongArch64 when TargetArchitectureSupport.IsLoongArch64Supported => new GCInfo_1<LoongArch64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.RiscV64 when TargetArchitectureSupport.IsRiscV64Supported => new GCInfo_1<RISCV64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.Wasm when TargetArchitectureSupport.IsWasmSupported => new GCInfo_1<WasmGCInfoTraits>(t),
                 _ => default(GCInfo),
             };
         });
@@ -84,9 +84,9 @@ public static class CoreCLRContracts
     /// <summary>
     /// Eagerly validates that every contract required by the cDAC data-access interfaces can be
     /// provided for the target. Contract availability is checked without instantiating the
-    /// contracts; <see cref="IRuntimeInfo"/> is read to determine the target operating system so
-    /// that OS-specific contracts are validated only when the target platform actually uses them.
-    /// In-box (main-descriptor) contracts are required unconditionally. Contracts published by a
+    /// contracts except for <see cref="IRuntimeInfo"/> and <see cref="IFeatureFlags"/>, which are read
+    /// so that platform- and feature-specific contracts are validated only when the target uses them.
+    /// Other in-box (main-descriptor) contracts are required unconditionally. Contracts published by a
     /// sub-descriptor are version-checked always, but their absence is tolerated while their
     /// sub-descriptor is still pending.
     /// </summary>
@@ -126,7 +126,6 @@ public static class CoreCLRContracts
         Validate<ILoader>(registry);
         Validate<INotifications>(registry);
         Validate<IObject>(registry);
-        Validate<IPrecodeStubs>(registry);
         Validate<IReJIT>(registry);
         Validate<IRuntimeInfo>(registry);
         Validate<IRuntimeTypeSystem>(registry);
@@ -135,6 +134,11 @@ public static class CoreCLRContracts
         Validate<IStressLog>(registry);
         Validate<ISyncBlock>(registry);
         Validate<IThread>(registry);
+
+        if (!registry.FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints))
+        {
+            Validate<IPrecodeStubs>(registry);
+        }
 
         // ExternalMemoryHandles was introduced in .NET 12. Readers built from this source may still
         // inspect .NET 11 targets, which do not advertise the contract.

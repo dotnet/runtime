@@ -35,7 +35,9 @@ buffer and table reservation, links the host, and invokes the composer. As on br
 ReadyToRun tasks name the composite `<entry>.r2r.wasm` after the app's main assembly. The composer
 records that file name in the host, so the host answers only to the name the component stubs
 carry. It deploys the composed host and the per-assembly stubs under the app bundle's `managed/`
-directory.
+directory. The table reservation is sized from the composite's active element segment, independently
+of the number of function definitions; table slots may contain duplicate or non-monotonic function
+references.
 Non-composite R2R and `WasmSingleFileBundle` are not supported by this path.
 
 ## Runtime tests
@@ -61,6 +63,14 @@ same composition task through `CORE_ROOT/wasi-r2r/WasiR2RComposer.proj`. It laun
 Without `RunCrossGen2`, the wrapper uses the original host and does not probe those stubs.
 Composition failures fail the test rather than silently falling back to interpretation.
 Helix receives the composition tools through a separate correlation payload.
+
+A WASI guest cannot start processes, so a merged runner does not launch its out-of-process tests
+itself. As on browser, its wrapper first runs the runner to write a plan of those tests, then runs
+each test's own wrapper, and finally runs the runner again to import the results into its report.
+Each test still composes its own ReadyToRun host. A test that calls into its own native code also
+gets a test-specific `corerun.wasm`, linked from the `corerun-link` kit that the `clr.hosts` build
+exports (see `src/tests/Common/CLRTest.WasmCorerun.targets`), and its composite is composed into
+that host.
 
 ## Composer diagnostics
 

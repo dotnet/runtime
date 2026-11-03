@@ -8,10 +8,22 @@
     <type fullname="System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.CompilerServices.CompExactlyDependsOnAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.CompHasFallbackAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
   </assembly>
 
   <assembly fullname="*">
     <!-- Internal attributes shared as implementation, so they could be in any assembly -->
+    <type fullname="System.Runtime.BypassReadyToRunAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.SuppressReadyToRunCanonicalRootingAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
     <type fullname="System.Runtime.Versioning.NonVersionableAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>

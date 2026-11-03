@@ -48,7 +48,7 @@ PALTEST(filemapping_memmgt_CreateFileMappingW_test2_paltest_createfilemappingw_t
         FILE_SHARE_READ,
         NULL,
         OPEN_EXISTING,
-        FILE_ATTRIBUTE_ARCHIVE,
+        FILE_ATTRIBUTE_NORMAL,
         NULL);
 
     //free this memory

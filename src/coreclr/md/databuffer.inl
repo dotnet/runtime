@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
+// ======================================================================================
 // File: DataBuffer.inl
 //
-
-//
 // Class code:DataBuffer provides secure access to a block of memory.
-//
 // ======================================================================================
 
 #pragma once
@@ -108,35 +106,6 @@ DataBuffer::PeekData(
     *ppTypeData = reinterpret_cast<T *>(m_pbData);
     return TRUE;
 } // DataBuffer::PeekData
-
-// --------------------------------------------------------------------------------------
-//
-// Reads data of type T at offset nOffset without skipping the read data (returns pointer to the type in
-// *ppTypeData).
-// Returns FALSE if there's not enough data (of size T) at offset nOffset in the buffer, doesn't
-// initialize the pointer *ppTypeData then.
-// Returns TRUE otherwise, fills *ppTypeData with the type start, but doesn't move the memory block
-// (doesn't skip any "read" data).
-template<class T>
-__checkReturn
-inline
-BOOL
-DataBuffer::PeekDataAt(
-                UINT32 nOffset,
-    _Outptr_ T    **ppTypeData)
-{
-    if (m_cbSize < nOffset)
-    {   // The offset is not in the memory block
-        return FALSE;
-    }
-    if ((m_cbSize - nOffset) < sizeof(T))
-    {   // The type is not fully in the memory block
-        return FALSE;
-    }
-    // Fill the start of the "read" type
-    *ppTypeData = reinterpret_cast<T *>(m_pbData + nOffset);
-    return TRUE;
-} // DataBuffer::PeekDataAt
 
 // --------------------------------------------------------------------------------------
 //

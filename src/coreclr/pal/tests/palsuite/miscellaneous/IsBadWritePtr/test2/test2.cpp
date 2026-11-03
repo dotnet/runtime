@@ -5,10 +5,10 @@
 **
 ** Source: test2.c
 **
-** Purpose: 
-** Create three consecuative pages, NOACCES, READWRITE and
-** NOACCESS.  Check to ensure that the READWRITE page returns 0, to 
-** ensure that IsBadWritePtr isn't overflowing.  Also check the other two
+** Purpose:
+** Create three consecutive pages, NOACCESS, READWRITE and
+** NOACCESS. Check to ensure that the READWRITE page returns 0, to
+** ensure that IsBadWritePtr isn't overflowing. Also check the other two
 ** pages to see that they return non-zero.
 **
 **
@@ -16,113 +16,64 @@
 
 #include <palsuite.h>
 #include <minipal/ospagesize.h>
+#include <sys/mman.h>
 
 PALTEST(miscellaneous_IsBadWritePtr_test2_paltest_isbadwriteptr_test2, "miscellaneous/IsBadWritePtr/test2/paltest_isbadwriteptr_test2")
 {
-    
-    LPVOID PageOne, PageTwo, PageThree;
+    BYTE* baseAddress;
+    LPVOID PageOne;
+    LPVOID PageTwo;
+    LPVOID PageThree;
+    size_t pageSize = minipal_getpagesize();
 
     if(0 != (PAL_Initialize(argc, argv)))
     {
-	return FAIL;
+        return FAIL;
     }
-    
-    /* Reserve enough space for four pages.  We'll commit this memory
-       and set the correct access for each page below.
-    */
-    
-    PageOne = VirtualAlloc(NULL, 
-			   minipal_getpagesize()*4,
-			   MEM_RESERVE, 
-			   PAGE_NOACCESS);
 
-    if(PageOne == NULL)
+    baseAddress = static_cast<BYTE*>(mmap(NULL, pageSize * 4, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0));
+    if(baseAddress == MAP_FAILED)
     {
-	Fail("ERROR: VirtualAlloc failed to reserve the required memory.\n");
+        Fail("ERROR: mmap failed to reserve the required memory.");
     }
 
-    /* Set the first Page to PAGE_NOACCESS */
-    
-    PageOne = VirtualAlloc(PageOne,
-			   minipal_getpagesize(),
-			   MEM_COMMIT,
-			   PAGE_NOACCESS);
+    PageOne = baseAddress;
+    PageTwo = baseAddress + pageSize;
+    PageThree = baseAddress + (2 * pageSize);
 
-    if(PageOne == NULL)
+    if(mprotect(PageTwo, pageSize, PROT_READ | PROT_WRITE) != 0)
     {
-	VirtualFree(PageOne,0,MEM_RELEASE);
-
-	Fail("ERROR: VirtualAlloc failed to commit the required memory "
-	     "for the first page.\n");
+        munmap(baseAddress, pageSize * 4);
+        Fail("ERROR: mprotect failed to make the middle page writable.");
     }
 
-    /* Set the second Page to PAGE_READWRITE */
-
-    PageTwo = VirtualAlloc(((BYTE*)PageOne)+minipal_getpagesize(),
-			   minipal_getpagesize(),
-			   MEM_COMMIT,
-			   PAGE_READWRITE);
-    if(PageTwo == NULL)
+    if(IsBadWritePtr(PageOne,pageSize) == 0)
     {
-	VirtualFree(PageOne,0,MEM_RELEASE);
+        munmap(baseAddress, pageSize * 4);
 
-	Fail("ERROR: VirtualAlloc failed to allocate the required memory "
-	     "for the second page. %d\n",GetLastError());
+        Fail("ERROR: Called IsBadWritePtr on a page which was set NOACCESS "
+             "but the return value was 0, indicating that the memory is "
+             "writable.");
     }
-    
-    /* Set the third Page to PAGE_NOACCESS */
 
-    PageThree = VirtualAlloc(((BYTE*)PageTwo) + (2 * minipal_getpagesize()),
-			     minipal_getpagesize(),
-			     MEM_COMMIT,
-			     PAGE_NOACCESS);
-      
-    if(PageThree == NULL)
+    if(IsBadWritePtr(PageTwo,pageSize) != 0)
     {
-	VirtualFree(PageOne,0,MEM_RELEASE);
+        munmap(baseAddress, pageSize * 4);
 
-	Fail("ERROR: VirtualAlloc failed to allocate the required memory. "
-	     "For the third page.\n");
+        Fail("ERROR: IsBadWritePtr didn't return 0 when called on a "
+             "page which should have been writable.");
     }
-    
-    
-/* Check that calling IsBadWritePtr on the first page returns non-zero */
-    
-    if(IsBadWritePtr(PageThree,minipal_getpagesize()) == 0)
+
+    if(IsBadWritePtr(PageThree,pageSize) == 0)
     {
-	VirtualFree(PageOne,0,MEM_RELEASE);
+        munmap(baseAddress, pageSize * 4);
 
-	Fail("ERROR: Called IsBadWritePtr on a page which was set NOACCESS "
-	     "but the return value was 0, indicating that the memory is "
-	     "writable.\n");
+        Fail("ERROR: Called IsBadWritePtr on a page which was set NOACCESS "
+             "but the return value was 0, indicating that the memory is "
+             "writable.");
     }
 
-    /* Check that calling IsBadWritePtr on the middle page returns 0 */
-
-    if(IsBadWritePtr(PageTwo,minipal_getpagesize()) != 0)
-    {
-	VirtualFree(PageOne,0,MEM_RELEASE);
-
-	Fail("ERROR: IsBadWritePtr didn't return 0 when called on a "
-	     "page which should have been writable.\n");
-    }
-
-    /* Check that calling IsBadWritePtr on the third page returns non-zero */
-    
-    if(IsBadWritePtr(PageThree,minipal_getpagesize()) == 0)
-    {
-	VirtualFree(PageOne,0,MEM_RELEASE);
-
-	Fail("ERROR: Called IsBadWritePtr on a page which was set NOACCESS "
-	     "but the return value was 0, indicating that the memory is "
-	     "writable.\n");
-    }
-    VirtualFree(PageOne,0,MEM_RELEASE);
+    munmap(baseAddress, pageSize * 4);
     PAL_Terminate();
     return PASS;
 }
-
-
-
-
-

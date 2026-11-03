@@ -16,7 +16,7 @@ import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
-import { extractLegacyModuleCallbacks, loaderCallbacks } from "./callbacks";
+import { extractLegacyModuleCallbacks } from "./callbacks";
 
 
 export class HostBuilder implements DotnetHostBuilder {
@@ -218,7 +218,7 @@ export class HostBuilder implements DotnetHostBuilder {
 
     withDownloadResourceProgress (callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder {
         try {
-            loaderCallbacks.downloadResourceProgress = callback;
+            loaderHelpers.callbacks.downloadResourceProgress = callback;
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -228,7 +228,7 @@ export class HostBuilder implements DotnetHostBuilder {
 
     withConfigLoaded (callback?: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder {
         try {
-            loaderCallbacks.configLoaded = callback;
+            loaderHelpers.callbacks.configLoaded = callback;
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -238,7 +238,7 @@ export class HostBuilder implements DotnetHostBuilder {
 
     withDotnetReady (callback?: () => void | Promise<void>): DotnetHostBuilder {
         try {
-            loaderCallbacks.dotnetReady = callback;
+            loaderHelpers.callbacks.dotnetReady = callback;
             return this;
         } catch (err) {
             mono_exit(1, err);

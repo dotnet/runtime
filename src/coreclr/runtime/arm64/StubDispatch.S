@@ -119,7 +119,6 @@ LOCAL_LABEL(RaceRetry_\entries):
 // Initial dispatch on an interface when we don't have a cache yet.
 //
     LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
-    ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
         // Trigger an AV if we're dispatching on a null this.
         // The exception handling infrastructure is aware of the fact that this is the first
         // instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here

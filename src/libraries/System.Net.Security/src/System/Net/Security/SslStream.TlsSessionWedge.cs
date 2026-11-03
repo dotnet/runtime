@@ -119,6 +119,7 @@ namespace System.Net.Security
             }
             finally
             {
+                ReleaseCachedCredentials();
                 if (refreshCredentialNeeded)
                 {
                     // Mirror legacy GenerateToken bookkeeping: the PAL has bumped the cred

@@ -2772,6 +2772,19 @@ AGAIN:
         }
     }
 
+    // Ordered and unordered floating-point relops differ for NaN operands.
+    if (op1->OperIsCompare() && ((op1->gtFlags & GTF_RELOP_NAN_UN) != (op2->gtFlags & GTF_RELOP_NAN_UN)))
+    {
+        return false;
+    }
+
+    // Indirection flags are semantic and some of them (e.g. GTF_IND_NONFAULTING) are only valid
+    // in the context of the original node, so they must be equal for all indirection-like nodes.
+    if (op1->OperIsIndirOrArrMetaData() && ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS)))
+    {
+        return false;
+    }
+
     /* Figure out what kind of nodes we're comparing */
 
     kind = op1->OperKind();
@@ -2783,11 +2796,21 @@ AGAIN:
         switch (oper)
         {
             case GT_CNS_INT:
-                if (op1->AsIntCon()->IconValue() == op2->AsIntCon()->IconValue())
+            {
+                GenTreeIntCon* const con1 = op1->AsIntCon();
+                GenTreeIntCon* const con2 = op2->AsIntCon();
+
+                // Field sequences carry field identity (and thus type info) just like
+                // GT_FIELD_ADDR's field handle, so they must match too. The same goes for
+                // the handle kind and the compile-time handle.
+                if ((con1->IconValue() == con2->IconValue()) && (con1->GetFieldSeq() == con2->GetFieldSeq()) &&
+                    ((op1->gtFlags & GTF_ICON_HDL_MASK) == (op2->gtFlags & GTF_ICON_HDL_MASK)) &&
+                    (!con1->IsIconHandle() || (con1->GetCompileTimeHandle() == con2->GetCompileTimeHandle())))
                 {
                     return true;
                 }
                 break;
+            }
 
             case GT_CNS_LNG:
             {
@@ -2901,11 +2924,6 @@ AGAIN:
                 // Rare case -- need contextual information to check equality in some cases.
                 return false;
             }
-
-            if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
-            {
-                return false;
-            }
         }
 
         if (IsExOp(kind))
@@ -2954,12 +2972,6 @@ AGAIN:
                     {
                         return false;
                     }
-
-                    if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
-                    {
-                        return false;
-                    }
-
                     break;
 
                 case GT_FIELD_ADDR:
@@ -2972,19 +2984,29 @@ AGAIN:
                 case GT_ARR_ADDR:
                     if ((op1->AsArrAddr()->GetElemType() != op2->AsArrAddr()->GetElemType()) ||
                         (op1->AsArrAddr()->GetElemClassHandle() != op2->AsArrAddr()->GetElemClassHandle()) ||
-                        (op1->AsArrAddr()->GetFirstElemOffset() != op2->AsArrAddr()->GetFirstElemOffset()))
+                        (op1->AsArrAddr()->GetFirstElemOffset() != op2->AsArrAddr()->GetFirstElemOffset()) ||
+                        ((op1->gtFlags & GTF_ARR_ADDR_NONNULL) != (op2->gtFlags & GTF_ARR_ADDR_NONNULL)))
+                    {
+                        return false;
+                    }
+                    break;
+
+                case GT_BOX:
+                    // Boxes are tied to their (upstream) allocation and copy statements.
+                    if ((op1->AsBox()->gtDefStmtWhenInlinedBoxValue != op2->AsBox()->gtDefStmtWhenInlinedBoxValue) ||
+                        (op1->AsBox()->gtCopyStmtWhenInlinedBoxValue != op2->AsBox()->gtCopyStmtWhenInlinedBoxValue))
                     {
                         return false;
                     }
                     break;
 
                 // For the ones below no extra argument matters for comparison.
-                case GT_BOX:
                 case GT_RUNTIMELOOKUP:
                     break;
 
                 default:
                     assert(!"unexpected unary ExOp operator");
+                    return false;
             }
         }
         return Compare(op1->AsOp()->gtOp1, op2->AsOp()->gtOp1);
@@ -3003,13 +3025,9 @@ AGAIN:
                     {
                         return false;
                     }
-                    FALLTHROUGH;
+                    break;
 
                 case GT_STOREIND:
-                    if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
-                    {
-                        return false;
-                    }
                     break;
 
                 case GT_INTRINSIC:
@@ -3053,6 +3071,7 @@ AGAIN:
 
                 default:
                     assert(!"unexpected binary ExOp operator");
+                    return false;
             }
         }
 
@@ -5542,7 +5561,7 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
         // op1 has side efects that can't be reordered.
         // Check for some special cases where we still may be able to swap.
 
-        if (secondNode->gtFlags & strictEffects)
+        if (secondNode->gtFlags & (strictEffects | GTF_ORDER_SIDEEFF))
         {
             // op2 has also has non reorderable side effects - can't swap.
             canSwap = false;
@@ -8840,10 +8859,15 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
         case GT_INTRINSIC:
             // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
-            // Currently, this is the only intrinsic that can throw an exception.
             if (AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType)
             {
                 return ExceptionSetFlags::NullReferenceException;
+            }
+
+            // The signed Log2 fallback throws ArgumentOutOfRangeException for negative inputs.
+            if (AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_Log2)
+            {
+                return ExceptionSetFlags::UnknownException;
             }
 
             return ExceptionSetFlags::None;
@@ -8921,6 +8945,11 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
                 // We currently don't try to avoid setting these flags and GTF_EXCEPT when
                 // we know that the operation in fact cannot overflow/divide by zero.
                 assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
+                flags |= ExceptionSetFlags::OverflowException | ExceptionSetFlags::DivideByZeroException;
+            }
+            else if ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))
+            {
+                // div/idiv fault on a zero divisor and on a quotient that doesn't fit.
                 flags |= ExceptionSetFlags::OverflowException | ExceptionSetFlags::DivideByZeroException;
             }
 #endif
@@ -11040,11 +11069,9 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
                                              CORINFO_METHOD_HANDLE   callerHandle,
                                              bool                    useParent)
 {
-    const bool      mustRestoreHandle     = true;
-    bool* const     pRuntimeLookup        = nullptr;
     bool            usingReadyToRunHelper = false;
     CorInfoHelpFunc helper                = CORINFO_HELP_UNDEF;
-    GenTree*        opHandle = impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, useParent);
+    GenTree*        opHandle              = impTokenToHandle(pResolvedToken, nullptr, useParent);
 
 #ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP lookup = {};
@@ -20601,7 +20628,7 @@ ValueSize GenTreeIndir::ValueSize() const
 // Return Value:
 //    True if this immediate value requires us to record a relocation for it; false otherwise.
 
-bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
+bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp) const
 {
     return comp->opts.compReloc && IsIconHandle();
 }
@@ -21799,6 +21826,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             {
                 GenTree* valueArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
                 castHnd           = gtGetClassHandle(valueArg, pIsExact, pIsNonNull);
+
+                // A failed isinst returns null even for a non-null value, only cast helpers preserve non-nullness.
+                if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
+                    (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY))
+                {
+                    *pIsNonNull = false;
+                }
             }
 
             // We don't know at jit time if the cast will succeed or fail, but if it
@@ -32316,6 +32350,13 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
                 gtFlags |= GTF_EXCEPT;
                 break;
             }
+
+            case NI_X86Base_DivRem:
+            case NI_X86Base_X64_DivRem:
+            {
+                gtFlags |= GTF_EXCEPT;
+                break;
+            }
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)
@@ -35223,7 +35264,7 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
 
     if (IsIntegralConst())
     {
-        return AsIntConCommon()->IntegralValue() >= 0;
+        return !AsIntConCommon()->ImmedValNeedsReloc(comp) && (AsIntConCommon()->IntegralValue() >= 0);
     }
 
     if (OperIs(GT_LCL_VAR))
@@ -35340,6 +35381,18 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
     return true;
 }
 
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
+//------------------------------------------------------------------------
+// GenTree::IsSveMaskOperand:
+//   Return true if this node can be represented directly as an SVE predicate.
+//
+bool GenTree::IsSveMaskOperand() const
+{
+    return OperIsConvertMaskToVector() || varTypeIsMask(this) || IsVectorZero();
+}
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
+
 //------------------------------------------------------------------------
 // gtFoldExprHWIntrinsic: Attempt to fold a HWIntrinsic
 //
@@ -35349,7 +35402,6 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 // Return Value:
 //    folded expression if it could be folded, else the original tree
 //
-#if defined(FEATURE_HW_INTRINSICS)
 GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
     assert(!optValnumCSE_phase);
@@ -35630,8 +35682,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         for (size_t i = firstVectorOperand; (i <= opCount) && canFold; i++)
         {
             GenTree* operand = tree->Op(i);
-            canFold          = operand->OperIsConvertMaskToVector() &&
-                      (genTypeSize(operand->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType));
+            canFold          = operand->IsSveMaskOperand() &&
+                      (!operand->OperIsConvertMaskToVector() ||
+                       (genTypeSize(operand->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType)));
         }
 
         if (canFold)
@@ -37136,20 +37189,20 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     // op2 = op2 & op1
                     simdmask_t result = {};
-                    EvaluateBinaryMask<simd16_t>(GT_AND, false, simdBaseType, &result, op2->AsMskCon()->gtSimdMaskVal,
-                                                 op1->AsMskCon()->gtSimdMaskVal);
+                    EvaluateBinaryMask(GT_AND, false, simdBaseType, simdSize, &result, op2->AsMskCon()->gtSimdMaskVal,
+                                       op1->AsMskCon()->gtSimdMaskVal);
                     op2->AsMskCon()->gtSimdMaskVal = result;
 
                     // op3 = op3 & ~op1
                     result = {};
-                    EvaluateBinaryMask<simd16_t>(GT_AND_NOT, false, simdBaseType, &result,
-                                                 op3->AsMskCon()->gtSimdMaskVal, op1->AsMskCon()->gtSimdMaskVal);
+                    EvaluateBinaryMask(GT_AND_NOT, false, simdBaseType, simdSize, &result,
+                                       op3->AsMskCon()->gtSimdMaskVal, op1->AsMskCon()->gtSimdMaskVal);
                     op3->AsMskCon()->gtSimdMaskVal = result;
 
                     // op2 = op2 | op3
                     result = {};
-                    EvaluateBinaryMask<simd16_t>(GT_OR, false, simdBaseType, &result, op2->AsMskCon()->gtSimdMaskVal,
-                                                 op3->AsMskCon()->gtSimdMaskVal);
+                    EvaluateBinaryMask(GT_OR, false, simdBaseType, simdSize, &result, op2->AsMskCon()->gtSimdMaskVal,
+                                       op3->AsMskCon()->gtSimdMaskVal);
                     op2->AsMskCon()->gtSimdMaskVal = result;
 
                     resultNode = op2;

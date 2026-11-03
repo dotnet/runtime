@@ -1,21 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-
-//
 
 /*============================================================
-**
 ** File:  COMUtilNative
-**
-**
 **
 ** Purpose: A dumping ground for classes which aren't large
 ** enough to get their own file in the EE.
-**
-**
-**
 ===========================================================*/
+
 #include "common.h"
 #include "object.h"
 #include "excep.h"
@@ -1073,25 +1065,6 @@ FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) 
     return newMemValue;
 }
 
-FORCEINLINE UINT64 GCInterface::InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend) {
-    WRAPPER_NO_CONTRACT;
-
-    UINT64 oldMemValue;
-    UINT64 newMemValue;
-
-    do {
-        oldMemValue = *pMinuend;
-        newMemValue = oldMemValue - subtrahend;
-
-        // check for underflow
-        if (newMemValue > oldMemValue)
-            newMemValue = 0;
-
-    } while (InterlockedCompareExchange64((LONGLONG*) pMinuend, (LONGLONG) newMemValue, (LONGLONG) oldMemValue) != (LONGLONG) oldMemValue);
-
-    return newMemValue;
-}
-
 extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
@@ -1114,9 +1087,7 @@ void GCInterface::EnumerateConfigurationValues(void* configurationContext, Enume
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(configurationContext != nullptr);
         PRECONDITION(callback != nullptr);
     }
@@ -1147,13 +1118,7 @@ extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heap
 
 int GCInterface::RefreshMemoryLimit()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     return GCHeapUtilities::GetGCHeap()->RefreshMemoryLimit();
 }
@@ -1171,13 +1136,7 @@ extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCR
 
 enable_no_gc_region_callback_status GCInterface::EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     return GCHeapUtilities::GetGCHeap()->EnableNoGCRegionCallback(callback, totalSize);
 }
@@ -1196,13 +1155,7 @@ extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation, QC
 
 uint64_t GCInterface::GetGenerationBudget(int generation)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     return GCHeapUtilities::GetGCHeap()->GetGenerationBudget(generation);
 }
@@ -1874,12 +1827,7 @@ enum ValueTypeHashCodeStrategy
 
 static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMTOut)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     // Should be handled by caller
     _ASSERTE(!mt->CanCompareBitsOrUseFastGetHashCode());

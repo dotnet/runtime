@@ -986,7 +986,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public TargetPointer GetGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         TargetPointer tlsIndexPtr = GetThreadStaticsInfo(typeHandle).GCTlsIndex;
         Contracts.IThread threadContract = _target.Contracts.Thread;
@@ -995,7 +995,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public TargetPointer GetNonGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         TargetPointer tlsIndexPtr = GetThreadStaticsInfo(typeHandle).NonGCTlsIndex;
         Contracts.IThread threadContract = _target.Contracts.Thread;
@@ -1997,8 +1997,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodDesc md = _methodDescs[methodDesc.Address];
         if (md.IsEligibleForTieredCompilation)
             return true;
-        // MethodDesc::IsEligibleForReJIT
-        if (_target.Contracts.ReJIT.IsEnabled())
+        // MethodDesc::IsEligibleForReJIT. The ReJIT contract is advertised only with PROFILING_SUPPORTED;
+        // targets without it (wasm) also lack FEATURE_REJIT, so nothing is ReJIT-eligible.
+        if (_target.Contracts.TryGetContract(out IReJIT reJit) && reJit.IsEnabled())
         {
             if (!md.IsIL)
                 return false;
@@ -2160,24 +2161,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return TargetPointer.Null;
         }
 
-        return GetMethodDescForEntrypoint(pCode);
-    }
-
-    private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)
-    {
-        // standard path, ask ExecutionManager for the MethodDesc
-        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-        if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
-        {
-            TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
-            return methodDescPtr;
-        }
-
-        // stub path, read address as a Precode and read MethodDesc from it
-        {
-            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
-            return methodDescPtr;
-        }
+        return _target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(pCode);
     }
 
     TargetCodePointer IRuntimeTypeSystem.GetSlot(ITypeHandle typeHandle, uint slot)

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
@@ -346,6 +347,14 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
         minipal_memory_barrier_process_wide();
 #endif //TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
+    if (waitForGCEvent)
+    {
+        // Fire the "restart end" event right before the threads are released. Once they are released,
+        // this thread may be preempted for a long time under CPU load, which would be wrongly reported
+        // as a part of the EE suspension.
+        FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
+    }
+
     RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
     GCHeapUtilities::GetGCHeap()->SetSuspensionPending(false);
 
@@ -411,27 +420,6 @@ void ThreadStore::SaveCurrentThreadOffsetForDAC()
 
 GPTR_IMPL(uint32_t, p_tls_index);
 GVAL_IMPL(uint32_t, SECTIONREL__tls_CurrentThread);
-
-//
-// This routine supports the !Thread debugger extension routine
-//
-// static
-PTR_Thread ThreadStore::GetThreadFromTEB(TADDR pTEB)
-{
-    if (pTEB == NULL)
-        return NULL;
-
-    uint32_t tlsIndex = *p_tls_index;
-    TADDR pTls = *(PTR_TADDR)(pTEB + OFFSETOF__TEB__ThreadLocalStoragePointer);
-    if (pTls == NULL)
-        return NULL;
-
-    TADDR pOurTls = *(PTR_TADDR)(pTls + (tlsIndex * sizeof(void*)));
-    if (pOurTls == NULL)
-        return NULL;
-
-    return (PTR_Thread)(pOurTls + SECTIONREL__tls_CurrentThread);
-}
 
 #endif // DACCESS_COMPILE
 

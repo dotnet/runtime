@@ -1079,7 +1079,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                     // Load from our address expression source
                     emit->emitIns_R_R_R_I(INS_ldp, emitTypeSize(type0), loReg, hiReg, addrReg, structOffset,
-                                          INS_OPTS_NONE, emitTypeSize(type0));
+                                          INS_OPTS_NONE, emitTypeSize(type1));
                 }
 
                 // Emit stp instruction to store the two registers into the outgoing argument area
@@ -3191,6 +3191,10 @@ void CodeGen::genCall(GenTreeCall* call)
     if (m_compiler->killGCRefs(call))
     {
         genDefineTempLabel(genCreateTempLabel());
+
+        // The runtime can't find callee-saved registers through an InlinedCallFrame,
+        // so LSRA must have spilled any GC values held in them.
+        assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & RBM_INT_CALLEE_SAVED) == RBM_NONE);
     }
 
     genCallInstruction(call);

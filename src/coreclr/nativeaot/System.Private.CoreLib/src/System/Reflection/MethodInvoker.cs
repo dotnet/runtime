@@ -2,30 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.MethodInfos;
+using System.Runtime.CompilerServices;
 
 using Internal.Reflection.Core.Execution;
-
-using static System.Reflection.DynamicInvokeInfo;
 
 namespace System.Reflection
 {
     public sealed class MethodInvoker
     {
         private readonly MethodBaseInvoker _methodBaseInvoker;
-        private readonly int _parameterCount;
 
         internal MethodInvoker(RuntimeMethodInfo method)
         {
             _methodBaseInvoker = method.MethodInvoker;
-            _parameterCount = method.GetParametersAsSpan().Length;
         }
 
         internal MethodInvoker(RuntimeConstructorInfo constructor)
         {
             _methodBaseInvoker = constructor.MethodInvoker;
-            _parameterCount = constructor.GetParametersAsSpan().Length;
         }
 
         public static MethodInvoker Create(MethodBase method)
@@ -50,11 +45,6 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj)
         {
-            if (_parameterCount != 0)
-            {
-                ThrowForArgCountMismatch();
-            }
-
             object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, default);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
@@ -63,12 +53,7 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, object? arg1)
         {
-            if (_parameterCount != 1)
-            {
-                ThrowForArgCountMismatch();
-            }
-
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, new Span<object?>(ref arg1, _parameterCount));
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, new Span<object?>(ref arg1));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -76,16 +61,11 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, object? arg1, object? arg2)
         {
-            if (_parameterCount != 2)
-            {
-                ThrowForArgCountMismatch();
-            }
+            InlineArray2<object?> argStorage = default;
+            argStorage[0] = arg1;
+            argStorage[1] = arg2;
 
-            StackAllocatedArguments argStorage = default;
-            argStorage._args[0] = arg1;
-            argStorage._args[1] = arg2;
-
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, ((Span<object?>)argStorage._args).Slice(0, 2));
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, argStorage);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -93,17 +73,12 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3)
         {
-            if (_parameterCount != 3)
-            {
-                ThrowForArgCountMismatch();
-            }
+            InlineArray3<object?> argStorage = default;
+            argStorage[0] = arg1;
+            argStorage[1] = arg2;
+            argStorage[2] = arg3;
 
-            StackAllocatedArguments argStorage = default;
-            argStorage._args[0] = arg1;
-            argStorage._args[1] = arg2;
-            argStorage._args[2] = arg3;
-
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, ((Span<object?>)argStorage._args).Slice(0, 3));
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, argStorage);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -111,18 +86,13 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3, object? arg4)
         {
-            if (_parameterCount != 4)
-            {
-                ThrowForArgCountMismatch();
-            }
+            InlineArray4<object?> argStorage = default;
+            argStorage[0] = arg1;
+            argStorage[1] = arg2;
+            argStorage[2] = arg3;
+            argStorage[3] = arg4;
 
-            StackAllocatedArguments argStorage = default;
-            argStorage._args[0] = arg1;
-            argStorage._args[1] = arg2;
-            argStorage._args[2] = arg3;
-            argStorage._args[3] = arg4;
-
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, ((Span<object?>)argStorage._args).Slice(0, 4));
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, argStorage);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -133,12 +103,6 @@ namespace System.Reflection
             object? result = _methodBaseInvoker.Invoke(obj, arguments);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
-        }
-
-        [DoesNotReturn]
-        private static void ThrowForArgCountMismatch()
-        {
-            throw new TargetParameterCountException(SR.Arg_ParmCnt);
         }
     }
 }

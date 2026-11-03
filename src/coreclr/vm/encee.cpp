@@ -556,6 +556,7 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
     return hr;
 }
 
+#ifdef FEATURE_REMAP_FUNCTION
 //---------------------------------------------------------------------------------------
 //
 // JitUpdatedFunction - Jit the new version of a function for EnC.
@@ -660,6 +661,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
 
     return jittedCode;
 }
+#endif // FEATURE_REMAP_FUNCTION
 
 
 //-----------------------------------------------------------------------------
@@ -668,7 +670,6 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
 // 1) jit the new function
 // 2) set the IP to newILOffset within that new function
 // 3) adjust local variables (particularly enregistered vars) to the new func.
-// It will not return.
 //
 // Params:
 //  pMD - method desc for method being updated. This is not enc-version aware.
@@ -678,8 +679,8 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
 //  pOrigContext - context of thread pointing into original version of the function.
 //
 // This function must be called on the thread that's executing the old function.
-// This function does not return. Instead, it will remap this thread directly
-// to be executing the new function.
+// Successful remapping transfers execution to the new function and does not return.
+// Returns E_NOTIMPL if frame remapping is unsupported.
 //-----------------------------------------------------------------------------
 HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     MethodDesc *pMD,
@@ -687,7 +688,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     SIZE_T newILOffset,
     CONTEXT *pOrigContext)
 {
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#ifndef FEATURE_REMAP_FUNCTION
     return E_NOTIMPL;
 #else
     LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction for %s::%s at IL offset 0x%zx\n",
@@ -787,7 +788,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     // Win32 handlers on the stack so cannot ever return from this function.
     EEPOLICY_HANDLE_FATAL_ERROR(CORDBG_E_ENC_INTERNAL_ERROR);
     return E_FAIL;
-#endif // #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#endif // !FEATURE_REMAP_FUNCTION
 
 }
 
@@ -1022,8 +1023,9 @@ PTR_CBYTE EditAndContinueModule::ResolveOrAllocateField(OBJECTREF      thisPoint
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -1132,10 +1134,13 @@ PTR_EnCEEClassData EditAndContinueModule::GetEnCEEClassData(MethodTable * pMT, B
 void *EnCFieldDesc::GetAddress( void *o)
 {
 #ifndef DACCESS_COMPILE
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     // can't throw through FieldDesc::GetInstanceField if FORBIDGC_LOADER_USE_ENABLED
     _ASSERTE(! FORBIDGC_LOADER_USE_ENABLED());
@@ -1512,6 +1517,7 @@ EnCAddedStaticField *EnCAddedStaticField::Allocate(EnCFieldDesc *pFD)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -1604,8 +1610,9 @@ EnCAddedStaticField * EnCFieldDesc::GetOrAllocateStaticFieldData()
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -1712,7 +1719,8 @@ EncApproxFieldDescIterator::EncApproxFieldDescIterator(MethodTable *pMT, int ite
 
 #ifndef DACCESS_COMPILE
     // can't fixup for EnC on the debugger thread
-    _ASSERTE((g_pDebugInterface->GetRCThreadId() != GetCurrentThreadId()) || !(m_flags & FixUpEncFields));
+    _ASSERTE(g_pDebugInterface == nullptr ||
+             (g_pDebugInterface->GetRCThreadId() != GetCurrentThreadId()) || !(m_flags & FixUpEncFields));
 #endif
 
     m_pCurrListElem = NULL;
@@ -1774,7 +1782,7 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
     // this list. Can't simply fixup the field always because loading triggers GC and many
     // code paths can't tolerate that.
     _ASSERTE( !(pFD->NeedsFixup()) ||
-              ( g_pDebugInterface->GetRCThreadId() == GetCurrentThreadId() ) );
+              (g_pDebugInterface != nullptr && g_pDebugInterface->GetRCThreadId() == GetCurrentThreadId()) );
 #endif
 
     return dac_cast<PTR_FieldDesc>(pFD);

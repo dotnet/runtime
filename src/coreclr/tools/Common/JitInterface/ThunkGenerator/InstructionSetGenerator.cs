@@ -636,6 +636,7 @@ namespace Internal.JitInterface
             return resultflags;
         }
 
+        // Expands unsupported instruction sets. If A implies B and B is unsupported, A is unsupported too.
         public void ExpandInstructionSetByReverseImplication(TargetArchitecture architecture)
         {
             this = ExpandInstructionSetByReverseImplicationHelper(architecture, this);
