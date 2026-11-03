@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection.Metadata;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL.Stubs
 {
@@ -14,6 +16,47 @@ namespace Internal.IL.Stubs
         // it calls CreateRuntimeAsyncTask/CreateRuntimeAsyncValueTask method to get the Task/ValueTask.
 
         // The emitted code matches method EmitTaskReturningThunk in CoreCLR VM.
+        // Determines whether the method is attributed with [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        // or [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))].
+        // Matches HasPoolingAsyncMethodBuilder in CoreCLR VM.
+        private static bool HasPoolingAsyncMethodBuilder(MethodDesc method)
+        {
+            if (method.GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod)
+                return false;
+
+            MetadataReader reader = ecmaMethod.MetadataReader;
+            CustomAttributeHandle attributeHandle = reader.GetCustomAttributeHandle(
+                reader.GetMethodDefinition(ecmaMethod.Handle).GetCustomAttributes(),
+                "System.Runtime.CompilerServices", "AsyncMethodBuilderAttribute");
+            if (attributeHandle.IsNil)
+                return false;
+
+            BlobReader blobReader = reader.GetBlobReader(reader.GetCustomAttribute(attributeHandle).Value);
+            if (blobReader.Length < 2 || blobReader.ReadUInt16() != 1)
+                return false;
+
+            string typeName;
+            try
+            {
+                typeName = blobReader.ReadSerializedString();
+            }
+            catch (BadImageFormatException)
+            {
+                return false;
+            }
+
+            const string PoolingBuilderName = "System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder";
+            if (typeName is null || !typeName.StartsWith(PoolingBuilderName, StringComparison.Ordinal))
+                return false;
+
+            // The name may be followed by a generic arity and/or an assembly qualification.
+            ReadOnlySpan<char> rest = typeName.AsSpan(PoolingBuilderName.Length);
+            if (rest.StartsWith("`1".AsSpan(), StringComparison.Ordinal))
+                rest = rest.Slice(2);
+
+            return rest.IsEmpty || rest[0] == ',';
+        }
+
         public static MethodIL EmitTaskReturningThunk(MethodDesc taskReturningMethod, MethodDesc asyncMethod)
         {
             TypeSystemContext context = taskReturningMethod.Context;
@@ -191,6 +234,13 @@ namespace Internal.IL.Stubs
 
                 codestream.EmitLabel(suspendedLabel);
 
+                // Honor [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))] by backing the returned
+                // ValueTask with a pooled, reusable IValueTaskSource rather than a new Task for each suspension.
+                ReadOnlySpan<byte> createRuntimeAsyncTaskName =
+                    isValueTask && HasPoolingAsyncMethodBuilder(taskReturningMethod) ? "CreatePooledRuntimeAsyncValueTask"u8 :
+                    isValueTask ? "CreateRuntimeAsyncValueTask"u8 :
+                    "CreateRuntimeAsyncTask"u8;
+
                 MethodDesc createRuntimeAsyncTaskMd;
                 if (logicalReturnType != null)
                 {
@@ -202,7 +252,7 @@ namespace Internal.IL.Stubs
                     );
 
                     createRuntimeAsyncTaskMd = asyncHelpersType
-                        .GetKnownMethod(isValueTask ? "CreateRuntimeAsyncValueTask"u8 : "CreateRuntimeAsyncTask"u8, createRuntimeAsyncTaskSignature)
+                        .GetKnownMethod(createRuntimeAsyncTaskName, createRuntimeAsyncTaskSignature)
                         .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                 }
                 else
@@ -215,7 +265,7 @@ namespace Internal.IL.Stubs
                     );
 
                     createRuntimeAsyncTaskMd = asyncHelpersType
-                        .GetKnownMethod(isValueTask ? "CreateRuntimeAsyncValueTask"u8 : "CreateRuntimeAsyncTask"u8, createRuntimeAsyncTaskSignature);
+                        .GetKnownMethod(createRuntimeAsyncTaskName, createRuntimeAsyncTaskSignature);
                 }
 
                 codestream.EmitLdLoc(refAwaitStateLocal);
