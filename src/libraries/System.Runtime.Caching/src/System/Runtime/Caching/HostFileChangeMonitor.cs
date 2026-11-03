@@ -20,14 +20,17 @@ namespace System.Runtime.Caching
         private const int MAX_CHAR_COUNT_OF_LONG_CONVERTED_TO_HEXADECIMAL_STRING = 16;
         private static IFileChangeNotificationSystem? s_fcn;
         private readonly ReadOnlyCollection<string> _filePaths;
-        private string _uniqueId = null!;
+        private string _uniqueId;
         private object? _fcnState;
         private DateTimeOffset _lastModified;
 
         private HostFileChangeMonitor() { _filePaths = null!; _uniqueId = null!; } // hide default .ctor
 
+        [MemberNotNull(nameof(_uniqueId))]
         private void InitDisposableMembers()
         {
+            Debug.Assert(s_fcn != null);
+            IFileChangeNotificationSystem fcn = s_fcn;
             bool dispose = true;
             try
             {
@@ -37,7 +40,7 @@ namespace System.Runtime.Caching
                     string path = _filePaths[0];
                     DateTimeOffset lastWrite;
                     long fileSize;
-                    s_fcn!.StartMonitoring(path, new OnChangedCallback(OnChanged), out _fcnState, out lastWrite, out fileSize);
+                    fcn.StartMonitoring(path, new OnChangedCallback(OnChanged), out _fcnState, out lastWrite, out fileSize);
                     uniqueId = $"{path}{lastWrite.UtcDateTime.Ticks:X}{fileSize:X}";
                     _lastModified = lastWrite;
                 }
@@ -60,7 +63,7 @@ namespace System.Runtime.Caching
                         DateTimeOffset lastWrite;
                         long fileSize;
                         object? state;
-                        s_fcn!.StartMonitoring(path, new OnChangedCallback(OnChanged), out state, out lastWrite, out fileSize);
+                        fcn.StartMonitoring(path, new OnChangedCallback(OnChanged), out state, out lastWrite, out fileSize);
                         fcnState[path] = state;
                         sb.Append(path);
                         sb.Append(lastWrite.UtcDateTime.Ticks.ToString("X", CultureInfo.InvariantCulture));
@@ -85,6 +88,7 @@ namespace System.Runtime.Caching
             }
         }
 
+        [MemberNotNull(nameof(s_fcn))]
         private static void InitFCN()
         {
             if (s_fcn == null)
@@ -118,7 +122,8 @@ namespace System.Runtime.Caching
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && s_fcn != null)
+            IFileChangeNotificationSystem? fcn = s_fcn;
+            if (disposing && fcn != null)
             {
                 if (_filePaths != null && _fcnState != null)
                 {
@@ -132,7 +137,7 @@ namespace System.Runtime.Caching
                                 object? state = fcnState?[path];
                                 if (state != null)
                                 {
-                                    s_fcn!.StopMonitoring(path, state);
+                                    fcn.StopMonitoring(path, state);
                                 }
                             }
                         }
@@ -142,7 +147,7 @@ namespace System.Runtime.Caching
                         string path = _filePaths[0];
                         if (path != null && _fcnState != null)
                         {
-                            s_fcn!.StopMonitoring(path, _fcnState);
+                            fcn.StopMonitoring(path, _fcnState);
                         }
                     }
                 }

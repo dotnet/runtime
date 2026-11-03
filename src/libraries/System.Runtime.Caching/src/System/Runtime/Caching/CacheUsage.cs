@@ -120,8 +120,8 @@ namespace System.Runtime.Caching
         private readonly CacheUsage _cacheUsage;
         private readonly byte _bucket;
 
-        private UsagePage[]? _pages;
-        private UsagePage[] Pages => _pages!;
+        private UsagePage[] _pages = [];
+
         private int _cEntriesInUse;
         private int _cPagesInUse;
         private int _cEntriesInFlush;
@@ -152,7 +152,7 @@ namespace System.Runtime.Caching
             Debug.Assert(_lastRefTail.IsInvalid, "_lastRefTail.IsInvalid");
             Debug.Assert(_addRef2Head.IsInvalid, "_addRef2Head.IsInvalid");
 
-            _pages = null;
+            _pages = [];
             _minEntriesInUse = -1;
             _freePageList._head = -1;
             _freePageList._tail = -1;
@@ -164,12 +164,12 @@ namespace System.Runtime.Caching
         {
             Debug.Assert((list._head == -1) == (list._tail == -1), "(list._head == -1) == (list._tail == -1)");
 
-            (_pages![(pageIndex)]._pagePrev) = -1;
-            (_pages![(pageIndex)]._pageNext) = list._head;
+            (_pages[(pageIndex)]._pagePrev) = -1;
+            (_pages[(pageIndex)]._pageNext) = list._head;
             if (list._head != -1)
             {
-                Debug.Assert((_pages![(list._head)]._pagePrev) == -1, "PagePrev(list._head) == -1");
-                (_pages![(list._head)]._pagePrev) = pageIndex;
+                Debug.Assert((_pages[(list._head)]._pagePrev) == -1, "PagePrev(list._head) == -1");
+                (_pages[(list._head)]._pagePrev) = pageIndex;
             }
             else
             {
@@ -183,12 +183,12 @@ namespace System.Runtime.Caching
         {
             Debug.Assert((list._head == -1) == (list._tail == -1), "(list._head == -1) == (list._tail == -1)");
 
-            (_pages![(pageIndex)]._pageNext) = -1;
-            (_pages![(pageIndex)]._pagePrev) = list._tail;
+            (_pages[(pageIndex)]._pageNext) = -1;
+            (_pages[(pageIndex)]._pagePrev) = list._tail;
             if (list._tail != -1)
             {
-                Debug.Assert((_pages![(list._tail)]._pageNext) == -1, "PageNext(list._tail) == -1");
-                (_pages![(list._tail)]._pageNext) = pageIndex;
+                Debug.Assert((_pages[(list._tail)]._pageNext) == -1, "PageNext(list._tail) == -1");
+                (_pages[(list._tail)]._pageNext) = pageIndex;
             }
             else
             {
@@ -211,30 +211,30 @@ namespace System.Runtime.Caching
         {
             Debug.Assert((list._head == -1) == (list._tail == -1), "(list._head == -1) == (list._tail == -1)");
 
-            if ((Pages[(pageIndex)]._pagePrev) != -1)
+            if ((_pages[(pageIndex)]._pagePrev) != -1)
             {
-                Debug.Assert((Pages[((Pages[(pageIndex)]._pagePrev))]._pageNext) == pageIndex, "PageNext(PagePrev(pageIndex)) == pageIndex");
-                (Pages[((Pages[(pageIndex)]._pagePrev))]._pageNext) = (Pages[(pageIndex)]._pageNext);
+                Debug.Assert((_pages[((_pages[(pageIndex)]._pagePrev))]._pageNext) == pageIndex, "PageNext(PagePrev(pageIndex)) == pageIndex");
+                (_pages[((_pages[(pageIndex)]._pagePrev))]._pageNext) = (_pages[(pageIndex)]._pageNext);
             }
             else
             {
                 Debug.Assert(list._head == pageIndex, "list._head == pageIndex");
-                list._head = (Pages[(pageIndex)]._pageNext);
+                list._head = (_pages[(pageIndex)]._pageNext);
             }
 
-            if ((Pages[(pageIndex)]._pageNext) != -1)
+            if ((_pages[(pageIndex)]._pageNext) != -1)
             {
-                Debug.Assert((Pages[((Pages[(pageIndex)]._pageNext))]._pagePrev) == pageIndex, "PagePrev(PageNext(pageIndex)) == pageIndex");
-                (Pages[((Pages[(pageIndex)]._pageNext))]._pagePrev) = (Pages[(pageIndex)]._pagePrev);
+                Debug.Assert((_pages[((_pages[(pageIndex)]._pageNext))]._pagePrev) == pageIndex, "PagePrev(PageNext(pageIndex)) == pageIndex");
+                (_pages[((_pages[(pageIndex)]._pageNext))]._pagePrev) = (_pages[(pageIndex)]._pagePrev);
             }
             else
             {
                 Debug.Assert(list._tail == pageIndex, "list._tail == pageIndex");
-                list._tail = (Pages[(pageIndex)]._pagePrev);
+                list._tail = (_pages[(pageIndex)]._pagePrev);
             }
 
-            (_pages![(pageIndex)]._pagePrev) = -1;
-            (_pages![(pageIndex)]._pageNext) = -1;
+            (_pages[(pageIndex)]._pagePrev) = -1;
+            (_pages[(pageIndex)]._pageNext) = -1;
         }
 
         private void MoveToListHead(int pageIndex, ref UsagePageList list)
@@ -284,13 +284,13 @@ namespace System.Runtime.Caching
 
         private void RemovePage(int pageIndex)
         {
-            Debug.Assert((((Pages[(pageIndex)]._entries))[0]._cFree) == NUM_ENTRIES, "FreeEntryCount(EntriesI(pageIndex)) == NUM_ENTRIES");
+            Debug.Assert((((_pages[(pageIndex)]._entries))[0]._cFree) == NUM_ENTRIES, "FreeEntryCount(EntriesI(pageIndex)) == NUM_ENTRIES");
 
             RemoveFromList(pageIndex, ref _freeEntryList);
             AddToListHead(pageIndex, ref _freePageList);
 
-            Debug.Assert((Pages[(pageIndex)]._entries) != null, "EntriesI(pageIndex) != null");
-            (Pages[(pageIndex)]._entries) = null!;
+            Debug.Assert((_pages[(pageIndex)]._entries) != null, "EntriesI(pageIndex) != null");
+            (_pages[(pageIndex)]._entries) = null!;
 
             _cPagesInUse--;
             if (_cPagesInUse == 0)
@@ -308,7 +308,7 @@ namespace System.Runtime.Caching
             Debug.Assert(_freeEntryList._head >= 0, "_freeEntryList._head >= 0");
             int pageIndex = _freeEntryList._head;
 
-            UsageEntry[] entries = (Pages[(pageIndex)]._entries);
+            UsageEntry[] entries = (_pages[(pageIndex)]._entries);
             int entryIndex = ((entries)[0]._ref1._next).Ref1Index;
 
             ((entries)[0]._ref1._next) = entries[entryIndex]._ref1._next;
@@ -325,7 +325,7 @@ namespace System.Runtime.Caching
         {
             Debug.Assert(entryRef.IsRef1, "entryRef.IsRef1");
 
-            UsageEntry[] entries = (Pages[(entryRef.PageIndex)]._entries);
+            UsageEntry[] entries = (_pages[(entryRef.PageIndex)]._entries);
             int entryIndex = entryRef.Ref1Index;
 
             Debug.Assert(entries[entryIndex]._cacheEntry == null, "entries[entryIndex]._cacheEntry == null");
@@ -359,7 +359,7 @@ namespace System.Runtime.Caching
             if (_freePageList._head == -1)
             {
                 int oldLength;
-                if (_pages == null)
+                if (_pages.Length == 0)
                 {
                     oldLength = 0;
                 }
@@ -380,7 +380,7 @@ namespace System.Runtime.Caching
 
                 for (int i = 0; i < oldLength; i++)
                 {
-                    newPages[i] = _pages![i];
+                    newPages[i] = _pages[i];
                 }
 
                 for (int i = oldLength; i < newPages.Length; i++)
@@ -410,7 +410,7 @@ namespace System.Runtime.Caching
             }
             entries[entries.Length - 1]._ref1._next = UsageEntryRef.INVALID;
 
-            (Pages[(pageIndex)]._entries) = entries;
+            (_pages[(pageIndex)]._entries) = entries;
 
             _cPagesInUse++;
             UpdateMinEntries();
@@ -433,9 +433,9 @@ namespace System.Runtime.Caching
 
             while (true)
             {
-                pageIndexNext = (Pages[(pageIndexCurrent)]._pageNext);
+                pageIndexNext = (_pages[(pageIndexCurrent)]._pageNext);
 
-                if ((((Pages[(pageIndexCurrent)]._entries))[0]._cFree) > meanFree)
+                if ((((_pages[(pageIndexCurrent)]._entries))[0]._cFree) > meanFree)
                 {
                     MoveToListTail(pageIndexCurrent, ref _freeEntryList);
                 }
@@ -455,7 +455,7 @@ namespace System.Runtime.Caching
                 if (_freeEntryList._tail == -1)
                     break;
 
-                entries = (Pages[(_freeEntryList._tail)]._entries);
+                entries = (_pages[(_freeEntryList._tail)]._entries);
                 Debug.Assert(((entries)[0]._cFree) > 0, "FreeEntryCount(entries) > 0");
                 int availableFreeEntries = (_cPagesInUse * NUM_ENTRIES) - ((entries)[0]._cFree) - _cEntriesInUse;
                 if (availableFreeEntries < (NUM_ENTRIES - ((entries)[0]._cFree)))
@@ -475,10 +475,13 @@ namespace System.Runtime.Caching
                     UsageEntryRef oldRef2 = (new UsageEntryRef((oldRef1).PageIndex, -(oldRef1).Ref1Index));
 
                     MemoryCacheEntry? cacheEntry = entries[i]._cacheEntry;
-                    Debug.Assert(cacheEntry!.UsageEntryRef == oldRef1, "cacheEntry.UsageEntryRef == oldRef1");
-                    cacheEntry!.UsageEntryRef = newRef1;
+                    if (cacheEntry == null)
+                        continue;
 
-                    UsageEntry[] newEntries = (Pages[(newRef1.PageIndex)]._entries);
+                    Debug.Assert(cacheEntry.UsageEntryRef == oldRef1, "cacheEntry.UsageEntryRef == oldRef1");
+                    cacheEntry.UsageEntryRef = newRef1;
+
+                    UsageEntry[] newEntries = (_pages[(newRef1.PageIndex)]._entries);
                     newEntries[newRef1.Ref1Index] = entries[i];
 
                     ((entries)[0]._cFree)++;
@@ -492,8 +495,8 @@ namespace System.Runtime.Caching
                         next = newRef2;
                     }
 
-                    { if ((prev).IsRef1) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (newRef1); } else if ((prev).IsRef2) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (newRef1); } else { _lastRefHead = (newRef1); } };
-                    { if ((next).IsRef1) { (Pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (newRef1); } else if ((next).IsRef2) { (Pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (newRef1); } else { _lastRefTail = (newRef1); } };
+                    { if ((prev).IsRef1) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (newRef1); } else if ((prev).IsRef2) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (newRef1); } else { _lastRefHead = (newRef1); } };
+                    { if ((next).IsRef1) { (_pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (newRef1); } else if ((next).IsRef2) { (_pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (newRef1); } else { _lastRefTail = (newRef1); } };
 
                     prev = newEntries[newRef1.Ref1Index]._ref2._prev;
                     if (prev == oldRef1)
@@ -504,8 +507,8 @@ namespace System.Runtime.Caching
                     next = newEntries[newRef1.Ref1Index]._ref2._next;
                     Debug.Assert(next != oldRef1, "next != oldRef1");
 
-                    { if ((prev).IsRef1) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (newRef2); } else if ((prev).IsRef2) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (newRef2); } else { _lastRefHead = (newRef2); } };
-                    { if ((next).IsRef1) { (Pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (newRef2); } else if ((next).IsRef2) { (Pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (newRef2); } else { _lastRefTail = (newRef2); } };
+                    { if ((prev).IsRef1) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (newRef2); } else if ((prev).IsRef2) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (newRef2); } else { _lastRefHead = (newRef2); } };
+                    { if ((next).IsRef1) { (_pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (newRef2); } else if ((next).IsRef2) { (_pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (newRef2); } else { _lastRefTail = (newRef2); } };
 
                     if (_addRef2Head == oldRef2)
                     {
@@ -531,7 +534,7 @@ namespace System.Runtime.Caching
                 Debug.Assert(cacheEntry.UsageEntryRef.IsInvalid, "cacheEntry.UsageEntryRef.IsInvalid");
                 cacheEntry.UsageEntryRef = freeRef1;
 
-                UsageEntry[] entries = (Pages[(freeRef1.PageIndex)]._entries);
+                UsageEntry[] entries = (_pages[(freeRef1.PageIndex)]._entries);
                 int entryIndex = freeRef1.Ref1Index;
                 entries[entryIndex]._cacheEntry = cacheEntry;
                 entries[entryIndex]._utcDate = DateTime.UtcNow;
@@ -547,7 +550,7 @@ namespace System.Runtime.Caching
                 else
                 {
                     entries[entryIndex]._ref1._next = _lastRefHead;
-                    { if ((_lastRefHead).IsRef1) { (Pages[((_lastRefHead).PageIndex)]._entries)[(_lastRefHead).Ref1Index]._ref1._prev = (freeRef1); } else if ((_lastRefHead).IsRef2) { (Pages[((_lastRefHead).PageIndex)]._entries)[(_lastRefHead).Ref2Index]._ref2._prev = (freeRef1); } else { _lastRefTail = (freeRef1); } };
+                    { if ((_lastRefHead).IsRef1) { (_pages[((_lastRefHead).PageIndex)]._entries)[(_lastRefHead).Ref1Index]._ref1._prev = (freeRef1); } else if ((_lastRefHead).IsRef2) { (_pages[((_lastRefHead).PageIndex)]._entries)[(_lastRefHead).Ref2Index]._ref2._prev = (freeRef1); } else { _lastRefTail = (freeRef1); } };
 
                     UsageEntryRef next, prev;
                     if (_addRef2Head.IsInvalid)
@@ -557,13 +560,13 @@ namespace System.Runtime.Caching
                     }
                     else
                     {
-                        prev = (Pages[(_addRef2Head.PageIndex)]._entries)[_addRef2Head.Ref2Index]._ref2._prev;
+                        prev = (_pages[(_addRef2Head.PageIndex)]._entries)[_addRef2Head.Ref2Index]._ref2._prev;
                         next = _addRef2Head;
                     }
 
                     entries[entryIndex]._ref2._prev = prev;
-                    { if ((prev).IsRef1) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (freeRef2); } else if ((prev).IsRef2) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (freeRef2); } else { _lastRefHead = (freeRef2); } };
-                    { if ((next).IsRef1) { (Pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (freeRef2); } else if ((next).IsRef2) { (Pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (freeRef2); } else { _lastRefTail = (freeRef2); } };
+                    { if ((prev).IsRef1) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (freeRef2); } else if ((prev).IsRef2) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (freeRef2); } else { _lastRefHead = (freeRef2); } };
+                    { if ((next).IsRef1) { (_pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (freeRef2); } else if ((next).IsRef2) { (_pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (freeRef2); } else { _lastRefTail = (freeRef2); } };
                 }
 
                 _lastRefHead = freeRef1;
@@ -581,22 +584,22 @@ namespace System.Runtime.Caching
         private void RemoveEntryFromLastRefList(UsageEntryRef entryRef)
         {
             Debug.Assert(entryRef.IsRef1, "entryRef.IsRef1");
-            UsageEntry[] entries = (Pages[(entryRef.PageIndex)]._entries);
+            UsageEntry[] entries = (_pages[(entryRef.PageIndex)]._entries);
             int entryIndex = entryRef.Ref1Index;
 
             UsageEntryRef prev = entries[entryIndex]._ref1._prev;
             UsageEntryRef next = entries[entryIndex]._ref1._next;
 
-            { if ((prev).IsRef1) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (next); } else if ((prev).IsRef2) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (next); } else { _lastRefHead = (next); } };
-            { if ((next).IsRef1) { (Pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (prev); } else if ((next).IsRef2) { (Pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (prev); } else { _lastRefTail = (prev); } };
+            { if ((prev).IsRef1) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (next); } else if ((prev).IsRef2) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (next); } else { _lastRefHead = (next); } };
+            { if ((next).IsRef1) { (_pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (prev); } else if ((next).IsRef2) { (_pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (prev); } else { _lastRefTail = (prev); } };
 
             prev = entries[entryIndex]._ref2._prev;
             next = entries[entryIndex]._ref2._next;
 
             UsageEntryRef entryRef2 = (new UsageEntryRef((entryRef).PageIndex, -(entryRef).Ref1Index));
 
-            { if ((prev).IsRef1) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (next); } else if ((prev).IsRef2) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (next); } else { _lastRefHead = (next); } };
-            { if ((next).IsRef1) { (Pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (prev); } else if ((next).IsRef2) { (Pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (prev); } else { _lastRefTail = (prev); } };
+            { if ((prev).IsRef1) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (next); } else if ((prev).IsRef2) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (next); } else { _lastRefHead = (next); } };
+            { if ((next).IsRef1) { (_pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (prev); } else if ((next).IsRef2) { (_pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (prev); } else { _lastRefTail = (prev); } };
 
             if (_addRef2Head == entryRef2)
             {
@@ -612,10 +615,10 @@ namespace System.Runtime.Caching
                 if (entryRef.IsInvalid)
                     return;
 
-                UsageEntry[] entries = (Pages[(entryRef.PageIndex)]._entries);
+                UsageEntry[] entries = (_pages[(entryRef.PageIndex)]._entries);
                 int entryIndex = entryRef.Ref1Index;
 
-                cacheEntry!.UsageEntryRef = UsageEntryRef.INVALID;
+                cacheEntry.UsageEntryRef = UsageEntryRef.INVALID;
                 entries[entryIndex]._cacheEntry = null;
 
                 RemoveEntryFromLastRefList(entryRef);
@@ -639,15 +642,15 @@ namespace System.Runtime.Caching
                 if (entryRef.IsInvalid)
                     return;
 
-                UsageEntry[] entries = (Pages[(entryRef.PageIndex)]._entries);
+                UsageEntry[] entries = (_pages[(entryRef.PageIndex)]._entries);
                 int entryIndex = entryRef.Ref1Index;
                 UsageEntryRef entryRef2 = (new UsageEntryRef((entryRef).PageIndex, -(entryRef).Ref1Index));
 
                 UsageEntryRef prev = entries[entryIndex]._ref2._prev;
                 UsageEntryRef next = entries[entryIndex]._ref2._next;
 
-                { if ((prev).IsRef1) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (next); } else if ((prev).IsRef2) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (next); } else { _lastRefHead = (next); } };
-                { if ((next).IsRef1) { (Pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (prev); } else if ((next).IsRef2) { (Pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (prev); } else { _lastRefTail = (prev); } };
+                { if ((prev).IsRef1) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (next); } else if ((prev).IsRef2) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (next); } else { _lastRefHead = (next); } };
+                { if ((next).IsRef1) { (_pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (prev); } else if ((next).IsRef2) { (_pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (prev); } else { _lastRefTail = (prev); } };
 
                 if (_addRef2Head == entryRef2)
                 {
@@ -658,13 +661,13 @@ namespace System.Runtime.Caching
                 prev = entries[entryIndex]._ref2._prev;
                 next = entries[entryIndex]._ref2._next;
 
-                { if ((prev).IsRef1) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (entryRef2); } else if ((prev).IsRef2) { (Pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (entryRef2); } else { _lastRefHead = (entryRef2); } };
-                { if ((next).IsRef1) { (Pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (entryRef2); } else if ((next).IsRef2) { (Pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (entryRef2); } else { _lastRefTail = (entryRef2); } };
+                { if ((prev).IsRef1) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref1Index]._ref1._next = (entryRef2); } else if ((prev).IsRef2) { (_pages[((prev).PageIndex)]._entries)[(prev).Ref2Index]._ref2._next = (entryRef2); } else { _lastRefHead = (entryRef2); } };
+                { if ((next).IsRef1) { (_pages[((next).PageIndex)]._entries)[(next).Ref1Index]._ref1._prev = (entryRef2); } else if ((next).IsRef2) { (_pages[((next).PageIndex)]._entries)[(next).Ref2Index]._ref2._prev = (entryRef2); } else { _lastRefTail = (entryRef2); } };
 
                 entries[entryIndex]._ref1._prev = UsageEntryRef.INVALID;
                 entries[entryIndex]._ref1._next = _lastRefHead;
 
-                { if ((_lastRefHead).IsRef1) { (Pages[((_lastRefHead).PageIndex)]._entries)[(_lastRefHead).Ref1Index]._ref1._prev = (entryRef); } else if ((_lastRefHead).IsRef2) { (Pages[((_lastRefHead).PageIndex)]._entries)[(_lastRefHead).Ref2Index]._ref2._prev = (entryRef); } else { _lastRefTail = (entryRef); } };
+                { if ((_lastRefHead).IsRef1) { (_pages[((_lastRefHead).PageIndex)]._entries)[(_lastRefHead).Ref1Index]._ref1._prev = (entryRef); } else if ((_lastRefHead).IsRef2) { (_pages[((_lastRefHead).PageIndex)]._entries)[(_lastRefHead).Ref2Index]._ref2._prev = (entryRef); } else { _lastRefTail = (entryRef); } };
                 _lastRefHead = entryRef;
 
                 Dbg.Trace("CacheUsageUpdate",
@@ -708,13 +711,13 @@ namespace System.Runtime.Caching
                     {
                         Debug.Assert(_cEntriesInUse > 0, "_cEntriesInUse > 0");
 
-                        prevNext = (Pages[(prev.PageIndex)]._entries)[prev.Ref2Index]._ref2._prev;
+                        prevNext = (_pages[(prev.PageIndex)]._entries)[prev.Ref2Index]._ref2._prev;
                         while (prevNext.IsRef1)
                         {
-                            prevNext = (Pages[(prevNext.PageIndex)]._entries)[prevNext.Ref1Index]._ref1._prev;
+                            prevNext = (_pages[(prevNext.PageIndex)]._entries)[prevNext.Ref1Index]._ref1._prev;
                         }
 
-                        entries = (Pages[(prev.PageIndex)]._entries);
+                        entries = (_pages[(prev.PageIndex)]._entries);
                         entryIndex = prev.Ref2Index;
 
                         if (!force)
@@ -728,10 +731,10 @@ namespace System.Runtime.Caching
 
                         UsageEntryRef prev1 = (new UsageEntryRef((prev).PageIndex, (prev).Ref2Index));
                         cacheEntry = entries[entryIndex]._cacheEntry;
-                        Debug.Assert(cacheEntry!.UsageEntryRef == prev1, "cacheEntry.UsageEntryRef == prev1");
-                        Dbg.Trace("CacheUsageFlushUnderUsedItem", "Flushing underused items, item=" + cacheEntry!.Key + ", bucket=" + _bucket);
+                        Debug.Assert(cacheEntry.UsageEntryRef == prev1, "cacheEntry.UsageEntryRef == prev1");
+                        Dbg.Trace("CacheUsageFlushUnderUsedItem", "Flushing underused items, item=" + cacheEntry.Key + ", bucket=" + _bucket);
 
-                        cacheEntry!.UsageEntryRef = UsageEntryRef.INVALID;
+                        cacheEntry.UsageEntryRef = UsageEntryRef.INVALID;
 
                         RemoveEntryFromLastRefList(prev1);
 
@@ -765,15 +768,18 @@ namespace System.Runtime.Caching
             UsageEntryRef next;
             while (!current.IsInvalid)
             {
-                entries = (Pages[(current.PageIndex)]._entries);
+                entries = (_pages[(current.PageIndex)]._entries);
                 entryIndex = current.Ref1Index;
 
                 next = entries[entryIndex]._ref1._next;
 
                 cacheEntry = entries[entryIndex]._cacheEntry;
                 entries[entryIndex]._cacheEntry = null;
-                Debug.Assert(cacheEntry!.UsageEntryRef.IsInvalid, "cacheEntry.UsageEntryRef.IsInvalid");
-                cacheStore.Remove(cacheEntry!, cacheEntry, CacheEntryRemovedReason.Evicted);
+                if (cacheEntry != null)
+                {
+                    Debug.Assert(cacheEntry.UsageEntryRef.IsInvalid, "cacheEntry.UsageEntryRef.IsInvalid");
+                    cacheStore.Remove(cacheEntry, cacheEntry, CacheEntryRemovedReason.Evicted);
+                }
 
                 current = next;
             }
@@ -787,7 +793,7 @@ namespace System.Runtime.Caching
                     current = inFlushHead;
                     while (!current.IsInvalid)
                     {
-                        entries = (Pages[(current.PageIndex)]._entries);
+                        entries = (_pages[(current.PageIndex)]._entries);
                         entryIndex = current.Ref1Index;
 
                         next = entries[entryIndex]._ref1._next;

@@ -34,7 +34,7 @@ namespace System.Runtime.Caching
         private readonly object _timerLock;
         private long _totalCountBeforeTrim;
 
-        private CacheMemoryMonitor _cacheMemoryMonitor = null!;
+        private CacheMemoryMonitor _cacheMemoryMonitor;
         private readonly MemoryCache _memoryCache;
         private readonly PhysicalMemoryMonitor _physicalMemoryMonitor;
 #if NET
@@ -165,6 +165,7 @@ namespace System.Runtime.Caching
 #endif
         }
 
+        [MemberNotNull(nameof(_cacheMemoryMonitor))]
         private void InitDisposableMembers()
         {
             bool dispose = true;

@@ -19,12 +19,13 @@ namespace System.Runtime.Caching
         private const int MAX_CHAR_COUNT_OF_LONG_CONVERTED_TO_HEXADECIMAL_STRING = 16;
         private readonly ReadOnlyCollection<string> _keys;
         private readonly string? _regionName;
-        private string _uniqueId = null!;
+        private string _uniqueId;
         private DateTimeOffset _lastModified;
         private List<MemoryCacheEntry>? _dependencies;
 
         private MemoryCacheEntryChangeMonitor() { _keys = null!; _uniqueId = null!; } // hide default .ctor
 
+        [MemberNotNull(nameof(_uniqueId))]
         private void InitDisposableMembers(MemoryCache cache)
         {
             bool dispose = true;
@@ -88,7 +89,7 @@ namespace System.Runtime.Caching
                 // pass reference to self so the dependency can notify us when it changes
                 entry.AddDependent(cache, this);
                 // add dependency to collection so we can dispose it later
-                _dependencies!.Add(entry!);
+                _dependencies?.Add(entry);
                 // has the entry already changed?
                 if (entry.State != EntryState.AddedToCache)
                 {
@@ -127,7 +128,7 @@ namespace System.Runtime.Caching
 
         public override ReadOnlyCollection<string> CacheKeys { get { return new ReadOnlyCollection<string>(_keys); } }
         public override string? RegionName { get { return _regionName; } }
-        public override string UniqueId => _uniqueId!;
+        public override string UniqueId => _uniqueId;
         public override DateTimeOffset LastModified { get { return _lastModified; } }
         internal List<MemoryCacheEntry>? Dependencies { get { return _dependencies; } }
 

@@ -24,7 +24,12 @@ namespace System.Runtime.Caching
 
         internal sealed class DirectoryMonitor
         {
-            internal FileSystemWatcher? Fsw;
+            internal readonly FileSystemWatcher Fsw;
+
+            internal DirectoryMonitor(string dir)
+            {
+                Fsw = new FileSystemWatcher(dir);
+            }
         }
 
         internal sealed class FileChangeEventTarget
@@ -104,15 +109,14 @@ namespace System.Runtime.Caching
                     dirMon = _dirMonitors[dir] as DirectoryMonitor;
                     if (dirMon == null)
                     {
-                        dirMon = new DirectoryMonitor();
-                        dirMon.Fsw = new FileSystemWatcher(dir);
-                        dirMon.Fsw!.NotifyFilter = NotifyFilters.FileName
+                        dirMon = new DirectoryMonitor(dir);
+                        dirMon.Fsw.NotifyFilter = NotifyFilters.FileName
                                                   | NotifyFilters.DirectoryName
                                                   | NotifyFilters.CreationTime
                                                   | NotifyFilters.Size
                                                   | NotifyFilters.LastWrite
                                                   | NotifyFilters.Security;
-                        dirMon.Fsw!.EnableRaisingEvents = true;
+                        dirMon.Fsw.EnableRaisingEvents = true;
                     }
                     _dirMonitors[dir] = dirMon;
                 }
@@ -122,11 +126,11 @@ namespace System.Runtime.Caching
 
             lock (dirMon)
             {
-                dirMon.Fsw!.Changed += target.ChangedHandler;
-                dirMon.Fsw!.Created += target.ChangedHandler;
-                dirMon.Fsw!.Deleted += target.ChangedHandler;
-                dirMon.Fsw!.Error += target.ErrorHandler;
-                dirMon.Fsw!.Renamed += target.RenamedHandler;
+                dirMon.Fsw.Changed += target.ChangedHandler;
+                dirMon.Fsw.Created += target.ChangedHandler;
+                dirMon.Fsw.Deleted += target.ChangedHandler;
+                dirMon.Fsw.Error += target.ErrorHandler;
+                dirMon.Fsw.Renamed += target.RenamedHandler;
             }
 
             state = target;
@@ -150,11 +154,11 @@ namespace System.Runtime.Caching
             {
                 lock (dirMon)
                 {
-                    dirMon.Fsw!.Changed -= target.ChangedHandler;
-                    dirMon.Fsw!.Created -= target.ChangedHandler;
-                    dirMon.Fsw!.Deleted -= target.ChangedHandler;
-                    dirMon.Fsw!.Error -= target.ErrorHandler;
-                    dirMon.Fsw!.Renamed -= target.RenamedHandler;
+                    dirMon.Fsw.Changed -= target.ChangedHandler;
+                    dirMon.Fsw.Created -= target.ChangedHandler;
+                    dirMon.Fsw.Deleted -= target.ChangedHandler;
+                    dirMon.Fsw.Error -= target.ErrorHandler;
+                    dirMon.Fsw.Renamed -= target.RenamedHandler;
                 }
             }
         }

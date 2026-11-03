@@ -29,10 +29,10 @@ namespace System.Runtime.Caching
         private static readonly object s_initLock = new object();
         private static MemoryCache? s_defaultCache;
         private static readonly CacheEntryRemovedCallback s_sentinelRemovedCallback = new CacheEntryRemovedCallback(SentinelEntry.OnCacheEntryRemovedCallback);
-        private GCHandleRef<MemoryCacheStore>[] _storeRefs = null!;
+        private GCHandleRef<MemoryCacheStore>[] _storeRefs;
         private int _storeCount;
         private int _disposed;
-        private MemoryCacheStatistics _stats = null!;
+        private MemoryCacheStatistics _stats;
         private readonly string _name;
         private Counters? _perfCounters;
         private readonly bool _configLess;
@@ -52,10 +52,10 @@ namespace System.Runtime.Caching
         private sealed class SentinelEntry
         {
             private readonly string _key;
-            private readonly ChangeMonitor _expensiveObjectDependency;
+            private readonly ChangeMonitor? _expensiveObjectDependency;
             private readonly CacheEntryUpdateCallback _updateCallback;
 
-            internal SentinelEntry(string key, ChangeMonitor expensiveObjectDependency, CacheEntryUpdateCallback callback)
+            internal SentinelEntry(string key, ChangeMonitor? expensiveObjectDependency, CacheEntryUpdateCallback callback)
             {
                 _key = key;
                 _expensiveObjectDependency = expensiveObjectDependency;
@@ -67,7 +67,7 @@ namespace System.Runtime.Caching
                 get { return _key; }
             }
 
-            internal ChangeMonitor ExpensiveObjectDependency
+            internal ChangeMonitor? ExpensiveObjectDependency
             {
                 get { return _expensiveObjectDependency; }
             }
@@ -88,7 +88,7 @@ namespace System.Runtime.Caching
                 Collection<ChangeMonitor> changeMonitors = policy.ChangeMonitors;
                 if (changeMonitors != null)
                 {
-                    foreach (ChangeMonitor monitor in changeMonitors!)
+                    foreach (ChangeMonitor monitor in changeMonitors)
                     {
                         if (monitor != null && monitor.HasChanged)
                         {
@@ -106,7 +106,7 @@ namespace System.Runtime.Caching
                 // if the monitors have changed we need to dispose them
                 if (hasChanged)
                 {
-                    foreach (ChangeMonitor monitor in changeMonitors!)
+                    foreach (ChangeMonitor monitor in changeMonitors)
                     {
                         monitor?.Dispose();
                     }
@@ -124,7 +124,7 @@ namespace System.Runtime.Caching
                         case CacheEntryRemovedReason.Expired:
                             break;
                         case CacheEntryRemovedReason.ChangeMonitorChanged:
-                            if (entry.ExpensiveObjectDependency.HasChanged)
+                            if (entry.ExpensiveObjectDependency?.HasChanged == true)
                             {
                                 return;
                             }
@@ -145,7 +145,7 @@ namespace System.Runtime.Caching
                         CacheItemPolicy? policy = args.UpdatedCacheItemPolicy;
                         if (expensiveObject != null && IsPolicyValid(policy))
                         {
-                            cache.Set(entry.Key, expensiveObject, policy!);
+                            cache.Set(entry.Key, expensiveObject, policy);
                         }
                         else
                         {
@@ -186,6 +186,7 @@ namespace System.Runtime.Caching
             }
         }
 
+        [MemberNotNull(nameof(_storeRefs), nameof(_stats))]
         private void InitDisposableMembers(NameValueCollection? config)
         {
             bool dispose = true;
@@ -385,7 +386,7 @@ namespace System.Runtime.Caching
             {
                 if (changeMonitors != null)
                 {
-                    foreach (ChangeMonitor monitor in changeMonitors!)
+                    foreach (ChangeMonitor monitor in changeMonitors)
                     {
                         monitor?.Dispose();
                     }
@@ -534,7 +535,7 @@ namespace System.Runtime.Caching
             }
             set
             {
-                Set(key, value!, ObjectCache.InfiniteAbsoluteExpiration);
+                Set(key, value, ObjectCache.InfiniteAbsoluteExpiration);
             }
         }
 
@@ -564,8 +565,9 @@ namespace System.Runtime.Caching
         public override CacheItem AddOrGetExisting(CacheItem item, CacheItemPolicy? policy)
         {
             ArgumentNullException.ThrowIfNull(item);
+            ArgumentNullException.ThrowIfNull(item.Value);
 
-            return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value!, policy));
+            return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value, policy));
         }
 
         public override object? AddOrGetExisting(string key, object value, CacheItemPolicy? policy, string? regionName = null)
@@ -602,8 +604,9 @@ namespace System.Runtime.Caching
         public override void Set(CacheItem item, CacheItemPolicy? policy)
         {
             ArgumentNullException.ThrowIfNull(item);
+            ArgumentNullException.ThrowIfNull(item.Value);
 
-            Set(item.Key, item.Value!, policy);
+            Set(item.Key, item.Value, policy);
         }
 
         public override void Set(string key, object value, CacheItemPolicy? policy, string? regionName = null)
@@ -636,7 +639,7 @@ namespace System.Runtime.Caching
             {
                 if (changeMonitors != null)
                 {
-                    foreach (ChangeMonitor monitor in changeMonitors!)
+                    foreach (ChangeMonitor monitor in changeMonitors)
                     {
                         monitor?.Dispose();
                     }
@@ -671,7 +674,7 @@ namespace System.Runtime.Caching
             {
                 if (changeMonitors != null)
                 {
-                    foreach (ChangeMonitor monitor in changeMonitors!)
+                    foreach (ChangeMonitor monitor in changeMonitors)
                     {
                         monitor?.Dispose();
                     }
@@ -707,7 +710,7 @@ namespace System.Runtime.Caching
             MemoryCacheKey sentinelCacheKey = new MemoryCacheKey("OnUpdateSentinel" + key);
             MemoryCacheStore sentinelStore = GetStore(sentinelCacheKey);
             MemoryCacheEntry sentinelCacheEntry = new MemoryCacheEntry(sentinelCacheKey.Key,
-                                                                       new SentinelEntry(key, expensiveObjectDep!, onUpdateCallback),
+                                                                       new SentinelEntry(key, expensiveObjectDep, onUpdateCallback),
                                                                        absoluteExpiration,
                                                                        slidingExpiration,
                                                                        CacheItemPriority.NotRemovable,

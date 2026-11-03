@@ -22,7 +22,7 @@ namespace System.Runtime.Caching
         private readonly CacheExpires _expires;
         private readonly CacheUsage _usage;
         private int _disposed;
-        private ManualResetEvent _insertBlock = null!;
+        private ManualResetEvent _insertBlock;
         private volatile bool _useInsertBlock;
         private readonly MemoryCache _cache;
         private readonly Counters? _perfCounters;
@@ -88,6 +88,7 @@ namespace System.Runtime.Caching
             }
         }
 
+        [MemberNotNull(nameof(_insertBlock))]
         private void InitDisposableMembers()
         {
             _insertBlock = new ManualResetEvent(true);
