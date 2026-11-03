@@ -97,7 +97,6 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         [Fact]
         public void Diagnostic_UnsealedValueType()
         {
-            // A value type that extends System.ValueType but is not sealed (warning, auto-sealed)
             string source = """
                 .assembly extern System.Runtime { }
                 .assembly test { }
@@ -112,6 +111,46 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             var error = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.UnsealedValueType, error.Id);
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Theory]
+        [InlineData("", false)]
+        [InlineData("", true)]
+        [InlineData("sealed", false)]
+        [InlineData("sealed", true)]
+        public void ValueType_PreservesSealedAttributeInErrorTolerantMode(string attributes, bool errorTolerant)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public {{attributes}} MyStruct extends [mscorlib]System.ValueType { }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = errorTolerant });
+            bool sealedType = attributes == "sealed";
+            if (sealedType)
+            {
+                Assert.Empty(diagnostics);
+            }
+            else
+            {
+                Diagnostic diagnostic = Assert.Single(diagnostics);
+                Assert.Equal(DiagnosticIds.UnsealedValueType, diagnostic.Id);
+                Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            }
+
+            if (!sealedType && !errorTolerant)
+            {
+                Assert.Null(result);
+                return;
+            }
+
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            MetadataReader reader = pe.GetMetadataReader();
+            TypeDefinition type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal(sealedType, type.Attributes.HasFlag(TypeAttributes.Sealed));
         }
 
         [Theory]
@@ -872,7 +911,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                 .ToDictionary(type => reader.GetString(type.Name));
 
             Assert.True(types["FlagValueType"].Attributes.HasFlag(TypeAttributes.BeforeFieldInit));
-            Assert.True(types["FlagValueType"].Attributes.HasFlag(TypeAttributes.Sealed));
+            Assert.False(types["FlagValueType"].Attributes.HasFlag(TypeAttributes.Sealed));
             Assert.Equal("ValueType", GetBaseTypeName(reader, types["FlagValueType"]));
             Assert.True(types["FlagEnumType"].Attributes.HasFlag(TypeAttributes.BeforeFieldInit));
             Assert.Equal("Enum", GetBaseTypeName(reader, types["FlagEnumType"]));

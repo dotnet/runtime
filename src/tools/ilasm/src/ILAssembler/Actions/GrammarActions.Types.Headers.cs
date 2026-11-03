@@ -187,7 +187,6 @@ internal sealed partial class GrammarActions
                     DiagnosticSeverity.Error,
                     string.Format(DiagnosticMessageTemplates.UnsealedValueType, typeDefinition.Name),
                     Location.From(location, _documents)));
-            typeDefinition.Attributes |= TypeAttributes.Sealed;
         }
     }
 
