@@ -345,8 +345,8 @@ namespace Mono.Linker
                             AssemblyDefinition? resolvedTargetAssembly = null;
                             if (attr.ConstructorArguments[0].Value is string str)
                             {
-                                var nextAssemblyName = AssemblyNameReference.Parse(str);
-                                if (context.TryResolve(nextAssemblyName) is AssemblyDefinition nextAssembly)
+                                var nextAssemblyName = LinkContext.TryParseAssemblyName(str);
+                                if (nextAssemblyName is not null && context.TryResolve(nextAssemblyName) is AssemblyDefinition nextAssembly)
                                 {
                                     resolvedTargetAssembly = nextAssembly;
                                     if (seen.Add(nextAssembly))

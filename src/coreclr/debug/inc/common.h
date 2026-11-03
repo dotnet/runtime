@@ -284,7 +284,7 @@ inline CORDB_ADDRESS ALIGN_ADDRESS( CORDB_ADDRESS val, CORDB_ADDRESS alignment )
     return result;
 }
 
-#include "dacprivate.h" // for MSLAYOUT
+#include "mslayout.h"
 #include "dumpcommon.h"
 
 #endif //DEBUGGER_COMMON_H

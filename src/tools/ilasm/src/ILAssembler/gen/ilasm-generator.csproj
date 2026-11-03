@@ -23,7 +23,7 @@
       <Listener>false</Listener>
       <Visitor>false</Visitor>
       <GAtn>false</GAtn>
-      <Package>ILAssembler</Package>
+      <Package>Microsoft.DotNet.ILAssembler</Package>
       <AntOutDir>$(ProjectDir)</AntOutDir>
       <WorkingDirectory>$(ProjectDir)</WorkingDirectory>
     </Antlr4>
