@@ -2078,6 +2078,7 @@ CPalThread::EnsureSignalAlternateStack()
                 if (st == 0)
                 {
                     m_alternateStack = altStack;
+                    m_alternateStackSize = altStackSize;
                 }
                 else
                 {
@@ -2109,27 +2110,25 @@ CPalThread::FreeSignalAlternateStack()
 {
 #ifndef TARGET_WASM // WebAssembly does not support alternate signal stacks.
     void *altstack = m_alternateStack;
+    size_t altStackSize = m_alternateStackSize;
     m_alternateStack = nullptr;
+    m_alternateStackSize = 0;
 
     if (altstack != nullptr)
     {
-        stack_t ss, oss;
-        // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
-        // all other ss fields are ignored. However, MUSL implementation checks that the
-        // ss_size is >= MINSIGSTKSZ even in this case.
-        ss.ss_size = MINSIGSTKSZ;
-        ss.ss_flags = SS_DISABLE;
-        ss.ss_sp = NULL;
-        int st = sigaltstack(&ss, &oss);
-        if ((st == 0) && (oss.ss_flags != SS_DISABLE))
+        stack_t ss;
+        if (sigaltstack(nullptr, &ss) == 0 && (ss.ss_flags & SS_DISABLE) == 0 && ss.ss_sp == altstack)
         {
-            // Make sure this altstack is this PAL's before freeing.
-            if (oss.ss_sp == altstack)
-            {
-                int st = munmap(oss.ss_sp, oss.ss_size);
-                _ASSERTE(st == 0);
-            }
+            // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
+            // all other ss fields are ignored. However, MUSL implementation checks that the
+            // ss_size is >= MINSIGSTKSZ even in this case.
+            ss.ss_size = MINSIGSTKSZ;
+            ss.ss_flags = SS_DISABLE;
+            ss.ss_sp = nullptr;
+            sigaltstack(&ss, nullptr);
         }
+        int st = munmap(altstack, altStackSize);
+        _ASSERTE(st == 0);
     }
 #endif // !TARGET_WASM
 }
