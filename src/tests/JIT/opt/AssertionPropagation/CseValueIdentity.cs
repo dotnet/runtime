@@ -66,6 +66,78 @@ public class CseValueIdentity
         Assert.Throws<InvalidOperationException>(() => AddWithRecordedIndex(list, record));
     }
 
+    private sealed class Buffer
+    {
+        public int[] Items;
+        public int Index;
+        public int Count;
+    }
+
+    // A reloaded field gets a fresh conservative value number, and CSE rewrites the reload
+    // but not the arithmetic above it. Facts about "Items.Length - 1" or "Count" from the
+    // guard must still reach the index built from the reload.
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int LastOfNonEmpty(Buffer b)
+    {
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        if (b.Items.Length == 0)
+            return -1;
+        return b.Items[b.Items.Length - 1];
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int LastGuardedBySub(Buffer b)
+    {
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        int last = b.Items.Length - 1;
+        if (last < 0)
+            return -1;
+        return b.Items[b.Items.Length - 1];
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CountAsIndex(Buffer b)
+    {
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        if ((uint)b.Count >= (uint)b.Items.Length)
+            return -1;
+        return b.Items[b.Count];
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int NextOfIndex(Buffer b)
+    {
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        if ((uint)(b.Index + 1) >= (uint)b.Items.Length)
+            return -1;
+        return b.Items[b.Index + 1];
+    }
+
+    [Fact]
+    public static void ReloadedFieldArithmetic()
+    {
+        Buffer b = new Buffer { Items = new int[] { 1, 2, 3, 4 }, Index = 1, Count = 2 };
+        Assert.Equal(4, LastOfNonEmpty(b));
+        Assert.Equal(4, LastGuardedBySub(b));
+        Assert.Equal(3, CountAsIndex(b));
+        Assert.Equal(3, NextOfIndex(b));
+
+        Buffer empty = new Buffer { Items = new int[0], Index = -1, Count = 0 };
+        Assert.Equal(-1, LastOfNonEmpty(empty));
+        Assert.Equal(-1, LastGuardedBySub(empty));
+        Assert.Equal(-1, CountAsIndex(empty));
+        Assert.Equal(-1, NextOfIndex(empty));
+
+        Buffer edge = new Buffer { Items = new int[] { 7 }, Index = 0, Count = 1 };
+        Assert.Equal(-1, CountAsIndex(edge));
+        Assert.Equal(-1, NextOfIndex(edge));
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static object CopyReceiver(ref Holder holder)
     {
