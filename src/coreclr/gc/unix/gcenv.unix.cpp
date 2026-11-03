@@ -977,7 +977,7 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
     return &g_processAffinitySet;
 }
 
-#if HAVE_PROCFS_STATM
+#ifdef RLIMIT_AS
 // Return the size of the user-mode portion of the virtual address space of this process.
 static size_t GetCurrentVirtualMemorySize()
 {
@@ -1016,7 +1016,7 @@ static size_t GetCurrentVirtualMemorySize()
 
     return result;
 }
-#endif // HAVE_PROCFS_STATM
+#endif // RLIMIT_AS
 
 // Return the size of the available user-mode portion of the virtual address space of this process.
 // Return:
@@ -1321,7 +1321,7 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
                 load = (uint32_t)(((float)used * 100) / (float)total);
             }
 
-#if HAVE_PROCFS_STATM
+#ifdef RLIMIT_AS
             rlimit addressSpaceLimit;
             if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
             {
@@ -1337,7 +1337,7 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
                     }
                 }
             }
-#endif // HAVE_PROCFS_STATM
+#endif // RLIMIT_AS
         }
     }
 

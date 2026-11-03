@@ -11,66 +11,6 @@ extern "C" {
 PALIMPORT
 HANDLE
 PALAPI
-CreateFileA(
-        IN LPCSTR lpFileName,
-        IN DWORD dwDesiredAccess,
-        IN DWORD dwShareMode,
-        IN LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-        IN DWORD dwCreationDisposition,
-        IN DWORD dwFlagsAndAttributes,
-        IN HANDLE hTemplateFile);
-
-PALIMPORT
-BOOL
-PALAPI
-DeleteFileA(
-        IN LPCSTR lpFileName);
-
-PALIMPORT
-BOOL
-PALAPI
-CreateDirectoryA(
-         IN LPCSTR lpPathName,
-         IN LPSECURITY_ATTRIBUTES lpSecurityAttributes);
-
-PALIMPORT
-BOOL
-PALAPI
-CreateDirectoryW(
-         IN LPCWSTR lpPathName,
-         IN LPSECURITY_ATTRIBUTES lpSecurityAttributes);
-
-PALIMPORT
-DWORD
-PALAPI
-GetFullPathNameA(
-         IN LPCSTR lpFileName,
-         IN DWORD nBufferLength,
-         OUT LPSTR lpBuffer,
-         OUT LPSTR *lpFilePart);
-
-PALIMPORT
-DWORD
-PALAPI
-GetTempPathA(
-         IN DWORD nBufferLength,
-         OUT LPSTR lpBuffer);
-
-PALIMPORT
-BOOL
-PALAPI
-SetCurrentDirectoryW(
-            IN LPCWSTR lpPathName);
-
-PALIMPORT
-BOOL
-PALAPI
-SetCurrentDirectoryA(
-            IN LPCSTR lpPathName);
-
-PALIMPORT
-HANDLE
-PALAPI
 OpenMutexA(
        IN DWORD dwDesiredAccess,
        IN BOOL bInheritHandle,
@@ -106,12 +46,6 @@ GetEnvironmentVariableA(
             IN LPCSTR lpName,
             OUT LPSTR lpBuffer,
             IN DWORD nSize);
-
-PALIMPORT
-BOOL
-PALAPI
-RemoveDirectoryW(
-                 IN LPCWSTR lpPathName);
 
 #ifdef  __cplusplus
 }
