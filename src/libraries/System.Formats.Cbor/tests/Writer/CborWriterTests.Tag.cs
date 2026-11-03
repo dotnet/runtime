@@ -79,11 +79,17 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [InlineData("2013-03-21T20:04:00Z", "c074323031332d30332d32315432303a30343a30305a")]
+        [InlineData("2020-04-09T11:41:19.0000001Z", "c0781c323032302d30342d30395431313a34313a31392e303030303030315a")]
         [InlineData("2020-04-09T14:31:21.3535941+01:00", "c07821323032302d30342d30395431343a33313a32312e333533353934312b30313a3030")]
+        [InlineData("2020-04-09T11:41:19-00:30", "c07819323032302d30342d30395431313a34313a31392d30303a3330")]
         [InlineData("2020-04-09T11:41:19.12-08:00", "c0781c323032302d30342d30395431313a34313a31392e31322d30383a3030")]
+        [InlineData("0001-01-01T00:00:00Z", "c074303030312d30312d30315430303a30303a30305a")]
+        [InlineData("9999-12-31T23:59:59.9999999Z", "c0781c393939392d31322d33315432333a35393a35392e393939393939395a")]
+        [InlineData("0001-01-01T00:00:00-14:00", "c07819303030312d30312d30315430303a30303a30302d31343a3030")]
+        [InlineData("9999-12-31T23:59:59.9999999+14:00", "c07821393939392d31322d33315432333a35393a35392e393939393939392b31343a3030")]
         public static void WriteDateTimeOffset_SingleValue_HappyPath(string valueString, string expectedHexEncoding)
         {
-            DateTimeOffset value = DateTimeOffset.Parse(valueString);
+            DateTimeOffset value = DateTimeOffset.Parse(valueString, CultureInfo.InvariantCulture);
             var writer = new CborWriter();
             writer.WriteDateTimeOffset(value);
 
@@ -91,14 +97,15 @@ namespace System.Formats.Cbor.Tests
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void WriteDateTimeOffset_IsCultureInvariant()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("2020-04-09T14:31:21.3535941Z", "c0781c323032302d30342d30395431343a33313a32312e333533353934315a")]
+        [InlineData("2020-04-09T14:31:21.3535941+01:00", "c07821323032302d30342d30395431343a33313a32312e333533353934312b30313a3030")]
+        public static void WriteDateTimeOffset_IsCultureInvariant(string valueString, string expectedHexEncoding)
         {
             // Regression test for https://github.com/dotnet/runtime/pull/92539
-            RemoteExecutor.Invoke(static () =>
+            RemoteExecutor.Invoke(static (input, expectedHex) =>
             {
-                DateTimeOffset value = DateTimeOffset.Parse("2020-04-09T14:31:21.3535941+01:00", CultureInfo.InvariantCulture);
-                string expectedHexEncoding = "c07821323032302d30342d30395431343a33313a32312e333533353934312b30313a3030";
+                DateTimeOffset value = DateTimeOffset.Parse(input, CultureInfo.InvariantCulture);
 
                 // Install a non-Gregorian calendar
                 var culture = new CultureInfo("he-IL");
@@ -110,8 +117,8 @@ namespace System.Formats.Cbor.Tests
                 writer.WriteDateTimeOffset(value);
 
                 byte[] encoding = writer.Encode();
-                AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
-            }).Dispose();
+                AssertHelper.HexEqual(expectedHex.HexToByteArray(), encoding);
+            }, valueString, expectedHexEncoding).Dispose();
         }
 
         [Theory]
