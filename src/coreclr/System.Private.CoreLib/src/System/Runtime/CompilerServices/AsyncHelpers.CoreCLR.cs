@@ -718,7 +718,6 @@ namespace System.Runtime.CompilerServices
                 // Ensure that state object isn't published out for others to see.
                 Debug.Assert((m_stateFlags & (int)InternalTaskOptions.PromiseTask) != 0, "Expected state flags to already be configured.");
                 Debug.Assert(m_stateObject is null, "Expected to be able to use the state object field for Continuation.");
-                m_action = DispatchContinuations;
                 m_stateFlags |= (int)(InternalTaskOptions.HiddenState | InternalTaskOptions.RuntimeAsyncTask);
             }
 
@@ -829,12 +828,8 @@ namespace System.Runtime.CompilerServices
                 _awaitedTaskGetResult(awaitedTask, ref awaitingContinuation.GetResultStorageOrNull());
             }
 
-            private Action GetContinuationAction()
-            {
-                object? action = m_action;
-                Debug.Assert(action is Action);
-                return Unsafe.As<Action>(action);
-            }
+            // Lazily created, as it's only needed when suspending on something other than a Task.
+            private Action GetContinuationAction() => Unsafe.As<Action>(m_action ??= new Action(DispatchContinuations));
 
             private Continuation MoveContinuationState()
             {
