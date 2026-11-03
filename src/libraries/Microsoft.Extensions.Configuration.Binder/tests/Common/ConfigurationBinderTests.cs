@@ -199,6 +199,110 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("Yo", options.NamedProperty);
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void VirtualPropertyMetadataUsesMostDerivedDeclaration(bool useGet, bool includeOriginalKey)
+        {
+            var values = new Dictionary<string, string?> { ["Renamed:0"] = "1" };
+            if (includeOriginalKey)
+            {
+                values["Values:0"] = "2";
+            }
+            IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+            RenamedVirtualCollectionOptions renamed;
+            InheritedRenamedVirtualCollectionOptions inherited;
+            IgnoredVirtualCollectionOptions ignored;
+            InheritedIgnoredVirtualCollectionOptions inheritedIgnored;
+            if (useGet)
+            {
+                renamed = configuration.Get<RenamedVirtualCollectionOptions>();
+                inherited = configuration.Get<InheritedRenamedVirtualCollectionOptions>();
+                ignored = configuration.Get<IgnoredVirtualCollectionOptions>();
+                inheritedIgnored = configuration.Get<InheritedIgnoredVirtualCollectionOptions>();
+            }
+            else
+            {
+                renamed = new();
+                inherited = new();
+                ignored = new();
+                inheritedIgnored = new();
+                configuration.Bind(renamed);
+                configuration.Bind(inherited);
+                configuration.Bind(ignored);
+                configuration.Bind(inheritedIgnored);
+            }
+
+            Assert.Equal(new[] { 99, 1 }, renamed.Values);
+            Assert.Equal(new[] { 99, 1 }, inherited.Values);
+            Assert.Equal(new[] { 99 }, ignored.Values);
+            Assert.Equal(new[] { 99 }, inheritedIgnored.Values);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void VirtualPropertyMetadataHandlesPartialAccessorOverrides(bool useGet)
+        {
+            IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["Value"] = "original",
+                    ["Middle"] = "middle",
+                    ["Leaf"] = "leaf",
+                    ["Renamed"] = "renamed",
+                }).Build();
+
+            SetterOnlyRenamedVirtualScalarOptions mostDerived;
+            InheritedSetterOnlyRenamedVirtualScalarOptions inherited;
+            InheritedSetterOnlyIgnoredVirtualScalarOptions ignored;
+
+            if (useGet)
+            {
+                mostDerived = configuration.Get<SetterOnlyRenamedVirtualScalarOptions>();
+                inherited = configuration.Get<InheritedSetterOnlyRenamedVirtualScalarOptions>();
+                ignored = configuration.Get<InheritedSetterOnlyIgnoredVirtualScalarOptions>();
+            }
+            else
+            {
+                mostDerived = new();
+                inherited = new();
+                ignored = new();
+                configuration.Bind(mostDerived);
+                configuration.Bind(inherited);
+                configuration.Bind(ignored);
+            }
+
+            Assert.Equal("leaf", mostDerived.Value);
+            Assert.Equal("renamed", inherited.Value);
+            Assert.Equal("initial", ignored.Value);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void OverloadedVirtualIndexersAreIgnored(bool useGet)
+        {
+            IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(
+                new Dictionary<string, string?> { ["Value"] = "bound" }).Build();
+
+            PartiallyOverriddenVirtualIndexerOptions options;
+
+            if (useGet)
+            {
+                options = configuration.Get<PartiallyOverriddenVirtualIndexerOptions>();
+            }
+            else
+            {
+                options = new();
+                configuration.Bind(options);
+            }
+
+            Assert.Equal("bound", options.Value);
+        }
+
         [Fact]
         public void CanBindConfigurationKeyNamesRequiringEscaping()
         {

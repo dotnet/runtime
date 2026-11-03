@@ -124,8 +124,19 @@ namespace ILCompiler.DependencyAnalysis
                     command |= StackTraceDataCommand.IsStackTraceHidden;
                 }
 
+                bool hasFunctionPointer = factory.Target.IsWasm && factory.AddressTakenMethodEntrypoint(entry.Method).Marked;
+                if (hasFunctionPointer)
+                {
+                    command |= StackTraceDataCommand.HasFunctionPointer;
+                }
+
                 objData.EmitByte(commandReservation, command);
-                objData.EmitReloc(factory.MethodEntrypoint(entry.Method), RelocType.IMAGE_REL_BASED_RELPTR32);
+                objData.EmitReloc(factory.MethodEntrypoint(entry.Method),
+                    factory.Target.IsWasm ? RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32 : RelocType.IMAGE_REL_BASED_RELPTR32);
+                if (hasFunctionPointer)
+                {
+                    objData.EmitReloc(factory.AddressTakenMethodEntrypoint(entry.Method), RelocType.WASM_TABLE_INDEX_I32);
+                }
             }
 
             return objData.ToObjectData();

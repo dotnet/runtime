@@ -390,6 +390,8 @@ namespace System
         private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(GetTls13Support);
         private static readonly Lazy<bool> s_sendsCAListByDefault = new Lazy<bool>(GetSendsCAListByDefault);
         private static readonly Lazy<bool> s_supportsSha3 = new Lazy<bool>(GetSupportsSha3);
+        private static readonly Lazy<bool> s_isTlsSupported = new Lazy<bool>(GetIsTlsSupported);
+        private static readonly Lazy<bool> s_isMD5Supported = new Lazy<bool>(GetIsMD5Supported);
 
         public static bool SupportsTls10 => s_supportsTls10.Value;
         public static bool SupportsTls11 => s_supportsTls11.Value;
@@ -399,6 +401,10 @@ namespace System
         public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows && SendsCAListByDefault);
         public static bool SupportsSha3 => s_supportsSha3.Value;
         public static bool DoesNotSupportSha3 => !s_supportsSha3.Value;
+
+        // Whether System.Net.Security (SslStream) is usable in the current process.
+        public static bool IsTlsSupported => s_isTlsSupported.Value;
+        public static bool IsMD5Supported => s_isMD5Supported.Value;
 
         private static readonly Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
 
@@ -826,6 +832,39 @@ namespace System
             }
 
             return false;
+        }
+
+        private static bool GetIsTlsSupported()
+        {
+#if NET
+            // Probe rather than check the platform, so that platforms which only support TLS
+            // through an optional runtime feature report the capability correctly.
+            try
+            {
+                _ = new System.Net.Security.SslClientAuthenticationOptions();
+                return true;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return false;
+            }
+#else
+            return true;
+#endif
+        }
+
+        private static bool GetIsMD5Supported()
+        {
+            try
+            {
+                using System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create();
+                md5.ComputeHash(Array.Empty<byte>());
+                return true;
+            }
+            catch (Exception ex) when (ex is PlatformNotSupportedException or System.Security.Cryptography.CryptographicException)
+            {
+                return false;
+            }
         }
 
         private static bool DetermineBinaryFormatterSupport()

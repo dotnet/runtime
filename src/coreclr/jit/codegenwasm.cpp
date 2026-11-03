@@ -757,12 +757,6 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             {
                 GetEmitter()->emitIns_BlockTy(INS_loop);
             }
-            else if (interval->IsTry() && m_compiler->IsNativeAot())
-            {
-                // TODO-NativeAOT-WASM: Preserve interval nesting without CoreCLR's catch-resumption tag during
-                // NativeAOT bringup.
-                GetEmitter()->emitIns_BlockTy(INS_block);
-            }
             else if (interval->IsTry())
             {
                 // Handle try_table emission here, since there may be blocks nested inside.
@@ -4661,10 +4655,11 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
         maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
     }
 
-    // Runtime wants us to report twice the actual Virtual IP range as code size.
+    // CoreCLR doubles virtual IPs to preserve the low-bit tag on virtual code addresses.
+    // NativeAOT uses unscaled virtual IPs.
     // Use 1 as the prolog size.
     //
-    codeSize   = 2 * maxVirtualIP;
+    codeSize   = m_compiler->IsNativeAot() ? maxVirtualIP : 2 * maxVirtualIP;
     prologSize = 1;
 
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).

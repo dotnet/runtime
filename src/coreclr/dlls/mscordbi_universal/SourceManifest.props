@@ -20,7 +20,14 @@
     <UniversalDbiSourceManifestSource Include="src/coreclr/pal/inc" />
     <UniversalDbiSourceManifestSource Include="src/coreclr/pal/prebuilt" />
     <UniversalDbiSourceManifestSource Include="src/coreclr/pal/src" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/AsmMacros_Unix.inc" />
     <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/CLREventBase.h" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/amd64/AsmMacros_Unix.inc" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/arm/AsmMacros_Unix.inc" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/arm64/AsmMacros_Unix.inc" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/i386/AsmMacros_Unix.inc" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/loongarch64/AsmMacros_Unix.inc" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/riscv64/AsmMacros_Unix.inc" />
     <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/unix/CLREventBase.cpp" />
     <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/windows/CLREventBase.cpp" />
     <UniversalDbiSourceManifestSource Include="src/coreclr/utilcode" />

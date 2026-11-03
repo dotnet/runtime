@@ -228,6 +228,13 @@
 
   <!-- RepositoryEngineeringDir isn't set when Installer tests import this file. -->
   <Import Project="$(RepositoryEngineeringDir)native\naming.props" />
+
+  <PropertyGroup>
+    <!-- These properties must be initialized before Subsets.props selects host tool projects. -->
+    <BuildHostTools Condition="'$(DotNetBuildFromVMR)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'">true</BuildHostTools>
+    <BuildHostILTools Condition="'$(BuildHostTools)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))">true</BuildHostILTools>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)Subsets.props" />
 
   <PropertyGroup>

@@ -21,13 +21,14 @@ namespace ILCompiler.PortableCallHelpers
     /// </summary>
     internal sealed class PInvokeTableGenerator(InteropLogger log)
     {
-        public void EmitPInvokeTable(TextWriter w, TargetDetails target, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes)
+        public void EmitPInvokeTable(TextWriter w, TargetDetails target, ModuleDesc systemModule, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes)
         {
             // Modules an unresolved P/Invoke has already been reported for, so each is logged once.
             // Only the logging is suppressed: a module a later P/Invoke does resolve - through
             // [WasmImportLinkage], say - still has to make it into the table.
             var skippedModules = new HashSet<string>(StringComparer.Ordinal);
             var modules = new SortedSet<string>(StringComparer.Ordinal);
+            var qcallImports = new List<PInvokeInfo>();
 
             // Normalize what gets linked separately from the exact managed module names emitted into
             // the table. Runtime lookup uses the latter, while availability accepts the same prefix
@@ -43,6 +44,13 @@ namespace ILCompiler.PortableCallHelpers
 
             foreach (PInvokeInfo pinvoke in pinvokes)
             {
+                if (pinvoke.Module == "QCall")
+                {
+                    if (pinvoke.Method.Module == systemModule)
+                        qcallImports.Add(pinvoke);
+                    continue;
+                }
+
                 if (modules.Contains(pinvoke.Module))
                     continue;
 
@@ -76,7 +84,7 @@ namespace ILCompiler.PortableCallHelpers
                     modules.Add(pinvoke.Module);
                     log.Verbose($"Adding module {pinvoke.Module} for static linking");
                 }
-                else if (pinvoke.Module != "QCall")
+                else
                 {
                     // Unresolved module: not statically linked, [WasmImportLinkage], "*" or QCall.
                     // Skip it and throw at runtime if it is ever called, which is what Mono does too.
@@ -202,6 +210,8 @@ namespace ILCompiler.PortableCallHelpers
 
                 """);
 
+            EmitQCallTable(w, target, qcallImports);
+
             static bool ShouldTreatAsVariadic(PInvokeInfo[] candidates)
             {
                 if (candidates.Length < 2)
@@ -221,6 +231,67 @@ namespace ILCompiler.PortableCallHelpers
 
             static string ListRefs(IGrouping<string, PInvokeInfo> l)
                 => string.Join(", ", l.Select(c => ((EcmaAssembly)c.Method.Module).GetName().Name).Distinct().OrderBy(n => n, StringComparer.Ordinal));
+        }
+
+        private void EmitQCallTable(TextWriter w, TargetDetails target, List<PInvokeInfo> qcallImports)
+        {
+            var qcalls = qcallImports
+                .OrderBy(p => p.EntryPoint, StringComparer.Ordinal)
+                .DistinctBy(p => p.EntryPoint, StringComparer.Ordinal)
+                .ToArray();
+
+            if (qcalls.Length == 0)
+            {
+                w.WriteLine(
+                    """
+                    const void* QCallResolveDllImport(const char* name)
+                    {
+                        return nullptr;
+                    }
+                    """);
+                return;
+            }
+
+            w.WriteLine("extern \"C\" {");
+            foreach (PInvokeInfo qcall in qcalls)
+            {
+                // string.h already declares the libc functions. Browser uses bulk-memory wrappers instead.
+                if (qcall.EntryPoint is "memmove" or "memset")
+                {
+                    if (target.OperatingSystem == TargetOS.Browser)
+                    {
+                        w.WriteLine(qcall.EntryPoint == "memmove"
+                            ? "    void* QCall_memmove(void* dest, const void* src, size_t len);"
+                            : "    void* QCall_memset(void* dest, int value, size_t len);");
+                    }
+                    continue;
+                }
+
+                // common.h can already declare QCalls with VM types. Use a separate C identifier
+                // with the same linker symbol for the metadata-derived ABI declaration.
+                w.WriteLine(GenPInvokeDecl(qcall, $"QCall_{CEntryPoint(qcall)}"));
+            }
+            w.WriteLine("} // extern \"C\"");
+            w.WriteLine();
+            w.WriteLine("static const Entry s_QCall[] = {");
+            foreach (PInvokeInfo qcall in qcalls)
+            {
+                if (target.OperatingSystem == TargetOS.Browser && qcall.EntryPoint is "memmove" or "memset")
+                    w.WriteLine($"    {{ \"{qcall.EntryPoint}\", (void*)&QCall_{qcall.EntryPoint} }},");
+                else if (qcall.EntryPoint is "memmove" or "memset")
+                    w.WriteLine($"    DllImportEntry({qcall.EntryPoint})");
+                else
+                    w.WriteLine($"    {{ \"{EscapeLiteral(qcall.EntryPoint)}\", (void*)&QCall_{CEntryPoint(qcall)} }},");
+            }
+            w.WriteLine(
+                """
+                };
+
+                const void* QCallResolveDllImport(const char* name)
+                {
+                    return minipal_resolve_dllimport(s_QCall, sizeof(s_QCall) / sizeof(s_QCall[0]), name);
+                }
+                """);
         }
 
         public void EmitNativeToInterp(TextWriter w, List<PInvokeCallback> callbacks)
@@ -452,7 +523,7 @@ namespace ILCompiler.PortableCallHelpers
             return FixupSymbolName(pinvoke.EntryPoint);
         }
 
-        private string GenPInvokeDecl(PInvokeInfo pinvoke)
+        private string GenPInvokeDecl(PInvokeInfo pinvoke, string symbolName = null)
         {
             MethodSignature signature = pinvoke.Method.Signature;
             TypeDesc returnType = signature.ReturnType;
@@ -471,7 +542,9 @@ namespace ILCompiler.PortableCallHelpers
                 : "";
             string externKeyword = pinvoke.WasmLinkage ? "extern " : "";
 
-            return $"    {importAttributes}{externKeyword}{MapType(returnType)} {CEntryPoint(pinvoke)} ({string.Join(", ", parameterTypes)});";
+            string nativeSymbol = CEntryPoint(pinvoke);
+            string symbolAlias = symbolName is null ? "" : $" __asm__(\"{EscapeLiteral(nativeSymbol)}\")";
+            return $"    {importAttributes}{externKeyword}{MapType(returnType)} {symbolName ?? nativeSymbol} ({string.Join(", ", parameterTypes)}){symbolAlias};";
         }
 
         private string FixedSymbolName(PInvokeCallback cb)

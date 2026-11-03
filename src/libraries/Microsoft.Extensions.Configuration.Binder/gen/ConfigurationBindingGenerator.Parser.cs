@@ -731,16 +731,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property)
                         {
                             string propertyName = property.Name;
-                            bool isDuplicateOrOverride = property.IsOverride || properties?.ContainsKey(propertyName) is true;
+                            bool isDuplicate = properties?.ContainsKey(propertyName) is true;
 
                             if (IsUnsupportedType(property.Type))
                             {
-                                // Report the skip once per property name. The override/duplicate check covers an
-                                // error-typed property that is overridden or shadows an already-bound member, while
+                                // Report the skip once per property name. The duplicate check covers an
+                                // error-typed property that overrides or shadows an already-bound member, while
                                 // the name set covers a `new`-shadowed error-typed property: both the base and
                                 // derived copies are skipped (so neither lands in 'properties' to dedupe the other),
                                 // which would otherwise fire SYSLIB1101 twice for the same name.
-                                if (ContainsErrorType(property.Type) && !isDuplicateOrOverride &&
+                                if (ContainsErrorType(property.Type) && !isDuplicate &&
                                     (reportedUnsupportedProperties ??= new(StringComparer.OrdinalIgnoreCase)).Add(propertyName))
                                 {
                                     RecordDiagnostic(DiagnosticDescriptors.PropertyNotSupported, typeParseInfo.BinderInvocation?.Location, [propertyName, typeParseInfo.FullName]);
@@ -749,16 +749,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 continue;
                             }
 
-                            if (isDuplicateOrOverride)
+                            if (isDuplicate)
                             {
                                 continue;
                             }
 
-                            ImmutableArray<AttributeData> attributes = property.GetAttributes();
-
-                            AttributeData? attributeData = attributes.FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
+                            AttributeData? attributeData = GetPropertyAttribute(property, _typeSymbols.ConfigurationKeyNameAttribute);
                             string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
-                            bool isIgnored = attributes.Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationIgnoreAttribute));
+                            bool isIgnored = GetPropertyAttribute(property, _typeSymbols.ConfigurationIgnoreAttribute) is not null;
 
                             PropertySpec spec = new(property, new TypeRef(property.Type))
                             {
@@ -838,6 +836,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static UnsupportedTypeSpec CreateUnsupportedCollectionSpec(TypeParseInfo typeParseInfo)
                 => CreateUnsupportedTypeSpec(typeParseInfo, NotSupportedReason.CollectionNotSupported);
+
+            private static AttributeData? GetPropertyAttribute(IPropertySymbol property, INamedTypeSymbol? attributeType)
+            {
+                for (IPropertySymbol? current = property; current is not null; current = current.OverriddenProperty)
+                {
+                    AttributeData? attribute = current.GetAttributes().FirstOrDefault(attribute =>
+                        SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, attributeType));
+                    if (attribute is not null)
+                    {
+                        return attribute;
+                    }
+                }
+
+                return null;
+            }
 
             private static UnsupportedTypeSpec CreateUnsupportedTypeSpec(TypeParseInfo typeParseInfo, NotSupportedReason reason) =>
                 new(typeParseInfo.TypeSymbol) { NotSupportedReason = reason };

@@ -6,7 +6,7 @@ using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal static partial class PseudoCustomAttributes
 {
