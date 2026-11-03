@@ -163,11 +163,20 @@ public sealed class JSFunctionBinding
 
 [Versioning.SupportedOSPlatformAttribute("browser")]
 [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+public abstract class JSExportCatalog
+{
+    protected JSExportCatalog() { }
+    [System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public abstract string[] GetExportNames();
+}
+
+[Versioning.SupportedOSPlatformAttribute("browser")]
+[System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 public abstract class JSExportProvider
 {
     protected JSExportProvider() { }
     [System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public abstract void Register();
+    public abstract void Bind();
 }
 
 [Versioning.SupportedOSPlatformAttribute("browser")]

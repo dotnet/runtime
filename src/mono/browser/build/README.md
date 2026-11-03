@@ -9,6 +9,15 @@ runtime configuration setting. The JSExport provider linker descriptor preserves
 the native `BindAssemblyExports` entry point, which makes the type-map lookup
 reachable even when JavaScript is the only caller of the application's exports.
 
+Per-method providers use a fully qualified export name plus signature hash as the
+type-map key; plain-name entries identify the default overload. A separate generated
+catalog supplies the name list because lazy type maps do not support enumeration.
+Discovery activates only that catalog and publishes deferred functions without
+activating method providers. CoreCLR invokes a shared
+managed delegate to bind a method synchronously on its first call, preserving
+synchronous return values and stable function identities without JavaScript proxies.
+Legacy assemblies retain their existing registration path.
+
 Wasm app build can run in two scenarios:
 
 1. After build, eg. when running the app in VS, or `dotnet build foo.csproj`

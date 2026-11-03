@@ -108,6 +108,18 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
             Path.Combine(_projectDir, "..", "Library", "Library.cs"),
             overwrite: true);
         string libraryDir = Path.Combine(_projectDir, "..", "Library");
+        if (IsCoreClrRuntime)
+        {
+            string countingDir = Path.Combine(_projectDir, "..", "CountingLibrary");
+            Directory.CreateDirectory(countingDir);
+            File.Copy(Path.Combine(libraryDir, "Library.csproj"), Path.Combine(countingDir, "CountingLibrary.csproj"));
+            File.Copy(
+                Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "DeferredJSExportProviders.cs"),
+                Path.Combine(countingDir, "DeferredJSExportProviders.cs"));
+            AddItemsPropertiesToProject(Path.Combine(countingDir, "CountingLibrary.csproj"), insertAtEnd: useLocalTargetingPack);
+            AddItemsPropertiesToProject(info.ProjectFilePath,
+                extraItems: """<ProjectReference Include="..\CountingLibrary\CountingLibrary.csproj" />""");
+        }
         AddItemsPropertiesToProject(
             Path.Combine(libraryDir, "Library.csproj"),
             extraProperties: "<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>",
@@ -119,8 +131,14 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         Assert.DoesNotContain("ModuleInitializer", generatedCode);
         string appGeneratedFile = Directory.GetFiles(Path.Combine(_projectDir, "obj"), "JSExports.g.cs", SearchOption.AllDirectories).Single();
         Assert.Contains("JSExportProvider>(\"Library\")", File.ReadAllText(appGeneratedFile));
-        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "MappedJSExports"));
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: IsCoreClrRuntime ? "DeferredJSExports" : "MappedJSExports"));
         Assert.Contains("Mapped JSExports passed", result.TestOutput);
+        if (IsCoreClrRuntime)
+        {
+            Assert.Equal(
+                new[] { "lazy:discovered", "lazy:read", "lazy:constructor", "lazy:bind", "lazy:first", "lazy:repeated" },
+                result.TestOutput.Where(static message => message.StartsWith("lazy:", StringComparison.Ordinal)));
+        }
     }
 
     [Theory, TestCategory("no-workload")]

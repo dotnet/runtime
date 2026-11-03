@@ -281,11 +281,41 @@ const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith
 // Run the test case
 try {
     switch (testCase) {
-        case "MappedJSExports": {
+        case "MappedJSExports":
+        case "DeferredJSExports": {
             const library = await getAssemblyExports("Library.dll");
             const again = await getAssemblyExports("Library");
+            if (testCase === "DeferredJSExports") {
+                const countingLibrary = await getAssemblyExports("CountingLibrary");
+                testOutput("lazy:discovered");
+                const add = countingLibrary.AssemblyProviderTest.CountingExports.Add;
+                const hashAdd = countingLibrary.AssemblyProviderTest.CountingExports["Add.1"];
+                const unused = countingLibrary.AssemblyProviderTest.CountingExports.Unused;
+                if (add !== hashAdd || typeof unused !== "function" ||
+                    countingLibrary.AssemblyProviderTest.CountingExports.Missing !== undefined ||
+                    !Object.keys(countingLibrary.AssemblyProviderTest.CountingExports).includes("Unused.2")) {
+                    throw new Error("Deferred export discovery changed the object shape");
+                }
+                testOutput("lazy:read");
+                let message;
+                try {
+                    add(-1, 0);
+                } catch (error) {
+                    message = error.message;
+                }
+                if (message !== "Deferred export failure") throw new Error("First deferred invocation did not propagate its exception");
+                testOutput("lazy:first");
+                if (hashAdd(19, 23) !== 42 ||
+                    countingLibrary.AssemblyProviderTest.CountingExports.Add !== add) {
+                    throw new Error("Repeated deferred invocation or function identity failed");
+                }
+                testOutput("lazy:repeated");
+            }
             if (library.AssemblyProviderTest.Exports.Add(17, 25) !== 42 ||
+                library.AssemblyProviderTest.Exports["Add.1568108894"] !== library.AssemblyProviderTest.Exports.Add ||
+                library.AssemblyProviderTest.Exports["Add.1018901745"](41) !== 42 ||
                 library.AssemblyProviderTest.Exports.Echo("type-map") !== "type-map" ||
+                await library.AssemblyProviderTest.Exports.AddAsync(20, 22) !== 42 ||
                 again.AssemblyProviderTest.Exports.Add(19, 23) !== 42) {
                 throw new Error("Mapped JSExport invocation failed");
             }

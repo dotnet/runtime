@@ -111,6 +111,15 @@ export type BindingClosureCS = {
     isDisposed: boolean,
 }
 
+export type DeferredBindingCS = {
+    providerKey: string,
+    bind?: (providerKey: string) => void,
+    boundFn?: Function,
+    wrapper?: Function,
+    isBinding: boolean,
+    isDisposed: boolean,
+}
+
 export const enum MeasuredBlock {
     bindJsFunction = "clr.bindJsFunction:",
     bindCsFunction = "clr.bindCsFunction:",

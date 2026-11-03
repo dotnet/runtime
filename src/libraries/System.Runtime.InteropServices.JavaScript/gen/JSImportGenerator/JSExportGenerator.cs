@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
@@ -62,7 +63,7 @@ namespace Microsoft.Interop.JavaScript
                         requiresImplementation: true) is null);
 
             IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
-            IncrementalValuesProvider<(string Source, string Registration, string? Attribute)> generateSingleStub = methodsToGenerate
+            IncrementalValuesProvider<(string Source, string Registration, string? Attribute, string Name, int Hash)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
                 .Select(static (data, ct) => CalculateStubInformation(data.Left.Syntax, data.Left.Symbol, data.Right, ct))
                 .WithTrackingName(StepNames.CalculateStubInformation)
@@ -81,7 +82,7 @@ namespace Microsoft.Interop.JavaScript
                 writer.Write(data.Right.Targets);
                 if (!data.Left.IsEmpty)
                 {
-                    WriteRegistrationSource(writer, data.Left, data.Right.Name);
+                    WriteProviderSource(writer, data.Left, data.Right.Name);
                 }
                 foreach (var generated in data.Left)
                 {
@@ -99,9 +100,10 @@ namespace Microsoft.Interop.JavaScript
                 if (assembly.GetAttributes().Any(static attribute =>
                     attribute.AttributeClass is { Name: "TypeMapAttribute" or "TypeMapAssemblyTargetAttribute", TypeArguments.Length: 1 } type
                     && type.ContainingNamespace.ToDisplayString() == "System.Runtime.InteropServices"
-                    && type.TypeArguments[0].ToDisplayString() == Constants.JSExportProvider))
+                    && type.TypeArguments[0].ToDisplayString() is Constants.JSExportProvider or Constants.JSExportCatalog))
                 {
                     writer.WriteLine($"[assembly: global::System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute<{Constants.JSExportProviderGlobal}>({CodeWriterHelpers.StringLiteral(assembly.Name)})]");
+                    writer.WriteLine($"[assembly: global::System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute<{Constants.JSExportCatalogGlobal}>({CodeWriterHelpers.StringLiteral(assembly.Name)})]");
                 }
             }
             return writer.ToString();
@@ -145,51 +147,72 @@ namespace Microsoft.Interop.JavaScript
             return new IncrementalStubGenerationContext(signatureContext, containingTypeContext, locations, jsExportData, IsReferenceableByMethodGroup(symbol.ContainingType));
         }
 
-        private static void WriteRegistrationSource(
+        private static void WriteProviderSource(
             IndentedTextWriter writer,
-            ImmutableArray<(string Source, string Registration, string? Attribute)> methods,
+            ImmutableArray<(string Source, string Registration, string? Attribute, string Name, int Hash)> methods,
             string assemblyName)
         {
             const string GeneratedNamespace = "System.Runtime.InteropServices.JavaScript";
-            const string ProviderClass = "__GeneratedJSExportProvider";
-
-            writer.WriteLine($"[assembly: global::System.Runtime.InteropServices.TypeMapAttribute<{Constants.JSExportProviderGlobal}>({CodeWriterHelpers.StringLiteral(assemblyName)}, typeof(global::{GeneratedNamespace}.{ProviderClass}))]");
+            const string CatalogClass = "__GeneratedJSExportCatalog";
+            writer.WriteLine($"[assembly: global::System.Runtime.InteropServices.TypeMapAttribute<{Constants.JSExportCatalogGlobal}>({CodeWriterHelpers.StringLiteral(assemblyName)}, typeof(global::{GeneratedNamespace}.{CatalogClass}))]");
+            var aliases = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                var method = methods[i];
+                string providerClass = $"__GeneratedJSExportProvider_{i}";
+                string key = $"{method.Name}#{method.Hash.ToString(CultureInfo.InvariantCulture)}";
+                writer.WriteLine($"[assembly: global::System.Runtime.InteropServices.TypeMapAttribute<{Constants.JSExportProviderGlobal}>({CodeWriterHelpers.StringLiteral(key)}, typeof(global::{GeneratedNamespace}.{providerClass}))]");
+                if (aliases.Add(method.Name))
+                {
+                    writer.WriteLine($"[assembly: global::System.Runtime.InteropServices.TypeMapAttribute<{Constants.JSExportProviderGlobal}>({CodeWriterHelpers.StringLiteral(method.Name)}, typeof(global::{GeneratedNamespace}.{providerClass}))]");
+                }
+            }
             writer.WriteLine($"namespace {GeneratedNamespace}");
             using (writer.WriteBlock())
             {
                 writer.WriteLine($"[{Constants.CompilerGeneratedAttributeGlobal}]");
-                writer.WriteLine($"file sealed class {ProviderClass} : {Constants.JSExportProviderGlobal}");
+                writer.WriteLine($"file sealed class {CatalogClass} : {Constants.JSExportCatalogGlobal}");
                 using (writer.WriteBlock())
                 {
-                    writer.WriteLine($"[{Constants.ThreadStaticGlobal}]");
-                    writer.WriteLine("static bool initialized;");
-                    writer.WriteLine($"public {ProviderClass}()");
+                    writer.WriteLine($"public {CatalogClass}()");
                     using (writer.WriteBlock())
                     {
                     }
                     writer.WriteLine();
-
-                    foreach (var method in methods)
+                    writer.WriteLine($"[{Constants.DynamicDependencyAttributeGlobal}({Constants.DynamicallyAccessedMemberTypesGlobal}.PublicParameterlessConstructor, typeof({CatalogClass}))]");
+                    writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
+                    writer.WriteLine("public override string[] GetExportNames()");
+                    using (writer.WriteBlock())
                     {
+                        string names = string.Join(", ", methods.Select(static method =>
+                            CodeWriterHelpers.StringLiteral($"{method.Name}#{method.Hash.ToString(CultureInfo.InvariantCulture)}")));
+                        writer.WriteLine($"return [{names}];");
+                    }
+                }
+                for (int i = 0; i < methods.Length; i++)
+                {
+                    var method = methods[i];
+                    string providerClass = $"__GeneratedJSExportProvider_{i}";
+                    writer.WriteLine($"[{Constants.CompilerGeneratedAttributeGlobal}]");
+                    writer.WriteLine($"file sealed class {providerClass} : {Constants.JSExportProviderGlobal}");
+                    using (writer.WriteBlock())
+                    {
+                        writer.WriteLine($"public {providerClass}()");
+                        using (writer.WriteBlock())
+                        {
+                        }
+                        writer.WriteLine();
                         if (method.Attribute is not null)
                         {
                             writer.WriteLine($"[{method.Attribute}]");
                         }
-                    }
-                    writer.WriteLine($"[{Constants.DynamicDependencyAttributeGlobal}({Constants.DynamicallyAccessedMemberTypesGlobal}.PublicParameterlessConstructor, typeof({ProviderClass}))]");
-                    writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
-                    writer.WriteLine("public override void Register()");
-                    using (writer.WriteBlock())
-                    {
-                        writer.WriteLine($"if (initialized || {Constants.OSArchitectureGlobal} != {Constants.ArchitectureWasmGlobal})");
-                        writer.Indent++;
-                        writer.WriteLine("return;");
-                        writer.Indent--;
-                        writer.WriteLine("initialized = true;");
-                        writer.WriteLine("unsafe");
+                        writer.WriteLine($"[{Constants.DynamicDependencyAttributeGlobal}({Constants.DynamicallyAccessedMemberTypesGlobal}.PublicParameterlessConstructor, typeof({providerClass}))]");
+                        writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
+                        writer.WriteLine("public override void Bind()");
                         using (writer.WriteBlock())
                         {
-                            foreach (var method in methods)
+                            writer.WriteLine("unsafe");
+                            using (writer.WriteBlock())
                             {
                                 writer.WriteLine(method.Registration);
                             }
@@ -199,7 +222,7 @@ namespace Microsoft.Interop.JavaScript
             }
         }
 
-        private static (string Source, string Registration, string? Attribute) GenerateSource(IncrementalStubGenerationContext incrementalContext)
+        private static (string Source, string Registration, string? Attribute, string Name, int Hash) GenerateSource(IncrementalStubGenerationContext incrementalContext)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
             ImmutableArray<TypePositionInfo> signatureElements = incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation;
@@ -251,7 +274,7 @@ namespace Microsoft.Interop.JavaScript
             {
                 string wrapperReference = $"&{signature.StubTypeQualifiedName}.{signature.WrapperName}";
                 string fastRegistration = $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, {signatures}, {wrapperReference});";
-                return (writer.ToString(), fastRegistration, null);
+                return (writer.ToString(), fastRegistration, null, signature.QualifiedMethodName, signature.TypesHash);
             }
 
             // Inaccessible (private or protected nested) types cannot be named from the registration,
@@ -259,7 +282,7 @@ namespace Microsoft.Interop.JavaScript
             string registration = $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, {signatures});";
             string attribute = $"{Constants.DynamicDependencyAttributeGlobal}({CodeWriterHelpers.StringLiteral(signature.WrapperName)}, {CodeWriterHelpers.StringLiteral(signature.StubTypeFullName)}, {CodeWriterHelpers.StringLiteral(signature.AssemblyName)})";
 
-            return (writer.ToString(), registration, attribute);
+            return (writer.ToString(), registration, attribute, signature.QualifiedMethodName, signature.TypesHash);
         }
 
         private static void WriteWrapper(

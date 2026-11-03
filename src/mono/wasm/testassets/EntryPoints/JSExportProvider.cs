@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
+using System.Threading.Tasks;
 
 [assembly: SupportedOSPlatform("browser")]
 
@@ -14,5 +15,15 @@ public static partial class Exports
     public static int Add(int left, int right) => left + right;
 
     [JSExport]
+    public static int Add(int value) => value + 1;
+
+    [JSExport]
     public static string Echo(string value) => value;
+
+    [JSExport]
+    public static async Task<int> AddAsync(int left, int right)
+    {
+        await Task.Yield();
+        return left + right;
+    }
 }

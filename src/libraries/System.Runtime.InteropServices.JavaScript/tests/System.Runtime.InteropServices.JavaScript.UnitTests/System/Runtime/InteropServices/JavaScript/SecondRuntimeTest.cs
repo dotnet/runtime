@@ -23,6 +23,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(3, state2);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static async Task CapturedExportCannotRunAfterDisposal(bool bindBeforeExit)
+        {
+            string runId = Guid.NewGuid().ToString();
+            await JSHost.ImportAsync("SecondRuntimeTest", "../SecondRuntimeTest.js?run=" + runId);
+            Assert.True(await Interop.CapturedExportCannotRunAfterDisposal(runId, bindBeforeExit));
+        }
+
         public static partial class Interop
         {
             public static int State { get; set; }
@@ -33,6 +43,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             [JSImport("runSecondRuntimeAndTestStaticState", "SecondRuntimeTest")]
             [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
             internal static partial Task<int> RunSecondRuntimeAndTestStaticState(string guid);
+
+            [JSImport("capturedExportCannotRunAfterDisposal", "SecondRuntimeTest")]
+            [return: JSMarshalAs<JSType.Promise<JSType.Boolean>>]
+            internal static partial Task<bool> CapturedExportCannotRunAfterDisposal(string guid, bool bindBeforeExit);
         }
     }
 }

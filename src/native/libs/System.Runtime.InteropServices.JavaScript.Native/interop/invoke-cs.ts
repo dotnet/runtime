@@ -3,7 +3,7 @@
 
 import BuildConfiguration from "consts:configuration";
 
-import type { BindingClosureCS, BoundMarshalerToCs, CSFnHandle, JSFunctionSignature } from "./types";
+import type { BindingClosureCS, BoundMarshalerToCs, CSFnHandle, DeferredBindingCS, JSFunctionSignature } from "./types";
 
 import { dotnetAssert, dotnetLogger, Module } from "./cross-module";
 
@@ -13,7 +13,7 @@ import { bindArgMarshalToCs } from "./marshal-to-cs";
 import { bindArgMarshalToJs, endMarshalTaskToJs, releaseEagerTaskHolder } from "./marshal-to-js";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, isRuntimeRunning, startMeasure } from "./utils";
 import { MarshalerType, MeasuredBlock } from "./types";
-import { boundCsFunctionSymbol, exportsByAssembly } from "./gc-handles";
+import { boundCsFunctionSymbol, deferredCsBinders, deferredCsFunctions, doNotForceDispose, exportsByAssembly } from "./gc-handles";
 
 export async function getAssemblyExports(assemblyName: string): Promise<any> {
     assertJsInterop();
@@ -26,6 +26,62 @@ export async function getAssemblyExports(assemblyName: string): Promise<any> {
     }
 
     return exportsByAssembly.get(assemblyName) || {};
+}
+
+export function registerLazyCsFunctions(assemblyName: string, descriptors: string[], bind: (providerKey: string) => void): void {
+    assertRuntimeRunning();
+    // The binder is runtime infrastructure, not an application delegate proxy.
+    Object.assign(bind, { [doNotForceDispose]: true });
+    deferredCsBinders.add(bind);
+    if (!exportsByAssembly.has(assemblyName)) {
+        const exports = {};
+        exportsByAssembly.set(assemblyName, exports);
+        exportsByAssembly.set(assemblyName + ".dll", exports);
+    }
+    const descriptorSize = 6;
+    dotnetAssert.check(descriptors.length % descriptorSize === 0, "Invalid deferred JSExport descriptors");
+    for (let index = 0; index < descriptors.length; index += descriptorSize) {
+        const providerKey = descriptors[index];
+        const namespaceName = descriptors[index + 1];
+        const shortClassName = descriptors[index + 2];
+        const methodName = descriptors[index + 3];
+        const signatureHash = Number(descriptors[index + 4]);
+        const isDefault = descriptors[index + 5] === "1";
+        dotnetAssert.check(Number.isInteger(signatureHash), "Invalid deferred JSExport signature hash");
+        const key = getCsFunctionKey(assemblyName, namespaceName, shortClassName, methodName, signatureHash);
+        const existing = deferredCsFunctions.get(key);
+        if (existing) {
+            walkExportsToSeFunction(assemblyName, namespaceName, shortClassName, methodName, signatureHash, existing.wrapper!, isDefault);
+            continue;
+        }
+
+        const binding: DeferredBindingCS = { providerKey, bind, isBinding: false, isDisposed: false };
+        const deferredFn = function (this: unknown, ...args: unknown[]) {
+            assertRuntimeRunning();
+            dotnetAssert.check(!binding.isDisposed, `The JSExport '${providerKey}' is disposed.`);
+            if (!binding.boundFn) {
+                dotnetAssert.check(!binding.isBinding, `Reentrant binding of JSExport '${providerKey}'.`);
+                const bind = binding.bind;
+                dotnetAssert.check(bind, `Missing binder for JSExport '${providerKey}'.`);
+                binding.isBinding = true;
+                try {
+                    bind(providerKey);
+                } finally {
+                    binding.isBinding = false;
+                }
+            }
+            const boundFn = binding.boundFn;
+            dotnetAssert.check(boundFn, `JSExport '${providerKey}' did not publish its binding.`);
+            return boundFn.apply(this, args);
+        };
+        binding.wrapper = deferredFn;
+        deferredCsFunctions.set(key, binding);
+        walkExportsToSeFunction(assemblyName, namespaceName, shortClassName, methodName, signatureHash, deferredFn, isDefault);
+    }
+}
+
+function getCsFunctionKey(assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number): string {
+    return `[${assemblyName}] ${namespaceName}.${shortClassName}:${methodName}.${signatureHash}`;
 }
 
 export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number, signature: JSFunctionSignature): void {
@@ -108,7 +164,14 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
 
     (<any>boundFn)[boundCsFunctionSymbol] = closure;
 
-    walkExportsToSeFunction(assemblyName, namespaceName, shortClassName, methodName, signatureHash, boundFn);
+    const deferred = deferredCsFunctions.get(getCsFunctionKey(assemblyName, namespaceName, shortClassName, methodName, signatureHash));
+    if (deferred) {
+        deferred.boundFn = boundFn;
+        deferred.bind = undefined;
+        Object.assign(deferred.wrapper!, { [boundCsFunctionSymbol]: closure });
+    } else {
+        walkExportsToSeFunction(assemblyName, namespaceName, shortClassName, methodName, signatureHash, boundFn);
+    }
     endMeasure(mark, MeasuredBlock.bindCsFunction, fullyQualifiedName);
 }
 
@@ -350,7 +413,7 @@ function bindFn(closure: BindingClosureCS) {
     };
 }
 
-function walkExportsToSeFunction(assembly: string, namespace: string, classname: string, methodname: string, signatureHash: number, fn: Function): void {
+function walkExportsToSeFunction(assembly: string, namespace: string, classname: string, methodname: string, signatureHash: number, fn: Function, isDefault = true): void {
     const parts = `${namespace}.${classname}`.replace(/\+/g, ".").replace(/\//g, ".").split(".");
     let scope: any = undefined;
     let assemblyScope = exportsByAssembly.get(assembly);
@@ -373,7 +436,7 @@ function walkExportsToSeFunction(assembly: string, namespace: string, classname:
         }
     }
 
-    if (!scope[methodname]) {
+    if (isDefault && !scope[methodname]) {
         scope[methodname] = fn;
     }
     scope[`${methodname}.${signatureHash}`] = fn;

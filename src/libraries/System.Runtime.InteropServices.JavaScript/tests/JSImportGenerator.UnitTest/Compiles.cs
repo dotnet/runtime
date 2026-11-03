@@ -132,7 +132,7 @@ namespace JSImportGenerator.Unit.Tests
                     }
                     else
                     {
-                        Assert.IsType<(string Source, string Registration, string Attribute)>(output.Value);
+                        Assert.IsType<(string Source, string Registration, string Attribute, string Name, int Hash)>(output.Value);
                     }
 
                     if (changeSignature)
@@ -199,7 +199,7 @@ namespace JSImportGenerator.Unit.Tests
         }
 
         [Fact]
-        public void ExportsUseOneMappedProviderWithoutModuleInitializer()
+        public void ExportsUseMappedProviderPerMethodWithoutModuleInitializer()
         {
             const string Source = """
                 using System.Runtime.InteropServices.JavaScript;
@@ -218,12 +218,19 @@ namespace JSImportGenerator.Unit.Tests
             TestUtils.AssertPostSourceGeneratorCompilation(generatedCompilation);
 
             SyntaxNode root = Assert.Single(driver.GetRunResult().Results[1].GeneratedSources).SyntaxTree.GetRoot();
-            ClassDeclarationSyntax provider = Assert.Single(root.DescendantNodes().OfType<ClassDeclarationSyntax>()
-                .Where(static type => type.Identifier.ValueText == "__GeneratedJSExportProvider"));
-            Assert.Single(provider.Members.OfType<ConstructorDeclarationSyntax>());
-            Assert.Single(provider.Members.OfType<MethodDeclarationSyntax>(),
-                static method => method.Identifier.ValueText == "Register");
+            ClassDeclarationSyntax[] providers = root.DescendantNodes().OfType<ClassDeclarationSyntax>()
+                .Where(static type => type.Identifier.ValueText.StartsWith("__GeneratedJSExportProvider_", StringComparison.Ordinal))
+                .ToArray();
+            Assert.Equal(2, providers.Length);
+            foreach (ClassDeclarationSyntax provider in providers)
+            {
+                Assert.Single(provider.Members.OfType<ConstructorDeclarationSyntax>());
+                Assert.Single(provider.Members.OfType<MethodDeclarationSyntax>(),
+                    static method => method.Identifier.ValueText == "Bind");
+            }
             string generatedCode = root.ToFullString();
+            Assert.Single(root.DescendantNodes().OfType<ClassDeclarationSyntax>(),
+                static type => type.Identifier.ValueText == "__GeneratedJSExportCatalog");
             Assert.Contains("TypeMapAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportProvider>", generatedCode);
             Assert.Contains("DynamicallyAccessedMemberTypes.PublicParameterlessConstructor", generatedCode);
             Assert.DoesNotContain("ModuleInitializer", generatedCode);
@@ -232,8 +239,10 @@ namespace JSImportGenerator.Unit.Tests
                 .Count(static invocation => invocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "BindManagedFunction" }));
         }
 
-        [Fact]
-        public void ReferencedProvidersAreDiscoveredWithoutLocalExports()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ReferencedProvidersAreDiscoveredWithoutLocalExports(bool catalogOnly)
         {
             const string Source = """
                 using System.Runtime.InteropServices.JavaScript;
@@ -243,7 +252,16 @@ namespace JSImportGenerator.Unit.Tests
                     public static int Add(int left, int right) => left + right;
                 }
                 """;
-            Compilation library = TestUtils.CreateCompilation(Source).WithAssemblyName("ExportLibrary");
+            const string CatalogSource = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.JavaScript;
+                [assembly: TypeMap<JSExportCatalog>("ExportLibrary", typeof(EmptyCatalog))]
+                public sealed class EmptyCatalog : JSExportCatalog
+                {
+                    public override string[] GetExportNames() => [];
+                }
+                """;
+            Compilation library = TestUtils.CreateCompilation(catalogOnly ? CatalogSource : Source).WithAssemblyName("ExportLibrary");
             library = TestUtils.RunGenerators(library, out var diagnostics, new Microsoft.Interop.JavaScript.JSExportGenerator());
             Assert.Empty(diagnostics);
             using var stream = new MemoryStream();
@@ -260,6 +278,7 @@ namespace JSImportGenerator.Unit.Tests
 
             string generatedCode = Assert.Single(driver.GetRunResult().Results[1].GeneratedSources).SourceText.ToString();
             Assert.Contains("TypeMapAssemblyTargetAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportProvider>(\"ExportLibrary\")", generatedCode);
+            Assert.Contains("TypeMapAssemblyTargetAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportCatalog>(\"ExportLibrary\")", generatedCode);
             Assert.DoesNotContain("class __GeneratedJSExportProvider", generatedCode);
         }
 
@@ -407,25 +426,36 @@ namespace JSImportGenerator.Unit.Tests
                         "JSExports.g.cs",
                         SourceText.From("""
                             // <auto-generated/>
-                            [assembly: global::System.Runtime.InteropServices.TypeMapAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportProvider>("TestProject", typeof(global::System.Runtime.InteropServices.JavaScript.__GeneratedJSExportProvider))]
+                            [assembly: global::System.Runtime.InteropServices.TypeMapAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportCatalog>("TestProject", typeof(global::System.Runtime.InteropServices.JavaScript.__GeneratedJSExportCatalog))]
+                            [assembly: global::System.Runtime.InteropServices.TypeMapAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportProvider>("[TestProject]Basic:AnnotatedExport#2034238666", typeof(global::System.Runtime.InteropServices.JavaScript.__GeneratedJSExportProvider_0))]
+                            [assembly: global::System.Runtime.InteropServices.TypeMapAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportProvider>("[TestProject]Basic:AnnotatedExport", typeof(global::System.Runtime.InteropServices.JavaScript.__GeneratedJSExportProvider_0))]
                             namespace System.Runtime.InteropServices.JavaScript
                             {
                                 [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute]
-                                file sealed class __GeneratedJSExportProvider : global::System.Runtime.InteropServices.JavaScript.JSExportProvider
+                                file sealed class __GeneratedJSExportCatalog : global::System.Runtime.InteropServices.JavaScript.JSExportCatalog
                                 {
-                                    [global::System.ThreadStaticAttribute]
-                                    static bool initialized;
-                                    public __GeneratedJSExportProvider()
+                                    public __GeneratedJSExportCatalog()
                                     {
                                     }
 
-                                    [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(__GeneratedJSExportProvider))]
+                                    [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(__GeneratedJSExportCatalog))]
                                     [global::System.Diagnostics.DebuggerNonUserCode]
-                                    public override void Register()
+                                    public override string[] GetExportNames()
                                     {
-                                        if (initialized || global::System.Runtime.InteropServices.RuntimeInformation.OSArchitecture != global::System.Runtime.InteropServices.Architecture.Wasm)
-                                            return;
-                                        initialized = true;
+                                        return ["[TestProject]Basic:AnnotatedExport#2034238666"];
+                                    }
+                                }
+                                [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute]
+                                file sealed class __GeneratedJSExportProvider_0 : global::System.Runtime.InteropServices.JavaScript.JSExportProvider
+                                {
+                                    public __GeneratedJSExportProvider_0()
+                                    {
+                                    }
+
+                                    [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(__GeneratedJSExportProvider_0))]
+                                    [global::System.Diagnostics.DebuggerNonUserCode]
+                                    public override void Bind()
+                                    {
                                         unsafe
                                         {
                                             global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.BindManagedFunction("[TestProject]Basic:AnnotatedExport", 2034238666, [global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Discard, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Object, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int52, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.BigInt64, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Action(), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Function(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int32), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Span(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Byte), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.ArraySegment(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Byte), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Object), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Array(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Object), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTime, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTimeOffset, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTime), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTimeOffset), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int52), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.BigInt64), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.ArraySegment(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Single)], &global::Basic.__Wrapper_AnnotatedExport_2034238666);
@@ -584,25 +614,36 @@ namespace JSImportGenerator.Unit.Tests
                         "JSExports.g.cs",
                         SourceText.From("""
                             // <auto-generated/>
-                            [assembly: global::System.Runtime.InteropServices.TypeMapAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportProvider>("TestProject", typeof(global::System.Runtime.InteropServices.JavaScript.__GeneratedJSExportProvider))]
+                            [assembly: global::System.Runtime.InteropServices.TypeMapAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportCatalog>("TestProject", typeof(global::System.Runtime.InteropServices.JavaScript.__GeneratedJSExportCatalog))]
+                            [assembly: global::System.Runtime.InteropServices.TypeMapAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportProvider>("[TestProject]Basic:Export1#622134597", typeof(global::System.Runtime.InteropServices.JavaScript.__GeneratedJSExportProvider_0))]
+                            [assembly: global::System.Runtime.InteropServices.TypeMapAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportProvider>("[TestProject]Basic:Export1", typeof(global::System.Runtime.InteropServices.JavaScript.__GeneratedJSExportProvider_0))]
                             namespace System.Runtime.InteropServices.JavaScript
                             {
                                 [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute]
-                                file sealed class __GeneratedJSExportProvider : global::System.Runtime.InteropServices.JavaScript.JSExportProvider
+                                file sealed class __GeneratedJSExportCatalog : global::System.Runtime.InteropServices.JavaScript.JSExportCatalog
                                 {
-                                    [global::System.ThreadStaticAttribute]
-                                    static bool initialized;
-                                    public __GeneratedJSExportProvider()
+                                    public __GeneratedJSExportCatalog()
                                     {
                                     }
 
-                                    [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(__GeneratedJSExportProvider))]
+                                    [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(__GeneratedJSExportCatalog))]
                                     [global::System.Diagnostics.DebuggerNonUserCode]
-                                    public override void Register()
+                                    public override string[] GetExportNames()
                                     {
-                                        if (initialized || global::System.Runtime.InteropServices.RuntimeInformation.OSArchitecture != global::System.Runtime.InteropServices.Architecture.Wasm)
-                                            return;
-                                        initialized = true;
+                                        return ["[TestProject]Basic:Export1#622134597"];
+                                    }
+                                }
+                                [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute]
+                                file sealed class __GeneratedJSExportProvider_0 : global::System.Runtime.InteropServices.JavaScript.JSExportProvider
+                                {
+                                    public __GeneratedJSExportProvider_0()
+                                    {
+                                    }
+
+                                    [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(__GeneratedJSExportProvider_0))]
+                                    [global::System.Diagnostics.DebuggerNonUserCode]
+                                    public override void Bind()
+                                    {
                                         unsafe
                                         {
                                             global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.BindManagedFunction("[TestProject]Basic:Export1", 622134597, [global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int32)], &global::Basic.__Wrapper_Export1_622134597);

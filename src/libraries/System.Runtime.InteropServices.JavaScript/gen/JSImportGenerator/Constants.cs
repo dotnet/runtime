@@ -20,15 +20,12 @@ namespace Microsoft.Interop.JavaScript
         public const string CompilerGeneratedAttributeGlobal = "global::System.Runtime.CompilerServices.CompilerGeneratedAttribute";
         public const string DynamicDependencyAttributeGlobal = "global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute";
         public const string DynamicallyAccessedMemberTypesGlobal = "global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes";
-        public const string ThreadStaticGlobal = "global::System.ThreadStaticAttribute";
         public const string TaskGlobal = "global::System.Threading.Tasks.Task";
         public const string SpanGlobal = "global::System.Span";
         public const string ArraySegmentGlobal = "global::System.ArraySegment";
         public const string FuncGlobal = "global::System.Func";
         public const string ActionGlobal = "global::System.Action";
         public const string ExceptionGlobal = "global::System.Exception";
-        public const string OSArchitectureGlobal = "global::System.Runtime.InteropServices.RuntimeInformation.OSArchitecture";
-        public const string ArchitectureWasmGlobal = "global::System.Runtime.InteropServices.Architecture.Wasm";
         public const string ArgumentsBuffer = "__arguments_buffer";
         public const string ArgumentException = "__arg_exception";
         public const string ArgumentReturn = "__arg_return";
@@ -40,6 +37,8 @@ namespace Microsoft.Interop.JavaScript
         public const string BindCSFunctionMethod = "BindManagedFunction";
         public const string JSExportProvider = "System.Runtime.InteropServices.JavaScript.JSExportProvider";
         public const string JSExportProviderGlobal = "global::System.Runtime.InteropServices.JavaScript.JSExportProvider";
+        public const string JSExportCatalog = "System.Runtime.InteropServices.JavaScript.JSExportCatalog";
+        public const string JSExportCatalogGlobal = "global::System.Runtime.InteropServices.JavaScript.JSExportCatalog";
         public const string JSMarshalerTypeGlobal = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerType";
         public const string JSMarshalerTypeGlobalDot = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.";
     }
