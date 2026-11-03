@@ -2097,12 +2097,40 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
         layout->ExceptionOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
-    // Now allocate all returns
+    // Now allocate all returns. A result is only live from the callee's completion until the
+    // caller copies it out on resumption, so results without GC pointers can share storage.
+    auto returnHasGCPtr = [](const ReturnInfo& ret) {
+        return varTypeIsGC(ret.Type.ReturnType) ||
+               ((ret.Type.ReturnType == TYP_STRUCT) && ret.Type.ReturnLayout->HasGCPtr());
+    };
+
+    unsigned sharedReturnSize = 0;
+    for (const ReturnInfo& ret : layout->Returns)
+    {
+        if (!returnHasGCPtr(ret))
+        {
+            sharedReturnSize = std::max(sharedReturnSize, ret.Size);
+        }
+    }
+
+    unsigned sharedReturnOffset = UINT_MAX;
     for (ReturnInfo& ret : layout->Returns)
     {
         // All returns must be pointer aligned because of the offset encoding in Continuation::Flags.
         layout->Size = roundUp(layout->Size, TARGET_POINTER_SIZE);
-        ret.Offset   = allocLayout(ret.HeapAlignment(), ret.Size);
+        if (returnHasGCPtr(ret))
+        {
+            ret.Offset = allocLayout(ret.HeapAlignment(), ret.Size);
+        }
+        else
+        {
+            if (sharedReturnOffset == UINT_MAX)
+            {
+                sharedReturnOffset = allocLayout(TARGET_POINTER_SIZE, sharedReturnSize);
+            }
+
+            ret.Offset = sharedReturnOffset;
+        }
     }
 
     for (GenTree* memberOffsetNode : continuationMemberOffsets.BottomUpOrder())
