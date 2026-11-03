@@ -694,8 +694,10 @@ HRESULT PgoManager::ComputeOffsetOfActualInstrumentationData(const ICorJitInfo::
         return E_NOTIMPL;
     }
 
-    // Align all instrumentation at size_t alignment, as the copy routine will copy in size_t units
-    *offsetOfActualInstrumentationData = (UINT)AlignUp(headerSize, sizeof(size_t));
+    // Align the counts within the data region to the largest entry alignment (8 bytes), so the entry layout
+    // does not depend on the schema size. This also keeps them size_t aligned for the copy routine.
+    size_t schemaSize = headerSize - headerInitialSize;
+    *offsetOfActualInstrumentationData = (UINT)(headerInitialSize + AlignUp(schemaSize, sizeof(int64_t)));
     return S_OK;
 }
 
@@ -1190,17 +1192,8 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
     }
 
     StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
-    const size_t countsOffset = found->header.countsOffset;
-    // Must match the writer's layout: entry alignment is relative to countsOffset, which is only size_t aligned.
-    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), countsOffset, countsOffset, &schemaArray))
+    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, 0, &schemaArray))
     {
-        // Rebase the offsets so they are relative to the copied instrumentation data.
-        for (COUNT_T iSchema = 0; iSchema < schemaArray.GetCount(); iSchema++)
-        {
-            _ASSERTE(schemaArray[iSchema].Offset >= countsOffset);
-            schemaArray[iSchema].Offset -= countsOffset;
-        }
-
         size_t schemaDataSize = AlignUp(schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema), sizeof(size_t));
         size_t instrumentationDataSize = 0;
         if (schemaArray.GetCount() > 0)
