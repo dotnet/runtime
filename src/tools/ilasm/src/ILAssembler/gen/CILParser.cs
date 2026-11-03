@@ -1272,6 +1272,8 @@ public partial class CILParser : Parser {
 			State = 533;
 			Match(T__25);
 			}
+			Context.Stop = TokenStream.LT(-1);
+			Actions.ProcessCoreLibraryDirective();
 		}
 		catch (RecognitionException re) {
 			_localctx.exception = re;
