@@ -443,6 +443,16 @@ namespace System.Runtime.CompilerServices
                 new SuppressThrowingAwaitContext(encodedContext);
         }
 
+        // A successfully completed task standing in for a failed task awaited with ConfigureAwaitOptions.SuppressThrowing,
+        // such that the failure isn't propagated, while preserving the failed task for diagnostics.
+        private sealed class SuppressedAwaitedTask : Task
+        {
+            public readonly Task AwaitedTask;
+
+            public SuppressedAwaitedTask(Task awaitedTask) : base(canceled: false, TaskCreationOptions.None, CancellationToken.None) =>
+                AwaitedTask = awaitedTask;
+        }
+
         // Encodes where to continue after an awaited Task completes into a single object, so that
         // RuntimeAsyncTask needs only one field for it:
         //   null                   => no continuation flags (transparent)
@@ -839,7 +849,10 @@ namespace System.Runtime.CompilerServices
                     {
                         awaitedTask.NotifyDebuggerOfWaitCompletionIfNecessary();
                         awaitedTask.MarkExceptionsAsHandled();
-                        _awaitedState = Task.CompletedTask;
+
+                        // When async instrumentation is active, preserve the identity of the awaited task so
+                        // that the wait can still be correlated when the continuation resumes.
+                        _awaitedState = AsyncInstrumentation.IsActive ? new SuppressedAwaitedTask(awaitedTask) : Task.CompletedTask;
                     }
 
                     return suppressThrowingContext.EncodedContext is { } encodedContext &&
@@ -2355,7 +2368,7 @@ namespace System.Runtime.CompilerServices
 
             public static void ResumeAsyncContext(Task task, Task? awaitedTask)
             {
-                OutputTaskWaitEnd(task, awaitedTask);
+                OutputTaskWaitEnd(task, awaitedTask is SuppressedAwaitedTask suppressed ? suppressed.AwaitedTask : awaitedTask);
                 TplEventSource.Log.TraceSynchronousWorkBegin(task.Id, CausalitySynchronousWork.Execution);
             }
 
