@@ -24,6 +24,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Turn off symbol publishing by default -->
     <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
 
+    <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
+
     <!-- Trimmer defaults -->
     <TrimMode Condition="'$(TrimMode)' == '' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'">partial</TrimMode>
     <TrimMode Condition="'$(TrimMode)' == '' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'">full</TrimMode>
@@ -38,9 +40,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <StaticWebAssetsAdditionalPublishPropertiesToRemove>$(StaticWebAssetsAdditionalPublishPropertiesToRemove);NoBuild;RuntimeIdentifier</StaticWebAssetsAdditionalPublishPropertiesToRemove>
     <StaticWebAssetStandaloneHosting Condition="'$(StaticWebAssetStandaloneHosting)' == '' and '$(StaticWebAssetProjectMode)' == 'Root'">true</StaticWebAssetStandaloneHosting>
     <StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute Condition="'$(StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute)' == ''">true</StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute>
-
-    <!-- Apply CoreCLR defaults after project properties but before the SDK defaults R2R to per-assembly. -->
-    <BeforeMicrosoftNETSdkTargets>$(BeforeMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.Defaults.targets</BeforeMicrosoftNETSdkTargets>
   </PropertyGroup>
 
   <!-- Import the optional in-build crossgen2 task shim before appending the wasm ReadyToRun override.
