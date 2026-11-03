@@ -3508,19 +3508,16 @@ namespace System.Threading.Tasks
                 (m_stateFlags & (int)TaskCreationOptions.RunContinuationsAsynchronously) == 0 &&
                 RuntimeHelpers.TryEnsureSufficientExecutionStack();
 
-            switch (continuationObject)
-            {
 #if !MONO
-                // Runtime async tasks register themselves directly as the continuation of a
-                // Task they await. This is cheap to check for. Its semantics cannot be described
-                // by ITaskCompletionAction because it should be inlined when there is only one,
-                // but run in parallel when there are multiple.
-                case Task t when (t.m_stateFlags & (int)InternalTaskOptions.RuntimeAsyncTask) != 0:
-                    t.ExecuteRuntimeAsyncAwaitContinuation(this, canInline: canInlineContinuations);
-                    LogFinishCompletionNotification();
-                    return;
+            if (TryRunAsyncTaskContinuation(continuationObject, canInlineContinuations))
+            {
+                LogFinishCompletionNotification();
+                return;
+            }
 #endif
 
+            switch (continuationObject)
+            {
                 // Handle the single IAsyncStateMachineBox case.  This could be handled as part of the ITaskCompletionAction
                 // but we want to ensure that inlining is properly handled in the face of schedulers, so its behavior
                 // needs to be customized ala raw Actions.  This is also one of the most important cases, as it represents the
@@ -3599,14 +3596,14 @@ namespace System.Threading.Tasks
                             continuations[i] = null;
                             if (etwIsEnabled)
                                 log.RunningContinuationList(Id, i, currentContinuation);
+#if !MONO
+                            if (TryRunAsyncTaskContinuation(currentContinuation, canInline: false))
+                            {
+                                continue;
+                            }
+#endif
                             switch (currentContinuation)
                             {
-#if !MONO
-                                case Task t when (t.m_stateFlags & (int)InternalTaskOptions.RuntimeAsyncTask) != 0:
-                                    t.ExecuteRuntimeAsyncAwaitContinuation(this, canInline: false);
-                                    break;
-#endif
-
                                 case IAsyncStateMachineBox stateMachineBox:
                                     AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, allowInlining: false);
                                     break;
@@ -3638,14 +3635,15 @@ namespace System.Threading.Tasks
                 if (etwIsEnabled)
                     log.RunningContinuationList(Id, i, currentContinuation);
 
-                switch (currentContinuation)
-                {
 #if !MONO
-                    case Task t when (t.m_stateFlags & (int)InternalTaskOptions.RuntimeAsyncTask) != 0:
-                        t.ExecuteRuntimeAsyncAwaitContinuation(this, canInlineContinuations);
-                        break;
+                if (TryRunAsyncTaskContinuation(currentContinuation, canInlineContinuations))
+                {
+                    continue;
+                }
 #endif
 
+                switch (currentContinuation)
+                {
                     case IAsyncStateMachineBox stateMachineBox:
                         AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
                         break;
@@ -3667,6 +3665,41 @@ namespace System.Threading.Tasks
 
             LogFinishCompletionNotification();
         }
+
+#if !MONO
+        /// <summary>
+        /// Runs <paramref name="continuation"/> if it's one of the two most common await continuations, both of which
+        /// are tasks: an <see cref="IAsyncStateMachineBox"/> task for an async method, or a runtime async task that
+        /// registered itself directly as the continuation. These are identified with a single type check plus a check
+        /// of the task's flags, which is cheaper than checking for each type separately.
+        /// </summary>
+        /// <returns>true if the continuation was handled; otherwise, false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryRunAsyncTaskContinuation(object continuation, bool canInline)
+        {
+            if (continuation is Task task)
+            {
+                int flags = task.m_stateFlags;
+
+                if ((flags & (int)InternalTaskOptions.AsyncStateMachineBox) != 0)
+                {
+                    Debug.Assert(task is IAsyncStateMachineBox);
+                    AwaitTaskContinuation.RunOrScheduleAction(Unsafe.As<IAsyncStateMachineBox>(task), canInline);
+                    return true;
+                }
+
+                // Runtime async semantics can't be described by ITaskCompletionAction, because the continuation
+                // should be inlined when there is only one, but run in parallel when there are multiple.
+                if ((flags & (int)InternalTaskOptions.RuntimeAsyncTask) != 0)
+                {
+                    task.ExecuteRuntimeAsyncAwaitContinuation(this, canInline);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+#endif
 
         private void RunOrQueueCompletionAction(ITaskCompletionAction completionAction, bool allowInlining)
         {
@@ -7084,6 +7117,12 @@ namespace System.Threading.Tasks
 
         /// <summary>Used to filter out internal vs. public task creation options.</summary>
         InternalOptionsMask = 0x0000FF00,
+
+        /// <summary>
+        /// Denotes that the Task is an async method's <see cref="IAsyncStateMachineBox"/>, which may be
+        /// registered directly as a continuation on a Task it is awaiting.
+        /// </summary>
+        AsyncStateMachineBox = 0x0100,
 
         ContinuationTask = 0x0200,
         PromiseTask = 0x0400,
