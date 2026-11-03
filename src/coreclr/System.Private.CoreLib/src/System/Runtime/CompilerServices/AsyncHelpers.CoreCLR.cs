@@ -801,6 +801,7 @@ namespace System.Runtime.CompilerServices
                     Task awaitedTask = Unsafe.As<Task>(_awaitedState);
                     if (!awaitedTask.IsCompletedSuccessfully)
                     {
+                        awaitedTask.NotifyDebuggerOfWaitCompletionIfNecessary();
                         awaitedTask.MarkExceptionsAsHandled();
                         _awaitedState = Task.CompletedTask;
                     }
