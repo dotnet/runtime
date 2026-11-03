@@ -29,18 +29,18 @@ internal static class SimdRegisterAccess
     }
 
     /// <summary>
-    /// Writes <paramref name="value"/> (4 or 8 bytes) into the low bytes of the <paramref name="index"/>-th
+    /// Writes <paramref name="value"/> into the low 64 bits of the <paramref name="index"/>-th
     /// register in the file that starts at <paramref name="fileOffset"/> with a <paramref name="registerStride"/>
     /// byte stride. Returns false when <paramref name="index"/> is outside the register file.
     /// </summary>
-    public static bool TryWriteRegister(Span<byte> context, int fileOffset, int registerStride, int registerCount, int index, ReadOnlySpan<byte> value)
+    public static bool TryWriteRegister(Span<byte> context, int fileOffset, int registerStride, int registerCount, int index, double value)
     {
-        if ((uint)index >= (uint)registerCount || value.Length is not (sizeof(float) or sizeof(double)))
+        if ((uint)index >= (uint)registerCount)
             return false;
         int offset = fileOffset + (index * registerStride);
-        if (offset + value.Length > context.Length)
+        if (offset + sizeof(double) > context.Length)
             return false;
-        value.CopyTo(context.Slice(offset, value.Length));
+        BinaryPrimitives.WriteInt64LittleEndian(context.Slice(offset), BitConverter.DoubleToInt64Bits(value));
         return true;
     }
 }

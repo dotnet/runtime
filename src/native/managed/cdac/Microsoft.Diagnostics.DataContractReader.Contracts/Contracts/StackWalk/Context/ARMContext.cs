@@ -169,7 +169,7 @@ internal struct ARMContext : IPlatformContext
     public readonly bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value)
         => SimdRegisterAccess.TryReadRegister(context, (int)Marshal.OffsetOf<ARMContext>(nameof(D)), DRegisterStride, DRegisterCount, index, out value);
 
-    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
+    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, double value)
         => SimdRegisterAccess.TryWriteRegister(context, (int)Marshal.OffsetOf<ARMContext>(nameof(D)), DRegisterStride, DRegisterCount, index, value);
 
     public void CopyContext(ReadOnlySpan<byte> source)

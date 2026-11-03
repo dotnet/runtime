@@ -7073,8 +7073,22 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
             ReadOnlySpan<byte> valueBytes = new ReadOnlySpan<byte>(pValue, (int)valueSize);
 
-            if (!TryGetFloatRegisterIndex(arch, reg, out int index) ||
-                !ctx.TryWriteFloatingPointRegister(buf, index, valueBytes))
+            if (!TryGetFloatRegisterIndex(arch, reg, out int index))
+                throw new ArgumentException($"Register {reg} is not a float register", nameof(reg));
+
+            double value = 0;
+            if (valueSize == sizeof(float) && arch == RuntimeInfoArchitecture.X86)
+                value = BitConverter.ToSingle(valueBytes);
+            else
+            {
+                // R4 writes must preserve the other four bytes of the scalar SIMD value.
+                if (valueSize == sizeof(float) && !ctx.TryReadFloatingPointRegister(buf, index, out value))
+                    throw new ArgumentException($"Register {reg} is not a float register", nameof(reg));
+
+                valueBytes.CopyTo(MemoryMarshal.AsBytes(new Span<double>(ref value)));
+            }
+
+            if (!ctx.TryWriteFloatingPointRegister(buf, index, value))
             {
                 throw new ArgumentException($"Register {reg} is not a float register", nameof(reg));
             }

@@ -203,7 +203,7 @@ internal struct AMD64Context : IPlatformContext
     public readonly bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value)
         => SimdRegisterAccess.TryReadRegister(context, (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)), XmmRegisterStride, XmmRegisterCount, index, out value);
 
-    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
+    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, double value)
         => SimdRegisterAccess.TryWriteRegister(context, (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)), XmmRegisterStride, XmmRegisterCount, index, value);
 
     public void CopyContext(ReadOnlySpan<byte> source)

@@ -179,6 +179,6 @@ internal struct WasmContext : IPlatformContext
         return false;
     }
 
-    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value) => false;
+    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, double value) => false;
     public readonly void CopyContext(ReadOnlySpan<byte> source) { }
 }

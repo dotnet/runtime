@@ -205,7 +205,7 @@ public struct X86Context : IPlatformContext
         return true;
     }
 
-    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
+    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, double value)
     {
         if ((uint)index >= X87RegisterCount)
             return false;
@@ -214,10 +214,7 @@ public struct X86Context : IPlatformContext
         if (!TryGetX87SlotOffset(context, index, out int offset) || offset + Float80Size > context.Length)
             return false;
 
-        double d = value.Length == sizeof(float)
-            ? BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(value))
-            : BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(value));
-        FloatConversion.X87DoubleToExtended(d, context.Slice(offset, Float80Size));
+        FloatConversion.X87DoubleToExtended(value, context.Slice(offset, Float80Size));
         return true;
     }
 
