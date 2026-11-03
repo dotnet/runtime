@@ -85,41 +85,6 @@ The `required` attribute specifies that if the type is not marked, during the ma
 </linker>
 ```
 
-### Conditional dependencies
-
-ILLink supports assembly-scoped `conditional` blocks. The `type` attribute names an
-exact metadata type in that assembly, using `/` for nested types. An optional `method`
-or `field` attribute selects a member by name; at most one may be specified. A method
-name matches all overloads, and retention of any matching overload activates the block.
-Without a member selector, retention of the type itself activates it, including
-retention through signatures and fields without a call to a constructor.
-
-```xml
-<linker>
-  <assembly fullname="Assembly">
-    <conditional type="Assembly.Trigger">
-      <type fullname="Assembly.Helpers" preserve="nothing">
-        <method name="Callback" />
-      </type>
-    </conditional>
-    <conditional type="Assembly.Trigger" field="State">
-      <type fullname="Assembly.OtherHelper" preserve="nothing" />
-    </conditional>
-  </assembly>
-</linker>
-```
-
-The block contains ordinary type descriptors. None of their roots or preservation
-policies apply until the trigger is marked. Blocks do not root their triggers, so
-unreachable cycles remain removable. Alternative blocks combine with OR semantics,
-and activated dependencies can trigger further blocks. Ordinary unconditional
-descriptors take precedence by independently rooting their targets.
-
-Feature conditions may be placed on the enclosing assembly, on the block, or on its
-type/member children, and must all be satisfied. Missing trigger types or members
-produce the same diagnostics as unresolved ordinary descriptor entries. This extension
-is specific to ILLink; it is not supported by NativeAOT descriptors.
-
 ### Preserve all methods or all fields on a type
 
 ```xml
@@ -350,7 +315,7 @@ Attribute annotation XML can be embedded in an assembly by including it as an em
   </ItemGroup>
 ```
 
-Embedded attribute annotations should only address methods from the containing assembly. Whereas attribute annotations specified on the command line via the [`--link-attributes` parameter](illink-options.md#supplementary-custom-attributes) can alter types and members in any assembly.
+Embedded attribute annotations should only address types and members from the containing assembly. Whereas attribute annotations specified on the command line via the [`--link-attributes` parameter](illink-options.md#supplementary-custom-attributes) can alter types and members in any assembly.
 
 The attribute element requires 'fullname' attribute without it trimmer will generate a warning and skip the attribute. Optionally you can use the 'assembly' attribute to point to certain assembly to look
 for the attribute, if not specified the trimmer will look up the attribute in any loaded assembly.
@@ -366,6 +331,35 @@ Inside an attribute element in the xml you can further define argument, field an
   <property name="propertyName" type="System.Byte">200</property>
 </attribute>
 ```
+
+### Conditional dependencies using injected attributes
+
+Link-attributes XML can introduce `DynamicDependencyAttribute` annotations without
+emitting attributes into the output assembly. Annotations on a method or field activate
+when that member is retained. ILLink also supports injecting the annotation on a type:
+retaining the type through a signature or field activates its dependencies without a
+constructor call. This does not change the public attribute's allowed source-code targets.
+
+```xml
+<linker>
+  <assembly fullname="Assembly" feature="EnableHelpers" featurevalue="true" featuredefault="true">
+    <type fullname="Assembly.Trigger">
+      <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute">
+        <argument>Callback</argument>
+        <argument>Assembly.Helpers</argument>
+        <argument>Assembly</argument>
+      </attribute>
+    </type>
+  </assembly>
+</linker>
+```
+
+Ordinary feature conditions govern whether the annotation is introduced. Annotations do
+not root their providers, so dead cycles remain removable. Multiple dependencies combine
+with OR semantics and can cascade through ordinary marking. Member names match overloads.
+For a type-only dependency, the `DynamicallyAccessedMemberTypes` constructor with `None`
+retains the target type without retaining any otherwise unused members.
+Type-provider annotations are ILLink-specific; NativeAOT does not support them.
 
 ### Custom attribute on assembly
 

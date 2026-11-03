@@ -92,8 +92,9 @@ triggers. Native consumers still see exactly one ordinary declaration, in the sa
 position; there are no new binder lookup failure modes or release-time dependency
 tables. Additional aliases can supply alternative triggers without duplicating an ID.
 
-The generator emits ILLink `conditional` blocks inside the existing feature-switch
-assembly groups. A trigger's actual marking activates the enclosed roots, including
+The generator emits `DynamicDependencyAttribute` annotations into the existing
+`ILLink.LinkAttributes.xml` resource, retaining the feature-switch assembly groups.
+A trigger's actual marking activates the dependencies, including
 when a type is retained only by a field or method signature. Merely declaring an edge
 does not mark either endpoint. Multiple edges are alternatives, cascades reach a fixed
 point, and cycles with no independently reachable entry stay dead. Unconditional roots
@@ -102,6 +103,12 @@ Class dependencies root the type; its ordinary optional member and layout obliga
 still apply whenever that type survives, even through another path. A conditional member
 roots its declaring type as well as that member. Method triggers and targets match by
 name, including all overloads, just like ordinary binder descriptor declarations.
+Class targets use `DynamicallyAccessedMemberTypes.None` to retain only the type itself.
+No new descriptor XML elements or separate conditional-edge marking loop are needed.
+ILLink honors injected dependencies on types as well as methods and fields; the public
+attribute's source-code targets are unchanged.
+CoreLib's own library-build trim also receives the generated annotations explicitly,
+because that pass ignores embedded link attributes.
 
 Debug checks inspect trigger metadata without loading it. Missing active targets are
 still errors; an inactive conditional member can be absent even when its declaring type

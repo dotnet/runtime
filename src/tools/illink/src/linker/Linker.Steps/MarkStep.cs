@@ -388,7 +388,6 @@ namespace Mono.Linker.Steps
         {
             while (ProcessPrimaryQueue() ||
                 ProcessMarkedPending() ||
-                Annotations.ProcessConditionalRoots() ||
                 ProcessLazyAttributes() ||
                 ProcessLateMarkedAttributes() ||
                 MarkFullyPreservedAssemblies()) ;
@@ -889,10 +888,10 @@ namespace Mono.Linker.Steps
                 }
             }
 
-            if (!(provider is MethodDefinition || provider is FieldDefinition))
+            if (!(provider is TypeDefinition || provider is MethodDefinition || provider is FieldDefinition))
                 return;
 
-            IMemberDefinition providerMember = (IMemberDefinition)provider; ;
+            IMemberDefinition providerMember = (IMemberDefinition)provider;
             MessageOrigin providerOrigin = new MessageOrigin(providerMember);
             foreach (var dynamicDependency in Annotations.GetLinkerAttributes<DynamicDependency>(providerMember))
                 MarkDynamicDependency(dynamicDependency, providerMember, providerOrigin);
@@ -937,7 +936,8 @@ namespace Mono.Linker.Steps
             if (isPreserveDependency)
                 MarkUserDependency(member, ca, origin);
 
-            if (Context.CanApplyOptimization(CodeOptimizations.RemoveDynamicDependencyAttribute, member.DeclaringType.Module.Assembly))
+            if (Context.CanApplyOptimization(CodeOptimizations.RemoveDynamicDependencyAttribute,
+                CustomAttributeSource.GetAssemblyFromCustomAttributeProvider(provider)))
             {
                 // Record the custom attribute so that it has a reason, without actually marking it.
                 Tracer.AddDirectDependency(ca, reason, marked: false);
@@ -952,7 +952,8 @@ namespace Mono.Linker.Steps
 
         void MarkDynamicDependency(DynamicDependency dynamicDependency, IMemberDefinition context, MessageOrigin origin)
         {
-            Debug.Assert(context is MethodDefinition || context is FieldDefinition);
+            Debug.Assert(context is TypeDefinition || context is MethodDefinition || context is FieldDefinition);
+            TypeDefinition declaringType = context is TypeDefinition contextType ? contextType : context.DeclaringType;
             AssemblyDefinition? assembly;
             if (dynamicDependency.AssemblyName != null)
             {
@@ -965,7 +966,7 @@ namespace Mono.Linker.Steps
             }
             else
             {
-                assembly = context.DeclaringType.Module.Assembly;
+                assembly = declaringType.Module.Assembly;
                 Debug.Assert(assembly != null);
             }
 
@@ -992,10 +993,10 @@ namespace Mono.Linker.Steps
             }
             else
             {
-                type = Context.TryResolve(context.DeclaringType);
+                type = Context.TryResolve(declaringType);
                 if (type == null)
                 {
-                    Context.LogWarning(context, DiagnosticId.UnresolvedTypeInDynamicDependencyAttribute, context.DeclaringType.GetDisplayName());
+                    Context.LogWarning(context, DiagnosticId.UnresolvedTypeInDynamicDependencyAttribute, declaringType.GetDisplayName());
                     return;
                 }
             }
@@ -1013,6 +1014,11 @@ namespace Mono.Linker.Steps
             else
             {
                 var memberTypes = dynamicDependency.MemberTypes;
+                if (memberTypes == DynamicallyAccessedMemberTypes.None)
+                {
+                    MarkTypeVisibleToReflection(type, new DependencyInfo(DependencyKind.DynamicDependency, context), origin);
+                    return;
+                }
                 members = type.GetDynamicallyAccessedMembers(Context, memberTypes);
                 if (!members.Any())
                 {

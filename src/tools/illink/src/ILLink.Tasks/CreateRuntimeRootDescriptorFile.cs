@@ -43,6 +43,8 @@ namespace ILLink.Tasks
         [Required]
         public ITaskItem ILLinkTrimXmlFilePath { get; set; }
 
+        public ITaskItem RuntimeRootLinkAttributesFilePath { get; set; }
+
         public ITaskItem[] DefineConstants { get; set; }
 
         /// <summary>
@@ -362,7 +364,6 @@ namespace ILLink.Tasks
 
             XmlElement linkerNode = doc["linker"];
             XmlNode assemblyNode = linkerNode["assembly"];
-            var featureAssemblies = new Dictionary<FeatureSwitchMembers, XmlElement>();
 
             if (featureSwitchMembers.Count > 0)
             {
@@ -378,7 +379,6 @@ namespace ILLink.Tasks
                         AddXmlTypeNode(doc, featureAssemblyNode, type.Key, type.Value);
                     }
                     linkerNode.AppendChild(featureAssemblyNode);
-                    featureAssemblies.Add(fs, featureAssemblyNode);
                 }
             }
 
@@ -386,6 +386,19 @@ namespace ILLink.Tasks
             {
                 AddXmlTypeNode(doc, assemblyNode, type.Key, type.Value);
             }
+            if (conditionalDependencies.Count != 0 && RuntimeRootLinkAttributesFilePath is null)
+            {
+                Log.LogError($"{nameof(RuntimeRootLinkAttributesFilePath)} is required for conditional dependencies.");
+                return;
+            }
+
+            var attributes = new XmlDocument();
+            XmlElement attributesRoot = attributes.CreateElement("linker");
+            attributes.AppendChild(attributesRoot);
+            XmlElement attributesAssembly = attributes.CreateElement("assembly");
+            attributesAssembly.SetAttribute("fullname", assemblyNode.Attributes["fullname"].Value);
+            attributesRoot.AppendChild(attributesAssembly);
+            var featureAssemblies = new Dictionary<FeatureSwitchMembers, XmlElement>();
             foreach (var dependency in conditionalDependencies)
             {
                 string triggerClassId;
@@ -420,33 +433,56 @@ namespace ILLink.Tasks
                     continue;
                 }
 
-                XmlNode parent = assemblyNode;
+                XmlNode parent = attributesAssembly;
                 if (dependency.FeatureSwitch is FeatureSwitchMembers feature)
                 {
                     if (!featureAssemblies.TryGetValue(feature, out XmlElement featureAssembly))
                     {
-                        featureAssembly = CreateFeatureAssembly(doc, feature);
+                        featureAssembly = CreateFeatureAssembly(attributes, feature);
                         featureAssemblies.Add(feature, featureAssembly);
-                        linkerNode.AppendChild(featureAssembly);
+                        attributesRoot.AppendChild(featureAssembly);
                     }
                     parent = featureAssembly;
                 }
 
-                XmlElement conditional = doc.CreateElement("conditional");
-                conditional.SetAttribute("type", triggerType);
+                XmlElement triggerNode = attributes.CreateElement("type");
+                triggerNode.SetAttribute("fullname", triggerType);
+                parent.AppendChild(triggerNode);
                 if (triggerMemberKind is not null)
-                    conditional.SetAttribute(triggerMemberKind, triggerMemberName);
+                {
+                    XmlElement member = attributes.CreateElement(triggerMemberKind);
+                    member.SetAttribute("name", triggerMemberName);
+                    triggerNode.AppendChild(member);
+                    triggerNode = member;
+                }
 
-                var target = new ClassMembers { required = true };
-                if (dependency.MemberKind == "method")
-                    target.methods = new HashSet<string> { dependency.MemberName };
-                else if (dependency.MemberKind == "field")
-                    target.fields = new HashSet<string> { dependency.MemberName };
-                AddXmlTypeNode(doc, conditional, targetType, target);
-                parent.AppendChild(conditional);
+                XmlElement attribute = attributes.CreateElement("attribute");
+                attribute.SetAttribute("fullname", "System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute");
+                triggerNode.AppendChild(attribute);
+                XmlElement selector = attributes.CreateElement("argument");
+                if (dependency.MemberKind is null)
+                {
+                    selector.SetAttribute("type", "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes");
+                    selector.InnerText = "None";
+                }
+                else
+                {
+                    selector.InnerText = dependency.MemberName;
+                }
+                attribute.AppendChild(selector);
+                XmlElement typeArgument = attributes.CreateElement("argument");
+                typeArgument.InnerText = targetType.Replace('/', '.');
+                attribute.AppendChild(typeArgument);
+                XmlElement assemblyArgument = attributes.CreateElement("argument");
+                assemblyArgument.InnerText = assemblyNode.Attributes["fullname"].Value;
+                attribute.AppendChild(assemblyArgument);
             }
             if (!Log.HasLoggedErrors)
+            {
                 doc.Save(outputFileName);
+                if (RuntimeRootLinkAttributesFilePath is not null)
+                    attributes.Save(RuntimeRootLinkAttributesFilePath.ItemSpec);
+            }
         }
 
         static XmlElement CreateFeatureAssembly(XmlDocument doc, FeatureSwitchMembers feature)

@@ -37,18 +37,22 @@ namespace ILLink.Tasks.Tests
             Assert.Equal("false", (string)target.Attribute("required"));
             Assert.Equal("fields", (string)target.Attribute("preserve"));
             Assert.Empty(target.Elements());
-            XElement classEdge = assembly.Elements("conditional").Single(e => e.Attribute("method") is not null);
-            Assert.Equal("TestNS.Container/Trigger", (string)classEdge.Attribute("type"));
-            Assert.Equal("Activate", (string)classEdge.Attribute("method"));
-            Assert.Equal("TestNS.Target", (string)classEdge.Element("type").Attribute("fullname"));
-            Assert.Equal("nothing", (string)classEdge.Element("type").Attribute("preserve"));
-            Assert.Null(classEdge.Element("type").Attribute("required"));
-            XElement feature = descriptor.Root.Elements("assembly").Single(a => a.Attribute("feature") is not null);
+            Assert.Empty(descriptor.Descendants("conditional"));
+            XDocument attributes = XDocument.Load(test.AttributesPath);
+            XElement classEdge = attributes.Descendants("method").Single();
+            Assert.Equal("TestNS.Container/Trigger", (string)classEdge.Parent.Attribute("fullname"));
+            Assert.Equal("Activate", (string)classEdge.Attribute("name"));
+            XElement attribute = Assert.Single(classEdge.Elements("attribute"));
+            Assert.Equal("System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute", (string)attribute.Attribute("fullname"));
+            Assert.Equal(new[] { "None", "TestNS.Target", "Input" }, attribute.Elements("argument").Select(a => a.Value));
+            Assert.Equal("System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes", (string)attribute.Element("argument").Attribute("type"));
+            XElement feature = attributes.Root.Elements("assembly").Single(a => a.Attribute("feature") is not null);
             Assert.Equal("TestFeature", (string)feature.Attribute("feature"));
-            XElement methodEdge = Assert.Single(feature.Elements("conditional"));
-            Assert.Equal("TestNS.Container/Trigger", (string)methodEdge.Attribute("type"));
-            Assert.Equal("Signal", (string)methodEdge.Attribute("field"));
-            Assert.Equal("Callback", (string)methodEdge.Element("type").Element("method").Attribute("name"));
+            XElement methodEdge = Assert.Single(feature.Elements("type"));
+            Assert.Equal("TestNS.Container/Trigger", (string)methodEdge.Attribute("fullname"));
+            Assert.Equal("Signal", (string)methodEdge.Element("field").Attribute("name"));
+            Assert.Equal(new[] { "Callback", "TestNS.Target", "Input" },
+                methodEdge.Element("field").Element("attribute").Elements("argument").Select(a => a.Value));
         }
 
         [Theory]
@@ -271,6 +275,8 @@ namespace ILLink.Tasks.Tests
         [InlineData("CLASS", "none", false, false)]
         [InlineData("CLASS", "target-type", false, false)]
         [InlineData("CLASS", "type", false, true)]
+        [InlineData("CLASS", "nested-target", false, true)]
+        [InlineData("CLASS", "generic-target", false, true)]
         [InlineData("CLASS", "signature", false, true)]
         [InlineData("CLASS", "field-type", false, true)]
         [InlineData("CLASS", "xml-type", false, true)]
@@ -308,12 +314,17 @@ namespace ILLink.Tasks.Tests
                 "FIELD" => "TRIGGER__SIGNAL",
                 _ => throw new InvalidOperationException(triggerKind)
             };
+            string targetName = root switch {
+                "nested-target" => "Container+Target",
+                "generic-target" => "Target`1",
+                _ => "Target"
+            };
             XDocument descriptor = test.Generate(new[] {
                 "DEFINE_CLASS_OPTIONAL(NEVER, TestNS, Never)",
                 "DEFINE_CLASS_OPTIONAL(TRIGGER, TestNS, Trigger)",
                 "DEFINE_METHOD_CONDITIONAL(TRIGGER, ACTIVATE, Activate, NoSig, CLASS, NEVER)",
                 "DEFINE_FIELD_CONDITIONAL(TRIGGER, SIGNAL, Signal, CLASS, NEVER)",
-                "DEFINE_CLASS_OPTIONAL(TARGET, TestNS, Target)",
+                $"DEFINE_CLASS_OPTIONAL(TARGET, TestNS, {targetName})",
                 root.StartsWith("feature-", StringComparison.Ordinal) ? "BEGIN_ILLINK_FEATURE_SWITCH(TestFeature, true, true)" : "",
                 $"DEFINE_METHOD_CONDITIONAL(TARGET, CALLBACK, Callback, NoSig, {triggerKind}, {trigger})",
                 $"DEFINE_FIELD_CONDITIONAL(TARGET, VALUE, Value, {triggerKind}, {trigger})",
@@ -342,6 +353,10 @@ namespace ILLink.Tasks.Tests
             foreach (XElement feature in descriptor.Root.Elements("assembly").Where(a => a.Attribute("feature") is not null))
                 feature.SetAttributeValue("fullname", "Input");
             descriptor.Save(test.DescriptorPath);
+            XDocument attributes = XDocument.Load(test.AttributesPath);
+            foreach (XElement feature in attributes.Root.Elements("assembly"))
+                feature.SetAttributeValue("fullname", "Input");
+            attributes.Save(test.AttributesPath);
 
             string input = Path.Combine(test.DirectoryPath, "Input.dll");
             using (AssemblyDefinition assembly = AssemblyDefinition.CreateAssembly(
@@ -354,7 +369,18 @@ namespace ILLink.Tasks.Tests
                 MethodDefinition activate = AddMethod(triggerType, "Activate");
                 var signal = new FieldDefinition("Signal", FieldAttributes.Public | FieldAttributes.Static, objectType);
                 triggerType.Fields.Add(signal);
-                TypeDefinition target = AddType(module, "Target");
+                TypeDefinition target;
+                if (root == "nested-target")
+                {
+                    target = new TypeDefinition("", "Target", TypeAttributes.NestedPublic, objectType);
+                    AddType(module, "Container").NestedTypes.Add(target);
+                }
+                else
+                {
+                    target = AddType(module, targetName);
+                    if (root == "generic-target")
+                        target.GenericParameters.Add(new GenericParameter("T", target));
+                }
                 AddMethod(target, "Callback");
                 AddMethod(target, "Callback").Parameters.Add(new ParameterDefinition(triggerType));
                 AddMethod(target, "Unused");
@@ -376,7 +402,7 @@ namespace ILLink.Tasks.Tests
                     main.Body.Instructions.Add(Instruction.Create(OpCodes.Ldtoken, target));
                     main.Body.Instructions.Add(Instruction.Create(OpCodes.Pop));
                 }
-                else if (root is "type" or "feature-off" or "feature-on" or "second")
+                else if (root is "type" or "feature-off" or "feature-on" or "second" or "nested-target" or "generic-target")
                 {
                     main.Body.Instructions.Add(Instruction.Create(OpCodes.Ldtoken, root == "second" ? second : triggerType));
                     main.Body.Instructions.Add(Instruction.Create(OpCodes.Pop));
@@ -395,14 +421,23 @@ namespace ILLink.Tasks.Tests
 
             string output = Path.Combine(test.DirectoryPath, "linked");
             using var driver = new Driver(new Queue<string>(new[] {
-                "-a", "Input", "entrypoint", "-reference", input, "-x", test.DescriptorPath, "-out", output,
+                "-a", "Input", "entrypoint", "-reference", input, "-x", test.DescriptorPath,
+                "--link-attributes", test.AttributesPath, "-out", output,
                 "--feature", "TestFeature", root == "feature-off" ? "false" : "true",
                 "-reference", typeof(object).Assembly.Location, "--action", "skip", "System.Private.CoreLib"
             }));
             var logger = new MockDriver.CustomLogger();
             Assert.True(driver.Run(logger) == 0, string.Join(Environment.NewLine, logger.Messages));
             using AssemblyDefinition linked = AssemblyDefinition.ReadAssembly(Path.Combine(output, "Input.dll"));
-            TypeDefinition retained = linked.MainModule.GetType("TestNS.Target");
+            foreach (TypeDefinition type in linked.MainModule.GetTypes())
+            {
+                Assert.DoesNotContain(type.CustomAttributes, IsDynamicDependency);
+                foreach (MethodDefinition method in type.Methods)
+                    Assert.DoesNotContain(method.CustomAttributes, IsDynamicDependency);
+                foreach (FieldDefinition field in type.Fields)
+                    Assert.DoesNotContain(field.CustomAttributes, IsDynamicDependency);
+            }
+            TypeDefinition retained = linked.MainModule.GetType("TestNS." + targetName.Replace('+', '/'));
             Assert.Equal(expected || root == "target-type", retained is not null);
             if (expected)
             {
@@ -423,6 +458,9 @@ namespace ILLink.Tasks.Tests
             Assert.Null(linked.MainModule.GetType("TestNS.DeadA"));
             Assert.Null(linked.MainModule.GetType("TestNS.DeadB"));
             Assert.Null(linked.MainModule.GetType("TestNS.Never"));
+
+            static bool IsDynamicDependency(CustomAttribute attribute) =>
+                attribute.AttributeType.FullName == "System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute";
 
             static TypeDefinition AddType(ModuleDefinition module, string name)
             {
@@ -457,12 +495,14 @@ namespace ILLink.Tasks.Tests
             }, expectSuccess: false));
             Assert.Single(test.BuildEngine.Errors);
             Assert.False(File.Exists(test.DescriptorPath));
+            Assert.False(File.Exists(test.AttributesPath));
         }
 
         sealed class DescriptorTest : IDisposable
         {
             public string DirectoryPath { get; } = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             public string DescriptorPath => Path.Combine(DirectoryPath, "descriptor.xml");
+            public string AttributesPath => Path.Combine(DirectoryPath, "attributes.xml");
             public MockBuildEngine BuildEngine { get; } = new MockBuildEngine();
 
             public DescriptorTest() => Directory.CreateDirectory(DirectoryPath);
@@ -482,7 +522,8 @@ namespace ILLink.Tasks.Tests
                     CortypeFilePath = new TaskItem(Path.Combine(DirectoryPath, "cortypeinfo.h")),
                     RexcepFilePath = new TaskItem(Path.Combine(DirectoryPath, "rexcep.h")),
                     ILLinkTrimXmlFilePath = new TaskItem(template),
-                    RuntimeRootDescriptorFilePath = new TaskItem(DescriptorPath)
+                    RuntimeRootDescriptorFilePath = new TaskItem(DescriptorPath),
+                    RuntimeRootLinkAttributesFilePath = new TaskItem(AttributesPath)
                 };
                 Assert.Equal(expectSuccess, task.Execute());
                 return expectSuccess ? XDocument.Load(DescriptorPath) : null;
