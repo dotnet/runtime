@@ -86,6 +86,7 @@ void CordbValue::Neuter()
     {
         pValueHome->Clear();
     }
+    m_pExternalMemoryParent.Clear();
     CordbBase::Neuter();
 } // CordbValue::Neuter
 
@@ -107,7 +108,8 @@ void CordbValue::CreateGenericValue(CordbAppDomain *               pAppdomain,
                                     TargetBuffer                   remoteValue,
                                     MemoryRange                    localValue,
                                     EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                                    ICorDebugValue**               ppValue)
+                                    ICorDebugValue**               ppValue,
+                                    CordbValue*                    pExternalMemoryParent)
 {
     LOG((LF_CORDB,LL_INFO100000,"CV::CreateValueByType CreateGenericValue\n"));
     RSSmartPtr<CordbGenericValue> pGenValue;
@@ -122,6 +124,7 @@ void CordbValue::CreateGenericValue(CordbAppDomain *               pAppdomain,
                                            ppRemoteRegAddr));
 
     pGenValue->Init(localValue); // throws
+    pGenValue->m_pExternalMemoryParent.Assign(pExternalMemoryParent);
 
     pGenValue->AddRef();
     *ppValue = (ICorDebugValue *)(ICorDebugGenericValue *)pGenValue;
@@ -147,7 +150,8 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
                                        MemoryRange                    localValue,
                                        EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                                        VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner,
-                                       ICorDebugValue**               ppValue)
+                                       ICorDebugValue**               ppValue,
+                                       CordbValue*                    pExternalMemoryParent)
 
 {
     HRESULT hr = S_OK;
@@ -169,6 +173,7 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
 
         IfFailThrow(pVCValue->Init(localValue));
         pVCValue->SetExternalMemoryOwner(vmExternalMemoryOwner);
+        pVCValue->m_pExternalMemoryParent.Assign(pExternalMemoryParent);
 
         pVCValue->AddRef();
         *ppValue = (ICorDebugValue*)(ICorDebugObjectValue*)pVCValue;
@@ -185,6 +190,7 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
                                         ppRemoteRegAddr, // Home
                                         &pRef);
         IfFailThrow(hr);
+        pRef->m_pExternalMemoryParent.Assign(pExternalMemoryParent);
         hr = pRef->QueryInterface(__uuidof(ICorDebugValue), (void**)ppValue);
         _ASSERTE(SUCCEEDED(hr));
     }
@@ -211,7 +217,8 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
                                               MemoryRange                    localValue,
                                               EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                                               VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner,
-                                              ICorDebugValue**               ppValue)
+                                              ICorDebugValue**               ppValue,
+                                              CordbValue*                    pExternalMemoryParent)
 {
     INTERNAL_SYNC_API_ENTRY(pAppdomain->GetProcess()); //
 
@@ -244,7 +251,7 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
     case ELEMENT_TYPE_I:
     case ELEMENT_TYPE_U:
         {
-            CreateGenericValue(pAppdomain, pType, remoteValue, localValue, ppRemoteRegAddr, ppValue); // throws
+            CreateGenericValue(pAppdomain, pType, remoteValue, localValue, ppRemoteRegAddr, ppValue, pExternalMemoryParent); // throws
             break;
         }
 
@@ -259,7 +266,7 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
     case ELEMENT_TYPE_SZARRAY:
     case ELEMENT_TYPE_FNPTR:
         {
-            CreateVCObjOrRefValue(pAppdomain, pType, boxed, remoteValue, localValue, ppRemoteRegAddr, vmExternalMemoryOwner, ppValue); // throws
+            CreateVCObjOrRefValue(pAppdomain, pType, boxed, remoteValue, localValue, ppRemoteRegAddr, vmExternalMemoryOwner, ppValue, pExternalMemoryParent); // throws
             break;
         }
 
@@ -2931,7 +2938,8 @@ CordbVCObjectValue::CordbVCObjectValue(CordbAppDomain *               pAppdomain
                  pAppdomain->GetSweepableExitNeuterList()),
       m_pObjectCopy(NULL),
       m_pValueHome(NULL),
-      m_vmExternalMemoryOwner(VMPTR_DebuggerExternalMemoryOwner::NullPtr())
+      m_vmExternalMemoryOwner(VMPTR_DebuggerExternalMemoryOwner::NullPtr()),
+      m_isExternalMemory(false)
 {
     // instantiate the value home
     NewHolder<ValueHome> pHome(NULL);
@@ -2974,6 +2982,16 @@ void CordbVCObjectValue::SetExternalMemoryOwner(VMPTR_DebuggerExternalMemoryOwne
 {
     _ASSERTE(m_vmExternalMemoryOwner.IsNull());
     m_vmExternalMemoryOwner = vmExternalMemoryOwner;
+    m_isExternalMemory = !vmExternalMemoryOwner.IsNull();
+}
+
+void CordbVCObjectValue::RefreshObjectCopy()
+{
+    if (m_isExternalMemory)
+    {
+        // External values survive resumes; GC and later evaluations can update their fields.
+        m_pValueHome->GetValue(MemoryRange(m_pObjectCopy, m_size));
+    }
 }
 
 void CordbVCObjectValue::NeuterLeftSideResources()
@@ -3168,11 +3186,21 @@ HRESULT CordbVCObjectValue::GetFieldValueForType(ICorDebugType * pType,
         _ASSERTE(fieldOffset < m_size);
         _ASSERTE(fieldOffset + size <= m_size);
 
+        RefreshObjectCopy();
+        bool externalValueField = m_isExternalMemory && pFieldType->IsValueType();
         m_pValueHome->CreateInternalValue(pFieldType,
                                           fieldOffset,
                                           m_pObjectCopy + fieldOffset,
                                           size,
-                                          ppValue); // throws
+                                          ppValue,
+                                          m_isExternalMemory ? this : nullptr); // throws
+
+        if (externalValueField)
+        {
+            CordbVCObjectValue* pValue = static_cast<CordbVCObjectValue*>(
+                static_cast<ICorDebugObjectValue*>(*ppValue));
+            pValue->m_isExternalMemory = true;
+        }
 
     }
     EX_CATCH_HRESULT(hr);
@@ -3228,8 +3256,22 @@ HRESULT CordbVCObjectValue::GetFieldValue(ICorDebugClass *pClass,
 //        and is responsible for allocation and deallocation.
 HRESULT CordbVCObjectValue::GetValue(void *pTo)
 {
+    PUBLIC_REENTRANT_API_ENTRY(this);
     VALIDATE_POINTER_TO_OBJECT_ARRAY(pTo, BYTE, m_size, false, true);
     FAIL_IF_NEUTERED(this);
+
+    if (m_isExternalMemory)
+    {
+        ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        RefreshObjectCopy();
+    }
+    EX_CATCH_HRESULT(hr);
+    IfFailRet(hr);
 
     // Copy out the value, which is the whole object.
     memcpy(pTo, m_pObjectCopy, m_size);

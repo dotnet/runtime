@@ -386,6 +386,13 @@ namespace ILCompiler.ObjectWriter
                 fixed (byte* pData = relocScratchBuffer)
                 {
                     long addend = reloc.Addend + Relocation.ReadValue(reloc.Type, pData);
+                    if (reloc.Type is RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32)
+                    {
+                        Relocation.WriteValue(reloc.Type, pData, checked(_methodStartVirtualIPs[reloc.SymbolName] + addend));
+                        sectionStream.Position = reloc.Offset;
+                        sectionStream.Write(relocScratchBuffer.AsSpan(0, size));
+                        continue;
+                    }
                     if (reloc.Type is RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB)
                     {
                         Debug.Assert(addend == 0);
@@ -628,7 +635,8 @@ namespace ILCompiler.ObjectWriter
                 return;
             }
 
-            _methodStartVirtualIPs.Add(currentSymbolName, _nextVirtualIP);
+            // Bit 31 is reserved by the managed stack-trace resolver for StackTraceHidden.
+            _methodStartVirtualIPs.Add(currentSymbolName, checked((uint)(int)_nextVirtualIP));
             Span<byte> indexBuffer = stackalloc byte[16];
             for (int i = 0; i < frames.Length; i++)
             {

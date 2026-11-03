@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class TypeDefinitionTests
     {
@@ -97,7 +97,6 @@ namespace ILAssembler.Tests
         [Fact]
         public void Diagnostic_UnsealedValueType()
         {
-            // A value type that extends System.ValueType but is not sealed (warning, auto-sealed)
             string source = """
                 .assembly extern System.Runtime { }
                 .assembly test { }
@@ -112,6 +111,126 @@ namespace ILAssembler.Tests
             var error = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.UnsealedValueType, error.Id);
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Theory]
+        [InlineData("", false)]
+        [InlineData("", true)]
+        [InlineData("sealed", false)]
+        [InlineData("sealed", true)]
+        public void ValueType_PreservesSealedAttributeInErrorTolerantMode(string attributes, bool errorTolerant)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public {{attributes}} MyStruct extends [mscorlib]System.ValueType { }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = errorTolerant });
+            bool sealedType = attributes == "sealed";
+            if (sealedType)
+            {
+                Assert.Empty(diagnostics);
+            }
+            else
+            {
+                Diagnostic diagnostic = Assert.Single(diagnostics);
+                Assert.Equal(DiagnosticIds.UnsealedValueType, diagnostic.Id);
+                Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            }
+
+            if (!sealedType && !errorTolerant)
+            {
+                Assert.Null(result);
+                return;
+            }
+
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            MetadataReader reader = pe.GetMetadataReader();
+            TypeDefinition type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal(sealedType, type.Attributes.HasFlag(TypeAttributes.Sealed));
+        }
+
+        [Theory]
+        [InlineData(".mscorlib\n.assembly System.Runtime { }", "System.Enum", "System.ValueType")]
+        [InlineData(".mscorlib\n.assembly System.Runtime { }", "System.Enum", "[mscorlib]System.ValueType")]
+        [InlineData(".assembly mscorlib { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly System.Private.CoreLib { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly System.Runtime { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly netstandard { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly MSCORLIB { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly SYSTEM.PRIVATE.CORELIB { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly SYSTEM.RUNTIME { }", "System.Enum", "System.ValueType")]
+        [InlineData(".assembly NETSTANDARD { }", "System.Enum", "System.ValueType")]
+        [InlineData(".mscorlib\n.assembly test { }", "System.Enum", "System.ValueType")]
+        public void SystemEnumInCoreLibrary_IsNotSealed(string assembly, string name, string baseType)
+        {
+            string source = $$"""
+                {{assembly}}
+                .class public abstract auto ansi beforefieldinit {{name}}
+                    extends {{baseType}}
+                {
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            TypeDefinition type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+
+            Assert.Equal("System", reader.GetString(type.Namespace));
+            Assert.Equal("Enum", reader.GetString(type.Name));
+            Assert.Equal(TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit, type.Attributes);
+            Assert.Equal("ValueType", GetBaseTypeName(reader, type));
+        }
+
+        [Theory]
+        [InlineData(".assembly test { }", ".class public abstract System.Enum")]
+        [InlineData(".assembly extern mscorlib { }\n.assembly test { }", ".class public abstract System.Enum")]
+        [InlineData(".assembly System.Runtime.Other { }", ".class public abstract System.Enum")]
+        [InlineData(".assembly extern System.Runtime { }\n.assembly test { }", ".class public abstract System.Enum")]
+        [InlineData(".mscorlib\n.assembly test { }", ".class public abstract Other.Enum")]
+        [InlineData(".mscorlib\n.assembly test { }", ".class public abstract System.Other")]
+        [InlineData(".mscorlib\n.assembly test { }", ".class public Outer { .class nested public abstract System.Enum", "}")]
+        [InlineData(".mscorlib\n.assembly test { }", ".class public MyStruct")]
+        [InlineData(".mscorlib\n.assembly test { }", ".class flags(0x80000081) System.Enum")]
+        public void UnsealedValueTypeOtherThanCoreLibrarySystemEnum_IsReported(
+            string assembly, string declaration, string closingDeclaration = "")
+        {
+            string source = $$"""
+                {{assembly}}
+                {{declaration}} extends System.ValueType { }
+                {{closingDeclaration}}
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.UnsealedValueType, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Theory]
+        [InlineData("", false)]
+        [InlineData("sealed", true)]
+        public void UserEnum_PreservesSealedAttribute(string attributes, bool sealedType)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public {{attributes}} UserEnum extends [mscorlib]System.Enum
+                {
+                    .field public specialname rtspecialname int32 value__
+                    .field public static literal valuetype UserEnum Zero = int32(0)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            TypeDefinition type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+
+            Assert.Equal(sealedType, type.Attributes.HasFlag(TypeAttributes.Sealed));
+            Assert.Equal("Enum", GetBaseTypeName(reader, type));
         }
 
 
@@ -156,8 +275,8 @@ namespace ILAssembler.Tests
                 .assembly extern System.Runtime { }
                 """;
 
-            var sourceText = new ILAssembler.SourceText(source, "test.il");
-            var compiler = new ILAssembler.DocumentCompiler();
+            var sourceText = new Microsoft.DotNet.ILAssembler.SourceText(source, "test.il");
+            var compiler = new Microsoft.DotNet.ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
 
             foreach (var d in diagnostics)
@@ -792,7 +911,7 @@ namespace ILAssembler.Tests
                 .ToDictionary(type => reader.GetString(type.Name));
 
             Assert.True(types["FlagValueType"].Attributes.HasFlag(TypeAttributes.BeforeFieldInit));
-            Assert.True(types["FlagValueType"].Attributes.HasFlag(TypeAttributes.Sealed));
+            Assert.False(types["FlagValueType"].Attributes.HasFlag(TypeAttributes.Sealed));
             Assert.Equal("ValueType", GetBaseTypeName(reader, types["FlagValueType"]));
             Assert.True(types["FlagEnumType"].Attributes.HasFlag(TypeAttributes.BeforeFieldInit));
             Assert.Equal("Enum", GetBaseTypeName(reader, types["FlagEnumType"]));

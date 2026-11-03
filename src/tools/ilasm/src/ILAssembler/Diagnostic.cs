@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 public enum DiagnosticSeverity
 {
@@ -87,7 +87,7 @@ public static class DiagnosticIds
 internal static class DiagnosticMessageTemplates
 {
     public const string LiteralOutOfRange = "The value '{0}' is out of range";
-    public const string UnsealedValueType = "The value type '{0}' is unsealed; implicitly sealed.";
+    public const string UnsealedValueType = "The value type '{0}' is unsealed.";
     public const string ThisOutsideClass = "'.this' cannot be used outside of a class definition";
     public const string BaseOutsideClass = "'.base' cannot be used outside of a class definition";
     public const string NoBaseType = "Current type does not have a base type";
