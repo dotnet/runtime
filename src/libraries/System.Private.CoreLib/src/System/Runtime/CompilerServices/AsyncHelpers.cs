@@ -249,32 +249,12 @@ namespace System.Runtime.CompilerServices
         public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
         {
             ConfiguredTaskAwaitable.ConfiguredTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
-            if ((awaiter.m_options & ConfigureAwaitOptions.SuppressThrowing) != 0)
-            {
-                TailAwait();
-                AwaitTaskWithRareOptions(awaiter);
-                return;
-            }
-
             if (!awaiter.IsCompleted)
             {
+                // Suspend handles all options, including SuppressThrowing and ForceYielding.
                 TailAwait();
                 Suspend(awaiter.m_task, awaiter.m_options);
                 return;
-            }
-
-            awaiter.GetResult();
-        }
-
-        [Intrinsic]
-        [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.NoInlining)]
-        [StackTraceHidden]
-        private static void AwaitTaskWithRareOptions(ConfiguredTaskAwaitable.ConfiguredTaskAwaiter awaiter)
-        {
-            if (!awaiter.IsCompleted)
-            {
-                UnsafeAwaitAwaiter(awaiter);
             }
 
             awaiter.GetResult();
