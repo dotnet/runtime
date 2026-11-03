@@ -11,6 +11,8 @@ using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using NativeWriter = Internal.Metadata.NativeFormat.Writer;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -258,6 +260,82 @@ namespace TypeSystemTests
 
             Assert.Equal(0, failures);
             Assert.Equal(4, successes);
+        }
+    }
+
+    public class NativeFormatSignatureTests
+    {
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void InstantiationHashesIncludeArguments(bool isMethod, bool nested)
+        {
+            const int InstantiationCount = 128;
+            var hashes = new HashSet<int>();
+            for (int i = 0; i < InstantiationCount; i++)
+            {
+                NativeWriter.MetadataRecord argument = new NativeWriter.TypeSpecification
+                {
+                    Signature = new NativeWriter.TypeVariableSignature { Number = i }
+                };
+                NativeWriter.MetadataRecord equalArgument = new NativeWriter.TypeSpecification
+                {
+                    Signature = new NativeWriter.TypeVariableSignature { Number = i }
+                };
+                if (nested)
+                {
+                    argument = new NativeWriter.TypeSpecification { Signature = CreateInstantiation(false, argument) };
+                    equalArgument = new NativeWriter.TypeSpecification { Signature = CreateInstantiation(false, equalArgument) };
+                }
+
+                NativeWriter.MetadataRecord record = CreateInstantiation(isMethod, argument);
+                NativeWriter.MetadataRecord equalRecord = CreateInstantiation(isMethod, equalArgument);
+                Assert.Equal(record, equalRecord);
+                Assert.Equal(record.GetHashCode(), equalRecord.GetHashCode());
+                hashes.Add(record.GetHashCode());
+            }
+
+            Assert.Equal(InstantiationCount, hashes.Count);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void InstantiationHashesSupportRecursiveTypeDefinitions(bool isMethod)
+        {
+            var type = new NativeWriter.TypeDefinition { Name = (NativeWriter.ConstantStringValue)"Self" };
+            type.BaseType = new NativeWriter.TypeSpecification { Signature = CreateInstantiation(false, type) };
+            var equalType = new NativeWriter.TypeDefinition { Name = (NativeWriter.ConstantStringValue)"Self" };
+            equalType.BaseType = new NativeWriter.TypeSpecification { Signature = CreateInstantiation(false, equalType) };
+
+            NativeWriter.MetadataRecord record = CreateInstantiation(isMethod, type);
+            NativeWriter.MetadataRecord equalRecord = CreateInstantiation(isMethod, equalType);
+            Assert.Equal(record, equalRecord);
+            Assert.Equal(record.GetHashCode(), equalRecord.GetHashCode());
+        }
+
+        private static NativeWriter.MetadataRecord CreateInstantiation(bool isMethod, params NativeWriter.MetadataRecord[] arguments)
+        {
+            if (isMethod)
+            {
+                return new NativeWriter.MethodInstantiation
+                {
+                    Method = new NativeWriter.QualifiedMethod
+                    {
+                        Method = new NativeWriter.Method { Name = (NativeWriter.ConstantStringValue)"Method" },
+                        EnclosingType = new NativeWriter.TypeDefinition { Name = (NativeWriter.ConstantStringValue)"Generic" }
+                    },
+                    GenericTypeArguments = new List<NativeWriter.MetadataRecord>(arguments)
+                };
+            }
+
+            return new NativeWriter.TypeInstantiationSignature
+            {
+                GenericType = new NativeWriter.TypeDefinition { Name = (NativeWriter.ConstantStringValue)"Generic" },
+                GenericTypeArguments = new List<NativeWriter.MetadataRecord>(arguments)
+            };
         }
     }
 }
