@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -444,7 +445,7 @@ namespace System.Reflection.Emit
                 TypeAttributes typeAttributes = TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.AnsiClass;
 
                 // Define the backing value class
-                valueClassType = (TypeBuilderImpl)_module.DefineType(strValueClassName, typeAttributes, _module.GetTypeFromCoreAssembly(CoreTypeId.ValueType), PackingSize.Size1, size);
+                valueClassType = (TypeBuilderImpl)_module.DefineType(strValueClassName, typeAttributes, _module.GetTypeFromCoreAssembly(CoreTypeId.ValueType), (PackingSize)ManagedPEBuilder.MappedFieldDataAlignment, size);
                 valueClassType.CreateType();
             }
 
