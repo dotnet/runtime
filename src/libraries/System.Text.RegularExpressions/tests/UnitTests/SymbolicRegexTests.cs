@@ -7,6 +7,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions.Symbolic;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -33,11 +35,12 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(aContext._left.IsNull);
             Assert.True(aContext._right.IsNull);
 
-            SymbolicRegexNode<BDD> concat = builder.CreateConcat(a, builder.CreateSingleton(solver.CreateBDDFromChar('b')));
-            Assert.Equal(concat, builder.CreateConcat(a, builder.CreateSingleton(solver.CreateBDDFromChar('b'))));
+            SymbolicRegexNode<BDD> b = builder.CreateSingleton(solver.CreateBDDFromChar('b'));
+            SymbolicRegexNode<BDD> concat = builder.CreateConcat(a, b);
+            Assert.Equal(concat, builder.CreateConcat(a, b));
             SymbolicRegexNodeContext<BDD> concatContext = builder.GetNodeContext(concat);
             Assert.Equal(a, concatContext._left);
-            Assert.False(concatContext._right.IsNull);
+            Assert.Equal(b, concatContext._right);
 
             for (char c = 'c'; c < 'z'; c++)
             {
@@ -48,6 +51,11 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(builder.NodeCount > 16);
             Assert.Equal(SymbolicRegexNodeKind.Singleton, a.Kind(builder));
             Assert.Equal(solver.CreateBDDFromChar('a'), aContext._set);
+            Assert.Equal(SymbolicRegexNodeKind.Concat, concatContext._kind);
+            Assert.Equal(a, concatContext._left);
+            Assert.Equal(solver.CreateBDDFromChar('a'), concatContext._left._set);
+            Assert.Equal(b, concatContext._right);
+            Assert.Equal(solver.CreateBDDFromChar('b'), concatContext._right._set);
 
             var otherSolver = new CharSetSolver();
             var otherBuilder = new SymbolicRegexBuilder<BDD>(otherSolver, otherSolver);
@@ -56,6 +64,87 @@ namespace System.Text.RegularExpressions.Tests
             // Handles only contain IDs. Equality is meaningful only together with the builder that owns those IDs.
             Assert.Equal(a.Id, otherA.Id);
             Assert.Equal(a, otherA);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public async Task NodeArenaPublicationIsVisibleToConcurrentReaders()
+        {
+            const int ReaderCount = 4;
+            const int CaptureCount = 256;
+
+            var solver = new CharSetSolver();
+            var builder = new SymbolicRegexBuilder<BDD>(solver, solver);
+            SymbolicRegexNode<BDD> retainedNode = builder.CreateCapture(builder.BeginningAnchor, 0);
+            SymbolicRegexNodeContext<BDD> retainedContext = builder.GetNodeContext(retainedNode);
+            long publishedCapture = PackPublishedCapture(retainedNode.Id, 0);
+            int writerFinished = 0;
+            using var start = new Barrier(ReaderCount + 1);
+
+            Task writer = Task.Run(() =>
+            {
+                start.SignalAndWait();
+
+                try
+                {
+                    for (int captureNumber = 1; captureNumber <= CaptureCount; captureNumber++)
+                    {
+                        SymbolicRegexNode<BDD> node = builder.CreateCapture(builder.BeginningAnchor, captureNumber);
+                        Volatile.Write(ref publishedCapture, PackPublishedCapture(node.Id, captureNumber));
+                    }
+                }
+                finally
+                {
+                    Volatile.Write(ref writerFinished, 1);
+                }
+            });
+
+            Task[] readers = new Task[ReaderCount];
+            for (int i = 0; i < readers.Length; i++)
+            {
+                readers[i] = Task.Run(() =>
+                {
+                    start.SignalAndWait();
+
+                    while (Volatile.Read(ref writerFinished) == 0)
+                    {
+                        ValidatePublishedCapture(builder, Volatile.Read(ref publishedCapture));
+                        ValidateCaptureContext(retainedContext, 0);
+                    }
+
+                    ValidatePublishedCapture(builder, Volatile.Read(ref publishedCapture));
+                    ValidateCaptureContext(retainedContext, 0);
+                });
+            }
+
+            await writer;
+            await Task.WhenAll(readers);
+
+            Assert.True(builder.NodeCount > 512);
+
+            static long PackPublishedCapture(int nodeId, int captureNumber) => ((long)captureNumber << 32) | (uint)nodeId;
+
+            static void ValidatePublishedCapture(SymbolicRegexBuilder<BDD> builder, long publishedCapture)
+            {
+                int nodeId = (int)publishedCapture;
+                int captureNumber = (int)(publishedCapture >> 32);
+                ValidateCaptureContext(builder.GetNodeContext(new SymbolicRegexNode<BDD>(nodeId)), captureNumber);
+            }
+
+            static void ValidateCaptureContext(SymbolicRegexNodeContext<BDD> context, int captureNumber)
+            {
+                Assert.Equal(SymbolicRegexNodeKind.Concat, context._kind);
+                Assert.Equal(SymbolicRegexNodeKind.CaptureStart, context._left._kind);
+                Assert.Equal(captureNumber, context._left._lower);
+
+                SymbolicRegexNodeContext<BDD> tail = context._right;
+                Assert.Equal(SymbolicRegexNodeKind.Concat, tail._kind);
+                Assert.Equal(SymbolicRegexNodeKind.BeginningAnchor, tail._left._kind);
+                Assert.Equal(SymbolicRegexNodeKind.CaptureEnd, tail._right._kind);
+                Assert.Equal(captureNumber, tail._right._lower);
+
+                Assert.True(context.IsNullableFor(CharKind.Context(CharKind.BeginningEnd, CharKind.General)));
+                Assert.False(context.IsNullableFor(CharKind.Context(CharKind.General, CharKind.General)));
+            }
         }
 
         [Theory]
