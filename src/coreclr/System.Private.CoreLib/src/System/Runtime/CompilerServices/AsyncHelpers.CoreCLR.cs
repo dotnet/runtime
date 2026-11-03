@@ -260,13 +260,14 @@ namespace System.Runtime.CompilerServices
                 // (from a thunk), or we came from DispatchContinuations (on resumption).
                 // Both cases have already initialized CurrentThread.
                 Thread? curThread = CurrentThread;
+                RuntimeAsyncStackState* stackState = StackState;
                 Debug.Assert(curThread != null);
-                Debug.Assert(StackState != null);
+                Debug.Assert(stackState != null);
                 // Here we get the execution context for presenting to the notifier,
                 // not for flowing across suspension to potentially another thread.
                 // Therefore we do not need to worry about IsFlowSuppressed
-                StackState->LeafExecutionContext = curThread._executionContext;
-                StackState->LeafSynchronizationContext = curThread._synchronizationContext;
+                stackState->LeafExecutionContext = curThread._executionContext;
+                stackState->LeafSynchronizationContext = curThread._synchronizationContext;
             }
 
             // At the start of an async chain (task-returning thunk or DispatchContinuations) this function
@@ -650,7 +651,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async)]
+        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.AggressiveInlining)]
         private static void TransparentAwait(ValueTask task)
         {
             object? obj = task._obj;
@@ -699,7 +700,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async)]
+        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.AggressiveInlining)]
         private static T TransparentAwait<T>(ValueTask<T> task)
         {
             object? obj = task._obj;
@@ -780,7 +781,25 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private bool QueueAwaitContinuationIfNecessary(object continuationContext, bool canInline)
+            {
+                // Fast path for the common case of continuing on the thread pool (including a successful
+                // SuppressThrowing await) from a thread pool thread that's not running a Task and has no
+                // SynchronizationContext, in which case the continuation can be invoked inline.
+                if (canInline &&
+                    (continuationContext == TaskScheduler.Default ||
+                     (continuationContext == SuppressThrowingAwaitContext.ThreadPool && Unsafe.As<Task>(_awaitedState!).IsCompletedSuccessfully)) &&
+                    Thread.CurrentThread._synchronizationContext is null &&
+                    Task.t_currentTask is null)
+                {
+                    return false;
+                }
+
+                return QueueAwaitContinuationIfNecessarySlow(continuationContext, canInline);
+            }
+
+            private bool QueueAwaitContinuationIfNecessarySlow(object continuationContext, bool canInline)
             {
                 if (continuationContext == TaskScheduler.Default)
                 {
@@ -819,7 +838,7 @@ namespace System.Runtime.CompilerServices
                     }
 
                     return suppressThrowingContext.EncodedContext is { } encodedContext &&
-                        QueueAwaitContinuationIfNecessary(encodedContext, canInline);
+                        QueueAwaitContinuationIfNecessarySlow(encodedContext, canInline);
                 }
 
                 if (continuationContext is TaskScheduler sched2)
@@ -884,6 +903,7 @@ namespace System.Runtime.CompilerServices
             // continuation that awaited it. If the awaited task didn't complete successfully, returns the
             // exception the await must propagate (or throws it, if it can't be propagated without throwing).
             [StackTraceHidden]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static unsafe Exception? GetAwaitedTaskResult(Task awaitedTask, Continuation awaitingContinuation)
             {
                 ref byte resultStorage = ref awaitingContinuation.GetResultStorageOrNull();
@@ -1156,7 +1176,10 @@ namespace System.Runtime.CompilerServices
 
                             if (newContinuation != null)
                             {
-                                newContinuation.Next = nextContinuation;
+                                if (newContinuation.Next != nextContinuation)
+                                {
+                                    newContinuation.Next = nextContinuation;
+                                }
                                 HandleSuspended(ref awaitState);
 
                                 contexts.Pop(awaitState.CurrentThread!);
@@ -1303,7 +1326,10 @@ namespace System.Runtime.CompilerServices
 
                             if (newContinuation != null)
                             {
-                                newContinuation.Next = nextContinuation;
+                                if (newContinuation.Next != nextContinuation)
+                                {
+                                    newContinuation.Next = nextContinuation;
+                                }
 
                                 RuntimeAsyncInstrumentationHelpers.AwaitSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation, newContinuation, awaitState.SentinelContinuation!.Next);
                                 InstrumentedHandleSuspended(flags, ref awaitState);
