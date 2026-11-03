@@ -41,7 +41,7 @@ logger.LogWarning("Disk space is running low.");
 logger.LogError(new InvalidOperationException("Payment failed."), "Order {OrderId} could not be completed.", 43);
 ```
 
-When `SourceName` is not set, every event is written with event ID 1000. To use your own source, set `SourceName`; the event ID passed to the log call is then used. The source must exist before the first event is written, and creating it requires administrator rights, so it is usually registered once during installation, for example with [EventLog.CreateEventSource](https://learn.microsoft.com/dotnet/api/system.diagnostics.eventlog.createeventsource). If the source cannot be created, the logger stops writing and reports the failure once in the `Application` log.
+When `SourceName` is not set, every event is written with event ID 1000. To use your own source, set `SourceName`; the event ID passed to the log call is then used. The source must exist before the first event is written, and creating it requires administrator rights, so it is usually registered once during installation, for example with [EventLog.CreateEventSource](https://learn.microsoft.com/dotnet/api/system.diagnostics.eventlog.createeventsource).
 
 When using the .NET Generic Host, the provider is configured through the `EventLog` section of the logging configuration, for example in `appsettings.json`:
 
