@@ -19,7 +19,7 @@
 #define REPLACEMENT_CHAR 0xfffd
 
 // Test if the wide character is a high surrogate
-static bool IsHighSurrogate(const CHAR16_T c)
+static bool IsHighSurrogate(CHAR16_T c)
 {
     return (c & 0xFC00) == HIGH_SURROGATE_START;
 }
