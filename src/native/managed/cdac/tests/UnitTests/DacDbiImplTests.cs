@@ -12,6 +12,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using ILCompiler.Reflection.ReadyToRun;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
@@ -27,7 +28,7 @@ using Entrypoints = cdac_universal::Microsoft.Diagnostics.DataContractReader.Ent
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-public unsafe class DacDbiImplTests
+public unsafe partial class DacDbiImplTests
 {
     private const int MetadataLocatorInsufficientBuffer = unchecked((int)0x8007007A);
 
@@ -70,6 +71,8 @@ public unsafe class DacDbiImplTests
         public int Calls { get; private set; }
         public uint MinimumBufferLength { get; set; }
         public MockMemorySpace.MemoryContext? Memory { get; set; }
+        public byte[]? CapturedMetadata { get; set; }
+        public int CapturedMetadataReadResult { get; set; }
 
         public int GetPlatform(int* platform) => throw new NotImplementedException();
 
@@ -79,6 +82,12 @@ public unsafe class DacDbiImplTests
         public int ReadVirtual(ulong address, byte* buffer, uint size, uint* bytesRead)
         {
             *bytesRead = 0;
+            if (address == 0x10000 && CapturedMetadata is byte[] captured)
+            {
+                *bytesRead = Math.Min(size, (uint)captured.Length);
+                captured.AsSpan(0, (int)*bytesRead).CopyTo(new Span<byte>(buffer, (int)*bytesRead));
+                return CapturedMetadataReadResult;
+            }
             int hr = Memory is null ? CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE
                 : Memory.ReadFromTarget(address, new Span<byte>(buffer, checked((int)size)));
             if (hr >= 0)
@@ -98,6 +107,32 @@ public unsafe class DacDbiImplTests
             *pathLength = (uint)Path.Length + 1;
             return System.HResults.S_OK;
         }
+    }
+
+    [GeneratedComInterface]
+    [Guid("7CEF8BA9-2EF7-42BF-973F-4171474F87D9")]
+    internal partial interface INativeTestMetadataLocator
+    {
+        [PreserveSig]
+        int GetMetaData(char* imagePath, uint timeStamp, uint imageSize,
+            uint pathBufferLength, uint* pathLength, char* pathBuffer);
+    }
+
+    [GeneratedComClass]
+    private sealed partial class NativeMetadataLocator(TestMetadataLocator locator)
+        : INativeTestMetadataLocator, ICorDebugDataTarget
+    {
+        public int GetMetaData(char* imagePath, uint timeStamp, uint imageSize,
+            uint pathBufferLength, uint* pathLength, char* pathBuffer)
+            => locator.GetMetaData(imagePath, timeStamp, imageSize, pathBufferLength, pathLength, pathBuffer);
+
+        public int GetPlatform(int* platform) => locator.GetPlatform(platform);
+
+        public int GetThreadContext(uint threadId, uint flags, uint size, byte* context)
+            => locator.GetThreadContext(threadId, flags, size, context);
+
+        public int ReadVirtual(ulong address, byte* buffer, uint size, uint* bytesRead)
+            => locator.ReadVirtual(address, buffer, size, bytesRead);
     }
 
     private static CorDebugMetadataReader CreateMetadataReader(MockTarget.Architecture arch,
@@ -130,6 +165,84 @@ public unsafe class DacDbiImplTests
     public void MetadataReadFallback_CorDebugTargetResolvesOmittedMetadata(MockTarget.Architecture arch)
     {
         using MetadataTestImage image = new();
+        TestMetadataLocator locator = new(image.Path);
+        Target target = CreateCorDebugMetadataTarget(arch, image, locator);
+        byte[] buffer = new byte[image.Metadata.Length];
+
+        target.ReadBuffer(0x10000, buffer);
+
+        Assert.Equal(image.Metadata, buffer);
+        Assert.Equal(1, locator.Calls);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(unchecked((int)0x80004005))]
+    public void MetadataReadFallback_PreservesCapturedPrefix(int readResult)
+    {
+        using MetadataTestImage image = new();
+        TestMetadataLocator locator = new(image.Path)
+        {
+            CapturedMetadata = [0xAA, 0xBB, 0xCC],
+            CapturedMetadataReadResult = readResult,
+        };
+        Target target = CreateCorDebugMetadataTarget(new() { Is64Bit = true, IsLittleEndian = true }, image, locator);
+        byte[] buffer = new byte[image.Metadata.Length];
+        byte[] expected = (byte[])image.Metadata.Clone();
+        locator.CapturedMetadata.CopyTo(expected, 0);
+
+        target.ReadBuffer(0x10000, buffer);
+
+        Assert.Equal(expected, buffer);
+    }
+
+    [Fact]
+    public void MetadataReadFallback_QueriesLocatorThroughNativeComWrapper()
+    {
+        using MetadataTestImage image = new();
+        TestMetadataLocator locator = new(image.Path);
+        void* pointer = ComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToUnmanaged(new NativeMetadataLocator(locator));
+        ICorDebugDataTarget nativeTarget = UniqueComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged(pointer)!;
+        ComObject wrapper = (ComObject)(object)nativeTarget;
+        try
+        {
+            Assert.NotSame(locator, nativeTarget);
+            Target target = CreateCorDebugMetadataTarget(new() { Is64Bit = true, IsLittleEndian = true },
+                image, locator, nativeTarget);
+            byte[] buffer = new byte[image.Metadata.Length];
+
+            target.ReadBuffer(0x10000, buffer);
+
+            Assert.Equal(image.Metadata, buffer);
+            Assert.Equal(1, locator.Calls);
+        }
+        finally
+        {
+            wrapper.FinalRelease();
+            ComInterfaceMarshaller<ICorDebugDataTarget>.Free(pointer);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void MetadataReadFallback_DoesNotRequireContractsForFailedUnrelatedRead(bool advertiseContracts)
+    {
+        ContractDescriptorBuilder builder = new(new TargetTestHelpers(new() { Is64Bit = true, IsLittleEndian = true }));
+        ContractDescriptorBuilder.DescriptorBuilder descriptor = new(builder);
+        if (advertiseContracts)
+            descriptor.SetContracts(new Dictionary<string, string> { [nameof(Loader)] = "c999" });
+        ulong address = descriptor.CreateSubDescriptor(0x30000, 0x31000, 0x32000);
+        TestMetadataLocator locator = new("unused") { Memory = builder.GetMemoryContext() };
+        Target target = Entrypoints.CreateTargetFromCorDebugDataTarget(locator, address, 0);
+
+        Assert.Throws<VirtualReadException>(() => target.ReadBuffer(0x10000, new byte[1]));
+        Assert.Equal(0, locator.Calls);
+    }
+
+    private static Target CreateCorDebugMetadataTarget(MockTarget.Architecture arch,
+        MetadataTestImage image, TestMetadataLocator locator, object? targetObject = null)
+    {
         ContractDescriptorBuilder builder = new(new TargetTestHelpers(arch));
         ulong descriptorAddress = new ContractDescriptorBuilder.DescriptorBuilder(builder)
             .SetContracts(new Dictionary<string, string>
@@ -138,8 +251,8 @@ public unsafe class DacDbiImplTests
                 [nameof(EcmaMetadata)] = "c999",
             })
             .CreateSubDescriptor(0x30000, 0x31000, 0x32000);
-        TestMetadataLocator locator = new(image.Path) { Memory = builder.GetMemoryContext() };
-        Target target = Entrypoints.CreateTargetFromCorDebugDataTarget(locator, descriptorAddress, 0);
+        locator.Memory = builder.GetMemoryContext();
+        Target target = Entrypoints.CreateTargetFromCorDebugDataTarget(targetObject ?? locator, descriptorAddress, 0);
         ModuleHandle module = new(new TargetPointer(0x1000));
         TargetPointer assembly = new(0x2000);
         Mock<ILoader> loader = new();
@@ -154,12 +267,7 @@ public unsafe class DacDbiImplTests
         metadata.Setup(m => m.GetReadOnlyMetadataAddress(module)).Returns(new TargetSpan(0x10000, (ulong)image.Metadata.Length));
         target.Contracts.Register<ILoader>("c999", _ => loader.Object);
         target.Contracts.Register<IEcmaMetadata>("c999", _ => metadata.Object);
-        byte[] buffer = new byte[image.Metadata.Length];
-
-        target.ReadBuffer(0x10000, buffer);
-
-        Assert.Equal(image.Metadata, buffer);
-        Assert.Equal(1, locator.Calls);
+        return target;
     }
 
     [Theory]

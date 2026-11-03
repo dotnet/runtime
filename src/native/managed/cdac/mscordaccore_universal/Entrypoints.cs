@@ -392,11 +392,12 @@ public static class Entrypoints
             {
                 fixed (byte* bufferPtr = buffer)
                 {
-                    uint bytesRead;
+                    uint bytesRead = 0;
                     int hr = dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
-                    if ((hr < 0 || bytesRead != (uint)buffer.Length)
+                    if (bytesRead < (uint)buffer.Length
+                        && address <= ulong.MaxValue - bytesRead
                         && metadataReader is not null
-                        && metadataReader.TryReadMemory(address, buffer))
+                        && metadataReader.TryReadMemory(address + bytesRead, buffer[(int)bytesRead..]))
                     {
                         return HResults.S_OK;
                     }

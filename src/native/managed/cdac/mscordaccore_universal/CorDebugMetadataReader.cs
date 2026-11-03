@@ -37,8 +37,11 @@ internal sealed unsafe class CorDebugMetadataReader(Target target, ICorDebugMeta
         _readingMetadata = true;
         try
         {
-            ILoader loader = target.Contracts.Loader;
-            IEcmaMetadata metadata = target.Contracts.EcmaMetadata;
+            if (!target.Contracts.TryGetContract<ILoader>(out ILoader loader)
+                || !target.Contracts.TryGetContract<IEcmaMetadata>(out IEcmaMetadata metadata))
+            {
+                return false;
+            }
             foreach (ModuleHandle module in loader.GetModuleHandles(loader.GetAppDomain(),
                 AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
             {
@@ -51,10 +54,18 @@ internal sealed unsafe class CorDebugMetadataReader(Target target, ICorDebugMeta
                 {
                     // A dump may lack the headers of an unrelated module.
                 }
+                catch (BadImageFormatException)
+                {
+                    // Unusable image headers do not prevent searching other modules.
+                }
             }
             return false;
         }
         catch (VirtualReadException)
+        {
+            return false;
+        }
+        catch (ContractNotAvailableException)
         {
             return false;
         }
@@ -110,6 +121,10 @@ internal sealed unsafe class CorDebugMetadataReader(Target target, ICorDebugMeta
             return false;
         }
         catch (BadImageFormatException)
+        {
+            return false;
+        }
+        catch (ArgumentException)
         {
             return false;
         }
