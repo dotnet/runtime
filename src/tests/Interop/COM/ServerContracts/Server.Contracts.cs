@@ -326,6 +326,8 @@ namespace Server.Contract
         object CreateUnrelatedArrayElement();
         bool AcceptExpectedArray(
             [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_UNKNOWN)] ExpectedArrayElement[] values);
+
+        int PropertySetterRegressionTest { get; set; }
     }
 
     [ComVisible(true)]

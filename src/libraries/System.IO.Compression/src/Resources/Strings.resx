@@ -432,4 +432,7 @@
   <data name="UnsupportedEncryptionMethod" xml:space="preserve">
     <value>The entry's encryption method is not supported.</value>
   </data>
+  <data name="ZipCryptoLastWriteTimeChangeNotSupported" xml:space="preserve">
+    <value>Changing LastWriteTime on a ZipCrypto-encrypted entry that uses a data descriptor requires re-encrypting its contents. Reopen the entry with its password to rewrite the data, or do not change LastWriteTime.</value>
+  </data>
 </root>

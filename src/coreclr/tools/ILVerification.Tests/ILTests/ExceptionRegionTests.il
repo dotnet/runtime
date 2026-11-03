@@ -196,7 +196,7 @@
         ret
     }
 
-    .method public instance void Leave.ToOtherFault_Invalid_LeaveOutOfFault.LeaveIntoFault.LeaveIntoHandler() cil managed
+    .method public instance void Leave.ToOtherFault_Invalid_LeaveOutOfFault.LeaveIntoHandler() cil managed
     {
         .try
         {

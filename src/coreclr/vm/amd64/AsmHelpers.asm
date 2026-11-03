@@ -20,9 +20,6 @@ extern GetInterpThreadContextWithPossiblyMissingThreadOrCallStub:proc
 extern CallInterpreterFuncletWorker:proc
 endif
 
-extern g_pPollGC:QWORD
-extern g_TrapReturningThreads:DWORD
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; PInvokeImportThunk
@@ -388,15 +385,6 @@ LEAF_ENTRY JIT_PatchpointForced, _TEXT
 LEAF_END JIT_PatchpointForced, _TEXT
 
 endif ; FEATURE_TIERED_COMPILATION
-
-LEAF_ENTRY JIT_PollGC, _TEXT
-    cmp [g_TrapReturningThreads], 0
-    jnz             JIT_PollGCRarePath
-    ret
-JIT_PollGCRarePath:
-    mov rax, g_pPollGC
-    TAILJMP_RAX
-LEAF_END JIT_PollGC, _TEXT
 
 ; rcx -This pointer
 ; rdx -ReturnBuffer

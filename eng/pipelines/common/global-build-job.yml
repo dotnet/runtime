@@ -277,3 +277,7 @@ jobs:
     - template: /eng/pipelines/coreclr/templates/prune-roslyn-cache.yml
       parameters:
         osGroup: ${{ parameters.osGroup }}
+
+    - template: /eng/pipelines/coreclr/templates/purge-illink-cache.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}

@@ -237,6 +237,7 @@ protected:
 
     void genEmitStartBlock(BasicBlock* block);
     void genEmitEndBlock(BasicBlock* block);
+    bool genIsCatchRetTargetWithoutCode(BasicBlock* block);
 
 public:
 #if HAS_FIXED_REGISTER_SET
@@ -740,6 +741,12 @@ protected:
     bool siInFuncletRegion; // Have we seen the start of the funclet region?
 
     IL_OFFSET siLastEndOffs; // IL offset of the (exclusive) end of the last block processed
+
+#if defined(TARGET_WASM)
+    // Wasm opens its method-wide scopes in the first emitted block rather than relying on the
+    // monotonic enter/exit cursors used by other targets.
+    bool siWasmScopesOpened;
+#endif // defined(TARGET_WASM)
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

@@ -178,10 +178,9 @@
   <Target Name="PrepareForAssembliesTrim">
     <!-- ILLink.Tasks arguments common to runs for both individual libraries and for the entire runtime pack -->
     <PropertyGroup>
+      <_ILLinkHasCustomArgs Condition="'$(ILLinkArgs)' != ''">true</_ILLinkHasCustomArgs>
       <!-- don't remove attributes after build, our tooling is not ready for that -->
       <ILLinkArgs>$(ILLinkArgs) --ignore-link-attributes true</ILLinkArgs>
-      <!-- ignore unresolved references -->
-      <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
     </PropertyGroup>
 
     <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
@@ -203,6 +202,18 @@
           Condition="'$(ILLinkTrimAssembly)' == 'true'"
           DependsOnTargets="PrepareForAssembliesTrim">
     <PropertyGroup>
+      <!-- suppress warnings with the following codes:
+           IL2008: Could not find type A specified in resource B
+           IL2009: Could not find method A in type B specified in resource C
+           IL2121: Unnecessary UnconditionalSuppressMessage attribute
+           IL2025: Duplicate preserve of A in B
+           IL2035: Unresolved assembly A in DynamicDependencyAttribute on B
+      -->
+      <LinkerNoWarn>$(LinkerNoWarn);IL2008;IL2009;IL2121;IL2025;IL2035</LinkerNoWarn>
+    </PropertyGroup>
+
+    <!-- Preserve argument ordering and overrides for callers supplying custom linker arguments. -->
+    <PropertyGroup Condition="'$(_ILLinkHasCustomArgs)' == 'true'">
       <!-- default action for assemblies with IsTrimmable attribute -->
       <ILLinkArgs>$(ILLinkArgs) --trim-mode skip</ILLinkArgs>
       <!-- default action for assemblies without IsTrimmable attribute -->
@@ -215,17 +226,29 @@
       <ILLinkArgs Condition="'@(ILLinkDescriptorsLibraryBuildXml)' != ''">$(ILLinkArgs) -x "@(ILLinkDescriptorsLibraryBuildXml->'%(FullPath)', '" -x "')"</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkSubstitutionsLibraryBuildXml)' != ''">$(ILLinkArgs) --substitutions "$(ILLinkSubstitutionsLibraryBuildXml)"</ILLinkArgs>
       <ILLinkArgs Condition="'@(ILLinkSuppressionsLibraryBuildXml)' != ''">$(ILLinkArgs) --link-attributes "@(ILLinkSuppressionsLibraryBuildXml->'%(FullPath)', '" --link-attributes "')"</ILLinkArgs>
-      <!-- suppress warnings with the following codes:
-           IL2008: Could not find type A specified in resource B
-           IL2009: Could not find method A in type B specified in resource C
-           IL2121: Unnecessary UnconditionalSuppressMessage attribute
-           IL2025: Duplicate preserve of A in B
-           IL2035: Unresolved assembly A in DynamicDependencyAttribute on B
-      -->
-      <LinkerNoWarn>$(LinkerNoWarn);IL2008;IL2009;IL2121;IL2025;IL2035</LinkerNoWarn>
       <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkDisableIPConstProp)' == 'true'">$(ILLinkArgs) --disable-opt ipconstprop</ILLinkArgs>
     </PropertyGroup>
+
+    <PropertyGroup Condition="'$(_ILLinkHasCustomArgs)' != 'true'">
+      <_ILLinkTrimMode>skip</_ILLinkTrimMode>
+      <_ILLinkDefaultAction>skip</_ILLinkDefaultAction>
+      <_ILLinkNoWarn>$(LinkerNoWarn)</_ILLinkNoWarn>
+      <_ILLinkRemoveSymbols>true</_ILLinkRemoveSymbols>
+      <_ILLinkRemoveSymbols Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">false</_ILLinkRemoveSymbols>
+      <_ILLinkPreserveSymbolPaths Condition="'$(_ILLinkRemoveSymbols)' == 'false' and '$(DeterministicSourcePaths)' == 'true'">true</_ILLinkPreserveSymbolPaths>
+      <_ILLinkIPConstProp Condition="'$(ILLinkDisableIPConstProp)' == 'true'">false</_ILLinkIPConstProp>
+      <ILLinkArgs Condition="'$(ILLinkSubstitutionsLibraryBuildXml)' != ''">$(ILLinkArgs) --substitutions "$(ILLinkSubstitutionsLibraryBuildXml)"</ILLinkArgs>
+      <ILLinkArgs Condition="'@(ILLinkSuppressionsLibraryBuildXml)' != ''">$(ILLinkArgs) --link-attributes "@(ILLinkSuppressionsLibraryBuildXml->'%(FullPath)', '" --link-attributes "')"</ILLinkArgs>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ILLinkAssemblyToTrim Include="$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)">
+        <TrimMode Condition="'$(_ILLinkHasCustomArgs)' != 'true'">link</TrimMode>
+      </_ILLinkAssemblyToTrim>
+      <_ILLinkRootDescriptors Include="@(ILLinkDescriptorsLibraryBuildXml->'%(FullPath)')"
+                              Condition="'$(_ILLinkHasCustomArgs)' != 'true'" />
+    </ItemGroup>
 
     <!-- Move the assembly into a subdirectory for ILLink -->
     <Move SourceFiles="$(ILLinkTrimAssemblyPath)"
@@ -264,8 +287,15 @@
       <ILLinkArgs Condition="@(_DependencyDirectories->Count()) > 0">$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
     </PropertyGroup>
 
-    <ILLink AssemblyPaths="$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)"
+    <ILLink AssemblyPaths="@(_ILLinkAssemblyToTrim)"
             RootAssemblyNames="@(ILLinkTrimInputAssembly)"
+            RootDescriptorFiles="@(_ILLinkRootDescriptors)"
+            TrimMode="$(_ILLinkTrimMode)"
+            DefaultAction="$(_ILLinkDefaultAction)"
+            NoWarn="$(_ILLinkNoWarn)"
+            RemoveSymbols="$(_ILLinkRemoveSymbols)"
+            PreserveSymbolPaths="$(_ILLinkPreserveSymbolPaths)"
+            IPConstProp="$(_ILLinkIPConstProp)"
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ExtraArgs="$(ILLinkArgs)"
             ToolExe="$(_DotNetHostFileName)"

@@ -26,6 +26,7 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)Polyfills\EnvironmentPolyfills.cs" Link="Common\Polyfills\EnvironmentPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\OperatingSystemPolyfills.cs" Link="Common\Polyfills\OperatingSystemPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup>

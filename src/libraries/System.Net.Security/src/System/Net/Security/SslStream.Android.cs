@@ -78,6 +78,7 @@ namespace System.Net.Security
 
             public Exception? ValidationException { get; private set; }
             public RemoteCertificateValidationResult? ValidationResult { get; private set; }
+            internal IntPtr PlatformTrustAnchor { get; private set; }
 
             public JavaProxy(SslStream sslStream)
             {
@@ -103,7 +104,7 @@ namespace System.Net.Security
             }
 
             [UnmanagedCallersOnly]
-            private static bool VerifyRemoteCertificate(IntPtr sslStreamProxyHandle, IntPtr platformValidationError)
+            private static bool VerifyRemoteCertificate(IntPtr sslStreamProxyHandle, IntPtr platformValidationError, IntPtr platformTrustAnchor)
             {
                 var proxy = (JavaProxy?)GCHandle.FromIntPtr(sslStreamProxyHandle).Target;
                 Debug.Assert(proxy is not null);
@@ -111,6 +112,7 @@ namespace System.Net.Security
 
                 try
                 {
+                    proxy.PlatformTrustAnchor = platformTrustAnchor;
                     proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate(platformValidationError);
                     return proxy.ValidationResult.IsValid;
                 }
@@ -118,6 +120,10 @@ namespace System.Net.Security
                 {
                     proxy.ValidationException = exception;
                     return false;
+                }
+                finally
+                {
+                    proxy.PlatformTrustAnchor = IntPtr.Zero;
                 }
             }
 

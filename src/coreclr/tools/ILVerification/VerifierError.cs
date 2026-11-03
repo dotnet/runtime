@@ -142,5 +142,7 @@ namespace ILVerify
         EHClauseOrder, // An exception handling clause nested in a try must precede that try's clause.
         EHClauseFilterEnd, // A filter must have exactly one endfilter as its last instruction.
         UnalignedAlignment, // Alignment specified for 'unaligned.' must be 1, 2, or 4.
+        ExpectedSignatureToken, // Expected signature token.
+        ReadOnlyInMkrefany, // A readonly ByRef cannot be used with mkrefany.
     }
 }

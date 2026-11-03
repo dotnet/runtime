@@ -219,7 +219,7 @@ export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
     }
     if (bytes) {
         await nativeModulePromiseController.promise;
-        dotnetBrowserHostExports.registerPdbBytes(bytes, assetInternal.virtualPath);
+        dotnetBrowserHostExports.registerPdbBytes(bytes, assetInternal.virtualPath, assetInternal.shortName!);
     }
 }
 

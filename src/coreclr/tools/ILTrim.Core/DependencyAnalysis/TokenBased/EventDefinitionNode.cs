@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -23,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private EventDefinitionHandle Handle => (EventDefinitionHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             MetadataReader reader = _module.MetadataReader;
 
@@ -31,28 +32,24 @@ namespace ILCompiler.DependencyAnalysis
 
             TypeDefinitionHandle declaringTypeHandle = eventDef.GetDeclaringType();
 
-            DependencyList dependencies = new DependencyList();
-
-            dependencies.Add(factory.TypeDefinition(_module, declaringTypeHandle), "Event owning type");
+            sink.Add(factory.TypeDefinition(_module, declaringTypeHandle), "Event owning type");
 
             if (!eventDef.Type.IsNil)
-                dependencies.Add(factory.GetNodeForTypeToken(_module, eventDef.Type), "Event type");
+                sink.Add(factory.GetNodeForTypeToken(_module, eventDef.Type), "Event type");
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, eventDef.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, eventDef.GetCustomAttributes());
 
             // Unlike properties, we root ALL accessor methods when an event is kept.
             // If you can subscribe to an event, you must be able to unsubscribe — keeping
             // only add without remove would break runtime semantics.
             EventAccessors accessors = eventDef.GetAccessors();
             if (!accessors.Adder.IsNil)
-                dependencies.Add(factory.MethodDefinition(_module, accessors.Adder), "Event adder");
+                sink.Add(factory.MethodDefinition(_module, accessors.Adder), "Event adder");
             if (!accessors.Remover.IsNil)
-                dependencies.Add(factory.MethodDefinition(_module, accessors.Remover), "Event remover");
+                sink.Add(factory.MethodDefinition(_module, accessors.Remover), "Event remover");
             if (!accessors.Raiser.IsNil)
-                dependencies.Add(factory.MethodDefinition(_module, accessors.Raiser), "Event raiser");
+                sink.Add(factory.MethodDefinition(_module, accessors.Raiser), "Event raiser");
             Debug.Assert(accessors.Others.Length == 0);
-
-            return dependencies;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

@@ -155,10 +155,7 @@ namespace System.Diagnostics
         /// <param name="item">Key and value pair of the tag to add to the collection.</param>
         public void Add(KeyValuePair<string, object?> item)
         {
-            if (item.Key == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item.Key, nameof(item));
 
             int index = FindIndex(item.Key);
             if (index >= 0)

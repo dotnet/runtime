@@ -45,7 +45,7 @@ console log file.** This is the most important rule for data quality.
 - **Stack traces may be unresolved** (`?? at ??:0:0`) — copy verbatim anyway.
   Note "(unresolved)" after the stack trace block.
 - Use actual test leg names from AzDO (e.g.,
-  `net11.0-linux-Release-arm64-jitstress2_jitstressregs0x2000-...`),
+  `netXY.0-linux-Release-arm64-jitstress2_jitstressregs0x2000-...`),
   not a summarized form like `coreclr linux arm64 Checked jitstress2`.
 - Use fully qualified `automatedTestName` — never shorten.
 - Report ALL failed test legs — if a test fails in 3 legs, list all 3.

@@ -64,7 +64,8 @@ namespace ILVerify
         /// <param name="verifierOptions">
         /// The options that control verification, or <see langword="null"/> to use the default options.
         /// </param>
-        public Verifier(IResolver resolver, VerifierOptions verifierOptions) : this(new ILVerifyTypeSystemContext(resolver), verifierOptions) { }
+        public Verifier(IResolver resolver, VerifierOptions verifierOptions)
+            : this(new ILVerifyTypeSystemContext(resolver) { AllowIgnoresAccessChecksTo = verifierOptions?.AllowIgnoresAccessChecksTo == true }, verifierOptions) { }
 
         internal Verifier(ILVerifyTypeSystemContext context, VerifierOptions verifierOptions)
         {
@@ -703,5 +704,10 @@ namespace ILVerify
         /// <see langword="false"/>.
         /// </remarks>
         public bool SanityChecks { get; set; }
+
+        /// <summary>
+        /// Respect IgnoresAccessChecksToAttribute. Off by default, since code that relies on it is not verifiable.
+        /// </summary>
+        public bool AllowIgnoresAccessChecksTo { get; set; }
     }
 }

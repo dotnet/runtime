@@ -1,0 +1,26 @@
+<Project>
+  <Import Project="$(RepositoryEngineeringDir)NativeAotToolPackage.targets" />
+
+  <PropertyGroup>
+    <AssemblyName>ilasm</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageId>runtime.$(PackageTargetRuntime).Microsoft.NETCore.ILAsm</PackageId>
+    <Title>$(PackageId)</Title>
+    <PackageDescription>The .NET IL Assembler.</PackageDescription>
+    <PackageProjectUrl>https://dot.net/</PackageProjectUrl>
+    <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</PackageIconUrl>
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+    <ProjectReference Include="..\ILAssembler\ILAssembler.csproj" />
+  </ItemGroup>
+</Project>
