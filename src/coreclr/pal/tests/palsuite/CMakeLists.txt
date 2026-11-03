@@ -4,6 +4,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(${PALTESTSUITE_SOURCE_DIR}/common)
 include_directories(${RUNTIME_DIR})
+include_directories(${COREPAL_SOURCE_DIR}/src/include)
 
 # All test will link against these libraries:
 # pthread and m are part of the Android C library (bionic),
@@ -303,6 +304,7 @@ add_executable_clr(paltests
   miscellaneous/SetLastError/test1/test.cpp
   pal_specific/PAL_Initialize_Terminate/test1/PAL_Initialize_Terminate.cpp
   pal_specific/PAL_Initialize_Terminate/test2/pal_initialize_twice.cpp
+  pal_specific/StackString/test1/test1.cpp
 #  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test1/PAL_RegisterLibraryW_UnregisterLibraryW.cpp
 #  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test2_neg/reg_unreg_libraryw_neg.cpp
   samples/test1/test.cpp
