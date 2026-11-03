@@ -1572,6 +1572,24 @@ ReturnKind MethodDesc::GetReturnKind()
     TypeHandle thValueType;
 
     MetaSig sig(this);
+
+    // Callers are not required to load the callee's value type return layout before the call
+    // (ReadyToRun call targets with a GCRefMap skip it) and we cannot load types here.
+    // Report an unknown return kind in that case.
+    if (sig.GetReturnType() == ELEMENT_TYPE_VALUETYPE)
+    {
+        TypeHandle thRet = sig.GetReturnProps().GetTypeHandleThrowing(
+            sig.GetModule(),
+            sig.GetSigTypeContext(),
+            ClassLoader::DontLoadTypes,
+            CLASS_LOAD_APPROXPARENTS,
+            TRUE /* dropGenericArgumentLevel */);
+        if (thRet.IsNull())
+        {
+            return RT_Illegal;
+        }
+    }
+
     CorElementType et = sig.GetReturnTypeNormalized(&thValueType);
 
     switch (et)
