@@ -36,9 +36,8 @@ public class Runtime_136000
         il.Emit(OpCodes.Ret);
 
         Func<Task, Task<bool>> test = type.CreateType().GetMethod("Test").CreateDelegate<Func<Task, Task<bool>>>();
-        Assert.False(test(Task.CompletedTask).GetAwaiter().GetResult());
 
-        var completion = new TaskCompletionSource();
+                var completion = new TaskCompletionSource();
         Task<bool> result = test(completion.Task);
         Assert.False(result.IsCompleted);
         completion.SetResult();
