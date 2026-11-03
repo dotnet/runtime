@@ -273,16 +273,8 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
 
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
 NOINLINE
-void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
+void InvokeUnmanagedMethodWithTransitionInner(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
-    InlinedCallFrame inlinedCallFrame;
-    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
-    inlinedCallFrame.m_pCallSiteSP = pFrame;
-    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
-    inlinedCallFrame.m_pThread = GetThread();
-    inlinedCallFrame.m_Datum = NULL;
-    inlinedCallFrame.Push();
-
     struct Param
     {
         MethodDesc *targetMethod;
@@ -312,6 +304,20 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
         DispatchManagedException(ohThrowable);
     }
     PAL_ENDTRY
+}
+
+NOINLINE
+void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
+{
+    InlinedCallFrame inlinedCallFrame;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+    inlinedCallFrame.m_pThread = GetThread();
+    inlinedCallFrame.m_Datum = NULL;
+    inlinedCallFrame.Push();
+
+    InvokeUnmanagedMethodWithTransitionInner(targetMethod, stack, pFrame, pArgs, pRet, callTarget);
 
     inlinedCallFrame.Pop();
 }

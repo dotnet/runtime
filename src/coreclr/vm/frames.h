@@ -601,11 +601,12 @@ protected:
 #endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
 #endif // DACCESS_COMPILE
 
-#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
+#if defined(TARGET_UNIX)
     ~Frame() noexcept { PopIfChained(); }
-
+#endif // TARGET_UNIX
     void PopIfChained() noexcept;
-#endif // TARGET_UNIX && !DACCESS_COMPILE
+#endif // !defined(DACCESS_COMPILE)
 
     friend struct ::cdac_data<Frame>;
 };
@@ -1415,6 +1416,14 @@ class PrestubMethodFrame : public FramedMethodFrame
 public:
     PrestubMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD);
 
+#ifndef DACCESS_COMPILE
+    ~PrestubMethodFrame() noexcept
+    {
+        GCX_COOP();
+        PopIfChained();
+    }
+#endif // DACCESS_COMPILE
+
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     void MarkPrestubComplete()
     {
@@ -2037,6 +2046,12 @@ public:
         m_pCalleeSavedFP = 0;
         m_pThread = NULL;
     }
+
+    ~InlinedCallFrame() noexcept
+    {
+        GCX_COOP();
+        PopIfChained();
+    }
 #endif // FEATURE_INTERPRETER
 #endif // DACCESS_COMPILE
 
@@ -2357,6 +2372,11 @@ public:
         m_pTopInterpMethodContextFrame = pTopInterpMethodContextFrame;
     }
 
+    ~InterpreterFrame() noexcept
+    {
+        GCX_COOP();
+        PopIfChained();
+    }
 #endif // DACCESS_COMPILE
 
     BOOL NeedsUpdateRegDisplay_Impl()
