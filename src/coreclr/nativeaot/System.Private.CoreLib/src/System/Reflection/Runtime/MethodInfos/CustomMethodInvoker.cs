@@ -61,9 +61,6 @@ namespace System.Reflection.Runtime.MethodInfos
             object result;
             try
             {
-                if (thisObject is not null && (_options & InvokerOptions.AllowNullThis) != 0 && (_thisType == typeof(string) || _thisType.IsArray))
-                    throw new NotSupportedException();
-
                 result = _action(thisObject, convertedArguments, _thisType);
             }
             catch (Exception e) when (wrapInTargetInvocationException)
