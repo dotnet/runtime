@@ -4924,7 +4924,8 @@ BOOL CordbInternalFrame::ConvertInternalFrameForILMethodWithoutMetadata(
     {
         return FALSE;
     }
-    else if (type == IDacDbiInterface::kDiagnosticHidden)
+    else if (type == IDacDbiInterface::kDiagnosticHidden ||
+             type == IDacDbiInterface::kDiagnosticHiddenLCGMethod)
     {
         return TRUE;
     }
@@ -7014,7 +7015,8 @@ BOOL CordbNativeFrame::ConvertNativeFrameForILMethodWithoutMetadata(
     {
         return FALSE;
     }
-    else if (type == IDacDbiInterface::kDiagnosticHidden)
+    else if (type == IDacDbiInterface::kDiagnosticHidden ||
+             type == IDacDbiInterface::kDiagnosticHiddenLCGMethod)
     {
         return TRUE;
     }
@@ -8924,7 +8926,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
     HRESULT hr;
     CORDB_ADDRESS addr;
     CorElementType ty;
-    bool needRelease = false;
+    ReleaseHolder<ICorDebugValue> dereferencedValue;
 
     pValue->GetType(&ty);
 
@@ -8945,7 +8947,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
 
         // Make sure to get the type we were referencing for use below.
         pValue->GetType(&ty);
-        needRelease = true;
+        dereferencedValue = pValue;
     }
 
     // We should never have a byref by this point.
@@ -9012,8 +9014,8 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
         // available for all struct types, so we indicate the type by using a
         // DebuggerIPCE_TypeArgData serialization of a type.
         //
-        // At the moment the LHS only cares about this data
-        // when boxing the "this" pointer.
+        // The serialized type is used when boxing. An already-loaded layout
+        // also lets the left side protect register snapshots before loading types.
         {
             CordbVCObjectValue * pVCObjVal =
                 static_cast<CordbVCObjectValue *>(static_cast<ICorDebugObjectValue*> (pValue));
@@ -9022,11 +9024,33 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
             cv->m_type->CountTypeDataNodes(&fullArgTypeNodeCount);
 
             _ASSERTE(fullArgTypeNodeCount > 0);
-            unsigned int bufferSize = sizeof(DebuggerIPCE_TypeArgData) * fullArgTypeNodeCount;
+            S_UINT32 checkedBufferSize = S_UINT32(sizeof(DebuggerIPCE_TypeArgData)) * S_UINT32(fullArgTypeNodeCount);
+            if (checkedBufferSize.IsOverflow() || fullArgTypeNodeCount > INT_MAX)
+            {
+                return E_INVALIDARG;
+            }
+            unsigned int bufferSize = checkedBufferSize.Value();
             DebuggerIPCE_TypeArgData *bufferFrom = (DebuggerIPCE_TypeArgData *) _alloca(bufferSize);
 
             DebuggerIPCE_TypeArgData *curr = bufferFrom;
             CordbType::GatherTypeData(cv->m_type, &curr);
+
+            if (addr == static_cast<CORDB_ADDRESS>(0))
+            {
+                VMPTR_TypeHandle layoutHandle = cv->m_type->m_typeHandleExact;
+                if (layoutHandle.IsNull())
+                {
+                    EX_TRY
+                    {
+                        TypeInfoList types(bufferFrom, static_cast<int>(fullArgTypeNodeCount));
+                        RSLockHolder lockHolder(GetProcess()->GetProcessLock());
+                        hr = GetProcess()->GetDAC()->GetApproxTypeHandle(&types, &layoutHandle);
+                    }
+                    EX_CATCH_HRESULT(hr);
+                    IfFailRet(hr);
+                }
+                bufferFrom[0].data.ClassTypeData.typeHandle = layoutHandle;
+            }
 
             void *buffer = NULL;
             IfFailRet(m_thread->GetProcess()->GetAndWriteRemoteBuffer(m_thread->GetAppDomain(), bufferSize, bufferFrom, &buffer));
@@ -9059,10 +9083,6 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
         break;
     }
 
-
-    // Release pValue if we got it via a dereference from above.
-    if (needRelease)
-        pValue->Release();
 
     return S_OK;
 }
