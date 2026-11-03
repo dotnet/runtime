@@ -1287,7 +1287,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
             else
             {
-                return new ReadOnlySpan<T>(ptr, checked((int)val.Count)).ToArray();
+                return new ReadOnlySpan<T>(ptr, (int)val.Count).ToArray();
             }
         }
 

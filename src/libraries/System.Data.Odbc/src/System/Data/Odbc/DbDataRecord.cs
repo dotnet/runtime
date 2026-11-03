@@ -132,11 +132,7 @@ namespace System.Data.Odbc
         {
             //Set all objects to null (to explicitly release them)
             //Note: SchemaInfo remains the same for all rows - no need to reget those...
-            int count = _values.Length;
-            for (int i = 0; i < count; ++i)
-            {
-                _values[i] = null;
-            }
+            Array.Clear(_values);
         }
     }
 }

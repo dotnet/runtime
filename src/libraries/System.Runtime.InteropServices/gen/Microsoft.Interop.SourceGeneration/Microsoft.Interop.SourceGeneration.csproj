@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)Polyfills\MemoryExtensionsPolyfills.cs" Link="Common\Polyfills\MemoryExtensionsPolyfills.cs" />
     <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
     <Compile Include="$(CommonPath)Roslyn\Hash.cs" Link="Common\Roslyn\Hash.cs" />
     <Compile Include="$(CommonPath)Roslyn\MemorySafetyRulesPolyfills.cs" Link="Common\Roslyn\MemorySafetyRulesPolyfills.cs" />
