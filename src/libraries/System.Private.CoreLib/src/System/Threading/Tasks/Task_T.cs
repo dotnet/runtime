@@ -488,6 +488,11 @@ namespace System.Threading.Tasks
                 return result;
             }
 
+            if (task.IsCompletedSuccessfully)
+            {
+                return new Task<TResult>(task.ResultOnSuccess);
+            }
+
             var promise = new CastUpPromise<TDerived>();
             task.AddCompletionAction(promise);
             return promise;
