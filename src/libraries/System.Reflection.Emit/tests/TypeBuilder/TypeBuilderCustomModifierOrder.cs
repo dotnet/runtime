@@ -49,7 +49,7 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        // On CoreCLR, a call to a loaded generic method, or to a method of a loaded generic type, in another module gets
+        // A call to a loaded generic method, or to a method of a loaded generic type, in another module gets
         // a member reference whose signature the runtime builder writes from the target's reflected custom modifiers;
         // the call binds only if that signature matches the target's.
         [Theory]
