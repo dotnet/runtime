@@ -166,17 +166,6 @@ mkAbsoluteFilenameA (
     DWORD dwFileLength,
     LPSTR absPathName );
 
-BOOL
-CreatePipe(
-        OUT PHANDLE hReadPipe,
-        OUT PHANDLE hWritePipe,
-        IN LPSECURITY_ATTRIBUTES lpPipeAttributes,
-        IN DWORD nSize);
-
-BOOL
-DeleteFileW(
-        IN LPCWSTR lpFileName);
-
 #define wcstod        PAL_wcstod
 #define wcstoul       PAL_wcstoul
 #define wcscat        PAL_wcscat
