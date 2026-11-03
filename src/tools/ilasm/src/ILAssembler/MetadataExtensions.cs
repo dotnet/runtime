@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal static class MetadataExtensions
 {

@@ -549,7 +549,7 @@ namespace System.IO.Compression.Tests
                         // Check 2: the field holds the expected value (and thus has been written to the file.)
                         Assert.NotNull(verifiedEntry);
                         Assert.Equal(expectedValues.EntryName, verifiedEntry.FullName);
-                        Assert.Equal(expectedValues.LastWriteTime, verifiedEntry.LastWriteTime);
+                        Assert.Equal(expectedValues.LastWriteTime.DateTime, verifiedEntry.LastWriteTime.DateTime);
                     }
 
                     // Check 3: no other data has been corrupted as a result
@@ -628,7 +628,7 @@ namespace System.IO.Compression.Tests
                         // Check 2: the field holds the expected value (and thus has been written to the file.)
                         Assert.NotNull(verifiedEntry);
                         Assert.Equal(expectedValues.EntryName, verifiedEntry.FullName);
-                        Assert.Equal(expectedValues.LastWriteTime, verifiedEntry.LastWriteTime);
+                        Assert.Equal(expectedValues.LastWriteTime.DateTime, verifiedEntry.LastWriteTime.DateTime);
                     }
 
                     // Check 3: no other data has been corrupted as a result
@@ -764,7 +764,7 @@ namespace System.IO.Compression.Tests
 
                         if (i == lastWriteTimeChangeIndex)
                         {
-                            Assert.Equal(expectedWriteTime, entry.LastWriteTime);
+                            Assert.Equal(expectedWriteTime.DateTime, entry.LastWriteTime.DateTime);
                         }
                     }
                 }
@@ -860,7 +860,7 @@ namespace System.IO.Compression.Tests
 
                         if (i == lastWriteTimeChangeIndex)
                         {
-                            Assert.Equal(expectedWriteTime, entry.LastWriteTime);
+                            Assert.Equal(expectedWriteTime.DateTime, entry.LastWriteTime.DateTime);
                         }
                     }
 
