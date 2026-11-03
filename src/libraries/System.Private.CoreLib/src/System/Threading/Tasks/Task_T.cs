@@ -445,6 +445,18 @@ namespace System.Threading.Tasks
             }
         }
 
+#if !MONO
+        [StackTraceHidden]
+        internal override void GetRuntimeAsyncAwaitResult(ref byte result)
+        {
+            TaskAwaiter.ValidateEnd(this);
+            if (!Unsafe.IsNullRef(ref result))
+            {
+                Unsafe.As<byte, TResult>(ref result) = ResultOnSuccess;
+            }
+        }
+#endif
+
         // Implements Result.  Result delegates to this method if the result isn't already available.
         internal TResult GetResultCore(bool waitCompletionNotification)
         {

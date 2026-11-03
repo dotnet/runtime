@@ -2434,7 +2434,15 @@ namespace System.Threading.Tasks
         /// Resumes a runtime async task that registered itself directly as a continuation on a Task it awaited.
         /// Only invoked on tasks with <see cref="InternalTaskOptions.RuntimeAsyncTask"/> set.
         /// </summary>
-        internal virtual void ExecuteRuntimeAsyncAwaitContinuation(bool canInline) => Debug.Fail("Only expected to be called on runtime async tasks.");
+        internal virtual void ExecuteRuntimeAsyncAwaitContinuation(Task completedTask, bool canInline) => Debug.Fail("Only expected to be called on runtime async tasks.");
+
+        /// <summary>
+        /// Completes a runtime async await of this completed task, throwing its exception if it didn't
+        /// complete successfully, and otherwise storing its result (if any) into <paramref name="result"/>.
+        /// </summary>
+        /// <param name="result">The awaiter's result storage, or a null reference if the awaiter has none.</param>
+        [StackTraceHidden]
+        internal virtual void GetRuntimeAsyncAwaitResult(ref byte result) => TaskAwaiter.ValidateEnd(this);
 #endif
 
         internal void ExecuteEntryUnsafe(Thread? threadPoolThread) // used instead of ExecuteEntry() when we don't have to worry about double-execution prevent
@@ -3506,7 +3514,7 @@ namespace System.Threading.Tasks
                 // by ITaskCompletionAction because it should be inlined when there is only one,
                 // but run in parallel when there are multiple.
                 case Task t when (t.m_stateFlags & (int)InternalTaskOptions.RuntimeAsyncTask) != 0:
-                    t.ExecuteRuntimeAsyncAwaitContinuation(canInline: canInlineContinuations);
+                    t.ExecuteRuntimeAsyncAwaitContinuation(this, canInline: canInlineContinuations);
                     LogFinishCompletionNotification();
                     return;
 #endif
@@ -3593,7 +3601,7 @@ namespace System.Threading.Tasks
                             {
 #if !MONO
                                 case Task t when (t.m_stateFlags & (int)InternalTaskOptions.RuntimeAsyncTask) != 0:
-                                    t.ExecuteRuntimeAsyncAwaitContinuation(canInline: false);
+                                    t.ExecuteRuntimeAsyncAwaitContinuation(this, canInline: false);
                                     break;
 #endif
 
@@ -3632,7 +3640,7 @@ namespace System.Threading.Tasks
                 {
 #if !MONO
                     case Task t when (t.m_stateFlags & (int)InternalTaskOptions.RuntimeAsyncTask) != 0:
-                        t.ExecuteRuntimeAsyncAwaitContinuation(canInlineContinuations);
+                        t.ExecuteRuntimeAsyncAwaitContinuation(this, canInlineContinuations);
                         break;
 #endif
 
