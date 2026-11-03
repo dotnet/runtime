@@ -768,16 +768,21 @@ namespace System.Runtime.CompilerServices
                 object? continuationContext = _awaitedState;
                 _awaitedState = completedTask;
 
-                if (continuationContext is null || !QueueAwaitContinuationIfNecessary(continuationContext, canInline))
+                // When not inlining, a TaskScheduler.Default context needs no further processing before queueing.
+                if (continuationContext is not null &&
+                    (canInline || continuationContext != TaskScheduler.Default) &&
+                    QueueAwaitContinuationIfNecessary(continuationContext, canInline))
                 {
-                    if (canInline)
-                    {
-                        DispatchContinuations();
-                    }
-                    else
-                    {
-                        ThreadPool.UnsafeQueueUserWorkItemInternal(this, preferLocal: true);
-                    }
+                    return;
+                }
+
+                if (canInline)
+                {
+                    DispatchContinuations();
+                }
+                else
+                {
+                    ThreadPool.UnsafeQueueUserWorkItemInternal(this, preferLocal: true);
                 }
             }
 
