@@ -19,7 +19,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Test-TLS.cs" />
-    <CMakeProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="cppcli\CMakeLists.txt" />
     <CMakeProjectReference Include="..\..\..\..\Interop\IJW\ijwhostmock\CMakeLists.txt" />
     <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
