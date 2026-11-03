@@ -2117,13 +2117,16 @@ CPalThread::FreeSignalAlternateStack()
     if (altstack != nullptr)
     {
         stack_t ss;
-        // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
-        // all other ss fields are ignored. However, MUSL implementation checks that the
-        // ss_size is >= MINSIGSTKSZ even in this case.
-        ss.ss_size = MINSIGSTKSZ;
-        ss.ss_flags = SS_DISABLE;
-        ss.ss_sp = NULL;
-        sigaltstack(&ss, nullptr);
+        if (sigaltstack(nullptr, &ss) == 0 && (ss.ss_flags & SS_DISABLE) == 0 && ss.ss_sp == altstack)
+        {
+            // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
+            // all other ss fields are ignored. However, MUSL implementation checks that the
+            // ss_size is >= MINSIGSTKSZ even in this case.
+            ss.ss_size = MINSIGSTKSZ;
+            ss.ss_flags = SS_DISABLE;
+            ss.ss_sp = nullptr;
+            sigaltstack(&ss, nullptr);
+        }
         int st = munmap(altstack, altStackSize);
         _ASSERTE(st == 0);
     }
