@@ -89,14 +89,14 @@ namespace Microsoft.DotNet.ILAssembler.Tests
         }
 
         [Theory]
-        [InlineData(".assembly test { }", ".class public System.Object { }", "")]
-        [InlineData(".assembly System.Runtime.Other { }", ".class public System.Object { }", "")]
-        [InlineData(".assembly netstandard { }", ".class public Other.Object { }", "")]
-        [InlineData(".assembly netstandard { }", ".class public System.Other { }", "")]
-        [InlineData(".assembly netstandard { }", ".class public System.object { }", "")]
-        [InlineData(".assembly netstandard { }", ".class public system.Object { }", "")]
-        [InlineData(".mscorlib\n.assembly test { }", ".class public Outer { .class nested public System.Object { }", "}")]
-        public void OtherClasses_KeepImplicitObjectBase(string assembly, string declaration, string closingDeclaration)
+        [InlineData(".assembly test { }", ".class public System.Object { }", "", false)]
+        [InlineData(".assembly System.Runtime.Other { }", ".class public System.Object { }", "", false)]
+        [InlineData(".assembly netstandard { }", ".class public Other.Object { }", "", true)]
+        [InlineData(".assembly netstandard { }", ".class public System.Other { }", "", true)]
+        [InlineData(".assembly netstandard { }", ".class public System.object { }", "", true)]
+        [InlineData(".assembly netstandard { }", ".class public system.Object { }", "", true)]
+        [InlineData(".mscorlib\n.assembly test { }", ".class public Outer { .class nested public System.Object { }", "}", true)]
+        public void OtherClasses_KeepImplicitObjectBase(string assembly, string declaration, string closingDeclaration, bool localBase)
         {
             string source = $$"""
                 {{assembly}}
@@ -106,7 +106,18 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
             MetadataReader reader = pe.GetMetadataReader();
-            TypeDefinition type = reader.GetTypeDefinition(reader.TypeDefinitions.Last());
+            TypeDefinition type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(
+                declaration.Contains("nested") ? 4 : 2));
+            if (localBase)
+            {
+                Assert.Equal(HandleKind.TypeDefinition, type.BaseType.Kind);
+                TypeDefinition baseDefinition = reader.GetTypeDefinition((TypeDefinitionHandle)type.BaseType);
+                Assert.Equal("System", reader.GetString(baseDefinition.Namespace));
+                Assert.Equal("Object", reader.GetString(baseDefinition.Name));
+                Assert.True(baseDefinition.GetDeclaringType().IsNil);
+                Assert.Empty(reader.AssemblyReferences);
+                return;
+            }
             Assert.Equal("Object", GetBaseTypeName(reader, type));
             TypeReference baseType = reader.GetTypeReference((TypeReferenceHandle)type.BaseType);
             Assert.Equal("System", reader.GetString(baseType.Namespace));
@@ -257,7 +268,18 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             Assert.Equal("System", reader.GetString(type.Namespace));
             Assert.Equal("Enum", reader.GetString(type.Name));
             Assert.Equal(TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit, type.Attributes);
-            Assert.Equal("ValueType", GetBaseTypeName(reader, type));
+            if (baseType.StartsWith("[", StringComparison.Ordinal))
+            {
+                Assert.Equal("ValueType", GetBaseTypeName(reader, type));
+            }
+            else
+            {
+                Assert.Equal(HandleKind.TypeDefinition, type.BaseType.Kind);
+                TypeDefinition baseDefinition = reader.GetTypeDefinition((TypeDefinitionHandle)type.BaseType);
+                Assert.Equal("System", reader.GetString(baseDefinition.Namespace));
+                Assert.Equal("ValueType", reader.GetString(baseDefinition.Name));
+                Assert.Empty(reader.AssemblyReferences);
+            }
         }
 
         [Theory]
