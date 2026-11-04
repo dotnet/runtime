@@ -419,7 +419,8 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                bool isValidList = MCList::processArgAsMCL(argv[i], &o->indexCount, &o->indexes);
+                bool isValidList = MCList::processArgAsMCL(argv[i], o->indexes);
+                o->indexCount    = (int)o->indexes.size();
                 if (!isValidList)
                 {
                     LogError("Arg '%s' is invalid, needed method context list.", argv[i]);

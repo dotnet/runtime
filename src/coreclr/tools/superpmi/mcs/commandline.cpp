@@ -335,7 +335,8 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 i++;
             processMCL2:
 
-                bool isValidList = MCList::processArgAsMCL(argv[i], &o->indexCount, &o->indexes);
+                bool isValidList = MCList::processArgAsMCL(argv[i], o->indexes);
+                o->indexCount    = (int)o->indexes.size();
                 if (!isValidList)
                     i--;
             }
