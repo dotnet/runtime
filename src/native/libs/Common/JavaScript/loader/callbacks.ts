@@ -7,12 +7,14 @@ export const loaderCallbacks: {
     configLoaded?: (config: LoaderConfig) => void | Promise<void>;
     dotnetReady?: () => void | Promise<void>;
     downloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+    startupDownloadQueueComputed?: (resourcesLoaded: number, totalResources: number) => void;
 } = {};
 
 type LegacyModuleCallbacks = {
     onConfigLoaded?: (config: LoaderConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+    onStartupDownloadQueueComputed?: (resourcesLoaded: number, totalResources: number) => void;
 };
 
 /**
@@ -21,11 +23,11 @@ type LegacyModuleCallbacks = {
  */
 export function extractLegacyModuleCallbacks<T extends object>(moduleConfig: T): T {
     const legacy = moduleConfig as LegacyModuleCallbacks;
-    if (!legacy || (legacy.onConfigLoaded === undefined && legacy.onDotnetReady === undefined && legacy.onDownloadResourceProgress === undefined)) {
+    if (!legacy || (legacy.onConfigLoaded === undefined && legacy.onDotnetReady === undefined && legacy.onDownloadResourceProgress === undefined && legacy.onStartupDownloadQueueComputed === undefined)) {
         return moduleConfig;
     }
 
-    const { onConfigLoaded, onDotnetReady, onDownloadResourceProgress, ...rest } = moduleConfig as T & LegacyModuleCallbacks;
+    const { onConfigLoaded, onDotnetReady, onDownloadResourceProgress, onStartupDownloadQueueComputed, ...rest } = moduleConfig as T & LegacyModuleCallbacks;
     if (onConfigLoaded !== undefined) {
         loaderCallbacks.configLoaded = onConfigLoaded;
     }
@@ -34,6 +36,9 @@ export function extractLegacyModuleCallbacks<T extends object>(moduleConfig: T):
     }
     if (onDownloadResourceProgress !== undefined) {
         loaderCallbacks.downloadResourceProgress = onDownloadResourceProgress;
+    }
+    if (onStartupDownloadQueueComputed !== undefined) {
+        loaderCallbacks.startupDownloadQueueComputed = onStartupDownloadQueueComputed;
     }
 
     return rest as unknown as T;
