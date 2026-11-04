@@ -12986,7 +12986,7 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     // for free candidates, and doesn't make sense as anything other than the last
     // heuristic for free registers.
 #ifdef TARGET_ARM64
-    // These groups preserve REG_VAR_ORDER and REG_VAR_ORDER_FLT. Select from
+    // These groups preserve REG_VAR_ORDER and REG_VAR_ORDER_FLT in targetarm64.h. Select from
     // the first nonempty group instead of visiting every candidate's rank.
     SingleTypeRegSet preferred;
     SingleTypeRegSet lowestRegOrderBit;
