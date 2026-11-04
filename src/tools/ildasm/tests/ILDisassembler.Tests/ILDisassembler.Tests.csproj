@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>false</IsPackable>
+    <!-- The linked Program.cs has the CLI's Main, so the test SDK must not generate a second entry point. -->
+    <GenerateProgramFile>false</GenerateProgramFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+    <ProjectReference Include="..\..\src\ILDisassembler\ILDisassembler.csproj" />
+  </ItemGroup>
+
+  <!-- Link the CLI so it can be tested without referencing the self-contained executable project. -->
+  <ItemGroup>
+    <Compile Include="..\..\src\ildasm\Program.cs">
+      <Link>Program.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\ildasm\IldasmRootCommand.cs">
+      <Link>IldasmRootCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\ildasm\NativeCommandLine.cs">
+      <Link>NativeCommandLine.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+</Project>
