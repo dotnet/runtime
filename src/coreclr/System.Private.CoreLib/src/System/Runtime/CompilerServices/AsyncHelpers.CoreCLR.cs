@@ -266,8 +266,7 @@ namespace System.Runtime.CompilerServices
             public int AwaiterOffset;
             public SuspensionNotifierKind NotifierKind;
 
-            // When we suspend in the leaf, the contexts are captured into these fields (except when awaiting a
-            // Task, whose notification doesn't depend on them).
+            // When we suspend in the leaf, the contexts are captured into these fields.
             public ExecutionContext? LeafExecutionContext;
             public SynchronizationContext? LeafSynchronizationContext;
 
@@ -319,6 +318,30 @@ namespace System.Runtime.CompilerServices
                 // Therefore we do not need to worry about IsFlowSuppressed
                 stackState->LeafExecutionContext = curThread._executionContext;
                 stackState->LeafSynchronizationContext = curThread._synchronizationContext;
+            }
+
+            // Puts back the contexts captured at the leaf. The frames unwinding from the suspension restored their
+            // callers' contexts without raising AsyncLocal change notifications, so this must happen before the
+            // contexts saved at the start of the chain are restored with notifications. It also lets a notifier
+            // observe the leaf's contexts.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void RestoreLeafContexts()
+            {
+                Thread? curThread = CurrentThread;
+                RuntimeAsyncStackState* stackState = StackState;
+                Debug.Assert(curThread != null);
+
+                ExecutionContext? leafExecutionContext = stackState->LeafExecutionContext;
+                if (leafExecutionContext != curThread._executionContext)
+                {
+                    curThread._executionContext = leafExecutionContext;
+                }
+
+                SynchronizationContext? leafSyncContext = stackState->LeafSynchronizationContext;
+                if (leafSyncContext != curThread._synchronizationContext)
+                {
+                    curThread._synchronizationContext = leafSyncContext;
+                }
             }
 
             // At the start of an async chain (task-returning thunk or DispatchContinuations) this function
@@ -423,6 +446,7 @@ namespace System.Runtime.CompilerServices
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+            state.CaptureContexts();
             SetAwaitedTask(state.StackState, task, options);
             AsyncSuspend(sentinelContinuation);
         }
@@ -434,6 +458,7 @@ namespace System.Runtime.CompilerServices
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+            state.CaptureContexts();
             SetAwaitedTask(state.StackState, task, options);
             AsyncSuspend(sentinelContinuation);
             return default!;
@@ -623,6 +648,7 @@ namespace System.Runtime.CompilerServices
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+            state.CaptureContexts();
 
             RuntimeAsyncStackState* stackState = state.StackState;
             stackState->Notifier = task;
@@ -643,6 +669,7 @@ namespace System.Runtime.CompilerServices
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+            state.CaptureContexts();
 
             RuntimeAsyncStackState* stackState = state.StackState;
             stackState->Notifier = task;
@@ -1097,6 +1124,8 @@ namespace System.Runtime.CompilerServices
                     return false;
                 }
 
+                state.RestoreLeafContexts();
+
                 Continuation sentinelContinuation = state.SentinelContinuation!;
                 Continuation headContinuation = sentinelContinuation.Next!;
                 sentinelContinuation.Next = null;
@@ -1130,18 +1159,7 @@ namespace System.Runtime.CompilerServices
                     return false;
                 }
 
-                Thread currentThread = state.CurrentThread!;
-                ExecutionContext? suspendingExecutionContext = stackState->LeafExecutionContext;
-                SynchronizationContext? suspendingSyncContext = stackState->LeafSynchronizationContext;
-                if (suspendingExecutionContext != currentThread._executionContext)
-                {
-                    currentThread._executionContext = suspendingExecutionContext;
-                }
-
-                if (suspendingSyncContext != currentThread._synchronizationContext)
-                {
-                    currentThread._synchronizationContext = suspendingSyncContext;
-                }
+                state.RestoreLeafContexts();
 
                 Continuation sentinelContinuation = state.SentinelContinuation!;
                 Continuation headContinuation = sentinelContinuation.Next!;
@@ -1221,30 +1239,10 @@ namespace System.Runtime.CompilerServices
 
             internal unsafe bool HandleSuspended(ref RuntimeAsyncAwaitState state)
             {
-                Thread? currentThread = state.CurrentThread;
-                Debug.Assert(currentThread != null);
-
                 RuntimeAsyncStackState* stackState = state.StackState;
                 SuspensionNotifierKind notifierKind = stackState->NotifierKind;
 
-                // Restore the contexts captured at the leaf so the notifier observes them. Registering with an
-                // awaited Task runs no user code and doesn't consult the thread's contexts (where to resume is
-                // already encoded in AwaitedContinuationContext), so the leaf doesn't capture them in that case.
-                // Either way, the caller restores the thread's contexts once we return.
-                if (notifierKind != SuspensionNotifierKind.AwaitedTask)
-                {
-                    ExecutionContext? suspendingExecutionContext = stackState->LeafExecutionContext;
-                    SynchronizationContext? suspendingSyncContext = stackState->LeafSynchronizationContext;
-                    if (suspendingExecutionContext != currentThread._executionContext)
-                    {
-                        currentThread._executionContext = suspendingExecutionContext;
-                    }
-
-                    if (suspendingSyncContext != currentThread._synchronizationContext)
-                    {
-                        currentThread._synchronizationContext = suspendingSyncContext;
-                    }
-                }
+                state.RestoreLeafContexts();
 
                 Continuation sentinelContinuation = state.SentinelContinuation!;
                 Continuation headContinuation = sentinelContinuation.Next!;
@@ -2406,6 +2404,7 @@ namespace System.Runtime.CompilerServices
         private static unsafe void SwitchToContinuationContext(ref RuntimeAsyncAwaitState state, object? continuationContext, ContinuationFlags flags)
         {
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+            state.CaptureContexts();
 
             RuntimeAsyncStackState* stackState = state.StackState;
             stackState->Notifier = Task.CompletedTask;
