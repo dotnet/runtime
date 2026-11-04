@@ -455,7 +455,8 @@ namespace System.Runtime.Caching
 
                 for (int i = 1; i < entries.Length; i++)
                 {
-                    if (entries[i]._cacheEntry == null)
+                    MemoryCacheEntry? cacheEntry = entries[i]._cacheEntry;
+                    if (cacheEntry == null)
                         continue;
 
                     Debug.Assert(_freeEntryList._head != _freeEntryList._tail, "_freeEntryList._head != _freeEntryList._tail");
@@ -466,7 +467,6 @@ namespace System.Runtime.Caching
                     UsageEntryRef oldRef1 = new UsageEntryRef(_freeEntryList._tail, i);
                     UsageEntryRef oldRef2 = (new UsageEntryRef((oldRef1).PageIndex, -(oldRef1).Ref1Index));
 
-                    MemoryCacheEntry cacheEntry = entries[i]._cacheEntry!;
                     Debug.Assert(cacheEntry.UsageEntryRef == oldRef1, "cacheEntry.UsageEntryRef == oldRef1");
                     cacheEntry.UsageEntryRef = newRef1;
 
