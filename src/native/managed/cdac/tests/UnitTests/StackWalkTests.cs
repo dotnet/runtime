@@ -846,6 +846,7 @@ public unsafe class StackWalkTests
         return (builder.AddTypes(types).AddGlobals((frameType + "Identifier", 0x100), (Constants.Globals.ObjectToMethodTableUnmask, markedReceiver ? 3UL : 0UL))
             .AddMockContract<IRuntimeTypeSystem>(rts).AddMockContract(runtimeInfo)
             .AddMockContract(Mock.Of<IGC>()).AddMockContract(Mock.Of<IGCInfo>())
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .AddMockContract(Mock.Of<IExecutionManager>()).Build(), rts);
 
         void AddMemory(uint address, byte[] data)

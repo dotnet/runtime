@@ -511,7 +511,7 @@ internal sealed class FrameHelpers
                 return TargetCodePointer.Null;
         }
 
-        return CodePointerUtils.StripPtrAuthFromReturnAddress(returnAddress, _target);
+        return CodePointerUtils.StripPointerAuthentiationFromReturnAddress(returnAddress, _target);
     }
 
     /// <summary>

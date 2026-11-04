@@ -40,7 +40,7 @@ internal static class CodePointerUtils
         return new TargetPointer(code.Value);
     }
 
-    internal static TargetCodePointer StripPtrAuthFromReturnAddress(TargetCodePointer returnAddress, Target target)
+    internal static TargetCodePointer StripPointerAuthentiationFromReturnAddress(TargetCodePointer returnAddress, Target target)
     {
         if (returnAddress == TargetCodePointer.Null)
         {
