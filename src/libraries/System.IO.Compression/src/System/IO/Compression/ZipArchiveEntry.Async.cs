@@ -886,7 +886,8 @@ public partial class ZipArchiveEntry
                     _compressedSize = 0;
                 }
 
-                // Reusing ciphertext must preserve its descriptor mode and encryption structures.
+                // For unchanged entries, we need to write the header correctly but avoid
+                // WriteLocalFileHeaderAsync creating new encryption structures.
                 // The original AES extra field is preserved in _lhUnknownExtraFields.
                 BitFlagValues savedFlags = _generalPurposeBitFlag;
                 ZipEncryptionMethod savedEncryption = Encryption;
@@ -894,10 +895,13 @@ public partial class ZipArchiveEntry
 
                 try
                 {
+                    // For AES entries: set CompressionMethod to Aes so the header writes method 99.
                     if (savedEncryption is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256)
                     {
                         CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
                     }
+                    // Clear Encryption so WriteLocalFileHeaderAsync doesn't create new encryption structures.
+                    // The original encryption flags are preserved when copying the existing ciphertext.
                     Encryption = ZipEncryptionMethod.None;
 
                     await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true,
@@ -936,7 +940,7 @@ public partial class ZipArchiveEntry
                 if (_originallyInArchive)
                 {
                     Debug.Assert(!forceWrite);
-                    await WriteLocalFileHeaderMetadataAsync(cancellationToken).ConfigureAwait(false);
+                    await WriteVersionAndLastModifiedInLocalHeaderAsync(cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -953,7 +957,10 @@ public partial class ZipArchiveEntry
         }
     }
 
-    private async Task WriteLocalFileHeaderMetadataAsync(CancellationToken cancellationToken)
+    // Writes version-needed and, if changed, the timestamp for an existing entry whose data stays in place.
+    // With data left in place, preserve the local header layout (APPNOTE 4.3.7),
+    // including Zip64 extra fields and the flags describing existing ciphertext.
+    private async Task WriteVersionAndLastModifiedInLocalHeaderAsync(CancellationToken cancellationToken)
     {
         if (Changes == ZipArchive.ChangeState.Unchanged)
         {
@@ -961,7 +968,7 @@ public partial class ZipArchiveEntry
         }
 
         byte[] buffer = new byte[sizeof(ushort) + sizeof(uint)];
-        bool lastModifiedChanged = PrepareToWriteLocalFileHeaderMetadata(buffer);
+        bool lastModifiedChanged = PrepareToWriteVersionAndLastModifiedInLocalHeader(buffer);
         await _archive.ArchiveStream.WriteAsync(buffer.AsMemory(0, sizeof(ushort)), cancellationToken).ConfigureAwait(false);
         if (lastModifiedChanged)
         {

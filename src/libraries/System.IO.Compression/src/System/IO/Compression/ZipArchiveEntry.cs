@@ -1929,7 +1929,8 @@ namespace System.IO.Compression
                         _compressedSize = 0;
                     }
 
-                    // Reusing ciphertext must preserve its descriptor mode and encryption structures.
+                    // For unchanged entries, we need to write the header correctly but avoid
+                    // WriteLocalFileHeader creating new encryption structures.
                     // The original AES extra field is preserved in _lhUnknownExtraFields.
                     BitFlagValues savedFlags = _generalPurposeBitFlag;
                     ZipEncryptionMethod savedEncryption = Encryption;
@@ -1937,10 +1938,13 @@ namespace System.IO.Compression
 
                     try
                     {
+                        // For AES entries: set CompressionMethod to Aes so the header writes method 99.
                         if (savedEncryption is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256)
                         {
                             CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
                         }
+                        // Clear Encryption so WriteLocalFileHeader doesn't create new encryption structures.
+                        // The original encryption flags are preserved when copying the existing ciphertext.
                         Encryption = ZipEncryptionMethod.None;
 
                         WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true,
@@ -1979,7 +1983,7 @@ namespace System.IO.Compression
                     if (_originallyInArchive)
                     {
                         Debug.Assert(!forceWrite);
-                        WriteLocalFileHeaderMetadata();
+                        WriteVersionAndLastModifiedInLocalHeader();
                     }
                     else
                     {
@@ -1996,7 +2000,7 @@ namespace System.IO.Compression
             }
         }
 
-        private bool PrepareToWriteLocalFileHeaderMetadata(Span<byte> buffer)
+        private bool PrepareToWriteVersionAndLastModifiedInLocalHeader(Span<byte> buffer)
         {
             BinaryPrimitives.WriteUInt16LittleEndian(buffer, (ushort)_versionToExtract);
             BinaryPrimitives.WriteUInt32LittleEndian(buffer[sizeof(ushort)..], ZipHelper.DateTimeToDosTime(_lastModified.DateTime));
@@ -2005,17 +2009,18 @@ namespace System.IO.Compression
             return _lastModified.DateTime != _originalLastModified.DateTime;
         }
 
-        private void WriteLocalFileHeaderMetadata()
+        // Writes version-needed and, if changed, the timestamp for an existing entry whose data stays in place.
+        // With data left in place, preserve the local header layout (APPNOTE 4.3.7),
+        // including Zip64 extra fields and the flags describing existing ciphertext.
+        private void WriteVersionAndLastModifiedInLocalHeader()
         {
             if (Changes == ZipArchive.ChangeState.Unchanged)
             {
                 return;
             }
 
-            // With data left in place, preserve the local header layout (APPNOTE 4.3.7),
-            // including Zip64 extra fields and the flags describing existing ciphertext.
             Span<byte> buffer = stackalloc byte[sizeof(ushort) + sizeof(uint)];
-            bool lastModifiedChanged = PrepareToWriteLocalFileHeaderMetadata(buffer);
+            bool lastModifiedChanged = PrepareToWriteVersionAndLastModifiedInLocalHeader(buffer);
             _archive.ArchiveStream.Write(buffer[..sizeof(ushort)]);
             if (lastModifiedChanged)
             {
