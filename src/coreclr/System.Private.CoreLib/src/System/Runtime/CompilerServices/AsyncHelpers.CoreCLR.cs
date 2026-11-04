@@ -51,7 +51,11 @@ namespace System.Runtime.CompilerServices
         // async callee's result. We need to represent the offset to each of
         // these, so we allocate the rest of the bits for this.
         ResultIndexFirstBit = 11,
-        ResultIndexNumBits = 20,
+        ResultIndexNumBits = 19,
+
+        // Never set by the JIT. Set when suspending on a Task awaited with ConfigureAwaitOptions.SuppressThrowing,
+        // such that the dispatcher doesn't propagate the awaited task's failure. See GetAwaitedTaskContinuationContext.
+        SuppressThrowing = 1 << 30,
 
         // The suspending frame had already been resumed by the dispatcher, so it left
         // capturing its ExecutionContext and (when it has an index) its continuation
@@ -968,6 +972,20 @@ namespace System.Runtime.CompilerServices
                     return null;
                 }
 
+                if ((awaitingContinuation.Flags & ContinuationFlags.SuppressThrowing) != 0)
+                {
+                    // Like TaskAwaiter.ValidateEnd with ConfigureAwaitOptions.SuppressThrowing, observe any failure
+                    // without propagating it. Only a non-generic Task can be awaited this way, so there's no result.
+                    Debug.Assert(Unsafe.IsNullRef(ref resultStorage));
+                    awaitedTask.NotifyDebuggerOfWaitCompletionIfNecessary();
+                    if (!awaitedTask.IsCompletedSuccessfully)
+                    {
+                        awaitedTask.MarkExceptionsAsHandled();
+                    }
+
+                    return null;
+                }
+
                 Exception? ex = awaitedTask.GetRuntimeAsyncAwaitResult(ref resultStorage);
                 if (ex is not null && (awaitingContinuation.ResumeInfo == null || awaitingContinuation.ResumeInfo->DiagnosticIP == null))
                 {
@@ -1082,11 +1100,29 @@ namespace System.Runtime.CompilerServices
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static object? GetAwaitedTaskContinuationContext(Continuation headContinuation, object? awaitedContinuationContext)
             {
-                if ((awaitedContinuationContext == TaskScheduler.Default || awaitedContinuationContext == SuppressThrowingAwaitContext.ThreadPool) &&
+                // When the head continuation has no continuation flags of its own, record continuing on the thread pool
+                // and/or suppressing a failure of the awaited task in its flags rather than in the task, so that the
+                // awaited task's completion doesn't need to process a continuation context.
+                if (awaitedContinuationContext is not null &&
                     (headContinuation.Flags & (ContinuationFlags.AllContinuationFlags | ContinuationFlags.ValueTaskAdaptedToTask)) == 0)
                 {
-                    headContinuation.Flags |= ContinuationFlags.ContinueOnThreadPool;
-                    awaitedContinuationContext = awaitedContinuationContext == TaskScheduler.Default ? null : SuppressThrowingAwaitContext.Transparent;
+                    if (awaitedContinuationContext == TaskScheduler.Default)
+                    {
+                        headContinuation.Flags |= ContinuationFlags.ContinueOnThreadPool;
+                        return null;
+                    }
+
+                    if (awaitedContinuationContext == SuppressThrowingAwaitContext.ThreadPool)
+                    {
+                        headContinuation.Flags |= ContinuationFlags.ContinueOnThreadPool | ContinuationFlags.SuppressThrowing;
+                        return null;
+                    }
+
+                    if (awaitedContinuationContext == SuppressThrowingAwaitContext.Transparent)
+                    {
+                        headContinuation.Flags |= ContinuationFlags.SuppressThrowing;
+                        return null;
+                    }
                 }
 
                 return awaitedContinuationContext;

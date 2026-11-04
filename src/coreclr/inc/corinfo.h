@@ -1818,7 +1818,11 @@ enum CorInfoContinuationFlags
     // async callee's result. We need to represent the offset to each of
     // these, so we allocate the rest of the bits for this.
     CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 11,
-    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 20,
+    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 19,
+
+    // Reserved for the VM: never set by the JIT. Set at runtime on the
+    // continuation awaiting a Task with ConfigureAwaitOptions.SuppressThrowing.
+    CORINFO_CONTINUATION_SUPPRESS_THROWING = 1 << 30,
 
     // If this bit is set, the suspending frame skipped capturing the
     // ExecutionContext (and continuation context, if it has an index) when it
