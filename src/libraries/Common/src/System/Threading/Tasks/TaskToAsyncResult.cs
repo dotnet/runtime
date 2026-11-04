@@ -128,6 +128,10 @@ namespace System.Threading.Tasks
                     // The task has already completed.  Treat this as synchronous completion.
                     // Invoke the callback; no need to store it.
                     CompletedSynchronously = true;
+                    // Observe any fault so that UnobservedTaskException is not raised if End
+                    // is never called. In the APM pattern exceptions are propagated via End;
+                    // End will still rethrow the exception if called.
+                    _ = task.Exception;
                     callback?.Invoke(this);
                 }
                 else if (callback is not null)
@@ -138,7 +142,14 @@ namespace System.Threading.Tasks
                     _callback = callback;
                     _task.ConfigureAwait(continueOnCapturedContext: false)
                          .GetAwaiter()
-                         .OnCompleted(() => _callback.Invoke(this));
+                         .OnCompleted(() =>
+                         {
+                             // Observe any fault so that UnobservedTaskException is not raised if End
+                             // is never called. In the APM pattern exceptions are propagated via End;
+                             // End will still rethrow the exception if called.
+                             _ = _task.Exception;
+                             _callback.Invoke(this);
+                         });
                 }
             }
 
