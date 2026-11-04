@@ -7995,6 +7995,28 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn, bool isIndex)
 }
 
 //------------------------------------------------------------------------
+// FindVNPair: Find the entry for a number in a pair list.
+//
+// Arguments:
+//    list - the list
+//    from - the number
+//
+// Return Value:
+//    The index of the entry, or -1 when there is none.
+//
+int ValueNumStore::FindVNPair(VNPairList& list, ValueNum from)
+{
+    for (int i = 0; i < list.Height(); i++)
+    {
+        if (list.BottomRef(i).from == from)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+//------------------------------------------------------------------------
 // VNCanonical: Return the representative of a value number's equivalence class.
 //
 // Arguments:
@@ -8010,18 +8032,25 @@ ValueNum ValueNumStore::VNCanonical(ValueNum vn)
         return vn;
     }
 
-    ValueNum root = vn;
-    ValueNum next;
-    while (m_vnEquivalences->TryGetValue(root, &next))
+    VNEquivalences& eq = *m_vnEquivalences;
+    if (!eq.members.Test(vn))
     {
-        root = next;
+        return vn;
+    }
+
+    ValueNum root = vn;
+    int      index;
+    while (eq.members.Test(root) && ((index = FindVNPair(eq.entries, root)) >= 0))
+    {
+        root = eq.entries.BottomRef(index).to;
     }
 
     // Compress the path so later lookups take one step.
-    while ((vn != root) && m_vnEquivalences->TryGetValue(vn, &next))
+    while ((vn != root) && ((index = FindVNPair(eq.entries, vn)) >= 0))
     {
-        m_vnEquivalences->AddOrUpdate(vn, root);
-        vn = next;
+        VNPair& entry = eq.entries.BottomRef(index);
+        vn            = entry.to;
+        entry.to      = root;
     }
     return root;
 }
@@ -8076,9 +8105,11 @@ void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
 
     if (m_vnEquivalences == nullptr)
     {
-        m_vnEquivalences = new (m_alloc) VNEquivalenceMap(m_alloc);
+        m_vnEquivalences = new (m_alloc) VNEquivalences(m_alloc);
     }
-    m_vnEquivalences->AddOrUpdate(fromRoot, toRoot);
+    assert(FindVNPair(m_vnEquivalences->entries, fromRoot) < 0);
+    m_vnEquivalences->members.Set(fromRoot);
+    m_vnEquivalences->entries.Push({fromRoot, toRoot});
 }
 
 #ifdef FEATURE_HW_INTRINSICS

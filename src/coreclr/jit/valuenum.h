@@ -158,6 +158,7 @@
 // Defines the type SmallHashTable.
 #include "compiler.h"
 #include "smallhash.h"
+#include "bitvec.h"
 #include "simd.h"
 
 // A "ValueNumStore" represents the "universe" of value numbers used in a single
@@ -1769,8 +1770,32 @@ private:
 
     // Union-find over conservative value numbers that CSE has proven equal. Allocated on the
     // first rewrite: about one method in nine records one, and few record more than eight.
-    typedef SmallHashTable<ValueNum, ValueNum, 8U> VNEquivalenceMap;
-    VNEquivalenceMap*                              m_vnEquivalences = nullptr;
+    // A number paired with another, such as a rewritten number and its representative.
+    struct VNPair
+    {
+        ValueNum from;
+        ValueNum to;
+    };
+    typedef ArrayStack<VNPair> VNPairList;
+
+    static int FindVNPair(VNPairList& list, ValueNum from);
+
+    // Allocated on the first rewrite CSE records, so methods without one carry a pointer.
+    struct VNEquivalences
+    {
+        // The numbers that have an entry in "entries", so a lookup of any other number costs a bit test.
+        GrowableBitSet members;
+
+        // Union-find over rewritten numbers, pointing each toward its representative.
+        VNPairList entries;
+
+        VNEquivalences(CompAllocator alloc)
+            : members(alloc)
+            , entries(alloc)
+        {
+        }
+    };
+    VNEquivalences* m_vnEquivalences = nullptr;
 
     // This is a map from "chunk number" to the attributes of the chunk.
     JitExpandArrayStack<Chunk*> m_chunks;
