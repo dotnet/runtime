@@ -121,8 +121,9 @@ namespace System.Threading.Tasks
         private int m_taskId; // this task's unique ID. initialized only if it is ever requested
 
         // The delegate to invoke for a delegate-backed Task.
-        // This field also may be used by async state machines to cache an Action.
-        internal Delegate? m_action;
+        // This field also may be used by async state machines to cache an Action, and by
+        // runtime async tasks to store state about what they're awaiting.
+        internal object? m_action;
         private protected object? m_stateObject; // A state object that can be optionally supplied, passed to action.
         internal TaskScheduler? m_taskScheduler; // The task scheduler this task runs under.
 
@@ -824,7 +825,7 @@ namespace System.Threading.Tasks
         }
 
         // Debugger support
-        private string DebuggerDisplayMethodDescription => m_action?.Method.ToString() ?? "{null}";
+        private string DebuggerDisplayMethodDescription => (m_action as Delegate)?.Method.ToString() ?? "{null}";
 
         // Internal property to process TaskCreationOptions access and mutation.
         internal TaskCreationOptions Options => OptionsMethod(m_stateFlags);
