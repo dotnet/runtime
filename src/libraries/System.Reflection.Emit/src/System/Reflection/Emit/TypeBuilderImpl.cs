@@ -445,7 +445,8 @@ namespace System.Reflection.Emit
                 TypeAttributes typeAttributes = TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.AnsiClass;
 
                 // Define the backing value class
-                valueClassType = (TypeBuilderImpl)_module.DefineType(strValueClassName, typeAttributes, _module.GetTypeFromCoreAssembly(CoreTypeId.ValueType), (PackingSize)ManagedPEBuilder.MappedFieldDataAlignment, size);
+                PackingSize packing = size % 8 == 0 ? PackingSize.Size8 : PackingSize.Size4;
+                valueClassType = (TypeBuilderImpl)_module.DefineType(strValueClassName, typeAttributes, _module.GetTypeFromCoreAssembly(CoreTypeId.ValueType), packing, size);
                 valueClassType.CreateType();
             }
 

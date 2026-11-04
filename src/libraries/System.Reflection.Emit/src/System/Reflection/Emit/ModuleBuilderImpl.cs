@@ -657,9 +657,9 @@ namespace System.Reflection.Emit
 
                 if (field.Attributes.HasFlag(FieldAttributes.HasFieldRVA) && field._rvaData != null)
                 {
+                    fieldDataBuilder.Align((int)((TypeBuilderImpl)field.FieldType).PackingSize);
                     _metadataBuilder.AddFieldRelativeVirtualAddress(handle, fieldDataBuilder.Count);
                     fieldDataBuilder.WriteBytes(field._rvaData!);
-                    fieldDataBuilder.Align(ManagedPEBuilder.MappedFieldDataAlignment);
                 }
             }
         }

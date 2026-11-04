@@ -272,11 +272,11 @@ namespace System.Reflection.Emit.Tests
                 CheckMethod("LoadAddress8_3", 8, field8Byte_2_data);
                 tlc.Unload();
 
-                void CheckFieldAlignment(FieldInfo field, int minAlighnmentRequired)
+                void CheckFieldAlignment(FieldInfo field, int expectedAlignment)
                 {
                     var layout = field.FieldType.StructLayoutAttribute;
                     Assert.NotNull(layout);
-                    Assert.True(layout.Pack >= minAlighnmentRequired);
+                    Assert.Equal(expectedAlignment, layout.Pack);
                 }
 
                 void CheckMethod(string name, int minAlignmentRequired, byte[] dataToVerify)
