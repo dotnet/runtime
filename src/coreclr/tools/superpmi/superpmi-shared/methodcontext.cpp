@@ -150,7 +150,7 @@ unsigned int MethodContext::saveToFile(FILE* hFile)
     unsigned int totalFileSize =
         2 /* leading magic cookie 'm', 'c' */ + 4 /* 4-byte data length */ + totalLen + 2 /* end canary '4', '2' */;
 
-    DWORD          bytesWritten = 0;
+    unsigned int   bytesWritten = 0;
     unsigned int   buffIndex    = 0;
     unsigned char* buff2        = new unsigned char[totalFileSize];
     buff2[buffIndex++]          = 'm';
@@ -171,7 +171,7 @@ unsigned int MethodContext::saveToFile(FILE* hFile)
 
     Assert(buffIndex == totalFileSize);
 
-    bytesWritten = (DWORD)fwrite(buff2, 1, totalFileSize, hFile);
+    bytesWritten = (unsigned int)fwrite(buff2, 1, totalFileSize, hFile);
     delete[] buff2;
     return bytesWritten;
 }
