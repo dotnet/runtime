@@ -315,6 +315,9 @@
       <Link>Common\Interop\Unix\System.Native\Interop.Exit.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasm)' == 'true'">
+    <Compile Include="Internal\Runtime\UnboxingStubMap.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CompilerCommonPath)\System\Collections\Generic\ArrayBuilder.cs">
       <Link>ArrayBuilder.cs</Link>
