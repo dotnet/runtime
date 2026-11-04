@@ -1083,6 +1083,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             var hash = new HashCode();
             hash.Add(-1777408040);
             hash.Add(Method);
+            for (int i = 0; i < GenericTypeArguments.Count; i++)
+                hash.Add(GenericTypeArguments[i]);
             LeaveGetHashCode();
             _hash = hash.ToHashCode();
             return _hash;
@@ -2582,6 +2584,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             var hash = new HashCode();
             hash.Add(770132338);
             hash.Add(GenericType);
+            for (int i = 0; i < GenericTypeArguments.Count; i++)
+                hash.Add(GenericTypeArguments[i]);
             LeaveGetHashCode();
             _hash = hash.ToHashCode();
             return _hash;

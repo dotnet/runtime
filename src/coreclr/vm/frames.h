@@ -2148,10 +2148,6 @@ public:
     VOID Init();
 };
 
-// TODO [DAVBR]: For the full fix for VsWhidbey 450273, this
-// may be uncommented once isLegalManagedCodeCaller works properly
-// with non-return address inputs, and with non-DEBUG builds
-//bool isLegalManagedCodeCaller(TADDR retAddr);
 bool isRetAddr(TADDR retAddr, TADDR* whereCalled);
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
