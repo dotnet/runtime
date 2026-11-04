@@ -590,6 +590,8 @@ OPT_CONFIG_INTEGER(JitDoRangeAnalysis, "JitDoRangeAnalysis", 1)                 
 OPT_CONFIG_INTEGER(JitDoVNBasedDeadStoreRemoval, "JitDoVNBasedDeadStoreRemoval", 1) // Perform VN-based dead store
                                                                                     // removal
 OPT_CONFIG_INTEGER(JitDoRedundantBranchOpts, "JitDoRedundantBranchOpts", 1) // Perform redundant branch optimizations
+// Max number of dominating compares redundant branch opts inspects for each relop
+CONFIG_INTEGER(JitRboDominatorLimit, "JitRboDominatorLimit", 128)
 OPT_CONFIG_STRING(JitEnableRboRange, "JitEnableRboRange")
 OPT_CONFIG_STRING(JitEnableHeadTailMergeRange, "JitEnableHeadTailMergeRange")
 OPT_CONFIG_STRING(JitEnableVNBasedDeadStoreRemovalRange, "JitEnableVNBasedDeadStoreRemovalRange")
@@ -921,6 +923,9 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
 // Enable processing methods with funclets. Set to 0 to bail to R2R unsupported before codegen.
 RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 1)
+// Method filter for WASM performance instrumentation profiler. Uses standard MethodSet pattern format.
+// Same key as the interpreter's InterpConfig.WasmPerformanceInstrumentation so both engines share it.
+RELEASE_CONFIG_METHODSET(WasmPerformanceInstrumentation, "WasmPerformanceInstrumentation")
 #endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.

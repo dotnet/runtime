@@ -1995,15 +1995,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         }
     }
 
-    if (!isUnsignedCompareCheckedBound && isUnsignedRelop && (op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) &&
-        !vnStore->IsVNConstant(op2VN) && vnStore->IsVNCheckedBoundIndex(op1VN) && optAssertionHasAssertionsForVN(op2VN))
-    {
-        AssertionDsc   dsc = AssertionDsc::CreateRelopVN(this, relopFunc, op1VN, op2VN);
-        AssertionIndex idx = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(idx);
-        return idx;
-    }
-
     // The remaining "(CheckedBnd + CNS) <relop> X" cases are only useful when the
     // comparison is ordered (LT/LE/GT/GE). For equality relops we don't produce
     // CheckedBoundAddConst-shaped assertions; the consumers (RangeCheck) only
@@ -2036,13 +2027,22 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     }
 
     // Loop condition like "(uint)i < (uint)bnd" or equivalent
-    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
+    // Assertion: "i u< bnd", i.e. "no throw" (i is in [0, bnd)) when bnd is never negative.
     if (isUnsignedCompareCheckedBound)
     {
         ValueNum idxVN = vnStore->VNNormalValue(unsignedCompareBnd.vnIdx);
         ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
 
-        AssertionDsc   dsc   = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
+        // A checked bound isn't necessarily never negative here, e.g. a Span's length may share its VN
+        // with a value that is validated later. Rely on it only if it's known to be never negative at
+        // this compare (the assertion is live only after it and the VN's value doesn't change).
+        auto isNeverNegativeLen = [this, lenVN](GenTree* op) {
+            return (optConservativeNormalVN(op) == lenVN) && op->IsNeverNegative(this);
+        };
+        bool isLenNeverNegative = vnStore->IsVNNeverNegative(lenVN) || isNeverNegativeLen(relop->gtGetOp1()) ||
+                                  isNeverNegativeLen(relop->gtGetOp2());
+
+        AssertionDsc   dsc   = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN, isLenNeverNegative);
         AssertionIndex index = optAddAssertion(dsc);
         if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
         {
@@ -2074,7 +2074,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     }
 
     // "X relop Y" where neither side is a constant nor a checked bound.
-    // For now, we only create such assertions for signed comparisons of int32 (and smaller, after promotion).
+    // For now, we only create such assertions for comparisons of int32 (and smaller, after promotion).
     // This widens what global assertion prop can reason about: e.g. "b > a" combined with "a > 10"
     // can be used to deduce "b > 10".
     //
@@ -2082,7 +2082,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // operands already has assertions registered. Otherwise the new assertion has no other facts
     // it can chain with and is unlikely to enable any deduction, while still consuming a slot
     // (and potentially crowding out useful ones).
-    if (!isUnsignedRelop && (op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) && !vnStore->IsVNConstant(op2VN) &&
+    if ((op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) && !vnStore->IsVNConstant(op2VN) &&
         (optAssertionHasAssertionsForVN(op1VN) || optAssertionHasAssertionsForVN(op2VN)))
     {
         AssertionDsc   dsc = AssertionDsc::CreateRelopVN(this, relopFunc, op1VN, op2VN);
@@ -2440,7 +2440,8 @@ void Compiler::optAssertionGen(GenTree* tree)
                     // GT_BOUNDS_CHECK node provides the following contract:
                     // * idxVN < lenVN
                     // * lenVN is non-negative
-                    assertionInfo = optAddAssertion(AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN));
+                    assertionInfo = optAddAssertion(
+                        AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN, /* isLenNeverNegative */ true));
                 }
             }
             break;
@@ -2511,7 +2512,8 @@ void Compiler::optAssertionGen(GenTree* tree)
                             // Compose a VN_ARR_LENGTH VN for the array reference and use it
                             // to create a bounds check assertion on the index.
                             ValueNum lenVN = vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, arrRefVN);
-                            assertionInfo  = optAddAssertion(AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN));
+                            assertionInfo  = optAddAssertion(
+                                AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN, /* isLenNeverNegative */ true));
                             break;
                         }
                     }
@@ -4717,6 +4719,21 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                     newTree = gtNewIconNode(tree->OperIs(assertionOper) ? 1 : 0);
                 }
             }
+            // "X < Y" implies "(X + 1) <= Y" as "X + 1" can't overflow, e.g. "(uint)(i + 1) > (uint)len"
+            // is false when "(uint)i < (uint)len".
+            else if (curAssertion.KindIs(OAK_LT, OAK_LT_UN) && tree->OperIs(GT_LE, GT_GT) &&
+                     (tree->IsUnsigned() == curAssertion.KindIs(OAK_LT_UN)) &&
+                     (curAssertion.GetOp2().GetVN() == op2VN) &&
+                     (!curAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS) || (curAssertion.GetOp2().GetCns() == 0)))
+            {
+                ValueNum addOp;
+                int      addCns;
+                if (vnStore->IsVNBinFuncWithConst(op1VN, VNF_ADD, &addOp, &addCns) && (addCns == 1) &&
+                    (addOp == curAssertion.GetOp1().GetVN()))
+                {
+                    newTree = gtNewIconNode(tree->OperIs(GT_LE) ? 1 : 0);
+                }
+            }
             // Look for an equality assertion involving the entire relop and zero.
             // Example: currentTree is "X >= Y" and we have an assertion "(X >= Y) == 0"
             //
@@ -5660,15 +5677,14 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
-        // If it is not a nothrow assertion, skip.
+        // Look for "prevIdx u< len" assertions. The bounds check only throws when "(uint)idx >= (uint)len",
+        // so we don't need to know whether "len" is never negative.
         const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
-        if (!curAssertion.IsBoundsCheckNoThrow())
+        if (!curAssertion.GetOp1().KindIs(O1K_VN) || !curAssertion.KindIs(OAK_LT_UN) ||
+            !curAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS) || (curAssertion.GetOp2().GetCns() != 0))
         {
             continue;
         }
-
-        assert(curAssertion.GetOp2().GetCns() == 0);
-        assert(curAssertion.GetOp2().IsVNNeverNegative());
 
         // Do we have a previous range check involving the same 'vnLen' upper bound?
         if (curAssertion.GetOp2().GetVN() == vnCurLen)

@@ -248,6 +248,12 @@ namespace System.Net.WebSockets.Client.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials not supported on browser")]
         public async Task Connect_ViaProxy_ProxyTunnelRequestIssued(string scheme)
         {
+            if (scheme == "wss" && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             bool connectionAccepted = false;
 
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>

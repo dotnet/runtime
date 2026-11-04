@@ -8,9 +8,9 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
-using LabelHandle = ILAssembler.MethodBodyWriter.Label;
+using LabelHandle = Microsoft.DotNet.ILAssembler.MethodBodyWriter.Label;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     internal sealed class EntityRegistry
     {
@@ -754,6 +754,20 @@ namespace ILAssembler
             }
         }
 
+        // Unlike SystemValueTypeType, does not create the TypeRef.
+        public bool IsSystemValueType(TypeEntity? type)
+        {
+            if (IsCoreLibrary && type is TypeDefinitionEntity { ContainingType: null, Namespace: "System", Name: "ValueType" })
+            {
+                return true;
+            }
+            return type is TypeReferenceEntity { Namespace: "System", Name: "ValueType", ResolutionScope: AssemblyReferenceEntity scope }
+                && (scope == FindAssemblyReference("System.Private.CoreLib")
+                    || scope == FindAssemblyReference("System.Runtime")
+                    || scope == FindAssemblyReference("mscorlib")
+                    || scope == FindAssemblyReference("netstandard"));
+        }
+
         private TypeEntity? _systemEnum;
         public TypeEntity SystemEnumType
         {
@@ -769,12 +783,23 @@ namespace ILAssembler
 
         public AssemblyEntity? Assembly { get; set; }
 
-        private TypeReferenceEntity ResolveFromCoreAssembly(string typeName)
+        public bool IsCoreLibrary { get; set; }
+
+        private TypeEntity ResolveFromCoreAssembly(string typeName)
         {
+            if (IsCoreLibrary)
+            {
+                (string typeNamespace, string name) = NameHelpers.SplitDottedNameToNamespaceAndName(typeName);
+                return GetOrCreateTypeDefinition(null, typeNamespace, name, _ => { });
+            }
+
             // Check for assembly refs in order of preference then fall back to creating mscorlib if none found
             AssemblyReferenceEntity coreAsmRef = GetCoreLibAssemblyReference();
             return GetOrCreateTypeReference(coreAsmRef, new TypeName(null, typeName));
         }
+
+        public EntityBase GetCoreLibraryResolutionScope()
+            => IsCoreLibrary ? Module : GetCoreLibAssemblyReference();
 
         public AssemblyReferenceEntity GetCoreLibAssemblyReference()
         {
@@ -785,9 +810,12 @@ namespace ILAssembler
                 ?? GetOrCreateAssemblyReference("mscorlib", new Version(0, 0, 0, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
         }
 
-        private static bool IsCoreLibAssemblyName(string name)
+        internal static bool IsCoreLibAssemblyName(string name)
         {
-            return name is "mscorlib" or "System.Runtime" or "System.Private.CoreLib" or "netstandard";
+            return string.Equals(name, "mscorlib", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "System.Runtime", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "netstandard", StringComparison.OrdinalIgnoreCase);
         }
 
         public interface IHasHandle
