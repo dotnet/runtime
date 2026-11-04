@@ -60,10 +60,10 @@ public class WebcilWasmWrapper
     private readonly bool _selfInstalling;
 
     /// <summary>
-    /// When true (the default), a WebAssembly tool-conventions <c>producers</c> section and a
+    /// When true, a WebAssembly tool-conventions <c>producers</c> section and a
     /// <c>build_id</c> section are appended to the wrapped module.
     /// </summary>
-    public bool EmitMetadataSections { get; set; } = true;
+    public bool EmitMetadataSections { get; set; }
 
     /// <summary>Version used for the <c>producers</c> <c>processed-by</c>/<c>sdk</c> fields.</summary>
     public string ProductVersion { get; set; } = string.Empty;

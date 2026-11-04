@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 using Microsoft.NET.Sdk.WebAssembly;
 using Wasm.Build.Tests;
@@ -129,6 +130,63 @@ namespace Wasm.Build.NativeRebuild.Tests
             Assert.Contains("WasmNativeBuildId 'not-hex' is not a valid hex string.", output);
         }
 
+        [TestCategory("no-workload")]
+        [Theory]
+        [InlineData(Configuration.Release)]
+        public void PreviousTargetFramework_IgnoresMetadataProperties(Configuration config)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_previous_tfm");
+            string testRoot = Directory.GetParent(_projectDir)!.FullName;
+            foreach (string projectFile in Directory.EnumerateFiles(testRoot, "*.csproj", SearchOption.AllDirectories))
+            {
+                string contents = File.ReadAllText(projectFile);
+                File.WriteAllText(projectFile, contents.Replace(DefaultTargetFramework, PreviousTargetFramework));
+            }
+
+            PublishProject(info, config,
+                new PublishOptions(
+                    TargetFramework: PreviousTargetFramework,
+                    AssertAppBundle: false,
+                    ExtraMSBuildArgs: "-p:_WasmDevel=true -p:WasmNativeBuildId=not-hex"),
+                isNativeBuild: false);
+
+            string frameworkDirectory = GetBinFrameworkDir(config, forPublish: true, PreviousTargetFramework);
+            string nativeWasm = FindWasmAsset(frameworkDirectory, "dotnet.native");
+            Assert.Null(ReadCustomSection(nativeWasm, "build_id"));
+
+            if (UseWebcil)
+            {
+                string webcil = FindWasmAsset(frameworkDirectory, info.ProjectName);
+                Assert.Null(ReadCustomSection(webcil, "producers"));
+                Assert.Null(ReadCustomSection(webcil, "build_id"));
+            }
+
+            WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
+            BootJsonData bootJson = provider.GetBootJson(provider.GetBootConfigPath(frameworkDirectory));
+            Assert.Null(bootJson.buildId);
+        }
+
+        [TestCategory("no-workload")]
+        [Fact]
+        public void RuntimePack_ContainsPrebuiltProducersObject()
+        {
+            string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
+            string runtimePackName = IsCoreClrRuntime
+                ? "Microsoft.NETCore.App.Runtime.browser-wasm"
+                : "Microsoft.NETCore.App.Runtime.Mono.browser-wasm";
+            string packagePath = Path.Combine(
+                s_buildEnv.BuiltNuGetsPath,
+                $"{runtimePackName}.{runtimePackVersion}.nupkg");
+
+            using ZipArchive package = ZipFile.OpenRead(packagePath);
+            ZipArchiveEntry? entry = package.GetEntry("runtimes/browser-wasm/native/dotnet-producers.o");
+            Assert.NotNull(entry);
+            using Stream stream = entry.Open();
+            using var buffer = new MemoryStream(checked((int)entry.Length));
+            stream.CopyTo(buffer);
+            AssertProducers(buffer.ToArray(), NativeRuntimeProducer);
+        }
+
         // -------------------- helpers --------------------
 
         private static string FindWasmAsset(string frameworkDirectory, string baseName)
@@ -149,8 +207,11 @@ namespace Wasm.Build.NativeRebuild.Tests
         }
 
         private static void AssertProducers(string wasmPath, string expectedProcessedBy)
+            => AssertProducers(File.ReadAllBytes(wasmPath), expectedProcessedBy);
+
+        private static void AssertProducers(byte[] wasm, string expectedProcessedBy)
         {
-            byte[]? producers = ReadCustomSection(wasmPath, "producers");
+            byte[]? producers = ReadCustomSection(wasm, "producers");
             Assert.NotNull(producers);
 
             // The section holds length-prefixed ASCII field/value strings; a substring scan is enough.
@@ -186,8 +247,10 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         // Returns the payload of the named custom section (bytes following the section name), or null.
         private static byte[]? ReadCustomSection(string wasmPath, string sectionName)
+            => ReadCustomSection(File.ReadAllBytes(wasmPath), sectionName);
+
+        private static byte[]? ReadCustomSection(byte[] bytes, string sectionName)
         {
-            byte[] bytes = File.ReadAllBytes(wasmPath);
             byte[]? found = null;
             int pos = 8; // skip the 4-byte magic and 4-byte version
             while (pos < bytes.Length)

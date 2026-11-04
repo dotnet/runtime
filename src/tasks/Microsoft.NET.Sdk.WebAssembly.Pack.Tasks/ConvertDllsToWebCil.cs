@@ -39,12 +39,16 @@ public class ConvertDllsToWebcil : Task
 
     /// <summary>
     /// Optional build_id (hex string, with or without a leading <c>0x</c>) stamped into every produced
-    /// webcil module. When empty, each webcil gets a content hash so it is self-identifying.
+    /// webcil module when <see cref="EmitMetadataSections"/> is enabled. When empty and metadata is enabled,
+    /// each webcil gets a content hash so it is self-identifying.
     /// </summary>
     public string? WasmNativeBuildId { get; set; }
 
     /// <summary>Product version recorded in the producers section of each webcil module.</summary>
     public string? ProductVersion { get; set; }
+
+    /// <summary>Whether to emit producers and build_id sections in produced webcil modules.</summary>
+    public bool EmitMetadataSections { get; set; }
 
     [Output]
     public ITaskItem[] WebcilCandidates { get; set; }
@@ -222,6 +226,7 @@ public class ConvertDllsToWebcil : Task
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
             var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter, webcilVersion: WebcilVersion);
+            webcilWriter.EmitMetadataSections = EmitMetadataSections;
             webcilWriter.ProductVersion = ProductVersion ?? string.Empty;
             webcilWriter.BuildId = buildId;
             webcilWriter.ConvertToWebcil();

@@ -51,7 +51,7 @@ public class WebcilConverter
     public bool WrapInWebAssembly { get; set; } = true;
 
     /// <summary>When wrapping in WebAssembly, also emit the tool-conventions producers + build_id sections.</summary>
-    public bool EmitMetadataSections { get; set; } = true;
+    public bool EmitMetadataSections { get; set; }
 
     /// <summary>Version used for the producers section.</summary>
     public string ProductVersion { get; set; } = string.Empty;

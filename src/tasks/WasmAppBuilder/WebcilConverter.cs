@@ -36,6 +36,13 @@ public class WebcilConverter
         return new WebcilConverter(converter, inputPath, outputPath, logger);
     }
 
+    /// <summary>Whether to emit producers and build_id sections in the wrapped module.</summary>
+    public bool EmitMetadataSections
+    {
+        get => _converter.EmitMetadataSections;
+        set => _converter.EmitMetadataSections = value;
+    }
+
     /// <summary>Version used for the producers section of the wrapped webcil module.</summary>
     public string ProductVersion
     {

@@ -75,7 +75,6 @@
 
     <!-- WebAssembly tool-conventions custom sections (https://github.com/WebAssembly/tool-conventions).
          See BrowserWasmApp.targets for details. -->
-    <WasmEmitProducersSection Condition="'$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
@@ -470,9 +469,13 @@
       <MicrosoftNetCoreAppRuntimePackRidDir Condition="'$(MicrosoftNetCoreAppRuntimePackRidDir)' == ''">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', $(RuntimeIdentifier)))</MicrosoftNetCoreAppRuntimePackRidDir>
       <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
       <MicrosoftNetCoreAppRuntimePackRidNativeDir Condition="'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)' == ''">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir), 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
+      <WasmEmitProducersSection Condition="'$(TargetFrameworkVersion)' == 'v12.0' and '$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
+      <_WasmEmitProducersSection Condition="'$(TargetFrameworkVersion)' == 'v12.0' and '$(WasmEmitProducersSection)' == 'true'">true</_WasmEmitProducersSection>
 
       <_WasmIntermediateOutputPath Condition="'$(WasmBuildingForNestedPublish)' != 'true'">$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm', 'for-build'))</_WasmIntermediateOutputPath>
       <_WasmIntermediateOutputPath Condition="'$(WasmBuildingForNestedPublish)' == 'true'">$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm', 'for-publish'))</_WasmIntermediateOutputPath>
+      <_WasmProducersObjectPath>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.o</_WasmProducersObjectPath>
+      <_WasmProducersObjectPath Condition="!Exists('$(_WasmProducersObjectPath)')">$(_WasmIntermediateOutputPath)dotnet-producers.o</_WasmProducersObjectPath>
 
       <_WasmCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_WasmCompileRsp>
       <_WasmCompileRspGenerated>$(_WasmIntermediateOutputPath)emcc-compile-generated.rsp</_WasmCompileRspGenerated>
@@ -934,8 +937,8 @@
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />
 
       <!-- Emscripten strips producers by default. Preserve the section that wasm-ld merges from this object. -->
-      <_EmccLinkStepArgs Condition="'$(WasmEmitProducersSection)' == 'true'" Include="-sEMIT_PRODUCERS_SECTION=1" />
-      <_EmccLinkStepArgs Condition="'$(WasmEmitProducersSection)' == 'true'" Include="&quot;$(_WasmIntermediateOutputPath)dotnet-producers.o&quot;" />
+      <_EmccLinkStepArgs Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="-sEMIT_PRODUCERS_SECTION=1" />
+      <_EmccLinkStepArgs Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="&quot;$(_WasmProducersObjectPath)&quot;" />
     </ItemGroup>
 
     <!-- Collect all link dependencies for incremental build -->
@@ -943,7 +946,7 @@
       <_WasmLinkDependencies Include="@(_WasmNativeFileForLinking)" />
       <_WasmLinkDependencies Include="@(_CoreCLRNativeLibs)" />
       <_WasmLinkDependencies Include="@(_CoreCLRJsLibrary)" />
-      <_WasmLinkDependencies Condition="'$(WasmEmitProducersSection)' == 'true'" Include="$(_WasmIntermediateOutputPath)dotnet-producers.o" />
+      <_WasmLinkDependencies Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="$(_WasmProducersObjectPath)" />
       <_WasmLinkDependencies Include="$(_WasmLinkRsp)" />
     </ItemGroup>
 
@@ -977,11 +980,10 @@
     </ItemGroup>
   </Target>
 
-  <!-- Emit a linkable object carrying the WebAssembly 'producers' custom section, so wasm-ld merges
-       .NET toolchain info into dotnet.native.wasm. -->
+  <!-- Full repo builds link the prebuilt browserhost before its runtime pack is assembled. -->
   <Target Name="_CoreCLREmitProducersObject"
           BeforeTargets="_CoreCLRWriteLinkRsp"
-          Condition="'$(WasmEmitProducersSection)' == 'true'">
+          Condition="'$(TargetFrameworkVersion)' == 'v12.0' and '$(WasmEmitProducersSection)' == 'true' and !Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.o')">
     <WasmEmitProducersObject
         OutputPath="$(_WasmIntermediateOutputPath)dotnet-producers.o"
         RuntimeName="CoreCLR"
