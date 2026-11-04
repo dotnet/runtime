@@ -170,7 +170,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
             if (_hasReversePInvokeFrame)
             {
-                ReversePInvokeFrameStackSlot = imageReader.DecodeVarLengthSigned(_gcInfoTypes.REVERSE_PINVOKE_FRAME_ENCBASE, ref bitOffset);
+                ReversePInvokeFrameStackSlot = _gcInfoTypes.DenormalizeStackSlot(imageReader.DecodeVarLengthSigned(_gcInfoTypes.REVERSE_PINVOKE_FRAME_ENCBASE, ref bitOffset));
             }
 
             if (_gcInfoTypes.HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA && !_slimHeader)

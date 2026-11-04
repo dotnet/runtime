@@ -332,7 +332,8 @@ public class GcInfoDecoderTests
     [Theory]
     [InlineData(new byte[] { 0x09, 0x08, 0x20, 0x00 }, 8, uint.MaxValue, -1, 0u)]
     [InlineData(new byte[] { 0x01, 0x09, 0x01, 0x00 }, -1, 1u, -1, 0u)]
-    [InlineData(new byte[] { 0x01, 0x0A, 0x03, 0x00 }, -1, uint.MaxValue, 3, 0u)]
+    [InlineData(new byte[] { 0x01, 0x0A, 0x03, 0x00 }, -1, uint.MaxValue, 12, 0u)]
+    [InlineData(new byte[] { 0x01, 0x0A, 0x0D, 0x00 }, -1, uint.MaxValue, -12, 0u)]
     [InlineData(new byte[] { 0x01, 0x08, 0x01 }, -1, uint.MaxValue, -1, 1u)]
     public void WasmFatHeaderPreservesOptionalFields(byte[] encoded, int cookieOffset, uint preservedArea,
         int reversePInvokeOffset, uint safePoints)
