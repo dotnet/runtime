@@ -7,6 +7,8 @@
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <!-- SetFatalErrorHandler throws PlatformNotSupportedException on Mono -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
+    <!-- The test requires spawning crashing child processes. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FatalErrorHandlerTest.cs" />

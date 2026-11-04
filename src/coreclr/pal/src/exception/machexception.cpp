@@ -87,7 +87,7 @@ static bool IsFatalHardwareExceptionForFatalErrorHandler(DWORD exceptionCode)
         case EXCEPTION_FLT_INEXACT_RESULT:
         case EXCEPTION_FLT_INVALID_OPERATION:
         case EXCEPTION_FLT_OVERFLOW:
-        case EXCEPTION_FLT_STACK_CHECK:
+        case STATUS_FLOAT_STACK_CHECK:
         case EXCEPTION_FLT_UNDERFLOW:
             return true;
 
