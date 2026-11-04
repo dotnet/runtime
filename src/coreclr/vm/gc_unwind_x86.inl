@@ -3012,16 +3012,6 @@ bool UnwindStackFrameX86(PREGDISPLAY     pContext,
             return false;
     }
 
-    // TODO [DAVBR]: For the full fix for VsWhidbey 450273, all the below
-    // may be uncommented once isLegalManagedCodeCaller works properly
-    // with non-return address inputs, and with non-DEBUG builds
-    /*
-    // Ensure isLegalManagedCodeCaller succeeds for speculative stackwalks.
-    // (We just assert this below for non-speculative stackwalks.)
-    //
-    FAIL_IF_SPECULATIVE_WALK(isLegalManagedCodeCaller(GetControlPC(pContext)));
-    */
-
     return true;
 }
 
