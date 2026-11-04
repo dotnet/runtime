@@ -786,18 +786,28 @@ namespace System.Runtime.CompilerServices
             {
                 object? continuationContext = m_action;
 
-                // Fast path for when the awaited task completed successfully, the awaiting continuation has nowhere to
-                // store a result, and it may run here: the await is then already complete, so the dispatcher can resume
-                // that continuation directly without first being handed the completed task to complete the await
-                // (equivalent to GetAwaitedTaskResult's early return followed by QueueContinuationFollowUpActionIfNecessary).
+                // Fast path for when the awaited task completed successfully and the awaiting continuation may run here:
+                // the await can then be completed immediately by storing any result into the continuation, so the
+                // dispatcher can resume that continuation directly without first being handed the completed task
+                // (equivalent to GetAwaitedTaskResult followed by QueueContinuationFollowUpActionIfNecessary).
                 if (continuationContext is null &&
                     canInline &&
                     !completedTask.IsWaitNotificationEnabledOrNotRanToCompletion &&
-                    !AsyncInstrumentation.IsActive &&
-                    CanResumeInlineWithoutAwaitedResult(MoveContinuationState()))
+                    !AsyncInstrumentation.IsActive)
                 {
-                    DispatchContinuations();
-                    return;
+                    Continuation continuation = MoveContinuationState();
+                    if (CanResumeInline(continuation.Flags))
+                    {
+                        ref byte resultStorage = ref continuation.GetResultStorageOrNull();
+                        if (!Unsafe.IsNullRef(ref resultStorage))
+                        {
+                            Exception? ex = completedTask.GetRuntimeAsyncAwaitResult(ref resultStorage);
+                            Debug.Assert(ex is null);
+                        }
+
+                        DispatchContinuations();
+                        return;
+                    }
                 }
 
                 // Swap the continuation context for the completed task before possibly handing this
@@ -823,15 +833,9 @@ namespace System.Runtime.CompilerServices
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static bool CanResumeInlineWithoutAwaitedResult(Continuation continuation)
+            private static bool CanResumeInline(ContinuationFlags flags)
             {
-                if (!Unsafe.IsNullRef(ref continuation.GetResultStorageOrNull()))
-                {
-                    return false;
-                }
-
                 // Mirrors the fast path of QueueContinuationFollowUpActionIfNecessary.
-                ContinuationFlags flags = continuation.Flags;
                 if ((flags & ContinuationFlags.ContinueOnThreadPool) != 0)
                 {
                     return Thread.CurrentThread._synchronizationContext is null && Task.t_currentTask is null;
