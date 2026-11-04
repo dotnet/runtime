@@ -463,7 +463,7 @@ public partial class ZipArchiveEntry
         if (_originallyInArchive)
         {
             _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-            (_lhUnknownExtraFields, _lhTrailingExtraFieldData) = await ZipLocalFileHeader.GetExtraFieldsAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+            (_lhUnknownExtraFields, _lhTrailingExtraFieldData, _lhUsesZip64) = await ZipLocalFileHeader.GetExtraFieldsAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
         }
     }
 
