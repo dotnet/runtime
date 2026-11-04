@@ -37,14 +37,6 @@ namespace System.Runtime.Caching
             get { return _memoryLimit; }
         }
 
-        private CacheMemoryMonitor()
-        {
-            // hide default ctor
-            _memoryCache = null!;
-            _cacheSizeSamples = null!;
-            _cacheSizeSampleTimes = null!;
-        }
-
         internal CacheMemoryMonitor(MemoryCache memoryCache, int cacheMemoryLimitMegabytes)
         {
             _memoryCache = memoryCache;
