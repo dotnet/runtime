@@ -12,13 +12,13 @@ using System.Runtime.Versioning;
 
 namespace AssemblyProviderTest;
 
-internal sealed class CountingAssemblyProvider : JSExportProvider
+internal sealed partial class CountingAssemblyProvider : JSExportProvider
 {
     public CountingAssemblyProvider() => Console.WriteLine("TestOutput -> lazy:constructor");
 
     [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(CountingAssemblyProvider))]
-    public override string[] GetExportNames() =>
-        ["[CountingLibrary]AssemblyProviderTest.CountingExports:Add#1", "[CountingLibrary]AssemblyProviderTest.CountingExports:Unused#2"];
+    public override ReadOnlySpan<string> GetExportNames() =>
+        new string[] { "[CountingLibrary]AssemblyProviderTest.CountingExports:Add#1", "[CountingLibrary]AssemblyProviderTest.CountingExports:Unused#2" };
 
     public override unsafe void Bind(string methodId)
     {
@@ -45,12 +45,23 @@ internal sealed class CountingAssemblyProvider : JSExportProvider
             arguments[2].ToManaged(out int left);
             arguments[3].ToManaged(out int right);
             if (left < 0)
+            {
+#if TEST_MONO
+                DisposeOrdinaryProxies(false, false);
+#endif
                 throw new InvalidOperationException("Deferred export failure");
+            }
             arguments[1].ToJS(left + right);
         }
         catch (Exception exception)
         {
             arguments[0].ToJS(exception);
         }
+
     }
+
+#if TEST_MONO
+    [JSImport("INTERNAL.forceDisposeProxies")]
+    private static partial void DisposeOrdinaryProxies(bool disposeMethods, bool verbose);
+#endif
 }

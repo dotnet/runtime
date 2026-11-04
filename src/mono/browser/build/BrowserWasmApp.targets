@@ -6,6 +6,7 @@
     <!-- we are not triggering EnableDiagnostics in Debug automatically, because it would trigger re-link, making dev-loop slow -->
     <EnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">false</EnableDiagnostics>
     <WasmAppRuntimeFlavor>Mono</WasmAppRuntimeFlavor>
+    <TypeMapEntryAssembly Condition="'$(TypeMapEntryAssembly)' == ''">$(AssemblyName)</TypeMapEntryAssembly>
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
@@ -46,6 +47,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.JSExportProvider.xml" />
+    <RuntimeHostConfigurationOption Remove="System.Runtime.InteropServices.TypeMappingEntryAssembly" />
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.TypeMappingEntryAssembly"
+                                    Value="$(TypeMapEntryAssembly)" />
     <!-- Allow running/debugging from VS -->
     <ProjectCapability Include="DotNetCoreWeb"/>
   </ItemGroup>

@@ -108,18 +108,17 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
             Path.Combine(_projectDir, "..", "Library", "Library.cs"),
             overwrite: true);
         string libraryDir = Path.Combine(_projectDir, "..", "Library");
-        if (IsCoreClrRuntime)
-        {
-            string countingDir = Path.Combine(_projectDir, "..", "CountingLibrary");
-            Directory.CreateDirectory(countingDir);
-            File.Copy(Path.Combine(libraryDir, "Library.csproj"), Path.Combine(countingDir, "CountingLibrary.csproj"));
-            File.Copy(
-                Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "DeferredJSExportProviders.cs"),
-                Path.Combine(countingDir, "DeferredJSExportProviders.cs"));
-            AddItemsPropertiesToProject(Path.Combine(countingDir, "CountingLibrary.csproj"), insertAtEnd: useLocalTargetingPack);
-            AddItemsPropertiesToProject(info.ProjectFilePath,
-                extraItems: """<ProjectReference Include="..\CountingLibrary\CountingLibrary.csproj" />""");
-        }
+        string countingDir = Path.Combine(_projectDir, "..", "CountingLibrary");
+        Directory.CreateDirectory(countingDir);
+        File.Copy(Path.Combine(libraryDir, "Library.csproj"), Path.Combine(countingDir, "CountingLibrary.csproj"));
+        File.Copy(
+            Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "DeferredJSExportProviders.cs"),
+            Path.Combine(countingDir, "DeferredJSExportProviders.cs"));
+        AddItemsPropertiesToProject(Path.Combine(countingDir, "CountingLibrary.csproj"),
+            extraProperties: IsCoreClrRuntime ? "" : "<DefineConstants>$(DefineConstants);TEST_MONO</DefineConstants>",
+            insertAtEnd: useLocalTargetingPack);
+        AddItemsPropertiesToProject(info.ProjectFilePath,
+            extraItems: """<ProjectReference Include="..\CountingLibrary\CountingLibrary.csproj" />""");
         AddItemsPropertiesToProject(
             Path.Combine(libraryDir, "Library.csproj"),
             extraProperties: "<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>",
@@ -129,34 +128,33 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         string generatedCode = File.ReadAllText(generatedFile);
         Assert.Contains("file sealed class __GeneratedJSExportProvider : ", generatedCode);
         Assert.Contains("JSExportProvider>(\"Library\", typeof(", generatedCode);
-        Assert.Contains("public override string[] GetExportNames()", generatedCode);
+        Assert.Contains("public override global::System.ReadOnlySpan<string> GetExportNames()", generatedCode);
         Assert.Contains("public override void Bind(string methodId)", generatedCode);
         Assert.DoesNotContain("__GeneratedJSExportProvider_", generatedCode);
         Assert.DoesNotContain("JSExportCatalog", generatedCode);
         Assert.DoesNotContain("ModuleInitializer", generatedCode);
         string appGeneratedFile = Directory.GetFiles(Path.Combine(_projectDir, "obj"), "JSExports.g.cs", SearchOption.AllDirectories).Single();
         Assert.Contains("JSExportProvider>(\"Library\")", File.ReadAllText(appGeneratedFile));
-        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: IsCoreClrRuntime ? "DeferredJSExports" : "MappedJSExports"));
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DeferredJSExports"));
         Assert.Contains("Mapped JSExports passed", result.TestOutput);
-        if (IsCoreClrRuntime)
-        {
-            Assert.Equal(
-                new[] { "lazy:constructor", "lazy:discovered", "lazy:read", "lazy:bind", "lazy:first", "lazy:repeated" },
-                result.TestOutput.Where(static message => message.StartsWith("lazy:", StringComparison.Ordinal)));
-        }
+        Assert.Equal(
+            new[] { "lazy:constructor", "lazy:discovered", "lazy:read", "lazy:bind", "lazy:first", "lazy:repeated" },
+            result.TestOutput.Where(static message => message.StartsWith("lazy:", StringComparison.Ordinal)));
     }
 
     [Theory, TestCategory("no-workload")]
-    [InlineData(Configuration.Debug)]
-    [InlineData(Configuration.Release)]
-    public async Task JSExportFromNet10Library(Configuration config)
+    [InlineData(Configuration.Debug, "net10.0", "10.0.0")]
+    [InlineData(Configuration.Release, "net10.0", "10.0.0")]
+    [InlineData(Configuration.Debug, "net11.0", "11.0.0-rc.1.26425.128")]
+    [InlineData(Configuration.Release, "net11.0", "11.0.0-rc.1.26425.128")]
+    public async Task JSExportFromLegacyLibrary(Configuration config, string targetFramework, string targetingPackVersion)
     {
         ProjectInfo info = CopyTestAsset(
-            config, false, TestAsset.WasmBasicTestApp, "net10_exports",
+            config, false, TestAsset.WasmBasicTestApp, "legacy_exports",
             extraProperties: "<PublishTrimmed>true</PublishTrimmed>",
             extraItems: $"""
                 <Reference Include="LegacyExports">
-                    <HintPath>..\LegacyExports\bin\{config}\net10.0\LegacyExports.dll</HintPath>
+                    <HintPath>..\LegacyExports\bin\{config}\{targetFramework}\LegacyExports.dll</HintPath>
                 </Reference>
                 <TrimmerRootAssembly Include="LegacyExports" />
                 """);
@@ -170,7 +168,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         {
             cmd.ExecuteWithCapturedOutput(
                 $"build -c {config} -bl:\"{Path.Combine(_logPath, "LegacyExports.binlog")}\"",
-                "-p:ImportDirectoryBuildProps=false -p:ImportDirectoryBuildTargets=false")
+                $"-p:ImportDirectoryBuildProps=false -p:ImportDirectoryBuildTargets=false -p:LegacyTargetFramework={targetFramework} -p:LegacyTargetingPackVersion={targetingPackVersion}")
                 .EnsureSuccessful();
         }
 
@@ -179,8 +177,9 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         Assert.Contains("JSFunctionBinding.BindManagedFunction(", generatedCode);
         Assert.Contains("static void __Register_()", generatedCode);
         Assert.DoesNotContain("RegisterAssemblyExports", generatedCode);
+        Assert.DoesNotContain("JSExportProvider", generatedCode);
 
-        string libraryPath = Path.Combine(libraryDir, "bin", config.ToString(), "net10.0", "LegacyExports.dll");
+        string libraryPath = Path.Combine(libraryDir, "bin", config.ToString(), targetFramework, "LegacyExports.dll");
         byte[] libraryBytes = File.ReadAllBytes(libraryPath);
         PublishProject(info, config);
         Assert.Equal(libraryBytes, File.ReadAllBytes(libraryPath));

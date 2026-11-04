@@ -169,7 +169,7 @@ public abstract class JSExportProvider
     [System.Diagnostics.DebuggerNonUserCodeAttribute]
     public abstract void Bind(string methodId);
     [System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public abstract string[] GetExportNames();
+    public abstract ReadOnlySpan<string> GetExportNames();
 }
 
 [Versioning.SupportedOSPlatformAttribute("browser")]

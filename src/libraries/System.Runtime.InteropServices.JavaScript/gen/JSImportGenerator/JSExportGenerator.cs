@@ -168,12 +168,12 @@ namespace Microsoft.Interop.JavaScript
                     writer.WriteLine();
                     writer.WriteLine($"[{Constants.DynamicDependencyAttributeGlobal}({Constants.DynamicallyAccessedMemberTypesGlobal}.PublicParameterlessConstructor, typeof({ProviderClass}))]");
                     writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
-                    writer.WriteLine("public override string[] GetExportNames()");
+                    writer.WriteLine("public override global::System.ReadOnlySpan<string> GetExportNames()");
                     using (writer.WriteBlock())
                     {
                         string names = string.Join(", ", methods.Select(static method =>
                             CodeWriterHelpers.StringLiteral($"{method.Name}#{method.Hash.ToString(CultureInfo.InvariantCulture)}")));
-                        writer.WriteLine($"return [{names}];");
+                        writer.WriteLine($"return new string[] {{ {names} }};");
                     }
                     writer.WriteLine();
                     foreach (var method in methods)

@@ -16,6 +16,74 @@ import { assert_js_interop } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 import { bind_assembly_exports, invoke_async_jsexport_by_handle, invoke_sync_jsexport_by_handle } from "./managed-exports";
 import { mono_log_debug } from "./logging";
+import { do_not_force_dispose } from "./gc-handles";
+
+type DeferredBinding = {
+    bind?: (methodId: string) => void,
+    boundFn?: Function,
+    wrapper?: Function,
+    isBinding: boolean,
+    isDisposed: boolean,
+};
+
+export const deferredCsFunctions = new Map<string, DeferredBinding>();
+export const deferredCsBinders = new Set<(methodId: string) => void>();
+
+export function registerLazyCsFunctions (assemblyName: string, descriptors: string[], bind: (methodId: string) => void): void {
+    loaderHelpers.assert_runtime_running();
+    // The binder is runtime infrastructure, not an application delegate proxy.
+    Object.assign(bind, { [do_not_force_dispose]: true });
+    deferredCsBinders.add(bind);
+    if (!exportsByAssembly.has(assemblyName)) {
+        const exports = {};
+        exportsByAssembly.set(assemblyName, exports);
+        exportsByAssembly.set(assemblyName + ".dll", exports);
+    }
+    const descriptorSize = 6;
+    mono_assert(descriptors.length % descriptorSize === 0, "Invalid deferred JSExport descriptors");
+    for (let index = 0; index < descriptors.length; index += descriptorSize) {
+        const methodId = descriptors[index];
+        const namespaceName = descriptors[index + 1];
+        const shortClassName = descriptors[index + 2];
+        const methodName = descriptors[index + 3];
+        const signatureHash = Number(descriptors[index + 4]);
+        const isDefault = descriptors[index + 5] === "1";
+        mono_assert(Number.isInteger(signatureHash), "Invalid deferred JSExport signature hash");
+        const key = getCsFunctionKey(assemblyName, namespaceName, shortClassName, methodName, signatureHash);
+        const existing = deferredCsFunctions.get(key);
+        if (existing) {
+            _walk_exports_to_set_function(assemblyName, namespaceName, shortClassName, methodName, signatureHash, existing.wrapper!, isDefault);
+            continue;
+        }
+
+        const binding: DeferredBinding = { bind, isBinding: false, isDisposed: false };
+        const deferredFn = function (this: unknown, ...args: unknown[]) {
+            loaderHelpers.assert_runtime_running();
+            mono_assert(!binding.isDisposed, () => `The JSExport '${key}' is disposed.`);
+            if (!binding.boundFn) {
+                mono_assert(!binding.isBinding, () => `Reentrant binding of JSExport '${key}'.`);
+                const bind = binding.bind;
+                mono_assert(bind, () => `Missing binder for JSExport '${key}'.`);
+                binding.isBinding = true;
+                try {
+                    bind(methodId);
+                } finally {
+                    binding.isBinding = false;
+                }
+            }
+            const boundFn = binding.boundFn;
+            mono_assert(boundFn, () => `JSExport '${key}' did not publish its binding.`);
+            return boundFn.apply(this, args);
+        };
+        binding.wrapper = deferredFn;
+        deferredCsFunctions.set(key, binding);
+        _walk_exports_to_set_function(assemblyName, namespaceName, shortClassName, methodName, signatureHash, deferredFn, isDefault);
+    }
+}
+
+function getCsFunctionKey (assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number): string {
+    return `[${assemblyName}] ${namespaceName}.${shortClassName}:${methodName}.${signatureHash}`;
+}
 
 export function mono_wasm_bind_cs_function (handle: CSFnHandle, assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number, signature: JSFunctionSignature): void {
     const fullyQualifiedName = `[${assemblyName}] ${namespaceName}.${shortClassName}:${methodName}`;
@@ -104,7 +172,13 @@ export function mono_wasm_bind_cs_function (handle: CSFnHandle, assemblyName: st
 
     (<any>bound_fn)[bound_cs_function_symbol] = closure;
 
-    _walk_exports_to_set_function(assemblyName, namespaceName, shortClassName, methodName, signatureHash, bound_fn);
+    const deferred = deferredCsFunctions.get(getCsFunctionKey(assemblyName, namespaceName, shortClassName, methodName, signatureHash));
+    if (deferred) {
+        deferred.boundFn = bound_fn;
+        deferred.bind = undefined;
+    } else {
+        _walk_exports_to_set_function(assemblyName, namespaceName, shortClassName, methodName, signatureHash, bound_fn);
+    }
     endMeasure(mark, MeasuredBlock.bindCsFunction, fullyQualifiedName);
 }
 
@@ -368,7 +442,7 @@ type BindingClosure = {
 }
 
 export const exportsByAssembly: Map<string, any> = new Map();
-function _walk_exports_to_set_function (assembly: string, namespace: string, classname: string, methodname: string, signature_hash: number, fn: Function): void {
+function _walk_exports_to_set_function (assembly: string, namespace: string, classname: string, methodname: string, signature_hash: number, fn: Function, isDefault = true): void {
     const parts = `${namespace}.${classname}`.replace(/\//g, ".").split(".");
     let scope: any = undefined;
     let assemblyScope = exportsByAssembly.get(assembly);
@@ -391,7 +465,7 @@ function _walk_exports_to_set_function (assembly: string, namespace: string, cla
         }
     }
 
-    if (!scope[methodname]) {
+    if (isDefault && !scope[methodname]) {
         scope[methodname] = fn;
     }
     scope[`${methodname}.${signature_hash}`] = fn;
@@ -399,6 +473,9 @@ function _walk_exports_to_set_function (assembly: string, namespace: string, cla
 
 export async function SystemInteropJS_GetAssemblyExports (assembly: string): Promise<any> {
     assert_js_interop();
+    if (assembly.endsWith(".dll")) {
+        assembly = assembly.substring(0, assembly.length - 4);
+    }
     const result = exportsByAssembly.get(assembly);
     if (!result) {
         await bind_assembly_exports(assembly);

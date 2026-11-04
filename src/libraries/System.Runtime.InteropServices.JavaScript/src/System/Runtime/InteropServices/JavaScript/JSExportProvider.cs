@@ -19,7 +19,7 @@ public abstract class JSExportProvider
     /// <summary>Gets the fully qualified export names, including signature hashes, in method ID order.</summary>
     /// <returns>The generated export catalog.</returns>
     [DebuggerNonUserCode]
-    public abstract string[] GetExportNames();
+    public abstract ReadOnlySpan<string> GetExportNames();
 
     /// <summary>Binds the specified JavaScript export for the current context.</summary>
     /// <param name="methodId">The invariant decimal index of the export in <see cref="GetExportNames"/>.</param>

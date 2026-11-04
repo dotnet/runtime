@@ -266,7 +266,7 @@ namespace JSImportGenerator.Unit.Tests
                 [assembly: TypeMap<JSExportProvider>("ExportLibrary", typeof(EmptyProvider))]
                 public sealed class EmptyProvider : JSExportProvider
                 {
-                    public override string[] GetExportNames() => [];
+                    public override System.ReadOnlySpan<string> GetExportNames() => [];
                     public override void Bind(string methodId) => throw new System.ArgumentOutOfRangeException(nameof(methodId), methodId, null);
                 }
                 """;
@@ -447,9 +447,9 @@ namespace JSImportGenerator.Unit.Tests
 
                                     [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(__GeneratedJSExportProvider))]
                                     [global::System.Diagnostics.DebuggerNonUserCode]
-                                    public override string[] GetExportNames()
+                                    public override global::System.ReadOnlySpan<string> GetExportNames()
                                     {
-                                        return ["[TestProject]Basic:AnnotatedExport#2034238666"];
+                                        return new string[] { "[TestProject]Basic:AnnotatedExport#2034238666" };
                                     }
 
                                     [global::System.Diagnostics.DebuggerNonUserCode]
@@ -632,9 +632,9 @@ namespace JSImportGenerator.Unit.Tests
 
                                     [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(__GeneratedJSExportProvider))]
                                     [global::System.Diagnostics.DebuggerNonUserCode]
-                                    public override string[] GetExportNames()
+                                    public override global::System.ReadOnlySpan<string> GetExportNames()
                                     {
-                                        return ["[TestProject]Basic:Export1#622134597"];
+                                        return new string[] { "[TestProject]Basic:Export1#622134597" };
                                     }
 
                                     [global::System.Diagnostics.DebuggerNonUserCode]

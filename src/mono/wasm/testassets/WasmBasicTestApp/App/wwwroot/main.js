@@ -303,7 +303,7 @@ try {
                 } catch (error) {
                     message = error.message;
                 }
-                if (message !== "Deferred export failure") throw new Error("First deferred invocation did not propagate its exception");
+                if (message !== "Deferred export failure") throw new Error(`First deferred invocation did not propagate its exception: ${message}`);
                 testOutput("lazy:first");
                 if (hashAdd(19, 23) !== 42 ||
                     countingLibrary.AssemblyProviderTest.CountingExports.Add !== add) {

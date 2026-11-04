@@ -75,19 +75,21 @@ Native relinking tests can run on both runtimes. For theories that also cover Mo
 
 If you want to test templating mechanism, use `CreateWasmTemplateProject`. Otherwise, use `CopyTestAsset` with either `WasmBasicTestApp` or `BlazorBasicTestApp`, adding your custom `TestScenario` or using a generic `DotnetRun` scenario in case of WASM app and adding a page with test in case of Blazor app. Bigger snippets of code should be saved in `src/mono/wasm/testassets` and placed in the application using methods: `ReplaceFile` or `File.Move`. Replacing existing small parts of code with custom lines is done with `UpdateFile`.
 
-`LibraryInitializerTests.JSExportFromNet10Library` checks binary compatibility with the released
+`LibraryInitializerTests.JSExportFromLegacyLibrary` checks binary compatibility with the released
 .NET 10 JSExport generator. It builds the `LegacyExports` library against the pinned 10.0.0
 targeting pack, without the in-tree pack overrides, then references its DLL from a trimmed
 current-framework browser app. The targeting pack (including its generator) is restored as needed;
-no .NET 10 SDK or browser workload is required. The test runs in the `no-workload` CI lane for
+no legacy SDK or browser workload is required. It also tests `net11.0` with the pinned
+`11.0.0-rc.1.26425.128` targeting pack and generator. Both legacy libraries are built
+separately and referenced unchanged by the current app. The test runs in the `no-workload` CI lane for
 both runtime flavors.
 
 `LibraryInitializerTests.JSExportFromAssemblyProvider` checks a library reached only from
 JavaScript through one generated type-map provider per assembly. It covers multiple exports,
 overloads, repeated assembly lookup, and trimmed and untrimmed publication without explicitly
-rooting the library. The provider's string catalog supports discovery without enumerating
+rooting the library. The provider's `ReadOnlySpan<string>` catalog supports discovery without enumerating
 the type map, and `Bind(string methodId)` dispatches on invariant decimal catalog indexes.
-On CoreCLR, a counting provider verifies one activation at discovery, no binding at discovery or
+On both runtimes, a counting provider verifies one activation at discovery, no binding at discovery or
 property read, exactly one binding on first invocation, stable aliases, and an
-unused method that must never be bound. Mono retains eager binding in this prototype;
-untrimmed Mono still requires runtime type-map support.
+unused method that must never be bound. Mono coverage uses trimmed apps and
+the unconditional external type-map support required by JSExports.
