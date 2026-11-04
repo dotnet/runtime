@@ -3,6 +3,9 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics.Tensors
 {
@@ -55,13 +58,31 @@ namespace System.Numerics.Tensors
                     InvokeSpanIntoSpan_1to2<sbyte, short, WidenSByteToInt16Operator>(Rename<TFrom, sbyte>(source), Rename<TTo, short>(destination));
                     return true;
                 }
+
+                if (IsInt32Like<TTo>())
+                {
+                    InvokeSpanIntoSpan_1to4<sbyte, int, WidenSByteToInt32Operator>(Rename<TFrom, sbyte>(source), Rename<TTo, int>(destination));
+                    return true;
+                }
+
+                if (typeof(TTo) == typeof(float))
+                {
+                    InvokeSpanIntoSpan_1to4<sbyte, float, WidenSByteToSingleOperator>(Rename<TFrom, sbyte>(source), Rename<TTo, float>(destination));
+                    return true;
+                }
             }
 
             if (typeof(TFrom) == typeof(ushort))
             {
                 if (IsUInt32Like<TTo>() || IsInt32Like<TTo>())
-            {
+                {
                     InvokeSpanIntoSpan_1to2<ushort, uint, WidenUInt16ToUInt32Operator>(Rename<TFrom, ushort>(source), Rename<TTo, uint>(destination));
+                    return true;
+                }
+
+                if (typeof(TTo) == typeof(float))
+                {
+                    InvokeSpanIntoSpan_1to2<ushort, float, WidenUInt16ToSingleOperator>(Rename<TFrom, ushort>(source), Rename<TTo, float>(destination));
                     return true;
                 }
             }
@@ -71,6 +92,12 @@ namespace System.Numerics.Tensors
                 if (IsInt32Like<TTo>())
                 {
                     InvokeSpanIntoSpan_1to2<short, int, WidenInt16ToInt32Operator>(Rename<TFrom, short>(source), Rename<TTo, int>(destination));
+                    return true;
+                }
+
+                if (typeof(TTo) == typeof(float))
+                {
+                    InvokeSpanIntoSpan_1to2<short, float, WidenInt16ToSingleOperator>(Rename<TFrom, short>(source), Rename<TTo, float>(destination));
                     return true;
                 }
             }
@@ -88,6 +115,12 @@ namespace System.Numerics.Tensors
                     InvokeSpanIntoSpan<uint, float, ConvertUInt32ToSingle>(Rename<TFrom, uint>(source), Rename<TTo, float>(destination));
                     return true;
                 }
+
+                if (typeof(TTo) == typeof(double))
+                {
+                    InvokeSpanIntoSpan_1to2<uint, double, WidenUInt32ToDoubleOperator>(Rename<TFrom, uint>(source), Rename<TTo, double>(destination));
+                    return true;
+                }
             }
 
             if (IsInt32Like<TFrom>())
@@ -101,6 +134,12 @@ namespace System.Numerics.Tensors
                 if (typeof(TTo) == typeof(float))
                 {
                     InvokeSpanIntoSpan<int, float, ConvertInt32ToSingle>(Rename<TFrom, int>(source), Rename<TTo, float>(destination));
+                    return true;
+                }
+
+                if (typeof(TTo) == typeof(double))
+                {
+                    InvokeSpanIntoSpan_1to2<int, double, WidenInt32ToDoubleOperator>(Rename<TFrom, int>(source), Rename<TTo, double>(destination));
                     return true;
                 }
             }
@@ -157,6 +196,96 @@ namespace System.Numerics.Tensors
             }
 
             return false;
+        }
+
+        /// <summary>Performs floating-point to integer conversions that are the same for truncation and saturation.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFloatingPointToInteger<TFrom, TTo>(ReadOnlySpan<TFrom> source, Span<TTo> destination)
+            where TFrom : INumberBase<TFrom>
+            where TTo : INumberBase<TTo>
+        {
+            if (typeof(TFrom) == typeof(float) && IsUInt32Like<TTo>())
+            {
+                InvokeSpanIntoSpan<float, uint, ConvertSingleToUInt32>(Rename<TFrom, float>(source), Rename<TTo, uint>(destination));
+                return true;
+            }
+
+            if (typeof(TFrom) == typeof(float) && IsInt32Like<TTo>())
+            {
+                InvokeSpanIntoSpan<float, int, ConvertSingleToInt32>(Rename<TFrom, float>(source), Rename<TTo, int>(destination));
+                return true;
+            }
+
+            if (typeof(TFrom) == typeof(double) && IsUInt64Like<TTo>())
+            {
+                InvokeSpanIntoSpan<double, ulong, ConvertDoubleToUInt64>(Rename<TFrom, double>(source), Rename<TTo, ulong>(destination));
+                return true;
+            }
+
+            if (typeof(TFrom) == typeof(double) && IsInt64Like<TTo>())
+            {
+                InvokeSpanIntoSpan<double, long, ConvertDoubleToInt64>(Rename<TFrom, double>(source), Rename<TTo, long>(destination));
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>(int)float, with saturation on overflow</summary>
+        private readonly struct ConvertSingleToInt32 : IUnaryOperator<float, int>
+        {
+            public static bool Vectorizable => FloatingPointToIntegerConversion.IsVectorizationSupported;
+
+            public static int Invoke(float x) => int.CreateSaturating(x);
+            public static Vector128<int> Invoke(Vector128<float> x) => Vector128.ConvertToInt32(x);
+            public static Vector256<int> Invoke(Vector256<float> x) => Vector256.ConvertToInt32(x);
+            public static Vector512<int> Invoke(Vector512<float> x) => Vector512.ConvertToInt32(x);
+        }
+
+        /// <summary>(uint)float, with saturation on overflow</summary>
+        private readonly struct ConvertSingleToUInt32 : IUnaryOperator<float, uint>
+        {
+            // Avoid the vector APIs' per-lane software fallbacks on other instruction sets.
+            public static bool Vectorizable =>
+                (Avx512F.VL.IsSupported || AdvSimd.IsSupported || PackedSimd.IsSupported) &&
+                FloatingPointToIntegerConversion.IsVectorizationSupported;
+
+            public static uint Invoke(float x) => uint.CreateSaturating(x);
+            public static Vector128<uint> Invoke(Vector128<float> x) => Vector128.ConvertToUInt32(x);
+            public static Vector256<uint> Invoke(Vector256<float> x) => Vector256.ConvertToUInt32(x);
+            public static Vector512<uint> Invoke(Vector512<float> x) => Vector512.ConvertToUInt32(x);
+        }
+
+        /// <summary>(ulong)double, with saturation on overflow</summary>
+        private readonly struct ConvertDoubleToUInt64 : IUnaryOperator<double, ulong>
+        {
+            public static bool Vectorizable =>
+                (Avx512DQ.VL.IsSupported || AdvSimd.Arm64.IsSupported) &&
+                FloatingPointToIntegerConversion.IsVectorizationSupported;
+
+            public static ulong Invoke(double x) => ulong.CreateSaturating(x);
+            public static Vector128<ulong> Invoke(Vector128<double> x) => Vector128.ConvertToUInt64(x);
+            public static Vector256<ulong> Invoke(Vector256<double> x) => Vector256.ConvertToUInt64(x);
+            public static Vector512<ulong> Invoke(Vector512<double> x) => Vector512.ConvertToUInt64(x);
+        }
+
+        /// <summary>(long)double, with saturation on overflow</summary>
+        private readonly struct ConvertDoubleToInt64 : IUnaryOperator<double, long>
+        {
+            public static bool Vectorizable =>
+                (Avx512DQ.VL.IsSupported || AdvSimd.Arm64.IsSupported) &&
+                FloatingPointToIntegerConversion.IsVectorizationSupported;
+
+            public static long Invoke(double x) => long.CreateSaturating(x);
+            public static Vector128<long> Invoke(Vector128<double> x) => Vector128.ConvertToInt64(x);
+            public static Vector256<long> Invoke(Vector256<double> x) => Vector256.ConvertToInt64(x);
+            public static Vector512<long> Invoke(Vector512<double> x) => Vector512.ConvertToInt64(x);
+        }
+
+        private static class FloatingPointToIntegerConversion
+        {
+            // Mono's floating-point to integer SIMD conversions do not consistently saturate.
+            public static bool IsVectorizationSupported { get; } = Type.GetType("Mono.RuntimeStructs") is null;
         }
 
         /// <summary>(int)float</summary>
@@ -324,6 +453,186 @@ namespace System.Numerics.Tensors
             public static (Vector128<short> Lower, Vector128<short> Upper) Invoke(Vector128<sbyte> x) => Vector128.Widen(x);
             public static (Vector256<short> Lower, Vector256<short> Upper) Invoke(Vector256<sbyte> x) => Vector256.Widen(x);
             public static (Vector512<short> Lower, Vector512<short> Upper) Invoke(Vector512<sbyte> x) => Vector512.Widen(x);
+        }
+
+        /// <summary>(int)sbyte</summary>
+        private readonly struct WidenSByteToInt32Operator : IUnaryOneToFourOperator<sbyte, int>
+        {
+            public static bool Vectorizable => true;
+
+            public static int Invoke(sbyte x) => x;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector128<int>, Vector128<int>, Vector128<int>, Vector128<int>) Invoke(Vector128<sbyte> x)
+            {
+                (Vector128<short> lower, Vector128<short> upper) = WidenSByteToInt16Operator.Invoke(x);
+                (Vector128<int> lowerLower, Vector128<int> lowerUpper) = WidenInt16ToInt32Operator.Invoke(lower);
+                (Vector128<int> upperLower, Vector128<int> upperUpper) = WidenInt16ToInt32Operator.Invoke(upper);
+                return (lowerLower, lowerUpper, upperLower, upperUpper);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector256<int>, Vector256<int>, Vector256<int>, Vector256<int>) Invoke(Vector256<sbyte> x)
+            {
+                (Vector256<short> lower, Vector256<short> upper) = WidenSByteToInt16Operator.Invoke(x);
+                (Vector256<int> lowerLower, Vector256<int> lowerUpper) = WidenInt16ToInt32Operator.Invoke(lower);
+                (Vector256<int> upperLower, Vector256<int> upperUpper) = WidenInt16ToInt32Operator.Invoke(upper);
+                return (lowerLower, lowerUpper, upperLower, upperUpper);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector512<int>, Vector512<int>, Vector512<int>, Vector512<int>) Invoke(Vector512<sbyte> x)
+            {
+                (Vector512<short> lower, Vector512<short> upper) = WidenSByteToInt16Operator.Invoke(x);
+                (Vector512<int> lowerLower, Vector512<int> lowerUpper) = WidenInt16ToInt32Operator.Invoke(lower);
+                (Vector512<int> upperLower, Vector512<int> upperUpper) = WidenInt16ToInt32Operator.Invoke(upper);
+                return (lowerLower, lowerUpper, upperLower, upperUpper);
+            }
+        }
+
+        /// <summary>(float)sbyte</summary>
+        private readonly struct WidenSByteToSingleOperator : IUnaryOneToFourOperator<sbyte, float>
+        {
+            public static bool Vectorizable => true;
+
+            public static float Invoke(sbyte x) => x;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector128<float>, Vector128<float>, Vector128<float>, Vector128<float>) Invoke(Vector128<sbyte> x)
+            {
+                (Vector128<int> first, Vector128<int> second, Vector128<int> third, Vector128<int> fourth) = WidenSByteToInt32Operator.Invoke(x);
+                return (Vector128.ConvertToSingle(first), Vector128.ConvertToSingle(second), Vector128.ConvertToSingle(third), Vector128.ConvertToSingle(fourth));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector256<float>, Vector256<float>, Vector256<float>, Vector256<float>) Invoke(Vector256<sbyte> x)
+            {
+                (Vector256<int> first, Vector256<int> second, Vector256<int> third, Vector256<int> fourth) = WidenSByteToInt32Operator.Invoke(x);
+                return (Vector256.ConvertToSingle(first), Vector256.ConvertToSingle(second), Vector256.ConvertToSingle(third), Vector256.ConvertToSingle(fourth));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector512<float>, Vector512<float>, Vector512<float>, Vector512<float>) Invoke(Vector512<sbyte> x)
+            {
+                (Vector512<int> first, Vector512<int> second, Vector512<int> third, Vector512<int> fourth) = WidenSByteToInt32Operator.Invoke(x);
+                return (Vector512.ConvertToSingle(first), Vector512.ConvertToSingle(second), Vector512.ConvertToSingle(third), Vector512.ConvertToSingle(fourth));
+            }
+        }
+
+        /// <summary>(float)short</summary>
+        private readonly struct WidenInt16ToSingleOperator : IUnaryOneToTwoOperator<short, float>
+        {
+            public static bool Vectorizable => true;
+
+            public static float Invoke(short x) => x;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector128<float> Lower, Vector128<float> Upper) Invoke(Vector128<short> x)
+            {
+                (Vector128<int> lower, Vector128<int> upper) = WidenInt16ToInt32Operator.Invoke(x);
+                return (Vector128.ConvertToSingle(lower), Vector128.ConvertToSingle(upper));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector256<float> Lower, Vector256<float> Upper) Invoke(Vector256<short> x)
+            {
+                (Vector256<int> lower, Vector256<int> upper) = WidenInt16ToInt32Operator.Invoke(x);
+                return (Vector256.ConvertToSingle(lower), Vector256.ConvertToSingle(upper));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector512<float> Lower, Vector512<float> Upper) Invoke(Vector512<short> x)
+            {
+                (Vector512<int> lower, Vector512<int> upper) = WidenInt16ToInt32Operator.Invoke(x);
+                return (Vector512.ConvertToSingle(lower), Vector512.ConvertToSingle(upper));
+            }
+        }
+
+        /// <summary>(float)ushort</summary>
+        private readonly struct WidenUInt16ToSingleOperator : IUnaryOneToTwoOperator<ushort, float>
+        {
+            public static bool Vectorizable => true;
+
+            public static float Invoke(ushort x) => x;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector128<float> Lower, Vector128<float> Upper) Invoke(Vector128<ushort> x)
+            {
+                (Vector128<uint> lower, Vector128<uint> upper) = WidenUInt16ToUInt32Operator.Invoke(x);
+                return (Vector128.ConvertToSingle(lower.AsInt32()), Vector128.ConvertToSingle(upper.AsInt32()));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector256<float> Lower, Vector256<float> Upper) Invoke(Vector256<ushort> x)
+            {
+                (Vector256<uint> lower, Vector256<uint> upper) = WidenUInt16ToUInt32Operator.Invoke(x);
+                return (Vector256.ConvertToSingle(lower.AsInt32()), Vector256.ConvertToSingle(upper.AsInt32()));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector512<float> Lower, Vector512<float> Upper) Invoke(Vector512<ushort> x)
+            {
+                (Vector512<uint> lower, Vector512<uint> upper) = WidenUInt16ToUInt32Operator.Invoke(x);
+                return (Vector512.ConvertToSingle(lower.AsInt32()), Vector512.ConvertToSingle(upper.AsInt32()));
+            }
+        }
+
+        /// <summary>(double)int</summary>
+        private readonly struct WidenInt32ToDoubleOperator : IUnaryOneToTwoOperator<int, double>
+        {
+            public static bool Vectorizable => true;
+
+            public static double Invoke(int x) => x;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector128<double> Lower, Vector128<double> Upper) Invoke(Vector128<int> x)
+            {
+                (Vector128<long> lower, Vector128<long> upper) = WidenInt32ToInt64Operator.Invoke(x);
+                return (Vector128.ConvertToDouble(lower), Vector128.ConvertToDouble(upper));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector256<double> Lower, Vector256<double> Upper) Invoke(Vector256<int> x)
+            {
+                (Vector256<long> lower, Vector256<long> upper) = WidenInt32ToInt64Operator.Invoke(x);
+                return (Vector256.ConvertToDouble(lower), Vector256.ConvertToDouble(upper));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector512<double> Lower, Vector512<double> Upper) Invoke(Vector512<int> x)
+            {
+                (Vector512<long> lower, Vector512<long> upper) = WidenInt32ToInt64Operator.Invoke(x);
+                return (Vector512.ConvertToDouble(lower), Vector512.ConvertToDouble(upper));
+            }
+        }
+
+        /// <summary>(double)uint</summary>
+        private readonly struct WidenUInt32ToDoubleOperator : IUnaryOneToTwoOperator<uint, double>
+        {
+            public static bool Vectorizable => true;
+
+            public static double Invoke(uint x) => x;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector128<double> Lower, Vector128<double> Upper) Invoke(Vector128<uint> x)
+            {
+                (Vector128<ulong> lower, Vector128<ulong> upper) = WidenUInt32ToUInt64Operator.Invoke(x);
+                return (Vector128.ConvertToDouble(lower), Vector128.ConvertToDouble(upper));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector256<double> Lower, Vector256<double> Upper) Invoke(Vector256<uint> x)
+            {
+                (Vector256<ulong> lower, Vector256<ulong> upper) = WidenUInt32ToUInt64Operator.Invoke(x);
+                return (Vector256.ConvertToDouble(lower), Vector256.ConvertToDouble(upper));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector512<double> Lower, Vector512<double> Upper) Invoke(Vector512<uint> x)
+            {
+                (Vector512<ulong> lower, Vector512<ulong> upper) = WidenUInt32ToUInt64Operator.Invoke(x);
+                return (Vector512.ConvertToDouble(lower), Vector512.ConvertToDouble(upper));
+            }
         }
 
         /// <summary>(uint)ushort</summary>

@@ -29,14 +29,21 @@ namespace Profiler.Tests
 
         static int RunTest()
         {
-            LoadCollectibleAssembly();
+            WeakReference collectibleContext = LoadCollectibleAssembly();
+
+            for (int i = 0; collectibleContext.IsAlive && (i < 10); i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
 
             Thread.Sleep(TimeSpan.FromSeconds(3));
 
             return 100;
         }
 
-        private static void LoadCollectibleAssembly()
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static WeakReference LoadCollectibleAssembly()
         {
             var collectibleContext = new AssemblyLoadContext("Collectible", true);
 
@@ -49,6 +56,8 @@ namespace Profiler.Tests
             Console.WriteLine(instance.GetHashCode());
             GC.Collect();
             collectibleContext.Unload();
+
+            return new WeakReference(collectibleContext);
         }
     }
 }
