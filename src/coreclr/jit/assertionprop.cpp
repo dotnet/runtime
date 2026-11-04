@@ -3169,8 +3169,19 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
     }
 
     // We want to use the Normal ValueNumber when checking for constants.
-    ValueNumPair vnPair = tree->gtVNPair;
-    ValueNum     vnCns  = vnStore->VNConservativeNormalValue(vnPair);
+    ValueNumPair vnPair            = tree->gtVNPair;
+    ValueNum     vnCns             = vnStore->VNConservativeNormalValue(vnPair);
+    bool         viaRepresentative = false;
+    if (!vnStore->IsVNConstant(vnCns))
+    {
+        // The representative of the tree's number can be a constant when the tree's own number is not.
+        ValueNum canonVN = vnStore->VNCanonical(vnCns);
+        if (vnStore->IsVNConstant(canonVN))
+        {
+            vnCns             = canonVN;
+            viaRepresentative = true;
+        }
+    }
 
     // Check if node evaluates to a constant
     if (!vnStore->IsVNConstant(vnCns))
@@ -3435,6 +3446,17 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
 
     if (conValTree != nullptr)
     {
+        if (viaRepresentative)
+        {
+            // The value is already computed, often kept in a register by CSE. A constant the
+            // target cannot materialize in one instruction costs more at each use than it saves.
+            gtPrepareCost(conValTree);
+            if (conValTree->GetCostEx() > 1)
+            {
+                return nullptr;
+            }
+        }
+
         if (!optIsProfitableToSubstitute(tree, block, parent, conValTree))
         {
             // Not profitable to substitute
@@ -6509,7 +6531,7 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
     assert((relop->gtFlags & GTF_RELOP_JMP_USED) != 0);
 
     // We want to use the Normal ValueNumber when checking for constants.
-    ValueNum vnCns = vnStore->VNConservativeNormalValue(relop->gtVNPair);
+    ValueNum vnCns = vnStore->VNCanonicalConservativeNormalValue(relop->gtVNPair);
     if (!vnStore->IsVNConstant(vnCns))
     {
         return nullptr;

@@ -118,6 +118,20 @@ public class CseValueIdentity
         return b.Items[b.Index + 1];
     }
 
+    // The reload's length has its own number, so the difference is a function over two
+    // numbers that only the representative shows to be equal. Constant propagation asks for it.
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int LengthDelta(Buffer b)
+    {
+        // ARM64-NOT: sub {{w[0-9]+, w[0-9]+, w[0-9]+}}
+        // X64-NOT: sub {{e[a-z0-9]+, e[a-z0-9]+}}
+        int[] items = b.Items;
+        if (items.Length == 0)
+            return -1;
+        return b.Items.Length - items.Length;
+    }
+
     [Fact]
     public static void ReloadedFieldArithmetic()
     {
@@ -126,12 +140,14 @@ public class CseValueIdentity
         Assert.Equal(4, LastGuardedBySub(b));
         Assert.Equal(3, CountAsIndex(b));
         Assert.Equal(3, NextOfIndex(b));
+        Assert.Equal(0, LengthDelta(b));
 
         Buffer empty = new Buffer { Items = new int[0], Index = -1, Count = 0 };
         Assert.Equal(-1, LastOfNonEmpty(empty));
         Assert.Equal(-1, LastGuardedBySub(empty));
         Assert.Equal(-1, CountAsIndex(empty));
         Assert.Equal(-1, NextOfIndex(empty));
+        Assert.Equal(-1, LengthDelta(empty));
 
         Buffer edge = new Buffer { Items = new int[] { 7 }, Index = 0, Count = 1 };
         Assert.Equal(-1, CountAsIndex(edge));
