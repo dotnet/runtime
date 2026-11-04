@@ -846,7 +846,7 @@ CreateFileW(
     {
         namePathString.CloseBuffer(0);
         DWORD dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failure! error is %d\n", dwLastError);
         palError = ERROR_INTERNAL_ERROR;
         goto done;
     }

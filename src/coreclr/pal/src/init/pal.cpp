@@ -733,7 +733,7 @@ static LPWSTR INIT_GetCurrentEXEPath()
     return_size = (INT)minipal_get_length_utf8_to_utf16(real_path, strlen(real_path) + 1, 0);
     if (0 == return_size)
     {
-        ASSERT("MultiByteToWideChar failure\n");
+        ASSERT("UTF-8 to UTF-16 conversion failure\n");
         return nullptr;
     }
 
@@ -747,7 +747,7 @@ static LPWSTR INIT_GetCurrentEXEPath()
     {
         if (!minipal_convert_utf8_to_utf16(real_path, strlen(real_path) + 1, (CHAR16_T*)return_value, return_size, 0))
         {
-            ASSERT("MultiByteToWideChar failure\n");
+            ASSERT("UTF-8 to UTF-16 conversion failure\n");
             free(return_value);
             return_value = nullptr;
         }

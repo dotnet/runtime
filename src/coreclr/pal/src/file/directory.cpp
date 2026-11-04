@@ -70,7 +70,7 @@ CreateDirectoryW(
     /* translate the wide char lpPathName string to multibyte string */
     if(0 == (mb_size = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpPathName, PAL_wcslen(lpPathName) + 1, 0)))
     {
-        ASSERT("WideCharToMultiByte failure! error is %d\n", GetLastError());
+        ASSERT("UTF-16 to UTF-8 conversion failure! error is %d\n", GetLastError());
         dwLastError = ERROR_INTERNAL_ERROR;
         goto done;
     }
@@ -78,7 +78,7 @@ CreateDirectoryW(
     if (((mb_dir = (char *)malloc(mb_size)) == NULL) ||
         ((int)minipal_convert_utf16_to_utf8((const CHAR16_T*)lpPathName, PAL_wcslen(lpPathName) + 1, mb_dir, mb_size, 0) != mb_size))
     {
-        ASSERT("WideCharToMultiByte or malloc failure! LastError:%d errno:%d\n",
+        ASSERT("UTF-16 to UTF-8 conversion or malloc failure! LastError:%d errno:%d\n",
               GetLastError(), errno);
         dwLastError = ERROR_INTERNAL_ERROR;
         goto done;
@@ -212,7 +212,7 @@ RemoveDirectoryW(
     if( mb_size == 0 )
     {
         mb_dirPathString.CloseBuffer(0);
-        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failure! error is %d\n", dwLastError);
         dwLastError = ERROR_INTERNAL_ERROR;
         goto done;
     }
@@ -339,7 +339,7 @@ SetCurrentDirectoryW(
     {
         dirPathString.CloseBuffer(0);
         dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failure! error is %d\n", dwLastError);
         dwLastError = ERROR_INTERNAL_ERROR;
         bRet = FALSE;
         goto done;

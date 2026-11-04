@@ -235,15 +235,6 @@ add_executable_clr(paltests
   #locale_info/CompareStringW/test1/test1.cpp
   #locale_info/GetLocaleInfoW/test1/test1.cpp
   #locale_info/GetLocaleInfoW/test2/test2.cpp
-  locale_info/MultiByteToWideChar/test1/test1.cpp
-  locale_info/MultiByteToWideChar/test2/test2.cpp
-  locale_info/MultiByteToWideChar/test3/test3.cpp
-  locale_info/MultiByteToWideChar/test4/test4.cpp
-  locale_info/WideCharToMultiByte/test1/test1.cpp
-  locale_info/WideCharToMultiByte/test2/test2.cpp
-  locale_info/WideCharToMultiByte/test3/test3.cpp
-  locale_info/WideCharToMultiByte/test4/test4.cpp
-  locale_info/WideCharToMultiByte/test5/test5.cpp
   miscellaneous/CloseHandle/test1/test.cpp
   miscellaneous/CloseHandle/test2/test.cpp
   miscellaneous/FlushInstructionCache/test1/test1.cpp

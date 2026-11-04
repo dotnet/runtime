@@ -196,7 +196,7 @@ GetFullPathNameW(
     if( srcSize == 0 )
     {
         DWORD dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failure! error is %d\n", dwLastError);
         SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }

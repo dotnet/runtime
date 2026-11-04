@@ -74,7 +74,6 @@ static const char *dbg_channel_names[]=
     "THREAD",
     "EXCEPT",
     "CRT",
-    "UNICODE",
     "ARCH",
     "SYNC",
     "FILE",

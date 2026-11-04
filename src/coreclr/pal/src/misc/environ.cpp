@@ -192,7 +192,7 @@ GetEnvironmentVariableW(
 
     if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpName, PAL_wcslen(lpName) + 1, inBuff, inBuffSize, 0))
     {
-        ASSERT("WideCharToMultiByte failed!\n");
+        ASSERT("UTF-16 to UTF-8 conversion failed!\n");
         SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
@@ -222,7 +222,7 @@ GetEnvironmentVariableW(
         }
         else
         {
-            ASSERT("MultiByteToWideChar failed!\n");
+            ASSERT("UTF-8 to UTF-16 conversion failed!\n");
             SetLastError(ERROR_INTERNAL_ERROR);
             size = 0;
             *lpBuffer = '\0';
@@ -291,7 +291,7 @@ SetEnvironmentVariableW(
 
     if ((nameSize = lpName != nullptr ? (INT)minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, PAL_wcslen(lpName) + 1, 0) : 0) == 0)
     {
-        ERROR("WideCharToMultiByte failed\n");
+        ERROR("UTF-16 to UTF-8 conversion failed\n");
         SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
@@ -306,7 +306,7 @@ SetEnvironmentVariableW(
 
     if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpName, PAL_wcslen(lpName) + 1, name, nameSize, 0))
     {
-        ASSERT("WideCharToMultiByte returned 0\n");
+        ASSERT("UTF-16 to UTF-8 conversion returned 0\n");
         SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
@@ -315,7 +315,7 @@ SetEnvironmentVariableW(
     {
         if ((valueSize = (INT)minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpValue, PAL_wcslen(lpValue) + 1, 0)) == 0)
         {
-            ERROR("WideCharToMultiByte failed\n");
+            ERROR("UTF-16 to UTF-8 conversion failed\n");
             SetLastError(ERROR_INVALID_PARAMETER);
             goto done;
         }
@@ -331,7 +331,7 @@ SetEnvironmentVariableW(
 
         if (0 == minipal_convert_utf16_to_utf8((const CHAR16_T*)lpValue, PAL_wcslen(lpValue) + 1, value, valueSize, 0))
         {
-            ASSERT("WideCharToMultiByte failed\n");
+            ASSERT("UTF-16 to UTF-8 conversion failed\n");
             SetLastError( ERROR_INTERNAL_ERROR );
             goto done;
         }

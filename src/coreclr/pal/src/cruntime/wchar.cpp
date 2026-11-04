@@ -47,7 +47,7 @@ _wtoi(
     len = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)string, PAL_wcslen(string) + 1, 0);
     if (!len)
     {
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n",
+        ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n",
               GetLastError());
         return -1;
     }
@@ -61,7 +61,7 @@ _wtoi(
     len = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)string, PAL_wcslen(string) + 1, tempStr, len, 0);
     if (!len)
     {
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n",
+        ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n",
               GetLastError());
         free(tempStr);
         return -1;
@@ -252,7 +252,7 @@ PAL_wcstoul(
     if (!size)
     {
         dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n", dwLastError);
         SetLastError(ERROR_INVALID_PARAMETER);
         res = 0;
         goto PAL_wcstoulExit;
@@ -269,7 +269,7 @@ PAL_wcstoul(
     if (!size)
     {
         dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n", dwLastError);
         SetLastError(ERROR_INVALID_PARAMETER);
         res = 0;
         goto PAL_wcstoulExit;
@@ -342,7 +342,7 @@ PAL__wcstoui64(
     if (!size)
     {
         dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n", dwLastError);
         SetLastError(ERROR_INVALID_PARAMETER);
         res = 0;
         goto PAL__wcstoui64Exit;
@@ -359,7 +359,7 @@ PAL__wcstoui64(
     if (!size)
     {
         dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n", dwLastError);
         SetLastError(ERROR_INVALID_PARAMETER);
         res = 0;
         goto PAL__wcstoui64Exit;
