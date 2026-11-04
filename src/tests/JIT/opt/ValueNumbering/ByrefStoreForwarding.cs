@@ -29,6 +29,19 @@ public class ByrefStoreForwarding
         int flags = -1;
         UpdateFlags(ref flags);
         Assert.Equal(~0x30, flags);
+
+        object[] objects = { "a", "b" };
+        object objectValue = null;
+        Assert.Same(objects[1], StoreObjectAndRead(ref objectValue, objects, 1));
+        Assert.Same(objects[1], objectValue);
+
+        int[] ints = { 1, 2, 3 };
+        ByrefHolder holder = default;
+        Assert.Equal(3, StoreByrefAndRead(ref holder, ints, 2));
+
+        int counter = 5;
+        Assert.Equal(9, IncrementWithExposedLocal(ref counter));
+        Assert.Equal(8, counter);
     }
 
     [Fact]
@@ -105,6 +118,48 @@ public class ByrefStoreForwarding
         value &= ~0x20;
         value |= 0x40;
     }
+
+    private ref struct ByrefHolder
+    {
+        public ref int Value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static object StoreObjectAndRead(ref object destination, object[] values, int index)
+    {
+        // ARM64: bl CORINFO_HELP_CHECKED_ASSIGN_REF
+        // ARM64-NOT: ldr x{{[0-9]+}}, [x{{[0-9]+}}]
+        // X64: CORINFO_HELP_CHECKED_ASSIGN_REF
+        // X64-NOT: gword ptr [{{[a-z0-9]+}}]
+        destination = values[index];
+        return destination;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int StoreByrefAndRead(ref ByrefHolder destination, int[] values, int index)
+    {
+        destination.Value = ref values[index];
+        return destination.Value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int IncrementWithExposedLocal(ref int value)
+    {
+        // ARM64: add w[[V:[0-9]+]], w{{[0-9]+}}, #3
+        // ARM64-NEXT: str w[[V]], {{\[}}x[[B:[0-9]+]]{{\]}}
+        // ARM64-NOT: ldr w{{[0-9]+}}, {{\[}}x[[B]]{{\]}}
+        // X64: add {{[a-z0-9]+}}, 3
+        // X64-NEXT: mov dword ptr {{\[}}[[B:[a-z0-9]+]]{{\]}}, {{[a-z0-9]+}}
+        // X64-NOT: dword ptr {{\[}}[[B]]{{\]}}
+        int local = 1;
+        Consume(ref local);
+        local = 1;
+        value += 3;
+        return value + local;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Consume(ref int value) => value++;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static double IncrementLongReadDouble(ref long value)

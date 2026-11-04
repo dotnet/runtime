@@ -12962,6 +12962,9 @@ static bool IsByrefStoreForwardingType(var_types type)
             return true;
         case TYP_LONG:
             return LOWER_DECOMPOSE_LONGS == 0;
+        case TYP_REF:
+        case TYP_BYREF:
+            return true;
         default:
             return false;
     }
@@ -13117,9 +13120,9 @@ void Compiler::fgValueNumberStore(GenTree* store)
             else
             {
                 assert(!store->HasAnyLocalDefs(this));
-                if (byrefStatesMatchGcHeapStates && store->OperIs(GT_STOREIND) &&
-                    IsByrefStoreForwardingType(store->TypeGet()) && (value->TypeGet() == store->TypeGet()) &&
-                    !store->AsIndir()->IsVolatile() && !(addrIsVNFunc && funcApp.FuncIs(VNF_PtrToLoc)))
+                if (store->OperIs(GT_STOREIND) && IsByrefStoreForwardingType(store->TypeGet()) &&
+                    (value->TypeGet() == store->TypeGet()) && !store->AsIndir()->IsVolatile() &&
+                    !(addrIsVNFunc && funcApp.FuncIs(VNF_PtrToLoc)))
                 {
                     // Keep the rest of memory opaque; only an exact, same-type load can reuse this value.
                     ValueNum memoryVN =
@@ -13127,6 +13130,12 @@ void Compiler::fgValueNumberStore(GenTree* store)
                                            vnStore->VNNormalValue(addr->gtVNPair.GetConservative()),
                                            valueVNPair.GetLiberal(), vnStore->VNForExpr(compCurBB, TYP_HEAP));
                     recordGcHeapStore(store, memoryVN DEBUGARG("byref store"));
+                    if (!byrefStatesMatchGcHeapStates)
+                    {
+                        // recordGcHeapStore made ByrefExposed opaque, but this store is also its current state.
+                        fgSetCurrentMemoryVN(ByrefExposed, memoryVN);
+                        fgValueNumberRecordMemorySsa(ByrefExposed, store);
+                    }
                 }
                 else
                 {
