@@ -745,47 +745,6 @@ CONTEXT * GetManagedLiveCtx(Thread * pThread)
     return pCtx;
 }
 
-// Validate an object. Returns E_INVALIDARG or S_OK.
-HRESULT ValidateObject(Object *objPtr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    EX_TRY
-    {
-        // Use AVInRuntimeImplOkHolder.
-        AVInRuntimeImplOkayHolder AVOkay;
-
-        // NULL is certinally valid...
-        if (objPtr != NULL)
-        {
-            if (!objPtr->ValidateObjectWithPossibleAV())
-            {
-                LOG((LF_CORDB, LL_INFO10000, "GAV: object methodtable-class invariant doesn't hold.\n"));
-                hr = E_INVALIDARG;
-                goto LExit;
-            }
-        }
-
-    LExit: ;
-    }
-    EX_CATCH
-    {
-        LOG((LF_CORDB, LL_INFO10000, "GAV: exception indicated ref is bad.\n"));
-        hr = E_INVALIDARG;
-    }
-    EX_END_CATCH
-
-    return hr;
-}   // ValidateObject
-
-
 #ifdef FEATURE_DBGIPC_TRANSPORT_VM
 void
 ShutdownTransport()
@@ -1257,7 +1216,6 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_pAssembly = pEvalInfo->vmAssembly.GetRawPtr();
     m_funcEvalKey = pEvalInfo->funcEvalKey;
     m_argCount = pEvalInfo->argCount;
-    m_targetCodeAddr = (TADDR)NULL;
     m_stringSize = pEvalInfo->stringSize;
     m_arrayRank = pEvalInfo->arrayRank;
     m_genericArgsCount = pEvalInfo->genericArgsCount;
@@ -1265,9 +1223,9 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_successful = false;
     m_argData = NULL;
     memset(m_result, 0, sizeof(m_result));
-    m_md = NULL;
     m_resultType = TypeHandle();
     m_externalMemoryOwner = NULL;
+    m_funcEvalResult = NULL;
     m_aborting = FE_ABORT_NONE;
     m_aborted = false;
     m_completed = false;
@@ -1289,6 +1247,13 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     }
 }
 
+void ReleaseDebuggerExternalMemoryHandle(ExternalMemoryHandle* pHandle)
+{
+    WRAPPER_NO_CONTRACT;
+
+    ExternalMemoryHandle::Remove(pHandle DEBUG_ARG(g_pDebugger->IsStopped()));
+}
+
 DebuggerExternalMemoryOwner::DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE *pMemory)
     : m_pHandle(NULL),
       m_pMemory(pMemory)
@@ -1301,15 +1266,42 @@ DebuggerExternalMemoryOwner::DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE 
     }
     CONTRACTL_END;
 
-    m_pHandle = ExternalMemoryHandle::Add(pMT, m_pMemory, 0);
+    m_pHandle = ExternalMemoryHandle::Add(TypeHandle(pMT), m_pMemory);
 }
 
 DebuggerExternalMemoryOwner::~DebuggerExternalMemoryOwner()
 {
     WRAPPER_NO_CONTRACT;
 
-    ExternalMemoryHandle::Remove(m_pHandle DEBUG_ARG(g_pDebugger->IsStopped()));
+    ReleaseDebuggerExternalMemoryHandle(m_pHandle);
     DeleteInteropSafe(m_pMemory);
+}
+
+DebuggerExternalMemoryOwner *DebuggerExternalMemoryOwner::Create(MethodTable *pMT, SIZE_T size)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    BYTE *pMemory = new (interopsafe) BYTE[size];
+    memset(pMemory, 0, size);
+    DebuggerExternalMemoryOwner *pOwner = nullptr;
+    EX_TRY
+    {
+        pOwner = new (interopsafe) DebuggerExternalMemoryOwner(pMT, pMemory);
+    }
+    EX_CATCH
+    {
+        DeleteInteropSafe(pMemory);
+        EX_RETHROW;
+    }
+    EX_END_CATCH
+
+    return pOwner;
 }
 
 BYTE *DebuggerEval::CreateExternalMemory(MethodTable *pMT, SIZE_T size)
@@ -1322,21 +1314,9 @@ BYTE *DebuggerEval::CreateExternalMemory(MethodTable *pMT, SIZE_T size)
     }
     CONTRACTL_END;
 
-    _ASSERTE(m_externalMemoryOwner == NULL);
-
-    BYTE *pMemory = new (interopsafe) BYTE[size];
-    EX_TRY
-    {
-        m_externalMemoryOwner = new (interopsafe) DebuggerExternalMemoryOwner(pMT, pMemory);
-    }
-    EX_CATCH
-    {
-        DeleteInteropSafe(pMemory);
-        EX_RETHROW;
-    }
-    EX_END_CATCH
-
-    return pMemory;
+    _ASSERTE(m_externalMemoryOwner == nullptr);
+    m_externalMemoryOwner = DebuggerExternalMemoryOwner::Create(pMT, size);
+    return m_externalMemoryOwner->GetMemory();
 }
 
 #ifdef _DEBUG
@@ -9787,7 +9767,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)pResult;
     ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pDomain);
     ipce->FuncEvalComplete.vmObjectHandle = pDE->m_vmObjectHandle;
-    ipce->FuncEvalComplete.vmExternalMemoryOwner.SetRawPtr(pDE->m_externalMemoryOwner);
+    ipce->FuncEvalComplete.vmExternalMemoryOwner.SetRawPtr(pDE->m_externalMemoryOwner.GetValue());
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: TypeHandle is %p\n", pDE->m_resultType.AsPtr()));
 
@@ -9808,7 +9788,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
         (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr))));
 
     IfFailThrow(m_pRCThread->SendIPCEvent());
-    pDE->m_externalMemoryOwner = NULL;
+    pDE->m_externalMemoryOwner.SuppressRelease();
 
 #endif
 }
@@ -14261,7 +14241,7 @@ Debugger::FuncEvalAbort(
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        if (g_pEEInterface->GetThread() != nullptr) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
     }
     CONTRACTL_END;
 
@@ -14324,7 +14304,7 @@ Debugger::FuncEvalRudeAbort(
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        if (g_pEEInterface->GetThread() != nullptr) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
     }
     CONTRACTL_END;
 
@@ -14400,6 +14380,46 @@ HRESULT Debugger::FuncEvalCleanup(DebuggerEval *debuggerEvalKey)
 }
 
 #endif // ifndef DACCESS_COMPILE
+
+// Validate an object. Returns E_INVALIDARG or S_OK.
+HRESULT ValidateObject(Object *objPtr)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    HRESULT hr = S_OK;
+
+    EX_TRY
+    {
+        // Use AVInRuntimeImplOkHolder.
+        AVInRuntimeImplOkayHolder AVOkay;
+
+        // NULL is certinally valid...
+        if (objPtr != NULL)
+        {
+            if (!objPtr->ValidateObjectWithPossibleAV())
+            {
+                LOG((LF_CORDB, LL_INFO10000, "GAV: object methodtable-class invariant doesn't hold.\n"));
+                hr = E_INVALIDARG;
+                goto LExit;
+            }
+        }
+
+    LExit: ;
+    }
+    EX_CATCH
+    {
+        LOG((LF_CORDB, LL_INFO10000, "GAV: exception indicated ref is bad.\n"));
+        hr = E_INVALIDARG;
+    }
+    EX_END_CATCH
+
+    return hr;
+}   // ValidateObject
 
 //
 // SetReference sets an object reference for the Right Side,
