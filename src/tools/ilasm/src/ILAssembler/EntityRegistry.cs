@@ -1790,6 +1790,9 @@ namespace Microsoft.DotNet.ILAssembler
             var key = (implementation as ExportedTypeEntity, @namespace, name);
             if (implementation is ExportedTypeEntity)
             {
+                // We only key on the implementation if the type is nested (ExportedTypeEntity).
+                // For forwarders, implementation is AssemblyReferenceEntity which is not used in the key.
+                // However, we need to pass the actual implementation to the entity constructor.
                 return GetOrCreateEntity(key, TableIndex.ExportedType, _seenExportedTypes, key => new(key.Item3, key.Item2, implementation), onCreateType);
             }
 
