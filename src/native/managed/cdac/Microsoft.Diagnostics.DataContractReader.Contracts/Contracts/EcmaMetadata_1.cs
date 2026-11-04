@@ -126,7 +126,14 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
                 {
                     TargetSpan address = GetReadOnlyMetadataAddress(handle);
                     byte[] data = new byte[address.Size];
-                    target.ReadBuffer(address.Address, data);
+                    try
+                    {
+                        target.ReadBuffer(address.Address, data);
+                    }
+                    catch (VirtualReadException)
+                    {
+                        return GetMetadataFromHost(handle, data);
+                    }
                     return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
                 }
                 case AvailableMetadataType.ReadWriteSavedCopy:
@@ -149,6 +156,32 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         {
             return null;
         }
+    }
+
+    private MetadataReaderProvider? GetMetadataFromHost(ModuleHandle handle, byte[] data)
+    {
+        ILoader loader = target.Contracts.Loader;
+        if (!loader.GetFileHeadersInfo(handle, out uint timestamp, out uint imageSize))
+            return null;
+
+        string path;
+        try
+        {
+            path = loader.GetPath(handle);
+        }
+        catch (VirtualReadException)
+        {
+            path = string.Empty;
+        }
+        if (path.Length == 0)
+            path = loader.GetFileName(handle);
+
+        // No RVA hint: locate metadata through the IL image's CLR header.
+        return target.TryGetMetadataFromCLRLocator(path, timestamp, imageSize, 0, data, out _)
+            || target.TryGetMetadataFromIXCLRDataTarget(path, timestamp, imageSize, 0, data, out _)
+            || target.TryGetMetadataFromCorDebugLocator(path, timestamp, imageSize, 0, data, out _)
+            ? MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data))
+            : null;
     }
 
     public byte[] GetReadWriteMetadata(ModuleHandle handle)

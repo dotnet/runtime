@@ -76,6 +76,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
     public delegate int SetTargetThreadContextDelegate(uint threadId, ReadOnlySpan<byte> context);
     public delegate int AllocVirtualDelegate(ulong size, out ulong allocatedAddress);
+    public delegate int GetMetadataDelegate(string imagePath, uint imageTimestamp, uint imageSize, uint metadataRva, Span<byte> buffer, out uint dataSize);
 
     private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
@@ -91,6 +92,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <param name="allocVirtual">A callback to allocate virtual memory in the target</param>
     /// <param name="contractRegistrations">Registration actions that populate the contract registry (e.g., <see cref="Contracts.CoreCLRContracts.Register"/>)</param>
     /// <param name="runtimeImageBase">The runtime image base address, or <see langword="default"/> when unavailable. This value is fixed for the lifetime of the target.</param>
+    /// <param name="getMetadataFromCLRLocator">An optional ICLRMetadataLocator callback.</param>
+    /// <param name="getMetadataFromIXCLRDataTarget">An optional IXCLRDataTarget3 metadata callback.</param>
+    /// <param name="getMetadataFromCorDebugLocator">An optional callback that retrieves metadata using ICorDebugMetaDataLocator.</param>
     /// <returns>The target object.</returns>
     public static ContractDescriptorTarget Create(
         ulong contractDescriptor,
@@ -100,9 +104,13 @@ public sealed unsafe class ContractDescriptorTarget : Target
         SetTargetThreadContextDelegate setThreadContext,
         AllocVirtualDelegate allocVirtual,
         Action<ContractRegistry>[] contractRegistrations,
-        TargetPointer runtimeImageBase = default)
+        TargetPointer runtimeImageBase = default,
+        GetMetadataDelegate? getMetadataFromCLRLocator = null,
+        GetMetadataDelegate? getMetadataFromIXCLRDataTarget = null,
+        GetMetadataDelegate? getMetadataFromCorDebugLocator = null)
     {
-        DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual);
+        DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual,
+            getMetadataFromCLRLocator, getMetadataFromIXCLRDataTarget, getMetadataFromCorDebugLocator);
         Descriptor descriptor = ReadContractDescriptor(contractDescriptor, dataTargetDelegates);
         return new ContractDescriptorTarget(descriptor, dataTargetDelegates, contractRegistrations, runtimeImageBase);
     }
@@ -121,6 +129,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <param name="pointerSize">The size of a pointer in bytes in the target process.</param>
     /// <param name="contractRegistrations">Registration actions that populate the contract registry (e.g., <see cref="Contracts.CoreCLRContracts.Register"/>)</param>
     /// <param name="runtimeImageBase">The runtime image base address, or <see langword="default"/> when unavailable. This value is fixed for the lifetime of the target.</param>
+    /// <param name="getMetadataFromCLRLocator">An optional ICLRMetadataLocator callback.</param>
+    /// <param name="getMetadataFromIXCLRDataTarget">An optional IXCLRDataTarget3 metadata callback.</param>
+    /// <param name="getMetadataFromCorDebugLocator">An optional callback that retrieves metadata using ICorDebugMetaDataLocator.</param>
     /// <returns>The target object.</returns>
     public static ContractDescriptorTarget Create(
         ContractDescriptorParser.ContractDescriptor contractDescriptor,
@@ -133,7 +144,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
         bool isLittleEndian,
         int pointerSize,
         Action<ContractRegistry>[]? contractRegistrations = null,
-        TargetPointer runtimeImageBase = default)
+        TargetPointer runtimeImageBase = default,
+        GetMetadataDelegate? getMetadataFromCLRLocator = null,
+        GetMetadataDelegate? getMetadataFromIXCLRDataTarget = null,
+        GetMetadataDelegate? getMetadataFromCorDebugLocator = null)
     {
         return new ContractDescriptorTarget(
             new Descriptor
@@ -142,7 +156,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 ContractDescriptor = contractDescriptor,
                 PointerData = globalPointerValues
             },
-            new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual),
+            new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual,
+                getMetadataFromCLRLocator, getMetadataFromIXCLRDataTarget, getMetadataFromCorDebugLocator),
             contractRegistrations ?? [], runtimeImageBase);
     }
 
@@ -157,6 +172,24 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         AddDescriptor(mainDescriptor);
         BuildDescriptors(forceBuild: true);
+    }
+
+    /// <inheritdoc/>
+    public override bool TryGetMetadataFromCLRLocator(string imagePath, uint imageTimestamp, uint imageSize, uint metadataRva, Span<byte> buffer, out uint dataSize)
+    {
+        return _dataTargetDelegates.TryGetMetadataFromCLRLocator(imagePath, imageTimestamp, imageSize, metadataRva, buffer, out dataSize);
+    }
+
+    /// <inheritdoc/>
+    public override bool TryGetMetadataFromIXCLRDataTarget(string imagePath, uint imageTimestamp, uint imageSize, uint metadataRva, Span<byte> buffer, out uint dataSize)
+    {
+        return _dataTargetDelegates.TryGetMetadataFromIXCLRDataTarget(imagePath, imageTimestamp, imageSize, metadataRva, buffer, out dataSize);
+    }
+
+    /// <inheritdoc/>
+    public override bool TryGetMetadataFromCorDebugLocator(string imagePath, uint imageTimestamp, uint imageSize, uint metadataRva, Span<byte> buffer, out uint dataSize)
+    {
+        return _dataTargetDelegates.TryGetMetadataFromCorDebugLocator(imagePath, imageTimestamp, imageSize, metadataRva, buffer, out dataSize);
     }
 
     public override bool TryGetRuntimeImageBase(out TargetPointer imageBase)
@@ -1059,7 +1092,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
         SetTargetThreadContextDelegate setThreadContext,
-        AllocVirtualDelegate allocVirtual)
+        AllocVirtualDelegate allocVirtual,
+        GetMetadataDelegate? getMetadataFromCLRLocator,
+        GetMetadataDelegate? getMetadataFromIXCLRDataTarget,
+        GetMetadataDelegate? getMetadataFromCorDebugLocator)
     {
         public int ReadFromTarget(ulong address, Span<byte> buffer)
         {
@@ -1086,6 +1122,27 @@ public sealed unsafe class ContractDescriptorTarget : Target
             return allocVirtual(size, out allocatedAddress);
         }
 
+        public bool TryGetMetadataFromCLRLocator(string imagePath, uint imageTimestamp, uint imageSize, uint metadataRva, Span<byte> buffer, out uint dataSize)
+        {
+            dataSize = 0;
+            return getMetadataFromCLRLocator is not null
+                && getMetadataFromCLRLocator(imagePath, imageTimestamp, imageSize, metadataRva, buffer, out dataSize) >= 0;
+        }
+
+        public bool TryGetMetadataFromIXCLRDataTarget(string imagePath, uint imageTimestamp, uint imageSize, uint metadataRva, Span<byte> buffer, out uint dataSize)
+        {
+            dataSize = 0;
+            return getMetadataFromIXCLRDataTarget is not null
+                && getMetadataFromIXCLRDataTarget(imagePath, imageTimestamp, imageSize, metadataRva, buffer, out dataSize) >= 0;
+        }
+
+        public bool TryGetMetadataFromCorDebugLocator(string imagePath, uint imageTimestamp, uint imageSize, uint metadataRva, Span<byte> buffer, out uint dataSize)
+        {
+            dataSize = 0;
+            return getMetadataFromCorDebugLocator is not null
+                && getMetadataFromCorDebugLocator(imagePath, imageTimestamp, imageSize, metadataRva, buffer, out dataSize) >= 0;
+        }
+
         public DataTargetDelegates WithReadCallback(Action<ulong, ulong> reportRead)
         {
             ReadFromTargetDelegate reader = readFromTarget;
@@ -1098,7 +1155,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
                     return hr;
                 },
-                writeToTarget, getThreadContext, setThreadContext, allocVirtual);
+                writeToTarget, getThreadContext, setThreadContext, allocVirtual,
+                getMetadataFromCLRLocator, getMetadataFromIXCLRDataTarget, getMetadataFromCorDebugLocator);
         }
     }
 }

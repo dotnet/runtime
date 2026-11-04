@@ -49,6 +49,48 @@ public abstract class Target
     /// <returns>true if successful, false otherwise</returns>
     public abstract bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context);
 
+    /// <summary>Retrieves metadata through the debugger's ICLRMetadataLocator.</summary>
+    /// <param name="imagePath">The target image path or file name.</param>
+    /// <param name="imageTimestamp">The PE timestamp.</param>
+    /// <param name="imageSize">The virtual image size.</param>
+    /// <param name="metadataRva">The metadata RVA hint, or zero.</param>
+    /// <param name="buffer">The destination metadata buffer.</param>
+    /// <param name="dataSize">When this method returns, contains the metadata size, including when the buffer is too small.</param>
+    /// <returns><see langword="true"/> if metadata was retrieved; otherwise, <see langword="false"/>.</returns>
+    public virtual bool TryGetMetadataFromCLRLocator(string imagePath, uint imageTimestamp, uint imageSize, uint metadataRva, Span<byte> buffer, out uint dataSize)
+    {
+        dataSize = 0;
+        return false;
+    }
+
+    /// <summary>Retrieves metadata through the debugger's IXCLRDataTarget3.</summary>
+    /// <param name="imagePath">The target image path or file name.</param>
+    /// <param name="imageTimestamp">The PE timestamp.</param>
+    /// <param name="imageSize">The virtual image size.</param>
+    /// <param name="metadataRva">The metadata RVA hint, or zero.</param>
+    /// <param name="buffer">The destination metadata buffer.</param>
+    /// <param name="dataSize">When this method returns, contains the metadata size, including when the buffer is too small.</param>
+    /// <returns><see langword="true"/> if metadata was retrieved; otherwise, <see langword="false"/>.</returns>
+    public virtual bool TryGetMetadataFromIXCLRDataTarget(string imagePath, uint imageTimestamp, uint imageSize, uint metadataRva, Span<byte> buffer, out uint dataSize)
+    {
+        dataSize = 0;
+        return false;
+    }
+
+    /// <summary>Retrieves metadata from a local image located through the debugger's ICorDebugMetaDataLocator.</summary>
+    /// <param name="imagePath">The target image path or file name.</param>
+    /// <param name="imageTimestamp">The PE timestamp.</param>
+    /// <param name="imageSize">The virtual image size.</param>
+    /// <param name="metadataRva">Unused by this locator.</param>
+    /// <param name="buffer">The destination metadata buffer.</param>
+    /// <param name="dataSize">When this method returns, contains the metadata size, including when the buffer is too small.</param>
+    /// <returns><see langword="true"/> if metadata was retrieved; otherwise, <see langword="false"/>.</returns>
+    public virtual bool TryGetMetadataFromCorDebugLocator(string imagePath, uint imageTimestamp, uint imageSize, uint metadataRva, Span<byte> buffer, out uint dataSize)
+    {
+        dataSize = 0;
+        return false;
+    }
+
     /// <summary>
     /// Reads a well-known global pointer value from the target process
     /// </summary>

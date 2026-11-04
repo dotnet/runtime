@@ -36,6 +36,15 @@ public unsafe partial interface ICorDebugMutableDataTarget : ICorDebugDataTarget
     int ContinueStatusChanged(uint threadId, uint continueStatus);
 }
 
+[GeneratedComInterface]
+[Guid("7cef8ba9-2ef7-42bf-973f-4171474f87d9")]
+public unsafe partial interface ICorDebugMetaDataLocator
+{
+    [PreserveSig]
+    int GetMetaData(char* imagePath, uint imageTimestamp, uint imageSize,
+        uint pathBufferSize, uint* pathLength, char* pathBuffer);
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public struct COR_TYPEID
 {

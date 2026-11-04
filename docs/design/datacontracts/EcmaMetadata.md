@@ -113,6 +113,11 @@ MetadataReader? GetMetadata(ModuleHandle handle)
             return null;
         case AvailableMetadataType.ReadOnly:
         {
+            // If reading the metadata bytes fails, it asks the host through the
+            // three optional metadata locator operations on `Target`, in this order:
+            // 1. ICLRMetadataLocator
+            // 2. IXCLRDataTarget3
+            // 3. ICorDebugMetaDataLocator
             TargetSpan address = GetReadOnlyMetadataAddress(handle);
             byte[] data = new byte[address.Size];
             _target.ReadBuffer(address.Address, data);
