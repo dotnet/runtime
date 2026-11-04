@@ -8683,6 +8683,30 @@ void CodeGen::genAmd64EmitterUnitTestsSse2()
 }
 
 /*****************************************************************************
+ * Unit tests for LEA instructions.
+ */
+
+void CodeGen::genAmd64EmitterUnitTestsLea()
+{
+    emitter* theEmitter = GetEmitter();
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    theEmitter->emitIns_R_AR(INS_lea, EA_4BYTE, REG_ECX, REG_EAX, 4);
+
+    // Base-only LEAs are equivalent to register moves, except when there is no base register.
+    theEmitter->emitIns_R_AR(INS_lea, EA_2BYTE, REG_ECX, REG_EAX, 0);
+    theEmitter->emitIns_R_AR(INS_lea, EA_4BYTE, REG_ECX, REG_EAX, 0);
+    theEmitter->emitIns_R_AR(INS_lea, EA_8BYTE, REG_RAX, REG_RCX, 0);
+    theEmitter->emitIns_R_AR(INS_lea, EA_8BYTE, REG_RAX, REG_RSP, 0);
+    theEmitter->emitIns_R_AR(INS_lea, EA_8BYTE, REG_RAX, REG_RBP, 0);
+    theEmitter->emitIns_R_AR(INS_lea, EA_8BYTE, REG_RAX, REG_RAX, 0);
+    theEmitter->emitIns_R_AR(INS_lea, EA_8BYTE, REG_RSP, REG_RBP, 0);
+    theEmitter->emitIns_R_ARX(INS_lea, EA_8BYTE, REG_RAX, REG_RCX, REG_RDX, 1, 0);
+    theEmitter->emitIns_R_ARX(INS_lea, EA_8BYTE, REG_RAX, REG_NA, REG_NA, 1, 0);
+}
+
+/*****************************************************************************
  * Unit tests for the APX instructions.
  */
 
@@ -8768,8 +8792,6 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitIns_R(INS_neg, EA_2BYTE, REG_EAX);
     theEmitter->emitIns_R(INS_not, EA_2BYTE, REG_EAX);
-
-    theEmitter->emitIns_R_AR(INS_lea, EA_4BYTE, REG_ECX, REG_EAX, 4);
 
     theEmitter->emitIns_R_AR(INS_mov, EA_1BYTE, REG_ECX, REG_EAX, 4);
     theEmitter->emitIns_R_AR(INS_mov, EA_2BYTE, REG_ECX, REG_EAX, 4);

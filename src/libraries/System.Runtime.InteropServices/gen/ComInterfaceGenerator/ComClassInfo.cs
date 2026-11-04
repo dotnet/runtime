@@ -50,7 +50,7 @@ namespace Microsoft.Interop
                 ContainingTypeUtilities.GetDeclarationHeader(syntax),
                 new(names.ToImmutable()))
             {
-                UseUpdatedMemorySafetyRules = syntax.SyntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules")
+                UseUpdatedMemorySafetyRules = type.ContainingModule.UsesUpdatedMemorySafetyRules()
             };
         }
 

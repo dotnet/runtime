@@ -4,6 +4,8 @@
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
      <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
     <ExplicitlyImportCustomILLinkTargets>true</ExplicitlyImportCustomILLinkTargets>
+    <!-- Unnecessary suppressions - disable for now since we didn't clean the runtime yet -->
+    <OOBILLinkNoWarn Condition="'$(OOBILLinkNoWarn)' == ''">IL2121</OOBILLinkNoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,8 +39,6 @@
 
     <PropertyGroup>
       <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
-      <!-- Unnecessary suppressions - disable for now since we didn't clean the runtime yet -->
-      <OOBILLinkArgs>$(ILLinkArgs) --nowarn IL2121</OOBILLinkArgs>
       <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes "@(OOBLibrarySuppressionsXml->'%(FullPath)', '" --link-attributes "')"</OOBILLinkArgs>
     </PropertyGroup>
 
@@ -52,6 +52,7 @@
         ReferenceAssemblyPaths="@(OOBAssemblyReference)"
         OutputDirectory="$(OOBAssembliesTrimDir)"
         ExtraArgs="$(OOBILLinkArgs)"
+        NoWarn="$(OOBILLinkNoWarn)"
         ToolExe="$(_DotNetHostFileName)"
         ToolPath="$(_DotNetHostDirectory)" />
 

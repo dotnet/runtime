@@ -1250,6 +1250,7 @@ public:
         kNone,
         kDiagnosticHidden,
         kLCGMethod,
+        kDiagnosticHiddenLCGMethod,
     } DynamicMethodType;
 
     //
@@ -1261,6 +1262,8 @@ public:
     //    pRetVal - [out] KNone if the method is neither a DiagnosticHidden or an LCG
     //             method. Return kDiagnosticHidden if the method is a DiagnosticHidden
     //             method. Return kLCGMethod if the method is an LCG method.
+    //             Return kDiagnosticHiddenLCGMethod only for an LCG method explicitly marked
+    //             diagnostics-hidden, rather than an IL stub, wrapper stub, or async thunk.
     //
     // Return Value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
@@ -2166,6 +2169,40 @@ public:
     //    Returns HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) when cbBuffer is smaller than the
     //    serialized metadata size.
     virtual HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer) = 0;
+
+    typedef enum
+    {
+        kArchUnknown = 0,
+        kArchX86,
+        kArchAMD64,
+        kArchArm,
+        kArchArm64,
+        kArchLoongArch64,
+        kArchRiscV64,
+        kArchWasm,
+    } TargetArchitecture;
+
+    typedef enum
+    {
+        kOSUnknown = 0,
+        kOSWindows,
+        kOSUnix,
+        kOSBrowser,
+        kOSApple,
+    } TargetOperatingSystem;
+
+    struct TargetInfo
+    {
+        TargetArchitecture    arch;
+        TargetOperatingSystem os;
+        ULONG32               pointerSize;
+    };
+
+    // Returns the target's processor architecture, OS family, and pointer size.
+    virtual HRESULT STDMETHODCALLTYPE GetTargetInfo(OUT TargetInfo * pTargetInfo) = 0;
+
+    // Returns the target's product major, minor, and patch versions, with dwSubBuild set to zero.
+    virtual HRESULT STDMETHODCALLTYPE GetRuntimeVersion(OUT COR_VERSION * pVersion) = 0;
 
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL

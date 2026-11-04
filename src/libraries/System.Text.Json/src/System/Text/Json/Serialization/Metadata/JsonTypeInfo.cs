@@ -1666,7 +1666,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal static bool IsInvalidForSerialization(Type type)
         {
-            return type == typeof(void) || type.IsPointer || type.IsByRef || IsByRefLike(type) || type.ContainsGenericParameters;
+            return type == typeof(void) || type.IsPointer || type.IsByRef || type.IsByRefLike || type.ContainsGenericParameters;
         }
 
         internal void MapInterfaceTypesToCallbacks()
@@ -1707,30 +1707,6 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 SetCreateObject(createObject);
             }
-        }
-
-        private static bool IsByRefLike(Type type)
-        {
-#if NET
-            return type.IsByRefLike;
-#else
-            if (!type.IsValueType)
-            {
-                return false;
-            }
-
-            object[] attributes = type.GetCustomAttributes(inherit: false);
-
-            for (int i = 0; i < attributes.Length; i++)
-            {
-                if (attributes[i].GetType().FullName == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
-                {
-                    return true;
-                }
-            }
-
-            return false;
-#endif
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

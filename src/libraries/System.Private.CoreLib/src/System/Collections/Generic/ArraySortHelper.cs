@@ -1473,6 +1473,7 @@ namespace System.Collections.Generic
             SwapIfGreaterWithValues(keys, values, comparer, middle, hi); // swap the middle with the high
 
             TKey pivot = keys[middle];
+            Swap(keys, values, middle, hi - 1);
             int left = 0, right = hi - 1; // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
 
             while (left < right)

@@ -323,82 +323,55 @@ namespace System.Reflection.Emit
 
             Debug.Assert(clsArgument != null);
 
-            if (IsEncodedModifiedType(clsArgument))
-            {
-                if (requiredCustomModifiers == null && optionalCustomModifiers == null)
-                {
-                    AddModifiedTypeCustomModifiers(clsArgument);
-                }
-                else
-                {
-                    // As in PersistedAssemblyBuilder, an array replaces the type's own modifiers of its kind.
-                    if (requiredCustomModifiers != null)
-                        AddReflectedCustomModifiers(requiredCustomModifiers, required: true, nameof(requiredCustomModifiers));
-                    else
-                        AddReflectedCustomModifiers(clsArgument.GetRequiredCustomModifiers(), required: true, paramName: null);
-
-                    if (optionalCustomModifiers != null)
-                        AddReflectedCustomModifiers(optionalCustomModifiers, required: false, nameof(optionalCustomModifiers));
-                    else
-                        AddReflectedCustomModifiers(clsArgument.GetOptionalCustomModifiers(), required: false, paramName: null);
-                }
-
-                // The overload taking a DynamicScope would add the type's own modifiers to the ones written above.
-                AddOneArgTypeHelperWorker(clsArgument, false, null);
-                return;
-            }
-
-            // Each array is in signature order, as this API takes them. Arrays passed with a modified type are read
-            // as reflection returns them, in reverse.
-            if (optionalCustomModifiers != null)
-            {
-                for (int i = 0; i < optionalCustomModifiers.Length; i++)
-                    AddCustomModifier(optionalCustomModifiers[i], required: false, nameof(optionalCustomModifiers));
-            }
-
+            // Required modifiers come first. An array replaces a modified type's own modifiers of its kind.
             if (requiredCustomModifiers != null)
-            {
-                for (int i = 0; i < requiredCustomModifiers.Length; i++)
-                    AddCustomModifier(requiredCustomModifiers[i], required: true, nameof(requiredCustomModifiers));
-            }
+                AddCustomModifiers(requiredCustomModifiers, isOptional: false, nameof(requiredCustomModifiers));
+            else if (IsEncodedModifiedType(clsArgument))
+                AddCustomModifiers(clsArgument.GetRequiredCustomModifiers(), isOptional: false, paramName: null);
 
-            AddOneArgTypeHelper(clsArgument);
+            if (optionalCustomModifiers != null)
+                AddCustomModifiers(optionalCustomModifiers, isOptional: true, nameof(optionalCustomModifiers));
+            else if (IsEncodedModifiedType(clsArgument))
+                AddCustomModifiers(clsArgument.GetOptionalCustomModifiers(), isOptional: true, paramName: null);
+
+            // The overload taking a DynamicScope would add the type's own modifiers to the ones written above.
+            AddOneArgTypeHelperWorker(clsArgument, false, null);
+        }
+
+        private void AddCustomModifiers(Type[] customModifiers, bool isOptional, string? paramName)
+        {
+            // Custom modifiers are in the order GetRequiredCustomModifiers and GetOptionalCustomModifiers
+            // return, the reverse of signature order.
+            for (int i = customModifiers.Length - 1; i >= 0; i--)
+            {
+                Type t = customModifiers[i];
+
+                ArgumentNullException.ThrowIfNull(t, paramName);
+
+                if (t.HasElementType)
+                    throw new ArgumentException(SR.Format(SR.Argument_CustomModifierElementType, t), paramName);
+
+                if (t.ContainsGenericParameters)
+                    throw new ArgumentException(SR.Format(SR.Argument_CustomModifierGeneric, t), paramName);
+
+                AddElementType(isOptional ? CorElementType.ELEMENT_TYPE_CMOD_OPT : CorElementType.ELEMENT_TYPE_CMOD_REQD);
+
+                int token = m_module!.GetTypeMetadataToken(t);
+                Debug.Assert(!MetadataToken.IsNullToken(token));
+                AddToken(token);
+            }
         }
 
         // Modifier tokens come from m_module, which a DynamicMethod's signature doesn't have.
         private bool IsEncodedModifiedType(Type type) =>
             m_module != null && type is ModifiedType or SignatureModifiedType;
 
-        // Reflection returns each kind's modifiers separately, without their interleaving, so required ones come
-        // first, as PersistedAssemblyBuilder writes them.
+        // Reflection returns each kind's modifiers separately, without their interleaving. Required modifiers come
+        // first.
         private void AddModifiedTypeCustomModifiers(Type type)
         {
-            AddReflectedCustomModifiers(type.GetRequiredCustomModifiers(), required: true, paramName: null);
-            AddReflectedCustomModifiers(type.GetOptionalCustomModifiers(), required: false, paramName: null);
-        }
-
-        // customModifiers is in reflection order, the reverse of signature order.
-        private void AddReflectedCustomModifiers(Type[] customModifiers, bool required, string? paramName)
-        {
-            for (int i = customModifiers.Length - 1; i >= 0; i--)
-                AddCustomModifier(customModifiers[i], required, paramName);
-        }
-
-        private void AddCustomModifier(Type customModifier, bool required, string? paramName)
-        {
-            ArgumentNullException.ThrowIfNull(customModifier, paramName);
-
-            if (customModifier.HasElementType)
-                throw new ArgumentException(SR.Format(SR.Argument_CustomModifierElementType, customModifier), paramName);
-
-            if (customModifier.ContainsGenericParameters)
-                throw new ArgumentException(SR.Format(SR.Argument_CustomModifierGeneric, customModifier), paramName);
-
-            AddElementType(required ? CorElementType.ELEMENT_TYPE_CMOD_REQD : CorElementType.ELEMENT_TYPE_CMOD_OPT);
-
-            int token = m_module!.GetTypeMetadataToken(customModifier);
-            Debug.Assert(!MetadataToken.IsNullToken(token));
-            AddToken(token);
+            AddCustomModifiers(type.GetRequiredCustomModifiers(), isOptional: false, paramName: null);
+            AddCustomModifiers(type.GetOptionalCustomModifiers(), isOptional: true, paramName: null);
         }
 
         private void AddOneArgTypeHelper(Type clsArgument, DynamicScope? scope = null)
@@ -850,59 +823,42 @@ namespace System.Reflection.Emit
 
             Debug.Assert(clsArgument != null);
 
-            if (optionalCustomModifiers != null)
-            {
-                for (int i = 0; i < optionalCustomModifiers.Length; i++)
-                {
-                    Type t = optionalCustomModifiers[i];
-
-                    if (t is not RuntimeType rtType)
-                        throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(optionalCustomModifiers));
-
-                    if (t.HasElementType)
-                        throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(optionalCustomModifiers));
-
-                    if (t.ContainsGenericParameters)
-                        throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(optionalCustomModifiers));
-
-                    if (t.IsFunctionPointer)
-                        throw new ArgumentException(SR.Argument_FunctionPointersInvalid, nameof(optionalCustomModifiers));
-
-                    AddElementType(CorElementType.ELEMENT_TYPE_CMOD_OPT);
-
-                    int token = dynamicScope.GetTokenFor(rtType.TypeHandle);
-                    Debug.Assert(!MetadataToken.IsNullToken(token));
-                    AddToken(token);
-                }
-            }
-
+            // Required modifiers come first.
             if (requiredCustomModifiers != null)
-            {
-                for (int i = 0; i < requiredCustomModifiers.Length; i++)
-                {
-                    Type t = requiredCustomModifiers[i];
+                AddDynamicCustomModifiers(dynamicScope, requiredCustomModifiers, isOptional: false, nameof(requiredCustomModifiers));
 
-                    if (t is not RuntimeType rtType)
-                        throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(requiredCustomModifiers));
-
-                    if (t.HasElementType)
-                        throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(requiredCustomModifiers));
-
-                    if (t.ContainsGenericParameters)
-                        throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(requiredCustomModifiers));
-
-                    if (t.IsFunctionPointer)
-                        throw new ArgumentException(SR.Argument_FunctionPointersInvalid, nameof(requiredCustomModifiers));
-
-                    AddElementType(CorElementType.ELEMENT_TYPE_CMOD_REQD);
-
-                    int token = dynamicScope.GetTokenFor(rtType.TypeHandle);
-                    Debug.Assert(!MetadataToken.IsNullToken(token));
-                    AddToken(token);
-                }
-            }
+            if (optionalCustomModifiers != null)
+                AddDynamicCustomModifiers(dynamicScope, optionalCustomModifiers, isOptional: true, nameof(optionalCustomModifiers));
 
             AddOneArgTypeHelper(clsArgument, dynamicScope);
+        }
+
+        private void AddDynamicCustomModifiers(DynamicScope dynamicScope, Type[] customModifiers, bool isOptional, string paramName)
+        {
+            // Custom modifiers are in the order GetRequiredCustomModifiers and GetOptionalCustomModifiers
+            // return, the reverse of signature order.
+            for (int i = customModifiers.Length - 1; i >= 0; i--)
+            {
+                Type t = customModifiers[i];
+
+                if (t is not RuntimeType rtType)
+                    throw new ArgumentException(SR.Argument_MustBeRuntimeType, paramName);
+
+                if (t.HasElementType)
+                    throw new ArgumentException(SR.Argument_ArraysInvalid, paramName);
+
+                if (t.ContainsGenericParameters)
+                    throw new ArgumentException(SR.Argument_GenericsInvalid, paramName);
+
+                if (t.IsFunctionPointer)
+                    throw new ArgumentException(SR.Argument_FunctionPointersInvalid, paramName);
+
+                AddElementType(isOptional ? CorElementType.ELEMENT_TYPE_CMOD_OPT : CorElementType.ELEMENT_TYPE_CMOD_REQD);
+
+                int token = dynamicScope.GetTokenFor(rtType.TypeHandle);
+                Debug.Assert(!MetadataToken.IsNullToken(token));
+                AddToken(token);
+            }
         }
 
         internal void AddArguments(DynamicScope dynamicScope, Type[]? arguments, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)

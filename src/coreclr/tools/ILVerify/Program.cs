@@ -114,7 +114,8 @@ namespace ILVerify
             _verifier = new Verifier(this, new VerifierOptions
             {
                 IncludeMetadataTokensInErrorMessages = Get(_command.Tokens),
-                SanityChecks = Get(_command.SanityChecks)
+                SanityChecks = Get(_command.SanityChecks),
+                AllowIgnoresAccessChecksTo = Get(_command.AllowIgnoresAccessChecks)
             });
             _verifier.SetSystemModuleName(new AssemblyNameInfo(Get(_command.SystemModule) ?? "mscorlib"));
 

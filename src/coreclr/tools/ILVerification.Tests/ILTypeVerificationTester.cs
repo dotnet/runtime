@@ -51,6 +51,14 @@ namespace ILVerification.Tests
                     IEnumerable<string> actual = results.Select(e => e.Code.ToString());
                     Assert.True(results.Where(r => r.Code == item).Count() > 0, $"Actual errors where: {string.Join(",", actual)}");
                 }
+
+                var typeHandle = (TypeDefinitionHandle)MetadataTokens.EntityHandle(invalidType.MetadataToken);
+                foreach (VerificationResult result in results)
+                {
+                    Assert.Equal(typeHandle, result.Type);
+                    // Type results carry no IL offset.
+                    Assert.False(result.TryGetArgumentValue("Offset", out int _));
+                }
             }
         }
 

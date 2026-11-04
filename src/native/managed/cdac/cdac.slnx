@@ -10,6 +10,7 @@
     <Project Path="Microsoft.Diagnostics.DataContractReader/Microsoft.Diagnostics.DataContractReader.csproj" />
     <Project Path="Microsoft.Diagnostics.DataContractReader.Legacy/Microsoft.Diagnostics.DataContractReader.Legacy.csproj" />
     <Project Path="gen/Microsoft.Diagnostics.DataContractReader.DataGenerator.csproj" />
+    <Project Path="mscordaccore_enummemory/mscordaccore_enummemory.csproj" />
     <Project Path="mscordaccore_universal/mscordaccore_universal.csproj" />
   </Folder>
   <Folder Name="/tests/">

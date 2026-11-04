@@ -461,7 +461,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
     {
         // The return buffer argument is implicit in both signatures.
 
-#if !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
+#ifndef HAS_RETBUFF_ARGUMENT_REGISTER
         // The ifdef above disables this code if the ret buff arg is always in the same register, which
         // means that we don't need to do any shuffling for it.
 
@@ -470,7 +470,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 
         if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
             return FALSE;
-#endif // !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
+#endif // !HAS_RETBUFF_ARGUMENT_REGISTER
     }
 
     // Handle async continuation argument.
@@ -991,13 +991,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBl
 
 static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     //TODO: depending on what we decide for generics method we may want to move this check to better places
     if (method->IsGenericMethodDefinition() || method->HasMethodInstantiation())
@@ -1194,9 +1188,7 @@ void COMDelegate::BindToMethod(MethodTable* pDelegateMT,
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pDelegateMT));
         PRECONDITION(CheckPointer(pTargetMethod));
         PRECONDITION(CheckPointer(pExactMethodType));
@@ -1943,6 +1935,7 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pMD != NULL);
         PRECONDITION(pMD->HasUnmanagedCallersOnlyAttribute());
     }

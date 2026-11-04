@@ -528,6 +528,7 @@ namespace System
         public static void Copy(System.Array sourceArray, long sourceIndex, System.Array destinationArray, long destinationIndex, long length) { }
         public void CopyTo(System.Array array, int index) { }
         public void CopyTo(System.Array array, long index) { }
+        public static T[] CreateFilled<T>(int length, T value) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public static System.Array CreateInstance(System.Type elementType, int length) { throw null; }
         public static System.Array CreateInstance(System.Type elementType, int length1, int length2) { throw null; }
@@ -11042,13 +11043,22 @@ namespace System.IO
         public override void Write(char value) { }
         public override void Write(char[]? buffer) { }
         public override void Write(char[] buffer, int index, int count) { }
+        public override void Write(decimal value) { }
+        public override void Write(double value) { }
+        public override void Write(int value) { }
+        public override void Write(long value) { }
         public override void Write(System.ReadOnlySpan<char> buffer) { }
+        public override void Write(float value) { }
         public override void Write(string? value) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
+        [System.CLSCompliantAttribute(false)]
+        public override void Write(uint value) { }
+        [System.CLSCompliantAttribute(false)]
+        public override void Write(ulong value) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -11178,9 +11188,18 @@ namespace System.IO
         public override string ToString() { throw null; }
         public override void Write(char value) { }
         public override void Write(char[] buffer, int index, int count) { }
+        public override void Write(decimal value) { }
+        public override void Write(double value) { }
+        public override void Write(int value) { }
+        public override void Write(long value) { }
         public override void Write(System.ReadOnlySpan<char> buffer) { }
+        public override void Write(float value) { }
         public override void Write(string? value) { }
         public override void Write(System.Text.StringBuilder? value) { }
+        [System.CLSCompliantAttribute(false)]
+        public override void Write(uint value) { }
+        [System.CLSCompliantAttribute(false)]
+        public override void Write(ulong value) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -15480,6 +15499,7 @@ namespace System.Runtime.ExceptionServices
     }
     public static partial class ExceptionHandling
     {
+        public static System.Exception? GetCurrentException() { throw null; }
         public static void SetUnhandledExceptionHandler(System.Func<System.Exception,bool> handler) { }
         public static void RaiseAppDomainUnhandledExceptionEvent(object exception) { }
     }

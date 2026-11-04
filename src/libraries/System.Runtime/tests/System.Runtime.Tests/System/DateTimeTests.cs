@@ -2018,6 +2018,16 @@ namespace System.Tests
               "DateTime parsing expected to throw with any dates greater than DateTime.MaxValue");
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [InlineData("\u6642")]
+        [InlineData("\u5206")]
+        [InlineData("\u79D2")]
+        public static void TryParse_TooManyNumbersViaHebrewLexer_FailsWithoutOverflow(string timeSuffix)
+        {
+            string input = $"1 2 3{timeSuffix} \u05D0\u0027 \u05D1\u0027 \u05D2\u0027";
+            Assert.False(DateTime.TryParse(input, CultureInfo.InvariantCulture, DateTimeStyles.None, out _), $"Input '{input}' should fail to parse.");
+        }
+
         public static IEnumerable<object[]> Parse_ValidInput_Succeeds_MemberData()
         {
             yield return new object[] { "1234 12", CultureInfo.InvariantCulture, new DateTime(1234, 12, 1, 0, 0, 0) };

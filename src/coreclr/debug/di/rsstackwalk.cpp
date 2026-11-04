@@ -540,6 +540,18 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         // on the stack.
         Debugger_JITFuncData * pJITFuncData = &(frameData.v.jitFuncData);
 
+        if (frameData.v.fNoMetadata)
+        {
+            IDacDbiInterface::DynamicMethodType methodType;
+            IfFailThrow(pDAC->IsDiagnosticsHiddenOrLCGMethod(
+                pJITFuncData->vmNativeCodeMethodDescToken, &methodType));
+            if (methodType == IDacDbiInterface::kDiagnosticHiddenLCGMethod)
+            {
+                // Preserve interop stitching frames; suppress only explicitly hidden LCG methods.
+                return S_FALSE;
+            }
+        }
+
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.
         CordbAppDomain * pCurrentAppDomain = GetProcess()->GetAppDomain();
@@ -626,11 +638,13 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
             // If justAfterILThrow is true, it means nativeOffset points to the return address of IL_Throw
             // (or another JIT exception helper) after an exception has been thrown.
             // In such cases we want to adjust nativeOffset, so it will point an actual exception callsite.
-            // By subtracting STACKWALK_CONTROLPC_ADJUST_OFFSET from nativeOffset you can get
+            // By subtracting the result of GetStackwalkControlPCAdjustOffset() from nativeOffset you can get
             // an address somewhere inside CALL instruction.
             // This ensures more consistent placement of exception line highlighting in Visual Studio
+            ULONG32 offset = 0;
+            IfFailThrow(GetProcess()->GetStackwalkControlPCAdjustOffset(&offset));
             DWORD nativeOffsetToMap = pJITFuncData->justAfterILThrow ?
-                               (DWORD)pJITFuncData->nativeOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET :
+                               (DWORD)pJITFuncData->nativeOffset - offset :
                                (DWORD)pJITFuncData->nativeOffset;
             CorDebugMappingResult mappingType;
             ULONG uILOffset = pNativeCode->GetSequencePoints()->MapNativeOffsetToIL(
@@ -808,7 +822,8 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
 
         IDacDbiInterface::DynamicMethodType dynMethodType;
         IfFailThrow(pDac->IsDiagnosticsHiddenOrLCGMethod(codeData.vmNativeCodeMethodDescToken, &dynMethodType));
-        if (dynMethodType == IDacDbiInterface::kDiagnosticHidden)
+        if (dynMethodType == IDacDbiInterface::kDiagnosticHidden ||
+            dynMethodType == IDacDbiInterface::kDiagnosticHiddenLCGMethod)
         {
             // Skipping async frame creation for async thunks. These can not be converted to a CordbAsyncFrame as they lack DebugInfo
             // Async Thunks appear on the continuation chain when runtime async calls library async code through a thunk.

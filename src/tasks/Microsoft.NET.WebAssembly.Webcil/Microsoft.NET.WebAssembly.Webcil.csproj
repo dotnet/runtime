@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <Description>Abstractions for modifying .NET webcil binary images</Description>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>

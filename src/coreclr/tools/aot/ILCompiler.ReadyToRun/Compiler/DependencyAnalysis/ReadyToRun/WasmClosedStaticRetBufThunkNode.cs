@@ -57,11 +57,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer) =>
             _signature.FuncType.CompareTo(((WasmClosedStaticRetBufThunkNode)other)._signature.FuncType);
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = base.ComputeNonRelocationBasedDependencies(factory);
-            dependencies.Add(_typeNode, "Wasm closed static return-buffer thunk requires type node");
-            return dependencies;
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
+            sink.Add(_typeNode, "Wasm closed static return-buffer thunk requires type node");
         }
 
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter instructionEncoder, bool relocsOnly)
