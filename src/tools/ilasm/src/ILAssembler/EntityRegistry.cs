@@ -757,6 +757,10 @@ namespace Microsoft.DotNet.ILAssembler
         // Unlike SystemValueTypeType, does not create the TypeRef.
         public bool IsSystemValueType(TypeEntity? type)
         {
+            if (IsCoreLibrary && type is TypeDefinitionEntity { ContainingType: null, Namespace: "System", Name: "ValueType" })
+            {
+                return true;
+            }
             return type is TypeReferenceEntity { Namespace: "System", Name: "ValueType", ResolutionScope: AssemblyReferenceEntity scope }
                 && (scope == FindAssemblyReference("System.Private.CoreLib")
                     || scope == FindAssemblyReference("System.Runtime")
@@ -779,12 +783,23 @@ namespace Microsoft.DotNet.ILAssembler
 
         public AssemblyEntity? Assembly { get; set; }
 
-        private TypeReferenceEntity ResolveFromCoreAssembly(string typeName)
+        public bool IsCoreLibrary { get; set; }
+
+        private TypeEntity ResolveFromCoreAssembly(string typeName)
         {
+            if (IsCoreLibrary)
+            {
+                (string typeNamespace, string name) = NameHelpers.SplitDottedNameToNamespaceAndName(typeName);
+                return GetOrCreateTypeDefinition(null, typeNamespace, name, _ => { });
+            }
+
             // Check for assembly refs in order of preference then fall back to creating mscorlib if none found
             AssemblyReferenceEntity coreAsmRef = GetCoreLibAssemblyReference();
             return GetOrCreateTypeReference(coreAsmRef, new TypeName(null, typeName));
         }
+
+        public EntityBase GetCoreLibraryResolutionScope()
+            => IsCoreLibrary ? Module : GetCoreLibAssemblyReference();
 
         public AssemblyReferenceEntity GetCoreLibAssemblyReference()
         {
