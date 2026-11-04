@@ -1120,6 +1120,54 @@ namespace System.Runtime.CompilerServices
                 return true;
             }
 
+            // Handles suspension on an ICriticalNotifyCompletion once this task's continuation Action has been cached,
+            // without the cost of HandleSuspended. Returns false, having changed nothing, if HandleSuspended is needed instead.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal unsafe bool TryHandleSuspendedOnCriticalNotifier(ref RuntimeAsyncAwaitState state, RuntimeAsyncStackState* stackState)
+            {
+                if (stackState->NotifierKind != SuspensionNotifierKind.CriticalNotifier || m_action is not Action action)
+                {
+                    return false;
+                }
+
+                Thread currentThread = state.CurrentThread!;
+                ExecutionContext? suspendingExecutionContext = stackState->LeafExecutionContext;
+                SynchronizationContext? suspendingSyncContext = stackState->LeafSynchronizationContext;
+                if (suspendingExecutionContext != currentThread._executionContext)
+                {
+                    currentThread._executionContext = suspendingExecutionContext;
+                }
+
+                if (suspendingSyncContext != currentThread._synchronizationContext)
+                {
+                    currentThread._synchronizationContext = suspendingSyncContext;
+                }
+
+                Continuation sentinelContinuation = state.SentinelContinuation!;
+                Continuation headContinuation = sentinelContinuation.Next!;
+                sentinelContinuation.Next = null;
+
+                SetContinuationState(headContinuation);
+
+                Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+                Debug.Assert(stackState->Notifier is ICriticalNotifyCompletion);
+                UnsafeOnCompleted(Unsafe.As<ICriticalNotifyCompletion>(stackState->Notifier!), action);
+                return true;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private static void UnsafeOnCompleted(ICriticalNotifyCompletion notifier, Action action)
+            {
+                try
+                {
+                    notifier.UnsafeOnCompleted(action);
+                }
+                catch (Exception ex)
+                {
+                    Task.ThrowAsync(ex, targetContext: null);
+                }
+            }
+
             [MethodImpl(MethodImplOptions.NoInlining)]
             private void AddAwaitedTaskContinuation(Task awaitedTask)
             {
@@ -1504,7 +1552,8 @@ namespace System.Runtime.CompilerServices
                                     newContinuation.Next = nextContinuation;
                                 }
                                 if (!TryHandleSuspendedOnTask(ref awaitState, &stackState) &&
-                                    !TryHandleSuspendedOnValueTaskSource(ref awaitState, &stackState))
+                                    !TryHandleSuspendedOnValueTaskSource(ref awaitState, &stackState) &&
+                                    !TryHandleSuspendedOnCriticalNotifier(ref awaitState, &stackState))
                                 {
                                     HandleSuspended(ref awaitState);
                                 }
