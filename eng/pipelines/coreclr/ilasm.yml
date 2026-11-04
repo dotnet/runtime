@@ -59,7 +59,7 @@ extends:
               - windows_x64
               jobParameters:
                 nameSuffix: ILAsm
-                buildArgs: -s tools.iltools -c $(_BuildConfig) -pack -test
+                buildArgs: -s tools.ilasm+tools.ildasm -c $(_BuildConfig) -pack -test
                 timeoutInMinutes: 120
                 enablePublishTestResults: true
                 testResultsFormat: 'xunit'
