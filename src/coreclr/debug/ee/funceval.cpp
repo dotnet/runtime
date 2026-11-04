@@ -1694,7 +1694,7 @@ void ResolveFuncEvalGenericArgInfo(DebuggerEval *pDE)
     }
 
     // Find the proper MethodDesc that we need to call.
-    pDE->m_md = g_pEEInterface->LoadMethodDef(pDE->m_debuggerModule->GetRuntimeModule(),
+    pDE->m_md = g_pEEInterface->LoadMethodDef(pDE->m_pAssembly->GetModule(),
                                               pDE->m_methodToken,
                                               nGenericArgs,
                                               pGenericArgs,
@@ -3670,7 +3670,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
             {
 
                 // Find the class.
-                TypeHandle thClass = g_pEEInterface->LoadClass(pDE->m_debuggerModule->GetRuntimeModule(),
+                TypeHandle thClass = g_pEEInterface->LoadClass(pDE->m_pAssembly->GetModule(),
                                                          pDE->m_classToken);
 
                 if (thClass.IsNull())
@@ -3680,7 +3680,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
                 TypeHandle th =
                     (nGenericArgs == 0)
                     ? thClass
-                    : g_pEEInterface->LoadInstantiation(pDE->m_debuggerModule->GetRuntimeModule(),
+                    : g_pEEInterface->LoadInstantiation(pDE->m_pAssembly->GetModule(),
                                                          pDE->m_classToken, nGenericArgs, pGenericArgs);
 
                 if (th.IsNull() || th.ContainsGenericVariables())

@@ -10,7 +10,6 @@ set(CORDBEE_SOURCES_DAC_AND_WKS
   controller.cpp
   debugger.cpp
   debuggermessagebox.cpp
-  debuggermodule.cpp
   executioncontrol.cpp
   functioninfo.cpp
 )
