@@ -32,7 +32,6 @@ EXTERN _OnHijackWorker@4:PROC
 endif ;FEATURE_HIJACK
 EXTERN _ProcessCLRException:PROC
 EXTERN _UMEntryPrestubUnwindFrameChainHandler:PROC
-EXTERN _CallDescrWorkerUnwindFrameChainHandler:PROC
 EXTERN _ProcessCLRException:PROC
 EXTERN __alloca_probe:PROC
 EXTERN _PInvokeImportWorker@4:PROC
@@ -230,8 +229,6 @@ ProcessCLRException proto c
 .safeseh ProcessCLRException
 UMEntryPrestubUnwindFrameChainHandler proto c
 .safeseh UMEntryPrestubUnwindFrameChainHandler
-CallDescrWorkerUnwindFrameChainHandler proto c
-.safeseh CallDescrWorkerUnwindFrameChainHandler
 
 ifdef HAS_ADDRESS_SANITIZER
 EXTERN ___asan_handle_no_return:PROC
@@ -252,88 +249,6 @@ CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, ca
 
         RET
 CallRtlUnwind ENDP
-
-;------------------------------------------------------------------------------
-; This helper routine enregisters the appropriate arguments and makes the
-; actual call.
-;------------------------------------------------------------------------------
-; void STDCALL CallDescrWorkerInternal(CallDescrWorkerParams *  pParams)
-CallDescrWorkerInternal PROC stdcall public USES EBX,
-                         pParams: DWORD
-
-        mov     ebx, pParams
-
-        ; We are about to run managed code so we need to put an exception
-        ; handler on the SEH stack; Note that ThePreStub and CallCatchFunclet
-        ; may replace where the handler points to!
-        PUSH_CLR_EXCEPTION_HANDLER _ProcessCLRException
-
-        mov     ecx, [ebx+CallDescrData__numStackSlots]
-        mov     eax, [ebx+CallDescrData__pSrc]            ; copy the stack
-        test    ecx, ecx
-        jz      donestack
-        lea     eax, [eax+4*ecx-4]          ; last argument
-        push    dword ptr [eax]
-        dec     ecx
-        jz      donestack
-        sub     eax, 4
-        push    dword ptr [eax]
-        dec     ecx
-        jz      donestack
-stackloop:
-        sub     eax, 4
-        push    dword ptr [eax]
-        dec     ecx
-        jnz     stackloop
-donestack:
-
-        ; now we must push each field of the ArgumentRegister structure
-        mov     eax, [ebx+CallDescrData__pArgumentRegisters]
-        mov     edx, dword ptr [eax]
-        mov     ecx, dword ptr [eax+4]
-
-        call    [ebx+CallDescrData__pTarget]
-
-CallDescrWorkerInternalReturnAddress:
-ifdef _DEBUG
-    nop     ; Debug-only tag used in asserts.
-            ; FCalls expect to be called from Jitted code or specific approved call sites,
-            ; like this one.
-endif
-
-        ; Save FP return value if necessary
-        mov     ecx, [ebx+CallDescrData__fpReturnSize]
-        cmp     ecx, 0
-        je      ReturnsInt
-
-        cmp     ecx, 4
-        je      ReturnsFloat
-        cmp     ecx, 8
-        je      ReturnsDouble
-        ; unexpected
-        jmp     Epilog
-
-ReturnsInt:
-        mov     [ebx+CallDescrData__returnValue], eax
-        mov     [ebx+CallDescrData__returnValue+4], edx
-
-Epilog:
-        POP_CLR_EXCEPTION_HANDLER
-        ret
-
-ReturnsFloat:
-        fstp    dword ptr [ebx+CallDescrData__returnValue]    ; Spill the Float return value
-        jmp     Epilog
-
-ReturnsDouble:
-        fstp    qword ptr [ebx+CallDescrData__returnValue]    ; Spill the Double return value
-        jmp     Epilog
-
-public _CallDescrWorkerInternalReturnAddressOffset
-_CallDescrWorkerInternalReturnAddressOffset:
-        dd      CallDescrWorkerInternalReturnAddress - CallDescrWorkerInternal
-
-CallDescrWorkerInternal endp
 
 ifdef FEATURE_HIJACK
 

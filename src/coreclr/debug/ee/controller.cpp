@@ -3610,7 +3610,7 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
     g_pEEInterface->MarkThreadForDebugStepping(thread, true);
     LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag marked thread for debug stepping\n"));
 
-    SetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
+    SetSSFlag(context ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
 }
 
 //
@@ -3660,7 +3660,7 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
 
     // Always need to unmark for stepping
     g_pEEInterface->MarkThreadForDebugStepping(thread, false);
-    UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
+    UnsetSSFlag(context ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
 }
 
 void DebuggerController::EnableExceptionHook()
@@ -7846,8 +7846,7 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                     }
                     else
                     {
-                        // We're hitting this code path with MC++ assemblies
-                        // that have an unmanaged entry point so the stub returns to CallDescrWorker.
+                        // An interop stub can return to unmanaged code.
                         _ASSERTE(g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(patch->address))->IsInteropStub());
                     }
 
@@ -8410,9 +8409,9 @@ void DebuggerStepper::PrepareForSendEvent(StackTraceTicket ticket)
         {
             // If we're at either a patch or SS, we'll have a context.
             CONTEXT *context = g_pEEInterface->GetThreadFilterContext(GetThread());
-            if (context == NULL)
+            if (context != NULL)
             {
-                void * pIP = CORDbgGetIP(reinterpret_cast<DT_CONTEXT *>(context));
+                void * pIP = CORDbgGetIP(context);
 
                 DebuggerJitInfo * dji = g_pDebugger->GetJitInfoFromAddr((TADDR) pIP);
                 DebuggerMethodInfo * dmi = NULL;
@@ -9338,8 +9337,8 @@ TP_RESULT DebuggerFuncEvalComplete::TriggerPatch(DebuggerControllerPatch *patch,
     #error Not supported
 #endif
 #endif
-    CORDbgCopyThreadContext(reinterpret_cast<DT_CONTEXT *>(pCtx),
-                            reinterpret_cast<DT_CONTEXT *>(&(m_pDE->m_context)));
+    CORDbgCopyThreadContext(reinterpret_cast<BYTE *>(pCtx), sizeof(T_CONTEXT),
+                            reinterpret_cast<const BYTE *>(&(m_pDE->m_context)), sizeof(T_CONTEXT));
 
     // We've hit our patch, so simply disable all (which removes the
     // patch) and trigger the event.
