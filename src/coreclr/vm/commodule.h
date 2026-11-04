@@ -11,12 +11,6 @@
 
 class Module;
 
-class COMModule
-{
-public:
-    FCDECL1(static Object*,     GetMethods,             ReflectModuleBaseObject* refThisUNSAFE);
-};
-
 // GetTypeRef
 // This function will return the class token for the named element.
 extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pModule,

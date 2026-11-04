@@ -243,7 +243,7 @@ the direct native function address. If the lookup name differs from the native s
 explicit `Entry` initializer.
 
 Keep the full native table sorted by entrypoint name in case-sensitive `strcmp` order;
-its resolver uses `CBinarySearch` to find entries by name.
+its resolver uses binary search to find entries by name.
 
 QCalls use their declared import entrypoint names and the `DllImportEntry` macro:
 

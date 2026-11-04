@@ -27,8 +27,6 @@
 class ExceptionNative
 {
 public:
-    FCDECL1(static FC_BOOL_RET, IsTransient, INT32 hresult);
-
 #ifdef FEATURE_COMINTEROP
     // NOTE: caller cleans up any partially initialized BSTRs in pED
     static void      GetExceptionData(OBJECTREF, ExceptionData *);

@@ -224,19 +224,16 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall, bool* pHa
 
     MethodTable * pMT = pMD->GetMethodTable();
 
-    //
-    // Delegate constructors are QCalls for which the entrypoint points to the target of the delegate
-    // We have to intercept these and set the call target to the managed helper Delegate.DelegateConstruct
-    //
-    if (pMT->IsDelegate() && pMD->IsCtor())
+    // Delegate constructors are FCalls whose entrypoint points to the delegate target.
+    // Redirect them to the managed helper Delegate.DelegateConstruct.
+    if (pMT->IsDelegate())
     {
         _ASSERTE(pMD->IsCtor());
 
         *pHasManagedImpl = true;
 
-        // We don't want to use the pMD passed in,
-        // since it may disappear.  Instead, use the stable one on Delegate.  Remember
-        // that this is 1:M between the method and the constructors.
+        // Use the stable MethodDesc on Delegate because the constructor's MethodDesc
+        // may disappear. One managed helper serves all delegate constructors.
         return CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE)->GetMultiCallableAddrOfCode();
     }
 
@@ -247,7 +244,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall, bool* pHa
         // This has to be tlbimp constructor
         _ASSERTE(pMD->IsCtor());
 
-        // FCComCtor does not need to be in the fcall hashtable since it does not erect frame.
+        // COM constructors are resolved directly instead of through the runtime helper table.
         return GetEEFuncEntryPoint(FCComCtor);
     }
 #else // !FEATURE_COMINTEROP
