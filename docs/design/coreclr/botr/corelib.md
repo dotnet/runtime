@@ -120,8 +120,9 @@ to preserve a type-only dependency; suppressing the warning does not make it saf
 
 Method triggers that have no existing binder declaration use a conditional self-edge.
 This registers their identity without making them roots; an unreachable self-edge stays
-dead like any other cycle. New native trigger declarations are appended to preserve
-existing binder ID values.
+dead like any other cycle. Trigger-only declarations live alongside their corresponding
+types and members under `#if defined(FOR_ILLINK) || defined(DEBUG)`: descriptor generation
+and debug/Checked consistency checks need their identities, but release binder tables do not.
 
 Additional native dependencies use these triggers:
 

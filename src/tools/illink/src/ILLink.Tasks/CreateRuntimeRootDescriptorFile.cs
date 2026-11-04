@@ -751,16 +751,25 @@ namespace ILLink.Tasks
 
                 if (ifdefLength > 0)
                 {
-                    string defineName = line.Substring(ifdefLength).Trim();
-                    if (ifdefLength == 4 && defineName.StartsWith("defined(", StringComparison.Ordinal) &&
-                        defineName[defineName.Length - 1] == ')')
+                    string condition = line.Substring(ifdefLength).Trim();
+                    string[] expressions = ifdefLength == 4
+                        ? condition.Split(new[] { "||" }, StringSplitOptions.None)
+                        : new[] { condition };
+                    bool isDefined = false;
+                    foreach (string expression in expressions)
                     {
-                        defineName = defineName.Substring("defined(".Length, defineName.Length - "defined(".Length - 1).Trim();
-                    }
-                    if (!IsIdentifier(defineName))
-                    {
-                        _logError($"Unsupported preprocessor condition in '{_filePath}' at line {_lineNumber}: {line}");
-                        return true;
+                        string defineName = expression.Trim();
+                        bool isDefinedExpression = ifdefLength == 4 &&
+                            defineName.StartsWith("defined(", StringComparison.Ordinal) &&
+                            defineName.EndsWith(")", StringComparison.Ordinal);
+                        if (isDefinedExpression)
+                            defineName = defineName.Substring("defined(".Length, defineName.Length - "defined(".Length - 1).Trim();
+                        if (!IsIdentifier(defineName) || (expressions.Length > 1 && !isDefinedExpression))
+                        {
+                            _logError($"Unsupported preprocessor condition in '{_filePath}' at line {_lineNumber}: {line}");
+                            return true;
+                        }
+                        isDefined |= _defineConstants.Contains(defineName);
                     }
 
                     _elseSections.Push(false);
@@ -770,7 +779,7 @@ namespace ILLink.Tasks
                     }
                     else
                     {
-                        _activeSections.Push(_defineConstants.Contains(defineName) != negativeIfDef);
+                        _activeSections.Push(isDefined != negativeIfDef);
                     }
 
                     return true;

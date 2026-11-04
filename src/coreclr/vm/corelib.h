@@ -569,6 +569,9 @@ DEFINE_CLASS(METHOD_INFO,           Reflection,             MethodInfo)
 DEFINE_CLASS(METHOD_HANDLE,         System,                 RuntimeMethodHandle)
 DEFINE_FIELD(METHOD_HANDLE,         METHOD,                 m_value)
 DEFINE_METHOD(METHOD_HANDLE,        TO_INTPTR,              ToIntPtr,           SM_RuntimeMethodHandle_RetIntPtr)
+#if defined(FOR_ILLINK) || defined(DEBUG)
+DEFINE_METHOD_CONDITIONAL(METHOD_HANDLE, GET_METHOD_BODY, GetMethodBody, NoSig, METHOD, METHOD_HANDLE__GET_METHOD_BODY)
+#endif // defined(FOR_ILLINK) || defined(DEBUG)
 
 DEFINE_CLASS(MISSING,               Reflection,             Missing)
 DEFINE_FIELD(MISSING,               VALUE,                  Value)
@@ -880,6 +883,9 @@ DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, CALL_STARTUP_HOOK, CallStartupHook, SM_PtrChar_PtrException_RetVoid)
 
 DEFINE_CLASS(STREAM,                IO,                     Stream)
+#if defined(FOR_ILLINK) || defined(DEBUG)
+DEFINE_METHOD_CONDITIONAL(STREAM, HAS_OVERRIDDEN_SLOW, HasOverriddenSlow, NoSig, METHOD, STREAM__HAS_OVERRIDDEN_SLOW)
+#endif // defined(FOR_ILLINK) || defined(DEBUG)
 DEFINE_METHOD_CONDITIONAL(STREAM,   BEGIN_READ,  BeginRead,  IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult, METHOD, STREAM__HAS_OVERRIDDEN_SLOW)
 DEFINE_METHOD_CONDITIONAL(STREAM,   END_READ,    EndRead,    IM_IAsyncResult_RetInt, METHOD, STREAM__HAS_OVERRIDDEN_SLOW)
 DEFINE_METHOD_CONDITIONAL(STREAM,   BEGIN_WRITE, BeginWrite, IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult, METHOD, STREAM__HAS_OVERRIDDEN_SLOW)
@@ -1316,6 +1322,9 @@ DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_MANAGED, ConvertToManaged, NoSig)
 
 // Classes referenced in EqualityComparer<T>.Default optimization
 
+#if defined(FOR_ILLINK) || defined(DEBUG)
+DEFINE_CLASS_OPTIONAL(EQUALITY_COMPARER, CollectionsGeneric, EqualityComparer`1)
+#endif // defined(FOR_ILLINK) || defined(DEBUG)
 DEFINE_CLASS_CONDITIONAL(STRING_EQUALITYCOMPARER, CollectionsGeneric, StringEqualityComparer, CLASS, EQUALITY_COMPARER)
 DEFINE_CLASS_CONDITIONAL(ENUM_EQUALITYCOMPARER, CollectionsGeneric, EnumEqualityComparer`1, CLASS, EQUALITY_COMPARER)
 DEFINE_CLASS_CONDITIONAL(NULLABLE_EQUALITYCOMPARER, CollectionsGeneric, NullableEqualityComparer`1, CLASS, EQUALITY_COMPARER)
@@ -1324,6 +1333,9 @@ DEFINE_CLASS_CONDITIONAL(OBJECT_EQUALITYCOMPARER, CollectionsGeneric, ObjectEqua
 
 // Classes referenced in Comparer<T>.Default optimization
 
+#if defined(FOR_ILLINK) || defined(DEBUG)
+DEFINE_CLASS_OPTIONAL(COMPARER, CollectionsGeneric, Comparer`1)
+#endif // defined(FOR_ILLINK) || defined(DEBUG)
 DEFINE_CLASS_CONDITIONAL(GENERIC_COMPARER, CollectionsGeneric, GenericComparer`1, CLASS, COMPARER)
 DEFINE_CLASS_CONDITIONAL(OBJECT_COMPARER, CollectionsGeneric, ObjectComparer`1, CLASS, COMPARER)
 DEFINE_CLASS_CONDITIONAL(ENUM_COMPARER, CollectionsGeneric, EnumComparer`1, CLASS, COMPARER)
@@ -1430,13 +1442,6 @@ DEFINE_FIELD_U(_compacted, GCMemoryInfoData, isCompaction)
 DEFINE_FIELD_U(_concurrent, GCMemoryInfoData, isConcurrent)
 DEFINE_FIELD_U(_pauseDurations, GCMemoryInfoData, pauseDurations)
 DEFINE_FIELD_U(_generationInfo, GCMemoryInfoData, generationInfo)
-
-// Self-edges register method triggers without independently rooting them.
-// Append trigger declarations so existing binder IDs keep their values.
-DEFINE_METHOD_CONDITIONAL(METHOD_HANDLE, GET_METHOD_BODY, GetMethodBody, NoSig, METHOD, METHOD_HANDLE__GET_METHOD_BODY)
-DEFINE_METHOD_CONDITIONAL(STREAM, HAS_OVERRIDDEN_SLOW, HasOverriddenSlow, NoSig, METHOD, STREAM__HAS_OVERRIDDEN_SLOW)
-DEFINE_CLASS_OPTIONAL(COMPARER, CollectionsGeneric, Comparer`1)
-DEFINE_CLASS_OPTIONAL(EQUALITY_COMPARER, CollectionsGeneric, EqualityComparer`1)
 
 #undef DEFINE_CLASS
 #undef DEFINE_CLASS_OPTIONAL

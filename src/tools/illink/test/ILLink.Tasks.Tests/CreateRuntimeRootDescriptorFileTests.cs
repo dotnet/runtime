@@ -580,6 +580,39 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void TriggerDeclarationsUseLinkerOrDebugGuard(bool linker, bool debug)
+        {
+            using var test = new DescriptorTest();
+            var defines = new List<string>();
+            if (linker)
+                defines.Add("FOR_ILLINK");
+            if (debug)
+                defines.Add("DEBUG");
+            XDocument descriptor = test.Generate(new[] {
+                "#if defined(FOR_ILLINK) || defined(DEBUG)",
+                "DEFINE_CLASS_OPTIONAL(TRIGGER, TestNS, Trigger)",
+                "DEFINE_METHOD_CONDITIONAL(TRIGGER, ACTIVATE, Activate, NoSig, METHOD, TRIGGER__ACTIVATE)",
+                "#else",
+                "DEFINE_CLASS(RELEASE, TestNS, Release)",
+                "#endif",
+                "#ifdef OUTER_DISABLED",
+                "#if defined(FOR_ILLINK) || defined(DEBUG)",
+                "DEFINE_CLASS(NESTED, TestNS, Nested)",
+                "#endif",
+                "#endif"
+            }, defines: defines.ToArray());
+            XElement assembly = descriptor.Root.Element("assembly");
+            Assert.Equal(linker || debug, assembly.Elements("type").Any(t => (string)t.Attribute("fullname") == "TestNS.Trigger"));
+            Assert.Equal(!linker && !debug, assembly.Elements("type").Any(t => (string)t.Attribute("fullname") == "TestNS.Release"));
+            Assert.DoesNotContain(assembly.Elements("type"), t => (string)t.Attribute("fullname") == "TestNS.Nested");
+            Assert.Equal(linker || debug, XDocument.Load(test.AttributesPath).Descendants("attribute").Any());
+        }
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void RuntimeHeaderEmitsConditionalNativeDependencies(bool varargs)
@@ -693,9 +726,12 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData("#if defined(FEATURE_ON) || defined(FEATURE_OTHER)")]
         [InlineData("#if defined()")]
         [InlineData("#if FEATURE_ON || FEATURE_OTHER")]
+        [InlineData("#if defined(FEATURE_ON) || FEATURE_OTHER")]
+        [InlineData("#if defined(FEATURE_ON) || defined()")]
+        [InlineData("#if defined(FEATURE_ON) ||")]
+        [InlineData("#if defined(FEATURE_ON) || defined(FEATURE_OTHER) && defined(FEATURE_THIRD)")]
         [InlineData("#elif FEATURE_OTHER")]
         [InlineData("#else")]
         [InlineData("#endif")]
@@ -704,7 +740,7 @@ namespace ILLink.Tasks.Tests
         public void InvalidHeaderConditionsAreDiagnosed(string source)
         {
             var errors = new List<string>();
-            var tracker = new CreateRuntimeRootILLinkDescriptorFile.DefineTracker(new HashSet<string>(), errors.Add, "corelib.h");
+            var tracker = new CreateRuntimeRootILLinkDescriptorFile.DefineTracker(new HashSet<string> { "FEATURE_ON" }, errors.Add, "corelib.h");
             foreach (string line in source.Split('\n'))
                 tracker.ProcessLine(line);
             tracker.Complete();
