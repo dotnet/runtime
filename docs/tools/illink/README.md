@@ -15,3 +15,4 @@ View the official trimming docs at [learn.microsoft.com](https://learn.microsoft
 ## Design Docs
 - [Reflection Handling](../../design/tools/illink/reflection-flow.md)
 - [Task Cache](../../design/tools/illink/task-cache.md)
+- [Shared Invocation Cache](../../../src/tasks/Common/InvocationCache/README.md)

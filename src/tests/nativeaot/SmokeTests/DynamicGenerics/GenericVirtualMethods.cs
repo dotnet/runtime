@@ -454,7 +454,10 @@ public static class GenericVirtualMethods
         }
 
         Assert.IsTrue(foundCaught);
-        Assert.IsTrue(mgt.RunAsyncMethod(true));
+        if (RuntimeFeature.IsMultithreadingSupported)
+        {
+            Assert.IsTrue(mgt.RunAsyncMethod(true));
+        }
     }
 
     class Base
