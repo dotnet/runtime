@@ -42,7 +42,7 @@ public class EcmaMetadataTests
     {
         using MetadataFixture fixture = new(locator: 0, readable: false, generation: 1);
 
-        Assert.Null(fixture.Contract.GetMetadata(fixture.Module));
+        Assert.Throws<VirtualReadException>(() => fixture.Contract.GetMetadata(fixture.Module));
         Assert.Equal(0, fixture.CLRCalls);
         Assert.Equal(0, fixture.IXCLRCalls);
         Assert.Equal(0, fixture.PathCalls);
@@ -123,6 +123,7 @@ public class EcmaMetadataTests
             loader.Setup(l => l.TryGetLoadedImageContents(Module, out imageBase, out size, out flags)).Returns(true);
             loader.Setup(l => l.GetFileHeadersInfo(Module, out timestamp, out imageSize)).Returns(true);
             loader.Setup(l => l.GetPath(Module)).Returns("TestModule.dll");
+            loader.Setup(l => l.GetPEAssembly(Module)).Throws<VirtualReadException>();
 
             ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact("""
                 {

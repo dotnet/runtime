@@ -116,45 +116,38 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     {
         AvailableMetadataType type = GetAvailableMetadataType(handle);
 
-        try
+        switch (type)
         {
-            switch (type)
+            case AvailableMetadataType.None:
+                return null;
+            case AvailableMetadataType.ReadOnly:
             {
-                case AvailableMetadataType.None:
-                    return null;
-                case AvailableMetadataType.ReadOnly:
+                TargetSpan address = GetReadOnlyMetadataAddress(handle);
+                byte[] data = new byte[address.Size];
+                try
                 {
-                    TargetSpan address = GetReadOnlyMetadataAddress(handle);
-                    byte[] data = new byte[address.Size];
-                    try
-                    {
-                        target.ReadBuffer(address.Address, data);
-                    }
-                    catch (VirtualReadException)
-                    {
-                        return GetMetadataFromHost(handle, data);
-                    }
-                    return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
-                }
-                case AvailableMetadataType.ReadWriteSavedCopy:
-                {
-                    TargetSpan address = GetReadWriteSavedMetadataAddress(handle);
-                    byte[] data = new byte[address.Size];
                     target.ReadBuffer(address.Address, data);
-                    return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
                 }
-                case AvailableMetadataType.ReadWrite:
+                catch (VirtualReadException)
                 {
-                    byte[] data = GetReadWriteMetadata(handle);
-                    return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
+                    return GetMetadataFromHost(handle, data);
                 }
-                default:
-                    throw new NotImplementedException();
+                return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
             }
-        }
-        catch
-        {
-            return null;
+            case AvailableMetadataType.ReadWriteSavedCopy:
+            {
+                TargetSpan address = GetReadWriteSavedMetadataAddress(handle);
+                byte[] data = new byte[address.Size];
+                target.ReadBuffer(address.Address, data);
+                return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
+            }
+            case AvailableMetadataType.ReadWrite:
+            {
+                byte[] data = GetReadWriteMetadata(handle);
+                return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
+            }
+            default:
+                throw new NotImplementedException();
         }
     }
 
