@@ -253,6 +253,54 @@ namespace System.Reflection.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Constructor_OpenGenericDeclaringTypeWithExistingInstance_Throws(bool isAbstract)
+        {
+            Type type = isAbstract ? typeof(AbstractConstructorTarget<>) : typeof(GenericConstructorTarget<>);
+            ConstructorInfo constructor = type.GetConstructor(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                Type.EmptyTypes,
+                modifiers: null)!;
+            object target = isAbstract ? new ConcreteConstructorTarget() : new GenericConstructorTarget<int>();
+
+            MemberAccessException exception = Assert.Throws<MemberAccessException>(() => constructor.Invoke(target, Array.Empty<object?>()));
+            Assert.Contains(type.ToString(), exception.Message);
+            Assert.Contains("Type.ContainsGenericParameters", exception.Message);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Constructor_OpenGenericDeclaringTypeAllocation_Throws(bool useConstructorInvoker)
+        {
+            Type type = typeof(GenericConstructorTarget<>);
+            ConstructorInfo constructor = type.GetConstructor(Type.EmptyTypes)!;
+            MemberAccessException exception;
+            if (useConstructorInvoker)
+            {
+                exception = Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke());
+                MemberAccessException spanException = Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke(Span<object?>.Empty));
+                Assert.Equal(exception.Message, spanException.Message);
+            }
+            else
+            {
+                exception = Assert.Throws<MemberAccessException>(() => constructor.Invoke(Array.Empty<object?>()));
+            }
+
+            Assert.Contains(type.ToString(), exception.Message);
+            Assert.Contains("Type.ContainsGenericParameters", exception.Message);
+        }
+
+        public sealed class GenericConstructorTarget<T>
+        {
+            public GenericConstructorTarget()
+            {
+            }
+        }
+
         public abstract class AbstractConstructorTarget<T>
         {
             protected AbstractConstructorTarget()
