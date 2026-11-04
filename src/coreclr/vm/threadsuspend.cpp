@@ -4555,10 +4555,6 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
 #endif // !TARGET_X86
 
     IS_VALID_CODE_PTR((FARPROC) (TADDR)m_pvHJRetAddr);
-    // TODO [DAVBR]: For the full fix for VsWhidbey 450273, the below
-    // may be uncommented once isLegalManagedCodeCaller works properly
-    // with non-return address inputs, and with non-DEBUG builds
-    //_ASSERTE(isLegalManagedCodeCaller((TADDR)m_pvHJRetAddr));
     STRESS_LOG2(LF_SYNC, LL_INFO100, "Hijacking return address 0x%p for thread %p\n", m_pvHJRetAddr, this);
 
     // Remember the method we're executing
