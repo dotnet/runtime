@@ -19,7 +19,7 @@ internal sealed partial class ResourceManagerNotifyShim : NotificationShimBase, 
 
     public void TMDown()
     {
-        NotificationType = ShimNotificationType.ResourceManagerTmDownNotify;
+        NotificationType = Interop.Xolehlp.ShimNotificationType.ResourceManagerTmDownNotify;
         ShimFactory.NewNotification(this);
     }
 }
