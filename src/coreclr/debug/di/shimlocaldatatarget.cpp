@@ -380,7 +380,7 @@ ShimLocalDataTarget::GetThreadContext(
 
     HRESULT hr = E_FAIL;
 
-    if (!CheckContextSizeForBuffer(contextSize, pContext))
+    if ((pContext == NULL) || !CheckContextSizeForFlags(contextSize, contextFlags))
     {
         return E_INVALIDARG;
     }
@@ -392,7 +392,7 @@ ShimLocalDataTarget::GetThreadContext(
 
     if (hThread != NULL)
     {
-        DT_CONTEXT * pCtx = reinterpret_cast<DT_CONTEXT *>(pContext);
+        T_CONTEXT * pCtx = reinterpret_cast<T_CONTEXT *>(pContext);
         pCtx->ContextFlags = contextFlags;
 
         if (DbiGetThreadContext(hThread, pCtx))
@@ -428,7 +428,7 @@ ShimLocalDataTarget::SetThreadContext(
 
     if (hThread != NULL)
     {
-        if (DbiSetThreadContext(hThread, reinterpret_cast<const DT_CONTEXT *>(pContext)))
+        if (DbiSetThreadContext(hThread, reinterpret_cast<const T_CONTEXT *>(pContext)))
         {
             hr = S_OK;
         }
