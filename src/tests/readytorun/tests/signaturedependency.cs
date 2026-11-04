@@ -7,3 +7,8 @@ public struct SignatureValue
 {
     public object Reference;
 }
+
+public struct GenericVirtualSignatureValue
+{
+    public object Reference;
+}

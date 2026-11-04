@@ -5,7 +5,7 @@ using System;
 using System.Collections.Immutable;
 using System.IO;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 /// <summary>
 /// Writes an assembled image and its Portable PDB to files: the output, and <c>&lt;output&gt;.pdb</c> beside it.

@@ -95,7 +95,7 @@ ExplicitControlLoaderHeap::~ExplicitControlLoaderHeap()
 
         if (fReleaseMemory)
         {
-            ExecutableAllocator::Instance()->Release(pVirtualAddress);
+            ExecutableAllocator::Instance()->Release(pVirtualAddress, pSearch->dwVirtualSize);
         }
 
         delete pSearch;
@@ -103,7 +103,7 @@ ExplicitControlLoaderHeap::~ExplicitControlLoaderHeap()
 
     if (m_reservedBlock.m_fReleaseMemory)
     {
-        ExecutableAllocator::Instance()->Release(m_reservedBlock.pVirtualAddress);
+        ExecutableAllocator::Instance()->Release(m_reservedBlock.pVirtualAddress, m_reservedBlock.dwVirtualSize);
     }
 
     INDEBUG(s_dwNumInstancesOfLoaderHeaps --;)
@@ -200,7 +200,7 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
     {
         // The caller asked us to release the provided block, so own it for
         // automatic cleanup on the error paths below.
-        pDataHolder = pData;
+        pDataHolder = ReservedMemoryBlock{ pData, dwSizeToReserve };
     }
 
     size_t dwSizeToCommitPart = dwSizeToCommit;

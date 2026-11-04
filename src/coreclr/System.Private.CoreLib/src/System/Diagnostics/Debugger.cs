@@ -93,5 +93,14 @@ namespace System.Diagnostics
         [DebuggerStepThrough]
         [DebuggerHidden]
         internal static void UserBreakpoint() => Break();
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        [DebuggerHidden]
+        internal static unsafe void InvokeFunction(IntPtr context)
+        {
+            // Exceptions must reach the native catcher without a managed catch site.
+            FunctionEvaluation.Run((FunctionEvaluation.Context*)context);
+        }
     }
 }
