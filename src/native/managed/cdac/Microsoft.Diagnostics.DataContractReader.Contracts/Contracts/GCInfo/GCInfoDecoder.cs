@@ -480,13 +480,13 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         _reversePInvokeFrameStackSlot = _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_REVERSE_PINVOKE_FRAME) ?
             TTraits.DenormalizeStackSlot(_reader.DecodeVarLengthSigned(TTraits.REVERSE_PINVOKE_FRAME_ENCBASE, ref _bitOffset)) :
             TTraits.NO_REVERSE_PINVOKE_FRAME;
-        yield return DecodePoints.ReversePInvoke;
 
         if (TTraits.HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
         {
             _fixedStackParameterScratchArea =
                 TTraits.DenormalizeSizeOfStackArea(_reader.DecodeVarLengthUnsigned(TTraits.SIZE_OF_STACK_AREA_ENCBASE, ref _bitOffset));
         }
+        yield return DecodePoints.ReversePInvoke;
 
         if (PartiallyInterruptibleGCSupported)
         {
