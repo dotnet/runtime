@@ -221,6 +221,35 @@ namespace System.Reflection.Tests
             Assert.Equal(24, target.Value);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Constructor_OpenAbstractGenericDeclaringTypeAllocation_Throws(bool useConstructorInvoker)
+        {
+            ConstructorInfo constructor = typeof(AbstractConstructorTarget<>).GetConstructor(
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                Type.EmptyTypes,
+                modifiers: null)!;
+
+            if (useConstructorInvoker)
+            {
+                Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke());
+                Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke(Span<object?>.Empty));
+            }
+            else
+            {
+                Assert.Throws<MemberAccessException>(() => constructor.Invoke(Array.Empty<object?>()));
+            }
+        }
+
+        public abstract class AbstractConstructorTarget<T>
+        {
+            protected AbstractConstructorTarget()
+            {
+            }
+        }
+
         public abstract class AbstractRefConstructorTarget
         {
             public int Value;
