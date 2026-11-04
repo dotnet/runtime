@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Xunit;
-using TestLibrary;
 
 public class Program
 {
@@ -47,7 +46,6 @@ public class Program
             typeof(GenericModifiers).GetMethod(name).MakeGenericMethod(argument).GetParameters()[0].GetModifiedParameterType();
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91381", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static unsafe int TestEntryPoint()
