@@ -170,6 +170,14 @@ namespace System.Tests
         [Fact, PlatformSpecific(TestPlatforms.tvOS)]
         public static void TestIsOSVersionAtLeast_TvOS() => TestIsOSVersionAtLeast("tvOS");
 
+        [Fact]
+        public static void WatchOS_AlwaysReturnsFalse()
+        {
+            Assert.False(OperatingSystem.IsWatchOS());
+            Assert.False(OperatingSystem.IsWatchOSVersionAtLeast(0));
+            Assert.False(OperatingSystem.IsWatchOSVersionAtLeast(1, 2, 3));
+        }
+
         [Fact, PlatformSpecific(TestPlatforms.Windows)]
         public static void TestIsOSPlatform_Windows() => TestIsOSPlatform("Windows", OperatingSystem.IsWindows);
 
