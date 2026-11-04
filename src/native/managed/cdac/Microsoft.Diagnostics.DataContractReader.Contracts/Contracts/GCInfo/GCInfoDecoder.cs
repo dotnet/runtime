@@ -22,6 +22,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         GenericInstContext,
         EditAndContinue,
         ReversePInvoke,
+        StackParameterArea,
         InterruptibleRanges,
         SlotTable,
         Complete,
@@ -451,6 +452,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.GenericInstContext;
         yield return DecodePoints.EditAndContinue;
         yield return DecodePoints.ReversePInvoke;
+        yield return DecodePoints.StackParameterArea;
 
         if (PartiallyInterruptibleGCSupported && !TTraits.USES_COMPACT_WASM_HEADER)
         {
@@ -548,13 +550,14 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         _reversePInvokeFrameStackSlot = _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_REVERSE_PINVOKE_FRAME) ?
             TTraits.DenormalizeStackSlot(_reader.DecodeVarLengthSigned(TTraits.REVERSE_PINVOKE_FRAME_ENCBASE, ref _bitOffset)) :
             TTraits.NO_REVERSE_PINVOKE_FRAME;
+        yield return DecodePoints.ReversePInvoke;
 
         if (TTraits.HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
         {
             _fixedStackParameterScratchArea =
                 TTraits.DenormalizeSizeOfStackArea(_reader.DecodeVarLengthUnsigned(TTraits.SIZE_OF_STACK_AREA_ENCBASE, ref _bitOffset));
         }
-        yield return DecodePoints.ReversePInvoke;
+        yield return DecodePoints.StackParameterArea;
 
         if (PartiallyInterruptibleGCSupported)
         {
@@ -582,7 +585,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     public GCInfoHeader GetHeader()
     {
-        EnsureDecodedTo(DecodePoints.ReversePInvoke);
+        EnsureDecodedTo(DecodePoints.StackParameterArea);
 
         GcInfoHeaderFlags genericsInstContextFlags = _headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK;
         SpecialSlot? gsCookie = _gsCookieStackSlot != TTraits.NO_GS_COOKIE ? new SpecialSlot(_gsCookieStackSlot) : null;
