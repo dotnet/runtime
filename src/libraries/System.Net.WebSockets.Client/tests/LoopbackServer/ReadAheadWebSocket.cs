@@ -15,7 +15,7 @@ namespace System.Net.WebSockets.Client.Tests;
 
 internal class ReadAheadWebSocket : WebSocket
 {
-    private const int ReadAheadBufferSize = 64 * 1024 * 1024;
+    private const int ReadAheadBufferSize = 4 * 1024;
 
     private record struct DataFrame(ValueWebSocketReceiveResult Metadata, Memory<byte> Memory, byte[] _rented);
 

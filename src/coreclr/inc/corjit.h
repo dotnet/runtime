@@ -288,13 +288,13 @@ public:
     struct ValueHistogram32
     {
         uint32_t Count;
-        intptr_t ValueTable[HandleHistogram32::SIZE];
+        int32_t ValueTable[HandleHistogram32::SIZE];
     };
 
     struct ValueHistogram64
     {
         uint64_t Count;
-        intptr_t ValueTable[HandleHistogram32::SIZE];
+        int32_t ValueTable[HandleHistogram32::SIZE];
     };
 
     enum class PgoInstrumentationKind
@@ -335,10 +335,11 @@ public:
         GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
         GetLikelyMethod = (DescriptorMin * 7) | MethodHandle, // Compressed get likely method data
 
-        // Same as type/method histograms, but for generic integer values
+        // Same as type/method histograms, but for generic integer values.
+        // Values are recorded as 32-bit ints on all targets (wider values are truncated).
         ValueHistogramIntCount = (DescriptorMin * 8) | FourByte | AlignPointer,
         ValueHistogramLongCount = (DescriptorMin * 8) | EightByte,
-        ValueHistogram = (DescriptorMin * 9) | EightByte,
+        ValueHistogram = (DescriptorMin * 9) | FourByte,
     };
 
     struct PgoInstrumentationSchema

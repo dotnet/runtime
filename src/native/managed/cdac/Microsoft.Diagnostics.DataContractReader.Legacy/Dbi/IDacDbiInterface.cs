@@ -482,6 +482,7 @@ public enum DynamicMethodType
     kNone = 0,
     kDiagnosticHidden = 1,
     kLCGMethod = 2,
+    kDiagnosticHiddenLCGMethod = 3,
 }
 
 public enum CorDebugThreadState

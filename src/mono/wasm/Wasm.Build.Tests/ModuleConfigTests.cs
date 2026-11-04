@@ -110,6 +110,45 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
+    [Theory]
+    [InlineData("not-found", false)]
+    [InlineData("network", false)]
+    [InlineData("not-found", true)]
+    [InlineData("network", true)]
+    [InlineData("none", false)]
+    [TestCategory("coreclr")]
+    public async Task NativeSymbolsDownloadDoesNotHang(string failure, bool ignorePdbLoadErrors)
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(
+            config, aot: false, TestAsset.WasmBasicTestApp,
+            $"NativeSymbolsDownload_{failure}_{ignorePdbLoadErrors}",
+            extraProperties: "<WasmEmitSymbolMap>true</WasmEmitSymbolMap><WasmBuildNative>false</WasmBuildNative>");
+        PublishProject(info, config, new PublishOptions(
+            AssertAppBundle: false,
+            ExtraMSBuildArgs: "-p:WasmFingerprintAssets=true"));
+
+        bool expectSuccess = failure is "none" || (failure is "not-found" && ignorePdbLoadErrors);
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "NativeSymbolsDownload",
+            DetectRuntimeFailures: expectSuccess,
+            ExpectedExitCode: expectSuccess ? 0 : 1,
+            BrowserQueryString: new NameValueCollection
+            {
+                { "failure", failure },
+                { "ignorePdbLoadErrors", ignorePdbLoadErrors.ToString().ToLowerInvariant() }
+            }));
+
+        Assert.Equal("Native symbols fetch: force-cache", Assert.Single(
+            result.TestOutput.Where(message => message.StartsWith("Native symbols fetch:", StringComparison.Ordinal))));
+        Assert.Equal(expectSuccess, result.TestOutput.Contains("Native symbols startup completed"));
+        if (!expectSuccess)
+        {
+            Assert.Contains(result.ConsoleOutput, message => message.Contains("Failed to load resource 'dotnet.native.", StringComparison.Ordinal));
+        }
+    }
+
     [Fact, TestCategory("bundler-friendly")]
     public async Task AssetIntegrity()
     {
