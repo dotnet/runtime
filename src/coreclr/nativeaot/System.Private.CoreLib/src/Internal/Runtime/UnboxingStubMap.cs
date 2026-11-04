@@ -24,13 +24,15 @@ namespace Internal.Runtime
 
         private static Map? s_map;
 
-        public static IntPtr GetTarget(IntPtr stub, bool includeInstantiatingStubs)
+        public static IntPtr GetTarget(IntPtr stub, bool includeInstantiatingStubs, out bool isInstantiatingStub)
         {
             Map map = GetMap();
+            isInstantiatingStub = false;
             int index = Array.BinarySearch(map.Keys, 0, map.SimpleCount, stub);
             if (index < 0 && includeInstantiatingStubs)
             {
                 index = Array.BinarySearch(map.Keys, map.SimpleCount, map.Keys.Length - map.SimpleCount, stub);
+                isInstantiatingStub = index >= 0;
             }
 
             return index >= 0 ? map.Values[index] : stub;

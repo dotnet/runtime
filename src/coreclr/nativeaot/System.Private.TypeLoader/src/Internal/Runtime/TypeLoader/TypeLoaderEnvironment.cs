@@ -458,16 +458,12 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            IntPtr exactTarget = RuntimeAugments.GetTargetOfWrapperStub(unboxingFunctionPointer, includeInstantiatingStubs: false);
-            if (RuntimeAugments.IsGenericType(declaringType))
+            IntPtr exactTarget = RuntimeAugments.GetTargetOfWrapperStub(unboxingFunctionPointer,
+                includeInstantiatingStubs: RuntimeAugments.IsGenericType(declaringType), out bool isInstantiatingStub);
+            if (isInstantiatingStub)
             {
-                IntPtr fatFunctionPointerTarget = RuntimeAugments.GetTargetOfWrapperStub(exactTarget, includeInstantiatingStubs: true);
-                if (fatFunctionPointerTarget != exactTarget)
-                {
-                    // Instantiating unboxing stubs supply the declaring type as the generic context.
-                    exactTarget = FunctionPointerOps.GetGenericMethodFunctionPointer(fatFunctionPointerTarget,
-                                                                                        declaringType.ToIntPtr());
-                }
+                // Instantiating unboxing stubs supply the declaring type as the generic context.
+                exactTarget = FunctionPointerOps.GetGenericMethodFunctionPointer(exactTarget, declaringType.ToIntPtr());
             }
 
             return exactTarget;
