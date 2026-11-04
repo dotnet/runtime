@@ -2778,8 +2778,8 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     GenTree* returnedContinuation = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
 
     bool         linksPrevContinuation;
-    GenTreeCall* allocContinuation = CreateAllocContinuationCall(subLayout.NeedsKeepAlive(), returnedContinuation,
-                                                                 layout, &linksPrevContinuation);
+    GenTreeCall* allocContinuation =
+        CreateAllocContinuationCall(subLayout.NeedsKeepAlive(), returnedContinuation, layout, &linksPrevContinuation);
 
     m_compiler->compCurBB = suspendBB;
     m_compiler->fgMorphTree(allocContinuation);
