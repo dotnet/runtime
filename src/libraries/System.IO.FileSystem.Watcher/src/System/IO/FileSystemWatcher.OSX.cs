@@ -456,7 +456,7 @@ namespace System.IO
                     // First, we should check if this event should kick off a re-scan since we can't really rely on anything after this point if that is true
                     if (ShouldRescanOccur(eventFlags[i]))
                     {
-                        watcher.OnError(new ErrorEventArgs(new IOException(SR.FSW_BufferOverflow, (int)eventFlags[i])));
+                        watcher.OnError(new ErrorEventArgs(CreateBufferOverflowException(_fullDirectory)));
                         break;
                     }
                     else if (handledRenameEvents == i)
