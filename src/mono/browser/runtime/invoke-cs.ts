@@ -3,6 +3,7 @@
 
 import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
+import { parseJSExportNames } from "../../../native/libs/Common/JavaScript/export-names";
 
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
@@ -29,8 +30,9 @@ type DeferredBinding = {
 export const deferredCsFunctions = new Map<string, DeferredBinding>();
 export const deferredCsBinders = new Set<(methodId: string) => void>();
 
-export function registerLazyCsFunctions (assemblyName: string, descriptors: string[], bind: (methodId: string) => void): void {
+export function registerLazyCsFunctions (assemblyName: string, exportNames: string[], bind: (methodId: string) => void): void {
     loaderHelpers.assert_runtime_running();
+    const names = parseJSExportNames(assemblyName, exportNames);
     // The binder is runtime infrastructure, not an application delegate proxy.
     Object.assign(bind, { [do_not_force_dispose]: true });
     deferredCsBinders.add(bind);
@@ -39,16 +41,7 @@ export function registerLazyCsFunctions (assemblyName: string, descriptors: stri
         exportsByAssembly.set(assemblyName, exports);
         exportsByAssembly.set(assemblyName + ".dll", exports);
     }
-    const descriptorSize = 6;
-    mono_assert(descriptors.length % descriptorSize === 0, "Invalid deferred JSExport descriptors");
-    for (let index = 0; index < descriptors.length; index += descriptorSize) {
-        const methodId = descriptors[index];
-        const namespaceName = descriptors[index + 1];
-        const shortClassName = descriptors[index + 2];
-        const methodName = descriptors[index + 3];
-        const signatureHash = Number(descriptors[index + 4]);
-        const isDefault = descriptors[index + 5] === "1";
-        mono_assert(Number.isInteger(signatureHash), "Invalid deferred JSExport signature hash");
+    for (const { methodId, namespaceName, shortClassName, methodName, signatureHash, isDefault } of names) {
         const key = getCsFunctionKey(assemblyName, namespaceName, shortClassName, methodName, signatureHash);
         const existing = deferredCsFunctions.get(key);
         if (existing) {

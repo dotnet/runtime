@@ -54,6 +54,45 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public class JSExportTest : JSInteropTestBase, IAsyncLifetime
     {
         [Theory]
+        [InlineData("Exports")]
+        [InlineData("Catalog.Namespace.Exports/Nested")]
+        public async Task RawExportCatalogPreservesLazyIdsAndAliases(string typeName)
+        {
+            string assemblyName = "RawCatalog" + Guid.NewGuid().ToString("N");
+            var boundIds = new List<string>();
+            JavaScriptTestHelper.RegisterRawExportCatalog(assemblyName,
+                [
+                    $"[{assemblyName}]{typeName}:Echo#-17",
+                    $"[{assemblyName}]{typeName}:Echo#23",
+                    $"[{assemblyName}]{typeName}:Unused#-2147483648"
+                ],
+                id =>
+                {
+                    boundIds.Add(id);
+                    throw new InvalidOperationException("Bind:" + id);
+                });
+            Assert.Empty(boundIds);
+
+            Assert.Equal("Bind:0|Bind:0|Bind:1",
+                await JavaScriptTestHelper.InspectRawExportCatalog(assemblyName, typeName));
+            Assert.Equal(new[] { "0", "0", "1" }, boundIds);
+        }
+
+        [Theory]
+        [InlineData("[Other]Exports:Echo#1")]
+        [InlineData("[RawCatalogInvalid]Exports:Echo")]
+        [InlineData("[RawCatalogInvalid]Exports:Echo#")]
+        [InlineData("[RawCatalogInvalid]Exports:Echo#2147483648")]
+        [InlineData("[RawCatalogInvalid]Exports:#1")]
+        public void RawExportCatalogRejectsInvalidNames(string name)
+        {
+            JSException exception = Assert.Throws<JSException>(() =>
+                JavaScriptTestHelper.RegisterRawExportCatalog("RawCatalogInvalid", [name],
+                    _ => throw new InvalidOperationException("Invalid exports must not be bound.")));
+            Assert.Contains($"Invalid JSExport catalog key '{name}'", exception.Message);
+        }
+
+        [Theory]
         [MemberData(nameof(MarshalBooleanCases))]
         public void JsExportBoolean(bool value)
         {

@@ -12,7 +12,9 @@ reachable even when JavaScript is the only caller of the application's exports.
 One generated provider per assembly uses the assembly name as its type-map key.
 Its `ReadOnlySpan<string> GetExportNames()` catalog supplies fully qualified, hash-qualified names without
 enumerating the type map. Discovery activates the provider and publishes deferred
-functions without binding methods. The first overload in catalog order supplies
+functions without binding methods. Managed discovery forwards the catalog strings
+unchanged to JavaScript, which derives the export paths, hashes, method IDs and aliases
+using the same parser for both runtimes. The first overload in catalog order supplies
 the plain-name alias. Both runtimes invoke the same provider's `Bind(string methodId)`
 synchronously on the first call, preserving
 synchronous return values and stable function identities without JavaScript proxies.

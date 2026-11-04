@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
+import { parseJSExportNames } from "../../Common/JavaScript/export-names";
 
 import type { BindingClosureCS, BoundMarshalerToCs, CSFnHandle, DeferredBindingCS, JSFunctionSignature } from "./types";
 
@@ -28,8 +29,9 @@ export async function getAssemblyExports(assemblyName: string): Promise<any> {
     return exportsByAssembly.get(assemblyName) || {};
 }
 
-export function registerLazyCsFunctions(assemblyName: string, descriptors: string[], bind: (methodId: string) => void): void {
+export function registerLazyCsFunctions(assemblyName: string, exportNames: string[], bind: (methodId: string) => void): void {
     assertRuntimeRunning();
+    const names = parseJSExportNames(assemblyName, exportNames);
     // The binder is runtime infrastructure, not an application delegate proxy.
     Object.assign(bind, { [doNotForceDispose]: true });
     deferredCsBinders.add(bind);
@@ -38,16 +40,7 @@ export function registerLazyCsFunctions(assemblyName: string, descriptors: strin
         exportsByAssembly.set(assemblyName, exports);
         exportsByAssembly.set(assemblyName + ".dll", exports);
     }
-    const descriptorSize = 6;
-    dotnetAssert.check(descriptors.length % descriptorSize === 0, "Invalid deferred JSExport descriptors");
-    for (let index = 0; index < descriptors.length; index += descriptorSize) {
-        const methodId = descriptors[index];
-        const namespaceName = descriptors[index + 1];
-        const shortClassName = descriptors[index + 2];
-        const methodName = descriptors[index + 3];
-        const signatureHash = Number(descriptors[index + 4]);
-        const isDefault = descriptors[index + 5] === "1";
-        dotnetAssert.check(Number.isInteger(signatureHash), "Invalid deferred JSExport signature hash");
+    for (const { methodId, namespaceName, shortClassName, methodName, signatureHash, isDefault } of names) {
         const key = getCsFunctionKey(assemblyName, namespaceName, shortClassName, methodName, signatureHash);
         const existing = deferredCsFunctions.get(key);
         if (existing) {

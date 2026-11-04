@@ -1305,6 +1305,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("INTERNAL.forceDisposeProxies")]
         internal static partial void ForceDisposeProxies(bool disposeMethods, bool verbose);
 
+        [JSImport("INTERNAL.registerLazyCsFunctions")]
+        internal static partial void RegisterRawExportCatalog(string assemblyName, string[] exportNames,
+            [JSMarshalAs<JSType.Function<JSType.String>>] Action<string> bind);
+
+        [JSImport("inspectRawExportCatalog", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.String>>]
+        internal static partial Task<string> InspectRawExportCatalog(string assemblyName, string typeName);
+
         // [csOwnedByJsHandle, csOwnedByJsvHandle, jsOwnedRegistered, jsOwnedAlive, importWrappers]
         [JSImport("INTERNAL.getProxyCounts")]
         internal static partial int[] GetProxyCounts();

@@ -562,6 +562,28 @@ export async function setup() {
     dllExports = await App.runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
 }
 
+export async function inspectRawExportCatalog(assemblyName, typeName) {
+    let scope = await App.runtime.getAssemblyExports(assemblyName);
+    for (const part of typeName.replace(/\//g, ".").split(".")) {
+        scope = scope[part];
+    }
+    if (scope.Echo !== scope["Echo.-17"] ||
+        typeof scope["Echo.23"] !== "function" ||
+        typeof scope["Unused.-2147483648"] !== "function") {
+        throw new Error("Raw catalog discovery changed export paths or aliases");
+    }
+    const messages = [];
+    for (const method of [scope.Echo, scope["Echo.-17"], scope["Echo.23"]]) {
+        try {
+            method();
+            throw new Error("The test binder must throw");
+        } catch (error) {
+            messages.push(error.message);
+        }
+    }
+    return messages.join("|");
+}
+
 // console.log('JavaScriptTestHelper:' Object.keys(globalThis.JavaScriptTestHelper));
 
 export function delay(ms) {

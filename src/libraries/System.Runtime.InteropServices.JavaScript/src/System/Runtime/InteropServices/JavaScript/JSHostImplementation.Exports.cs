@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -24,28 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return false;
 
             var provider = (JSExportProvider)Activator.CreateInstance(providerType)!;
-            ReadOnlySpan<string> names = provider.GetExportNames();
-            var aliases = new HashSet<string>(StringComparer.Ordinal);
-            string prefix = $"[{assemblyName}]";
-            var descriptors = new List<string>();
-            for (int index = 0; index < names.Length; index++)
-            {
-                string key = names[index];
-                int hashIndex = key.LastIndexOf('#');
-                if (hashIndex < 0 || !key.StartsWith(prefix, StringComparison.Ordinal))
-                    throw new InvalidOperationException($"Invalid JSExport catalog key '{key}' for assembly '{assemblyName}'.");
-
-                string name = key.Substring(0, hashIndex);
-                var (_, nameSpace, shortClassName, methodName) = ParseFQN(name);
-                bool isDefault = aliases.Add(name);
-                descriptors.Add(index.ToString(CultureInfo.InvariantCulture));
-                descriptors.Add(nameSpace);
-                descriptors.Add(shortClassName);
-                descriptors.Add(methodName);
-                descriptors.Add(key.Substring(hashIndex + 1));
-                descriptors.Add(isDefault ? "1" : "0");
-            }
-            JavaScriptImports.RegisterLazyCSFunctions(assemblyName, descriptors.ToArray(), provider.Bind);
+            JavaScriptImports.RegisterLazyCSFunctions(assemblyName, provider.GetExportNames().ToArray(), provider.Bind);
             return true;
         }
 

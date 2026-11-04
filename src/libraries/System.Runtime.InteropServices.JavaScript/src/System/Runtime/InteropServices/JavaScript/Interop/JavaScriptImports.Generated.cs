@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static partial void BindCSFunction(IntPtr methodHandle, string assemblyName, string namespaceName, string shortClassName, string methodName, int signatureHash, IntPtr signature);
 
         [JSImport("INTERNAL.registerLazyCsFunctions")]
-        public static partial void RegisterLazyCSFunctions(string assemblyName, string[] descriptors, [JSMarshalAs<JSType.Function<JSType.String>>] Action<string> bind);
+        public static partial void RegisterLazyCSFunctions(string assemblyName, string[] exportNames, [JSMarshalAs<JSType.Function<JSType.String>>] Action<string> bind);
 
 #if DEBUG
         [JSImport("globalThis.console.log")]
