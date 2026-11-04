@@ -290,6 +290,10 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on Apple platforms.
         /// </summary>
+        [SupportedOSPlatformGuard("macos")]
+        [SupportedOSPlatformGuard("ios")]
+        [SupportedOSPlatformGuard("tvos")]
+        [SupportedOSPlatformGuard("maccatalyst")]
         [NonVersionable]
         public static bool IsApplePlatform() =>
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
