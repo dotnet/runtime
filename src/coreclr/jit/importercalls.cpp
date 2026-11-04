@@ -3575,6 +3575,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         node->SetHasOrderingSideEffect();
         node->gtFlags |= GTF_CALL | GTF_GLOB_REF;
         info.compUsesAsyncContinuation = true;
+
+        // An inlinee consuming the continuation (an inlined Task-returning thunk) makes the
+        // root consume it too: its async call must stay a call whose continuation can be
+        // read, so it must not be inlined in turn.
+        impInlineRoot()->info.compUsesAsyncContinuation = true;
         return node;
     }
 
@@ -7867,7 +7872,19 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
             break;
     }
 
-    if (compIsForInlining())
+    // A non-async inlinee does not await: it consumes the continuation explicitly via
+    // AsyncHelpers.AsyncCallContinuation, as the Task-returning thunks do. Such a call
+    // behaves exactly as it would in the inlinee compiled on its own, provided that the root
+    // is not async either: the async transformation would otherwise treat the call as a
+    // suspension point of the root.
+    const bool inlineeConsumesContinuation = compIsForInlining() && !compIsAsync();
+    if (inlineeConsumesContinuation && impInlineRoot()->compIsAsync())
+    {
+        compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+        return;
+    }
+
+    if (compIsForInlining() && !inlineeConsumesContinuation)
     {
         // Two cases are inlined cheaply: async versions of synchronous methods, where
         // all async calls are in tail position, and explicit tail awaits. In both the

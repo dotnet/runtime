@@ -142,7 +142,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
     //
     //     return CreateRuntimeAsyncTask(ref awaitState);
     //   }
-    //   catch (Exception ex)
+    //   catch (Exception ex) // emitted as a filter checking for Exception, to allow inlining
     //   {
     //     return TaskFromException(ex);
     //   }
@@ -241,9 +241,16 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
 
             pCode->EndTryBlock();
         }
-        // Catch
+        // Catch, expressed as an equivalent filter so that the JIT can inline the thunk
+        // (it cannot inline methods with typed catch clauses).
         {
-            pCode->BeginCatchBlock(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
+            pCode->BeginFilterBlock();
+            pCode->EmitISINST(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
+            pCode->EmitLDNULL();
+            pCode->EmitCGT_UN();
+            pCode->EmitENDFILTER();
+
+            pCode->BeginFilterHandlerBlock();
 
             int fromExceptionToken;
             if (logicalResultLocal != UINT_MAX)
@@ -271,7 +278,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
             pCode->EmitCALL(fromExceptionToken, 1, 1);
             pCode->EmitSTLOC(returnTaskLocal);
             pCode->EmitLEAVE(returnTaskLabel);
-            pCode->EndCatchBlock();
+            pCode->EndFilterHandlerBlock();
         }
 
         pCode->EmitLabel(suspendedLabel);
