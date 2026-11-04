@@ -124,6 +124,7 @@ internal static partial class Interop
             SafeEvpPKeyHandle pkey,
             IntPtr extraHandle,
             RSASignaturePaddingMode paddingMode,
+            int pssSaltLength,
             IntPtr digestAlgorithm,
             ref byte hash,
             int hashLength,
@@ -133,6 +134,7 @@ internal static partial class Interop
         internal static int RsaSignHash(
             SafeEvpPKeyHandle pkey,
             RSASignaturePaddingMode paddingMode,
+            int pssSaltLength,
             HashAlgorithmName digestAlgorithm,
             ReadOnlySpan<byte> hash,
             Span<byte> destination)
@@ -145,6 +147,7 @@ internal static partial class Interop
                 pkey,
                 pkey.ExtraHandle,
                 paddingMode,
+                pssSaltLength,
                 digestAlgorithmPtr,
                 ref MemoryMarshal.GetReference(hash),
                 hash.Length,
@@ -165,6 +168,7 @@ internal static partial class Interop
             SafeEvpPKeyHandle pkey,
             IntPtr extraHandle,
             RSASignaturePaddingMode paddingMode,
+            int pssSaltLength,
             IntPtr digestAlgorithm,
             ref byte hash,
             int hashLength,
@@ -174,6 +178,7 @@ internal static partial class Interop
         internal static bool RsaVerifyHash(
             SafeEvpPKeyHandle pkey,
             RSASignaturePaddingMode paddingMode,
+            int pssSaltLength,
             HashAlgorithmName digestAlgorithm,
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> signature)
@@ -186,6 +191,7 @@ internal static partial class Interop
                 pkey,
                 pkey.ExtraHandle,
                 paddingMode,
+                pssSaltLength,
                 digestAlgorithmPtr,
                 ref MemoryMarshal.GetReference(hash),
                 hash.Length,
