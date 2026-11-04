@@ -18,9 +18,9 @@ using System.Security.Cryptography;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
-using LabelHandle = ILAssembler.MethodBodyWriter.Label;
+using LabelHandle = Microsoft.DotNet.ILAssembler.MethodBodyWriter.Label;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     internal sealed partial class GrammarActions
     {
@@ -40,6 +40,7 @@ namespace ILAssembler
         private readonly List<CILParser.DataLabelReferenceValue> _mappedFieldDataReferenceFixups = new();
         private readonly BlobBuilder _manifestResources = new();
         private int _syntaxErrorCount;
+        private bool _isCoreLibrary;
 
         // Debug info tracking
         private Guid _currentLanguageGuid = PdbDocumentTable.ILAssemblyLanguage;

@@ -176,6 +176,13 @@ inline bool MethodDesc::IsInteropStub()
     }
 }
 
+inline bool MethodDesc::IsDiagnosticsHiddenLCGMethod()
+{
+    WRAPPER_NO_CONTRACT;
+    return IsLCGMethod() &&
+        AsDynamicMethodDesc()->HasFlags(DynamicMethodDesc::FlagIsDiagnosticsHidden);
+}
+
 // This method is intended to identify methods that aren't shown in diagnostic introspection (stacktraces,
 // code viewing, stepping, etc). Partly this is a user experience consideration to preserve the
 // abstraction users would expect based on source code and assembly contents. Partly it is also a technical
@@ -195,7 +202,9 @@ inline bool MethodDesc::IsDiagnosticsHidden()
     //   tolerate if the runtime-implemented frame is missing because they can still see the managed target method.
 
     WRAPPER_NO_CONTRACT;
-    if (IsILStub())
+    if (IsILStub() ||
+        (GetClassification() == mcDynamic &&
+            AsDynamicMethodDesc()->HasFlags(DynamicMethodDesc::FlagIsDiagnosticsHidden)))
     {
         return true;
     }
@@ -254,4 +263,3 @@ inline MethodDescBackpatchInfoTracker * MethodDesc::GetBackpatchInfoTracker()
 }
 
 #endif  // _METHOD_INL_
-
