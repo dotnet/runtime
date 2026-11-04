@@ -2,34 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading;
-using ILCompiler.Reflection.ReadyToRun;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 /// <summary>
-/// Tests for decoding and resolving WASM variable debug information.
+/// Tests for resolving WASM variable debug information.
 /// </summary>
 /// <remarks>
-/// On WASM a debug-info "register" is not a register. RyuJIT records a wasm local index biased
-/// past the reserved register numbers (<c>ICorDebugInfo::WASM_LOCAL_REGNUM_BASE</c> in
-/// <c>src/coreclr/inc/cordebuginfo.h</c>), and the resulting wasm local is engine-private
-/// frame state that is not in linear memory. <see cref="WasmContext"/> exposes no indexed
-/// register file, so a naive resolution reports the value 0 for every variable.
+/// On WASM a debug-info "register" names a WASM local, which is engine-private frame state that is
+/// not in linear memory. <see cref="WasmContext"/> exposes no indexed register file, so a naive
+/// resolution reports the value 0 for every variable.
 /// </remarks>
 public unsafe class WasmDebugInfoTests
 {
-    // ICorDebugInfo::WASM_LOCAL_REGNUM_BASE, spelled independently of the reader's constant so
-    // that a reader-side drift is caught.
+    // ICorDebugInfo::WASM_LOCAL_REGNUM_BASE.
     private const uint WasmLocalRegNumBase = 3;
 
     // The base register RyuJIT emits for every WASM stack location. REG_FPBASE and REG_SPBASE are
@@ -39,9 +31,6 @@ public unsafe class WasmDebugInfoTests
 
     private static uint EncodeWasmRegister(uint index)
         => index + WasmLocalRegNumBase;
-
-    private static uint? DecodeWasmRegister(uint register)
-        => DebugInfoHelpers.DecodeWasmRegister(register);
 
     private static Target CreateTarget(RuntimeInfoArchitecture targetArch, bool is64Bit)
     {
@@ -68,49 +57,30 @@ public unsafe class WasmDebugInfoTests
         Target target = CreateTarget(RuntimeInfoArchitecture.Wasm, is64Bit: false);
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
 
+        // A usable frame pointer, so only the kind check can refuse the location.
+        context.FramePointer = new TargetPointer(0x0020_0000);
         uint register = EncodeWasmRegister(localIndex);
 
-        // Both the projected kind produced by the contract on WASM and the raw architecture-neutral
-        // kind must refuse to resolve.
-        foreach (DebugVarLocKind kind in new[] { DebugVarLocKind.WasmLocal, DebugVarLocKind.Register })
+        foreach (DebugVarLocKind kind in new[] { DebugVarLocKind.Register, DebugVarLocKind.RegisterRegister, DebugVarLocKind.RegisterStack, DebugVarLocKind.StackRegister })
         {
-            DebugVarInfo varInfo = new()
+            foreach (bool isByRef in new[] { false, true })
             {
-                StartOffset = 0,
-                EndOffset = 0x100,
-                VarNumber = 0,
-                Kind = kind,
-                Register = register,
-                WasmLocal = DecodeWasmRegister(register),
-            };
+                DebugVarInfo varInfo = new()
+                {
+                    StartOffset = 0,
+                    EndOffset = 0x100,
+                    VarNumber = 0,
+                    Kind = kind,
+                    IsByRef = isByRef,
+                    Register = register,
+                    Register2 = register + 1,
+                    BaseRegister = JitEmittedWasmStackBaseRegister,
+                    BaseRegister2 = JitEmittedWasmStackBaseRegister,
+                };
 
-            Assert.Empty(ClrDataFrame.ResolveVarLocation(varInfo, context, target));
+                Assert.Empty(ClrDataFrame.ResolveVarLocation(varInfo, context, target));
+            }
         }
-    }
-
-    /// <summary>
-    /// A WASM stack location whose base register is neither a decodable WASM local nor the WASM
-    /// frame-base sentinel has no frame pointer to resolve against and must not produce an address.
-    /// </summary>
-    [Theory]
-    [InlineData(0u)]  // REGNUM_PC
-    [InlineData(1u)]  // REGNUM_COUNT
-    public void ResolveVarLocation_WasmStackWithNonLocalBase_ReportsNoLocation(uint baseRegister)
-    {
-        Target target = CreateTarget(RuntimeInfoArchitecture.Wasm, is64Bit: false);
-        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
-
-        DebugVarInfo varInfo = new()
-        {
-            StartOffset = 0,
-            EndOffset = 0x100,
-            VarNumber = 0,
-            Kind = DebugVarLocKind.Stack,
-            BaseRegister = baseRegister,
-            StackOffset = 0x10,
-        };
-
-        Assert.Empty(ClrDataFrame.ResolveVarLocation(varInfo, context, target));
     }
 
     /// <summary>
@@ -136,191 +106,6 @@ public unsafe class WasmDebugInfoTests
 
         NativeVarLocation location = Assert.Single(locations);
         Assert.True(location.IsRegisterValue);
-    }
-
-    public static TheoryData<uint, uint> DecodableRegisters() => new()
-    {
-        // The first register past REGNUM_AMBIENT_SP is local $0.
-        { 3u, 0u },
-        { 4u, 1u },
-        { 7u, 4u },
-        // The JIT's previous packed (local, type) form for $1 (i32) is now an ordinary biased
-        // index; it must not be unregister.
-        { 0x20000001u, 0x1FFFFFFEu },
-        { uint.MaxValue, uint.MaxValue - 3u },
-    };
-
-    [Theory]
-    [MemberData(nameof(DecodableRegisters))]
-    public void DecodeWasmRegister_RemovesRegNumBias(uint register, uint expectedIndex)
-    {
-        uint? local = DecodeWasmRegister(register);
-
-        Assert.NotNull(local);
-        Assert.Equal(expectedIndex, local);
-    }
-
-    /// <summary>
-    /// The reserved register numbers below <c>WASM_LOCAL_REGNUM_BASE</c> are pseudo-registers and
-    /// must not decode as locals.
-    /// </summary>
-    [Theory]
-    [InlineData(0u)]  // REGNUM_PC
-    [InlineData(1u)]  // REGNUM_COUNT
-    [InlineData(2u)]  // REGNUM_AMBIENT_SP
-    public void DecodeWasmRegister_ReservedValues_ReturnNull(uint register)
-    {
-        Assert.Null(DecodeWasmRegister(register));
-    }
-
-    /// <summary>
-    /// A register-only location whose register is a reserved pseudo-register names no local, so
-    /// the reader must reject it rather than report it as local $0 or a readable register.
-    /// </summary>
-    [Theory]
-    [InlineData(0u)]
-    [InlineData(1u)]
-    [InlineData(2u)]
-    public void DoVars_WasmReservedRegister_Throws(uint register)
-    {
-        byte[] encoded = EncodeNibbleUInts(
-            1,
-            unchecked(0u - MaxILNum),
-            0,
-            1,
-            VLT_REG,
-            register);
-        NativeReader reader = new(new MemoryStream(encoded));
-
-        Assert.Throws<InvalidOperationException>(
-            () => DebugInfoHelpers.DoVars(reader, isX86: false, isWasm: true).ToList());
-    }
-
-    private const uint MaxILNum = unchecked((uint)-6);
-
-    // VarLocType values from ICorDebugInfo (cordebuginfo.h), in declaration order.
-    private const uint VLT_REG = 0;
-    private const uint VLT_STK = 3;
-    private const uint VLT_REG_REG = 5;
-
-    /// <summary>
-    /// A vars blob holding three entries: a variable in a single WASM local, a variable spanning
-    /// two WASM locals, and a stack slot based off the logical frame pointer.
-    /// </summary>
-    private static byte[] EncodeWasmVarsBlob() => EncodeNibbleUInts(
-        3,
-        // var 0: [0x00, 0x10) in WASM local $4
-        unchecked(0u - MaxILNum), 0x00, 0x10, VLT_REG, EncodeWasmRegister(4),
-        // var 1: [0x10, 0x30) spanning WASM locals $7 and $8
-        unchecked(1u - MaxILNum), 0x10, 0x20, VLT_REG_REG, EncodeWasmRegister(7), EncodeWasmRegister(8),
-        // var 2: [0x30, 0x40) at [logical FP + 0x18]; WASM stack bases encode as register 2.
-        // The signed offset is encoded with the sign in bit 0.
-        unchecked(2u - MaxILNum), 0x30, 0x10, VLT_STK, JitEmittedWasmStackBaseRegister, 0x18 << 1);
-
-    [Fact]
-    public void DoVars_Wasm_PromotesKindsAndDecodesLocals()
-    {
-        NativeReader reader = new(new MemoryStream(EncodeWasmVarsBlob()));
-        List<DebugVarInfo> result = new(DebugInfoHelpers.DoVars(reader, isX86: false, isWasm: true));
-
-        Assert.Collection(
-            result,
-            varInfo =>
-            {
-                Assert.Equal(DebugVarLocKind.WasmLocal, varInfo.Kind);
-                Assert.NotNull(varInfo.WasmLocal);
-                Assert.Equal(4u, varInfo.WasmLocal);
-                Assert.Equal(EncodeWasmRegister(4), varInfo.Register);
-            },
-            varInfo =>
-            {
-                Assert.Equal(DebugVarLocKind.WasmLocalPair, varInfo.Kind);
-                Assert.NotNull(varInfo.WasmLocal);
-                Assert.NotNull(varInfo.WasmLocal2);
-                Assert.Equal(7u, varInfo.WasmLocal);
-                Assert.Equal(8u, varInfo.WasmLocal2);
-            },
-            varInfo =>
-            {
-                // Stack slots live in linear memory, so the kind and encoded base are unchanged.
-                Assert.Equal(DebugVarLocKind.Stack, varInfo.Kind);
-                Assert.Null(varInfo.WasmLocal);
-                Assert.Equal(JitEmittedWasmStackBaseRegister, varInfo.BaseRegister);
-                Assert.Equal(0x18, varInfo.StackOffset);
-            });
-    }
-
-    /// <summary>
-    /// The identical blob decoded as a non-WASM target must keep the architecture-neutral kinds
-    /// and decode no locals, so the projection cannot leak into other architectures.
-    /// </summary>
-    [Fact]
-    public void DoVars_NonWasm_LeavesKindsAndLocalsAlone()
-    {
-        NativeReader reader = new(new MemoryStream(EncodeWasmVarsBlob()));
-        List<DebugVarInfo> result = new(DebugInfoHelpers.DoVars(reader, isX86: false));
-
-        Assert.Collection(
-            result,
-            varInfo =>
-            {
-                Assert.Equal(DebugVarLocKind.Register, varInfo.Kind);
-                Assert.Null(varInfo.WasmLocal);
-            },
-            varInfo =>
-            {
-                Assert.Equal(DebugVarLocKind.RegisterRegister, varInfo.Kind);
-                Assert.Null(varInfo.WasmLocal);
-                Assert.Null(varInfo.WasmLocal2);
-            },
-            varInfo =>
-            {
-                Assert.Equal(DebugVarLocKind.Stack, varInfo.Kind);
-            });
-    }
-
-    /// <summary>
-    /// DacDbi's <c>VarLoc</c> mirrors <c>ICorDebugInfo::VarLoc</c>, where a WASM local is encoded
-    /// as <c>VLT_REG</c> whose register number is the biased local index.
-    /// The projected WASM kinds must therefore round-trip to the original ICorDebugInfo form
-    /// rather than degrading to <c>VLT_INVALID</c>, which would lose the local index entirely.
-    /// </summary>
-    [Fact]
-    public void ConvertToVarLoc_WasmLocal_RoundTripsToRegisterForms()
-    {
-        uint register = EncodeWasmRegister(4);
-        uint register2 = EncodeWasmRegister(5);
-
-        VarLoc single = DacDbiImpl.ConvertToVarLoc(new DebugVarInfo
-        {
-            Kind = DebugVarLocKind.WasmLocal,
-            Register = register,
-            WasmLocal = DecodeWasmRegister(register),
-        });
-        Assert.Equal(VarLocType.VLT_REG, single.vlType);
-        Assert.Equal(register, single.vlrReg);
-
-        VarLoc byref = DacDbiImpl.ConvertToVarLoc(new DebugVarInfo
-        {
-            Kind = DebugVarLocKind.WasmLocal,
-            IsByRef = true,
-            Register = register,
-            WasmLocal = DecodeWasmRegister(register),
-        });
-        Assert.Equal(VarLocType.VLT_REG_BYREF, byref.vlType);
-        Assert.Equal(register, byref.vlrReg);
-
-        VarLoc pair = DacDbiImpl.ConvertToVarLoc(new DebugVarInfo
-        {
-            Kind = DebugVarLocKind.WasmLocalPair,
-            Register = register,
-            Register2 = register2,
-            WasmLocal = DecodeWasmRegister(register),
-            WasmLocal2 = DecodeWasmRegister(register2),
-        });
-        Assert.Equal(VarLocType.VLT_REG_REG, pair.vlType);
-        Assert.Equal(register, pair.vlrrReg1);
-        Assert.Equal(register2, pair.vlrrReg2);
     }
 
     /// <summary>
@@ -433,11 +218,21 @@ public unsafe class WasmDebugInfoTests
         Assert.True(dataValue.GetAddress(&address) < 0, "GetAddress should fail for a value with no locations");
     }
 
-    [Fact]
-    public void ResolveVarLocation_WasmStackByRefUnreadable_PreservesFailedLocation()
+    /// <summary>
+    /// An unreadable or null byref indirection fails at the read rather than becoming address 0,
+    /// which is readable linear memory on WASM.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ResolveVarLocation_WasmStackByRefUnreadableOrNull_Throws(bool slotIsNull)
     {
         const ulong FrameAddress = 0x0020_0000;
-        Target target = CreateWasmTargetWithZeroPage();
+        const int StackOffset = 0x24;
+        MockMemorySpace.HeapFragment[] fragments = slotIsNull
+            ? [new MockMemorySpace.HeapFragment { Address = FrameAddress + StackOffset, Data = new byte[4], Name = "null byref pointer slot" }]
+            : [];
+        Target target = CreateWasmTargetWithZeroPage(fragments);
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
         context.FramePointer = new TargetPointer(FrameAddress);
 
@@ -446,70 +241,37 @@ public unsafe class WasmDebugInfoTests
             Kind = DebugVarLocKind.Stack,
             IsByRef = true,
             BaseRegister = JitEmittedWasmStackBaseRegister,
-            StackOffset = 0x24,
+            StackOffset = StackOffset,
         };
 
-        NativeVarLocation location = Assert.Single(ClrDataFrame.ResolveVarLocation(varInfo, context, target));
-
-        Assert.True(location.HasReadFailure);
-        Assert.False(location.IsRegisterValue);
-        Assert.Equal(0u, location.AddressOrValue);
-        Assert.Equal(4u, location.Size);
+        VirtualReadException ex = Assert.Throws<VirtualReadException>(() => ClrDataFrame.ResolveVarLocation(varInfo, context, target));
+        Assert.Equal(CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE, ex.HResult);
     }
 
     [Fact]
-    public unsafe void ClrDataValue_WasmStackByRefUnreadable_FailsWithoutBecomingZero()
+    public void ResolveVarLocation_WasmStackByRef_ResolvesThroughPointer()
     {
         const ulong FrameAddress = 0x0020_0000;
-        Target target = CreateWasmTargetWithZeroPage();
+        const int StackOffset = 0x24;
+        const uint Pointee = 0x0030_0040;
+        byte[] slot = new byte[4];
+        BitConverter.TryWriteBytes(slot, Pointee);
+        Target target = CreateWasmTargetWithZeroPage(
+            new MockMemorySpace.HeapFragment { Address = FrameAddress + StackOffset, Data = slot, Name = "byref pointer slot" });
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
         context.FramePointer = new TargetPointer(FrameAddress);
+
         DebugVarInfo varInfo = new()
         {
             Kind = DebugVarLocKind.Stack,
             IsByRef = true,
             BaseRegister = JitEmittedWasmStackBaseRegister,
-            StackOffset = 0x24,
+            StackOffset = StackOffset,
         };
-        NativeVarLocation[] locations = ClrDataFrame.ResolveVarLocation(varInfo, context, target);
 
-        IXCLRDataValue dataValue = new ClrDataValue(
-            target,
-            TargetPointer.Null,
-            flags: (uint)ClrDataValueFlag.IS_REFERENCE,
-            typeHandle: new TargetTypeHandle(new TargetPointer(0x0030_0000)),
-            baseAddress: TargetPointer.Null,
-            locations,
-            legacyImpl: null,
-            apiLock: new Lock());
-
-        uint numLocs;
-        Assert.Equal(HResults.S_OK, dataValue.GetNumLocations(&numLocs));
-        Assert.Equal(1u, numLocs);
-
-        byte[] buffer = [0xCC, 0xCC, 0xCC, 0xCC];
-        uint dataSize = 0;
-        int hr;
-        fixed (byte* pBuffer = buffer)
-        {
-            hr = dataValue.GetBytes((uint)buffer.Length, &dataSize, pBuffer);
-        }
-        Assert.Equal(CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE, hr);
-        Assert.Equal(new byte[] { 0xCC, 0xCC, 0xCC, 0xCC }, buffer);
-
-        ClrDataAddress address;
-        Assert.Equal(CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE, dataValue.GetAddress(&address));
-
-        uint flags;
-        ClrDataAddress location;
-        Assert.Equal(
-            CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE,
-            dataValue.GetLocationByIndex(0, &flags, &location));
-
-        DacComNullableByRef<IXCLRDataValue> associatedValue = new(isNullRef: false);
-        Assert.Equal(
-            CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE,
-            dataValue.GetAssociatedValue(associatedValue));
+        NativeVarLocation location = Assert.Single(ClrDataFrame.ResolveVarLocation(varInfo, context, target));
+        Assert.False(location.IsRegisterValue);
+        Assert.Equal(Pointee, location.AddressOrValue);
     }
 
     [Fact]
@@ -563,51 +325,6 @@ public unsafe class WasmDebugInfoTests
         Assert.Equal(SlotAddress, (ulong)address);
     }
 
-    [Fact]
-    public unsafe void ClrDataValue_WasmStackByRefNullPointer_FailsWithoutReadingZeroPage()
-    {
-        const ulong FrameAddress = 0x0020_0000;
-        const int StackOffset = 0x24;
-        Target target = CreateWasmTargetWithZeroPage(
-            new MockMemorySpace.HeapFragment
-            {
-                Address = FrameAddress + StackOffset,
-                Data = new byte[4],
-                Name = "null byref pointer slot",
-            });
-        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
-        context.FramePointer = new TargetPointer(FrameAddress);
-        DebugVarInfo varInfo = new()
-        {
-            Kind = DebugVarLocKind.Stack,
-            IsByRef = true,
-            BaseRegister = JitEmittedWasmStackBaseRegister,
-            StackOffset = StackOffset,
-        };
-        NativeVarLocation[] locations = ClrDataFrame.ResolveVarLocation(varInfo, context, target);
-        Assert.True(Assert.Single(locations).HasReadFailure);
-
-        IXCLRDataValue dataValue = new ClrDataValue(
-            target,
-            TargetPointer.Null,
-            flags: (uint)ClrDataValueFlag.IS_REFERENCE,
-            typeHandle: null,
-            baseAddress: TargetPointer.Null,
-            locations,
-            legacyImpl: null,
-            apiLock: new Lock());
-
-        byte[] buffer = [0xCC, 0xCC, 0xCC, 0xCC];
-        uint dataSize;
-        fixed (byte* pBuffer = buffer)
-        {
-            Assert.Equal(
-                CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE,
-                dataValue.GetBytes((uint)buffer.Length, &dataSize, pBuffer));
-        }
-        Assert.Equal(new byte[] { 0xCC, 0xCC, 0xCC, 0xCC }, buffer);
-    }
-
     private static Target CreateWasmTargetWithZeroPage(params MockMemorySpace.HeapFragment[] fragments)
     {
         TestPlaceholderTarget.Builder builder = new(
@@ -624,38 +341,5 @@ public unsafe class WasmDebugInfoTests
             });
         builder.MemoryBuilder.AddHeapFragments(fragments);
         return builder.Build();
-    }
-
-    /// <summary>
-    /// Nibble encoder matching CoreCLR's <c>NibbleWriter::WriteEncodedU32</c>: three value bits per
-    /// nibble, high bit set on every nibble but the last, most significant group first, low nibble
-    /// of each byte used before the high nibble.
-    /// </summary>
-    private static byte[] EncodeNibbleUInts(params uint[] values)
-    {
-        List<byte> nibbles = new();
-        Span<byte> groups = stackalloc byte[11];
-        foreach (uint value in values)
-        {
-            int groupCount = 0;
-            uint remaining = value;
-            do
-            {
-                groups[groupCount++] = (byte)(remaining & 7);
-                remaining >>= 3;
-            }
-            while (remaining != 0);
-
-            for (int i = groupCount - 1; i >= 0; i--)
-            {
-                byte continuation = i == 0 ? (byte)0 : (byte)8;
-                nibbles.Add((byte)(groups[i] | continuation));
-            }
-        }
-
-        byte[] bytes = new byte[(nibbles.Count + 1) / 2];
-        for (int i = 0; i < nibbles.Count; i++)
-            bytes[i / 2] |= (byte)(nibbles[i] << (4 * (i & 1)));
-        return bytes;
     }
 }

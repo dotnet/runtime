@@ -78,6 +78,8 @@ _None._
 | `VLT_FIXED_VA` | Fixed argument in a varargs function | `10` |
 | `VLT_COUNT` | Number of valid `VarLocType` values | `11` |
 | `VLT_INVALID` | Sentinel for invalid locations | `12` |
+| `WASM_LOCAL_REGNUM_BASE` | WebAssembly only: bias added to a local index to form a register number (see [WebAssembly Variable Register Encoding](#webassembly-variable-register-encoding)) | `3` |
+| WebAssembly stack base register | WebAssembly only: the base register of every `VLT_STK` / `VLT_STK2` record, meaning the logical frame pointer (see [WebAssembly Stack Base Encoding](#webassembly-stack-base-encoding)) | `2` |
 
 ### DebugInfo Stream Encoding
 
@@ -278,52 +280,31 @@ coordinated, fail-loud reader update.
 
 ### WebAssembly Variable Locations
 
-On WASM the contract therefore reports:
-
-* `VLT_REG` / `VLT_REG_BYREF` as `DebugVarLocKind.WasmLocal`, and `VLT_REG_REG` as
-  `DebugVarLocKind.WasmLocalPair`. WASM locals are engine-private frame state: they are not in
-  linear memory and cannot be read through the data target, so the contract names them rather than
-  resolving them. A consumer attached to the WASM engine (for example over the Chrome DevTools
-  Protocol) can fetch the value from the local index.
-* Stack-based kinds unchanged, because their storage is linear memory and is readable. Only the
-  base register differs, as described below.
-
-The frame pointer to add the offset to is the *logical* frame pointer, which for a method's root
-function is its own frame base and for a funclet is the parent method's frame base.
-`WasmContext.Unwind` and wasm explicit-frame seeding populate it by mirroring
-`RtlVirtualUnwind` / `GetWasmFramePointerFromStackPointer` in
-`src/coreclr/vm/wasm/helpers.cpp`; variable resolution consumes that context value rather than
-independently unwinding again.
-
-The JIT never emits `VLT_REG_FP` or `VLT_FPSTK` on WASM; `f32` and `f64` locals are reported as
-`VLT_REG`, so `IsFloatingPoint` is not set for them.
-
-`DebugVarInfo` exposes decoded register locations in `WasmLocal` and `WasmLocal2`, corresponding to
-`Register` and `Register2` with `WASM_LOCAL_REGNUM_BASE` removed. A register-only location whose
-register is below `WASM_LOCAL_REGNUM_BASE` names no local and is rejected. `Register` and
-`Register2` retain the biased values from the Vars stream. Both are null on every other architecture. Stack base register `2` is
-not a WASM local descriptor.
-
-The managed cDAC reader reports engine-private WASM register locals with no native locations.
-Existing `ClrDataValue` behavior then reports those values unavailable (`GetNumLocations == 0`,
-`GetBytes`/`GetAddress` fail) instead of fabricating a register value of zero.
-
-An unreadable or null WASM `VLT_STK_BYREF` indirection preserves one logical location, matching
-the native DAC's location count, but its address/value/object accessors fail with
-`CORDBG_E_READVIRTUAL_FAILURE`. This distinguishes a failed indirection from a direct
-stack-homed null reference, which remains one readable location containing zero. This deliberately
-differs from the native DAC (`DereferenceByRefVar` in `vm/util.cpp`), which reports a failed byref read as
-address `0` and relies on address `0` being unmapped; WASM linear address `0` is readable, so the
-same representation would read unrelated bytes as the variable's value.
-
-There is no native DAC build on WASM, so live `_legacyImpl` comparison assertions cannot validate
-this representation. DacDbi coverage is structural managed unit coverage.
-
+`GetMethodVarInfo` reports WASM variable locations with the same kinds and register numbers as
+the Vars stream; a consumer that needs a WASM local index subtracts `WASM_LOCAL_REGNUM_BASE`.
 WASM local index spaces are per function, and a method's funclets are separate WASM functions from
-its root (`WasmRegAlloc` in `src/coreclr/jit/regallocwasm.cpp`). Variable ranges, by contrast, are
-method-relative, and a funclet's virtual IP is rebased onto its root function. A consumer must
-therefore establish which WASM function the current virtual IP belongs to before interpreting a
-local index.
+its root (`WasmRegAlloc` in `src/coreclr/jit/regallocwasm.cpp`), so a consumer must establish which
+WASM function a frame is in before using a local index. The JIT never emits `VLT_REG_FP` or
+`VLT_FPSTK` on WASM; `f32` and `f64` locals are reported as `VLT_REG`.
+
+When resolving a location to target memory (`IXCLRDataFrame` variable values):
+
+* Register-based kinds have no location. WASM locals are engine-private frame state, not in linear
+  memory, so the value is unavailable (`GetNumLocations == 0`, `GetBytes` / `GetAddress` fail)
+  rather than a fabricated zero. A consumer attached to the engine, for example over the Chrome
+  DevTools Protocol, can read the local itself.
+* `VLT_STK` and `VLT_STK2` resolve to the logical frame pointer in the stack-walk context plus the
+  stack offset. For a method's root function that is its own frame base; for a funclet it is the
+  parent method's frame base. `WasmContext.Unwind` and WASM explicit-frame seeding set it by
+  mirroring `RtlVirtualUnwind` / `GetWasmFramePointerFromStackPointer` in
+  `src/coreclr/vm/wasm/helpers.cpp`.
+* For `VLT_STK_BYREF`, an unreadable or null indirection fails with
+  `CORDBG_E_READVIRTUAL_FAILURE`. Native `DereferenceByRefVar` (`vm/util.cpp`) instead reports
+  address `0` and relies on address `0` being unmapped; WASM linear address `0` is readable, so that
+  representation would read unrelated bytes as the variable's value.
+
+There is no native DAC build on WASM, so these results cannot be cross-checked against
+`_legacyImpl`.
 
 ### Async Suspension Point APIs
 

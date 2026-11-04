@@ -140,12 +140,9 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
 
         if (chunks.VarsSize > 0)
         {
-            RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
-            bool isX86 = arch == RuntimeInfoArchitecture.X86;
-            bool isWasm = arch == RuntimeInfoArchitecture.Wasm;
-
+            bool isX86 = _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86;
             NativeReader varsNativeReader = new(new TargetStream(_target, chunks.VarsStart, chunks.VarsSize), _target.IsLittleEndian);
-            return DebugInfoHelpers.DoVars(varsNativeReader, isX86, isWasm);
+            return DebugInfoHelpers.DoVars(varsNativeReader, isX86);
         }
 
         return [];

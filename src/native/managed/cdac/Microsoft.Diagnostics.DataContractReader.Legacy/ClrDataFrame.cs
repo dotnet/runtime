@@ -540,7 +540,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                     AddressOrValue = locations[0].AddressOrValue,
                     Size = (ulong)typeSize,
                     IsRegisterValue = locations[0].IsRegisterValue,
-                    HasReadFailure = locations[0].HasReadFailure,
                 },
             ];
         }
@@ -994,26 +993,17 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     }
 
     /// <summary>
-    /// Resolves a variable location on WASM.
+    /// Resolves a variable location on WASM. A WASM debug-info register names a WASM local, which
+    /// is engine-private and not readable through the data target, so it has no location. Stack
+    /// slots are in linear memory and resolve against the frame's logical frame pointer.
     /// </summary>
-    /// <remarks>
-    /// WASM has no register file — <see cref="WasmContext"/>.<c>TryReadRegister(int)</c> always
-    /// fails — and a WASM "register" in debug info is not a register at all but a biased
-    /// local index naming a WASM local. WASM locals are engine-private frame
-    /// state: they are not in linear memory and cannot be read through the data target, so they
-    /// are reported as having no location rather than resolved. Routing them through
-    /// <see cref="ReadRegister"/> would instead silently report the value 0 for every variable.
-    /// Stack slots, by contrast, live in linear memory and are resolved here against the frame's
-    /// logical frame pointer.
-    /// </remarks>
     private static NativeVarLocation[] ResolveWasmVarLocation(
         DebugVarInfo varInfo,
         IPlatformAgnosticContext context,
         Target target,
         int pointerSize)
     {
-        // The only base register of a WASM stack record: the logical frame pointer. See
-        // "WebAssembly Stack Base Encoding" in DebugInfo.md.
+        // See "WebAssembly Stack Base Encoding" in DebugInfo.md.
         const uint WasmFrameBaseRegister = 2;
         switch (varInfo.Kind)
         {
@@ -1021,11 +1011,11 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             case DebugVarLocKind.DoubleStack:
                 break;
             default:
-                // WasmLocal, WasmLocalPair, and the mixed register/stack kinds all have at least
-                // part of their storage in a WASM local, which is unreadable from here.
+                // Every other kind keeps at least part of the variable in a WASM local.
                 return [];
         }
 
+        Debug.Assert(varInfo.BaseRegister == WasmFrameBaseRegister, $"Unexpected WASM stack base register {varInfo.BaseRegister}");
         if (varInfo.BaseRegister != WasmFrameBaseRegister)
             return [];
 
@@ -1038,21 +1028,12 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
         if (varInfo.IsByRef)
         {
-            // Native DereferenceByRefVar reports a failed indirection as address 0, which is unmapped
-            // natively. WASM linear address 0 is readable, so mark the location as unreadable instead.
-            if (!target.TryReadPointer(address, out TargetPointer byRefAddress) ||
-                byRefAddress == TargetPointer.Null)
-            {
-                return
-                [
-                    new NativeVarLocation
-                    {
-                        AddressOrValue = 0,
-                        Size = (ulong)pointerSize,
-                        HasReadFailure = true,
-                    },
-                ];
-            }
+            // Native DereferenceByRefVar turns a failed or null indirection into address 0, which is
+            // unmapped natively. WASM linear address 0 is readable, so fail here instead.
+            TargetPointer byRefAddress = target.ReadPointer(address);
+            if (byRefAddress == TargetPointer.Null)
+                throw new VirtualReadException($"The byref variable at 0x{address:X} is null.");
+
             address = byRefAddress.Value;
         }
 

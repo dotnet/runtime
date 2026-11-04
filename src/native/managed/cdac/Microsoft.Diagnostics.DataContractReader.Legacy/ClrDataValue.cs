@@ -25,7 +25,6 @@ public readonly struct NativeVarLocation
     public ulong AddressOrValue { get; init; }
     public ulong Size { get; init; }
     public bool IsRegisterValue { get; init; }
-    public bool HasReadFailure { get; init; }
 }
 
 [GeneratedComClass]
@@ -112,7 +111,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             {
                 throw new InvalidCastException(); // E_NOINTERFACE
             }
-            ThrowIfLocationReadFailed();
 
             *address = _locations[0].AddressOrValue;
         }
@@ -176,8 +174,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         {
             if (_totalSize == 0)
                 throw new InvalidCastException(); // E_NOINTERFACE
-
-            ThrowIfLocationReadFailed();
 
             if (dataSize is not null)
                 *dataSize = (uint)_totalSize;
@@ -467,8 +463,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             }
 
             NativeVarLocation currentLocation = _locations[0];
-            ThrowIfLocationReadFailed();
-
             ulong address = currentLocation.IsRegisterValue
                 ? currentLocation.AddressOrValue
                 : _target.ReadPointer(new TargetPointer(currentLocation.AddressOrValue)).Value;
@@ -518,7 +512,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             }
             else if ((_flags & (uint)ClrDataValueFlag.IS_ARRAY) != 0)
             {
-                ThrowIfLocationReadFailed();
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 TargetPointer methodTable = _target.Contracts.Object.GetMethodTableAddress(_baseAddress);
                 typeHandle = rts.GetTypeParam(rts.GetTypeHandle(methodTable));
@@ -551,7 +544,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             if ((_flags & (uint)ClrDataValueFlag.IS_STRING) == 0)
                 throw new ArgumentException();
 
-            ThrowIfLocationReadFailed();
             string value = _target.Contracts.Object.GetStringValue(_baseAddress);
             OutputBufferHelpers.CopyStringToBuffer(str, bufLen, strLen, value);
             if (str is null || bufLen < value.Length + 1)
@@ -593,7 +585,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             if ((_flags & (uint)ClrDataValueFlag.IS_ARRAY) == 0)
                 throw new ArgumentException();
 
-            ThrowIfLocationReadFailed();
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             ITypeHandle arrayType = rts.GetTypeHandle(_target.Contracts.Object.GetMethodTableAddress(_baseAddress));
             rts.IsArray(arrayType, out uint arrayRank);
@@ -654,7 +645,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             if ((_flags & (uint)ClrDataValueFlag.IS_ARRAY) == 0)
                 throw new ArgumentException();
 
-            ThrowIfLocationReadFailed();
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             ITypeHandle arrayType = rts.GetTypeHandle(_target.Contracts.Object.GetMethodTableAddress(_baseAddress));
             if (!rts.IsArray(arrayType, out uint rank) || numInd != rank)
@@ -994,7 +984,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             }
             else
             {
-                ThrowIfLocationReadFailed();
                 uint offset = rts.GetFieldDescOffset(fieldDesc, fieldDefinition);
                 ulong objectOffset = rts.IsValueType(enclosingType) ? 0 : (ulong)_target.PointerSize;
                 address = new TargetPointer(checked(_baseAddress + objectOffset + offset));
@@ -1164,18 +1153,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         return hr;
     }
 
-    private void ThrowIfLocationReadFailed()
-    {
-        foreach (NativeVarLocation location in _locations)
-            ThrowIfLocationReadFailed(location);
-    }
-
-    private static void ThrowIfLocationReadFailed(NativeVarLocation location)
-    {
-        if (location.HasReadFailure)
-            throw new VirtualReadException("The variable's indirect location could not be read.");
-    }
-
     int IXCLRDataValue.GetLocationByIndex(uint loc, uint* flags, ClrDataAddress* arg)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
@@ -1189,8 +1166,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
                 throw new ArgumentException();
 
             NativeVarLocation location = _locations[loc];
-            ThrowIfLocationReadFailed(location);
-
             *flags = location.IsRegisterValue ? ClrDataVLocFlag.CLRDATA_VLOC_REGISTER : ClrDataVLocFlag.CLRDATA_VLOC_MEMORY;
             *arg = location.IsRegisterValue ? 0 : location.AddressOrValue;
         }
