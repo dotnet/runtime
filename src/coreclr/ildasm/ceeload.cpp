@@ -65,7 +65,7 @@ BOOL PELoader::open(const WCHAR* moduleName)
     if (!moduleName)
         return FALSE;
 
-    m_hFile = VMToOSInterface::OpenFile(reinterpret_cast<const char16_t*>(moduleName));
+    m_hFile = VMToOSInterface::OpenFile(reinterpret_cast<const char16_t*>(moduleName), /* executable */ false);
     if (m_hFile == VMToOSInterface::InvalidFileHandle)
         return FALSE;
 

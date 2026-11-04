@@ -60,7 +60,7 @@ static HRESULT FindObjMetaData(PVOID pImage, PVOID *ppMetaData, long *pcbMetaDat
 // This function returns the address to the MapView of file and file size.
 void GetMapViewOfFile(_In_ WCHAR *szFile, PBYTE *ppbMap, DWORD *pdwFileSize)
 {
-    VMToOSInterface::MemoryMapHandle hFile = VMToOSInterface::OpenFile(reinterpret_cast<const char16_t*>(szFile));
+    VMToOSInterface::MemoryMapHandle hFile = VMToOSInterface::OpenFile(reinterpret_cast<const char16_t*>(szFile), /* executable */ false);
     if (hFile == VMToOSInterface::InvalidFileHandle)
         MDInfo::Error("OpenFile failed!");
 

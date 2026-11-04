@@ -192,7 +192,7 @@ private:
         if (!moduleName)
             return NULL;
 
-        m_hFile = VMToOSInterface::OpenFile(reinterpret_cast<const char16_t*>(moduleName));
+        m_hFile = VMToOSInterface::OpenFile(reinterpret_cast<const char16_t*>(moduleName), /* executable */ false);
         return (m_hFile == VMToOSInterface::InvalidFileHandle) ? NULL : map_file();
     }
 

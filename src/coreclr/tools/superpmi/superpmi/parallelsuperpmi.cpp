@@ -340,8 +340,11 @@ bool WriteArrayToMCL(char* mclFilename, int* arr, int count)
     }
 
 Cleanup:
-    if (hMCLFile != nullptr)
-        fclose(hMCLFile);
+    if (hMCLFile != nullptr && fclose(hMCLFile) != 0)
+    {
+        LogError("Failed to close output file '%s'. errno=%d", mclFilename, errno);
+        result = false;
+    }
 
     return result;
 }
