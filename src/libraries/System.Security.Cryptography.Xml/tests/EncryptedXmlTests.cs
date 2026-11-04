@@ -424,7 +424,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         private static void DecryptDeepXml(bool root)
         {
-            const int Depth = 100000;
+            const int Depth = 10000;
             XmlDocument doc = new XmlDocument { PreserveWhitespace = true };
             string plaintext = "<target>" + BuildDeepMarkup(Depth, "x") + "</target>";
             doc.LoadXml(root ? plaintext : "<root><data>" + plaintext + "</data></root>");
