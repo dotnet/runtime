@@ -196,7 +196,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         {
             Data.ReadyToRunHeader header = Target.ProcessedData.GetOrAdd<Data.ReadyToRunHeader>(r2rInfo.ReadyToRunHeader);
 
-            // R2R 33, the runtime's minimum supported major version, still uses GCInfo version 5.
+            // R2R 35, the runtime's minimum supported major version, still uses GCInfo version 5.
             // Retain historical mappings for older target dumps; see readytorun.h for versioning details.
             return header.MajorVersion switch
             {
