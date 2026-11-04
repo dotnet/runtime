@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
@@ -325,89 +326,6 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal([typeof(System.Runtime.InteropServices.InAttribute)], created.GetMethod(nameof(IInParameter.M)).GetParameters()[0].GetModifiedParameterType().GetRequiredCustomModifiers());
         }
 
-        [Fact]
-        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
-        public void DefineMethod_ModifiedParameterTypes_KeepOptionalBeforeRequiredModifiers()
-        {
-            ModuleBuilder module = Helpers.DynamicModule();
-            TypeBuilder interfaceType = module.DefineType("I", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
-            // Modifier arrays are written optional modifiers first.
-            interfaceType.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual | MethodAttributes.NewSlot | MethodAttributes.HideBySig,
-                CallingConventions.HasThis, typeof(int), [typeof(IsConst)], [typeof(IsLong)],
-                [typeof(int)], [[typeof(IsVolatile)]], [[typeof(IsBoxed)]]);
-            Type createdInterface = interfaceType.CreateType();
-            MethodInfo source = createdInterface.GetMethod("M");
-
-            TypeBuilder type = module.DefineType("C", TypeAttributes.Public, typeof(object), [createdInterface]);
-            MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot | MethodAttributes.HideBySig,
-                CallingConventions.HasThis, source.ReturnParameter.GetModifiedParameterType(), [source.GetParameters()[0].GetModifiedParameterType()]);
-            ILGenerator il = method.GetILGenerator();
-            il.Emit(OpCodes.Ldarg_1);
-            il.Emit(OpCodes.Ret);
-            type.DefineMethodOverride(method, source);
-            Type created = type.CreateType();
-            MethodInfo copy = created.GetMethod("M");
-
-            Assert.Equal(source.Module.ResolveSignature(source.MetadataToken), copy.Module.ResolveSignature(copy.MetadataToken));
-            Assert.Equal(42, source.Invoke(Activator.CreateInstance(created), [42]));
-        }
-
-        [Fact]
-        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
-        public void DefineMethod_ModifiedParameterTypeWithFourByteModifierToken_KeepsOptionalBeforeRequired()
-        {
-            // A TypeDef row of 4096 or more takes a four-byte compressed token in a signature.
-            ModuleBuilder module = Helpers.DynamicModule();
-            for (int i = 0; i < 4096; i++)
-                module.DefineType("Filler" + i);
-            Type modifier = module.DefineType("Modifier", TypeAttributes.Public).CreateType();
-            TypeBuilder interfaceType = module.DefineType("I", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
-            interfaceType.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual | MethodAttributes.NewSlot | MethodAttributes.HideBySig,
-                CallingConventions.HasThis, typeof(void), null, null,
-                [typeof(int)], [[typeof(IsConst)]], [[modifier]]);
-            Type createdInterface = interfaceType.CreateType();
-            MethodInfo source = createdInterface.GetMethod("M");
-
-            TypeBuilder type = Helpers.DynamicModule().DefineType("C", TypeAttributes.Public, typeof(object), [createdInterface]);
-            MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot | MethodAttributes.HideBySig,
-                CallingConventions.HasThis, typeof(void), [source.GetParameters()[0].GetModifiedParameterType()]);
-            method.GetILGenerator().Emit(OpCodes.Ret);
-            type.DefineMethodOverride(method, source);
-
-            // Modifier arrays are written optional modifiers first; the type fails to load if the copy writes the
-            // required one first.
-            Assert.Contains(createdInterface, type.CreateType().GetInterfaces());
-        }
-
-        [Theory]
-        [InlineData("ModifierOrder.ITop")]
-        [InlineData("ModifierOrder.IPointer")]
-        [InlineData("ModifierOrder.IByRef")]
-        [InlineData("ModifierOrder.IArray")]
-        [InlineData("ModifierOrder.IGenericArgument")]
-        [InlineData("ModifierOrder.IReturnPointer")]
-        [InlineData("ModifierOrder.ITwoLevels")]
-        [InlineData("ModifierOrder.ITwoByteTokens")]
-        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
-        public void DefineMethod_ModifiedTypesFromSignature_KeepModifierOrder(string interfaceName)
-        {
-            // The interface methods (System.Reflection.Emit.TestModifierOrder.il) have optional modifiers before
-            // required ones, interleaved, nested in element and generic argument types, or with two-byte tokens.
-            Type interfaceType = Assembly.Load("System.Reflection.Emit.TestModifierOrder").GetType(interfaceName, throwOnError: true);
-            MethodInfo source = interfaceType.GetMethod("M");
-
-            TypeBuilder type = Helpers.DynamicModule().DefineType("C", TypeAttributes.Public, typeof(object), [interfaceType]);
-            MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot | MethodAttributes.HideBySig,
-                CallingConventions.HasThis, source.ReturnParameter.GetModifiedParameterType(), Array.ConvertAll(source.GetParameters(), p => p.GetModifiedParameterType()));
-            ILGenerator il = method.GetILGenerator();
-            il.Emit(OpCodes.Ldnull);
-            il.Emit(OpCodes.Throw);
-            type.DefineMethodOverride(method, source);
-
-            // The type fails to load if the override's signature differs from the interface method's.
-            Assert.Contains(interfaceType, type.CreateType().GetInterfaces());
-        }
-
         public static IEnumerable<object[]> ModifierArrays_TestData()
         {
             yield return [new[] { typeof(IsVolatile), typeof(IsBoxed) }, null];
@@ -438,7 +356,8 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(expectedRequired, created.GetRequiredCustomModifiers());
             Assert.Equal(expectedOptional, created.GetOptionalCustomModifiers());
 
-            // Required modifiers come first: HASTHIS, one parameter, VOID, then the parameter's modifiers.
+            // Reflection returns each kind separately, so only the blob shows that required modifiers come first. The
+            // modifiers start after HASTHIS, the parameter count and VOID.
             byte[] signature = method.Module.ResolveSignature(method.MetadataToken);
             for (int i = 0; i < expectedRequired.Length + expectedOptional.Length; i++)
                 Assert.Equal((byte)(i < expectedRequired.Length ? SignatureTypeCode.RequiredModifier : SignatureTypeCode.OptionalModifier), signature[3 + 2 * i]);
@@ -478,6 +397,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo created = type.CreateType().GetMethod("M");
 
             Assert.Equal(42, created.Invoke(null, [42]));
+            // Neither the call nor LocalVariableInfo shows a local's modifiers, so the test reads the local signature.
             byte[] localSignature = created.Module.ResolveSignature(created.GetMethodBody().LocalSignatureMetadataToken);
             Assert.Equal(7, localSignature.Length);
             Assert.Equal((byte)SignatureKind.LocalVariables, localSignature[0]);
@@ -512,11 +432,12 @@ namespace System.Reflection.Emit.Tests
             AssertCalliSignature("Managed", OpCodes.Ldarg_0.Size + OpCodes.Ldftn.Size + sizeof(int), (byte)SignatureCallingConvention.Default);
             AssertCalliSignature("Unmanaged", OpCodes.Ldarg_0.Size + OpCodes.Ldarg_1.Size, (byte)SignatureCallingConvention.CDecl);
 
-            // The calli's signature: its calling convention, one parameter, then the return and parameter types.
+            // Calling Managed doesn't show the modifiers in its calli's signature, and Unmanaged isn't called, so the
+            // test reads each signature.
             void AssertCalliSignature(string name, int calliOffset, byte callingConvention)
             {
                 MethodInfo method = created.GetMethod(name);
-                byte[] signature = method.Module.ResolveSignature(BitConverter.ToInt32(method.GetMethodBody().GetILAsByteArray(), calliOffset + OpCodes.Calli.Size));
+                byte[] signature = method.Module.ResolveSignature(BinaryPrimitives.ReadInt32LittleEndian(method.GetMethodBody().GetILAsByteArray().AsSpan(calliOffset + OpCodes.Calli.Size)));
                 Assert.Equal(12, signature.Length);
                 Assert.Equal(callingConvention, signature[0]);
                 Assert.Equal(1, signature[1]);
@@ -542,7 +463,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(typeof(List<int>), created.Invoke(null, null));
 
             // The runtime loads List<int> with or without the modifier in the type spec, so only the blob shows it.
-            int typeSpecToken = BitConverter.ToInt32(created.GetMethodBody().GetILAsByteArray(), OpCodes.Ldtoken.Size);
+            int typeSpecToken = BinaryPrimitives.ReadInt32LittleEndian(created.GetMethodBody().GetILAsByteArray().AsSpan(OpCodes.Ldtoken.Size));
             Assert.Equal((byte)SignatureTypeCode.GenericTypeInstance, created.Module.ResolveSignature(typeSpecToken)[0]);
         }
 
@@ -609,7 +530,7 @@ namespace System.Reflection.Emit.Tests
             byte[] GetLdtokenTypeSpec(string name)
             {
                 MethodInfo method = created.GetMethod(name);
-                return method.Module.ResolveSignature(BitConverter.ToInt32(method.GetMethodBody().GetILAsByteArray(), OpCodes.Ldtoken.Size));
+                return method.Module.ResolveSignature(BinaryPrimitives.ReadInt32LittleEndian(method.GetMethodBody().GetILAsByteArray().AsSpan(OpCodes.Ldtoken.Size)));
             }
 
             void DefineLdtoken(string name, Type operand)

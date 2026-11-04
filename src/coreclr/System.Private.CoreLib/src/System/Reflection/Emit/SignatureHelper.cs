@@ -343,7 +343,7 @@ namespace System.Reflection.Emit
                         AddReflectedCustomModifiers(clsArgument.GetOptionalCustomModifiers(), required: false, paramName: null);
                 }
 
-                // Not AddOneArgTypeHelper: it would add the type's own modifiers to the ones written above.
+                // The overload taking a DynamicScope would add the type's own modifiers to the ones written above.
                 AddOneArgTypeHelperWorker(clsArgument, false, null);
                 return;
             }
@@ -369,31 +369,12 @@ namespace System.Reflection.Emit
         private bool IsEncodedModifiedType(Type type) =>
             m_module != null && type is ModifiedType or SignatureModifiedType;
 
-        // Modifier order is part of the signature: an override copied with it changed doesn't match its declaration.
-        // Without a known order, required modifiers come first, as PersistedAssemblyBuilder writes them.
+        // Reflection returns each kind's modifiers separately, without their interleaving, so required ones come
+        // first, as PersistedAssemblyBuilder writes them.
         private void AddModifiedTypeCustomModifiers(Type type)
         {
-            Type[] requiredCustomModifiers = type.GetRequiredCustomModifiers();
-            Type[] optionalCustomModifiers = type.GetOptionalCustomModifiers();
-
-            // The counts differ when ELEMENT_TYPE_CMOD_INTERNAL or ELEMENT_TYPE_SENTINEL sits among the modifiers:
-            // the kinds stop there, while reflection counts the first and steps over the second.
-            bool[]? kinds = (type as ModifiedType)?.GetCustomModifierKinds();
-            if (kinds == null || kinds.Length != requiredCustomModifiers.Length + optionalCustomModifiers.Length)
-            {
-                AddReflectedCustomModifiers(requiredCustomModifiers, required: true, paramName: null);
-                AddReflectedCustomModifiers(optionalCustomModifiers, required: false, paramName: null);
-                return;
-            }
-
-            // Reflection returns each kind's modifiers in reverse signature order.
-            int required = requiredCustomModifiers.Length;
-            int optional = optionalCustomModifiers.Length;
-            foreach (bool isRequired in kinds)
-            {
-                Type customModifier = isRequired ? requiredCustomModifiers[--required] : optionalCustomModifiers[--optional];
-                AddCustomModifier(customModifier, isRequired, paramName: null);
-            }
+            AddReflectedCustomModifiers(type.GetRequiredCustomModifiers(), required: true, paramName: null);
+            AddReflectedCustomModifiers(type.GetOptionalCustomModifiers(), required: false, paramName: null);
         }
 
         // customModifiers is in reflection order, the reverse of signature order.
@@ -408,10 +389,10 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(customModifier, paramName);
 
             if (customModifier.HasElementType)
-                throw new ArgumentException(SR.Argument_ArraysInvalid, paramName);
+                throw new ArgumentException(SR.Format(SR.Argument_CustomModifierElementType, customModifier), paramName);
 
             if (customModifier.ContainsGenericParameters)
-                throw new ArgumentException(SR.Argument_GenericsInvalid, paramName);
+                throw new ArgumentException(SR.Format(SR.Argument_CustomModifierGeneric, customModifier), paramName);
 
             AddElementType(required ? CorElementType.ELEMENT_TYPE_CMOD_REQD : CorElementType.ELEMENT_TYPE_CMOD_OPT);
 

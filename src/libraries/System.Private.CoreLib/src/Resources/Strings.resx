@@ -1035,6 +1035,12 @@
   <data name="Argument_CustomCultureCannotBePassedByNumber" xml:space="preserve">
     <value>Customized cultures cannot be passed by LCID, only by name.</value>
   </data>
+  <data name="Argument_CustomModifierElementType" xml:space="preserve">
+    <value>Custom modifier '{0}' is an array, pointer or by-ref type.</value>
+  </data>
+  <data name="Argument_CustomModifierGeneric" xml:space="preserve">
+    <value>Custom modifier '{0}' contains generic parameters.</value>
+  </data>
   <data name="Argument_CustomModifierLengthInvalidLength" xml:space="preserve">
     <value>Custom modifiers length '{0}' does not match the size of the arguments.</value>
   </data>

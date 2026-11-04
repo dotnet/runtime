@@ -83,7 +83,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
+        [SkipOnMono("Mono's SignatureHelper does not reject a modified type without a module.")]
         public void AddArgument_ModifiedSignatureTypeWithoutModule_ThrowsNotSupportedException()
         {
             Type modifiedType = Type.MakeModifiedSignatureType(typeof(int), [typeof(IsConst)], null);

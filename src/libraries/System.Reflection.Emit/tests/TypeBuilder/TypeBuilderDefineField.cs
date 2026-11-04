@@ -360,16 +360,25 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal([typeof(IsLong)], field.GetModifiedFieldType().GetOptionalCustomModifiers());
         }
 
+        public static IEnumerable<object[]> InvalidCustomModifiers_TestData()
+        {
+            yield return [typeof(int[])];
+            yield return [typeof(int).MakePointerType()];
+            yield return [typeof(int).MakeByRefType()];
+            yield return [typeof(List<>)];
+            yield return [typeof(List<>).GetGenericArguments()[0]];
+        }
+
         [Theory]
         [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
-        [InlineData(typeof(int[]))]
-        [InlineData(typeof(List<>))]
+        [MemberData(nameof(InvalidCustomModifiers_TestData))]
         public void DefineField_ModifiedSignatureTypeWithInvalidModifier_ThrowsArgumentException(Type customModifier)
         {
             Type fieldType = Type.MakeModifiedSignatureType(typeof(int), [customModifier], null);
 
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineField("F", fieldType, FieldAttributes.Public | FieldAttributes.Static));
+            ArgumentException ex = AssertExtensions.Throws<ArgumentException>(null, () => type.DefineField("F", fieldType, FieldAttributes.Public | FieldAttributes.Static));
+            Assert.Contains($"'{customModifier}'", ex.Message);
         }
 
         [Fact]
