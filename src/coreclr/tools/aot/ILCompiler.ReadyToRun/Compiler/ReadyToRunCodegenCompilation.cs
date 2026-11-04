@@ -319,11 +319,16 @@ namespace ILCompiler
         private HashSet<MethodDesc> _deniedManagedHelpers;
         private bool _directManagedHelpersInitialized;
         private ReadyToRunCallGraphBuilder _callGraphBuilder;
-        private readonly ReadyToRunCompilationPlan _compilationPlan;
+        private ReadyToRunCompilationPlan _compilationPlan;
         private readonly Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo> _previousCompilationInfo;
         private readonly bool _isCoreLibCompilation;
         private readonly HashSet<MethodDesc> _startupEagerMethods;
         private bool _compilingEagerMethods;
+        internal bool DeferredWasmCalls { get; }
+        private readonly ConcurrentDictionary<MethodWithToken, DeferredWasmCallNode> _deferredWasmTargets;
+        private readonly HashSet<MethodWithGCInfo> _deferredWasmMethods;
+        private readonly HashSet<MethodWithGCInfo> _finalizedWasmMethods;
+        private bool _deferredWasmPolicyFrozen;
 
         public ProfileDataManager ProfileData => _profileData;
 
@@ -381,7 +386,8 @@ namespace ILCompiler
             bool verifyTypeAndFieldLayout,
             ReadyToRunContainerFormat format,
             WasmDebugInfo wasmDebugInfo,
-            ReadyToRunCompilationPlan compilationPlan)
+            ReadyToRunCompilationPlan compilationPlan,
+            bool deferredWasmCalls = false)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -407,7 +413,8 @@ namespace ILCompiler
             _format = format;
             _wasmDebugInfo = wasmDebugInfo;
             _compilationPlan = compilationPlan;
-            if (_compilationPlan is not null)
+            DeferredWasmCalls = deferredWasmCalls;
+            if (_compilationPlan is not null || deferredWasmCalls)
             {
                 _previousCompilationInfo = new Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo>();
             }
@@ -432,9 +439,22 @@ namespace ILCompiler
                 }
             }
 
-            if (_isCoreLibCompilation && _compilationPlan is not null)
+            if (_isCoreLibCompilation && (_compilationPlan is not null || deferredWasmCalls))
             {
                 _startupEagerMethods = GetStartupEagerMethods();
+            }
+
+            if (deferredWasmCalls)
+            {
+                _deferredWasmTargets = new();
+                _deferredWasmMethods = new();
+                _finalizedWasmMethods = new();
+                _callGraphBuilder = new ReadyToRunCallGraphBuilder();
+                _dependencyGraph.DependencyAnalysisQuiesced += FinalizeDeferredWasmCalls;
+                foreach (MethodDesc method in _startupEagerMethods)
+                {
+                    _dependencyGraph.AddRoot(NodeFactory.CompiledMethodNode(method), "Native-facing startup method");
+                }
             }
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
@@ -569,7 +589,7 @@ namespace ILCompiler
                 }
             }
 
-            if (managedHelpers.Count > 0)
+            if (managedHelpers.Count > 0 && !_directManagedHelpersInitialized)
             {
                 InitializeDirectManagedHelpers(managedHelpers);
                 _directManagedHelpersInitialized = true;
@@ -602,7 +622,7 @@ namespace ILCompiler
                     foreach (MethodDesc method in methodsAtLevel)
                     {
                         MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
-                        if (!methodNode.StaticDependenciesAreComputed)
+                        if (DeferredWasmCalls ? !_finalizedWasmMethods.Contains(methodNode) : !methodNode.StaticDependenciesAreComputed)
                         {
                             dependencies.Add(methodNode);
                         }
@@ -611,10 +631,21 @@ namespace ILCompiler
                     string phase = isEager ? "eager" : "non-eager";
                     if (Logger.IsVerbose)
                     {
-                        Logger.Writer.WriteLine($"Precompiling two-phase {phase} level {level} with {methodsAtLevel.Count} methods");
+                        string operation = DeferredWasmCalls ? "Finalizing deferred Wasm calls" : "Precompiling two-phase";
+                        Logger.Writer.WriteLine($"{operation} {phase} level {level} with {methodsAtLevel.Count} methods");
                     }
 
-                    ComputeDependencyNodeDependencies(dependencies);
+                    if (DeferredWasmCalls)
+                    {
+                        foreach (DependencyNodeCore<NodeFactory> dependency in dependencies)
+                        {
+                            FinalizeDeferredWasmMethod((MethodWithGCInfo)dependency);
+                        }
+                    }
+                    else
+                    {
+                        ComputeDependencyNodeDependencies(dependencies);
+                    }
 
                     int compiledCount = 0;
                     foreach (DependencyNodeCore<NodeFactory> dependency in dependencies)
@@ -842,6 +873,84 @@ namespace ILCompiler
                         // Include the caller and the level-zero leaf in the activation depth.
                         (compilationInfo.Level < DefaultMaxDirectCallActivationDepth - 1 ||
                             IsDirectCallDepthExempt(method.OwningType))));
+        }
+
+        internal ISymbolNode GetDeferredWasmCall(MethodWithToken method, ISymbolNode fallback)
+        {
+            if (fallback is not DelayLoadMethodImport { MethodCodeNode: not null } import ||
+                import.MethodCodeNode.Method != method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific))
+            {
+                return fallback;
+            }
+
+            return _deferredWasmTargets.GetOrAdd(method, static (_, fallback) => new DeferredWasmCallNode(fallback), import);
+        }
+
+        private void FinalizeDeferredWasmCalls()
+        {
+            if (!_deferredWasmPolicyFrozen)
+            {
+                var methods = new List<MethodDesc>();
+                foreach (MethodWithGCInfo method in _deferredWasmMethods)
+                {
+                    if (!method.IsEmpty)
+                    {
+                        methods.Add(method.Method);
+                    }
+                }
+
+                _compilationPlan = _callGraphBuilder.CreatePlan(methods);
+                _callGraphBuilder = null;
+                PrecompileCompilationPlan();
+                _deferredWasmPolicyFrozen = true;
+                NodeFactory.CompleteDeferredImportPlacement();
+            }
+            foreach (MethodWithGCInfo method in _deferredWasmMethods)
+            {
+                if (!_finalizedWasmMethods.Contains(method))
+                {
+                    FinalizeDeferredWasmMethod(method);
+                }
+                if (!method.DeferredWasmDependenciesPublished)
+                {
+                    method.DeferredWasmDependenciesPublished = true;
+                    _dependencyGraph.RevisitStaticDependencies(method);
+                }
+            }
+        }
+
+        private void FinalizeDeferredWasmMethod(MethodWithGCInfo method)
+        {
+            if (!method.IsEmpty)
+            {
+                DeferredWasmCallRewriter.Rewrite(this, method);
+                method.FinalizePrecodeFixups();
+            }
+            _finalizedWasmMethods.Add(method);
+        }
+
+        internal void SelectDeferredWasmCall(MethodWithGCInfo caller, DeferredWasmCallNode call, bool useDirectCall, bool isEager)
+        {
+            MethodWithToken activationToken = useDirectCall ? caller.GetDeferredWasmActivationToken(call.Target) : default;
+            Import import = useDirectCall
+                ? (Import)(isEager
+                    ? SymbolNodeFactory.EagerReadyToRunMethodEntry(activationToken)
+                    : SymbolNodeFactory.PrecodeReadyToRunMethodEntry(activationToken))
+                : call.Fallback;
+
+            if (import.Table.IsEager)
+            {
+                caller.AddModuleEagerFixup(import);
+                caller.AddDeferredWasmDependency(import);
+            }
+            else if (import.EmitPrecode)
+            {
+                caller.AddDeferredWasmFixup(import);
+            }
+            if (useDirectCall)
+            {
+                caller.AddDirectCallTarget(call.Target);
+            }
         }
 
         internal static bool IsDirectCallDepthExempt(TypeDesc type)
@@ -1161,6 +1270,20 @@ namespace ILCompiler
 
                 ProcessMutableMethodBodiesList();
                 ResetILCache();
+
+                if (DeferredWasmCalls)
+                {
+                    foreach (DependencyNodeCore<NodeFactory> dependency in obj)
+                    {
+                        if (dependency is MethodWithGCInfo method)
+                        {
+                            // Late compilation is safe, but indicates that dependency analysis missed part of the method closure.
+                            Debug.Assert(!_deferredWasmPolicyFrozen,
+                                $"Method {method.Method} requires compilation after the deferred Wasm call policy was frozen.");
+                            _deferredWasmMethods.Add(method);
+                        }
+                    }
+                }
 
                 IReadOnlyList<DependencyNodeCore<NodeFactory>> methodsToCompile = obj;
                 if (!_directManagedHelpersInitialized && _nodeFactory.CompilationCurrentPhase == 0)

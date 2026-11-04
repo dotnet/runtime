@@ -501,6 +501,8 @@ namespace Internal.JitInterface
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
         private List<(ISymbolNode Location, int Offset)> _wasmMethodVirtualIPFixups;
+        private Dictionary<int, WasmTypeNode> _deferredWasmCallSignatures;
+        private Dictionary<MethodWithGCInfo, MethodWithToken> _deferredWasmActivationTokens;
         public bool HasColdCode { get; private set; }
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
@@ -2822,6 +2824,26 @@ namespace Internal.JitInterface
                             MethodWithGCInfo targetCodeNode = _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(targetCodeNode);
                         }
+                        else if (_compilation.DeferredWasmCalls &&
+                            !_isCompilationProbe &&
+                            !isUnboxingStub &&
+                            !isRawPInvoke &&
+                            !useInstantiatingStub &&
+                            (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
+                        {
+                            MethodWithToken targetMethodWithToken = ComputeMethodWithToken(
+                                nonUnboxingMethod, ref resolvedToken, constrainedType, unboxing: false);
+                            ISymbolNode fallback = _compilation.NodeFactory.MethodEntrypoint(
+                                targetMethodWithToken, isInstantiatingStub: false,
+                                isPrecodeImportRequired: false, isJumpableImportRequired: false);
+                            ISymbolNode deferredTarget = _compilation.GetDeferredWasmCall(targetMethodWithToken, fallback);
+                            if (deferredTarget is DeferredWasmCallNode deferredCall)
+                            {
+                                _deferredWasmActivationTokens ??= new Dictionary<MethodWithGCInfo, MethodWithToken>();
+                                _deferredWasmActivationTokens.TryAdd(deferredCall.Target, targetMethodWithToken);
+                            }
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(deferredTarget);
+                        }
                         else if (!isUnboxingStub &&
                             !isRawPInvoke &&
                             !useInstantiatingStub &&
@@ -3605,6 +3627,8 @@ namespace Internal.JitInterface
         partial void ClearWasmMethodVirtualIPFixups()
         {
             _wasmMethodVirtualIPFixups = null;
+            _deferredWasmCallSignatures = null;
+            _deferredWasmActivationTokens = null;
         }
 
         private unsafe HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)

@@ -23,6 +23,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly bool _sortLast;
         private readonly ImportSectionNode _originalTable;
+        private bool _placementDeferred;
 
         public Signature Signature => ImportSignature.Target;
 
@@ -37,13 +38,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void OnMarked(NodeFactory factory)
         {
+            if (factory.DeferredImportPlacement is List<Import> imports)
+            {
+                _placementDeferred = true;
+                imports.Add(this);
+                return;
+            }
+            Table.AddImport(factory, this);
+        }
+
+        internal void CompleteDeferredPlacement(NodeFactory factory)
+        {
+            Debug.Assert(_placementDeferred);
+            _placementDeferred = false;
             Table.AddImport(factory, this);
         }
 
         internal void PromoteToEager(ImportSectionNode table)
         {
-            // Marking embeds the cell and its signature pointer in their final table.
-            Debug.Assert(!Marked);
+            // Placement, including the signature pointer, must wait until promotion is decided.
+            Debug.Assert(!Marked || _placementDeferred);
             Debug.Assert(table.IsEager && !table.EmitPrecode);
             Debug.Assert(Table.EntrySize == table.EntrySize);
             Table = table;

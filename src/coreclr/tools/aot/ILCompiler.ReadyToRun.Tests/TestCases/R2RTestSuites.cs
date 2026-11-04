@@ -32,10 +32,20 @@ public class R2RTestSuites
         _output = output;
     }
 
+    public static IEnumerable<object[]> DirectCallModes()
+    {
+        yield return [1, false];
+        yield return [2, false];
+        if (TestPaths.IsWasmTarget)
+        {
+            yield return [1, true];
+            yield return [2, true];
+        }
+    }
+
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.SupportsTwoPhaseDirectCalls))]
-    [InlineData(1)]
-    [InlineData(2)]
-    public void DirectCalleesCoverRelocationPrecodeFixups(int parallelism)
+    [MemberData(nameof(DirectCallModes))]
+    public void DirectCalleesCoverRelocationPrecodeFixups(int parallelism, bool deferred)
     {
         CompiledAssembly input = new()
         {
@@ -52,7 +62,7 @@ public class R2RTestSuites
                     AdditionalArgs =
                     [
                         "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath,
-                        "--two-phase-compilation", "--parallelism", parallelism.ToString(),
+                        deferred ? "--deferred-wasm-calls" : "--two-phase-compilation", "--parallelism", parallelism.ToString(),
                         "--codegenopt", "JitNoInline=1",
                     ],
                     OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
@@ -129,10 +139,20 @@ public class R2RTestSuites
     }
 
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void StartupEagerMethodsHaveNoPrecodeFixups(bool rootCoreLib)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void StartupEagerMethodsHaveNoPrecodeFixups(bool rootCoreLib, bool deferred)
     {
+        List<string> additionalArgs = rootCoreLib
+            ? [TestPaths.SystemPrivateCoreLibPath, "--parallelism", "2", "--codegenopt", "JitNoInline=1"]
+            : ["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath, "--parallelism", "2",
+                "--codegenopt", "JitNoInline=1"];
+        if (deferred)
+        {
+            additionalArgs.Add("--deferred-wasm-calls");
+        }
         CompiledAssembly input = new()
         {
             AssemblyName = nameof(StartupEagerMethodsHaveNoPrecodeFixups),
@@ -145,10 +165,7 @@ public class R2RTestSuites
                 new(nameof(StartupEagerMethodsHaveNoPrecodeFixups), [new CrossgenAssembly(input)])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
-                    AdditionalArgs = rootCoreLib
-                        ? [TestPaths.SystemPrivateCoreLibPath, "--parallelism", "2", "--codegenopt", "JitNoInline=1"]
-                        : ["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath, "--parallelism", "2",
-                            "--codegenopt", "JitNoInline=1"],
+                    AdditionalArgs = additionalArgs,
                     OutputFileExtension = ".wasm",
                     Validate = Validate,
                 },

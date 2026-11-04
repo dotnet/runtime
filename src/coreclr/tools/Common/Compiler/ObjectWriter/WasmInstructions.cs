@@ -123,6 +123,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         Call = 0x10,
         CallIndirect = 0x11,
         ReturnCall = 0x12,
+        ReturnCallIndirect = 0x13,
         LocalGet = 0x20,
         LocalSet = 0x21,
         LocalTee = 0x22,

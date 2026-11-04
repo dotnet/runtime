@@ -375,6 +375,12 @@
   <data name="TwoPhaseCompilationOption" xml:space="preserve">
     <value>Run a discovery compilation and compile methods in callee-first dependency levels. This is an experimental option.</value>
   </data>
+  <data name="DeferredWasmCallsOption" xml:space="preserve">
+    <value>Experimentally select Wasm managed calls after a single code-generation pass.</value>
+  </data>
+  <data name="DeferredWasmCallsRequiresOptimizedCoreLib" xml:space="preserve">
+    <value>--deferred-wasm-calls requires an optimized Wasm compilation containing System.Private.CoreLib and cannot be combined with --two-phase-compilation.</value>
+  </data>
   <data name="MapCsvFileOption" xml:space="preserve">
     <value>Generate a CSV formatted map file</value>
   </data>

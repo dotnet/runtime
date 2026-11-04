@@ -81,6 +81,18 @@ namespace ILCompiler.DependencyAnalysis
     {
         private bool _markingComplete;
 
+        internal List<Import> DeferredImportPlacement { get; set; }
+
+        internal void CompleteDeferredImportPlacement()
+        {
+            List<Import> imports = DeferredImportPlacement;
+            DeferredImportPlacement = null;
+            foreach (Import import in imports)
+            {
+                import.CompleteDeferredPlacement(this);
+            }
+        }
+
         public CompilerTypeSystemContext TypeSystemContext { get; }
 
         public TargetDetails Target { get; }

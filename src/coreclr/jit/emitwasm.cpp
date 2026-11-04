@@ -315,6 +315,11 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     switch (params.callType)
     {
         case EC_FUNC_TOKEN:
+            if (m_compiler->eeGetRelocTypeHint(params.addr) == CorInfoReloc::WASM_DEFERRED_CALL)
+            {
+                emitIns_I(INS_deferred_call, EA_HANDLE_CNS_RELOC,
+                          reinterpret_cast<cnsval_ssize_t>(params.wasmSignature));
+            }
             ins = params.isJump ? INS_return_call : INS_call;
             id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)params.addr);
             id->idIns(ins);
@@ -732,6 +737,9 @@ unsigned emitter::instrDesc::idCodeSize() const
     unsigned size = HasOpcodePrefix(idIns()) ? 1 + SizeOfULEB128(opcode) : 1;
     switch (idInsFmt())
     {
+        case IF_DEFERRED_CALL:
+            size = 0;
+            break;
         case IF_OPCODE:
             break;
         case IF_BLOCK:
@@ -989,6 +997,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     switch (insFmt)
     {
+        case IF_DEFERRED_CALL:
+        {
+            // The following call opcode is one byte; retain its exact signature without changing the code.
+            emitRecordRelocation(dst + 1, reinterpret_cast<void*>(emitGetInsSC(id)), CorInfoReloc::WASM_DEFERRED_CALL);
+            break;
+        }
         case IF_OPCODE:
         {
             dst += emitOutputOpcode(dst, ins);
@@ -1359,6 +1373,7 @@ void emitter::emitDispIns(
         case IF_RAW_ULEB128:
         case IF_ULEB128:
         case IF_FUNCIDX:
+        case IF_DEFERRED_CALL:
         case IF_GLOBALIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);

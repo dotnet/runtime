@@ -154,6 +154,8 @@ namespace ILCompiler
             new("--hot-cold-splitting") { Description = SR.HotColdSplittingOption };
         public Option<bool> TwoPhaseCompilation { get; } =
             new("--two-phase-compilation") { Description = SR.TwoPhaseCompilationOption };
+        public Option<bool> DeferredWasmCalls { get; } =
+            new("--deferred-wasm-calls") { Description = SR.DeferredWasmCallsOption };
         public Option<bool> VerifyGCModeTransitions { get; } =
             new("--verify-gc-mode-transitions") { Description = SR.VerifyGCModeTransitionsOption };
         public Option<bool?> TargetSingleThreaded { get; } =
@@ -247,6 +249,7 @@ namespace ILCompiler
             Options.Add(MakeReproPath);
             Options.Add(HotColdSplitting);
             Options.Add(TwoPhaseCompilation);
+            Options.Add(DeferredWasmCalls);
             Options.Add(StripInliningInfo);
             Options.Add(StripDebugInfo);
             Options.Add(StripILBodies);

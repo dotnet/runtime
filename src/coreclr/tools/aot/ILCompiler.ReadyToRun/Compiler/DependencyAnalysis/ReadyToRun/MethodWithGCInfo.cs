@@ -37,6 +37,75 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
         private DependencyList _nonRelocationDependencies;
+        private DeferredWasmCompilationData _deferredWasmData;
+        internal bool DeferredWasmDependenciesPublished { get; set; }
+
+        private sealed class DeferredWasmCompilationData(OffsetMapping[] locations, NativeVarInfo[] variables)
+        {
+            internal readonly OffsetMapping[] Locations = locations;
+            internal readonly NativeVarInfo[] Variables = variables;
+            internal Dictionary<int, WasmTypeNode> Signatures;
+            internal Dictionary<MethodWithGCInfo, MethodWithToken> ActivationTokens;
+            internal HashSet<ISymbolNode> Fixups;
+        }
+
+        internal void InitializeDeferredWasmCalls(Dictionary<int, WasmTypeNode> signatures, Dictionary<MethodWithGCInfo, MethodWithToken> tokens)
+        {
+            _deferredWasmData.Signatures = signatures;
+            _deferredWasmData.ActivationTokens = tokens;
+        }
+
+        internal WasmTypeNode GetDeferredWasmCallSignature(int offset) =>
+            _deferredWasmData.Signatures[offset];
+
+        internal MethodWithToken GetDeferredWasmActivationToken(MethodWithGCInfo target) =>
+            _deferredWasmData.ActivationTokens[target];
+
+        internal void AddDeferredWasmFixup(Import import)
+        {
+            _deferredWasmData.Fixups ??= new HashSet<ISymbolNode>(_fixups);
+            if (_deferredWasmData.Fixups.Add(import))
+            {
+                _fixups.Add(import);
+            }
+        }
+
+        internal void InitializeDeferredWasmDebugInfo(OffsetMapping[] locations, NativeVarInfo[] variables)
+        {
+            _deferredWasmData = new DeferredWasmCompilationData(locations, variables);
+        }
+
+        internal void AddDeferredWasmDependency(ISymbolNode node)
+        {
+            _nonRelocationDependencies ??= new DependencyList();
+            _nonRelocationDependencies.Add(node, "Selected deferred Wasm call");
+        }
+
+        internal void FinalizeDeferredWasmCode(ObjectData code, FrameInfo[] frames, Func<int, int> mapOffset)
+        {
+            Debug.Assert(!_precodeFixupsFinalized);
+            _methodCode = code;
+            _frameInfos = frames;
+            DeferredWasmCompilationData data = _deferredWasmData;
+            if (data.Locations is not null)
+            {
+                foreach (ref OffsetMapping location in data.Locations.AsSpan())
+                {
+                    location.nativeOffset = checked((uint)mapOffset((int)location.nativeOffset));
+                }
+            }
+            if (data.Variables is not null)
+            {
+                foreach (ref NativeVarInfo variable in data.Variables.AsSpan())
+                {
+                    variable.startOffset = checked((uint)mapOffset((int)variable.startOffset));
+                    variable.endOffset = checked((uint)mapOffset((int)variable.endOffset));
+                }
+            }
+            InitializeDebugLocInfos(data.Locations);
+            InitializeDebugVarInfos(data.Variables);
+            _deferredWasmData = null;
+        }
 
         public MethodWithGCInfo(MethodDesc methodDesc)
         {

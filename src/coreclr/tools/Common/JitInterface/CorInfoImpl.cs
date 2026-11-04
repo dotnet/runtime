@@ -562,8 +562,18 @@ namespace Internal.JitInterface
                 _methodCodeNode.InitializeFuncletKinds(GetWasmFuncletKinds(_ehClauses));
             }
 
-            _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
-            _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+#if READYTORUN
+            if (_compilation.DeferredWasmCalls)
+            {
+                _methodCodeNode.InitializeDeferredWasmDebugInfo(_debugLocInfos, _debugVarInfos);
+                _methodCodeNode.InitializeDeferredWasmCalls(_deferredWasmCallSignatures, _deferredWasmActivationTokens);
+            }
+            else
+#endif
+            {
+                _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
+                _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+            }
 #if READYTORUN
             MethodDesc[] inlineeArray;
             if (_inlinedMethods != null)
@@ -603,7 +613,10 @@ namespace Internal.JitInterface
                     }
                 }
             }
-            _methodCodeNode.FinalizePrecodeFixups();
+            if (!_compilation.DeferredWasmCalls)
+            {
+                _methodCodeNode.FinalizePrecodeFixups();
+            }
 
             if (_synthesizedPgoDependencies != null)
             {
@@ -4753,6 +4766,15 @@ namespace Internal.JitInterface
             // the relocation with a method-load-time fixup that stores the target's runtime
             // MultiCallableAddrOfCode into the location.
             bool handledByCodeStoreFixup = false;
+#if READYTORUN
+            if (fRelocType == CorInfoReloc.WASM_DEFERRED_CALL)
+            {
+                Debug.Assert(locationBlock == BlockType.Code && addlDelta == 0);
+                _deferredWasmCallSignatures ??= new Dictionary<int, WasmTypeNode>();
+                _deferredWasmCallSignatures.Add(relocOffset, (WasmTypeNode)HandleToObject(target));
+                return;
+            }
+#endif
             TryUseWasmMethodCodeStoreFixup(target, fRelocType, locationBlock, relocOffset, addlDelta, ref handledByCodeStoreFixup);
             if (handledByCodeStoreFixup)
             {
@@ -4840,6 +4862,12 @@ namespace Internal.JitInterface
 
         private CorInfoReloc getRelocTypeHint(void* target)
         {
+#if READYTORUN
+            if (_compilation.DeferredWasmCalls && target != null && HandleToObject(target) is DeferredWasmCallNode)
+            {
+                return CorInfoReloc.WASM_DEFERRED_CALL;
+            }
+#endif
             switch (_compilation.TypeSystemContext.Target.Architecture)
             {
                 case TargetArchitecture.X64:

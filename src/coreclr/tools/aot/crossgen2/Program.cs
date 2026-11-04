@@ -733,18 +733,30 @@ namespace ILCompiler
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
                     bool useTwoPhaseCompilation = Get(_command.TwoPhaseCompilation);
-                    if (!useTwoPhaseCompilation &&
-                        typeSystemContext.Target.Architecture == TargetArchitecture.Wasm32 &&
-                        optimizationMode != OptimizationMode.None)
+                    bool deferredWasmCalls = Get(_command.DeferredWasmCalls);
+                    bool containsCoreLib = false;
+                    foreach (EcmaModule compilationModule in compilationGroup.CompilationModuleSet)
                     {
-                        foreach (EcmaModule compilationModule in compilationGroup.CompilationModuleSet)
+                        containsCoreLib |= compilationModule == typeSystemContext.SystemModule;
+                    }
+                    if (deferredWasmCalls)
+                    {
+                        if (useTwoPhaseCompilation ||
+                            typeSystemContext.Target.Architecture != TargetArchitecture.Wasm32 ||
+                            optimizationMode == OptimizationMode.None ||
+                            !containsCoreLib)
                         {
-                            if (compilationModule == typeSystemContext.SystemModule)
-                            {
-                                useTwoPhaseCompilation = true;
-                                break;
-                            }
+                            throw new CommandLineException(SR.DeferredWasmCallsRequiresOptimizedCoreLib);
                         }
+                        builder.UseDeferredWasmCalls();
+                    }
+                    if (!useTwoPhaseCompilation &&
+                        !deferredWasmCalls &&
+                        typeSystemContext.Target.Architecture == TargetArchitecture.Wasm32 &&
+                        optimizationMode != OptimizationMode.None &&
+                        containsCoreLib)
+                    {
+                        useTwoPhaseCompilation = true;
                     }
 
                     if (useTwoPhaseCompilation)
