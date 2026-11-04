@@ -1010,25 +1010,48 @@ namespace System.Collections.Immutable
                 return true;
             }
 
-            // To determine whether everything we have is also in another sequence,
-            // we enumerate the sequence and "tag" whether it's in this collection,
-            // then consider whether every element in this collection was tagged.
-            // Since this collection is immutable we cannot directly tag.  So instead
-            // we simply count how many "hits" we have and ensure it's equal to the
-            // size of this collection.  Of course for this to work we need to ensure
-            // the uniqueness of items in the given sequence, so we create a set based
-            // on the sequence first.
-            var otherSet = new HashSet<T>(other, origin.EqualityComparer);
-            int matches = 0;
-            foreach (T item in otherSet)
+            switch (other)
             {
-                if (Contains(item, origin))
-                {
-                    matches++;
-                }
+                case ImmutableHashSet<T> otherAsImmutableHashSet:
+                    if (otherAsImmutableHashSet.Count < origin.Count)
+                    {
+                        return false;
+                    }
+
+                    if (EqualityComparer<IEqualityComparer<T>>.Default.Equals(origin.EqualityComparer, otherAsImmutableHashSet.KeyComparer))
+                    {
+                        return SetEqualsWithImmutableHashset(otherAsImmutableHashSet, origin);
+                    }
+                    break;
+
+                case HashSet<T> otherAsHashset:
+                    if (otherAsHashset.Count < origin.Count)
+                    {
+                        return false;
+                    }
+
+                    if (EqualityComparer<IEqualityComparer<T>>.Default.Equals(origin.EqualityComparer, otherAsHashset.Comparer))
+                    {
+                        return SetEqualsWithHashset(otherAsHashset, origin);
+                    }
+                    break;
+
+                case ICollection<T> otherAsICollectionGeneric:
+                    // We check for < instead of != because other is not guaranteed to be a set, it could be a collection with duplicates.
+                    if (otherAsICollectionGeneric.Count < origin.Count)
+                    {
+                        return false;
+                    }
+                    break;
             }
 
-            return matches == origin.Count;
+            var otherSet = new HashSet<T>(other, origin.EqualityComparer);
+            if (otherSet.Count < origin.Count)
+            {
+                return false;
+            }
+
+            return SetEqualsWithHashset(otherSet, origin);
         }
 
         #endregion
