@@ -31,7 +31,7 @@ const exit = (exitCode: number, reason: any): void => {
 
 let _dotnet: DotnetHostBuilder | undefined;
 if (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR) {
-    // Dedicated worker spawned by withWorker(): wait for init message
+    // Dedicated worker spawned by runInWorker: wait for init message
     // from main thread, then bootstrap the runtime with shared WebAssembly.Memory.
     // ENVIRONMENT_IS_SIDECAR workers (Emscripten pthreads) continue normal startup.
     const initMsg = await waitForInitMessage();

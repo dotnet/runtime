@@ -4,7 +4,7 @@
 export const enum SignalState { IDLE, PENDING, DONE, ERROR, READY, EXECUTING }
 export const enum CommandId { NONE, RUN_MAIN, EXIT, RUN_MAIN_AND_EXIT }
 
-export const SIGNALING_VERSION = 14;
+export const SIGNALING_VERSION = 15;
 export const OFFSET_VERSION = 0;
 export const OFFSET_MEMORY_GENERATION = 1;
 export const OFFSET_WAKEUP_MAIN = 2;
@@ -42,14 +42,14 @@ export function wakeWorker(signal: Int32Array): void {
 
 export function writeSharedError(signal: Int32Array, offset: number, error: unknown, context: string): void {
     const text = error instanceof Error ? error.message : String(error);
-    const message = text.length <= errorCapacity ? text : `withWorker(): ${context} error exceeds shared error capacity`;
+    const message = text.length <= errorCapacity ? text : `runInWorker: ${context} error exceeds shared error capacity`;
     for (let index = 0; index < message.length; index++) signal[offset + 1 + index] = message.charCodeAt(index);
     Atomics.store(signal, offset, message.length);
 }
 
 export function readSharedError(signal: Int32Array, offset: number): Error {
     const length = Atomics.load(signal, offset);
-    if (length < 0 || length > errorCapacity) throw new Error("withWorker(): invalid shared error length");
+    if (length < 0 || length > errorCapacity) throw new Error("runInWorker: invalid shared error length");
     let message = "";
     for (let index = 0; index < length; index++) message += String.fromCharCode(signal[offset + 1 + index]);
     return new Error(message);
@@ -72,7 +72,7 @@ export function createMemoryViews(buffer: ArrayBufferLike): WasmMemoryViews {
 export class MemoryViewManager {
     private views: WasmMemoryViews;
     constructor(private readonly memory: WebAssembly.Memory, signal: Int32Array) {
-        if (Atomics.load(signal, OFFSET_VERSION) !== SIGNALING_VERSION) throw new Error("withWorker(): signaling version mismatch");
+        if (Atomics.load(signal, OFFSET_VERSION) !== SIGNALING_VERSION) throw new Error("runInWorker: signaling version mismatch");
         this.views = createMemoryViews(memory.buffer);
     }
     refreshIfNeeded(): WasmMemoryViews {

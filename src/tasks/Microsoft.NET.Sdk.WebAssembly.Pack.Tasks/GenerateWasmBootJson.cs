@@ -86,6 +86,8 @@ public class GenerateWasmBootJson : Task
 
     public bool IsMultiThreaded { get; set; }
 
+    public bool WasmRunInWorker { get; set; }
+
     public string? UseMonoRuntime { get; set; }
 
     public bool FingerprintAssets { get; set; }
@@ -136,6 +138,7 @@ public class GenerateWasmBootJson : Task
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
+            runInWorker = WasmRunInWorker ? true : null,
         };
 
         if (IsTargeting100OrLater())

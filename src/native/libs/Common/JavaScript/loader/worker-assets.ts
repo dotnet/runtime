@@ -34,7 +34,7 @@ function requestResource(asset: AssetEntryInternal, module: boolean): Promise<Wo
         };
         port1.onmessageerror = () => {
             close();
-            reject(new Error("withWorker(): invalid resource response"));
+            reject(new Error("runInWorker: invalid resource response"));
         };
         const request: WorkerResourceRequest = {
             type: "resource", module, port: port2,
@@ -54,13 +54,13 @@ function requestResource(asset: AssetEntryInternal, module: boolean): Promise<Wo
 
 export async function resolveWorkerModule(asset: AssetEntryInternal): Promise<string> {
     const result = await requestResource(asset, true);
-    if (result.type !== "url") throw new Error("withWorker(): expected a module URL");
+    if (result.type !== "url") throw new Error("runInWorker: expected a module URL");
     return result.url;
 }
 
 export async function loadWorkerResource(asset: AssetEntryInternal): Promise<Response> {
     const result = await requestResource(asset, false);
-    if (result.type !== "response") throw new Error("withWorker(): expected a resource response");
+    if (result.type !== "response") throw new Error("runInWorker: expected a resource response");
     asset.resolvedUrl = result.resolvedUrl;
     const response = result.status === 0 ? Response.error() : new Response(result.body, {
         status: result.status, statusText: result.statusText, headers: result.headers,

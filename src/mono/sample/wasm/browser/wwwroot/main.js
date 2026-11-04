@@ -81,7 +81,6 @@ function displayMeaning(meaning) {
 try {
     const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
         .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true })
-        .withWorker()
         .withConfigLoaded(config => {
             if (typeof document !== "object") throw new Error("Configuration callback ran outside UI");
             initializerEvents.push("config-callback");
@@ -189,7 +188,7 @@ try {
     if (nestedExport(4) !== 91) throw new Error("Outer call did not recover from inner errors.");
     nestedMode = "chain";
     if (nestedExport(15) !== 16) throw new Error("Maximum supported nesting failed.");
-    if (getConfig().workerOptions) {
+    if (getConfig().runInWorker) {
         try {
             nestedExport(16);
             throw new Error("Expected nested export capacity failure.");
@@ -267,7 +266,7 @@ try {
             error.dispose?.();
         }
     }
-    if (getConfig().workerOptions) {
+    if (getConfig().runInWorker) {
         if (await exports.Sample.Test.TaskThroughImport(-6) !== 46) throw new Error("Thenable completion changed.");
         try {
             await exports.Sample.Test.TaskThroughImport(-7);

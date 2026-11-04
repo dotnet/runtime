@@ -24,7 +24,7 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
     await loaderCallbacks.configLoaded?.(config);
     await initPolyfillsLoader();
     const resources = config.resources;
-    if (!resources) throw new Error("withWorker(): runtime resources are missing");
+    if (!resources) throw new Error("runInWorker: runtime resources are missing");
     const initializers = (resources.modulesAfterConfigLoaded ?? []).map(asset => [asset, callLibraryInitializerOnRuntimeConfigLoaded(asset)] as const);
     await Promise.all(initializers.map(([, promise]) => promise));
     const worker = new Worker(scriptUrl, { type: "module" });
@@ -37,7 +37,7 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
     let uiAttached = false;
     const resourceAbort = new AbortController();
     const timeoutMs = config.workerOptions?.timeoutMs ?? 30000;
-    const timeout = timeoutMs > 0 ? setTimeout(() => terminate(new Error("withWorker(): worker startup timed out")), timeoutMs) : undefined;
+    const timeout = timeoutMs > 0 ? setTimeout(() => terminate(new Error("runInWorker: worker startup timed out")), timeoutMs) : undefined;
 
     function terminate(error: Error): void {
         if (exited) return;
@@ -52,7 +52,7 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
             try {
                 dotnetRuntimeExports.forceDisposeProxies(false, false);
             } catch (cleanupError) {
-                dotnetLogger.error("withWorker(): UI proxy cleanup failed", cleanupError);
+                dotnetLogger.error("runInWorker: UI proxy cleanup failed", cleanupError);
             }
         }
         pending?.abort(error);
@@ -65,9 +65,9 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
     }
 
     async function attach(message: Extract<WorkerToMainMessage, { type: "attach" }>): Promise<void> {
-        if (!(message.wasmMemory.buffer instanceof SharedArrayBuffer)) throw new Error("withWorker(): memory is not shared");
+        if (!(message.wasmMemory.buffer instanceof SharedArrayBuffer)) throw new Error("runInWorker: memory is not shared");
         signal = new Int32Array(message.signalBuffer);
-        if (Atomics.load(signal, OFFSET_VERSION) !== SIGNALING_VERSION) throw new Error("withWorker(): signaling version mismatch");
+        if (Atomics.load(signal, OFFSET_VERSION) !== SIGNALING_VERSION) throw new Error("runInWorker: signaling version mismatch");
         channel = createNativeChannel(signal, message.nativeBuffer, false, (operation, first, second) => {
             switch (operation) {
                 case 0: return Number(dotnetRuntimeExports.bindJSImportST(first as any));
@@ -78,7 +78,7 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
                 case 5: dotnetRuntimeExports.invokeJSFunction(first as any, second as any); break;
                 case 6: dotnetRuntimeExports.forceDisposeProxies(!!first, !!second); break;
                 case 7: dotnetRuntimeExports.abortInteropTimers(); break;
-                default: throw new Error("withWorker(): unknown runtime callback");
+                default: throw new Error("runInWorker: unknown runtime callback");
             }
             return 0;
         });
@@ -87,7 +87,7 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
         Object.assign(Module, {
             _malloc: (size: number) => {
                 const pointer = native.invoke(NativeOperation.Malloc, size) >>> 0;
-                if (!pointer && size !== 0) throw new Error("withWorker(): native allocation failed");
+                if (!pointer && size !== 0) throw new Error("runInWorker: native allocation failed");
                 return pointer as any as VoidPtr;
             },
             _free: (pointer: VoidPtr) => {
@@ -101,7 +101,7 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
             },
             stackRestore: (saved: VoidPtr) => {
                 const count = Number(saved);
-                if (!Number.isInteger(count) || count < 0 || count > frames.length) throw new Error("withWorker(): invalid scratch stack restore");
+                if (!Number.isInteger(count) || count < 0 || count > frames.length) throw new Error("runInWorker: invalid scratch stack restore");
                 while (frames.length > count) Module._free(frames.pop()!);
             },
             safeSetTimeout: (callback: () => void, delay: number) => setTimeout(callback, delay),
@@ -143,17 +143,17 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
                     runtimeState.exitCode = code;
                     return code;
                 } finally {
-                    terminate(new Error("withWorker(): runtime exited"));
+                    terminate(new Error("runInWorker: runtime exited"));
                 }
             },
             exit: (code: number, reason?: unknown) => {
                 if (exited || exitRequested) return;
                 exitRequested = true;
-                pending?.abort(new Error(`withWorker(): runtime exited with code ${code}`));
+                pending?.abort(new Error(`runInWorker: runtime exited with code ${code}`));
                 pending = undefined;
                 void send(CommandId.EXIT, undefined, undefined, code, reason).then(() => {
                     runtimeState.exitCode = code;
-                    terminate(new Error("withWorker(): runtime exited"));
+                    terminate(new Error("runInWorker: runtime exited"));
                 }, error => terminate(error instanceof Error ? error : new Error(String(error))));
             },
         });
@@ -169,8 +169,8 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
 
     async function send(commandId: CommandId, mainAssemblyName?: string, args?: string[], exitCode?: number, reason?: unknown): Promise<number> {
         if (exited) throw exited;
-        if (!signal) throw new Error("withWorker(): native transport is not attached");
-        if (pending) throw new Error("withWorker(): another command is already running");
+        if (!signal) throw new Error("runInWorker: native transport is not attached");
+        if (pending) throw new Error("runInWorker: another command is already running");
         const activeSignal = signal;
         const controller = new AbortController();
         pending = controller;
@@ -212,7 +212,7 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
         if (message.type === "diagnostic-download") {
             try {
                 const download = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.downloadDiagnosticData;
-                if (!download) throw new Error("withWorker(): UI diagnostic download handler is not initialized");
+                if (!download) throw new Error("runInWorker: UI diagnostic download handler is not initialized");
                 download(message.chunks);
             } catch (error) {
                 terminate(error instanceof Error ? error : new Error(String(error)));
@@ -227,16 +227,16 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
             }
         } else if (message.type === "attach") {
             if (signal) {
-                terminate(new Error("withWorker(): duplicate native attachment")); return;
+                terminate(new Error("runInWorker: duplicate native attachment")); return;
             }
             void attach(message).catch(error => terminate(error instanceof Error ? error : new Error(String(error))));
         } else if (message.type === "error") {
             const error = new Error(message.message);
-            dotnetLogger.error("withWorker(): native worker failed", error);
+            dotnetLogger.error("runInWorker: native worker failed", error);
             terminate(error);
         } else if (message.type === "ready") {
             if (!uiAttached) {
-                terminate(new Error("withWorker(): worker became ready before UI attachment")); return;
+                terminate(new Error("runInWorker: worker became ready before UI attachment")); return;
             }
             if (timeout !== undefined) clearTimeout(timeout);
             runtimeState.dotnetReady = true;
@@ -251,7 +251,7 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
         }
     };
     worker.onerror = event => terminate(new Error(event.message));
-    worker.onmessageerror = () => terminate(new Error("withWorker(): invalid worker message"));
+    worker.onmessageerror = () => terminate(new Error("runInWorker: invalid worker message"));
     try {
         worker.postMessage({ type: "init", config: {
             ...config, resources: { ...resources, modulesAfterConfigLoaded: [], modulesAfterRuntimeReady: [] },

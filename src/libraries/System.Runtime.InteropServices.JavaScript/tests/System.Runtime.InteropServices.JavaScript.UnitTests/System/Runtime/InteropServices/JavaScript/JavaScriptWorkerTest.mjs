@@ -4,7 +4,7 @@
 export async function setup(runtime) {
     const exports = (await runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests"))
         .System.Runtime.InteropServices.JavaScript.Tests.WorkerInteropTest;
-    const worker = runtime.getConfig().workerOptions !== undefined;
+    const worker = runtime.getConfig().runInWorker !== undefined;
     const voidEvents = [];
     let lastView;
     let inlineThenableCalls = 0;

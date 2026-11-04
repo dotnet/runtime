@@ -46,11 +46,12 @@ The dedicated-worker prototype requires both build-time and runtime opt-in:
 ```xml
 <PropertyGroup>
   <UseMonoRuntime>false</UseMonoRuntime>
-  <WasmEnableSharedMemory>true</WasmEnableSharedMemory>
+  <WasmRunInWorker>true</WasmRunInWorker>
 </PropertyGroup>
 ```
 
-Start it with `dotnet.withWorker().create()` and serve the app with
+The build emits `runInWorker: true` into the boot configuration. Start it with
+`dotnet.create()`; no separate JavaScript worker opt-in is needed. Serve with
 `Cross-Origin-Opener-Policy: same-origin` and
 `Cross-Origin-Embedder-Policy: require-corp`.
 
@@ -59,6 +60,11 @@ directory before asset fingerprinting and integrity computation. The runtime pac
 is not modified. Ordinary builds without this property retain non-shared memory
 and do not require these isolation headers. Changing the property restages the
 application assets; do not patch files in the NuGet cache or published output.
+`WasmRunInWorker` defaults to false. It controls both worker startup and shared
+asset staging for build and publish. `withConfig({ runInWorker: true })` can
+select worker startup only when the application already carries shared assets.
+`workerOptions.timeoutMs` optionally adjusts startup timeout but does not enable
+worker hosting. The former `withWorker()` API is removed.
 Browser ReadyToRun images must be produced by a compiler that includes a maximum
 in their memory imports. Older unbounded images fail shared staging explicitly.
 

@@ -32,8 +32,7 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(WasmTestWithWorker)' == 'true'">
-    <WasmEnableSharedMemory>true</WasmEnableSharedMemory>
-    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --with-worker</WasmXHarnessMonoArgs>
+    <WasmRunInWorker>true</WasmRunInWorker>
   </PropertyGroup>
   <Target Name="ValidateWorkerInteropTests" BeforeTargets="PrepareForBuild"
           Condition="'$(WasmTestWithWorker)' == 'true'">

@@ -157,7 +157,7 @@ public class WebcilInWasmSizesTests
                 BuildEngine = new TestBuildEngine(),
                 Candidates = [candidate],
                 IsEnabled = true,
-                WasmEnableSharedMemory = shared,
+                WasmRunInWorker = shared,
                 ConversionStamp = stamp,
                 OutputPath = outputPath,
                 IntermediateOutputPath = Path.Combine(directory.Path, "tmp"),

@@ -10,6 +10,51 @@ import { readFile } from "node:fs/promises";
 import ts from "typescript";
 import { createWorkerModuleLoader, seedNativeRequestIds } from "./worker-transport-worker.mjs";
 
+test("boot runInWorker selects hosting without a builder method or timeout-options opt-in", async () => {
+    for (const [runInWorker, inWorker, expected] of [
+        [true, false, "worker"], [false, false, "ordinary"], [undefined, false, "ordinary"], [true, true, "ordinary"],
+    ]) {
+        const config = { runInWorker, workerOptions: { timeoutMs: 1 } };
+        const api = {};
+        const calls = [];
+        const load = createWorkerModuleLoader(createContext({}), {
+            "./cross-module": { Module: {}, dotnetApi: api },
+            "./callbacks": { extractLegacyModuleCallbacks: value => value, loaderCallbacks: {} },
+            "./config": {
+                loaderConfig: config, mergeLoaderConfig: source => Object.assign(config, source), validateLoaderConfig() {},
+            },
+            "./run": { createRuntime: async () => calls.push("ordinary") },
+            "./exit": { exit: (_code, error) => {
+                throw error;
+            } },
+            "./assets": { setLoadBootResourceCallback() {} },
+            "./worker-proxy": { createWorkerProxy: async () => {
+                calls.push("worker"); return api;
+            } },
+            "./per-module": { ENVIRONMENT_IS_WEB_WORKER: inWorker, ENVIRONMENT_IS_SIDECAR: false },
+        });
+        const module = await load("./host-builder");
+        await module.evaluate();
+        const builder = new module.namespace.HostBuilder();
+        assert.equal(builder.withWorker, undefined);
+        assert.equal(await builder.create(), api);
+        assert.deepEqual(calls, [expected]);
+    }
+});
+
+test("runInWorker config preserves boot selection across unrelated merges and honors explicit false", async () => {
+    const load = createWorkerModuleLoader(createContext({}), { "./per-module": { browserVirtualAppBase: "/" } });
+    const module = await load("./config");
+    await module.evaluate();
+    const { mergeLoaderConfig, loaderConfig } = module.namespace;
+    mergeLoaderConfig({ runInWorker: true });
+    mergeLoaderConfig({ diagnosticTracing: true });
+    assert.equal(loaderConfig.runInWorker, true);
+    mergeLoaderConfig({ runInWorker: false });
+    mergeLoaderConfig({ workerOptions: { timeoutMs: 100 } });
+    assert.equal(loaderConfig.runInWorker, false);
+});
+
 test("native host operations retain INTERNAL names while UI helpers are isolated in TARGET", async () => {
     const bytes = new Uint8Array(64);
     const load = createWorkerModuleLoader(createContext({}), {

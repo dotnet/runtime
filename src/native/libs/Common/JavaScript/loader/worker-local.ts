@@ -48,7 +48,7 @@ export function createWorkerLocal(
             };
             port1.onmessageerror = () => {
                 close();
-                reject(new Error("withWorker(): invalid LOCAL response"));
+                reject(new Error("runInWorker: invalid LOCAL response"));
             };
             signal.addEventListener("abort", abort, { once: true });
             try {
@@ -63,7 +63,7 @@ export function createWorkerLocal(
     async function collect(operation: Collection, options?: DiagnosticCommandOptions): Promise<Uint8Array[]> {
         const result = await request({ operation, options: { ...options, skipDownload: true } });
         if (!Array.isArray(result) || !result.every(chunk => chunk instanceof Uint8Array)) {
-            throw new Error("withWorker(): invalid LOCAL diagnostic data");
+            throw new Error("runInWorker: invalid LOCAL diagnostic data");
         }
         return result;
     }
@@ -72,12 +72,12 @@ export function createWorkerLocal(
         ...synchronous,
         async loadLazyAssembly(assemblyName) {
             const result = await request({ operation: "loadLazyAssembly", assemblyName });
-            if (typeof result !== "boolean") throw new Error("withWorker(): invalid LOCAL assembly result");
+            if (typeof result !== "boolean") throw new Error("runInWorker: invalid LOCAL assembly result");
             return result;
         },
         async loadSatelliteAssemblies(cultures) {
             const result = await request({ operation: "loadSatelliteAssemblies", cultures });
-            if (result !== undefined) throw new Error("withWorker(): invalid LOCAL satellite result");
+            if (result !== undefined) throw new Error("runInWorker: invalid LOCAL satellite result");
         },
         collectCpuSamples: options => collect("collectCpuSamples", options),
         collectMetrics: options => collect("collectMetrics", options),

@@ -18,7 +18,7 @@ import type { DiagnosticCommandOptions } from "./types";
 
 export function initializeWorkerUI(internals: InternalExchange): void {
     const context = internals[InternalExchangeIndex.WorkerRuntimeContext];
-    if (!context?.memory) throw new Error("withWorker(): UI shared memory is missing");
+    if (!context?.memory) throw new Error("runInWorker: UI shared memory is missing");
     const memory = context.memory;
     let views = createMemoryViews(memory.buffer);
     installSharedMemoryViews(() => {
@@ -30,7 +30,7 @@ export function initializeWorkerUI(internals: InternalExchange): void {
     registerRuntime(dotnetApi);
     context.downloadDiagnosticData = downloadBlob;
     Object.assign(dotnetApi.INTERNAL.TARGET ??= {}, { downloadBlob });
-    if (!context.local) throw new Error("withWorker(): native LOCAL operations are missing");
+    if (!context.local) throw new Error("runInWorker: native LOCAL operations are missing");
     const local = context.local;
     const collect = (operation: "collectCpuSamples" | "collectMetrics" | "collectGcDump" | "collectPgoTrace") =>
         async (options?: DiagnosticCommandOptions) => {

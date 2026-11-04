@@ -49,22 +49,6 @@ interface DotnetHostBuilder {
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
     /**
-     * Configures the runtime to start on a dedicated web worker.
-     * The main thread gets a proxy supporting runMain, runMainAndExit, and exit.
-     * The normal dotnet.runtime.js interop implementation runs on the UI/main thread.
-     * Native calls and callbacks cross the worker boundary using existing native argument frames.
-     * Managed execution, native allocation and the VM stack remain on the runtime worker.
-     * JS handles, managed proxies, Promise holders, application modules and browser services are UI-owned.
-     * Boot-resource and download-progress callbacks execute on UI; resource response streams transfer to the worker.
-     * UI marshaling uses shared memory and a separate worker-allocated scratch stack.
-     * Nested managed-entry calls are bounded to 16, with reserved capacity for native helper operations.
-     * Synchronous signatures remain synchronous; Task completion follows the normal interop contract.
-     * Arbitrary raw Emscripten Module/FS/Wasm-table access is not available on the UI.
-     * Build the application with WasmEnableSharedMemory=true to select app-owned shared assets.
-     * Requires COOP/COEP headers and SharedArrayBuffer support.
-     */
-    withWorker(options?: WorkerOptions): DotnetHostBuilder;
-    /**
      * "command line" arguments for the Main() method.
      * @param args
      */
@@ -256,7 +240,13 @@ type LoaderConfig = {
     applicationArguments?: string[];
     /**
      * Configures the runtime to start on a dedicated web worker.
+     * Emitted by WasmRunInWorker=true together with app-owned shared native/R2R assets.
+     * Application interop and handles remain on UI; native execution runs in the worker.
      * Requires COOP/COEP headers and SharedArrayBuffer support.
+     */
+    runInWorker?: boolean;
+    /**
+     * Optional worker startup settings. These do not enable worker hosting.
      */
     workerOptions?: WorkerOptions;
 };

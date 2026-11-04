@@ -66,7 +66,7 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
             case NativeOperation.RunBackgroundTimers: dotnetBrowserUtilsExports.runBackgroundTimers(); break;
             case NativeOperation.GetRuntimeContractDescriptor: return dotnetApi.INTERNAL.GetDotNetRuntimeContractDescriptor();
             case NativeOperation.ConnectDSRouter: dotnetApi.INTERNAL.connectDSRouter(dotnetBrowserUtilsExports.utf16ToString(args, second)); break;
-            default: throw new Error(`withWorker(): unknown native operation ${operation}`);
+            default: throw new Error(`runInWorker: unknown native operation ${operation}`);
         }
         return 0;
     });
@@ -87,7 +87,7 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
         const request = event.data;
         if (request.type === "local") {
             if (closing || failed) {
-                request.port.postMessage({ type: "error", message: "withWorker(): runtime exited" });
+                request.port.postMessage({ type: "error", message: "runInWorker: runtime exited" });
                 request.port.close();
                 return;
             }
@@ -100,7 +100,7 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
         }
         if (request.type !== "command" || closing) return;
         if (commandRunning && request.commandId !== CommandId.EXIT) {
-            fail(new Error("withWorker(): another command is already running"));
+            fail(new Error("runInWorker: another command is already running"));
             return;
         }
         commandRunning = true;
@@ -122,7 +122,7 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
     async function execute(command: WorkerCommandMessage): Promise<number> {
         if (command.commandId === CommandId.RUN_MAIN) return runtime.runMain(command.mainAssemblyName, command.args);
         if (command.commandId === CommandId.RUN_MAIN_AND_EXIT) return runtime.runMainAndExit(command.mainAssemblyName, command.args);
-        if (command.commandId !== CommandId.EXIT) throw new Error("withWorker(): invalid lifecycle command");
+        if (command.commandId !== CommandId.EXIT) throw new Error("runInWorker: invalid lifecycle command");
         closing = true;
         try {
             runtime.exit(command.exitCode ?? 0, command.reason);
@@ -138,7 +138,7 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
         downloadDiagnosticData: chunks => self.postMessage({ type: "diagnostic-download", chunks }),
         beforeRuntimeStart: async () => {
             const wasmMemory = dotnetNativeBrowserExports.getWasmMemory();
-            if (!(wasmMemory.buffer instanceof SharedArrayBuffer)) throw new Error("withWorker(): native memory is not shared");
+            if (!(wasmMemory.buffer instanceof SharedArrayBuffer)) throw new Error("runInWorker: native memory is not shared");
             self.postMessage({ type: "attach", wasmMemory, signalBuffer, nativeBuffer });
             await attached.promise;
         },

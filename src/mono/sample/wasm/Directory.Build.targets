@@ -39,7 +39,7 @@
     <NestedBuildProperty Include="WasmBuildNative" />
     <NestedBuildProperty Include="WasmEmitSourceMap" />
     <NestedBuildProperty Include="WasmEmitSymbolMap" />
-    <NestedBuildProperty Include="WasmEnableSharedMemory" />
+    <NestedBuildProperty Include="WasmRunInWorker" />
     <NestedBuildProperty Include="WasmEnableThreads" />
     <NestedBuildProperty Include="EnableDiagnostics" />
     <NestedBuildProperty Include="DiagnosticPorts" />

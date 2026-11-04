@@ -55,7 +55,7 @@ export function createNativeChannel(
     signal: Int32Array, buffer: SharedArrayBuffer, worker: boolean,
     dispatch: (operation: number, first: number, second: number) => number,
 ) {
-    if (buffer.byteLength !== bufferSize * 4) throw new Error("withWorker(): incompatible native call buffer");
+    if (buffer.byteLength !== bufferSize * 4) throw new Error("runInWorker: incompatible native call buffer");
     const calls = new Int32Array(buffer);
     const outgoing = worker ? 0 : queueSize;
     const incoming = worker ? queueSize : 0;
@@ -72,7 +72,7 @@ export function createNativeChannel(
         if (stopped) throw stopped;
         const state = Atomics.load(signal, OFFSET_WORKER_STATE);
         if (state === SignalState.ERROR) throw readSharedError(signal, OFFSET_WORKER_ERROR_LENGTH);
-        if (state !== SignalState.IDLE) throw new Error("withWorker(): native runtime exited");
+        if (state !== SignalState.IDLE) throw new Error("runInWorker: native runtime exited");
     }
 
     function assertCallAvailable(): void {
@@ -80,7 +80,7 @@ export function createNativeChannel(
         for (let slot = 0; slot < callCapacity; slot++) {
             if (Atomics.load(calls, entry(outgoing, slot)) === SignalState.IDLE) return;
         }
-        throw new NativeCallCapacityError("withWorker(): native call capacity exceeded");
+        throw new NativeCallCapacityError("runInWorker: native call capacity exceeded");
     }
 
     function entry(base: number, slot: number): number {
@@ -89,7 +89,7 @@ export function createNativeChannel(
 
     function execute(slot: number): void {
         const offset = entry(incoming, slot);
-        if (Atomics.load(calls, offset) !== SignalState.PENDING) throw new Error("withWorker(): invalid native request state");
+        if (Atomics.load(calls, offset) !== SignalState.PENDING) throw new Error("runInWorker: invalid native request state");
         dispatchDepth++;
         try {
             if (worker && calls[offset + 2] === NativeOperation.CompleteTask) {
@@ -101,15 +101,15 @@ export function createNativeChannel(
                     process(false);
                     if (Atomics.load(calls, offset) === SignalState.READY) Atomics.wait(signal, ownWakeup, generation);
                 }
-                if (Atomics.load(calls, offset) !== SignalState.EXECUTING) throw new Error("withWorker(): Task preparation failed");
-                if (calls[offset + 7] !== 0) throw new Error("withWorker(): Task preparation failed");
+                if (Atomics.load(calls, offset) !== SignalState.EXECUTING) throw new Error("runInWorker: Task preparation failed");
+                if (calls[offset + 7] !== 0) throw new Error("runInWorker: Task preparation failed");
             }
             const result = dispatch(calls[offset + 2], calls[offset + 3], calls[offset + 4]);
             Atomics.store(calls, offset + 5, result);
             Atomics.store(calls, offset, SignalState.DONE);
         } catch (error) {
             const text = error instanceof Error ? error.message : String(error);
-            const message = text.length <= errorCapacity ? text : "withWorker(): native transport error exceeds shared error capacity";
+            const message = text.length <= errorCapacity ? text : "runInWorker: native transport error exceeds shared error capacity";
             for (let index = 0; index < message.length; index++) calls[offset + 8 + index] = message.charCodeAt(index);
             Atomics.store(calls, offset + 6, message.length);
             Atomics.store(calls, offset, SignalState.ERROR);
@@ -129,7 +129,7 @@ export function createNativeChannel(
             const tail = Atomics.load(calls, incoming + 1) >>> 0;
             if (tail === (Atomics.load(calls, incoming) >>> 0)) return;
             const slot = Atomics.load(calls, incoming + 2 + tail % queueCapacity);
-            if (slot < 0 || slot >= capacity) throw new Error("withWorker(): invalid native request slot");
+            if (slot < 0 || slot >= capacity) throw new Error("runInWorker: invalid native request slot");
             Atomics.store(calls, incoming + 1, (tail + 1) | 0);
             const operation = calls[entry(incoming, slot) + 2];
             if (worker && !allowTaskCompletion
@@ -142,7 +142,7 @@ export function createNativeChannel(
     function invoke(operation: number, first = 0, second = 0, beforeInvoke?: () => void): number {
         ensureRunning();
         if (!worker && operation === NativeOperation.CompleteTask && dispatchDepth !== 0) {
-            throw new Error("withWorker(): Task completion must follow the initial native callback");
+            throw new Error("runInWorker: Task completion must follow the initial native callback");
         }
         let slot = -1;
         const privileged = operation === NativeOperation.Malloc || operation === NativeOperation.Free
@@ -155,7 +155,7 @@ export function createNativeChannel(
                 break;
             }
         }
-        if (slot === -1) throw new NativeCallCapacityError("withWorker(): native call capacity exceeded");
+        if (slot === -1) throw new NativeCallCapacityError("runInWorker: native call capacity exceeded");
         const offset = entry(outgoing, slot);
         const id = nextId;
         let preparationError: unknown;
@@ -163,7 +163,7 @@ export function createNativeChannel(
         try {
             const head = Atomics.load(calls, outgoing) >>> 0;
             const tail = Atomics.load(calls, outgoing + 1) >>> 0;
-            if (((head - tail) >>> 0) >= queueCapacity) throw new Error("withWorker(): native dispatch queue is full");
+            if (((head - tail) >>> 0) >= queueCapacity) throw new Error("runInWorker: native dispatch queue is full");
             calls[offset + 1] = id;
             calls[offset + 2] = operation;
             calls[offset + 3] = first;
@@ -194,17 +194,17 @@ export function createNativeChannel(
                 }
             }
             ensureRunning();
-            if (calls[offset + 1] !== id) throw new Error("withWorker(): native completion identity mismatch");
+            if (calls[offset + 1] !== id) throw new Error("runInWorker: native completion identity mismatch");
             const state = Atomics.load(calls, offset);
             if (state === SignalState.ERROR) {
                 if (preparationError !== undefined) throw preparationError;
                 const length = calls[offset + 6];
-                if (length < 0 || length > errorCapacity) throw new Error("withWorker(): invalid native error length");
+                if (length < 0 || length > errorCapacity) throw new Error("runInWorker: invalid native error length");
                 let message = "";
                 for (let index = 0; index < length; index++) message += String.fromCharCode(calls[offset + 8 + index]);
                 throw new Error(message);
             }
-            if (state !== SignalState.DONE) throw new Error("withWorker(): invalid native completion");
+            if (state !== SignalState.DONE) throw new Error("runInWorker: invalid native completion");
             return calls[offset + 5];
         } finally {
             Atomics.store(calls, offset, SignalState.IDLE);

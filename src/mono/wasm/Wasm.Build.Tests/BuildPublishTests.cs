@@ -28,7 +28,7 @@ namespace Wasm.Build.Tests
         public async Task SharedMemoryIsAppOwnedAndOptIn(bool nativeRelink)
         {
             const Configuration Config = Configuration.Debug;
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, Config, aot: false, "shared_opt_in",
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, Config, aot: false, "shared_opt_in", addFrameworkArg: true,
                 extraProperties: "<PublishReadyToRun>true</PublishReadyToRun><WasmFingerprintAssets>true</WasmFingerprintAssets>",
                 extraItems: $"""
                     <PackageReference Include="Microsoft.NET.Runtime.WebAssembly.Sdk"
@@ -63,8 +63,10 @@ namespace Wasm.Build.Tests
                 const shared = new URLSearchParams(location.search).get("shared") === "true";
                 const check = (value, message) => { if (!value) throw new Error(message); };
                 const builder = dotnet.withConfig({ logExitCode: true, exitOnUnhandledError: true });
-                if (shared) builder.withWorker();
+                builder.withConfigLoaded(config => check(!!config.runInWorker === shared, "Embedded boot flag does not match the build property"));
                 const runtime = await builder.create();
+                check(!!runtime.getConfig().runInWorker === shared, "Boot config does not match WasmRunInWorker");
+                check(typeof builder.withWorker === "undefined", "Removed worker builder API is still exposed");
                 check(crossOriginIsolated === shared, "Unexpected isolation mode");
                 const config = runtime.getConfig();
                 for (const asset of [config.resources.wasmNative[0], config.resources.coreAssembly[0]]) {
@@ -95,12 +97,15 @@ namespace Wasm.Build.Tests
                 exit(code);
                 """);
 
+            var provider = new WasmSdkBasedProjectProvider(_testOutput, DefaultTargetFramework);
             foreach (bool shared in new[] { true, false, true })
             {
-                string args = $"-p:WasmEnableSharedMemory={shared.ToString().ToLowerInvariant()} -p:WasmBuildNative={nativeRelink.ToString().ToLowerInvariant()} -p:UsingBrowserRuntimeWorkload=false";
+                string args = $"-p:WasmRunInWorker={shared.ToString().ToLowerInvariant()} -p:WasmBuildNative={nativeRelink.ToString().ToLowerInvariant()} -p:UsingBrowserRuntimeWorkload=false";
                 // Shared copies intentionally differ from runtime-pack/relink bytes; verify the live memory below.
                 BuildProject(info, Config, new BuildOptions(UseCache: false, AssertAppBundle: !shared,
                     ExtraMSBuildArgs: args + " -p:WasmBuildOnlyAfterPublish=false"), isNativeBuild: nativeRelink);
+                string buildBootPath = provider.GetBootConfigPath(GetBinFrameworkDir(Config, forPublish: false));
+                Assert.Equal(shared, provider.GetBootJson(buildBootPath).runInWorker == true);
                 PublishProject(info, Config, new PublishOptions(UseCache: false, AssertAppBundle: !shared, ExtraMSBuildArgs: args), isNativeBuild: nativeRelink);
                 RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(Config,
                     BrowserQueryString: new System.Collections.Specialized.NameValueCollection { ["shared"] = shared ? "true" : "false" },

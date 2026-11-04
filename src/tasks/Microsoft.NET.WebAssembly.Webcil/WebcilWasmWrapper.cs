@@ -56,18 +56,18 @@ public class WebcilWasmWrapper
 {
     private readonly Stream _webcilPayloadStream;
     private readonly uint _webcilPayloadSize;
-    private readonly bool _wasmEnableSharedMemory;
+    private readonly bool _wasmRunInWorker;
     private readonly bool _selfInstalling;
 
     public WebcilWasmWrapper(Stream webcilPayloadStream)
-        : this(webcilPayloadStream, selfInstalling: false, wasmEnableSharedMemory: false)
+        : this(webcilPayloadStream, selfInstalling: false, wasmRunInWorker: false)
     {
     }
 
-    public WebcilWasmWrapper(Stream webcilPayloadStream, bool selfInstalling, bool wasmEnableSharedMemory)
+    public WebcilWasmWrapper(Stream webcilPayloadStream, bool selfInstalling, bool wasmRunInWorker)
     {
         _webcilPayloadStream = webcilPayloadStream;
-        _wasmEnableSharedMemory = wasmEnableSharedMemory;
+        _wasmRunInWorker = wasmRunInWorker;
         long len = webcilPayloadStream.Length;
         if (len > (long)uint.MaxValue)
             throw new InvalidOperationException("webcil payload too large");
@@ -91,7 +91,7 @@ public class WebcilWasmWrapper
 #else
         byte[]
 #endif
-    WasmWrapperPrefix => (_selfInstalling, _wasmEnableSharedMemory) switch
+    WasmWrapperPrefix => (_selfInstalling, _wasmRunInWorker) switch
     {
         (true, true) => s_selfInstallingSharedWasmWrapperPrefix,
         (true, false) => s_selfInstallingWasmWrapperPrefix,

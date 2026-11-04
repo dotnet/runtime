@@ -7,7 +7,6 @@ export async function runSecondRuntimeAndTestStaticState(guid) {
             appendElementOnExit: false,
             logExitCode: false,
         });
-    if (App.runtime.getConfig().workerOptions) builder2.withWorker();
     const runtime2 = await builder2.create();
     if (runtime2.runtimeId === App.runtime.runtimeId
         || globalThis.getDotnetRuntime(runtime2.runtimeId) !== runtime2

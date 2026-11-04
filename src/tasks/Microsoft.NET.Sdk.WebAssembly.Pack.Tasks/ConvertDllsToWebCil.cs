@@ -26,7 +26,7 @@ public class ConvertDllsToWebcil : Task
     [Required]
     public bool IsEnabled { get; set; }
 
-    public bool WasmEnableSharedMemory { get; set; }
+    public bool WasmRunInWorker { get; set; }
     public string? ConversionStamp { get; set; }
 
     /// <summary>
@@ -195,7 +195,7 @@ public class ConvertDllsToWebcil : Task
 
                 // Copy (not move): the runtime pack's native/*.wasm is a shared source that must survive staging.
                 string stagedR2R = r2rWebcilPath;
-                if (WasmEnableSharedMemory)
+                if (WasmRunInWorker)
                 {
                     stagedR2R = Path.Combine(tmpDir, webcilFileName);
                     File.WriteAllBytes(stagedR2R, WasmMemory.MakeShared(File.ReadAllBytes(r2rWebcilPath)));
@@ -215,7 +215,7 @@ public class ConvertDllsToWebcil : Task
         {
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
-            var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter, webcilVersion: WebcilVersion, wasmEnableSharedMemory: WasmEnableSharedMemory);
+            var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter, webcilVersion: WebcilVersion, wasmRunInWorker: WasmRunInWorker);
             webcilWriter.ConvertToWebcil();
 
             if (!Directory.Exists(candidatePath))

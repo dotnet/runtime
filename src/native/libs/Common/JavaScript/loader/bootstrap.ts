@@ -26,18 +26,18 @@ export async function validateEngineFeatures(): Promise<void> {
             dotnetAssert.check(v8MajorVersion >= 14, "This V8 shell is too old. Please use a modern version.");
         }
     }
-    if (loaderConfig.workerOptions) {
+    if (loaderConfig.runInWorker) {
         if (typeof globalThis.Worker === "undefined") {
-            throw new Error("Worker is not available. withWorker() requires a JS engine with Worker support.");
+            throw new Error("Worker is not available. runInWorker requires a JS engine with Worker support.");
         }
         if (typeof SharedArrayBuffer === "undefined") {
-            throw new Error("SharedArrayBuffer is not available. withWorker() requires cross-origin isolation (COOP/COEP headers).");
+            throw new Error("SharedArrayBuffer is not available. runInWorker requires cross-origin isolation (COOP/COEP headers).");
         }
         if (!globalThis.crossOriginIsolated) {
-            throw new Error("crossOriginIsolated is false. withWorker() requires Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy headers.");
+            throw new Error("crossOriginIsolated is false. runInWorker requires Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy headers.");
         }
         if (typeof Atomics === "undefined" || typeof Atomics.waitAsync !== "function") {
-            throw new Error("Atomics.waitAsync is not available. withWorker() requires a browser with Atomics.waitAsync support.");
+            throw new Error("Atomics.waitAsync is not available. runInWorker requires a browser with Atomics.waitAsync support.");
         }
     }
 }

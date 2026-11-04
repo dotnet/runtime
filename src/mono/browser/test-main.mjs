@@ -121,7 +121,6 @@ function initRunArgs(runArgs) {
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? (isFirefox && !runArgs.debugging) : runArgs.forwardConsole;
     runArgs.interpreterPgo = runArgs.interpreterPgo === undefined ? false : runArgs.interpreterPgo;
-    runArgs.withWorker = runArgs.withWorker === undefined ? false : runArgs.withWorker;
 
     return runArgs;
 }
@@ -154,8 +153,6 @@ function processArguments(incomingArguments, runArgs) {
             runArgs.interpreterPgo = true;
         } else if (currentArg == "--no-interpreter-pgo") {
             runArgs.interpreterPgo = false;
-        } else if (currentArg == "--with-worker") {
-            runArgs.withWorker = true;
         } else if (currentArg.startsWith("--test-module=")) {
             runArgs.testModule = currentArg.substring("--test-module=".length);
         } else if (currentArg.startsWith("--fetch-random-delay=")) {
@@ -185,7 +182,6 @@ function processArguments(incomingArguments, runArgs) {
     runArgs.applicationArguments = incomingArguments;
     // cheap way to let the testing infrastructure know we're running in a browser context (or not)
     runArgs.environmentVariables["IsBrowserDomSupported"] = ENVIRONMENT_IS_WEB.toString().toLowerCase();
-    runArgs.environmentVariables["DOTNET_TEST_WITH_WORKER"] = runArgs.withWorker ? "1" : "0";
     runArgs.environmentVariables["IsNodeJS"] = ENVIRONMENT_IS_NODE.toString().toLowerCase();
     runArgs.environmentVariables["IsFirefox"] = isFirefox.toString().toLowerCase();
     runArgs.environmentVariables["IsChromium"] = isChromium.toString().toLowerCase();
@@ -260,7 +256,7 @@ function configureRuntime(dotnet, runArgs) {
         .withEnvironmentVariables(runArgs.environmentVariables)
         .withDiagnosticTracing(runArgs.diagnosticTracing)
         .withConfig({
-            appendElementOnExit: !runArgs.withWorker,
+            appendElementOnExit: true,
             logExitCode: true,
             exitOnUnhandledError: true,
             forwardConsole: runArgs.forwardConsole,
@@ -318,29 +314,29 @@ async function run() {
             return;
         }
 
-        if (runArgs.withWorker) {
-            if (!ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER || ENVIRONMENT_IS_NODE) {
-                throw new Error("--with-worker requires a browser UI thread");
-            }
-            runArgs.forwardConsole = true;
-            mono_exit = (code, reason) => {
-                App.runtime?.exit(code, reason);
-                if (reason) console.error(reason);
-                const done = document.createElement("label");
-                done.id = "tests_done";
-                done.textContent = String(code);
-                document.body.appendChild(done);
-                console.log(`WASM EXIT ${code}`);
-            };
-        }
         configureRuntime(dotnet, runArgs);
-        if (runArgs.withWorker) {
-            dotnet.withWorker();
+        if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && !ENVIRONMENT_IS_NODE) {
+            dotnet.withConfigLoaded(config => {
+                runArgs.runInWorker = config.runInWorker === true;
+                config.environmentVariables["DOTNET_TEST_WITH_WORKER"] = runArgs.runInWorker ? "1" : "0";
+                if (!runArgs.runInWorker) return;
+                config.forwardConsole = true;
+                config.appendElementOnExit = false;
+                mono_exit = (code, reason) => {
+                    App.runtime?.exit(code, reason);
+                    if (reason) console.error(reason);
+                    const done = document.createElement("label");
+                    done.id = "tests_done";
+                    done.textContent = String(code);
+                    document.body.appendChild(done);
+                    console.log(`WASM EXIT ${code}`);
+                };
+            });
         }
 
         App.runtime = await dotnet.create();
         App.runArgs = runArgs
-        if (runArgs.withWorker) {
+        if (runArgs.runInWorker) {
             console.log("test-main.mjs: dedicated worker runtime created");
         }
         if (runArgs.testModule) {
@@ -385,10 +381,10 @@ async function run() {
                 const main_assembly_name = runArgs.applicationArguments[1];
                 const app_args = runArgs.applicationArguments.slice(2);
                 const now = Date.now();
-                const result = runArgs.withWorker
+                const result = runArgs.runInWorker
                     ? await App.runtime.runMainAndExit(main_assembly_name, app_args)
                     : await App.runtime.runMain(main_assembly_name, app_args);
-                const memoryLength = runArgs.withWorker
+                const memoryLength = runArgs.runInWorker
                     ? App.runtime.INTERNAL.workerMemoryViews.refreshIfNeeded().u8.length
                     : App.runtime.Module.HEAPU8.length;
                 console.log(`test-main.mjs exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} after ${(Date.now() - now) / 60000} minutes with result ${result} and linear memory ${memoryLength} bytes`);
