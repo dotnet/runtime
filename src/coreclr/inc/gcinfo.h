@@ -46,8 +46,10 @@ inline int GCInfoVersion()
     // In SOS we only care about ability to parse/dump the GC Info.
     // Since v2 and v3 had the same file format and v1 is no longer supported,
     // we can assume that everything before net10.0 uses GCInfo v3.
-    if (IsRuntimeVersionAtLeast(11))
+    if (IsRuntimeVersionAtLeast(12))
         return 6;
+    if (IsRuntimeVersionAtLeast(11))
+        return 5;
     if (IsRuntimeVersionAtLeast(10))
         return 4;
     return 3;
