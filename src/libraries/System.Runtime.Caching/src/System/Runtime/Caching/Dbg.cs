@@ -28,9 +28,9 @@ namespace System.Runtime.Caching
                 e is ExternalException ee ? "Exception " + e + Environment.NewLine + "_hr=0x" + ee.ErrorCode.ToString("x", CultureInfo.InvariantCulture) :
                 "Exception " + e;
 
-            if (string.IsNullOrEmpty(message) & exceptionMessage != null)
+            if (string.IsNullOrEmpty(message) && exceptionMessage != null)
             {
-                message = exceptionMessage!;
+                message = exceptionMessage;
                 exceptionMessage = null;
             }
 
