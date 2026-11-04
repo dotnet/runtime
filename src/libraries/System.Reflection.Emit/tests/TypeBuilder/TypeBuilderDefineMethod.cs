@@ -219,6 +219,20 @@ namespace System.Reflection.Emit.Tests
 
         [Fact]
         [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
+        public void DefineMethod_ModifiedConstructedGenericSignatureType_KeepsModifiers()
+        {
+            Type parameterType = Type.MakeModifiedSignatureType(typeof(List<int>), [typeof(IsConst)], null);
+
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [parameterType]).GetILGenerator().Emit(OpCodes.Ret);
+            ParameterInfo parameter = type.CreateType().GetMethod("M").GetParameters()[0];
+
+            Assert.Equal(typeof(List<int>), parameter.ParameterType);
+            Assert.Equal([typeof(IsConst)], parameter.GetModifiedParameterType().GetRequiredCustomModifiers());
+        }
+
+        [Fact]
+        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
         public void DefineMethod_ModifiedParameterTypes_CopiesSignature()
         {
             Type pointerType = Type.MakeModifiedSignatureType(typeof(int), null, [typeof(IsConst)]).MakePointerType();
@@ -238,10 +252,9 @@ namespace System.Reflection.Emit.Tests
             MethodInfo copy = type.CreateType().GetMethod("M");
             ParameterInfo[] copyParameters = copy.GetParameters();
 
-            // Reflection returns the modifiers of each kind in the reverse of their signature order.
-            Assert.Equal([typeof(IsVolatile), typeof(IsConst)], sourceParameters[0].GetModifiedParameterType().GetRequiredCustomModifiers());
-            Assert.Equal([typeof(IsVolatile), typeof(IsConst)], copyParameters[0].GetModifiedParameterType().GetRequiredCustomModifiers());
-            Assert.Equal([typeof(IsBoxed), typeof(IsLong)], copy.ReturnParameter.GetModifiedParameterType().GetOptionalCustomModifiers());
+            Assert.Equal([typeof(IsConst), typeof(IsVolatile)], sourceParameters[0].GetModifiedParameterType().GetRequiredCustomModifiers());
+            Assert.Equal([typeof(IsConst), typeof(IsVolatile)], copyParameters[0].GetModifiedParameterType().GetRequiredCustomModifiers());
+            Assert.Equal([typeof(IsLong), typeof(IsBoxed)], copy.ReturnParameter.GetModifiedParameterType().GetOptionalCustomModifiers());
             Assert.Equal(typeof(int).MakePointerType(), copyParameters[1].ParameterType);
             Assert.Equal([typeof(IsConst)], copyParameters[1].GetModifiedParameterType().GetElementType().GetOptionalCustomModifiers());
             Assert.Equal(typeof(List<int>), copyParameters[2].ParameterType);
@@ -462,7 +475,8 @@ namespace System.Reflection.Emit.Tests
             MethodInfo created = type.CreateType().GetMethod("M");
             Assert.Equal(typeof(List<int>), created.Invoke(null, null));
 
-            // The runtime loads List<int> with or without the modifier in the type spec, so only the blob shows it.
+            // The runtime loads List<int> with or without the modifier in the type spec, so the test checks that the blob
+            // starts with GENERICINST, not with the modifier.
             int typeSpecToken = BinaryPrimitives.ReadInt32LittleEndian(created.GetMethodBody().GetILAsByteArray().AsSpan(OpCodes.Ldtoken.Size));
             Assert.Equal((byte)SignatureTypeCode.GenericTypeInstance, created.Module.ResolveSignature(typeSpecToken)[0]);
         }

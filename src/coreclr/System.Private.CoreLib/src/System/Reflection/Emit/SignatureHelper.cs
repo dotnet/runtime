@@ -323,7 +323,7 @@ namespace System.Reflection.Emit
 
             Debug.Assert(clsArgument != null);
 
-            // Required modifiers come first. An array replaces a modified type's own modifiers of its kind.
+            // Required modifiers come first.
             if (requiredCustomModifiers != null)
                 AddCustomModifiers(requiredCustomModifiers, isOptional: false, nameof(requiredCustomModifiers));
             else if (IsEncodedModifiedType(clsArgument))
@@ -334,8 +334,9 @@ namespace System.Reflection.Emit
             else if (IsEncodedModifiedType(clsArgument))
                 AddCustomModifiers(clsArgument.GetOptionalCustomModifiers(), isOptional: true, paramName: null);
 
-            // The overload taking a DynamicScope would add the type's own modifiers to the ones written above.
-            AddOneArgTypeHelperWorker(clsArgument, false, null);
+            // The overload taking a DynamicScope would write the type's own modifiers again, including those an array
+            // replaced.
+            AddOneArgTypeHelperWorker(clsArgument, lastWasGenericInst: false, null);
         }
 
         private void AddCustomModifiers(Type[] customModifiers, bool isOptional, string? paramName)
@@ -364,7 +365,7 @@ namespace System.Reflection.Emit
 
         // Modifier tokens come from m_module, which a DynamicMethod's signature doesn't have.
         private bool IsEncodedModifiedType(Type type) =>
-            m_module != null && type is ModifiedType or SignatureModifiedType;
+            m_module is not null && type is ModifiedType or SignatureModifiedType;
 
         // Reflection returns each kind's modifiers separately, without their interleaving. Required modifiers come
         // first.
@@ -379,7 +380,7 @@ namespace System.Reflection.Emit
             if (IsEncodedModifiedType(clsArgument))
                 AddModifiedTypeCustomModifiers(clsArgument);
 
-            AddOneArgTypeHelperWorker(clsArgument, false, scope);
+            AddOneArgTypeHelperWorker(clsArgument, lastWasGenericInst: false, scope);
         }
 
         private void AddOneArgTypeHelperWorker(Type clsArgument, bool lastWasGenericInst, DynamicScope? scope)
