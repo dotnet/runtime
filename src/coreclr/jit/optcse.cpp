@@ -1921,7 +1921,15 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             break;
 
         case GT_LCL_VAR:
-            return false; // Can't CSE a volatile LCL_VAR
+            // Address-exposed locals are memory reads. Reuse them through a CSE temp so later
+            // optimizations can rely on one captured value. Facts recorded against the reload's
+            // own number, such as an object's exact type, reach the temp through the value
+            // number equivalences the rewrite records.
+            if (!m_compiler->lvaGetDesc(tree->AsLclVar())->IsAddressExposed())
+            {
+                return false;
+            }
+            break;
 
         case GT_NEG:
         case GT_NOT:
