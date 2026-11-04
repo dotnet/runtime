@@ -55,6 +55,7 @@ public class DelayedR2RActivation
             PrepareMethod(nameof(GenericCaller)),
             PrepareMethod(nameof(RecursiveTarget)),
             PrepareMethod(nameof(ExceptionTarget)),
+            PrepareMethod(nameof(EscapingExceptionTarget)),
             PrepareMethod(nameof(CompiledCaller)),
             PrepareMethod(nameof(NativeToInterpreterTarget)),
             PrepareMethod(typeof(VirtualTarget).GetMethod(nameof(VirtualTarget.Invoke))),
@@ -167,16 +168,16 @@ public class DelayedR2RActivation
         Assert.Equal(46, LatePreparedTarget(5));
 
         VerifyCalls(7, callCompiledTarget: true);
-        foreach (IntPtr entryPoint in entryPoints)
+        for (int index = 0; index < entryPoints.Length; index++)
         {
-            Assert.False(PrefersInterpreter(entryPoint), "PrefersInterpreter, after activation");
+            Assert.False(PrefersInterpreter(entryPoints[index]), $"PrefersInterpreter, entryPoints[{index}] after activation");
         }
 
         for (int invocation = 0; invocation < 3; invocation++)
         {
             Assert.Equal(invocation + 11, InterpreterOnlyTarget(invocation));
             // Implementation has already activated, so these calls only take the alias's redirect.
-            Assert.Equal(invocation + 53, AliasCaller.CallDeclared(new AliasTarget(), invocation));
+            VerifyAliasCalls(invocation);
             Assert.True(PrefersInterpreter(interpreterOnlyEntryPoint));
         }
     }
@@ -214,6 +215,9 @@ public class DelayedR2RActivation
         Assert.Equal(5, CrossModuleGenericCaller());
         object marker = new();
         Assert.Same(marker, ExceptionTarget(marker));
+        InvalidOperationException exception = new("activated exception");
+        Assert.Same(exception, Assert.Throws<InvalidOperationException>(() => EscapingExceptionTarget(true, exception)));
+        EscapingExceptionTarget(false, exception);
         Assert.Equal(callCompiledTarget ? value + 17 : value, CompiledCaller(callCompiledTarget, value));
         VirtualBase virtualTarget = new VirtualTarget();
         Assert.Equal(value + 23, virtualTarget.Invoke(value));
@@ -223,9 +227,21 @@ public class DelayedR2RActivation
         Assert.Equal(value + 19, CallThroughFunctionPointer(value));
         IVirtualTarget structTarget = new StructTarget();
         Assert.Equal(value + 29, structTarget.Invoke(value));
-        // Calls Implementation through the interpreter's alias on Declared. After activation, the alias
-        // must send the call to Implementation's R2R code.
-        Assert.Equal(value + 53, AliasCaller.CallDeclared(new AliasTarget(), value));
+        VerifyAliasCalls(value);
+    }
+
+    [BypassReadyToRun]
+    private static void VerifyAliasCalls(int value)
+    {
+        AliasTarget target = new();
+        int before = AliasTarget.InvocationCount;
+        Assert.Equal(value + 53, AliasCaller.CallDeclared(target, value));
+        Assert.Equal(before + 1, AliasTarget.InvocationCount);
+
+        // The declaration's PEP may have no interpreter data even though its MethodDesc caches the implementation.
+        Func<int, int> callback = target.Declared;
+        Assert.Equal(value + 53, callback(value));
+        Assert.Equal(before + 2, AliasTarget.InvocationCount);
     }
 
     [BypassReadyToRun]
@@ -343,6 +359,16 @@ public class DelayedR2RActivation
     [BypassReadyToRun]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int InterpreterOnlyTarget(int value) => value + 11;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void EscapingExceptionTarget(bool shouldThrow, InvalidOperationException exception)
+    {
+        GC.Collect();
+        if (shouldThrow)
+        {
+            throw exception;
+        }
+    }
 
     public interface IVirtualTarget
     {

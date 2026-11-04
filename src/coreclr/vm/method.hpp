@@ -23,6 +23,7 @@
 #include "eeconfig.h"
 #include "precode.h"
 #include "auxiliarymethods.h"
+#include "auxiliarymethodlookup.h"
 #ifdef FEATURE_INTERPRETER
 #include "callstubgenerator.h"
 #endif // FEATURE_INTERPRETER
@@ -280,9 +281,6 @@ struct MethodDescCodeData final
 #ifdef FEATURE_INTERPRETER
     InterpreterCalliCookie CalliCookie;
 #endif // FEATURE_INTERPRETER
-#ifdef FEATURE_AUXILIARY_R2R_MODULES
-    AuxiliaryMethodState AuxiliaryState;
-#endif // FEATURE_AUXILIARY_R2R_MODULES
 #if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
     PatchpointInfo *AltJitPatchpointInfo;
 #endif // _DEBUG && ALLOW_SXS_JIT
@@ -2380,8 +2378,7 @@ public:
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    void TryActivateDelayedR2RCode(CallerGCMode callerGCMode);
-    void RecordDelayedR2RCode(PrepareCodeConfig* pConfig);
+    void TryActivateDelayedR2RCode(InterpMethod* interpreterMethod, CallerGCMode callerGCMode);
     AuxiliaryMethodState GetAuxiliaryMethodState();
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
@@ -2470,13 +2467,13 @@ public:
     void SetCallerGCMode(CallerGCMode mode);
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    const AuxiliaryMethodStateRequest& GetAuxiliaryMethodStateRequest() const
+    const AuxiliaryMethodLookupState& GetAuxiliaryMethodLookup() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_auxiliaryMethodStateRequest;
     }
 
-    void SetAuxiliaryMethodStateRequest(AuxiliaryMethodStateRequest request)
+    void SetAuxiliaryMethodLookup(AuxiliaryMethodLookupState request)
     {
         LIMITED_METHOD_CONTRACT;
         m_auxiliaryMethodStateRequest = request;
@@ -2616,7 +2613,7 @@ protected:
     CallerGCMode m_callerGCMode;
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    AuxiliaryMethodStateRequest m_auxiliaryMethodStateRequest = AuxiliaryMethodStateRequest::Pending(AuxiliaryMethodState::Uninitialized());
+    AuxiliaryMethodLookupState m_auxiliaryMethodStateRequest = AuxiliaryMethodLookupState::Pending(AuxiliaryMethodState::Uninitialized());
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
 #ifdef FEATURE_MULTICOREJIT

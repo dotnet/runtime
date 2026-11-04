@@ -33,6 +33,8 @@
     // byte code on Declared, which makes Declared an alias of Implementation.
     .class public auto ansi beforefieldinit AliasTarget extends [System.Runtime]System.Object
     {
+        .field public static int32 InvocationCount
+
         .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
         {
             ldarg.0
@@ -44,6 +46,10 @@
         // separate interpreter inconsistency for MethodImpls in the same type, not what this test checks.
         .method public hidebysig newslot virtual instance int32 Declared(int32 'value') cil managed noinlining
         {
+            ldsfld int32 DelayedR2RActivationHelpers.AliasTarget::InvocationCount
+            ldc.i4.1
+            add
+            stsfld int32 DelayedR2RActivationHelpers.AliasTarget::InvocationCount
             ldarg.1
             ldc.i4.s 53
             add
@@ -53,6 +59,10 @@
         .method public hidebysig newslot virtual instance int32 Implementation(int32 'value') cil managed noinlining
         {
             .override DelayedR2RActivationHelpers.AliasTarget::Declared
+            ldsfld int32 DelayedR2RActivationHelpers.AliasTarget::InvocationCount
+            ldc.i4.1
+            add
+            stsfld int32 DelayedR2RActivationHelpers.AliasTarget::InvocationCount
             ldarg.1
             ldc.i4.s 53
             add

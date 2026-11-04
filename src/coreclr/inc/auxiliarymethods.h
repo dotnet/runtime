@@ -30,14 +30,19 @@ public:
 
 enum class AuxiliaryMethodStateDiscriminator : uint8_t
 {
+    // The method has not been looked up yet and has no auxiliary state.
     Uninitialized,
+    // The method is known to have no auxiliary code, or auxiliary code failed activation.
     InterpretOnly,
+    // The method is known to be in an auxiliary module, but the module is not yet activated.
     CheckAuxiliaryModuleActivationFlag,
+    // The method may be in an auxiliary module downloaded later.
     CheckAuxiliaryEntryPointsEra,
+    // The method has been successfully activated.
     Activated
 };
 
-// Caches information to determine whether to reattempt method activation.
+// Shared by all aliases of an interpreted body. Activated redirects retained bytecode to native code.
 struct AuxiliaryMethodState
 {
     union
@@ -84,40 +89,7 @@ struct AuxiliaryMethodState
     }
 
     // Defined in the VM's interpexec.h, since it needs ReadyToRunInfo.
-    inline bool ShouldTryDelayedActivation() const;
-};
-
-enum class AuxiliaryMethodStateRequestType : uint8_t
-{
-    ActivationRequest,
-    ActivationReply
-};
-
-// Pending requests allow lookup to delay activation and carry any cached state.
-// Resolved requests carry the lookup result.
-struct AuxiliaryMethodStateRequest
-{
-    AuxiliaryMethodState auxMethodState;
-    AuxiliaryMethodStateRequestType requestStatus;
-
-    AuxiliaryMethodStateRequest(AuxiliaryMethodState state, AuxiliaryMethodStateRequestType status) : auxMethodState(state), requestStatus(status) {}
-
-public:
-
-    inline AuxiliaryMethodState GetAuxMethodState() const { return auxMethodState; }
-    inline bool IsResolved() const { return requestStatus == AuxiliaryMethodStateRequestType::ActivationReply; }
-    inline bool IsPending() const { return requestStatus == AuxiliaryMethodStateRequestType::ActivationRequest; }
-
-
-    inline static AuxiliaryMethodStateRequest Resolved(AuxiliaryMethodState newState)
-    {
-        return AuxiliaryMethodStateRequest(newState, AuxiliaryMethodStateRequestType::ActivationReply);
-    }
-
-    inline static AuxiliaryMethodStateRequest Pending(AuxiliaryMethodState currentState)
-    {
-        return AuxiliaryMethodStateRequest(currentState, AuxiliaryMethodStateRequestType::ActivationRequest);
-    }
+    inline bool ShouldResolveNativeCode() const;
 };
 
 #endif // FEATURE_AUXILIARY_R2R_MODULES

@@ -124,7 +124,7 @@ void InterpDispatchCache_ReclaimAll();
 void InterpDispatchCache_ClearForLoaderAllocator(LoaderAllocator* pLoaderAllocator);
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-inline bool AuxiliaryMethodState::ShouldTryDelayedActivation() const
+inline bool AuxiliaryMethodState::ShouldResolveNativeCode() const
 {
     LIMITED_METHOD_CONTRACT;
     switch (discriminator)
@@ -137,6 +137,8 @@ inline bool AuxiliaryMethodState::ShouldTryDelayedActivation() const
             // TODO: remove the simulated download once auxiliary EntryPoints modules are separate
             ReadyToRunInfo::AdvanceSimulatedAuxiliaryEntryPointsDownload();
             return ReadyToRunInfo::IsAuxiliaryEntryPointsEraStale(auxiliaryEntryPointsEra);
+        case AuxiliaryMethodStateDiscriminator::Activated:
+            return true;
         case AuxiliaryMethodStateDiscriminator::Uninitialized:
             return false;
         case AuxiliaryMethodStateDiscriminator::InterpretOnly:

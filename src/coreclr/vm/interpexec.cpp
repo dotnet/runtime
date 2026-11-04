@@ -1489,19 +1489,22 @@ static InterpByteCodeStart* ResolveInterpreterCode(MethodDesc*& targetMethod, In
     // A declaration can still cache its implementation's interpreter code after the implementation's R2R
     // code is published. Keep this check so calls through that alias reach the published code.
     if (targetIp != nullptr
-        && targetIp->Method->methodHnd->GetAuxiliaryMethodState().ShouldTryDelayedActivation())
+        && targetIp->Method->AuxiliaryState.ShouldResolveNativeCode())
     {
-        pFrame->ip = ip;
-        pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
         MethodDesc* pActualMethod = targetIp->Method->methodHnd;
+        if (targetIp->Method->AuxiliaryState.discriminator != AuxiliaryMethodStateDiscriminator::Activated)
         {
-            GCX_PREEMP_REGION_BEGIN();
-            CallWithSEHWrapper(
-                [pActualMethod]() {
-                    pActualMethod->TryActivateDelayedR2RCode(CallerGCMode::Coop);
-                    return 0;
-                });
-            GCX_PREEMP_REGION_END();
+            pFrame->ip = ip;
+            pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+            {
+                GCX_PREEMP_REGION_BEGIN();
+                CallWithSEHWrapper(
+                    [pActualMethod, targetIp]() {
+                        pActualMethod->TryActivateDelayedR2RCode(targetIp->Method, CallerGCMode::Coop);
+                        return 0;
+                    });
+                GCX_PREEMP_REGION_END();
+            }
         }
         if (pActualMethod->GetInterpreterCode() == nullptr)
         {

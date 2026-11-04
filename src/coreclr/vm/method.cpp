@@ -243,10 +243,6 @@ HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
 #ifdef FEATURE_CODE_VERSIONING
     alloc->OptimizationTier = NativeCodeVersion::OptimizationTierUnknown;
 #endif
-#ifdef FEATURE_AUXILIARY_R2R_MODULES
-    alloc->AuxiliaryState = AuxiliaryMethodState::Uninitialized();
-#endif // FEATURE_AUXILIARY_R2R_MODULES
-
     // Try to set the field. Suppress clean-up if we win the race.
     if (InterlockedCompareExchangeT(&m_codeData, (MethodDescCodeData*)alloc, NULL) == NULL)
         amTracker.SuppressRelease();
