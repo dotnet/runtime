@@ -94,7 +94,7 @@ public class GCStress
             Assert.Equal(42, result[0]);
         }
 
-        Assert.Throws<NullReferenceException>(() => R2RGCStressVirtualCall(null, null, callback, kind));
+        Assert.Throws<NullReferenceException>(() => R2RGCStressVirtualCallNullReceiver(null, null, callback, kind));
         Console.WriteLine($"R2R GC stress virtual calls ({kind}): passed");
     }
 
@@ -110,6 +110,23 @@ public class GCStress
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int[] R2RGCStressVirtualCall(
+        VirtualCallTarget target, IVirtualCallTarget interfaceTarget,
+        Func<VirtualCallTarget, int[]> callback, DispatchKind kind)
+    {
+        int[] result = kind switch
+        {
+            DispatchKind.Class => target.GetValue(),
+            DispatchKind.Interface => interfaceTarget.GetValue(),
+            DispatchKind.OpenDelegate => callback(target),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+
+        Poll();
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int[] R2RGCStressVirtualCallNullReceiver(
         VirtualCallTarget target, IVirtualCallTarget interfaceTarget,
         Func<VirtualCallTarget, int[]> callback, DispatchKind kind)
     {
