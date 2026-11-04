@@ -156,6 +156,60 @@ namespace System.Reflection.Tests
             VerifyModifiedType(expected, methodParameter.GetModifiedParameterType());
         }
 
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(List<int>))]
+        public static void TestModifiersOnSubstitutedGenericParameters(Type argumentType)
+        {
+            using (MetadataLoadContext lc = new MetadataLoadContext(new CoreMetadataAssemblyResolver(), "mscorlib"))
+            {
+                Assembly a = lc.LoadFromByteArray(TestData.s_SubstitutedGenericModifiersImage);
+                Type genericModifiers = a.GetType("GenericModifiers", throwOnError: true);
+                Type foo = a.GetType("FooModifier", throwOnError: true);
+                Type bar = a.GetType("BarModifier", throwOnError: true);
+                Assembly core = lc.CoreAssembly;
+                Type argument = argumentType.IsGenericType
+                    ? core.GetType(argumentType.GetGenericTypeDefinition().FullName, throwOnError: true).MakeGenericType(core.GetType(typeof(int).FullName, throwOnError: true))
+                    : core.GetType(argumentType.FullName, throwOnError: true);
+                Type intType = core.GetType(typeof(int).FullName, throwOnError: true);
+                Type listDefinition = core.GetType(typeof(List<>).FullName, throwOnError: true);
+
+                Type Modified(string name) =>
+                    genericModifiers.GetMethod(name).MakeGenericMethod(argument).GetParameters()[0].GetModifiedParameterType();
+
+                // The modifier on the generic parameter itself survives substitution.
+                Type modOpt = Modified("ModOptOnGenericParameter");
+                Assert.Equal(argument, modOpt.UnderlyingSystemType);
+                Assert.Equal<Type>(new[] { foo }, modOpt.GetOptionalCustomModifiers());
+                Assert.Empty(modOpt.GetRequiredCustomModifiers());
+                if (argument.IsGenericType)
+                {
+                    // The arguments of a substituted type have no signature of their own and no modifiers.
+                    Type inner = modOpt.GetGenericArguments()[0];
+                    Assert.Equal(intType, inner.UnderlyingSystemType);
+                    Assert.Empty(inner.GetOptionalCustomModifiers());
+                }
+
+                // A modifier inside a generic instantiation stays on the substituted argument. The
+                // instantiation decoded from the signature is a distinct instance from one made with
+                // MakeGenericType, so compare it by definition and argument.
+                Type modOptInArgument = Modified("ModOptInGenericArgument");
+                Assert.Equal(listDefinition, modOptInArgument.UnderlyingSystemType.GetGenericTypeDefinition());
+                Assert.Empty(modOptInArgument.GetOptionalCustomModifiers());
+                Type listArgument = modOptInArgument.GetGenericArguments()[0];
+                Assert.Equal(argument, listArgument.UnderlyingSystemType);
+                Assert.Equal<Type>(new[] { foo }, listArgument.GetOptionalCustomModifiers());
+
+                // A required modifier under a byref stays on the element.
+                Type modReqByRef = Modified("ModReqOnByRefGenericParameter");
+                Assert.True(modReqByRef.UnderlyingSystemType.IsByRef);
+                Type element = modReqByRef.GetElementType();
+                Assert.Equal(argument, element.UnderlyingSystemType);
+                Assert.Equal<Type>(new[] { bar }, element.GetRequiredCustomModifiers());
+                Assert.Empty(element.GetOptionalCustomModifiers());
+            }
+        }
+
         private static void VerifyModifiedType(Type expected, Type modified)
         {
             Assert.NotNull(modified);
