@@ -627,7 +627,7 @@ void Frame::PopIfChained() noexcept
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

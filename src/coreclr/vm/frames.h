@@ -1419,7 +1419,6 @@ public:
 #ifndef DACCESS_COMPILE
     ~PrestubMethodFrame() noexcept
     {
-        GCX_COOP();
         PopIfChained();
     }
 #endif // DACCESS_COMPILE
@@ -2049,7 +2048,6 @@ public:
 
     ~InlinedCallFrame() noexcept
     {
-        GCX_COOP();
         PopIfChained();
     }
 #endif // FEATURE_INTERPRETER
@@ -2374,7 +2372,6 @@ public:
 
     ~InterpreterFrame() noexcept
     {
-        GCX_COOP();
         PopIfChained();
     }
 #endif // DACCESS_COMPILE
