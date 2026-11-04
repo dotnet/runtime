@@ -330,8 +330,6 @@ namespace Internal.TypeSystem.Ecma
         {
             Debug.Assert(field.HasRva);
             int addr = field.MetadataReader.GetFieldDefinition(field.Handle).GetRelativeVirtualAddress();
-            // Note: avoid PEMemoryBlock.GetContent() without arguments - it copies everything
-            // from the field RVA to the end of the section.
             var memBlock = field.Module.PEReader.GetSectionData(addr);
 
             int size = field.FieldType.GetElementSize().AsInt;
