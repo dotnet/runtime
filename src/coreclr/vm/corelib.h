@@ -1005,18 +1005,38 @@ DEFINE_FIELD_U(TemporaryResultHandle, DebuggerFuncEvalContext, pTemporaryResult)
 DEFINE_FIELD_U(ResultByRefs,      DebuggerFuncEvalContext, pResultByRefs)
 DEFINE_FIELD_U(ResultData,        DebuggerFuncEvalContext, pResultData)
 DEFINE_FIELD_U(ResultHandle,      DebuggerFuncEvalContext, resultHandle)
-DEFINE_FIELD_U(Module,            DebuggerFuncEvalContext, pModule)
+DEFINE_FIELD_U(Assembly,          DebuggerFuncEvalContext, pAssembly)
+DEFINE_FIELD_U(TypeArguments,     DebuggerFuncEvalContext, pTypeArguments)
+DEFINE_FIELD_U(EvaluationData,    DebuggerFuncEvalContext, pEvaluationData)
+DEFINE_FIELD_U(StringSize,        DebuggerFuncEvalContext, stringSize)
+DEFINE_FIELD_U(ArrayRank,         DebuggerFuncEvalContext, arrayRank)
 DEFINE_FIELD_U(ArgumentCount,     DebuggerFuncEvalContext, argumentCount)
 DEFINE_FIELD_U(ParameterCount,    DebuggerFuncEvalContext, parameterCount)
 DEFINE_FIELD_U(Flags,             DebuggerFuncEvalContext, flags)
-DEFINE_FIELD_U(MethodToken,       DebuggerFuncEvalContext, methodToken)
+DEFINE_FIELD_U(MemberToken,       DebuggerFuncEvalContext, memberToken)
 DEFINE_FIELD_U(GenericArgsCount,  DebuggerFuncEvalContext, genericArgsCount)
+DEFINE_FIELD_U(GenericArgsNodeCount, DebuggerFuncEvalContext, genericArgsNodeCount)
+DEFINE_FIELD_U(Kind,              DebuggerFuncEvalContext, kind)
 
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeArgument, DebuggerFuncEvalArgument)
 DEFINE_FIELD_U(Literal,         DebuggerFuncEvalArgument, pLiteral)
+DEFINE_FIELD_U(TypeData,        DebuggerFuncEvalArgument, pTypeData)
 DEFINE_FIELD_U(ElementType,     DebuggerFuncEvalArgument, elementType)
 DEFINE_FIELD_U(Flags,           DebuggerFuncEvalArgument, flags)
+DEFINE_FIELD_U(TypeNodeCount,   DebuggerFuncEvalArgument, typeNodeCount)
+
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeTypeArgument, DebuggerIPCE_TypeArgData)
+DEFINE_FIELD_U(ElementType,     DebuggerIPCE_TypeArgData, data.elementType)
+DEFINE_FIELD_U(MetadataToken,   DebuggerIPCE_TypeArgData, data.ClassTypeData.metadataToken)
+DEFINE_FIELD_U(Assembly,        DebuggerIPCE_TypeArgData, data.ClassTypeData.vmAssembly)
+DEFINE_FIELD_U(ArrayRank,       DebuggerIPCE_TypeArgData, data.ArrayTypeData.arrayRank)
+DEFINE_FIELD_U(ChildCount,      DebuggerIPCE_TypeArgData, numTypeArgs)
 #endif // DEBUGGING_SUPPORTED
+
+#ifdef FOR_ILLINK
+// The layout-only mirror is not otherwise referenced by managed code.
+DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeTypeArgument, DebuggerIPCE_TypeArgData)
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)

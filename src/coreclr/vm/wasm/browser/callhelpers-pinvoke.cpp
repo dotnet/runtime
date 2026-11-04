@@ -346,6 +346,7 @@ extern "C" {
     void QCall_AssemblyNative_GetEntryPoint (void *, void *, void *) __asm__("AssemblyNative_GetEntryPoint");
     void QCall_AssemblyNative_GetExecutingAssembly (void *, void *, void *) __asm__("AssemblyNative_GetExecutingAssembly");
     void QCall_AssemblyNative_GetExportedTypes (void *, void *, void *) __asm__("AssemblyNative_GetExportedTypes");
+    void QCall_AssemblyNative_GetExposedObject (void *, void *, void *) __asm__("AssemblyNative_GetExposedObject");
     int32_t QCall_AssemblyNative_GetFlags (void *, void *) __asm__("AssemblyNative_GetFlags");
     void QCall_AssemblyNative_GetForwardedType (void *, int32_t, void *, void *) __asm__("AssemblyNative_GetForwardedType");
     void QCall_AssemblyNative_GetFullName (void *, void *, void *) __asm__("AssemblyNative_GetFullName");
@@ -381,8 +382,6 @@ extern "C" {
     int32_t QCall_CustomAttribute_ParseAttributeUsageAttribute (void *, int32_t, void *, void *, void *) __asm__("CustomAttribute_ParseAttributeUsageAttribute");
     void QCall_DebugDebugger_Break (void *) __asm__("DebugDebugger_Break");
     void QCall_DebugDebugger_CustomNotification (void *, void *) __asm__("DebugDebugger_CustomNotification");
-    void QCall_DebugDebugger_GetFuncEvalArgumentType (void *, uint32_t, void *, void *) __asm__("DebugDebugger_GetFuncEvalArgumentType");
-    void QCall_DebugDebugger_GetFuncEvalMethod (void *, void *, void *, void *) __asm__("DebugDebugger_GetFuncEvalMethod");
     int32_t QCall_DebugDebugger_IsLoggingHelper () __asm__("DebugDebugger_IsLoggingHelper");
     int32_t QCall_DebugDebugger_IsManagedDebuggerAttached () __asm__("DebugDebugger_IsManagedDebuggerAttached");
     int32_t QCall_DebugDebugger_Launch () __asm__("DebugDebugger_Launch");
@@ -649,6 +648,7 @@ static const Entry s_QCall[] = {
     { "AssemblyNative_GetEntryPoint", (void*)&QCall_AssemblyNative_GetEntryPoint },
     { "AssemblyNative_GetExecutingAssembly", (void*)&QCall_AssemblyNative_GetExecutingAssembly },
     { "AssemblyNative_GetExportedTypes", (void*)&QCall_AssemblyNative_GetExportedTypes },
+    { "AssemblyNative_GetExposedObject", (void*)&QCall_AssemblyNative_GetExposedObject },
     { "AssemblyNative_GetFlags", (void*)&QCall_AssemblyNative_GetFlags },
     { "AssemblyNative_GetForwardedType", (void*)&QCall_AssemblyNative_GetForwardedType },
     { "AssemblyNative_GetFullName", (void*)&QCall_AssemblyNative_GetFullName },
@@ -684,8 +684,6 @@ static const Entry s_QCall[] = {
     { "CustomAttribute_ParseAttributeUsageAttribute", (void*)&QCall_CustomAttribute_ParseAttributeUsageAttribute },
     { "DebugDebugger_Break", (void*)&QCall_DebugDebugger_Break },
     { "DebugDebugger_CustomNotification", (void*)&QCall_DebugDebugger_CustomNotification },
-    { "DebugDebugger_GetFuncEvalArgumentType", (void*)&QCall_DebugDebugger_GetFuncEvalArgumentType },
-    { "DebugDebugger_GetFuncEvalMethod", (void*)&QCall_DebugDebugger_GetFuncEvalMethod },
     { "DebugDebugger_IsLoggingHelper", (void*)&QCall_DebugDebugger_IsLoggingHelper },
     { "DebugDebugger_IsManagedDebuggerAttached", (void*)&QCall_DebugDebugger_IsManagedDebuggerAttached },
     { "DebugDebugger_Launch", (void*)&QCall_DebugDebugger_Launch },

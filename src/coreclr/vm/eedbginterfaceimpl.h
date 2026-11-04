@@ -168,26 +168,6 @@ public:
 
     TypeHandle FindLoadedElementType(CorElementType et);
 
-    TypeHandle LoadClass(Module *pModule,
-                       mdTypeDef classToken);
-
-    TypeHandle LoadInstantiation(Module *pModule,
-                                 mdTypeDef typeDef,
-                                 DWORD numGenericArgs,
-                                 TypeHandle *pGenericArgs);
-
-    TypeHandle LoadArrayType(CorElementType et,
-                             TypeHandle elemtype,
-                             unsigned rank);
-
-    TypeHandle LoadPointerOrByrefType(CorElementType et,
-                                      TypeHandle elemtype);
-
-    TypeHandle LoadFnptrType(TypeHandle *inst,
-                             DWORD ntypars);
-
-    TypeHandle LoadElementType(CorElementType et);
-
     __checkReturn
     HRESULT GetMethodImplProps(Module *pModule,
                                mdToken tk,

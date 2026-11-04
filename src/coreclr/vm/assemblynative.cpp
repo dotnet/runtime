@@ -1134,6 +1134,20 @@ extern "C" void QCALLTYPE AssemblyNative_GetFullName(QCall::AssemblyHandle pAsse
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE AssemblyNative_GetExposedObject(Assembly* pAssembly, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(pAssembly != nullptr);
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    retAssembly.Set(pAssembly->GetExposedObject());
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
