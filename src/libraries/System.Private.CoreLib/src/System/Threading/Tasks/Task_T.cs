@@ -350,7 +350,7 @@ namespace System.Threading.Tasks
 
         // Debugger support
         private string DebuggerDisplayMethodDescription =>
-            m_action?.Method.ToString() ?? "{null}";
+            (m_action as Delegate)?.Method.ToString() ?? "{null}";
 
 
         // internal helper function breaks out logic used by TaskCompletionSource

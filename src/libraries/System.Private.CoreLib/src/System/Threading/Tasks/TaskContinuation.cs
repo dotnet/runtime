@@ -277,7 +277,7 @@ namespace System.Threading.Tasks
             m_options = options;
             m_taskScheduler = scheduler;
             if (TplEventSource.Log.IsEnabled())
-                TplEventSource.Log.TraceOperationBegin(m_task.Id, "Task.ContinueWith: " + task.m_action!.GetMethodName(), 0);
+                TplEventSource.Log.TraceOperationBegin(m_task.Id, "Task.ContinueWith: " + ((Delegate)task.m_action!).GetMethodName(), 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(m_task);
@@ -357,7 +357,7 @@ namespace System.Threading.Tasks
         internal override Delegate[]? GetDelegateContinuationsForDebugger() =>
             m_task is null ? null :
             m_task.m_action is null ? m_task.GetDelegateContinuationsForDebugger() :
-            [m_task.m_action];
+            [(Delegate)m_task.m_action];
     }
 
     /// <summary>Task continuation for awaiting with a current synchronization context.</summary>
@@ -491,6 +491,29 @@ namespace System.Threading.Tasks
         internal static void RunOrScheduleAction(Action action, TaskScheduler scheduler, ExecutionContext? capturedContext, bool allowInlining)
         {
             Debug.Assert(action != null);
+
+            RunOrScheduleAction(static state =>
+            {
+                try
+                {
+                    ((Action)state!)();
+                }
+                catch (Exception exception)
+                {
+                    Task.ThrowAsync(exception, targetContext: null);
+                }
+            }, action, scheduler, capturedContext, allowInlining);
+        }
+
+        /// <summary>Invokes or schedules the callback to be executed on the specified scheduler.</summary>
+        /// <param name="callback">The callback to invoke. It's responsible for handling any exceptions it incurs.</param>
+        /// <param name="state">The state to pass to <paramref name="callback"/>.</param>
+        /// <param name="scheduler">The scheduler on which to run the callback.</param>
+        /// <param name="capturedContext">The captured <see cref="ExecutionContext"/>, if any, with which to run the callback.</param>
+        /// <param name="allowInlining">true to allow inlining, or false to force the callback to run asynchronously.</param>
+        internal static void RunOrScheduleAction(Action<object?> callback, object? state, TaskScheduler scheduler, ExecutionContext? capturedContext, bool allowInlining)
+        {
+            Debug.Assert(callback != null);
             Debug.Assert(scheduler != null && scheduler != TaskScheduler.Default);
 
             // We permit inlining if the caller allows us to, and
@@ -504,17 +527,7 @@ namespace System.Threading.Tasks
 
             // Create the continuation task task. If we're allowed to inline, try to do so.
             // The target scheduler may still deny us from executing on this thread, in which case this'll be queued.
-            Task task = CreateTask(static state =>
-            {
-                try
-                {
-                    ((Action)state!)();
-                }
-                catch (Exception exception)
-                {
-                    Task.ThrowAsync(exception, targetContext: null);
-                }
-            }, action, scheduler, capturedContext);
+            Task task = CreateTask(callback, state, scheduler, capturedContext);
 
             if (inlineIfPossible)
             {
