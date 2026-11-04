@@ -247,8 +247,9 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
             }
             if (match)
             {
-                strcpy(pDest, map[index].sub);
-                pDest += strlen(map[index].sub);
+                size_t subLen = strlen(map[index].sub);
+                memcpy(pDest, map[index].sub, subLen);
+                pDest += subLen;
             }
             else
             {

@@ -14,23 +14,21 @@
 #define DOTNET_PREFIX _T("DOTNET_")
 #define DOTNET_PREFIX_LEN STRING_LENGTH(DOTNET_PREFIX)
 
-namespace
+static void GetEnvironmentConfigName(const char* name, TCHAR* buffer, uint32_t bufferSize)
 {
-    void GetEnvironmentConfigName(const char* name, TCHAR* buffer, uint32_t bufferSize)
+    assert(DOTNET_PREFIX_LEN + strlen(name) < bufferSize);
+    memcpy(buffer, DOTNET_PREFIX, (DOTNET_PREFIX_LEN) * sizeof(TCHAR));
+#ifdef TARGET_WINDOWS
+    size_t nameLen = strlen(name);
+    for (size_t i = 0; i < nameLen; i++)
     {
-        assert(DOTNET_PREFIX_LEN + strlen(name) < bufferSize);
-        memcpy(buffer, DOTNET_PREFIX, (DOTNET_PREFIX_LEN) * sizeof(TCHAR));
-    #ifdef TARGET_WINDOWS
-        size_t nameLen = strlen(name);
-        for (size_t i = 0; i < nameLen; i++)
-        {
-            buffer[DOTNET_PREFIX_LEN + i] = name[i];
-        }
-        buffer[DOTNET_PREFIX_LEN + nameLen] = '\0';
-    #else
-        strcpy(buffer + DOTNET_PREFIX_LEN, name);
-    #endif
+        buffer[DOTNET_PREFIX_LEN + i] = name[i];
     }
+    buffer[DOTNET_PREFIX_LEN + nameLen] = '\0';
+#else
+    size_t nameLen = strlen(name);
+    memcpy(buffer + DOTNET_PREFIX_LEN, name, nameLen + 1);
+#endif
 }
 
 bool RhConfig::Environment::TryGetBooleanValue(const char* name, bool* value)
@@ -156,10 +154,11 @@ bool RhConfig::ReadStringConfigValue(_In_z_ const char* name, const char** pValu
     const char *embeddedValue = nullptr;
     if (GetEmbeddedVariable(&g_compilerEmbeddedSettingsBlob, name, true, &embeddedValue))
     {
-        char* strCopy = new (nothrow) char[strlen(embeddedValue) + 1];
+        size_t len = strlen(embeddedValue);
+        char* strCopy = new (nothrow) char[len + 1];
         if (strCopy != nullptr)
         {
-            strcpy(strCopy, embeddedValue);
+            memcpy(strCopy, embeddedValue, len + 1);
             *pValue = strCopy;
 
             return true;
@@ -195,10 +194,11 @@ bool RhConfig::ReadKnobStringValue(_In_z_ const char *name, const char** pValue)
     const char *embeddedValue = nullptr;
     if (GetEmbeddedVariable(&g_compilerEmbeddedKnobsBlob, name, false, &embeddedValue))
     {
-        char* strCopy = new (nothrow) char[strlen(embeddedValue) + 1];
+        size_t len = strlen(embeddedValue);
+        char* strCopy = new (nothrow) char[len + 1];
         if (strCopy != nullptr)
         {
-            strcpy(strCopy, embeddedValue);
+            memcpy(strCopy, embeddedValue, len + 1);
             *pValue = strCopy;
 
             return true;
