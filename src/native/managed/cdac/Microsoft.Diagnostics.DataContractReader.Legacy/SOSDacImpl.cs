@@ -7752,7 +7752,12 @@ public sealed unsafe partial class SOSDacImpl
                     IsRegister = slot.IsRegister ? 1 : 0,
                     RegisterNumber = slot.RegisterNumber,
                     SpOffset = slot.SpOffset,
-                    BaseRegister = slot.BaseRegister,
+                    BaseRegister = slot.IsRegister ? 0u : slot.BaseRegister switch
+                    {
+                        1 => 0u,
+                        2 => 1u,
+                        _ => throw new InvalidOperationException($"Unexpected GC stack slot base {slot.BaseRegister}."),
+                    },
                     GcFlags = slot.GcFlags,
                 };
             }
