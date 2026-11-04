@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <CLRTestPriority>1</CLRTestPriority>
+    <!-- Keep this conditional so the priority-0 text filter includes the Windows x86 regression. -->
+    <CLRTestPriority Condition="'$(TargetOS)' != 'windows' or '$(TargetArchitecture)' != 'x86'">1</CLRTestPriority>
+    <AlwaysUseCrossGen2 Condition="'$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86'">true</AlwaysUseCrossGen2>
     <Optimize>true</Optimize>
     <!-- Exercises native virtual-dispatch stubs under GC stress. -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>

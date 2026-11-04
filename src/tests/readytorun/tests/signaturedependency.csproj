@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestPriority Condition="'$(TargetOS)' != 'windows' or '$(TargetArchitecture)' != 'x86'">1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="signaturedependency.cs" />

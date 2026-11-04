@@ -89,9 +89,24 @@ public class ColdSignatureDispatch
     {
         s_isGCStress = TestLibrary.Utilities.IsGCStress;
         object reference = new object();
-        SignatureValue result = new Caller<string>().Invoke(
-            new GenericTransform<string>(), new SignatureValue { Reference = reference });
+        Caller<string> caller = new Caller<string>();
+        GenericTransform<string> target = new GenericTransform<string>();
+        SignatureValue argument = new SignatureValue { Reference = reference };
+        SignatureValue result = caller.Invoke(target, argument);
         Assert.Same(reference, result.Reference);
+
+        // The cold call prepares the target. Further calls install and exercise the dispatch stub.
+        s_isGCStress = false;
+        for (int i = 0; i < 2; i++)
+        {
+            result = caller.Invoke(target, argument);
+            Assert.Same(reference, result.Reference);
+        }
+
+        Assert.Throws<NullReferenceException>(() =>
+        {
+            caller.Invoke(null, default);
+        });
 
         // Shared code resolves a generic virtual target at run time. The resolved instantiation
         // must load its signature types before GC can scan its prestub frame.
