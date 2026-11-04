@@ -266,9 +266,6 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     BitVec m_reconcileReadBacks;
     // Replacements that need readbacks in the entry block (parameters/OSR locals).
     BitVec m_entryReadBacks;
-    // Set of replacements with no bits set, used for the common case where a
-    // block ends with no pending readbacks.
-    BitVec m_emptyReplacements;
 
     struct ReplacementInfo
     {

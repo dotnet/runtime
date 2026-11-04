@@ -1698,7 +1698,6 @@ void ReplaceVisitor::PrepareReadBacks()
     m_structCurrent                  = BitVecOps::MakeEmpty(m_replacementsTraits);
     m_reconcileReadBacks             = BitVecOps::MakeEmpty(m_replacementsTraits);
     m_entryReadBacks                 = BitVecOps::MakeEmpty(m_replacementsTraits);
-    m_emptyReplacements              = BitVecOps::MakeEmpty(m_replacementsTraits);
     m_replacementInfo                = new (m_compiler, CMK_Promotion) ReplacementInfo[index];
 
     for (AggregateInfo* agg : m_aggregates)
@@ -2058,9 +2057,6 @@ bool ReplaceVisitor::MustMaterializeReadBacks(BasicBlock* block)
 //
 void ReplaceVisitor::EndBlock()
 {
-    BitVec& pendingReadBacks    = m_pendingReadBacks[m_currentBlock->bbPostorderNum];
-    BitVec& currentStructFields = m_currentStructFields[m_currentBlock->bbPostorderNum];
-
     assert(BitVecOps::IsSubset(m_replacementsTraits, m_needsReadBack, m_structCurrent));
     bool materialize =
         BitVecOps::IsMember(&m_postOrderTraits, m_requiresReadBackOnExit, m_currentBlock->bbPostorderNum);
@@ -2105,12 +2101,8 @@ void ReplaceVisitor::EndBlock()
 
     // Snapshots must not alias the working sets: reconciliation can update a
     // predecessor's pending set after subsequent blocks have been processed.
-    pendingReadBacks    = BitVecOps::IsEmpty(m_replacementsTraits, m_needsReadBack)
-                              ? m_emptyReplacements
-                              : BitVecOps::MakeCopy(m_replacementsTraits, m_needsReadBack);
-    currentStructFields = BitVecOps::IsEmpty(m_replacementsTraits, m_structCurrent)
-                              ? m_emptyReplacements
-                              : BitVecOps::MakeCopy(m_replacementsTraits, m_structCurrent);
+    BitVecOps::Assign(m_replacementsTraits, m_pendingReadBacks[m_currentBlock->bbPostorderNum], m_needsReadBack);
+    BitVecOps::Assign(m_replacementsTraits, m_currentStructFields[m_currentBlock->bbPostorderNum], m_structCurrent);
 }
 
 //------------------------------------------------------------------------
