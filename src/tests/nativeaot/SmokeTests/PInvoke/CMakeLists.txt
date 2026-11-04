@@ -1,9 +1,3 @@
-# See the comment in ../../CustomMain/CMakeLists.txt: nativeaot tests never build for browser
-# wasm, so this directory excludes itself from the recursive add_subdirectory globber.
-if (CLR_CMAKE_TARGET_BROWSER)
-    return()
-endif()
-
 project (PInvokeNative)
 include_directories(${INC_PLATFORM_DIR})
 
