@@ -46,11 +46,22 @@ namespace System.Runtime.CompilerServices
                 IsPending = true;
             }
 
-            internal static void OnCompleted(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            // Registers the continuation with the source. Like any notifier, a source that throws from OnCompleted
+            // has its exception propagated to the thread pool; returns false in that case.
+            internal static bool OnCompleted(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
             {
                 Debug.Assert(source is IValueTaskSource);
                 IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
-                typedSource.OnCompleted(continuation, state, token, flags);
+                try
+                {
+                    typedSource.OnCompleted(continuation, state, token, flags);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Task.ThrowAsync(ex, targetContext: null);
+                    return false;
+                }
             }
 
             [StackTraceHidden]
@@ -61,11 +72,20 @@ namespace System.Runtime.CompilerServices
                 typedSource.GetResult(token);
             }
 
-            internal static void OnCompleted<T>(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            internal static bool OnCompleted<T>(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
             {
                 Debug.Assert(source is IValueTaskSource<T>);
                 IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
-                typedSource.OnCompleted(continuation, state, token, flags);
+                try
+                {
+                    typedSource.OnCompleted(continuation, state, token, flags);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Task.ThrowAsync(ex, targetContext: null);
+                    return false;
+                }
             }
 
             [StackTraceHidden]
