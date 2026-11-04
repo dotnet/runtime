@@ -19,6 +19,7 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 #include "pal/palinternal.h"
 #include "pal/file.h"
 #include "pal/utils.h"
+#include <minipal/utf8.h>
 
 #include <time.h>
 #include <stdio.h>
@@ -839,8 +840,7 @@ CreateFileW(
         goto done;
     }
 
-    size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
-                                NULL, NULL );
+    size = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)lpFileName, PAL_wcslen(lpFileName) + 1, name, length, 0);
 
     if( size == 0 )
     {

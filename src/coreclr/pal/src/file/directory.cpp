@@ -23,6 +23,7 @@ Revision History:
 #include "pal/dbgmsg.h"
 #include "pal/file.h"
 #include "pal/stackstring.hpp"
+#include <minipal/utf8.h>
 
 #include <stdlib.h>
 #include <sys/param.h>
@@ -67,8 +68,7 @@ CreateDirectoryW(
     }
 
     /* translate the wide char lpPathName string to multibyte string */
-    if(0 == (mb_size = WideCharToMultiByte( CP_ACP, 0, lpPathName, -1, NULL, 0,
-                                            NULL, NULL )))
+    if(0 == (mb_size = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpPathName, PAL_wcslen(lpPathName) + 1, 0)))
     {
         ASSERT("WideCharToMultiByte failure! error is %d\n", GetLastError());
         dwLastError = ERROR_INTERNAL_ERROR;
@@ -76,8 +76,7 @@ CreateDirectoryW(
     }
 
     if (((mb_dir = (char *)malloc(mb_size)) == NULL) ||
-        (WideCharToMultiByte( CP_ACP, 0, lpPathName, -1, mb_dir, mb_size, NULL,
-                              NULL) != mb_size))
+        ((int)minipal_convert_utf16_to_utf8((const CHAR16_T*)lpPathName, PAL_wcslen(lpPathName) + 1, mb_dir, mb_size, 0) != mb_size))
     {
         ASSERT("WideCharToMultiByte or malloc failure! LastError:%d errno:%d\n",
               GetLastError(), errno);
@@ -208,8 +207,7 @@ RemoveDirectoryW(
         goto done;
     }
 
-    mb_size = WideCharToMultiByte( CP_ACP, 0, lpPathName, -1, mb_dir, length,
-                                   NULL, NULL );
+    mb_size = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)lpPathName, PAL_wcslen(lpPathName) + 1, mb_dir, length, 0);
 
     if( mb_size == 0 )
     {
@@ -335,8 +333,7 @@ SetCurrentDirectoryW(
         goto done;
     }
 
-    size = WideCharToMultiByte( CP_ACP, 0, lpPathName, -1, dir, length,
-                                NULL, NULL );
+    size = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)lpPathName, PAL_wcslen(lpPathName) + 1, dir, length, 0);
 
     if( size == 0 )
     {

@@ -125,16 +125,15 @@ struct EventStaticEntry
         LPCUTF8 utf8Name = 0;
         if (SUCCEEDED(fieldDesc->GetName_NoThrow(&utf8Name)))
         {
-            len = MultiByteToWideChar(CP_ACP, 0, utf8Name, -1, name, sizeRemaining - sizeof(EventStaticEntry));
+            len = (int)minipal_convert_utf8_to_utf16(utf8Name, strlen(utf8Name) + 1, (CHAR16_T*)name,
+                (sizeRemaining - sizeof(EventStaticEntry)) / sizeof(WCHAR), 0);
             if (len <= 0)
             {
-                // We will ignore corrupted/bad metadata here and only emit names for fields which are
-                // up to 255 characters (and also don't fit in the buffer).
-                if (GetLastError() == ERROR_INSUFFICIENT_BUFFER && sizeRemaining < 256)
+                // We will only emit names for fields which are up to 255 characters (and also don't fit in the buffer).
+                if (sizeRemaining < 256)
                     return -1; // nothing written, insufficient buffer.  Flush and try again.
 
-                // If the name is larger than 255 or we have some other error converting the string,
-                // just emit an empty string.
+                // If the name is larger than 255, just emit an empty string.
                 len = 1;
                 name[0] = 0;
             }

@@ -95,20 +95,18 @@ ConvertUtf8(_In_ LPCUTF8 utf8,
             ULONG32* nameLen,
             _Out_writes_to_opt_(bufLen, *nameLen) PWSTR buffer)
 {
+    size_t cchUtf8 = strlen(utf8) + 1;
+
     if (nameLen)
     {
-        *nameLen = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
-        if (!*nameLen)
-        {
-            return HRESULT_FROM_GetLastError();
-        }
+        *nameLen = (ULONG32)minipal_get_length_utf8_to_utf16(utf8, cchUtf8, 0);
     }
 
     if (buffer && bufLen)
     {
-        if (!MultiByteToWideChar(CP_UTF8, 0, utf8, -1, buffer, bufLen))
+        if (!minipal_convert_utf8_to_utf16(utf8, cchUtf8, (CHAR16_T*)buffer, bufLen, 0))
         {
-            return HRESULT_FROM_GetLastError();
+            return HRESULT_FROM_WIN32(errno);
         }
     }
 
@@ -120,12 +118,13 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
           ULONG32 srcChars,
           _Outptr_ LPUTF8* utf8)
 {
-    ULONG32 chars = WideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
-                                           NULL, 0, NULL, NULL);
-    if (!chars)
+    if (wstr == NULL || srcChars == 0)
     {
-        return HRESULT_FROM_GetLastError();
+        return E_INVALIDARG;
     }
+
+    size_t cchSrc = srcChars == (ULONG32)-1 ? u16_strlen(wstr) + 1 : srcChars;
+    ULONG32 chars = (ULONG32)minipal_get_length_utf16_to_utf8((const CHAR16_T*)wstr, cchSrc, 0);
 
     // Make sure the converted string is always terminated.
     if (srcChars != (ULONG32)-1)
@@ -142,10 +141,9 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
         return E_OUTOFMEMORY;
     }
 
-    if (!WideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
-                                mem, chars, NULL, NULL))
+    if (!minipal_convert_utf16_to_utf8((const CHAR16_T*)wstr, cchSrc, mem, chars, 0))
     {
-        HRESULT hr = HRESULT_FROM_GetLastError();
+        HRESULT hr = HRESULT_FROM_WIN32(errno);
         delete [] mem;
         return hr;
     }

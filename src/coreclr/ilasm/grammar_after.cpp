@@ -120,7 +120,7 @@ char* NewStrFromTokenW(_In_reads_(tokLen) void* curTok, size_t tokLen)
     char *nb = new char[(tokLen<<1) + 2];
     if(nb != NULL)
     {
-        tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),nb,(int)(tokLen<<1) + 2,NULL,NULL);
+        tokLen = minipal_convert_utf16_to_utf8((const CHAR16_T*)wcurTok,tokLen >> 1,nb,(tokLen<<1) + 2,0);
         nb[tokLen] = 0;
     }
     return nb;
@@ -143,7 +143,7 @@ char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Ou
     // CodeQL [SM02986] Cast to WCHAR is safe because we bail if curTok is not properly aligned
     WCHAR* wcurTok = (WCHAR*)curTok;
     if(tokLen >= bufSize/2) return NULL;
-    tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),staticBuf,(int)bufSize,NULL,NULL);
+    tokLen = minipal_convert_utf16_to_utf8((const CHAR16_T*)wcurTok,tokLen >> 1,staticBuf,bufSize,0);
     staticBuf[tokLen] = 0;
     return staticBuf;
 }
@@ -990,7 +990,7 @@ Its_An_Id:
                             {
                                 if((wzFile = new WCHAR[tokLen+1]) != NULL)
                                 {
-                                    tokLen = MultiByteToWideChar(g_uCodePage,0,curTok,(int)tokLen,wzFile,(int)tokLen+1);
+                                    tokLen = minipal_convert_utf8_to_utf16(curTok,tokLen,(CHAR16_T*)wzFile,tokLen+1,0);
                                     wzFile[tokLen] = 0;
                                 }
                             }
@@ -1793,15 +1793,6 @@ BinStr* AsmParse::MakeTypeClass(CorElementType kind, mdToken tk)
 /**************************************************************************/
 void PrintANSILine(FILE* pF, _In_ __nullterminated char* sz)
 {
-        WCHAR *wz = &wzUniBuf[0];
-        if(g_uCodePage != CP_ACP)
-        {
-                memset(wz,0,dwUniBuf); // dwUniBuf/2 WCHARs = dwUniBuf bytes
-                MultiByteToWideChar(g_uCodePage,0,sz,-1,wz,(dwUniBuf >> 1)-1);
-
-                memset(sz,0,dwUniBuf);
-                WideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,dwUniBuf-1,NULL,NULL);
-        }
         fprintf(pF,"%s",sz);
 }
 /**************************************************************************/

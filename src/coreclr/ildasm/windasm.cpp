@@ -143,7 +143,7 @@ void GetInputFileFullPath()
     DWORD len = (DWORD) strlen(g_szInputFile) + 16;
     WCHAR* wzArg = new WCHAR[len];
     memset(wzArg, 0, len * sizeof(WCHAR));
-    MultiByteToWideChar(g_uConsoleCP, 0, g_szInputFile, -1, wzArg, len);
+    minipal_convert_utf8_to_utf16(g_szInputFile, strlen(g_szInputFile) + 1, (CHAR16_T*)wzArg, len, 0);
 
     // Get the full path
     len = GetFullPathName(wzArg, MAX_PATH, g_wszFullInputFile, NULL);
@@ -427,7 +427,7 @@ int ParseCmdLineW(int argc, _In_ __nullterminated wchar_t* argv[], _Out_ char** 
     for(int i=1; i < argc; i++)
     {
         memset(szArg,0,2048);
-        WideCharToMultiByte(CP_UTF8,0,argv[i],-1,szArg,2048,NULL,NULL);
+        minipal_convert_utf16_to_utf8((const CHAR16_T*)argv[i],u16_strlen(argv[i])+1,szArg,2048,0);
         if((ret = ProcessOneArg(szArg,ppszObjFileName)) != 0) break;
     }
     VDELETE(szArg);
@@ -508,7 +508,7 @@ int main(int argc, char* argv[])
     }
     if(hConsoleOut != INVALID_HANDLE_VALUE) //First pass: console
     {
-        g_uConsoleCP = GetConsoleOutputCP();
+        g_uConsoleCP = CP_UTF8;
 
         if(iCommandLineParsed)
         {

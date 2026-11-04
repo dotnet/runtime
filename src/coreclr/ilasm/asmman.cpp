@@ -28,7 +28,7 @@ BinStr* BinStrToUnicode(BinStr* pSource, bool Swap)
             if(wz)
             {
                 memset(wz,0,L);
-                MultiByteToWideChar(g_uCodePage,0,pb,-1,wz,l);
+                minipal_convert_utf8_to_utf16(pb,strlen(pb)+1,(CHAR16_T*)wz,l,0);
                 tmp->remove(L-(DWORD)u16_strlen(wz)*sizeof(WCHAR));
 #if BIGENDIAN
                 if (Swap)
@@ -205,7 +205,7 @@ void    AsmMan::EmitFiles()
         if(!tmp->m_fNew) continue;
         tmp->m_fNew = FALSE;
 
-        MultiByteToWideChar(g_uCodePage,0,tmp->szName,-1,wzUniBuf,dwUniBuf);
+        minipal_convert_utf8_to_utf16(tmp->szName,strlen(tmp->szName)+1,(CHAR16_T*)wzUniBuf,dwUniBuf,0);
         if(tmp->pHash==NULL) // if hash not explicitly specified
         {
             if(m_pAssembly      // and assembly is defined
@@ -553,7 +553,7 @@ void    AsmMan::EmitAssemblyRefs()
             dwFlags |= afPublicKey;
         }
         // Convert name to Unicode
-        MultiByteToWideChar(g_uCodePage,0,m_pCurAsmRef->szName,-1,wzUniBuf,dwUniBuf);
+        minipal_convert_utf8_to_utf16(m_pCurAsmRef->szName,strlen(m_pCurAsmRef->szName)+1,(CHAR16_T*)wzUniBuf,dwUniBuf,0);
         hr = m_pAsmEmitter->DefineAssemblyRef(       // S_OK or error.
                     pbPublicKeyOrToken,              // [IN] Public key or token of the assembly.
                     cbPublicKeyOrToken,              // [IN] Count of bytes in the key or token.
@@ -588,7 +588,7 @@ void    AsmMan::EmitAssembly()
     FillAssemblyMetadata(m_pAssembly, &md);
 
     // Convert name to Unicode
-    MultiByteToWideChar(g_uCodePage,0,m_pAssembly->szName,-1,wzUniBuf,dwUniBuf);
+    minipal_convert_utf8_to_utf16(m_pAssembly->szName,strlen(m_pAssembly->szName)+1,(CHAR16_T*)wzUniBuf,dwUniBuf,0);
 
     hr = m_pAsmEmitter->DefineAssembly(              // S_OK or error.
         (const void*)(m_sStrongName.m_pbPublicKey), // [IN] Public key of the assembly.
@@ -857,7 +857,7 @@ HRESULT AsmMan::EmitManifest()
             if(!pComType->m_fNew) continue;
             pComType->m_fNew = FALSE;
 
-            MultiByteToWideChar(g_uCodePage,0,pComType->szName,-1,wzUniBuf,dwUniBuf);
+            minipal_convert_utf8_to_utf16(pComType->szName,strlen(pComType->szName)+1,(CHAR16_T*)wzUniBuf,dwUniBuf,0);
             mdToken     tkImplementation = mdTokenNil;
             if(pComType->tkImpl) tkImplementation = pComType->tkImpl;
             else if(pComType->szFileName)
@@ -930,7 +930,7 @@ HRESULT AsmMan::EmitManifest()
             if(!pManRes->m_fNew) continue;
             pManRes->m_fNew = FALSE;
 
-            MultiByteToWideChar(g_uCodePage,0,pManRes->szAlias,-1,wzUniBuf,dwUniBuf);
+            minipal_convert_utf8_to_utf16(pManRes->szAlias,strlen(pManRes->szAlias)+1,(CHAR16_T*)wzUniBuf,dwUniBuf,0);
             if(pManRes->szAsmRefName)
             {
                 tkImplementation = GetAsmRefTokByName(pManRes->szAsmRefName);
@@ -1007,7 +1007,7 @@ HRESULT AsmMan::EmitManifest()
             }
             if(fOK || ((Assembler*)m_pAssembler)->OnErrGo)
             {
-                MultiByteToWideChar(g_uCodePage,0,pManRes->szName,-1,wzUniBuf,dwUniBuf);
+                minipal_convert_utf8_to_utf16(pManRes->szName,strlen(pManRes->szName)+1,(CHAR16_T*)wzUniBuf,dwUniBuf,0);
                 hr = m_pAsmEmitter->DefineManifestResource(         // S_OK or error.
                         (LPCWSTR)wzUniBuf,                          // [IN] Name of the resource.
                         tkImplementation,                           // [IN] mdFile or mdAssemblyRef that provides the resource.

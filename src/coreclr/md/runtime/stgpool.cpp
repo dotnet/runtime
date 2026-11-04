@@ -986,17 +986,9 @@ StgStringPool::AddStringW(
         return (S_OK);
     }
 
-    // How many bytes will be required in the heap?
-    iLen = ::WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        szString,
-        -1,     // null-terminated string
-        NULL,
-        0,
-        NULL,
-        NULL);
-    // WCTMB includes trailing 0 if (when passing parameter #4 (length) -1.
+    // How many bytes will be required in the heap, including the trailing 0?
+    size_t cchString = u16_strlen(szString) + 1;
+    iLen = (ULONG)minipal_get_length_utf16_to_utf8((const CHAR16_T*)szString, cchString, 0);
 
     // Check for room.
     if (iLen > GetCbSegAvailable())
@@ -1007,17 +999,9 @@ StgStringPool::AddStringW(
     pData = reinterpret_cast<LPSTR>(GetNextLocation());
 
     // Convert the data in place to the correct location.
-    iLen = ::WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        szString,
-        -1,
-        pData,
-        GetCbSegAvailable(),
-        NULL,
-        NULL);
+    iLen = (ULONG)minipal_convert_utf16_to_utf8((const CHAR16_T*)szString, cchString, pData, GetCbSegAvailable(), 0);
     if (iLen == 0)
-        return (BadError(HRESULT_FROM_NT(GetLastError())));
+        return (BadError(HRESULT_FROM_NT(errno)));
 
     // If the hash table is to be kept built (default).
     if (m_bHash)

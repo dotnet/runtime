@@ -373,7 +373,7 @@ mdToken Assembler::MakeTypeRef(mdToken tkResScope, LPCUTF8 pszFullClassName)
         if(*pc)
         {
             // convert name to widechar
-            MultiByteToWideChar(g_uCodePage,0,pc,-1,wzUniBuf,dwUniBuf);
+            minipal_convert_utf8_to_utf16(pc,strlen(pc)+1,(CHAR16_T*)wzUniBuf,dwUniBuf,0);
             if(FAILED(m_pEmitter->DefineTypeRefByName(tkResScope, wzUniBuf, &tkRet))) tkRet = mdTokenNil;
         }
     }
@@ -910,7 +910,7 @@ BOOL Assembler::EmitField(FieldDescriptor* pFD)
     cSig = pFD->m_pbsSig->length();
     mySig = (COR_SIGNATURE*)(pFD->m_pbsSig->ptr());
 
-    MultiByteToWideChar(g_uCodePage,0,pFD->m_szName,-1,wzFieldName,dwUniBuf); //int)cFieldNameLength);
+    minipal_convert_utf8_to_utf16(pFD->m_szName,strlen(pFD->m_szName)+1,(CHAR16_T*)wzFieldName,dwUniBuf,0); //int)cFieldNameLength);
     if(IsFdPrivateScope(pFD->m_dwAttr))
     {
         WCHAR* p = (WCHAR*)u16_strstr(wzFieldName,W("$PST04"));
@@ -1368,7 +1368,7 @@ void Assembler::EmitDataString(BinStr* str)
 
         if(UnicodeString)
         {
-            MultiByteToWideChar(g_uCodePage,0,pb,-1,UnicodeString,DataLen);
+            minipal_convert_utf8_to_utf16(pb,strlen(pb)+1,(CHAR16_T*)UnicodeString,DataLen,0);
             EmitData(UnicodeString,DataLen*sizeof(WCHAR));
             if(DataLen >= dwUniBuf) delete [] UnicodeString;
         }
@@ -1777,7 +1777,7 @@ mdToken Assembler::MakeMemberRef(mdToken cr, _In_ __nullterminated char* pszMemb
     }
     else
     {
-        MultiByteToWideChar(g_uCodePage,0,pszMemberName,-1,wzUniBuf,dwUniBuf);
+        minipal_convert_utf8_to_utf16(pszMemberName,strlen(pszMemberName)+1,(CHAR16_T*)wzUniBuf,dwUniBuf,0);
 
         if(cr == mdTokenNil) cr = mdTypeRefNil;
         if(TypeFromToken(cr) == mdtAssemblyRef)
@@ -2014,7 +2014,7 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
         literal->appendInt8(0);
         pb = literal->ptr();
         // convert string to Unicode
-        L = UnicodeString ? MultiByteToWideChar(g_uCodePage,0,(char*)pb,-1,UnicodeString,DataLen+1) : 0;
+        L = UnicodeString ? (DWORD)minipal_convert_utf8_to_utf16((char*)pb,strlen((char*)pb)+1,(CHAR16_T*)UnicodeString,DataLen+1,0) : 0;
         if(L == 0)
         {
             const char* sz=NULL;
@@ -2412,7 +2412,7 @@ void Assembler::SetPdbFileName(_In_ __nullterminated char* szName)
         if (*szName)
         {
             strcpy_s(m_szPdbFileName, MAX_FILENAME_LENGTH * 3 + 1, szName);
-            MultiByteToWideChar(g_uCodePage, 0, szName, -1, m_wzPdbFileName, MAX_FILENAME_LENGTH);
+            minipal_convert_utf8_to_utf16(szName, strlen(szName) + 1, (CHAR16_T*)m_wzPdbFileName, MAX_FILENAME_LENGTH, 0);
         }
     }
 }

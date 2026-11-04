@@ -341,13 +341,14 @@ LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
 #endif
 
     // Now we have a working buffer with a bunch of interesting stuff.  Time
-    // to convert it back to ansi for the imagehlp api's.  Allocate the buffer
-    // 2x bigger to handle worst case for MBCS.
-    ch = ::WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, rcBuff, -1, 0, 0, 0, 0);
+    // to convert it to UTF-8 for the imagehlp api's.
+    LPCWSTR wszBuff = rcBuff.GetUnicode();
+    size_t cchBuff = u16_strlen(wszBuff) + 1;
+    ch = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)wszBuff, cchBuff, 0);
     LPSTR szRtn = (LPSTR) qb.AllocNoThrow(ch + 1);
     if (!szRtn)
         return NULL;
-    WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, rcBuff, -1, szRtn, ch+1, 0, 0);
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)wszBuff, cchBuff, szRtn, ch + 1, 0);
     return (szRtn);
 }
 LPSTR FillSymbolSearchPath(CQuickBytes &qb)

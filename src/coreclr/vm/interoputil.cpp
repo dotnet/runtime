@@ -621,7 +621,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     // Get the name, and determine its length.
     pszName = pAssembly->GetSimpleName();
     cbName=(ULONG)strlen(pszName);
-    cchName = MultiByteToWideChar(CP_ACP,0, pszName,cbName+1, 0,0);
+    cchName = (ULONG)minipal_get_length_utf8_to_utf16(pszName, cbName+1, 0);
 
     // See if there is a public key.
     EX_TRY
@@ -686,7 +686,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     IfFailGo(rDef.ReSizeNoThrow(cbCur + cchName*sizeof(WCHAR) + sizeof(szTypeLibKeyName)-1 + cbSN + sizeof(ver)+sizeof(USHORT)));
 
     // Put it all together.  Name first.
-    MultiByteToWideChar(CP_ACP,0, pszName,cbName+1, (LPWSTR)(&rDef[cbCur]),cchName);
+    minipal_convert_utf8_to_utf16(pszName, cbName+1, (CHAR16_T*)(&rDef[cbCur]), cchName, 0);
     pName = (LPWSTR)(&rDef[cbCur]);
     for (pch=pName; *pch; ++pch)
         if (*pch == '.' || *pch == ' ')
