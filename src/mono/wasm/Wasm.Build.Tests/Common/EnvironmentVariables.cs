@@ -19,6 +19,7 @@ namespace Wasm.Build.Tests
         internal static readonly string? ChromePathForTests        = Environment.GetEnvironmentVariable("CHROME_PATH_FOR_TESTS");
         internal static readonly string? FirefoxPathForTests       = Environment.GetEnvironmentVariable("FIREFOX_PATH_FOR_TESTS");
         internal static readonly string? V8PathForTests            = Environment.GetEnvironmentVariable("V8_PATH_FOR_TESTS");
+        internal static readonly string? BlazorTemplateTargetFramework = Environment.GetEnvironmentVariable("WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK");
         internal static readonly bool    IsRunningOnCI             = Environment.GetEnvironmentVariable("IS_RUNNING_ON_CI") is "true";
         internal static readonly bool    ShowBuildOutput           = IsRunningOnCI || Environment.GetEnvironmentVariable("SHOW_BUILD_OUTPUT") is not null;
         internal static readonly bool UseWebcil                    = Environment.GetEnvironmentVariable("USE_WEBCIL_FOR_TESTS") is "true";
@@ -28,13 +29,6 @@ namespace Wasm.Build.Tests
         internal static readonly string? WasiSdkPath               = Environment.GetEnvironmentVariable("WASI_SDK_PATH");
         internal static readonly bool WorkloadsTestPreviousVersions = Environment.GetEnvironmentVariable("WORKLOADS_TEST_PREVIOUS_VERSIONS") is "true";
         internal static readonly string? RuntimeFlavor = Environment.GetEnvironmentVariable("RUNTIME_FLAVOR_FOR_TESTS");
-        internal static readonly string? RepositoryEngineeringDir      = Environment.GetEnvironmentVariable("REPOSITORY_ENGINEERING_DIR");
-        internal static readonly string? BrowserBuildTargetsDir        = Environment.GetEnvironmentVariable("BROWSER_BUILD_TARGETS_DIR");
-        internal static readonly string? WasmAppBuilderTasksAssemblyPath = Environment.GetEnvironmentVariable("WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH");
-        internal static readonly string? EmsdkPath                     = Environment.GetEnvironmentVariable("EMSDK_PATH");
-
-        // WASM-TODO https://github.com/dotnet/runtime/issues/128362
-        internal static readonly string? MinipalIncludeDir             = Environment.GetEnvironmentVariable("MINIPAL_INCLUDE_DIR");
-        internal static readonly string? CoreCLRVmWasmIncludeDir       = Environment.GetEnvironmentVariable("CORECLR_VM_WASM_INCLUDE_DIR");
+        internal static readonly string? BaseDir = Environment.GetEnvironmentVariable("BASE_DIR");
     }
 }

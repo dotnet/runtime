@@ -120,4 +120,7 @@
   <data name="CacheEntryHasEmptySize" xml:space="preserve">
     <value>Cache entry must specify a value for {0} when {1} is set.</value>
   </data>
+  <data name="CacheEntrySetAfterDispose" xml:space="preserve">
+    <value>The value of {0} cannot be changed after the cache entry has been disposed. Set {0} before disposing the entry.</value>
+  </data>
 </root>

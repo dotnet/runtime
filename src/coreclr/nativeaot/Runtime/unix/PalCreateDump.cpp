@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <sal.h>
 #include "config.h"
+#include "PalCreateDump.h"
 #include <pthread.h>
 #include <string.h>
 #include <assert.h>
@@ -15,12 +16,13 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <signal.h>
 #if HAVE_PRCTL_H
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #endif
+#ifndef HOST_WASM
 #include <sys/wait.h>
+#endif
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -50,14 +52,13 @@
 #include <minipal/thread.h>
 #include <generatedumpflags.h>
 
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 
 // Crash dump generating program arguments. MAX_ARGV_ENTRIES is the max number
 // of entries if every createdump option/argument is passed.
 #define MAX_ARGV_ENTRIES 32 
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 char* g_szCreateDumpPath = nullptr;
-char* g_ppidarg  = nullptr;
 
 const size_t MaxUnsigned32BitDecString = STRING_LENGTH("4294967295");
 const size_t MaxUnsigned64BitDecString = STRING_LENGTH("18446744073709551615");
@@ -128,7 +129,7 @@ BuildCreateDumpCommandLine(
     int dumpType,
     uint32_t flags)
 {
-    if (g_szCreateDumpPath == nullptr || g_ppidarg == nullptr)
+    if (g_szCreateDumpPath == nullptr)
     {
         return false;
     }
@@ -187,7 +188,6 @@ BuildCreateDumpCommandLine(
     }
 
     argv[argc++] = "--nativeaot";
-    argv[argc++] = g_ppidarg;
     argv[argc++] = nullptr;
 
     assert(argc < MAX_ARGV_ENTRIES);
@@ -256,7 +256,7 @@ CreateCrashDump(
         {
             fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
             close(child_write_pipe);
-            exit(-1);
+            _exit(EXIT_FAILURE);
         }
 
         // Only dup the child's stderr if there is error buffer
@@ -275,7 +275,7 @@ CreateCrashDump(
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execv(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
             }
-            exit(-1);
+            _exit(EXIT_FAILURE);
         }
     }
     else
@@ -347,7 +347,7 @@ CreateCrashDump(
     return true;
 }
 
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 
 // Helper function to prevent compiler from optimizing away a variable
 #if defined(__llvm__)
@@ -382,7 +382,7 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void*
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
 
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
     // If enabled, launch the create minidump utility and wait until it completes
     if (g_argvCreateDump[0] != nullptr)
     {
@@ -468,7 +468,7 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void*
         free(signalAddressArg);
         free(exceptionRecordArg);
     }
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 }
 
 void
@@ -512,7 +512,7 @@ PalGenerateCoreDump(
     char* errorMessageBuffer,
     int cbErrorMessageBuffer)
 {
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
     const char* argvCreateDump[MAX_ARGV_ENTRIES];
     if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
@@ -530,7 +530,7 @@ PalGenerateCoreDump(
     return result;
 #else
     return false;
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 }
 
 /*++
@@ -549,7 +549,7 @@ Return
 bool
 PalCreateDumpInitialize()
 {
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
     bool enabled = false;
     RhConfig::Environment::TryGetBooleanValue("DbgEnableMiniDump", &enabled);
     if (enabled)
@@ -654,19 +654,12 @@ PalCreateDumpInitialize()
 
         g_szCreateDumpPath = program;
 
-        // Format the app pid for the createdump command line
-        g_ppidarg = FormatInt(getpid());
-        if (g_ppidarg == nullptr)
-        {
-            return false;
-        }
-
         if (!BuildCreateDumpCommandLine(g_argvCreateDump, dumpName, logFilePath, dumpType, flags))
         {
             return false;
         }
     }
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 
     return true;
 }

@@ -2690,9 +2690,10 @@ interface ICorDebugProcess : ICorDebugController
     HRESULT GetID([out] DWORD *pdwProcessId);
 
     /*
-     * GetHandle returns a handle to the process. This handle is owned
-     * by the debugging API; the debugger should duplicate it before
-     * using it.
+     * GetHandle returns a handle to the process on Windows. This handle
+     * is owned by the debugging API; the debugger should duplicate it
+     * before using it. On Unix, this method returns an opaque sentinel
+     * that must not be used as a native process handle.
      */
 
     HRESULT GetHandle([out] HPROCESS *phProcessHandle);

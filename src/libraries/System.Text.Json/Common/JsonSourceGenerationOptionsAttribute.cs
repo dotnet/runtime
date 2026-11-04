@@ -191,6 +191,13 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.InferClosedTypePolymorphism"/> when set.
         /// </summary>
+        /// <remarks>
+        /// If a type declares one or more <see cref="JsonDerivedTypeAttribute"/> registrations, inference is
+        /// skipped for that type and only the explicitly registered derived types are used. Polymorphism
+        /// configuration declared on derived types applies to their respective contracts and does not affect
+        /// inference for the base type. Closed derived types are expanded recursively and only terminal derived
+        /// types are registered.
+        /// </remarks>
         public bool InferClosedTypePolymorphism { get; set; }
     }
 }

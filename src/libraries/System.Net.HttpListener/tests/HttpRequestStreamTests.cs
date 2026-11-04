@@ -701,5 +701,112 @@ namespace System.Net.Tests
                 Assert.Throws<HttpListenerException>(() => context.Request.InputStream.Read(buffer, 0, buffer.Length));
             }
         }
+
+        // http.sys tolerates whitespace around the chunk size and delivers the body, so this
+        // is asserting the behavior of the managed implementation only. Gating on the
+        // implementation rather than the platform keeps it running on Windows when the
+        // managed implementation is force-enabled.
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsManagedImplementation))]
+        [InlineData("5 ")]
+        [InlineData(" 5")]
+        [InlineData(" 5 ")]
+        [InlineData("5\t")]
+        [InlineData("\t5")]
+        [InlineData("5 ;foo=bar")]
+        public async Task Read_ChunkSizeWithWhitespace_ThrowsHttpListenerException(string chunkSizeLine)
+        {
+            using (Socket client = _factory.GetConnectedSocket())
+            {
+                Uri listeningUri = new Uri(_factory.ListeningUrl);
+                string request =
+                    $"POST {listeningUri.PathAndQuery} HTTP/1.1\r\n" +
+                    $"Host: {listeningUri.Host}\r\n" +
+                    "Transfer-Encoding: chunked\r\n" +
+                    "\r\n" +
+                    $"{chunkSizeLine}\r\n" +
+                    "Hello\r\n" +
+                    "0\r\n" +
+                    "\r\n";
+
+                await client.SendAsync(Encoding.ASCII.GetBytes(request));
+                HttpListenerContext context = await _listener.GetContextAsync();
+
+                byte[] buffer = new byte[5];
+                await Assert.ThrowsAsync<HttpListenerException>(() => ReadLengthAsync(context.Request.InputStream, buffer, 0, buffer.Length));
+            }
+        }
+
+        // http.sys rejects this request with a 400 before a context is ever handed out, so there is
+        // no request stream to read from; this asserts the behavior of the managed implementation.
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsManagedImplementation))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Read_ChunkSizeWithBareCR_ThrowsHttpListenerException(bool sendCRSeparately)
+        {
+            using (Socket client = _factory.GetConnectedSocket())
+            {
+                Uri listeningUri = new Uri(_factory.ListeningUrl);
+
+                // The CR in "1\r0" isn't followed by a LF, so this must not be read as a 0x10 byte chunk.
+                string beforeCR =
+                    $"POST {listeningUri.PathAndQuery} HTTP/1.1\r\n" +
+                    $"Host: {listeningUri.Host}\r\n" +
+                    "Transfer-Encoding: chunked\r\n" +
+                    "\r\n" +
+                    "1\r";
+                string afterCR =
+                    "0\n" +
+                    "0123456789ABCDEF\r\n" +
+                    "0\r\n" +
+                    "\r\n";
+
+                byte[] buffer = new byte[16];
+                Task<int> read;
+                if (sendCRSeparately)
+                {
+                    // Send the byte after the CR only once the read is pending, so the CR and that
+                    // byte reach the chunk decoder in separate writes.
+                    await client.SendAsync(Encoding.ASCII.GetBytes(beforeCR));
+                    HttpListenerContext context = await _listener.GetContextAsync();
+                    read = ReadLengthAsync(context.Request.InputStream, buffer, 0, buffer.Length);
+                    await client.SendAsync(Encoding.ASCII.GetBytes(afterCR));
+                }
+                else
+                {
+                    await client.SendAsync(Encoding.ASCII.GetBytes(beforeCR + afterCR));
+                    HttpListenerContext context = await _listener.GetContextAsync();
+                    read = ReadLengthAsync(context.Request.InputStream, buffer, 0, buffer.Length);
+                }
+
+                await Assert.ThrowsAsync<HttpListenerException>(() => read);
+            }
+        }
+
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsManagedImplementation))]
+        [InlineData("80000000")]
+        [InlineData("FFFFFFFF")]
+        [InlineData("80000000;foo=bar")]
+        public async Task Read_ChunkSizeOverflow_ThrowsHttpListenerException(string chunkSizeLine)
+        {
+            using (Socket client = _factory.GetConnectedSocket())
+            {
+                Uri listeningUri = new Uri(_factory.ListeningUrl);
+                string request =
+                    $"POST {listeningUri.PathAndQuery} HTTP/1.1\r\n" +
+                    $"Host: {listeningUri.Host}\r\n" +
+                    "Transfer-Encoding: chunked\r\n" +
+                    "\r\n" +
+                    $"{chunkSizeLine}\r\n" +
+                    "Hello\r\n" +
+                    "0\r\n" +
+                    "\r\n";
+
+                await client.SendAsync(Encoding.ASCII.GetBytes(request));
+                HttpListenerContext context = await _listener.GetContextAsync();
+
+                byte[] buffer = new byte[5];
+                await Assert.ThrowsAsync<HttpListenerException>(() => ReadLengthAsync(context.Request.InputStream, buffer, 0, buffer.Length));
+            }
+        }
     }
 }

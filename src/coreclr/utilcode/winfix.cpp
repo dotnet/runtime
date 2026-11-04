@@ -68,7 +68,6 @@ static volatile ULONG g_dwMaxDBCSCharByteSize = 0;
 DWORD GetMaxDBCSCharByteSize()
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
     if (g_dwMaxDBCSCharByteSize == 0)

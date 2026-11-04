@@ -142,19 +142,7 @@ namespace System.Text.Json.Nodes
         {
             ArgumentNullException.ThrowIfNull(propertyName);
 
-#if NET9_0
-            index = Dictionary.IndexOf(propertyName);
-            if (index < 0)
-            {
-                jsonNode = null;
-                return false;
-            }
-
-            jsonNode = Dictionary.GetAt(index).Value;
-            return true;
-#else
             return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
-#endif
         }
 
         /// <inheritdoc/>
@@ -287,17 +275,8 @@ namespace System.Text.Json.Nodes
 
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 
-            if (
-#if NET9_0
-                !dict.TryAdd(propertyName, value)
-#else
-                !dict.TryAdd(propertyName, value, out int index)
-#endif
-                )
+            if (!dict.TryAdd(propertyName, value, out int index))
             {
-#if NET9_0
-                int index = dict.IndexOf(propertyName);
-#endif
                 Debug.Assert(index >= 0);
                 JsonNode? replacedValue = dict.GetAt(index).Value;
 

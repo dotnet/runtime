@@ -426,8 +426,11 @@ INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UMINV, aarch64_neon_uminv, Arm64, Across, 
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FMAXV, aarch64_neon_fmaxv, Arm64, Across, V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FMINV, aarch64_neon_fminv, Arm64, Across, V64 | V128 | R4 | R8)
 
-INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SADDLP, aarch64_neon_saddlp, Arm64, Widen, V64 | V128 | I1 | I2 | I4 | I8)
-INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UADDLP, aarch64_neon_uaddlp, Arm64, Widen, V64 | V128 | I1 | I2 | I4 | I8)
+/* The element width here is that of the (widened) result, so I1 is not a valid
+ * combination: the narrowest result element width is 16 bits. Listing it would
+ * also make add_intrinsic () index intrin_types out of bounds. */
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SADDLP, aarch64_neon_saddlp, Arm64, Widen, V64 | V128 | I2 | I4 | I8)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UADDLP, aarch64_neon_uaddlp, Arm64, Widen, V64 | V128 | I2 | I4 | I8)
 
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_FCVTXN, aarch64_neon_fcvtxn, Arm64, v64_r4_t, v128_r8_t)
 

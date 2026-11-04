@@ -82,7 +82,6 @@ class X86NearJump : public InstructionFormat
         {
             STATIC_CONTRACT_NOTHROW;
             STATIC_CONTRACT_GC_NOTRIGGER;
-            STATIC_CONTRACT_FORBID_FAULT;
 
 
             if (fExternal)
@@ -133,7 +132,6 @@ static BYTE gX86NearJump[sizeof(X86NearJump)];
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 

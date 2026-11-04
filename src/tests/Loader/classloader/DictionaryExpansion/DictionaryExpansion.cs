@@ -279,9 +279,8 @@ public class Test_DictionaryExpansion
             Assert.Equal(GFunc<Test_DictionaryExpansion>(i).ToString(), i == 0 ? "Test_DictionaryExpansion" : $"TestType{i}`1[Test_DictionaryExpansion]");
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/154", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
-    [Fact]
+    [ConditionalFact(typeof(Utilities), nameof(Utilities.IsReflectionEmitSupported))]
     public static void TestEntryPoint()
     {
         GenBase deriv4 = new GenDerived4();

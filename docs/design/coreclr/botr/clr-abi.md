@@ -128,11 +128,20 @@ call(["this" pointer] [return buffer pointer] [generics context] [continuation] 
 call(["this" pointer] [return buffer pointer] [userargs] [continuation] [generics context])   // x86
 ```
 
-## AMD64-only: by-value value types
+## By-value value types passed by reference
 
-Just like native, AMD64 has implicit-byrefs. Any structure (value type in IL parlance) that is not 1, 2, 4, or 8 bytes in size (i.e., 3, 5, 6, 7, or >= 9 bytes in size) that is declared to be passed by value, is instead passed by reference. For JIT generated code, it follows the native ABI where the passed-in reference is a pointer to a compiler generated temp local on the stack. However, there are some cases within remoting or reflection where apparently stackalloc is too hard, and so they pass in pointers within the GC heap, thus the JITed code must report these implicit byref parameters as interior pointers (BYREFs in JIT parlance), in case the callee is one of these reflection paths. Similarly, all writes must use checked write barriers.
+Structures (value types in IL parlance) that are declared to be passed by value are, above a certain size, passed by reference to a caller-allocated shadow copy instead. Just like native, the exact rule is architecture specific:
 
-The AMD64 native calling conventions (Windows 64 and System V) require return buffer address to be returned by callee in RAX. JIT also follows this rule.
+| Architecture | Structures passed by implicit reference |
+| --- | --- |
+| Windows AMD64 | Not 1, 2, 4, or 8 bytes in size (i.e., 3, 5, 6, 7, or >= 9 bytes) |
+| ARM64 | Larger than 16 bytes, except HFAs/HVAs (unless passed as varargs) |
+| LoongArch64, RISC-V | Larger than 16 bytes |
+| WebAssembly | Non-unwrappable structures; see [Web Assembly ABI](#web-assembly-abi-r2r-and-jit) |
+
+System V AMD64, x86 and ARM32 do not use this convention. For JIT generated code, it follows the native ABI where the passed-in reference is a pointer to a compiler generated temp local on the stack.
+
+Since .NET 12, implicit-byref argument storage must be outside the GC heap on all architectures that use this convention. Runtime callers may use explicitly GC-protected native memory instead of the stack. The caller is responsible for making a writable copy as required by by-value semantics and for reporting any GC references in that copy. Callees may omit write barriers when modifying the argument and need not report implicit-byref argument pointers to the GC. This does not apply to explicit byref parameters or the `this` pointer of a value type, and does not remove aliasing caused by taking the argument's address within the callee.
 
 ## RISC-V only: structs passed/returned according to hardware floating-point calling convention
 
@@ -142,15 +151,18 @@ Passing/returning structs according to hardware floating-point calling conventio
 
 Since .NET 10, return buffers must always be allocated on the stack by the caller. After the call, the caller is responsible for copying the return buffer to the final destination using write barriers if necessary. The JIT can assume that the return buffer is always on the stack and may optimize accordingly, such as by omitting write barriers when writing GC pointers to the return buffer. In addition, the buffer is allowed to be used for temporary storage within the method since its content must not be aliased or cross-thread visible.
 
+AMD64-only: The AMD64 native calling conventions (Windows 64 and System V) require the return buffer address to be returned by the callee in RAX. The JIT also follows this rule.
+
 ARM64-only: When a method returns a structure that is larger than 16 bytes the caller reserves a return buffer of sufficient size and alignment to hold the result. The address of the buffer is passed as an argument to the method in `R8` (defined in the JIT as `REG_ARG_RET_BUFF`). The callee isn't required to preserve the value stored in `R8`.
 
 ## Hidden parameters
 
 *Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
 
-*Calli Pinvoke* - The VM wants the address of the PInvoke in (AMD64) `R10` / (ARM) `R12` / (ARM64) `R14` (In the JIT: `REG_PINVOKE_TARGET_PARAM`), and the signature (the pinvoke cookie) in (AMD64) `R11` / (ARM) `R4` / (ARM64) `R15` (in the JIT: `REG_PINVOKE_COOKIE_PARAM`).
-
-*Normal PInvoke* - The VM shares IL stubs based on signatures, but wants the right method to show up in call stack and exceptions, so the MethodDesc for the exact PInvoke is passed in the (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` (in the JIT: `REG_SECRET_STUB_PARAM`). Then in the IL stub, when the JIT gets `CORJIT_FLG_PUBLISH_SECRET_PARAM`, it must move the register into a compiler temp. The value is returned for the intrinsic `NI_System_StubHelpers_GetStubContext`.
+*Secret stub argument* - An explicit `native int` parameter with a required `System.Runtime.CompilerServices.SecretStubArgument` modifier tells the JIT to bind the parameter to (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` / (LoongArch64, RISC-V) `T2` (in the JIT: `REG_SECRET_STUB_PARAM`). Interop IL stubs use this parameter for the following values:
+- Unmanaged CALLI stubs pass the unmanaged target address.
+- Shared vararg PInvoke stubs pass the MethodDesc for the exact PInvoke.
+- Native-to-managed method and delegate stubs pass the `UMEntryThunkData` used to recover the managed target or delegate.
 
 ## Small primitive returns
 
@@ -775,11 +787,17 @@ For a main R2R method, the fixed frame begins at `$fp`. If the method does not u
 
 | Offset from `$fp` | Contents |
 |---:|---|
-| `0` | R2R function table entry index for the main method body |
+| `0` | Frame identity |
 | `TARGET_POINTER_SIZE` | Function-local virtual IP divided by 2 |
 | `2 * TARGET_POINTER_SIZE` and above | Other frame locals and spills |
 
-The main method prolog stores the function table entry index at `$fp[0]`. The JIT updates the virtual IP slot at block boundaries that can be observed by GC or EH. For the main method this update is a store to the special virtual-IP local, which is allocated at `$fp + TARGET_POINTER_SIZE`.
+An ordinary managed method stores its incoming portable entrypoint (PEP) at `$fp[0]`. Managed JIT helper methods instead store a constant negative odd identity, `-(2 * runtimeFunctionIndex + 1)`, because helper callers can pass zero for the PEP argument. The index is the helper's entry in the runtime-functions table of the first R2R image, which must represent CoreLib (including a composite image containing CoreLib). The object writer resolves this constant after runtime-function layout and encodes it using minimal signed LEB128.
+
+Reverse-P/Invoke methods have no PEP argument. They store a positive odd identity, `2 * functionTableIndex + 1`, using their runtime function-table index. Registered function-table indices must be nonzero and below `2^30`, so these identities remain positive and do not overlap the negative helper identities or the sentinel `1`.
+
+PEPs are pointer-aligned. Funclets store their pointer-aligned establishing frame pointer plus `2`, reserving low bits `10`. This distinguishes them from PEPs (low bits `00`) and odd index identities without constraining the linear-memory address range. Stack processing recognizes the exact sentinel values `0` and `1` before decoding identities.
+
+The JIT updates the virtual IP slot at block boundaries that can be observed by GC or EH. For the main method this update is a store to the special virtual-IP local, which is allocated at `$fp + TARGET_POINTER_SIZE`.
 
 Frames with `localloc` use the same fixed-frame unwind data. When a nonzero `localloc` moves `$sp` below `$fp`, the JIT reserves one aligned slot below the allocation and writes `0` at `$sp[0]` and the fixed frame pointer at `$sp + TARGET_POINTER_SIZE`.
 
@@ -788,7 +806,7 @@ Frames with `localloc` use the same fixed-frame unwind data. When a nonzero `loc
 | caller frame | caller's frame |
 | `$fp + 2 * TARGET_POINTER_SIZE` and above | other fixed frame locals and spills |
 | `$fp + TARGET_POINTER_SIZE` | function-local virtual IP divided by 2 |
-| `$fp` | R2R function table entry index |
+| `$fp` | Frame identity |
 | below `$fp` | dynamic `localloc` allocation |
 | `$sp + TARGET_POINTER_SIZE` | saved `$fp` |
 | `$sp` | `0` marker |
@@ -797,10 +815,12 @@ Funclets are separate Wasm functions. A funclet is called with the current manag
 
 | Offset from funclet `$sp` after prolog | Contents |
 |---:|---|
-| `0` | R2R function table entry index for the funclet |
+| `0` | Establishing frame pointer plus `2` |
 | `TARGET_POINTER_SIZE` | Function-local virtual IP divided by 2 |
 
-The funclet updates its virtual IP slot by storing through its current `$sp`, not through the parent `$fp`. The stored virtual IP value is still relative to the controlling main method's virtual-IP base; when the frame's function table index names a funclet, the runtime uses the controlling main method's runtime-function entry as the virtual-IP base before adding the stored offset. A frame whose first word is `0` means the current `$sp` is not the R2R frame base, and the next word holds the saved `$fp`. A frame whose first word is `TERMINATE_R2R_STACK_WALK` terminates R2R stack walking.
+The funclet updates its virtual IP slot by storing through its current `$sp`, not through the parent `$fp`. The stored virtual IP value is still relative to the controlling main method's virtual-IP base. Stack processing follows the tagged establishing frame pointer and resolves that frame's identity before adding the physical funclet frame's local offset. It also recovers the logical method frame pointer directly from this tag, without unwinding through the funclet's callers. The funclet prolog does not load the establishing frame's identity or receive an additional PEP parameter.
+
+A frame whose first word is `0` means the current `$sp` is not the R2R frame base, and the next word holds the saved `$fp`. A frame whose first word is `TERMINATE_R2R_STACK_WALK` terminates R2R stack walking.
 
 One step of R2R stack walking is:
 
@@ -828,13 +848,22 @@ bool WalkOneR2RFrame(uint32_t currentSp, out uint32_t nextSp, out uint32_t curre
     if (frameBase == 0)
         return false;
 
-    uint32_t functionIndex = read32(frameBase);
+    uint32_t identity = read32(frameBase);
     uint32_t localVirtualIP = 2 * read32(frameBase + TARGET_POINTER_SIZE);
 
-    RuntimeFunction function = RuntimeFunctionFor(functionIndex);
-    RuntimeFunction baseFunction = function.IsFunclet ? ControllingMainFunction(function) : function;
-    currentVirtualIP = baseFunction.VirtualIPBase + localVirtualIP;
+    while ((identity & 3) == 2)
+        identity = read32(identity - 2);
 
+    uint32_t methodVirtualIP;
+    if ((identity & 1) == 0)
+        methodVirtualIP = VirtualIPForFunctionTableIndex(ActualCodeForPEP(identity));
+    else if ((int32_t)identity < 0)
+        methodVirtualIP = CoreLibRuntimeFunction((~identity) >> 1).VirtualIPBase;
+    else
+        methodVirtualIP = VirtualIPForFunctionTableIndex(identity >> 1);
+
+    currentVirtualIP = methodVirtualIP + localVirtualIP;
+    RuntimeFunction function = RuntimeFunctionForVirtualIP(currentVirtualIP);
     uint32_t frameSize = ReadFrameSizeFromWasmUnwindBlob(function);
     nextSp = frameBase + frameSize;
     return true;

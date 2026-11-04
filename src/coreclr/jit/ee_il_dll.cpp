@@ -505,34 +505,6 @@ unsigned Compiler::eeGetArgSizeAlignment(var_types type, bool isFloatHfa)
 }
 
 //------------------------------------------------------------------------
-// eeConvertToLookup: Convert a tuple of "{ value, pValue }" to "CORINFO_CONST_LOOKUP".
-//
-// Arguments:
-//    value  - The direct value (IAT_VALUE)
-//    pValue - The indirect value (IAT_PVALUE)
-//
-// Return Value:
-//    The lookup.
-//
-CORINFO_CONST_LOOKUP Compiler::eeConvertToLookup(void* value, void* pValue)
-{
-    CORINFO_CONST_LOOKUP lookup;
-    if (value != nullptr)
-    {
-        assert(pValue == nullptr);
-        lookup.accessType = IAT_VALUE;
-        lookup.addr       = value;
-    }
-    else
-    {
-        assert(pValue != nullptr);
-        lookup.accessType = IAT_PVALUE;
-        lookup.addr       = pValue;
-    }
-    return lookup;
-}
-
-//------------------------------------------------------------------------
 // eeGetArrayDataOffset: Gets the offset of a SDArray's first element
 //
 // Return Value:
@@ -894,7 +866,11 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         case CodeGenInterface::VLT_REG:
         case CodeGenInterface::VLT_REG_BYREF:
+#if defined(TARGET_WASM)
+            printf("$%u", (unsigned)var->loc.vlReg.vlrReg - ICorDebugInfo::WASM_LOCAL_REGNUM_BASE);
+#else
             printf("%s", getRegName(var->loc.vlReg.vlrReg));
+#endif
             if (var->loc.vlType == (ICorDebugInfo::VarLocType)CodeGenInterface::VLT_REG_BYREF)
             {
                 printf(" byref");

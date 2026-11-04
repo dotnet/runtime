@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
-**
 ** Header:  AppDomain.cpp
 **
-
-**
 ** Purpose: Implements AppDomain (loader domain) architecture
-**
-**
 ===========================================================*/
+
 #ifndef _APPDOMAIN_H
 #define _APPDOMAIN_H
 
@@ -212,7 +208,6 @@ public:
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         PRECONDITION(HasLock());
 
@@ -879,22 +874,6 @@ protected:
             _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
             *pAssemblyHolder = dac_cast<PTR_Assembly>(m_array.Get(index));
         }
-        // Doesn't lock the assembly list (caller has to hold the lock already).
-        // Doesn't AddRef the returned assembly (if collectible).
-        Assembly * Get_UnlockedNoReference(DWORD index)
-        {
-            CONTRACTL {
-                NOTHROW;
-                GC_NOTRIGGER;
-                MODE_ANY;
-                SUPPORTS_DAC;
-            } CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-            _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
-#endif
-            return dac_cast<PTR_Assembly>(m_array.Get(index));
-        }
 
 #ifndef DACCESS_COMPILE
         void Set(AppDomain * pAppDomain, DWORD index, Assembly * pAssembly)
@@ -943,7 +922,7 @@ protected:
         }
 #endif // DACCESS_COMPILE
 
-        // Should be used only by code:AssemblyIterator::Create
+        // Callers other than AssemblyIterator::Create must hold the assembly-list lock.
         ArrayList::Iterator GetArrayListIterator()
         {
             return m_array.Iterate();
@@ -1207,9 +1186,6 @@ public:
     DefaultAssemblyBinder *CreateDefaultBinder();
     DefaultAssemblyBinder *GetDefaultBinder() {LIMITED_METHOD_CONTRACT;  return m_pDefaultBinder; }
 
-    // Only call this routine when you can guarantee there are no loads in progress.
-    void ClearBinderContext();
-
     static void RaiseExitProcessEvent();
     Assembly* RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szName);
     Assembly* RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef);
@@ -1252,8 +1228,6 @@ public:
     {
         STATIC_CONTRACT_THROWS;
         STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_FAULT;
-
         if (m_pRefClassFactHash != NULL) {
             return m_pRefClassFactHash;
         }
@@ -1267,8 +1241,6 @@ public:
     {
         STATIC_CONTRACT_THROWS;
         STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_FAULT;
-
         if (m_pRefDispIDCache != NULL) {
             return m_pRefDispIDCache;
         }
@@ -1574,13 +1546,6 @@ public:
 
     //****************************************************************************************
     //
-    // To be run during shutdown. This must be done after all operations
-    // that require the use of system classes (i.e., exceptions).
-    // DetachBegin stops release resources held by systemdomain and the default domain.
-    static void DetachEnd();
-
-    //****************************************************************************************
-    //
     // Initializes and shutdowns the single instance of the SystemDomain
     // in the EE
 #ifndef DACCESS_COMPILE
@@ -1721,11 +1686,6 @@ public:
     // Tell profiler about system created domains which are created before the profiler is
     // actually activated.
     static void NotifyProfilerStartup();
-
-    //****************************************************************************************
-    // Tell profiler at shutdown that system created domains are going away.  They are not
-    // torn down using the normal sequence.
-    static HRESULT NotifyProfilerShutdown();
 #endif // PROFILING_SUPPORTED
 
 #ifndef DACCESS_COMPILE
@@ -1783,9 +1743,6 @@ private:
 
     void PreallocateSpecialObjects();
 
-    //****************************************************************************************
-    //
-    static StackWalkAction CallersMethodCallback(CrawlFrame* pCrawlFrame, VOID* pClientData);
     static StackWalkAction CallersMethodCallbackWithStackMark(CrawlFrame* pCrawlFrame, VOID* pClientData);
 
 #ifndef DACCESS_COMPILE

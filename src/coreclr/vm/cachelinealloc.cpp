@@ -21,6 +21,7 @@
 #include "common.h"
 #include <stddef.h>
 #include "cachelinealloc.h"
+#include <minipal.h>
 
 #include "threads.h"
 #include "excep.h"
@@ -86,14 +87,13 @@ void *CCacheLineAllocator::VAlloc(ULONG cbSize)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return NULL);
     }
     CONTRACTL_END;
 
     // helper to call virtual free to release memory
 
     int i =0;
-    void* pv = ClrVirtualAlloc (NULL, cbSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    void* pv = VMToOSInterface::AllocateMemory (NULL, cbSize, VMToOSInterface::MemoryProtection::ReadWrite);
     if (pv != NULL)
     {
         LPCacheLine tempPtr = m_registryList.GetHead();
@@ -122,7 +122,7 @@ LNew:
         else
         {
             // couldn't find space to register this page
-            ClrVirtualFree(pv, 0, MEM_RELEASE);
+            VMToOSInterface::ReleaseMemoryReservation(pv, cbSize);
             return NULL;
         }
     }
@@ -150,7 +150,9 @@ void CCacheLineAllocator::VFree(void* pv)
 
     // helper to call virtual free to release memory
 
-    bRes = ClrVirtualFree (pv, 0, MEM_RELEASE);
+    // VAlloc is only ever called with AllocSize (4096 * 16); VFree releases that same extent.
+    const size_t AllocSize = 4096 * 16;
+    bRes = VMToOSInterface::ReleaseMemoryReservation(pv, AllocSize);
 }
 
 ///////////////////////////////////////////////////////
@@ -166,7 +168,6 @@ void *CCacheLineAllocator::GetCacheLine64()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return NULL);
     }
     CONTRACTL_END;
 
@@ -214,7 +215,6 @@ void *CCacheLineAllocator::GetCacheLine32()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return NULL);
     }
     CONTRACTL_END;
 

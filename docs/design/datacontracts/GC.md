@@ -116,7 +116,8 @@ public readonly struct GCOomData
     HandleType[] GetHandleTypes(uint[] types);
     // Gets the extra info (user data) associated with a dependent handle
     TargetNUInt GetHandleExtraInfo(TargetPointer handle);
-    // Gets the global allocation context pointer and limit
+    // Gets the global allocation context pointer and limit. Both are null when the target
+    // runtime does not allocate out of a global allocation context.
     void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit);
 
     // Gets handle table memory regions (segments)
@@ -293,7 +294,7 @@ public readonly record struct GCHeapSegmentInfo(
 | `GCHighestAddress` | `pointer` | Highest GC address as recorded by the VM/GC interface |
 | `GCIdentifiers` | `string` | CSV string containing identifiers of the GC. Current values are "server", "workstation", "regions", and "segments" |
 | `GCLowestAddress` | `pointer` | Lowest GC address as recorded by the VM/GC interface |
-| `GlobalAllocContext` | `pointer` | Pointer to the global EEAllocContext |
+| `GlobalAllocContext` | `pointer` | Pointer to the global EEAllocContext. Required in GC contract version `c1`; optional in `c2` and later, where it is absent in runtimes which allocate only out of thread allocation contexts |
 | `GlobalFreeHugeRegions` | `pointer` | Pointer to the global free huge region list |
 | `GlobalMechanismsLength` | `uint32` | Number of counters in the global GC mechanisms array |
 | `GlobalRegionsToDecommit` | `pointer` | Pointer to the global regions-to-decommit array |
@@ -881,7 +882,16 @@ GetGlobalAllocationContext
 ```csharp
 void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit)
 {
-    TargetPointer globalAllocContextAddress = target.ReadGlobalPointer("GlobalAllocContext");
+    // "GlobalAllocContext" is required in c1 and optional in c2 and later: runtimes which
+    // allocate only out of thread allocation contexts do not define it. Report an empty
+    // context in that case, so that the same implementation serves both versions.
+    if (!target.TryReadGlobalPointer("GlobalAllocContext", out TargetPointer? globalAllocContextAddress))
+    {
+        allocPtr = TargetPointer.Null;
+        allocLimit = TargetPointer.Null;
+        return;
+    }
+
     allocPtr = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Pointer offset */);
     allocLimit = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Limit offset */);
 }
@@ -1149,10 +1159,11 @@ IEnumerable<(HeapSegment Segment, TargetPointer Address)> WalkSegmentList(Target
 GetPotentialNextObjectAddress
 
 Computes the next candidate object address when walking a Gen0/Ephemeral segment.
-Active allocation contexts (per-thread, the global non-thread-local context, and
-the per-heap Gen0 context) carve out reserved-but-not-yet-allocated ranges inside
-such segments; when the naive `current + size` lands on one of those ranges the
-walk must skip past it. The contexts are collected via `IThread.GetThreadStoreData`
+Active allocation contexts (per-thread, the global non-thread-local context when the
+target runtime has one, and the per-heap Gen0 context) carve out
+reserved-but-not-yet-allocated ranges inside such segments; when the naive
+`current + size` lands on one of those ranges the walk must skip past it. The
+contexts are collected via `IThread.GetThreadStoreData`
 and `IThread.GetThreadData` (per-thread contexts), `IGC.GetGlobalAllocationContext`
 (global context), and `IGC.GetGCIdentifiers` + `IGC.GetGCHeaps` + `IGC.GetHeapData`
 (per-heap Gen0 contexts).

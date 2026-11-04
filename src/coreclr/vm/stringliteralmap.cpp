@@ -70,8 +70,8 @@ void StringLiteralMap::Init()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(this));
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -298,6 +298,7 @@ GlobalStringLiteralMap::GlobalStringLiteralMap()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 }
@@ -346,7 +347,6 @@ void GlobalStringLiteralMap::Init()
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -433,7 +433,6 @@ static void LogStringLiteral(_In_z_ const char* action, EEStringData *pStringDat
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     ULONG length = pStringData->GetCharCount();
     length = min(length, (ULONG)128);
@@ -678,6 +677,4 @@ void StringLiteralEntry::DeleteEntry (StringLiteralEntry *pEntry)
     pEntry->m_pNext = s_FreeEntryList;
     s_FreeEntryList = pEntry;
 }
-
-
 

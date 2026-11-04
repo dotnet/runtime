@@ -20,7 +20,7 @@ namespace ILCompiler
         {
         }
 
-        public override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
+        protected override bool ContainsMethodBodyCore(MethodDesc method, bool unboxingStub)
         {
             return false;
         }

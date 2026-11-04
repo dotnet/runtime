@@ -19,11 +19,6 @@ namespace Internal.Runtime.TypeLoader
     {
         internal abstract void Prepare(TypeBuilder builder);
         internal abstract IntPtr Create(TypeBuilder builder);
-        internal virtual unsafe void WriteCellIntoDictionary(TypeBuilder typeBuilder, IntPtr* pDictionary, int slotIndex)
-        {
-            pDictionary[slotIndex] = Create(typeBuilder);
-        }
-
         internal virtual IntPtr CreateLazyLookupCell(TypeBuilder builder, out IntPtr auxResult)
         {
             auxResult = IntPtr.Zero;

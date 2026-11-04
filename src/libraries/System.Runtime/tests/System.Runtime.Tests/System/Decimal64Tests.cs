@@ -12,6 +12,34 @@ namespace System.Tests
 {
     public class Decimal64Tests
     {
+        [Theory]
+        [InlineData("-883.2925549776085", "2.45990008214473e-384")]
+        public static void ExpSubnormalRoundingTest(string input, string expected)
+        {
+            Assert.Equal(Decimal64.Parse(expected, CultureInfo.InvariantCulture),
+                Decimal64.Exp(Decimal64.Parse(input, CultureInfo.InvariantCulture)));
+        }
+
+        [Theory]
+        [InlineData(-399, 0)]
+        [InlineData(-398, 1)]
+        [InlineData(-397, 10)]
+        public static void Exp10SubnormalAccuracyTest(int input, int expectedUnits)
+        {
+            Assert.Equal(Decimal64.Epsilon * expectedUnits, Decimal64.Exp10(input));
+        }
+
+        [Theory]
+        [InlineData("0.9999999999999999", "1.4142135623730950605868e-8", "-1.00000000000000005e-16", "3.14159265358979323846264e-16")]
+        public static void TranscendentalBoundaryAccuracyTest(string input, string acos, string log, string sinPi)
+        {
+            Decimal64 x = Decimal64.Parse(input, CultureInfo.InvariantCulture);
+            Assert.Equal(Decimal64.Parse(acos, CultureInfo.InvariantCulture), Decimal64.Acos(x));
+            Assert.Equal(Decimal64.Parse(log, CultureInfo.InvariantCulture), Decimal64.Log(x));
+            Assert.Equal(Decimal64.Parse(sinPi, CultureInfo.InvariantCulture), Decimal64.SinPi(x));
+            Assert.Equal(Decimal64.SinPi(x), Decimal64.SinCosPi(x).SinPi);
+        }
+
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Number;
@@ -1996,20 +2024,25 @@ namespace System.Tests
         [InlineData(0x7C00000000000000UL, 0x31C0000000000002UL, 0x7C00000000000000UL)] // log(NaN, 2) = NaN
         [InlineData(0x31C0000000000002UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // log(2, NaN) = NaN
         [InlineData(0x31C0000000000002UL, 0x31C0000000000001UL, 0x7C00000000000000UL)] // log(2, 1) = NaN (base 1)
+        [InlineData(0x31600000000003E8UL, 0x31A0000000000005UL, 0xB1C0000000000000UL)] // log(1.000, 0.5) = -0
         public static void LogNewBaseTest(ulong value, ulong newBase, ulong expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log(Unsafe.BitCast<ulong, Decimal64>(value), Unsafe.BitCast<ulong, Decimal64>(newBase))));
         }
 
         [Theory]
-        [InlineData(8.0, 2.0)]
-        [InlineData(100.0, 10.0)]
-        [InlineData(2.5, 3.0)]
-        public static void LogNewBaseAccuracyTest(double input, double newBase)
+        [InlineData("8", "2", "3.000000000000000")]
+        [InlineData("100", "10", "2.000000000000000")]
+        [InlineData("2.5", "3", "0.8340437671464697300975132933358795420083467265341692611822354509568071")]
+        [InlineData("1.000000000000001", "0.9999999999999999", "-9.999999999999994500000000000003575")]
+        public static void LogNewBaseAccuracyTest(string input, string newBase, string oracle)
         {
-            double expected = double.Log(input, newBase);
-            double actual = (double)Decimal64.Log((Decimal64)input, (Decimal64)newBase);
-            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log({input}, {newBase}): expected {expected}, got {actual}");
+            Decimal64 actual = Decimal64.Log(Decimal64.Parse(input, CultureInfo.InvariantCulture),
+                Decimal64.Parse(newBase, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected), recordedUlp: 0, limit: 1);
         }
 
         [Theory]
@@ -2176,6 +2209,78 @@ namespace System.Tests
             Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cbrt({input}): expected {expected}, got {actual}");
         }
 
+        // The near-tie inputs are the significands whose exact product sits closest to a rounding
+        // boundary, which is where carrying the constant to fewer digits would decide the result
+        // differently; the expected values were computed independently at several hundred digits.
+        [Theory]
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 0xF800000000000000UL)] // -Infinity
+        [InlineData(0x31C0000000000000UL, 0x2D60000000000000UL)] // +0
+        [InlineData(0xB1C0000000000000UL, 0xAD60000000000000UL)] // -0
+        [InlineData(0x31C0000000000001UL, 0x2FA6335E2214CADAUL)] // 1
+        [InlineData(0xB1C0000000000001UL, 0xAFA6335E2214CADAUL)] // -1
+        [InlineData(0x31C00000000000B4UL, 0x2FEB29430A256D21UL)] // 180
+        [InlineData(0x31C000000000005AUL, 0x2FE594A18512B691UL)] // 90
+        [InlineData(0x77FB86F26FC0FFFFUL, 0x5FC6335E2214CAD9UL)] // MaxValue
+        [InlineData(0xF7FB86F26FC0FFFFUL, 0xDFC6335E2214CAD9UL)] // MinValue
+        [InlineData(0x0000000000000001UL, 0x0000000000000000UL)] // Epsilon
+        [InlineData(0x8000000000000001UL, 0x8000000000000000UL)] // -Epsilon
+        [InlineData(0x00038D7EA4C68000UL, 0x00000FDFA94D0207UL)] // MinNormal
+        [InlineData(0x31D3C7CB9E6193D6UL, 0x6C6285FD7E8E7308UL)] // near tie 5567701906985942
+        [InlineData(0x0033C7CB9E6193D6UL, 0x000373CC8CA7D84EUL)] // near tie 5567701906985942 subnormal
+        [InlineData(0x31CBBEE7DBB055BFUL, 0x3194800A5C2EE663UL)] // near tie 3306127776306623
+        [InlineData(0x002BBEE7DBB055BFUL, 0x00020CCDD604B0A3UL)] // near tie 3306127776306623 subnormal
+        [InlineData(0x6C70C06A9B780723UL, 0x31A5B75B526CB460UL)] // near tie 9218763362141987
+        [InlineData(0x6008C06A9B780723UL, 0x0005B75B526CB460UL)] // near tie 9218763362141987 subnormal
+        [InlineData(0x31C702F9912FC653UL, 0x318C3CD2786CBFD9UL)] // near tie 1973595742914131
+        [InlineData(0x002702F9912FC653UL, 0x000139483F3E132FUL)] // near tie 1973595742914131 subnormal
+        [InlineData(0x31C4CD1B075AF51CUL, 0x31886131A50584C7UL)] // near tie 1351415878055196
+        [InlineData(0x0024CD1B075AF51CUL, 0x0000D684F6E6F3AEUL)] // near tie 1351415878055196 subnormal
+        [InlineData(0x31D508ECB38F52F9UL, 0x31A3ABD8BDBA398EUL)] // near tie 5920787228742393
+        [InlineData(0x003508ECB38F52F9UL, 0x0003ABD8BDBA398EUL)] // near tie 5920787228742393 subnormal
+        public static void DegreesToRadiansTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.DegreesToRadians(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        // The near-tie inputs are the significands whose exact product sits closest to a rounding
+        // boundary, which is where carrying the constant to fewer digits would decide the result
+        // differently; the expected values were computed independently at several hundred digits.
+        [Theory]
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 0xF800000000000000UL)] // -Infinity
+        [InlineData(0x31C0000000000000UL, 0x2DC0000000000000UL)] // +0
+        [InlineData(0xB1C0000000000000UL, 0xADC0000000000000UL)] // -0
+        [InlineData(0x31C0000000000001UL, 0x30145B05528029C8UL)] // 1
+        [InlineData(0xB1C0000000000001UL, 0xB0145B05528029C8UL)] // -1
+        [InlineData(0x31C00000000000B4UL, 0x3063A9FBD687B59AUL)] // 180
+        [InlineData(0x31C000000000005AUL, 0x305251EB30A68C01UL)] // 90
+        [InlineData(0x77FB86F26FC0FFFFUL, 0x7800000000000000UL)] // MaxValue
+        [InlineData(0xF7FB86F26FC0FFFFUL, 0xF800000000000000UL)] // MinValue
+        [InlineData(0x0000000000000001UL, 0x0000000000000039UL)] // Epsilon
+        [InlineData(0x8000000000000001UL, 0x8000000000000039UL)] // -Epsilon
+        [InlineData(0x00038D7EA4C68000UL, 0x00345B05528029C8UL)] // MinNormal
+        [InlineData(0x31D3C7CB9E6193D6UL, 0x320B55574E55B3B9UL)] // near tie 5567701906985942
+        [InlineData(0x0033C7CB9E6193D6UL, 0x006B55574E55B3B9UL)] // near tie 5567701906985942 subnormal
+        [InlineData(0x31CBBEE7DBB055BFUL, 0x3206BAD47EA97B66UL)] // near tie 3306127776306623
+        [InlineData(0x002BBEE7DBB055BFUL, 0x0066BAD47EA97B66UL)] // near tie 3306127776306623 subnormal
+        [InlineData(0x6C70C06A9B780723UL, 0x3212C3EAB0629378UL)] // near tie 9218763362141987
+        [InlineData(0x6008C06A9B780723UL, 0x0072C3EAB0629378UL)] // near tie 9218763362141987 subnormal
+        [InlineData(0x31C702F9912FC653UL, 0x32040471E1589F0CUL)] // near tie 1973595742914131
+        [InlineData(0x002702F9912FC653UL, 0x00640471E1589F0CUL)] // near tie 1973595742914131 subnormal
+        [InlineData(0x31C4CD1B075AF51CUL, 0x31FB824198B94A89UL)] // near tie 1351415878055196
+        [InlineData(0x0024CD1B075AF51CUL, 0x005B824198B94A89UL)] // near tie 1351415878055196 subnormal
+        [InlineData(0x31D508ECB38F52F9UL, 0x320C0D55A409DD23UL)] // near tie 5920787228742393
+        [InlineData(0x003508ECB38F52F9UL, 0x006C0D55A409DD23UL)] // near tie 5920787228742393 subnormal
+        public static void RadiansToDegreesTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.RadiansToDegrees(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
         [Theory]
         [InlineData(0x7C00000000000000UL, 0x7800000000000000UL, 0x7800000000000000UL)] // hypot(NaN, +Infinity) = +Infinity
         [InlineData(0x7800000000000000UL, 0x7C00000000000000UL, 0x7800000000000000UL)] // hypot(+Infinity, NaN) = +Infinity
@@ -2225,6 +2330,9 @@ namespace System.Tests
         [InlineData(0x31C0000000000000UL, -5, 0x7800000000000000UL)] // rootn(+0, n < 0) = +Infinity
         [InlineData(0xB1C0000000000000UL, -5, 0xF800000000000000UL)] // rootn(-0, odd < 0) = -Infinity
         [InlineData(0xB1C0000000000004UL, 2, 0x7C00000000000000UL)] // rootn(-4, even) = NaN
+        [InlineData(0x3140000000001B58UL, 1, 0x2FD8DE76816D8000UL)] // rootn(0.7000, 1) uses the full-precision cohort
+        [InlineData(0xB140000000001B58UL, 1, 0xAFD8DE76816D8000UL)] // rootn(-0.7000, 1) uses the full-precision cohort
+        [InlineData(0x01C0000000000001UL, 1, 0x00005AF3107A4000UL)] // subnormal padding stops at the minimum quantum
         public static void RootNTest(ulong value, int n, ulong expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.RootN(Unsafe.BitCast<ulong, Decimal64>(value), n)));

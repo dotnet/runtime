@@ -424,11 +424,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             // RFC 6066 forbids IP literals.
             // IDN mapping is handled by MsQuic.
-            string sni = (IPAddress.IsValid(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? string.Empty;
+            string? sni = (IPAddress.IsValid(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host;
 
             unsafe
             {
-                byte* targetHostPtr = Utf8StringMarshaller.ConvertToUnmanaged(sni);
+                byte* targetHostPtr = !string.IsNullOrEmpty(sni) ? Utf8StringMarshaller.ConvertToUnmanaged(sni) : null;
                 try
                 {
                     ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionStart(
@@ -441,7 +441,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 }
                 finally
                 {
-                    Utf8StringMarshaller.Free(targetHostPtr);
+                    if (targetHostPtr != null)
+                    {
+                        Utf8StringMarshaller.Free(targetHostPtr);
+                    }
                 }
             }
         }

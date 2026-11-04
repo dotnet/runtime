@@ -350,56 +350,6 @@ NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
     EPILOG_BRANCH_REG  $t4
 NESTED_END PInvokeImportThunk, _TEXT
 
-#ifdef FEATURE_PREJIT
-//------------------------------------------------
-// VirtualMethodFixupStub
-//
-// In NGEN images, virtual slots inherited from cross-module dependencies
-// point to a jump thunk that calls into the following function that will
-// call into a VM helper. The VM helper is responsible for patching up
-// thunk, upon executing the precode, so that all subsequent calls go directly
-// to the actual method body.
-//
-// This is done lazily for performance reasons.
-//
-// On entry:
-//
-// $a0 = "this" pointer
-// $t2 = Address of thunk
-
-NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
-
-    // Save arguments and return address
-    //                            $fp,$ra
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    SAVE_ARGUMENT_REGISTERS  $sp, 32
-    SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
-
-
-    // Call the helper in the VM to perform the actual fixup
-    // and tell us where to tail call. $a0 already contains
-    // the this pointer.
-
-    // Move the thunk start address in $a1
-    ori  $a1, $t2, 0
-    bl VirtualMethodFixupWorker
-    ori  $t4,$a0,0
-
-    // On return, a0 contains the target to tailcall to
-
-    // pop the stack and restore original register state
-    RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
-    RESTORE_ARGUMENT_REGISTERS  $sp, 32
-    //                              $fp,$ra
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
-
-    PATCH_LABEL  VirtualMethodFixupPatchLabel
-
-    // and tailcall to the actual method
-    EPILOG_BRANCH_REG  $t4
-NESTED_END VirtualMethodFixupStub, _TEXT
-#endif // FEATURE_PREJIT
-
 // ------------------------------------------------------------------
 // ThePreStubPatch()
 LEAF_ENTRY ThePreStubPatch, _TEXT
@@ -407,30 +357,6 @@ LEAF_ENTRY ThePreStubPatch, _TEXT
 C_FUNC(ThePreStubPatchLabel):
     jirl  $r0, $ra, 0
 LEAF_END ThePreStubPatch, _TEXT
-
-#ifdef FEATURE_PREJIT
-// ------------------------------------------------------------------
-// void StubDispatchFixupStub(args in regs $a0-$a7 & stack, $t1:IndirectionCellAndFlags)
-//
-// The stub dispatch thunk which transfers control to StubDispatchFixupWorker.
-NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    srli.d  $a1, $t8, 2
-    slli.d  $a1, $a1, 2 // Indirection cell
-
-    addi.d $a0, $sp, __PWTB_TransitionBlock        // pTransitionBlock
-    ori  $a2, $zero, 0 // sectionIndex
-    ori  $a3, $zero, 0 // pModule
-    bl StubDispatchFixupWorker
-    ori  $t4,$a0,0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL StubDispatchFixupPatchLabel
-    EPILOG_BRANCH_REG  $t4
-NESTED_END StubDispatchFixupStub, _TEXT
-#endif
 
 //
 // $t2 = UMEntryThunkData*
@@ -730,44 +656,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END CallEHFilterFunclet, _TEXT
 
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    ld.d $a1, $a0, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
-    dbar 0
-    bnez $a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
-    ori  $a0, $a1, 0
-    jirl $r0, $ra, 0
-
-LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetNonGCStaticBase
-    ld.d $a0, $a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable
-    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, $t4
-    ld.d $t4, $t4, 0
-    EPILOG_BRANCH_REG        $t4
-LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    ld.d $a1, $a0, OFFSETOF__DynamicStaticsInfo__m_pGCStatics
-    dbar 0
-    bnez $a1, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
-    ori  $a0, $a1, 0
-    jirl $r0, $ra, 0
-
-LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetGCStaticBase
-    ld.d $a0, $a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable
-    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, $t4
-    ld.d $t4, $t4, 0
-    EPILOG_BRANCH_REG        $t4
-LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
@@ -940,17 +828,6 @@ LEAF_ENTRY GetTLSResolverAddress, _TEXT
         EPILOG_RETURN
 LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------
-
-LEAF_ENTRY JIT_PollGC, _TEXT
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, $t0
-        ld.w    $t0, $t0, 0
-        bne     $t0, $zero, LOCAL_LABEL(JIT_PollGCRarePath)
-        jirl $r0, $ra, 0
-LOCAL_LABEL(JIT_PollGCRarePath):
-        PREPARE_EXTERNAL_VAR g_pPollGC, $t0
-        ld.d    $t0, $t0, 0
-        EPILOG_BRANCH_REG $t0
-LEAF_END JIT_PollGC, _TEXT
 
 //a0 -This pointer
 //a1 -ReturnBuffer

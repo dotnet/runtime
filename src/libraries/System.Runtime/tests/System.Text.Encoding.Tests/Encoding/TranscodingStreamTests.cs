@@ -399,6 +399,7 @@ namespace System.Text.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134955", TestPlatforms.Wasi)]
         public Task ReadApm()
         {
             // Tests TranscodingStream.BeginRead / EndRead
@@ -480,6 +481,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "AsyncComms feeds the pipe from a worker that blocks, which needs a second thread.")]
         public async Task ReadAsync_LoopsWhenPartialDataReceived()
         {
             // Validates that the TranscodingStream will loop instead of returning 0
@@ -895,6 +897,7 @@ namespace System.Text.Tests
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134955", TestPlatforms.Wasi)]
         public void WriteApm()
         {
             // Arrange

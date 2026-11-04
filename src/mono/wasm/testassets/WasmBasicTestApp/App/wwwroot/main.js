@@ -121,13 +121,14 @@ switch (testCase) {
                 throw error;
             });
         }
-        dotnet.withModuleConfig({
-            onDownloadResourceProgress: (loaded, total) => {
-                console.log(`DownloadResourceProgress: ${loaded} / ${total}`);
-                if (loaded === total && loaded !== 0) {
-                    testOutput("DownloadResourceProgress: Finished");
-                }
+        dotnet.withDownloadResourceProgress((loaded, total) => {
+            console.log(`DownloadResourceProgress: ${loaded} / ${total}`);
+            if (loaded === total && loaded !== 0) {
+                testOutput("DownloadResourceProgress: Finished");
             }
+        });
+        dotnet.withDotnetReady(() => {
+            testOutput("onDotnetReady called");
         });
         break;
     case "AssetIntegrity":
@@ -136,6 +137,39 @@ switch (testCase) {
             return defaultUri;
         });
         break;
+    case "NativeSymbolsDownload": {
+        const failure = params.get("failure");
+        const originalFetch = globalThis.fetch.bind(globalThis);
+        dotnet.withConfig({
+            enableDownloadRetry: true,
+            ignorePdbLoadErrors: params.get("ignorePdbLoadErrors") === "true"
+        }).withConfigLoaded(config => {
+            if (config.resources.wasmSymbols?.length !== 1 || !config.resources.jsModuleDiagnostics?.length) {
+                throw new Error("Expected emitted native symbols and a diagnostics module");
+            }
+            const symbols = config.resources.wasmSymbols[0];
+            if (symbols.cache !== "force-cache" || !symbols.hash?.startsWith("sha256-")) {
+                throw new Error("Expected fingerprinted native symbols with integrity");
+            }
+            globalThis.fetch = (input, options) => {
+                const url = input instanceof Request ? input.url : String(input);
+                if (url.includes(symbols.name)) {
+                    testOutput(`Native symbols fetch: ${options?.cache}`);
+                    if (failure === "not-found") {
+                        return Promise.resolve(new Response(null, { status: 404, statusText: "Not Found" }));
+                    }
+                    if (failure === "network") {
+                        return Promise.reject(new TypeError("Simulated native-symbol network failure"));
+                    }
+                    if (failure !== "none") {
+                        throw new Error(`Unknown native-symbol failure '${failure}'`);
+                    }
+                }
+                return originalFetch(input, options);
+            };
+        });
+        break;
+    }
     case "OutErrOverrideWorks":
         dotnet.withModuleConfig({
             out: (message) => {
@@ -156,11 +190,9 @@ switch (testCase) {
         break;
     case "DownloadThenInit":
         let dtConfigLoadedCalled = false;
-        dotnet.withModuleConfig({
-            onConfigLoaded: () => {
-                dtConfigLoadedCalled = true;
-                testOutput("onConfigLoaded called");
-            }
+        dotnet.withConfigLoaded(() => {
+            dtConfigLoadedCalled = true;
+            testOutput("onConfigLoaded called");
         });
         const originalFetch = globalThis.fetch;
         globalThis.fetch = (url, fetchArgs) => {
@@ -181,11 +213,9 @@ switch (testCase) {
             loadBootResourceCalled = true;
             return defaultUri;
         });
-        dotnet.withModuleConfig({
-            onConfigLoaded: () => {
-                hcConfigLoadedCalled = true;
-                testOutput("onConfigLoaded called");
-            }
+        dotnet.withConfigLoaded(() => {
+            hcConfigLoadedCalled = true;
+            testOutput("onConfigLoaded called");
         });
         const originalFetch3 = globalThis.fetch;
         globalThis.fetch = (url, fetchArgs) => {
@@ -256,23 +286,21 @@ switch (testCase) {
         break;
     case "BufferedAssetsTest":
         const originalFetch4 = globalThis.fetch.bind(globalThis);
-        dotnet.withModuleConfig({
-            onConfigLoaded: (config) => {
-                const bufferedAssets = [
-                    ...config.resources.wasmNative,
-                    ...config.resources.coreAssembly,
-                    ...config.resources.assembly,
-                    ...(config.resources.corePdb ?? []),
-                    ...(config.resources.pdb ?? []),
-                    ...config.resources.wasmSymbols,
-                ];
-                for (const asset of bufferedAssets) {
-                    const url = new URL(asset.resolvedUrl ?? `./_framework/${asset.name}`, location.href);
-                    asset.buffer = originalFetch4(url).then(r => {
-                        if (!r.ok) throw new Error(`Failed to fetch buffered asset '${url}': ${r.status} ${r.statusText}`);
-                        return r.arrayBuffer();
-                    });
-                }
+        dotnet.withConfigLoaded((config) => {
+            const bufferedAssets = [
+                ...config.resources.wasmNative,
+                ...config.resources.coreAssembly,
+                ...config.resources.assembly,
+                ...(config.resources.corePdb ?? []),
+                ...(config.resources.pdb ?? []),
+                ...config.resources.wasmSymbols,
+            ];
+            for (const asset of bufferedAssets) {
+                const url = new URL(asset.resolvedUrl ?? `./_framework/${asset.name}`, location.href);
+                asset.buffer = originalFetch4(url).then(r => {
+                    if (!r.ok) throw new Error(`Failed to fetch buffered asset '${url}': ${r.status} ${r.statusText}`);
+                    return r.arrayBuffer();
+                });
             }
         });
         break;
@@ -351,6 +379,10 @@ try {
             break;
         case "DownloadResourceProgressTest":
         case "AssetIntegrity":
+            exit(0);
+            break;
+        case "NativeSymbolsDownload":
+            testOutput("Native symbols startup completed");
             exit(0);
             break;
         case "OutErrOverrideWorks":

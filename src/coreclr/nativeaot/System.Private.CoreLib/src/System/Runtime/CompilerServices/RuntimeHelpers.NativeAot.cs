@@ -77,11 +77,6 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhCompareObjectContentsAndPadding(o1, o2);
         }
 
-        internal static int GetNewHashCode()
-        {
-            return Random.Shared.Next();
-        }
-
         public static unsafe int GetHashCode(object o)
         {
             return ObjectHeader.GetHashCode(o);
@@ -211,6 +206,13 @@ namespace System.Runtime.CompilerServices
         internal static unsafe bool ObjectHasComponentSize(object obj)
         {
             return GetMethodTable(obj)->HasComponentSize;
+        }
+
+        // Returns true iff the type of the object requires finalization,
+        // which includes a finalizer inherited from a base type.
+        internal static unsafe bool ObjectHasFinalizer(object obj)
+        {
+            return GetMethodTable(obj)->IsFinalizable;
         }
 
         public static void PrepareMethod(RuntimeMethodHandle method)

@@ -4,6 +4,10 @@
 #if defined(__linux__) && !defined(_GNU_SOURCE)
 // glibc declares pthread_setname_np only when _GNU_SOURCE is defined before <pthread.h>.
 #define _GNU_SOURCE
+#elif defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+// pthread_threadid_np and pthread_setname_np are hidden by _XOPEN_SOURCE unless
+// _DARWIN_C_SOURCE is defined before <pthread.h>.
+#define _DARWIN_C_SOURCE
 #endif
 
 #include "thread.h"

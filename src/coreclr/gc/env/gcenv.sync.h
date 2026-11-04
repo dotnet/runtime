@@ -26,9 +26,9 @@ class CrstStatic
 #endif
 
 public:
-    bool InitNoThrow(CrstType eType, CrstFlags eFlags = CRST_DEFAULT)
+    void Init(CrstType eType, CrstFlags eFlags = CRST_DEFAULT)
     {
-        return m_cs.Initialize();
+        (void)m_cs.Initialize();
     }
 
     void Destroy()
@@ -130,8 +130,6 @@ class CLREventStatic
 public:
     bool CreateAutoEventNoThrow(bool bInitialState);
     bool CreateManualEventNoThrow(bool bInitialState);
-    bool CreateOSAutoEventNoThrow(bool bInitialState);
-    bool CreateOSManualEventNoThrow(bool bInitialState);
 
     void CloseEvent();
     bool IsValid() const;

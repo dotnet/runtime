@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_Conversions_Boxing_box_unbox01;
+
 using System;
 using Xunit;
 
@@ -52,6 +54,7 @@ public class Test_box_unbox01
 
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

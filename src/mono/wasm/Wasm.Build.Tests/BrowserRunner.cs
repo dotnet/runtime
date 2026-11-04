@@ -21,7 +21,7 @@ internal class BrowserRunner : IAsyncDisposable
     private static Regex s_appHostUrlRegex = new Regex("^App url: (?<url>https?://.*$)");
     private static Regex s_appPublishedUrlRegex = new Regex(@"^\s{2}(?<url>https?://.*$)");
     private static readonly Regex s_payloadRegex = new Regex("\"payload\":\"(?<payload>[^\"]*)\"", RegexOptions.Compiled);
-    private static Regex s_exitRegex = new Regex("WASM EXIT (?<exitCode>-?[0-9]+)$");
+    internal static readonly Regex s_exitRegex = new Regex("WASM EXIT (?<exitCode>-?[0-9]+)$", RegexOptions.Compiled);
     private static readonly Lazy<string> s_chromePath = new(() =>
     {
         string artifactsBinDir = Path.Combine(Path.GetDirectoryName(typeof(BuildTestBase).Assembly.Location)!, "..", "..", "..", "..");

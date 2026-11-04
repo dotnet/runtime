@@ -31,7 +31,6 @@ int ns::GetFullLength(                  // Number of chars in full name.
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     int iLen = 1;                       // Null terminator.
     if (szNameSpace)
@@ -49,7 +48,6 @@ int ns::GetFullLength(                  // Number of chars in full name.
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 
     int iLen = 1;
@@ -76,7 +74,6 @@ WCHAR *ns::FindSep(                     // Pointer to separator or null.
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(szPath);
     WCHAR *ptr = (WCHAR*)u16_strrchr(szPath, NAMESPACE_SEPARATOR_WCHAR);
@@ -92,7 +89,6 @@ LPUTF8 ns::FindSep(                     // Pointer to separator or null.
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     _ASSERTE(szPath);
@@ -114,7 +110,6 @@ LPUTF8 ns::SplitInline(                 // Pointer to name portion.
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     LPUTF8 ptr = ns::FindSep(szPath);
     if (ptr)
@@ -132,7 +127,6 @@ void ns::SplitInline(
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     LPUTF8 ptr = SplitInline(szPath);
     if (ptr)
@@ -160,7 +154,6 @@ int ns::SplitPath(                      // true ok, false trunction.
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     const WCHAR *ptr = ns::FindSep(szPath);
     size_t iLen = (ptr) ? ptr - szPath : 0;
@@ -207,7 +200,6 @@ int ns::SplitPath(                      // true ok, false trunction.
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     LPCUTF8 ptr = ns::FindSep(szPath);
     size_t iLen = (ptr) ? ptr - szPath : 0;
@@ -256,7 +248,6 @@ int ns::MakePath(                       // true ok, false truncation.
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (cchChars < 1)
         return false;
@@ -298,7 +289,6 @@ int ns::MakePath(                       // true ok, false truncation.
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (cchChars < 1)
         return false;
@@ -340,8 +330,6 @@ void ns::MakePath(                      // throws on out of memory
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-
     ssBuf.Clear();
 
     if (!ssNameSpace.IsEmpty())

@@ -64,7 +64,7 @@ EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjust
 EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIOEnqueue(
     void * NativeOverlapped,
     void * Overlapped,
-    bool MultiDequeues,
+    BOOL MultiDequeues,
     uint16_t ClrInstanceID)
 {
 }

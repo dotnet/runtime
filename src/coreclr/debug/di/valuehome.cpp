@@ -190,6 +190,7 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
     // If the value is in a reg, then it's going to be a register's width (regardless of
     // the actual width of the data).
     // For signed types, like i2, i1, make sure we sign extend.
+    IDacDbiInterface::TargetInfo targetInfo;
 
     if (fIsSigned)
     {
@@ -203,11 +204,16 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
                      extendedVal = (SSIZE_T) *(short*)newValue.StartAddress();          break;
             case 4:  _ASSERTE(sizeof(DWORD) == 4);
                      extendedVal = (SSIZE_T) *(int*)newValue.StartAddress();            break;
-#if defined(TARGET_64BIT)
-            case 8:  _ASSERTE(sizeof(ULONGLONG) == 8);
-                     extendedVal = (SSIZE_T) *(ULONGLONG*)newValue.StartAddress();      break;
-#endif // TARGET_64BIT
-            default: _ASSERTE(!"bad size");
+            case 8:
+            {
+                IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
+                _ASSERTE(targetInfo.pointerSize == 8);
+                extendedVal = (SSIZE_T) *(INT64*)newValue.StartAddress();
+                break;
+            }
+            default:
+                _ASSERTE(!"bad size");
+                ThrowHR(E_FAIL);
         }
     }
     else
@@ -221,11 +227,16 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
                      extendedVal = *( WORD*)newValue.StartAddress();     break;
             case 4:  _ASSERTE(sizeof(DWORD) == 4);
                      extendedVal = *(DWORD*)newValue.StartAddress();     break;
-#if defined(TARGET_64BIT)
-            case 8:  _ASSERTE(sizeof(ULONGLONG) == 8);
-                     extendedVal = *(ULONGLONG*)newValue.StartAddress(); break;
-#endif // TARGET_64BIT
-            default: _ASSERTE(!"bad size");
+            case 8:
+            {
+                IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
+                _ASSERTE(targetInfo.pointerSize == 8);
+                extendedVal = (SIZE_T) *(UINT64*)newValue.StartAddress();
+                break;
+            }
+            default:
+                _ASSERTE(!"bad size");
+                ThrowHR(E_FAIL);
         }
     }
 
@@ -673,7 +684,8 @@ void RemoteValueHome::CreateInternalValue(CordbType *       pType,
                                           CORDB_ADDRESS     offset,
                                           void *            localAddress,
                                           ULONG32           size,
-                                          ICorDebugValue ** ppValue)
+                                          ICorDebugValue ** ppValue,
+                                          CordbValue *      pExternalMemoryParent)
 {
     // If we're creating an ICDValue for a field added with EnC, the local address will be null, since the field
     // will not be included with the local cached copy of the ICDObjectValue to which the field belongs.
@@ -690,7 +702,9 @@ void RemoteValueHome::CreateInternalValue(CordbType *       pType,
                                   TargetBuffer(m_remoteValue.pAddress + offset, size),
                                   MemoryRange(localAddress, localSize),
                                   NULL, // remote reg
-                                  ppValue);  // throws
+                                  VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
+                                  ppValue,
+                                  pExternalMemoryParent);  // throws
 } // RemoteValueHome::CreateInternalValue
 
 // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
@@ -772,7 +786,8 @@ void RegisterValueHome::CreateInternalValue(CordbType *       pType,
                                             CORDB_ADDRESS     offset,
                                             void *            localAddress,
                                             ULONG32           size,
-                                            ICorDebugValue ** ppValue)
+                                            ICorDebugValue ** ppValue,
+                                            CordbValue *      pExternalMemoryParent)
 {
     TargetBuffer remoteValue(PTR_TO_CORDB_ADDRESS((void *)NULL),0);
     EnregisteredValueHomeHolder pRemoteReg(NULL);
@@ -814,7 +829,9 @@ void RegisterValueHome::CreateInternalValue(CordbType *       pType,
                                   EMPTY_BUFFER,  // remote address
                                   MemoryRange(localAddress, size),
                                   pRegHolder,
-                                  ppValue);  // throws
+                                  VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
+                                  ppValue,
+                                  pExternalMemoryParent);  // throws
 } // RegisterValueHome::CreateInternalValue
 
 // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
@@ -889,21 +906,18 @@ void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
 } // RegisterValueHome::SetEnregisteredValue
 
 
-// Get an enregistered value from the register display of the native frame
-// Arguments:
-//     output: dest - buffer will hold the register value
-// Note: Throws E_NOTIMPL for attempts to get an enregistered value for a float register
-//       or for 64-bit platforms
 void RegisterValueHome::GetEnregisteredValue(MemoryRange dest)
 {
-#if !defined(TARGET_X86)
-    _ASSERTE(!"@TODO IA64/AMD64 -- Not Yet Implemented");
-    ThrowHR(E_NOTIMPL);
-#else // TARGET_X86
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(m_pProcess->GetTargetInfo(&targetInfo));
+    if (targetInfo.arch != IDacDbiInterface::kArchX86)
+    {
+        _ASSERTE(!"@TODO IA64/AMD64 -- Not Yet Implemented");
+        ThrowHR(E_NOTIMPL);
+    }
     _ASSERTE(m_pRemoteRegAddr != NULL);
 
     m_pRemoteRegAddr->GetEnregisteredValue(dest); // throws
-#endif // !TARGET_X86
 } // RegisterValueHome::GetEnregisteredValue
 
 // Is this a signed type or unsigned type?
@@ -986,7 +1000,8 @@ void HandleValueHome::CreateInternalValue(CordbType *       pType,
                                           CORDB_ADDRESS     offset,
                                           void *            localAddress,
                                           ULONG32           size,
-                                          ICorDebugValue ** ppValue)
+                                          ICorDebugValue ** ppValue,
+                                          CordbValue *      pExternalMemoryParent)
 {
     _ASSERTE(!"References don't have sub-objects--we shouldn't be here");
     ThrowHR(E_INVALIDARG);
@@ -1145,4 +1160,3 @@ RefValueHome::RefValueHome(CordbProcess *                pProcess,
 
 
 } // RefValueHome::RefValueHome
-

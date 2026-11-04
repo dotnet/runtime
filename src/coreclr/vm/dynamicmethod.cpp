@@ -26,7 +26,6 @@ DynamicMethodTable* Module::GetDynamicMethodTable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -53,7 +52,6 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(ppLocation));
         PRECONDITION(CheckPointer(pModule));
     }
@@ -103,7 +101,6 @@ void DynamicMethodTable::MakeMethodTable(AllocMemTracker *pamTracker)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -144,7 +141,6 @@ void DynamicMethodTable::AddMethodsToList()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -217,10 +213,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     CONTRACTL
     {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM());
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(psig));
         PRECONDITION(sigSize > 0);
     }
@@ -264,6 +257,8 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
                     | DynamicMethodDesc::FlagStatic
                     | DynamicMethodDesc::FlagIsLCGMethod);
 
+    // LCG signatures contain only types supplied by the managed API, which are already loaded.
+    pNewMD->SetNativeImageDependenciesPrepared();
 
     // Note: Reset has THROWS contract since it may allocate jump stub and on WASM parses the signature
     // It will never throw here for jump stubs since it will always reuse the existing jump stub,
@@ -321,7 +316,6 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -330,7 +324,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
     HeapList *pHp = pCodeHeap->InitializeHeapList(pInfo);
     if (pHp == NULL)
     {
-        _ASSERTE(!pInfo->GetThrowOnOutOfMemoryWithinRange());
+        _ASSERTE(pInfo->IsSpecificMemoryRangeRequested());
         return NULL;
     }
 
@@ -340,7 +334,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
     pCodeHeap.SuppressRelease();
 
     LOG((LF_BCL, LL_INFO10, "Level1 - CodeHeap created {0x%p}\n", (HostCodeHeap*)pCodeHeap));
-    _ASSERTE((pHp != NULL) || !pInfo->GetThrowOnOutOfMemoryWithinRange());
+    _ASSERTE((pHp != NULL) || pInfo->IsSpecificMemoryRangeRequested());
     return pHp;
 }
 
@@ -351,7 +345,6 @@ HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -377,7 +370,7 @@ HostCodeHeap::~HostCodeHeap()
         delete[] m_pHeapList->pHdrMap;
 
     if (m_pBaseAddr)
-        ExecutableAllocator::Instance()->Release(m_pBaseAddr);
+        ExecutableAllocator::Instance()->Release(m_pBaseAddr, m_TotalBytesAvailable);
     LOG((LF_BCL, LL_INFO10, "Level1 - CodeHeap destroyed {0x%p}\n", this));
 }
 
@@ -403,15 +396,11 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     // reserve ReserveBlockSize rounded-up to VIRTUAL_ALLOC_RESERVE_GRANULARITY of memory
     ReserveBlockSize = ALIGN_UP(ReserveBlockSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
-    if (pInfo->GetLoAddr() != NULL || pInfo->GetHiAddr() != NULL)
+    if (pInfo->IsSpecificMemoryRangeRequested())
     {
         m_pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->ReserveWithinRange(ReserveBlockSize, pInfo->GetLoAddr(), pInfo->GetHiAddr());
         if (!m_pBaseAddr)
-        {
-            if (pInfo->GetThrowOnOutOfMemoryWithinRange())
-                ThrowOutOfMemoryWithinRange();
             return NULL;
-        }
     }
     else
     {
@@ -429,6 +418,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     m_pAllocator = pInfo->GetAllocator();
 
     HeapList* pHp = new HeapList;
+    pHp->isOptimizedCode = false;
 
     TrackAllocation *pTracker = NULL;
 
@@ -444,8 +434,6 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
         pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
         if (pTracker == NULL)
         {
-            // This should only ever happen with fault injection
-            _ASSERTE(g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP));
             delete pHp;
             ThrowOutOfMemory();
         }
@@ -456,6 +444,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     pHp->hpNext = NULL;
     pHp->pHeap = (PTR_CodeHeap)this;
+    pHp->pLoaderAllocator = m_pAllocator;
     // wire it back
     m_pHeapList = (PTR_HeapList)pHp;
 
@@ -469,7 +458,6 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     pHp->endAddress = pHp->startAddress;
 
     pHp->maxCodeHeapSize = m_TotalBytesAvailable - (pTracker ? pTracker->size : 0);
-    pHp->reserveForJumpStubs = 0;
 
 #if defined(TARGET_64BIT)
     if (pHp->CLRPersonalityRoutine != NULL)
@@ -725,16 +713,6 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
         MODE_ANY;
     }
     CONTRACTL_END;
-
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP))
-    {
-        char *a = new (nothrow) char;
-        if (a == NULL)
-            return NULL;
-        delete a;
-    }
-#endif // _DEBUG
 
     // Skip walking the free list if the cached size of the largest block is not enough
     size_t totalRequiredSize = ALIGN_UP(sizeof(TrackAllocation) + header + size + (alignment - 1) + reserveForJumpStubs, sizeof(void*));
@@ -1027,7 +1005,7 @@ bool LCGMethodResolver::TryDestroyCodeHeapMemory()
 
             HostCodeHeap *pHeap = current->GetHostCodeHeap();
             LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%zx)} \n", current, pHeap, *(size_t*)pHeap));
-            if (!pHeap->GetJitManager()->TryFreeHostCodeHeapMemory(pHeap, current))
+            if (!pHeap->GetJitManager()->TryFreeJumpStubBlock(pHeap, current))
             {
                 // We were unable to destroy this code heap memory.
                 // Update the JumpStub cache in place so clean-up can be done later.

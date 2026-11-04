@@ -470,6 +470,51 @@ namespace Microsoft.Extensions
             public ReadOnlyDictionaryStructExplicit ReadOnlyDictionaryStructExplicit { get; set; } = new();
         }
 
+        public class OptionsWithNonInstantiableElements
+        {
+            public List<AbstractElement> List { get; set; }
+
+            public AbstractElement[] Array { get; set; }
+
+            public HashSet<AbstractElement> Set { get; set; }
+
+            public Dictionary<string, AbstractElement> Dictionary { get; set; }
+
+            public string Name { get; set; }
+        }
+
+        public abstract class AbstractElement
+        {
+            public int Value { get; set; }
+        }
+
+        public class OptionsWithNonInstantiableElementsAndTrackingSetter
+        {
+            private List<AbstractElement> _list = new();
+
+            public int ListSetterCallCount { get; private set; }
+
+            public List<AbstractElement> List
+            {
+                get => _list;
+                set
+                {
+                    ListSetterCallCount++;
+                    _list = value;
+                }
+            }
+        }
+
+        public struct StructWithNoBindableMembers
+        {
+            public int Field;
+        }
+
+        public class OptionsWithStructWithNoBindableMembers
+        {
+            public StructWithNoBindableMembers Struct { get; set; } = new StructWithNoBindableMembers { Field = 42 };
+        }
+
         public struct ReadOnlyCollectionStructExplicit : IReadOnlyCollection<string>
         {
             public ReadOnlyCollectionStructExplicit()
@@ -514,6 +559,28 @@ namespace Microsoft.Extensions
         {
             public string? EnableFeatureX { get; set; }
             public List<PositionalRecordWithNullableParam> Users { get; set; } = new();
+        }
+
+        public record SoleReadOnlyCollectionParamRecord(IReadOnlyList<string> Values);
+
+        public readonly record struct SoleReadOnlyCollectionParamStruct(IReadOnlyList<string> Values);
+
+        public class SoleReadOnlyCollectionParamHolder
+        {
+            public SoleReadOnlyCollectionParamRecord? Class { get; set; }
+            public SoleReadOnlyCollectionParamStruct Struct { get; set; }
+            public SoleReadOnlyCollectionParamStruct? NullableStruct { get; set; }
+        }
+
+        public record SoleReadOnlyDictionaryParamRecord(IReadOnlyDictionary<string, string> Values);
+
+        public readonly record struct SoleReadOnlyDictionaryParamStruct(IReadOnlyDictionary<string, string> Values);
+
+        public class SoleReadOnlyDictionaryParamHolder
+        {
+            public SoleReadOnlyDictionaryParamRecord? Class { get; set; }
+            public SoleReadOnlyDictionaryParamStruct Struct { get; set; }
+            public SoleReadOnlyDictionaryParamStruct? NullableStruct { get; set; }
         }
     }
 }

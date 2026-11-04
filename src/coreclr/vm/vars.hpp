@@ -396,14 +396,12 @@ GVAL_DECL(PTR_WSTR, g_EntryAssemblyPath);
 // Global System Information
 extern SYSTEM_INFO g_SystemInfo;
 
-// <TODO>@TODO - PROMOTE.</TODO>
-// <TODO>@TODO - I'd like to make these private members of CLRException some day.</TODO>
 EXTERN OBJECTHANDLE         g_pPreallocatedOutOfMemoryException;
 EXTERN OBJECTHANDLE         g_pPreallocatedStackOverflowException;
 EXTERN OBJECTHANDLE         g_pPreallocatedExecutionEngineException;
 
 // we use this as a dummy object to indicate free space in the handle tables -- this object is never visible to the world
-EXTERN OBJECTHANDLE         g_pPreallocatedSentinelObject;
+EXTERN OBJECTREF            g_pPreallocatedSentinelObject;
 
 EXTERN MethodTable*         g_pCastHelpers;
 
@@ -493,7 +491,7 @@ EXTERN PRTLDLLSHUTDOWNINPROGRESS g_pfnRtlDllShutdownInProgress;
 
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.
-inline bool IsAtProcessExit()
+inline bool IsAtProcessExit() noexcept
 {
     SUPPORTS_DAC;
 #if defined(DACCESS_COMPILE) || !defined(HOST_WINDOWS)
@@ -594,11 +592,16 @@ typedef DPTR(GSCookie) PTR_GSCookie;
 #endif
 
 #ifndef DACCESS_COMPILE
-// const is so that it gets placed in the .text section (which is read-only)
+#ifdef FEATURE_READONLY_GS_COOKIE
+
+// const places the cookie in a read-only data section.
 // volatile is so that accesses to it do not get optimized away because of the const
 //
 
 extern "C" RAW_KEYWORD(volatile) READONLY_ATTR const GSCookie s_gsCookie;
+#else
+extern "C" RAW_KEYWORD(volatile) GSCookie s_gsCookie;
+#endif // FEATURE_READONLY_GS_COOKIE
 
 inline
 GSCookie * GetProcessGSCookiePtr() { return  const_cast<GSCookie *>(&s_gsCookie); }

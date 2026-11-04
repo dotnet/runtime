@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -9,12 +10,17 @@ namespace System.Formats.Tar.Tests
     public class TarFile_CreateFromDirectory_Roundtrip_Tests : TarTestsBase
     {
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [InlineData("./file.txt", "subDirectory")]
-        [InlineData("../file.txt", "subDirectory")]
-        [InlineData("../file.txt", "subDirectory1/subDirectory1.1")]
-        [InlineData("./file.txt", "subDirectory1/subDirectory1.1")]
-        [InlineData("./file.txt", null)]
-        public void SymlinkRelativeTargets_InsideTheArchive_RoundtripsSuccessfully(string symlinkTargetPath, string? subDirectory)
+        [InlineData("./file.txt", "subDirectory", false)]
+        [InlineData("./file.txt", "subDirectory", true)]
+        [InlineData("../file.txt", "subDirectory", false)]
+        [InlineData("../file.txt", "subDirectory", true)]
+        [InlineData("../file.txt", "subDirectory1/subDirectory1.1", false)]
+        [InlineData("../file.txt", "subDirectory1/subDirectory1.1", true)]
+        [InlineData("./file.txt", "subDirectory1/subDirectory1.1", false)]
+        [InlineData("./file.txt", "subDirectory1/subDirectory1.1", true)]
+        [InlineData("./file.txt", null, false)]
+        [InlineData("./file.txt", null, true)]
+        public async Task SymlinkRelativeTargets_InsideTheArchive_RoundtripsSuccessfully(string symlinkTargetPath, string? subDirectory, bool async)
         {
             using TempDirectory root = new TempDirectory();
 
@@ -27,15 +33,18 @@ namespace System.Formats.Tar.Tests
             Directory.CreateDirectory(destinationDirectoryName);
 
             string sourceSubDirectory = Path.Join(sourceDirectoryName, subDirectory);
-            if(subDirectory != null)  Directory.CreateDirectory(sourceSubDirectory);
+            if (subDirectory != null)
+            {
+                Directory.CreateDirectory(sourceSubDirectory);
+            }
 
             File.Create(Path.Join(sourceDirectoryName, subDirectory, symlinkTargetPath)).Dispose();
             File.CreateSymbolicLink(Path.Join(sourceSubDirectory, "linkToFile"), symlinkTargetPath);
 
-            TarFile.CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: false);
+            await CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: false, async);
 
             using FileStream archiveStream = File.OpenRead(destinationArchive);
-            TarFile.ExtractToDirectory(archiveStream, destinationDirectoryName, overwriteFiles: true);
+            await ExtractToDirectory(archiveStream, destinationDirectoryName, overwriteFiles: true, async);
 
             string destinationSubDirectory = Path.Join(destinationDirectoryName, subDirectory);
             string symlinkPath = Path.Join(destinationSubDirectory, "linkToFile");
@@ -49,9 +58,11 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [InlineData("../file.txt", null)]
-        [InlineData("../../file.txt", "subDirectory")]
-        public void SymlinkRelativeTargets_OutsideTheArchive_Fails(string symlinkTargetPath, string? subDirectory)
+        [InlineData("../file.txt", null, false)]
+        [InlineData("../file.txt", null, true)]
+        [InlineData("../../file.txt", "subDirectory", false)]
+        [InlineData("../../file.txt", "subDirectory", true)]
+        public async Task SymlinkRelativeTargets_OutsideTheArchive_Fails(string symlinkTargetPath, string? subDirectory, bool async)
         {
             using TempDirectory root = new TempDirectory();
 
@@ -64,14 +75,17 @@ namespace System.Formats.Tar.Tests
             Directory.CreateDirectory(destinationDirectoryName);
 
             string sourceSubDirectory = Path.Join(sourceDirectoryName, subDirectory);
-            if(subDirectory != null)  Directory.CreateDirectory(sourceSubDirectory);
+            if (subDirectory != null)
+            {
+                Directory.CreateDirectory(sourceSubDirectory);
+            }
 
             File.CreateSymbolicLink(Path.Join(sourceSubDirectory, "linkToFile"), symlinkTargetPath);
 
-            TarFile.CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: false);
+            await CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: false, async);
 
             using FileStream archiveStream = File.OpenRead(destinationArchive);
-            Exception exception = Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(archiveStream, destinationDirectoryName, overwriteFiles: true));
+            Exception exception = await Assert.ThrowsAsync<IOException>(() => ExtractToDirectory(archiveStream, destinationDirectoryName, overwriteFiles: true, async));
 
             Assert.Equal(SR.Format(SR.TarExtractingResultsLinkOutside, symlinkTargetPath, $"{destinationDirectoryName}{Path.DirectorySeparatorChar}"), exception.Message);
         }

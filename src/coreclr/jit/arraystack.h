@@ -113,6 +113,12 @@ public:
         INDEBUG(m_version++);
     }
 
+    void Reverse()
+    {
+        std::reverse(data, data + tosIndex);
+        INDEBUG(m_version++);
+    }
+
     T* Data()
     {
         return data;

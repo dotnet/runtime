@@ -158,6 +158,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             PublicKey publicKey,
             int? depthLimit = null)
         {
+            return CreateSubordinateCA(
+                new X500DistinguishedName(subject),
+                publicKey,
+                depthLimit);
+        }
+
+        internal X509Certificate2 CreateSubordinateCA(
+            X500DistinguishedName subject,
+            PublicKey publicKey,
+            int? depthLimit = null)
+        {
             return CreateCertificate(
                 subject,
                 publicKey,
@@ -171,7 +182,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     s_caKeyUsage });
         }
 
-        internal X509Certificate2 CreateEndEntity(string subject, PublicKey publicKey, X509ExtensionCollection extensions)
+        internal X509Certificate2 CreateEndEntity(
+            string subject,
+            PublicKey publicKey,
+            X509ExtensionCollection extensions)
+        {
+            return CreateCertificate(
+                new X500DistinguishedName(subject),
+                publicKey,
+                TimeSpan.FromSeconds(2),
+                extensions);
+        }
+
+        internal X509Certificate2 CreateEndEntity(
+            X500DistinguishedName subject,
+            PublicKey publicKey,
+            X509ExtensionCollection extensions)
         {
             return CreateCertificate(
                 subject,
@@ -255,6 +281,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             X509ExtensionCollection extensions,
             bool ocspResponder = false)
         {
+            X500DistinguishedName name = new(subject);
+
+            return CreateCertificate(name, publicKey, nestingBuffer, extensions, ocspResponder);
+        }
+
+        private X509Certificate2 CreateCertificate(
+            X500DistinguishedName subject,
+            PublicKey publicKey,
+            TimeSpan nestingBuffer,
+            X509ExtensionCollection extensions,
+            bool ocspResponder = false)
+        {
             if (_cdpExtension == null && CdpUri != null)
             {
                 _cdpExtension = CreateCdpExtension(CdpUri);
@@ -271,7 +309,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
 
             CertificateRequest request = new CertificateRequest(
-                new X500DistinguishedName(subject),
+                subject,
                 publicKey,
                 HashAlgorithmIfNeeded(_cert.GetKeyAlgorithm()),
                 RSASignaturePadding.Pkcs1);
@@ -808,6 +846,74 @@ SingleResponse ::= SEQUENCE {
             bool forTls = false,
             X509ExtensionCollection extensions = null)
         {
+            BuildPrivatePkiCore(
+                pkiOptions,
+                out responder,
+                out rootAuthority,
+                out intermediateAuthorities,
+                out endEntityCert,
+                BuildSubject("A Revocation Test Root", testName, pkiOptions, pkiOptionsInSubject),
+                index => BuildSubject($"A Revocation Test CA {index}", testName, pkiOptions, pkiOptionsInSubject),
+                intermediateAuthorityCount,
+                BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
+                keyFactoryHashSubjectName: subjectName,
+                testName,
+                registerAuthorities,
+                keyFactory,
+                forTls,
+                extensions);
+        }
+
+        internal static void BuildPrivatePki(
+            PkiOptions pkiOptions,
+            out RevocationResponder responder,
+            X500DistinguishedName rootName,
+            out CertificateAuthority rootAuthority,
+            X500DistinguishedName[] intermediateNames,
+            out CertificateAuthority[] intermediateAuthorities,
+            X500DistinguishedName endEntityName,
+            out X509Certificate2 endEntityCert,
+            string testName = null,
+            bool registerAuthorities = true,
+            KeyFactory keyFactory = null,
+            bool forTls = false,
+            X509ExtensionCollection extensions = null)
+        {
+            BuildPrivatePkiCore(
+                pkiOptions,
+                out responder,
+                out rootAuthority,
+                out intermediateAuthorities,
+                out endEntityCert,
+                rootName,
+                index => intermediateNames[index],
+                intermediateNames.Length,
+                endEntityName: endEntityName,
+                keyFactoryHashSubjectName: null,
+                testName,
+                registerAuthorities,
+                keyFactory,
+                forTls,
+                extensions);
+        }
+
+        private static void BuildPrivatePkiCore(
+            PkiOptions pkiOptions,
+            out RevocationResponder responder,
+            out CertificateAuthority rootAuthority,
+            out CertificateAuthority[] intermediateAuthorities,
+            out X509Certificate2 endEntityCert,
+            X500DistinguishedName rootName,
+            Func<int, X500DistinguishedName> intermediateAuthorityNameFactory,
+            int intermediateAuthorityCount,
+            X500DistinguishedName endEntityName,
+            string keyFactoryHashSubjectName,
+            string testName = null,
+            bool registerAuthorities = true,
+            KeyFactory keyFactory = null,
+            bool forTls = false,
+            X509ExtensionCollection extensions = null)
+        {
             bool rootDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoRootCertDistributionUri);
             bool issuerRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl);
             bool issuerRevocationViaOcsp = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaOcsp);
@@ -838,7 +944,7 @@ SingleResponse ::= SEQUENCE {
                     hasher.AppendData(MemoryMarshal.AsBytes(new ReadOnlySpan<PkiOptions>(ref pkiOptions)));
                     hasher.AppendData(MemoryMarshal.AsBytes(new ReadOnlySpan<int>(ref intermediateAuthorityCount)));
                     hasher.AppendData(MemoryMarshal.AsBytes(testName.AsSpan()));
-                    hasher.AppendData(MemoryMarshal.AsBytes(subjectName.AsSpan()));
+                    hasher.AppendData(MemoryMarshal.AsBytes(keyFactoryHashSubjectName.AsSpan()));
 
                     Span<byte> hash = stackalloc byte[256 / 8];
                     int written = hasher.GetCurrentHash(hash);
@@ -854,8 +960,7 @@ SingleResponse ::= SEQUENCE {
             using (KeyHolder rootKey = KeyHolder.CreateKey(keyFactory))
             using (KeyHolder eeKey = KeyHolder.CreateKey(keyFactory))
             {
-                CertificateRequest rootReq = rootKey.CreateRequest(
-                    BuildSubject("A Revocation Test Root", testName, pkiOptions, pkiOptionsInSubject));
+                CertificateRequest rootReq = rootKey.CreateRequest(rootName);
 
                 X509BasicConstraintsExtension caConstraints =
                     new X509BasicConstraintsExtension(true, false, 0, true);
@@ -894,7 +999,7 @@ SingleResponse ::= SEQUENCE {
 
                     {
                         X509Certificate2 intermedPub = issuingAuthority.CreateSubordinateCA(
-                            BuildSubject($"A Revocation Test CA {intermediateIndex}", testName, pkiOptions, pkiOptionsInSubject),
+                            intermediateAuthorityNameFactory(intermediateIndex),
                             intermediateKey.ToPublicKey());
                         intermedCert = intermediateKey.OntoCertificate(intermedPub);
                         intermedPub.Dispose();
@@ -918,7 +1023,7 @@ SingleResponse ::= SEQUENCE {
                 }
 
                 endEntityCert = issuingAuthority.CreateEndEntity(
-                    BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
+                    endEntityName,
                     eeKey.ToPublicKey(),
                     extensions);
 
@@ -970,7 +1075,7 @@ SingleResponse ::= SEQUENCE {
             intermediateAuthority = intermediateAuthorities.Single();
         }
 
-        private static string BuildSubject(
+        private static X500DistinguishedName BuildSubject(
             string cn,
             string testName,
             PkiOptions pkiOptions,
@@ -979,7 +1084,8 @@ SingleResponse ::= SEQUENCE {
             string testNamePart = !string.IsNullOrWhiteSpace(testName) ? $", O=\"{testName}\"" : "";
             string pkiOptionsPart = includePkiOptions ? $", OU=\"{pkiOptions}\"" : "";
 
-            return $"CN=\"{cn}\"" + testNamePart + pkiOptionsPart;
+            string subject = $"CN=\"{cn}\"" + testNamePart + pkiOptionsPart;
+            return new X500DistinguishedName(subject);
         }
 
         private static HashAlgorithmName HashAlgorithmIfNeeded(string publicKeyOid)
@@ -1114,7 +1220,7 @@ SingleResponse ::= SEQUENCE {
                 return new KeyHolder(factory.CreateKey());
             }
 
-            internal CertificateRequest CreateRequest(string subject)
+            internal CertificateRequest CreateRequest(X500DistinguishedName subject)
             {
                 return _key switch
                 {

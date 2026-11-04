@@ -1,21 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: methodtable.inl
-//
-
-
-//
-
-//
-// ============================================================================
 
 #ifndef _METHODTABLE_INL_
 #define _METHODTABLE_INL_
 
 #include "methodtable.h"
 #include "genericdict.h"
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 //==========================================================================================
 // DO NOT ADD ANY ASSERTS OR ANY OTHER CODE TO THIS METHOD.
@@ -69,25 +62,6 @@ inline Assembly * MethodTable::GetAssembly()
 {
     WRAPPER_NO_CONTRACT;
     return GetModule()->GetAssembly();
-}
-
-//==========================================================================================
-inline BOOL MethodTable::IsClassPointerValid()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    LowBits lowBits = union_getLowBits(m_pCanonMT);
-    if (lowBits == UNION_EECLASS)
-    {
-        return m_pEEClass != NULL;
-    }
-    else
-    {
-        // pointer to canonical MethodTable.
-        TADDR canonicalMethodTable = union_getPointer(m_pCanonMT);
-        return PTR_MethodTable(canonicalMethodTable)->m_pEEClass != NULL;
-    }
 }
 
 //==========================================================================================
@@ -1171,6 +1145,7 @@ inline PTR_BYTE MethodTable::GetGCStaticsBasePointer()
     }
 }
 
+#ifdef FEATURE_MULTITHREADING
 #ifndef DACCESS_COMPILE
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer()
@@ -1229,6 +1204,7 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer(PTR_Thread pThread)
 
     return (PTR_BYTE)GetThreadLocalStaticBaseNoCreate(pThread, tlsIndex);
 }
+#endif // FEATURE_MULTITHREADING
 
 //==========================================================================================
 inline OBJECTREF MethodTable::AllocateNoChecks()

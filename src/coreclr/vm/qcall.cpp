@@ -7,6 +7,46 @@
 
 #include "common.h"
 
+void SetQCallExceptionStatusThrowable(QCallExceptionStatus* pStatus, OBJECTREF throwable)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(throwable != NULL);
+    _ASSERTE(*pStatus == 0);
+
+    MethodTable* exceptionType = throwable->GetMethodTable();
+    if (exceptionType == g_pOutOfMemoryExceptionClass)
+    {
+        *pStatus = QCallOutOfMemoryException;
+        return;
+    }
+
+    if (exceptionType == g_pStackOverflowExceptionClass)
+    {
+        *pStatus = QCallStackOverflowException;
+        return;
+    }
+
+    OBJECTHANDLE exceptionHandle = GetAppDomain()->GetHandleStore()->CreateHandleOfType(
+        OBJECTREFToObject(throwable),
+        HNDTYPE_DEFAULT);
+    if (exceptionHandle == NULL)
+    {
+        *pStatus = QCallOutOfMemoryException;
+        return;
+    }
+
+    DiagHandleCreated(exceptionHandle, throwable);
+    _ASSERTE(reinterpret_cast<UINT_PTR>(exceptionHandle) > QCallStackOverflowException);
+    *pStatus = reinterpret_cast<UINT_PTR>(exceptionHandle);
+}
+
 //
 // Helpers for returning managed string from QCall
 //

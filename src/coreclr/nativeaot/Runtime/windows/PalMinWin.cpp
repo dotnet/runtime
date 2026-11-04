@@ -259,7 +259,7 @@ uint32_t PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t 
 {
     if (!allowReentrantWait)
     {
-        return WaitForMultipleObjectsEx(handleCount, pHandles, FALSE, timeout, alertable);
+        return WaitForMultipleObjectsEx(handleCount, pHandles, false, timeout, alertable);
     }
     else
     {
@@ -287,19 +287,9 @@ HANDLE PalCreateLowMemoryResourceNotification()
     return CreateMemoryResourceNotification(LowMemoryResourceNotification);
 }
 
-void PalSleep(uint32_t milliseconds)
-{
-    return Sleep(milliseconds);
-}
-
 UInt32_BOOL PalSwitchToThread()
 {
     return SwitchToThread();
-}
-
-HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName)
-{
-    return CreateEventW(pEventAttributes, manualReset, initialState, pName);
 }
 
 UInt32_BOOL PalAreShadowStacksEnabled()
@@ -1042,11 +1032,6 @@ uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint
     return res;
 }
 
-UInt32_BOOL PalCloseHandle(HANDLE arg1)
-{
-    return ::CloseHandle(arg1);
-}
-
 uint32_t PalGetCurrentProcessId()
 {
     return static_cast<uint32_t>(::GetCurrentProcessId());
@@ -1055,19 +1040,4 @@ uint32_t PalGetCurrentProcessId()
 uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize)
 {
     return ::GetEnvironmentVariableW(lpName, lpBuffer, nSize);
-}
-
-UInt32_BOOL PalResetEvent(HANDLE arg1)
-{
-    return ::ResetEvent(arg1);
-}
-
-UInt32_BOOL PalSetEvent(HANDLE arg1)
-{
-    return ::SetEvent(arg1);
-}
-
-uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3)
-{
-    return ::WaitForSingleObjectEx(arg1, arg2, arg3);
 }

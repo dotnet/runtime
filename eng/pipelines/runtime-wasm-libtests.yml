@@ -1,3 +1,7 @@
+# Manually run all WebAssembly library-test jobs, including the full trimmed
+# CoreCLR ReadyToRun lane, on a PR with:
+#   /azp run runtime-wasm-libtests
+
 trigger: none
 
 variables:
@@ -17,16 +21,18 @@ extends:
 
     - stage: Build
       jobs:
-      - template: /eng/common/core-templates/job/helix-job-monitor.yml
-        parameters:
-          helixAccessToken: $(HelixApiAccessToken)
-          timeoutInMinutes: 540
-          allowNoHelixJobs: true
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
+            allowNoHelixJobs: true
 
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-wasm.yml
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
-          isRollingBuild: ${{ variables.isRollingBuild }}
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           excludeNonLibTests: true
           excludeLibTests: false
+          runFullR2RLibraryTests: true

@@ -788,12 +788,9 @@ HRESULT ETW::TypeSystemLog::PreRegistrationInit()
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (!AllLoggedTypes::s_cs.InitNoThrow(
+    AllLoggedTypes::s_cs.Init(
         CrstEtwTypeLogHash,
-        CRST_UNSAFE_ANYMODE))       // This lock is taken during a GC while walking the heap
-    {
-        return E_FAIL;
-    }
+        CRST_UNSAFE_ANYMODE);
 
     return S_OK;
 }
@@ -1506,122 +1503,97 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
     }
     CONTRACTL_END;
 
+    *pfCreatedNew = FALSE;
+
     BOOL fSucceeded = FALSE;
 
-   {
-        CrstHolder _crst(GetHashCrst());
-
-        // Check if ETW is enabled, and if not, bail here.
-        // We do this inside of the lock to ensure that we don't immediately
-        // re-allocate the global type hash after it has been cleaned up.
-        if (!ETW_TRACING_CATEGORY_ENABLED(
-           MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-            TRACE_LEVEL_INFORMATION,
-            CLR_TYPE_KEYWORD))
-        {
-            *pfCreatedNew = FALSE;
-            return fSucceeded;
-        }
-
-        if (s_pAllLoggedTypes == NULL)
-        {
-            s_pAllLoggedTypes = new (nothrow) AllLoggedTypes;
-            if (s_pAllLoggedTypes == NULL)
-            {
-                // out of memory.  Bail on ETW stuff
-                *pfCreatedNew = FALSE;
-                return fSucceeded;
-            }
-        }
-    }
-
-    // Step 1: go from LoaderModule to hash of types.
     Module * pLoaderModule = th.GetLoaderModule();
     _ASSERTE(pLoaderModule != NULL);
-    LoggedTypesFromModule * pLoggedTypesFromModule = nullptr;
-    {
-        CrstHolder _crst(GetHashCrst());
-        pLoggedTypesFromModule = s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
-    }
+    TypeLoggingInfo typeLoggingInfoNew(th);
+    LoggedTypesFromModule * pNewLoggedTypesFromModule = NULL;
 
-    if (pLoggedTypesFromModule == NULL)
+    while (TRUE)
     {
-        pLoggedTypesFromModule = new (nothrow) LoggedTypesFromModule(pLoaderModule);
-        if (pLoggedTypesFromModule == NULL)
-        {
-            // out of memory.  Bail on ETW stuff
-            *pfCreatedNew = FALSE;
-            return fSucceeded;
-        }
+        BOOL fAllocateLoggedTypesFromModule = FALSE;
+
         {
             CrstHolder _crst(GetHashCrst());
-            // recheck if the type has been added by another thread since we last checked above
-            LoggedTypesFromModule * recheckLoggedTypesFromModule = s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
-            if (recheckLoggedTypesFromModule == NULL)
+
+            // Check if ETW is enabled, and if not, bail here.
+            // We do this inside of the lock to ensure that we don't immediately
+            // re-allocate the global type hash after it has been cleaned up.
+            if (!ETW_TRACING_CATEGORY_ENABLED(
+                MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+                TRACE_LEVEL_INFORMATION,
+                CLR_TYPE_KEYWORD))
             {
-                EX_TRY
+                break;
+            }
+
+            if (s_pAllLoggedTypes == NULL)
+            {
+                s_pAllLoggedTypes = new (nothrow) AllLoggedTypes;
+                if (s_pAllLoggedTypes == NULL)
                 {
-                    s_pAllLoggedTypes->allLoggedTypesHash.Add(pLoggedTypesFromModule);
-                    fSucceeded = TRUE;
+                    break;
                 }
-                EX_SWALLOW_NONTERMINAL
-            }
-            else
-            {
-                delete pLoggedTypesFromModule;
-                pLoggedTypesFromModule = recheckLoggedTypesFromModule;
             }
 
-            if (!fSucceeded)
+            LoggedTypesFromModule * pLoggedTypesFromModule =
+                s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
+            if (pLoggedTypesFromModule == NULL)
             {
-                *pfCreatedNew = FALSE;
-                return fSucceeded;
+                if (pNewLoggedTypesFromModule == NULL)
+                {
+                    fAllocateLoggedTypesFromModule = TRUE;
+                }
+                else
+                {
+                    EX_TRY
+                    {
+                        s_pAllLoggedTypes->allLoggedTypesHash.Add(pNewLoggedTypesFromModule);
+                        pLoggedTypesFromModule = pNewLoggedTypesFromModule;
+                        pNewLoggedTypesFromModule = NULL;
+                    }
+                    EX_SWALLOW_NONTERMINAL
+                }
             }
+
+            if (!fAllocateLoggedTypesFromModule && pLoggedTypesFromModule != NULL)
+            {
+                // The cache objects must not be used after releasing this lock because
+                // provider disable and module unload can delete them under the same lock.
+                if (pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th).th.IsNull())
+                {
+                    EX_TRY
+                    {
+                        pLoggedTypesFromModule->loggedTypesFromModuleHash.Add(typeLoggingInfoNew);
+                        fSucceeded = TRUE;
+                    }
+                    EX_SWALLOW_NONTERMINAL
+                }
+
+                break;
+            }
+        }
+
+        if (!fAllocateLoggedTypesFromModule)
+        {
+            break;
+        }
+
+        // Allocate outside the lock, then revalidate and publish the candidate
+        // under the lock on the next iteration.
+        pNewLoggedTypesFromModule = new (nothrow) LoggedTypesFromModule(pLoaderModule);
+        if (pNewLoggedTypesFromModule == NULL)
+        {
+            break;
         }
     }
 
-    // Step 2: From hash of types, see if our TypeHandle is there already
-    TypeLoggingInfo typeLoggingInfoPreexisting;
-    {
-        CrstHolder _crst(GetHashCrst());
-        typeLoggingInfoPreexisting = pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th);
-        if (!typeLoggingInfoPreexisting.th.IsNull())
-        {
-            // Type is already hashed, so it's already logged, so we don't need to
-            // log it again.
-            *pfCreatedNew = FALSE;
-            return fSucceeded;
-        }
-    }
+    delete pNewLoggedTypesFromModule;
 
-    // We haven't logged this type, so we need to continue with this function to
-    // log it below. Add it to the hash table first so any recursive calls will
-    // see that this type is already being taken care of
-    fSucceeded = FALSE;
-    TypeLoggingInfo typeLoggingInfoNew(th);
-    {
-        CrstHolder _crst(GetHashCrst());
-        // Like above, check if the type has been added from a different thread since we last looked it up.
-        if (!pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th).th.IsNull())
-        {
-            *pfCreatedNew = FALSE;
-            return fSucceeded;
-        }
-
-        EX_TRY
-        {
-            pLoggedTypesFromModule->loggedTypesFromModuleHash.Add(typeLoggingInfoNew);
-            fSucceeded = TRUE;
-        }
-        EX_SWALLOW_NONTERMINAL
-        if (!fSucceeded)
-        {
-            *pfCreatedNew = FALSE;
-            return fSucceeded;
-        }
-    } // RELEASE: CrstHolder _crst(GetHashCrst());
-
-    *pfCreatedNew = TRUE;
+    *pfCreatedNew = fSucceeded;
     return fSucceeded;
 }
 
@@ -2678,7 +2650,6 @@ extern "C"
             if(g_fEEStarted) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);};
             MODE_ANY;
             CAN_TAKE_LOCK;
-            STATIC_CONTRACT_FAULT;
         } CONTRACTL_END;
 
         // Mark that we are the special ETWRundown thread.  Currently all this does
@@ -3607,25 +3578,68 @@ VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER
 }
 
 /**********************************************************************/
-/* This is called by the runtime when a single jit helper method with stub is initialized */
+/* This is called by the runtime when a helper is initialized */
 /**********************************************************************/
-VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
+VOID ETW::MethodLog::HelperInitialized(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
 {
     CONTRACTL {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         PRECONDITION(ullHelperStartAddress != 0);
         PRECONDITION(ulHelperSize != 0);
+        PRECONDITION(pHelperName != nullptr);
     } CONTRACTL_END;
 
     EX_TRY
     {
-        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                        TRACE_LEVEL_INFORMATION,
-                                        CLR_JIT_KEYWORD))
-        {
-            ETW::MethodLog::SendHelperEvent(ullHelperStartAddress, ulHelperSize, pHelperName);
-        }
+        SendHelperEvent(
+            ullHelperStartAddress,
+            ulHelperSize,
+            pHelperName,
+            ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
+    } EX_CATCH { } EX_END_CATCH
+}
+
+/**********************************************************************/
+/* This is called by the runtime when a helper is destroyed */
+/**********************************************************************/
+VOID ETW::MethodLog::HelperDestroyed(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(ullHelperStartAddress != 0);
+        PRECONDITION(ulHelperSize != 0);
+        PRECONDITION(pHelperName != nullptr);
+    } CONTRACTL_END;
+
+    EX_TRY
+    {
+        SendHelperEvent(
+            ullHelperStartAddress,
+            ulHelperSize,
+            pHelperName,
+            ETW::EnumerationLog::EnumerationStructs::JitMethodUnload);
+    } EX_CATCH { } EX_END_CATCH
+}
+
+VOID ETW::MethodLog::SendCopiedWriteBarrierEvent(
+    ULONGLONG ullHelperStartAddress,
+    ULONG ulHelperSize,
+    LPCWSTR pHelperName,
+    DWORD dwEventOptions)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(ullHelperStartAddress != 0);
+        PRECONDITION(ulHelperSize != 0);
+        PRECONDITION(pHelperName != nullptr);
+    } CONTRACTL_END;
+
+    EX_TRY
+    {
+        SendHelperEvent(ullHelperStartAddress, ulHelperSize, pHelperName, dwEventOptions);
     } EX_CATCH { } EX_END_CATCH
 }
 
@@ -3773,6 +3787,7 @@ VOID ETW::LoaderLog::SendDomainEvent(DWORD dwEventOptions, LPCWSTR wszFriendlyNa
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(AppDomain::GetCurrentDomain() != NULL);
     } CONTRACTL_END;
 
@@ -3826,10 +3841,13 @@ VOID ETW::LoaderLog::SendDomainEvent(DWORD dwEventOptions, LPCWSTR wszFriendlyNa
 /********************************************************/
 VOID ETW::EnumerationLog::SendThreadRundownEvent()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
     Thread *pThread = NULL;
@@ -3854,10 +3872,13 @@ VOID ETW::EnumerationLog::SendThreadRundownEvent()
 /********************************************************/
 VOID ETW::EnumerationLog::SendGCRundownEvent()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (GCHeapUtilities::IsGCHeapInitialized())
     {
@@ -3898,10 +3919,13 @@ VOID ETW::EnumerationLog::SendGCRundownEvent()
 
 VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if(!pAssembly)
         return;
@@ -4153,10 +4177,13 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
 //
 VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL bFireDomainModuleEvents)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if(!pModule)
         return;
@@ -4355,10 +4382,13 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(
     SString *methodName,
     SString *methodSignature)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     Module *pModule = NULL;
     Module *pLoaderModule = NULL; // This must not be used except for getting the ModuleID
@@ -4434,13 +4464,13 @@ TADDR MethodAndStartAddressToEECodeInfoPointer(MethodDesc *pMethodDesc, PCODE pN
     } CONTRACTL_END;
 
     // MethodDesc ==> Code Address ==>JitManager
-    TADDR start = pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode();
-    if(start == 0) {
+    TADDR entryPoint = pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode();
+    if(entryPoint == 0) {
         // this method hasn't been jitted
         return 0;
     }
 
-    return GetInterpreterCodeFromEntryPointIfPresent(start);
+    return GetDiagnosticCodeStartFromEntryPoint(pMethodDesc, entryPoint);
 }
 
 /****************************************************************************/
@@ -4536,6 +4566,11 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     // EECodeInfo is technically initialized by a "PCODE", but it can also be initialized
     // by a TADDR (i.e., w/out thumb bit set on ARM)
     EECodeInfo codeInfo(start);
+    if (!codeInfo.IsValid())
+    {
+        // The address doesn't map to a registered JIT manager, so there is no region info to report.
+        return;
+    }
 
     // MethodToken ==> MethodRegionInfo
     IJitManager::MethodRegionInfo methodRegionInfo;
@@ -4760,6 +4795,11 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
     // EECodeInfo is technically initialized by a "PCODE", but it can also be initialized
     // by a TADDR (i.e., w/out thumb bit set on ARM)
     EECodeInfo codeInfo(start);
+    if (!codeInfo.IsValid())
+    {
+        return;
+    }
+
     TADDR startAddress = codeInfo.GetStartAddress();
     DebugInfoRequest request;
     request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
@@ -4920,23 +4960,76 @@ VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNat
     delete[] (BYTE*)mappings;
 }
 
-VOID ETW::MethodLog::SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
+// Do not explicitly check CLR_JIT_KEYWORD here. These events can be enabled by multiple
+// keywords, and copied write barriers and stubs should be reported when any of them is enabled.
+VOID ETW::MethodLog::SendHelperEvent(
+    ULONGLONG ullHelperStartAddress,
+    ULONG ulHelperSize,
+    LPCWSTR pHelperName,
+    DWORD dwEventOptions)
 {
     WRAPPER_NO_CONTRACT;
-    if(pHelperName)
+
+    if (pHelperName == nullptr || ulHelperSize == 0)
     {
-         PCWSTR szDtraceOutput1=W("");
-         ULONG methodFlags = ETW::MethodLog::MethodStructs::JitHelperMethod; // helper flag set
-         FireEtwMethodLoadVerbose_V1(ullHelperStartAddress,
-                                     0,
-                                     ullHelperStartAddress,
-                                     ulHelperSize,
-                                     0,
-                                     methodFlags,
-                                     NULL,
-                                     pHelperName,
-                                     NULL,
-                                     GetClrInstanceId());
+        return;
+    }
+
+    if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoad)
+    {
+        FireEtwMethodLoadVerbose_V1(
+            ullHelperStartAddress,
+            0,
+            ullHelperStartAddress,
+            ulHelperSize,
+            0,
+            MethodStructs::JitHelperMethod,
+            nullptr,
+            pHelperName,
+            nullptr,
+            GetClrInstanceId());
+    }
+    else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodUnload)
+    {
+        FireEtwMethodUnloadVerbose_V1(
+            ullHelperStartAddress,
+            0,
+            ullHelperStartAddress,
+            ulHelperSize,
+            0,
+            MethodStructs::JitHelperMethod,
+            nullptr,
+            pHelperName,
+            nullptr,
+            GetClrInstanceId());
+    }
+    else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodDCStart)
+    {
+        FireEtwMethodDCStartVerbose_V1(
+            ullHelperStartAddress,
+            0,
+            ullHelperStartAddress,
+            ulHelperSize,
+            0,
+            MethodStructs::JitHelperMethod,
+            nullptr,
+            pHelperName,
+            nullptr,
+            GetClrInstanceId());
+    }
+    else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodDCEnd)
+    {
+        FireEtwMethodDCEndVerbose_V1(
+            ullHelperStartAddress,
+            0,
+            ullHelperStartAddress,
+            ulHelperSize,
+            0,
+            MethodStructs::JitHelperMethod,
+            nullptr,
+            pHelperName,
+            nullptr,
+            GetClrInstanceId());
     }
 }
 
@@ -4947,10 +5040,13 @@ VOID ETW::MethodLog::SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHe
 /****************************************************************************/
 VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (!pModule)
         return;
@@ -4974,8 +5070,8 @@ VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOpti
 #endif // FEATURE_READYTORUN
 }
 
-// Called be ETW::MethodLog::SendEventsForJitMethods
-// Sends the ETW events once our caller determines whether or not rejit locks can be acquired
+// Called by ETW::MethodLog::SendEventsForJitMethods
+// Sends the ETW events for methods in the selected code heaps.
 VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAllocatorFilter,
                                                    DWORD dwEventOptions,
                                                    BOOL fLoadOrDCStart,
@@ -5012,8 +5108,8 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
         fGetCodeIds);
 #endif // FEATURE_INTERPRETER
 }
-// Called be ETW::MethodLog::SendEventsForJitMethods
-// Sends the ETW events once our caller determines whether or not rejit locks can be acquired
+// Called by ETW::MethodLog::SendEventsForJitMethodsHelper
+// Sends the ETW events for methods in the supplied code heap.
 VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
                                                    CodeHeapIterator heapIterator,
                                                    DWORD dwEventOptions,
@@ -5039,26 +5135,41 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
     {
         MethodDesc * pMD = heapIterator.GetMethod();
         if (pMD == NULL)
+        {
+            if (fSendMethodEvent && heapIterator.GetStubCodeBlockKind() != STUB_CODE_BLOCK_UNKNOWN)
+            {
+                ETW::MethodLog::SendHelperEvent(
+                    heapIterator.GetMethodCode(),
+                    heapIterator.GetCodeSize(),
+                    GetStubCodeBlockKindStringW(heapIterator.GetStubCodeBlockKind()),
+                    dwEventOptions);
+            }
             continue;
+        }
 
         PCODE codeStart = PINSTRToPCODE(heapIterator.GetMethodCode());
 
         // Get info relevant to the native code version. In some cases, such as collectible loader
         // allocators, we don't support code versioning so we need to short circuit the call.
-        // This also allows our caller to avoid having to pre-enter the relevant locks.
-        // see code:#TableLockHolder
         DWORD nativeCodeVersionId = 0;
         ReJITID ilCodeId = 0;
         NativeCodeVersion nativeCodeVersion;
 #ifdef FEATURE_CODE_VERSIONING
         if (fGetCodeIds && pMD->IsVersionable())
         {
-            _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
             nativeCodeVersion = pMD->GetCodeVersionManager()->GetNativeCodeVersion(pMD, codeStart);
             if (nativeCodeVersion.IsNull())
             {
-                // The code version manager hasn't been updated with the jitted code
-                if (codeStart != MethodAndStartAddressToEECodeInfoPointer(pMD, (PCODE)NULL))
+                // The code version state may be published concurrently with rundown.
+#ifndef DACCESS_COMPILE
+                PCODE nativeCode = pMD->GetNativeCodeVolatile();
+#else
+                PCODE nativeCode = pMD->GetNativeCode();
+#endif
+                TADDR mappedNativeCode = nativeCode != (PCODE)NULL
+                    ? MethodAndStartAddressToEECodeInfoPointer(pMD, nativeCode)
+                    : (TADDR)NULL;
+                if (codeStart != mappedNativeCode)
                 {
                     continue;
                 }
@@ -5162,28 +5273,9 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
         BOOL fSendRichDebugInfoEvent =
             (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JittedMethodRichDebugInfo) != 0;
 
-        // #TableLockHolder:
-        //
-        // A word about ReJitManager::TableLockHolder... As we enumerate through the functions,
-        // we may need to grab their code IDs. The ReJitManager grabs its table Crst in order to
-        // fetch these. However, several other kinds of locks are being taken during this
-        // enumeration, such as the SystemDomain lock and the CodeHeapIterator's
-        // lock. In order to avoid lock-leveling issues, we grab the appropriate ReJitManager
-        // table locks after SystemDomain and before CodeHeapIterator. In particular, we need to
-        // grab the SharedDomain's ReJitManager table lock as well as the specific AppDomain's
-        // ReJitManager table lock for the current AppDomain we're iterating. Why the SharedDomain's
-        // ReJitManager lock? For any given AppDomain we're iterating over, the MethodDescs we
-        // find may be managed by that AppDomain's ReJitManger OR the SharedDomain's ReJitManager.
-        // (This is due to generics and whether given instantiations may be shared based on their
-        // arguments.) Therefore, we proactively take the SharedDomain's ReJitManager's table
-        // lock up front, and then individually take the appropriate AppDomain's ReJitManager's
-        // table lock that corresponds to the domain or module we're currently iterating over.
-        //
-
 #ifdef FEATURE_CODE_VERSIONING
         if (getCodeVersionIds)
         {
-            CodeVersionManager::LockHolder codeVersioningLockHolder;
             SendEventsForJitMethodsHelper(
                 pLoaderAllocatorFilter,
                 dwEventOptions,
@@ -5207,6 +5299,13 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
                 fSendRichDebugInfoEvent,
                 FALSE);
         }
+
+#ifndef FEATURE_PORTABLE_HELPERS
+        if (pLoaderAllocatorFilter == nullptr && fSendMethodEvent)
+        {
+            ReportCopiedWriteBarriersToEventTracing(dwEventOptions);
+        }
+#endif // !FEATURE_PORTABLE_HELPERS
     } EX_CATCH{} EX_END_CATCH
 #endif // !DACCESS_COMPILE
 }
@@ -5230,6 +5329,7 @@ VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(AppDomain::GetCurrentDomain() != NULL);
     }
     CONTRACTL_END;
@@ -5303,6 +5403,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pLoaderAllocator != NULL);
     } CONTRACTL_END;
 
@@ -5348,6 +5449,7 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pAssembly != NULL);
     } CONTRACTL_END;
 
@@ -5385,6 +5487,7 @@ VOID ETW::EnumerationLog::IterateModule(Module *pModule, DWORD enumerationOption
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pModule != NULL);
     } CONTRACTL_END;
 
@@ -5446,10 +5549,13 @@ VOID ETW::EnumerationLog::IterateModule(Module *pModule, DWORD enumerationOption
 // static
 VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, DWORD enumerationOptions)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (moduleFilter)
     {

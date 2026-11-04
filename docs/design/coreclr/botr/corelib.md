@@ -77,29 +77,29 @@ QCalls should be implemented with a C-style method signature. This makes it easi
 Do not replicate the comments into your actual QCall implementation. This is for illustrative purposes.
 
 ```CSharp
-class Foo
+partial class Foo
 {
-    // All QCalls should have the following DllImport attribute
-    [DllImport(RuntimeHelpers.QCall, EntryPoint = "Foo_BarInternal", CharSet = CharSet.Unicode)]
-
-    // QCalls should always be static extern.
-    private static extern bool BarInternal(int flags, string inString, StringHandleOnStack retString);
+    // QCalls that use BEGIN_QCALL must use the hidden last parameter error handler.
+    [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+    [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Foo_BarInternal", StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool BarInternal(int flags, string inString, StringHandleOnStack retString);
 
     // Many QCalls have a thin managed wrapper around them to perform
     // as much work prior to the transition as possible. An example would be
     // argument validation which is easier in managed than native code.
-    public string Bar(int flags)
+    public string Bar(int flags, string inString)
     {
         if (flags != 0)
             throw new ArgumentException("Invalid flags");
 
-        string retString = null;
+        string? retString = null;
         // The strings are returned from QCalls by taking address
-        // of a local variable using StringHandleOnStack
-        if (!BarInternal(flags, this.Id, new StringHandleOnStack(ref retString)))
+        // of a local variable using StringHandleOnStack.
+        if (!BarInternal(flags, inString, new StringHandleOnStack(ref retString)))
             FatalError();
 
-        return retString;
+        return retString!;
     }
 }
 ```
@@ -114,7 +114,8 @@ The QCall entrypoint has to be registered in tables in [vm\qcallentrypoints.cpp]
 
 ```C++
 // All QCalls should be free functions and tagged with QCALLTYPE and extern "C"
-extern "C" BOOL QCALLTYPE Foo_BarInternal(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString)
+extern "C" BOOL QCALLTYPE Foo_BarInternal(
+    int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     // All QCalls should have QCALL_CONTRACT.
     // It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE.
@@ -132,7 +133,7 @@ extern "C" BOOL QCALLTYPE Foo_BarInternal(int flags, LPCWSTR wszString, QCall::S
     BOOL retVal = FALSE;
 
     // The body has to be enclosed in BEGIN_QCALL/END_QCALL macro.
-    // It is necessary for exception handling.
+    // It initializes qcallError and captures exceptions for the managed error handler.
     BEGIN_QCALL;
 
     // Argument validation would ideally be in managed, but in some cases
@@ -157,6 +158,9 @@ extern "C" BOOL QCALLTYPE Foo_BarInternal(int flags, LPCWSTR wszString, QCall::S
     return retVal;
 }
 ```
+
+QCalls that return before entering `BEGIN_QCALL`, including no-op fast paths and code excluded
+by platform conditionals, must explicitly set `*qcallError = 0` before returning.
 
 ## FCall functional behavior
 
@@ -292,31 +296,35 @@ Then, you can use the `REF<T>` template to create a type name like `SAFEHANDLERE
 
 # Calling into managed code from unmanaged code
 
-Clearly there are places where the CLR must call into managed code from native. For this purpose, we have added a `MethodDescCallSite` class to handle a lot of plumbing for you. Conceptually, all you need to do is find the `MethodDesc*` for the method you want to call, find a managed object for the "this" pointer (if you're calling an instance method), pass in an array of arguments, and deal with the return value. Internally, you'll need to potentially toggle your thread's state to allow the GC to run in preemptive mode, etc.
+The VM calls CoreLib methods marked `[UnmanagedCallersOnly]` through `UnmanagedCallersOnlyCaller`. The binder identifies the entrypoint, and the helper transitions to preemptive GC mode before calling it through the platform's unmanaged ABI. The caller must keep managed references GC-protected and pass their addresses to the managed entrypoint. Instance or virtual dispatch is performed in a managed wrapper rather than by constructing a native argument stack.
 
-Here's a simplified example. Note how this instance uses the binder described in the previous section to call `SafeHandle`'s virtual `ReleaseHandle` method.
+The `InvokeThrowing` variants append an exception-handle argument. The managed entrypoint catches exceptions and stores them through that argument; the native helper rethrows them after returning. For example, `Exception.CreateTargetInvocationException` returns its newly allocated object through an output argument:
 
 ```C++
-void SafeHandle::RunReleaseMethod(SafeHandle* psh)
+OBJECTREF CreateTargetInvocationException(OBJECTREF innerException)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    SAFEHANDLEREF sh(psh);
-
-    GCPROTECT_BEGIN(sh);
-
-    MethodDescCallSite releaseHandle(s_pReleaseHandleMethod, METHOD__SAFE_HANDLE__RELEASE_HANDLE, (OBJECTREF*)&sh, TypeHandle(), TRUE);
-
-    ARG_SLOT releaseArgs[] = { ObjToArgSlot(sh) };
-    if (!(BOOL)releaseHandle.Call_RetBool(releaseArgs)) {
-        MDA_TRIGGER_ASSISTANT(ReleaseHandleFailed, ReportViolation)(sh->GetTypeHandle(), sh->m_handle);
     }
+    CONTRACTL_END;
 
+    struct
+    {
+        OBJECTREF inner;
+        OBJECTREF result;
+    } gc;
+    gc.inner = innerException;
+    gc.result = nullptr;
+
+    GCPROTECT_BEGIN(gc);
+    UnmanagedCallersOnlyCaller caller{METHOD__EXCEPTION__CREATE_TARGET_INVOCATION_EXCEPTION};
+    caller.InvokeThrowing(&gc.inner, &gc.result);
     GCPROTECT_END();
+
+    return gc.result;
 }
 ```
 

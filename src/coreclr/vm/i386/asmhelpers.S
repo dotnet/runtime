@@ -126,101 +126,6 @@ LEAF_ENTRY RestoreFPUContext, _TEXT
     ret     4
 LEAF_END RestoreFPUContext, _TEXT
 
-// ------------------------------------------------------------------------------
-//  This helper routine enregisters the appropriate arguments and makes the
-//  actual call.
-// ------------------------------------------------------------------------------
-//  void STDCALL CallDescrWorkerInternal(CallDescrWorkerParams *  pParams)
-NESTED_ENTRY CallDescrWorkerInternal, _TEXT, NoHandler
-    PROLOG_BEG
-    PROLOG_PUSH ebx
-    PROLOG_END
-
-    mov     ebx, [esp + ((2 + 1) * 4)]
-
-    // compute padding size
-    mov     eax, esp
-    mov     ecx, [ebx + CallDescrData__numStackSlots]
-    shl     ecx, 2
-    sub     eax, ecx
-    and     eax, 15
-    // adjust stack offset
-    sub     esp, eax
-
-    // copy the stack
-    mov     ecx, [ebx +CallDescrData__numStackSlots]
-    mov     eax, [ebx +CallDescrData__pSrc]
-    test    ecx, ecx
-    jz      LOCAL_LABEL(donestack)
-    lea     eax, [eax + 4*ecx - 4] // last argument
-    push    DWORD PTR [eax]
-    dec     ecx
-    jz      LOCAL_LABEL(donestack)
-    sub     eax, 4
-    push    DWORD PTR [eax]
-    dec     ecx
-    jz      LOCAL_LABEL(donestack)
-
-LOCAL_LABEL(stackloop):
-    sub     eax, 4
-    push    DWORD PTR [eax]
-    dec     ecx
-    jnz     LOCAL_LABEL(stackloop)
-
-LOCAL_LABEL(donestack):
-    // now we must push each field of the ArgumentRegister structure
-    mov     eax, [ebx + CallDescrData__pArgumentRegisters]
-    mov     edx, DWORD PTR [eax]
-    mov     ecx, DWORD PTR [eax + 4]
-
-    CHECK_STACK_ALIGNMENT
-    call    [ebx + CallDescrData__pTarget]
-LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
-
-#ifdef _DEBUG
-    nop     // Debug-only tag used in asserts.
-            // FCalls expect to be called from Jitted code or specific approved call sites,
-            // like this one.
-#endif
-
-    // Save FP return value if necessary
-    mov     ecx, [ebx + CallDescrData__fpReturnSize]
-    cmp     ecx, 0
-    je      LOCAL_LABEL(ReturnsInt)
-
-    cmp     ecx, 4
-    je      LOCAL_LABEL(ReturnsFloat)
-    cmp     ecx, 8
-    je      LOCAL_LABEL(ReturnsDouble)
-    // unexpected
-    jmp     LOCAL_LABEL(Epilog)
-
-LOCAL_LABEL(ReturnsInt):
-    mov     [ebx + CallDescrData__returnValue], eax
-    mov     [ebx + CallDescrData__returnValue + 4], edx
-
-LOCAL_LABEL(Epilog):
-    // restore the stake pointer
-    lea     esp, [ebp - 4]
-
-    EPILOG_BEG
-    EPILOG_POP ebx
-    EPILOG_END
-    ret     4
-
-LOCAL_LABEL(ReturnsFloat):
-    fstp    DWORD PTR [ebx + CallDescrData__returnValue]  // Spill the Float return value
-    jmp     LOCAL_LABEL(Epilog)
-
-LOCAL_LABEL(ReturnsDouble):
-    fstp    QWORD PTR [ebx + CallDescrData__returnValue]  // Spill the Double return value
-    jmp     LOCAL_LABEL(Epilog)
-
-PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
-    .word LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
-
-NESTED_END CallDescrWorkerInternal, _TEXT
-
 #ifdef FEATURE_HIJACK
 
 // A JITted method's return address was hijacked to return to us here.
@@ -352,99 +257,6 @@ LEAF_ENTRY GetCurrentSP, _TEXT
     add     eax, 4
     ret
 LEAF_END GetCurrentSP, _TEXT
-
-// ==========================================================================
-// Invoked for vararg forward P/Invoke calls as a stub.
-// Except for secret return buffer, arguments come on the stack so EDX is available as scratch.
-// EAX       - the PInvokeMethodDesc
-// ECX       - may be return buffer address
-// [ESP + 4] - the VASigCookie
-//
-NESTED_ENTRY VarargPInvokeStub, _TEXT, NoHandler
-    // EDX <- VASigCookie
-    mov     edx, [esp + 4]           // skip retaddr
-
-    mov     edx, [edx + VASigCookie__StubOffset]
-    test    edx, edx
-
-    jz      LOCAL_LABEL(GoCallVarargWorker)
-    // ---------------------------------------
-
-    // EAX contains MD ptr for the IL stub
-    jmp     edx
-
-LOCAL_LABEL(GoCallVarargWorker):
-    //
-    // MD ptr in EAX, VASigCookie ptr at [esp+4]
-    //
-    STUB_PROLOG
-
-    mov         esi, esp
-
-    // save pMD
-    push        eax
-
-    push        eax                     // pMD
-    push        dword ptr [esi + 4*7]   // pVaSigCookie
-    push        esi                     // pTransitionBlock
-
-    call        C_FUNC(VarargPInvokeStubWorker)
-
-    // restore pMD
-    pop     eax
-
-    STUB_EPILOG
-
-    // jump back to the helper - this time it won't come back here as the stub already exists
-    jmp C_FUNC(VarargPInvokeStub)
-NESTED_END VarargPInvokeStub, _TEXT
-
-// ==========================================================================
-// Invoked for marshaling-required unmanaged CALLI calls as a stub.
-// EAX       - the unmanaged target
-// ECX, EDX  - arguments
-// EBX       - the VASigCookie
-//
-LEAF_ENTRY GenericPInvokeCalliHelper, _TEXT
-
-    cmp     dword ptr [ebx + VASigCookie__StubOffset], 0
-    jz      LOCAL_LABEL(GoCallCalliWorker)
-
-    // Stub is already prepared, just jump to it
-    jmp     dword ptr [ebx + VASigCookie__StubOffset]
-
-LOCAL_LABEL(GoCallCalliWorker):
-    //
-    // call the stub generating worker
-    // target ptr in EAX, VASigCookie ptr in EBX
-    //
-
-    STUB_PROLOG
-
-    mov         esi, esp
-
-    // save target
-    push        eax
-
-    #define STACK_ALIGN_PADDING 4
-    sub         esp, STACK_ALIGN_PADDING    // pass stack aligned to 0x10
-    push        eax                         // unmanaged target
-    push        ebx                         // pVaSigCookie (first stack argument)
-    push        esi                         // pTransitionBlock
-
-    CHECK_STACK_ALIGNMENT
-    call        C_FUNC(GenericPInvokeCalliStubWorker)
-    add         esp, STACK_ALIGN_PADDING    // restore alignment, callee pop args
-    #undef STACK_ALIGN_PADDING
-
-    // restore target
-    pop     eax
-
-    STUB_EPILOG
-
-    // jump back to the helper - this time it won't come back here as the stub already exists
-    jmp C_FUNC(GenericPInvokeCalliHelper)
-LEAF_END GenericPInvokeCalliHelper, _TEXT
 
 #ifdef FEATURE_READYTORUN
 NESTED_ENTRY DynamicHelperArgsStub, _TEXT, NoHandler
@@ -777,6 +589,8 @@ NESTED_ENTRY BackPatchWorkerAsmStub, _TEXT, NoHandler
     ret
 NESTED_END BackPatchWorkerAsmStub, _TEXT
 
+#ifdef PROFILING_SUPPORTED
+
 NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
     push    esi
     push    edi
@@ -974,6 +788,8 @@ NESTED_END ProfileTailcallNaked, _TEXT
 NESTED_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT, NoHandler
     ret
 NESTED_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
+
+#endif // PROFILING_SUPPORTED
 
 #ifdef FEATURE_TIERED_COMPILATION
 

@@ -66,7 +66,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         [SkipOnPlatform(TestPlatforms.Browser, "MaxResponseHeadersLength is not supported on Browser")]
         public void Ctor_ExpectedDefaultPropertyValues()
         {
@@ -157,6 +157,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "System.Net.NetworkInformation is not supported on WASI")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -271,6 +272,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
                 // Host header is not supported on HTTP/2 and later.
@@ -434,9 +441,12 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Connection.Add("close");
                     request.Headers.Add("Cookie", "$Version=1; Skin=new");
                     request.Content.Headers.ContentLength = contentArray.Length;
-                    if (PlatformDetection.IsNotBrowser)
+                    if (PlatformDetection.IsMD5Supported)
                     {
                         request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(contentArray);
+                    }
+                    if (PlatformDetection.IsNotBrowser)
+                    {
                         request.Headers.Expect.Add(new NameValueWithParametersHeaderValue("100-continue"));
                     }
                     request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
@@ -984,6 +994,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, false, false)]
         [InlineData(null, false, false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [SkipOnPlatform(TestPlatforms.Wasi, "APM (Begin/End) methods are not supported on WASI")]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming, bool slowChunks)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1221,6 +1232,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "APM (Begin/End) methods are not supported on WASI")]
         public async Task ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -2248,39 +2260,80 @@ namespace System.Net.Http.Functional.Tests
                 return; // SocketsHttpHandler doesn't support Latin-1 characters in headers without setting header encoding.
             }
             var headerValue = $"HeaderValue{safeChar}WithSafeChar";
+            var clientFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var cancellation = new CancellationTokenSource();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
                 {
-                    var handler = CreateHttpClientHandler();
-                    using (var client = new HttpClient(handler))
+                    try
                     {
-                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        request.Version = UseVersion;
-                        switch (headerType)
+                        var handler = CreateHttpClientHandler();
+                        using (var client = new HttpClient(handler))
                         {
-                            case HeaderType.Request:
-                                request.Headers.Add("Custom-Header", headerValue);
-                                break;
-                            case HeaderType.Content:
-                                request.Content = new StringContent("test content");
-                                request.Content.Headers.Add("Custom-Content-Header", headerValue);
-                                break;
-                            case HeaderType.Cookie:
+                            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                            request.Version = UseVersion;
+                            switch (headerType)
+                            {
+                                case HeaderType.Request:
+                                    request.Headers.Add("Custom-Header", headerValue);
+                                    break;
+                                case HeaderType.Content:
+                                    request.Content = new StringContent("test content");
+                                    request.Content.Headers.Add("Custom-Content-Header", headerValue);
+                                    break;
+                                case HeaderType.Cookie:
 #if WINHTTPHANDLER_TEST
-                                handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+                                    handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
 #endif
-                                handler.CookieContainer = new CookieContainer();
-                                handler.CookieContainer.Add(uri, new Cookie("CustomCookie", headerValue));
-                                break;
-                        }
+                                    handler.CookieContainer = new CookieContainer();
+                                    handler.CookieContainer.Add(uri, new Cookie("CustomCookie", headerValue));
+                                    break;
+                            }
 
-                        using (HttpResponseMessage response = await client.SendAsync(request))
-                        {
-                            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                            using (HttpResponseMessage response = await client.SendAsync(request, cancellation.Token))
+                            {
+                                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                            }
                         }
+                    }
+                    finally
+                    {
+                        clientFinished.SetResult(true);
                     }
                 }, async server =>
                 {
-                    var data = await server.AcceptConnectionSendResponseAndCloseAsync();
+                    HttpRequestData data;
+                    if (IsWinHttpHandler && UseVersion.Major == 2)
+                    {
+                        GenericLoopbackConnection genericConnection = null;
+                        try
+                        {
+                            genericConnection = await server.EstablishGenericConnectionAsync();
+                            var connection = (Http2LoopbackConnection)genericConnection;
+                            (int streamId, data) = await connection.ReadAndParseRequestHeaderAsync();
+                            await connection.SendGoAway(streamId);
+                            await connection.SendResponseHeadersAsync(streamId, endStream: true);
+
+                            // WinHTTP can fail pending native I/O if the server closes before the buffered send completes.
+                            await clientFinished.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                            await connection.WaitForConnectionShutdownAsync();
+                        }
+                        catch
+                        {
+                            cancellation.Cancel();
+                            throw;
+                        }
+                        finally
+                        {
+                            if (genericConnection is not null)
+                            {
+                                await genericConnection.DisposeAsync();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        data = await server.AcceptConnectionSendResponseAndCloseAsync();
+                    }
                     switch (headerType)
                     {
                         case HeaderType.Request:

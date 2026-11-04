@@ -151,6 +151,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 // Base case to avoid stack overflow for recursive object graphs.
                                 _seenTransitiveTypes.Add(typeRef, true);
 
+                                // Every element of a non-dictionary collection is constructed and then appended,
+                                // so an element type that cannot be instantiated leaves the collection with
+                                // nothing to bind. No BindCore method is generated for it and the element type
+                                // is not reachable through it. The collection itself remains supported as long
+                                // as an (empty) instance can be created for it.
+                                if (!_typeIndex.HasBindableMembers(collectionSpec))
+                                {
+                                    return _typeIndex.CanInstantiate(collectionSpec);
+                                }
+
                                 if (_typeIndex.GetTypeSpec(collectionSpec.ElementTypeRef) is ComplexTypeSpec)
                                 {
                                     _namespaces.Add("System.Linq");

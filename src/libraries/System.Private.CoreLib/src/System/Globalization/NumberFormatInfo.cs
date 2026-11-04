@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Globalization
@@ -103,7 +102,7 @@ namespace System.Globalization
         {
             byte[] utf8 = utf8Cache ?? CreateUtf8Cache(ref utf8Cache, value);
             Debug.Assert(utf8.Length > 0);
-            return MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(utf8), utf8.Length - 1);
+            return utf8.AsSpan(0, utf8.Length - 1);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

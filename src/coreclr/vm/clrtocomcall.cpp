@@ -24,6 +24,7 @@
 #include "sigbuilder.h"
 #include "callconvbuilder.hpp"
 #include "method.hpp"
+#include "ilstubresolver.h"
 
 CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags)
 {
@@ -127,7 +128,7 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
 
 namespace
 {
-    MethodDesc* CreateEventCallStub(MethodDesc* pMD)
+    COR_ILMETHOD_DECODER* CreateEventCallIL(MethodDesc* pMD, ILStubResolver* pResolver)
     {
         STANDARD_VM_CONTRACT;
 
@@ -140,24 +141,8 @@ namespace
         MethodDesc *pEvProvMD = pComInfo->m_pEventProviderMD;
         MethodTable *pEvProvMT = pEvProvMD->GetMethodTable();
 
-        FunctionSigBuilder sigBuilder;
-        sigBuilder.SetCallingConv((CorCallingConvention)IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS);
-
-        LocalDesc obj(ELEMENT_TYPE_OBJECT);
-        sigBuilder.NewArg(&obj);
-
-        MetaSig sig(pEvProvMD);
-        LocalDesc retType(sig.GetRetTypeHandleThrowing());
-        sigBuilder.SetReturnType(&retType);
-
-        DWORD cbMetaSigSize = sigBuilder.GetSigSize();
-        AllocMemHolder<BYTE> szMetaSig(pMD->GetMethodTable()->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMetaSigSize)));
-        sigBuilder.GetSig(szMetaSig, cbMetaSigSize);
-
-        Signature signature(szMetaSig, cbMetaSigSize);
         SigTypeContext typeContext;
-
-        ILStubLinker stubLinker(pMD->GetModule(), signature, &typeContext, pEvProvMD, ILStubLinkerFlags::ILSTUB_LINKER_FLAG_STUB_HAS_THIS);
+        ILStubLinker stubLinker(pMD->GetModule(), pMD->GetSignature(), &typeContext, pEvProvMD, ILStubLinkerFlags::ILSTUB_LINKER_FLAG_STUB_HAS_THIS);
 
         ILCodeStream* pCode = stubLinker.NewCodeStream(ILStubLinker::kDispatch);
 
@@ -169,61 +154,67 @@ namespace
         pCode->EmitCALL(pCode->GetToken(pEvProvMD), 2, 1);
         pCode->EmitRET();
 
-        MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
-            pMD->GetLoaderAllocator(),
-            pMD->GetMethodTable(),
-            PINVOKESTUB_FL_COM | PINVOKESTUB_FL_COMEVENTCALL,
-            pMD->GetModule(),
-            szMetaSig,
-            cbMetaSigSize,
-            &typeContext,
-            &stubLinker
-        );
-
-        szMetaSig.SuppressRelease();
-
-        return pStubMD;
-    }
-
-    MethodDesc* GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
-    {
-        STANDARD_VM_CONTRACT;
-
-        // COM event stubs are very simple and don't go through any marshalling logic.
-        // We generate them as a regular IL stub outside of the P/Invoke system.
-        if (SF_IsCOMEventCallStub(dwStubFlags))
-        {
-            _ASSERTE(pMD->IsCLRToCOMCall()); //  no generic COM eventing
-            ((CLRToCOMCallMethodDesc *)pMD)->InitComEventCallInfo();
-            return CreateEventCallStub(pMD);
-        }
-
-        // Get the call signature information
-        StubSigDesc sigDesc(pMD);
-
-        return PInvoke::CreateCLRToNativeILStub(
-                        &sigDesc,
-                        (CorNativeLinkType)0,
-                        (CorNativeLinkFlags)0,
-                        CallConv::GetDefaultUnmanagedCallingConvention(),
-                        dwStubFlags);
+        return pResolver->FinalizeILStub(&stubLinker);
     }
 }
 
-PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
+COR_ILMETHOD_DECODER* CLRToCOMCall::CreateCLRToCOMCallMethodIL(MethodDesc* pMD, DynamicResolver** ppResolver)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pMD != NULL);
+    _ASSERTE(pMD->IsCLRToCOMCall());
+    _ASSERTE(ppResolver != NULL);
+
+    DWORD dwStubFlags;
+    CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(pMD, &dwStubFlags);
+
+    // The generated code always uses COM, so make sure that it is started.
+    EnsureComStarted();
+
+    NewHolder<ILStubResolver> pResolver = new ILStubResolver();
+    pResolver->SetStubMethodDesc(pMD);
+
+    COR_ILMETHOD_DECODER* pIL;
+
+    // COM event stubs are very simple and don't go through any marshalling logic.
+    if (SF_IsCOMEventCallStub(dwStubFlags))
+    {
+        ((CLRToCOMCallMethodDesc *)pMD)->InitComEventCallInfo();
+        pIL = CreateEventCallIL(pMD, pResolver);
+    }
+    else
+    {
+        pIL = PInvoke::CreateCLRToCOMMarshallingIL(pMD, dwStubFlags, pResolver);
+    }
+
+    *ppResolver = pResolver.Extract();
+    return pIL;
+}
+
+MethodDesc* CLRToCOMCall::GetPredefinedILStubMethod(MethodDesc* pMD)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMD->IsCLRToCOMCall());
-    _ASSERTE(*ppStubMD == NULL);
 
     DWORD dwStubFlags;
-    CLRToCOMCallInfo* pComInfo = CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(pMD, &dwStubFlags);
+    CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(pMD, &dwStubFlags);
 
-    *ppStubMD = GetILStubMethodDesc(pMD, dwStubFlags);
+    // Predefined IL stubs are never used for COM event calls.
+    if (SF_IsCOMEventCallStub(dwStubFlags))
+        return NULL;
 
-    PCODE pCode = JitILStub(*ppStubMD);
-    InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), pCode, NULL);
+    MethodDesc* pStubMD = NULL;
+    if (FAILED(FindPredefinedILStubMethod(pMD, dwStubFlags, &pStubMD)))
+        return NULL;
 
-    return *pComInfo->GetAddrOfILStubField();
+    // We are about to execute the method in pStubMD which could be in another module.
+    // Call EnsureActive before making the call.
+    pStubMD->EnsureActive();
+
+    // The generated code always uses COM, so make sure that it is started.
+    EnsureComStarted();
+
+    return pStubMD;
 }

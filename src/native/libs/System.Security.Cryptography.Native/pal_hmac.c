@@ -6,6 +6,7 @@
 #include "pal_hmac.h"
 
 #include <assert.h>
+#include <pthread.h>
 
 static EVP_MAC* g_evpMacHmac = NULL;
 static pthread_once_t g_evpMacHmacInit = PTHREAD_ONCE_INIT;

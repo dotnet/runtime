@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include "CLREventBase.h"
 #include "vars.hpp"
 #include "eeconfig.h"
 #include "dllimport.h"
@@ -1058,7 +1059,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
                 {
                     MulticoreJitTrace(("Delay main thread %d ms", g_MulticoreJitDelay));
 
-                    ClrSleepEx(g_MulticoreJitDelay, FALSE);
+                    minipal_sleep(g_MulticoreJitDelay);
                 }
 
                 player.SuppressRelease();
@@ -1168,7 +1169,6 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBin
     {
         THROWS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -1320,14 +1320,7 @@ LONG g_nMulticoreAutoStart = 0;
 // Threading: calls into StartProfile
 void MulticoreJitManager::AutoStartProfile(AppDomain * pDomain)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     CLRConfigStringHolder wszProfile(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitProfile));
 
@@ -1350,11 +1343,7 @@ void MulticoreJitManager::AutoStartProfile(AppDomain * pDomain)
 
 MulticoreJitManager::MulticoreJitManager()
 {
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     m_pMulticoreJitRecorder = NULL;
     m_fSetProfileRootCalled = 0;
@@ -1548,7 +1537,7 @@ DWORD MulticoreJitManager::EncodeModuleHelper(void * pModuleContext, Module * pR
 //    wszProfile  - profile name
 //    ptrNativeAssemblyBinder - the binding context
 //
-extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1567,7 +1556,7 @@ extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszPr
 }
 
 
-extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(_In_z_ LPCWSTR wszProfilePath)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(_In_z_ LPCWSTR wszProfilePath, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

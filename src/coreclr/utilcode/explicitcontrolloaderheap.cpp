@@ -6,8 +6,9 @@
 #include "loaderheap_shared.h"
 #include "ex.h"
 #include "pedecoder.h"
-#define DONOT_DEFINE_ETW_CALLBACK
+#ifndef SELF_NO_HOST
 #include "eventtracebase.h"
+#endif // !SELF_NO_HOST
 
 #ifndef DACCESS_COMPILE
 
@@ -55,7 +56,7 @@ ExplicitControlLoaderHeap::ExplicitControlLoaderHeap(bool fMakeExecutable) :
     CONTRACTL
     {
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -77,7 +78,7 @@ ExplicitControlLoaderHeap::~ExplicitControlLoaderHeap()
     {
         DESTRUCTOR_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -94,7 +95,7 @@ ExplicitControlLoaderHeap::~ExplicitControlLoaderHeap()
 
         if (fReleaseMemory)
         {
-            ExecutableAllocator::Instance()->Release(pVirtualAddress);
+            ExecutableAllocator::Instance()->Release(pVirtualAddress, pSearch->dwVirtualSize);
         }
 
         delete pSearch;
@@ -102,7 +103,7 @@ ExplicitControlLoaderHeap::~ExplicitControlLoaderHeap()
 
     if (m_reservedBlock.m_fReleaseMemory)
     {
-        ExecutableAllocator::Instance()->Release(m_reservedBlock.pVirtualAddress);
+        ExecutableAllocator::Instance()->Release(m_reservedBlock.pVirtualAddress, m_reservedBlock.dwVirtualSize);
     }
 
     INDEBUG(s_dwNumInstancesOfLoaderHeaps --;)
@@ -157,7 +158,7 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -199,7 +200,7 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
     {
         // The caller asked us to release the provided block, so own it for
         // automatic cleanup on the error paths below.
-        pDataHolder = pData;
+        pDataHolder = ReservedMemoryBlock{ pData, dwSizeToReserve };
     }
 
     size_t dwSizeToCommitPart = dwSizeToCommit;
@@ -246,7 +247,7 @@ BOOL ExplicitControlLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -299,12 +300,11 @@ void *ExplicitControlLoaderHeap::AllocMemForCode_NoThrow(size_t dwHeaderSize, si
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return NULL;);
+        GC_NOTRIGGER;
         PRECONDITION(0 == (dwCodeAlignment & (dwCodeAlignment - 1))); // require power of 2
     }
     CONTRACTL_END;
 
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     // We don't know how much "extra" we need to satisfy the alignment until we know
     // which address will be handed out which in turn we don't know because we don't

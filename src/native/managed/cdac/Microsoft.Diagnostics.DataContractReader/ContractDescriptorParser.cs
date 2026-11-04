@@ -3,11 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Unicode;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -22,39 +19,73 @@ public partial class ContractDescriptorParser
     // data_descriptor.md uses a distinguished property name to indicate the size of a type
     public const string TypeDescriptorSizeSigil = "!";
 
+    private static readonly JsonReaderOptions s_readerOptions = new()
+    {
+        AllowTrailingCommas = true,
+        CommentHandling = JsonCommentHandling.Skip,
+    };
+
+    private delegate TValue ReadValue<TValue>(ref Utf8JsonReader reader);
+
     /// <summary>
     ///  Parses the "compact" representation of a contract descriptor.
     /// </summary>
-    // Workaround for https://github.com/dotnet/runtime/issues/101205
-    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Root))]
     public static ContractDescriptor? ParseCompact(ReadOnlySpan<byte> json)
     {
-        return JsonSerializer.Deserialize(json, ContractDescriptorContext.Default.ContractDescriptor);
-    }
+        Utf8JsonReader reader = new(json, s_readerOptions);
 
-    [JsonSerializable(typeof(ContractDescriptor))]
-    [JsonSerializable(typeof(int?))]
-    [JsonSerializable(typeof(string))]
-    [JsonSerializable(typeof(Dictionary<string, string>))]
-    [JsonSerializable(typeof(Dictionary<string, TypeDescriptor>))]
-    [JsonSerializable(typeof(Dictionary<string, FieldDescriptor>))]
-    [JsonSerializable(typeof(Dictionary<string, GlobalDescriptor>))]
-    [JsonSerializable(typeof(TypeDescriptor))]
-    [JsonSerializable(typeof(FieldDescriptor))]
-    [JsonSerializable(typeof(GlobalDescriptor))]
-    [JsonSerializable(typeof(Dictionary<string, JsonElement>))]
-    [JsonSourceGenerationOptions(AllowTrailingCommas = true,
-                                DictionaryKeyPolicy = JsonKnownNamingPolicy.Unspecified, // contracts, types and globals are case sensitive
-                                PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-                                NumberHandling = JsonNumberHandling.AllowReadingFromString,
-                                ReadCommentHandling = JsonCommentHandling.Skip,
-                                UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
-                                UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement,
-                                Converters = [typeof(TypeDescriptorConverter),
-                                            typeof(FieldDescriptorConverter),
-                                            typeof(GlobalDescriptorConverter)])]
-    internal sealed partial class ContractDescriptorContext : JsonSerializerContext
-    {
+        if (!reader.Read())
+            throw new JsonException();
+        if (reader.TokenType == JsonTokenType.Null)
+        {
+            if (reader.Read())
+                throw new JsonException();
+            return null;
+        }
+        if (reader.TokenType != JsonTokenType.StartObject)
+            throw new JsonException();
+
+        ContractDescriptor descriptor = new();
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.EndObject)
+            {
+                if (reader.Read())
+                    throw new JsonException();
+                return descriptor;
+            }
+            if (reader.TokenType != JsonTokenType.PropertyName)
+                throw new JsonException();
+
+            string propertyName = reader.GetString() ?? throw new JsonException();
+            ReadNext(ref reader);
+            switch (propertyName)
+            {
+                case "version":
+                    descriptor.Version = ReadNullableInt32(ref reader);
+                    break;
+                case "baseline":
+                    descriptor.Baseline = ReadNullableString(ref reader);
+                    break;
+                case "contracts":
+                    descriptor.Contracts = ReadDictionary(ref reader, ReadString);
+                    break;
+                case "types":
+                    descriptor.Types = ReadDictionary(ref reader, ReadTypeDescriptor);
+                    break;
+                case "globals":
+                    descriptor.Globals = ReadDictionary(ref reader, ReadGlobalDescriptor);
+                    break;
+                case "subDescriptors":
+                    descriptor.SubDescriptors = ReadDictionary(ref reader, ReadGlobalDescriptor);
+                    break;
+                default:
+                    reader.Skip();
+                    break;
+            }
+        }
+
+        throw new JsonException();
     }
 
     public class ContractDescriptor
@@ -69,9 +100,6 @@ public partial class ContractDescriptorParser
 
         public Dictionary<string, GlobalDescriptor>? SubDescriptors { get; set; }
 
-        [JsonExtensionData]
-        public Dictionary<string, JsonElement>? Extras { get; set; }
-
         public override string ToString()
         {
             return $"Version: {Version}, Baseline: {Baseline}, Contracts: {Contracts?.Count}, Types: {Types?.Count}, Globals: {Globals?.Count}, SubDescriptors: {SubDescriptors?.Count}";
@@ -79,21 +107,18 @@ public partial class ContractDescriptorParser
 
     }
 
-    [JsonConverter(typeof(TypeDescriptorConverter))]
     public class TypeDescriptor
     {
         public uint? Size { get; set; }
         public Dictionary<string, FieldDescriptor>? Fields { get; set; }
     }
 
-    [JsonConverter(typeof(FieldDescriptorConverter))]
     public class FieldDescriptor
     {
         public string? Type { get; set; }
         public int Offset { get; set; }
     }
 
-    [JsonConverter(typeof(GlobalDescriptorConverter))]
     public class GlobalDescriptor
     {
         [MemberNotNullWhen(true, nameof(NumericValue))]
@@ -105,171 +130,197 @@ public partial class ContractDescriptorParser
         public string? StringValue { get; set; }
     }
 
-    internal sealed class TypeDescriptorConverter : JsonConverter<TypeDescriptor>
+    private static string ReadString(ref Utf8JsonReader reader)
     {
-        // Almost a normal dictionary converter except:
-        //  1. looks for a special key "!" to set the Size property
-        //  2. field names are property names, but treated case-sensitively
-        public override TypeDescriptor Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType != JsonTokenType.StartObject)
-                throw new JsonException();
-            uint? size = null;
-            Dictionary<string, FieldDescriptor>? fields = new();
-            while (reader.Read())
-            {
-                switch (reader.TokenType)
-                {
-                    case JsonTokenType.EndObject:
-                        return new TypeDescriptor { Size = size, Fields = fields };
-                    case JsonTokenType.PropertyName:
-                        string? fieldNameOrSizeSigil = reader.GetString();
-                        reader.Read(); // read the next value: either a number or a field descriptor
-                        if (fieldNameOrSizeSigil == TypeDescriptorSizeSigil)
-                        {
-                            uint newSize = reader.GetUInt32();
-                            if (size is not null)
-                            {
-                                throw new JsonException($"Size specified multiple times: {size} and {newSize}");
-                            }
-                            size = newSize;
-                        }
-                        else
-                        {
-                            string? fieldName = fieldNameOrSizeSigil;
-                            var field = JsonSerializer.Deserialize(ref reader, ContractDescriptorContext.Default.FieldDescriptor);
-                            if (fieldName is null || field is null)
-                                throw new JsonException();
-                            if (!fields.TryAdd(fieldName, field))
-                            {
-                                throw new JsonException($"Duplicate field name: {fieldName}");
-                            }
-                        }
-                        break;
-                    case JsonTokenType.Comment:
-                        // unexpected - we specified to skip comments.  but let's ignore anyway
-                        break;
-                    default:
-                        throw new JsonException();
-                }
-            }
-            throw new JsonException();
-        }
-
-        public override void Write(Utf8JsonWriter writer, TypeDescriptor value, JsonSerializerOptions options)
-        {
-            throw new NotImplementedException();
-        }
+        if (reader.TokenType == JsonTokenType.String)
+            return reader.GetString() ?? throw new JsonException();
+        throw new JsonException();
     }
 
-    internal sealed class FieldDescriptorConverter : JsonConverter<FieldDescriptor>
+    private static TypeDescriptor ReadTypeDescriptor(ref Utf8JsonReader reader)
     {
-        // Compact Field descriptors are either a number or a two element array
-        // 1. number - no type, offset is given as the number
-        // 2. [number, string] - offset is given as the number, type name is given as the string
-        public override FieldDescriptor Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        // Almost a normal dictionary except:
+        //  1. "!" specifies the type size.
+        //  2. All other property names are case-sensitive field names.
+        if (reader.TokenType != JsonTokenType.StartObject)
+            throw new JsonException();
+
+        uint? size = null;
+        Dictionary<string, FieldDescriptor> fields = new();
+        while (reader.Read())
         {
-            if (TryGetInt32FromToken(ref reader, out int offset))
-                return new FieldDescriptor { Offset = offset };
-            if (reader.TokenType != JsonTokenType.StartArray)
+            if (reader.TokenType == JsonTokenType.EndObject)
+                return new TypeDescriptor { Size = size, Fields = fields };
+            if (reader.TokenType != JsonTokenType.PropertyName)
                 throw new JsonException();
-            reader.Read();
-            //   [number, string]
-            //    ^ we're here
-            if (!TryGetInt32FromToken(ref reader, out offset))
+
+            string fieldName = reader.GetString() ?? throw new JsonException();
+            ReadNext(ref reader);
+            if (fieldName == TypeDescriptorSizeSigil)
+            {
+                uint newSize = reader.GetUInt32();
+                if (size is not null)
+                    throw new JsonException($"Size specified multiple times: {size} and {newSize}");
+                size = newSize;
+            }
+            else if (!fields.TryAdd(fieldName, ReadFieldDescriptor(ref reader)))
+            {
+                throw new JsonException($"Duplicate field name: {fieldName}");
+            }
+        }
+
+        throw new JsonException();
+    }
+
+    private static FieldDescriptor ReadFieldDescriptor(ref Utf8JsonReader reader)
+    {
+        // Compact field descriptors are either:
+        //  1. number - no type, offset is given as the number.
+        //  2. [number, string] - offset is the number and type name is the string.
+        if (TryGetInt32FromToken(ref reader, out int offset))
+            return new FieldDescriptor { Offset = offset };
+        if (reader.TokenType != JsonTokenType.StartArray)
+            throw new JsonException();
+
+        ReadNext(ref reader);
+        //   [number, string]
+        //    ^ we're here
+        if (!TryGetInt32FromToken(ref reader, out offset))
+            throw new JsonException();
+        ReadNext(ref reader);
+        //   [number, string]
+        //            ^ we're here
+        if (reader.TokenType != JsonTokenType.String)
+            throw new JsonException();
+        string type = reader.GetString() ?? throw new JsonException();
+        ReadNext(ref reader);
+        if (reader.TokenType != JsonTokenType.EndArray)
+            throw new JsonException();
+        return new FieldDescriptor { Type = type, Offset = offset };
+    }
+
+    private static Dictionary<string, TValue>? ReadDictionary<TValue>(
+        ref Utf8JsonReader reader,
+        ReadValue<TValue> readValue)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+            return null;
+        if (reader.TokenType != JsonTokenType.StartObject)
+            throw new JsonException();
+
+        Dictionary<string, TValue> values = [];
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.EndObject)
+                return values;
+            if (reader.TokenType != JsonTokenType.PropertyName)
                 throw new JsonException();
-            reader.Read(); // string
+
+            string name = reader.GetString() ?? throw new JsonException();
+            ReadNext(ref reader);
+            values[name] = readValue(ref reader);
+        }
+
+        throw new JsonException();
+    }
+
+    private static GlobalDescriptor ReadGlobalDescriptor(ref Utf8JsonReader reader)
+    {
+        // Compact global descriptors have four forms:
+        //  1. value - no type, direct value.
+        //  2. [value] - no type, indirect value.
+        //  3. [value, string] - typed direct value.
+        //  4. [[value], string] - typed indirect value.
+        // A value can be a string or number. Numeric strings are retained as strings and parsed as numbers.
+        if (TryGetGlobalValueFromToken(ref reader, out GlobalValue directValue))
+            return CreateGlobalDescriptor(directValue, indirect: false, type: null);
+        if (reader.TokenType != JsonTokenType.StartArray)
+            throw new JsonException();
+
+        ReadNext(ref reader);
+        // Cases 2 and 3:
+        //   [value]
+        //    ^ we're here
+        //   [value, string]
+        //    ^ we're here
+        // Case 4:
+        //   [[value], string]
+        //    ^ we're here
+        if (TryGetGlobalValueFromToken(ref reader, out GlobalValue value))
+        {
+            ReadNext(ref reader);
+            if (reader.TokenType == JsonTokenType.EndArray)
+                return CreateGlobalDescriptor(value, indirect: true, type: null);
             if (reader.TokenType != JsonTokenType.String)
                 throw new JsonException();
-            string? type = reader.GetString();
-            reader.Read(); // end of array
+
+            string type = reader.GetString() ?? throw new JsonException();
+            ReadNext(ref reader);
             if (reader.TokenType != JsonTokenType.EndArray)
                 throw new JsonException();
-            return new FieldDescriptor { Type = type, Offset = offset };
+            return CreateGlobalDescriptor(value, indirect: false, type);
         }
 
-        public override void Write(Utf8JsonWriter writer, FieldDescriptor value, JsonSerializerOptions options)
-        {
+        if (reader.TokenType != JsonTokenType.StartArray)
             throw new JsonException();
-        }
+        ReadNext(ref reader);
+        //   [[value], string]
+        //     ^ we're here
+        if (!TryGetGlobalValueFromToken(ref reader, out value))
+            throw new JsonException();
+        ReadNext(ref reader);
+        //   [[value], string]
+        //           ^ we're here
+        if (reader.TokenType != JsonTokenType.EndArray)
+            throw new JsonException();
+        ReadNext(ref reader);
+        //   [[value], string]
+        //             ^ we're here
+        if (reader.TokenType != JsonTokenType.String)
+            throw new JsonException();
+        string indirectType = reader.GetString() ?? throw new JsonException();
+        ReadNext(ref reader);
+        if (reader.TokenType != JsonTokenType.EndArray)
+            throw new JsonException();
+        return CreateGlobalDescriptor(value, indirect: true, indirectType);
     }
 
-    internal sealed class GlobalDescriptorConverter : JsonConverter<GlobalDescriptor>
+    private static GlobalDescriptor CreateGlobalDescriptor(GlobalValue value, bool indirect, string? type)
     {
-        public override GlobalDescriptor Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            // four cases:
-            // 1. value - no type, direct value, given value
-            // 2. [number] - no type, indirect value, given aux data ptr
-            // 3. [value, string] - type, direct value, given value
-            // 4. [[number], string] - type, indirect value, given aux data ptr
-            // value can either be a string or a number. if a string is able to be parsed as a number, it is read as both
+        if (indirect && value.NumericValue is null)
+            throw new JsonException("Indirect global value could not be converted to a number.");
 
-            // Case 1: value
-            if (TryGetGlobalValueFromToken(ref reader, out GlobalValue valueCase1))
-                return new GlobalDescriptor { NumericValue = valueCase1.NumericValue, StringValue = valueCase1.StringValue, Indirect = false };
-            if (reader.TokenType != JsonTokenType.StartArray)
-                throw new JsonException();
-            reader.Read();
-            // we're in case 2, 3, or 4:
-            // case 2: [number]
-            //          ^ we're here
-            // case 3: [value, string]
-            //          ^ we're here
-            // case 4: [[number], string]
-            //          ^ we're here
-            if (TryGetGlobalValueFromToken(ref reader, out GlobalValue valueCase2or3))
-            {
-                // case 2 or 3
-                // case 2: [number]
-                //          ^ we're here
-                // case 3: [value, string]
-                //          ^ we're here
-                reader.Read(); // end of array (case 2) or string (case 3)
-                if (reader.TokenType == JsonTokenType.EndArray) // it was case 2
-                {
-                    if (valueCase2or3.NumericValue is null)
-                        throw new JsonException("Indirect global value could not be converted to a number.");
-                    return new GlobalDescriptor { NumericValue = valueCase2or3.NumericValue, StringValue = valueCase2or3.StringValue, Indirect = true };
-                }
-                if (reader.TokenType == JsonTokenType.String) // it was case 3
-                {
-                    string? type = reader.GetString();
-                    reader.Read(); // end of array for case 3
-                    if (reader.TokenType != JsonTokenType.EndArray)
-                        throw new JsonException();
-                    return new GlobalDescriptor { Type = type, NumericValue = valueCase2or3.NumericValue, StringValue = valueCase2or3.StringValue, Indirect = false };
-                }
-                throw new JsonException();
-            }
-            if (reader.TokenType == JsonTokenType.StartArray)
-            {
-                // case 4: [[number], string]
-                //          ^ we're here
-                reader.Read(); // number
-                if (!TryGetGlobalValueFromToken(ref reader, out GlobalValue valueCase4))
-                    throw new JsonException();
-                reader.Read(); // end of inner array
-                if (reader.TokenType != JsonTokenType.EndArray)
-                    throw new JsonException();
-                reader.Read(); // string
-                if (reader.TokenType != JsonTokenType.String)
-                    throw new JsonException();
-                string? type = reader.GetString();
-                reader.Read(); // end of outer array
-                if (reader.TokenType != JsonTokenType.EndArray)
-                    throw new JsonException();
-                if (valueCase4.NumericValue is null)
-                    throw new JsonException("Indirect global value could not be converted to a number.");
-                return new GlobalDescriptor { Type = type, NumericValue = valueCase4.NumericValue, StringValue = valueCase4.StringValue, Indirect = true };
-            }
-            throw new JsonException();
-        }
-
-        public override void Write(Utf8JsonWriter writer, GlobalDescriptor value, JsonSerializerOptions options)
+        return new GlobalDescriptor
         {
+            Type = type,
+            NumericValue = value.NumericValue,
+            StringValue = value.StringValue,
+            Indirect = indirect,
+        };
+    }
+
+    private static int? ReadNullableInt32(ref Utf8JsonReader reader)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+            return null;
+        if (TryGetInt32FromToken(ref reader, out int value))
+            return value;
+        throw new JsonException();
+    }
+
+    private static string? ReadNullableString(ref Utf8JsonReader reader)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+            return null;
+        if (reader.TokenType == JsonTokenType.String)
+            return reader.GetString();
+        throw new JsonException();
+    }
+
+    private static void ReadNext(ref Utf8JsonReader reader)
+    {
+        if (!reader.Read())
             throw new JsonException();
-        }
     }
 
     private struct GlobalValue
@@ -322,7 +373,7 @@ public partial class ContractDescriptorParser
         }
         if (reader.TokenType == JsonTokenType.String)
         {
-            var s = reader.GetString();
+            string? s = reader.GetString();
             if (s == null)
             {
                 value = 0u;
@@ -361,7 +412,7 @@ public partial class ContractDescriptorParser
         }
         if (reader.TokenType == JsonTokenType.String)
         {
-            var s = reader.GetString();
+            string? s = reader.GetString();
             if (s == null)
             {
                 value = 0;
