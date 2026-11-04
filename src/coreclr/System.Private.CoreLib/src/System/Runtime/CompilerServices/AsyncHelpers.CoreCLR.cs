@@ -728,14 +728,15 @@ namespace System.Runtime.CompilerServices
         // async functions.
         private class RuntimeAsyncTask<T> : Task<T>
         {
+            // The base Task's m_action field (unused for invoking a delegate by this promise-style task)
+            // stores state about what this task is awaiting, avoiding the need for an additional field.
             // When suspended on a Task, this RuntimeAsyncTask is registered directly as that task's
             // continuation (rather than via an intermediate continuation object). While registered,
-            // this holds where to resume, encoded as described by EncodeAwaitedContinuationContext.
+            // the field holds where to resume, encoded as described by EncodeAwaitedContinuationContext.
             // Once the awaited task completes, it instead holds that completed task until the
             // dispatcher consumes it. When suspended on an IValueTaskSource, it holds the
             // ValueTaskSourceContinuation describing the source until the dispatcher consumes it.
-            // It is null otherwise.
-            private object? _awaitedState;
+            // Otherwise, it's null or holds the Action cached by GetContinuationAction.
 
             public RuntimeAsyncTask()
             {
@@ -757,8 +758,8 @@ namespace System.Runtime.CompilerServices
             {
                 // Swap the continuation context for the completed task before possibly handing this
                 // task to another thread, which will consume it in DispatchContinuations.
-                object? continuationContext = _awaitedState;
-                _awaitedState = completedTask;
+                object? continuationContext = m_action;
+                m_action = completedTask;
 
                 // When not inlining, a TaskScheduler.Default context needs no further processing before queueing.
                 if (continuationContext is not null &&
@@ -786,7 +787,7 @@ namespace System.Runtime.CompilerServices
                 // SynchronizationContext, in which case the continuation can be invoked inline.
                 if (canInline &&
                     (continuationContext == TaskScheduler.Default ||
-                     (continuationContext == SuppressThrowingAwaitContext.ThreadPool && Unsafe.As<Task>(_awaitedState!).IsCompletedSuccessfully)) &&
+                     (continuationContext == SuppressThrowingAwaitContext.ThreadPool && Unsafe.As<Task>(m_action!).IsCompletedSuccessfully)) &&
                     Thread.CurrentThread._synchronizationContext is null &&
                     Task.t_currentTask is null)
                 {
@@ -825,8 +826,8 @@ namespace System.Runtime.CompilerServices
                 {
                     // Like TaskAwaiter.ValidateEnd with SuppressThrowing, observe any failure, and have the
                     // dispatcher complete the await from a successful task so that nothing is thrown.
-                    Debug.Assert(_awaitedState is Task { IsCompleted: true });
-                    Task awaitedTask = Unsafe.As<Task>(_awaitedState);
+                    Debug.Assert(m_action is Task { IsCompleted: true });
+                    Task awaitedTask = Unsafe.As<Task>(m_action);
                     if (!awaitedTask.IsCompletedSuccessfully)
                     {
                         awaitedTask.NotifyDebuggerOfWaitCompletionIfNecessary();
@@ -834,7 +835,7 @@ namespace System.Runtime.CompilerServices
 
                         // When async instrumentation is active, preserve the identity of the awaited task so
                         // that the wait can still be correlated when the continuation resumes.
-                        _awaitedState = AsyncInstrumentation.IsActive ? new SuppressedAwaitedTask(awaitedTask) : Task.CompletedTask;
+                        m_action = AsyncInstrumentation.IsActive ? new SuppressedAwaitedTask(awaitedTask) : Task.CompletedTask;
                     }
 
                     return suppressThrowingContext.EncodedContext is { } encodedContext &&
@@ -843,7 +844,7 @@ namespace System.Runtime.CompilerServices
 
                 if (continuationContext is TaskScheduler sched2)
                 {
-                    TaskSchedulerAwaitTaskContinuation.RunOrScheduleAction(GetContinuationAction(), sched2, capturedContext: null, allowInlining: canInline);
+                    TaskSchedulerAwaitTaskContinuation.RunOrScheduleAction(s_dispatchCallback, this, sched2, capturedContext: null, allowInlining: canInline);
                     return true;
                 }
 
@@ -872,17 +873,23 @@ namespace System.Runtime.CompilerServices
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private object? MoveAwaitedState()
             {
-                object? awaitedState = _awaitedState;
+                object? awaitedState = m_action;
                 if (awaitedState != null)
                 {
-                    Debug.Assert(awaitedState is Task or ValueTaskSourceContinuation);
+                    Debug.Assert(awaitedState is Task or ValueTaskSourceContinuation or Action);
                     if (awaitedState is ValueTaskSourceContinuation vtsCont)
                     {
                         // The ValueTaskSourceContinuation stays installed for reuse by subsequent awaits.
                         return vtsCont.IsPending ? vtsCont : null;
                     }
 
-                    _awaitedState = null;
+                    if (awaitedState is Action)
+                    {
+                        // The cached continuation action stays installed for reuse by subsequent awaits.
+                        return null;
+                    }
+
+                    m_action = null;
                 }
 
                 return awaitedState;
@@ -891,10 +898,10 @@ namespace System.Runtime.CompilerServices
             // Removes any ValueTaskSourceContinuation kept installed for reuse, returning it to the thread's cache.
             private void ReleaseValueTaskSourceContinuation(ref RuntimeAsyncAwaitState awaitState)
             {
-                if (_awaitedState is ValueTaskSourceContinuation vtsCont)
+                if (m_action is ValueTaskSourceContinuation vtsCont)
                 {
                     Debug.Assert(!vtsCont.IsPending);
-                    _awaitedState = null;
+                    m_action = null;
                     vtsCont.Source = null;
                     awaitState.CachedValueTaskSourceContinuation = vtsCont;
                 }
@@ -940,8 +947,30 @@ namespace System.Runtime.CompilerServices
                 return ex;
             }
 
-            // Lazily created, as it's only needed when suspending on something other than a Task.
-            private Action GetContinuationAction() => Unsafe.As<Action>(m_action ??= new Action(DispatchContinuations));
+            // Lazily created, as it's only needed when suspending on something other than a Task or IValueTaskSource.
+            // It's cached in m_action until that's next needed to store awaited state.
+            private Action GetContinuationAction() => m_action as Action ?? CreateContinuationAction();
+
+            private Action CreateContinuationAction()
+            {
+                Debug.Assert(m_action is null);
+                Action action = DispatchContinuations;
+                m_action = action;
+                return action;
+            }
+
+            private static readonly Action<object?> s_dispatchCallback = static state =>
+            {
+                Debug.Assert(state is RuntimeAsyncTask<T>);
+                try
+                {
+                    Unsafe.As<RuntimeAsyncTask<T>>(state).DispatchContinuations();
+                }
+                catch (Exception exception)
+                {
+                    Task.ThrowAsync(exception, targetContext: null);
+                }
+            };
 
             // Completes the operation with the result stored in m_result. The result was already written
             // there by the final continuation and nothing else can complete this task, so the result-less
@@ -996,7 +1025,7 @@ namespace System.Runtime.CompilerServices
                 SetContinuationState(headContinuation);
 
                 SuspensionNotifierKind notifierKind = stackState->NotifierKind;
-                if (_awaitedState is not null && notifierKind != SuspensionNotifierKind.ValueTaskSource)
+                if (m_action is not null && notifierKind != SuspensionNotifierKind.ValueTaskSource)
                 {
                     // Only reuse a ValueTaskSourceContinuation for consecutive source awaits; don't keep
                     // its consumed source alive across waits on something else.
@@ -1014,7 +1043,7 @@ namespace System.Runtime.CompilerServices
                             // continuation when it resumes.
                             Debug.Assert(notifier is Task);
                             Task awaitedTask = Unsafe.As<Task>(notifier);
-                            _awaitedState = stackState->AwaitedContinuationContext;
+                            m_action = stackState->AwaitedContinuationContext;
                             if (!awaitedTask.AddTaskContinuation(this, addBeforeOthers: false))
                             {
                                 ExecuteRuntimeAsyncAwaitContinuation(awaitedTask, canInline: false);
@@ -1079,12 +1108,12 @@ namespace System.Runtime.CompilerServices
                 // The ValueTaskSourceContinuation isn't linked into the continuation chain. Instead, like
                 // when awaiting a Task, the dispatcher fetches the source's result directly into the head
                 // continuation when it resumes. Reuse the one this task holds from a previous await, if any.
-                if (_awaitedState is not ValueTaskSourceContinuation valueTaskSourceCont)
+                if (m_action is not ValueTaskSourceContinuation valueTaskSourceCont)
                 {
-                    Debug.Assert(_awaitedState is null);
+                    Debug.Assert(m_action is null or Action);
                     valueTaskSourceCont = state.CachedValueTaskSourceContinuation ?? new ValueTaskSourceContinuation();
                     state.CachedValueTaskSourceContinuation = null;
-                    _awaitedState = valueTaskSourceCont;
+                    m_action = valueTaskSourceCont;
                 }
 
                 Debug.Assert(headContinuation != valueTaskSourceCont);
@@ -1264,7 +1293,7 @@ namespace System.Runtime.CompilerServices
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
                             m_stateObject = null;
-                            if (_awaitedState is not null)
+                            if (m_action is not null)
                             {
                                 ReleaseValueTaskSourceContinuation(ref awaitState);
                             }
@@ -1291,7 +1320,7 @@ namespace System.Runtime.CompilerServices
                     if (asyncDispatcherInfo.NextContinuation == null)
                     {
                         m_stateObject = null;
-                        if (_awaitedState is not null)
+                        if (m_action is not null)
                         {
                             ReleaseValueTaskSourceContinuation(ref awaitState);
                         }
@@ -1430,7 +1459,7 @@ namespace System.Runtime.CompilerServices
 
                             // Tail of AsyncTaskMethodBuilderT.SetException
                             m_stateObject = null;
-                            if (_awaitedState is not null)
+                            if (m_action is not null)
                             {
                                 ReleaseValueTaskSourceContinuation(ref awaitState);
                             }
@@ -1461,7 +1490,7 @@ namespace System.Runtime.CompilerServices
                         RuntimeAsyncInstrumentationHelpers.CompleteRuntimeAsyncContext(ref asyncDispatcherInfo, flags);
 
                         m_stateObject = null;
-                        if (_awaitedState is not null)
+                        if (m_action is not null)
                         {
                             ReleaseValueTaskSourceContinuation(ref awaitState);
                         }
@@ -1593,7 +1622,7 @@ namespace System.Runtime.CompilerServices
                     TaskScheduler sched = (TaskScheduler)continuationContext;
 
                     SetContinuationState(continuation);
-                    TaskSchedulerAwaitTaskContinuation.RunOrScheduleAction(GetContinuationAction(), sched, capturedContext: null, allowInlining: true);
+                    TaskSchedulerAwaitTaskContinuation.RunOrScheduleAction(s_dispatchCallback, this, sched, capturedContext: null, allowInlining: true);
 
                     return true;
                 }
