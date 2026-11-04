@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 33
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MAJOR_VERSION 34
+#define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 33
+#define MINIMUM_READYTORUN_MAJOR_VERSION 34
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -86,6 +86,10 @@
 // GCRefMaps, moves VASIG_COOKIE from 5 to 7, and prefixes map-bearing import
 // signatures with their GCRefMaps.
 // R2R Version 33.1 adds READYTORUN_HELPER_WasmProfSamplepoint (used on WebAssembly)
+// R2R Version 34 changes the runtime async contract: continuation flags record SuppressThrowing awaits,
+//     async thunks and resumption stubs changed shape, and continuations omit the result slot for
+//     ignored results (resumption stubs skip storing a result when there is no result location).
+//     R2R 34 is not backward compatible with 33.x or earlier.
 
 struct READYTORUN_CORE_HEADER
 {
