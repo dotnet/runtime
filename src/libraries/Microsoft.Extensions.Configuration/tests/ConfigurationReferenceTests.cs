@@ -48,6 +48,8 @@ namespace Microsoft.Extensions.Configuration.Test
             ["Chain:First"] = "$ref(Chain:Second)",
             ["Chain:Second"] = "$ref(Target)",
             ["Empty"] = "",
+            ["Null"] = null,
+            [":Target"] = "spliced",
         };
 
         // (value stored at "Probe", value "Probe" reads back as).
@@ -74,10 +76,12 @@ namespace Microsoft.Extensions.Configuration.Test
 
             // A target that holds the empty string was found; a target that is missing was not. The two are distinct.
             ("$ref(Empty)", ""),
+            ("$ref({Empty}:Target)", "spliced"),
 
             // Well-formed but pointing at nothing, which reads as absent.
             ("$ref(Missing)", null),
             ("$ref(Section)", null),
+            ("$ref({Null}:Target)", null),
             ("$ref({Missing}:Target)", null),
             ("$ref(Odd:{x}:Key)", null),
             // The closing parenthesis is the last character, so the extra one is part of the key rather than a syntax
@@ -762,9 +766,7 @@ namespace Microsoft.Extensions.Configuration.Test
         [Fact]
         public void DisposedProvider_IsPassedOverByEveryReadPath()
         {
-            // Reading the providers is one stage now, so a provider that has been disposed under a concurrent change to
-            // the sources is passed over the same way whichever read path asked. Resolving a reference must not change
-            // that, or turning the feature off would change how a disposed provider behaves.
+            // Disposed providers are passed over by both direct reads and reference resolution.
             var manager = new ConfigurationManager();
             ((IConfigurationBuilder)manager).Add(new ThrowOnDisposeSource(("Target", "gone")));
             ((IConfigurationBuilder)manager).Add(new MemoryConfigurationSource
@@ -808,16 +810,30 @@ namespace Microsoft.Extensions.Configuration.Test
 
             using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () =>
             {
-                IConfigurationRoot root = new ConfigurationBuilder()
-                    .AddInMemoryCollection(new Dictionary<string, string?>
+                foreach (RootKind kind in new[] { RootKind.Builder, RootKind.Manager })
+                {
+                    var data = new Dictionary<string, string?>
                     {
                         ["Target"] = "hit",
                         ["Probe"] = "$ref(Target)",
-                    })
-                    .Build();
+                        ["Malformed"] = "$ref()",
+                        ["Dangling"] = "$ref(Missing)",
+                        ["Null"] = null,
+                    };
+                    IConfigurationRoot root = BuildRoot(kind, Source(data));
 
-                Assert.Equal("$ref(Target)", root["Probe"]);
-                Assert.Equal("$ref(Target)", root.GetSection("Probe").Value);
+                    foreach (KeyValuePair<string, string?> entry in data)
+                    {
+                        Assert.Equal(entry.Value, root[entry.Key]);
+                        Assert.Equal(entry.Value, root.GetSection(entry.Key).Value);
+                        Assert.True(TryGetViaSection(root, entry.Key, out string? value));
+                        Assert.Equal(entry.Value, value);
+                    }
+
+                    Assert.False(TryGetViaSection(root, "Missing", out string? missing));
+                    Assert.Null(missing);
+                    Assert.Equal(data.Keys.OrderBy(key => key, StringComparer.OrdinalIgnoreCase), root.GetChildren().Select(section => section.Key));
+                }
             }, options);
         }
 
@@ -852,37 +868,38 @@ namespace Microsoft.Extensions.Configuration.Test
         [InlineData("Target", "hit", 0)]
         [InlineData("Probe", "hit", 1)]
         [InlineData("Combined", "deep", 1)]
-        public void ReadReportsTheProviderThatDeclaredTheKey(string key, string expected, int expectedProvider)
+        [InlineData("Null", null, 0)]
+        [InlineData("NullReference", null, 1)]
+        public void ResolvedValue_KeepsDebuggerProviderAttribution(string key, string? expected, int expectedProvider)
         {
-            // A resolved value is attributed to the provider holding the text that was read, not to whichever provider
-            // held the value it resolved to. "Combined" is built from two keys in the other provider, so no single
-            // provider holds it; where it was declared is the only answer, and the more useful one either way.
+            // "Combined" reads two keys from the other provider, but debugger attribution still belongs
+            // to the provider holding the reference.
             IList<IConfigurationProvider> providers =
             [
-                Provider(("Target", "hit"), ("Pointer", "Deep"), ("Deep:Target", "deep")),
+                Provider(("Target", "hit"), ("Pointer", "Deep"), ("Deep:Target", "deep"), ("Null", null)),
                 Provider(
                     ("Plain", "plain"),
                     ("Probe", "$ref(Target)"),
-                    ("Combined", "$ref({Pointer}:Target)")),
+                    ("Combined", "$ref({Pointer}:Target)"),
+                    ("NullReference", "$ref(Null)")),
             ];
+            var root = new ConfigurationRoot(providers);
 
-            Assert.True(ConfigurationEngine.Default.Get(providers, key, out string? value, out int providerIndex));
+            Assert.True(TryGetViaSection(root, key, out string? value));
             Assert.Equal(expected, value);
-            Assert.Equal(expectedProvider, providerIndex);
+            Assert.Same(providers[expectedProvider], ConfigurationSectionDebugView.GetValueProvider(root, key));
         }
 
         [Theory]
         [InlineData("Absent")]
         [InlineData("Dangling")]
-        public void ReadThatFindsNothingNamesNoProvider(string key)
+        public void ReadThatFindsNothingReturnsFalse(string key)
         {
-            // Nothing was read, so nothing can be attributed: a read that produced nothing has no value at all. That
-            // holds for a key nothing declared and for one declared as a reference that led nowhere.
             IList<IConfigurationProvider> providers = [Provider(("Dangling", "$ref(Missing)"))];
+            var root = new ConfigurationRoot(providers);
 
-            Assert.False(ConfigurationEngine.Default.Get(providers, key, out string? value, out int providerIndex));
+            Assert.False(TryGetViaSection(root, key, out string? value));
             Assert.Null(value);
-            Assert.Equal(-1, providerIndex);
         }
 
         private static IConfigurationProvider Provider(params (string Key, string? Value)[] values)
@@ -977,6 +994,71 @@ namespace Microsoft.Extensions.Configuration.Test
 
             sources.Clear();
             Assert.Empty(((IConfigurationRoot)manager).Providers);
+        }
+
+        [Theory]
+        [InlineData(false, "$ref(Target)", "Probe")]
+        [InlineData(true, "$ref(Target)", "Probe")]
+        [InlineData(false, "$ref({Pointer}:Target)", "Pointer")]
+        [InlineData(true, "$ref({Pointer}:Target)", "Pointer")]
+        public void Reference_UsesOneProviderGenerationDuringSourceMutation(bool useTryGet, string referenceValue, string mutationKey)
+        {
+            using var manager = new ConfigurationManager();
+            var provider = new ReadCallbackProvider(key =>
+            {
+                if (string.Equals(key, mutationKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    manager.Sources.Clear();
+                    manager.Sources.Add(Source(
+                        ("Probe", referenceValue),
+                        ("Target", "after"),
+                        ("Pointer", "After"),
+                        ("After:Target", "after")));
+                }
+            },
+                ("Probe", referenceValue),
+                ("Target", "before"),
+                ("Pointer", "Before"),
+                ("Before:Target", "before"));
+            manager.Sources.Add(provider);
+
+            string? value;
+            if (useTryGet)
+            {
+                Assert.True(TryGetViaSection(manager, "Probe", out value));
+            }
+            else
+            {
+                value = manager["Probe"];
+            }
+
+            Assert.Equal("before", value);
+            Assert.True(provider.IsDisposed);
+            Assert.Equal("after", manager["Probe"]);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GetChildren_KeepsProvidersAliveDuringDeferredEnumeration(bool useSection)
+        {
+            using var manager = new ConfigurationManager();
+            bool enumerated = false;
+            var provider = new ReadCallbackProvider(_ =>
+            {
+                enumerated = true;
+                manager.Sources.Clear();
+            },
+                ("Section:First", "first"),
+                ("Section:Second", "second"));
+            manager.Sources.Add(provider);
+
+            IConfiguration configuration = useSection ? manager.GetSection("Section") : manager;
+            IEnumerable<IConfigurationSection> children = configuration.GetChildren();
+
+            Assert.True(enumerated);
+            Assert.True(provider.IsDisposed);
+            Assert.Equal(useSection ? new[] { "First", "Second" } : new[] { "Section" }, children.Select(child => child.Key));
         }
 
         // The reverse walk of IConfigurationRoot.Providers that GetDebugView and any equivalent third-party code do.
@@ -1370,6 +1452,46 @@ namespace Microsoft.Extensions.Configuration.Test
                     }
                 }
                 return Built;
+            }
+        }
+
+        private sealed class ReadCallbackProvider : ConfigurationProvider, IConfigurationSource, IDisposable
+        {
+            private readonly Action<string?> _onRead;
+
+            public ReadCallbackProvider(Action<string?> onRead, params (string Key, string? Value)[] entries)
+            {
+                _onRead = onRead;
+                Data = Dict(entries);
+            }
+
+            public bool IsDisposed { get; private set; }
+
+            public IConfigurationProvider Build(IConfigurationBuilder builder) => this;
+
+            public override bool TryGet(string key, out string? value)
+            {
+                Read(key);
+                return base.TryGet(key, out value);
+            }
+
+            public override IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
+            {
+                Read(parentPath);
+                foreach (string key in base.GetChildKeys(earlierKeys, parentPath))
+                {
+                    Assert.False(IsDisposed);
+                    yield return key;
+                }
+            }
+
+            public void Dispose() => IsDisposed = true;
+
+            private void Read(string? key)
+            {
+                Assert.False(IsDisposed);
+                _onRead(key);
+                Assert.False(IsDisposed);
             }
         }
 

@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Configuration
         {
             get
             {
-                ConfigurationEngine.Default.Get(_providers, key, out string? value, out _);
+                TryGetConfiguration(_providers, key, out string? value);
                 return value;
             }
             set => SetConfiguration(_providers, key, value);
@@ -113,6 +113,36 @@ namespace Microsoft.Extensions.Configuration
             {
                 (provider as IDisposable)?.Dispose();
             }
+        }
+
+        internal static bool TryGetConfiguration(IList<IConfigurationProvider> providers, string key, out string? value)
+        {
+            // The call-site guard lets the trimmer remove reference resolution entirely.
+            return ReferenceResolver.Disabled
+                ? GetValueProvider(providers, key, out value) is not null
+                : ReferenceResolver.TryGet(providers, key, out value);
+        }
+
+        internal static IConfigurationProvider? GetValueProvider(IList<IConfigurationProvider> providers, string key, out string? value)
+        {
+            for (int i = providers.Count - 1; i >= 0; i--)
+            {
+                try
+                {
+                    IConfigurationProvider provider = providers[i];
+                    if (provider.TryGet(key, out value))
+                    {
+                        return provider;
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Preserve reads after disposal when another provider can still supply the value.
+                }
+            }
+
+            value = null;
+            return null;
         }
 
         internal static void SetConfiguration(IList<IConfigurationProvider> providers, string key, string? value)

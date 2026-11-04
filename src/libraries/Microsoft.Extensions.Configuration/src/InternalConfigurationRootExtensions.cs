@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -20,15 +21,23 @@ namespace Microsoft.Extensions.Configuration
         internal static IEnumerable<IConfigurationSection> GetChildrenImplementation(this IConfigurationRoot root, string? path)
         {
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
-            IList<IConfigurationProvider> providers = AsList(reference?.Providers ?? root.Providers);
+            IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
 
-            IEnumerable<string> keys = ConfigurationEngine.Default.GetChildKeys(providers, path);
-            if (reference is not null)
+            IEnumerable<IConfigurationSection> children = providers
+                .Aggregate(Enumerable.Empty<string>(),
+                    (seed, source) => source.GetChildKeys(seed, path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select(key => root.GetSection(path == null ? key : path + ConfigurationPath.KeyDelimiter + key));
+
+            if (reference is null)
             {
-                keys = keys.ToList();
+                return children;
             }
-
-            return keys.Select(key => root.GetSection(path == null ? key : path + ConfigurationPath.KeyDelimiter + key));
+            else
+            {
+                // Eagerly evaluate the IEnumerable before releasing the reference so we don't allow iteration over disposed providers.
+                return children.ToList();
+            }
         }
 
         internal static bool TryGetConfiguration(this IConfigurationRoot root, string key, out string? value)
@@ -38,15 +47,11 @@ namespace Microsoft.Extensions.Configuration
                 // Hold the reference for the whole read: resolving a reference reads several keys, and they all have to
                 // come from the same provider generation.
                 using ReferenceCountedProviders reference = manager.GetProvidersReference();
-                return ConfigurationEngine.Default.Get(reference.Providers, key, out value, out _);
+                return ConfigurationRoot.TryGetConfiguration(reference.Providers, key, out value);
             }
 
-            return ConfigurationEngine.Default.Get(AsList(root.Providers), key, out value, out _);
+            IEnumerable<IConfigurationProvider> providers = root.Providers;
+            return ConfigurationRoot.TryGetConfiguration(providers as IList<IConfigurationProvider> ?? providers.ToList(), key, out value);
         }
-
-        // Providers is IList<IConfigurationProvider> for both of the roots in this library, and for the pinned
-        // generation a ConfigurationManager hands out.
-        private static IList<IConfigurationProvider> AsList(IEnumerable<IConfigurationProvider> providers) =>
-            providers as IList<IConfigurationProvider> ?? providers.ToList();
     }
 }

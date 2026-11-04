@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Configuration
     // values carry references, so nothing else about configuration changes: enumeration, change tokens and writes are
     // untouched, and a section is never redirected - a reference names a single key, and one whose target holds no value
     // of its own reads as absent.
-    internal sealed class ReferenceEngine : ConfigurationEngine
+    internal static class ReferenceResolver
     {
         private const string SwitchName = "Microsoft.Extensions.Configuration.DisableConfigurationTransformations";
         // The three ways one read can grow, each bounded on its own: steps from one reference to the next, levels of
@@ -25,12 +25,10 @@ namespace Microsoft.Extensions.Configuration
         [FeatureSwitchDefinition(SwitchName)]
         internal static bool Disabled { get; } = AppContext.TryGetSwitch(SwitchName, out bool disabled) && disabled;
 
-        internal ReferenceEngine(ConfigurationEngine next) : base(next) { }
-
-        internal override bool Get(IList<IConfigurationProvider> providers, string key, out string? value, out int providerIndex)
+        internal static bool TryGet(IList<IConfigurationProvider> providers, string key, out string? value)
         {
             Trail trail = default;
-            bool read = Read(providers, key, nesting: 0, hops: 0, ref trail, out value, out providerIndex);
+            bool read = Read(providers, key, nesting: 0, hops: 0, ref trail, out value);
 
             if (!trail.Recording)
             {
@@ -46,9 +44,10 @@ namespace Microsoft.Extensions.Configuration
             });
         }
 
-        private bool Read(IList<IConfigurationProvider> providers, string key, int nesting, int hops, ref Trail trail, out string? value, out int providerIndex)
+        private static bool Read(IList<IConfigurationProvider> providers, string key, int nesting, int hops, ref Trail trail, out string? value)
         {
-            if (!Next.Get(providers, key, out value, out providerIndex))
+            IConfigurationProvider? provider = ConfigurationRoot.GetValueProvider(providers, key, out value);
+            if (provider is null)
             {
                 return false;
             }
@@ -60,7 +59,7 @@ namespace Microsoft.Extensions.Configuration
 
             // A chained configuration has already read its own values, so what it serves is text.
             if (!ReferenceSyntax.IsReference(raw, out int bodyStart, out int bodyLength)
-             || providers[providerIndex] is ChainedConfigurationProvider)
+             || provider is ChainedConfigurationProvider)
             {
                 return true;
             }
@@ -73,8 +72,7 @@ namespace Microsoft.Extensions.Configuration
             }
             else if (BuildKey(providers, raw.AsSpan(bodyStart, bodyLength), key, nesting, hops, ref trail) is { } target)
             {
-                // The key was declared here whatever it turned out to name, so the target's provider is not the answer.
-                followed = Read(providers, target, nesting, hops + 1, ref trail, out value, out _);
+                followed = Read(providers, target, nesting, hops + 1, ref trail, out value);
             }
 
             trail.Record(key);
@@ -82,13 +80,12 @@ namespace Microsoft.Extensions.Configuration
             if (!followed)
             {
                 value = null;
-                providerIndex = -1;
             }
 
             return followed;
         }
 
-        private string? BuildKey(IList<IConfigurationProvider> providers, ReadOnlySpan<char> body, string baseKey, int nesting, int hops, ref Trail trail)
+        private static string? BuildKey(IList<IConfigurationProvider> providers, ReadOnlySpan<char> body, string baseKey, int nesting, int hops, ref Trail trail)
         {
             body = body.Trim();
             if (body.IsEmpty)
@@ -133,7 +130,7 @@ namespace Microsoft.Extensions.Configuration
                         }
 
                         // Neither an absent key nor one held as null has any text to put in.
-                        if (!Read(providers, inner, nesting + 1, hops, ref trail, out string? value, out _) || value is null)
+                        if (!Read(providers, inner, nesting + 1, hops, ref trail, out string? value) || value is null)
                         {
                             return null;
                         }
