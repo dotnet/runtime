@@ -28,7 +28,7 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
     {
         HijackArgs args = _target.ProcessedData.GetOrAdd<Data.HijackArgs>(frame.HijackArgsPtr);
 
-        _holder.InstructionPointer = CodePointerUtils.StripPtrAuthFromReturnAddress(frame.ReturnAddress, _target);
+        _holder.InstructionPointer = CodePointerUtils.StripPointerAuthentiationFromReturnAddress(frame.ReturnAddress, _target);
 
         // The stack pointer is the address immediately following HijackArgs
         uint hijackArgsSize = Data.HijackArgs.GetSize(_target);

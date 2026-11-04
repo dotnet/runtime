@@ -763,7 +763,7 @@ internal class ARM64Unwinder(Target target)
                     return false;
                 }
 
-                context.Lr = CodePointerUtils.StripPtrAuthFromReturnAddress(new TargetCodePointer(context.Lr), _target).Value;
+                context.Lr = CodePointerUtils.StripPointerAuthentiationFromReturnAddress(new TargetCodePointer(context.Lr), _target).Value;
             }
 
             //

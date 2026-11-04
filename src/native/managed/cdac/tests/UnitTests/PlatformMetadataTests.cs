@@ -18,7 +18,7 @@ public class PlatformMetadataTests
     {
         Target target = CreateTarget();
         Assert.Equal(0UL, target.Contracts.PlatformMetadata.GetPointerAuthenticationMask());
-        Assert.Equal(0x1234UL, CodePointerUtils.StripPtrAuthFromReturnAddress(new(0x1234), target).Value);
+        Assert.Equal(0x1234UL, CodePointerUtils.StripPointerAuthentiationFromReturnAddress(new(0x1234), target).Value);
     }
 
     [Theory]
@@ -28,7 +28,7 @@ public class PlatformMetadataTests
     {
         Target target = CreateTarget(mask);
 
-        Assert.Equal(address, CodePointerUtils.StripPtrAuthFromReturnAddress(new(signedAddress), target).Value);
+        Assert.Equal(address, CodePointerUtils.StripPointerAuthentiationFromReturnAddress(new(signedAddress), target).Value);
     }
 
     private static Target CreateTarget(ulong? mask = null)
