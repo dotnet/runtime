@@ -1068,7 +1068,13 @@ namespace System.Runtime.CompilerServices
 
                 Debug.Assert(stackState->Notifier is Task);
                 Task awaitedTask = Unsafe.As<Task>(stackState->Notifier!);
-                m_action = GetAwaitedTaskContinuationContext(headContinuation, stackState->AwaitedContinuationContext);
+
+                // m_action is known to be null here, so only a non-null context needs storing (avoiding a write barrier otherwise).
+                if (GetAwaitedTaskContinuationContext(headContinuation, stackState->AwaitedContinuationContext) is { } continuationContext)
+                {
+                    m_action = continuationContext;
+                }
+
                 if (!awaitedTask.TryAddFirstTaskContinuation(this))
                 {
                     AddAwaitedTaskContinuation(awaitedTask);
