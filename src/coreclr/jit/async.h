@@ -500,6 +500,7 @@ class AsyncTransformation
                                                    SaveSet                          saveSet);
     SaveSet                 GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption);
     SuspensionContextHelper GetSuspensionContextHelper(GenTreeCall* call);
+    bool                    CanFinishSuspensionInDispatcher(GenTreeCall* call);
     void                    FinishContextHandlingAndSuspension(BasicBlock*                      callBlock,
                                                                GenTreeCall*                     call,
                                                                BasicBlock*                      suspendBB,
@@ -564,12 +565,13 @@ class AsyncTransformation
                                                                   GenTree*                  invariantResumed,
                                                                   bool                      execContextMayVary,
                                                                   bool                      syncContextMayVary);
-    void                      InsertFinishContextHandlingCall(BasicBlock*               block,
+    BasicBlock*               InsertFinishContextHandlingCall(BasicBlock*               block,
                                                               const ContinuationLayout& layout,
                                                               SuspensionContextHelper   helper,
                                                               GenTree*                  resumed,
                                                               GenTree*                  execContext,
-                                                              GenTree*                  syncContext);
+                                                              GenTree*                  syncContext,
+                                                              bool                      skipIfResumed);
     GenTreeLclVarCommon*      FindAndRemoveCommonAsyncResumedDef();
     const ContinuationLayout* CreateResumptionsAndSuspensions(ArrayStack<GenTree*>& continuationMemberOffsets);
     BasicBlock*               CreateOSRJumpBB(GenTree* osrAddress);

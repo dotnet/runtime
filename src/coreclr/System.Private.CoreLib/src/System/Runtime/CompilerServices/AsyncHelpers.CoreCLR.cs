@@ -51,7 +51,13 @@ namespace System.Runtime.CompilerServices
         // async callee's result. We need to represent the offset to each of
         // these, so we allocate the rest of the bits for this.
         ResultIndexFirstBit = 11,
-        ResultIndexNumBits = 21,
+        ResultIndexNumBits = 20,
+
+        // The suspending frame had already been resumed by the dispatcher, so it left
+        // capturing its ExecutionContext and (when it has an index) its continuation
+        // context to the dispatcher, which does that when the frame returns this
+        // continuation. See FinishSuspensionInDispatcher.
+        FinishSuspensionInDispatcher = 1 << 31,
     }
 
     // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
@@ -98,6 +104,27 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(index != 0);
             ref byte data = ref RuntimeHelpers.GetRawData(this);
             return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe ref object? GetContinuationContextRefOrNull()
+        {
+            const uint mask = (1u << (int)ContinuationFlags.ContinuationContextIndexNumBits) - 1;
+            uint index = ((uint)Flags >> (int)ContinuationFlags.ContinuationContextIndexFirstBit) & mask;
+            if (index == 0)
+                return ref Unsafe.NullRef<object?>();
+            ref byte data = ref RuntimeHelpers.GetRawData(this);
+            return ref Unsafe.As<byte, object?>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe ref ExecutionContext? GetExecutionContextRef()
+        {
+            const uint mask = (1u << (int)ContinuationFlags.ExecutionContextIndexNumBits) - 1;
+            uint index = ((uint)Flags >> (int)ContinuationFlags.ExecutionContextIndexFirstBit) & mask;
+            Debug.Assert(index != 0);
+            ref byte data = ref RuntimeHelpers.GetRawData(this);
+            return ref Unsafe.As<byte, ExecutionContext?>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1336,6 +1363,10 @@ namespace System.Runtime.CompilerServices
 
                             if (newContinuation != null)
                             {
+                                if ((newContinuation.Flags & ContinuationFlags.FinishSuspensionInDispatcher) != 0)
+                                {
+                                    FinishSuspensionInDispatcher(newContinuation, awaitState.CurrentThread!);
+                                }
                                 if (newContinuation.Next != nextContinuation)
                                 {
                                     newContinuation.Next = nextContinuation;
@@ -1505,6 +1536,10 @@ namespace System.Runtime.CompilerServices
 
                             if (newContinuation != null)
                             {
+                                if ((newContinuation.Flags & ContinuationFlags.FinishSuspensionInDispatcher) != 0)
+                                {
+                                    FinishSuspensionInDispatcher(newContinuation, awaitState.CurrentThread!);
+                                }
                                 if (newContinuation.Next != nextContinuation)
                                 {
                                     newContinuation.Next = nextContinuation;
@@ -2365,6 +2400,59 @@ namespace System.Runtime.CompilerServices
                 if (previousExecCtx != threadExecCtx)
                 {
                     thread._executionContext = previousExecCtx;
+                }
+            }
+        }
+
+        // Finish the suspension of a frame that the dispatcher resumed and that left this to the
+        // dispatcher (see ContinuationFlags.FinishSuspensionInDispatcher). This does what
+        // FinishSuspension{No,With}ContinuationContext would have done for the resumed frame;
+        // the frame returned straight to the dispatcher, so the thread's contexts are still the
+        // ones it suspended with.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void FinishSuspensionInDispatcher(Continuation continuation, Thread thread)
+        {
+            Debug.Assert((continuation.Flags & ContinuationFlags.FinishSuspensionInDispatcher) != 0);
+
+            ref object? continuationContext = ref continuation.GetContinuationContextRefOrNull();
+            if (!Unsafe.IsNullRef(ref continuationContext))
+            {
+                CaptureContinuationContextForDispatcher(continuation, ref continuationContext, thread);
+            }
+
+            ExecutionContext? threadExecCtx = thread._executionContext;
+            ref ExecutionContext? execCtx = ref continuation.GetExecutionContextRef();
+            if (threadExecCtx != execCtx)
+            {
+                execCtx = threadExecCtx != null && threadExecCtx.InstanceIsFlowSuppressed ? ExecutionContext.DefaultFlowSuppressed : threadExecCtx;
+            }
+        }
+
+        private static void CaptureContinuationContextForDispatcher(Continuation continuation, ref object? continuationContext, Thread thread)
+        {
+            SynchronizationContext? threadSyncCtx = thread._synchronizationContext;
+            if (threadSyncCtx != null && threadSyncCtx.GetType() != typeof(SynchronizationContext))
+            {
+                continuation.Flags |= ContinuationFlags.ContinueOnCapturedSynchronizationContext;
+                if (continuationContext != threadSyncCtx)
+                {
+                    continuationContext = threadSyncCtx;
+                }
+            }
+            else
+            {
+                TaskScheduler? sched = GetCurrentTaskScheduler();
+                if (sched != null && sched != TaskScheduler.Default)
+                {
+                    continuation.Flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
+                    if (continuationContext != sched)
+                    {
+                        continuationContext = sched;
+                    }
+                }
+                else
+                {
+                    continuation.Flags |= ContinuationFlags.ContinueOnThreadPool;
                 }
             }
         }
