@@ -20,7 +20,7 @@ namespace System.IO.Tests
                 if (OperatingSystem.IsWindows())
                 {
                     // Prior to 1903 Windows would not delete the filename until the last file handle is closed.
-                    Assert.Equal(PlatformDetection.IsWindows10Version1903OrGreater, !File.Exists(fileName));
+                    Assert.Equal(DeletesOpenFileNameImmediately, !File.Exists(fileName));
                 }
             }
 
@@ -58,7 +58,7 @@ namespace System.IO.Tests
                 if (OperatingSystem.IsWindows())
                 {
                     // Prior to 1903 Windows would not delete the filename until the last file handle is closed.
-                    Assert.Equal(PlatformDetection.IsWindows10Version1903OrGreater, !File.Exists(fileName));
+                    Assert.Equal(DeletesOpenFileNameImmediately, !File.Exists(fileName));
                 }
             }
 
@@ -106,13 +106,13 @@ namespace System.IO.Tests
                     Assert.Equal(0, fs2.ReadByte());
 
                     // Prior to 1903 Windows would not delete the filename until the last file handle is closed.
-                    Assert.Equal(PlatformDetection.IsWindows10Version1903OrGreater, !File.Exists(fileName));
+                    Assert.Equal(DeletesOpenFileNameImmediately, !File.Exists(fileName));
                 }
 
                 Assert.Equal(0, fs1.ReadByte());
                 fs1.WriteByte(0xFF);
 
-                if (PlatformDetection.IsWindows10Version1903OrGreater)
+                if (DeletesOpenFileNameImmediately)
                 {
                     // On 1903 the filename is immediately released after delete is called
                     Assert.Throws<FileNotFoundException>(() => CreateFileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.ReadWrite));
