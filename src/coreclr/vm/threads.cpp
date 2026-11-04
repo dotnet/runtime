@@ -3179,10 +3179,6 @@ OBJECTREF Thread::GetExposedObject()
         // Run it before acquiring the ThreadStore lock.
         CallDefaultConstructor(attempt);
 
-        // The exposed object keeps us alive until it is GC'ed.  This
-        // doesn't mean the physical thread continues to run, of course.
-        attempt->SetInternal(this);
-
         BOOL fNeedThreadStore = (! ThreadStore::HoldingThreadStore(pCurThread));
         // Take a lock to make sure that only one thread creates the object.
         ThreadStoreLockHolder tsHolder(fNeedThreadStore);
@@ -3190,6 +3186,10 @@ OBJECTREF Thread::GetExposedObject()
         // Check to see if another thread has not already created the exposed object.
         if (ObjectFromHandle(m_ExposedObject) == NULL)
         {
+            // The exposed object keeps us alive until it is GC'ed.  This
+            // doesn't mean the physical thread continues to run, of course.
+            attempt->SetInternal(this);
+
             // Keep a weak reference to the exposed object.
             StoreObjectInHandle(m_ExposedObject, (OBJECTREF) attempt);
 
@@ -3214,10 +3214,6 @@ OBJECTREF Thread::GetExposedObject()
 
             exposedHolder.SuppressRelease();
             strongHolder.SuppressRelease();
-        }
-        else
-        {
-            attempt->ClearInternal();
         }
 
         GCPROTECT_END();
