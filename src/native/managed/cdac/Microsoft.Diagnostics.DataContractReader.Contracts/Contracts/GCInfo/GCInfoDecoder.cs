@@ -189,6 +189,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.SlotTable;
     }
 
+    // GCInfo v6 bounded register decoding.
     private uint ReadRegisterValue(int encodingBase)
     {
         uint chunk = (uint)_reader.ReadBits(encodingBase + 1, ref _bitOffset);
@@ -331,6 +332,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield break;
     }
 
+    // GCInfo v6 stack-slot decoding.
     private void DecodeStackSlots(uint count, bool isUntracked)
     {
         GcSlotFlags flags = 0;
