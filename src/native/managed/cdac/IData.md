@@ -137,7 +137,7 @@ access instead of construction. This has two consequences:
 * **Reading a field fails exactly as the eager path did.** A non-nullable
   `[Field]` whose descriptor entry is absent throws
   `InvalidOperationException` from the layout lookup (the same exception
-  `LayoutSet.Select` threw at construction). A field that *is* in the
+  `TypeLayout.Select` threw at construction). A field that *is* in the
   descriptor but whose target memory is unreadable throws
   `VirtualReadException` from the read itself. The generator does not
   substitute one for the other -- it looks the field up and, if found,
@@ -451,7 +451,7 @@ internal sealed partial class Module : IData<Module>
 // Generated (the class captures _target for any type with instance members):
 public void WriteFlags(uint value)
 {
-    _layouts.Select(Address, out var t, out var b, out var n, "Flags");
+    _layout.Select(Address, out var t, out var b, out var n, "Flags");
     _target.WriteField<uint>(b, t, n, value);
     Flags = value;
 }
@@ -489,7 +489,7 @@ managed metadata to fill gaps.
 ### How layout selection works
 
 1. The generator emits a call to
-   `LayoutSet.Resolve(target, typeNames)` at the top of the ctor.
+   `TypeLayout.Resolve(target, typeNames)` at the top of the ctor.
    This tries each candidate type name against the native descriptors
    first. The first native match is authoritative, even if a field or
    size is absent. If no native layout exists, the helper prepares a
@@ -498,7 +498,7 @@ managed metadata to fill gaps.
    are memoized for that instance.
 
 2. Every `[Field]` read calls
-   `LayoutSet.Select(address, out type, out baseAddr, out name, ...names)`.
+   `TypeLayout.Select(address, out type, out baseAddr, out name, ...names)`.
    The helper walks `names` against the selected `TypeInfo`'s `Fields`
    map. If a name matches, the read is anchored at `address`: native
    offsets already include the object header by convention, and managed
@@ -506,7 +506,7 @@ managed metadata to fill gaps.
    The generated code then calls the
    appropriate `target.ReadField<T>(baseAddr, type, name)` overload.
 
-3. If no field name matches in the selected layout, `LayoutSet.Select` throws
+3. If no field name matches in the selected layout, `TypeLayout.Select` throws
    `InvalidOperationException` with the candidate name list in the
    message. Optional fields instead return `null`. Neither case searches
    another layout. Construction remains lazy and succeeds even if no
@@ -590,11 +590,11 @@ the header for managed reference types -- so native reads also use
 ### `[FieldAddress]` and `[InstanceDataStart]` under fallback
 
 `[FieldAddress]` accepts the same `params string[]` name list as
-`[Field]`, and works through `LayoutSet.Select` to obtain the
+`[Field]`, and works through `TypeLayout.Select` to obtain the
 resolved type info and base address, then computes the absolute
 field address within the selected layout.
 
-`[InstanceDataStart]` returns `address + layouts.InstanceSize`,
+`[InstanceDataStart]` returns `address + layout.InstanceSize`,
 where `InstanceSize` is the selected layout's `Size`. An absent size
 throws `InvalidOperationException`; it does not cause a lookup in
 another source.
