@@ -6,7 +6,7 @@ using Xunit;
 
 public class B07847
 {
-    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/133538", RuntimeConfiguration.Checked)]
+    [PlatformSpecific(TestPlatforms.Windows)]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -4,12 +4,20 @@
 using System.Reflection.PortableExecutable;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
 {
     internal void BeginTopLevelDirective() => PrepareTopLevelDeclaration();
+
+    internal void ProcessCoreLibraryDirective()
+    {
+        if (!IsDeclarationSuppressed)
+        {
+            _entityRegistry.IsCoreLibrary = true;
+        }
+    }
 
     internal void ProcessTopLevelDataDeclaration(CILParser.DataDeclContext context)
         => _ = context;

@@ -59,12 +59,12 @@ namespace System.Threading.Tests
             Assert.Equal(ev.InitialCount, ev.CurrentCount);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [Theory]
         [InlineData(0)]
         [InlineData(100)]
         public static void RunCountdownEventTest1_SimpleTimeout(int ms)
         {
-            CountdownEvent ev = new CountdownEvent(999);
+            using CountdownEvent ev = new CountdownEvent(999);
             Assert.False(ev.Wait(ms));
             Assert.False(ev.IsSet);
             Assert.False(ev.WaitHandle.WaitOne(ms));

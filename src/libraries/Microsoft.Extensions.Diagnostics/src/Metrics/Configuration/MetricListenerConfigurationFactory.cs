@@ -13,7 +13,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Configuration
 
         public MetricListenerConfigurationFactory(IEnumerable<MetricsConfiguration> configurations)
         {
-            _configurations = configurations ?? throw new ArgumentNullException(nameof(configurations));
+            ArgumentNullException.ThrowIfNull(configurations);
+            _configurations = configurations;
         }
 
         public IConfiguration GetConfiguration(string listenerName)

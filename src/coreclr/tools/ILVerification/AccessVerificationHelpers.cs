@@ -215,6 +215,18 @@ namespace ILVerify
                     if (currentTypeDef == curInstTypeDef.GetTypeDefinition())
                     {
                         // At this point we know that the instance type is able to access the same family fields as current type
+                        if (targetTypeDef.IsInterface)
+                        {
+                            // Like ClassLoader::CanAccessFamily in the runtime, implementing any instantiation of the interface is enough
+                            foreach (DefType implementedInterface in currentTypeDef.RuntimeInterfaces)
+                            {
+                                if (implementedInterface.GetTypeDefinition() == targetTypeDef)
+                                    return true;
+                            }
+
+                            return false;
+                        }
+
                         // Now iterate through all super types of current type to see if current type can access family target type
                         while (currentTypeDef != null)
                         {

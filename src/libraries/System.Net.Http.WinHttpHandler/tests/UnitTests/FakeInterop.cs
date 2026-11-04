@@ -99,7 +99,10 @@ internal static partial class Interop
             proxyInfo.ProxyBypass = proxyBypass;
             APICallHistory.SessionProxySettings = proxyInfo;
 
-            return new FakeSafeWinHttpHandle(true);
+            return new FakeSafeWinHttpHandle(true)
+            {
+                ProxySettings = proxyInfo
+            };
         }
 
         public static bool WinHttpCloseHandle(IntPtr sessionHandle)
@@ -115,6 +118,8 @@ internal static partial class Interop
             ushort serverPort,
             uint reserved)
         {
+            // Feature-detection sessions must not replace the settings of the session used for the request.
+            APICallHistory.SessionProxySettings = ((FakeSafeWinHttpHandle)sessionHandle).ProxySettings;
             return new FakeSafeWinHttpHandle(true);
         }
 

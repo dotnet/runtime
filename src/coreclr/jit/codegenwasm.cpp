@@ -187,9 +187,10 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         assert(m_compiler->lvaWasmVirtualIP != BAD_VAR_NUM);
         assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
 
-        // Helpers may be called without a PEP, so their identity is independent of the caller.
+        // NativeAOT encodes the method start. CoreCLR helpers may be called without a PEP,
+        // so their identity is independent of the caller.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
+        if (m_compiler->IsNativeAot() || m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
         {
             GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
         }
@@ -755,12 +756,6 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             if (interval->IsLoop())
             {
                 GetEmitter()->emitIns_BlockTy(INS_loop);
-            }
-            else if (interval->IsTry() && m_compiler->IsNativeAot())
-            {
-                // TODO-NativeAOT-WASM: Preserve interval nesting without CoreCLR's catch-resumption tag during
-                // NativeAOT bringup.
-                GetEmitter()->emitIns_BlockTy(INS_block);
             }
             else if (interval->IsTry())
             {
@@ -4660,10 +4655,11 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
         maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
     }
 
-    // Runtime wants us to report twice the actual Virtual IP range as code size.
+    // CoreCLR doubles virtual IPs to preserve the low-bit tag on virtual code addresses.
+    // NativeAOT uses unscaled virtual IPs.
     // Use 1 as the prolog size.
     //
-    codeSize   = 2 * maxVirtualIP;
+    codeSize   = m_compiler->IsNativeAot() ? maxVirtualIP : 2 * maxVirtualIP;
     prologSize = 1;
 
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).

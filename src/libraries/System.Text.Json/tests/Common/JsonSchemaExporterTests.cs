@@ -437,5 +437,28 @@ namespace System.Text.Json.Schema.Tests
 
         private string FormatJson(JsonNode? node) =>
             JsonSerializer.Serialize(node, _indentedOptions.GetTypeInfo<JsonNode>());
+
+        [Theory]
+        [InlineData("1E4")]
+        [InlineData("1e-4")]
+        [InlineData("1.23E+4")]
+        [InlineData("-1.23e-4")]
+        public void Decimal_AllowReadingFromString_MatchesScientificNotation(string decimalString)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/130868
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
+                NumberHandling = JsonNumberHandling.AllowReadingFromString
+            };
+
+            JsonNode schema = options.GetJsonSchemaAsNode(typeof(decimal));
+            string pattern = schema["pattern"]!.GetValue<string>();
+            Assert.Matches(pattern, decimalString);
+
+            decimal parsed = JsonSerializer.Deserialize<decimal>($"\"{decimalString}\"", options);
+            Assert.True(decimal.TryParse(decimalString, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out decimal expected));
+            Assert.Equal(expected, parsed);
+        }
     }
 }

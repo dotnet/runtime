@@ -974,7 +974,7 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
             bool result = UnwindHelpers::GetUnwindProcInfo(PINSTRToPCODE((TADDR)pvAddress), m_UnwindInfoSections, &procInfo);
             ASSERT(result);
 
-            if (branchTarget < procInfo.start_ip || branchTarget >= procInfo.end_ip)
+            if (branchTarget <= procInfo.start_ip || branchTarget >= procInfo.end_ip)
             {
                 return trailingEpilogueInstructions;
             }

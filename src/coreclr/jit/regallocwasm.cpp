@@ -181,13 +181,20 @@ void WasmRegAlloc::IdentifyCandidates()
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
             varIsRegCandidate = false;
         }
-        // We also need to ensure that any GC refs are not stored in wasm locals until we have support for
-        // spilling them to the stack before calls.
-        // TODO-WASM: Add support for spilling GC refs in order to relax this second restriction.
+        // We also need to ensure that any GC refs are not stored in wasm locals unless they are pre-identified as
+        // candidates (identified as never gc-exposed).
+        // TODO-WASM: Add support for spilling GC ref locals in order to relax this second restriction and enregister
+        // more GC ref locals.
         if (varTypeIsGC(varDsc->lvType))
         {
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
-            varIsRegCandidate = false;
+            bool isRefCandidate =
+                varDsc->lvTracked &&
+                VarSetOps::IsMember(m_compiler, *m_compiler->m_wasmGCRefCandidates, varDsc->lvVarIndex);
+            if (!isRefCandidate)
+            {
+                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
+                varIsRegCandidate = false;
+            }
         }
         if (varIsRegCandidate)
         {
@@ -1011,6 +1018,10 @@ void WasmRegAlloc::ResolveReferences()
         unsigned Index;
     };
 
+    auto canReuseAbiReg = [](regNumber virtReg, regNumber abiReg) {
+        return genIsValidReg(virtReg) && (WasmRegToType(virtReg) == WasmRegToType(abiReg));
+    };
+
     // Resolve funclet by funclet, in reverse order, so that we process the main method region last.
     //
     for (FuncInfoDsc* const funcInfo : m_compiler->Funcs().Reverse())
@@ -1050,7 +1061,8 @@ void WasmRegAlloc::ResolveReferences()
                             indexBase              = max(indexBase, argIndex + 1);
 
                             LclVarDsc* argVarDsc = m_compiler->lvaGetDesc(argLclNum);
-                            if ((argVarDsc->GetRegNum() == argReg) || (argLclNum == m_compiler->lvaWasmSpArg))
+                            if (canReuseAbiReg(argVarDsc->GetRegNum(), argReg) ||
+                                (argLclNum == m_compiler->lvaWasmSpArg))
                             {
                                 assert(abiInfo.HasExactlyOneRegisterSegment());
                                 virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
@@ -1059,7 +1071,7 @@ void WasmRegAlloc::ResolveReferences()
                             const ParameterRegisterLocalMapping* mapping =
                                 m_compiler->FindParameterRegisterLocalMappingByRegister(argReg);
                             if ((mapping != nullptr) &&
-                                (m_compiler->lvaGetDesc(mapping->LclNum)->GetRegNum() == argReg))
+                                canReuseAbiReg(m_compiler->lvaGetDesc(mapping->LclNum)->GetRegNum(), argReg))
                             {
                                 virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
                             }
@@ -1119,7 +1131,7 @@ void WasmRegAlloc::ResolveReferences()
                     const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
                     assert(abiInfo.HasExactlyOneRegisterSegment());
                     regNumber abiReg = abiInfo.Segment(0).GetRegister();
-                    if (WasmRegToType(virtReg) == WasmRegToType(abiReg))
+                    if (canReuseAbiReg(virtReg, abiReg))
                     {
                         physReg = abiReg;
                     }
@@ -1131,7 +1143,7 @@ void WasmRegAlloc::ResolveReferences()
                         m_compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
                     assert(mapping != nullptr);
                     regNumber abiReg = mapping->RegisterSegment->GetRegister();
-                    if (WasmRegToType(virtReg) == WasmRegToType(abiReg))
+                    if (canReuseAbiReg(virtReg, abiReg))
                     {
                         physReg = abiReg;
                     }
@@ -1284,6 +1296,7 @@ void WasmRegAlloc::ResolveReferences()
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
             PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
+            assert(physRegs.Index <= physRegs.IndexBase + physRegs.DeclaredCount);
             if (physRegs.DeclaredCount != 0)
             {
                 decls->push_back({type, physRegs.DeclaredCount});

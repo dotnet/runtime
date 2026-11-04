@@ -2253,7 +2253,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             data.v.mapping = (int)CorDebugMappingResult.MAPPING_NO_INFO;
             data.v.fVarArgs = (byte)(rts.IsVarArg(md) ? 1 : 0);
-            data.v.fNoMetadata = (byte)((rts.IsNoMetadataMethod(md, out _) || rts.IsILStub(md) || IsDiagnosticsHidden(rts.GetAsyncMethodFlags(md)) || rts.IsWrapperStub(md)) ? 1 : 0);
+            data.v.fNoMetadata = (byte)((rts.IsNoMetadataMethod(md, out _) || rts.IsDiagnosticsHidden(md)) ? 1 : 0);
             GenericContextLoc genericContextLoc = rts.GetGenericContextLoc(md);
             if (genericContextLoc != GenericContextLoc.None)
             {
@@ -2325,10 +2325,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         IStackWalk stackWalk = _target.Contracts.StackWalk;
         return gcInfo.GetAmbientSP(gcInfoHandle, nativeOffset, stackWalk.GetContextFramePointer(handle), stackWalk.GetStackPointer(handle));
     }
-
-    private static bool IsDiagnosticsHidden(AsyncMethodFlags flags)
-        => flags.HasFlag(AsyncMethodFlags.Thunk)
-            && (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant));
 
     private static bool HasClassOrMethodInstantiation(IRuntimeTypeSystem rts, MethodDescHandle md)
     {
@@ -2666,7 +2662,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
-            if (rts.IsILStub(md) || IsDiagnosticsHidden(rts.GetAsyncMethodFlags(md)) || rts.IsWrapperStub(md))
+            if (rts.IsDiagnosticsHiddenLCGMethod(md))
+            {
+                *pRetVal = (int)DynamicMethodType.kDiagnosticHiddenLCGMethod;
+            }
+            else if (rts.IsDiagnosticsHidden(md))
             {
                 *pRetVal = (int)DynamicMethodType.kDiagnosticHidden;
             }
@@ -5354,7 +5354,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null && walk.LegacyHandle != 0 && count > 0)
         {
-            // Parity check covers the handle prefix only.
+            // External roots can be duplicated and span different batch boundaries.
+            // Compare complete root sets before the stack-reference portion of each walk.
             DacGcReference[] legacyRefs = new DacGcReference[(int)count];
             uint legacyFetched = 0;
             int hrLocal = _legacy.WalkRefs(walk.LegacyHandle, count, legacyRefs, &legacyFetched);
@@ -5362,37 +5363,25 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             // If this is the case, the cDAC may report S_FALSE while the legacy DAC reports S_OK, or vice versa.
             // Allow divergent success codes, but still validate the rest of the results.
             Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowDivergentSuccess);
-            uint cdacHandlePrefix = CountHandlePrefix(refs, i);
-            uint legacyHandlePrefix = CountHandlePrefix(legacyRefs, legacyFetched);
-            Debug.Assert(
-                cdacHandlePrefix == legacyHandlePrefix,
-                $"cDAC handle-prefix count {cdacHandlePrefix}, legacy {legacyHandlePrefix}");
-
-            uint compare = Math.Min(cdacHandlePrefix, legacyHandlePrefix);
-            for (uint j = 0; j < compare; j++)
+            RefWalkHandlePrefixValidator validator = walk.HandlePrefixValidator;
+            validator.AddBatch(refs.AsSpan(0, (int)i), legacy: false, endOfWalk: hr == HResults.S_FALSE);
+            validator.AddBatch(legacyRefs.AsSpan(0, (int)legacyFetched), legacy: true, endOfWalk: hrLocal == HResults.S_FALSE);
+            while (validator.NeedsLegacyBatch && hrLocal >= 0)
             {
-                Debug.Assert(refs[j].dwType == legacyRefs[j].dwType,
-                    $"refs[{j}].dwType cDAC={refs[j].dwType:X}, legacy={legacyRefs[j].dwType:X}");
-                Debug.Assert(refs[j].vmDomain == legacyRefs[j].vmDomain,
-                    $"refs[{j}].vmDomain cDAC=0x{refs[j].vmDomain:X}, legacy=0x{legacyRefs[j].vmDomain:X}");
-                Debug.Assert(refs[j].objHnd == legacyRefs[j].objHnd,
-                    $"refs[{j}].objHnd cDAC=0x{refs[j].objHnd:X}, legacy=0x{legacyRefs[j].objHnd:X}");
-                Debug.Assert(refs[j].i64ExtraData == legacyRefs[j].i64ExtraData,
-                    $"refs[{j}].i64ExtraData cDAC=0x{refs[j].i64ExtraData:X}, legacy=0x{legacyRefs[j].i64ExtraData:X}");
+                hrLocal = _legacy.WalkRefs(walk.LegacyHandle, count, legacyRefs, &legacyFetched);
+                Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowDivergentSuccess);
+                validator.AddBatch(legacyRefs.AsSpan(0, (int)legacyFetched), legacy: true,
+                    endOfWalk: hrLocal == HResults.S_FALSE);
+                Debug.Assert(hrLocal != HResults.S_OK || legacyFetched > 0,
+                    "Legacy handle-prefix walk did not make progress.");
+                if (legacyFetched == 0)
+                    break;
             }
-        }
 
-        static uint CountHandlePrefix(DacGcReference[] buffer, uint length)
-        {
-            for (uint j = 0; j < length; j++)
+            if (validator.TryCompare(out bool matches))
             {
-                CorGCReferenceType dwType = buffer[j].dwType;
-                if (dwType == CorGCReferenceType.CorReferenceStack)
-                {
-                    return j;
-                }
+                Debug.Assert(matches, "cDAC and legacy handle-prefix root sets differ.");
             }
-            return length;
         }
 #endif
 
@@ -6578,6 +6567,106 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*pIndex == indexLocal, $"cDAC: {*pIndex}, DAC: {indexLocal}");
+        }
+#endif
+        return hr;
+    }
+
+    public int GetRuntimeVersion(COR_VERSION* pVersion)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pVersion is null)
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pVersion));
+            *pVersion = default;
+
+            ReadOnlySpan<char> productVersion = _target.Contracts.RuntimeInfo.GetRuntimeProductVersion().AsSpan();
+            int suffix = productVersion.IndexOfAny('-', '+');
+            if (!Version.TryParse(suffix >= 0 ? productVersion[..suffix] : productVersion, out Version? version) ||
+                version.Build < 0 || version.Revision >= 0)
+                throw new FormatException($"Expected a three-component runtime product version, got '{productVersion}'.");
+
+            *pVersion = new COR_VERSION
+            {
+                dwMajor = (uint)version.Major,
+                dwMinor = (uint)version.Minor,
+                dwBuild = (uint)version.Build,
+                dwSubBuild = 0,
+            };
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            COR_VERSION versionLocal = default;
+            int hrLocal = _legacy.GetRuntimeVersion(pVersion is null ? null : &versionLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pVersion->dwMajor == versionLocal.dwMajor, $"cDAC: {pVersion->dwMajor}, DAC: {versionLocal.dwMajor}");
+                Debug.Assert(pVersion->dwMinor == versionLocal.dwMinor, $"cDAC: {pVersion->dwMinor}, DAC: {versionLocal.dwMinor}");
+                Debug.Assert(pVersion->dwBuild == versionLocal.dwBuild, $"cDAC: {pVersion->dwBuild}, DAC: {versionLocal.dwBuild}");
+                Debug.Assert(pVersion->dwSubBuild == versionLocal.dwSubBuild, $"cDAC: {pVersion->dwSubBuild}, DAC: {versionLocal.dwSubBuild}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    public int GetTargetInfo(TargetInfo* pTargetInfo)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pTargetInfo is null)
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pTargetInfo));
+            Contracts.IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
+
+            pTargetInfo->Arch = runtimeInfo.GetTargetArchitecture() switch
+            {
+                Contracts.RuntimeInfoArchitecture.X86 => TargetArchitecture.X86,
+                Contracts.RuntimeInfoArchitecture.X64 => TargetArchitecture.AMD64,
+                Contracts.RuntimeInfoArchitecture.Arm => TargetArchitecture.Arm,
+                Contracts.RuntimeInfoArchitecture.Arm64 => TargetArchitecture.Arm64,
+                Contracts.RuntimeInfoArchitecture.LoongArch64 => TargetArchitecture.LoongArch64,
+                Contracts.RuntimeInfoArchitecture.RiscV64 => TargetArchitecture.RiscV64,
+                Contracts.RuntimeInfoArchitecture.Wasm => TargetArchitecture.Wasm,
+                _ => TargetArchitecture.Unknown,
+            };
+
+            pTargetInfo->OS = runtimeInfo.GetTargetOperatingSystem() switch
+            {
+                Contracts.RuntimeInfoOperatingSystem.Windows => TargetOperatingSystem.Windows,
+                Contracts.RuntimeInfoOperatingSystem.Unix => TargetOperatingSystem.Unix,
+                Contracts.RuntimeInfoOperatingSystem.Browser => TargetOperatingSystem.Browser,
+                Contracts.RuntimeInfoOperatingSystem.Apple => TargetOperatingSystem.Apple,
+                _ => TargetOperatingSystem.Unknown,
+            };
+
+            pTargetInfo->PointerSize = (uint)_target.PointerSize;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            TargetInfo targetInfoLocal = default;
+            int hrLocal = _legacy.GetTargetInfo(pTargetInfo == null ? null : &targetInfoLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pTargetInfo->Arch == targetInfoLocal.Arch, $"cDAC: {pTargetInfo->Arch}, DAC: {targetInfoLocal.Arch}");
+                Debug.Assert(pTargetInfo->OS == targetInfoLocal.OS, $"cDAC: {pTargetInfo->OS}, DAC: {targetInfoLocal.OS}");
+                Debug.Assert(pTargetInfo->PointerSize == targetInfoLocal.PointerSize, $"cDAC: {pTargetInfo->PointerSize}, DAC: {targetInfoLocal.PointerSize}");
+            }
         }
 #endif
         return hr;
