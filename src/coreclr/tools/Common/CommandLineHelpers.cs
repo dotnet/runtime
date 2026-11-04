@@ -13,11 +13,6 @@ using Internal.TypeSystem;
 
 namespace System.CommandLine
 {
-    internal sealed class CommandLineException : Exception
-    {
-        public CommandLineException(string message) : base(message) { }
-    }
-
     //
     // Helpers for command line processing
     //
@@ -91,38 +86,6 @@ namespace System.CommandLine
                 "wasi" => TargetOS.Wasi,
                 _ => throw new CommandLineException($"Target OS '{token}' is not supported")
             };
-        }
-
-        public static TargetArchitecture GetTargetArchitecture(string token)
-        {
-            if (string.IsNullOrEmpty(token))
-            {
-                return RuntimeInformation.ProcessArchitecture switch
-                {
-                    Architecture.X86 => TargetArchitecture.X86,
-                    Architecture.X64 => TargetArchitecture.X64,
-                    Architecture.Arm => TargetArchitecture.ARM,
-                    Architecture.Arm64 => TargetArchitecture.ARM64,
-                    Architecture.Wasm => TargetArchitecture.Wasm32,
-                    Architecture.LoongArch64 => TargetArchitecture.LoongArch64,
-                    Architecture.RiscV64 => TargetArchitecture.RiscV64,
-                    _ => throw new NotImplementedException()
-                };
-            }
-            else
-            {
-                return token.ToLowerInvariant() switch
-                {
-                    "x86" => TargetArchitecture.X86,
-                    "x64" => TargetArchitecture.X64,
-                    "arm" or "armel" => TargetArchitecture.ARM,
-                    "arm64" => TargetArchitecture.ARM64,
-                    "wasm" => TargetArchitecture.Wasm32,
-                    "loongarch64" => TargetArchitecture.LoongArch64,
-                    "riscv64" => TargetArchitecture.RiscV64,
-                    _ => throw new CommandLineException($"Target architecture '{token}' is not supported")
-                };
-            }
         }
 
         public static (TargetArchitecture, TargetOS, TargetAbi) GetTargetSpec(string targetArchitectureToken, string targetOSToken)

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>superpmi</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
+
+    <!-- Published as a NativeAOT (or single-file) executable next to the other SuperPMI tools. -->
+    <AotOrSingleFile>true</AotOrSingleFile>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <RuntimeIdentifier>$(PortableOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    <PublishDir>$(RuntimeBinDir)</PublishDir>
+    <!-- The native side uses C++ exceptions. -->
+    <LinkStandardCPlusPlusLibrary>true</LinkStandardCPlusPlusLibrary>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\Common\JitInterface\CorInfoImpl_generated.cs" Link="JitInterface\CorInfoImpl_generated.cs" />
+    <Compile Include="..\..\..\Common\CommandLineHelpers.TargetArchitecture.cs" Link="CommandLineHelpers.TargetArchitecture.cs" />
+    <ProjectReference Include="..\SuperPmi.Shared\SuperPmi.Shared.csproj" />
+  </ItemGroup>
+
+  <!-- The native side: linked in with NativeAOT, and a library next to superpmi otherwise. -->
+  <ItemGroup Condition="'$(PublishAot)' == 'true'">
+    <DirectPInvoke Include="superpmi-jitinterface" />
+    <NativeLibrary Include="$(RuntimeBinDir)superpmi-lib\$(LibPrefix)superpmi-jitinterface-static$(StaticLibSuffix)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PublishAot)' != 'true'">
+    <None Include="$(RuntimeBinDir)superpmi-lib\$(LibPrefix)superpmi-jitinterface$(LibSuffix)"
+          Link="$(LibPrefix)superpmi-jitinterface$(LibSuffix)"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -19,10 +19,9 @@ It's a good idea to choose an existing API that is similar to the one you want t
 3) Open `src/coreclr/inc/corinfo.h` and add the new API in `ICorStaticInfo`
 4) Open `src/coreclr/tools/Common/JitInterface/CorInfoImpl.cs` and add the new API in `CorInfoImpl` class. If the implementation is not shared for NativeAOT and R2R, use `CorInfoImpl.RyuJit.cs` and `CorInfoImpl.ReadyToRun.cs` to implement the API.
 5) Open `src/coreclr/vm/jitinterface.cpp` and add the CoreCLR-specific implementation
-6) Open `lwmlist.h` and add a definition of "input-args" - "output-args" map. Either use the generic `DLD`-like structs or create new ones in `agnostic.h`
-7) Open `src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h` and add the necessary recording, dumping, and replaying methods for the new API and then implement them in `methodcontext.cpp`
-8) Update `enum mcPackets` in `src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h` to include an entry for the new API and bump the max value of the enum
-9) Use the `rec*` and `rep*` methods in `src/coreclr/tools/superpmi/superpmi/icorjitinfo.cpp` and `src/coreclr/tools/superpmi/superpmi-shim-collector/icorjitinfo.cpp` accordingly
+6) Open `src/coreclr/tools/superpmi/managed/SuperPmi.Shared/MethodContext.Maps.cs` and add a map of "input-args" to "output-args" for the new API (its entry in `s_maps`, its property, and its dump), with a new packet ID in `PacketId.cs`. Either use the generic `DLD`-like records or create new ones in `Agnostic.cs`
+7) Add the recording, dumping, and replaying methods for the new API to `MethodContext.Record.cs`, `MethodContext.Dump.cs`, and `MethodContext.Replay.cs` in the same directory
+8) Use the `rec*` and `rep*` methods in `src/coreclr/tools/superpmi/managed/superpmi-shim-collector/CorInfoImpl.Collector.cs` and `src/coreclr/tools/superpmi/managed/superpmi/CorInfoImpl.SuperPmi.cs` accordingly
 
 ## Adding a new JIT-VM API through an agent
 

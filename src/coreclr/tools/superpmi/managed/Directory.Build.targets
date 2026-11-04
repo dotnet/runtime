@@ -1,0 +1,14 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', '$(MSBuildThisFileDirectory)..'))" />
+
+  <!-- On Windows, the symbols go to PDB\, like those of the native binaries. -->
+  <Target Name="PublishSymbolsToPdbDirectory"
+          BeforeTargets="_ComputeResolvedFilesToPublishTypes"
+          Condition="'$(TargetsWindows)' == 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Condition="'%(Extension)' == '.pdb'">
+        <RelativePath>PDB\%(Filename)%(Extension)</RelativePath>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+</Project>

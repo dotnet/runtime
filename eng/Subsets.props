@@ -383,6 +383,11 @@
       Category="clr" />
   </ItemGroup>
 
+  <!-- The managed SuperPMI tools, after their native parts. -->
+  <ItemGroup Condition="$(_subset.Contains('+clr.spmi+')) and '$(SdkToolsSupported)' == 'true'">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\superpmi\managed\superpmi-tools.proj" Category="clr" />
+  </ItemGroup>
+
   <!--
     Build the CoreCLR cross tools when we're doing a cross build and either we're building any CoreCLR native tools for platforms CoreCLR fully supports or when someone explicitly requests them.
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
