@@ -66,6 +66,92 @@ namespace System.IO
             return _sb;
         }
 
+        public override void Write(int value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        [CLSCompliant(false)]
+        public override void Write(uint value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(long value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        [CLSCompliant(false)]
+        public override void Write(ulong value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(float value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(double value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(decimal value)
+        {
+            if (GetType() == typeof(StringWriter))
+            {
+                WriteNumber(value);
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
         // Writes a character to the underlying string buffer.
         //
         public override void Write(char value)

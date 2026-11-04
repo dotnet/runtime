@@ -1581,33 +1581,43 @@ namespace System.Net.Http.Functional.Tests
             const string FirstTraceParent = "00-F";
             const string FirstTraceState = "first";
 
-            await GetFactoryForVersion(UseVersion).CreateServerAsync(async (server, uri) =>
+            await GetFactoryForVersion(UseVersion).CreateClientAndServerAsync(async uri =>
             {
                 SendMultipleTimesHandler handler = new SendMultipleTimesHandler(CreateSocketsHttpHandler(allowAllCertificates: true), parent0, parent1, parent2);
                 using HttpClient client = new HttpClient(handler);
-                HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
 
                 request.Headers.Add("traceparent", FirstTraceParent);
                 request.Headers.Add("tracestate", FirstTraceState);
 
-                Task clientTask = TestAsync ? client.SendAsync(request) : Task.Run(() => client.Send(request));
+                using HttpResponseMessage response = TestAsync ? await client.SendAsync(request) : await Task.Run(() => client.Send(request));
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    HttpRequestData requestData = await connection.ReadRequestDataAsync();
 
-                HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
+                    // On the first send DiagnosticsHandler should keep user-supplied headers.
+                    string traceparent = GetHeaderValue(requestData, "traceparent");
+                    string tracestate = GetHeaderValue(requestData, "tracestate");
+                    Assert.Equal(FirstTraceParent, traceparent);
+                    Assert.Equal(FirstTraceState, tracestate);
 
-                // On the first send DiagnosticsHandler should keep user-supplied headers.
-                string traceparent = GetHeaderValue(requestData, "traceparent");
-                string tracestate = GetHeaderValue(requestData, "tracestate");
-                Assert.Equal(FirstTraceParent, traceparent);
-                Assert.Equal(FirstTraceState, tracestate);
+                    await connection.SendResponseAsync(HttpStatusCode.InternalServerError);
+                    connection.CompleteRequestProcessing();
 
-                requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
+                    requestData = await connection.ReadRequestDataAsync();
 
-                // Headers should be overridden on each subsequent send.
-                AssertHeadersAreInjected(requestData, parent1);
-                requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.OK);
-                AssertHeadersAreInjected(requestData, parent2);
+                    // Headers should be overridden on each subsequent send.
+                    AssertHeadersAreInjected(requestData, parent1);
+                    await connection.SendResponseAsync(HttpStatusCode.InternalServerError);
+                    connection.CompleteRequestProcessing();
 
-                await clientTask;
+                    requestData = await connection.ReadRequestDataAsync();
+                    AssertHeadersAreInjected(requestData, parent2);
+                    await connection.SendResponseAsync(HttpStatusCode.OK);
+                });
             });
         }
 

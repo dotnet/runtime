@@ -22,13 +22,6 @@ LEAF_ENTRY GetCurrentIP, _TEXT
 LEAF_END GetCurrentIP, _TEXT
 
 
-LEAF_ENTRY GetRBP, _TEXT
-
-        mov rax, rbp
-        ret
-
-LEAF_END GetRBP, _TEXT
-
 ;// this is the same implementation as the function of the same name in di\amd64\floatconversion.asm and they must
 ;// remain in sync.
 

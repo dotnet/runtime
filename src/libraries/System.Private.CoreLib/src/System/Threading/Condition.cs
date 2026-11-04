@@ -138,8 +138,12 @@ namespace System.Threading
             if (!_lock.IsHeldByCurrentThread)
                 throw new SynchronizationLockException();
 
-            if (millisecondsTimeout != 0)
-                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+#if FEATURE_MULTITHREADING
+            RuntimeFeature.ThrowIfBlockingIsNotSupported(millisecondsTimeout);
+#else
+            if (millisecondsTimeout == Timeout.Infinite)
+                throw new PlatformNotSupportedException();
+#endif
 
             using ThreadBlockingInfo.Scope threadBlockingScope = new(this, millisecondsTimeout);
 

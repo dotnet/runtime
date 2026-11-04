@@ -3,6 +3,7 @@
     <TargetFramework>$(CDacTfm)</TargetFramework>
     <RollForward Condition="'$(CDacTfm)' != '$(NetCoreAppToolCurrent)'">LatestMajor</RollForward>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsTestProject>true</IsTestProject>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>

@@ -5646,7 +5646,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsDiagnosticsHiddenOrLCGMethod(VM
 
         MethodDesc * pMD = vmMethodDesc.GetDacPtr();
 
-        if (pMD->IsDiagnosticsHidden())
+        if (pMD->IsDiagnosticsHiddenLCGMethod())
+        {
+            *pRetVal = kDiagnosticHiddenLCGMethod;
+        }
+        else if (pMD->IsDiagnosticsHidden())
         {
             *pRetVal = kDiagnosticHidden;
         }
@@ -7786,6 +7790,21 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_Met
     {
         *pIndex = ICorDebugInfo::TYPECTXT_ILNUM;
     }
+
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetRuntimeVersion(OUT COR_VERSION * pVersion)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pVersion == nullptr)
+        return E_INVALIDARG;
+
+    pVersion->dwMajor = RuntimeProductMajorVersion;
+    pVersion->dwMinor = RuntimeProductMinorVersion;
+    pVersion->dwBuild = RuntimeProductPatchVersion;
+    pVersion->dwSubBuild = 0;
 
     return S_OK;
 }

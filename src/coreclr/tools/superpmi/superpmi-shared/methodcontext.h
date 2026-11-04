@@ -218,6 +218,14 @@ public:
     void dmpIsValueClass(DWORDLONG key, DWORD value);
     bool repIsValueClass(CORINFO_CLASS_HANDLE cls);
 
+    void recIsByRefLike(CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpIsByRefLike(DWORDLONG key, DWORD value);
+    bool repIsByRefLike(CORINFO_CLASS_HANDLE cls);
+
+    void recIsSharedInst(CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpIsSharedInst(DWORDLONG key, DWORD value);
+    bool repIsSharedInst(CORINFO_CLASS_HANDLE cls);
+
     void recGetClassSize(CORINFO_CLASS_HANDLE cls, unsigned result);
     void dmpGetClassSize(DWORDLONG key, DWORD val);
     unsigned repGetClassSize(CORINFO_CLASS_HANDLE cls);
@@ -1114,10 +1122,10 @@ enum mcPackets
     PacketCR_AllocGCInfo = 114,
     PacketCR_AllocMem = 115,
     PacketCR_CallLog = 116,
-    PacketCR_ClassMustBeLoadedBeforeCodeIsRun = 117,
+    //PacketCR_ClassMustBeLoadedBeforeCodeIsRun = 117,
     PacketCR_CompileMethod = 118,
     PacketCR_MessageLog = 119,
-    PacketCR_MethodMustBeLoadedBeforeCodeIsRun = 120,
+    //PacketCR_MethodMustBeLoadedBeforeCodeIsRun = 120,
     PacketCR_ProcessName = 121,
     PacketCR_RecordRelocation = 122,
     PacketCR_ReportFatalError = 123,
@@ -1240,6 +1248,8 @@ enum mcPackets
     Packet_GetWasmWellKnownGlobals = 240,
     Packet_CanValueClassInstancePointerEscape = 241,
     Packet_GetAwaitAwaiterInContinuationCall = 242,
+    Packet_IsByRefLike = 243,
+    Packet_IsSharedInst = 244,
 };
 
 void SetDebugDumpVariables();

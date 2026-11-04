@@ -40,6 +40,8 @@ key_comparer (instance_data_t data, size_t lhs, size_t rhs) {
 #define DN_SIMDHASH_KEY_HASHER(data, key) (uint32_t)(key & 0xFFFFFFFFu)
 #define DN_SIMDHASH_KEY_EQUALS key_comparer
 #define DN_SIMDHASH_INSTANCE_DATA_T instance_data_t
+#define DN_SIMDHASH_SCAN_DATA_T instance_data_t
+#define DN_SIMDHASH_GET_SCAN_DATA(data) (data)
 #define DN_SIMDHASH_ON_REMOVE(data, key, value)  // printf("remove [%zd, %zd], f==%f\n", key, value, data.f)
 #define DN_SIMDHASH_ON_REPLACE(data, old_key, new_key, old_value, new_value)  // printf("replace [%zd, %zd] with [%zd, %zd] i==%i\n", key, old_value, key, new_value, data.i)
 
@@ -48,9 +50,9 @@ key_comparer (instance_data_t data, size_t lhs, size_t rhs) {
 uint32_t count_cascaded_buckets (dn_simdhash_size_t_size_t_t *hash) {
 	uint32_t result = 0;
 	dn_simdhash_buffers_t buffers = hash->buffers;
-	BEGIN_SCAN_BUCKETS(0, bucket_index, bucket_address)
+	BEGIN_SCAN_BUCKETS(buffers, 0, bucket_index, bucket_address)
 		result += dn_simdhash_bucket_cascaded_count(bucket_address->suffixes);
-	END_SCAN_BUCKETS(0, bucket_index, bucket_address)
+	END_SCAN_BUCKETS(buffers, 0, bucket_index, bucket_address)
 	return result;
 }
 
@@ -100,6 +102,83 @@ int64_t get_100ns_ticks () {
 	gettimeofday(&tv, NULL);
 	return ((int64_t)tv.tv_sec * 1000000 + tv.tv_usec) * 10;
 #endif
+}
+
+static uint8_t
+test_duplicate_after_remove (dn_simdhash_insert_mode mode, uint8_t wrap, uint8_t saturated)
+{
+	dn_simdhash_size_t_size_t_t *hash = dn_simdhash_size_t_size_t_new(32, NULL);
+	if (!tassert(hash != NULL, "could not allocate duplicate regression table"))
+		return 0;
+
+	dn_simdhash_instance_data(instance_data_t, hash).f = 3.14f;
+	dn_simdhash_instance_data(instance_data_t, hash).i = 42;
+	uint8_t result = 0;
+	uint32_t bucket_count = hash->buffers.buckets_length;
+	uint32_t first_bucket = wrap ? bucket_count - 1 : 0;
+	size_t duplicate_key = first_bucket + (DN_SIMDHASH_BUCKET_CAPACITY * bucket_count);
+	for (uint32_t i = 0; i <= DN_SIMDHASH_BUCKET_CAPACITY; i++) {
+		size_t key = first_bucket + (i * bucket_count);
+		if (!tasserteq(dn_simdhash_size_t_size_t_try_add(hash, key, i + 1),
+			DN_SIMDHASH_ADD_INSERTED, "could not populate duplicate regression table"))
+			goto done;
+	}
+
+	if (!tassert(dn_simdhash_size_t_size_t_try_remove(hash, first_bucket),
+		"could not create vacancy before overflowed key"))
+		goto done;
+
+	if (saturated) {
+		for (uint32_t i = 0; i < bucket_count; i++)
+			dn_simdhash_bucket_set_cascaded_count(address_of_bucket(hash->buffers, i)->suffixes, 255);
+	}
+
+	dn_simdhash_insert_result inserted = DN_SIMDHASH_TRY_INSERT_INTERNAL(
+		hash, duplicate_key, (uint32_t)duplicate_key, 1234, mode);
+	dn_simdhash_insert_result expected = mode == DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE
+		? DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT
+		: DN_SIMDHASH_INSERT_OK_OVERWROTE_EXISTING;
+	if (!tasserteq(inserted, expected, "incorrect duplicate result after removal"))
+		goto done;
+	if (!tasserteq(dn_simdhash_count(hash), DN_SIMDHASH_BUCKET_CAPACITY,
+		"duplicate operation changed the count"))
+		goto done;
+
+	size_t new_key = first_bucket + ((DN_SIMDHASH_BUCKET_CAPACITY + 1) * bucket_count);
+	if (!tasserteq(dn_simdhash_size_t_size_t_try_add(hash, new_key, 5678),
+		DN_SIMDHASH_ADD_INSERTED, "could not reuse vacancy for a new key"))
+		goto done;
+	if (!tasserteq(hash->buffers.buckets_length, bucket_count, "vacancy reuse grew the table"))
+		goto done;
+	if (!tasserteq(dn_simdhash_count(hash), DN_SIMDHASH_BUCKET_CAPACITY + 1,
+		"new insertion produced an incorrect count"))
+		goto done;
+	if (!tasserteq(dn_simdhash_bucket_count(address_of_bucket(hash->buffers, first_bucket)->suffixes),
+		DN_SIMDHASH_BUCKET_CAPACITY, "new insertion did not reuse the first vacancy"))
+		goto done;
+
+	for (uint32_t i = 1; i <= DN_SIMDHASH_BUCKET_CAPACITY + 1; i++) {
+		size_t key = first_bucket + (i * bucket_count);
+		size_t value = 0;
+		size_t expected_value = i == DN_SIMDHASH_BUCKET_CAPACITY + 1 ? 5678
+			: (key == duplicate_key && mode != DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE ? 1234 : i + 1);
+		if (!tassert(dn_simdhash_size_t_size_t_try_get_value(hash, key, &value),
+			"key became unreachable after vacancy reuse") ||
+			!tasserteq(value, expected_value, "incorrect value after vacancy reuse") ||
+			!tassert(dn_simdhash_size_t_size_t_try_remove(hash, key),
+			"could not remove key after vacancy reuse"))
+			goto done;
+	}
+	if (!tasserteq(dn_simdhash_count(hash), 0, "table was not empty after removing remaining keys"))
+		goto done;
+	if (!saturated && !tasserteq(count_cascaded_buckets(hash), 0,
+		"vacancy reuse left incorrect cascade counts"))
+		goto done;
+	result = 1;
+
+done:
+	dn_simdhash_free(hash);
+	return result;
 }
 
 int main () {
@@ -223,6 +302,20 @@ retry: {
 	int64_t ended = get_100ns_ticks();
 
 	printf("done. elapsed ticks: %lld\n", (ended - started));
+
+	printf("Begin duplicate-after-delete regression.\n");
+	for (uint32_t mode = DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE;
+		mode <= DN_SIMDHASH_INSERT_MODE_OVERWRITE_KEY_AND_VALUE; mode++) {
+		for (uint8_t wrap = 0; wrap <= 1; wrap++) {
+			for (uint8_t saturated = 0; saturated <= 1; saturated++) {
+				if (!test_duplicate_after_remove((dn_simdhash_insert_mode)mode, wrap, saturated)) {
+					printf("End duplicate-after-delete regression: FAILED.\n");
+					return 1;
+				}
+			}
+		}
+	}
+	printf("End duplicate-after-delete regression.\n");
 
 	return 0;
 	/*

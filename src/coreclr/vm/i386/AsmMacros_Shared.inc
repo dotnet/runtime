@@ -11,12 +11,21 @@ G_HIGHEST_ADDRESS                           equ _g_highest_address
 G_EPHEMERAL_LOW                             equ _g_ephemeral_low
 G_EPHEMERAL_HIGH                            equ _g_ephemeral_high
 G_CARD_TABLE                                equ _g_card_table
+G_TRAP_THREADS                              equ _g_TrapReturningThreads
+G_POLL_GC                                   equ _g_pPollGC
 
 EXTERN G_LOWEST_ADDRESS : DWORD
 EXTERN G_HIGHEST_ADDRESS : DWORD
 EXTERN G_EPHEMERAL_LOW : DWORD
 EXTERN G_EPHEMERAL_HIGH : DWORD
 EXTERN G_CARD_TABLE : DWORD
+EXTERN G_TRAP_THREADS : DWORD
+EXTERN G_POLL_GC : DWORD
+
+TAILCALL_GC_POLL_RARE macro
+        mov     eax, G_POLL_GC
+        jmp     eax
+        endm
 
 RhpGcAlloc TEXTEQU <_RhpGcAlloc@16>
 

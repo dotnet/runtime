@@ -26,6 +26,7 @@
         <FeaturePortableEntryPoints>true</FeaturePortableEntryPoints>
         <FeaturePortableHelpers>true</FeaturePortableHelpers>
         <FeatureInterpreter>true</FeatureInterpreter>
+        <FeatureJavaMarshal>false</FeatureJavaMarshal>
 
         <!-- single thread -->
         <FeaturePortableTimer Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableTimer>

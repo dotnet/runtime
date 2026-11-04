@@ -482,6 +482,7 @@ public enum DynamicMethodType
     kNone = 0,
     kDiagnosticHidden = 1,
     kLCGMethod = 2,
+    kDiagnosticHiddenLCGMethod = 3,
 }
 
 public enum CorDebugThreadState
@@ -945,6 +946,9 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetTargetInfo(TargetInfo* pTargetInfo);
+
+    [PreserveSig]
+    int GetRuntimeVersion(COR_VERSION* pVersion);
 }
 
 public enum TargetArchitecture
@@ -974,4 +978,13 @@ public struct TargetInfo
     public TargetArchitecture Arch;
     public TargetOperatingSystem OS;
     public uint PointerSize;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct COR_VERSION
+{
+    public uint dwMajor;
+    public uint dwMinor;
+    public uint dwBuild;
+    public uint dwSubBuild;
 }

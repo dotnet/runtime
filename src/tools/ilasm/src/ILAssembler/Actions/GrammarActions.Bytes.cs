@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed partial class GrammarActions
 {
