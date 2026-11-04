@@ -111,7 +111,7 @@ internal sealed partial class GrammarActions
         }
 
         EntityRegistry.ExportedTypeEntity exportedType =
-            _entityRegistry.GetOrCreateExportedType(
+            _entityRegistry.DeclareExportedType(
                 implementation,
                 typeNamespace,
                 name,

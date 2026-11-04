@@ -20,6 +20,7 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class ExportedTypeTests
     {
+        private const TypeAttributes Forwarder = (TypeAttributes)0x00200000;
 
         [Fact]
         public void Diagnostic_ExportedTypeNotFound()
@@ -127,6 +128,106 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             Assert.True(exportedType.Attributes.HasFlag((System.Reflection.TypeAttributes)0x00200000));
         }
 
+
+        [Theory]
+        [InlineData(true, "D1,D2")]
+        [InlineData(false, "D1,D2")]
+        [InlineData(true, "D3,D4")]
+        [InlineData(false, "D3,D4")]
+        [InlineData(true, "D,D")]
+        [InlineData(false, "D,D")]
+        [InlineData(true, "D,E")]
+        [InlineData(false, "D,E")]
+        [InlineData(true, "D1,D2,D3,D4,D5,D1,D2")]
+        [InlineData(false, "D1,D2,D3,D4,D5,D1,D2")]
+        public void TypeForwarders_PreserveDuplicateDeclarations(bool isAssembly, string destinations)
+        {
+            string[] assemblyNames = destinations.Split(',');
+            var source = new StringBuilder();
+            if (isAssembly)
+            {
+                source.AppendLine(".assembly Forwarder { }");
+            }
+            source.AppendLine(".module ForwarderModule.dll");
+            foreach (string assemblyName in assemblyNames.Distinct())
+            {
+                source.AppendLine($".assembly extern {assemblyName} {{ }}");
+            }
+            foreach (string assemblyName in assemblyNames)
+            {
+                source.AppendLine($$"""
+                    .class extern forwarder Testspace.TestType
+                    {
+                        .assembly extern {{assemblyName}}
+                    }
+                    """);
+            }
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source.ToString(), new Options { Dll = true });
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(isAssembly, reader.IsAssembly);
+            Assert.Equal("ForwarderModule.dll", reader.GetString(reader.GetModuleDefinition().Name));
+            Assert.Equal(assemblyNames.Length, reader.ExportedTypes.Count);
+
+            int index = 0;
+            foreach (ExportedTypeHandle handle in reader.ExportedTypes)
+            {
+                ExportedType exportedType = reader.GetExportedType(handle);
+                Assert.Equal("Testspace", reader.GetString(exportedType.Namespace));
+                Assert.Equal("TestType", reader.GetString(exportedType.Name));
+                Assert.Equal(Forwarder, exportedType.Attributes);
+                Assert.Equal(0, exportedType.GetTypeDefinitionId());
+                Assert.Equal(HandleKind.AssemblyReference, exportedType.Implementation.Kind);
+                AssemblyReference destination = reader.GetAssemblyReference((AssemblyReferenceHandle)exportedType.Implementation);
+                Assert.Equal(assemblyNames[index++], reader.GetString(destination.Name));
+            }
+        }
+
+        [Fact]
+        public void DuplicateTypeForwarders_KeepAttributesAndFirstNestedParent()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly extern D1 { }
+                .assembly extern D2 { }
+                .assembly Forwarder { }
+                .class extern public forwarder Testspace.TestType
+                {
+                    .assembly extern D1
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                }
+                .class extern private forwarder Testspace.TestType
+                {
+                    .assembly extern D2
+                    .custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00)
+                }
+                .class extern nested public Nested
+                {
+                    .class extern Testspace.TestType
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            ExportedTypeHandle[] handles = reader.ExportedTypes.ToArray();
+            Assert.Equal(3, handles.Length);
+            ExportedType first = reader.GetExportedType(handles[0]);
+            ExportedType second = reader.GetExportedType(handles[1]);
+            ExportedType nested = reader.GetExportedType(handles[2]);
+            Assert.Equal(TypeAttributes.Public | Forwarder, first.Attributes);
+            Assert.Equal(Forwarder, second.Attributes);
+            Assert.Equal("D1", reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)first.Implementation).Name));
+            Assert.Equal("D2", reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)second.Implementation).Name));
+            Assert.Equal(
+                new byte[] { 0x01, 0x00, 0x00, 0x00 },
+                reader.GetBlobBytes(reader.GetCustomAttribute(Assert.Single(first.GetCustomAttributes())).Value));
+            Assert.Equal(
+                new byte[] { 0x01, 0x00, 0x01, 0x00, 0x00 },
+                reader.GetBlobBytes(reader.GetCustomAttribute(Assert.Single(second.GetCustomAttributes())).Value));
+            Assert.Equal("Nested", reader.GetString(nested.Name));
+            Assert.Equal(TypeAttributes.NestedPublic, nested.Attributes);
+            Assert.Equal(handles[0], (ExportedTypeHandle)nested.Implementation);
+        }
 
         [Fact]
         public void TypeForwarder_WithMissingImplementation_EmitsWarning()
