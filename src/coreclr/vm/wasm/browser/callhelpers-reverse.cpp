@@ -15,30 +15,17 @@ extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualified
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
 extern "C" void* GetR2RNativeCodeForUnmanagedCallersOnly(MethodDesc* pMD);
 
-static MethodDesc* MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_74_0_I32_RetVoid = nullptr;
-static void Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_74_0_I32_RetVoid(void * arg0)
+static MethodDesc* MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid(void * arg0)
 {
     // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_74_0_I32_RetVoid)
+    if (!MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid)
     {
-        LookupUnmanagedCallersOnlyMethodByName("System.GC, System.Private.CoreLib", "<RegisterNoGCRegionCallback>g__Callback|74_0", &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_74_0_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.GC, System.Private.CoreLib", "<RegisterNoGCRegionCallback>g__Callback|72_0", &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
     }
 
     int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_74_0_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_74_0_I32_RetVoid);
-}
-
-static MethodDesc* MD_System_Private_CoreLib_System_GC_AddMemoryPressureFromNative_I64_I32_RetVoid = nullptr;
-static void Call_System_Private_CoreLib_System_GC_AddMemoryPressureFromNative_I64_I32_RetVoid(int64_t arg0, void * arg1)
-{
-    // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_System_GC_AddMemoryPressureFromNative_I64_I32_RetVoid)
-    {
-        LookupUnmanagedCallersOnlyMethodByName("System.GC, System.Private.CoreLib", "AddMemoryPressureFromNative", &MD_System_Private_CoreLib_System_GC_AddMemoryPressureFromNative_I64_I32_RetVoid);
-    }
-
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC_AddMemoryPressureFromNative_I64_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC_AddMemoryPressureFromNative_I64_I32_RetVoid);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid = nullptr;
@@ -1020,19 +1007,6 @@ extern "C" void SystemInteropJS_ReleaseJSOwnedObjectByGCHandle(void * arg0)
     Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid(arg0);
 }
 
-static MethodDesc* MD_System_Private_CoreLib_System_GC_RemoveMemoryPressureFromNative_I64_I32_RetVoid = nullptr;
-static void Call_System_Private_CoreLib_System_GC_RemoveMemoryPressureFromNative_I64_I32_RetVoid(int64_t arg0, void * arg1)
-{
-    // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_System_GC_RemoveMemoryPressureFromNative_I64_I32_RetVoid)
-    {
-        LookupUnmanagedCallersOnlyMethodByName("System.GC, System.Private.CoreLib", "RemoveMemoryPressureFromNative", &MD_System_Private_CoreLib_System_GC_RemoveMemoryPressureFromNative_I64_I32_RetVoid);
-    }
-
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC_RemoveMemoryPressureFromNative_I64_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC_RemoveMemoryPressureFromNative_I64_I32_RetVoid);
-}
-
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
@@ -1251,8 +1225,7 @@ extern "C" void SystemJS_ExecuteTimerCallback()
 
 const ReverseThunkMapEntry g_ReverseThunks[] =
 {
-    { 4164795097, "<RegisterNoGCRegionCallback>g__Callback|74_0#1:System.Private.CoreLib:System:GC", { &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_74_0_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_74_0_I32_RetVoid } },
-    { 2756303177, "AddMemoryPressureFromNative#2:System.Private.CoreLib:System:GC", { &MD_System_Private_CoreLib_System_GC_AddMemoryPressureFromNative_I64_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_GC_AddMemoryPressureFromNative_I64_I32_RetVoid } },
+    { 3863938719, "<RegisterNoGCRegionCallback>g__Callback|72_0#1:System.Private.CoreLib:System:GC", { &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid } },
     { 1336557534, "BackgroundJobHandler#0:System.Private.CoreLib:System.Threading:ThreadPool", { &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid } },
     { 2901966433, "BindAssemblyExports#1:System.Runtime.InteropServices.JavaScript:System.Runtime.InteropServices.JavaScript:JavaScriptExports", { &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid, (void*)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid } },
     { 1361004804, "CallClassConstructor#3:System.Private.CoreLib:System.Runtime.CompilerServices:InitHelpers", { &MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid } },
@@ -1317,7 +1290,6 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 4206970338, "OnUnhandledException#2:System.Private.CoreLib:System:AppContext", { &MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid } },
     { 1873201650, "ParseAsAssemblySpec#3:System.Private.CoreLib:System.Reflection:AssemblyName", { &MD_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid } },
     { 1403522766, "ReleaseJSOwnedObjectByGCHandle#1:System.Runtime.InteropServices.JavaScript:System.Runtime.InteropServices.JavaScript:JavaScriptExports", { &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid, (void*)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid } },
-    { 1729088462, "RemoveMemoryPressureFromNative#2:System.Private.CoreLib:System:GC", { &MD_System_Private_CoreLib_System_GC_RemoveMemoryPressureFromNative_I64_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_GC_RemoveMemoryPressureFromNative_I64_I32_RetVoid } },
     { 225437511, "Resolve#4:System.Private.CoreLib:System.Runtime.Loader:AssemblyLoadContext", { &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid } },
     { 260403842, "ResolveSatelliteAssembly#4:System.Private.CoreLib:System.Runtime.Loader:AssemblyLoadContext", { &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid } },
     { 426514126, "ResolveSignature#5:System.Private.CoreLib:System:Resolver", { &MD_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid } },

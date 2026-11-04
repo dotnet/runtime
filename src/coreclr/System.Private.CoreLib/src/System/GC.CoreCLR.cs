@@ -163,32 +163,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern safe long GetLastGCDuration();
 
-        [UnmanagedCallersOnly]
-        private static unsafe void AddMemoryPressureFromNative(long bytesAllocated, Exception* pException)
-        {
-            try
-            {
-                AddMemoryPressure(bytesAllocated);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static unsafe void RemoveMemoryPressureFromNative(long bytesAllocated, Exception* pException)
-        {
-            try
-            {
-                RemoveMemoryPressure(bytesAllocated);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
         // Returns the generation that obj is currently in.
         //
         public static int GetGeneration(object obj)

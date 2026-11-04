@@ -57,7 +57,12 @@ namespace System.Threading
         private bool _isDead;
         private bool _isThreadPool;
 
-        private Thread() { }
+        private Thread()
+        {
+#if FEATURE_MULTITHREADING
+            GC.AddMemoryPressure(EstimatedMemoryPressure);
+#endif
+        }
 
         internal static Exception GetQCallSpecialException(nint status)
         {

@@ -3175,9 +3175,12 @@ OBJECTREF Thread::GetExposedObject()
         THREADBASEREF attempt = (THREADBASEREF) AllocateObject(g_pThreadClass);
         GCPROTECT_BEGIN(attempt);
 
+        // The managed constructor adds memory pressure and can trigger a GC.
+        // Run it before acquiring the ThreadStore lock.
+        CallDefaultConstructor(attempt);
+
         // The exposed object keeps us alive until it is GC'ed.  This
         // doesn't mean the physical thread continues to run, of course.
-        // We have to set this outside of the ThreadStore lock, because this might trigger a GC.
         attempt->SetInternal(this);
 
         BOOL fNeedThreadStore = (! ThreadStore::HoldingThreadStore(pCurThread));
@@ -3206,11 +3209,7 @@ OBJECTREF Thread::GetExposedObject()
             attempt->SetManagedThreadId(GetThreadId());
 
 
-            // Note that we are NOT calling the constructor on the Thread.  That's
-            // because this is an internal create where we don't want a Start
-            // address.  And we don't want to expose such a constructor for our
-            // customers to accidentally call.  The following is in lieu of a true
-            // constructor:
+            // Initialize the native-backed properties of the runtime-created wrapper.
             attempt->InitExisting();
 
             exposedHolder.SuppressRelease();
@@ -3218,14 +3217,7 @@ OBJECTREF Thread::GetExposedObject()
         }
         else
         {
-            OBJECTREF exposedObject = ObjectFromHandle(m_ExposedObject);
-            GCPROTECT_BEGIN(exposedObject);
-
             attempt->ClearInternal();
-            tsHolder.Release();
-            GCInterface::RemoveMemoryPressure(sizeof(Thread));
-
-            GCPROTECT_END();
         }
 
         GCPROTECT_END();

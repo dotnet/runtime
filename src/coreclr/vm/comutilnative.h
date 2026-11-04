@@ -162,9 +162,6 @@ public:
     FCDECL0(static INT64,    GetAllocatedBytesForCurrentThread);
     FCDECL0(static INT64,    GetTotalAllocatedBytesApproximate);
 
-    static void RemoveMemoryPressure(UINT64 bytesAllocated);
-    static void AddMemoryPressure(UINT64 bytesAllocated);
-
     static void EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
     static int  RefreshMemoryLimit();
     static enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);

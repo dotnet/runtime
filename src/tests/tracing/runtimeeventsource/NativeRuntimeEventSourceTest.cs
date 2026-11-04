@@ -26,11 +26,10 @@ namespace Tracing.Tests
         private const ulong MemoryPressure = 1_234_567;
         private const ulong WarmupMemoryPressure = 65_531;
 
-        public static bool IsMemoryPressureTracingSupported =>
-            Utilities.IsNotMonoRuntime && !PlatformDetection.IsWasm && PlatformDetection.IsMultithreadingSupported;
-
+        [ActiveIssue("Memory-pressure tracing is not enabled on Mono", TestRuntimes.Mono)]
+        [ActiveIssue("WASM doesn't support diagnostics tracing", TestPlatforms.Browser | TestPlatforms.Wasi)]
         [SkipOnCoreClr("Tracing tests routinely time out with GC stress.", RuntimeTestModes.AnyGCStress)]
-        [ConditionalTheory(typeof(NativeRuntimeEventSourceTest), nameof(IsMemoryPressureTracingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(EventLevel.Informational, 1L)]
         [InlineData(EventLevel.Verbose, 0x10000L)]
         public static void MemoryPressureEvents(EventLevel disabledLevel, long disabledKeywords)

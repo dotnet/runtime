@@ -1156,36 +1156,6 @@ uint64_t GCInterface::GetGenerationBudget(int generation)
     return GCHeapUtilities::GetGCHeap()->GetGenerationBudget(generation);
 }
 
-void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-    UnmanagedCallersOnlyCaller caller(METHOD__GC__ADD_MEMORY_PRESSURE);
-    caller.InvokeThrowing(static_cast<INT64>(bytesAllocated));
-}
-
-void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-    UnmanagedCallersOnlyCaller caller(METHOD__GC__REMOVE_MEMORY_PRESSURE);
-    caller.InvokeThrowing(static_cast<INT64>(bytesAllocated));
-}
-
 //
 // EnvironmentNative
 //

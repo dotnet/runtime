@@ -10,6 +10,8 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+        private const long EstimatedMemoryPressure = 20_000;
+
 #if !TARGET_WINDOWS
         internal WaitSubsystem.ThreadWaitInfo WaitInfo
         {
@@ -51,20 +53,18 @@ namespace System.Threading
         /// <summary>Clean up the thread when it goes away.</summary>
         ~Thread()
         {
-            uint memoryPressure = InternalFinalize();
-            if (memoryPressure != 0)
-            {
-                GC.RemoveMemoryPressure(memoryPressure);
-            }
+            InternalFinalize();
+            GC.RemoveMemoryPressure(EstimatedMemoryPressure);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern uint InternalFinalize();
+        private extern void InternalFinalize();
 
         private void Initialize()
         {
             Thread _this = this;
             Initialize(ObjectHandleOnStack.Create(ref _this));
+            GC.AddMemoryPressure(EstimatedMemoryPressure);
         }
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]

@@ -27,12 +27,10 @@ namespace System.Reflection
 
         // This field is set by the VM to atomically transfer the ownership to the managed loader allocator
         internal IntPtr m_nativeLoaderAllocator;
-        private bool _memoryPressureAdded;
 
         internal LoaderAllocatorScout()
         {
             GC.AddMemoryPressure(MemoryPressure);
-            _memoryPressureAdded = true;
         }
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
@@ -51,12 +49,7 @@ namespace System.Reflection
                 return;
             }
 
-            // Initialization can fail before ownership of the native allocator is transferred.
-            if (_memoryPressureAdded)
-            {
-                _memoryPressureAdded = false;
-                GC.RemoveMemoryPressure(MemoryPressure);
-            }
+            GC.RemoveMemoryPressure(MemoryPressure);
         }
     }
 
