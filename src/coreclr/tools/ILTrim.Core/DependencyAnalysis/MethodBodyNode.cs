@@ -36,7 +36,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => _dependencies != null;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => _dependencies;
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
+        {
+            foreach (DependencyListEntry dependency in _dependencies)
+            {
+                sink.Add(dependency);
+            }
+        }
 
         void INodeWithDeferredDependencies.ComputeDependencies(NodeFactory factory)
         {
@@ -119,7 +125,8 @@ namespace ILCompiler.DependencyAnalysis
                         }
 
                         FieldDesc field;
-                        if (opcode == ILOpcode.ldfld || opcode == ILOpcode.ldflda ||
+                        if (opcode == ILOpcode.stfld || opcode == ILOpcode.stsfld ||
+                            opcode == ILOpcode.ldfld || opcode == ILOpcode.ldflda ||
                             opcode == ILOpcode.ldsfld || opcode == ILOpcode.ldsflda)
                         {
                             field = _module.TryGetField(token);
@@ -345,7 +352,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

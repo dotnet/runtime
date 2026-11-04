@@ -18,33 +18,6 @@ namespace Internal.Metadata.NativeFormat
             return reader.DecodeString(offset, out value);
         }
 
-        public static uint Read(this NativeReader reader, uint offset, out char value)
-        {
-            uint val;
-            offset = reader.DecodeUnsigned(offset, out val);
-            value = (char)val;
-            return offset;
-        }
-
-        public static uint Read(this NativeReader reader, uint offset, out short value)
-        {
-            int val;
-            offset = reader.DecodeSigned(offset, out val);
-            value = (short)val;
-            return offset;
-        }
-
-        public static uint Read(this NativeReader reader, uint offset, out sbyte value)
-        {
-            value = (sbyte)reader.ReadUInt8(offset);
-            return offset + 1;
-        }
-
-        public static uint Read(this NativeReader reader, uint offset, out ulong value)
-        {
-            return reader.DecodeUnsignedLong(offset, out value);
-        }
-
         public static uint Read(this NativeReader reader, uint offset, out int value)
         {
             return reader.DecodeSigned(offset, out value);
@@ -69,29 +42,12 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         }
 
-        public static uint Read(this NativeReader reader, uint offset, out long value)
-        {
-            return reader.DecodeSignedLong(offset, out value);
-        }
-
         public static uint Read(this NativeReader reader, uint offset, out Handle handle)
         {
             uint rawValue;
             offset = reader.DecodeUnsigned(offset, out rawValue);
             handle = new Handle((HandleType)(rawValue & 0x7F), (int)(rawValue >> 7));
             return offset;
-        }
-
-        public static uint Read(this NativeReader reader, uint offset, out float value)
-        {
-            value = reader.ReadFloat(offset);
-            return offset + 4;
-        }
-
-        public static uint Read(this NativeReader reader, uint offset, out double value)
-        {
-            value = reader.ReadDouble(offset);
-            return offset + 8;
         }
     }
 }

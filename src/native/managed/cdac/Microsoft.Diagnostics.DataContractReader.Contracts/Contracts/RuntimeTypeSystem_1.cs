@@ -19,11 +19,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 {
     private const int TYPE_MASK_OFFSET = 27; // offset of type in field desc flags2
     private readonly Target _target;
-    private readonly TargetPointer _freeObjectMethodTablePointer;
-    private readonly TargetPointer _objectMethodTablePointer;
-    private TargetPointer _continuationMethodTablePointer;
-    private TargetPointer _continuationSingletonEEClassPointer;
-    private readonly TargetPointer _multicastDelegateMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _freeObjectMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _objectMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _continuationMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _continuationSingletonEEClassPointer;
+    private readonly CachedValue<TargetPointer> _multicastDelegateMethodTablePointer;
     private readonly ulong _methodDescAlignment;
     private readonly TypeValidation _typeValidation;
     private readonly MethodValidation _methodValidation;
@@ -40,6 +40,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public void Flush(FlushScope scope)
     {
+        _freeObjectMethodTablePointer.Clear();
+        _objectMethodTablePointer.Clear();
+        _continuationMethodTablePointer.Clear();
+        _continuationSingletonEEClassPointer.Clear();
+        _multicastDelegateMethodTablePointer.Clear();
         _methodTables.Clear();
         _methodDescs.Clear();
         _typeHandles.Clear();
@@ -153,6 +158,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
+        IsDiagnosticsHidden = 0x00020000,
         ILStubTypeMask = 0x000007FF,
     }
 
@@ -438,16 +444,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     internal RuntimeTypeSystem_1(Target target)
     {
         _target = target;
-        _freeObjectMethodTablePointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable));
-        _objectMethodTablePointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
-        _continuationMethodTablePointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
-        _continuationSingletonEEClassPointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
-        _multicastDelegateMethodTablePointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.MulticastDelegateMethodTable));
+        _freeObjectMethodTablePointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable)));
+        _objectMethodTablePointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable)));
+        _continuationMethodTablePointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable)));
+        _continuationSingletonEEClassPointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass)));
+        _multicastDelegateMethodTablePointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.MulticastDelegateMethodTable)));
         _methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
         _typeValidation = new TypeValidation(target, _continuationMethodTablePointer, _continuationSingletonEEClassPointer);
         _methodValidation = new MethodValidation(target, _methodDescAlignment);
@@ -456,29 +457,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
     internal TargetPointer ObjectMethodTablePointer => _objectMethodTablePointer;
-    internal TargetPointer ContinuationMethodTablePointer
-    {
-        get
-        {
-            if (_continuationMethodTablePointer != TargetPointer.Null)
-                return _continuationMethodTablePointer;
-            _continuationMethodTablePointer = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
-            return _continuationMethodTablePointer;
-        }
-    }
-
-    internal TargetPointer ContinuationSingletonEEClassPointer
-    {
-        get
-        {
-            if (_continuationSingletonEEClassPointer != TargetPointer.Null)
-                return _continuationSingletonEEClassPointer;
-            _continuationSingletonEEClassPointer = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
-            return _continuationSingletonEEClassPointer;
-        }
-    }
+    internal TargetPointer ContinuationMethodTablePointer => _continuationMethodTablePointer;
+    internal TargetPointer ContinuationSingletonEEClassPointer => _continuationSingletonEEClassPointer;
 
     internal ulong MethodDescAlignment => _methodDescAlignment;
 
@@ -665,6 +645,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool ContainsGCPointers(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
     public bool IsByRefLike(ITypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsByRefLike;
+    public bool IsInlineArray(ITypeHandle typeHandle) => typeHandle.IsMethodTable() && GetClassData(typeHandle).IsInlineArray;
 
     private bool IsFeatureHfaTarget(out RuntimeInfoArchitecture arch)
     {
@@ -1006,7 +987,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public TargetPointer GetGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         TargetPointer tlsIndexPtr = GetThreadStaticsInfo(typeHandle).GCTlsIndex;
         Contracts.IThread threadContract = _target.Contracts.Thread;
@@ -1015,7 +996,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public TargetPointer GetNonGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         TargetPointer tlsIndexPtr = GetThreadStaticsInfo(typeHandle).NonGCTlsIndex;
         Contracts.IThread threadContract = _target.Contracts.Thread;
@@ -1893,6 +1874,38 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return AsDynamicMethodDesc(methodDesc).IsILStub;
     }
 
+    public bool IsDiagnosticsHidden(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        if (methodDesc.Classification == MethodClassification.Dynamic)
+        {
+            DynamicMethodDesc dynamicMethod = AsDynamicMethodDesc(methodDesc);
+            if (dynamicMethod.IsILStub ||
+                dynamicMethod.ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsDiagnosticsHidden))
+            {
+                return true;
+            }
+        }
+
+        AsyncMethodFlags flags = GetAsyncMethodFlags(methodDescHandle);
+        return IsWrapperStub(methodDesc) ||
+            (flags.HasFlag(AsyncMethodFlags.Thunk) &&
+                (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant)));
+    }
+
+    public bool IsDiagnosticsHiddenLCGMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        if (methodDesc.Classification != MethodClassification.Dynamic)
+        {
+            return false;
+        }
+
+        DynamicMethodDesc dynamicMethod = AsDynamicMethodDesc(methodDesc);
+        return dynamicMethod.IsDynamicMethod &&
+            dynamicMethod.ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsDiagnosticsHidden);
+    }
+
     public bool HasMDContextArg(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
@@ -2017,8 +2030,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodDesc md = _methodDescs[methodDesc.Address];
         if (md.IsEligibleForTieredCompilation)
             return true;
-        // MethodDesc::IsEligibleForReJIT
-        if (_target.Contracts.ReJIT.IsEnabled())
+        // MethodDesc::IsEligibleForReJIT. The ReJIT contract is advertised only with PROFILING_SUPPORTED;
+        // targets without it (wasm) also lack FEATURE_REJIT, so nothing is ReJIT-eligible.
+        if (_target.Contracts.TryGetContract(out IReJIT reJit) && reJit.IsEnabled())
         {
             if (!md.IsIL)
                 return false;
@@ -2180,24 +2194,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return TargetPointer.Null;
         }
 
-        return GetMethodDescForEntrypoint(pCode);
-    }
-
-    private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)
-    {
-        // standard path, ask ExecutionManager for the MethodDesc
-        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-        if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
-        {
-            TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
-            return methodDescPtr;
-        }
-
-        // stub path, read address as a Precode and read MethodDesc from it
-        {
-            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
-            return methodDescPtr;
-        }
+        return _target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(pCode);
     }
 
     TargetCodePointer IRuntimeTypeSystem.GetSlot(ITypeHandle typeHandle, uint slot)

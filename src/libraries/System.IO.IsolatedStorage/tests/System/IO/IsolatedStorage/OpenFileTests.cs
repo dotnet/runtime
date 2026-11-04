@@ -66,7 +66,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void OpenFile_PassesFileShare()
         {
             TestHelper.WipeStores();

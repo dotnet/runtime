@@ -178,6 +178,15 @@ public:
     }
 
     //------------------------------------------------------------------------
+    // Reverse:
+    //   Reverse the order of the planned copies.
+    //
+    void Reverse()
+    {
+        m_entries.Reverse();
+    }
+
+    //------------------------------------------------------------------------
     // Finalize:
     //   Create IR to perform the full decomposed struct copy as specified by
     //   the entries that were added to the decomposition plan. Add the
@@ -518,7 +527,7 @@ private:
                 if ((entry.FromReplacement != nullptr) && (entry.Type == TYP_REF))
                 {
                     Replacement* rep = entry.FromReplacement;
-                    if (rep->NeedsWriteBack)
+                    if (m_replacer->NeedsWriteBack(*rep))
                     {
                         statements->AddStatement(
                             Promotion::CreateWriteBack(m_compiler, m_src->AsLclVarCommon()->GetLclNum(), *rep));
@@ -813,8 +822,8 @@ private:
         if (entry.FromReplacement != nullptr)
         {
             // Check if the remainder is going to handle it.
-            if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
-                (entry.ToReplacement == nullptr))
+            if ((remainderStrategy.Type == RemainderStrategy::FullBlock) &&
+                !m_replacer->NeedsWriteBack(*entry.FromReplacement) && (entry.ToReplacement == nullptr))
             {
 #ifdef DEBUG
                 if (dump)
@@ -1392,7 +1401,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                 JITDUMP("*** Block operation partially overlaps with start replacement of destination V%02u (%s)\n",
                         dstFirstRep->LclNum, dstFirstRep->Description);
 
-                if (dstFirstRep->NeedsWriteBack)
+                if (NeedsWriteBack(*dstFirstRep))
                 {
                     // The value of the replacement will be partially assembled from its old value and this struct
                     // operation.
@@ -1416,7 +1425,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                     JITDUMP("*** Block operation partially overlaps with end replacement of destination V%02u (%s)\n",
                             dstLastRep->LclNum, dstLastRep->Description);
 
-                    if (dstLastRep->NeedsWriteBack)
+                    if (NeedsWriteBack(*dstLastRep))
                     {
                         result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstLastRep));
                         ClearNeedsWriteBack(*dstLastRep);
@@ -1440,7 +1449,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                 JITDUMP("*** Block operation partially overlaps with start replacement of source V%02u (%s)\n",
                         srcFirstRep->LclNum, srcFirstRep->Description);
 
-                if (srcFirstRep->NeedsWriteBack)
+                if (NeedsWriteBack(*srcFirstRep))
                 {
                     result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcFirstRep));
                     ClearNeedsWriteBack(*srcFirstRep);
@@ -1457,7 +1466,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                     JITDUMP("*** Block operation partially overlaps with end replacement of source V%02u (%s)\n",
                             srcLastRep->LclNum, srcLastRep->Description);
 
-                    if (srcLastRep->NeedsWriteBack)
+                    if (NeedsWriteBack(*srcLastRep))
                     {
                         result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcLastRep));
                         ClearNeedsWriteBack(*srcLastRep);
@@ -1691,7 +1700,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
 
     while ((dstRep < dstEndRep) || (srcRep < srcEndRep))
     {
-        if ((srcRep < srcEndRep) && srcRep->NeedsReadBack)
+        if ((srcRep < srcEndRep) && NeedsReadBack(*srcRep))
         {
             JITDUMP("  Source replacement V%02u (%s) is stale. Will read it back before copy.\n", srcRep->LclNum,
                     srcRep->Description);
@@ -1699,7 +1708,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
             assert(srcLcl != nullptr);
             statements->AddStatement(Promotion::CreateReadBack(m_compiler, srcLcl->GetLclNum(), *srcRep));
             ClearNeedsReadBack(*srcRep);
-            assert(!srcRep->NeedsWriteBack);
+            assert(!NeedsWriteBack(*srcRep));
         }
 
         if ((dstRep < dstEndRep) && (srcRep < srcEndRep))
@@ -1770,5 +1779,13 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                     LastUseString(srcLcl, srcRep));
             srcRep++;
         }
+    }
+
+    if ((dstLcl != nullptr) && (srcLcl != nullptr) && (dstLcl->GetLclNum() == srcLcl->GetLclNum()) &&
+        (dstBaseOffs > srcBaseOffs) && (dstBaseOffs - srcBaseOffs < srcLcl->GetLayout(m_compiler)->GetSize()))
+    {
+        // Copy overlapping slices from high to low so stores do not overwrite later sources.
+        JITDUMP("  Reversing copy order for overlapping slices of the same local\n");
+        plan->Reverse();
     }
 }

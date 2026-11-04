@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Tests
     public static partial class SP800108HmacCounterKdfTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68162", TestPlatforms.Browser)] // wasm threading support
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68162", TestPlatforms.Browser | TestPlatforms.Wasi)] // wasm threading support
         public static void Race_ReusingOneInstance_Allocating()
         {
             using (SP800108HmacCounterKdf kdf = new("kdf"u8, HashAlgorithmName.SHA256))
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68162", TestPlatforms.Browser)] // wasm threading support
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68162", TestPlatforms.Browser | TestPlatforms.Wasi)] // wasm threading support
         public static void Race_ReusingOneInstance_Buffering()
         {
             using (SP800108HmacCounterKdf kdf = new("kdf"u8, HashAlgorithmName.SHA256))
@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68162", TestPlatforms.Browser)] // wasm threading support
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68162", TestPlatforms.Browser | TestPlatforms.Wasi)] // wasm threading support
         public static void Race_UseAndDisposeOneInstance_Allocating()
         {
             SP800108HmacCounterKdf kdf;

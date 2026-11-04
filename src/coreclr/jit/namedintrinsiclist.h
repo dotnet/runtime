@@ -23,6 +23,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_BitConverter_Int64BitsToDouble,
     NI_System_BitConverter_SingleToInt32Bits,
 
+    NI_System_Buffer_Memmove,
     NI_System_SpanHelpers_Memmove,
 
     NI_System_Half_FusedMultiplyAdd,
@@ -140,7 +141,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Object_GetType,
     NI_System_RuntimeTypeHandle_ToIntPtr,
     NI_System_RuntimeType_get_TypeHandle,
-    NI_System_StubHelpers_GetStubContext,
     NI_System_StubHelpers_NextCallReturnAddress,
 
     NI_Array_Address,

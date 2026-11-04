@@ -54,7 +54,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteSingle_Ctap2Conformance_ShouldPreservePrecision_NaN()
         {
             // float.NaN may differ across architectures, in particular it's negative on x86 and positive elsewhere
-            byte[] expectedEncoding = ("fa" + CborTestHelpers.SingleToInt32Bits(float.NaN).ToString("x4")).HexToByteArray();
+            byte[] expectedEncoding = ("fa" + BitConverter.SingleToInt32Bits(float.NaN).ToString("x4")).HexToByteArray();
             var writer = new CborWriter(CborConformanceMode.Ctap2Canonical);
             writer.WriteSingle(float.NaN);
             AssertHelper.HexEqual(expectedEncoding, writer.Encode());

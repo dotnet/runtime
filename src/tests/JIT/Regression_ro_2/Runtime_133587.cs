@@ -30,6 +30,7 @@ public class Runtime_133587
     }
 
     [Theory]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133910", TestRuntimes.Mono)]
     [InlineData(false, SourceKind.Valid)]
     [InlineData(true, SourceKind.Valid)]
     [InlineData(false, SourceKind.Null)]

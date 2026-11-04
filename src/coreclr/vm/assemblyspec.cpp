@@ -400,7 +400,7 @@ HRESULT AssemblySpec::CheckFriendAssemblyName()
 }
 
 HRESULT AssemblySpec::EmitToken(
-    IMetaDataAssemblyEmit *pEmit,
+    IMDInternalEmit *pEmit,
     mdAssemblyRef *pToken)
 {
     CONTRACTL

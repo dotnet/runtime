@@ -10,7 +10,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Configuration
     {
         public MetricsConfiguration(IConfiguration configuration)
         {
-            Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            ArgumentNullException.ThrowIfNull(configuration);
+            Configuration = configuration;
         }
 
         public IConfiguration Configuration { get; }

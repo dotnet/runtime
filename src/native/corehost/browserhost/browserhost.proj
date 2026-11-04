@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.Build.NoTargets"
+         TreatAsLocalProperty="IsBrowserWasmProject;RequiresCrossgen2Pack;InvariantGlobalization;InvariantTimezone;EnableDiagnostics;WasmInitialHeapSize;EmccMaximumHeapSize;EmccStackSize">
+  <PropertyGroup>
+    <IsBrowserWasmProject>false</IsBrowserWasmProject>
+    <RequiresCrossgen2Pack>false</RequiresCrossgen2Pack>
+    <IntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'browserhost', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</IntermediateOutputPath>
+    <MicrosoftNetCoreAppRuntimePackRidNativeDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
+    <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == '' and '$(Configuration)' == 'Debug'">true</WasmNativeDebugSymbols>
+    <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Checked'">-O2</EmccLinkOptimizationFlag>
+  </PropertyGroup>
+
+  <Import Project="$(BrowserProjectRoot)build\BrowserWasmApp.CoreCLR.targets" />
+
+  <PropertyGroup>
+    <InvariantGlobalization>$(BrowserHostInvariantGlobalization)</InvariantGlobalization>
+    <InvariantTimezone>$(BrowserHostInvariantTimezone)</InvariantTimezone>
+    <EnableDiagnostics>$(BrowserHostEnableDiagnostics)</EnableDiagnostics>
+    <WasmInitialHeapSize>$(BrowserHostInitialHeapSize)</WasmInitialHeapSize>
+    <EmccMaximumHeapSize>$(BrowserHostMaximumHeapSize)</EmccMaximumHeapSize>
+    <EmccStackSize>$(BrowserHostStackSize)</EmccStackSize>
+  </PropertyGroup>
+
+  <!-- The runtime already generated the framework interop helpers. App relinks regenerate
+       these helpers for the app's assembly closure; the prebuilt host uses the runtime archive. -->
+  <ItemGroup>
+    <NativeFileReference Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclr_gen_static.a" />
+  </ItemGroup>
+
+  <Target Name="PrepareBrowserHost"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild;ResolveLibrariesRuntimeFilesFromLocalBuild">
+    <Error Condition="'$(TargetOS)' != 'browser' or '$(TargetArchitecture)' != 'wasm' or '$(RuntimeFlavor)' != 'CoreCLR'"
+           Text="The prebuilt browserhost requires CoreCLR for browser-wasm." />
+    <ItemGroup>
+      <_BrowserHostNativeFile Include="@(RuntimeFiles->WithMetadataValue('IsNative', 'true'));@(LibrariesRuntimeFiles->WithMetadataValue('IsNative', 'true'))"
+                              Exclude="$(LibrariesSharedFrameworkDir)dotnet.native.js"
+                              Condition="'%(Extension)' == '.a' or '%(Extension)' == '.js'" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_BrowserHostNativeFile->Distinct())"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)"
+          SkipUnchangedFiles="true">
+      <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
+
+  <Target Name="BuildBrowserHost"
+          BeforeTargets="Build"
+          DependsOnTargets="PrepareBrowserHost;
+                            _CoreCLRWasmInitialize;
+                            AcquireEmscriptenSdk;
+                            _CoreCLRSetupEmscripten;
+                            _CoreCLRPrepareForNativeBuild;
+                            _CoreCLRWriteLinkRsp;
+                            _CoreCLRLinkNative;
+                            _CoreCLRCompleteNativeBuild" />
+
+  <Target Name="CopyBrowserHost"
+          AfterTargets="Build"
+          DependsOnTargets="BuildBrowserHost">
+    <Copy SourceFiles="@(WasmNativeAsset)"
+          DestinationFolder="$(LibrariesSharedFrameworkDir)"
+          SkipUnchangedFiles="true">
+      <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
+</Project>

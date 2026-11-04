@@ -2581,7 +2581,6 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
             case NI_System_Threading_Interlocked_MemoryBarrier:
             case NI_System_Threading_Volatile_ReadBarrier:
             case NI_System_Threading_Volatile_WriteBarrier:
-            case NI_System_StubHelpers_GetStubContext:
             case NI_System_StubHelpers_NextCallReturnAddress:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:

@@ -100,8 +100,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs" Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
   </ItemGroup>
 
-  <!-- Zstandard files (not supported on browser/wasi) -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' or '$(TargetPlatformIdentifier)' == 'unix'">
+  <!-- Zstandard files (not supported on browser) -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' or '$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="$(CommonPath)Interop\Interop.Zstd.cs" />
     <Compile Include="System\IO\Compression\Zstandard\ZstandardCompressionOptions.cs" />
     <Compile Include="System\IO\Compression\Zstandard\ZstandardDecoder.cs" />
@@ -116,8 +116,8 @@
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
   </ItemGroup>
 
-  <!-- Zstandard PlatformNotSupported stubs for browser/wasi -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
+  <!-- Zstandard PlatformNotSupported stubs for browser -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="System\IO\Compression\Zstandard\Zstandard.PlatformNotSupported.cs" />
   </ItemGroup>
 

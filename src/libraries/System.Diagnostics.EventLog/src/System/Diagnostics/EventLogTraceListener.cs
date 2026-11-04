@@ -85,11 +85,15 @@ namespace System.Diagnostics
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, severity, id, format, args, null, null))
                 return;
 
+            EventLog? eventLog = EventLog;
+            if (eventLog is null)
+                return;
+
             EventInstance data = CreateEventInstance(severity, id);
 
             if (args == null || args.Length == 0)
             {
-                EventLog!.WriteEvent(data, format);
+                eventLog.WriteEvent(data, format);
             }
             else if (string.IsNullOrEmpty(format))
             {
@@ -99,13 +103,12 @@ namespace System.Diagnostics
                     strings[i] = args[i]?.ToString();
                 }
 
-                EventLog!.WriteEvent(data, strings);
+                eventLog.WriteEvent(data, strings);
             }
             else
             {
-                EventLog!.WriteEvent(data, string.Format(CultureInfo.InvariantCulture, format, args));
+                eventLog.WriteEvent(data, string.Format(CultureInfo.InvariantCulture, format, args));
             }
-
         }
 
         [ComVisible(false)]
@@ -114,7 +117,11 @@ namespace System.Diagnostics
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, severity, id, message, null, null, null))
                 return;
 
-            EventLog!.WriteEvent(CreateEventInstance(severity, id), message);
+            EventLog? eventLog = EventLog;
+            if (eventLog is null)
+                return;
+
+            eventLog.WriteEvent(CreateEventInstance(severity, id), message);
         }
 
         [ComVisible(false)]
@@ -123,13 +130,21 @@ namespace System.Diagnostics
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, severity, id, null, null, data, null))
                 return;
 
-            EventLog!.WriteEvent(CreateEventInstance(severity, id), new object?[] { data });
+            EventLog? eventLog = EventLog;
+            if (eventLog is null)
+                return;
+
+            eventLog.WriteEvent(CreateEventInstance(severity, id), new object?[] { data });
         }
 
         [ComVisible(false)]
         public override void TraceData(TraceEventCache? eventCache, string source, TraceEventType severity, int id, params object?[]? data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, severity, id, null, null, null, data))
+                return;
+
+            EventLog? eventLog = EventLog;
+            if (eventLog is null)
                 return;
 
             EventInstance inst = CreateEventInstance(severity, id);
@@ -148,7 +163,7 @@ namespace System.Diagnostics
                 }
             }
 
-            EventLog!.WriteEvent(inst, new object[] { sb.ToString() });
+            eventLog.WriteEvent(inst, new object[] { sb.ToString() });
         }
 
         private static EventInstance CreateEventInstance(TraceEventType severity, int id)

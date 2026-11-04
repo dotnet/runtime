@@ -408,7 +408,7 @@ ep_rt_aot_wait_event_wait (
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
-    return wait_event->event->Wait (timeout, alertable);
+    return wait_event->event->Wait (timeout, alertable, false);
 }
 
 bool
@@ -483,7 +483,7 @@ void
 ep_rt_aot_thread_sleep (uint64_t ns)
 {
     STATIC_CONTRACT_NOTHROW;
-    PalSleep(static_cast<uint32_t>(ns/1000000));
+    minipal_sleep(static_cast<uint32_t>(ns/1000000));
 }
 
 uint32_t

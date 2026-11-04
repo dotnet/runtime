@@ -34,9 +34,9 @@ public struct S1
 public class Runtime_128566
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
-        var vr2 = M4().GetAwaiter().GetResult();
+        var vr2 = await M4();
         Assert.False(vr2.F1.F0);
     }
 

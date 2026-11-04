@@ -191,7 +191,7 @@ namespace System.Text.Json
             Debug.Assert(rootValue is not null);
 
             Type runtimeType = rootValue.GetType();
-            if (runtimeType != JsonTypeInfo.ObjectType)
+            if (runtimeType != typeof(object))
             {
                 // To determine the contract for an object value:
                 // 1. Find the JsonTypeInfo for the runtime type with fallback to the nearest ancestor, if not available.
@@ -215,7 +215,7 @@ namespace System.Text.Json
             get
             {
                 Debug.Assert(IsReadOnly);
-                return _objectTypeInfo ??= GetTypeInfoInternal(JsonTypeInfo.ObjectType);
+                return _objectTypeInfo ??= GetTypeInfoInternal(typeof(object));
             }
         }
 
@@ -332,7 +332,7 @@ namespace System.Text.Json
 
                 for (Type? current = type.BaseType; current != null; current = current.BaseType)
                 {
-                    if (current == JsonTypeInfo.ObjectType)
+                    if (current == typeof(object))
                     {
                         // Avoid falling back to the contract for object since it's polymorphic
                         // and it would try to send us back to the runtime type that isn't supported.

@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
@@ -81,6 +80,26 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override ReadOnlySpan<ParameterInfo> GetParametersAsSpan()
         {
             return RuntimeParameters;
+        }
+
+        internal RuntimeType[] ArgumentTypes
+        {
+            get
+            {
+                RuntimeType[]? argumentTypes = _lazyArgumentTypes;
+                if (argumentTypes is null)
+                {
+                    ReadOnlySpan<ParameterInfo> parameters = GetParametersAsSpan();
+                    argumentTypes = new RuntimeType[parameters.Length];
+                    for (int i = 0; i < argumentTypes.Length; i++)
+                    {
+                        argumentTypes[i] = (RuntimeType)parameters[i].ParameterType;
+                    }
+                    _lazyArgumentTypes = argumentTypes;
+                }
+
+                return argumentTypes;
+            }
         }
 
         public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
@@ -196,5 +215,6 @@ namespace System.Reflection.Runtime.MethodInfos
         protected abstract MethodBaseInvoker UncachedMethodInvoker { get; }
 
         private volatile MethodBaseInvoker _lazyMethodInvoker;
+        private volatile RuntimeType[]? _lazyArgumentTypes;
     }
 }

@@ -3,12 +3,13 @@
 
 import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback, SymbolsAsset, AssetBehaviors, VfsAsset } from "./types";
 
-import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetDiagnosticsExports, dotnetNativeBrowserExports, dotnetApi } from "./cross-module";
+import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, dotnetDiagnosticsExports, dotnetNativeBrowserExports, dotnetApi } from "./cross-module";
 import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, browserVirtualAppBase } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
 import { fetchLike, responseLike } from "./polyfills";
 import { loaderConfig } from "./config";
+import { loaderCallbacks } from "./callbacks";
 
 let throttlingPCS: PromiseCompletionSource<void> | undefined;
 let currentParallelDownloads = 0;
@@ -103,6 +104,8 @@ export function fetchMainWasm(asset: WasmAsset): Promise<Response> {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
     assetInternal.behavior = "dotnetwasm";
+    // Assembly instantiation holds download slots until the main Wasm module supplies memory.
+    assetInternal.priority = true;
     if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
     mainWasmAsset = asset;
     wasmBinaryPromise = loadResource(assetInternal);
@@ -218,7 +221,7 @@ export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
     }
     if (bytes) {
         await nativeModulePromiseController.promise;
-        dotnetBrowserHostExports.registerPdbBytes(bytes, assetInternal.virtualPath);
+        dotnetBrowserHostExports.registerPdbBytes(bytes, assetInternal.virtualPath, assetInternal.shortName!);
     }
 }
 
@@ -391,7 +394,8 @@ function loadResource(asset: AssetEntryInternal): Promise<Response> {
         // no need to retry or throttle local file access
         return loadResourceFetch(asset);
     }
-    if (!loaderConfig.enableDownloadRetry || noRetry[asset.behavior]) {
+    const retryCachedWasm = asset.behavior === "dotnetwasm" && asset.cache === "force-cache";
+    if (!loaderConfig.enableDownloadRetry || (noRetry[asset.behavior] && !retryCachedWasm)) {
         // only throttle, no retry
         return loadResourceThrottle(asset);
     }
@@ -403,8 +407,13 @@ const noRetryStatusCodes = new Set<number>([400, 401, 403, 404, 405, 406, 409, 4
 async function loadResourceRetry(asset: AssetEntryInternal): Promise<Response> {
     let response: Response;
     response = await loadResourceAttempt();
-    if (response.ok || asset.isOptional || noRetryStatusCodes.has(response.status)) {
+    const retryWithCacheReload = asset.cache === "force-cache";
+    if (response.ok || asset.isOptional || (!retryWithCacheReload && noRetryStatusCodes.has(response.status))) {
         return response;
+    }
+    if (retryWithCacheReload) {
+        // A cached failure is not authoritative, even for an otherwise terminal status.
+        asset.cache = "reload";
     }
     // second attempt only after all first attempts are queued
     await allDownloadsQueuedPCS.promise;
@@ -458,10 +467,21 @@ async function loadResourceThrottle(asset: AssetEntryInternal): Promise<Response
         const response = await responsePromise;
         dotnetAssert.check(response, "Bad response in loadResourceThrottle");
 
-        if (!noBuffer[asset.behavior]) {
-            asset.buffer = await response.arrayBuffer();
+        const checkEmpty = response.ok && (asset.cache === "force-cache" || asset.cache === "reload") &&
+            asset.behavior !== "vfs" && asset.behavior !== "symbols";
+        if (checkEmpty && response.headers.get("Content-Length") === "0") {
+            throw new Error(`Failed to load resource '${asset.name}': empty response`);
         }
-        if (!leaveAfterInstantiation[asset.behavior]) {
+        if (!noBuffer[asset.behavior]) {
+            const buffer = await response.arrayBuffer();
+            if (checkEmpty && buffer.byteLength === 0) {
+                throw new Error(`Failed to load resource '${asset.name}': empty response`);
+            }
+            if (response.ok) {
+                asset.buffer = buffer;
+            }
+        }
+        if (!response.ok || !leaveAfterInstantiation[asset.behavior]) {
             finishThrottling(asset);
         }
         return response;
@@ -551,9 +571,7 @@ function onDownloadedAsset(asset: AssetEntryInternal): void {
         finishThrottling(asset);
     }
     ++downloadedAssetsCount;
-    if (Module.onDownloadResourceProgress) {
-        Module.onDownloadResourceProgress(downloadedAssetsCount, totalAssetsToDownload);
-    }
+    loaderCallbacks.downloadResourceProgress?.(downloadedAssetsCount, totalAssetsToDownload);
     // release memory
     asset.buffer = null!;
     asset.pendingDownload = undefined;
@@ -565,7 +583,11 @@ export function verifyAllAssetsDownloaded(): void {
 
 function normalizeVirtualPath(asset: AssetEntryInternal): void {
     dotnetAssert.check(asset.virtualPath, "Asset must have virtualPath");
-    asset.virtualPath = asset.virtualPath!.replace(/\.wasm$/, ".dll");
+    // Component stubs probe for the composite owner by its crossgen2 name (<entry>.r2r.wasm), so it keeps
+    // its .wasm virtual path; it is not a managed assembly (see initializeCoreCLR's TPA).
+    if (!asset.isCompositeImage) {
+        asset.virtualPath = asset.virtualPath!.replace(/\.wasm$/, ".dll");
+    }
     asset.virtualPath = asset.virtualPath.startsWith("/")
         ? asset.virtualPath
         : asset.culture

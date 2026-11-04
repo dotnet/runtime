@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -20,19 +21,15 @@ namespace ILCompiler.DependencyAnalysis
 
         private TypeSpecificationHandle Handle => (TypeSpecificationHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             TypeSpecification typeSpec = _module.MetadataReader.GetTypeSpecification(Handle);
-
-            DependencyList dependencies = new DependencyList();
 
             EcmaSignatureAnalyzer.AnalyzeTypeSpecSignature(
                 _module,
                 _module.MetadataReader.GetBlobReader(typeSpec.Signature),
                 factory,
-                dependencies);
-
-            return dependencies;
+                sink);
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

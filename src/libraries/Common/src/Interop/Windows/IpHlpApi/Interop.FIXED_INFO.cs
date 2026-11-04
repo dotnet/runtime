@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -13,32 +14,50 @@ internal static partial class Interop
         public const int MAX_SCOPE_ID_LEN = 256;
 
         [StructLayout(LayoutKind.Sequential)]
-        public unsafe struct FIXED_INFO
+        public struct FIXED_INFO
         {
-            private fixed byte _hostName[MAX_HOSTNAME_LEN + 4];
-            public string HostName => CreateString(ref _hostName[0], MAX_HOSTNAME_LEN + 4);
+            private HostNameBuffer _hostName;
+            public string HostName => CreateString(_hostName);
 
-            private fixed byte _domainName[MAX_DOMAIN_NAME_LEN + 4];
-            public string DomainName => CreateString(ref _domainName[0], MAX_DOMAIN_NAME_LEN + 4);
+            private DomainNameBuffer _domainName;
+            public string DomainName => CreateString(_domainName);
 
             public IntPtr currentDnsServer; // IpAddressList*
             public IP_ADDR_STRING DnsServerList;
             public uint nodeType;
 
-            private fixed byte _scopeId[MAX_SCOPE_ID_LEN + 4];
-            public string ScopeId => CreateString(ref _scopeId[0], MAX_SCOPE_ID_LEN + 4);
+            private ScopeIdBuffer _scopeId;
+            public string ScopeId => CreateString(_scopeId);
 
             public uint enableRouting;
             public uint enableProxy;
             public uint enableDns;
 
-            private static string CreateString(ref byte firstByte, int maxLength)
+            private static unsafe string CreateString(ReadOnlySpan<byte> buffer)
             {
-                fixed (byte* ptr = &firstByte)
+                int terminator = buffer.IndexOf((byte)0);
+                fixed (byte* ptr = buffer)
                 {
-                    int terminator = new ReadOnlySpan<byte>(ptr, maxLength).IndexOf((byte)0);
-                    return Marshal.PtrToStringAnsi((IntPtr)ptr, (terminator >= 0) ? terminator : maxLength);
+                    return Marshal.PtrToStringAnsi((IntPtr)ptr, (terminator >= 0) ? terminator : buffer.Length);
                 }
+            }
+
+            [InlineArray(MAX_HOSTNAME_LEN + 4)]
+            private struct HostNameBuffer
+            {
+                private byte _element0;
+            }
+
+            [InlineArray(MAX_DOMAIN_NAME_LEN + 4)]
+            private struct DomainNameBuffer
+            {
+                private byte _element0;
+            }
+
+            [InlineArray(MAX_SCOPE_ID_LEN + 4)]
+            private struct ScopeIdBuffer
+            {
+                private byte _element0;
             }
         }
     }

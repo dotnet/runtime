@@ -113,7 +113,9 @@ struct ee_alloc_context
     uint8_t m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
 
     gc_alloc_context* GetGCAllocContext();
-    uint8_t* GetCombinedLimit();
+    uint8_t* getCombinedLimit();
+    uint8_t* getAllocPtr();
+    void setAllocPtr(uint8_t* ptr);
     void UpdateCombinedLimit(bool samplingEnabled);
     static bool IsRandomizedSamplingEnabled();
     static uint32_t ComputeGeometricRandom();
@@ -167,10 +169,6 @@ struct RuntimeThreadLocals
 #ifdef FEATURE_SUSPEND_REDIRECTION
     uint8_t*                m_redirectionContextBuffer;             // storage for redirection context, allocated on demand
 #endif //FEATURE_SUSPEND_REDIRECTION
-
-#ifdef FEATURE_GC_STRESS
-    uint32_t                m_uRand;                                // current per-thread random number
-#endif // FEATURE_GC_STRESS
 };
 
 struct ReversePInvokeFrame
@@ -194,14 +192,9 @@ public:
                                                     // ...Prior to setting this bit the state is TSF_Unknown.
         TSF_Detached            = 0x00000002,       // Thread was detached and no longer can run managed code.
                                                     // ...TSF_Attached is cleared when TSF_Detached is set.
-        TSF_SuppressGcStress    = 0x00000008,       // Do not allow gc stress on this thread, used in DllMain
-                                                    // ...and on the Finalizer thread
         TSF_DoNotTriggerGc      = 0x00000010,       // Do not allow hijacking of this thread, also intended to
                                                     // ...be checked during allocations in debug builds.
         TSF_IsGcSpecialThread   = 0x00000020,       // Set to indicate a GC worker thread used for background GC
-#ifdef FEATURE_GC_STRESS
-        TSF_IsRandSeedSet       = 0x00000040,       // set to indicate the random number generator for GCStress was inited
-#endif // FEATURE_GC_STRESS
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
         TSF_Redirected          = 0x00000080,       // Set to indicate the thread is redirected and will inevitably
@@ -230,7 +223,6 @@ private:
     bool IsStateSet(ThreadStateFlags flags);
 
 #ifdef FEATURE_HIJACK
-    void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction);
     void CrossThreadUnhijack();
@@ -293,16 +285,12 @@ public:
     static bool         IsHijackTarget(void * address) { return false; }
 #endif // FEATURE_HIJACK
 
-#ifdef FEATURE_GC_STRESS
-    static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
-#endif // FEATURE_GC_STRESS
-
-    bool                IsSuppressGcStressSet();
-    void                SetSuppressGcStress();
-    void                ClearSuppressGcStress();
     bool                IsWithinStackBounds(PTR_VOID p);
     void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
     void                PushExInfo(ExInfo * pExInfo);
+#ifdef FEATURE_PORTABLE_HELPERS
+    void                PopExInfo(ExInfo* pExInfo, uintptr_t resumeSP);
+#endif // FEATURE_PORTABLE_HELPERS
     void                ValidateExInfoPop(ExInfo * pExInfo, void * limitSP);
     void                ValidateExInfoStack();
     bool                IsDoNotTriggerGcSet();
@@ -318,18 +306,12 @@ public:
 #ifndef DACCESS_COMPILE
     void                SetThreadStressLog(void * ptsl);
 #endif // DACCESS_COMPILE
-#ifdef FEATURE_GC_STRESS
-    void                SetRandomSeed(uint32_t seed);
-    uint32_t            NextRand();
-    bool                IsRandInited();
-#endif // FEATURE_GC_STRESS
     PTR_ExInfo          GetCurExInfo();
 
     bool                IsCurrentThreadInCooperativeMode();
 
     PInvokeTransitionFrame* GetTransitionFrameForStackTrace();
     PInvokeTransitionFrame* GetTransitionFrameForSampling();
-    void *              GetCurrentThreadPInvokeReturnAddress();
 
     //
     // The set of operations used to support unmanaged code running in cooperative mode
@@ -337,8 +319,8 @@ public:
     void                EnablePreemptiveMode();
     void                DisablePreemptiveMode();
 
-    // Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame
-    // in assembly code. Do not use anywhere else.
+    // Record the managed caller's transition frame for GC allocation helpers that remain in
+    // cooperative mode, so the GC can walk the managed stack. Do not use anywhere else.
     void                SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransitionFrame);
 
     // Setup the m_pDeferredTransitionFrame field for GC helpers entered via regular PInvoke.

@@ -2,12 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+#ifdef FEATURE_NATIVEAOT
+#include "common.h"
+#include "gcenv.h"
+#include "CommonMacros.inl"
+#include "GCMemoryHelpers.inl"
+#else
 #include <fcall.h>
-
-#ifndef FEATURE_NATIVEAOT
 #include "gchelpers.inl"
 #include "gcheaputilities.h"
-#endif
+#endif // FEATURE_NATIVEAOT
 
 #ifdef FEATURE_MULTITHREADING
 #error The current assembly implementation of write barriers assumes single-threaded Wasm
@@ -40,8 +44,8 @@
         [card_byte_shift] "i" (card_byte_shift) \
     )
 
-EXTERN_C FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
-ASM_HELPER_2(VOID, RhpAssignRef, Object **dst, Object *ref)
+EXTERN_C FCDECL2_RAW(void, RhpAssignRef, Object **dst, Object *ref);
+ASM_HELPER_2(void, RhpAssignRef, Object **dst, Object *ref)
 {
     GC_ASM(
         /* *dst = ref */
@@ -78,8 +82,8 @@ ASM_HELPER_2(VOID, RhpAssignRef, Object **dst, Object *ref)
     );
 }
 
-EXTERN_C FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
-ASM_HELPER_2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref)
+EXTERN_C FCDECL2_RAW(void, RhpCheckedAssignRef, Object **dst, Object *ref);
+ASM_HELPER_2(void, RhpCheckedAssignRef, Object **dst, Object *ref)
 {
     GC_ASM(
         /* *dst = ref */

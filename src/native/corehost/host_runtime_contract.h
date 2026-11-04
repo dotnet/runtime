@@ -84,5 +84,20 @@ struct host_runtime_contract
     bool(HOST_CONTRACT_CALLTYPE* get_native_code_data)(
        const struct host_runtime_contract_native_code_context* context,
        /*out*/ struct host_runtime_contract_native_code_data* data);
+
+    // Get the simple names of the host-resolved assemblies.
+    // Returned names are owned by the host and valid for the lifetime of the process.
+    bool(HOST_CONTRACT_CALLTYPE* get_assembly_names)(
+        /*out*/ const char* const** names,
+        /*out*/ size_t* count,
+        void* contract_context);
+
+    // Resolve an assembly simple name to its path components.
+    // On success, returned strings are owned by the host and valid for the lifetime of the process.
+    bool(HOST_CONTRACT_CALLTYPE* resolve_assembly_to_path)(
+        const char* simple_name,
+        /*out*/ const char** directory,
+        /*out*/ const char** file_name,
+        void* contract_context);
 };
 #endif // __HOST_RUNTIME_CONTRACT_H__

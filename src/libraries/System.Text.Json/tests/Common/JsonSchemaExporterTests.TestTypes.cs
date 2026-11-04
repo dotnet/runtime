@@ -268,10 +268,10 @@ namespace System.Text.Json.Schema.Tests
                       "properties": {
                         "IntegerReadingFromString": { "type": ["string","integer"], "pattern": "^-?(?:0|[1-9]\\d*)$" },
                         "DoubleReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
-                        "DecimalReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$" },
+                        "DecimalReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
                         "IntegerWritingAsString": { "type": ["string","integer"], "pattern": "^-?(?:0|[1-9]\\d*)$" },
                         "DoubleWritingAsString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
-                        "DecimalWritingAsString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$" },
+                        "DecimalWritingAsString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
                         "IntegerAllowingFloatingPointLiterals": { "type": "integer" },
                         "DoubleAllowingFloatingPointLiterals": {
                             "anyOf": [
@@ -287,7 +287,7 @@ namespace System.Text.Json.Schema.Tests
                                 { "enum": ["NaN", "Infinity", "-Infinity"] }
                             ]
                         },
-                        "DecimalAllowingFloatingPointLiteralsAndReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$" }
+                        "DecimalAllowingFloatingPointLiteralsAndReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" }
                       }
                     }
                 """);
@@ -1404,6 +1404,13 @@ namespace System.Text.Json.Schema.Tests
             [JsonPropertyName("str")]
             public string? StringProperty { get; set; }
         }
+
+        [JsonNumberHandling(JsonNumberHandling.Strict)]
+        public union StrictIntOrStringUnion(int, string);
+
+        public union IntOrBoolUnion(int, bool);
+
+        public union NullableIntUnion(int?);
 
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public class PocoWithCustomNumberHandling

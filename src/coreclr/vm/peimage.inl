@@ -1,10 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// --------------------------------------------------------------------------------
-// PEImage.inl
-//
-
-// --------------------------------------------------------------------------------
 
 #ifndef PEIMAGE_INL_
 #define PEIMAGE_INL_
@@ -198,29 +193,6 @@ inline BOOL PEImage::IsOpened()
     LIMITED_METHOD_CONTRACT;
     return m_pLayouts[IMAGE_LOADED]!=NULL || m_pLayouts[IMAGE_FLAT] !=NULL;
 }
-
-
-inline BOOL PEImage::IsReferenceAssembly()
-{
-    CONTRACTL
-    {
-        PRECONDITION(HasCorHeader());
-    }
-    CONTRACTL_END;
-
-    IMDInternalImport* mdImport = this->GetMDImport();
-    HRESULT hr = mdImport->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly),
-                                           g_ReferenceAssemblyAttribute,
-                                           NULL,
-                                           NULL);
-    IfFailThrow(hr);
-    if (hr == S_OK) {
-        return TRUE;
-    }
-    _ASSERTE(hr == S_FALSE);
-    return FALSE;
-}
-
 
 inline BOOL PEImage::HasHeaders()
 {

@@ -222,7 +222,7 @@ protected:
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
     void                       genEmitLocalGet(regNumber reg, WasmValueType expectedType);
     void                       genEmitLocalGet(regNumber reg, var_types expectedType);
-    void                       genEmitNullCheck(regNumber reg);
+    void                       genEmitNullCheck(regNumber reg, var_types refType);
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
     void                       ensureCurrentFuncIsUnwindable();
@@ -237,6 +237,7 @@ protected:
 
     void genEmitStartBlock(BasicBlock* block);
     void genEmitEndBlock(BasicBlock* block);
+    bool genIsCatchRetTargetWithoutCode(BasicBlock* block);
 
 public:
 #if HAS_FIXED_REGISTER_SET
@@ -357,7 +358,6 @@ protected:
     var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
     void      genSpillOrAddRegisterParam(
              unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& seg, class RegGraph* graph);
-    void genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
     void genEnregisterIncomingStackArgs();
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
 
@@ -648,6 +648,7 @@ protected:
 
 #if defined(TARGET_AMD64)
     void genAmd64EmitterUnitTestsSse2();
+    void genAmd64EmitterUnitTestsLea();
     void genAmd64EmitterUnitTestsApx();
     void genAmd64EmitterUnitTestsAvx10v2();
     void genAmd64EmitterUnitTestsCCMP();
@@ -675,10 +676,7 @@ protected:
     //
     //-------------------------------------------------------------------------
 
-    void      genSinglePush();
-    void      genSinglePop();
-    regMaskTP genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs);
-    void      genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs);
+    void genSinglePush();
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -743,6 +741,12 @@ protected:
     bool siInFuncletRegion; // Have we seen the start of the funclet region?
 
     IL_OFFSET siLastEndOffs; // IL offset of the (exclusive) end of the last block processed
+
+#if defined(TARGET_WASM)
+    // Wasm opens its method-wide scopes in the first emitted block rather than relying on the
+    // monotonic enter/exit cursors used by other targets.
+    bool siWasmScopesOpened;
+#endif // defined(TARGET_WASM)
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -957,7 +961,7 @@ protected:
     void genCompareFloat(GenTreeOp* treeNode);
     void genCompareInt(GenTreeOp* treeNode);
 #ifdef TARGET_XARCH
-    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, emitAttr opSize);
     GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
 #endif
 
@@ -1164,10 +1168,6 @@ protected:
     void      genTransferRegGCState(regNumber dst, regNumber src);
     void      genConsumeAddress(GenTree* addr);
     void      genConsumeAddrMode(GenTreeAddrMode* mode);
-    void      genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg);
-    void      genConsumeBlockSrc(GenTreeBlk* blkNode);
-    void      genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg);
-    void      genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 
     void genConsumePutStructArgStk(GenTreePutArgStk* putArgStkNode,
                                    regNumber         dstReg,

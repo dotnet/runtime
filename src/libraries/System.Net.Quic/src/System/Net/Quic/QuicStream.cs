@@ -109,7 +109,7 @@ public sealed partial class QuicStream
             }
         }
     };
-    private MsQuicBuffers _sendBuffers = new MsQuicBuffers();
+    private readonly MsQuicBuffers _sendBuffers = new MsQuicBuffers();
     private int _sendLocked;
     private Exception? _sendException;
 

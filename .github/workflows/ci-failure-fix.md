@@ -8,7 +8,7 @@ permissions:
   pull-requests: read
 
 on:
-  schedule: every 12h
+  schedule: daily on weekdays
   workflow_dispatch:
   roles: [admin, maintainer, write]
   permissions: {}
@@ -31,9 +31,10 @@ environment: copilot-pat-pool
 
 engine:
   id: copilot
-  model: claude-opus-4.8
   env:
     COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, 'NO COPILOT PAT AVAILABLE') }}
+
+model: gpt-5.6-terra
 
 concurrency:
   group: "ci-failure-fix"
@@ -94,6 +95,8 @@ steps:
       path: /tmp/gh-aw/agent
 
 safe-outputs:
+  report-failure-as-issue: false
+  report-failed-jobs: false
   create-pull-request:
     title-prefix: "[ci-fix] "
     draft: true
@@ -110,7 +113,7 @@ safe-outputs:
     allowed-labels: [agentic-workflows]
   add-comment:
     target: "*"
-    max: 10
+    max: 3
   data:
     type: object
     properties:
@@ -147,7 +150,7 @@ You are a CI remediation agent. Each scheduled run, you walk the open `[ci-scan]
 
 You are the *mitigation* stage. `ci-failure-scan` only detects failures and files KBEs; it never disables tests. **You never mute, skip, or disable a test, and you never add `[ActiveIssue]` / `Skip` / `<*Incompatible>` annotations.** A failure is removed either by a real fix PR or by a human the PR/comment loops in. A "help wanted" PR is a genuine best-effort code change plus an ask for review — never a test-disable dressed up as a fix. The agent runs read-only; all writes go through `safe-outputs`.
 
-To suggest changes, edit this file or comment on the PRs/comments it produces — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback daily, and opens (or updates) a single draft PR with proposed edits to either prompt.
+To suggest changes, edit this file or comment on the PRs/comments it produces — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback every two weeks and lists proposed edits to either prompt in the `[ci-scan-feedback] KPI Tracker` issue.
 
 ## Hard rules — non-negotiable
 
@@ -365,6 +368,10 @@ Every `create_pull_request` and `add_comment` safe-output call MUST also provide
 
 Do not paste this JSON into the body. `safe-outputs.data` validates it and appends it after sanitization as a `Structured data:` fenced JSON block. New readers use that block as the machine-readable identity; the visible block remains the legacy fallback.
 
+In every `## Evidence` section, render each Azure DevOps build ID as a Markdown link
+to that build, never as a bare number. Use the build URL from the KBE when available;
+otherwise use `https://dev.azure.com/dnceng-public/public/_build/results?buildId=<id>`.
+
 ## Templates
 
 ### Template: Fix-PR body (Branch FIX — confident)
@@ -388,12 +395,12 @@ Linked KBE: #<n>
 - Why the failing test/log validates this fix: <one or two sentences>
 
 ## Evidence
-- Failing build: <AzDO link>
-- First build it occurred: <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
+- Failing build: [<build-id>](<AzDO build URL>)
+- First build it occurred: [<build-id>](<AzDO build URL>) — <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
 - Suspected regressing change: <dotnet/runtime#<n> | none identified>
 
 ---
-Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-fix.md), which attempts validated fixes for `[ci-scan]` Known Build Errors and otherwise loops in owners. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
+Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-fix.md), which attempts validated fixes for `[ci-scan]` Known Build Errors and otherwise loops in owners. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback every two weeks and lists proposed prompt edits in its KPI tracker issue.
 ````
 
 Keep the diff <= 20 lines, single file. Never stage a test-disabling change.
@@ -425,8 +432,8 @@ Linked KBE: #<n>
 - Result: <passed | failed | not run>
 
 ## Evidence
-- Failing build: <AzDO link>
-- First build it occurred: <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
+- Failing build: [<build-id>](<AzDO build URL>)
+- First build it occurred: [<build-id>](<AzDO build URL>) — <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
 - Suspected regressing change: <dotnet/runtime#<n> | none identified with sufficient confidence>
 
 ## Help wanted
@@ -434,7 +441,7 @@ Linked KBE: #<n>
 - Area owners (`area-<x>`): <@individual-owner>, `@dotnet/<team>`
 
 ---
-Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-fix.md). Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
+Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-fix.md). Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback every two weeks and lists proposed prompt edits in its KPI tracker issue.
 ````
 
 ### Template: Loop-in comment body (Branch COMMENT — last resort)
@@ -453,8 +460,8 @@ This Known Build Error has no producible automated code change (reason: <JIT/GC 
 <what fails, the failing log line, the source location, and the most likely cause>
 
 ## Evidence
-- Failing build: <AzDO link>
-- First build it occurred: <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
+- Failing build: [<build-id>](<AzDO build URL>)
+- First build it occurred: [<build-id>](<AzDO build URL>) — <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
 - Possible related PR: <dotnet/runtime#<n> | none identified with sufficient confidence>
 
 ## Suggested reviewers / area contacts

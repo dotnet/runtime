@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
@@ -142,6 +143,81 @@ namespace System.Text.Json.Serialization.Tests
             PipeReader reader = PipeReader.Create(JsonTestHelper.GetSequence(data, segmentSize));
             int result = await Serializer.DeserializeWrapper<int>(reader);
             Assert.Equal(123456789, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(StreamTests.NullableStructWithNullMemberTestData), MemberType = typeof(StreamTests))]
+        public async Task ReadNullableStructWithNullMember_MultiSegment(Type type, bool useSourceGeneration, string expectedJson)
+        {
+            JsonSerializerOptions options = StreamTests.CreateNullableStructOptions(useSourceGeneration);
+            byte[] data = Encoding.UTF8.GetBytes(expectedJson.Replace("}", ",\"Ignored\":null}"));
+
+            foreach (int segmentSize in new[] { 1, 2, 3, 16 })
+            {
+                ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(data, segmentSize);
+                Assert.False(sequence.IsSingleSegment);
+                PipeReader reader = PipeReader.Create(sequence);
+                try
+                {
+                    object result = await Serializer.DeserializeWrapper(reader, type, options);
+                    Assert.Equal(expectedJson, JsonSerializer.Serialize(result, type, options));
+                }
+                finally
+                {
+                    await reader.CompleteAsync();
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StreamTests.NullableStructWithNullMemberTestData), MemberType = typeof(StreamTests))]
+        public async Task ReadNullableStructWithNullMember_PartialBuffers(Type type, bool useSourceGeneration, string expectedJson)
+        {
+            JsonSerializerOptions options = StreamTests.CreateNullableStructOptions(useSourceGeneration);
+            byte[] data = Encoding.UTF8.GetBytes(expectedJson.Replace("}", ",\"Ignored\":null}"));
+
+            for (int split = 1; split < data.Length; split++)
+            {
+                foreach (bool completeJson in new[] { false, true })
+                {
+                    // Inline scheduling makes the flush/resume interleaving deterministic.
+                    Pipe pipe = new(new PipeOptions(
+                        readerScheduler: PipeScheduler.Inline,
+                        writerScheduler: PipeScheduler.Inline,
+                        pauseWriterThreshold: 0,
+                        useSynchronizationContext: false));
+                    try
+                    {
+                        Task<object> readTask = Serializer.DeserializeWrapper(pipe.Reader, type, options);
+                        await pipe.Writer.WriteAsync(data.AsMemory(0, split));
+                        Assert.False(readTask.IsCompleted);
+
+                        if (completeJson)
+                        {
+                            for (int offset = split; offset < data.Length; offset++)
+                            {
+                                await pipe.Writer.WriteAsync(data.AsMemory(offset, 1));
+                            }
+                        }
+
+                        await pipe.Writer.CompleteAsync();
+                        if (completeJson)
+                        {
+                            object result = await readTask;
+                            Assert.Equal(expectedJson, JsonSerializer.Serialize(result, type, options));
+                        }
+                        else
+                        {
+                            await Assert.ThrowsAsync<JsonException>(() => readTask);
+                        }
+                    }
+                    finally
+                    {
+                        await pipe.Writer.CompleteAsync();
+                        await pipe.Reader.CompleteAsync();
+                    }
+                }
+            }
         }
     }
 }

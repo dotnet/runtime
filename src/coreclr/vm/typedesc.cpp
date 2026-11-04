@@ -515,9 +515,11 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
     STATIC_CONTRACT_GC_NOTRIGGER;
     SUPPORTS_DAC;
 
-    if (_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
+    DWORD dwFlags = VolatileLoad(&_typeAndFlags);
+
+    if (dwFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
     {
-        if (_typeAndFlags & TypeDesc::enum_flag_DependenciesLoaded)
+        if (dwFlags & TypeDesc::enum_flag_DependenciesLoaded)
         {
             return CLASS_DEPENDENCIES_LOADED;
         }
@@ -830,7 +832,18 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
             if (whichCurrent == WhichConstraintsToLoad::None)
             {
                 constraintAlloc = (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints & ~WhichConstraintsLoadedMask) * S_SIZE_T(sizeof(TypeHandle))));
-                constraints = (TypeHandle*)constraintAlloc;
+                constraints = constraintAlloc.operator->();
+
+                // Publish the array before filling it so concurrent loaders populate the same storage.
+                TypeHandle* existingConstraints = InterlockedCompareExchangeT(&m_constraints, constraints, nullptr);
+                if (existingConstraints == nullptr)
+                {
+                    constraintAlloc.SuppressRelease();
+                }
+                else
+                {
+                    constraints = existingConstraints;
+                }
             }
             else
             {
@@ -845,7 +858,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                 mdToken tkConstraintType, tkParam;
                 if (FAILED(pInternalImport->GetGenericParamConstraintProps(tkConstraint, &tkParam, &tkConstraintType)))
                 {
-                    GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
+                    GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT != NULL ? pMT->GetCl() : defToken, IDS_CLASSLOAD_BADFORMAT);
                 }
                 _ASSERTE(tkParam == GetToken());
                 TypeHandle thConstraint;
@@ -859,7 +872,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
 
                     if (FAILED(pInternalImport->GetTypeSpecFromToken(tkConstraintType, &pSig, &cSig)))
                     {
-                        GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
+                        GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT != NULL ? pMT->GetCl() : defToken, IDS_CLASSLOAD_BADFORMAT);
                     }
 
                     SigPointer investigatePtr(pSig, cSig);
@@ -956,14 +969,6 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                 }
 
                 i++;
-            }
-
-            if (whichCurrent == WhichConstraintsToLoad::None)
-            {
-                if (InterlockedCompareExchangeT(&m_constraints, constraintAlloc.operator->(), NULL) == NULL)
-                {
-                    constraintAlloc.SuppressRelease();
-                }
             }
 
             if (loadedAllConstraints)

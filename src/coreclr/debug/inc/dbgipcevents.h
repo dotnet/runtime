@@ -779,6 +779,7 @@ DEFINE_VMPTR(class FieldDesc,       PTR_FieldDesc,      VMPTR_FieldDesc);
 // ObjectHandle is a safe way to represent an object into the GC heap. It gets updated
 // when a GC occurs.
 DEFINE_VMPTR(struct OBJECTHANDLE__, TADDR,              VMPTR_OBJECTHANDLE);
+DEFINE_VMPTR(class DebuggerExternalMemoryOwner, TADDR, VMPTR_DebuggerExternalMemoryOwner);
 
 DEFINE_VMPTR(class TypeHandle,      PTR_TypeHandle,     VMPTR_TypeHandle);
 
@@ -1179,8 +1180,9 @@ struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
 
 // DebuggerIPCE_TypeArgData is used when sending type arguments
 // across to a funceval.  It contains the DebuggerIPCE_ExpandedTypeData describing the
-// essence of the type, but the typeHandle and other
-// BasicTypeData fields should be zero and will be ignored.
+// essence of the type. Type handles are normally zero and are ignored when
+// loading types. An enregistered func-eval value-type argument includes an already-loaded
+// layout handle in its first node, for GC protection of its snapshot before any type loading.
 // The DebuggerIPCE_ExpandedTypeData is then followed
 // by the required number of type arguments, each of which
 // will be a further DebuggerIPCE_TypeArgData record in the stream of
@@ -1194,6 +1196,7 @@ struct MSLAYOUT DebuggerIPCE_TypeArgData
 //
 // Remote enregistered info used by CordbValues and for passing
 // variable homes between the left and right sides during a func eval.
+// Non-leaf register values can be registered as GC roots and updated in place during the eval.
 //
 
 enum RemoteAddressKind
@@ -1325,11 +1328,6 @@ struct MSLAYOUT Ls_Rs_BaseBuffer
 {
 #ifdef RIGHT_SIDE_COMPILE
 protected:
-    // copy data can happen on both LS and RS. In LS case,
-    // ReadProcessMemory is really reading from its own process memory.
-    //
-    void CopyLSDataToRSWorker(ICorDebugDataTarget * pTargethProcess);
-
     // retrieve the RS data and own it
     BYTE *TransferRSDataWorker()
     {
@@ -1389,7 +1387,6 @@ struct MSLAYOUT Ls_Rs_ByteBuffer : public Ls_Rs_BaseBuffer
         return m_pbRS;
     }
 
-    void CopyLSDataToRS(ICorDebugDataTarget * pTarget);
     BYTE *TransferRSData()
     {
         return TransferRSDataWorker();
@@ -1408,9 +1405,6 @@ struct MSLAYOUT Ls_Rs_StringBuffer : public Ls_Rs_BaseBuffer
     {
         return reinterpret_cast<const WCHAR*> (m_pbRS);
     }
-
-    // Copy over the string.
-    void CopyLSDataToRS(ICorDebugDataTarget * pTarget);
 
     // Caller will pick up ownership.
     // Since caller will delete this data, we can't give back a constant pointer.
@@ -1741,6 +1735,7 @@ struct MSLAYOUT DebuggerIPCEvent
             Portable<VMPTR_AppDomain> vmAppDomain;
 
             Portable<VMPTR_OBJECTHANDLE> vmObjectHandle;
+            Portable<VMPTR_DebuggerExternalMemoryOwner> vmExternalMemoryOwner;
             DebuggerIPCE_ExpandedTypeData resultType;
         } FuncEvalComplete;
 
@@ -1839,6 +1834,11 @@ struct MSLAYOUT DebuggerIPCEvent
             Portable<VMPTR_OBJECTHANDLE> vmObjectHandle;
             Portable<CorDebugHandleType> handleType;
         } DisposeHandle;
+
+        struct MSLAYOUT
+        {
+            Portable<VMPTR_DebuggerExternalMemoryOwner> vmExternalMemoryOwner;
+        } DisposeExternalMemoryOwner;
 
         struct MSLAYOUT
         {
