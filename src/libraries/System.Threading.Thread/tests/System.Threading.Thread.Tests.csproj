@@ -21,4 +21,7 @@
     <ProjectReference Include="MTAMain\MTAMain.csproj" />
     <ProjectReference Include="DefaultApartmentStateMain\DefaultApartmentStateMain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" />
+  </ItemGroup>
 </Project>

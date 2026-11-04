@@ -26,6 +26,56 @@ namespace System.Threading.Threads.Tests
         private const int UnexpectedTimeoutMilliseconds = ThreadTestHelpers.UnexpectedTimeoutMilliseconds;
         private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
 
+        [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetUInt64OSThreadId")]
+        private static extern ulong GetNativeThreadId();
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]
+        [InlineData(1)]
+        [InlineData(4)]
+        public static void NativeThreadIds_AreDistinctAndStable(int workerCount)
+        {
+            using var ready = new CountdownEvent(workerCount);
+            using var release = new ManualResetEventSlim();
+            ulong currentThreadId = GetNativeThreadId();
+            ulong[] threadIds = new ulong[workerCount];
+            Action[] waitForThreads = new Action[workerCount];
+
+            for (int i = 0; i < workerCount; i++)
+            {
+                int index = i;
+                Thread thread = ThreadTestHelpers.CreateGuardedThread(out waitForThreads[i], () =>
+                {
+                    threadIds[index] = GetNativeThreadId();
+                    ready.Signal();
+                    Assert.True(release.Wait(UnexpectedTimeoutMilliseconds));
+                    Assert.Equal(threadIds[index], GetNativeThreadId());
+                });
+                thread.IsBackground = true;
+                thread.Start();
+            }
+
+            try
+            {
+                Assert.True(ready.Wait(UnexpectedTimeoutMilliseconds));
+                var uniqueIds = new HashSet<ulong> { currentThreadId };
+                Assert.NotEqual(0UL, currentThreadId);
+                foreach (ulong threadId in threadIds)
+                {
+                    Assert.NotEqual(0UL, threadId);
+                    Assert.True(uniqueIds.Add(threadId), $"Duplicate native thread ID: {threadId}");
+                }
+            }
+            finally
+            {
+                release.Set();
+                foreach (Action waitForThread in waitForThreads)
+                {
+                    waitForThread();
+                }
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ConstructorTest()
         {
