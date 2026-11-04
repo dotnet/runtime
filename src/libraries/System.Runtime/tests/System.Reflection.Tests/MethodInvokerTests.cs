@@ -222,24 +222,34 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void Constructor_OpenAbstractGenericDeclaringTypeAllocation_Throws(bool useConstructorInvoker)
+        [InlineData(typeof(AbstractConstructorTarget<>), false)]
+        [InlineData(typeof(AbstractConstructorTarget<>), true)]
+        [InlineData(typeof(AbstractConstructorTarget<int>), false)]
+        [InlineData(typeof(AbstractConstructorTarget<int>), true)]
+        public void Constructor_AbstractGenericDeclaringTypeAllocation_Throws(Type type, bool useConstructorInvoker)
         {
-            ConstructorInfo constructor = typeof(AbstractConstructorTarget<>).GetConstructor(
+            ConstructorInfo constructor = type.GetConstructor(
                 BindingFlags.Instance | BindingFlags.NonPublic,
                 binder: null,
                 Type.EmptyTypes,
                 modifiers: null)!;
 
+            if (!type.ContainsGenericParameters)
+            {
+                Assert.Null(constructor.Invoke(new ConcreteConstructorTarget(), Array.Empty<object?>()));
+            }
+
             if (useConstructorInvoker)
             {
-                Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke());
-                Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke(Span<object?>.Empty));
+                MemberAccessException exception = Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke());
+                Assert.Contains(type.ToString(), exception.Message);
+                exception = Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke(Span<object?>.Empty));
+                Assert.Contains(type.ToString(), exception.Message);
             }
             else
             {
-                Assert.Throws<MemberAccessException>(() => constructor.Invoke(Array.Empty<object?>()));
+                MemberAccessException exception = Assert.Throws<MemberAccessException>(() => constructor.Invoke(Array.Empty<object?>()));
+                Assert.Contains(type.ToString(), exception.Message);
             }
         }
 
@@ -248,6 +258,10 @@ namespace System.Reflection.Tests
             protected AbstractConstructorTarget()
             {
             }
+        }
+
+        public sealed class ConcreteConstructorTarget : AbstractConstructorTarget<int>
+        {
         }
 
         public abstract class AbstractRefConstructorTarget

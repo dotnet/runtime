@@ -46,7 +46,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
 
         private static object ThrowAbstractConstructorException(IntPtr declaringType)
         {
-            throw new MemberAccessException(SR.Format(SR.Acc_CreateAbstEx, Type.GetTypeFromHandle(RuntimeTypeHandle.FromIntPtr(declaringType)).FullName));
+            throw new MemberAccessException(SR.Format(SR.Acc_CreateAbstEx, Type.GetTypeFromHandle(RuntimeTypeHandle.FromIntPtr(declaringType))));
         }
 
         private void ValidateInvocationTarget(object? thisObject)
