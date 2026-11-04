@@ -5041,15 +5041,170 @@ bool CSE_HeuristicCommon::IsCompatibleType(var_types cseLclVarTyp, var_types exp
 }
 
 //------------------------------------------------------------------------
-// PerformCSE: takes a successful candidate and performs the appropriate replacements
+// optCSEStoreIsMostRecentDef: Check that the store is the latest definition at every CSE use.
 //
 // Arguments:
-//    successfulCandidate - cse candidate to perform
+//   comp       - compiler instance
+//   dsc        - CSE candidate
+//   store      - store to the proposed CSE local
 //
-// It will replace all of the CSE defs with writes to a new "cse0" LclVar
-// and will replace all of the CSE uses with reads of the "cse0" LclVar
+// Returns:
+//   True if no other definition reaches a CSE use.
 //
-// It will also put cse0 into SSA if there is just one def.
+// Notes:
+//   Treat entry as another definition and check statement order and backedges.
+//   Pruned SSA can omit PHIs at new uses, so dominance alone is insufficient.
+//   Reject EH and non-convergence.
+//
+static bool optCSEStoreIsMostRecentDef(Compiler* comp, CSEdsc* dsc, GenTreeLclVar* store)
+{
+    if (comp->compHndBBtabCount > 0)
+    {
+        return false;
+    }
+    if (comp->m_dfsTree == nullptr)
+    {
+        comp->m_dfsTree = comp->fgComputeDfs();
+    }
+
+    const unsigned lclNum = store->GetLclNum();
+    enum : BYTE
+    {
+        ST_UNKNOWN = 0,
+        ST_STORE   = 1,
+        ST_OTHER   = 2
+    };
+
+    LclVarDsc* const                                                    varDsc = comp->lvaGetDesc(lclNum);
+    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, bool> DefBlockMap;
+    DefBlockMap                                                         defBlocks(comp->getAllocator(CMK_CSE));
+    for (unsigned i = 0; i < varDsc->lvPerSsaData.GetCount(); i++)
+    {
+        LclSsaVarDsc* const ssaDef = varDsc->lvPerSsaData.GetSsaDefByIndex(i);
+        if (ssaDef->GetDefNode() != nullptr)
+        {
+            defBlocks.Set(ssaDef->GetBlock(), true, DefBlockMap::Overwrite);
+        }
+    }
+
+    auto blockExit = [&](BasicBlock* block, BYTE in) -> BYTE {
+        bool dummy;
+        if (!defBlocks.Lookup(block, &dummy))
+        {
+            return in;
+        }
+        BYTE st = in;
+        for (Statement* const stmt : block->Statements())
+        {
+            for (GenTree* const tree : stmt->TreeList())
+            {
+                if (tree->OperIsLocalStore() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
+                {
+                    st = (tree == store) ? ST_STORE : ST_OTHER;
+                }
+            }
+        }
+        return st;
+    };
+
+    const unsigned count = comp->m_dfsTree->GetPostOrderCount();
+    BYTE* const    inSt  = new (comp, CMK_CSE) BYTE[count]();
+    BYTE* const    outSt = new (comp, CMK_CSE) BYTE[count]();
+
+    auto meet = [](BYTE a, BYTE b) -> BYTE {
+        if (a == ST_UNKNOWN)
+        {
+            return b;
+        }
+        if (b == ST_UNKNOWN)
+        {
+            return a;
+        }
+        return (a == b) ? a : ST_OTHER;
+    };
+
+    bool     changed = true;
+    unsigned iters   = 0;
+    while (changed && (iters++ < 16))
+    {
+        changed = false;
+        for (unsigned i = count; i > 0; i--)
+        {
+            BasicBlock* const block = comp->m_dfsTree->GetPostOrder(i - 1);
+            BYTE              in    = (block == comp->fgFirstBB) ? ST_OTHER : ST_UNKNOWN;
+            for (FlowEdge* const pred : block->PredEdges())
+            {
+                BasicBlock* const predBlock = pred->getSourceBlock();
+                if (!comp->m_dfsTree->Contains(predBlock))
+                {
+                    continue;
+                }
+                in = meet(in, outSt[predBlock->bbPostorderNum]);
+            }
+            const BYTE out = blockExit(block, in);
+            if ((in != inSt[block->bbPostorderNum]) || (out != outSt[block->bbPostorderNum]))
+            {
+                inSt[block->bbPostorderNum]  = in;
+                outSt[block->bbPostorderNum] = out;
+                changed                      = true;
+            }
+        }
+    }
+    if (changed)
+    {
+        return false;
+    }
+
+    for (treeStmtLst* useLst = &dsc->csdTreeList; useLst != nullptr; useLst = useLst->tslNext)
+    {
+        if (!IS_CSE_USE(useLst->tslTree->gtCSEnum))
+        {
+            continue;
+        }
+        BasicBlock* const useBlock = useLst->tslBlock;
+        if (!comp->m_dfsTree->Contains(useBlock))
+        {
+            continue;
+        }
+        BYTE st = inSt[useBlock->bbPostorderNum];
+        bool dummy;
+        if (defBlocks.Lookup(useBlock, &dummy))
+        {
+            bool found = false;
+            for (Statement* const stmt : useBlock->Statements())
+            {
+                for (GenTree* const tree : stmt->TreeList())
+                {
+                    if (tree == useLst->tslTree)
+                    {
+                        found = true;
+                        break;
+                    }
+                    if (tree->OperIsLocalStore() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
+                    {
+                        st = (tree == store) ? ST_STORE : ST_OTHER;
+                    }
+                }
+                if (found)
+                {
+                    break;
+                }
+            }
+        }
+        if (st != ST_STORE)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
+// PerformCSE: Store definitions in a CSE temp or reusable destination local,
+//   replace uses with local reads, and update SSA where possible.
+//
+// Arguments:
+//   successfulCandidate - the candidate to transform
 //
 void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 {
@@ -5090,20 +5245,78 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
 #endif // DEBUG
 
-    //  Allocate a CSE temp
-    //
-    unsigned  cseLclVarNum = m_compiler->lvaGrabTemp(false DEBUGARG(grabTempMessage));
-    var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
-
-    LclVarDsc* const lclDsc = m_compiler->lvaGetDesc(cseLclVarNum);
-    if (cseLclVarTyp == TYP_STRUCT)
+    // Reuse the destination of a single CSE definition to avoid a temp and copy.
+    UseDefLocation reuseDef;
+    if ((dsc->csdDefCount == 1) && !successfulCandidate->IsSharedConst())
     {
-        m_compiler->lvaSetStruct(cseLclVarNum, successfulCandidate->Expr()->GetLayout(m_compiler), false);
+        for (treeStmtLst* defLst = &dsc->csdTreeList; defLst != nullptr; defLst = defLst->tslNext)
+        {
+            GenTree* const defExp = defLst->tslTree;
+            if (!IS_CSE_DEF(defExp->gtCSEnum))
+            {
+                continue;
+            }
+
+            GenTree* const parent = m_compiler->gtFindLink(defLst->tslStmt, defExp).parent;
+            if ((parent != nullptr) && parent->OperIs(GT_STORE_LCL_VAR) && (parent->AsLclVar()->Data() == defExp))
+            {
+                GenTreeLclVar* const store  = parent->AsLclVar();
+                LclVarDsc* const     varDsc = m_compiler->lvaGetDesc(store);
+
+                // Fast path: no other definition node. Implicit entry values cannot
+                // reach uses dominated by this store.
+                bool onlyDef = store->HasSsaName();
+                for (unsigned i = 0; onlyDef && (i < varDsc->lvPerSsaData.GetCount()); i++)
+                {
+                    GenTreeLclVarCommon* const defNode = varDsc->lvPerSsaData.GetSsaDefByIndex(i)->GetDefNode();
+                    onlyDef                            = (defNode == nullptr) || (defNode == store);
+                }
+
+                if (!varDsc->IsAddressExposed() && !varDsc->lvDoNotEnregister && !varDsc->lvIsCSE &&
+                    !varTypeIsStruct(varDsc) && (varDsc->TypeGet() == genActualType(defExp->TypeGet())))
+                {
+                    bool eligible = onlyDef;
+                    if (!eligible && store->HasSsaName())
+                    {
+                        // Prove that no competing definition reaches a CSE use.
+                        eligible = optCSEStoreIsMostRecentDef(m_compiler, dsc, store);
+                        if (eligible)
+                        {
+                            JITDUMP("V%02u has other defs, but none reaches a " FMT_CSE " use\n", store->GetLclNum(),
+                                    dsc->csdIndex);
+                        }
+                    }
+                    if (eligible)
+                    {
+                        reuseDef = UseDefLocation(defLst->tslBlock, defLst->tslStmt, store);
+                    }
+                }
+            }
+            break;
+        }
     }
-    lclDsc->lvType  = cseLclVarTyp;
+
+    unsigned         cseLclVarNum = (reuseDef.Tree != nullptr) ? reuseDef.Tree->GetLclNum()
+                                                               : m_compiler->lvaGrabTemp(false DEBUGARG(grabTempMessage));
+    var_types        cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
+    LclVarDsc* const lclDsc       = m_compiler->lvaGetDesc(cseLclVarNum);
+
+    if (reuseDef.Tree != nullptr)
+    {
+        JITDUMP("Using V%02u, which the definition is stored to, as the temp for " FMT_CSE "\n", cseLclVarNum,
+                dsc->csdIndex);
+    }
+    else
+    {
+        if (cseLclVarTyp == TYP_STRUCT)
+        {
+            m_compiler->lvaSetStruct(cseLclVarNum, successfulCandidate->Expr()->GetLayout(m_compiler), false);
+        }
+        lclDsc->lvType = cseLclVarTyp;
+    }
     lclDsc->lvIsCSE = true;
 
-    // Record that we created a new LclVar for use as a CSE temp
+    // Record the CSE temp
     //
     m_addCSEcount++;
     m_compiler->optCSEcount++;
@@ -5263,6 +5476,14 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         }
 #endif // DEBUG
 
+        if (reuseDef.Tree != nullptr)
+        {
+            // The store that consumes the value is the definition.
+            reuseDef.Tree->gtCSEnum = exp->gtCSEnum;
+            exp->gtCSEnum           = NO_CSE;
+            continue;
+        }
+
         GenTree* val = exp;
         if (isSharedConst)
         {
@@ -5339,7 +5560,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         defUses.Emplace(blk, stmt, cseLclVar);
     }
 
-    bool insertIntoSsa = ssaBuilder.FinalizeDefs();
+    IncrementalLiveInBuilder liveInBuilder(m_compiler);
+    bool                     insertIntoSsa = (reuseDef.Tree == nullptr) && ssaBuilder.FinalizeDefs();
 
     // Start out by inserting all the uses we created as part of defs into SSA.
     if (insertIntoSsa)
@@ -5347,7 +5569,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         JITDUMP("Inserting each use created for defs into SSA\n");
         for (UseDefLocation& defUse : defUses.BottomUpOrder())
         {
-            InsertUseIntoSsa(ssaBuilder, defUse);
+            ssaBuilder.InsertUse(defUse);
+            AdoptReachingDefVN(defUse.Tree);
         }
     }
 
@@ -5440,10 +5663,24 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
         ReplaceCSENode(stmt, exp, cse);
 
-        if (insertIntoSsa)
+        if (insertIntoSsa || (reuseDef.Tree != nullptr))
         {
-            ValueNumPair oldLclVNP = cseLclVar->gtVNPair;
-            InsertUseIntoSsa(ssaBuilder, UseDefLocation(blk, stmt, cseLclVar));
+            ValueNumPair   oldLclVNP = cseLclVar->gtVNPair;
+            UseDefLocation useLoc(blk, stmt, cseLclVar);
+            if (reuseDef.Tree != nullptr)
+            {
+                unsigned ssaNum = reuseDef.Tree->GetSsaNum();
+                JITDUMP("Inserting use [%06u] of V%02u d:%u into SSA\n", Compiler::dspTreeID(cseLclVar), cseLclVarNum,
+                        ssaNum);
+                cseLclVar->SetSsaNum(ssaNum);
+                liveInBuilder.MarkLiveInBackwards(cseLclVarNum, useLoc, reuseDef);
+                m_compiler->lvaGetDesc(cseLclVar)->GetPerSsaData(ssaNum)->AddUse(blk);
+            }
+            else
+            {
+                ssaBuilder.InsertUse(useLoc);
+            }
+            AdoptReachingDefVN(cseLclVar);
 
             // Update conservative VN of comma node in case we changed
             // conservative VNs due to a new reaching def
@@ -5508,19 +5745,14 @@ void CSE_HeuristicCommon::ReplaceCSENode(Statement* stmt, GenTree* exp, GenTree*
 }
 
 //------------------------------------------------------------------------
-// InsertUseIntoSsa:
-//   Insert a use into SSA form, updating its conservative VN to match its
-//   reaching definition in the process.
+// AdoptReachingDefVN:
+//   Give a CSE temp use the value number of its reaching definition.
 //
 // Parameters:
-//   ssaBuilder - Incremental SSA builder that has already had definitions inserted
-//   useDefLoc  - Location of the new use
+//   lcl - The use, already in SSA
 //
-void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, const UseDefLocation& useDefLoc)
+void CSE_HeuristicCommon::AdoptReachingDefVN(GenTreeLclVar* lcl)
 {
-    ssaBuilder.InsertUse(useDefLoc);
-
-    GenTreeLclVar* lcl = useDefLoc.Tree;
     assert(lcl->HasSsaName());
 
     LclVarDsc* lclDsc = m_compiler->lvaGetDesc(lcl);
