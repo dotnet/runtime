@@ -9,7 +9,7 @@ WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and
 Copyright (c) .NET Foundation. All rights reserved.
 ***********************************************************************************************
 -->
-<Project ToolsVersion="14.0">
+<Project ToolsVersion="14.0" TreatAsLocalProperty="_WasmFilesystemUsageDetected">
 
   <PropertyGroup>
     <_UseBlazorDevServer>$(RunArguments.Contains('blazor-devserver.dll').ToString().ToLower())</_UseBlazorDevServer>    
@@ -257,6 +257,11 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="ResolveWasmOutputs" DependsOnTargets="$(ResolveWasmOutputsDependsOn);_ResolveWasmOutputs" />
 
   <Target Name="ComputeWasmVfs">
+    <PropertyGroup>
+      <_WasmFilesystemUsageDetected Condition="'@(WasmFilesToIncludeInFileSystem)' != ''">true</_WasmFilesystemUsageDetected>
+      <!-- TODO-WASM: Default to false once IL trimming provides better filesystem usage detection. -->
+      <_WasmFilesystemUsageDetected Condition="'$(_WasmFilesystemUsageDetected)' == ''">true</_WasmFilesystemUsageDetected>
+    </PropertyGroup>
     <ItemGroup>
       <WasmFilesToIncludeInFileSystem Condition="'%(WasmFilesToIncludeInFileSystem.TargetPath)' == ''">
         <TargetPath>%(WasmFilesToIncludeInFileSystem.Identity)</TargetPath>
@@ -763,7 +768,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-build.stamp"
-      Lines="$(_WasmBootJsonBuildStampContent)"
+      Lines="$(_WasmBootJsonBuildStampContent)|$(_WasmFilesystemUsageDetected)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -795,6 +800,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       MergeWith="@(_WasmDotnetJsForBuild)"
       OutputPath="$(_WasmBuildBootJsonPath)"
       ConfigurationFiles="@(_WasmJsConfigStaticWebAsset)"
+      FilesystemUsageDetected="$(_WasmFilesystemUsageDetected)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
@@ -1339,11 +1345,14 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmPublishBootJsonPropertyStamp"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
     <PropertyGroup>
+      <_WasmFilesystemUsageDetected Condition="'@(WasmFilesToIncludeInFileSystem)' != ''">true</_WasmFilesystemUsageDetected>
+      <!-- TODO-WASM: Default to false once IL trimming provides better filesystem usage detection. -->
+      <_WasmFilesystemUsageDetected Condition="'$(_WasmFilesystemUsageDetected)' == ''">true</_WasmFilesystemUsageDetected>
       <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(PublishReadyToRunComposite)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonPublishStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
-      Lines="$(_WasmBootJsonPublishStampContent)"
+      Lines="$(_WasmBootJsonPublishStampContent)|$(_WasmFilesystemUsageDetected)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -1370,6 +1379,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       MergeWith="@(_WasmDotnetJsForPublish)"
       OutputPath="$([MSBuild]::NormalizePath($(IntermediateOutputPath), $(_WasmPublishBootConfigFileName)))"
       ConfigurationFiles="@(_WasmPublishConfigFile)"
+      FilesystemUsageDetected="$(_WasmFilesystemUsageDetected)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
