@@ -1846,11 +1846,10 @@ void AsyncTransformation::BuildContinuation(BasicBlock*                block,
                                             bool                       needsKeepAlive,
                                             ContinuationLayoutBuilder* layoutBuilder)
 {
-    // Calls to the always-suspending helpers never resume a callee frame that writes the
-    // result; instead the runtime stores the awaited result into the continuation and
-    // tolerates it having no result storage. So when the result is unused, skip it.
-    if ((call->gtReturnType != TYP_VOID) &&
-        ((callDefInfo.DefinitionNode != nullptr) || !call->GetAsyncInfo().AlwaysSuspends))
+    // When the result is unused there is no need for result storage in the continuation.
+    // Everything that propagates a result into a continuation (the resumption stubs and the
+    // runtime helpers that complete awaits) tolerates the continuation having no result storage.
+    if ((call->gtReturnType != TYP_VOID) && (callDefInfo.DefinitionNode != nullptr))
     {
         ClassLayout* layout =
             call->gtReturnType == TYP_STRUCT ? m_compiler->typGetObjLayout(call->gtRetClsHnd) : nullptr;

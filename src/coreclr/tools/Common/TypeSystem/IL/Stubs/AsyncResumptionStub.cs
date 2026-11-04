@@ -117,6 +117,11 @@ namespace ILCompiler
                 var doneResult = ilEmitter.NewCodeLabel();
                 ilStream.EmitLdLoc(newContinuationLocal);
                 ilStream.Emit(ILOpcode.brtrue, doneResult);
+
+                // The awaiting continuation has no result storage when the caller ignores the result.
+                ilStream.EmitLdArg(1);
+                ilStream.Emit(ILOpcode.brfalse, doneResult);
+
                 ilStream.EmitLdArg(1);
                 ilStream.EmitLdLoc(resultLocal);
                 ilStream.Emit(ILOpcode.stobj, ilEmitter.NewToken(_targetMethod.Signature.ReturnType));
