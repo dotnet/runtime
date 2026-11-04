@@ -1501,7 +1501,9 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     pEntryPoint = pMD->GetTemporaryEntryPoint();
     PortableEntryPoint::SetActualCode(pEntryPoint, actualEntryPoint);
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(virtualEntrypointIP, pMD);
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
     pConfig->SetAuxiliaryMethodStateRequest(AuxiliaryMethodStateRequest::Resolved(AuxiliaryMethodState::Activated()));
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 #else
 #error "ReadyToRun and PortableEntryPoints are not currently compatible on non-WASM targets, as the R2R image layout would need to be changed to support this scenario."
 #endif
