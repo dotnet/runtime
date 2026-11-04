@@ -490,7 +490,8 @@ class AsyncTransformation
 
     GenTreeCall* CreateAllocContinuationCall(bool                      hasKeepAlive,
                                              GenTree*                  prevContinuation,
-                                             const ContinuationLayout& layout);
+                                             const ContinuationLayout& layout,
+                                             bool*                     linksPrevContinuation);
 
     void                    FillInDataOnSuspension(const ContinuationLayout&        layout,
                                                    const ContinuationLayoutBuilder& subLayout,

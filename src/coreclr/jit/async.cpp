@@ -2778,8 +2778,9 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     // Allocate continuation
     GenTree* returnedContinuation = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
 
-    GenTreeCall* allocContinuation =
-        CreateAllocContinuationCall(subLayout.NeedsKeepAlive(), returnedContinuation, layout);
+    bool         linksPrevContinuation;
+    GenTreeCall* allocContinuation = CreateAllocContinuationCall(subLayout.NeedsKeepAlive(), returnedContinuation,
+                                                                 layout, &linksPrevContinuation);
 
     m_compiler->compCurBB = suspendBB;
     m_compiler->fgMorphTree(allocContinuation);
@@ -2789,6 +2790,16 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     unsigned newContinuationVar   = GetNewContinuationVar();
     GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(newContinuationVar, allocContinuation);
     LIR::AsRange(suspendBB).InsertAtEnd(storeNewContinuation);
+
+    if (!linksPrevContinuation)
+    {
+        // The allocation helper did not link the new continuation into the chain; store 'Next' here.
+        unsigned nextOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationNextFldHnd);
+        GenTree* newCont    = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
+        GenTree* prevCont   = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
+        GenTree* storeNext  = StoreAtOffset(prevCont, nextOffset, newCont, TYP_REF);
+        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeNext));
+    }
 
     SaveSet tailSaveSet = SaveSet::All;
     if (resumeReachable)
@@ -3016,18 +3027,23 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
 //   Create a call to the JIT helper that allocates a continuation.
 //
 // Parameters:
-//   hasKeepAlive     - Whether the continuation needs a KeepAlive field.
-//   prevContinuation - IR node that has the value of the previous continuation object.
-//   layout           - Layout information for the continuation.
+//   hasKeepAlive          - Whether the continuation needs a KeepAlive field.
+//   prevContinuation      - IR node that has the value of the previous continuation object.
+//   layout                - Layout information for the continuation.
+//   linksPrevContinuation - [out] Whether the returned call stores the new continuation into
+//                           'prevContinuation.Next'. If false, the caller must do so and
+//                           'prevContinuation' is not used.
 //
 // Returns:
 //   IR node representing the allocation.
 //
 GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(bool                      hasKeepAlive,
                                                               GenTree*                  prevContinuation,
-                                                              const ContinuationLayout& layout)
+                                                              const ContinuationLayout& layout,
+                                                              bool*                     linksPrevContinuation)
 {
     GenTree* contClassHndNode = m_compiler->gtNewIconEmbClsHndNode(layout.ClassHnd);
+    *linksPrevContinuation    = true;
 
     // If we need to keep the loader alive, use a different helper.
     if (hasKeepAlive)
@@ -3043,6 +3059,16 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(bool              
                 : CORINFO_HELP_ALLOC_CONTINUATION_METHOD;
         return m_compiler->gtNewHelperCallNode(helperNum, TYP_REF, prevContinuation, contClassHndNode,
                                                keepAliveOffsetNode, handleArg);
+    }
+
+    if (!m_compiler->IsAot())
+    {
+        // Use the regular allocation helper directly rather than going through the managed
+        // AllocContinuation helper; the caller links the continuation into the chain.
+        bool            helperHasSideEffects;
+        CorInfoHelpFunc newHelper = m_compiler->info.compCompHnd->getNewHelper(layout.ClassHnd, &helperHasSideEffects);
+        *linksPrevContinuation    = false;
+        return m_compiler->gtNewHelperCallNode(newHelper, TYP_REF, contClassHndNode);
     }
 
     return m_compiler->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION, TYP_REF, prevContinuation,
