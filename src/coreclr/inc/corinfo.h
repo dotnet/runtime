@@ -1818,7 +1818,13 @@ enum CorInfoContinuationFlags
     // async callee's result. We need to represent the offset to each of
     // these, so we allocate the rest of the bits for this.
     CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 11,
-    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 21,
+    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 20,
+
+    // If this bit is set, the suspending frame skipped capturing the
+    // ExecutionContext (and continuation context, if it has an index) when it
+    // had already been resumed by the dispatcher. The dispatcher that resumed
+    // it must then do the capture when the frame returns this continuation.
+    CORINFO_CONTINUATION_FINISH_SUSPENSION_IN_DISPATCHER = 1u << 31,
 };
 
 struct CORINFO_ASYNC_INFO
