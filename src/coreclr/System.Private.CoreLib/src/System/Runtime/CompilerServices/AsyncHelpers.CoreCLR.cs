@@ -448,7 +448,7 @@ namespace System.Runtime.CompilerServices
         // ConfigureAwaitOptions.SuppressThrowing, such that a failed awaited task isn't propagated.
         private sealed class SuppressThrowingAwaitContext
         {
-            private static readonly SuppressThrowingAwaitContext s_transparent = new(null);
+            public static readonly SuppressThrowingAwaitContext Transparent = new(null);
             public static readonly SuppressThrowingAwaitContext ThreadPool = new(TaskScheduler.Default);
 
             public readonly object? EncodedContext;
@@ -456,7 +456,7 @@ namespace System.Runtime.CompilerServices
             private SuppressThrowingAwaitContext(object? encodedContext) => EncodedContext = encodedContext;
 
             public static SuppressThrowingAwaitContext Create(object? encodedContext) =>
-                encodedContext is null ? s_transparent :
+                encodedContext is null ? Transparent :
                 encodedContext == TaskScheduler.Default ? ThreadPool :
                 new SuppressThrowingAwaitContext(encodedContext);
         }
@@ -781,8 +781,16 @@ namespace System.Runtime.CompilerServices
             {
                 // Fast path for the common case of continuing on the thread pool (including a successful
                 // SuppressThrowing await) from a thread pool thread that's not running a Task and has no
-                // SynchronizationContext, in which case the continuation can be invoked inline.
-                if (canInline &&
+                // SynchronizationContext, in which case the continuation can be invoked inline. A successful
+                // SuppressThrowing await without a context needs nothing at all.
+                if (continuationContext == SuppressThrowingAwaitContext.Transparent)
+                {
+                    if (Unsafe.As<Task>(m_action!).IsCompletedSuccessfully)
+                    {
+                        return false;
+                    }
+                }
+                else if (canInline &&
                     (continuationContext == TaskScheduler.Default ||
                      (continuationContext == SuppressThrowingAwaitContext.ThreadPool && Unsafe.As<Task>(m_action!).IsCompletedSuccessfully)) &&
                     Thread.CurrentThread._synchronizationContext is null &&
@@ -1048,7 +1056,20 @@ namespace System.Runtime.CompilerServices
                             // continuation when it resumes.
                             Debug.Assert(notifier is Task);
                             Task awaitedTask = Unsafe.As<Task>(notifier);
-                            m_action = stackState->AwaitedContinuationContext;
+                            object? awaitedContinuationContext = stackState->AwaitedContinuationContext;
+
+                            // Continuing on the thread pool needs no context object, so when the awaiting frame doesn't
+                            // already specify where to continue, move that onto its continuation, as for an await the JIT
+                            // recognized. The dispatcher then checks it on the thread it's already running on, rather than
+                            // the awaited task's completion separately checking it beforehand.
+                            if ((awaitedContinuationContext == TaskScheduler.Default || awaitedContinuationContext == SuppressThrowingAwaitContext.ThreadPool) &&
+                                (headContinuation.Flags & (ContinuationFlags.AllContinuationFlags | ContinuationFlags.ValueTaskAdaptedToTask)) == 0)
+                            {
+                                headContinuation.Flags |= ContinuationFlags.ContinueOnThreadPool;
+                                awaitedContinuationContext = awaitedContinuationContext == TaskScheduler.Default ? null : SuppressThrowingAwaitContext.Transparent;
+                            }
+
+                            m_action = awaitedContinuationContext;
                             if (!awaitedTask.AddTaskContinuation(this, addBeforeOthers: false))
                             {
                                 ExecuteRuntimeAsyncAwaitContinuation(awaitedTask, canInline: false);
