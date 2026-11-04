@@ -36,6 +36,25 @@ This command will:
 
 **Note:** The first build may take longer as it downloads and sets up the Emscripten toolchain.
 
+### CoreLib ReadyToRun optimization data
+
+Browser/wasm builds restore `optimization.browser-wasm.MIBC.Runtime` using the version tracked
+in `eng/Version.Details.props`. The profile is staged under `artifacts/mibc/browser/wasm/data/`
+instead of using the desktop-profile fallback.
+
+The existing CoreLib build merges the staged profiles into
+`artifacts/bin/coreclr/browser.wasm.<Configuration>/StandardOptimizationData.mibc`.
+Crossgen2 consumes the merged profile when `EnableNgenOptimization=true`, which is the default
+for Release and Checked builds. To exercise this path in a Debug build, pass
+`/p:EnableNgenOptimization=true`.
+
+Package selection does not depend on files already existing in the local NuGet cache, so a
+clean restore also downloads the browser profile. Missing optimization data fails the build
+with the existing `Failed to restore Mibc optimization data` error.
+
+This configures the runtime's prebuilt CoreLib image. It does not enable partial compilation;
+application publishing uses `PublishReadyToRunPgoFiles` separately.
+
 ## Testing the Runtime
 
 ### Browser Testing (Recommended)
