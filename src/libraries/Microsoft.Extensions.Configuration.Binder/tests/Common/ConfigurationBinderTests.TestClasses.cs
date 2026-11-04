@@ -36,6 +36,19 @@ namespace Microsoft.Extensions
             }
         }
 
+        public class ClassWithIgnoredVirtualCollection
+        {
+            [ConfigurationIgnore]
+            public virtual List<string> Values { get; } = new() { "Default" };
+
+            public string? Other { get; set; }
+        }
+
+        public class ClassWithIgnoredCollectionGetterOverride : ClassWithIgnoredVirtualCollection
+        {
+            public override List<string> Values => base.Values;
+        }
+
         public class GenericOptions<T>
         {
             public T Value { get; set; }

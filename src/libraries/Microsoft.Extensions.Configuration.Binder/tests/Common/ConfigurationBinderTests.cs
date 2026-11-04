@@ -235,6 +235,71 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("Default", options.IgnoredProperty);
         }
 
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void CanIgnoreInheritedAttributeOnCollectionGetterOverride(bool create, bool errorOnUnknownConfiguration)
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    [$"{nameof(ClassWithIgnoredVirtualCollection.Values)}:0"] = "Configured",
+                    [nameof(ClassWithIgnoredVirtualCollection.Other)] = "Configured"
+                })
+                .Build();
+
+            ClassWithIgnoredCollectionGetterOverride options;
+            if (create)
+            {
+                options = configuration.Get<ClassWithIgnoredCollectionGetterOverride>(
+                    binderOptions => binderOptions.ErrorOnUnknownConfiguration = errorOnUnknownConfiguration)!;
+            }
+            else
+            {
+                options = new ClassWithIgnoredCollectionGetterOverride();
+                configuration.Bind(options,
+                    binderOptions => binderOptions.ErrorOnUnknownConfiguration = errorOnUnknownConfiguration);
+            }
+
+            Assert.Equal(new[] { "Default" }, options.Values);
+            Assert.Equal("Configured", options.Other);
+        }
+
+#if NET
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void IgnoredAttributeCheckDoesNotAllocateForNonOverriddenProperty(bool virtualProperty)
+        {
+            PropertyInfo property = virtualProperty
+                ? typeof(ComplexOptions).GetProperty(nameof(ComplexOptions.Virtual))!
+                : typeof(NestedOptions).GetProperty(nameof(NestedOptions.Integer))!;
+            Func<PropertyInfo, bool> isIgnored = typeof(ConfigurationBinder)
+                .GetMethod("IsIgnoredProperty", BindingFlags.NonPublic | BindingFlags.Static)!
+                .CreateDelegate<Func<PropertyInfo, bool>>();
+
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.False(isIgnored(property));
+            }
+
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            bool ignored = false;
+            for (int i = 0; i < 1000; i++)
+            {
+                ignored |= isIgnored(property);
+            }
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+            Assert.False(ignored);
+            Assert.Equal(0, allocated);
+        }
+#endif
+#endif
+
         [Fact]
         public void EmptyStringIsNullable()
         {
