@@ -1,0 +1,4 @@
+<!-- This file blocks inheritance from parent Directory.Build.targets files -->
+<Project>
+  <!-- Intentionally empty to isolate this project from the runtime repo's build configuration -->
+</Project>
