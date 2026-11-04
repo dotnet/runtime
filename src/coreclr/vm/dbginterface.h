@@ -18,6 +18,7 @@ typedef void (*FAVORCALLBACK)(void *);
 
 class DebuggerSteppingInfo;
 class COR_ILMETHOD_DECODER;
+class DebuggerEval;
 
 //
 // The purpose of this object is to serve as an entry point to the
@@ -366,6 +367,17 @@ public:
     virtual void ProcessAnyPendingEvals(Thread* pThread) = 0;
 
     virtual void SendCreateThreadAtInterpreterEntry(Thread* pRuntimeThread) = 0;
+
+    virtual bool ReadFuncEvalTypeHandles(
+        DebuggerEval* pDE, TypeHandle* pTypes, uint32_t count) = 0;
+    virtual void* AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType) = 0;
+    virtual void ProtectFuncEvalByRefResult(DebuggerEval* pDE, TypeHandle resultType) = 0;
+    virtual TypeHandle GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index) = 0;
+    virtual BOOL ReadFuncEvalPrimitiveRegister(
+        DebuggerEval* pDE, UINT32 index, UINT64* pValue) = 0;
+    virtual void WriteFuncEvalRegister(
+        DebuggerEval* pDE, UINT32 index, UINT64 value) = 0;
+    virtual void SetFuncEvalResultType(DebuggerEval* pDE, TypeHandle resultType) = 0;
 
 #endif //DACCESS_COMPILE
 };

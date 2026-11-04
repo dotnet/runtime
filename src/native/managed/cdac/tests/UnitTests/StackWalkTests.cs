@@ -2591,6 +2591,7 @@ public unsafe class StackWalkTests
         int icfSize = 0;
         ulong r2rFrame = 0;
         TargetPointer runtimeFunctionAddress = TargetPointer.Null;
+        int unwindInfoLookups = 0;
         TestPlaceholderTarget target = CreateTarget(
             wasmArch,
             threadBuilder => thread = threadBuilder.AddThread(1, 1234),
@@ -2630,7 +2631,11 @@ public unsafe class StackWalkTests
             executionManager: CreateInterpreterExecutionManager(
                 [],
                 managedIps: [R2RIp],
-                unwindInfo: () => (runtimeFunctionAddress, TargetPointer.Null)));
+                unwindInfo: () =>
+                {
+                    unwindInfoLookups++;
+                    return (runtimeFunctionAddress, TargetPointer.Null);
+                }));
 
         IStackWalk stackWalk = target.Contracts.StackWalk;
         ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
@@ -2643,6 +2648,7 @@ public unsafe class StackWalkTests
 
         Assert.Equal([(R2RIp, r2rFrame)], frameless);
         Assert.True(walked.Length <= 3, $"Walk did not terminate: {walked.Length} frames");
+        Assert.Equal(2, unwindInfoLookups);
     }
 
     private sealed class InterpreterExecutionManager : IExecutionManager

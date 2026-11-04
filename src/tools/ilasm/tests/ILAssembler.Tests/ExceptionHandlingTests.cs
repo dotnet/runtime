@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class ExceptionHandlingTests
     {
@@ -406,8 +406,8 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var sourceText = new ILAssembler.SourceText(source, "test.il");
-            var compiler = new ILAssembler.DocumentCompiler();
+            var sourceText = new Microsoft.DotNet.ILAssembler.SourceText(source, "test.il");
+            var compiler = new Microsoft.DotNet.ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
 
             foreach (var d in diagnostics)
@@ -456,8 +456,8 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var sourceText = new ILAssembler.SourceText(source, "test.il");
-            var compiler = new ILAssembler.DocumentCompiler();
+            var sourceText = new Microsoft.DotNet.ILAssembler.SourceText(source, "test.il");
+            var compiler = new Microsoft.DotNet.ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
 
             foreach (var d in diagnostics)

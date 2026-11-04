@@ -367,6 +367,7 @@
     <MetadataCommonPath>$(CompilerCommonPath)\Internal\Metadata\NativeFormat</MetadataCommonPath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MetadataCommonPath)\BlobReader.cs" />
     <Compile Include="$(MetadataCommonPath)\NativeFormatReaderCommonGen.cs" />
     <Compile Include="$(MetadataCommonPath)\MdBinaryReader.cs" />
     <Compile Include="$(MetadataCommonPath)\MdBinaryReaderGen.cs" />
@@ -510,11 +511,8 @@
     <Compile Include="$(RuntimeBasePath)System\Runtime\MethodTable.Runtime.cs">
       <Link>Runtime.Base\src\System\Runtime\MethodTable.Runtime.cs</Link>
     </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\ExceptionHandling.cs" Condition="'$(TargetsWasm)' != 'true'">
+    <Compile Include="$(RuntimeBasePath)System\Runtime\ExceptionHandling.cs">
       <Link>Runtime.Base\src\System\Runtime\ExceptionHandling.cs</Link>
-    </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\ExceptionHandling.wasm.cs" Condition="'$(TargetsWasm)' == 'true'">
-      <Link>Runtime.Base\src\System\Runtime\ExceptionHandling.wasm.cs</Link>
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\InternalCalls.cs">
       <Link>Runtime.Base\src\System\Runtime\InternalCalls.cs</Link>
@@ -522,7 +520,7 @@
     <Compile Include="$(RuntimeBasePath)System\Runtime\RuntimeExports.cs">
       <Link>Runtime.Base\src\System\Runtime\RuntimeExports.cs</Link>
     </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\StackFrameIterator.cs" Condition="'$(TargetsWasm)' != 'true'">
+    <Compile Include="$(RuntimeBasePath)System\Runtime\StackFrameIterator.cs">
       <Link>Runtime.Base\src\System\Runtime\StackFrameIterator.cs</Link>
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\TypeCast.cs">
@@ -534,6 +532,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true' and '$(TargetsWasm)' != 'true'">
     <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Full\AsmOffsets.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true' and '$(TargetsWasm)' == 'true'">
+    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Portable\AsmOffsetsPortable.cs" />
   </ItemGroup>
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
