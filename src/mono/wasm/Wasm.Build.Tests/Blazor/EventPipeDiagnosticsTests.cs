@@ -16,6 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.NET.Sdk.WebAssembly;
 using Microsoft.NET.WebAssembly.Webcil;
 using Microsoft.Playwright;
 using Xunit;
@@ -211,7 +212,20 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             UseCache: false, AssertAppBundle: false,
             ExtraMSBuildArgs: $"{buildArgs} -p:WasmBuildTestCompilerLog=pgo-instrumented.jit.txt"));
         SaveCompilerLog(info, "pgo-instrumented.jit.txt");
-        Dictionary<string, Guid> producerMvids = GetPublishedModuleMvids(config);
+        string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
+        AssetsData producerAssets = (AssetsData)_provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).resources;
+        string unlistedArtifact = Path.Combine(frameworkDir, "unlisted-compiler-artifact.wasm");
+        File.Copy(Path.Combine(frameworkDir, producerAssets.assembly[0].name), unlistedArtifact);
+        Dictionary<string, Guid> producerMvids;
+        try
+        {
+            // Unlisted compiler artifacts must not become IL-reference or MVID requirements.
+            producerMvids = GetPublishedModuleMvids(config);
+        }
+        finally
+        {
+            File.Delete(unlistedArtifact);
+        }
 
         // Debug producers can legitimately use MinOpts; Release must demonstrate actual inlinees,
         // not just calls to methods carrying AggressiveInlining.
@@ -373,10 +387,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     private Dictionary<string, Guid> GetPublishedModuleMvids(Configuration config)
     {
         var modules = new Dictionary<string, Guid>(StringComparer.Ordinal);
-        foreach (string path in Directory.EnumerateFiles(GetBlazorBinFrameworkDir(config, forPublish: true), "*.wasm")
-            .Where(path => !Path.GetFileName(path).StartsWith("dotnet", StringComparison.Ordinal)))
+        string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
+        AssetsData assets = (AssetsData)_provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).resources;
+        // Composite owners and other compiler artifacts are not original managed assemblies.
+        foreach (WebcilAsset asset in assets.coreAssembly.Concat(assets.assembly).Where(asset => asset.isCompositeImage != true))
         {
-            using var stream = File.OpenRead(path);
+            using var stream = File.OpenRead(Path.Combine(frameworkDir, asset.name));
             using var reader = new WebcilReader(stream);
             MetadataReader metadata = reader.GetMetadataReader();
             string name = metadata.GetString(metadata.GetAssemblyDefinition().Name);
