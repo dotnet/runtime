@@ -10,6 +10,417 @@ import { readFile } from "node:fs/promises";
 import ts from "typescript";
 import { createWorkerModuleLoader, seedNativeRequestIds } from "./worker-transport-worker.mjs";
 
+test("worker boot metadata is cloneable while providers and module namespaces remain realm-owned", async () => {
+    const bytes = Promise.resolve(new ArrayBuffer(16));
+    const response = Promise.resolve(new Response("asset"));
+    const uiModule = { dotnetInitializeModule() {} };
+    const workerModule = { dotnetInitializeModule() {} };
+    const asset = { name: "test.dll", virtualPath: "test.dll", buffer: bytes, pendingDownload: { response } };
+    const source = {
+        runInWorker: true, environmentVariables: { TEST: "worker" },
+        resources: {
+            coreAssembly: [asset], assembly: [], wasmNative: [], jsModuleNative: [],
+            jsModuleRuntime: [{ name: "runtime.js", moduleExports: uiModule }],
+            modulesAfterConfigLoaded: [{ moduleExports: uiModule }],
+            satelliteResources: { fr: [{ ...asset, name: "satellite.dll" }] },
+        },
+    };
+    const load = createWorkerModuleLoader(createContext({}), {});
+    const module = await load("./worker-config");
+    await module.evaluate();
+    const boot = module.namespace.createWorkerBootConfig(source);
+    const wire = structuredClone(boot.config);
+    assert.equal(wire.resources.coreAssembly[0].buffer, undefined);
+    assert.equal(wire.resources.coreAssembly[0].pendingDownload, undefined);
+    assert.equal(wire.resources.jsModuleRuntime[0].moduleExports, undefined);
+    assert.equal(wire.resources.modulesAfterConfigLoaded.length, 0);
+    assert.equal(boot.assets.get(wire.resources.coreAssembly[0].workerAssetId), asset);
+    assert.equal(asset.buffer, bytes);
+    assert.equal(asset.pendingDownload.response, response);
+    module.namespace.restoreWorkerModules(wire, { resources: { jsModuleRuntime: [{ name: "runtime.js", moduleExports: workerModule }] } });
+    assert.equal(wire.resources.jsModuleRuntime[0].moduleExports, workerModule);
+    assert.equal(source.resources.jsModuleRuntime[0].moduleExports, uiModule);
+});
+
+test("worker errors preserve built-in type, stack, cause, status and aggregate members", async () => {
+    const load = createWorkerModuleLoader(createContext({ structuredClone }), {});
+    const module = await load("./worker-errors");
+    await module.evaluate();
+    const error = new TypeError("native error", { cause: new RangeError("native cause") });
+    error.stack = "native worker stack";
+    error.status = 42;
+    const received = module.namespace.deserializeWorkerError(structuredClone(module.namespace.serializeWorkerError(error)));
+    assert.equal(received.name, "TypeError");
+    assert.equal(received.message, "native error");
+    assert.equal(received.stack, "native worker stack");
+    assert.equal(received.cause.name, "RangeError");
+    assert.equal(received.cause.message, "native cause");
+    assert.equal(received.status, 42);
+    const aggregateModule = await createWorkerModuleLoader(createContext({ Error, TypeError, RangeError, AggregateError, structuredClone }), {})("./worker-errors");
+    await aggregateModule.evaluate();
+    const aggregate = new AggregateError([error], "aggregate");
+    const roundtrip = aggregateModule.namespace.deserializeWorkerError(aggregateModule.namespace.serializeWorkerError(aggregate));
+    assert.equal(roundtrip.errors[0].message, "native error");
+    const repeated = new AggregateError([error, error], "repeated");
+    const repeatedResult = module.namespace.deserializeWorkerError(module.namespace.serializeWorkerError(repeated));
+    assert.equal(repeatedResult.errors[0].message, "native error");
+    assert.equal(repeatedResult.errors[1].message, "native error");
+    const unsupported = new TypeError("original error", { cause: () => {} });
+    const unsupportedResult = module.namespace.deserializeWorkerError(module.namespace.serializeWorkerError(unsupported));
+    assert.equal(unsupportedResult.name, "TypeError");
+    assert.equal(unsupportedResult.message, "original error");
+    assert.equal(unsupportedResult.cause.name, "DataCloneError");
+    const bigint = new Error("bigint", { cause: 42n });
+    const clone = module.namespace.deserializeWorkerError(module.namespace.serializeWorkerError(bigint));
+    assert.equal(clone.cause, 42n);
+    const jsonError = module.namespace.deserializeWorkerError(JSON.parse(JSON.stringify(module.namespace.serializeWorkerError(bigint, true))));
+    assert.equal(jsonError.cause.name, "DataCloneError");
+});
+
+test("all diagnostic collectors transfer aliased byte views and preserve structured failures", async () => {
+    const load = createWorkerModuleLoader(createContext({ MessageChannel, ArrayBuffer, Uint8Array, structuredClone }), {});
+    const module = await load("./worker-local");
+    await module.evaluate();
+    const operations = ["collectMetrics", "collectGcDump", "collectPgoTrace", "collectCpuSamples"];
+    let backing, options;
+    const local = Object.fromEntries(operations.map(name => [name, async value => {
+        options = value;
+        backing = new ArrayBuffer(16);
+        new Uint8Array(backing).set([1, 2, 3, 4], 3);
+        return [new Uint8Array(backing, 3, 2), new Uint8Array(backing, 5, 2)];
+    }]));
+    local.loadLazyAssembly = async () => {
+        throw new TypeError("host failure", { cause: new RangeError("host cause") });
+    };
+    const worker = { postMessage: request => {
+        void module.namespace.serveWorkerLocal(request, local);
+    } };
+    const proxy = module.namespace.createWorkerLocal(worker, new AbortController().signal, {});
+    for (const name of operations) {
+        const chunks = await proxy[name]({ durationMs: 1 });
+        assert.deepEqual([...chunks[0]], [1, 2]);
+        assert.deepEqual([...chunks[1]], [3, 4]);
+        assert.equal(chunks[0].byteOffset, 3);
+        assert.equal(chunks[1].byteOffset, 5);
+        assert.equal(chunks[0].buffer, chunks[1].buffer);
+        assert.equal(backing.byteLength, 0);
+        assert.equal(options.skipDownload, true);
+    }
+    await assert.rejects(proxy.loadLazyAssembly("missing"), error => {
+        assert.equal(error.name, "TypeError");
+        assert.equal(error.message, "host failure");
+        assert.equal(error.cause.name, "RangeError");
+        assert.equal(error.cause.message, "host cause");
+        return true;
+    });
+});
+
+test("UI, worker and sidecar environment flags distinguish physical workers from runtime roles", async () => {
+    for (const [globals, expected] of [
+        [{ window: {} }, [false, false, false, true]],
+        [{ importScripts() {} }, [true, false, true, true]],
+        [{ importScripts() {}, dotnetSidecar: true }, [true, true, false, true]],
+        [{ importScripts() {}, dotnetSidecar: false }, [true, true, false, true]],
+    ]) {
+        const load = createWorkerModuleLoader(createContext(globals), {});
+        const module = await load("../per-module/index");
+        await module.evaluate();
+        const env = module.namespace;
+        assert.deepEqual([env.ENVIRONMENT_IS_WEB_WORKER, env.ENVIRONMENT_IS_SIDECAR, env.ENVIRONMENT_IS_WORKER, env.ENVIRONMENT_IS_WEB], expected);
+    }
+});
+
+test("realm-owned JS and virtual GC handles cannot collide and freed handles retain ownership", async () => {
+    for (const worker of [false, true]) {
+        const released = [];
+        const load = createWorkerModuleLoader(createContext({}), {
+            "consts:configuration": { default: "Debug" },
+            "./cross-module": { dotnetAssert: { check: (condition, message) => assert.ok(condition, message) }, dotnetLogger: {}, dotnetLoaderExports: {} },
+            "./types": { GCHandleNull: 0 },
+            "./utils": { assertJsInterop() {}, isRuntimeRunning: () => true },
+            "./weak-ref": { useWeakRef: true, createStrongRef: value => ({ deref: () => value }), createWeakRef: value => ({ deref: () => value }) },
+            "./managed-exports": { releaseJsOwnedObjectByGcHandle: handle => released.push(handle) },
+        });
+        const module = await load("../../../System.Runtime.InteropServices.JavaScript.Native/interop/gc-handles");
+        await module.evaluate();
+        const gc = module.namespace;
+        gc.initializeRealmHandles(worker);
+        const first = gc.getJsHandleFromJSObject({});
+        const second = gc.getJsHandleFromJSObject({});
+        assert.equal(first, worker ? 2 : 1);
+        assert.equal(second, first + 2);
+        gc.releaseCSOwnedObject(first);
+        assert.equal(gc.getJsHandleFromJSObject({}), first);
+        assert.equal(gc.allocGcvHandle(), worker ? -2 : -3);
+        assert.equal(gc.allocGcvHandle(), worker ? -4 : -5);
+        assert.equal(gc.getProxyCounts()[0], 2);
+    }
+});
+
+test("worker imports, properties, object release and promise callbacks use the owning normal marshaler", async () => {
+    const calls = [];
+    let localBindingError = 0;
+    let remoteBindingError = 0;
+    const signatures = new Map([
+        [100, { name: "INTERNAL.http_wasm_fetch", handle: 10 }],
+        [200, { name: "INTERNAL.ws_wasm_send", handle: 20 }],
+        [300, { name: "INTERNAL.TARGET.getProperty", handle: 30 }],
+        [400, { name: "console.log", handle: 40 }],
+        [500, { name: "INTERNAL.http_wasm_fetch", module: "application", handle: 50 }],
+    ]);
+    const record = name => (...args) => {
+        calls.push([name, ...args]); return 0;
+    };
+    const api = { INTERNAL: {} };
+    const load = createWorkerModuleLoader(createContext({}), {
+        "../../Common/JavaScript/loader/worker-native": {
+            NativeOperation: {},
+            RuntimeOperation: { BindJSImport: 0, InvokeJSImport: 1, ReleaseCSOwnedObject: 2, ResolveOrRejectPromise: 3, CancelPromise: 4, InvokeJSFunction: 5, ForceDisposeProxies: 6, AbortInteropTimers: 7 },
+        },
+        "../../Common/JavaScript/loader/worker-errors": { serializeWorkerError() {}, deserializeWorkerError() {} },
+        "./cross-module": { dotnetApi: api, dotnetBrowserUtilsExports: {}, Module: {} },
+        "./invoke-js": {
+            bindJSImportST: signature => {
+                assert.ok(signatures.has(signature), "Binding must finish before the managed signature buffer is freed");
+                record("bind")(signature);
+                return localBindingError;
+            },
+            invokeJSImportST: record("invoke"), invokeJSFunction: record("function"),
+            getProperty() {}, setProperty() {}, hasProperty() {}, getTypeOfProperty() {},
+        },
+        "./cancelable-promise": { cancelPromise: record("cancel") },
+        "./gc-handles": {
+            releaseCSOwnedObject: record("release"), getJSObjectFromJSHandle: handle => handle === -2 ? {} : undefined,
+            lookupJsOwnedObject: handle => handle === 1024 ? {} : undefined, forceDisposeProxies: record("dispose"), getProxyCounts() {},
+        },
+        "./marshal-to-js": { resolveOrRejectPromise: record("complete") },
+        "./marshal": {
+            getSignatureFunctionName: signature => signatures.get(signature).name,
+            getSignatureHandle: signature => signatures.get(signature).handle,
+            getSignatureModuleName: signature => signatures.get(signature).module,
+            getArg: (args, index) => {
+                assert.equal(index, 2); return args;
+            },
+            getArgJsHandle: arg => arg,
+        },
+        "./scheduling": { abortInteropTimers: record("timers") },
+    });
+    const module = await load("../../../System.Runtime.InteropServices.JavaScript.Native/interop/worker-interop");
+    await module.evaluate();
+    const table = module.namespace.createWorkerInterop({ invoke: (...args) => {
+        record("ui")(...args);
+        return remoteBindingError;
+    } });
+    localBindingError = 1234;
+    assert.equal(table[0](300), 1234);
+    assert.deepEqual(calls.splice(0), [["bind", 300]]);
+    localBindingError = 0;
+    remoteBindingError = 5678;
+    assert.equal(table[0](300), 5678);
+    assert.deepEqual(calls.splice(0), [["bind", 300], ["ui", 0, 300]]);
+    remoteBindingError = 0;
+    for (const signature of signatures.keys()) assert.equal(table[0](signature), 0);
+    assert.deepEqual(calls.splice(0), [
+        ["bind", 100], ["bind", 200], ["bind", 300], ["ui", 0, 300], ["ui", 0, 400], ["ui", 0, 500],
+    ]);
+    // Managed code frees each native signature buffer after the initial bind returns.
+    signatures.clear();
+    table[1](10, 123);
+    table[1](20, 456);
+    table[1](30, 2);
+    table[1](30, 4);
+    table[1](30, 1);
+    table[1](40, 789);
+    table[1](50, 987);
+    assert.deepEqual(calls.splice(0), [
+        ["invoke", 10, 123], ["invoke", 20, 456], ["invoke", 30, 2],
+        ["invoke", 30, 4], ["ui", 1, 30, 1], ["ui", 1, 40, 789], ["ui", 1, 50, 987],
+    ]);
+    for (const handle of [2, 1, -2, -3]) {
+        table[2](handle); table[3](handle); table[5](handle, 99);
+    }
+    table[4](1024);
+    table[4](2048);
+    table[6](false, true);
+    table[7]();
+    assert.deepEqual(calls, [
+        ["release", 2], ["complete", 2], ["function", 2, 99],
+        ["ui", 2, 1], ["ui", 3, 1], ["ui", 5, 1, 99],
+        ["release", -2], ["complete", -2], ["function", -2, 99],
+        ["ui", 2, -3], ["ui", 3, -3], ["ui", 5, -3, 99],
+        ["cancel", 1024], ["ui", 4, 2048],
+        ["dispose", false, true], ["ui", 6, 0, 1], ["timers"], ["ui", 7],
+    ]);
+});
+
+test("typed and generic JSObject marshaling reject foreign handles before assertions in worker hosting", async () => {
+    const source = await readFile(new URL("../libs/System.Runtime.InteropServices.JavaScript.Native/interop/marshal-to-js.ts", import.meta.url), "utf8");
+    const declarations = ["getJSObjectForMarshaling", "_marshalJsObjectToJs", "_marshalCsObjectToJs"].map(name => {
+        const declaration = source.match(new RegExp(`function ${name}[\\s\\S]*?\\n\\}`))?.[0];
+        assert.ok(declaration);
+        return `export ${declaration}`;
+    });
+    const output = ts.transpileModule(declarations.join("\n"), {
+        compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+    }).outputText;
+    const internals = [];
+    const objects = new Map();
+    const types = { None: 0, JSObject: 1 };
+    const module = new SourceTextModule(output, { context: createContext({
+        Error,
+        MarshalerType: types,
+        dotnetInternals: internals,
+        dotnetAssert: { fastCheck: (condition, message) => assert.ok(condition, condition ? undefined : message()) },
+        InternalExchangeIndex: { WorkerRuntimeContext: 0 },
+        getArgType: arg => arg.type,
+        getArgJsHandle: arg => arg.handle,
+        getJSObjectFromJSHandle: handle => objects.get(handle),
+    }) });
+    await module.link(() => {
+        throw new Error("Unexpected converter import");
+    });
+    await module.evaluate();
+    const converters = [module.namespace._marshalJsObjectToJs, module.namespace._marshalCsObjectToJs];
+    const workerObject = {};
+    const uiObject = {};
+    for (const role of ["worker", "ui"]) {
+        internals[0] = { role, getRemoteError: () => assert.fail("Objects must not use error snapshot transport") };
+        const localHandle = role === "worker" ? 2 : 1;
+        const foreignHandle = role === "worker" ? 1 : 2;
+        const localObject = role === "worker" ? workerObject : uiObject;
+        objects.clear();
+        objects.set(localHandle, localObject);
+        for (const convert of converters) {
+            assert.equal(convert({ type: types.JSObject, handle: localHandle }), localObject);
+            assert.equal(convert({ type: types.None }), null);
+            assert.throws(() => convert({ type: types.JSObject, handle: foreignHandle }), {
+                name: "Error",
+                message: `JS object JSHandle ${foreignHandle} is not available in this realm; cross-realm JSObject marshaling is not supported.`,
+            });
+        }
+    }
+    internals[0] = undefined;
+    assert.equal(module.namespace._marshalCsObjectToJs({ type: types.JSObject, handle: 2 }), undefined);
+    assert.throws(() => module.namespace._marshalJsObjectToJs({ type: types.JSObject, handle: 2 }), {
+        name: "AssertionError",
+        message: "JS object JSHandle 2 was not found",
+    });
+    for (const convert of converters) {
+        assert.equal(convert({ type: types.JSObject, handle: 1 }), uiObject);
+        assert.equal(convert({ type: types.None }), null);
+    }
+});
+
+test("Task result conversion failures reject completed and delayed Promises and release holders exactly once", async () => {
+    const source = await readFile(new URL("../libs/System.Runtime.InteropServices.JavaScript.Native/interop/marshal-to-js.ts", import.meta.url), "utf8");
+    const declarations = [
+        "createTaskHolder", "tryMarshalSyncTaskToJs", "beginMarshalTaskToJs",
+        "endMarshalTaskToJs", "releaseEagerTaskHolder", "resolveOrRejectPromise",
+    ].map(name => {
+        const declaration = source.match(new RegExp(`function ${name}[\\s\\S]*?\\n\\}`))?.[0];
+        assert.ok(declaration);
+        return `export ${declaration}`;
+    });
+    const holderDeclaration = source.match(/export class TaskHolder[\s\S]*?\n\}/)?.[0];
+    assert.ok(holderDeclaration);
+    const output = ts.transpileModule([holderDeclaration, ...declarations].join("\n"), {
+        compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+    }).outputText;
+    const types = { None: 0, Void: 1, JSObject: 2, TaskResolved: 3, TaskRejected: 4, TaskPreCreated: 5 };
+    const holders = new Map();
+    const releases = [];
+    const converters = new Map();
+    let nextHandle = 1;
+    const check = (condition, message) => assert.ok(condition, condition ? undefined : typeof message === "function" ? message() : message);
+    const module = new SourceTextModule(output, { context: createContext({
+        Promise,
+        BuildConfiguration: "Release",
+        MarshalerType: types,
+        dotnetAssert: { check, fastCheck: check },
+        dotnetLoaderExports: { createPromiseCompletionSource: () => {
+            let resolve, reject;
+            const promise = new Promise((res, rej) => {
+                resolve = res; reject = rej;
+            });
+            return { promise, resolve, reject };
+        } },
+        csToJsMarshalers: converters,
+        eagerTaskHandleSymbol: Symbol("eagerTaskHandle"),
+        jsinteropDoc: "test",
+        getArg: (args, index) => args[index],
+        getArgType: arg => arg.type,
+        getArgElementType: arg => arg.elementType,
+        getArgJsHandle: arg => arg.handle,
+        setArgType: (arg, type) => {
+            arg.type = type;
+        },
+        setJsHandle: (arg, handle) => {
+            arg.handle = handle;
+        },
+        getJsHandleFromJSObject: holder => {
+            const handle = nextHandle++;
+            holders.set(handle, holder);
+            return handle;
+        },
+        getJSObjectFromJSHandle: handle => holders.get(handle),
+        releaseCSOwnedObject: handle => {
+            assert.equal(holders.delete(handle), true, "Holder must be released exactly once");
+            releases.push(handle);
+        },
+        fixupPointer: args => args,
+        isReceiverShouldFree: () => false,
+        isRuntimeRunning: () => true,
+        assertRuntimeRunning() {},
+        marshalExceptionToCs: () => assert.fail("Conversion failure must reject the owning Promise"),
+    }) });
+    await module.link(() => {
+        throw new Error("Unexpected Task converter import");
+    });
+    await module.evaluate();
+    const api = module.namespace;
+    for (const delayed of [false, true]) {
+        for (const suppliedConverter of [false, true]) {
+            for (const fails of [false, true]) {
+                const failure = new Error("Result conversion failed");
+                const value = {};
+                let conversions = 0;
+                const convert = () => {
+                    conversions++;
+                    if (fails) throw failure;
+                    return value;
+                };
+                converters.set(types.JSObject, convert);
+                const converter = suppliedConverter ? convert : undefined;
+                const res = {};
+                const eagerPromise = api.beginMarshalTaskToJs(res, undefined, converter);
+                const handle = res.handle;
+                const releaseCount = releases.length;
+                if (!delayed) {
+                    res.type = types.TaskResolved;
+                    res.elementType = types.JSObject;
+                }
+                let promise;
+                assert.doesNotThrow(() => {
+                    promise = api.endMarshalTaskToJs([{}, res], converter, eagerPromise);
+                });
+                assert.ok(promise instanceof Promise);
+                const settled = fails ? assert.rejects(promise, error => error === failure) : promise.then(result => assert.equal(result, value));
+                if (delayed) {
+                    assert.equal(promise, eagerPromise);
+                    assert.equal(holders.has(handle), true);
+                    assert.doesNotThrow(() => api.resolveOrRejectPromise([
+                        {}, {}, { type: types.TaskResolved, handle }, { type: types.JSObject },
+                    ]));
+                }
+                await settled;
+                assert.equal(conversions, 1);
+                assert.deepEqual(releases.slice(releaseCount), [handle]);
+                assert.equal(holders.size, 0);
+            }
+        }
+    }
+});
+
 test("boot runInWorker selects hosting without a builder method or timeout-options opt-in", async () => {
     for (const [runInWorker, inWorker, expected] of [
         [true, false, "worker"], [false, false, "ordinary"], [undefined, false, "ordinary"], [true, true, "ordinary"],
@@ -390,7 +801,7 @@ test("thenable detection does not start user code or duplicate Task completion",
     assert.equal(current.getCalls(), 1);
 });
 
-test("native-worker role initializes only forwarding callbacks without application handle ownership", async () => {
+test("native-worker role reuses marshalers and delegates owner-aware dispatch without exposing application APIs", async () => {
     const changed = await readFile(new URL("../libs/System.Runtime.InteropServices.JavaScript.Native/interop/index.ts", import.meta.url), "utf8");
     async function initialize(source) {
         const initialized = [];
@@ -411,7 +822,9 @@ test("native-worker role initializes only forwarding callbacks without applicati
             const names = imports.get(specifier);
             return new SyntheticModule(names, function () {
                 for (const name of names) {
-                    const value = name === "default" ? "proof"
+                    const value = name === "createWorkerInterop" ? () => Array.from({ length: 8 }, (_, operation) => (...args) => {
+                        forwarded.push([operation, ...args]); return 42;
+                    }) : name === "default" ? "proof"
                         : name === "InternalExchangeIndex" ? { RuntimeAPI: 0, RuntimeExportsTable: 4, WorkerRuntimeContext: 10 }
                             : name === "jsInteropState" ? state
                                 : (...args) => {
@@ -433,8 +846,8 @@ test("native-worker role initializes only forwarding callbacks without applicati
         return { api, initialized, forwarded, table: internals[4] };
     }
     const current = await initialize(changed);
-    assert.equal(current.initialized.includes("initializeMarshalersToCs"), false);
-    assert.equal(current.initialized.includes("initializeMarshalersToJs"), false);
+    assert.equal(current.initialized.includes("initializeMarshalersToCs"), true);
+    assert.equal(current.initialized.includes("initializeMarshalersToJs"), true);
     assert.equal(current.api.getAssemblyExports, undefined);
     assert.equal(current.api.INTERNAL.TARGET, undefined);
     assert.equal(current.table.length, 8);

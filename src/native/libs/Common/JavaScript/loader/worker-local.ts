@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DiagnosticCommandOptions, RuntimeAPI } from "./types";
+import { deserializeWorkerError, serializeWorkerError } from "./worker-errors";
+import type { WorkerError } from "./worker-errors";
 
 export interface LocalRuntimeAPI {
     loadLazyAssembly(assemblyName: string): Promise<boolean>;
@@ -22,7 +24,7 @@ type LocalOperation =
     | { operation: Collection; options?: DiagnosticCommandOptions };
 export type WorkerLocalRequest = LocalOperation & { type: "local"; port: MessagePort };
 type LocalResult = boolean | Uint8Array[] | undefined;
-type LocalReply = { type: "result"; result: LocalResult } | { type: "error"; message: string };
+type LocalReply = { type: "result"; result: LocalResult } | { type: "error"; error: WorkerError };
 
 export function createWorkerLocal(
     worker: Worker, signal: AbortSignal,
@@ -43,7 +45,7 @@ export function createWorkerLocal(
             };
             port1.onmessage = (event: MessageEvent<LocalReply>) => {
                 close();
-                if (event.data.type === "error") reject(new Error(event.data.message));
+                if (event.data.type === "error") reject(deserializeWorkerError(event.data.error));
                 else resolve(event.data.result);
             };
             port1.onmessageerror = () => {
@@ -99,7 +101,7 @@ export async function serveWorkerLocal(request: WorkerLocalRequest, local: Local
             : [];
         request.port.postMessage({ type: "result", result } satisfies LocalReply, buffers);
     } catch (error) {
-        request.port.postMessage({ type: "error", message: error instanceof Error ? error.message : String(error) } satisfies LocalReply);
+        request.port.postMessage({ type: "error", error: serializeWorkerError(error) } satisfies LocalReply);
     } finally {
         request.port.close();
     }

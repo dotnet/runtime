@@ -31,6 +31,8 @@ export function export_internal (): any {
         mono_wasm_exit: (exit_code: number) => {
             Module.err("early exit " + exit_code);
         },
+        forceDisposeProxies,
+        getProxyCounts: get_proxy_counts,
         mono_wasm_dump_threads: WasmEnableThreads ? mono_wasm_dump_threads : undefined,
 
         // with mono_wasm_debugger_log and mono_wasm_trace_logger
@@ -54,46 +56,42 @@ export function export_internal (): any {
         mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
         mono_wasm_get_func_id_to_name_mappings,
 
-        TARGET: {
-            forceDisposeProxies,
-            getProxyCounts: get_proxy_counts,
-            // interop
-            getProperty: get_property,
-            setProperty: set_property,
-            hasProperty: has_property,
-            getTypeOfProperty: get_typeof_property,
-            getGlobalThis: get_global_this,
-            getDotnetInstance: () => exportedRuntimeAPI,
-            dynamicImport: dynamic_import,
-            bindCsFunction: mono_wasm_bind_cs_function,
+        // interop
+        getProperty: get_property,
+        setProperty: set_property,
+        hasProperty: has_property,
+        getTypeOfProperty: get_typeof_property,
+        getGlobalThis: get_global_this,
+        getDotnetInstance: () => exportedRuntimeAPI,
+        dynamicImport: dynamic_import,
+        bindCsFunction: mono_wasm_bind_cs_function,
 
-            // BrowserWebSocket
-            wsCreate: ws_wasm_create,
-            wsOpen: ws_wasm_open,
-            wsSend: ws_wasm_send,
-            wsReceive: ws_wasm_receive,
-            wsClose: ws_wasm_close,
-            wsAbort: ws_wasm_abort,
-            wsGetState: ws_get_state,
+        // BrowserWebSocket
+        wsCreate: ws_wasm_create,
+        wsOpen: ws_wasm_open,
+        wsSend: ws_wasm_send,
+        wsReceive: ws_wasm_receive,
+        wsClose: ws_wasm_close,
+        wsAbort: ws_wasm_abort,
+        wsGetState: ws_get_state,
 
-            // BrowserHttpHandler
-            httpSupportsStreamingRequest: http_wasm_supports_streaming_request,
-            httpSupportsStreamingResponse: http_wasm_supports_streaming_response,
-            httpCreateController: http_wasm_create_controller,
-            httpGetResponseType: http_wasm_get_response_type,
-            httpGetResponseStatus: http_wasm_get_response_status,
-            httpAbort: http_wasm_abort,
-            httpTransformStreamWrite: http_wasm_transform_stream_write,
-            httpTransformStreamClose: http_wasm_transform_stream_close,
-            httpFetch: http_wasm_fetch,
-            httpFetchStream: http_wasm_fetch_stream,
-            httpFetchBytes: http_wasm_fetch_bytes,
-            httpGetResponseHeaderNames: http_wasm_get_response_header_names,
-            httpGetResponseHeaderValues: http_wasm_get_response_header_values,
-            httpGetResponseBytes: http_wasm_get_response_bytes,
-            httpGetResponseLength: http_wasm_get_response_length,
-            httpGetStreamedResponseBytes: http_wasm_get_streamed_response_bytes,
-        },
+        // BrowserHttpHandler
+        httpSupportsStreamingRequest: http_wasm_supports_streaming_request,
+        httpSupportsStreamingResponse: http_wasm_supports_streaming_response,
+        httpCreateController: http_wasm_create_controller,
+        httpGetResponseType: http_wasm_get_response_type,
+        httpGetResponseStatus: http_wasm_get_response_status,
+        httpAbort: http_wasm_abort,
+        httpTransformStreamWrite: http_wasm_transform_stream_write,
+        httpTransformStreamClose: http_wasm_transform_stream_close,
+        httpFetch: http_wasm_fetch,
+        httpFetchStream: http_wasm_fetch_stream,
+        httpFetchBytes: http_wasm_fetch_bytes,
+        httpGetResponseHeaderNames: http_wasm_get_response_header_names,
+        httpGetResponseHeaderValues: http_wasm_get_response_header_values,
+        httpGetResponseBytes: http_wasm_get_response_bytes,
+        httpGetResponseLength: http_wasm_get_response_length,
+        httpGetStreamedResponseBytes: http_wasm_get_streamed_response_bytes,
 
         // jiterpreter
         jiterpreter_dump_stats,

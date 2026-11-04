@@ -28,11 +28,25 @@ export const enum NativeOperation {
     RunBackgroundTimers,
     GetRuntimeContractDescriptor,
     ConnectDSRouter,
+    GetErrorSnapshot,
+}
+
+export const enum RuntimeOperation {
+    BindJSImport,
+    InvokeJSImport,
+    ReleaseCSOwnedObject,
+    ResolveOrRejectPromise,
+    CancelPromise,
+    InvokeJSFunction,
+    ForceDisposeProxies,
+    AbortInteropTimers,
+    GetProxyCounts,
+    GetErrorSnapshot,
 }
 
 export interface WorkerRuntimeContext {
     role: "ui" | "worker";
-    invoke: (operation: number, first?: number, second?: number) => number;
+    invoke: (operation: NativeOperation | RuntimeOperation, first?: number, second?: number) => number;
     beforeRuntimeStart?: () => Promise<void>;
     memory?: WebAssembly.Memory;
     beforeTaskCompletion?: () => void;
@@ -42,6 +56,8 @@ export interface WorkerRuntimeContext {
     resolveModuleResource?: (asset: AssetEntryInternal) => Promise<string>;
     local?: LocalRuntimeAPI;
     downloadDiagnosticData?: (chunks: Uint8Array[]) => void;
+    getErrorSnapshot?: (handle: number, output: number) => void;
+    getRemoteError?: (handle: number) => Error;
 }
 
 export class NativeCallCapacityError extends Error { }
@@ -147,7 +163,7 @@ export function createNativeChannel(
         let slot = -1;
         const privileged = operation === NativeOperation.Malloc || operation === NativeOperation.Free
             || operation === NativeOperation.ReleaseJSOwnedObject || operation === NativeOperation.GetManagedStackTrace
-            || operation === NativeOperation.RunBackgroundTimers;
+            || operation === NativeOperation.RunBackgroundTimers || operation === NativeOperation.GetErrorSnapshot;
         const limit = worker || privileged ? capacity : callCapacity;
         for (let index = 0; index < limit; index++) {
             if (Atomics.compareExchange(calls, entry(outgoing, index), SignalState.IDLE, SignalState.PENDING) === SignalState.IDLE) {

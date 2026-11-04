@@ -114,6 +114,10 @@ export class HostBuilder implements DotnetHostBuilder {
     async download(httpCacheOnly?: boolean): Promise<void> {
         try {
             validateLoaderConfig();
+            if (loaderConfig.runInWorker && !httpCacheOnly && !ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR) {
+                await createWorkerProxy(loaderConfig, true);
+                return;
+            }
             return createRuntime(true, httpCacheOnly ?? false);
         } catch (err) {
             exit(1, err);

@@ -8,7 +8,7 @@
  * It's good to keep this file small.
  */
 
-import type { DotnetHostBuilder } from "./types";
+import type { DotnetHostBuilder, LoaderConfig } from "./types";
 
 import { HostBuilder } from "./host-builder";
 import { initPolyfillsEarly } from "./polyfills";
@@ -30,16 +30,17 @@ const exit = (exitCode: number, reason: any): void => {
 };
 
 let _dotnet: DotnetHostBuilder | undefined;
+const bootConfig: LoaderConfig = /*! dotnetBootConfig */{};
 if (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR) {
     // Dedicated worker spawned by runInWorker: wait for init message
     // from main thread, then bootstrap the runtime with shared WebAssembly.Memory.
     // ENVIRONMENT_IS_SIDECAR workers (Emscripten pthreads) continue normal startup.
     const initMsg = await waitForInitMessage();
-    await bootstrapWorkerRuntime(initMsg);
+    await bootstrapWorkerRuntime(initMsg, bootConfig);
     // dotnet export is undefined in worker context
 } else {
     _dotnet = new HostBuilder() as DotnetHostBuilder;
-    _dotnet.withConfig(/*! dotnetBootConfig */{});
+    _dotnet.withConfig(bootConfig);
 }
 
 export const dotnet = _dotnet;

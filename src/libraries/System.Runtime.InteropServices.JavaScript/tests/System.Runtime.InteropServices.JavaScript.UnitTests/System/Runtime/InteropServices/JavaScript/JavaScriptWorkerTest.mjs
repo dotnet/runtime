@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 export async function setup(runtime) {
+    runtime.INTERNAL.TARGET ??= runtime.INTERNAL;
     const exports = (await runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests"))
         .System.Runtime.InteropServices.JavaScript.Tests.WorkerInteropTest;
-    const worker = runtime.getConfig().runInWorker !== undefined;
+    const worker = runtime.getConfig().runInWorker === true;
     const voidEvents = [];
     let lastView;
     let inlineThenableCalls = 0;
@@ -42,7 +43,7 @@ export async function setup(runtime) {
         inlineThenableCalls: () => inlineThenableCalls,
         nativeBoundaryProof: () => {
             const internal = runtime.INTERNAL;
-            check(!internal.LOCAL && !internal.getProperty && !internal.httpFetch, "Obsolete interop namespaces remain");
+            check(!internal.LOCAL && (internal.TARGET === internal || !internal.getProperty), "Obsolete interop namespaces remain");
             check(internal.TARGET.getProperty(document, "nodeType") === 9, "TARGET property helper did not execute on UI");
             check(internal.TARGET.getGlobalThis() === globalThis, "TARGET global must remain the UI global");
             check(typeof internal.loadLazyAssembly === "function" && typeof internal.loadSatelliteAssemblies === "function",

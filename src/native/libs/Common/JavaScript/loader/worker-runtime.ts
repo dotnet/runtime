@@ -14,20 +14,24 @@ import { loaderCallbacks } from "./callbacks";
 import { fetchLazyAssembly, fetchSatelliteAssemblies } from "./assets";
 import { serveWorkerLocal } from "./worker-local";
 import type { WorkerLocalRequest } from "./worker-local";
+import { deserializeWorkerError, serializeWorkerError } from "./worker-errors";
+import type { WorkerError } from "./worker-errors";
+import { restoreWorkerModules } from "./worker-config";
 import {
     createSignalingBuffer, SignalState, CommandId, OFFSET_COMMAND_RESULT, OFFSET_COMMAND_SIGNAL,
     OFFSET_COMMAND_PROMISE_ID, OFFSET_WORKER_STATE, OFFSET_WORKER_ERROR_LENGTH, writeSharedError, wakeMain,
 } from "./shared-signaling";
 
-export interface WorkerInitMessage { type: "init"; config: LoaderConfig }
+export interface WorkerInitMessage { type: "init"; config: LoaderConfig; downloadOnly?: boolean }
 export interface WorkerCommandMessage {
     type: "command"; commandId: CommandId; promiseId: number;
-    mainAssemblyName?: string; args?: string[]; exitCode?: number; reason?: unknown;
+    mainAssemblyName?: string; args?: string[]; exitCode?: number; reason?: WorkerError;
 }
 export type WorkerToMainMessage =
     | { type: "attach", wasmMemory: WebAssembly.Memory, signalBuffer: SharedArrayBuffer, nativeBuffer: SharedArrayBuffer }
     | { type: "ready", runtimeBuildInfo: RuntimeAPI["runtimeBuildInfo"], workerProxyCounts: number[] }
-    | { type: "error", message: string }
+    | { type: "preloaded" }
+    | { type: "error", error: WorkerError }
     | WorkerResourceRequest
     | { type: "diagnostic-download"; chunks: Uint8Array[] }
     | { type: "download-progress"; loaded: number; total: number };
@@ -43,7 +47,7 @@ export function waitForInitMessage(): Promise<WorkerInitMessage> {
     });
 }
 
-export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promise<void> {
+export async function bootstrapWorkerRuntime(message: WorkerInitMessage, bootConfig: LoaderConfig): Promise<void> {
     const signalBuffer = createSignalingBuffer();
     const signal = new Int32Array(signalBuffer);
     const nativeBuffer = createNativeCallBuffer();
@@ -52,6 +56,8 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
     let commandRunning = false;
     let closing = false;
     let failed = false;
+    let starting = false;
+    const builder = new HostBuilder();
     const channel = createNativeChannel(signal, nativeBuffer, true, (operation, first, second) => {
         const args = first as any;
         switch (operation) {
@@ -66,6 +72,9 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
             case NativeOperation.RunBackgroundTimers: dotnetBrowserUtilsExports.runBackgroundTimers(); break;
             case NativeOperation.GetRuntimeContractDescriptor: return dotnetApi.INTERNAL.GetDotNetRuntimeContractDescriptor();
             case NativeOperation.ConnectDSRouter: dotnetApi.INTERNAL.connectDSRouter(dotnetBrowserUtilsExports.utf16ToString(args, second)); break;
+            case NativeOperation.GetErrorSnapshot:
+                dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]!.getErrorSnapshot!(first, second);
+                break;
             default: throw new Error(`runInWorker: unknown native operation ${operation}`);
         }
         return 0;
@@ -80,14 +89,19 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
         attached.reject(failure);
         channel.stop(failure);
         wakeMain(signal);
-        self.postMessage({ type: "error", message: failure.message });
+        self.postMessage({ type: "error", error: serializeWorkerError(failure) });
     }
 
-    self.addEventListener("message", (event: MessageEvent<WorkerCommandMessage | WorkerLocalRequest | { type: "attached" }>) => {
+    self.addEventListener("message", (event: MessageEvent<WorkerCommandMessage | WorkerLocalRequest | { type: "attached" } | { type: "start" }>) => {
         const request = event.data;
+        if (request.type === "start") {
+            if (starting || closing || failed) return;
+            void start().catch(fail);
+            return;
+        }
         if (request.type === "local") {
             if (closing || failed) {
-                request.port.postMessage({ type: "error", message: "runInWorker: runtime exited" });
+                request.port.postMessage({ type: "error", error: serializeWorkerError(new Error("runInWorker: runtime exited")) });
                 request.port.close();
                 return;
             }
@@ -124,13 +138,24 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
         if (command.commandId === CommandId.RUN_MAIN_AND_EXIT) return runtime.runMainAndExit(command.mainAssemblyName, command.args);
         if (command.commandId !== CommandId.EXIT) throw new Error("runInWorker: invalid lifecycle command");
         closing = true;
+        const reason = command.reason ? deserializeWorkerError(command.reason) : undefined;
+        const context = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext];
+        if (context && reason) context.exitError = reason;
         try {
-            runtime.exit(command.exitCode ?? 0, command.reason);
+            runtime.exit(command.exitCode ?? 0, reason);
         } catch (error) {
             if (error && typeof error === "object" && "status" in error && typeof error.status === "number") return error.status;
             throw error;
         }
+
         return command.exitCode ?? 0;
+    }
+
+    async function start(): Promise<void> {
+        starting = true;
+        runtime = await builder.create();
+        self.postMessage({ type: "ready", runtimeBuildInfo: runtime.runtimeBuildInfo,
+            workerProxyCounts: runtime.INTERNAL.nativeBoundary.getProxyCounts() });
     }
 
     dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext] = {
@@ -156,10 +181,12 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage): Promis
             loadLazyAssembly: fetchLazyAssembly,
             loadSatelliteAssemblies: fetchSatelliteAssemblies,
         });
+        restoreWorkerModules(message.config, bootConfig);
         mergeLoaderConfig(message.config);
-        runtime = await new HostBuilder().create();
-        self.postMessage({ type: "ready", runtimeBuildInfo: runtime.runtimeBuildInfo,
-            workerProxyCounts: runtime.INTERNAL.nativeBoundary.getProxyCounts() });
+        if (message.downloadOnly) {
+            await builder.download(false);
+            self.postMessage({ type: "preloaded" });
+        } else await start();
     } catch (error) {
         fail(error);
     }

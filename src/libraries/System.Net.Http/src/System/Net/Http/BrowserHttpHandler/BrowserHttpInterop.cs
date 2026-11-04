@@ -26,19 +26,19 @@ namespace System.Net.Http
             return _SupportsStreamingResponse.Value;
         }
 
-        [JSImport("INTERNAL.TARGET.httpSupportsStreamingRequest")]
+        [JSImport("INTERNAL.httpSupportsStreamingRequest")]
         public static partial bool SupportsStreamingRequestImpl();
 
-        [JSImport("INTERNAL.TARGET.httpSupportsStreamingResponse")]
+        [JSImport("INTERNAL.httpSupportsStreamingResponse")]
         public static partial bool SupportsStreamingResponseImpl();
 
-        [JSImport("INTERNAL.TARGET.httpCreateController")]
+        [JSImport("INTERNAL.httpCreateController")]
         public static partial JSObject CreateController();
 
-        [JSImport("INTERNAL.TARGET.httpAbort")]
+        [JSImport("INTERNAL.httpAbort")]
         public static partial void Abort(JSObject httpController);
 
-        [JSImport("INTERNAL.TARGET.httpTransformStreamWrite")]
+        [JSImport("INTERNAL.httpTransformStreamWrite")]
         public static partial Task TransformStreamWrite(
             JSObject httpController,
             IntPtr bufferPtr,
@@ -47,23 +47,23 @@ namespace System.Net.Http
         public static unsafe Task TransformStreamWriteUnsafe(JSObject httpController, ReadOnlyMemory<byte> buffer, Buffers.MemoryHandle handle)
             => TransformStreamWrite(httpController, (nint)handle.Pointer, buffer.Length);
 
-        [JSImport("INTERNAL.TARGET.httpTransformStreamClose")]
+        [JSImport("INTERNAL.httpTransformStreamClose")]
         public static partial Task TransformStreamClose(
             JSObject httpController);
 
-        [JSImport("INTERNAL.TARGET.httpGetResponseHeaderNames")]
+        [JSImport("INTERNAL.httpGetResponseHeaderNames")]
         private static partial string[] _GetResponseHeaderNames(
             JSObject httpController);
 
-        [JSImport("INTERNAL.TARGET.httpGetResponseHeaderValues")]
+        [JSImport("INTERNAL.httpGetResponseHeaderValues")]
         private static partial string[] _GetResponseHeaderValues(
             JSObject httpController);
 
-        [JSImport("INTERNAL.TARGET.httpGetResponseStatus")]
+        [JSImport("INTERNAL.httpGetResponseStatus")]
         public static partial int GetResponseStatus(
             JSObject httpController);
 
-        [JSImport("INTERNAL.TARGET.httpGetResponseType")]
+        [JSImport("INTERNAL.httpGetResponseType")]
         public static partial string GetResponseType(
             JSObject httpController);
 
@@ -83,7 +83,7 @@ namespace System.Net.Http
             }
         }
 
-        [JSImport("INTERNAL.TARGET.httpFetch")]
+        [JSImport("INTERNAL.httpFetch")]
         public static partial Task Fetch(
             JSObject httpController,
             string uri,
@@ -92,7 +92,7 @@ namespace System.Net.Http
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues);
 
-        [JSImport("INTERNAL.TARGET.httpFetchStream")]
+        [JSImport("INTERNAL.httpFetchStream")]
         public static partial Task FetchStream(
             JSObject httpController,
             string uri,
@@ -101,7 +101,7 @@ namespace System.Net.Http
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues);
 
-        [JSImport("INTERNAL.TARGET.httpFetchBytes")]
+        [JSImport("INTERNAL.httpFetchBytes")]
         private static partial Task FetchBytes(
             JSObject httpController,
             string uri,
@@ -117,7 +117,7 @@ namespace System.Net.Http
             return FetchBytes(httpController, uri, headerNames, headerValues, optionNames, optionValues, (IntPtr)pinBuffer.Pointer, bodyLength);
         }
 
-        [JSImport("INTERNAL.TARGET.httpGetStreamedResponseBytes")]
+        [JSImport("INTERNAL.httpGetStreamedResponseBytes")]
         public static partial Task<int> GetStreamedResponseBytes(
             JSObject fetchResponse,
             IntPtr bufferPtr,
@@ -127,11 +127,11 @@ namespace System.Net.Http
             => GetStreamedResponseBytes(jsController, (IntPtr)handle.Pointer, buffer.Length);
 
 
-        [JSImport("INTERNAL.TARGET.httpGetResponseLength")]
+        [JSImport("INTERNAL.httpGetResponseLength")]
         public static partial Task<int> GetResponseLength(
             JSObject fetchResponse);
 
-        [JSImport("INTERNAL.TARGET.httpGetResponseBytes")]
+        [JSImport("INTERNAL.httpGetResponseBytes")]
         public static partial int GetResponseBytes(
             JSObject fetchResponse,
             [JSMarshalAs<JSType.MemoryView>] Span<byte> buffer);

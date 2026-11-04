@@ -7,12 +7,15 @@ import { scriptUrl } from "./bootstrap";
 import { dotnetApi, dotnetInternals, dotnetRuntimeExports, dotnetBrowserUtilsExports, dotnetLogger, Module } from "./cross-module";
 import { runtimeState } from "./exit";
 import { loaderCallbacks } from "./callbacks";
-import { initPolyfillsLoader } from "./polyfills";
-import { loadDotnetModule, loadJSModule, callLibraryInitializerOnRuntimeConfigLoaded, callLibraryInitializerOnRuntimeReady, updateWorkerDownloadProgress } from "./assets";
+import { loadDotnetModule, loadJSModule, callLibraryInitializerOnRuntimeReady, updateWorkerDownloadProgress } from "./assets";
+import { initializeLoaderConfig } from "./run";
 import { serveWorkerResource } from "./worker-assets";
 import { createWorkerLocal } from "./worker-local";
+import { createWorkerBootConfig } from "./worker-config";
+import { deserializeWorkerError, serializeWorkerError } from "./worker-errors";
+import type { WorkerError } from "./worker-errors";
 import { createPromiseCompletionSource } from "./promise-completion-source";
-import { createNativeChannel, NativeOperation } from "./worker-native";
+import { createNativeChannel, NativeOperation, RuntimeOperation } from "./worker-native";
 import {
     SignalState, CommandId, MemoryViewManager, allocatePromiseId, OFFSET_VERSION, SIGNALING_VERSION,
     OFFSET_COMMAND_SIGNAL, OFFSET_COMMAND_PROMISE_ID, OFFSET_COMMAND_RESULT, OFFSET_WAKEUP_MAIN,
@@ -20,15 +23,32 @@ import {
 } from "./shared-signaling";
 import type { WorkerToMainMessage, WorkerCommandMessage } from "./worker-runtime";
 
-export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAPI> {
-    await loaderCallbacks.configLoaded?.(config);
-    await initPolyfillsLoader();
+interface WorkerSession {
+    ready: Promise<RuntimeAPI>;
+    downloaded: Promise<RuntimeAPI>;
+    start(): void;
+}
+
+let workerSession: Promise<WorkerSession> | undefined;
+
+export async function createWorkerProxy(config: LoaderConfig, downloadOnly = false): Promise<RuntimeAPI> {
+    const session = await (workerSession ??= createWorkerSession(config, downloadOnly));
+    if (downloadOnly) return session.downloaded;
+    session.start();
+    return session.ready;
+}
+
+async function createWorkerSession(config: LoaderConfig, preload: boolean): Promise<WorkerSession> {
+    const initializers = await initializeLoaderConfig();
     const resources = config.resources;
     if (!resources) throw new Error("runInWorker: runtime resources are missing");
-    const initializers = (resources.modulesAfterConfigLoaded ?? []).map(asset => [asset, callLibraryInitializerOnRuntimeConfigLoaded(asset)] as const);
-    await Promise.all(initializers.map(([, promise]) => promise));
+    const boot = createWorkerBootConfig(config);
     const worker = new Worker(scriptUrl, { type: "module" });
     const ready = createPromiseCompletionSource<RuntimeAPI>();
+    const downloaded = createPromiseCompletionSource<RuntimeAPI>();
+    void ready.promise.catch(error => dotnetLogger.debug(() => `Worker readiness failed: ${error}`));
+    void downloaded.promise.catch(error => dotnetLogger.debug(() => `Worker preload failed: ${error}`));
+    let startRequested = !preload;
     let signal: Int32Array | undefined;
     let channel: ReturnType<typeof createNativeChannel> | undefined;
     let exited: Error | undefined;
@@ -37,7 +57,8 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
     let uiAttached = false;
     const resourceAbort = new AbortController();
     const timeoutMs = config.workerOptions?.timeoutMs ?? 30000;
-    const timeout = timeoutMs > 0 ? setTimeout(() => terminate(new Error("runInWorker: worker startup timed out")), timeoutMs) : undefined;
+    const armTimeout = () => timeoutMs > 0 ? setTimeout(() => terminate(new Error("runInWorker: worker startup timed out")), timeoutMs) : undefined;
+    let timeout = armTimeout();
 
     function terminate(error: Error): void {
         if (exited) return;
@@ -61,6 +82,7 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
         worker.onmessageerror = null;
         worker.terminate();
         ready.reject(error);
+        downloaded.reject(error);
         if (signal) wakeMain(signal);
     }
 
@@ -70,14 +92,22 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
         if (Atomics.load(signal, OFFSET_VERSION) !== SIGNALING_VERSION) throw new Error("runInWorker: signaling version mismatch");
         channel = createNativeChannel(signal, message.nativeBuffer, false, (operation, first, second) => {
             switch (operation) {
-                case 0: return Number(dotnetRuntimeExports.bindJSImportST(first as any));
-                case 1: dotnetRuntimeExports.invokeJSImportST(first as any, second as any); break;
-                case 2: dotnetRuntimeExports.releaseCSOwnedObject(first as any); break;
-                case 3: dotnetRuntimeExports.resolveOrRejectPromise(first as any); break;
-                case 4: dotnetRuntimeExports.cancelPromise(first as any); break;
-                case 5: dotnetRuntimeExports.invokeJSFunction(first as any, second as any); break;
-                case 6: dotnetRuntimeExports.forceDisposeProxies(!!first, !!second); break;
-                case 7: dotnetRuntimeExports.abortInteropTimers(); break;
+                case RuntimeOperation.BindJSImport: return Number(dotnetRuntimeExports.bindJSImportST(first as any));
+                case RuntimeOperation.InvokeJSImport: dotnetRuntimeExports.invokeJSImportST(first as any, second as any); break;
+                case RuntimeOperation.ReleaseCSOwnedObject: dotnetRuntimeExports.releaseCSOwnedObject(first as any); break;
+                case RuntimeOperation.ResolveOrRejectPromise: dotnetRuntimeExports.resolveOrRejectPromise(first as any); break;
+                case RuntimeOperation.CancelPromise: dotnetRuntimeExports.cancelPromise(first as any); break;
+                case RuntimeOperation.InvokeJSFunction: dotnetRuntimeExports.invokeJSFunction(first as any, second as any); break;
+                case RuntimeOperation.ForceDisposeProxies: dotnetRuntimeExports.forceDisposeProxies(!!first, !!second); break;
+                case RuntimeOperation.AbortInteropTimers: dotnetRuntimeExports.abortInteropTimers(); break;
+                case RuntimeOperation.GetProxyCounts:
+                    dotnetApi.INTERNAL.TARGET.getProxyCounts().forEach((count: number, index: number) => {
+                        dotnetApi.localHeapViewI32()[(first >>> 2) + index] = count;
+                    });
+                    break;
+                case RuntimeOperation.GetErrorSnapshot:
+                    dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]!.getErrorSnapshot!(first, second);
+                    break;
                 default: throw new Error("runInWorker: unknown runtime callback");
             }
             return 0;
@@ -138,6 +168,8 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
         Object.assign(dotnetApi, {
             runMain: (assembly?: string, args?: string[]) => send(CommandId.RUN_MAIN, assembly, args),
             runMainAndExit: async (assembly?: string, args?: string[]) => {
+                if (exited) throw exited;
+                if (pending) throw new Error("runInWorker: another command is already running");
                 try {
                     const code = await send(CommandId.RUN_MAIN_AND_EXIT, assembly, args);
                     runtimeState.exitCode = code;
@@ -149,12 +181,19 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
             exit: (code: number, reason?: unknown) => {
                 if (exited || exitRequested) return;
                 exitRequested = true;
-                pending?.abort(new Error(`runInWorker: runtime exited with code ${code}`));
+                const error = reason instanceof Error ? reason
+                    : new Error(reason === undefined ? `runInWorker: runtime exited with code ${code}` : String(reason));
+                const context = dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext];
+                if (context) context.exitError = error;
+                pending?.abort(error);
                 pending = undefined;
-                void send(CommandId.EXIT, undefined, undefined, code, reason).then(() => {
+                void send(CommandId.EXIT, undefined, undefined, code, serializeWorkerError(error)).then(() => {
                     runtimeState.exitCode = code;
-                    terminate(new Error("runInWorker: runtime exited"));
-                }, error => terminate(error instanceof Error ? error : new Error(String(error))));
+                    terminate(error);
+                }, failure => {
+                    dotnetLogger.error("runInWorker: exit failed", failure);
+                    terminate(error);
+                });
             },
         });
         runtimeState.nativeReady = true;
@@ -167,7 +206,7 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
         worker.postMessage({ type: "attached" });
     }
 
-    async function send(commandId: CommandId, mainAssemblyName?: string, args?: string[], exitCode?: number, reason?: unknown): Promise<number> {
+    async function send(commandId: CommandId, mainAssemblyName?: string, args?: string[], exitCode?: number, reason?: WorkerError): Promise<number> {
         if (exited) throw exited;
         if (!signal) throw new Error("runInWorker: native transport is not attached");
         if (pending) throw new Error("runInWorker: another command is already running");
@@ -177,8 +216,8 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
         const promiseId = allocatePromiseId();
         Atomics.store(activeSignal, OFFSET_COMMAND_SIGNAL, SignalState.PENDING);
         const command: WorkerCommandMessage = { type: "command", commandId, promiseId, mainAssemblyName, args, exitCode, reason };
-        worker.postMessage(command);
         try {
+            worker.postMessage(command);
             return await new Promise<number>((resolve, reject) => {
                 const check = () => {
                     if (controller.signal.aborted) {
@@ -218,7 +257,7 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
                 terminate(error instanceof Error ? error : new Error(String(error)));
             }
         } else if (message.type === "resource") {
-            void serveWorkerResource(message, resourceAbort.signal).catch(error => terminate(error instanceof Error ? error : new Error(String(error))));
+            void serveWorkerResource(message, resourceAbort.signal, boot.assets).catch(error => terminate(error instanceof Error ? error : new Error(String(error))));
         } else if (message.type === "download-progress") {
             try {
                 updateWorkerDownloadProgress(message.loaded, message.total);
@@ -231,9 +270,16 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
             }
             void attach(message).catch(error => terminate(error instanceof Error ? error : new Error(String(error))));
         } else if (message.type === "error") {
-            const error = new Error(message.message);
+            const error = deserializeWorkerError(message.error);
             dotnetLogger.error("runInWorker: native worker failed", error);
             terminate(error);
+        } else if (message.type === "preloaded") {
+            if (!uiAttached) {
+                terminate(new Error("runInWorker: worker preloaded before UI attachment"));
+                return;
+            }
+            if (timeout !== undefined) clearTimeout(timeout);
+            downloaded.resolve(dotnetApi);
         } else if (message.type === "ready") {
             if (!uiAttached) {
                 terminate(new Error("runInWorker: worker became ready before UI attachment")); return;
@@ -247,17 +293,28 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
                 await loaderCallbacks.dotnetReady?.();
                 await Promise.all([...initializers, ...afterReady].map(([asset, promise]) => callLibraryInitializerOnRuntimeReady([asset, promise])));
                 ready.resolve(dotnetApi);
+                downloaded.resolve(dotnetApi);
             })().catch(error => terminate(error instanceof Error ? error : new Error(String(error))));
         }
     };
     worker.onerror = event => terminate(new Error(event.message));
     worker.onmessageerror = () => terminate(new Error("runInWorker: invalid worker message"));
     try {
-        worker.postMessage({ type: "init", config: {
-            ...config, resources: { ...resources, modulesAfterConfigLoaded: [], modulesAfterRuntimeReady: [] },
-        } });
+        worker.postMessage({ type: "init", config: boot.config, downloadOnly: preload });
     } catch (error) {
         terminate(error instanceof Error ? error : new Error(String(error)));
     }
-    return ready.promise;
+    return {
+        ready: ready.promise,
+        downloaded: downloaded.promise,
+        start: () => {
+            if (startRequested) return;
+            startRequested = true;
+            void downloaded.promise.then(() => {
+                if (exited) throw exited;
+                timeout = armTimeout();
+                worker.postMessage({ type: "start" });
+            }).catch(error => terminate(error instanceof Error ? error : new Error(String(error))));
+        },
+    };
 }

@@ -63,8 +63,14 @@ namespace Wasm.Build.Tests
                 const shared = new URLSearchParams(location.search).get("shared") === "true";
                 const check = (value, message) => { if (!value) throw new Error(message); };
                 const builder = dotnet.withConfig({ logExitCode: true, exitOnUnhandledError: true });
-                builder.withConfigLoaded(config => check(!!config.runInWorker === shared, "Embedded boot flag does not match the build property"));
+                let configCalls = 0;
+                builder.withConfigLoaded(config => {
+                    configCalls++;
+                    check(!!config.runInWorker === shared, "Embedded boot flag does not match the build property");
+                });
+                await builder.download({{nativeRelink.ToString().ToLowerInvariant()}});
                 const runtime = await builder.create();
+                check(configCalls === 1, "Preload/create initialized config more than once");
                 check(!!runtime.getConfig().runInWorker === shared, "Boot config does not match WasmRunInWorker");
                 check(typeof builder.withWorker === "undefined", "Removed worker builder API is still exposed");
                 check(crossOriginIsolated === shared, "Unexpected isolation mode");
@@ -91,6 +97,14 @@ namespace Wasm.Build.Tests
                     check(runtime.INTERNAL.workerMemoryViews.getViews().u8.buffer instanceof SharedArrayBuffer, "Memory is not shared");
                 } else {
                     check(runtime.localHeapViewU8().buffer instanceof ArrayBuffer, "Ordinary memory is shared");
+                }
+                if (shared) {
+                    const running = runtime.runMain();
+                    await runtime.runMainAndExit().then(
+                        () => { throw new Error("Concurrent exit unexpectedly succeeded"); },
+                        error => check(error.message.includes("another command"), "Wrong concurrent command error"));
+                    check(await running === 0, "Rejected concurrent exit interrupted Main");
+                    check(exports.Increment(41) === 42, "Rejected concurrent exit terminated the runtime");
                 }
                 console.log("TestOutput -> Opt-in scalar worker interop passed");
                 const code = await runtime.runMainAndExit();

@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetEntryInternal } from "./types";
+import type { Asset, AssetEntryInternal } from "./types";
 import { loadResourceFetch, resolveModuleResource } from "./assets";
+import { deserializeWorkerError, serializeWorkerError } from "./worker-errors";
+import type { WorkerError } from "./worker-errors";
 
-type WorkerAsset = Pick<AssetEntryInternal, "name" | "behavior" | "resolvedUrl" | "hash" | "cache" | "useCredentials">;
+type WorkerAsset = Pick<AssetEntryInternal, "name" | "behavior" | "resolvedUrl" | "hash" | "cache" | "useCredentials" | "workerAssetId">;
 export interface WorkerResourceRequest {
     type: "resource";
     asset: WorkerAsset;
@@ -17,7 +19,7 @@ type WorkerResourceResult =
         type: "response"; body: ReadableStream<Uint8Array> | null; status: number; statusText: string;
         headers: [string, string][]; url: string; redirected: boolean; responseType: ResponseType; resolvedUrl?: string;
     };
-type WorkerResourceReply = WorkerResourceResult | { type: "error"; message: string };
+type WorkerResourceReply = WorkerResourceResult | { type: "error"; error: WorkerError };
 
 function requestResource(asset: AssetEntryInternal, module: boolean): Promise<WorkerResourceResult> {
     return new Promise((resolve, reject) => {
@@ -29,7 +31,7 @@ function requestResource(asset: AssetEntryInternal, module: boolean): Promise<Wo
         port1.onmessage = (event: MessageEvent<WorkerResourceReply>) => {
             close();
             const result = event.data;
-            if (result.type === "error") reject(new Error(result.message));
+            if (result.type === "error") reject(deserializeWorkerError(result.error));
             else resolve(result);
         };
         port1.onmessageerror = () => {
@@ -41,6 +43,7 @@ function requestResource(asset: AssetEntryInternal, module: boolean): Promise<Wo
             asset: {
                 name: asset.name, behavior: asset.behavior, resolvedUrl: asset.resolvedUrl,
                 hash: asset.hash, cache: asset.cache, useCredentials: asset.useCredentials,
+                workerAssetId: asset.workerAssetId,
             },
         };
         try {
@@ -71,13 +74,15 @@ export async function loadWorkerResource(asset: AssetEntryInternal): Promise<Res
     return response;
 }
 
-export async function serveWorkerResource(request: WorkerResourceRequest, signal: AbortSignal): Promise<void> {
+export async function serveWorkerResource(request: WorkerResourceRequest, signal: AbortSignal, assets?: ReadonlyMap<number, Asset>): Promise<void> {
     try {
         signal.throwIfAborted();
+        const source = request.asset.workerAssetId === undefined ? undefined : assets?.get(request.asset.workerAssetId);
+        const asset = source ? Object.assign(source, request.asset) : request.asset;
         if (request.module) {
-            request.port.postMessage({ type: "url", url: resolveModuleResource(request.asset) } satisfies WorkerResourceReply);
+            request.port.postMessage({ type: "url", url: resolveModuleResource(asset) } satisfies WorkerResourceReply);
         } else {
-            const response = await loadResourceFetch(request.asset, signal);
+            const response = await loadResourceFetch(asset, signal);
             if (signal.aborted) {
                 await response.body?.cancel(signal.reason);
                 return;
@@ -87,13 +92,13 @@ export async function serveWorkerResource(request: WorkerResourceRequest, signal
             const reply: WorkerResourceReply = {
                 type: "response", body: response.body, status: response.status, statusText: response.statusText,
                 headers, url: response.url,
-                redirected: response.redirected, responseType: response.type, resolvedUrl: request.asset.resolvedUrl,
+                redirected: response.redirected, responseType: response.type, resolvedUrl: asset.resolvedUrl,
             };
             request.port.postMessage(reply, response.body ? [response.body] : []);
         }
     } catch (error) {
         if (!signal.aborted) {
-            request.port.postMessage({ type: "error", message: error instanceof Error ? error.message : String(error) } satisfies WorkerResourceReply);
+            request.port.postMessage({ type: "error", error: serializeWorkerError(error) } satisfies WorkerResourceReply);
         }
     } finally {
         request.port.close();

@@ -56,6 +56,7 @@ export type EmscriptenModuleInternal = EmscriptenModule & {
 }
 
 export interface AssetEntryInternal extends AssetEntry {
+    workerAssetId?: number
     cache?: RequestCache
     useCredentials?: boolean
     culture?: string

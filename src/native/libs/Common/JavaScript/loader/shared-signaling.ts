@@ -4,7 +4,7 @@
 export const enum SignalState { IDLE, PENDING, DONE, ERROR, READY, EXECUTING }
 export const enum CommandId { NONE, RUN_MAIN, EXIT, RUN_MAIN_AND_EXIT }
 
-export const SIGNALING_VERSION = 15;
+export const SIGNALING_VERSION = 16;
 export const OFFSET_VERSION = 0;
 export const OFFSET_MEMORY_GENERATION = 1;
 export const OFFSET_WAKEUP_MAIN = 2;

@@ -30,11 +30,19 @@ const _CsOwnedObjectsByJsHandle: any[] = [null];
 const _CsOwnedObjectsByJsvHandle: any[] = [null];
 const _JsHandleFreeList: JSHandle[] = [];
 let _nextJSHandle = 1;
+let handleStride = 1;
 
 export const jsOwnedObjectTable = new Map<GCHandle, WeakRefInternal<any>>();
 
 const _GcvHandleFreeList: GCHandle[] = [];
 let nextGcvHandle = -2;
+
+export function initializeRealmHandles(worker: boolean): void {
+    dotnetAssert.check(_nextJSHandle === 1 && nextGcvHandle === -2, "Interop handles were initialized before realm ownership");
+    handleStride = 2;
+    _nextJSHandle = worker ? 2 : 1;
+    nextGcvHandle = worker ? -2 : -3;
+}
 
 export const jsImportWrapperByFnHandle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 export const exportsByAssembly: Map<string, any> = new Map();
@@ -43,7 +51,10 @@ export const exportsByAssembly: Map<string, any> = new Map();
 // It's used when we need to create GCHandle-like identity ahead of time, before calling coreCLR.
 // they have negative values, so that they don't collide with GCHandles.
 export function allocGcvHandle(): GCHandle {
-    const gcvHandle = _GcvHandleFreeList.length ? _GcvHandleFreeList.pop() : nextGcvHandle--;
+    const reused = _GcvHandleFreeList.pop();
+    if (reused !== undefined) return reused;
+    const gcvHandle = nextGcvHandle;
+    nextGcvHandle -= handleStride;
     return gcvHandle as any;
 }
 
@@ -73,11 +84,12 @@ export const csOwnedJsHandleSymbol = Symbol.for("wasm cs_owned_jsHandle");
 export const doNotForceDispose = Symbol.for("wasm doNotForceDispose");
 
 
-export function getJSObjectFromJSHandle(jsHandle: JSHandle): any {
-    if (isJsHandle(jsHandle))
-        return _CsOwnedObjectsByJsHandle[<any>jsHandle];
-    if (isJsvHandle(jsHandle))
-        return _CsOwnedObjectsByJsvHandle[0 - <any>jsHandle];
+export function getJSObjectFromJSHandle(jsHandle: JSHandle | number): any {
+    const handle = Number(jsHandle);
+    if (handle > 0)
+        return _CsOwnedObjectsByJsHandle[handle];
+    if (handle < -1)
+        return _CsOwnedObjectsByJsvHandle[0 - handle];
     return null;
 }
 
@@ -86,7 +98,9 @@ export function getJsHandleFromJSObject(jsObj: any): JSHandle {
     if (jsObj[csOwnedJsHandleSymbol]) {
         return jsObj[csOwnedJsHandleSymbol];
     }
-    const jsHandle = _JsHandleFreeList.length ? _JsHandleFreeList.pop() : _nextJSHandle++;
+    const reused = _JsHandleFreeList.pop();
+    const jsHandle = reused ?? _nextJSHandle;
+    if (reused === undefined) _nextJSHandle += handleStride;
 
     // note _cs_owned_objects_by_jsHandle is list, not Map. That's why we maintain _jsHandle_free_list.
     _CsOwnedObjectsByJsHandle[<any>jsHandle] = jsObj;
