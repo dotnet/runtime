@@ -1785,7 +1785,7 @@ namespace Microsoft.DotNet.ILAssembler
             return CreateEntity(TableIndex.ManifestResource, _manifestResourceEntities, () => new ManifestResourceEntity(name, offset));
         }
 
-        public ExportedTypeEntity DeclareExportedType(EntityBase? implementation, string @namespace, string name, Action<ExportedTypeEntity> onCreateType)
+        public ExportedTypeEntity GetOrCreateExportedType(EntityBase? implementation, string @namespace, string name, Action<ExportedTypeEntity> onCreateType)
         {
             var key = (implementation as ExportedTypeEntity, @namespace, name);
             if (implementation is ExportedTypeEntity)
