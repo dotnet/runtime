@@ -1011,7 +1011,7 @@ namespace System.Runtime.CompilerServices
             // storage of the continuation that awaited it. If the awaited operation didn't complete successfully,
             // returns the exception the await must propagate (or throws it).
             [StackTraceHidden]
-            private static Exception? GetAwaitedResult(ref RuntimeAsyncAwaitState awaitState, object awaitedState, Continuation awaitingContinuation)
+            private static Exception? GetAwaitedResult(object awaitedState, Continuation awaitingContinuation)
             {
                 if (awaitedState is ValueTaskSourceContinuation vtsCont)
                 {
@@ -1521,7 +1521,7 @@ namespace System.Runtime.CompilerServices
                             // propagated (generally without needing to be thrown) as if that continuation threw it.
                             object s = awaitedState;
                             awaitedState = null;
-                            exception = GetAwaitedResult(ref awaitState, s, asyncDispatcherInfo.NextContinuation);
+                            exception = GetAwaitedResult(s, asyncDispatcherInfo.NextContinuation);
                         }
                         else
                         {
@@ -1689,7 +1689,7 @@ namespace System.Runtime.CompilerServices
                         {
                             object s = awaitedState;
                             awaitedState = null;
-                            if (GetAwaitedResult(ref awaitState, s, curContinuation) is Exception awaitException)
+                            if (GetAwaitedResult(s, curContinuation) is Exception awaitException)
                             {
                                 throw awaitException;
                             }

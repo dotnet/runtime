@@ -65,7 +65,7 @@ namespace System.Runtime.CompilerServices
             }
 
             [StackTraceHidden]
-            internal static void GetResult(object source, short token, ref byte result)
+            internal static void GetResult(object source, short token, ref byte _)
             {
                 Debug.Assert(source is IValueTaskSource);
                 IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
