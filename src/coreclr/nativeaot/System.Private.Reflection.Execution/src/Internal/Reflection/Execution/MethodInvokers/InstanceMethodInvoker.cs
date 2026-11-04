@@ -49,7 +49,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             throw new MemberAccessException(SR.Format(SR.Acc_CreateAbstEx, Type.GetTypeFromHandle(RuntimeTypeHandle.FromIntPtr(declaringType)).FullName));
         }
 
-        private void ValidateThis(object? thisObject)
+        private void ValidateInvocationTarget(object? thisObject)
         {
             if (thisObject is null && MethodInvokeInfo.Method.IsConstructor && MethodInvokeInfo.Method.DeclaringType.IsAbstract)
             {
@@ -64,7 +64,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         {
             if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
             {
-                ValidateThis(thisObject);
+                ValidateInvocationTarget(thisObject);
             }
 
             object? result = MethodInvokeInfo.Invoke(
@@ -82,7 +82,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         {
             if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
             {
-                ValidateThis(thisObject);
+                ValidateInvocationTarget(thisObject);
             }
 
             object? result = MethodInvokeInfo.Invoke(
@@ -98,7 +98,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         {
             if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
             {
-                ValidateThis(thisObject);
+                ValidateInvocationTarget(thisObject);
             }
 
             object? result = MethodInvokeInfo.InvokeDirectWithFewArgs(
