@@ -19,6 +19,40 @@ public class GCInfoHeaderTests
     [InlineData(RuntimeInfoArchitecture.RiscV64, 24u)]
     public void GetHeaderDecodesOutgoingAreaBeforeSlotLifetimes(RuntimeInfoArchitecture architecture, uint expectedSize)
     {
+        byte[] encoded = architecture == RuntimeInfoArchitecture.Arm
+            ? [0x03, 0x40, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00]
+            : [0x03, 0x40, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00];
+        IGCInfoDecoder decoder = CreateDecoder(architecture, encoded);
+
+        GCInfoHeader header = decoder.GetHeader();
+        Assert.Equal(expectedSize, header.SizeOfStackParameterArea);
+        Assert.Empty(decoder.GetSlotLifetimes());
+        Assert.Equal(expectedSize, decoder.GetHeader().SizeOfStackParameterArea);
+    }
+
+    [Fact]
+    public void GenericContextLookupStopsBeforeOutgoingArea()
+    {
+        // The outgoing-area encoding is deliberately unterminated.
+        IGCInfoDecoder decoder = CreateDecoder(RuntimeInfoArchitecture.X64,
+            [0x03, 0x40, 0x80, 0x88, 0x88, 0x88, 0x88, 0x88]);
+
+        Assert.False(decoder.TryGetGenericContextStorage(GenericContextLoc.ThisPtr, 0, out _));
+    }
+
+    [Fact]
+    public void SlimHeaderStopsBeforeSafePointCount()
+    {
+        // The safe-point count is deliberately unterminated.
+        IGCInfoDecoder decoder = CreateDecoder(RuntimeInfoArchitecture.X64, [0x22, 0xF8]);
+
+        GCInfoHeader header = decoder.GetHeader();
+        Assert.Equal(8u, header.CodeSize);
+        Assert.Equal(0u, header.SizeOfStackParameterArea);
+    }
+
+    private static IGCInfoDecoder CreateDecoder(RuntimeInfoArchitecture architecture, byte[] encoded)
+    {
         MockTarget.Architecture arch = new()
         {
             IsLittleEndian = true,
@@ -26,20 +60,17 @@ public class GCInfoHeaderTests
         };
         TestPlaceholderTarget.Builder builder = new(arch);
         const ulong GCInfoAddress = 0x10000;
-        byte[] encoded = architecture == RuntimeInfoArchitecture.Arm
-            ? [0x03, 0x40, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00]
-            : [0x03, 0x40, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00];
         builder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
         {
             Address = GCInfoAddress,
             Data = encoded,
-            Name = "Fat GCInfo header with three outgoing stack slots",
+            Name = "GCInfo header",
         });
         Mock<IRuntimeInfo> runtimeInfo = new();
         runtimeInfo.Setup(c => c.GetTargetArchitecture()).Returns(architecture);
         Target target = builder.AddMockContract(runtimeInfo).Build();
         TargetPointer address = new(GCInfoAddress);
-        IGCInfoDecoder decoder = architecture switch
+        return architecture switch
         {
             RuntimeInfoArchitecture.X64 => new GcInfoDecoder<AMD64GCInfoTraits>(target, address, 5),
             RuntimeInfoArchitecture.Arm => new GcInfoDecoder<ARMGCInfoTraits>(target, address, 5),
@@ -48,10 +79,5 @@ public class GCInfoHeaderTests
             RuntimeInfoArchitecture.RiscV64 => new GcInfoDecoder<RISCV64GCInfoTraits>(target, address, 5),
             _ => throw new System.InvalidOperationException(),
         };
-
-        GCInfoHeader header = decoder.GetHeader();
-        Assert.Equal(expectedSize, header.SizeOfStackParameterArea);
-        Assert.Empty(decoder.GetSlotLifetimes());
-        Assert.Equal(expectedSize, decoder.GetHeader().SizeOfStackParameterArea);
     }
 }
