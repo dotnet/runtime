@@ -289,6 +289,24 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void RecursiveDelete_Issue84344()
+        {
+            // Test the scenario described in GitHub issue #84344 where the nesting depth of subdirectories is huge (14000).
+            // Using 14000 as the depth makes the test very slow, so we reduce the depth to 9000 for quicker execution while still
+            // exercising a very deep directory tree. See https://github.com/dotnet/runtime/issues/84344.
+            // The original scenario and this test are limited to Windows; on Unix-like systems the much shorter maximum path length
+            // (for example, 4096 characters) would cause failures due to path length limits rather than testing Directory.Delete recursion.
+            DirectoryInfo subDir = testDir.CreateSubdirectory("test_issue84344");
+            for (int i = 0; i < depth; i++)
+            {
+                subDir = subDir.CreateSubdirectory("a");
+            }
+            // Now delete the subdir recursively.
+            Directory.Delete(subDir.FullName, recursive: true);
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Recursive delete throws IOException if directory contains in-use file
         public void RecursiveDelete_ShouldThrowIOExceptionIfContainedFileInUse()
         {
