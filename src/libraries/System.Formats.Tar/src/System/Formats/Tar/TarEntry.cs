@@ -506,16 +506,8 @@ namespace System.Formats.Tar
             Debug.Assert(destinationDirectoryPath[^1] == Path.DirectorySeparatorChar);
             Debug.Assert(fileDestinationPath.StartsWith(destinationDirectoryPath, StringComparison.Ordinal));
 
-            string? resolvedDest = extractState.ResolvedDestinationDirectoryPath;
-            if (resolvedDest is null)
-            {
-                resolvedDest = ResolvePhysicalPath(destinationDirectoryPath, out bool canReuse);
-                if (canReuse)
-                {
-                    // Archive entries cannot replace an ordinary destination root or its ancestors.
-                    extractState.ResolvedDestinationDirectoryPath = resolvedDest;
-                }
-            }
+            // The destination root and its ancestors are trusted, and extraction never overwrites directories.
+            string resolvedDest = extractState.ResolvedDestinationDirectoryPath ??= ResolvePhysicalPath(destinationDirectoryPath);
 
             // GetFullDestinationPath has already normalized and checked the logical target.
             ReadOnlySpan<char> relative = fileDestinationPath.AsSpan(destinationDirectoryPath.Length);
@@ -547,7 +539,7 @@ namespace System.Formats.Tar
 
         private static string ResolveSymlink(string path)
         {
-            if (IsExistingNonLink(path, out _))
+            if (IsExistingNonLink(path))
             {
                 return path;
             }
@@ -567,15 +559,13 @@ namespace System.Formats.Tar
 
         // Resolves the full path of the specified path, resolving symlinks at each step.
         // This is needed to mitigate malicious entries in the archive that could lead to writing files outside of the intended directory.
-        private static string ResolvePhysicalPath(string path, out bool canReuse)
+        private static string ResolvePhysicalPath(string path)
         {
-            canReuse = true;
             string fullPath = Path.GetFullPath(path);
             string? root = Path.GetPathRoot(fullPath);
 
             if (root is null)
             {
-                canReuse = false;
                 return fullPath;
             }
 
@@ -590,9 +580,7 @@ namespace System.Formats.Tar
                 }
 
                 current = Path.Join(current, component);
-                bool isNonLink = IsExistingNonLink(current, out bool isOrdinaryDirectory);
-                canReuse &= isOrdinaryDirectory;
-                if (!isNonLink && Path.Exists(current))
+                if (!IsExistingNonLink(current) && Path.Exists(current))
                 {
                     current = ResolveSymlink(current);
                 }

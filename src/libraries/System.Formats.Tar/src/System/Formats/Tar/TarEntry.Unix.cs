@@ -10,15 +10,11 @@ namespace System.Formats.Tar
     // Unix specific methods for the TarEntry class.
     public abstract partial class TarEntry
     {
-        private static bool IsExistingNonLink(string path, out bool isOrdinaryDirectory)
+        private static bool IsExistingNonLink(string path)
         {
-            isOrdinaryDirectory = false;
             if (Interop.Sys.LStat(path, out Interop.Sys.FileStatus status) == 0)
             {
-                int fileType = status.Mode & Interop.Sys.FileTypes.S_IFMT;
-                isOrdinaryDirectory = fileType == Interop.Sys.FileTypes.S_IFDIR;
-
-                return fileType != Interop.Sys.FileTypes.S_IFLNK;
+                return (status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFLNK;
             }
 
             return false;
