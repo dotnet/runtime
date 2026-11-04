@@ -126,6 +126,12 @@ MethodContextReader::MethodContextReader(
     if (this->fileHandle != nullptr)
     {
         this->fileSize = fgetsize(this->fileHandle);
+        if (this->fileSize < 0)
+        {
+            LogError("Failed to get the size of '%s'. errno=%d", mchFileName.c_str(), errno);
+            fclose(this->fileHandle);
+            this->fileHandle = nullptr;
+        }
     }
 
     ReadExcludedMethods(mchFileName);
