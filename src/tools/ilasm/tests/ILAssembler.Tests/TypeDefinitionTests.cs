@@ -743,6 +743,36 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             Assert.Equal("Outer.Inner", reader.GetString(typeDef.Namespace));
         }
 
+        [Theory]
+        [InlineData(".", "TestType", "", ".TestType")]
+        [InlineData("..", "TestType", ".", ".TestType")]
+        [InlineData("..N", "TestType", "..N", "TestType")]
+        [InlineData("N.M.", "TestType", "N.M", ".TestType")]
+        [InlineData("N.M..", "TestType", "N.M.", ".TestType")]
+        [InlineData("N.", "'.TestType'", "N.", ".TestType")]
+        public void Namespace_TrailingDotsArePreservedInTypeName(
+            string namespaceName,
+            string className,
+            string expectedNamespace,
+            string expectedTypeName)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .namespace '{{namespaceName}}'
+                {
+                    .class public auto ansi beforefieldinit {{className}} extends [mscorlib]System.Object { }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+
+            TypeDefinition typeDefinition = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal(expectedNamespace, reader.GetString(typeDefinition.Namespace));
+            Assert.Equal(expectedTypeName, reader.GetString(typeDefinition.Name));
+        }
+
 
         [Fact]
         public void LeadingDotInTypeName_Preserved()
