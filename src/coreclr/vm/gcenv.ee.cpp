@@ -1414,11 +1414,12 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
                 return false;
             }
             out =  Configuration::GetKnobStringValue(configKey);
-            if (out == NULL)
-            {
-                return false;
-            }
         }
+    }
+
+    if (out == NULL)
+    {
+        return false;
     }
 
     size_t cchOut = u16_strlen(out) + 1;
