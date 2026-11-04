@@ -21,6 +21,13 @@ namespace System.Net.Test.Common
                 CheckHasSystemNetSecurityNative() && (!PlatformDetection.IsOpenSslSupported || PlatformDetection.OpenSslVersion.Major < 3);
         }
 
+        // Initial server challenges do not require the NTLM response generation affected by OpenSSL 3.
+        public static bool IsNtlmServerAvailable() =>
+            !OperatingSystem.IsBrowser() &&
+            !OperatingSystem.IsWasi() &&
+            CheckHasSystemNetSecurityNative() &&
+            Interop.NetSecurityNative.IsNtlmInstalled();
+
         private static bool CheckHasSystemNetSecurityNative()
         {
             try

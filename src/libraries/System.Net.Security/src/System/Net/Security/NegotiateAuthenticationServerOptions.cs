@@ -27,6 +27,10 @@ namespace System.Net.Security
         /// Specifies the GSSAPI authentication package used for the authentication.
         /// Common values are Negotiate, NTLM or Kerberos. Default value is Negotiate.
         /// </summary>
+        /// <remarks>
+        /// Specifying Kerberos or NTLM restricts authentication to that protocol.
+        /// Negotiate allows the authentication provider to select a protocol and can fall back to NTLM.
+        /// </remarks>
         public string Package { get; set; } = NegotiationInfoClass.Negotiate;
 
         /// <summary>

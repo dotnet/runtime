@@ -72,15 +72,16 @@ namespace Microsoft.Win32.SafeHandles
     {
         private static readonly Lazy<bool> s_IsNtlmInstalled = new Lazy<bool>(InitIsNtlmInstalled);
 
-        public static SafeGssCredHandle CreateAcceptor()
+        public static SafeGssCredHandle CreateAcceptor(Interop.NetSecurityNative.PackageType packageType)
         {
             SafeGssCredHandle? retHandle;
             Interop.NetSecurityNative.Status status;
             Interop.NetSecurityNative.Status minorStatus;
 
-            status = Interop.NetSecurityNative.AcquireAcceptorCred(out minorStatus, out retHandle);
+            status = Interop.NetSecurityNative.AcquireAcceptorCred(out minorStatus, packageType, out retHandle);
             if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
             {
+                retHandle.Dispose();
                 throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
             }
 
