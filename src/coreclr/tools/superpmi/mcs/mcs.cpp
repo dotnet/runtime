@@ -21,35 +21,6 @@
 #include "verbprintjiteeversion.h"
 #include "logging.h"
 
-#ifndef TARGET_WINDOWS
-#include <sys/stat.h>
-#endif
-
-static bool IsSameFile(const char* path1, const char* path2)
-{
-#ifdef TARGET_WINDOWS
-    const DWORD share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
-    HANDLE file1 = CreateFileA(path1, 0, share, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-    HANDLE file2 = CreateFileA(path2, 0, share, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-    BY_HANDLE_FILE_INFORMATION info1;
-    BY_HANDLE_FILE_INFORMATION info2;
-    bool same = (file1 != INVALID_HANDLE_VALUE) && (file2 != INVALID_HANDLE_VALUE) &&
-                GetFileInformationByHandle(file1, &info1) && GetFileInformationByHandle(file2, &info2) &&
-                (info1.dwVolumeSerialNumber == info2.dwVolumeSerialNumber) &&
-                (info1.nFileIndexHigh == info2.nFileIndexHigh) && (info1.nFileIndexLow == info2.nFileIndexLow);
-    if (file1 != INVALID_HANDLE_VALUE)
-        CloseHandle(file1);
-    if (file2 != INVALID_HANDLE_VALUE)
-        CloseHandle(file2);
-    return same;
-#else
-    struct stat stat1;
-    struct stat stat2;
-    return (stat(path1, &stat1) == 0) && (stat(path2, &stat2) == 0) &&
-           (stat1.st_dev == stat2.st_dev) && (stat1.st_ino == stat2.st_ino);
-#endif
-}
-
 int __cdecl main(int argc, char* argv[])
 {
 #ifdef TARGET_UNIX
@@ -65,14 +36,6 @@ int __cdecl main(int argc, char* argv[])
     CommandLine::Options o;
     if (!CommandLine::Parse(argc, argv, &o))
     {
-        return -1;
-    }
-
-    // These verbs stream from the first file into the second, so opening the output would truncate the input.
-    if ((o.actionCopy || o.actionStrip || o.actionStat || o.actionRemoveDup) &&
-        (o.nameOfFile1 != nullptr) && (o.nameOfFile2 != nullptr) && IsSameFile(o.nameOfFile1, o.nameOfFile2))
-    {
-        LogError("The input and output files must be different: '%s'", o.nameOfFile2);
         return -1;
     }
 
