@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Configuration
         // Whether <paramref name="value"/> is a reference, and if so the span between the opening parenthesis and the
         // final ')'. The keyword is matched case-insensitively, in keeping with configuration keys generally. There is
         // no escape: a value that spells a reference is one, and an application holding text that cannot be read any
-        // other way turns transformations off rather than learning a syntax to say so.
+        // other way disables reference resolution rather than learning a syntax to say so.
         internal static bool IsReference(string value, out int bodyStart, out int bodyLength)
         {
             bodyStart = 0;

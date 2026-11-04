@@ -806,7 +806,7 @@ namespace Microsoft.Extensions.Configuration.Test
         public void GloballyDisabled_ReferenceIsLiteral()
         {
             var options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions.Add("Microsoft.Extensions.Configuration.DisableConfigurationTransformations", bool.TrueString);
+            options.RuntimeConfigurationOptions.Add("Microsoft.Extensions.Configuration.DisableConfigurationReferences", bool.TrueString);
 
             using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () =>
             {
@@ -841,10 +841,10 @@ namespace Microsoft.Extensions.Configuration.Test
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // RuntimeConfigurationOptions are not supported on .NET Framework.
         public void GloballyDisabled_DisposedProviderBehavesTheSame()
         {
-            // The switch turns transformations off; it must not also decide how a read path treats a disposed provider.
+            // The switch turns reference resolution off; it must not also decide how a read path treats a disposed provider.
             // These are the same assertions the two DisposedProvider tests make with references on.
             var options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions.Add("Microsoft.Extensions.Configuration.DisableConfigurationTransformations", bool.TrueString);
+            options.RuntimeConfigurationOptions.Add("Microsoft.Extensions.Configuration.DisableConfigurationReferences", bool.TrueString);
 
             using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () =>
             {

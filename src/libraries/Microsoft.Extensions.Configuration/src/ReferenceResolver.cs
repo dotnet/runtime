@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration
     // of its own reads as absent.
     internal static class ReferenceResolver
     {
-        private const string SwitchName = "Microsoft.Extensions.Configuration.DisableConfigurationTransformations";
+        private const string SwitchName = "Microsoft.Extensions.Configuration.DisableConfigurationReferences";
         // The three ways one read can grow, each bounded on its own: steps from one reference to the next, levels of
         // sub-reference, and values put into any single key expression.
         private const int MaxChain = 64;
