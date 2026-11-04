@@ -1005,6 +1005,66 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
+            // Handles the common suspension on a Task without the cost of a call to HandleSuspended, when this task isn't
+            // holding other awaited state. Returns false, having changed nothing, if HandleSuspended is needed instead.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal unsafe bool TryHandleSuspendedOnTask(ref RuntimeAsyncAwaitState state, RuntimeAsyncStackState* stackState)
+            {
+                if (stackState->NotifierKind != SuspensionNotifierKind.AwaitedTask || m_action is not null)
+                {
+                    return false;
+                }
+
+                Continuation sentinelContinuation = state.SentinelContinuation!;
+                Continuation headContinuation = sentinelContinuation.Next!;
+                sentinelContinuation.Next = null;
+
+                SetContinuationState(headContinuation);
+
+                Debug.Assert(stackState->Notifier is Task);
+                Task awaitedTask = Unsafe.As<Task>(stackState->Notifier!);
+                m_action = GetAwaitedTaskContinuationContext(headContinuation, stackState->AwaitedContinuationContext);
+                if (!awaitedTask.TryAddFirstTaskContinuation(this))
+                {
+                    AddAwaitedTaskContinuation(awaitedTask);
+                }
+
+                return true;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private void AddAwaitedTaskContinuation(Task awaitedTask)
+            {
+                try
+                {
+                    if (!awaitedTask.AddTaskContinuation(this, addBeforeOthers: false))
+                    {
+                        ExecuteRuntimeAsyncAwaitContinuation(awaitedTask, canInline: false);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Task.ThrowAsync(ex, targetContext: null);
+                }
+            }
+
+            // Continuing on the thread pool needs no context object, so when the awaiting frame doesn't
+            // already specify where to continue, move that onto its continuation, as for an await the JIT
+            // recognized. The dispatcher then checks it on the thread it's already running on, rather than
+            // the awaited task's completion separately checking it beforehand.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static object? GetAwaitedTaskContinuationContext(Continuation headContinuation, object? awaitedContinuationContext)
+            {
+                if ((awaitedContinuationContext == TaskScheduler.Default || awaitedContinuationContext == SuppressThrowingAwaitContext.ThreadPool) &&
+                    (headContinuation.Flags & (ContinuationFlags.AllContinuationFlags | ContinuationFlags.ValueTaskAdaptedToTask)) == 0)
+                {
+                    headContinuation.Flags |= ContinuationFlags.ContinueOnThreadPool;
+                    awaitedContinuationContext = awaitedContinuationContext == TaskScheduler.Default ? null : SuppressThrowingAwaitContext.Transparent;
+                }
+
+                return awaitedContinuationContext;
+            }
+
             internal unsafe bool HandleSuspended(ref RuntimeAsyncAwaitState state)
             {
                 Thread? currentThread = state.CurrentThread;
@@ -1056,20 +1116,7 @@ namespace System.Runtime.CompilerServices
                             // continuation when it resumes.
                             Debug.Assert(notifier is Task);
                             Task awaitedTask = Unsafe.As<Task>(notifier);
-                            object? awaitedContinuationContext = stackState->AwaitedContinuationContext;
-
-                            // Continuing on the thread pool needs no context object, so when the awaiting frame doesn't
-                            // already specify where to continue, move that onto its continuation, as for an await the JIT
-                            // recognized. The dispatcher then checks it on the thread it's already running on, rather than
-                            // the awaited task's completion separately checking it beforehand.
-                            if ((awaitedContinuationContext == TaskScheduler.Default || awaitedContinuationContext == SuppressThrowingAwaitContext.ThreadPool) &&
-                                (headContinuation.Flags & (ContinuationFlags.AllContinuationFlags | ContinuationFlags.ValueTaskAdaptedToTask)) == 0)
-                            {
-                                headContinuation.Flags |= ContinuationFlags.ContinueOnThreadPool;
-                                awaitedContinuationContext = awaitedContinuationContext == TaskScheduler.Default ? null : SuppressThrowingAwaitContext.Transparent;
-                            }
-
-                            m_action = awaitedContinuationContext;
+                            m_action = GetAwaitedTaskContinuationContext(headContinuation, stackState->AwaitedContinuationContext);
                             if (!awaitedTask.AddTaskContinuation(this, addBeforeOthers: false))
                             {
                                 ExecuteRuntimeAsyncAwaitContinuation(awaitedTask, canInline: false);
@@ -1293,7 +1340,10 @@ namespace System.Runtime.CompilerServices
                                 {
                                     newContinuation.Next = nextContinuation;
                                 }
-                                HandleSuspended(ref awaitState);
+                                if (!TryHandleSuspendedOnTask(ref awaitState, &stackState))
+                                {
+                                    HandleSuspended(ref awaitState);
+                                }
 
                                 contexts.Pop(awaitState.CurrentThread!);
                                 awaitState.Pop();
@@ -1687,7 +1737,7 @@ namespace System.Runtime.CompilerServices
             return;
         }
 
-        private static void FinalizeRuntimeAsyncTask<T>(ref RuntimeAsyncAwaitState state, RuntimeAsyncTask<T> task)
+        private static unsafe void FinalizeRuntimeAsyncTask<T>(ref RuntimeAsyncAwaitState state, RuntimeAsyncTask<T> task)
         {
             // We restore back to the leaf context to call OnCompleted, so we
             // need to push/pop contexts around that as well.
@@ -1703,7 +1753,11 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            task.HandleSuspended(ref state);
+            if (!task.TryHandleSuspendedOnTask(ref state, state.StackState))
+            {
+                task.HandleSuspended(ref state);
+            }
+
             contexts.Pop(state.CurrentThread!);
         }
 

@@ -4732,6 +4732,11 @@ namespace System.Threading.Tasks
             else return true;
         }
 
+        /// <summary>Adds the continuation if the task isn't completed and has no other continuations, without allocating.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool TryAddFirstTaskContinuation(object tc) =>
+            !IsCompleted && m_continuationObject is null && Interlocked.CompareExchange(ref m_continuationObject, tc, null) is null;
+
         // Removes a continuation task from m_continuations
         internal void RemoveContinuation(object continuationObject) // could be TaskContinuation or Action<Task>
         {
