@@ -144,6 +144,9 @@ namespace ILLink.Tasks
 
             ProcessExceptionTypes(rexcepFilePath);
 
+            if (Log.HasLoggedErrors)
+                return false;
+
             OutputXml(iLLinkTrimXmlFilePath, RuntimeRootDescriptorFilePath.ItemSpec);
 
             return true;
@@ -612,6 +615,11 @@ namespace ILLink.Tasks
                 if (ifdefLength > 0)
                 {
                     string defineName = line.Substring(ifdefLength).Trim();
+                    if (ifdefLength == 4 && defineName.StartsWith("defined(", StringComparison.Ordinal) &&
+                        defineName.EndsWith(")", StringComparison.Ordinal))
+                    {
+                        defineName = defineName.Substring("defined(".Length, defineName.Length - "defined(".Length - 1).Trim();
+                    }
                     if (!IsIdentifier(defineName))
                     {
                         _logError($"Unsupported preprocessor condition in '{_filePath}' at line {_lineNumber}: {line}");

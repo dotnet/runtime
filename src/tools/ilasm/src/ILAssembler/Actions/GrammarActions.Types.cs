@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal sealed partial class GrammarActions
 {
