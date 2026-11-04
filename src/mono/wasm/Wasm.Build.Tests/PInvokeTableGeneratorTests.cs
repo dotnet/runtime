@@ -90,6 +90,29 @@ namespace Wasm.Build.Tests
 
             RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
             Assert.Contains(result.TestOutput, line => line.Contains("CoreLib entrypoint trimming sample passed", StringComparison.Ordinal));
+
+            if (useEntryPoints)
+                return;
+
+            string linkedDir = Path.GetRelativePath(_projectDir, Path.Combine(GetObjDir(config), "linked")) + Path.DirectorySeparatorChar;
+            Assert.True(File.Exists(Path.Combine(_projectDir, linkedDir, "System.Private.CoreLib.dll")));
+            UpdateFile(Path.Combine("Common", "Program.cs"), new Dictionary<string, string>
+            {
+                { "#if USE_ENTRYPOINTS", "#if true" },
+            });
+            PublishProject(info, config, new PublishOptions(AOT: aot, AssertAppBundle: false, UseCache: false, Label: "untrimmed",
+                ExtraMSBuildArgs: $"{ReadyToRunTests.GetR2RBuildArgs(config)} -p:PublishTrimmed=false -p:IntermediateLinkDir={linkedDir}"), isNativeBuild: true);
+
+            symbols = File.ReadAllText(Path.Combine(nativeBuildDir, "dotnet.native.js.symbols"));
+            table = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
+            foreach (string entryPoint in new[] { "GCInterface_GetTotalMemory", "Math_Asinh" })
+            {
+                Assert.Contains(symbols.Split('\n'), line => line.TrimEnd('\r').EndsWith($":{entryPoint}", StringComparison.Ordinal));
+                Assert.Contains($"{{ \"{entryPoint}\",", table);
+            }
+
+            result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            Assert.Contains(result.TestOutput, line => line.Contains("CoreLib entrypoint trimming sample passed", StringComparison.Ordinal));
         }
 
         // Only Mono's generator rejects a non-blittable callback signature; crossgen2 leaves the

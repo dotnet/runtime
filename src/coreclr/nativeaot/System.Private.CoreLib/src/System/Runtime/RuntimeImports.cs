@@ -32,8 +32,6 @@ namespace System.Runtime
         private const bool UseMathHelpers = false;
 #endif
 
-        private const string MathImportPrefix = UseMathHelpers ? "Rhp_" : "";
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadEntryPointAddress")]
 #if TARGET_WINDOWS
@@ -827,11 +825,11 @@ namespace System.Runtime
         internal static extern float tanhf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "fmod")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "Math_FMod" : "fmod")]
         internal static extern double fmod(double x, double y);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, MathImportPrefix + "fmodf")]
+        [RuntimeImport(RuntimeLibrary, UseMathHelpers ? "MathF_FMod" : "fmodf")]
         internal static extern float fmodf(float x, float y);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -262,6 +262,8 @@ namespace ILLink.Tasks
                     AddMethod("set_" + propertyName, classId, null, null, currentFeatureSwitch);
                 }
             }
+
+            defineTracker.Complete();
         }
 
         public void ProcessCoreTypes(string corTypeFile)
@@ -285,6 +287,8 @@ namespace ILLink.Tasks
                     AddClass(classNamespace, className, classId);
                 }
             }
+
+            defineTracker.Complete();
         }
 
         public void ProcessExceptionTypes(string excTypeFile)
@@ -309,6 +313,8 @@ namespace ILLink.Tasks
                     AddMethod(".ctor", classId, classNamespace, className);
                 }
             }
+
+            defineTracker.Complete();
         }
 
         void OutputXml(string iLLinkTrimXmlFilePath, string outputFileName)

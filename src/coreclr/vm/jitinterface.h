@@ -173,8 +173,8 @@ extern "C" FCDECL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 // Math helpers implemented in runtime/MathHelpers.cpp
 EXTERN_C FCDECL1_D(uint64_t, RhpDbl2ULng, double val);
 EXTERN_C FCDECL1_D(int64_t, RhpDbl2Lng, double val);
-EXTERN_C FCDECL2_DD(double, Rhp_fmod, double x, double y);
-EXTERN_C FCDECL2_FF(float, Rhp_fmodf, float x, float y);
+EXTERN_C FCDECL2_DD(double, Math_FMod, double x, double y);
+EXTERN_C FCDECL2_FF(float, MathF_FMod, float x, float y);
 
 EXTERN_C FCDECL1_D(double, Math_Acos, double x);
 EXTERN_C FCDECL1_F(float, MathF_Acos, float x);

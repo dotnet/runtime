@@ -67,11 +67,17 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData(null)]
-        [InlineData("corelib.h")]
-        [InlineData("cortypeinfo.h")]
-        [InlineData("rexcep.h")]
-        public void TestCoreLibClassGen(string invalidHeader)
+        [InlineData(null, null)]
+        [InlineData("corelib.h", "#if FEATURE_ON || FEATURE_OTHER")]
+        [InlineData("cortypeinfo.h", "#if FEATURE_ON || FEATURE_OTHER")]
+        [InlineData("rexcep.h", "#if FEATURE_ON || FEATURE_OTHER")]
+        [InlineData("corelib.h", "#ifdef FEATURE_ON")]
+        [InlineData("cortypeinfo.h", "#ifdef FEATURE_ON")]
+        [InlineData("rexcep.h", "#ifdef FEATURE_ON")]
+        [InlineData("corelib.h", "#ifdef FEATURE_OFF")]
+        [InlineData("cortypeinfo.h", "#ifdef FEATURE_OFF")]
+        [InlineData("rexcep.h", "#ifdef FEATURE_OFF")]
+        public void TestCoreLibClassGen(string invalidHeader, string condition)
         {
             File.WriteAllLines("corelib.h", new string[] {
                 "#ifndef TESTDEF",
@@ -124,7 +130,7 @@ namespace ILLink.Tasks.Tests
             new XDocument(existingContent).Save("Test.ILLink.Descriptors.Combined.xml");
 
             if (invalidHeader is not null)
-                File.AppendAllText(invalidHeader, "\n#if FEATURE_ON || FEATURE_OTHER\n");
+                File.AppendAllText(invalidHeader, $"\n{condition}\n");
 
             File.Delete("Test.ILLink.Descriptors.xml");
             var buildEngine = new MockBuildEngine();

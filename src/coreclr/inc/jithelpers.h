@@ -102,8 +102,8 @@
     DYNAMICJITHELPER(CORINFO_HELP_DBL2UINT_OVF, NULL,               METHOD__MATH__CONVERT_TO_UINT32_CHECKED)
     JITHELPER(CORINFO_HELP_DBL2ULNG,            RhpDbl2ULng,        METHOD__NIL)
     DYNAMICJITHELPER(CORINFO_HELP_DBL2ULNG_OVF, NULL,               METHOD__MATH__CONVERT_TO_UINT64_CHECKED)
-    JITHELPER(CORINFO_HELP_FLTREM,              Rhp_fmodf,          METHOD__NIL)
-    JITHELPER(CORINFO_HELP_DBLREM,              Rhp_fmod,           METHOD__NIL)
+    JITHELPER(CORINFO_HELP_FLTREM,              MathF_FMod,         METHOD__NIL)
+    JITHELPER(CORINFO_HELP_DBLREM,              Math_FMod,          METHOD__NIL)
 
     // Allocating a new object
     JITHELPER(CORINFO_HELP_NEWFAST,                     RhpNew,                   METHOD__NIL)

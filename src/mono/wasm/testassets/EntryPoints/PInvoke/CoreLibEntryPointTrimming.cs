@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 
 #if USE_ENTRYPOINTS
-if (GC.GetTotalMemory(forceFullCollection: false) <= 0 || Math.Asinh(Environment.ProcessorCount) <= 0)
+if (GC.GetTotalMemory(forceFullCollection: false) < 0 || Math.Asinh(Environment.ProcessorCount) <= 0)
     return 1;
 #endif
 

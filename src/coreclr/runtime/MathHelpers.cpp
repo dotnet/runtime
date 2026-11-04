@@ -35,13 +35,13 @@ FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 }
 FCIMPLEND
 
-FCIMPL2_DD(double, Rhp_fmod, double x, double y)
+FCIMPL2_DD(double, Math_FMod, double x, double y)
 {
     return fmod(x, y);
 }
 FCIMPLEND
 
-FCIMPL2_FF(float, Rhp_fmodf, float x, float y)
+FCIMPL2_FF(float, MathF_FMod, float x, float y)
 {
     return fmodf(x, y);
 }

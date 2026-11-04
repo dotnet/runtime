@@ -266,7 +266,7 @@
       <_WasiBundledFile Include="$(WasmAppDir)managed\*.dll" />
       <_WasiPInvokeModules Remove="@(_WasiPInvokeModules)" />
     </ItemGroup>
-    <ItemGroup Condition="'$(IntermediateLinkDir)' != ''">
+    <ItemGroup Condition="'$(PublishTrimmed)' == 'true' and '$(IntermediateLinkDir)' != ''">
       <_WasiBundledFileR2RRemap Include="@(_WasiBundledFile)" Condition="Exists('$(IntermediateLinkDir)%(FileName)%(Extension)')" />
       <_WasiBundledFile Remove="@(_WasiBundledFileR2RRemap)" />
       <_WasiBundledFile Include="@(_WasiBundledFileR2RRemap->'$(IntermediateLinkDir)%(FileName)%(Extension)')" />
