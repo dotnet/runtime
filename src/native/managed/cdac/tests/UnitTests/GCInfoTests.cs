@@ -1,0 +1,293 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
+using Xunit;
+
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
+
+public unsafe class GCInfoTests
+{
+    private const ulong MethodIP = 0x10000;
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void QueryInterfaceFromIXCLRDataProcess_ExposesGCInfo(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface18 sos = CreateGCInfoInterface(arch, CodeKind.Jitted);
+        void* process = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(Assert.IsAssignableFrom<IXCLRDataProcess>(sos));
+        try
+        {
+            Guid iid = typeof(ISOSDacInterface18).GUID;
+            Assert.Equal(HResults.S_OK, Marshal.QueryInterface((nint)process, in iid, out nint gcInfo));
+            try
+            {
+                void** vtable = *(void***)gcInfo;
+                SOSGCInfoHeader header = new() { SizeOf = (uint)sizeof(SOSGCInfoHeader) };
+                int hr = ((delegate* unmanaged[MemberFunction]<nint, ClrDataAddress, SOSGCInfoHeader*, int>)vtable[3])(gcInfo, MethodIP, &header);
+                Assert.Equal(HResults.S_OK, hr);
+                Assert.Equal(6u, header.GcInfoVersion);
+                Assert.Equal(128u, header.CodeSize);
+
+                uint needed = uint.MaxValue;
+                SOSCodeRange* ranges = stackalloc SOSCodeRange[2];
+                hr = ((delegate* unmanaged[MemberFunction]<nint, ClrDataAddress, uint, SOSCodeRange*, uint*, int>)vtable[4])(gcInfo, MethodIP, 2, ranges, &needed);
+                Assert.Equal(HResults.S_OK, hr);
+                Assert.Equal(2u, needed);
+                Assert.Equal(4u, ranges[0].BeginOffset);
+                Assert.Equal(20u, ranges[1].EndOffset);
+
+                uint* offsets = stackalloc uint[2];
+                hr = ((delegate* unmanaged[MemberFunction]<nint, ClrDataAddress, uint, uint*, uint*, int>)vtable[5])(gcInfo, MethodIP, 2, offsets, &needed);
+                Assert.Equal(HResults.S_OK, hr);
+                Assert.Equal(2u, needed);
+                Assert.Equal(8u, offsets[0]);
+                Assert.Equal(24u, offsets[1]);
+
+                SOSGCSlotLifetime* lifetimes = stackalloc SOSGCSlotLifetime[3];
+                hr = ((delegate* unmanaged[MemberFunction]<nint, ClrDataAddress, uint, SOSGCSlotLifetime*, uint*, int>)vtable[6])(gcInfo, MethodIP, 3, lifetimes, &needed);
+                Assert.Equal(HResults.S_OK, hr);
+                Assert.Equal(3u, needed);
+                Assert.Equal(1, lifetimes[0].IsRegister);
+                Assert.Equal(-24, lifetimes[1].SpOffset);
+                Assert.Equal(1u, lifetimes[2].BaseRegister);
+            }
+            finally
+            {
+                Marshal.Release(gcInfo);
+            }
+        }
+        finally
+        {
+            ComInterfaceMarshaller<IXCLRDataProcess>.Free(process);
+        }
+    }
+
+    [Theory]
+    [InlineData(CodeKind.Jitted, GenericsContextKind.None)]
+    [InlineData(CodeKind.ReadyToRun, GenericsContextKind.This)]
+    [InlineData(CodeKind.Interpreter, GenericsContextKind.MethodDesc)]
+    [InlineData(CodeKind.Interpreter, GenericsContextKind.MethodHandle)]
+    public void GetGCInfoHeader_MapsFieldsAndSelectsDecoder(CodeKind codeKind, GenericsContextKind contextKind)
+    {
+        bool hasSpecialSlots = contextKind != GenericsContextKind.None;
+        MockTarget.Architecture arch = new() { Is64Bit = true, IsLittleEndian = true };
+        ISOSDacInterface18 sos = CreateGCInfoInterface(arch, codeKind, (_, gcInfo, handle) =>
+        {
+            gcInfo.Setup(g => g.GetHeader(handle)).Returns(new GCInfoHeader(
+                Version: 6, CodeSize: 128, PrologSize: 3, StackBaseRegister: 5, SizeOfStackParameterArea: 32,
+                IsVarArg: hasSpecialSlots, WantsReportOnlyLeaf: !hasSpecialSlots, HasTailCalls: hasSpecialSlots,
+                GSCookie: hasSpecialSlots ? new SpecialSlot(-16) : null,
+                GSCookieValidRangeStart: hasSpecialSlots ? 3u : 0u,
+                GSCookieValidRangeEnd: hasSpecialSlots ? 120u : 0u,
+                PSPSym: hasSpecialSlots ? new SpecialSlot(0) : null,
+                GenericsInstContext: hasSpecialSlots ? new SpecialSlot(-32) : null,
+                GenericsInstContextKind: contextKind));
+        });
+
+        SOSGCInfoHeader header = new() { SizeOf = (uint)sizeof(SOSGCInfoHeader) };
+        Assert.Equal(HResults.S_OK, sos.GetGCInfoHeader(MethodIP, &header));
+        Assert.Equal((uint)sizeof(SOSGCInfoHeader), header.SizeOf);
+        Assert.Equal(6u, header.GcInfoVersion);
+        Assert.Equal(128u, header.CodeSize);
+        Assert.Equal(3u, header.PrologSize);
+        Assert.Equal(5u, header.StackBaseRegister);
+        Assert.Equal(32u, header.SizeOfStackParameterArea);
+        Assert.Equal(hasSpecialSlots ? 1 : 0, header.IsVarArg);
+        Assert.Equal(hasSpecialSlots ? 0 : 1, header.WantsReportOnlyLeaf);
+        Assert.Equal(hasSpecialSlots ? 1 : 0, header.HasTailCalls);
+        Assert.Equal(hasSpecialSlots ? 1 : 0, header.GSCookieIsPresent);
+        Assert.Equal(hasSpecialSlots ? -16 : 0, header.GSCookieStackSlot);
+        Assert.Equal(hasSpecialSlots ? 3u : 0u, header.GSCookieValidRangeStart);
+        Assert.Equal(hasSpecialSlots ? 120u : 0u, header.GSCookieValidRangeEnd);
+        Assert.Equal(hasSpecialSlots ? 1 : 0, header.PSPSymIsPresent);
+        Assert.Equal(0, header.PSPSymStackSlot);
+        Assert.Equal(hasSpecialSlots ? 1 : 0, header.GenericsInstContextIsPresent);
+        Assert.Equal(hasSpecialSlots ? -32 : 0, header.GenericsInstContextStackSlot);
+        Assert.Equal((uint)contextKind, header.GenericsInstContextKind);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void GetGCInfoTables_RespectBufferSizes(int count)
+    {
+        MockTarget.Architecture arch = new() { Is64Bit = false, IsLittleEndian = false };
+        ISOSDacInterface18 sos = CreateGCInfoInterface(arch, CodeKind.Interpreter);
+        SOSCodeRange[]? ranges = count == 0 ? null : new SOSCodeRange[count];
+        uint[]? offsets = count == 0 ? null : new uint[count];
+        SOSGCSlotLifetime[]? lifetimes = count == 0 ? null : new SOSGCSlotLifetime[count];
+        uint needed = uint.MaxValue;
+
+        Assert.Equal(count < 2 ? HResults.S_FALSE : HResults.S_OK,
+            sos.GetGCInfoInterruptibleRanges(MethodIP, (uint)count, ranges, &needed));
+        Assert.Equal(2u, needed);
+        Assert.Equal(count < 2 ? HResults.S_FALSE : HResults.S_OK,
+            sos.GetGCInfoSafePoints(MethodIP, (uint)count, offsets, &needed));
+        Assert.Equal(2u, needed);
+        Assert.Equal(count < 3 ? HResults.S_FALSE : HResults.S_OK,
+            sos.GetGCInfoSlotLifetimes(MethodIP, (uint)count, lifetimes, &needed));
+        Assert.Equal(3u, needed);
+
+        if (count >= 2)
+        {
+            Assert.NotNull(ranges);
+            Assert.NotNull(offsets);
+            Assert.Equal(new SOSCodeRange { BeginOffset = 4, EndOffset = 12 }, ranges[0]);
+            Assert.Equal(new SOSCodeRange { BeginOffset = 16, EndOffset = 20 }, ranges[1]);
+            Assert.Equal(8u, offsets[0]);
+            Assert.Equal(24u, offsets[1]);
+        }
+        if (count >= 3)
+        {
+            Assert.NotNull(lifetimes);
+            Assert.Equal(new SOSGCSlotLifetime { BeginOffset = 4, EndOffset = 8, IsRegister = 1, RegisterNumber = 3, GcFlags = 3 }, lifetimes[0]);
+            Assert.Equal(new SOSGCSlotLifetime { BeginOffset = 0, EndOffset = 128, SpOffset = -24, BaseRegister = 2, GcFlags = 6 }, lifetimes[1]);
+            Assert.Equal(new SOSGCSlotLifetime { BeginOffset = 16, EndOffset = 20, SpOffset = 40, BaseRegister = 1, GcFlags = 1 }, lifetimes[2]);
+        }
+        if (ranges is not null)
+            Assert.All(ranges.AsSpan(count >= 2 ? 2 : 0).ToArray(), value => Assert.Equal(default, value));
+        if (offsets is not null)
+            Assert.All(offsets.AsSpan(count >= 2 ? 2 : 0).ToArray(), value => Assert.Equal(0u, value));
+        if (lifetimes is not null)
+            Assert.All(lifetimes.AsSpan(count >= 3 ? 3 : 0).ToArray(), value => Assert.Equal(default, value));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCInfoTables_EmptyResults(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface18 sos = CreateGCInfoInterface(arch, CodeKind.ReadyToRun, (_, gcInfo, handle) =>
+        {
+            gcInfo.Setup(g => g.GetInterruptibleRanges(handle)).Returns(Array.Empty<InterruptibleRange>());
+            gcInfo.Setup(g => g.GetSafePoints(handle)).Returns(Array.Empty<uint>());
+            gcInfo.Setup(g => g.GetSlotLifetimes(handle)).Returns(Array.Empty<GCSlotLifetime>());
+        });
+        uint needed = uint.MaxValue;
+        Assert.Equal(HResults.S_OK, sos.GetGCInfoInterruptibleRanges(MethodIP, 0, null, &needed));
+        Assert.Equal(0u, needed);
+        needed = uint.MaxValue;
+        Assert.Equal(HResults.S_OK, sos.GetGCInfoSafePoints(MethodIP, 0, null, &needed));
+        Assert.Equal(0u, needed);
+        needed = uint.MaxValue;
+        Assert.Equal(HResults.S_OK, sos.GetGCInfoSlotLifetimes(MethodIP, 0, null, &needed));
+        Assert.Equal(0u, needed);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GetGCInfoHeader_RejectsInvalidBuffers(bool almostLargeEnough)
+    {
+        MockTarget.Architecture arch = new() { Is64Bit = true, IsLittleEndian = true };
+        ISOSDacInterface18 sos = CreateGCInfoInterface(arch, CodeKind.Jitted);
+        Assert.Equal(HResults.E_POINTER, sos.GetGCInfoHeader(MethodIP, null));
+        uint size = almostLargeEnough ? (uint)sizeof(SOSGCInfoHeader) - 1 : 0;
+        SOSGCInfoHeader header = new() { SizeOf = size, CodeSize = uint.MaxValue };
+        Assert.Equal(HResults.E_INVALIDARG, sos.GetGCInfoHeader(MethodIP, &header));
+        Assert.Equal(size, header.SizeOf);
+        Assert.Equal(uint.MaxValue, header.CodeSize);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCInfoTables_RejectInvalidBuffers(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface18 sos = CreateGCInfoInterface(arch, CodeKind.Jitted);
+        Assert.Equal(HResults.E_POINTER, sos.GetGCInfoInterruptibleRanges(MethodIP, 0, null, null));
+        Assert.Equal(HResults.E_POINTER, sos.GetGCInfoSafePoints(MethodIP, 0, null, null));
+        Assert.Equal(HResults.E_POINTER, sos.GetGCInfoSlotLifetimes(MethodIP, 0, null, null));
+
+        uint needed = uint.MaxValue;
+        Assert.Equal(HResults.E_INVALIDARG, sos.GetGCInfoInterruptibleRanges(MethodIP, 1, null, &needed));
+        Assert.Equal(0u, needed);
+        needed = uint.MaxValue;
+        Assert.Equal(HResults.E_INVALIDARG, sos.GetGCInfoSafePoints(MethodIP, 1, null, &needed));
+        Assert.Equal(0u, needed);
+        needed = uint.MaxValue;
+        Assert.Equal(HResults.E_INVALIDARG, sos.GetGCInfoSlotLifetimes(MethodIP, 1, null, &needed));
+        Assert.Equal(0u, needed);
+
+        Assert.Equal(HResults.E_INVALIDARG, sos.GetGCInfoInterruptibleRanges(MethodIP, 2, new SOSCodeRange[1], &needed));
+        Assert.Equal(HResults.E_INVALIDARG, sos.GetGCInfoSafePoints(MethodIP, 2, new uint[1], &needed));
+        Assert.Equal(HResults.E_INVALIDARG, sos.GetGCInfoSlotLifetimes(MethodIP, 2, new SOSGCSlotLifetime[1], &needed));
+    }
+
+    [Theory]
+    [InlineData(0ul, HResults.E_INVALIDARG)]
+    [InlineData(MethodIP + 1, HResults.E_INVALIDARG)]
+    [InlineData(MethodIP, HResults.E_FAIL)]
+    public void GetGCInfo_InitializesOutputsOnFailure(ulong ip, int expectedHResult)
+    {
+        MockTarget.Architecture arch = new() { Is64Bit = true, IsLittleEndian = true };
+        ISOSDacInterface18 sos = CreateGCInfoInterface(arch, CodeKind.Jitted, (executionManager, _, _) =>
+        {
+            executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(MethodIP + 1))).Returns((CodeBlockHandle?)null);
+            executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(MethodIP)))
+                .Throws(new COMException("Cannot read the method's code block.", HResults.E_FAIL));
+        });
+        SOSGCInfoHeader header = new() { SizeOf = (uint)sizeof(SOSGCInfoHeader), CodeSize = uint.MaxValue };
+        Assert.Equal(expectedHResult, sos.GetGCInfoHeader(ip, &header));
+        Assert.Equal((uint)sizeof(SOSGCInfoHeader), header.SizeOf);
+        Assert.Equal(0u, header.CodeSize);
+        Assert.Equal(0u, header.GcInfoVersion);
+
+        uint needed = uint.MaxValue;
+        Assert.Equal(expectedHResult, sos.GetGCInfoInterruptibleRanges(ip, 0, null, &needed));
+        Assert.Equal(0u, needed);
+        needed = uint.MaxValue;
+        Assert.Equal(expectedHResult, sos.GetGCInfoSafePoints(ip, 0, null, &needed));
+        Assert.Equal(0u, needed);
+        needed = uint.MaxValue;
+        Assert.Equal(expectedHResult, sos.GetGCInfoSlotLifetimes(ip, 0, null, &needed));
+        Assert.Equal(0u, needed);
+    }
+
+    private static ISOSDacInterface18 CreateGCInfoInterface(
+        MockTarget.Architecture arch,
+        CodeKind codeKind,
+        Action<Mock<IExecutionManager>, Mock<IGCInfo>, IGCInfoHandle>? configure = null)
+    {
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x30000));
+        TargetPointer gcInfoAddress = new(0x20000);
+        uint version = 6;
+        Mock<IExecutionManager> executionManager = new(MockBehavior.Strict);
+        executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(MethodIP))).Returns(codeBlock);
+        executionManager.Setup(e => e.GetCodeKind(new TargetCodePointer(MethodIP))).Returns(codeKind);
+        executionManager.Setup(e => e.GetGCInfo(codeBlock, out gcInfoAddress, out version));
+        Mock<IGCInfo> gcInfo = new(MockBehavior.Strict);
+        IGCInfoHandle handle = Mock.Of<IGCInfoHandle>();
+        if (codeKind == CodeKind.Interpreter)
+            gcInfo.Setup(g => g.DecodeInterpreterGCInfo(gcInfoAddress, version)).Returns(handle);
+        else
+            gcInfo.Setup(g => g.DecodePlatformSpecificGCInfo(gcInfoAddress, version)).Returns(handle);
+        gcInfo.Setup(g => g.GetHeader(handle)).Returns(new GCInfoHeader(
+            6, 128, 0, 5, 0, false, false, false, null, 0, 0, null, null, GenericsContextKind.None));
+        gcInfo.Setup(g => g.GetInterruptibleRanges(handle)).Returns(new InterruptibleRange[] { new(4, 12), new(16, 20) });
+        gcInfo.Setup(g => g.GetSafePoints(handle)).Returns(new uint[] { 8, 24 });
+        gcInfo.Setup(g => g.GetSlotLifetimes(handle)).Returns(new GCSlotLifetime[]
+        {
+            new(true, 3, 0, 0, 3, 4, 8),
+            new(false, 0, -24, 2, 6, 0, 128),
+            new(false, 0, 40, 1, 1, 16, 20),
+        });
+        configure?.Invoke(executionManager, gcInfo, handle);
+        Target target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(executionManager)
+            .AddMockContract(gcInfo)
+            .Build();
+
+        return Assert.IsAssignableFrom<ISOSDacInterface18>(new SOSDacImpl(target, legacyObj: null, new()));
+    }
+
+}
