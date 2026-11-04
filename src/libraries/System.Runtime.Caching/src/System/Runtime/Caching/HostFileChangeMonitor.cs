@@ -21,16 +21,15 @@ namespace System.Runtime.Caching
         private const int MAX_CHAR_COUNT_OF_LONG_CONVERTED_TO_HEXADECIMAL_STRING = 16;
         private static IFileChangeNotificationSystem? s_fcn;
         private readonly ReadOnlyCollection<string> _filePaths;
-        private string _uniqueId = null!;
+        private string _uniqueId;
         private object? _fcnState;
         private DateTimeOffset _lastModified;
 
-        private HostFileChangeMonitor() { _filePaths = null!; _uniqueId = null!; } // hide default .ctor
-
+        [MemberNotNull(nameof(_uniqueId))]
         private void InitDisposableMembers()
         {
             Debug.Assert(s_fcn != null);
-            IFileChangeNotificationSystem fcn = s_fcn!;
+            IFileChangeNotificationSystem fcn = s_fcn;
             bool dispose = true;
             try
             {
@@ -88,6 +87,7 @@ namespace System.Runtime.Caching
             }
         }
 
+        [MemberNotNull(nameof(s_fcn))]
         private static void InitFCN()
         {
             if (s_fcn == null)
@@ -113,6 +113,7 @@ namespace System.Runtime.Caching
 #pragma warning restore IDE0074
                 Interlocked.CompareExchange(ref s_fcn, fcn, null);
             }
+            Debug.Assert(s_fcn != null);
         }
 
         //
