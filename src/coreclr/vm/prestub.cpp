@@ -314,7 +314,7 @@ PCODE MethodDesc::PrepareInitialCode(CallerGCMode callerGCMode)
     PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
     config.SetCallerGCMode(callerGCMode);
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    config.SetAuxiliaryMethodStateRequest(AuxiliaryMethodStateRequest::Pending(m_codeData->AuxiliaryState));
+    config.SetAuxiliaryMethodStateRequest(AuxiliaryMethodStateRequest::Pending(AuxiliaryMethodState::Uninitialized()));
 #endif
     return PrepareCode(&config);
 }
@@ -383,6 +383,10 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
         if (pCode == (PCODE)NULL)
         {
             pCode = GetPrecompiledCode(pConfig, shouldTier);
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+            if (pCode == (PCODE)NULL)
+                RecordDelayedR2RCode(pConfig);
+#endif // FEATURE_AUXILIARY_R2R_MODULES
         }
 
         if (pCode != (PCODE)NULL)
@@ -400,9 +404,6 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
         pCode = JitCompileCode(pConfig);
-#ifdef FEATURE_AUXILIARY_R2R_MODULES
-        RecordDelayedR2RCode(pConfig);
-#endif // FEATURE_AUXILIARY_R2R_MODULES
     }
     else
     {
@@ -608,9 +609,9 @@ void MethodDesc::RecordDelayedR2RCode(PrepareCodeConfig* pConfig)
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(pConfig->GetAuxiliaryMethodStateRequest().IsResolved());
-    _ASSERTE(m_codeData != nullptr);
     _ASSERTE(pConfig->GetAuxiliaryMethodStateRequest().auxMethodState.discriminator != AuxiliaryMethodStateDiscriminator::Activated);
     AuxiliaryMethodState state = pConfig->GetAuxiliaryMethodStateRequest().GetAuxMethodState();
+    IfFailThrow(EnsureCodeDataExists(NULL));
     m_codeData->AuxiliaryState = state;
 }
 
