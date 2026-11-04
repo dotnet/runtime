@@ -163,7 +163,17 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                     """);
             }
 
-            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source.ToString(), new Options { Dll = true });
+            string declarations = source.ToString();
+            var (normalDiagnostics, normalResult) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                declarations, new Options { Dll = true });
+            Assert.Null(normalResult);
+            AssertDuplicateDiagnostics(normalDiagnostics, declarations, assemblyNames.Length - 1);
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                declarations, new Options { Dll = true, ErrorTolerant = true });
+            AssertDuplicateDiagnostics(diagnostics, declarations, assemblyNames.Length - 1);
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
             MetadataReader reader = pe.GetMetadataReader();
             Assert.Equal(isAssembly, reader.IsAssembly);
             Assert.Equal("ForwarderModule.dll", reader.GetString(reader.GetModuleDefinition().Name));
@@ -207,7 +217,11 @@ namespace Microsoft.DotNet.ILAssembler.Tests
                 }
                 """;
 
-            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = true });
+            AssertDuplicateDiagnostics(diagnostics, source, 1);
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
             MetadataReader reader = pe.GetMetadataReader();
             ExportedTypeHandle[] handles = reader.ExportedTypes.ToArray();
             Assert.Equal(3, handles.Length);
@@ -227,6 +241,70 @@ namespace Microsoft.DotNet.ILAssembler.Tests
             Assert.Equal("Nested", reader.GetString(nested.Name));
             Assert.Equal(TypeAttributes.NestedPublic, nested.Attributes);
             Assert.Equal(handles[0], (ExportedTypeHandle)nested.Implementation);
+        }
+
+        private static void AssertDuplicateDiagnostics(ImmutableArray<Diagnostic> diagnostics, string source, int count)
+        {
+            Assert.Equal(count, diagnostics.Length);
+            int position = source.IndexOf(".class extern", StringComparison.Ordinal);
+            foreach (Diagnostic diagnostic in diagnostics)
+            {
+                position = source.IndexOf(".class extern", position + 1, StringComparison.Ordinal);
+                Assert.Equal("ILA0065", diagnostic.Id);
+                Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+                Assert.Equal("Duplicate exported type 'Testspace.TestType'", diagnostic.Message);
+                Assert.Equal("test.il", diagnostic.Location.Source.Path);
+                Assert.Equal(position, diagnostic.Location.Span.Start);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void DuplicateFileBackedExportedTypes_RequireErrorTolerantMode(bool errorTolerant)
+        {
+            string source = """
+                .assembly test { }
+                .file Module.netmodule
+                .class extern public Testspace.TestType { .file Module.netmodule }
+                .class extern private Testspace.TestType { .file Module.netmodule }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = errorTolerant });
+            AssertDuplicateDiagnostics(diagnostics, source, 1);
+            if (!errorTolerant)
+            {
+                Assert.Null(result);
+                return;
+            }
+
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            MetadataReader reader = pe.GetMetadataReader();
+            ExportedType[] types = reader.ExportedTypes.Select(reader.GetExportedType).ToArray();
+            Assert.Equal(2, types.Length);
+            Assert.Equal(TypeAttributes.Public, types[0].Attributes);
+            Assert.Equal(TypeAttributes.NotPublic, types[1].Attributes);
+            Assert.Equal(HandleKind.AssemblyFile, types[0].Implementation.Kind);
+            Assert.Equal(types[0].Implementation, types[1].Implementation);
+        }
+
+        [Fact]
+        public void ExportedTypes_WithDistinctFullNamesOrParents_AreNotDuplicates()
+        {
+            string source = """
+                .assembly test { }
+                .assembly extern D { }
+                .class extern forwarder First.TestType { .assembly extern D }
+                .class extern forwarder Second.TestType { .assembly extern D }
+                .class extern forwarder First.OtherType { .assembly extern D }
+                .class extern nested public TestType { .class extern First.TestType }
+                .class extern nested public TestType { .class extern Second.TestType }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            Assert.Equal(5, pe.GetMetadataReader().ExportedTypes.Count);
         }
 
         [Fact]

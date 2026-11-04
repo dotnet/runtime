@@ -1796,7 +1796,7 @@ namespace Microsoft.DotNet.ILAssembler
                 return GetOrCreateEntity(key, TableIndex.ExportedType, _seenExportedTypes, key => new(key.Item3, key.Item2, implementation), onCreateType);
             }
 
-            // Native ILAsm preserves top-level duplicates even though ECMA-335 II.22.14 forbids them.
+            // Error-tolerant mode preserves top-level duplicates after the caller diagnoses them.
             // Keep the first declaration for nested exported-type name resolution.
             var entity = new ExportedTypeEntity(name, @namespace, implementation);
             RecordEntityInTable(TableIndex.ExportedType, entity);
