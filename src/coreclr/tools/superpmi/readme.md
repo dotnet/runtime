@@ -54,17 +54,16 @@ library (`.dll` or `.so` or `.dylib`), which the runtime loads as its JIT; the `
 and `superpmi-shim-simple` libraries work the same way, to count the JIT-EE interface calls and to
 measure the cost of the shims.
 
-All of them are written in C# (in `managed`), and published with NativeAOT next to the JIT:
+All of them are written in C# (in `managed`), and published with NativeAOT next to the JIT, on the
+platforms that NativeAOT supports:
 
 * `managed/SuperPmi.Shared`: the method context format, and the recording (`rec*`), replaying (`rep*`)
   and dumping (`dmp*`) of the JIT-EE interface calls.
-* `managed/superpmi`, `managed/mcs`: the executable tools. Without NativeAOT for the platform, they are
-  single-file apps.
-* `managed/superpmi-shim-*`, with the code they share in `managed/shim`: the shims, which need NativeAOT.
+* `managed/superpmi`, `managed/mcs`: the executable tools.
+* `managed/superpmi-shim-*`, with the code they share in `managed/shim`: the shims.
 * `jitinterface`: the native code they need, to call the JIT and the runtime through their C++ interfaces.
   Most of it is generated with the JIT interface (`src/coreclr/tools/Common/JitInterface/ThunkGenerator`).
-  It is built as static libraries in `superpmi-lib`, which NativeAOT links into the tools; a single-file
-  `superpmi` gets a copy of the `superpmi-jitinterface` shared library next to it instead.
+  It is built as static libraries in `superpmi-lib`, which NativeAOT links into the tools.
 
 To harness collection, there is a .NET Core C# program that is built as
 part of the coreclr tests build called superpmicollect.exe

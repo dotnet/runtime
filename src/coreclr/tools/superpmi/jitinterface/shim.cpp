@@ -14,8 +14,6 @@
 
 #ifdef _MSC_VER
 #include <excpt.h>
-#else
-#include <cxxabi.h>
 #endif
 
 #include "jitinterface_generated.h"
@@ -53,22 +51,10 @@ static void RunWithCodeFilter(F& function, uint32_t* code)
     {
     }
 }
-#else
-// The code of the current exception if the PAL threw it (PAL_SEHException, whose first field points to the
-// EXCEPTION_RECORD), and otherwise 1, the code that is recorded for the other exceptions.
-static uint32_t GetCurrentExceptionCode()
-{
-    const std::type_info* type = abi::__cxa_current_exception_type();
-    if (type == nullptr || strcmp(type->name(), "16PAL_SEHException") != 0)
-        return 1;
-
-    std::exception_ptr exception = std::current_exception();
-    void* object = *reinterpret_cast<void**>(&exception);
-    return **reinterpret_cast<uint32_t**>(object);
-}
 #endif
 
-// Runs the function, and returns what it throws in *ppException instead.
+// Runs the function, and returns what it throws in *ppException instead. Elsewhere than on Windows, the code of a C++
+// exception isn't known, so it is recorded as 1.
 template <typename F>
 static void RunCapturingException(CorInfoExceptionClass** ppException, F function)
 {
@@ -88,9 +74,6 @@ static void RunCapturingException(CorInfoExceptionClass** ppException, F functio
     }
     catch (...)
     {
-#ifndef _MSC_VER
-        code = GetCurrentExceptionCode();
-#endif
         *ppException = new CapturedException(std::current_exception(), code);
     }
 }

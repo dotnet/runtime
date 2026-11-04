@@ -4,14 +4,15 @@
     <OutputType>Exe</OutputType>
     <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
 
-    <!-- Published as a NativeAOT (or single-file) executable next to the other SuperPMI tools. -->
-    <AotOrSingleFile>true</AotOrSingleFile>
+    <!-- Published as a NativeAOT executable next to the other SuperPMI tools. -->
+    <PublishAot>true</PublishAot>
     <SelfContained>true</SelfContained>
-    <PublishTrimmed>true</PublishTrimmed>
     <RuntimeIdentifier>$(PortableOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <PublishDir>$(RuntimeBinDir)</PublishDir>
     <!-- The native side uses C++ exceptions. -->
     <LinkStandardCPlusPlusLibrary>true</LinkStandardCPlusPlusLibrary>
+    <!-- PIN (for the throughput measurements) moves threads with SetThreadContext, which CET shadow stacks deny. -->
+    <CETCompat>false</CETCompat>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,16 +21,14 @@
     <ProjectReference Include="..\SuperPmi.Shared\SuperPmi.Shared.csproj" />
   </ItemGroup>
 
-  <!-- The native side: linked in with NativeAOT, and a library next to superpmi otherwise. -->
-  <ItemGroup Condition="'$(PublishAot)' == 'true'">
+  <ItemGroup>
     <DirectPInvoke Include="superpmi-jitinterface" />
-    <NativeLibrary Include="$(RuntimeBinDir)superpmi-lib\$(LibPrefix)superpmi-jitinterface-static$(StaticLibSuffix)" />
+    <NativeLibrary Include="$(RuntimeBinDir)superpmi-lib\$(LibPrefix)superpmi-jitinterface$(StaticLibSuffix)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PublishAot)' != 'true'">
-    <None Include="$(RuntimeBinDir)superpmi-lib\$(LibPrefix)superpmi-jitinterface$(LibSuffix)"
-          Link="$(LibPrefix)superpmi-jitinterface$(LibSuffix)"
-          CopyToOutputDirectory="PreserveNewest"
-          CopyToPublishDirectory="PreserveNewest" />
+  <!-- PIN finds the instruction counter of the throughput measurements by its name, so it must be exported (which
+       DLL_EXPORT does on Windows). -->
+  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+    <IlcArg Include="--export-dynamic-symbol:Instrumentor_GetInsCount" />
   </ItemGroup>
 </Project>

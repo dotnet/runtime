@@ -4,10 +4,9 @@
     <OutputType>Exe</OutputType>
     <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
 
-    <!-- Published as a NativeAOT (or single-file) executable next to the other SuperPMI tools. -->
-    <AotOrSingleFile>true</AotOrSingleFile>
+    <!-- Published as a NativeAOT executable next to the other SuperPMI tools. -->
+    <PublishAot>true</PublishAot>
     <SelfContained>true</SelfContained>
-    <PublishTrimmed>true</PublishTrimmed>
     <RuntimeIdentifier>$(PortableOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <PublishDir>$(RuntimeBinDir)</PublishDir>
   </PropertyGroup>

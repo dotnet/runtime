@@ -383,8 +383,7 @@
       Category="clr" />
   </ItemGroup>
 
-  <!-- The managed SuperPMI tools, after their native parts. -->
-  <ItemGroup Condition="$(_subset.Contains('+clr.spmi+')) and '$(SdkToolsSupported)' == 'true'">
+  <ItemGroup Condition="($(_subset.Contains('+clr.spmi+')) or $(_subset.Contains('+clr.native+'))) and '$(SdkToolsSupported)' == 'true' and '$(UseNativeAotForComponents)' == 'true'">
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\superpmi\managed\superpmi-tools.proj" Category="clr" />
   </ItemGroup>
 

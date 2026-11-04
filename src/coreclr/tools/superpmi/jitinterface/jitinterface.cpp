@@ -209,7 +209,7 @@ DLL_EXPORT const PrintControl* GetCoreDisToolsPrinters(LogCallback callback)
     return &s_printControl;
 }
 
-DLL_EXPORT volatile uint64_t s_globalZero = 0;
+static volatile uint64_t s_globalZero = 0;
 
 // A dynamic instrumentor can rewrite this function to provide the precise instruction counts that SuperPMI
 // reports in its metrics. The volatile read tells the compiler that something might actually happen here.
