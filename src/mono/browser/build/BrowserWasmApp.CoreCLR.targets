@@ -427,6 +427,7 @@
     <_CoreCLRWasmBuildAppCoreDependsOn>
       _CoreCLRWasmInitialize;
       _CoreCLRSetupEmscripten;
+      _CoreCLRResolveWasmOpt;
       _CoreCLRGatherWasmFiles;
       _CoreCLRPrepareForNativeBuild;
       _CoreCLRGenerateManagedToNative;
@@ -556,6 +557,15 @@
       <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=1" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=0" Condition="'$(WasmEnableRelaxedSimd)' != 'true'" />
     </ItemGroup>
+  </Target>
+
+  <!-- Resolve wasm-opt from the Emscripten SDK for the opt-in WasmRunWasmOpt passes. -->
+  <Target Name="_CoreCLRResolveWasmOpt" Condition="'$(WasmRunWasmOpt)' == 'true'">
+    <PropertyGroup>
+      <_WasmOptPath Condition="'$(EmscriptenUpstreamBinPath)' != ''">$([MSBuild]::NormalizePath('$(EmscriptenUpstreamBinPath)', 'wasm-opt$(_ExeExt)'))</_WasmOptPath>
+    </PropertyGroup>
+    <Error Condition="'$(_WasmOptPath)' == '' or !Exists('$(_WasmOptPath)')"
+           Text="WasmRunWasmOpt=true requires wasm-opt from the Emscripten SDK, but it was not found at '$(_WasmOptPath)'." />
   </Target>
 
   <!-- ======================== Prepare for Native Build ======================== -->
@@ -993,7 +1003,7 @@
     </Exec>
 
     <Message Text="Running wasm-opt with @(_WasmOptArgs, ' ')" Importance="High" Condition="'$(WasmRunWasmOpt)' == 'true'" />
-    <Exec Command="&quot;$(EmscriptenUpstreamBinPath)wasm-opt$(_ExeExt)&quot; @(_WasmOptArgs, ' ') &quot;$(_WasmRelinkedWasmPath)&quot; -o &quot;$(_WasmRelinkedWasmPath)&quot;"
+    <Exec Command="&quot;$(_WasmOptPath)&quot; @(_WasmOptArgs, ' ') &quot;$(_WasmRelinkedWasmPath)&quot; -o &quot;$(_WasmRelinkedWasmPath)&quot;"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(EmscriptenEnvVars)"
           ContinueOnError="ErrorAndContinue"
