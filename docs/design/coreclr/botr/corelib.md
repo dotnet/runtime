@@ -110,6 +110,14 @@ attribute's source-code targets are unchanged.
 CoreLib's own library-build trim also receives the generated annotations explicitly,
 because that pass ignores embedded link attributes.
 
+Applications using these CoreLib annotations must also use the matching linker build.
+Rebuilding runtime packs does not replace the SDK-selected linker. When testing local
+packs outside this repository, set `ILLinkTasksAssembly` to the matching built
+`ILLink.Tasks.dll`; its sibling `illink.dll` supplies type-trigger and type-only
+dependency support. Verify the effective linker path in the publish binlog, including
+nested WebAssembly publishes. An older linker can report IL2037 for `None` and fail
+to preserve a type-only dependency; suppressing the warning does not make it safe.
+
 Method triggers that have no existing binder declaration use a conditional self-edge.
 This registers their identity without making them roots; an unreachable self-edge stays
 dead like any other cycle. New native trigger declarations are appended to preserve

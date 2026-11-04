@@ -255,6 +255,7 @@ namespace ILLink.Tasks.Tests
             }));
             var logger = new MockDriver.CustomLogger();
             Assert.True(driver.Run(logger) == 0, string.Join(Environment.NewLine, logger.Messages));
+            Assert.DoesNotContain(logger.Messages, message => message.Category is MessageCategory.Warning or MessageCategory.Error);
             using AssemblyDefinition linked = AssemblyDefinition.ReadAssembly(Path.Combine(output, "Input.dll"));
             TypeDefinition retained = nested
                 ? linked.MainModule.GetType($"TestNS.{containerName}")?.NestedTypes.SingleOrDefault(t => t.Name == candidateName)
@@ -428,6 +429,7 @@ namespace ILLink.Tasks.Tests
             }));
             var logger = new MockDriver.CustomLogger();
             Assert.True(driver.Run(logger) == 0, string.Join(Environment.NewLine, logger.Messages));
+            Assert.DoesNotContain(logger.Messages, message => message.Category is MessageCategory.Warning or MessageCategory.Error);
             using AssemblyDefinition linked = AssemblyDefinition.ReadAssembly(Path.Combine(output, "Input.dll"));
             foreach (TypeDefinition type in linked.MainModule.GetTypes())
             {
@@ -475,6 +477,85 @@ namespace ILLink.Tasks.Tests
                 method.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
                 type.Methods.Add(method);
                 return method;
+            }
+        }
+
+        [Theory]
+        [InlineData(false, "None", "Target", null)]
+        [InlineData(true, "None", "Target", null)]
+        [InlineData(false, "None", "MissingType", null)]
+        [InlineData(true, "None", "MissingType", 2036)]
+        [InlineData(false, "MissingMethod", "Target", null)]
+        [InlineData(true, "MissingMethod", "Target", 2037)]
+        public void ConditionalTypeDependenciesPreserveDiagnostics(bool active, string selector, string targetName, int? warningCode)
+        {
+            using var test = new DescriptorTest();
+            test.Generate(new[] {
+                "DEFINE_CLASS_OPTIONAL(TRIGGER, TestNS, Trigger)",
+                "DEFINE_METHOD_CONDITIONAL(TRIGGER, ACTIVATE, Activate, NoSig, METHOD, TRIGGER__ACTIVATE)",
+                "DEFINE_CLASS_CONDITIONAL(TARGET, TestNS, Target, METHOD, TRIGGER__ACTIVATE)"
+            });
+            XDocument attributes = XDocument.Load(test.AttributesPath);
+            XElement dependency = attributes.Descendants("attribute").Single(a => a.Elements("argument").ElementAt(1).Value == "TestNS.Target");
+            dependency.Elements("argument").ElementAt(1).Value = "TestNS." + targetName;
+            if (selector != "None")
+            {
+                dependency.Element("argument").Attribute("type").Remove();
+                dependency.Element("argument").Value = selector;
+            }
+            attributes.Save(test.AttributesPath);
+
+            string input = Path.Combine(test.DirectoryPath, "Input.dll");
+            using (AssemblyDefinition assembly = AssemblyDefinition.CreateAssembly(
+                new AssemblyNameDefinition("Input", new Version(1, 0)), "Input", ModuleKind.Console))
+            {
+                ModuleDefinition module = assembly.MainModule;
+                TypeDefinition trigger = AddType("Trigger");
+                MethodDefinition activate = AddMethod(trigger, "Activate");
+                TypeDefinition target = AddType("Target");
+                AddMethod(target, "Unused");
+                target.Fields.Add(new FieldDefinition("Unused", FieldAttributes.Public, module.TypeSystem.Int32));
+                MethodDefinition main = AddMethod(AddType("Program"), "Main");
+                if (active)
+                    main.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Call, activate));
+                module.EntryPoint = main;
+                assembly.Write(input);
+
+                TypeDefinition AddType(string name)
+                {
+                    var type = new TypeDefinition("TestNS", name, TypeAttributes.Public, module.ImportReference(typeof(object)));
+                    module.Types.Add(type);
+                    return type;
+                }
+
+                static MethodDefinition AddMethod(TypeDefinition type, string name)
+                {
+                    var method = new MethodDefinition(name, MethodAttributes.Public | MethodAttributes.Static, type.Module.TypeSystem.Void);
+                    method.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
+                    type.Methods.Add(method);
+                    return method;
+                }
+            }
+
+            string output = Path.Combine(test.DirectoryPath, "linked");
+            using var driver = new Driver(new Queue<string>(new[] {
+                "-a", "Input", "entrypoint", "-reference", input, "--link-attributes", test.AttributesPath, "-out", output,
+                "-reference", typeof(object).Assembly.Location, "--action", "skip", "System.Private.CoreLib"
+            }));
+            var logger = new MockDriver.CustomLogger();
+            Assert.True(driver.Run(logger) == 0, string.Join(Environment.NewLine, logger.Messages));
+            MessageContainer[] diagnostics = logger.Messages.Where(message => message.Category is MessageCategory.Warning or MessageCategory.Error).ToArray();
+            if (warningCode is int expectedCode)
+                Assert.Equal(expectedCode, Assert.Single(diagnostics).Code);
+            else
+                Assert.Empty(diagnostics);
+            using AssemblyDefinition linked = AssemblyDefinition.ReadAssembly(Path.Combine(output, "Input.dll"));
+            TypeDefinition retained = linked.MainModule.GetType("TestNS.Target");
+            Assert.Equal(active && selector == "None" && targetName == "Target", retained is not null);
+            if (retained is not null)
+            {
+                Assert.Empty(retained.Methods);
+                Assert.Empty(retained.Fields);
             }
         }
 
