@@ -73,6 +73,9 @@ namespace System.Reflection.Runtime.TypeInfos
                         InvokerOptions.AllowNullThis,
                         delegate (object _this, object[] args, Type thisType)
                         {
+                            if (_this is not null)
+                                throw new NotSupportedException();
+
                             int[] lengths = new int[rank];
                             for (int i = 0; i < rank; i++)
                             {
@@ -111,6 +114,9 @@ namespace System.Reflection.Runtime.TypeInfos
                             InvokerOptions.AllowNullThis,
                             delegate (object _this, object[] args, Type thisType)
                             {
+                                if (_this is not null)
+                                    throw new NotSupportedException();
+
                                 int[] lengths = new int[args.Length];
                                 for (int i = 0; i < args.Length; i++)
                                 {
@@ -147,6 +153,9 @@ namespace System.Reflection.Runtime.TypeInfos
                         InvokerOptions.AllowNullThis,
                         delegate (object _this, object[] args, Type thisType)
                         {
+                            if (_this is not null)
+                                throw new NotSupportedException();
+
                             int[] lengths = new int[rank];
                             int[] lowerBounds = new int[rank];
                             for (int i = 0; i < rank; i++)

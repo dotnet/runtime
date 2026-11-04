@@ -1509,7 +1509,7 @@ void Module::FreeClassTables()
             {
                 TypeHandle th = pEntry->GetTypeHandle();
 
-                // Array EEClass doesn't need notification and there is no work for Destruct()
+                // TypeDescs don't need notification and there is no work for Destruct()
                 if (th.IsTypeDesc())
                     continue;
 
