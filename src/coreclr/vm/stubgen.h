@@ -668,7 +668,7 @@ class ILCodeStream;
 #ifndef DACCESS_COMPILE
 struct ILStubEHClause
 {
-    enum Kind { kNone, kTypedCatch, kFinally };
+    enum Kind { kNone, kTypedCatch, kFinally, kFilter };
 
     DWORD kind;
     DWORD dwTryBeginOffset;
@@ -683,6 +683,7 @@ struct ILStubEHClauseBuilder
     DWORD kind;
     ILCodeLabel* tryBeginLabel;
     ILCodeLabel* tryEndLabel;
+    ILCodeLabel* filterBeginLabel;
     ILCodeLabel* handlerBeginLabel;
     ILCodeLabel* handlerEndLabel;
     DWORD typeToken;
@@ -945,6 +946,9 @@ public:
     void EndCatchBlock  ();
     void BeginFinallyBlock();
     void EndFinallyBlock();
+    void BeginFilterBlock();
+    void BeginFilterHandlerBlock();
+    void EndFilterHandlerBlock();
 
     void EmitADD        ();
     void EmitADD_OVF    ();
@@ -989,6 +993,7 @@ public:
     void EmitCPBLK      ();
     void EmitCPOBJ      (int token);
     void EmitDUP        ();
+    void EmitENDFILTER  ();
     void EmitENDFINALLY ();
     void EmitINITBLK    ();
     void EmitINITOBJ    (int token);
@@ -1018,6 +1023,7 @@ public:
     void EmitLDLEN      ();
     void EmitLDLOC      (DWORD dwLocalNum);
     void EmitLDLOCA     (DWORD dwLocalNum);
+    void EmitISINST     (int token);
     void EmitLDNULL     ();
     void EmitLDOBJ      (int token);
     void EmitLDSFLD     (int token);

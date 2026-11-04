@@ -1765,6 +1765,7 @@ namespace System.Runtime.CompilerServices
 #pragma warning disable CA1859
         // When a Task-returning thunk gets a continuation result
         // it calls here to make a Task that awaits on the current async state.
+        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the suspended path out of inlined thunks
         private static Task<T?> CreateRuntimeAsyncTask<T>(ref RuntimeAsyncAwaitState state)
         {
             RuntimeAsyncTask<T?> result = new();
@@ -1772,6 +1773,7 @@ namespace System.Runtime.CompilerServices
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the suspended path out of inlined thunks
         private static Task CreateRuntimeAsyncTask(ref RuntimeAsyncAwaitState state)
         {
             RuntimeAsyncTask<VoidTaskResult> result = new();
@@ -1779,20 +1781,27 @@ namespace System.Runtime.CompilerServices
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the suspended path out of inlined thunks
         private static ValueTask<T?> CreateRuntimeAsyncValueTask<T>(ref RuntimeAsyncAwaitState state)
         {
             // We only come to these methods in the expensive case (already
             // suspended), so ValueTask optimization here is not relevant.
-            return new ValueTask<T?>(CreateRuntimeAsyncTask<T>(ref state));
+            RuntimeAsyncTask<T?> result = new();
+            FinalizeRuntimeAsyncTask(ref state, result);
+            return new ValueTask<T?>(result);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the suspended path out of inlined thunks
         private static ValueTask CreateRuntimeAsyncValueTask(ref RuntimeAsyncAwaitState state)
         {
-            return new ValueTask(CreateRuntimeAsyncTask(ref state));
+            RuntimeAsyncTask<VoidTaskResult> result = new();
+            FinalizeRuntimeAsyncTask(ref state, result);
+            return new ValueTask(result);
         }
 
         // Used instead of CreateRuntimeAsyncValueTask by thunks for methods attributed with
         // [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))], mirroring that builder's pooling.
+        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the suspended path out of inlined thunks
         private static ValueTask<T?> CreatePooledRuntimeAsyncValueTask<T>(ref RuntimeAsyncAwaitState state)
         {
             if ((AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out _)) || Task.s_asyncDebuggingEnabled)
@@ -1807,6 +1816,7 @@ namespace System.Runtime.CompilerServices
             return new ValueTask<T?>(source, token);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)] // keeps the suspended path out of inlined thunks
         private static ValueTask CreatePooledRuntimeAsyncValueTask(ref RuntimeAsyncAwaitState state)
         {
             if ((AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out _)) || Task.s_asyncDebuggingEnabled)
