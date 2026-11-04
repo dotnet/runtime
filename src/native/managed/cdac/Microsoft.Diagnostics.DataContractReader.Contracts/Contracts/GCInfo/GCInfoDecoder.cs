@@ -258,7 +258,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             }
         }
 
-        if (TTraits.USES_COMPACT_WASM_HEADER || _gcVersion >= 6)
+        if (_gcVersion >= 6)
         {
             DecodeStackSlots(numStackSlots, isUntracked: false);
             DecodeStackSlots(_numUntrackedSlots, isUntracked: true);
