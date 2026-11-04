@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <Optimize>true</Optimize>
+    <Features>$(Features);runtime-async=on</Features>
+    <CLRTestTargetUnsupported Condition="'$(Configuration)' == 'Release' or '$(TargetArchitecture)' == 'wasm' or '$(TargetsOSX)' == 'true' or '$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GCStressAsyncResume.cs" />
+    <CLRTestEnvironmentVariable Include="DOTNET_GCStress" Value="8" />
+    <CLRTestEnvironmentVariable Include="DOTNET_GcCoverage" Value="/IL_STUB_AsyncResume/" />
+    <CLRTestEnvironmentVariable Include="DOTNET_GcStressOnDirectCalls" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_gcConcurrent" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_ReadyToRun" Value="1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>
