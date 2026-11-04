@@ -784,9 +784,24 @@ namespace System.Runtime.CompilerServices
             // awaited task had already completed by the time we tried to register.
             internal override void ExecuteRuntimeAsyncAwaitContinuation(Task completedTask, bool canInline)
             {
+                object? continuationContext = m_action;
+
+                // Fast path for when the awaited task completed successfully, the awaiting continuation has nowhere to
+                // store a result, and it may run here: the await is then already complete, so the dispatcher can resume
+                // that continuation directly without first being handed the completed task to complete the await
+                // (equivalent to GetAwaitedTaskResult's early return followed by QueueContinuationFollowUpActionIfNecessary).
+                if (continuationContext is null &&
+                    canInline &&
+                    !completedTask.IsWaitNotificationEnabledOrNotRanToCompletion &&
+                    !AsyncInstrumentation.IsActive &&
+                    CanResumeInlineWithoutAwaitedResult(MoveContinuationState()))
+                {
+                    DispatchContinuations();
+                    return;
+                }
+
                 // Swap the continuation context for the completed task before possibly handing this
                 // task to another thread, which will consume it in DispatchContinuations.
-                object? continuationContext = m_action;
                 m_action = completedTask;
 
                 // When not inlining, a TaskScheduler.Default context needs no further processing before queueing.
@@ -805,6 +820,24 @@ namespace System.Runtime.CompilerServices
                 {
                     ThreadPool.UnsafeQueueUserWorkItemInternal(this, preferLocal: true);
                 }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static bool CanResumeInlineWithoutAwaitedResult(Continuation continuation)
+            {
+                if (!Unsafe.IsNullRef(ref continuation.GetResultStorageOrNull()))
+                {
+                    return false;
+                }
+
+                // Mirrors the fast path of QueueContinuationFollowUpActionIfNecessary.
+                ContinuationFlags flags = continuation.Flags;
+                if ((flags & ContinuationFlags.ContinueOnThreadPool) != 0)
+                {
+                    return Thread.CurrentThread._synchronizationContext is null && Task.t_currentTask is null;
+                }
+
+                return (flags & (ContinuationFlags.ContinueOnCapturedSynchronizationContext | ContinuationFlags.ContinueOnCapturedTaskScheduler)) == 0;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
