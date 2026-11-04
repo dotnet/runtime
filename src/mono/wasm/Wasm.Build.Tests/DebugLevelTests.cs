@@ -116,6 +116,73 @@ public class DebugLevelTests : WasmTemplateTestsBase
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(null, false)]
+    [InlineData(null, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [TestCategory("no-workload")]
+    public async Task StackTraceLineNumbersBuildPublishBuild(bool? lineNumberSupport, bool noBuild)
+    {
+        Configuration configuration = Configuration.Debug;
+        string lineNumberProperty = lineNumberSupport is bool enabled
+            ? $"<StackTraceLineNumberSupport>{enabled.ToString().ToLowerInvariant()}</StackTraceLineNumberSupport>"
+            : "";
+        ProjectInfo info = CopyTestAsset(
+            configuration,
+            aot: false,
+            asset: TestAsset.WasmBasicTestApp,
+            idPrefix: "StackTraceLineNumbers",
+            extraProperties: $"""
+                <PublishTrimmed>true</PublishTrimmed>
+                <PublishReadyToRun>false</PublishReadyToRun>
+                <WasmBuildNative>false</WasmBuildNative>
+                <CopyOutputSymbolsToPublishDirectory>true</CopyOutputSymbolsToPublishDirectory>
+                <WasmDebugLevel>-1</WasmDebugLevel>
+                {lineNumberProperty}
+                """,
+            extraItems: "<Compile Remove=\"*.cs\" />");
+        File.WriteAllText(Path.Combine(_projectDir, "Common", "Program.cs"), """
+            using System;
+            using System.Diagnostics;
+            using System.Runtime.InteropServices.JavaScript;
+
+            public static partial class Program
+            {
+                [JSExport]
+                public static void Main()
+                {
+                    StackFrame frame = new StackTrace(true).GetFrame(0)!;
+                    Console.WriteLine($"TestOutput -> Source info: {frame.GetFileLineNumber() > 0}");
+                    Console.WriteLine($"TestOutput -> Method: {DiagnosticMethodInfo.Create(frame)?.Name}");
+                }
+            }
+            """);
+
+        BrowserRunOptions runOptions = new(configuration, TestScenario: "DotnetRun");
+        for (int step = 0; step < 3; step++)
+        {
+            bool publish = step == 1;
+            bool expectLineNumbers = publish ? lineNumberSupport is true : lineNumberSupport is not false;
+            RunResult result;
+            if (publish)
+            {
+                PublishProject(info, configuration,
+                    new PublishOptions(UseCache: false, ExtraMSBuildArgs: noBuild ? "--no-build" : ""),
+                    isNativeBuild: false);
+                result = await RunForPublishWithWebServer(runOptions);
+            }
+            else
+            {
+                BuildProject(info, configuration, new BuildOptions(UseCache: false), isNativeBuild: false);
+                result = await RunForBuildWithDotnetRun(runOptions);
+            }
+
+            Assert.Contains(result.TestOutput, line => line.Contains($"Source info: {expectLineNumbers}"));
+            Assert.Contains(result.TestOutput, line => line.Contains("Method: Main"));
+        }
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
     [InlineData(false)]
     [InlineData(true)]
     [TestCategory("no-workload")]
