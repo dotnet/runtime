@@ -126,8 +126,8 @@ DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  S
 DEFINE_METHOD(APPCONTEXT,   ON_FIRST_CHANCE_EXCEPTION,  OnFirstChanceException, SM_PtrException_PtrException_RetVoid)
 
 #ifdef FEATURE_VARARGS
-DEFINE_CLASS(ARG_ITERATOR,          System,                 ArgIterator)
-DEFINE_CLASS_U(System,              ArgIterator,            VARARGS)  // Includes a SigPointer.
+DEFINE_CLASS_OPTIONAL(ARG_ITERATOR, System,                 ArgIterator)
+DEFINE_CLASS_U_OPTIONAL(System,     ArgIterator,            VARARGS)  // Includes a SigPointer.
 
 DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandle)
 #endif // FEATURE_VARARGS
@@ -527,7 +527,7 @@ DEFINE_CLASS(METHOD,                Reflection,             RuntimeMethodInfo)
 
 DEFINE_CLASS(METHOD_BASE,           Reflection,             MethodBase)
 
-DEFINE_CLASS_U(Reflection,             RuntimeExceptionHandlingClause,    RuntimeExceptionHandlingClause)
+DEFINE_CLASS_U_OPTIONAL(Reflection,    RuntimeExceptionHandlingClause,    RuntimeExceptionHandlingClause)
 DEFINE_FIELD_U(_methodBody,            RuntimeExceptionHandlingClause,        _methodBody)
 DEFINE_FIELD_U(_flags,                 RuntimeExceptionHandlingClause,        _flags)
 DEFINE_FIELD_U(_tryOffset,             RuntimeExceptionHandlingClause,        _tryOffset)
@@ -536,16 +536,16 @@ DEFINE_FIELD_U(_handlerOffset,         RuntimeExceptionHandlingClause,        _h
 DEFINE_FIELD_U(_handlerLength,         RuntimeExceptionHandlingClause,        _handlerLength)
 DEFINE_FIELD_U(_catchMetadataToken,    RuntimeExceptionHandlingClause,        _catchToken)
 DEFINE_FIELD_U(_filterOffset,          RuntimeExceptionHandlingClause,        _filterOffset)
-DEFINE_CLASS(RUNTIME_EH_CLAUSE,             Reflection,             RuntimeExceptionHandlingClause)
+DEFINE_CLASS_CONDITIONAL(RUNTIME_EH_CLAUSE, Reflection, RuntimeExceptionHandlingClause, METHOD, METHOD_HANDLE__GET_METHOD_BODY)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(RUNTIME_EH_CLAUSE,            CTOR,                   .ctor,              IM_RetVoid)
 #endif // FOR_ILLINK
 
-DEFINE_CLASS_U(Reflection,             RuntimeLocalVariableInfo,        RuntimeLocalVariableInfo)
+DEFINE_CLASS_U_OPTIONAL(Reflection,    RuntimeLocalVariableInfo,        RuntimeLocalVariableInfo)
 DEFINE_FIELD_U(_type,                  RuntimeLocalVariableInfo,        _type)
 DEFINE_FIELD_U(_localIndex,            RuntimeLocalVariableInfo,        _localIndex)
 DEFINE_FIELD_U(_isPinned,              RuntimeLocalVariableInfo,        _isPinned)
-DEFINE_CLASS(RUNTIME_LOCAL_VARIABLE_INFO,   Reflection,             RuntimeLocalVariableInfo)
+DEFINE_CLASS_CONDITIONAL(RUNTIME_LOCAL_VARIABLE_INFO, Reflection, RuntimeLocalVariableInfo, METHOD, METHOD_HANDLE__GET_METHOD_BODY)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(RUNTIME_LOCAL_VARIABLE_INFO,  CTOR,                   .ctor,              IM_RetVoid)
 #endif // FOR_ILLINK
@@ -880,10 +880,10 @@ DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, CALL_STARTUP_HOOK, CallStartupHook, SM_PtrChar_PtrException_RetVoid)
 
 DEFINE_CLASS(STREAM,                IO,                     Stream)
-DEFINE_METHOD(STREAM,               BEGIN_READ,             BeginRead,  IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult)
-DEFINE_METHOD(STREAM,               END_READ,               EndRead,    IM_IAsyncResult_RetInt)
-DEFINE_METHOD(STREAM,               BEGIN_WRITE,            BeginWrite, IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult)
-DEFINE_METHOD(STREAM,               END_WRITE,              EndWrite,   IM_IAsyncResult_RetVoid)
+DEFINE_METHOD_CONDITIONAL(STREAM,   BEGIN_READ,  BeginRead,  IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult, METHOD, STREAM__HAS_OVERRIDDEN_SLOW)
+DEFINE_METHOD_CONDITIONAL(STREAM,   END_READ,    EndRead,    IM_IAsyncResult_RetInt, METHOD, STREAM__HAS_OVERRIDDEN_SLOW)
+DEFINE_METHOD_CONDITIONAL(STREAM,   BEGIN_WRITE, BeginWrite, IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult, METHOD, STREAM__HAS_OVERRIDDEN_SLOW)
+DEFINE_METHOD_CONDITIONAL(STREAM,   END_WRITE,   EndWrite,   IM_IAsyncResult_RetVoid, METHOD, STREAM__HAS_OVERRIDDEN_SLOW)
 
 // Defined as element type alias
 // DEFINE_CLASS(INTPTR,                System,                 IntPtr)
@@ -915,7 +915,7 @@ DEFINE_METHOD(STRING,               WCSLEN,                 wcslen,             
 DEFINE_METHOD(STRING,               STRLEN,                 strlen,                     SM_PtrByte_RetInt)
 DEFINE_PROPERTY(STRING,             LENGTH,                 Length,                     Int)
 
-DEFINE_CLASS(STRING_BUILDER,        Text,                   StringBuilder)
+DEFINE_CLASS_OPTIONAL(STRING_BUILDER, Text,                 StringBuilder)
 DEFINE_PROPERTY(STRING_BUILDER,     LENGTH,                 Length,                     Int)
 DEFINE_PROPERTY(STRING_BUILDER,     CAPACITY,               Capacity,                   Int)
 DEFINE_METHOD(STRING_BUILDER,       CTOR_INT,               .ctor,                      IM_Int_RetVoid)
@@ -1107,9 +1107,9 @@ DEFINE_METHOD(IDISPATCHHELPERS,     GET_DISPATCH_INNER_EXCEPTION, GetDispatchInn
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_VARARGS
-DEFINE_METHOD(STUBHELPERS,          MARSHAL_TO_MANAGED_VA_LIST,         MarshalToManagedVaList,         SM_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(STUBHELPERS,          MARSHAL_TO_UNMANAGED_VA_LIST,       MarshalToUnmanagedVaList,       SM_IntPtr_UInt_IntPtr_RetVoid)
-DEFINE_METHOD(STUBHELPERS,          CALC_VA_LIST_SIZE,                  CalcVaListSize,                 SM_IntPtr_RetUInt)
+DEFINE_METHOD_CONDITIONAL(STUBHELPERS, MARSHAL_TO_MANAGED_VA_LIST, MarshalToManagedVaList, SM_IntPtr_IntPtr_RetVoid, CLASS, ARG_ITERATOR)
+DEFINE_METHOD_CONDITIONAL(STUBHELPERS, MARSHAL_TO_UNMANAGED_VA_LIST, MarshalToUnmanagedVaList, SM_IntPtr_UInt_IntPtr_RetVoid, CLASS, ARG_ITERATOR)
+DEFINE_METHOD_CONDITIONAL(STUBHELPERS, CALC_VA_LIST_SIZE, CalcVaListSize, SM_IntPtr_RetUInt, CLASS, ARG_ITERATOR)
 #endif // FEATURE_VARARGS
 DEFINE_METHOD(STUBHELPERS,          VALIDATE_OBJECT,                    ValidateObject,                 SM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     ValidateByref,                  SM_IntPtr_IntPtr_RetVoid)
@@ -1310,24 +1310,24 @@ DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FROM_MANAGED, FromManaged, IM_Str_SpanOfB
 DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, TO_UNMANAGED, ToUnmanaged, IM_RetPtrByte)
 DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FREE, Free, IM_RetVoid)
 
-DEFINE_CLASS(UTF8BUFFERMARSHALER, StubHelpers, UTF8BufferMarshaler)
+DEFINE_CLASS_CONDITIONAL(UTF8BUFFERMARSHALER, StubHelpers, UTF8BufferMarshaler, CLASS, STRING_BUILDER)
 DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_NATIVE, ConvertToNative, NoSig)
 DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_MANAGED, ConvertToManaged, NoSig)
 
 // Classes referenced in EqualityComparer<T>.Default optimization
 
-DEFINE_CLASS(STRING_EQUALITYCOMPARER, CollectionsGeneric, StringEqualityComparer)
-DEFINE_CLASS(ENUM_EQUALITYCOMPARER, CollectionsGeneric, EnumEqualityComparer`1)
-DEFINE_CLASS(NULLABLE_EQUALITYCOMPARER, CollectionsGeneric, NullableEqualityComparer`1)
-DEFINE_CLASS(GENERIC_EQUALITYCOMPARER, CollectionsGeneric, GenericEqualityComparer`1)
-DEFINE_CLASS(OBJECT_EQUALITYCOMPARER, CollectionsGeneric, ObjectEqualityComparer`1)
+DEFINE_CLASS_CONDITIONAL(STRING_EQUALITYCOMPARER, CollectionsGeneric, StringEqualityComparer, CLASS, EQUALITY_COMPARER)
+DEFINE_CLASS_CONDITIONAL(ENUM_EQUALITYCOMPARER, CollectionsGeneric, EnumEqualityComparer`1, CLASS, EQUALITY_COMPARER)
+DEFINE_CLASS_CONDITIONAL(NULLABLE_EQUALITYCOMPARER, CollectionsGeneric, NullableEqualityComparer`1, CLASS, EQUALITY_COMPARER)
+DEFINE_CLASS_CONDITIONAL(GENERIC_EQUALITYCOMPARER, CollectionsGeneric, GenericEqualityComparer`1, CLASS, EQUALITY_COMPARER)
+DEFINE_CLASS_CONDITIONAL(OBJECT_EQUALITYCOMPARER, CollectionsGeneric, ObjectEqualityComparer`1, CLASS, EQUALITY_COMPARER)
 
 // Classes referenced in Comparer<T>.Default optimization
 
-DEFINE_CLASS(GENERIC_COMPARER, CollectionsGeneric, GenericComparer`1)
-DEFINE_CLASS(OBJECT_COMPARER, CollectionsGeneric, ObjectComparer`1)
-DEFINE_CLASS(ENUM_COMPARER, CollectionsGeneric, EnumComparer`1)
-DEFINE_CLASS(NULLABLE_COMPARER, CollectionsGeneric, NullableComparer`1)
+DEFINE_CLASS_CONDITIONAL(GENERIC_COMPARER, CollectionsGeneric, GenericComparer`1, CLASS, COMPARER)
+DEFINE_CLASS_CONDITIONAL(OBJECT_COMPARER, CollectionsGeneric, ObjectComparer`1, CLASS, COMPARER)
+DEFINE_CLASS_CONDITIONAL(ENUM_COMPARER, CollectionsGeneric, EnumComparer`1, CLASS, COMPARER)
+DEFINE_CLASS_CONDITIONAL(NULLABLE_COMPARER, CollectionsGeneric, NullableComparer`1, CLASS, COMPARER)
 
 DEFINE_CLASS(CASTCACHE, CompilerServices, CastHelpers)
 DEFINE_FIELD(CASTCACHE, TABLE, s_table)
@@ -1430,6 +1430,13 @@ DEFINE_FIELD_U(_compacted, GCMemoryInfoData, isCompaction)
 DEFINE_FIELD_U(_concurrent, GCMemoryInfoData, isConcurrent)
 DEFINE_FIELD_U(_pauseDurations, GCMemoryInfoData, pauseDurations)
 DEFINE_FIELD_U(_generationInfo, GCMemoryInfoData, generationInfo)
+
+// Self-edges register method triggers without independently rooting them.
+// Append trigger declarations so existing binder IDs keep their values.
+DEFINE_METHOD_CONDITIONAL(METHOD_HANDLE, GET_METHOD_BODY, GetMethodBody, NoSig, METHOD, METHOD_HANDLE__GET_METHOD_BODY)
+DEFINE_METHOD_CONDITIONAL(STREAM, HAS_OVERRIDDEN_SLOW, HasOverriddenSlow, NoSig, METHOD, STREAM__HAS_OVERRIDDEN_SLOW)
+DEFINE_CLASS_OPTIONAL(COMPARER, CollectionsGeneric, Comparer`1)
+DEFINE_CLASS_OPTIONAL(EQUALITY_COMPARER, CollectionsGeneric, EqualityComparer`1)
 
 #undef DEFINE_CLASS
 #undef DEFINE_CLASS_OPTIONAL

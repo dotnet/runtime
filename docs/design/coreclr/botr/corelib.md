@@ -110,6 +110,28 @@ attribute's source-code targets are unchanged.
 CoreLib's own library-build trim also receives the generated annotations explicitly,
 because that pass ignores embedded link attributes.
 
+Method triggers that have no existing binder declaration use a conditional self-edge.
+This registers their identity without making them roots; an unreachable self-edge stays
+dead like any other cycle. New native trigger declarations are appended to preserve
+existing binder ID values.
+
+Additional native dependencies use these triggers:
+
+- The three `StubHelpers` va_list helpers depend on `ArgIterator` retention. Its native
+  layout remains an optional obligation, including its nested signature pointer.
+- `RuntimeExceptionHandlingClause` and `RuntimeLocalVariableInfo` depend on
+  `RuntimeMethodHandle.GetMethodBody`, retaining their constructors and native-written
+  fields whenever present. `RuntimeMethodBody` remains mandatory because COM classification
+  looks it up independently.
+- Stream's `BeginRead`, `EndRead`, `BeginWrite`, and `EndWrite` depend on
+  `Stream.HasOverriddenSlow`. Every native override probe reads all four slots.
+- Comparer implementation types depend on their respective `Comparer<T>` or
+  `EqualityComparer<T>` base type. These conservative type triggers cover both JIT
+  specialization and managed/ReadyToRun factory paths without coupling the two families.
+- `UTF8BufferMarshaler` depends on `StringBuilder`. StringBuilder's other native member
+  obligations are preserved when that type survives; its declaration is optional.
+  Managed formatting and AsAny marshalling can independently retain StringBuilder.
+
 Debug checks inspect trigger metadata without loading it. Missing active targets are
 still errors; an inactive conditional member can be absent even when its declaring type
 survives. A conditional class with a native layout alias must use `DEFINE_CLASS_U_OPTIONAL`

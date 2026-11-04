@@ -322,8 +322,8 @@ namespace ILLink.Tasks.Tests
             XDocument descriptor = test.Generate(new[] {
                 "DEFINE_CLASS_OPTIONAL(NEVER, TestNS, Never)",
                 "DEFINE_CLASS_OPTIONAL(TRIGGER, TestNS, Trigger)",
-                "DEFINE_METHOD_CONDITIONAL(TRIGGER, ACTIVATE, Activate, NoSig, CLASS, NEVER)",
-                "DEFINE_FIELD_CONDITIONAL(TRIGGER, SIGNAL, Signal, CLASS, NEVER)",
+                "DEFINE_METHOD_CONDITIONAL(TRIGGER, ACTIVATE, Activate, NoSig, METHOD, TRIGGER__ACTIVATE)",
+                "DEFINE_FIELD_CONDITIONAL(TRIGGER, SIGNAL, Signal, FIELD, TRIGGER__SIGNAL)",
                 $"DEFINE_CLASS_OPTIONAL(TARGET, TestNS, {targetName})",
                 root.StartsWith("feature-", StringComparison.Ordinal) ? "BEGIN_ILLINK_FEATURE_SWITCH(TestFeature, true, true)" : "",
                 $"DEFINE_METHOD_CONDITIONAL(TARGET, CALLBACK, Callback, NoSig, {triggerKind}, {trigger})",
@@ -498,6 +498,72 @@ namespace ILLink.Tasks.Tests
             Assert.False(File.Exists(test.AttributesPath));
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void RuntimeHeaderEmitsConditionalNativeDependencies(bool varargs)
+        {
+            using var test = new DescriptorTest();
+            string inputs = Path.Combine(AppContext.BaseDirectory, "RuntimeRoots");
+            XDocument descriptor = test.Generate(
+                File.ReadAllLines(Path.Combine(inputs, "corelib.h")),
+                namespaces: File.ReadAllText(Path.Combine(inputs, "namespace.h")),
+                defines: varargs ? new[] { "FOR_ILLINK", "FEATURE_VARARGS" } : new[] { "FOR_ILLINK" });
+            XElement assembly = descriptor.Root.Element("assembly");
+            XDocument attributes = XDocument.Load(test.AttributesPath);
+            AssertDependency("System.RuntimeMethodHandle", "GetMethodBody", "None", "System.Reflection.RuntimeExceptionHandlingClause");
+            AssertDependency("System.RuntimeMethodHandle", "GetMethodBody", "None", "System.Reflection.RuntimeLocalVariableInfo");
+            AssertDependency("System.RuntimeMethodHandle", "GetMethodBody", "GetMethodBody", "System.RuntimeMethodHandle");
+            AssertDependency("System.IO.Stream", "HasOverriddenSlow", "HasOverriddenSlow", "System.IO.Stream");
+            foreach (string method in new[] { "BeginRead", "EndRead", "BeginWrite", "EndWrite" })
+                AssertDependency("System.IO.Stream", "HasOverriddenSlow", method, "System.IO.Stream");
+            foreach (string name in new[] { "GenericComparer`1", "ObjectComparer`1", "EnumComparer`1", "NullableComparer`1" })
+                AssertDependency("System.Collections.Generic.Comparer`1", null, "None", "System.Collections.Generic." + name);
+            foreach (string name in new[] { "StringEqualityComparer", "EnumEqualityComparer`1", "NullableEqualityComparer`1", "GenericEqualityComparer`1", "ObjectEqualityComparer`1" })
+                AssertDependency("System.Collections.Generic.EqualityComparer`1", null, "None", "System.Collections.Generic." + name);
+            AssertDependency("System.Text.StringBuilder", null, "None", "System.StubHelpers.UTF8BufferMarshaler");
+            foreach (string name in new[] { "System.Reflection.RuntimeExceptionHandlingClause", "System.Reflection.RuntimeLocalVariableInfo" })
+            {
+                XElement type = GetType(name);
+                Assert.Equal("false", (string)type.Attribute("required"));
+                Assert.Equal("fields", (string)type.Attribute("preserve"));
+                Assert.Contains(type.Elements("method"), m => (string)m.Attribute("name") == ".ctor");
+            }
+            Assert.Null(GetType("System.Reflection.RuntimeMethodBody").Attribute("required"));
+            foreach (string name in new[] { "System.Text.StringBuilder", "System.StubHelpers.UTF8BufferMarshaler", "System.Collections.Generic.Comparer`1", "System.Collections.Generic.EqualityComparer`1" })
+                Assert.Equal("false", (string)GetType(name).Attribute("required"));
+            XElement stream = GetType("System.IO.Stream");
+            Assert.DoesNotContain(stream.Elements("method"), m => (string)m.Attribute("name") is "HasOverriddenSlow" or "BeginRead" or "EndRead" or "BeginWrite" or "EndWrite");
+            Assert.DoesNotContain(GetType("System.RuntimeMethodHandle").Elements("method"), m => (string)m.Attribute("name") == "GetMethodBody");
+            if (varargs)
+            {
+                Assert.Equal("false", (string)GetType("System.ArgIterator").Attribute("required"));
+                Assert.Equal("fields", (string)GetType("System.ArgIterator").Attribute("preserve"));
+                foreach (string method in new[] { "MarshalToManagedVaList", "MarshalToUnmanagedVaList", "CalcVaListSize" })
+                {
+                    AssertDependency("System.ArgIterator", null, method, "System.StubHelpers.StubHelpers");
+                    Assert.DoesNotContain(GetType("System.StubHelpers.StubHelpers").Elements("method"), m => (string)m.Attribute("name") == method);
+                }
+            }
+            else
+            {
+                Assert.DoesNotContain(assembly.Elements("type"), t => (string)t.Attribute("fullname") == "System.ArgIterator");
+                Assert.DoesNotContain(attributes.Descendants("type"), t => (string)t.Attribute("fullname") == "System.ArgIterator");
+            }
+
+            XElement GetType(string name) => assembly.Elements("type").Single(t => (string)t.Attribute("fullname") == name);
+
+            void AssertDependency(string triggerType, string triggerMethod, string selector, string target)
+            {
+                IEnumerable<XElement> providers = attributes.Descendants("type").Where(t => (string)t.Attribute("fullname") == triggerType);
+                if (triggerMethod is not null)
+                    providers = providers.Elements("method").Where(m => (string)m.Attribute("name") == triggerMethod);
+                Assert.Contains(providers.Elements("attribute"), a =>
+                    (string)a.Attribute("fullname") == "System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute" &&
+                    a.Elements("argument").Select(argument => argument.Value).SequenceEqual(new[] { selector, target, "Input" }));
+            }
+        }
+
         sealed class DescriptorTest : IDisposable
         {
             public string DirectoryPath { get; } = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -507,10 +573,11 @@ namespace ILLink.Tasks.Tests
 
             public DescriptorTest() => Directory.CreateDirectory(DirectoryPath);
 
-            public XDocument Generate(string[] declarations, string coreTypes = "", string exceptions = "", bool expectSuccess = true)
+            public XDocument Generate(string[] declarations, string coreTypes = "", string exceptions = "", bool expectSuccess = true,
+                string namespaces = null, string[] defines = null)
             {
                 File.WriteAllLines(Path.Combine(DirectoryPath, "corelib.h"), declarations);
-                File.WriteAllText(Path.Combine(DirectoryPath, "namespace.h"), "#define g_TestNS \"TestNS\"" + Environment.NewLine);
+                File.WriteAllText(Path.Combine(DirectoryPath, "namespace.h"), namespaces ?? "#define g_TestNS \"TestNS\"" + Environment.NewLine);
                 File.WriteAllText(Path.Combine(DirectoryPath, "cortypeinfo.h"), coreTypes);
                 File.WriteAllText(Path.Combine(DirectoryPath, "rexcep.h"), exceptions);
                 string template = Path.Combine(DirectoryPath, "template.xml");
@@ -523,7 +590,8 @@ namespace ILLink.Tasks.Tests
                     RexcepFilePath = new TaskItem(Path.Combine(DirectoryPath, "rexcep.h")),
                     ILLinkTrimXmlFilePath = new TaskItem(template),
                     RuntimeRootDescriptorFilePath = new TaskItem(DescriptorPath),
-                    RuntimeRootLinkAttributesFilePath = new TaskItem(AttributesPath)
+                    RuntimeRootLinkAttributesFilePath = new TaskItem(AttributesPath),
+                    DefineConstants = defines?.Select(define => new TaskItem(define)).ToArray()
                 };
                 Assert.Equal(expectSuccess, task.Execute());
                 return expectSuccess ? XDocument.Load(DescriptorPath) : null;
