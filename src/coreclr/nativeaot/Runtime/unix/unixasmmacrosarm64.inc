@@ -5,74 +5,43 @@
 
 #include <arm64/AsmMacros_Unix.inc>
 
-// Loads the address of a thread-local variable into the target register,
-// which cannot be x0. Preserves all other registers.
-.macro INLINE_GET_TLS_VAR target, var
-    .ifc \target, x0
-        .error "target cannot be x0"
-    .endif
-
-    stp     x0, lr, [sp,#-0x10]!
-#if defined(__APPLE__)
-    // Apple's tls_get_var trashes xip0 (and possibly xip1)
-    stp     xip0, xip1, [sp,#-0x10]!
-#endif
-
-    // This sequence of instructions is recognized and potentially patched
-    // by the linker (GD->IE/LE relaxation).
-#if defined(__APPLE__)
-    adrp    x0, \var@TLVPPAGE
-    ldr     x0, [x0, \var@TLVPPAGEOFF]
-    ldr     \target, [x0]
-
-    blr     \target
-    // End of the sequence
-
-    mov     \target, x0
-#else
-    adrp    x0, :tlsdesc:\var
-    ldr     \target, [x0, #:tlsdesc_lo12:\var]
-    add     x0, x0, :tlsdesc_lo12:\var
-    .tlsdesccall \var
-    blr     \target
-    // End of the sequence
-
-    mrs     \target, tpidr_el0
-    add     \target, \target, x0
-#endif
-
-#if defined(__APPLE__)
-    ldp     xip0, xip1, [sp],#0x10
-#endif
-    ldp     x0, lr, [sp],#0x10
-.endm
-
 // Inlined version of RhpGetThread. Target cannot be x0.
+// Preserves all other general-purpose registers, except x16 and x17 on Apple.
+// Can trash volatile FP/SIMD registers.
+// Only for functions whose CFA is sp-based (no fp frame): the x0/lr save adjusts the CFA offset.
 .macro INLINE_GETTHREAD target
+    PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
     INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   x0, lr, 0x10
 .endm
 
-// Target cannot be x0.
+// Target cannot be x0 or x2. Preserves x0-x2, which the allocation helpers keep live across it.
+// Only for functions whose CFA is sp-based (no fp frame), see INLINE_GETTHREAD.
 .macro INLINE_GET_ALLOC_CONTEXT_BASE target
     .ifc \target, x0
         .error "target cannot be x0"
     .endif
+    .ifc \target, x2
+        .error "target cannot be x2"
+    .endif
 
 #ifdef FEATURE_EMULATED_TLS
-    PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x20
+    PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x30
     PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
+    PROLOG_SAVE_REG                   x2, 0x20
 
     bl C_FUNC(RhpGetThread)
     mov         \target, x0
 
+    EPILOG_RESTORE_REG                x2, 0x20
     .ifc \target, x1
     EPILOG_RESTORE_REG_PAIR           x0, xzr, 0x10
     .else
     EPILOG_RESTORE_REG_PAIR           x0, x1, 0x10
     .endif
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x30
 #else
-    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
+    INLINE_GETTHREAD \target
 #endif
 .endm
 

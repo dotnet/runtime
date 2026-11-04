@@ -95,9 +95,9 @@ namespace System.IO.Ports
         public System.IO.Ports.StopBits StopBits { get { throw null; } set { } }
         public int WriteBufferSize { get { throw null; } set { } }
         public int WriteTimeout { get { throw null; } set { } }
-        public event System.IO.Ports.SerialDataReceivedEventHandler DataReceived { add { } remove { } }
-        public event System.IO.Ports.SerialErrorReceivedEventHandler ErrorReceived { add { } remove { } }
-        public event System.IO.Ports.SerialPinChangedEventHandler PinChanged { add { } remove { } }
+        public event System.IO.Ports.SerialDataReceivedEventHandler? DataReceived { add { } remove { } }
+        public event System.IO.Ports.SerialErrorReceivedEventHandler? ErrorReceived { add { } remove { } }
+        public event System.IO.Ports.SerialPinChangedEventHandler? PinChanged { add { } remove { } }
         public void Close() { }
         public void DiscardInBuffer() { }
         public void DiscardOutBuffer() { }
@@ -113,8 +113,8 @@ namespace System.IO.Ports
         public string ReadTo(string value) { throw null; }
         public void Write(byte[] buffer, int offset, int count) { }
         public void Write(char[] buffer, int offset, int count) { }
-        public void Write(string text) { }
-        public void WriteLine(string text) { }
+        public void Write(string? text) { }
+        public void WriteLine(string? text) { }
     }
     public enum StopBits
     {

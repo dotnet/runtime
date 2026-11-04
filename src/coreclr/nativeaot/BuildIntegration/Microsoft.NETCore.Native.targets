@@ -41,10 +41,9 @@ The .NET Foundation licenses this file to you under the MIT license.
     <UseSizeOptimizedLinq Condition="'$(UseSizeOptimizedLinq)' == ''">true</UseSizeOptimizedLinq>
   </PropertyGroup>
 
-  <!-- These formats encode function pointers as relative linear-memory addresses, not WASM table indices. -->
+  <!-- Data dehydration encodes function pointers as relative linear-memory addresses, not WASM table indices. -->
   <PropertyGroup Condition="'$(_targetArchitecture)' == 'wasm'">
     <IlcDehydrate Condition="'$(IlcDehydrate)' == ''">false</IlcDehydrate>
-    <StackTraceSupport Condition="'$(StackTraceSupport)' == ''">false</StackTraceSupport>
   </PropertyGroup>
 
   <!-- Configure LINQ expressions -->

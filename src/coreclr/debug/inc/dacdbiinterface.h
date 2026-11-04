@@ -1250,6 +1250,7 @@ public:
         kNone,
         kDiagnosticHidden,
         kLCGMethod,
+        kDiagnosticHiddenLCGMethod,
     } DynamicMethodType;
 
     //
@@ -1261,6 +1262,8 @@ public:
     //    pRetVal - [out] KNone if the method is neither a DiagnosticHidden or an LCG
     //             method. Return kDiagnosticHidden if the method is a DiagnosticHidden
     //             method. Return kLCGMethod if the method is an LCG method.
+    //             Return kDiagnosticHiddenLCGMethod only for an LCG method explicitly marked
+    //             diagnostics-hidden, rather than an IL stub, wrapper stub, or async thunk.
     //
     // Return Value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.

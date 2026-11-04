@@ -86,7 +86,7 @@ namespace System
             return RuntimeImports.RhGetGeneration(obj);
         }
 
-        internal static int GetGenerationSize(int gen)
+        internal static ulong GetGenerationSize(int gen)
         {
             return RuntimeImports.RhGetGenerationSize(gen);
         }

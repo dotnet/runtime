@@ -61,9 +61,6 @@
 #include "../binder/inc/defaultassemblybinder.h"
 #include "../binder/inc/assemblybindercommon.hpp"
 
-// this file handles string conversion errors for itself
-#undef  MAKE_TRANSLATIONFAILED
-
 // Define these macro's to do strict validation for jit lock and class
 // init entry leaks.  This defines determine if the asserts that
 // verify for these leaks are defined or not.  These asserts can

@@ -105,43 +105,43 @@ extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallExceptionStatus
 
 // No constructor version of JIT_GetSharedNonGCStaticBase.  Does not check if class has
 // been initialized.
-HCIMPL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable* pMT)
+FCIMPL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
     return pMT->GetDynamicStaticsInfo()->GetNonGCStaticsPointerAssumeIsInited();
 }
-HCIMPLEND
+FCIMPLEND
 
 // No constructor version of JIT_GetSharedNonGCStaticBase.  Does not check if class has
 // been initialized.
-HCIMPL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pDynamicStaticsInfo)
+FCIMPL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pDynamicStaticsInfo)
 {
     FCALL_CONTRACT;
 
     return pDynamicStaticsInfo->GetNonGCStaticsPointerAssumeIsInited();
 }
-HCIMPLEND
+FCIMPLEND
 
 // No constructor version of JIT_GetSharedGCStaticBase.  Does not check if class has been
 // initialized.
-HCIMPL1(void*, JIT_GetGCStaticBaseNoCtor_Portable, MethodTable* pMT)
+FCIMPL1(void*, JIT_GetGCStaticBaseNoCtor_Portable, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
     return pMT->GetDynamicStaticsInfo()->GetGCStaticsPointerAssumeIsInited();
 }
-HCIMPLEND
+FCIMPLEND
 
 // No constructor version of JIT_GetSharedGCStaticBase.  Does not check if class has been
 // initialized.
-HCIMPL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pDynamicStaticsInfo)
+FCIMPL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pDynamicStaticsInfo)
 {
     FCALL_CONTRACT;
 
     return pDynamicStaticsInfo->GetGCStaticsPointerAssumeIsInited();
 }
-HCIMPLEND
+FCIMPLEND
 
 #include <optdefault.h>
 
@@ -204,32 +204,34 @@ extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandl
 }
 
 // *** This helper corresponds CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2.
-HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
+FCDECL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex);
+FCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
 {
     FCALL_CONTRACT;
 
     return ((BYTE*)&t_ThreadStatics) + staticBlockIndex;
 }
-HCIMPLEND
+FCIMPLEND
 
 // *** This helper corresponds CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE.
 // Returns the address of the pThread field within thread-local storage, which serves as the storage
 // location for the DirectOnThreadLocalData.pNativeThread thread static field. Adjust the value by
 // OFFSETOF__CORINFO_Array__data, since all thread static bases are returned as relative to the start of an
 // array object.
-HCIMPL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase)
+FCDECL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase);
+FCIMPL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase)
 {
     FCALL_CONTRACT;
 
     return (void*)((uint8_t*)&(((ThreadLocalData*)&t_ThreadStatics)->pThread) - OFFSETOF__CORINFO_Array__data);
 }
-HCIMPLEND
+FCIMPLEND
 #endif // FEATURE_MULTITHREADING
 
 #include <optdefault.h>
 
 #ifdef FEATURE_IJW
-HCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField)
+FCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField)
 {
     FCALL_CONTRACT;
 
@@ -242,7 +244,7 @@ HCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField)
     uint8_t** pTlsArray = static_cast<uint8_t**>(NtCurrentTeb()->ThreadLocalStoragePointer);
     return pTlsArray[pModule->GetTlsIndex()] + pModule->GetFieldTlsOffset(fieldRva);
 }
-HCIMPLEND
+FCIMPLEND
 #endif // FEATURE_IJW
 
 //========================================================================
@@ -354,12 +356,13 @@ extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(EnregisteredTypeHandle type
 //
 //========================================================================
 /*************************************************************/
-HCIMPL2(BOOL, JIT_IsInstanceOfException, EnregisteredTypeHandle type, Object* obj)
+FCDECL2(BOOL, JIT_IsInstanceOfException, EnregisteredTypeHandle type, Object* obj);
+FCIMPL2(BOOL, JIT_IsInstanceOfException, EnregisteredTypeHandle type, Object* obj)
 {
     FCALL_CONTRACT;
     return ExceptionIsOfRightType(TypeHandle::FromPtr(type), obj->GetTypeHandle());
 }
-HCIMPLEND
+FCIMPLEND
 
 extern "C" void QCALLTYPE ThrowInvalidCastException(EnregisteredTypeHandle pSourceType, EnregisteredTypeHandle pTargetType, QCallExceptionStatus* qcallError)
 {
@@ -602,17 +605,19 @@ extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
     return addr;
 }
 
-HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
+FCDECL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length);
+FCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
 {
     _ASSERTE(pDest != nullptr);
     FCALL_CONTRACT;
     memset(pDest, value, length);
 }
-HCIMPLEND
+FCIMPLEND
 
 // Helper for synchronized static methods in shared generics code
 #include <optsmallperfcritical.h>
-HCIMPL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD)
+FCDECL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD);
+FCIMPL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD)
     CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(pMD != NULL);
@@ -622,7 +627,7 @@ HCIMPL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD)
     _ASSERTE(!pMT->IsSharedByGenericInstantiations());
 
     return pMT;
-HCIMPLEND
+FCIMPLEND
 #include <optdefault.h>
 
 //========================================================================
@@ -646,7 +651,8 @@ EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
 #ifdef TARGET_WASM
 void IL_Throw_Impl(Object* obj, TransitionBlock* transitionBlock)
 #else
-EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock)
+EXTERN_C FCDECL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock);
+FCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock)
 #endif
 {
     FCALL_CONTRACT;
@@ -676,7 +682,7 @@ EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionB
     UNREACHABLE();
 }
 #ifndef TARGET_WASM
-HCIMPLEND
+FCIMPLEND
 #endif
 
 /*************************************************************/
@@ -685,7 +691,8 @@ EXTERN_C FCDECL0(void, IL_Rethrow);
 #ifdef TARGET_WASM
 void IL_Rethrow_Impl(TransitionBlock* transitionBlock)
 #else
-EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
+EXTERN_C FCDECL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock);
+FCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
 #endif
 {
     FCALL_CONTRACT;
@@ -706,7 +713,7 @@ EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
     UNREACHABLE();
 }
 #ifndef TARGET_WASM
-HCIMPLEND
+FCIMPLEND
 #endif
 
 
@@ -714,7 +721,8 @@ EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
 #ifdef TARGET_WASM
 void IL_ThrowExact_Impl(Object* obj, TransitionBlock* transitionBlock)
 #else
-EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock)
+EXTERN_C FCDECL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock);
+FCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock)
 #endif
 {
     FCALL_CONTRACT;
@@ -740,7 +748,7 @@ EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transi
     UNREACHABLE();
 }
 #ifndef TARGET_WASM
-HCIMPLEND
+FCIMPLEND
 #endif
 
 
@@ -748,7 +756,7 @@ HCIMPLEND
 // WASM doesn't have assembly stubs, but the FCALL calling convention passes the callersStackPointer in as a hidden argument.
 // WASM-TODO At the moment actual handling of the R2R stack walk isn't implemented, so if there isn't an actual R2R stack
 // just pass NULL for the transition block, but the check is left in place for future implementation of R2R stack walking on WASM.
-HCIMPL1(void, IL_Throw, Object* obj)
+FCIMPL1(void, IL_Throw, Object* obj)
 {
     FCALL_CONTRACT;
 
@@ -758,9 +766,9 @@ HCIMPL1(void, IL_Throw, Object* obj)
 
     IL_Throw_Impl(obj, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block);
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL0(void, IL_Rethrow)
+FCIMPL0(void, IL_Rethrow)
 {
     FCALL_CONTRACT;
 
@@ -770,9 +778,9 @@ HCIMPL0(void, IL_Rethrow)
 
     IL_Rethrow_Impl((callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block);
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL1(void, IL_ThrowExact, Object* obj)
+FCIMPL1(void, IL_ThrowExact, Object* obj)
 {
     FCALL_CONTRACT;
     TransitionBlock block;
@@ -781,7 +789,7 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
 
     IL_ThrowExact_Impl(obj, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block);
 }
-HCIMPLEND
+FCIMPLEND
 #endif // TARGET_WASM
 
 #ifndef STATUS_STACK_BUFFER_OVERRUN  // Not defined yet in CESDK includes
@@ -841,12 +849,12 @@ void DoJITFailFast ()
 #endif // !TARGET_UNIX
 }
 
-HCIMPL0(void, JIT_FailFast)
+FCIMPL0(void, JIT_FailFast)
 {
     FCALL_CONTRACT;
     DoJITFailFast ();
 }
-HCIMPLEND
+FCIMPLEND
 
 // FailFast if a method marked UnmanagedCallersOnlyAttribute is
 // invoked directly from managed code. UMThunkStub.asm check the
@@ -879,7 +887,8 @@ extern "C" void * _ReturnAddress(void);
 //  if (*pFlag != 0) call JIT_DbgIsJustMyCode
 // So this is only called if the flag (obtained by GetJMCFlagAddr) is
 // non-zero.
-HCIMPL0(void, JIT_DbgIsJustMyCode)
+FCDECL0(void, JIT_DbgIsJustMyCode);
+FCIMPL0(void, JIT_DbgIsJustMyCode)
 {
     FCALL_CONTRACT;
 
@@ -902,7 +911,7 @@ HCIMPL0(void, JIT_DbgIsJustMyCode)
 
     return;
 }
-HCIMPLEND
+FCIMPLEND
 
 #ifdef PROFILING_SUPPORTED
 
@@ -1068,9 +1077,9 @@ void JIT_RareDisableHelper()
 }
 
 /*********************************************************************/
-/* we don't use HCIMPL macros because we don't want the overhead even in debug mode */
+/* we use FCIMPL1_RAW because we don't want the prolog overhead even in debug mode */
 
-HCIMPL1_RAW(Object*, JIT_CheckObj, Object* obj)
+FCIMPL1_RAW(Object*, JIT_CheckObj, Object* obj)
 {
     FCALL_CONTRACT;
 
@@ -1082,7 +1091,7 @@ HCIMPL1_RAW(Object*, JIT_CheckObj, Object* obj)
     }
     return obj;
 }
-HCIMPLEND_RAW
+FCIMPLEND
 
 static int loopChoice = 0;
 
@@ -1092,7 +1101,8 @@ static int loopChoice = 0;
 // of a memory location, and testing whether the result is odd or even.  The "loopChoice" variable
 // above provides that memory location, and this JIT helper merely informs the JIT of the address of
 // "loopChoice".
-HCIMPL0(void*, JIT_LoopCloneChoiceAddr)
+FCDECL0(void*, JIT_LoopCloneChoiceAddr);
+FCIMPL0(void*, JIT_LoopCloneChoiceAddr)
 {
      CONTRACTL {
         FCALL_CHECK;
@@ -1100,10 +1110,11 @@ HCIMPL0(void*, JIT_LoopCloneChoiceAddr)
 
      return &loopChoice;
 }
-HCIMPLEND
+FCIMPLEND
 
 // Prints a message that loop cloning optimization has occurred.
-HCIMPL0(void, JIT_DebugLogLoopCloning)
+FCDECL0(void, JIT_DebugLogLoopCloning);
+FCIMPL0(void, JIT_DebugLogLoopCloning)
 {
      CONTRACTL {
         FCALL_CHECK;
@@ -1113,7 +1124,7 @@ HCIMPL0(void, JIT_DebugLogLoopCloning)
      minipal_log_print_info(">> Logging loop cloning optimization\n");
 #endif
 }
-HCIMPLEND
+FCIMPLEND
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
@@ -1566,7 +1577,7 @@ extern "C" PCODE JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransit
 
 #else
 
-HCIMPL2(PCODE, JIT_Patchpoint, int* counter, int ilOffset)
+FCIMPL2(PCODE, JIT_Patchpoint, int* counter, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //
@@ -1574,9 +1585,9 @@ HCIMPL2(PCODE, JIT_Patchpoint, int* counter, int ilOffset)
 
     UNREACHABLE();
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL1(PCODE, JIT_PatchpointForced, int ilOffset)
+FCIMPL1(PCODE, JIT_PatchpointForced, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //
@@ -1584,7 +1595,7 @@ HCIMPL1(PCODE, JIT_PatchpointForced, int ilOffset)
 
     UNREACHABLE();
 }
-HCIMPLEND
+FCIMPLEND
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
@@ -1650,7 +1661,8 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
     return true;
 }
 
-HCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* valueProfile)
+FCDECL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* valueProfile);
+FCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* valueProfile)
 {
     FCALL_CONTRACT;
 
@@ -1667,9 +1679,10 @@ HCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* v
 
     valueProfile->ValueTable[sampleIndex] = val;
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* valueProfile)
+FCDECL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* valueProfile);
+FCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* valueProfile)
 {
     FCALL_CONTRACT;
 
@@ -1686,9 +1699,10 @@ HCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* v
 
     valueProfile->ValueTable[sampleIndex] = val;
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
+FCDECL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile);
+FCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
 {
     FCALL_CONTRACT;
 
@@ -1719,10 +1733,11 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* c
 
     classProfile->HandleTable[sampleIndex] = (CORINFO_CLASS_HANDLE)pMT;
 }
-HCIMPLEND
+FCIMPLEND
 
 // Version of helper above used when the count is 64-bit
-HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* classProfile)
+FCDECL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* classProfile);
+FCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* classProfile)
 {
     FCALL_CONTRACT;
 
@@ -1749,9 +1764,10 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* c
 
     classProfile->HandleTable[sampleIndex] = (CORINFO_CLASS_HANDLE)pMT;
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32* methodProfile)
+FCDECL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32* methodProfile);
+FCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32* methodProfile)
 {
     FCALL_CONTRACT;
 
@@ -1799,10 +1815,11 @@ HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32
     //
     methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
 }
-HCIMPLEND
+FCIMPLEND
 
 // Version of helper above used when the count is 64-bit
-HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64* methodProfile)
+FCDECL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64* methodProfile);
+FCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64* methodProfile)
 {
     FCALL_CONTRACT;
 
@@ -1850,9 +1867,10 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
     //
     methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL3(void, JIT_VTableProfile32, Object* obj, MethodDesc* pBaseMD, ICorJitInfo::HandleHistogram32* methodProfile)
+FCDECL3(void, JIT_VTableProfile32, Object* obj, MethodDesc* pBaseMD, ICorJitInfo::HandleHistogram32* methodProfile);
+FCIMPL3(void, JIT_VTableProfile32, Object* obj, MethodDesc* pBaseMD, ICorJitInfo::HandleHistogram32* methodProfile)
 {
     FCALL_CONTRACT;
 
@@ -1896,9 +1914,10 @@ HCIMPL3(void, JIT_VTableProfile32, Object* obj, MethodDesc* pBaseMD, ICorJitInfo
 
     methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL3(void, JIT_VTableProfile64, Object* obj, MethodDesc* pBaseMD, ICorJitInfo::HandleHistogram64* methodProfile)
+FCDECL3(void, JIT_VTableProfile64, Object* obj, MethodDesc* pBaseMD, ICorJitInfo::HandleHistogram64* methodProfile);
+FCIMPL3(void, JIT_VTableProfile64, Object* obj, MethodDesc* pBaseMD, ICorJitInfo::HandleHistogram64* methodProfile)
 {
     FCALL_CONTRACT;
 
@@ -1942,7 +1961,7 @@ HCIMPL3(void, JIT_VTableProfile64, Object* obj, MethodDesc* pBaseMD, ICorJitInfo
 
     methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
 }
-HCIMPLEND
+FCIMPLEND
 
 // Helpers for scalable approximate counters
 //
@@ -1951,7 +1970,8 @@ HCIMPLEND
 //
 // See docs/design/features/ScalableApproximateCounting.md
 //
-HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
+FCDECL1(void, JIT_CountProfile32, volatile LONG* pCounter);
+FCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
 {
     FCALL_CONTRACT;
 
@@ -1975,9 +1995,10 @@ HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
 
     InterlockedAdd(pCounter, delta);
 }
-HCIMPLEND
+FCIMPLEND
 
-HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
+FCDECL1(void, JIT_CountProfile64, volatile LONG64* pCounter);
+FCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
 {
     FCALL_CONTRACT;
 
@@ -2001,7 +2022,7 @@ HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
 
     InterlockedAdd64(pCounter, delta);
 }
-HCIMPLEND
+FCIMPLEND
 
 #endif // FEATURE_PGO
 
@@ -2128,7 +2149,7 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
 // We may not have a managed thread set up in JIT_ReversePInvokeEnter, and the GC mode may be incorrect.
 // On x86, SEH handlers are set up and torn down explicitly, so we avoid using dynamic contracts.
 // This method uses the correct calling convention and argument layout manually, without relying on standard macros or contracts.
-HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, MethodDesc* pMD, void* thunkDataMaybe)
+FCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, MethodDesc* pMD, void* thunkDataMaybe)
 {
     _ASSERTE(frame != NULL && pMD != NULL);
     _ASSERTE(!pMD->IsILStub() || thunkDataMaybe != NULL);
@@ -2176,9 +2197,9 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
     INSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif
 }
-HCIMPLEND_RAW
+FCIMPLEND
 
-HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
+FCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
 
@@ -2209,9 +2230,9 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
     INSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif
 }
-HCIMPLEND_RAW
+FCIMPLEND
 
-HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* frame)
+FCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
     _ASSERTE(frame->currentThread == GetThread());
@@ -2233,9 +2254,9 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* f
     }
 #endif
 }
-HCIMPLEND_RAW
+FCIMPLEND
 
-HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
+FCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
     _ASSERTE(frame->currentThread == GetThread());
@@ -2250,7 +2271,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     UNINSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif
 }
-HCIMPLEND_RAW
+FCIMPLEND
 
 // These do take args but have a custom calling convention.
 EXTERN_C void JIT_ValidateIndirectCall();
