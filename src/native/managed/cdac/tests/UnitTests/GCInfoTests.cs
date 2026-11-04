@@ -172,7 +172,7 @@ public unsafe class GCInfoTests
 
     [Theory]
     [InlineData(false, new byte[] { 0x0A, 0x80, 0xB0, 0x10, 0x88, 0x00 })]
-    [InlineData(true, new byte[] { 0x0A, 0x40, 0x58, 0x08, 0x44 })]
+    [InlineData(true, new byte[] { 0x0A, 0x80, 0xB0, 0x10, 0x88, 0x00 })]
     public void NonWasmVersion5StackSlotsRemainReadable(bool interpreter, byte[] encoded)
     {
         IGCInfoDecoder decoder = CreateDecoder(RuntimeInfoArchitecture.X64, interpreter, encoded, 5);

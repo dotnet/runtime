@@ -216,7 +216,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private IEnumerable<DecodePoints> DecodeSlotTable()
     {
-        if (TTraits.HAS_REGISTER_SLOTS && _reader.ReadBits(1, ref _bitOffset) != 0)
+        if ((_gcVersion < 6 || TTraits.HAS_REGISTER_SLOTS) && _reader.ReadBits(1, ref _bitOffset) != 0)
         {
             _numRegisters = _reader.DecodeVarLengthUnsigned(TTraits.NUM_REGISTERS_ENCBASE, ref _bitOffset);
         }
