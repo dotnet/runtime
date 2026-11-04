@@ -295,7 +295,7 @@ namespace System.Runtime.CompilerServices
 
             // When suspending on an IValueTaskSource (RuntimeAsyncStackState.ValueTaskSource is non-null), these
             // describe how to await it. They're only valid until the suspension is handled.
-            public delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> ValueTaskSourceOnCompleted;
+            public delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, bool> ValueTaskSourceOnCompleted;
             public delegate*<object, short, ref byte, void> ValueTaskSourceGetResult;
             public short ValueTaskSourceToken;
             public ContinuationFlags ValueTaskSourceFlags;
@@ -587,7 +587,7 @@ namespace System.Runtime.CompilerServices
             object source,
             short token,
             ContinuationFlags flags,
-            delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> onCompleted,
+            delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, bool> onCompleted,
             delegate*<object, short, ref byte, void> getResult)
         {
             state.StackState->Notifier = source;
@@ -1231,8 +1231,7 @@ namespace System.Runtime.CompilerServices
 
                         case SuspensionNotifierKind.ValueTaskSource:
                             Debug.Assert(notifier is not null);
-                            SuspendOnValueTaskSource(ref state, headContinuation, notifier);
-                            break;
+                            return SuspendOnValueTaskSource(ref state, headContinuation, notifier);
 
                         case SuspensionNotifierKind.Yield:
                             // Result of async call to UnsafeAwaitAwaiter for "await Task.Yield()".
@@ -1282,7 +1281,7 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
-            private unsafe void SuspendOnValueTaskSource(ref RuntimeAsyncAwaitState state, Continuation headContinuation, object source)
+            private unsafe bool SuspendOnValueTaskSource(ref RuntimeAsyncAwaitState state, Continuation headContinuation, object source)
             {
                 // The ValueTaskSourceContinuation isn't linked into the continuation chain. Instead, like
                 // when awaiting a Task, the dispatcher fetches the source's result directly into the head
@@ -1296,8 +1295,6 @@ namespace System.Runtime.CompilerServices
                 }
 
                 Debug.Assert(headContinuation != valueTaskSourceCont);
-                short token = state.ValueTaskSourceToken;
-                valueTaskSourceCont.Initialize(source, token, state.ValueTaskSourceGetResult);
 
                 // The awaiter must inform the ValueTaskSource on whether the continuation
                 // wants to run on a context, although the source may decide to ignore the suggestion.
@@ -1328,23 +1325,79 @@ namespace System.Runtime.CompilerServices
                     contWithContinueFlags.Flags &= ~ContinuationFlags.AllContinuationFlags;
                 }
 
+                return RegisterWithValueTaskSource(ref state, valueTaskSourceCont, source, continuationFlags);
+            }
+
+            // Initializes the ValueTaskSourceContinuation for awaiting the source and registers this task's dispatch
+            // as the source's continuation, telling the source whether the awaiting frame prefers to continue on a context.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private unsafe bool RegisterWithValueTaskSource(ref RuntimeAsyncAwaitState state, ValueTaskSourceContinuation valueTaskSourceCont, object source, ContinuationFlags continuationFlags)
+            {
+                short token = state.ValueTaskSourceToken;
+                valueTaskSourceCont.Initialize(source, token, state.ValueTaskSourceGetResult);
+
                 const ContinuationFlags continueOnContextFlags =
                     ContinuationFlags.ContinueOnCapturedSynchronizationContext |
                     ContinuationFlags.ContinueOnCapturedTaskScheduler;
 
-                ValueTaskSourceOnCompletedFlags configFlags = ValueTaskSourceOnCompletedFlags.None;
-                if ((continuationFlags & continueOnContextFlags) != 0)
-                {
-                    // if await has captured some context, inform the source
-                    configFlags = ValueTaskSourceOnCompletedFlags.UseSchedulingContext;
-                }
+                ValueTaskSourceOnCompletedFlags configFlags = (continuationFlags & continueOnContextFlags) != 0 ?
+                    ValueTaskSourceOnCompletedFlags.UseSchedulingContext : // if await has captured some context, inform the source
+                    ValueTaskSourceOnCompletedFlags.None;
 
-                state.ValueTaskSourceOnCompleted(
+                // This doesn't throw: an exception from the source is propagated to the thread pool.
+                return state.ValueTaskSourceOnCompleted(
                     source,
                     ThreadPool.s_dispatchRuntimeAsyncContinuationsCallback,
                     this,
                     token,
                     configFlags);
+            }
+
+            // Handles the common resuspension on an IValueTaskSource without the cost of a call to HandleSuspended: when
+            // this task already holds a ValueTaskSourceContinuation from a previous source await, the suspending frame
+            // didn't change the thread's contexts, and the awaiting continuation is the head of the chain. Returns false,
+            // having changed nothing, if HandleSuspended is needed instead.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private unsafe bool TryHandleSuspendedOnValueTaskSource(ref RuntimeAsyncAwaitState state, RuntimeAsyncStackState* stackState)
+            {
+                if (stackState->NotifierKind != SuspensionNotifierKind.ValueTaskSource ||
+                    m_action is not ValueTaskSourceContinuation valueTaskSourceCont)
+                {
+                    return false;
+                }
+
+                Thread currentThread = state.CurrentThread!;
+                if (stackState->LeafExecutionContext != currentThread._executionContext ||
+                    stackState->LeafSynchronizationContext != currentThread._synchronizationContext)
+                {
+                    return false;
+                }
+
+                Continuation sentinelContinuation = state.SentinelContinuation!;
+                Continuation headContinuation = sentinelContinuation.Next!;
+
+                // As in SuspendOnValueTaskSource, but only for when the head continuation is the one with the flags.
+                ContinuationFlags continuationFlags = state.ValueTaskSourceFlags;
+                if ((continuationFlags & ContinuationFlags.AllContinuationFlags) == 0)
+                {
+                    continuationFlags = headContinuation.Flags;
+                    if ((continuationFlags & (ContinuationFlags.AllContinuationFlags | ContinuationFlags.ValueTaskAdaptedToTask)) == 0)
+                    {
+                        return false;
+                    }
+
+                    if ((continuationFlags & ContinuationFlags.AllContinuationFlags) != 0)
+                    {
+                        headContinuation.Flags = continuationFlags & ~ContinuationFlags.AllContinuationFlags;
+                    }
+                }
+
+                sentinelContinuation.Next = null;
+                SetContinuationState(headContinuation);
+
+                Debug.Assert(stackState->Notifier is not null);
+                RegisterWithValueTaskSource(ref state, valueTaskSourceCont, stackState->Notifier!, continuationFlags);
+                return true;
             }
 
             internal unsafe void InstrumentedHandleSuspended(AsyncInstrumentation.Flags flags, ref RuntimeAsyncAwaitState state)
@@ -1450,7 +1503,8 @@ namespace System.Runtime.CompilerServices
                                 {
                                     newContinuation.Next = nextContinuation;
                                 }
-                                if (!TryHandleSuspendedOnTask(ref awaitState, &stackState))
+                                if (!TryHandleSuspendedOnTask(ref awaitState, &stackState) &&
+                                    !TryHandleSuspendedOnValueTaskSource(ref awaitState, &stackState))
                                 {
                                     HandleSuspended(ref awaitState);
                                 }
