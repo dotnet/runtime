@@ -527,7 +527,7 @@ def main(main_args):
             if arch == "arm": # public linux_arm
                 helix_queue = "(Debian.12.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7"
             elif arch == "arm64": # public linux_arm64
-                helix_queue = "(Ubuntu.2404.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-arm64v8"
+                helix_queue = "(AzureLinux.4.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-arm64v8@sha256:58b4dcd230283f19a9596095ab1d994f88397e800679a523785cb8310689e22a"
             else: # public linux_x64
                 helix_queue = "azurelinux.3.amd64.open"
         elif platform_name == "osx":
@@ -545,7 +545,7 @@ def main(main_args):
             if arch == "arm": # internal linux_arm
                 helix_queue = "(Debian.12.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7"
             elif arch == "arm64": # internal linux_arm64
-                helix_queue = "(Ubuntu.2404.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-arm64v8"
+                helix_queue = "(AzureLinux.4.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-arm64v8@sha256:58b4dcd230283f19a9596095ab1d994f88397e800679a523785cb8310689e22a"
             else: # internal linux_x64
                 helix_queue = "azurelinux.3.amd64"
         elif platform_name == "osx":
