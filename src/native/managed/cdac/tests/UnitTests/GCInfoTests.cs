@@ -57,7 +57,8 @@ public unsafe class GCInfoTests
                 Assert.Equal(3u, needed);
                 Assert.Equal(1, lifetimes[0].IsRegister);
                 Assert.Equal(-24, lifetimes[1].SpOffset);
-                Assert.Equal(1u, lifetimes[2].BaseRegister);
+                Assert.Equal(1u, lifetimes[1].BaseRegister);
+                Assert.Equal(0u, lifetimes[2].BaseRegister);
             }
             finally
             {
@@ -152,8 +153,8 @@ public unsafe class GCInfoTests
         {
             Assert.NotNull(lifetimes);
             Assert.Equal(new SOSGCSlotLifetime { BeginOffset = 4, EndOffset = 8, IsRegister = 1, RegisterNumber = 3, GcFlags = 3 }, lifetimes[0]);
-            Assert.Equal(new SOSGCSlotLifetime { BeginOffset = 0, EndOffset = 128, SpOffset = -24, BaseRegister = 2, GcFlags = 6 }, lifetimes[1]);
-            Assert.Equal(new SOSGCSlotLifetime { BeginOffset = 16, EndOffset = 20, SpOffset = 40, BaseRegister = 1, GcFlags = 1 }, lifetimes[2]);
+            Assert.Equal(new SOSGCSlotLifetime { BeginOffset = 0, EndOffset = 128, SpOffset = -24, BaseRegister = 1, GcFlags = 6 }, lifetimes[1]);
+            Assert.Equal(new SOSGCSlotLifetime { BeginOffset = 16, EndOffset = 20, SpOffset = 40, BaseRegister = 0, GcFlags = 1 }, lifetimes[2]);
         }
         if (ranges is not null)
             Assert.All(ranges.AsSpan(count >= 2 ? 2 : 0).ToArray(), value => Assert.Equal(default, value));
@@ -253,14 +254,33 @@ public unsafe class GCInfoTests
         Assert.Equal(0u, needed);
     }
 
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(3u)]
+    public void GetGCInfoSlotLifetimes_RejectsUnsupportedStackBases(uint slotBase)
+    {
+        MockTarget.Architecture arch = new() { Is64Bit = true, IsLittleEndian = true };
+        ISOSDacInterface18 sos = CreateGCInfoInterface(arch, CodeKind.Jitted, (_, gcInfo, handle) =>
+        {
+            gcInfo.Setup(g => g.GetSlotLifetimes(handle)).Returns(new GCSlotLifetime[]
+            {
+                new(false, 0, 8, slotBase, 0, 0, 128),
+            });
+        });
+        SOSGCSlotLifetime[] result = [new() { SpOffset = 123 }];
+        uint needed = 0;
+        Assert.Equal(HResults.COR_E_INVALIDOPERATION, sos.GetGCInfoSlotLifetimes(MethodIP, 1, result, &needed));
+        Assert.Equal(123, result[0].SpOffset);
+    }
+
     private static ISOSDacInterface18 CreateGCInfoInterface(
         MockTarget.Architecture arch,
         CodeKind codeKind,
-        Action<Mock<IExecutionManager>, Mock<IGCInfo>, IGCInfoHandle>? configure = null)
+        Action<Mock<IExecutionManager>, Mock<IGCInfo>, IGCInfoHandle>? configure = null,
+        uint version = 6)
     {
         CodeBlockHandle codeBlock = new(new TargetPointer(0x30000));
         TargetPointer gcInfoAddress = new(0x20000);
-        uint version = 6;
         Mock<IExecutionManager> executionManager = new(MockBehavior.Strict);
         executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(MethodIP))).Returns(codeBlock);
         executionManager.Setup(e => e.GetCodeKind(new TargetCodePointer(MethodIP))).Returns(codeKind);
@@ -272,7 +292,7 @@ public unsafe class GCInfoTests
         else
             gcInfo.Setup(g => g.DecodePlatformSpecificGCInfo(gcInfoAddress, version)).Returns(handle);
         gcInfo.Setup(g => g.GetHeader(handle)).Returns(new GCInfoHeader(
-            6, 128, 0, 5, 0, false, false, false, null, 0, 0, null, null, GenericsContextKind.None));
+            version, 128, 0, 5, 0, false, false, false, null, 0, 0, null, null, GenericsContextKind.None));
         gcInfo.Setup(g => g.GetInterruptibleRanges(handle)).Returns(new InterruptibleRange[] { new(4, 12), new(16, 20) });
         gcInfo.Setup(g => g.GetSafePoints(handle)).Returns(new uint[] { 8, 24 });
         gcInfo.Setup(g => g.GetSlotLifetimes(handle)).Returns(new GCSlotLifetime[]

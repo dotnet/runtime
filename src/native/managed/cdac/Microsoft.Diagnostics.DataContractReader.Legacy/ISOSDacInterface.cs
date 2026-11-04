@@ -1312,6 +1312,7 @@ public struct SOSGCSlotLifetime
     public int IsRegister;
     public uint RegisterNumber;
     public int SpOffset;
+    // 0 = SP-relative; 1 = relative to SOSGCInfoHeader.StackBaseRegister. Ignored for register slots.
     public uint BaseRegister;
     public uint GcFlags;
 }
