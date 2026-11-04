@@ -323,7 +323,9 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <!-- wasm-opt comes from the Emscripten SDK, so the workload's BrowserWasmApp.CoreCLR.targets owns the
-       ReadyToRun wasm-opt pass and sets _WasmCoreClrR2RWasmOptSupported. Without it the option is ignored. -->
+       ReadyToRun wasm-opt pass and sets _WasmCoreClrR2RWasmOptSupported. The workload manifest already requires
+       the workload when WasmRunWasmOpt=true; this covers builds that still lack its targets, for example with
+       UsingBrowserRuntimeWorkload=false. -->
   <Target Name="_WasmCoreClrWarnR2RWasmOptUnavailable"
           Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmRunWasmOpt)' == 'true' and '$(_WasmCoreClrR2RWasmOptSupported)' != 'true'"
           BeforeTargets="_CreateR2RImages">

@@ -1072,13 +1072,8 @@
        turning the option on or off, or changing its arguments, recompiles every image. -->
   <Target Name="_WasmCoreClrConfigureR2RWasmOpt"
           Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmRunWasmOpt)' == 'true'"
+          DependsOnTargets="_CoreCLRResolveWasmOpt"
           BeforeTargets="_WasmCoreClrConservativeR2RInputs">
-    <PropertyGroup>
-      <_WasmR2RWasmOptPath Condition="'$(EmscriptenUpstreamBinPath)' != ''">$([MSBuild]::NormalizePath('$(EmscriptenUpstreamBinPath)', 'wasm-opt$(_ExeExt)'))</_WasmR2RWasmOptPath>
-    </PropertyGroup>
-    <Error Condition="'$(_WasmR2RWasmOptPath)' == '' or !Exists('$(_WasmR2RWasmOptPath)')"
-           Text="WasmRunWasmOpt=true requires wasm-opt from the Emscripten SDK to optimize ReadyToRun images, but it was not found at '$(_WasmR2RWasmOptPath)'." />
-
     <ItemGroup>
       <_WasmR2RWasmOptUserOptimizationFlag Include="@(WasmOptConfigurationFlags)" Condition="$([System.String]::Copy('%(WasmOptConfigurationFlags.Identity)').StartsWith('-O'))" />
 
@@ -1102,7 +1097,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_WasmReadyToRunPostProcessState>$(_WasmReadyToRunPostProcessState)WasmOpt=$(_WasmR2RWasmOptPath) @(_WasmR2RWasmOptArgs, ' ');</_WasmReadyToRunPostProcessState>
+      <_WasmReadyToRunPostProcessState>$(_WasmReadyToRunPostProcessState)WasmOpt=$(_WasmOptPath) @(_WasmR2RWasmOptArgs, ' ');</_WasmReadyToRunPostProcessState>
     </PropertyGroup>
   </Target>
 
@@ -1110,12 +1105,12 @@
        optimized again, while an up-to-date image is not optimized twice. wasm-opt writes to a temporary file,
        so a failed run leaves the crossgen2 output in place and the next build retries it. -->
   <Target Name="_WasmCoreClrOptimizeR2RImages"
-          Condition="'$(_WasmR2RWasmOptPath)' != '' and '@(_WasmR2RImageToOptimize)' != ''"
+          Condition="'$(_WasmOptPath)' != '' and '@(_WasmR2RImageToOptimize)' != ''"
           AfterTargets="_CreateR2RImages"
           Inputs="@(_WasmR2RImageToOptimize)"
           Outputs="@(_WasmR2RImageToOptimize->'%(FullPath).wasm-opt.stamp')">
     <Message Importance="High" Text="Running wasm-opt on @(_WasmR2RImageToOptimize->Count()) ReadyToRun image(s) with @(_WasmR2RWasmOptArgs, ' ')" />
-    <Exec Command="&quot;$(_WasmR2RWasmOptPath)&quot; @(_WasmR2RWasmOptArgs, ' ') &quot;%(_WasmR2RImageToOptimize.FullPath)&quot; -o &quot;%(_WasmR2RImageToOptimize.FullPath).wasm-opt.tmp&quot;"
+    <Exec Command="&quot;$(_WasmOptPath)&quot; @(_WasmR2RWasmOptArgs, ' ') &quot;%(_WasmR2RImageToOptimize.FullPath)&quot; -o &quot;%(_WasmR2RImageToOptimize.FullPath).wasm-opt.tmp&quot;"
           IgnoreStandardErrorWarningFormat="true"
           StandardOutputImportance="Low" />
     <!-- wasm-opt re-encodes the module and moves the payload; tools such as R2RDump read it at its file offset. -->
