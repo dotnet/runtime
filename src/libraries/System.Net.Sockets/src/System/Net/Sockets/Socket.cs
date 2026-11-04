@@ -3280,9 +3280,11 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
             }
 
-            if (endPointSnapshot is not null && !CanTryAddressFamily(endPointSnapshot.AddressFamily))
+            if (endPointSnapshot is not null && endPointSnapshot is not DnsEndPoint && !CanTryAddressFamily(endPointSnapshot.AddressFamily))
             {
-                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, endPointSnapshot.AddressFamily, _addressFamily), nameof(e));
+                // DnsEndPoint 由 Serialize 用 "remoteEP" 参数名拒绝，这里不抢先抛，
+                // 否则参数名会变成 SAEA 的 "e"，破坏既有行为与测试预期。
+                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, endPointSnapshot.AddressFamily, _addressFamily), "remoteEP");
             }
 
             if (e._socketAddress != null && endPointSnapshot is IPEndPoint ipep && e._socketAddress.Family == endPointSnapshot?.AddressFamily)
