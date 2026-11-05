@@ -149,6 +149,49 @@ rounding. `N = max(1, StepData.rangeCount)`.
 | `DB_IPCE_FORCE_CATCH_HANDLER_FOUND` | `0x025a` | Debugger -> runtime | `ForceCatchHandlerFoundData` | `Portable<bool> enableEvents @0, Portable<VMPTR_Object> vmObj @8` | `H + 16` |
 | `DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION` | `0x025b` | Debugger -> runtime | `CustomNotificationData` | `Portable<VMPTR_Module> vmModule @0, Portable<mdTypeDef> classMetadataToken @8, Portable<bool> Enabled @12` | `H + 16` |
 
+### Enum values
+
+IPC enum fields occupy 4 bytes, including `CorElementType` (not its one-byte
+signature encoding). Prefixes below apply to every name in the values column;
+numbers are decimal unless prefixed with `0x`. Flag values may be ORed.
+An enum definition does not make every member valid in every event field.
+
+Sources:
+[`dbgipcevents.h`](https://github.com/dotnet/runtime/blob/bf500a0eea0ac203cba07587c29652474627cc6e/src/coreclr/debug/inc/dbgipcevents.h),
+[`cordebug.idl`](https://github.com/dotnet/runtime/blob/bf500a0eea0ac203cba07587c29652474627cc6e/src/coreclr/inc/cordebug.idl),
+and [`corhdr.h`](https://github.com/dotnet/runtime/blob/bf500a0eea0ac203cba07587c29652474627cc6e/src/coreclr/inc/corhdr.h).
+
+| Enum | Prefix | Values |
+| ---- | ------ | ------ |
+| `CorElementType` | `ELEMENT_TYPE_` | `END=0x00, VOID=0x01, BOOLEAN=0x02, CHAR=0x03, I1=0x04, U1=0x05, I2=0x06, U2=0x07, I4=0x08, U4=0x09, I8=0x0a, U8=0x0b, R4=0x0c, R8=0x0d, STRING=0x0e, PTR=0x0f, BYREF=0x10, VALUETYPE=0x11, CLASS=0x12, VAR=0x13, ARRAY=0x14, GENERICINST=0x15, TYPEDBYREF=0x16, I=0x18, U=0x19, FNPTR=0x1b, OBJECT=0x1c, SZARRAY=0x1d, MVAR=0x1e, CMOD_REQD=0x1f, CMOD_OPT=0x20, INTERNAL=0x21, CMOD_INTERNAL=0x22, MAX=0x23, MODIFIER=0x40, SENTINEL=0x41, PINNED=0x45` |
+| `CorDebugStepReason` | `STEP_` | `NORMAL=0, RETURN=1, CALL=2, EXCEPTION_FILTER=3, EXCEPTION_HANDLER=4, INTERCEPT=5, EXIT=6` |
+| `CorDebugUnmappedStop` | `STOP_` | `NONE=0, PROLOG=0x01, EPILOG=0x02, NO_MAPPING_INFO=0x04, OTHER_UNMAPPED=0x08, UNMANAGED=0x10, ALL=0xffff` |
+| `CorDebugIntercept` | `INTERCEPT_` | `NONE=0, CLASS_INIT=0x01, EXCEPTION_FILTER=0x02, SECURITY=0x04, CONTEXT_POLICY=0x08, INTERCEPTION=0x10, ALL=0xffff` |
+| `CorDebugExceptionCallbackType` | `DEBUG_EXCEPTION_` | `FIRST_CHANCE=1, USER_FIRST_CHANCE=2, CATCH_HANDLER_FOUND=3, UNHANDLED=4` |
+| `CorDebugExceptionFlags` | `DEBUG_EXCEPTION_` | `NONE=0, CAN_BE_INTERCEPTED=0x01` |
+| `CorDebugExceptionUnwindCallbackType` | `DEBUG_EXCEPTION_` | `UNWIND_BEGIN=1, INTERCEPTED=2` |
+| `CorDebugThreadState` | `THREAD_` | `RUN=0, SUSPEND=1` |
+| `CorDebugHandleType` | `HANDLE_` | `STRONG=1, WEAK_TRACK_RESURRECTION=2, PINNED=3` |
+| `DebuggerIPCE_FuncEvalType` | `DB_IPCE_FET_` | `NORMAL=0, NEW_OBJECT=1, NEW_OBJECT_NC=2, NEW_STRING=3, NEW_ARRAY=4` |
+| `NameChangeType` | None | `APP_DOMAIN_NAME_CHANGE=0, THREAD_NAME_CHANGE=1` |
+| `RemoteAddressKind` | `RAK_` | `NONE=0, REG=1, REGREG=2, REGMEM=3, MEMREG=4, FLOAT=5, END=6` |
+| `HijackAction` | `HIJACK_ACTION_` | `EXIT_UNHANDLED=0, EXIT_HANDLED=1, WAIT=2` |
+
+`CorDebugRegister` also occupies 4 bytes. Register numbers overlap across
+architectures; use the target architecture to interpret them. In the following
+table, `X0..X28=3..31` denotes consecutive names and consecutive numeric values.
+
+| Register prefix | Values |
+| --------------- | ------ |
+| `REGISTER_` | `INSTRUCTION_POINTER=0, STACK_POINTER=1, FRAME_POINTER=2` |
+| `REGISTER_X86_` | `EIP=0, ESP=1, EBP=2, EAX=3, ECX=4, EDX=5, EBX=6, ESI=7, EDI=8, FPSTACK_0..FPSTACK_7=9..16` |
+| `REGISTER_AMD64_` | `RIP=0, RSP=1, RBP=2, RAX=3, RCX=4, RDX=5, RBX=6, RSI=7, RDI=8, R8..R15=9..16, XMM0..XMM15=17..32` |
+| `REGISTER_IA64_` | `BSP=2, R0=3, F0=131` |
+| `REGISTER_ARM_` | `PC=0, SP=1, R0..R12=2..14, LR=15, D0..D31=16..47` |
+| `REGISTER_ARM64_` | `PC=0, SP=1, FP=2, X0..X28=3..31, LR=32, V0..V31=33..64` |
+| `REGISTER_LOONGARCH64_` | `PC=0, SP=1, FP=2, RA=3, TP=4, A0..A7=5..12, T0..T8=13..21, X0=22, S0..S8=23..31, F0..F31=32..63` |
+| `REGISTER_RISCV64_` | `PC=0, SP=1, FP=2, RA=3, GP=4, TP=5, T0..T2=6..8, S1=9, A0..A7=10..17, S2..S11=18..27, T3..T6=28..31, F0..F31=32..63` |
+
 ### Debugger IPC control block baseline
 
 `CorDBIPC_BUFFER_SIZE` is 2092 for `TARGET_X86`/`TARGET_ARM` and 4016 for
