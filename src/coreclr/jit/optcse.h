@@ -395,6 +395,12 @@ struct CSEdsc
     // The set of exceptions we currently can use for CSE uses.
     ValueNum defExcSetCurrent;
 
+    // Like defExcSetCurrent, but also including the exceptions that the statements
+    // containing the defs rule out. Only usable for uses outside the statement of the
+    // most recent def, since those are reached only once that statement has completed.
+    ValueNum   defExcSetCurrentStmt;
+    Statement* csdLastDefStmt;
+
     // Number of distinct locals referenced (in first def tree)
     // and total number of local nodes.
     //
