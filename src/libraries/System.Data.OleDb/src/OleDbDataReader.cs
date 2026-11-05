@@ -865,7 +865,7 @@ namespace System.Data.OleDb
             {
                 throw ADP.InvalidSourceBufferIndex(value.Length, srcIndex, "dataIndex");
             }
-            else if ((bufferIndex < 0) || (bufferIndex >= buffer.Length))
+            else if ((bufferIndex < 0) || (bufferIndex > buffer.Length) || (bufferIndex == buffer.Length && length > 0))
             {
                 throw ADP.InvalidDestinationBufferIndex(buffer.Length, bufferIndex, "bufferIndex");
             }
@@ -902,7 +902,7 @@ namespace System.Data.OleDb
             {
                 throw ADP.InvalidSourceBufferIndex(value.Length, srcIndex, "dataIndex");
             }
-            else if ((bufferIndex < 0) || (bufferIndex >= buffer.Length))
+            else if ((bufferIndex < 0) || (bufferIndex > buffer.Length) || (bufferIndex == buffer.Length && length > 0))
             {
                 throw ADP.InvalidDestinationBufferIndex(buffer.Length, bufferIndex, "bufferIndex");
             }
