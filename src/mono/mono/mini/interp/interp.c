@@ -8510,9 +8510,12 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoOb
 	if (clause_type == MONO_EXCEPTION_CLAUSE_FILTER && !filtered)
 		clause_type = MONO_EXCEPTION_CLAUSE_NONE;
 
-	if (clause_type == MONO_EXCEPTION_CLAUSE_FILTER)
+	stackval filter_retval = {0};
+	if (clause_type == MONO_EXCEPTION_CLAUSE_FILTER) {
+		/* Keep the filter result out of the argument slots written back below. */
+		frame.retval = &filter_retval;
 		clause_args.start_with_ip = (const guint16*)ei->data.filter;
-	else
+	} else
 		clause_args.start_with_ip = (const guint16*)ei->handler_start;
 	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE || clause_type == MONO_EXCEPTION_CLAUSE_FILTER) {
 		/* Run until the end */

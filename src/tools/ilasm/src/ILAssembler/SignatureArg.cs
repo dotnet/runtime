@@ -4,7 +4,7 @@
 using System.Reflection;
 using System.Reflection.Metadata;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     internal sealed record SignatureArg(ParameterAttributes Attributes, BlobBuilder SignatureBlob, BlobBuilder MarshallingDescriptor, string? Name)
     {
