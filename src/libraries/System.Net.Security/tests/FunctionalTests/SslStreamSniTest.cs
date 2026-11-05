@@ -218,33 +218,106 @@ namespace System.Net.Security.Tests
             Assert.Equal(target, client.TargetHostName);
         }
 
-        [Theory]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
-        [InlineData("192.0.2.1", null, null, "192.0.2.1", true)]
-        [InlineData("192.0.2.1", null, null, "192.0.2.2", false)]
-        [InlineData("192.0.2.1", "192.0.2.2", null, "192.0.2.1", true)]
-        [InlineData("192.0.2.1", "192.0.2.2", null, "192.0.2.2", true)]
-        [InlineData("192.0.2.1", "192.0.2.2", null, "192.0.2.3", false)]
-        [InlineData("192.0.2.1", null, "example.test", "192.0.2.1", false)]
-        [InlineData("192.0.2.1", "192.0.2.2", "example.test", "192.0.2.1", false)]
-        [InlineData("192.0.2.1", "192.0.2.2", "example.test", "192.0.2.2", true)]
-        [InlineData("192.0.2.1", null, "192.0.2.1", "192.0.2.1", true)]
-        [InlineData("other.test", null, "192.0.2.1", "192.0.2.1", true)]
-        [InlineData("192.0.2.1", null, "*.0.2.1", "192.0.2.1", false)]
-        [InlineData("*.0.2.1", null, null, "192.0.2.1", false)]
-        [InlineData("2001:db8::1", null, null, "2001:db8::1", true)]
-        [InlineData("2001:db8::1", null, null, "2001:db8::2", false)]
-        [InlineData("2001:db8::1", "2001:db8::2", null, "2001:db8::1", true)]
-        [InlineData("2001:db8::1", "2001:db8::2", null, "2001:db8::2", true)]
-        [InlineData("2001:db8::1", "2001:db8::2", null, "2001:db8::3", false)]
-        [InlineData("2001:db8::1", null, "example.test", "2001:db8::1", false)]
-        [InlineData("2001:db8::1", "2001:db8::2", "example.test", "2001:db8::1", false)]
-        [InlineData("2001:db8::1", "2001:db8::2", "example.test", "2001:db8::2", true)]
-        [InlineData("2001:db8::1", null, "2001:db8::1", "2001:db8::1", true)]
-        [InlineData("other.test", null, "2001:db8::1", "2001:db8::1", true)]
-        public async Task SslStream_IpLiteral_CertificateNameValidation(
-            string commonName, string? sanAddress, string? sanDnsName, string targetHost, bool expectNameMatch)
+        public static TheoryData<string, string, string?, string?, string, bool> IpLiteralCertificateNameValidationData()
         {
+            TheoryData<string, string, string?, string?, string, bool> data = new();
+
+            // Without a DNS SAN, a matching CN is accepted even if an IP SAN contains a different address.
+            AddCase("IPv4: CN matches, no SAN",
+                commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: true);
+            AddCase("IPv4: CN mismatches, no SAN",
+                commonName: "192.0.2.1", targetHost: "192.0.2.2", expectNameMatch: false);
+            AddCase("IPv4: CN matches, IP SAN mismatches",
+                commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: true,
+                sanAddress: "192.0.2.2");
+            AddCase("IPv4: IP SAN matches, CN mismatches",
+                commonName: "192.0.2.1", targetHost: "192.0.2.2", expectNameMatch: true,
+                sanAddress: "192.0.2.2");
+            AddCase("IPv4: neither CN nor IP SAN matches",
+                commonName: "192.0.2.1", targetHost: "192.0.2.3", expectNameMatch: false,
+                sanAddress: "192.0.2.2");
+
+            // A DNS SAN suppresses CN fallback, but does not prevent an IP SAN from matching.
+            AddCase("IPv4: DNS SAN blocks matching CN",
+                commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: false,
+                sanDnsName: "example.test");
+            AddCase("IPv4: DNS SAN blocks CN; IP SAN mismatches",
+                commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: false,
+                sanAddress: "192.0.2.2", sanDnsName: "example.test");
+            AddCase("IPv4: IP SAN matches, DNS SAN mismatches",
+                commonName: "192.0.2.1", targetHost: "192.0.2.2", expectNameMatch: true,
+                sanAddress: "192.0.2.2", sanDnsName: "example.test");
+
+            // A numeric DNS SAN can match the IP target as text, independently of CN.
+            AddCase("IPv4: numeric DNS SAN and CN match",
+                commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: true,
+                sanDnsName: "192.0.2.1");
+            AddCase("IPv4: numeric DNS SAN matches, CN unrelated",
+                commonName: "other.test", targetHost: "192.0.2.1", expectNameMatch: true,
+                sanDnsName: "192.0.2.1");
+            AddCase("IPv4: wildcard DNS SAN does not match",
+                commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: false,
+                sanDnsName: "*.0.2.1");
+            AddCase("IPv4: wildcard CN does not match",
+                commonName: "*.0.2.1", targetHost: "192.0.2.1", expectNameMatch: false);
+
+            // IPv6 follows the same CN and SAN precedence rules.
+            AddCase("IPv6: CN matches, no SAN",
+                commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: true);
+            AddCase("IPv6: CN mismatches, no SAN",
+                commonName: "2001:db8::1", targetHost: "2001:db8::2", expectNameMatch: false);
+            AddCase("IPv6: CN matches, IP SAN mismatches",
+                commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: true,
+                sanAddress: "2001:db8::2");
+            AddCase("IPv6: IP SAN matches, CN mismatches",
+                commonName: "2001:db8::1", targetHost: "2001:db8::2", expectNameMatch: true,
+                sanAddress: "2001:db8::2");
+            AddCase("IPv6: neither CN nor IP SAN matches",
+                commonName: "2001:db8::1", targetHost: "2001:db8::3", expectNameMatch: false,
+                sanAddress: "2001:db8::2");
+            AddCase("IPv6: DNS SAN blocks matching CN",
+                commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: false,
+                sanDnsName: "example.test");
+            AddCase("IPv6: DNS SAN blocks CN; IP SAN mismatches",
+                commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: false,
+                sanAddress: "2001:db8::2", sanDnsName: "example.test");
+            AddCase("IPv6: IP SAN matches, DNS SAN mismatches",
+                commonName: "2001:db8::1", targetHost: "2001:db8::2", expectNameMatch: true,
+                sanAddress: "2001:db8::2", sanDnsName: "example.test");
+            AddCase("IPv6: numeric DNS SAN and CN match",
+                commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: true,
+                sanDnsName: "2001:db8::1");
+            AddCase("IPv6: numeric DNS SAN matches, CN unrelated",
+                commonName: "other.test", targetHost: "2001:db8::1", expectNameMatch: true,
+                sanDnsName: "2001:db8::1");
+
+            // Equivalent IPv6 addresses with different spellings do not match in numeric DNS SANs.
+            AddCase("IPv6: expanded DNS vs compressed target mismatch",
+                commonName: "other.test", targetHost: "2001:db8::1", expectNameMatch: false,
+                sanDnsName: "2001:0db8:0:0:0:0:0:1");
+            AddCase("IPv6: compressed DNS vs expanded target mismatch",
+                commonName: "other.test", targetHost: "2001:0db8:0:0:0:0:0:1", expectNameMatch: false,
+                sanDnsName: "2001:db8::1");
+
+            return data;
+
+            void AddCase(
+                string scenario, string commonName, string targetHost, bool expectNameMatch,
+                string? sanAddress = null, string? sanDnsName = null)
+            {
+                data.Add(scenario, commonName, sanAddress, sanDnsName, targetHost, expectNameMatch);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(IpLiteralCertificateNameValidationData))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task SslStream_IpLiteral_CertificateNameValidation(
+            string scenario, string commonName, string? sanAddress, string? sanDnsName, string targetHost, bool expectNameMatch)
+        {
+            // The scenario describes the rule being checked and appears in the test case name.
+            _ = scenario;
+
             using RSA key = RSA.Create(2048);
             CertificateRequest request = new CertificateRequest(
                 $"CN={commonName}", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -253,6 +326,7 @@ namespace System.Net.Security.Tests
             {
                 SubjectAlternativeNameBuilder san = new SubjectAlternativeNameBuilder();
 
+                // Preserve numeric DNS SANs as text; only IP SANs are encoded as address bytes.
                 if (sanDnsName is not null)
                 {
                     san.AddDnsName(sanDnsName);
@@ -276,10 +350,13 @@ namespace System.Net.Security.Tests
             using (server)
             {
                 SslPolicyErrors? observedErrors = null;
+                // Disable resumption on both peers so every case validates its own certificate.
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
                 {
+                    // Validate this IP literal, independently of the underlying transport.
                     TargetHost = targetHost,
                     AllowTlsResume = false,
+                    // Trust the test certificate so chain errors do not obscure name-matching results.
                     CertificateChainPolicy = new X509ChainPolicy
                     {
                         TrustMode = X509ChainTrustMode.CustomRootTrust,
@@ -289,6 +366,7 @@ namespace System.Net.Security.Tests
                     RemoteCertificateValidationCallback = (sender, remoteCertificate, chain, errors) =>
                     {
                         observedErrors = errors;
+                        // Let mismatch cases complete TLS and payload checks; assert the exact errors below.
                         return true;
                     },
                 };
