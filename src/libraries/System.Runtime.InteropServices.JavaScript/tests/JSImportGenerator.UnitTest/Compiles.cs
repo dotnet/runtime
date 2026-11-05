@@ -217,13 +217,13 @@ namespace JSImportGenerator.Unit.Tests
                 namespace System.Runtime.InteropServices.JavaScript
                 {
                     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute]
+                    [global::System.Runtime.InteropServices.TypeMapFactoryAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportProvider, __GeneratedJSExportProvider>]
                     file sealed class __GeneratedJSExportProvider : global::System.Runtime.InteropServices.JavaScript.JSExportProvider
                     {
                         public __GeneratedJSExportProvider()
                         {
                         }
 
-                        [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(__GeneratedJSExportProvider))]
                         [global::System.Diagnostics.DebuggerNonUserCode]
                         public override global::System.ReadOnlySpan<string> GetExportNames()
                         {
@@ -511,13 +511,13 @@ namespace JSImportGenerator.Unit.Tests
                             namespace System.Runtime.InteropServices.JavaScript
                             {
                                 [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute]
+                                [global::System.Runtime.InteropServices.TypeMapFactoryAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportProvider, __GeneratedJSExportProvider>]
                                 file sealed class __GeneratedJSExportProvider : global::System.Runtime.InteropServices.JavaScript.JSExportProvider
                                 {
                                     public __GeneratedJSExportProvider()
                                     {
                                     }
 
-                                    [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(__GeneratedJSExportProvider))]
                                     [global::System.Diagnostics.DebuggerNonUserCode]
                                     public override global::System.ReadOnlySpan<string> GetExportNames()
                                     {
@@ -696,13 +696,13 @@ namespace JSImportGenerator.Unit.Tests
                             namespace System.Runtime.InteropServices.JavaScript
                             {
                                 [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute]
+                                [global::System.Runtime.InteropServices.TypeMapFactoryAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportProvider, __GeneratedJSExportProvider>]
                                 file sealed class __GeneratedJSExportProvider : global::System.Runtime.InteropServices.JavaScript.JSExportProvider
                                 {
                                     public __GeneratedJSExportProvider()
                                     {
                                     }
 
-                                    [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(__GeneratedJSExportProvider))]
                                     [global::System.Diagnostics.DebuggerNonUserCode]
                                     public override global::System.ReadOnlySpan<string> GetExportNames()
                                     {

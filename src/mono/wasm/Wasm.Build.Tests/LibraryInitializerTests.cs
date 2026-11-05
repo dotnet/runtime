@@ -84,6 +84,16 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
             yield return new object[] { Configuration.Debug, false };
     }
 
+    private void UseCurrentMonoRuntime(ProjectInfo info)
+    {
+        if (IsCoreClrRuntime)
+            return;
+
+        AddItemsPropertiesToProject(info.ProjectFilePath,
+            extraProperties: $"<UseMonoRuntime>true</UseMonoRuntime><WBTMonoRuntimePackVersion>{s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework)}</WBTMonoRuntimePackVersion>",
+            insertAtEnd: $"<Import Project=\"{BuildEnvironment.WasmOverridePacksTargetsPath}\" />");
+    }
+
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(AssemblyProviderConfigurations))]
     public async Task JSExportFromAssemblyProvider(Configuration config, bool trimmed)
@@ -103,6 +113,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
             extraProperties: $"<PublishTrimmed>{trimmed.ToString().ToLowerInvariant()}</PublishTrimmed><EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>",
             extraItems: """<ProjectReference Include="..\Library\Library.csproj" />""",
             insertAtEnd: useLocalTargetingPack);
+        UseCurrentMonoRuntime(info);
         File.Copy(
             Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "JSExportProvider.cs"),
             Path.Combine(_projectDir, "..", "Library", "Library.cs"),
@@ -130,6 +141,8 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         Assert.Contains("JSExportProvider>(\"Library\", typeof(", generatedCode);
         Assert.Contains("public override global::System.ReadOnlySpan<string> GetExportNames()", generatedCode);
         Assert.Contains("public override void Bind(string methodId)", generatedCode);
+        Assert.Contains("TypeMapFactoryAttribute<global::System.Runtime.InteropServices.JavaScript.JSExportProvider, __GeneratedJSExportProvider>", generatedCode);
+        Assert.DoesNotContain("PublicParameterlessConstructor", generatedCode);
         Assert.DoesNotContain("__GeneratedJSExportProvider_", generatedCode);
         Assert.DoesNotContain("JSExportCatalog", generatedCode);
         Assert.DoesNotContain("ModuleInitializer", generatedCode);
@@ -137,7 +150,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         Assert.DoesNotContain("DynamicDependencyAttribute(\"__Wrapper", generatedCode);
         string appGeneratedFile = Directory.GetFiles(Path.Combine(_projectDir, "obj"), "JSExports.g.cs", SearchOption.AllDirectories).Single();
         Assert.Contains("JSExportProvider>(\"Library\")", File.ReadAllText(appGeneratedFile));
-        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DeferredJSExports"));
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DeferredJSExports") { TimeoutSeconds = 60 });
         Assert.Contains("Mapped JSExports passed", result.TestOutput);
         Assert.Equal(
             new[] { "lazy:constructor", "lazy:discovered", "lazy:read", "lazy:bind", "lazy:first", "lazy:repeated" },
@@ -160,6 +173,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
                 </Reference>
                 <TrimmerRootAssembly Include="LegacyExports" />
                 """);
+        UseCurrentMonoRuntime(info);
         string libraryDir = Path.Combine(_projectDir, "..", "LegacyExports");
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "LegacyExports"), libraryDir);
 
@@ -186,7 +200,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         PublishProject(info, config);
         Assert.Equal(libraryBytes, File.ReadAllBytes(libraryPath));
 
-        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "LegacyJSExports"));
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "LegacyJSExports") { TimeoutSeconds = 60 });
         Assert.Contains("Legacy JSExports passed", result.TestOutput);
     }
 }

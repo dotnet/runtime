@@ -10,6 +10,10 @@ the native `BindAssemblyExports` entry point, which makes the type-map lookup
 reachable even when JavaScript is the only caller of the application's exports.
 
 One generated provider per assembly uses the assembly name as its type-map key.
+The provider's `TypeMapFactoryAttribute<JSExportProvider, TImplementation>`
+supplies typed activation through a public parameterless constructor. Its generic
+`new()` constraint preserves that constructor without a generated
+`DynamicDependency` or an `Activator.CreateInstance(Type)` suppression.
 Its `ReadOnlySpan<string> GetExportNames()` catalog supplies fully qualified, hash-qualified names without
 enumerating the type map. Discovery activates the provider and publishes deferred
 functions without binding methods. Managed discovery forwards the catalog strings

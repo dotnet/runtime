@@ -181,6 +181,7 @@ namespace Microsoft.Interop.JavaScript
             using (writer.WriteBlock())
             {
                 writer.WriteLine($"[{Constants.CompilerGeneratedAttributeGlobal}]");
+                writer.WriteLine($"[global::System.Runtime.InteropServices.TypeMapFactoryAttribute<{Constants.JSExportProviderGlobal}, {ProviderClass}>]");
                 writer.WriteLine($"file sealed class {ProviderClass} : {Constants.JSExportProviderGlobal}");
                 using (writer.WriteBlock())
                 {
@@ -189,7 +190,6 @@ namespace Microsoft.Interop.JavaScript
                     {
                     }
                     writer.WriteLine();
-                    writer.WriteLine($"[{Constants.DynamicDependencyAttributeGlobal}({Constants.DynamicallyAccessedMemberTypesGlobal}.PublicParameterlessConstructor, typeof({ProviderClass}))]");
                     writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
                     writer.WriteLine("public override global::System.ReadOnlySpan<string> GetExportNames()");
                     using (writer.WriteBlock())

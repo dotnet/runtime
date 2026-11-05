@@ -19,7 +19,6 @@ namespace Microsoft.Interop.JavaScript
         public const string JSMarshalerArgument = "System.Runtime.InteropServices.JavaScript.JSMarshalerArgument";
         public const string CompilerGeneratedAttributeGlobal = "global::System.Runtime.CompilerServices.CompilerGeneratedAttribute";
         public const string DynamicDependencyAttributeGlobal = "global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute";
-        public const string DynamicallyAccessedMemberTypesGlobal = "global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes";
         public const string TaskGlobal = "global::System.Threading.Tasks.Task";
         public const string SpanGlobal = "global::System.Span";
         public const string ArraySegmentGlobal = "global::System.ArraySegment";
