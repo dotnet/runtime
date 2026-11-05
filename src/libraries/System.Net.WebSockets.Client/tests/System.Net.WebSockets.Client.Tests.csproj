@@ -20,6 +20,12 @@
     <XunitShowProgress Condition="'$(RuntimeFlavor)' == 'CoreCLR' or '$(WasmEnableThreads)' == 'true'">true</XunitShowProgress>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
+    <XunitShowProgress>true</XunitShowProgress>
+    <!-- Use SocketsHttpHandler through HttpClientHandler; the wasi:http handler can't upgrade to WebSockets. -->
+    <UseNativeHttpHandler>false</UseNativeHttpHandler>
+  </PropertyGroup>
+
   <ItemGroup>
     <Content Include="package.json" Link="wwwroot\package.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="package-lock.json" Link="wwwroot\package-lock.json" CopyToOutputDirectory="PreserveNewest" />

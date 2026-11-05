@@ -16,6 +16,9 @@
   <ItemGroup>
     <ExternalsProject Include="externals.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
     <ProjectReference Include="@(ExternalsProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
+    <BrowserHostProject Include="$(SharedNativeRoot)corehost\browserhost\browserhost.proj"
+                        Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and ('$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == '')" />
+    <ProjectReference Include="@(BrowserHostProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
     <!-- Task for building the PlatformManifest and the sfx deps.json -->
     <ProjectReference Include="$(RepoTasksDir)installer.tasks\installer.tasks.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
@@ -51,6 +54,14 @@
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets"
           Condition="'$(TargetOS)' == 'wasi' and '$(ContinuousIntegrationBuild)' == 'true'" />
+
+  <Target Name="BuildBrowserHost"
+          BeforeTargets="BuildExternalsProject"
+          Condition="'@(BrowserHostProject)' != ''">
+    <MSBuild Projects="@(BrowserHostProject)"
+             Targets="Build"
+             Properties="$(TraversalGlobalProperties);Configuration=$(HostConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeConfiguration=$(RuntimeConfiguration)" />
+  </Target>
 
   <Target Name="BuildExternalsProject"
           BeforeTargets="Build">

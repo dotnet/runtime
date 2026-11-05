@@ -102,8 +102,40 @@ internal static class ReflectionTest
         TestActivatingThingsInSignature.Run();
         TestArrayInitialize.Run();
         TestDelegateInvokeFromEvent.Run();
+        TestFrozenRuntimeTypes.Run();
 
         return 100;
+    }
+
+    class TestFrozenRuntimeTypes
+    {
+        public static void Run()
+        {
+            const int MaxRank = 32;
+            Type[] types = new Type[MaxRank * MaxRank];
+            for (int outerRank = 1; outerRank <= MaxRank; outerRank++)
+            {
+                for (int innerRank = 1; innerRank <= MaxRank; innerRank++)
+                {
+                    Type type = typeof(TestFrozenRuntimeTypes).MakeArrayType(innerRank).MakeArrayType(outerRank);
+                    types[(outerRank - 1) * MaxRank + innerRank - 1] = type;
+                }
+            }
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+
+            for (int outerRank = 1; outerRank <= MaxRank; outerRank++)
+            {
+                for (int innerRank = 1; innerRank <= MaxRank; innerRank++)
+                {
+                    Type type = types[(outerRank - 1) * MaxRank + innerRank - 1];
+                    Assert.Equal(outerRank, type.GetArrayRank());
+                    Assert.Equal(innerRank, type.GetElementType().GetArrayRank());
+                    Assert.Same(typeof(TestFrozenRuntimeTypes), type.GetElementType().GetElementType());
+                    Assert.Same(typeof(TestFrozenRuntimeTypes).MakeArrayType(innerRank).MakeArrayType(outerRank), type);
+                }
+            }
+        }
     }
 
     class TestReflectionInvoke

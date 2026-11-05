@@ -25,4 +25,23 @@
     <EmbeddedResource Include="Resources.resx" GenerateSource="true" />
   </ItemGroup>
 
+  <!-- The unsafe-v2 migration fixers do not ship; they are built in every configuration but Release. -->
+  <PropertyGroup Condition="'$(Configuration)' != 'Release'">
+    <DefineConstants>$(DefineConstants);UNSAFE_MIGRATION</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <Compile Remove="UnsafeContext\**" />
+  </ItemGroup>
+
+  <!-- Index and Range support for netstandard2.0. -->
+  <PropertyGroup Condition="'$(Configuration)' != 'Release'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(Configuration)' != 'Release'">
+    <Compile Include="$(CoreLibSharedDir)System\Index.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Range.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+  </ItemGroup>
+
 </Project>

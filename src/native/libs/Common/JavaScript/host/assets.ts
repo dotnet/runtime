@@ -11,22 +11,23 @@ const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map()
 // Self-installing wrapper version; keep in sync with WebcilConstants.WASM_WRAPPER_VERSION_SELF_INSTALLING.
 const webcilWrapperVersion = 2;
 
-export function registerPdbBytes(bytes: Uint8Array, virtualPath: string) {
-    const lastSlash = virtualPath.lastIndexOf("/");
-    let parentDirectory = lastSlash > 0
-        ? virtualPath.substring(0, lastSlash)
-        : browserVirtualAppBase;
-    let fileName = lastSlash > 0 ? virtualPath.substring(lastSlash + 1) : virtualPath;
-    if (fileName.startsWith("/")) {
-        fileName = fileName.substring(1);
-    }
-    if (!parentDirectory.startsWith("/")) {
-        parentDirectory = browserVirtualAppBase + parentDirectory;
-    }
+export function registerPdbBytes(bytes: Uint8Array, virtualPath: string, shortName: string) {
+    const sp = _ems_.stackSave();
+    try {
+        const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
+        if (_ems_._posix_memalign(ptrPtr as any, 16, bytes.length)) {
+            throw new Error("posix_memalign failed for PDB");
+        }
 
-    _ems_.dotnetLogger.debug(`Registering PDB '${fileName}' in directory '${parentDirectory}'`);
-    _ems_.FS.createPath("/", parentDirectory, true, true);
-    _ems_.FS.createDataFile(parentDirectory, fileName, bytes, true /* canRead */, true /* canWrite */, true /* canOwn */);
+        const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
+        _ems_.HEAPU8.set(bytes, ptr >>> 0);
+
+        _ems_.dotnetLogger.debug(`Registered PDB '${virtualPath}' (shortName: '${shortName}') at ${ptr.toString(16)} length ${bytes.length}`);
+        loadedAssemblies.set(virtualPath, { ptr, length: bytes.length });
+        loadedAssemblies.set(shortName, { ptr, length: bytes.length });
+    } finally {
+        _ems_.stackRestore(sp);
+    }
 }
 
 export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortName: string) {
@@ -170,7 +171,13 @@ function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number
 
 export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr): boolean {
     const path = _ems_.UTF8ArrayToString(_ems_.dotnetApi.localHeapViewU8(), pathPtr as any);
-    const assembly = loadedAssemblies.get(path);
+    let assembly = loadedAssemblies.get(path);
+    if (!assembly) {
+        const lastSlash = path.lastIndexOf("/");
+        if (lastSlash >= 0) {
+            assembly = loadedAssemblies.get(path.substring(lastSlash + 1));
+        }
+    }
     if (assembly) {
         _ems_.HEAPU32[outDataStartPtr as any >>> 2] = assembly.ptr;
         // int64_t target

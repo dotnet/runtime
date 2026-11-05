@@ -81,7 +81,7 @@ private:
 // Note: throws
 BOOL CompatibleHostAndTargetPlatforms(HANDLE hTargetProcess)
 {
-#if defined(TARGET_UNIX)
+#if defined(HOST_UNIX)
     return TRUE;
 #else
     // get the platform for the host process
@@ -278,17 +278,17 @@ HRESULT STDMETHODCALLTYPE
 ShimLocalDataTarget::GetPlatform(
         CorDebugPlatform *pPlatform)
 {
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
 #error ShimLocalDataTarget is not implemented on PAL systems yet
 #endif
     // Assume that we're running on Windows for now.
-#if defined(TARGET_X86)
+#if defined(HOST_X86)
     *pPlatform = CORDB_PLATFORM_WINDOWS_X86;
-#elif defined(TARGET_AMD64)
+#elif defined(HOST_AMD64)
     *pPlatform = CORDB_PLATFORM_WINDOWS_AMD64;
-#elif defined(TARGET_ARM)
+#elif defined(HOST_ARM)
     *pPlatform = CORDB_PLATFORM_WINDOWS_ARM;
-#elif defined(TARGET_ARM64)
+#elif defined(HOST_ARM64)
     *pPlatform = CORDB_PLATFORM_WINDOWS_ARM64;
 #else
 #error Unknown Processor.
@@ -380,7 +380,7 @@ ShimLocalDataTarget::GetThreadContext(
 
     HRESULT hr = E_FAIL;
 
-    if (!CheckContextSizeForBuffer(contextSize, pContext))
+    if ((pContext == NULL) || !CheckContextSizeForFlags(contextSize, contextFlags))
     {
         return E_INVALIDARG;
     }
@@ -392,7 +392,7 @@ ShimLocalDataTarget::GetThreadContext(
 
     if (hThread != NULL)
     {
-        DT_CONTEXT * pCtx = reinterpret_cast<DT_CONTEXT *>(pContext);
+        T_CONTEXT * pCtx = reinterpret_cast<T_CONTEXT *>(pContext);
         pCtx->ContextFlags = contextFlags;
 
         if (DbiGetThreadContext(hThread, pCtx))
@@ -428,7 +428,7 @@ ShimLocalDataTarget::SetThreadContext(
 
     if (hThread != NULL)
     {
-        if (DbiSetThreadContext(hThread, reinterpret_cast<const DT_CONTEXT *>(pContext)))
+        if (DbiSetThreadContext(hThread, reinterpret_cast<const T_CONTEXT *>(pContext)))
         {
             hr = S_OK;
         }
@@ -462,9 +462,6 @@ ShimLocalDataTarget::ContinueStatusChanged(
 HRESULT STDMETHODCALLTYPE
 ShimLocalDataTarget::VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
 {
-#ifndef TARGET_UNIX
-    _ASSERTE(!"ShimLocalDataTarget::VirtualUnwind NOT IMPLEMENTED");
-#endif
     return E_NOTIMPL;
 }
 

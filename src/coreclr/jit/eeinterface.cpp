@@ -328,7 +328,9 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
             CorInfoTypeWithMod   argTypeWithMod = info.compCompHnd->getArgType(sig, argLst, &vcClsHnd);
             AppendCorInfoTypeWithModModifiers(printer, argTypeWithMod);
 
-            var_types type = JitType2PreciseVarType(strip(argTypeWithMod));
+            // The VM can report CORINFO_TYPE_UNDEF for types it cannot classify; print them as <UNDEF>.
+            CorInfoType argType = strip(argTypeWithMod);
+            var_types   type    = (argType == CORINFO_TYPE_UNDEF) ? TYP_UNDEF : JitType2PreciseVarType(argType);
             switch (type)
             {
                 case TYP_REF:
@@ -356,7 +358,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
 
         if (includeReturnType)
         {
-            var_types retType = JitType2PreciseVarType(sig->retType);
+            var_types retType = (sig->retType == CORINFO_TYPE_UNDEF) ? TYP_UNDEF : JitType2PreciseVarType(sig->retType);
             if (retType != TYP_VOID)
             {
                 printer->Append(':');
@@ -444,7 +446,8 @@ const char* Compiler::eeGetMethodFullName(
     bool                 success = eeRunFunctorWithSPMIErrorTrap([&]() {
         clsHnd = info.compCompHnd->getMethodClass(hnd);
         CORINFO_SIG_INFO sig;
-        eeGetMethodSig(hnd, &sig);
+        // Not eeGetMethodSig: its asserts reject open generic methods, whose types are CORINFO_TYPE_UNDEF.
+        info.compCompHnd->getMethodSig(hnd, &sig);
         eePrintMethod(&p, clsHnd, hnd, &sig,
                                       /* includeAssembly */ false,
                                       /* includeClass */ true,

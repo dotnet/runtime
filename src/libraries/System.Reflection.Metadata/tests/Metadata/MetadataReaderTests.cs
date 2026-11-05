@@ -198,6 +198,27 @@ namespace System.Reflection.Metadata.Tests
 
         }
 
+        [Theory]
+        [InlineData(0x8000)]
+        [InlineData(0xFFFF)]
+        public unsafe void StreamCountLargerThanInt16MaxValue(int streamCount)
+        {
+            // Metadata root with an empty version string. The stream count is not followed by any stream headers.
+            byte[] metadata = new byte[]
+            {
+                0x42, 0x53, 0x4A, 0x42, // signature
+                0x01, 0x00, // major version
+                0x01, 0x00, // minor version
+                0x00, 0x00, 0x00, 0x00, // reserved
+                0x00, 0x00, 0x00, 0x00, // version string length
+                0x00, 0x00, // flags
+                (byte)streamCount, (byte)(streamCount >> 8), // stream count
+            };
+
+            GCHandle pinned = GetPinnedPEImage(metadata);
+            Assert.Throws<BadImageFormatException>(() => new MetadataReader((byte*)pinned.AddrOfPinnedObject(), metadata.Length));
+        }
+
         [Fact]
         public unsafe void InvalidExternalTableMask()
         {
@@ -3343,7 +3364,7 @@ namespace System.Reflection.Metadata.Tests
 
                     // read stream headers to collect offsets and sizes to adjust later
                     blobReader.ReadUInt16(); // reserved
-                    int streamCount = blobReader.ReadInt16();
+                    int streamCount = blobReader.ReadUInt16();
                     streamHeaders = new StreamHeaderInfo[streamCount];
 
                     for (int i = 0; i < streamCount; i++)

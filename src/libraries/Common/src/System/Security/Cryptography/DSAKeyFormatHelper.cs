@@ -49,35 +49,41 @@ namespace System.Security.Cryptography
 
             ValueDssParms.Decode(algId.Parameters, AsnEncodingRules.BER, out ValueDssParms parms);
 
+            BigInteger p = new BigInteger(parms.P, isBigEndian: true);
+            BigInteger q = new BigInteger(parms.Q, isBigEndian: true);
+            BigInteger g = new BigInteger(parms.G, isBigEndian: true);
+
             // Sanity checks from FIPS 186-4 4.1/4.2.  Since FIPS 186-5 withdrew DSA/DSS
             // these will never change again.
             //
             // This technically allows a non-standard combination of 1024-bit P and 256-bit Q,
             // but that will get filtered out by the underlying provider.
             // These checks just prevent obviously bad data from wasting work on reinterpretation.
-            if (parms.P.Sign < 0 ||
-                parms.Q.Sign < 0 ||
-                !IsValidPLength(parms.P.GetBitLength()) ||
-                !IsValidQLength(parms.Q.GetBitLength()) ||
-                parms.G <= 1 ||
-                parms.G >= parms.P ||
+            if (p.Sign < 0 ||
+                q.Sign < 0 ||
+                !IsValidPLength(p.GetBitLength()) ||
+                !IsValidQLength(q.GetBitLength()) ||
+                g <= 1 ||
+                g >= p ||
                 x <= 1 ||
-                x >= parms.Q)
+                x >= q)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
+            // BigInteger.ToByteArray saves us the trouble of skipping over padding zeroes
+            // compared to params.P.
             ret = new DSAParameters
             {
-                P = parms.P.ToByteArray(isUnsigned: true, isBigEndian: true),
-                Q = parms.Q.ToByteArray(isUnsigned: true, isBigEndian: true),
+                P = p.ToByteArray(isUnsigned: true, isBigEndian: true),
+                Q = q.ToByteArray(isUnsigned: true, isBigEndian: true),
             };
 
-            ret.G = parms.G.ExportKeyParameter(ret.P.Length);
+            ret.G = g.ExportKeyParameter(ret.P.Length);
             ret.X = x.ExportKeyParameter(ret.Q.Length);
 
             // The public key is not contained within the format, calculate it.
-            BigInteger y = BigInteger.ModPow(parms.G, x, parms.P);
+            BigInteger y = BigInteger.ModPow(g, x, p);
             ret.Y = y.ExportKeyParameter(ret.P.Length);
         }
 
@@ -112,31 +118,37 @@ namespace System.Security.Cryptography
 
             ValueDssParms.Decode(algId.Parameters, AsnEncodingRules.BER, out ValueDssParms parms);
 
+            BigInteger p = new BigInteger(parms.P, isBigEndian: true);
+            BigInteger q = new BigInteger(parms.Q, isBigEndian: true);
+            BigInteger g = new BigInteger(parms.G, isBigEndian: true);
+
             // Sanity checks from FIPS 186-4 4.1/4.2.  Since FIPS 186-5 withdrew DSA/DSS
             // these will never change again.
             //
             // This technically allows a non-standard combination of 1024-bit P and 256-bit Q,
             // but that will get filtered out by the underlying provider.
             // These checks just prevent obviously bad data from wasting work on reinterpretation.
-            if (parms.P.Sign < 0 ||
-                parms.Q.Sign < 0 ||
-                !IsValidPLength(parms.P.GetBitLength()) ||
-                !IsValidQLength(parms.Q.GetBitLength()) ||
-                parms.G <= 1 ||
-                parms.G >= parms.P ||
+            if (p.Sign < 0 ||
+                q.Sign < 0 ||
+                !IsValidPLength(p.GetBitLength()) ||
+                !IsValidQLength(q.GetBitLength()) ||
+                g <= 1 ||
+                g >= p ||
                 y <= 1 ||
-                y >= parms.P)
+                y >= p)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
+            // BigInteger.ToByteArray saves us the trouble of skipping over padding zeroes
+            // compared to params.P.
             ret = new DSAParameters
             {
-                P = parms.P.ToByteArray(isUnsigned: true, isBigEndian: true),
-                Q = parms.Q.ToByteArray(isUnsigned: true, isBigEndian: true),
+                P = p.ToByteArray(isUnsigned: true, isBigEndian: true),
+                Q = q.ToByteArray(isUnsigned: true, isBigEndian: true),
             };
 
-            ret.G = parms.G.ExportKeyParameter(ret.P.Length);
+            ret.G = g.ExportKeyParameter(ret.P.Length);
             ret.Y = y.ExportKeyParameter(ret.P.Length);
         }
 

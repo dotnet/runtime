@@ -17,6 +17,26 @@ namespace System.Runtime.Loader.Tests
         private const string TestAssembly = "System.Runtime.Loader.Test.Assembly";
         private const string TestAssembly2 = "System.Runtime.Loader.Test.Assembly2";
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("profile.mcj")]
+        public static void ProfileOptimization_WithoutMultithreading_IsNoOp(string? profile)
+        {
+            string directoryPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+
+            ProfileOptimization.SetProfileRoot(directoryPath);
+            ProfileOptimization.StartProfile(profile);
+            ProfileOptimization.StartProfile(null);
+
+            AssemblyLoadContext context = new AssemblyLoadContext(nameof(ProfileOptimization_WithoutMultithreading_IsNoOp));
+            context.SetProfileOptimizationRoot(directoryPath);
+            context.StartProfileOptimization(profile);
+            context.StartProfileOptimization(null);
+
+            Assert.False(Directory.Exists(directoryPath));
+        }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/134952", TestPlatforms.Wasi)]
         public static void GetAssemblyNameTest_ValidAssembly()
