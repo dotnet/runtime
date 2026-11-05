@@ -1742,11 +1742,9 @@ namespace System.Reflection.Tests
         {
             Type[] genericInterfaces = { typeof(TI_GenericInterface<int>), typeof(TI_GenericInterface<string>), typeof(TI_GenericInterface<long[]>) };
 
-            // Generic type definition and constructed forms of the interface match all instantiations,
-            // including ones inherited from a base class or through another interface.
+            // A generic interface type definition matches all instantiations, including ones inherited
+            // from a base class or through another interface.
             yield return new object[] { typeof(TI_ClassWithGenericInterfaces), typeof(TI_GenericInterface<>), genericInterfaces };
-            yield return new object[] { typeof(TI_ClassWithGenericInterfaces), typeof(TI_GenericInterface<int>), genericInterfaces };
-            yield return new object[] { typeof(TI_ClassWithGenericInterfaces), typeof(TI_GenericInterface<double>), genericInterfaces };
 
             // Other interfaces implemented by the type.
             yield return new object[] { typeof(TI_ClassWithGenericInterfaces), typeof(TI_DerivedGenericInterface<>), new[] { typeof(TI_DerivedGenericInterface<long>) } };
@@ -1790,6 +1788,11 @@ namespace System.Reflection.Tests
             AssertExtensions.Throws<ArgumentException>("interfaceType", () => typeof(TI_ClassWithGenericInterfaces).GetInterfacesWithSameMetadataDefinitionAs(typeof(string)));
             AssertExtensions.Throws<ArgumentException>("interfaceType", () => typeof(TI_ClassWithGenericInterfaces).GetInterfacesWithSameMetadataDefinitionAs(typeof(List<>)));
             AssertExtensions.Throws<ArgumentException>("interfaceType", () => typeof(List<int>).GetInterfacesWithSameMetadataDefinitionAs(typeof(List<>).GetGenericArguments()[0]));
+
+            // Constructed generic interfaces aren't accepted; the generic type definition must be used instead.
+            AssertExtensions.Throws<ArgumentException>("interfaceType", () => typeof(TI_ClassWithGenericInterfaces).GetInterfacesWithSameMetadataDefinitionAs(typeof(TI_GenericInterface<int>)));
+            AssertExtensions.Throws<ArgumentException>("interfaceType", () => typeof(List<int>).GetInterfacesWithSameMetadataDefinitionAs(typeof(IList<int>)));
+            AssertExtensions.Throws<ArgumentException>("interfaceType", () => typeof(List<int>).GetInterfacesWithSameMetadataDefinitionAs(typeof(List<>).GetInterface("IList`1")));
         }
 
 #pragma warning disable 0067, 0169
