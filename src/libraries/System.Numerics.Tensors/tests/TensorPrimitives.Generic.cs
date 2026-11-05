@@ -360,27 +360,6 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
-        
-        [Fact]
-        public void AndNot_Half_SpanScalar_AllLengths()
-        {
-            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
-            {
-                using BoundedMemory<Half> x = CreateAndFillTensor(tensorLength);
-                Half y = NextRandom();
-                using BoundedMemory<Half> destination = CreateTensor(tensorLength);
-
-                TensorPrimitives.AndNot<Half>(x.Span, y, destination.Span);
-
-                short yBits = BitConverter.HalfToInt16Bits(y);
-                for (int i = 0; i < tensorLength; i++)
-                {
-                    short expected = (short)(BitConverter.HalfToInt16Bits(x.Span[i]) & ~yBits);
-                    Assert.Equal(expected, BitConverter.HalfToInt16Bits(destination.Span[i]));
-                }
-            });
-        }
-
         [Fact]
         public void AndNot_Half_BitPatterns()
         {
@@ -464,73 +443,6 @@ namespace System.Numerics.Tensors.Tests
             }
         }
 
-        [Fact]
-        public void AndNot_Half_InPlace()
-        {
-            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
-            {
-                using BoundedMemory<Half> x = CreateAndFillTensor(tensorLength);
-                using BoundedMemory<Half> y = CreateAndFillTensor(tensorLength);
-                Half[] xOrig = x.Span.ToArray();
-                Half[] yOrig = y.Span.ToArray();
-
-                // Destination == x
-                TensorPrimitives.AndNot<Half>(x.Span, y.Span, x.Span);
-                for (int i = 0; i < tensorLength; i++)
-                {
-                    short expected = (short)(BitConverter.HalfToInt16Bits(xOrig[i]) & ~BitConverter.HalfToInt16Bits(yOrig[i]));
-                    Assert.Equal(expected, BitConverter.HalfToInt16Bits(x.Span[i]));
-                }
-
-                // Destination == y
-                xOrig.CopyTo(x.Span);
-                TensorPrimitives.AndNot<Half>(x.Span, y.Span, y.Span);
-                for (int i = 0; i < tensorLength; i++)
-                {
-                    short expected = (short)(BitConverter.HalfToInt16Bits(xOrig[i]) & ~BitConverter.HalfToInt16Bits(yOrig[i]));
-                    Assert.Equal(expected, BitConverter.HalfToInt16Bits(y.Span[i]));
-                }
-
-                // Scalar-span: destination == y
-                yOrig.CopyTo(y.Span);
-                Half scalarX = NextRandom();
-                short scalarXBits = BitConverter.HalfToInt16Bits(scalarX);
-                TensorPrimitives.AndNot<Half>(scalarX, y.Span, y.Span);
-                for (int i = 0; i < tensorLength; i++)
-                {
-                    short expected = (short)(scalarXBits & ~BitConverter.HalfToInt16Bits(yOrig[i]));
-                    Assert.Equal(expected, BitConverter.HalfToInt16Bits(y.Span[i]));
-                }
-            });
-        }
-
-        [Fact]
-        public void AndNot_Half_Throws()
-        {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
-            {
-                using BoundedMemory<Half> x = CreateAndFillTensor(tensorLength);
-                using BoundedMemory<Half> y = CreateAndFillTensor(tensorLength - 1);
-                using BoundedMemory<Half> destination = CreateTensor(tensorLength);
-
-                // Mismatched lengths
-                Assert.Throws<ArgumentException>(() => TensorPrimitives.AndNot<Half>(x.Span, y.Span, destination.Span));
-                Assert.Throws<ArgumentException>(() => TensorPrimitives.AndNot<Half>(y.Span, x.Span, destination.Span));
-
-                // Destination too short
-                using BoundedMemory<Half> yEqual = CreateAndFillTensor(tensorLength);
-                using BoundedMemory<Half> shortDest = CreateTensor(tensorLength - 1);
-                AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AndNot<Half>(x.Span, yEqual.Span, shortDest.Span));
-                AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AndNot<Half>(x.Span[0], yEqual.Span, shortDest.Span));
-            });
-
-            // Overlap validation
-            Half[] array = new Half[10];
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AndNot<Half>(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(0, 2)));
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AndNot<Half>(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(2, 2)));
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AndNot<Half>((Half)default, array.AsSpan(4, 2), array.AsSpan(3, 2)));
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AndNot<Half>((Half)default, array.AsSpan(4, 2), array.AsSpan(5, 2)));
-        }
         #endregion
     }
 
@@ -561,7 +473,7 @@ namespace System.Numerics.Tensors.Tests
     public class UInt128GenericTensorPrimitives : GenericIntegerTensorPrimitivesTests<UInt128> { }
 
     public unsafe abstract class GenericFloatingPointNumberTensorPrimitivesTests<T> : GenericNumberTensorPrimitivesTests<T>
-        where T : unmanaged, IFloatingPointIeee754<T>, IMinMaxValue<T>
+        where T : unmanaged, IFloatingPointIeee754<T>, IBitwiseOperators<T, T, T>, IMinMaxValue<T>
     {
         protected override T Cosh(T x) => T.Cosh(x);
         protected override void Cosh(ReadOnlySpan<T> x, Span<T> destination) => TensorPrimitives.Cosh(x, destination);
@@ -913,6 +825,7 @@ namespace System.Numerics.Tensors.Tests
         #region Span,Span -> Destination
         public static IEnumerable<object[]> SpanSpanDestinationFunctionsToTest()
         {
+            yield return Create(TensorPrimitives.AndNot, (x, y) => x & ~y);
             yield return Create(TensorPrimitives.Atan2, T.Atan2);
             yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi);
             yield return Create(TensorPrimitives.CopySign, T.CopySign);
@@ -1162,6 +1075,7 @@ namespace System.Numerics.Tensors.Tests
         #region Scalar,Span -> Destination
         public static IEnumerable<object[]> ScalarSpanFloatDestinationFunctionsToTest()
         {
+            yield return Create(TensorPrimitives.AndNot, (x, y) => x & ~y);
             yield return Create(TensorPrimitives.Atan2, T.Atan2);
             yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi);
             yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(floatTolerance: 1e-5f));
@@ -2598,7 +2512,6 @@ namespace System.Numerics.Tensors.Tests
         #region Span,Scalar -> Destination
         public static IEnumerable<object[]> SpanScalarDestinationFunctionsToTest()
         {
-            yield return Create(TensorPrimitives.AndNot, (x, y) => x & ~y);
             yield return Create(TensorPrimitives.BitwiseAnd, (x, y) => x & y);
             yield return Create(TensorPrimitives.BitwiseOr, (x, y) => x | y);
             yield return Create(TensorPrimitives.Max, T.Max);
