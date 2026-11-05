@@ -32,7 +32,7 @@ namespace Wasm.Build.Tests
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
         [InlineData(Configuration.Release)]
-        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload"), TestCategory("wasm-opt")]
         public Task ProjectWithNativeReference_ReadyToRun(Configuration config) =>
             ProjectWithNativeReferenceCore(config, aot: false, readyToRun: true);
 
@@ -77,6 +77,7 @@ namespace Wasm.Build.Tests
             {
                 Assert.Contains("Linking CoreCLR WASM", buildOutput);
                 Assert.Contains("** ReadyToRunPInvokeModules: native-lib;", buildOutput);
+                AssertReadyToRunWasmOpt(Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "R2R"), buildOutput, composite: false);
             }
 
             RunResult output = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun"));
