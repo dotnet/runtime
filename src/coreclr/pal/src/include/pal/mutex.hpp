@@ -78,8 +78,9 @@ Design
   find any other sync object with a timed wait with the necessary properties, so polling is done for timed waits.
 
 Shared memory files
-- Session-scoped mutexes (name not prefixed, or prefixed with Local) go in /tmp/.dotnet/shm/session<sessionId>/<mutexName>
-- Globally-scoped mutexes (name prefixed with Global) go in /tmp/.dotnet/shm/global/<mutexName>
+- Session-scoped mutexes go in <systemBase>/.dotnet/shm/session<sessionId>/<mutexName>
+- Globally-scoped mutexes go in <systemBase>/.dotnet/shm/global/<mutexName>
+- User-scoped mutexes use a user-specific system base; other mutexes use the global shared-files base
 - Contains shared state, and is mmap'ped into the process, see SharedMemorySharedDataHeader and NamedMutexSharedData for data
   stored
 - Creation and deletion is synchronized using an exclusive file lock on the shm directory
@@ -96,7 +97,7 @@ Shared memory files
 Lock files when using file locks:
 - In addition to the shared memory file, we need another file for the actual synchronization file lock, since a file lock on the
   shared memory file is used for lifetime purposes.
-- These files go in /tmp/.dotnet/lockfiles/session<sessionId>|global/<mutexName>
+- These files go in <systemBase>/.dotnet/lockfiles/session<sessionId>|global/<mutexName>
 - The file is empty, and is only used for file locks
 
 Process data

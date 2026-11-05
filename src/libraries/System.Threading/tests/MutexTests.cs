@@ -418,6 +418,7 @@ namespace System.Threading.Tests
             string name = Guid.NewGuid().ToString("N");
             string prefixedName = namePrefix + name;
             bool currentSessionOnly = namePrefix != @"Global\";
+            bool currentUserOnly = !PlatformDetection.IsWindows;
 
             using (var m = new Mutex(initiallyOwned: false, prefixedName, out bool createdNew))
             {
@@ -426,18 +427,18 @@ namespace System.Threading.Tests
                 new Mutex(
                     initiallyOwned: false,
                     name,
-                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                    new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly },
                     out createdNew).Dispose();
                 Assert.False(createdNew);
 
                 Mutex.OpenExisting(
                     name,
-                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly }).Dispose();
+                    new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly }).Dispose();
 
                 Assert.True(
                     Mutex.TryOpenExisting(
                         name,
-                        new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                        new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly },
                         out Mutex m2));
                 m2.Dispose();
             }
@@ -446,7 +447,7 @@ namespace System.Threading.Tests
                 new Mutex(
                     initiallyOwned: false,
                     name,
-                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                    new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly },
                     out bool createdNew))
             {
                 Assert.True(createdNew);
@@ -795,6 +796,46 @@ namespace System.Threading.Tests
         private static bool IsRemoteExecutorAndCrossProcessNamedMutexSupported =>
             RemoteExecutor.IsSupported && IsCrossProcessNamedMutexSupported;
 
+        private static bool IsRemoteExecutorAndThreadingSupported =>
+            RemoteExecutor.IsSupported && PlatformDetection.IsThreadingSupported;
+
+        [ConditionalFact(nameof(IsRemoteExecutorAndThreadingSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void NamedMutex_UnspecifiedScope_DefaultAndCompatibilitySwitch()
+        {
+            RemoteExecutor.Invoke(VerifyUnspecifiedMutexScope, bool.FalseString).Dispose();
+            RemoteExecutor.Invoke(VerifyUnspecifiedMutexScope, bool.TrueString).Dispose();
+        }
+
+        private static void VerifyUnspecifiedMutexScope(string unsafeDefaultMutexScopeGlobalValue)
+        {
+            bool unsafeDefaultMutexScopeGlobal = bool.Parse(unsafeDefaultMutexScopeGlobalValue);
+            if (unsafeDefaultMutexScopeGlobal)
+            {
+                AppContext.SetSwitch(
+                    "System.Threading.Mutex.UnsafeDefaultMutexScopeGlobal",
+                    isEnabled: true);
+            }
+
+            string name = Guid.NewGuid().ToString("N");
+            bool expectedCurrentUserOnly = !unsafeDefaultMutexScopeGlobal;
+            NamedWaitHandleOptions expectedOptions =
+                new() { CurrentUserOnly = expectedCurrentUserOnly, CurrentSessionOnly = true };
+            NamedWaitHandleOptions otherOptions =
+                new() { CurrentUserOnly = !expectedCurrentUserOnly, CurrentSessionOnly = true };
+
+            using Mutex mutex = new(initiallyOwned: false, name, out bool createdNew);
+            Assert.True(createdNew);
+
+            using Mutex matchingMutex = new(initiallyOwned: false, name, expectedOptions, out createdNew);
+            Assert.False(createdNew);
+            using Mutex openedMutex = Mutex.OpenExisting(name);
+            using Mutex explicitlyOpenedMutex = Mutex.OpenExisting(name, expectedOptions);
+
+            using Mutex otherMutex = new(initiallyOwned: false, name, otherOptions, out createdNew);
+            Assert.True(createdNew);
+        }
+
         [ConditionalTheory(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
         [MemberData(nameof(NameOptionCombinations_MemberData))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(bool currentUserOnly, bool currentSessionOnly)
@@ -998,6 +1039,98 @@ namespace System.Threading.Tests
             | UnixFileMode.OtherRead
             | UnixFileMode.OtherWrite
             | UnixFileMode.OtherExecute;
+        private const UnixFileMode OwnerUserRwx =
+            UnixFileMode.UserRead
+            | UnixFileMode.UserWrite
+            | UnixFileMode.UserExecute;
+
+        [ConditionalFact(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [UnsupportedOSPlatform("windows")]
+        public void NamedMutex_UserScopedSharedMemoryPathAndPermissions()
+        {
+            string homeDirectory = GetTestFilePath();
+            Directory.CreateDirectory(homeDirectory);
+
+            RemoteInvokeOptions remoteInvokeOptions = new();
+            remoteInvokeOptions.StartInfo.EnvironmentVariables["HOME"] = homeDirectory;
+            remoteInvokeOptions.StartInfo.EnvironmentVariables["XDG_RUNTIME_DIR"] = string.Empty;
+
+            RemoteExecutor.Invoke(
+                homeDirectory =>
+                {
+                    string userSpecificBase = Path.Combine(
+                        homeDirectory,
+                        ".dotnet",
+                        "corefx",
+                        "Runtime",
+                        "SharedMemory");
+                    string name = Guid.NewGuid().ToString("N");
+                    string runtimeDirectory = Path.Combine(userSpecificBase, ".dotnet");
+                    string sharedMemoryDirectory = Path.Combine(runtimeDirectory, "shm");
+                    string globalDirectory = Path.Combine(sharedMemoryDirectory, "global");
+                    string sharedMemoryPath = Path.Combine(globalDirectory, name);
+                    NamedWaitHandleOptions options =
+                        new() { CurrentUserOnly = true, CurrentSessionOnly = false };
+
+                    using Mutex mutex = new($"Global\\{name}", options);
+
+                    Assert.True(File.Exists(sharedMemoryPath));
+                    Assert.Equal(
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute,
+                        File.GetUnixFileMode(userSpecificBase));
+                    Assert.Equal(
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute,
+                        File.GetUnixFileMode(runtimeDirectory));
+                    Assert.Equal(
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute,
+                        File.GetUnixFileMode(sharedMemoryDirectory));
+                    Assert.Equal(
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute,
+                        File.GetUnixFileMode(globalDirectory));
+                    Assert.Equal(
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite,
+                        File.GetUnixFileMode(sharedMemoryPath));
+                },
+                homeDirectory,
+                remoteInvokeOptions).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [UnsupportedOSPlatform("windows")]
+        public void NamedMutex_SharedMemoryDirectoryReplacementDoesNotRedirectFileAccess()
+        {
+            string userRuntimeDirectory = GetTestFilePath();
+            Directory.CreateDirectory(userRuntimeDirectory);
+
+            RemoteInvokeOptions remoteInvokeOptions = new();
+            remoteInvokeOptions.StartInfo.EnvironmentVariables["XDG_RUNTIME_DIR"] = userRuntimeDirectory;
+
+            RemoteExecutor.Invoke(
+                userRuntimeDirectory =>
+                {
+                    NamedWaitHandleOptions options =
+                        new() { CurrentUserOnly = true, CurrentSessionOnly = false };
+                    string firstName = Guid.NewGuid().ToString("N");
+
+                    using Mutex firstMutex = new($"Global\\{firstName}", options);
+
+                    string runtimeDirectory = Path.Combine(userRuntimeDirectory, ".dotnet");
+                    string sharedMemoryDirectory = Path.Combine(runtimeDirectory, "shm");
+                    string originalSharedMemoryDirectory = Path.Combine(runtimeDirectory, "shm-original");
+                    Directory.Move(sharedMemoryDirectory, originalSharedMemoryDirectory);
+                    Directory.CreateDirectory(Path.Combine(sharedMemoryDirectory, "global"), OwnerUserRwx);
+
+                    string secondName = Guid.NewGuid().ToString("N");
+                    using Mutex secondMutex = new($"Global\\{secondName}", options);
+
+                    Assert.True(File.Exists(Path.Combine(originalSharedMemoryDirectory, "global", secondName)));
+                    Assert.False(File.Exists(Path.Combine(sharedMemoryDirectory, "global", secondName)));
+                },
+                userRuntimeDirectory,
+                remoteInvokeOptions).Dispose();
+        }
 
         [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]

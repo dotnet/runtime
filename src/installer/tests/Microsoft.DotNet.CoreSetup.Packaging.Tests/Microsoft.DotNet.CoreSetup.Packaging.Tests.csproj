@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="$(SystemSecurityCryptographyPkcsToolsetVersion)" />
   </ItemGroup>
 
   <ItemGroup>
