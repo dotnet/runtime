@@ -40,15 +40,14 @@
 #define WszLoadLibrary         LoadLibraryExWrapper
 #define WszCreateFile          CreateFileWrapper
 #define fopen_lp               u16_fopen_wrapper
+#define WszSearchPath          SearchPathWrapper
 #else // HOST_WINDOWS
 #define WszLoadLibrary         LoadLibraryExW
-#define WszCreateFile          CreateFileW
 #define fopen_lp               u16_fopen_s
 #endif // HOST_WINDOWS
 
 //APIS which have a buffer as an out parameter
 #define WszGetEnvironmentVariable GetEnvironmentVariableWrapper
-#define WszSearchPath          SearchPathWrapper
 #define WszGetModuleFileName   GetModuleFileNameWrapper
 
 #ifdef HOST_WINDOWS

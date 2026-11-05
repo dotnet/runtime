@@ -23,7 +23,6 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC); // some headers have code with asserts, so do t
 #endif //HAVE_VM_ALLOCATE
 
 #include "pal/utils.h"
-#include "pal/file.h"
 
 #include <errno.h>
 #include <string.h>
@@ -130,7 +129,7 @@ LPWSTR UTIL_MBToWC_Alloc(LPCSTR lpMultiByteStr, int cbMultiByte)
     if(NULL == lpWideCharStr)
     {
         ERROR("malloc() failed! errno is %d (%s)\n", errno,strerror(errno));
-        SetLastError(FILEGetLastErrorFromErrno());
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return NULL;
     }
 
