@@ -531,6 +531,49 @@ static GenTreeIntCon* NewRangeConstant(Compiler* comp, target_size_t bits, var_t
 }
 
 //------------------------------------------------------------------------------
+// ConstantCost: The instructions a comparison constant costs beyond the instruction that consumes it.
+//
+// Arguments:
+//    constant - the constant node, with its costs set
+//    forCcmp  - whether a ccmp consumes it, which takes a five bit immediate, where cmp and sub take
+//               twelve bits
+//
+// Return Value:
+//    Zero when the instruction takes the constant as an immediate, the instructions that put it in a
+//    register otherwise.
+//
+static unsigned ConstantCost(GenTree* constant, bool forCcmp)
+{
+#ifdef TARGET_ARM64
+    if (constant->IsCnsIntOrI() && !constant->IsIconHandle())
+    {
+        INT64 const    value = constant->AsIntCon()->IconValue();
+        emitAttr const size  = emitActualTypeSize(constant);
+        if (forCcmp ? emitter::emitIns_valid_imm_for_ccmp(value) : emitter::emitIns_valid_imm_for_add(value, size))
+        {
+            return 0;
+        }
+        if (emitter::emitIns_valid_imm_for_mov(value, size))
+        {
+            return 1;
+        }
+
+        // One movz or movn and a movk per further halfword that differs from what it filled
+        unsigned movzCount = 0;
+        unsigned movnCount = 0;
+        for (unsigned shift = 0; shift < ((size == EA_8BYTE) ? 64u : 32u); shift += 16)
+        {
+            unsigned const halfword = static_cast<unsigned>(value >> shift) & 0xFFFF;
+            movzCount += (halfword != 0);
+            movnCount += (halfword != 0xFFFF);
+        }
+        return min(movzCount, movnCount);
+    }
+#endif
+    return constant->GetCostEx();
+}
+
+//------------------------------------------------------------------------------
 // SameBase: Are the two comparison bases the same value?
 //    The second test's load is the first's again, so it is marked non-faulting once the first has
 //    taken the null check; that difference does not make it another load.
@@ -566,7 +609,7 @@ static GenTree* FoldComparisons(
     GenTree*       value1;
     GenTree*       value2;
     GenTreeIntCon* bound1;
-    GenTreeIntCon* bound2;
+    GenTreeIntCon* bound2 = nullptr;
     genTreeOps     op1;
     genTreeOps     op2;
     if (!IsConstantRangeTest(cmp1, &value1, &bound1, &op1) || !varTypeIsIntOrI(genActualType(value1)) ||
@@ -765,7 +808,8 @@ static GenTree* FoldComparisons(
             // Four tests describe the interval through "(X - offset) relop bound": the unsigned test of
             // the interval or of its complement, and the signed test of either, which starts the interval
             // at the minimum value. They differ only in their constants, so take the one whose constants
-            // cost least to materialize; an interval of exactly half the ring is a sign test.
+            // cost least beyond the sub and cmp that take them; an interval of exactly half the ring is
+            // a sign test.
             target_size_t const width      = range.Width(mask);
             target_size_t const complLower = (upper + 1) & mask;
             target_size_t const complWidth = mask - width - 1;
@@ -812,12 +856,12 @@ static GenTree* FoldComparisons(
                 {
                     GenTree* const offsetNode = NewRangeConstant(comp, encoding.offset, type);
                     comp->gtSetEvalOrder(offsetNode);
-                    cost += offsetNode->GetCostEx();
+                    cost += ConstantCost(offsetNode, false);
                     size += offsetNode->GetCostSz();
                 }
                 GenTree* const boundNode = NewRangeConstant(comp, encoding.bound, type);
                 comp->gtSetEvalOrder(boundNode);
-                cost += boundNode->GetCostEx();
+                cost += ConstantCost(boundNode, false);
                 size += boundNode->GetCostSz();
                 if ((cost < bestCost) || ((cost == bestCost) && (size < bestSize)) ||
                     ((cost == bestCost) && (size == bestSize) && (mag < bestMagnitude)))
@@ -828,6 +872,18 @@ static GenTree* FoldComparisons(
                     bestMagnitude = mag;
                 }
             }
+
+#ifdef TARGET_ARM64
+            // Left alone, a pair of compares on locals becomes a cmp and ccmp chain, as many arithmetic
+            // instructions as the fold's sub and cmp, so it competes on its constants like the encodings
+            // do: the first bound in the cmp and the second in the ccmp. A tie goes to the fold.
+            if ((symbolicBound == nullptr) && value1->gtEffectiveVal()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+                value2->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+                (bestCost > (ConstantCost(bound1, false) + ConstantCost(bound2, true))))
+            {
+                return nullptr;
+            }
+#endif
 
             if (best->offset != 0)
             {
@@ -840,22 +896,6 @@ static GenTree* FoldComparisons(
 
         newBound = NewRangeConstant(comp, constant, type);
     }
-#ifdef TARGET_ARM64
-    if ((value != base1) && (symbolicBound == nullptr) && value1->gtEffectiveVal()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
-        value2->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-    {
-        // SUB/CMP need as many arithmetic instructions as CMP/CCMP. Avoid making
-        // a simple comparison pair more expensive by introducing costly constants.
-        GenTree* offset = value->gtGetOp2();
-        comp->gtSetEvalOrder(offset);
-        comp->gtSetEvalOrder(newBound);
-        if ((offset->GetCostEx() + newBound->GetCostEx()) > (bound1->GetCostEx() + bound2->GetCostEx()))
-        {
-            return nullptr;
-        }
-    }
-#endif
-
     // A load base is not wrapped: it is the first test's own load, kept in place.
     cmp1->gtOp1 =
         (value1 == value1->gtEffectiveVal()) ? value : comp->gtWrapWithSideEffects(value, value1, GTF_OBS_EFFECT);
@@ -1177,6 +1217,18 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
             return false;
         }
     }
+
+#ifdef TARGET_ARM64
+    // The chain turns the second compare into a ccmp, whose immediate is five bits where cmp has
+    // twelve. The branch the chain removes pays for one instruction to materialize a constant that
+    // no longer fits, more is a loss.
+    GenTree* const cond2Constant = cond2->gtGetOp2();
+    if (cond2Constant->IsCnsIntOrI() && (ConstantCost(cond2Constant, true) > (ConstantCost(cond2Constant, false) + 1)))
+    {
+        JITDUMP("Skipping CompareChainCond whose constant costs more in a ccmp than the branch it saves\n");
+        return false;
+    }
+#endif
 
     if (splitFirst)
     {
