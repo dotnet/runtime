@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using Internal.JitInterface;
 using Internal.Pgo;
 using Internal.Text;
@@ -31,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<ISymbolNode> _fixups;
         private HashSet<MethodWithGCInfo> _directCallTargets;
         private HashSet<Import> _moduleEagerFixups;
-        private Import[] _guaranteedPrecodeFixups = Array.Empty<Import>();
+        private Import[] _guaranteedPrecodeFixups;
         private bool _precodeFixupsFinalized;
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
@@ -184,7 +185,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         internal HashSet<MethodWithGCInfo> DirectCallTargets => _directCallTargets;
 
-        internal Import[] GuaranteedPrecodeFixups => _guaranteedPrecodeFixups;
+        internal Import[] GuaranteedPrecodeFixups => Volatile.Read(ref _guaranteedPrecodeFixups);
 
         internal void FinalizePrecodeFixups(HashSet<Import> scratch = null)
         {
@@ -192,6 +193,62 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _precodeFixupsFinalized = true;
 
             HashSet<Import> coveredFixups = scratch ?? new HashSet<Import>();
+            CollectCoveredPrecodeFixups(coveredFixups);
+
+            // Making a direct callee ReadyToRun applies its transitive fixup requirements first.
+            // Module-eager fixups are likewise guaranteed before any method precode executes.
+            if (coveredFixups.Count != 0)
+            {
+                _fixups.RemoveAll(fixup =>
+                    fixup is Import import &&
+                    coveredFixups.Contains(import));
+            }
+            coveredFixups.Clear();
+        }
+
+        internal Import[] GetGuaranteedPrecodeFixups(HashSet<Import> scratch)
+        {
+            Import[] guarantees = GuaranteedPrecodeFixups;
+            if (guarantees is not null)
+            {
+                return guarantees;
+            }
+
+            Debug.Assert(_precodeFixupsFinalized);
+            Import[] seed = CollectCoveredPrecodeFixups(scratch);
+            foreach (ISymbolNode fixup in _fixups)
+            {
+                if (fixup is Import import)
+                {
+                    scratch.Add(import);
+                }
+            }
+            // The union contains seed, so equal counts mean its array can be shared unchanged.
+            if (scratch.Count == seed.Length)
+            {
+                guarantees = seed;
+            }
+            else
+            {
+                guarantees = new Import[scratch.Count];
+                scratch.CopyTo(guarantees);
+            }
+            scratch.Clear();
+
+            return Interlocked.CompareExchange(ref _guaranteedPrecodeFixups, guarantees, null) ?? guarantees;
+        }
+
+        private Import[] CollectCoveredPrecodeFixups(HashSet<Import> coveredFixups)
+        {
+            // Materialize callees before using the same scratch storage for this method.
+            if (_directCallTargets is not null)
+            {
+                foreach (MethodWithGCInfo target in _directCallTargets)
+                {
+                    target.GetGuaranteedPrecodeFixups(coveredFixups);
+                }
+            }
+
             coveredFixups.Clear();
             Import[] seed = Array.Empty<Import>();
 
@@ -208,43 +265,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 foreach (MethodWithGCInfo target in _directCallTargets)
                 {
                     Debug.Assert(target._precodeFixupsFinalized);
-                    foreach (Import fixup in target._guaranteedPrecodeFixups)
+                    Import[] targetFixups = target.GuaranteedPrecodeFixups;
+                    foreach (Import fixup in targetFixups)
                     {
                         coveredFixups.Add(fixup);
                     }
-                    if (target._guaranteedPrecodeFixups.Length > seed.Length)
+                    if (targetFixups.Length > seed.Length)
                     {
-                        seed = target._guaranteedPrecodeFixups;
+                        seed = targetFixups;
                     }
                 }
             }
 
-            // Making a direct callee ReadyToRun applies its transitive fixup requirements first.
-            // Module-eager fixups are likewise guaranteed before any method precode executes.
-            if (coveredFixups.Count != 0)
-            {
-                _fixups.RemoveAll(fixup =>
-                    fixup is Import import &&
-                    coveredFixups.Contains(import));
-            }
-            foreach (ISymbolNode fixup in _fixups)
-            {
-                if (fixup is Import import)
-                {
-                    coveredFixups.Add(import);
-                }
-            }
-            // The union contains seed, so equal counts mean its array can be shared unchanged.
-            if (coveredFixups.Count == seed.Length)
-            {
-                _guaranteedPrecodeFixups = seed;
-            }
-            else
-            {
-                _guaranteedPrecodeFixups = new Import[coveredFixups.Count];
-                coveredFixups.CopyTo(_guaranteedPrecodeFixups);
-            }
-            coveredFixups.Clear();
+            return seed;
         }
 
         internal void ApplyModuleEagerFixups(HashSet<Import> fixups)

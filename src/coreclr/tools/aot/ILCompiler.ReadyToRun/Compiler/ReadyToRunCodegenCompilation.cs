@@ -715,6 +715,7 @@ namespace ILCompiler
             var eagerMethodClosure = new HashSet<MethodWithGCInfo>();
             var methodsToVisit = new Stack<MethodWithGCInfo>();
             var eagerFixups = new HashSet<Import>();
+            HashSet<Import> fixupScratch = _deferredWasmFixupScratch ?? new HashSet<Import>();
 
             // Every method compiled in the eager phase is available before non-eager callers.
             foreach (MethodDesc method in compiledEagerMethods)
@@ -742,20 +743,17 @@ namespace ILCompiler
                     continue;
                 }
 
-                if (method.GuaranteedPrecodeFixups is not null)
+                foreach (Import fixup in method.GetGuaranteedPrecodeFixups(fixupScratch))
                 {
-                    foreach (Import fixup in method.GuaranteedPrecodeFixups)
+                    eagerFixups.Add(fixup);
+                    // Eager helper entries also prepare their bodies, even when the
+                    // generated call does not contribute a direct-call edge.
+                    if (fixup.Signature is MethodFixupSignature { IsReadyToRunEntry: true } signature)
                     {
-                        eagerFixups.Add(fixup);
-                        // Eager helper entries also prepare their bodies, even when the
-                        // generated call does not contribute a direct-call edge.
-                        if (fixup.Signature is MethodFixupSignature { IsReadyToRunEntry: true } signature)
+                        MethodDesc target = signature.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                        if (compiledMethods.Contains(target))
                         {
-                            MethodDesc target = signature.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                            if (compiledMethods.Contains(target))
-                            {
-                                methodsToVisit.Push(NodeFactory.CompiledMethodNode(target));
-                            }
+                            methodsToVisit.Push(NodeFactory.CompiledMethodNode(target));
                         }
                     }
                 }

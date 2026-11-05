@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Tasks;
 
 using crossgen2::ILCompiler;
 using crossgen2::ILCompiler.DependencyAnalysis;
@@ -189,6 +190,7 @@ public class ReadyToRunLibraryRootProviderTests
         caller.AddDirectCallTarget(callee);
         caller.Fixups.Add(cell);
         caller.FinalizePrecodeFixups();
+        Import[] callerGuarantees = caller.GetGuaranteedPrecodeFixups(new HashSet<Import>());
 
         if (moduleEager)
         {
@@ -197,12 +199,12 @@ public class ReadyToRunLibraryRootProviderTests
             callee.ApplyModuleEagerFixups(eagerFixups);
             caller.ApplyModuleEagerFixups(eagerFixups);
             Assert.DoesNotContain(eagerCell, callee.GuaranteedPrecodeFixups);
-            Assert.DoesNotContain(eagerCell, caller.GuaranteedPrecodeFixups);
+            Assert.DoesNotContain(eagerCell, callerGuarantees);
         }
 
         Assert.Empty(caller.Fixups);
-        Assert.Same(callee.GuaranteedPrecodeFixups, caller.GuaranteedPrecodeFixups);
-        Assert.Same(cell, Assert.Single(caller.GuaranteedPrecodeFixups));
+        Assert.Same(callee.GuaranteedPrecodeFixups, callerGuarantees);
+        Assert.Same(cell, Assert.Single(callerGuarantees));
     }
 
     [Theory]
@@ -223,6 +225,7 @@ public class ReadyToRunLibraryRootProviderTests
         MethodWithGCInfo leaf = new(method);
         leaf.Fixups.Add(leafCell);
         leaf.FinalizePrecodeFixups(scratch: scratch);
+        Assert.Null(leaf.GuaranteedPrecodeFixups);
         MethodWithGCInfo left = new(method);
         left.AddDirectCallTarget(leaf);
         left.Fixups.Add(leftCell);
@@ -236,16 +239,55 @@ public class ReadyToRunLibraryRootProviderTests
         outer.AddDirectCallTarget(right);
         outer.Fixups.AddRange([leafCell, leftCell, rightCell, outerCell]);
         outer.FinalizePrecodeFixups(scratch: scratch);
+        Assert.Null(outer.GuaranteedPrecodeFixups);
+        HashSet<Import> consumerScratch = scratch ?? new HashSet<Import>();
+        Import[] outerGuarantees = outer.GetGuaranteedPrecodeFixups(consumerScratch);
 
+        Assert.NotNull(leaf.GuaranteedPrecodeFixups);
         Assert.Same(leafCell, Assert.Single(leaf.GuaranteedPrecodeFixups));
         Assert.True(new HashSet<Import>(left.GuaranteedPrecodeFixups).SetEquals([leafCell, leftCell]));
         Assert.True(new HashSet<Import>(right.GuaranteedPrecodeFixups).SetEquals([leafCell, rightCell]));
-        Assert.True(new HashSet<Import>(outer.GuaranteedPrecodeFixups).SetEquals([leafCell, leftCell, rightCell, outerCell]));
+        Assert.True(new HashSet<Import>(outerGuarantees).SetEquals([leafCell, leftCell, rightCell, outerCell]));
         Assert.Same(outerCell, Assert.Single(outer.Fixups));
         if (scratch is not null)
         {
             Assert.Empty(scratch);
         }
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(64)]
+    public void PrecodeGuaranteesAreSharedByConcurrentConsumers(int fixupCount)
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        MethodDesc method = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
+        MethodWithGCInfo methodNode = new(method);
+        ImportSectionNode table = new("TestImports", ReadyToRunImportSectionType.Unknown,
+            ReadyToRunImportSectionFlags.PCode, 8, emitPrecode: true, emitGCRefMap: false);
+        Import[] cells = new Import[fixupCount];
+        for (int i = 0; i < cells.Length; i++)
+        {
+            cells[i] = new Import(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
+            methodNode.Fixups.Add(cells[i]);
+        }
+        methodNode.FinalizePrecodeFixups();
+        Assert.Null(methodNode.GuaranteedPrecodeFixups);
+
+        Import[][] guarantees = new Import[8][];
+        Parallel.For(0, guarantees.Length, i =>
+        {
+            HashSet<Import> scratch = new();
+            guarantees[i] = methodNode.GetGuaranteedPrecodeFixups(scratch);
+            Assert.Empty(scratch);
+        });
+
+        Assert.All(guarantees, snapshot =>
+        {
+            Assert.Same(guarantees[0], snapshot);
+            Assert.Equal(cells.Length, snapshot.Length);
+            Assert.All(cells, cell => Assert.Contains(cell, snapshot));
+        });
     }
 
     [Theory]
