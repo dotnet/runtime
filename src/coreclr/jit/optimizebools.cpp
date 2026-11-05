@@ -669,14 +669,80 @@ static GenTree* FoldComparisons(
         }
         else
         {
-            value      = comp->gtNewOperNode(GT_SUB, type, value, NewRangeConstant(comp, lower, type));
-            constant   = range.Width(mask);
-            isUnsigned = constant != signBit - 1;
-            oper       = isUnsigned ? GT_LE : GT_GE;
-            if (!isUnsigned)
+            // Four tests describe the interval through "(X - offset) relop bound": the unsigned test of
+            // the interval or of its complement, and the signed test of either, which starts the interval
+            // at the minimum value. They differ only in their constants, so take the one whose constants
+            // cost least to materialize; an interval of exactly half the ring is a sign test.
+            target_size_t const width      = range.Width(mask);
+            target_size_t const complLower = (upper + 1) & mask;
+            target_size_t const complWidth = mask - width - 1;
+
+            struct Encoding
             {
-                constant = 0;
+                target_size_t offset;
+                target_size_t bound;
+                genTreeOps    oper;
+                bool          isUnsigned;
+            };
+            Encoding encodings[] = {
+                {lower, width, GT_LE, true},
+                {complLower, complWidth, GT_GT, true},
+                {(lower + signBit) & mask, (width + 1 - signBit) & mask, GT_LT, false},
+                {(complLower + signBit) & mask, (complWidth + 1 - signBit) & mask, GT_GE, false},
+            };
+            if (width == signBit - 1)
+            {
+                encodings[0] = {lower, 0, GT_GE, false};
             }
+            if (complWidth == signBit - 1)
+            {
+                encodings[1] = {complLower, 0, GT_LT, false};
+            }
+
+            // Among equally priced constants the smallest wins, since it fits the most immediate forms,
+            // such as the five bits of a ccmp that a later chain may need.
+            auto magnitude = [type](target_size_t bits) {
+                ssize_t const value = (type == TYP_INT) ? static_cast<int32_t>(bits) : static_cast<ssize_t>(bits);
+                return static_cast<target_size_t>((value < 0) ? -value : value);
+            };
+
+            Encoding*     best          = nullptr;
+            unsigned      bestCost      = UINT_MAX;
+            unsigned      bestSize      = UINT_MAX;
+            target_size_t bestMagnitude = ~static_cast<target_size_t>(0);
+            for (Encoding& encoding : encodings)
+            {
+                unsigned            cost = 0;
+                unsigned            size = 0;
+                target_size_t const mag  = max(magnitude(encoding.offset), magnitude(encoding.bound));
+                if (encoding.offset != 0)
+                {
+                    GenTree* const offsetNode = NewRangeConstant(comp, encoding.offset, type);
+                    comp->gtSetEvalOrder(offsetNode);
+                    cost += offsetNode->GetCostEx();
+                    size += offsetNode->GetCostSz();
+                }
+                GenTree* const boundNode = NewRangeConstant(comp, encoding.bound, type);
+                comp->gtSetEvalOrder(boundNode);
+                cost += boundNode->GetCostEx();
+                size += boundNode->GetCostSz();
+                if ((cost < bestCost) || ((cost == bestCost) && (size < bestSize)) ||
+                    ((cost == bestCost) && (size == bestSize) && (mag < bestMagnitude)))
+                {
+                    best          = &encoding;
+                    bestCost      = cost;
+                    bestSize      = size;
+                    bestMagnitude = mag;
+                }
+            }
+
+            if (best->offset != 0)
+            {
+                value = comp->gtNewOperNode(GT_SUB, type, value, NewRangeConstant(comp, best->offset, type));
+            }
+            constant   = best->bound;
+            oper       = best->oper;
+            isUnsigned = best->isUnsigned;
         }
 
         newBound = NewRangeConstant(comp, constant, type);
