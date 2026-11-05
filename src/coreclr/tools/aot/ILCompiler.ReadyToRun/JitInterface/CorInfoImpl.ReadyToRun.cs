@@ -497,6 +497,7 @@ namespace Internal.JitInterface
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
         private readonly HashSet<Import> _precodeFixupScratch = new();
+        private readonly HashSet<Import> _moduleEagerFixupScratch = new();
         private List<MethodDesc> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
@@ -523,7 +524,7 @@ namespace Internal.JitInterface
             {
                 if (import.Table.IsEager)
                 {
-                    _methodCodeNode.AddModuleEagerFixup(import);
+                    _moduleEagerFixupScratch.Add(import);
                 }
                 else if (import.EmitPrecode)
                 {
@@ -538,7 +539,15 @@ namespace Internal.JitInterface
 
             if (node is Import { Table.IsEager: true } eagerImport)
             {
-                _methodCodeNode.AddModuleEagerFixup(eagerImport);
+                _moduleEagerFixupScratch.Add(eagerImport);
+            }
+        }
+
+        private void PublishModuleEagerFixups()
+        {
+            if (_moduleEagerFixupScratch.Count != _methodCodeNode.ModuleEagerFixups.Length)
+            {
+                _methodCodeNode.InitializeModuleEagerFixups([.. _moduleEagerFixupScratch]);
             }
         }
 
@@ -844,6 +853,7 @@ namespace Internal.JitInterface
             ManagedHelperProbeResult result = default;
             _isCompilationProbe = !publishCode;
             _methodCodeNode = methodCodeNodeNeedingCode;
+            _moduleEagerFixupScratch.UnionWith(_methodCodeNode.ModuleEagerFixups);
 
             try
             {
@@ -959,6 +969,7 @@ namespace Internal.JitInterface
                     PublishEmptyCode();
                 }
 
+                PublishModuleEagerFixups();
                 HasColdCode = (_methodColdCodeNode != null);
                 CompileMethodCleanup();
                 _isCompilationProbe = false;
@@ -1105,11 +1116,6 @@ namespace Internal.JitInterface
 
         private void AddManagedHelperDependency(MethodDesc helperMethod)
         {
-            if (!_isCompilationProbe)
-            {
-                _compilation.RecordCall(MethodBeingCompiled, helperMethod);
-            }
-
             // Cached helper targets outlive the current compilation's dependencies, including probes.
             MethodWithToken helperMethodWithToken = new MethodWithToken(
                 helperMethod,
@@ -2721,11 +2727,6 @@ namespace Internal.JitInterface
             // We validate the safety of the signature here, as it could have been adjusted
             // by virtual resolution during getCallInfo (virtual resolution could find a result using type equivalence)
             ValidateSafetyOfUsingTypeEquivalenceInSignature(targetMethod.GetTypicalMethodDefinition().Signature);
-
-            if (pResult->kind == CORINFO_CALL_KIND.CORINFO_CALL)
-            {
-                _compilation.RecordCall(MethodBeingCompiled, methodToCall);
-            }
 
             if (_compilation.NodeFactory.Target.IsWasm && targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke"u8)
             {

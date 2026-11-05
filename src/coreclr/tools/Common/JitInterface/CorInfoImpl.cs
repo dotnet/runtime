@@ -613,6 +613,7 @@ namespace Internal.JitInterface
                     }
                 }
             }
+            PublishModuleEagerFixups();
             if (!_compilation.DeferredWasmCalls)
             {
                 _methodCodeNode.FinalizePrecodeFixups(scratch: _precodeFixupScratch);
@@ -788,6 +789,7 @@ namespace Internal.JitInterface
             _actualInstructionSetSupported = default(InstructionSetFlags);
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
             _precodeFixups = null;
+            _moduleEagerFixupScratch.Clear();
             _stashedPrecodeFixups.Clear();
             _stashedInlinedMethods.Clear();
             _ilBodiesNeeded = null;

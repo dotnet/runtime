@@ -90,7 +90,18 @@ public class ReadyToRunLibraryRootProviderTests
             expectedDebugInfo.InitializeDebugVarInfos(variables);
         }
 
-        DeferredWasmCallRewriter.Rewrite(compilation, caller);
+        Relocation[] repeatedRelocations = (Relocation[])relocations.Clone();
+        Import existingEagerImport = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
+        if (eager && callCount != 0)
+        {
+            caller.InitializeModuleEagerFixups([existingEagerImport, import]);
+        }
+        if (!eager && callCount != 0)
+        {
+            caller.Fixups.Add(import);
+        }
+        DeferredWasmCallRewriter rewriter = new(compilation);
+        rewriter.Rewrite(caller);
 
         Assert.Same(original, caller.GetData(factory, relocsOnly: false));
         Assert.Same(frames, caller.FrameInfos);
@@ -105,20 +116,30 @@ public class ReadyToRunLibraryRootProviderTests
         {
             if (eager)
             {
-                Assert.Contains(import, (HashSet<Import>)typeof(MethodWithGCInfo)
-                    .GetField("_moduleEagerFixups", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(caller)!);
+                Assert.Equal(2, caller.ModuleEagerFixups.Length);
+                Assert.Contains(import, caller.ModuleEagerFixups);
+                Assert.Contains(existingEagerImport, caller.ModuleEagerFixups);
             }
             else
             {
-                Assert.Contains(import, caller.Fixups);
+                Assert.Same(import, Assert.Single(caller.Fixups));
             }
-            Assert.Same(target, Assert.Single((HashSet<MethodWithGCInfo>)typeof(MethodWithGCInfo)
-                .GetField("_directCallTargets", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(caller)!));
+            Assert.Same(target, Assert.Single(caller.DirectCallTargets));
         }
         Assert.Equal(expectedDebugInfo.DebugLocInfos, caller.DebugLocInfos);
         Assert.Equal(expectedDebugInfo.DebugVarInfos, caller.DebugVarInfos);
         Assert.Null(typeof(MethodWithGCInfo).GetField("_deferredWasmData", BindingFlags.Instance | BindingFlags.NonPublic)!
             .GetValue(caller));
+
+        MethodWithGCInfo nextCaller = new(targetMethod);
+        nextCaller.SetCode(new ObjectNode.ObjectData(original.Data, repeatedRelocations, 16, [nextCaller]));
+        nextCaller.InitializeFrameInfos(frames);
+        nextCaller.InitializeDeferredWasmDebugInfo(null, null);
+        nextCaller.InitializeDeferredWasmCalls(null, new Dictionary<MethodWithGCInfo, MethodWithToken> { [target] = token });
+        rewriter.Rewrite(nextCaller);
+        Assert.Equal(callCount == 0 ? 0 : 1, nextCaller.DirectCallTargets.Length);
+        Assert.Equal(eager && callCount != 0 ? 1 : 0, nextCaller.ModuleEagerFixups.Length);
+        Assert.Equal(!eager && callCount != 0 ? 1 : 0, nextCaller.Fixups.Count);
 
         static void SetField(object instance, string name, object value) =>
             instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(instance, value);
@@ -265,18 +286,18 @@ public class ReadyToRunLibraryRootProviderTests
             MethodDesc nonEagerCaller = type.GetMethod("NonEagerCaller"u8, null);
             MethodDesc cycleLeft = type.GetMethod("CycleLeft"u8, null);
             MethodDesc cycleRight = type.GetMethod("CycleRight"u8, null);
-            ReadyToRunCallGraphBuilder graph = new();
-            graph.AddCall(eagerRoot, eagerMiddle);
-            graph.AddCall(eagerMiddle, eagerCold);
-            graph.AddCall(eagerCold, eagerLeaf);
-            graph.AddCall(nonEagerLeaf, eagerRoot);
-            graph.AddCall(nonEagerLeaf, eagerCold);
-            graph.AddCall(nonEagerCaller, nonEagerLeaf);
-            graph.AddCall(cycleLeft, cycleRight);
-            graph.AddCall(cycleRight, cycleLeft);
-            graph.AddCall(cycleRight, eagerRoot);
-            ReadyToRunCompilationPlan plan = graph.CreatePlan(
-                [eagerLeaf, eagerCold, eagerMiddle, eagerRoot, nonEagerLeaf, nonEagerCaller, cycleLeft, cycleRight]);
+            NodeFactory factory = (NodeFactory)RuntimeHelpers.GetUninitializedObject(typeof(NodeFactory));
+            ReadyToRunCompilationPlan plan = ReadyToRunCompilationPlan.Create(
+                [
+                    CreateMethodNode(eagerLeaf),
+                    CreateMethodNode(eagerCold, eagerLeaf),
+                    CreateMethodNode(eagerMiddle, eagerCold),
+                    CreateMethodNode(eagerRoot, eagerMiddle),
+                    CreateMethodNode(nonEagerLeaf, eagerRoot, eagerCold),
+                    CreateMethodNode(nonEagerCaller, nonEagerLeaf),
+                    CreateMethodNode(cycleLeft, cycleRight),
+                    CreateMethodNode(cycleRight, cycleLeft, eagerRoot),
+                ], factory);
 
             ReadyToRunCompilationPlan eagerPlan = plan.CreateEagerPlan([eagerRoot]);
             Assert.Equal(4, eagerPlan.LevelCount);
@@ -303,6 +324,62 @@ public class ReadyToRunLibraryRootProviderTests
         {
             Directory.Delete(workingDirectory, recursive: true);
         }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CompilationPlanUsesPublishedCallRelocations(bool reverseOrder)
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        MethodDesc leaf = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
+        MethodDesc middle = context.GetWellKnownType(WellKnownType.Boolean).GetMethod("GetHashCode"u8, null);
+        MethodDesc caller = context.GetWellKnownType(WellKnownType.Char).GetMethod("GetHashCode"u8, null);
+        MethodDesc ignored = context.GetWellKnownType(WellKnownType.Int64).GetMethod("GetHashCode"u8, null);
+        MethodDesc external = context.GetWellKnownType(WellKnownType.Double).GetMethod("GetHashCode"u8, null);
+        MethodWithGCInfo leafNode = CreateMethodNode(leaf);
+        MethodWithGCInfo middleNode = CreateMethodNode(middle, leaf);
+        MethodWithGCInfo callerNode = new(caller);
+        MethodWithGCInfo ignoredNode = CreateMethodNode(ignored, caller);
+        DelayLoadMethodImport fallback = (DelayLoadMethodImport)RuntimeHelpers.GetUninitializedObject(typeof(DelayLoadMethodImport));
+        typeof(DelayLoadMethodImport).GetField("_localMethod", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(fallback, middleNode);
+        DeferredWasmCallNode deferred = new(fallback);
+        callerNode.SetCode(new ObjectNode.ObjectData(new byte[40],
+            [
+                new(RelocType.WASM_FUNCTION_INDEX_LEB, 1, deferred),
+                new(RelocType.WASM_FUNCTION_INDEX_LEB, 7, deferred),
+                new(RelocType.WASM_FUNCTION_INDEX_LEB, 13, leafNode),
+                new(RelocType.IMAGE_REL_BASED_DIR64, 19, ignoredNode),
+                new(RelocType.WASM_FUNCTION_INDEX_LEB, 28, new MethodWithGCInfo(external)),
+            ], 1, [callerNode]));
+        List<MethodWithGCInfo> nodes = [leafNode, middleNode, callerNode, ignoredNode];
+        if (reverseOrder)
+        {
+            nodes.Reverse();
+        }
+        NodeFactory factory = (NodeFactory)RuntimeHelpers.GetUninitializedObject(typeof(NodeFactory));
+
+        ReadyToRunCompilationPlan plan = ReadyToRunCompilationPlan.Create(nodes, factory);
+
+        Assert.Equal(4, plan.LevelCount);
+        Assert.Same(leaf, Assert.Single(plan.GetMethodsAtLevel(0)));
+        Assert.Same(middle, Assert.Single(plan.GetMethodsAtLevel(1)));
+        Assert.Same(caller, Assert.Single(plan.GetMethodsAtLevel(2)));
+        Assert.Same(ignored, Assert.Single(plan.GetMethodsAtLevel(3)));
+    }
+
+    private static MethodWithGCInfo CreateMethodNode(MethodDesc method, params MethodDesc[] callees)
+    {
+        MethodWithGCInfo node = new(method);
+        Relocation[] relocations = new Relocation[callees.Length];
+        for (int i = 0; i < callees.Length; i++)
+        {
+            relocations[i] = new Relocation(RelocType.WASM_FUNCTION_INDEX_LEB, 1 + i * 6, new MethodWithGCInfo(callees[i]));
+        }
+        node.SetCode(new ObjectNode.ObjectData(new byte[1 + callees.Length * 6], relocations, 1, [node]));
+
+        return node;
     }
 
     [Theory]
@@ -344,7 +421,7 @@ public class ReadyToRunLibraryRootProviderTests
         Import cell = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
         callee.Fixups.Add(cell);
         callee.FinalizePrecodeFixups();
-        caller.AddDirectCallTarget(callee);
+        caller.InitializeDirectCallTargets([callee]);
         caller.Fixups.Add(cell);
         caller.FinalizePrecodeFixups();
         Import[] callerGuarantees = caller.GetGuaranteedPrecodeFixups(new HashSet<Import>());
@@ -384,16 +461,15 @@ public class ReadyToRunLibraryRootProviderTests
         leaf.FinalizePrecodeFixups(scratch: scratch);
         Assert.Null(leaf.GuaranteedPrecodeFixups);
         MethodWithGCInfo left = new(method);
-        left.AddDirectCallTarget(leaf);
+        left.InitializeDirectCallTargets([leaf]);
         left.Fixups.Add(leftCell);
         left.FinalizePrecodeFixups(scratch: scratch);
         MethodWithGCInfo right = new(method);
-        right.AddDirectCallTarget(leaf);
+        right.InitializeDirectCallTargets([leaf]);
         right.Fixups.Add(rightCell);
         right.FinalizePrecodeFixups(scratch: scratch);
         MethodWithGCInfo outer = new(method);
-        outer.AddDirectCallTarget(left);
-        outer.AddDirectCallTarget(right);
+        outer.InitializeDirectCallTargets([left, right]);
         outer.Fixups.AddRange([leafCell, leftCell, rightCell, outerCell]);
         outer.FinalizePrecodeFixups(scratch: scratch);
         Assert.Null(outer.GuaranteedPrecodeFixups);
@@ -495,7 +571,7 @@ public class ReadyToRunLibraryRootProviderTests
         Import callerCell = sharedCell ? calleeCell : new(table, signature);
         callee.Fixups.Add(calleeCell);
         callee.FinalizePrecodeFixups();
-        caller.AddDirectCallTarget(callee);
+        caller.InitializeDirectCallTargets([callee]);
         caller.Fixups.Add(callerCell);
         caller.FinalizePrecodeFixups();
 

@@ -59,6 +59,7 @@ namespace ILCompiler
         private bool _hotColdSplitting;
         private bool _verifyGCModeTransitions;
         private WasmDebugInfo _wasmDebugInfo = WasmDebugInfo.NameSection;
+        private bool _enableDeferredWasmCalls = true;
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
@@ -228,6 +229,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseDeferredWasmCalls(bool enable)
+        {
+            _enableDeferredWasmCalls = enable;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseCompositeImageSettings(CompositeImageSettings compositeImageSettings)
         {
             _compositeImageSettings = compositeImageSettings;
@@ -383,7 +390,8 @@ namespace ILCompiler
             }
 
             bool deferredWasmCalls = false;
-            if (_context.Target.Architecture == TargetArchitecture.Wasm32 && _optimizationMode != OptimizationMode.None)
+            if (_enableDeferredWasmCalls &&
+                _context.Target.Architecture == TargetArchitecture.Wasm32 && _optimizationMode != OptimizationMode.None)
             {
                 foreach (EcmaModule compilationModule in inputModules)
                 {

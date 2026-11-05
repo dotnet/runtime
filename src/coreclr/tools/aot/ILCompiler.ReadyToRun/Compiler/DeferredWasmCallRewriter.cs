@@ -14,10 +14,14 @@ using Internal.Text;
 
 namespace ILCompiler;
 
-internal static class DeferredWasmCallRewriter
+internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation compilation)
 {
     private const int BodySizePrefixLength = 5;
     private const int RelocInstructionLength = 6;
+    private readonly HashSet<MethodWithGCInfo> _directTargets = new();
+    private readonly HashSet<Import> _moduleEagerFixups = new();
+    private readonly HashSet<ISymbolNode> _fixups = new();
+    private bool _fixupsInitialized;
 
     private sealed class Edit(int offset, int length, byte[] bytes, Relocation[] relocations)
     {
@@ -28,7 +32,65 @@ internal static class DeferredWasmCallRewriter
         internal int NewOffset;
     }
 
-    internal static void Rewrite(ReadyToRunCodegenCompilation compilation, MethodWithGCInfo method)
+    internal void Rewrite(MethodWithGCInfo method)
+    {
+        Debug.Assert(_directTargets.Count == 0 && _moduleEagerFixups.Count == 0 && _fixups.Count == 0);
+        _directTargets.UnionWith(method.DirectCallTargets);
+        _moduleEagerFixups.UnionWith(method.ModuleEagerFixups);
+        try
+        {
+            RewriteCore(method);
+            if (_directTargets.Count != method.DirectCallTargets.Length)
+            {
+                method.InitializeDirectCallTargets([.. _directTargets]);
+            }
+            if (_moduleEagerFixups.Count != method.ModuleEagerFixups.Length)
+            {
+                method.InitializeModuleEagerFixups([.. _moduleEagerFixups]);
+            }
+        }
+        finally
+        {
+            _directTargets.Clear();
+            _moduleEagerFixups.Clear();
+            _fixups.Clear();
+            _fixupsInitialized = false;
+        }
+    }
+
+    private void SelectCall(MethodWithGCInfo caller, DeferredWasmCallNode call, bool useDirectCall, bool isEager)
+    {
+        MethodWithToken activationToken = useDirectCall ? caller.GetDeferredWasmActivationToken(call.Target) : default;
+        Import import = useDirectCall
+            ? (Import)(isEager
+                ? compilation.SymbolNodeFactory.EagerReadyToRunMethodEntry(activationToken)
+                : compilation.SymbolNodeFactory.PrecodeReadyToRunMethodEntry(activationToken))
+            : call.Fallback;
+
+        if (import.Table.IsEager)
+        {
+            _moduleEagerFixups.Add(import);
+            caller.AddDeferredWasmDependency(import);
+        }
+        else if (import.EmitPrecode)
+        {
+            if (!_fixupsInitialized)
+            {
+                _fixups.UnionWith(caller.Fixups);
+                _fixupsInitialized = true;
+            }
+            if (_fixups.Add(import))
+            {
+                caller.Fixups.Add(import);
+            }
+        }
+        if (useDirectCall)
+        {
+            _directTargets.Add(call.Target);
+        }
+    }
+
+    private void RewriteCore(MethodWithGCInfo method)
     {
         ObjectNode.ObjectData original = method.GetData(compilation.NodeFactory, relocsOnly: false);
         foreach (Relocation relocation in original.Relocs.AsSpan())
@@ -36,7 +98,7 @@ internal static class DeferredWasmCallRewriter
             if (relocation.Target is DeferredWasmCallNode call &&
                 !compilation.CanUseDirectCall(call.Method, out _))
             {
-                RewriteWithIndirectCalls(compilation, method, original);
+                RewriteWithIndirectCalls(method, original);
                 return;
             }
         }
@@ -48,15 +110,14 @@ internal static class DeferredWasmCallRewriter
                 Debug.Assert(relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB);
                 bool direct = compilation.CanUseDirectCall(call.Method, out ReadyToRunMethodCompilationInfo info);
                 Debug.Assert(direct);
-                compilation.SelectDeferredWasmCall(method, call, useDirectCall: true, info.IsEager);
+                SelectCall(method, call, useDirectCall: true, info.IsEager);
                 relocation = new Relocation(relocation.RelocType, relocation.Offset, call.Target);
             }
         }
         method.FinalizeDeferredWasmCode(original, method.FrameInfos);
     }
 
-    private static void RewriteWithIndirectCalls(
-        ReadyToRunCodegenCompilation compilation, MethodWithGCInfo method, ObjectNode.ObjectData original)
+    private void RewriteWithIndirectCalls(MethodWithGCInfo method, ObjectNode.ObjectData original)
     {
         NodeFactory factory = compilation.NodeFactory;
         Relocation[] originalRelocations = original.Relocs ?? [];
@@ -82,7 +143,7 @@ internal static class DeferredWasmCallRewriter
             {
                 Debug.Assert(relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB);
                 bool direct = compilation.CanUseDirectCall(call.Method, out ReadyToRunMethodCompilationInfo info);
-                compilation.SelectDeferredWasmCall(method, call, direct, info.IsEager);
+                SelectCall(method, call, direct, info.IsEager);
                 Debug.Assert(frameIdentities.TryGetValue(call.Target, out Stack<int> pending) && pending.Count != 0);
                 int identityOffset = frameIdentities[call.Target].Pop();
                 if (direct)

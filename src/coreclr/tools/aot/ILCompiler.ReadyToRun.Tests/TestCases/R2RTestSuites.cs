@@ -44,9 +44,11 @@ public class R2RTestSuites
     }
 
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
-    [InlineData(1)]
-    [InlineData(2)]
-    public void DirectCalleesCoverRelocationPrecodeFixups(int parallelism)
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    public void DirectCalleesCoverRelocationPrecodeFixups(int parallelism, bool disableDeferredWasmCalls)
     {
         CompiledAssembly input = new()
         {
@@ -65,13 +67,14 @@ public class R2RTestSuites
                         "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath,
                         "--parallelism", parallelism.ToString(),
                         "--codegenopt", "JitNoInline=1",
+                        .. disableDeferredWasmCalls ? new[] { "--disable-deferred-wasm-calls" } : Array.Empty<string>(),
                     ],
                     OutputFileExtension = ".wasm",
                     Validate = Validate,
                 },
             ]));
 
-        static void Validate(ReadyToRunReader reader)
+        void Validate(ReadyToRunReader reader)
         {
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
             foreach (string name in new[]
@@ -82,7 +85,7 @@ public class R2RTestSuites
                 ReadyToRunMethod method = Assert.Single(methods,
                     method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
                 IReadOnlyList<FixupCell> fixups = method.Fixups ?? Array.Empty<FixupCell>();
-                if (name is "FixupMiddle" or "FixupOuter" or "FixupAtDepthLimit")
+                if (!disableDeferredWasmCalls && (name is "FixupMiddle" or "FixupOuter" or "FixupAtDepthLimit"))
                 {
                     Assert.DoesNotContain(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.StringHandle);
                     Assert.Contains(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun);
@@ -91,7 +94,7 @@ public class R2RTestSuites
                 {
                     Assert.Single(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.StringHandle);
                 }
-                if (name == "FixupBeyondDepthLimit")
+                if (disableDeferredWasmCalls || name == "FixupBeyondDepthLimit")
                 {
                     Assert.DoesNotContain(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun);
                 }
@@ -102,7 +105,7 @@ public class R2RTestSuites
                 ReadyToRunMethod method = Assert.Single(methods,
                     method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
                 IReadOnlyList<FixupCell> fixups = method.Fixups ?? Array.Empty<FixupCell>();
-                if (name.EndsWith("Caller", StringComparison.Ordinal))
+                if (!disableDeferredWasmCalls && name.EndsWith("Caller", StringComparison.Ordinal))
                 {
                     Assert.Contains(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun);
                 }
@@ -125,7 +128,7 @@ public class R2RTestSuites
                 ReadyToRunMethod method = Assert.Single(methods,
                     method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
                 IReadOnlyList<FixupCell> fixups = method.Fixups ?? Array.Empty<FixupCell>();
-                if (direct)
+                if (direct && !disableDeferredWasmCalls)
                 {
                     Assert.Contains(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun);
                     Assert.DoesNotContain(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.StringHandle);

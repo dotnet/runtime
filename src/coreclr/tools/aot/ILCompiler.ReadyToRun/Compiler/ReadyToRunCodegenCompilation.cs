@@ -318,7 +318,7 @@ namespace ILCompiler
         private HashSet<MethodDesc> _directManagedHelpers;
         private HashSet<MethodDesc> _deniedManagedHelpers;
         private bool _directManagedHelpersInitialized;
-        private ReadyToRunCallGraphBuilder _callGraphBuilder;
+        private readonly DeferredWasmCallRewriter _deferredWasmCallRewriter;
         private readonly Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo> _finalizedWasmCompilationInfo;
         private readonly HashSet<MethodDesc> _startupEagerMethods;
         private bool _compilingEagerMethods;
@@ -434,7 +434,7 @@ namespace ILCompiler
                 _deferredWasmMethods = new();
                 _finalizedWasmMethods = new();
                 _deferredWasmFixupScratch = new();
-                _callGraphBuilder = new ReadyToRunCallGraphBuilder();
+                _deferredWasmCallRewriter = new DeferredWasmCallRewriter(this);
                 _dependencyGraph.DependencyAnalysisQuiesced += FinalizeDeferredWasmCalls;
                 foreach (MethodDesc method in _startupEagerMethods)
                 {
@@ -751,31 +751,6 @@ namespace ILCompiler
             }
         }
 
-        internal void RecordCall(MethodDesc caller, MethodDesc callee)
-        {
-            ReadyToRunCallGraphBuilder callGraphBuilder = _callGraphBuilder;
-            if (callGraphBuilder is null)
-            {
-                return;
-            }
-
-            if (callee.IsUnboxingThunk())
-            {
-                callee = callee.GetUnboxedMethod();
-            }
-
-            if (callee is PInvokeTargetNativeMethod rawPInvoke)
-            {
-                callee = rawPInvoke.Target;
-            }
-
-            callee = callee.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            if (CompilationModuleGroup.ContainsMethodBody(callee, unboxingStub: false))
-            {
-                callGraphBuilder.AddCall(caller, callee);
-            }
-        }
-
         internal bool CanUseDirectCall(MethodDesc method, out ReadyToRunMethodCompilationInfo compilationInfo)
         {
             compilationInfo = default;
@@ -804,17 +779,16 @@ namespace ILCompiler
         {
             if (!_deferredWasmPolicyFrozen)
             {
-                var methods = new List<MethodDesc>();
+                var methods = new List<MethodWithGCInfo>();
                 foreach (MethodWithGCInfo method in _deferredWasmMethods)
                 {
                     if (!method.IsEmpty)
                     {
-                        methods.Add(method.Method);
+                        methods.Add(method);
                     }
                 }
 
-                ReadyToRunCompilationPlan compilationPlan = _callGraphBuilder.CreatePlan(methods);
-                _callGraphBuilder = null;
+                ReadyToRunCompilationPlan compilationPlan = ReadyToRunCompilationPlan.Create(methods, NodeFactory);
                 FinalizeCompilationPlan(compilationPlan);
                 _deferredWasmPolicyFrozen = true;
                 NodeFactory.CompleteDeferredImportPlacement();
@@ -837,34 +811,10 @@ namespace ILCompiler
         {
             if (!method.IsEmpty)
             {
-                DeferredWasmCallRewriter.Rewrite(this, method);
+                _deferredWasmCallRewriter.Rewrite(method);
                 method.FinalizePrecodeFixups(scratch: _deferredWasmFixupScratch);
             }
             _finalizedWasmMethods.Add(method);
-        }
-
-        internal void SelectDeferredWasmCall(MethodWithGCInfo caller, DeferredWasmCallNode call, bool useDirectCall, bool isEager)
-        {
-            MethodWithToken activationToken = useDirectCall ? caller.GetDeferredWasmActivationToken(call.Target) : default;
-            Import import = useDirectCall
-                ? (Import)(isEager
-                    ? SymbolNodeFactory.EagerReadyToRunMethodEntry(activationToken)
-                    : SymbolNodeFactory.PrecodeReadyToRunMethodEntry(activationToken))
-                : call.Fallback;
-
-            if (import.Table.IsEager)
-            {
-                caller.AddModuleEagerFixup(import);
-                caller.AddDeferredWasmDependency(import);
-            }
-            else if (import.EmitPrecode)
-            {
-                caller.AddDeferredWasmFixup(import);
-            }
-            if (useDirectCall)
-            {
-                caller.AddDirectCallTarget(call.Target);
-            }
         }
 
         internal static bool IsDirectCallDepthExempt(TypeDesc type)

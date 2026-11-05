@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+
+using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 using Internal.TypeSystem;
 
@@ -22,21 +24,6 @@ namespace ILCompiler
         public int CodeSize { get; }
         public int Level { get; }
         public bool IsEager { get; }
-    }
-
-    internal sealed class ReadyToRunCallGraphBuilder
-    {
-        private readonly ConcurrentDictionary<MethodDesc, ConcurrentDictionary<MethodDesc, byte>> _edges = new();
-
-        public void AddCall(MethodDesc caller, MethodDesc callee)
-        {
-            _edges.GetOrAdd(caller, static _ => new ConcurrentDictionary<MethodDesc, byte>()).TryAdd(callee, 0);
-        }
-
-        public ReadyToRunCompilationPlan CreatePlan(List<MethodDesc> methods)
-        {
-            return ReadyToRunCompilationPlan.Create(methods, _edges);
-        }
     }
 
     public sealed class ReadyToRunCompilationPlan
@@ -138,8 +125,7 @@ namespace ILCompiler
 
         internal static int[] ComputeLevelsForTest(int[][] adjacency)
         {
-            int[] components = ComputeStronglyConnectedComponents(adjacency, out int componentCount);
-            int[] componentLevels = ComputeComponentLevels(adjacency, components, componentCount);
+            int[] components = ComputeStronglyConnectedComponents(adjacency, out int[] componentLevels);
             int[] levels = new int[adjacency.Length];
             for (int i = 0; i < levels.Length; i++)
             {
@@ -149,42 +135,49 @@ namespace ILCompiler
             return levels;
         }
 
-        internal static ReadyToRunCompilationPlan Create(
-            List<MethodDesc> methods,
-            ConcurrentDictionary<MethodDesc, ConcurrentDictionary<MethodDesc, byte>> edges)
+        internal static ReadyToRunCompilationPlan Create(List<MethodWithGCInfo> methodNodes, NodeFactory factory)
         {
-            methods.Sort(TypeSystemComparer.Instance.Compare);
+            methodNodes.Sort(static (left, right) => TypeSystemComparer.Instance.Compare(left.Method, right.Method));
 
-            var methodIndices = new Dictionary<MethodDesc, int>(methods.Count);
-            for (int i = 0; i < methods.Count; i++)
+            MethodDesc[] methods = new MethodDesc[methodNodes.Count];
+            var methodIndices = new Dictionary<MethodDesc, int>(methods.Length);
+            for (int i = 0; i < methods.Length; i++)
             {
+                methods[i] = methodNodes[i].Method;
                 methodIndices.Add(methods[i], i);
             }
 
-            int[][] adjacency = new int[methods.Count][];
-            for (int i = 0; i < methods.Count; i++)
+            int[][] adjacency = new int[methods.Length][];
+            var calleeIndices = new HashSet<int>();
+            for (int i = 0; i < methods.Length; i++)
             {
-                MethodDesc method = methods[i];
-                if (!edges.TryGetValue(method, out ConcurrentDictionary<MethodDesc, byte> callees))
+                calleeIndices.Clear();
+                foreach (Relocation relocation in methodNodes[i].GetData(factory, relocsOnly: false).Relocs.AsSpan())
                 {
-                    adjacency[i] = Array.Empty<int>();
-                    continue;
-                }
+                    if (relocation.RelocType != RelocType.WASM_FUNCTION_INDEX_LEB)
+                    {
+                        continue;
+                    }
 
-                var calleeIndices = new List<int>(callees.Count);
-                foreach (MethodDesc callee in callees.Keys)
-                {
-                    if (methodIndices.TryGetValue(callee, out int calleeIndex))
+                    MethodWithGCInfo target = relocation.Target switch
+                    {
+                        DeferredWasmCallNode call => call.Target,
+                        MethodWithGCInfo method => method,
+                        _ => null,
+                    };
+                    if (target is not null && methodIndices.TryGetValue(target.Method, out int calleeIndex))
                     {
                         calleeIndices.Add(calleeIndex);
                     }
                 }
 
-                calleeIndices.Sort();
-                adjacency[i] = calleeIndices.ToArray();
+                int[] callees = calleeIndices.Count == 0 ? Array.Empty<int>() : new int[calleeIndices.Count];
+                calleeIndices.CopyTo(callees);
+                Array.Sort(callees);
+                adjacency[i] = callees;
             }
 
-            return new ReadyToRunCompilationPlan(methods.ToArray(), adjacency, includeColdCalls: false);
+            return new ReadyToRunCompilationPlan(methods, adjacency, includeColdCalls: false);
         }
 
         private static MethodDesc[][] ComputeMethodsByLevel(MethodDesc[] methods, int[][] adjacency, bool includeColdCalls)
@@ -209,8 +202,7 @@ namespace ILCompiler
                 adjacency = hotAdjacency;
             }
 
-            int[] components = ComputeStronglyConnectedComponents(adjacency, out int componentCount);
-            int[] componentLevels = ComputeComponentLevels(adjacency, components, componentCount);
+            int[] components = ComputeStronglyConnectedComponents(adjacency, out int[] componentLevels);
 
             int maxLevel = 0;
             for (int i = 0; i < componentLevels.Length; i++)
@@ -239,7 +231,7 @@ namespace ILCompiler
             return resultLevels;
         }
 
-        private static int[] ComputeStronglyConnectedComponents(int[][] adjacency, out int componentCount)
+        private static int[] ComputeStronglyConnectedComponents(int[][] adjacency, out int[] componentLevels)
         {
             int currentIndex = 0;
             int[] indices = new int[adjacency.Length];
@@ -251,7 +243,8 @@ namespace ILCompiler
 
             var inProgress = new Stack<int>();
             var traversal = new List<TraversalFrame>();
-            componentCount = 0;
+            var levels = new List<int>();
+            var members = new List<int>();
 
             for (int root = 0; root < adjacency.Length; root++)
             {
@@ -297,20 +290,39 @@ namespace ILCompiler
 
                     if (lowLinks[vertex] == indices[vertex])
                     {
+                        int component = levels.Count;
+                        members.Clear();
                         int componentVertex;
                         do
                         {
                             componentVertex = inProgress.Pop();
                             onStack[componentVertex] = false;
-                            components[componentVertex] = componentCount;
+                            components[componentVertex] = component;
+                            members.Add(componentVertex);
                         }
                         while (componentVertex != vertex);
 
-                        componentCount++;
+                        // Tarjan completes external callees before callers. Label every member
+                        // before scanning edges so internal calls do not contribute to the level.
+                        int level = 0;
+                        foreach (int member in members)
+                        {
+                            foreach (int callee in adjacency[member])
+                            {
+                                int calleeComponent = components[callee];
+                                Debug.Assert(calleeComponent >= 0 && calleeComponent <= component);
+                                if (calleeComponent != component)
+                                {
+                                    level = Math.Max(level, levels[calleeComponent] + 1);
+                                }
+                            }
+                        }
+                        levels.Add(level);
                     }
                 }
             }
 
+            componentLevels = levels.ToArray();
             return components;
 
             void InitializeVertex(int vertex)
@@ -321,62 +333,6 @@ namespace ILCompiler
                 inProgress.Push(vertex);
                 onStack[vertex] = true;
             }
-        }
-
-        private static int[] ComputeComponentLevels(int[][] adjacency, int[] components, int componentCount)
-        {
-            var outgoing = new HashSet<int>[componentCount];
-            var incoming = new List<int>[componentCount];
-            for (int i = 0; i < componentCount; i++)
-            {
-                outgoing[i] = new HashSet<int>();
-                incoming[i] = new List<int>();
-            }
-
-            for (int caller = 0; caller < adjacency.Length; caller++)
-            {
-                int callerComponent = components[caller];
-                foreach (int callee in adjacency[caller])
-                {
-                    int calleeComponent = components[callee];
-                    if (callerComponent != calleeComponent && outgoing[callerComponent].Add(calleeComponent))
-                    {
-                        incoming[calleeComponent].Add(callerComponent);
-                    }
-                }
-            }
-
-            int[] remainingCallees = new int[componentCount];
-            int[] levels = new int[componentCount];
-            var ready = new Queue<int>();
-            for (int i = 0; i < componentCount; i++)
-            {
-                remainingCallees[i] = outgoing[i].Count;
-                if (remainingCallees[i] == 0)
-                {
-                    ready.Enqueue(i);
-                }
-            }
-
-            int processed = 0;
-            while (ready.Count > 0)
-            {
-                int callee = ready.Dequeue();
-                processed++;
-
-                foreach (int caller in incoming[callee])
-                {
-                    levels[caller] = Math.Max(levels[caller], levels[callee] + 1);
-                    remainingCallees[caller]--;
-                    if (remainingCallees[caller] == 0)
-                    {
-                        ready.Enqueue(caller);
-                    }
-                }
-            }
-
-            Debug.Assert(processed == componentCount);
-            return levels;
         }
 
         private struct TraversalFrame

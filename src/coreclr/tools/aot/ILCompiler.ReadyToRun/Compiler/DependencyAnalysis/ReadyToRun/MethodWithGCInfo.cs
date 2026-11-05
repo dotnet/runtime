@@ -30,8 +30,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private byte[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
         private List<ISymbolNode> _fixups;
-        private HashSet<MethodWithGCInfo> _directCallTargets;
-        private HashSet<Import> _moduleEagerFixups;
+        private MethodWithGCInfo[] _directCallTargets;
+        private Import[] _moduleEagerFixups;
         private Import[] _guaranteedPrecodeFixups;
         private bool _precodeFixupsFinalized;
         private MethodDesc[] _inlinedMethods;
@@ -46,7 +46,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             internal readonly NativeVarInfo[] Variables = variables;
             internal Dictionary<int, WasmTypeNode> Signatures;
             internal Dictionary<MethodWithGCInfo, MethodWithToken> ActivationTokens;
-            internal HashSet<ISymbolNode> Fixups;
         }
 
         internal void InitializeDeferredWasmCalls(Dictionary<int, WasmTypeNode> signatures, Dictionary<MethodWithGCInfo, MethodWithToken> tokens)
@@ -60,15 +59,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         internal MethodWithToken GetDeferredWasmActivationToken(MethodWithGCInfo target) =>
             _deferredWasmData.ActivationTokens[target];
-
-        internal void AddDeferredWasmFixup(Import import)
-        {
-            _deferredWasmData.Fixups ??= new HashSet<ISymbolNode>(_fixups);
-            if (_deferredWasmData.Fixups.Add(import))
-            {
-                _fixups.Add(import);
-            }
-        }
 
         internal void InitializeDeferredWasmDebugInfo(OffsetMapping[] locations, NativeVarInfo[] variables)
         {
@@ -177,19 +167,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public List<ISymbolNode> Fixups => _fixups;
 
-        internal void AddDirectCallTarget(MethodWithGCInfo target)
-        {
-            _directCallTargets ??= new HashSet<MethodWithGCInfo>();
-            _directCallTargets.Add(target);
-        }
+        internal void InitializeDirectCallTargets(MethodWithGCInfo[] targets) => _directCallTargets = targets;
 
-        internal void AddModuleEagerFixup(Import fixup)
-        {
-            _moduleEagerFixups ??= new HashSet<Import>();
-            _moduleEagerFixups.Add(fixup);
-        }
+        internal void InitializeModuleEagerFixups(Import[] fixups) => _moduleEagerFixups = fixups;
 
-        internal HashSet<MethodWithGCInfo> DirectCallTargets => _directCallTargets;
+        internal MethodWithGCInfo[] DirectCallTargets => _directCallTargets ?? Array.Empty<MethodWithGCInfo>();
+
+        internal Import[] ModuleEagerFixups => _moduleEagerFixups ?? Array.Empty<Import>();
 
         internal Import[] GuaranteedPrecodeFixups => Volatile.Read(ref _guaranteedPrecodeFixups);
 

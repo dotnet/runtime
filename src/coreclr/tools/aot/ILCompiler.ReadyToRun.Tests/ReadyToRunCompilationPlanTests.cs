@@ -3,6 +3,7 @@
 
 extern alias crossgen2;
 
+using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -17,6 +18,11 @@ public class ReadyToRunCompilationPlanTests
 {
     public static IEnumerable<object[]> CallGraphs()
     {
+        yield return [Array.Empty<int[]>(), Array.Empty<int>()];
+        yield return [new int[][] { [0, 0] }, new[] { 0 }];
+        yield return [new int[][] { [1, 1, 2], [0, 2, 2], [] }, new[] { 1, 1, 0 }];
+        yield return [new int[][] { [], [0], [1, 0], [4], [3, 2] }, new[] { 0, 1, 2, 3, 3 }];
+        yield return [new int[][] { [1, 2], [0, 3], [4, 4], [3], [2, 3] }, new[] { 2, 2, 1, 0, 1 }];
         yield return
         [
             new int[][]
@@ -58,6 +64,114 @@ public class ReadyToRunCompilationPlanTests
     public void ComputesCalleeFirstLevels(int[][] adjacency, int[] expectedLevels)
     {
         Assert.Equal(expectedLevels, ReadyToRunCompilationPlan.ComputeLevelsForTest(adjacency));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(4)]
+    [InlineData(16)]
+    public void LevelsMatchIndependentReachabilityReference(int methodCount)
+    {
+        Random random = new(42 + methodCount);
+        for (int sample = 0; sample < 256; sample++)
+        {
+            int[][] adjacency = new int[methodCount][];
+            for (int caller = 0; caller < methodCount; caller++)
+            {
+                List<int> callees = new();
+                for (int callee = 0; callee < methodCount; callee++)
+                {
+                    if (random.Next(100) < 5 + sample % 5 * 20)
+                    {
+                        callees.Add(callee);
+                        if (random.Next(4) == 0)
+                        {
+                            callees.Add(callee);
+                        }
+                    }
+                }
+                adjacency[caller] = callees.ToArray();
+            }
+
+            Assert.Equal(ComputeReferenceLevels(adjacency), ReadyToRunCompilationPlan.ComputeLevelsForTest(adjacency));
+        }
+    }
+
+    [Fact]
+    public void LongCallChainDoesNotRequireRecursiveTraversal()
+    {
+        const int MethodCount = 20_000;
+        int[][] adjacency = new int[MethodCount][];
+        for (int i = 0; i < MethodCount; i++)
+        {
+            adjacency[i] = i + 1 == MethodCount ? [] : [i + 1];
+        }
+        int[] levels = ReadyToRunCompilationPlan.ComputeLevelsForTest(adjacency);
+
+        for (int i = 0; i < MethodCount; i++)
+        {
+            Assert.Equal(MethodCount - i - 1, levels[i]);
+        }
+    }
+
+    private static int[] ComputeReferenceLevels(int[][] adjacency)
+    {
+        int count = adjacency.Length;
+        bool[,] reachable = new bool[count, count];
+        for (int caller = 0; caller < count; caller++)
+        {
+            reachable[caller, caller] = true;
+            foreach (int callee in adjacency[caller])
+            {
+                reachable[caller, callee] = true;
+            }
+        }
+        for (int intermediate = 0; intermediate < count; intermediate++)
+        {
+            for (int caller = 0; caller < count; caller++)
+            {
+                for (int callee = 0; callee < count; callee++)
+                {
+                    reachable[caller, callee] |= reachable[caller, intermediate] && reachable[intermediate, callee];
+                }
+            }
+        }
+
+        int[] components = new int[count];
+        for (int method = 0; method < count; method++)
+        {
+            for (int representative = 0; representative <= method; representative++)
+            {
+                if (reachable[method, representative] && reachable[representative, method])
+                {
+                    components[method] = representative;
+                    break;
+                }
+            }
+        }
+        int[] componentLevels = new int[count];
+        for (int iteration = 0; iteration < count; iteration++)
+        {
+            for (int caller = 0; caller < count; caller++)
+            {
+                foreach (int callee in adjacency[caller])
+                {
+                    if (components[caller] != components[callee])
+                    {
+                        componentLevels[components[caller]] = Math.Max(
+                            componentLevels[components[caller]], componentLevels[components[callee]] + 1);
+                    }
+                }
+            }
+        }
+        int[] levels = new int[count];
+        for (int method = 0; method < count; method++)
+        {
+            levels[method] = componentLevels[components[method]];
+        }
+
+        return levels;
     }
 
     [Theory]

@@ -474,6 +474,9 @@
   <data name="StripInliningInfoOption" xml:space="preserve">
     <value>Strip inlining info from the R2R image.</value>
   </data>
+  <data name="DisableDeferredWasmCallsOption" xml:space="preserve">
+    <value>Disable deferred WebAssembly calls while retaining the selected optimization mode.</value>
+  </data>
   <data name="StripDebugInfoOption" xml:space="preserve">
     <value>Strip debug info from the R2R image.</value>
   </data>
