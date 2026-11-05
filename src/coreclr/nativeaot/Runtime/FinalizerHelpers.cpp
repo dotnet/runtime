@@ -36,12 +36,34 @@ EXTERN_C void QCALLTYPE ProcessFinalizers();
 
 #ifdef TARGET_WASM
 EXTERN_C void QCALLTYPE ProcessFinalizersWorkerIteration();
+#endif // TARGET_WASM
 
-EXTERN_C void QCALLTYPE WasiFinalizer_RunWorker()
+#if defined(TARGET_BROWSER) || defined(TARGET_WASI)
+#ifdef TARGET_BROWSER
+EXTERN_C void SystemJS_ScheduleFinalization();
+#endif // TARGET_BROWSER
+
+#ifdef TARGET_WASI
+EXTERN_C void WasiFinalizer_Schedule();
+#endif // TARGET_WASI
+
+static void RunFinalizerIterationOnCurrentThread()
 {
     ProcessFinalizersWorkerIteration();
 }
-#endif // TARGET_WASM
+
+#ifdef TARGET_BROWSER
+EXTERN_C void SystemJS_ExecuteFinalizationCallback()
+{
+    RunFinalizerIterationOnCurrentThread();
+}
+#else // TARGET_WASI
+EXTERN_C void QCALLTYPE WasiFinalizer_RunWorker()
+{
+    RunFinalizerIterationOnCurrentThread();
+}
+#endif // TARGET_BROWSER
+#endif // TARGET_BROWSER || TARGET_WASI
 
 #ifdef TARGET_WASI
 #ifdef FEATURE_WASM_MANAGED_THREADS
@@ -158,6 +180,8 @@ void RhEnableFinalization()
 {
 #ifdef FEATURE_MULTITHREADING
     g_FinalizerEvent.Set();
+#elif defined(TARGET_BROWSER)
+    SystemJS_ScheduleFinalization();
 #else // TARGET_WASI
     WasiFinalizer_Schedule();
 #endif // FEATURE_MULTITHREADING
