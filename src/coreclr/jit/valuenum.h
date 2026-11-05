@@ -695,6 +695,9 @@ public:
     template <typename TArgVisitor>
     VNVisit VNVisitReachingVNs(ValueNum vn, TArgVisitor argVisitor)
     {
+        // A number CSE rewrote may stand for a phi definition, so start from the representative.
+        vn = VNCanonical(vn);
+
         // Fast-path: in most cases vn is not a phi definition
         if (!IsPhiDef(vn))
         {
