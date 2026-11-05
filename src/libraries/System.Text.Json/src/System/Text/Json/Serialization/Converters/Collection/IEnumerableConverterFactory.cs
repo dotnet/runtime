@@ -70,7 +70,9 @@ namespace System.Text.Json.Serialization.Converters
             else if (typeToConvert.IsImmutableDictionaryType())
             {
                 genericArgs = typeToConvert.GetGenericArguments();
-                converterType = typeof(ImmutableDictionaryOfTKeyTValueConverterWithReflection<,,>);
+                converterType = typeToConvert.IsImmutableSortedDictionaryType()
+                    ? typeof(ImmutableSortedDictionaryOfTKeyTValueConverter<,,>)
+                    : typeof(ImmutableDictionaryOfTKeyTValueConverter<,,>);
                 dictionaryKeyType = genericArgs[0];
                 elementType = genericArgs[1];
             }
@@ -93,7 +95,7 @@ namespace System.Text.Json.Serialization.Converters
             // Immutable non-dictionaries from System.Collections.Immutable, e.g. ImmutableStack<T>
             else if (typeToConvert.IsImmutableEnumerableType())
             {
-                converterType = typeof(ImmutableEnumerableOfTConverterWithReflection<,>);
+                converterType = typeof(ImmutableEnumerableOfTConverter<,>);
                 elementType = typeToConvert.GetGenericArguments()[0];
             }
             // IList<>
@@ -173,7 +175,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else if (typeToConvert.IsNonGenericStackOrQueue())
             {
-                converterType = typeof(StackOrQueueConverterWithReflection<>);
+                converterType = typeof(StackOrQueueConverter<>);
             }
             else
             {

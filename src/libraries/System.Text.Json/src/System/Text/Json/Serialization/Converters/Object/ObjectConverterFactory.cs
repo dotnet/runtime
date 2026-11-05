@@ -119,7 +119,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    converterType = typeof(LargeObjectWithParameterizedConstructorConverterWithReflection<>).MakeGenericType(typeToConvert);
+                    converterType = typeof(LargeObjectWithParameterizedConstructorConverter<>).MakeGenericType(typeToConvert);
                 }
             }
 
