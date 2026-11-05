@@ -320,37 +320,11 @@ internal sealed class SchemaDef
     // Common tuple definitions
     //
 
-    private static readonly string[] TypeDefOrRef = new string[]
-    {
-        "TypeDefinition",
-        "TypeReference",
-    };
-
     private static readonly string[] TypeDefOrRefOrSpec = new string[]
     {
         "TypeDefinition",
         "TypeReference",
         "TypeSpecification",
-    };
-
-    private static readonly string[] TypeDefOrRefOrSpecOrMod = new string[]
-    {
-        "TypeDefinition",
-        "TypeReference",
-        "TypeSpecification",
-        "ModifiedType",
-    };
-
-    private static readonly string[] TypeSig = new string[]
-    {
-        "TypeInstantiationSignature",
-        "SZArraySignature",
-        "ArraySignature",
-        "PointerSignature",
-        "FunctionPointerSignature",
-        "ByReferenceSignature",
-        "TypeVariableSignature",
-        "MethodTypeVariableSignature",
     };
 
     private static readonly string[] MethodDefOrRef = new string[]
@@ -400,7 +374,7 @@ internal sealed class SchemaDef
         new RecordDef(
             name: "TypeSpecification",
             members: new MemberDef[] {
-                new MemberDef("Signature", TypeDefOrRef.Concat(TypeSig).ToArray(), MemberDefFlags.RecordRef | MemberDefFlags.Child),
+                new MemberDef("Blob", flags: MemberDefFlags.Blob),
                 // COMPLETENESS: new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
@@ -480,7 +454,7 @@ internal sealed class SchemaDef
             name: "MethodInstantiation",
             members: new MemberDef[] {
                 new MemberDef("Method", MethodDefOrRef, MemberDefFlags.RecordRef),
-                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
+                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
                 // COMPLETENESS: new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
@@ -547,7 +521,7 @@ internal sealed class SchemaDef
                 new MemberDef("Flags", "GenericParameterAttributes"),
                 new MemberDef("Kind", "GenericParameterKind"),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("Constraints", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
+                new MemberDef("Constraints", TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
@@ -576,79 +550,21 @@ internal sealed class SchemaDef
             }
         ),
         new RecordDef(
-            name: "TypeInstantiationSignature",
-            members: new MemberDef[] {
-                new MemberDef("GenericType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
-            }
-        ),
-        new RecordDef(
-            name: "SZArraySignature",
-            members: new MemberDef[] {
-                new MemberDef("ElementType", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
-            }
-        ),
-        new RecordDef(
-            name: "ArraySignature",
-            members: new MemberDef[] {
-                new MemberDef("ElementType", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
-                new MemberDef("Rank", "int"),
-                new MemberDef("Sizes", "Int32", MemberDefFlags.Array),
-                new MemberDef("LowerBounds", "Int32", MemberDefFlags.Array),
-            }
-        ),
-        new RecordDef(
-            name: "ByReferenceSignature",
-            members: new MemberDef[] {
-                new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
-            }
-        ),
-        new RecordDef(
-            name: "PointerSignature",
-            members: new MemberDef[] {
-                new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
-            }
-        ),
-        new RecordDef(
-            name: "FunctionPointerSignature",
-            members: new MemberDef[] {
-                new MemberDef("Signature", "MethodSignature", MemberDefFlags.RecordRef),
-            }
-        ),
-        new RecordDef(
-            name: "TypeVariableSignature",
-            members: new MemberDef[] {
-                new MemberDef("Number", "int"),
-            }
-        ),
-        new RecordDef(
-            name: "MethodTypeVariableSignature",
-            members: new MemberDef[] {
-                new MemberDef("Number", "int"),
-            }
-        ),
-        new RecordDef(
             name: "FieldSignature",
             members: new MemberDef[] {
-                new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
+                new MemberDef("Blob", flags: MemberDefFlags.Blob),
             }
         ),
         new RecordDef(
             name: "PropertySignature",
             members: new MemberDef[] {
-                new MemberDef("CallingConvention", "CallingConventions"),
-                new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
-                new MemberDef("Parameters", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
+                new MemberDef("Blob", flags: MemberDefFlags.Blob),
             }
         ),
         new RecordDef(
             name: "MethodSignature",
             members: new MemberDef[] {
-                new MemberDef("CallingConvention", "SignatureCallingConvention"),
-                new MemberDef("GenericParameterCount", "int"),
-                new MemberDef("ReturnType", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
-                new MemberDef("Parameters", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
-                new MemberDef("VarArgParameters", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
+                new MemberDef("Blob", flags: MemberDefFlags.Blob),
             }
         ),
         new RecordDef(
@@ -658,14 +574,6 @@ internal sealed class SchemaDef
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Name),
                 new MemberDef("NestedTypes", "TypeForwarder", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 // COMPLETENESS: new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
-            }
-        ),
-        new RecordDef(
-            name: "ModifiedType",
-            members: new MemberDef[] {
-                new MemberDef("IsOptional", "bool"),
-                new MemberDef("ModifierType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-                new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
             }
         )
     }

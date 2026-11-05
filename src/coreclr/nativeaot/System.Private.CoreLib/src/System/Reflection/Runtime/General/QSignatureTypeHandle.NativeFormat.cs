@@ -20,13 +20,24 @@ namespace System.Reflection.Runtime.General
         {
             if (!skipCheck)
             {
-                if (!handle.IsTypeDefRefSpecOrModifiedTypeHandle(reader))
+                if (!handle.IsTypeDefRefOrSpecHandle(reader))
                     throw new BadImageFormatException();
             }
 
-            Debug.Assert(handle.IsTypeDefRefSpecOrModifiedTypeHandle(reader));
+            Debug.Assert(handle.IsTypeDefRefOrSpecHandle(reader));
             _reader = reader;
-            _handle = handle;
+            _signature = new TypeSignature(reader, handle);
+
+#if ECMA_METADATA_SUPPORT
+            _blobReader = default(global::System.Reflection.Metadata.BlobReader);
+#endif
+        }
+
+        public QSignatureTypeHandle(MetadataReader reader, TypeSignature signature)
+        {
+            Debug.Assert(reader == signature.Reader);
+            _reader = reader;
+            _signature = signature;
 
 #if ECMA_METADATA_SUPPORT
             _blobReader = default(global::System.Reflection.Metadata.BlobReader);

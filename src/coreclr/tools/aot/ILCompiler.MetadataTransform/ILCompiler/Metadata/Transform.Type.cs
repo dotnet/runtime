@@ -22,14 +22,7 @@ namespace ILCompiler.Metadata
 
         private Action<Cts.MetadataType, TypeDefinition> _initTypeDef;
         private Action<Cts.MetadataType, TypeReference> _initTypeRef;
-        private Action<Cts.ArrayType, TypeSpecification> _initSzArray;
-        private Action<Cts.ArrayType, TypeSpecification> _initArray;
-        private Action<Cts.ByRefType, TypeSpecification> _initByRef;
-        private Action<Cts.PointerType, TypeSpecification> _initPointer;
-        private Action<Cts.FunctionPointerType, TypeSpecification> _initFunctionPointer;
-        private Action<Cts.TypeDesc, TypeSpecification> _initTypeInst;
-        private Action<Cts.SignatureTypeVariable, TypeSpecification> _initTypeVar;
-        private Action<Cts.SignatureMethodVariable, TypeSpecification> _initMethodVar;
+        private Action<Cts.TypeDesc, TypeSpecification> _initTypeSpec;
 
         public override MetadataRecord HandleType(Cts.TypeDesc type)
         {
@@ -39,54 +32,22 @@ namespace ILCompiler.Metadata
                 return rec;
             }
 
-            switch (type.Category)
+            if (!type.IsDefType || !type.IsTypeDefinition)
             {
-                case Cts.TypeFlags.SzArray:
-                    rec = _types.Create((Cts.ArrayType)type, _initSzArray ??= InitializeSzArray);
-                    break;
-                case Cts.TypeFlags.Array:
-                    rec = _types.Create((Cts.ArrayType)type, _initArray ??= InitializeArray);
-                    break;
-                case Cts.TypeFlags.ByRef:
-                    rec = _types.Create((Cts.ByRefType)type, _initByRef ??= InitializeByRef);
-                    break;
-                case Cts.TypeFlags.Pointer:
-                    rec = _types.Create((Cts.PointerType)type, _initPointer ??= InitializePointer);
-                    break;
-                case Cts.TypeFlags.FunctionPointer:
-                    rec = _types.Create((Cts.FunctionPointerType)type, _initFunctionPointer ??= InitializeFunctionPointer);
-                    break;
-                case Cts.TypeFlags.SignatureTypeVariable:
-                    rec = _types.Create((Cts.SignatureTypeVariable)type, _initTypeVar ??= InitializeTypeVariable);
-                    break;
-                case Cts.TypeFlags.SignatureMethodVariable:
-                    rec = _types.Create((Cts.SignatureMethodVariable)type, _initMethodVar ??= InitializeMethodVariable);
-                    break;
-                default:
-                    {
-                        Debug.Assert(type.IsDefType);
-
-                        if (!type.IsTypeDefinition)
-                        {
-                            // Instantiated generic type
-                            rec = _types.Create(type, _initTypeInst ??= InitializeTypeInstance);
-                        }
-                        else
-                        {
-                            // Type definition
-                            var metadataType = (Cts.MetadataType)type;
-                            if (_policy.GeneratesMetadata(metadataType))
-                            {
-                                Debug.Assert(!_policy.IsBlocked(metadataType));
-                                rec = _types.Create(metadataType, _initTypeDef ??= InitializeTypeDef);
-                            }
-                            else
-                            {
-                                rec = _types.Create(metadataType, _initTypeRef ??= InitializeTypeRef);
-                            }
-                        }
-                    }
-                    break;
+                rec = _types.Create(type, _initTypeSpec ??= InitializeTypeSpecification);
+            }
+            else
+            {
+                var metadataType = (Cts.MetadataType)type;
+                if (_policy.GeneratesMetadata(metadataType))
+                {
+                    Debug.Assert(!_policy.IsBlocked(metadataType));
+                    rec = _types.Create(metadataType, _initTypeDef ??= InitializeTypeDef);
+                }
+                else
+                {
+                    rec = _types.Create(metadataType, _initTypeRef ??= InitializeTypeRef);
+                }
             }
 
             Debug.Assert(rec is TypeDefinition || rec is TypeReference || rec is TypeSpecification);
@@ -94,80 +55,9 @@ namespace ILCompiler.Metadata
             return rec;
         }
 
-        private void InitializeSzArray(Cts.ArrayType entity, TypeSpecification record)
+        private void InitializeTypeSpecification(Cts.TypeDesc entity, TypeSpecification record)
         {
-            record.Signature = new SZArraySignature
-            {
-                ElementType = HandleType(entity.ElementType),
-            };
-        }
-
-        private void InitializeArray(Cts.ArrayType entity, TypeSpecification record)
-        {
-            record.Signature = new ArraySignature
-            {
-                ElementType = HandleType(entity.ElementType),
-                Rank = entity.Rank,
-                // TODO: LowerBounds
-                LowerBounds = Array.Empty<int>(),
-                // TODO: Sizes
-                Sizes = Array.Empty<int>(),
-            };
-        }
-
-        private void InitializeByRef(Cts.ByRefType entity, TypeSpecification record)
-        {
-            record.Signature = new ByReferenceSignature
-            {
-                Type = HandleType(entity.ParameterType)
-            };
-        }
-
-        private void InitializePointer(Cts.PointerType entity, TypeSpecification record)
-        {
-            record.Signature = new PointerSignature
-            {
-                Type = HandleType(entity.ParameterType)
-            };
-        }
-
-        private void InitializeFunctionPointer(Cts.FunctionPointerType entity, TypeSpecification record)
-        {
-            record.Signature = new FunctionPointerSignature
-            {
-                Signature = HandleMethodSignature(entity.Signature)
-            };
-        }
-
-        private void InitializeTypeVariable(Cts.SignatureTypeVariable entity, TypeSpecification record)
-        {
-            record.Signature = new TypeVariableSignature
-            {
-                Number = entity.Index
-            };
-        }
-
-        private void InitializeMethodVariable(Cts.SignatureMethodVariable entity, TypeSpecification record)
-        {
-            record.Signature = new MethodTypeVariableSignature
-            {
-                Number = entity.Index
-            };
-        }
-
-        private void InitializeTypeInstance(Cts.TypeDesc entity, TypeSpecification record)
-        {
-            var sig = new TypeInstantiationSignature
-            {
-                GenericType = HandleType(entity.GetTypeDefinition()),
-            };
-
-            for (int i = 0; i < entity.Instantiation.Length; i++)
-            {
-                sig.GenericTypeArguments.Add(HandleType(entity.Instantiation[i]));
-            }
-
-            record.Signature = sig;
+            WriteTypeSignature(record.Blob, entity);
         }
 
         private TypeReference GetNestedReferenceParent(Cts.MetadataType entity)
@@ -377,145 +267,6 @@ namespace ILCompiler.Metadata
 
             static bool HasNestedTypes(Cts.MetadataType entity)
                 => entity.GetNestedTypes().GetEnumerator().MoveNext();
-        }
-
-        private MetadataRecord HandleType(Cts.Ecma.EcmaModule module, ref Ecma.BlobReader reader)
-        {
-            switch (reader.ReadSignatureTypeCode())
-            {
-                case Ecma.SignatureTypeCode.Void:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.Void));
-                case Ecma.SignatureTypeCode.Boolean:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.Boolean));
-                case Ecma.SignatureTypeCode.SByte:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.SByte));
-                case Ecma.SignatureTypeCode.Byte:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.Byte));
-                case Ecma.SignatureTypeCode.Int16:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.Int16));
-                case Ecma.SignatureTypeCode.UInt16:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.UInt16));
-                case Ecma.SignatureTypeCode.Int32:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.Int32));
-                case Ecma.SignatureTypeCode.UInt32:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.UInt32));
-                case Ecma.SignatureTypeCode.Int64:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.Int64));
-                case Ecma.SignatureTypeCode.UInt64:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.UInt64));
-                case Ecma.SignatureTypeCode.Single:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.Single));
-                case Ecma.SignatureTypeCode.Double:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.Double));
-                case Ecma.SignatureTypeCode.Char:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.Char));
-                case Ecma.SignatureTypeCode.String:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.String));
-                case Ecma.SignatureTypeCode.IntPtr:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.IntPtr));
-                case Ecma.SignatureTypeCode.UIntPtr:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.UIntPtr));
-                case Ecma.SignatureTypeCode.Object:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.Object));
-                case Ecma.SignatureTypeCode.TypeHandle:
-                    return HandleType(module.GetType(reader.ReadTypeHandle()));
-                case Ecma.SignatureTypeCode.SZArray:
-                    return new TypeSpecification
-                    {
-                        Signature = new SZArraySignature()
-                        {
-                            ElementType = HandleType(module, ref reader)
-                        }
-                    };
-                case Ecma.SignatureTypeCode.Array:
-                    {
-                        MetadataRecord elementType = HandleType(module, ref reader);
-                        int rank = reader.ReadCompressedInteger();
-
-                        var boundsCount = reader.ReadCompressedInteger();
-                        for (int i = 0; i < boundsCount; i++)
-                            reader.ReadCompressedInteger();
-                        var lowerBoundsCount = reader.ReadCompressedInteger();
-                        for (int j = 0; j < lowerBoundsCount; j++)
-                            reader.ReadCompressedSignedInteger();
-
-                        return new TypeSpecification
-                        {
-                            Signature = new ArraySignature()
-                            {
-                                ElementType = elementType,
-                                Rank = rank,
-                                // TODO: LowerBounds
-                                LowerBounds = Array.Empty<int>(),
-                                // TODO: Sizes
-                                Sizes = Array.Empty<int>(),
-                            }
-                        };
-                    }
-                case Ecma.SignatureTypeCode.ByReference:
-                    return new TypeSpecification
-                    {
-                        Signature = new ByReferenceSignature()
-                        {
-                            Type = HandleType(module, ref reader)
-                        }
-                    };
-                case Ecma.SignatureTypeCode.Pointer:
-                    return new TypeSpecification
-                    {
-                        Signature = new PointerSignature()
-                        {
-                            Type = HandleType(module, ref reader)
-                        }
-                    };
-                case Ecma.SignatureTypeCode.GenericTypeParameter:
-                    return HandleType(module.Context.GetSignatureVariable(reader.ReadCompressedInteger(), false));
-                case Ecma.SignatureTypeCode.GenericMethodParameter:
-                    return HandleType(module.Context.GetSignatureVariable(reader.ReadCompressedInteger(), true));
-                case Ecma.SignatureTypeCode.GenericTypeInstance:
-                    {
-                        var sig = new TypeInstantiationSignature
-                        {
-                            GenericType = HandleType(module, ref reader)
-                        };
-
-                        int count = reader.ReadCompressedInteger();
-                        for (int i = 0; i < count; i++)
-                            sig.GenericTypeArguments.Add(HandleType(module, ref reader));
-
-                        return new TypeSpecification
-                        {
-                            Signature = sig
-                        };
-                    }
-                case Ecma.SignatureTypeCode.TypedReference:
-                    return HandleType(module.Context.GetWellKnownType(Cts.WellKnownType.TypedReference));
-                case Ecma.SignatureTypeCode.FunctionPointer:
-                    return new TypeSpecification
-                    {
-                        Signature = new FunctionPointerSignature
-                        {
-                            Signature = HandleMethodSignature(module, ref reader)
-                        }
-                    };
-                case Ecma.SignatureTypeCode.OptionalModifier:
-                    return new ModifiedType
-                    {
-                        IsOptional = true,
-                        ModifierType = HandleType(module.GetType(reader.ReadTypeHandle())),
-                        Type = HandleType(module, ref reader),
-                    };
-                case Ecma.SignatureTypeCode.RequiredModifier:
-                    return new ModifiedType
-                    {
-                        IsOptional = false,
-                        ModifierType = HandleType(module.GetType(reader.ReadTypeHandle())),
-                        Type = HandleType(module, ref reader),
-                    };
-
-                default:
-                    throw new BadImageFormatException();
-            }
         }
 
         private static TypeAttributes GetTypeAttributes(Cts.MetadataType type)

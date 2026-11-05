@@ -258,10 +258,14 @@ namespace Internal.StackTraceMetadata
                     return FormatAssemblyName(reader, typeRef.NamespaceOrEnclosingType);
                 case HandleType.TypeSpecification:
                     TypeSpecification typeSpec = reader.GetTypeSpecification(handle.ToTypeSpecificationHandle(reader));
-                    return FormatAssemblyName(reader, typeSpec.Signature);
-                case HandleType.TypeInstantiationSignature:
-                    TypeInstantiationSignature typeInst = reader.GetTypeInstantiationSignature(handle.ToTypeInstantiationSignatureHandle(reader));
-                    return FormatAssemblyName(reader, typeInst.GenericType);
+                    SignatureReader signature = typeSpec.Signature.SkipCustomModifiers().GetReader();
+                    if ((SignatureTypeCode)signature.ReadByte() == SignatureTypeCode.GenericTypeInstance)
+                    {
+                        signature = signature.ReadType().GetReader();
+                        signature.ReadByte();
+                        return FormatAssemblyName(reader, signature.ReadTypeHandle());
+                    }
+                    return "<unknown>";
                 case HandleType.NamespaceDefinition:
                     NamespaceDefinition nsDef = reader.GetNamespaceDefinition(handle.ToNamespaceDefinitionHandle(reader));
                     return FormatAssemblyName(reader, nsDef.Scope);

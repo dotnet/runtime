@@ -158,22 +158,8 @@ namespace ILCompiler.Metadata
 
         public override MethodSignature HandleMethodSignature(Cts.MethodSignature signature)
         {
-            // TODO: if Cts.MethodSignature implements Equals/GetHashCode, we could enable pooling here.
-
-            var result = new MethodSignature
-            {
-                CallingConvention = GetSignatureCallingConvention(signature),
-                GenericParameterCount = signature.GenericParameterCount,
-                ReturnType = HandleType(signature.ReturnType),
-                // TODO-NICE: VarArgParameters
-            };
-
-            result.Parameters.Capacity = signature.Length;
-            for (int i = 0; i < signature.Length; i++)
-            {
-                result.Parameters.Add(HandleType(signature[i]));
-            }
-
+            MethodSignature result = new MethodSignature();
+            WriteMethodSignature(result.Blob, signature);
             return result;
         }
 
@@ -185,26 +171,8 @@ namespace ILCompiler.Metadata
 
         private MethodSignature HandleMethodSignature(Cts.Ecma.EcmaModule module, ref Ecma.BlobReader blobReader)
         {
-            Ecma.SignatureHeader header = blobReader.ReadSignatureHeader();
-
-            int arity = header.IsGeneric ? blobReader.ReadCompressedInteger() : 0;
-
-            int count = blobReader.ReadCompressedInteger();
-
-            var result = new MethodSignature
-            {
-                CallingConvention = GetSignatureCallingConvention(header),
-                GenericParameterCount = arity,
-                ReturnType = HandleType(module, ref blobReader),
-                // TODO-NICE: VarArgParameters
-            };
-
-            result.Parameters.Capacity = count;
-            for (int i = 0; i < count; i++)
-            {
-                result.Parameters.Add(HandleType(module, ref blobReader));
-            }
-
+            MethodSignature result = new MethodSignature();
+            WriteMethodSignature(result.Blob, module, ref blobReader);
             return result;
         }
 

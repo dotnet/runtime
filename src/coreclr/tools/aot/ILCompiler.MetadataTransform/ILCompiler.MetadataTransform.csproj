@@ -47,6 +47,7 @@
     <Compile Include="$(MetadataCommonPath)\MdBinaryReaderGen.cs" />
     <Compile Include="$(MetadataCommonPath)\NativeMetadataReader.cs" />
     <Compile Include="$(MetadataCommonPath)\NativeFormatReaderGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeFormatSignatures.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MetadataWriterPath)\MdBinaryWriter.cs" />
@@ -70,6 +71,7 @@
     <Compile Include="ILCompiler\Metadata\Transform.Parameter.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Property.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Scope.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Signature.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.String.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Type.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.TypeForwarders.cs" />

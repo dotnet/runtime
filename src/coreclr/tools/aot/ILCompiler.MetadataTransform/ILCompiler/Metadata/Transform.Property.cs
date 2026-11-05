@@ -7,7 +7,6 @@ using Cts = Internal.TypeSystem;
 using Ecma = System.Reflection.Metadata;
 
 using MethodSemanticsAttributes = Internal.Metadata.NativeFormat.MethodSemanticsAttributes;
-using CallingConventions = System.Reflection.CallingConventions;
 
 namespace ILCompiler.Metadata
 {
@@ -37,26 +36,25 @@ namespace ILCompiler.Metadata
             {
                 Name = HandleString(reader.GetString(propDef.Name)),
                 Flags = propDef.Attributes,
-                Signature = new PropertySignature
-                {
-                    CallingConvention = sig.IsStatic ? CallingConventions.Standard : CallingConventions.HasThis,
-                },
+                Signature = new PropertySignature(),
             };
 
-            result.Signature.Parameters.Capacity = sig.Length;
+            MetadataBlob blob = result.Signature.Blob;
+            blob.WriteByte((byte)((byte)Ecma.SignatureKind.Property | (sig.IsStatic ? 0 : 0x20)));
+            blob.WriteCompressedInteger(sig.Length);
             if (!sig.HasEmbeddedSignatureData)
             {
-                result.Signature.Type = HandleType(sig.ReturnType);
+                WriteTypeSignature(blob, sig.ReturnType);
                 for (int i = 0; i < sig.Length; i++)
-                    result.Signature.Parameters.Add(HandleType(sig[i]));
+                    WriteTypeSignature(blob, sig[i]);
             }
             else
             {
                 sigBlobReader.ReadSignatureHeader();
                 int count = sigBlobReader.ReadCompressedInteger();
-                result.Signature.Type = HandleType(module, ref sigBlobReader);
+                WriteTypeSignature(blob, module, ref sigBlobReader);
                 for (int i = 0; i < count; i++)
-                    result.Signature.Parameters.Add(HandleType(module, ref sigBlobReader));
+                    WriteTypeSignature(blob, module, ref sigBlobReader);
             }
 
             if (getterHasMetadata)

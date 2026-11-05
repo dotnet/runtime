@@ -34,11 +34,11 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
                 MethodSignature methodSignature = this.MethodSignature;
 
                 QSignatureTypeHandle[] typeSignatures = new QSignatureTypeHandle[methodSignature.Parameters.Count + 1];
-                typeSignatures[0] = new QSignatureTypeHandle(_reader, methodSignature.ReturnType, true);
+                typeSignatures[0] = new QSignatureTypeHandle(_reader, methodSignature.ReturnType);
                 int paramIndex = 1;
-                foreach (Handle parameterTypeSignatureHandle in methodSignature.Parameters)
+                foreach (TypeSignature parameterSignature in methodSignature.Parameters)
                 {
-                    typeSignatures[paramIndex++] = new QSignatureTypeHandle(_reader, parameterTypeSignatureHandle, true);
+                    typeSignatures[paramIndex++] = new QSignatureTypeHandle(_reader, parameterSignature);
                 }
 
                 return typeSignatures;

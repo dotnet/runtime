@@ -78,9 +78,9 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                     if (signature.Parameters.Count != 1)
                         continue;
 
-                    HandleCollection.Enumerator parameters = signature.Parameters.GetEnumerator();
+                    TypeSignatureCollection.Enumerator parameters = signature.Parameters.GetEnumerator();
                     parameters.MoveNext();
-                    if (parameters.Current.Resolve(_reader, default).ToType() != typeof(string))
+                    if (parameters.Current.Resolve(default).ToType() != typeof(string))
                         continue;
 
                     BlobReader blob = new BlobReader(ca.Blob.AsSpan());

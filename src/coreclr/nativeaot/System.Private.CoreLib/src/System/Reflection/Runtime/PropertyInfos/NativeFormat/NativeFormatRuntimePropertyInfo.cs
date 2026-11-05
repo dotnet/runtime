@@ -71,8 +71,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         public override Type GetModifiedPropertyType()
         {
-            return ModifiedType.Create(PropertyType, _reader, _reader.GetPropertySignature(_property.Signature).Type);
-
+            return ModifiedType.Create(PropertyType, _reader.GetPropertySignature(_property.Signature).Type);
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
@@ -128,7 +127,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         internal override QSignatureTypeHandle GetParameterTypeHandle(int position)
         {
-            foreach (Handle parameterType in _property.Signature.GetPropertySignature(_reader).Parameters)
+            foreach (TypeSignature parameterType in _property.Signature.GetPropertySignature(_reader).Parameters)
             {
                 if (position-- == 0)
                     return new QSignatureTypeHandle(_reader, parameterType);

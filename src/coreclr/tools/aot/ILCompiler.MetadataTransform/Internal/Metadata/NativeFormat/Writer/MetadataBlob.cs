@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 using Internal.NativeFormat;
 
 namespace Internal.Metadata.NativeFormat.Writer;
@@ -35,6 +36,28 @@ public sealed class MetadataBlob : IEquatable<MetadataBlob>
         Debug.Assert(!_isReadOnly);
         foreach (byte value in bytes)
             _bytes.Add(value);
+    }
+
+    // ECMA-335 II.23.2; type operands continue to use relocatable native handles.
+    public void WriteCompressedInteger(int value)
+    {
+        Debug.Assert((uint)value <= 0x1fffffff);
+        if (value <= 0x7f)
+        {
+            WriteByte((byte)value);
+        }
+        else if (value <= 0x3fff)
+        {
+            WriteByte((byte)((value >> 8) | 0x80));
+            WriteByte((byte)value);
+        }
+        else
+        {
+            WriteByte((byte)((value >> 24) | 0xc0));
+            WriteByte((byte)(value >> 16));
+            WriteByte((byte)(value >> 8));
+            WriteByte((byte)value);
+        }
     }
 
     public void WriteString(ConstantStringValue value)
@@ -89,6 +112,22 @@ public sealed class MetadataBlob : IEquatable<MetadataBlob>
     }
 
     public override bool Equals(object obj) => obj is MetadataBlob other && Equals(other);
+
+    public override string ToString()
+    {
+        StringBuilder builder = new StringBuilder();
+        int offset = 0;
+        foreach (HandleReference reference in _references)
+        {
+            while (offset < reference.Offset)
+                builder.Append(_bytes[offset++].ToString("X2"));
+            builder.Append('[').Append(reference.Record?.ToString(false)).Append(']');
+        }
+        while (offset < _bytes.Count)
+            builder.Append(_bytes[offset++].ToString("X2"));
+
+        return builder.ToString();
+    }
 
     public override int GetHashCode()
     {

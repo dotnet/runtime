@@ -102,12 +102,12 @@ namespace System.Reflection
 
             MemberReference memberReference = customAttribute.Constructor.ToMemberReferenceHandle(reader).GetMemberReference(reader);
             MethodSignature signature = memberReference.Signature.ParseMethodSignature(reader);
-            HandleCollection signatureParameters = signature.Parameters;
+            TypeSignatureCollection signatureParameters = signature.Parameters;
             Type[] expectedParameterTypes = new Type[signatureParameters.Count];
             int index = 0;
-            foreach (Handle parameterHandle in signatureParameters)
+            foreach (TypeSignature parameterSignature in signatureParameters)
             {
-                expectedParameterTypes[index++] = parameterHandle.Resolve(reader, attributeTypeInfo.TypeContext).ToType();
+                expectedParameterTypes[index++] = parameterSignature.Resolve(attributeTypeInfo.TypeContext).ToType();
             }
 
             foreach (ConstructorInfo candidate in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
