@@ -1,11 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.ComponentModel
 {
     /// <summary>
     /// Provides data for the <see langword='PropertyChanged'/> event.
     /// </summary>
+    [DebuggerDisplay("PropertyName = {PropertyName}")]
     public class PropertyChangedEventArgs : EventArgs
     {
         /// <summary>
