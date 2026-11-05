@@ -823,6 +823,12 @@ public:
 
     ValueNumPair VNPExcSetUnion(ValueNumPair xs0vnp, ValueNumPair xs1vnp);
 
+    // Returns the VN representing the exception set "xs" without the item "item", which need not be in it.
+    ValueNum VNExcSetRemove(ValueNum xs, ValueNum item);
+
+    // Returns the VN representing the exception set "xs" without its null check items.
+    ValueNum VNExcSetWithoutNullChecks(ValueNum xs);
+
     // Returns the VN representing the intersection of the two exception sets "xs0" and "xs1".
     // These must be applications of VNF_ExcSetCons or the empty set. (i.e VNForEmptyExcSet())
     // and also must be in ascending order.

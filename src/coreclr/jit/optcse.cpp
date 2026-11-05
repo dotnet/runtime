@@ -567,11 +567,14 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         // If the value number for op2 and tree are different, then some new
         // exceptions were produced by op1. For that case we will NOT use the
         // normal value. This allows us to CSE commas with an op1 that is
-        // an BOUNDS_CHECK.
+        // an BOUNDS_CHECK. Only the exceptions op1 adds go into the key, without
+        // its null checks: those may differ between copies of the same load, and
+        // whether a def covers a use's exceptions is decided in availability.
         //
         if (vnOp2Lib != vnLib)
         {
-            key = vnLib; // include the exc set in the hash key
+            key = vnStore->VNWithExc(vnLibNorm, vnStore->VNExcSetWithoutNullChecks(
+                                                    vnStore->VNExceptionSet(tree->AsOp()->gtOp1->GetVN(VNK_Liberal))));
         }
         else
         {

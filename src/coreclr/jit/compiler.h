@@ -6689,6 +6689,23 @@ public:
     // Create VNP for NullPtrExc for something that null checks a base address
     ValueNumPair fgValueNumberIndirNullCheckExceptions(GenTree* baseAddr);
 
+    // The value numbers a null check of an address is keyed on, constant offsets peeled
+    void fgVNNullCheckBases(GenTree* baseAddr, ValueNum* baseLVN, ValueNum* baseCVN);
+
+    // During value numbering, for each exception item the blocks that survived it, none dominating
+    // another. Reaching a point one of them dominates means the item was not raised there, so it cannot
+    // be raised here either: the same null check, division or cast has been survived.
+    // The first surviving block is held inline, most items never see a second one.
+    struct SurvivedBlocks
+    {
+        BasicBlock*              first = nullptr;
+        ArrayStack<BasicBlock*>* more  = nullptr;
+    };
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, SurvivedBlocks> SurvivedExceptionsMap;
+    SurvivedExceptionsMap* vnSurvivedExceptions = nullptr;
+    bool fgVNSurvivedException(ValueNum excItemVN);
+    void fgVNDropSurvivedCastException(GenTreeCall* call);
+
     // Adds the exception sets for the current tree node which is performing a division or modulus operation
     void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
 
