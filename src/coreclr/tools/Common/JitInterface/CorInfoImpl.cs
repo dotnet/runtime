@@ -561,8 +561,13 @@ namespace Internal.JitInterface
                 _methodCodeNode.InitializeFuncletKinds(GetWasmFuncletKinds(_ehClauses));
             }
 
-            _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
-            _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+#if READYTORUN
+            if (!_compilation.NodeFactory.OptimizationFlags.StripDebugInfo)
+#endif
+            {
+                _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
+                _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+            }
 #if READYTORUN
             MethodDesc[] inlineeArray;
             if (_inlinedMethods != null)
