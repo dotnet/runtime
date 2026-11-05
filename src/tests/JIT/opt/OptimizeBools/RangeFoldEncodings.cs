@@ -6,7 +6,8 @@ using System.Runtime.CompilerServices;
 using Xunit;
 
 // A pair of constant tests folds to one test of an interval. The interval has four encodings, and the
-// fold takes the one with the cheapest constants.
+// fold takes the one with the cheapest constants; a value known to be never negative narrows the
+// interval before that choice.
 public class RangeFoldEncodings
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -29,6 +30,18 @@ public class RangeFoldEncodings
         return (uint)length < 257 || unchecked(length - 257) < 6 ? 42 : length;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int SignedSecondLength(int[] array)
+    {
+        // The length is never negative by value number, so the signed test cannot see a wrapped value
+        // and the pair is one compare.
+        // ARM64-NOT: sub
+        // X64-NOT: -257
+        // X64-NOT: 0x101
+        int length = array.Length;
+        return (uint)length < 257 || unchecked(length - 257) < 6 ? 42 : length;
+    }
+
     [Fact]
     public static void TestEntryPoint()
     {
@@ -40,6 +53,11 @@ public class RangeFoldEncodings
         foreach (int length in new[] { int.MinValue, int.MinValue + 257, -1, 0, 256, 257, 262, 263, int.MaxValue })
         {
             Assert.Equal((uint)length < 257 || unchecked(length - 257) < 6 ? 42 : length, SignedSecond(length));
+        }
+
+        foreach (int length in new[] { 0, 256, 257, 262, 263, 300 })
+        {
+            Assert.Equal(length < 263 ? 42 : length, SignedSecondLength(new int[length]));
         }
     }
 }

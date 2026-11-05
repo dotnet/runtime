@@ -538,6 +538,24 @@ static GenTree* FoldComparisons(
     op1                = cmp1IsReversed ? GenTree::ReverseRelop(op1) : op1;
     ModularRange first = ModularRange::FromComparison(op1, static_cast<target_size_t>(bound1->IconValue()),
                                                       cmp1->IsUnsigned(), mask, offset1);
+    // A never-negative value takes only the nonnegative half of the ring. Narrowing the first test to
+    // it lets a pair whose result would otherwise straddle the sign boundary fold to one test with
+    // small constants.
+    if (base1->IsNeverNegative(comp))
+    {
+        ModularRange const               nonNegative(0, mask >> 1);
+        ModularRange                     narrowed;
+        ModularRange::Intersection const kind = first.Intersect(nonNegative, mask, &narrowed);
+        if (kind == ModularRange::Intersection::Single)
+        {
+            first = narrowed;
+        }
+        else if (kind == ModularRange::Intersection::Empty)
+        {
+            first = ModularRange();
+        }
+    }
+
     ModularRange second;
     GenTree*     symbolicBound = nullptr;
     if (IsConstantRangeTest(cmp2, &value2, &bound2, &op2))
