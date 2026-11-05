@@ -552,12 +552,6 @@ static GenTree* FoldComparisons(
         op2    = cmp2IsReversed ? GenTree::ReverseRelop(op2) : op2;
         second = ModularRange::FromComparison(op2, static_cast<target_size_t>(bound2->IconValue()), cmp2->IsUnsigned(),
                                               mask, offset2);
-
-        // Negative bounds are enabled separately.
-        if ((bound1->IconValue() < 0) || (bound2->IconValue() < 0))
-        {
-            return nullptr;
-        }
     }
     else
     {
