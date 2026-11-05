@@ -69,9 +69,9 @@ export function stringToUTF8Ptr(str: string): CharPtr {
 export function stringToUTF8(str: string): Uint8Array {
     if (textEncoderUtf8 === undefined) {
         const len = _ems_.lengthBytesUTF8(str);
-        const buffer = new Uint8Array(len);
-        _ems_.stringToUTF8Array(str, buffer, 0, len);
-        return buffer;
+        const buffer = new Uint8Array(len + 1);
+        _ems_.stringToUTF8Array(str, buffer, 0, buffer.length);
+        return buffer.subarray(0, len);
     }
     return textEncoderUtf8.encode(str);
 }

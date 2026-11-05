@@ -93,7 +93,7 @@ only by the worker. There is no separate value serializer or object-reference
 protocol, and no six-argument transport restriction.
 IntPtr preserves the native unsigned Wasm32 representation. Dates retain native
 millisecond precision. Arrays, objects, exceptions, callbacks and Tasks use the
-existing native marshalers and UI-owned handle/Promise registries. Span lifetime
+existing native marshalers and the owning realm's handle/Promise registries. Span lifetime
 ends with its import (also on failure); ArraySegment disposal uses the normal
 managed-proxy lifecycle. Memory views refresh after growth. UI scratch frames
 are allocated from shared heap memory, not the VM's native stack.
@@ -115,9 +115,9 @@ the worker exits. UI JavaScript objects stay in their original realm.
 Application JavaScript always runs on the UI/main thread. `JSHost.ImportAsync`
 loads modules there, global imports bind there, and `JSHost.GlobalThis` and
 `JSHost.DotnetInstance` expose UI-owned objects. Unregistered application imports
-never fall back to worker-local lookup. `INTERNAL` interop helpers, including
-property access and HTTP/WebSocket services, also run on UI. Only native VM/host
-operations and native background work remain on the runtime worker.
+never fall back to worker-local lookup. HTTP/WebSocket clients execute in the
+worker with normal worker-owned marshalers, handles and Promise holders.
+Property helpers route to the target object's owning realm.
 
 This branch is a native-boundary architecture proof, not a complete hosting
 implementation. Configuration/ready callbacks and application library
@@ -128,15 +128,15 @@ response streams are transferred to the worker without buffering whole WASM
 images. Progress combines UI and worker assets. Native JS modules are imported
 only in the worker, even when their URLs are selected by a UI callback.
 Shutdown aborts loader-owned fetches and cancels late custom response bodies.
-`INTERNAL` selects native-host operations: lazy/satellite assembly loading,
-diagnostic collection/router operations and native contract/heap access. With a
-worker, UI wrappers retain normal interop handles and Task marshaling while the
-native host executes the operation. Without a worker, operations run locally.
+`INTERNAL` selects native-host operations: HTTP/WebSocket services, lazy/satellite assembly loading,
+diagnostic collection/router operations and native contract/heap access. UI wrappers
+forward assembly and diagnostic requests to the native host; networking marshaling
+stays worker-local. Without a worker, operations run locally.
 Diagnostic trace data returns to UI for downloads, including native/startup
 collections. Existing public diagnostic methods remain UI wrappers. Native-host
 names retain their existing INTERNAL paths, so ASP.NET Core lazy/culture callers
-do not need a namespace update. UI-owned property/global/module helpers,
-HTTP/WebSocket interop and proxy diagnostics are under `INTERNAL.TARGET`.
+do not need a namespace update. UI-facing property/global/module helpers and
+proxy diagnostics are under `INTERNAL.TARGET`; property access follows object ownership.
 Managed imports and direct JS callers use that explicit target namespace.
 Diagnostics sessions and collection continue to execute in the native host;
 the DOM download is dispatched to UI without moving trace/GC processing there.
@@ -172,6 +172,16 @@ system Chrome major version.
 Hot-reload browser tools are disabled for this test run: they are unrelated to
 the interop assertions and recent SDKs otherwise inject conflicting assets into
 the two referenced HTTP test servers.
+
+The WBT `SharedMemoryIsAppOwnedAndOptIn` case covers prebuilt assets with
+`TestUsingWorkloads=false`. `SharedMemoryIsAppOwnedAndOptInNativeRelink` runs
+with `TestUsingWorkloads=true` and an installed wasm-tools workload, which
+provides Emscripten without `EMSDK_PATH`. Both cases verify worker/ordinary/worker
+mode transitions. Native relinking is not part of the no-workload test lane.
+
+V8 shell runs the ordinary non-DOM interop tests. Test-module paths are relative
+module specifiers, such as `./JavaScriptWorkerTest.mjs`; the shell does not
+provide browser APIs such as `URL` or `TextEncoder`.
 
 ## Installation of JavaScript engines
 

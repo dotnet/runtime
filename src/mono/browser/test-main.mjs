@@ -340,7 +340,7 @@ async function run() {
             console.log("test-main.mjs: dedicated worker runtime created");
         }
         if (runArgs.testModule) {
-            const testModule = await import(new URL(runArgs.testModule, import.meta.url).href);
+            const testModule = await import(runArgs.testModule);
             await testModule.setup(App.runtime);
         }
 

@@ -21,21 +21,25 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-        [InlineData(false)]
-        [InlineData(true)]
+        [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
         [TestCategory("no-workload")]
-        public async Task SharedMemoryIsAppOwnedAndOptIn(bool nativeRelink)
+        public Task SharedMemoryIsAppOwnedAndOptIn() => SharedMemoryIsAppOwnedAndOptInCore(nativeRelink: false);
+
+        [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        public Task SharedMemoryIsAppOwnedAndOptInNativeRelink() => SharedMemoryIsAppOwnedAndOptInCore(nativeRelink: true);
+
+        private async Task SharedMemoryIsAppOwnedAndOptInCore(bool nativeRelink)
         {
             const Configuration Config = Configuration.Debug;
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, Config, aot: false, "shared_opt_in", addFrameworkArg: true,
                 extraProperties: "<PublishReadyToRun>true</PublishReadyToRun><WasmFingerprintAssets>true</WasmFingerprintAssets>",
-                extraItems: $"""
+                extraItems: IsUsingWorkloads ? "" : $"""
                     <PackageReference Include="Microsoft.NET.Runtime.WebAssembly.Sdk"
                                       Version="{s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework)}"
                                       GeneratePathProperty="true" PrivateAssets="all" />
                     """,
-                insertAtEnd: """
+                insertAtEnd: IsUsingWorkloads ? "" : """
                     <Import Project="$(PkgMicrosoft_NET_Runtime_WebAssembly_Sdk)\Sdk\Sdk.targets"
                             Condition="'$(WasmBuildNative)' == 'true' and '$(PkgMicrosoft_NET_Runtime_WebAssembly_Sdk)' != ''" />
                     """);
@@ -114,7 +118,7 @@ namespace Wasm.Build.Tests
             var provider = new WasmSdkBasedProjectProvider(_testOutput, DefaultTargetFramework);
             foreach (bool shared in new[] { true, false, true })
             {
-                string args = $"-p:WasmRunInWorker={shared.ToString().ToLowerInvariant()} -p:WasmBuildNative={nativeRelink.ToString().ToLowerInvariant()} -p:UsingBrowserRuntimeWorkload=false";
+                string args = $"-p:WasmRunInWorker={shared.ToString().ToLowerInvariant()} -p:WasmBuildNative={nativeRelink.ToString().ToLowerInvariant()} -p:UsingBrowserRuntimeWorkload={IsUsingWorkloads.ToString().ToLowerInvariant()}";
                 // Shared copies intentionally differ from runtime-pack/relink bytes; verify the live memory below.
                 BuildProject(info, Config, new BuildOptions(UseCache: false, AssertAppBundle: !shared,
                     ExtraMSBuildArgs: args + " -p:WasmBuildOnlyAfterPublish=false"), isNativeBuild: nativeRelink);

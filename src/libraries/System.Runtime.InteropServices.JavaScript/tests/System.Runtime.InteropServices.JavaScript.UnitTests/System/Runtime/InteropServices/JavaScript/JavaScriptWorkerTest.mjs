@@ -13,7 +13,9 @@ export async function setup(runtime) {
         if (!condition) throw new Error(message);
     }
     runtime.setModuleImports("WorkerInteropTest", {
-        nativeBoundaryCapacity: () => {
+        nativeBoundaryCapacity: async () => {
+            // Unwind the test runner's enclosing native completion before measuring the full entry budget.
+            await new Promise(resolve => setTimeout(resolve, 0));
             const boundary = runtime.INTERNAL.nativeBoundary;
             const before = boundary?.getScratchCount();
             check(exports.Nested(15) === 15, "Supported native nesting changed");

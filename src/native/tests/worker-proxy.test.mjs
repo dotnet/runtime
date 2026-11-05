@@ -776,6 +776,73 @@ test("native UTF16 error buffers are terminated even when the allocator returns 
     assert.deepEqual(Array.from(words.subarray(4, 8)), [65, 0, 66, 0]);
 });
 
+test("UTF8 fallback preserves complete native host properties without TextEncoder", async () => {
+    for (const encoder of [undefined, TextEncoder]) {
+        const bytes = new Uint8Array(512);
+        const encode = value => new TextEncoder().encode(value);
+        const emscripten = {
+            lengthBytesUTF8: value => encode(value).length,
+            stringToUTF8Array(value, output, start, capacity) {
+                const encoded = encode(value);
+                const count = Math.min(encoded.length, capacity - 1);
+                output.set(encoded.subarray(0, count), start);
+                output[start + count] = 0;
+                return count;
+            },
+        };
+        const load = createWorkerModuleLoader(createContext({ TextEncoder: encoder }), {
+            "../utils/cross-module": {
+                Module: { _malloc: () => {
+                    bytes.fill(0xcc); return 8;
+                } },
+                dotnetApi: { localHeapViewU8: () => bytes },
+            },
+            "../../Common/JavaScript/ems-ambient": { _ems_: emscripten },
+            "./memory": { getU16Local() {}, arrayBufferNeedsCopy() {}, setU16Local() {}, viewOrCopy() {}, zeroRegion() {} },
+        });
+        const strings = await load("../../../System.Native.Browser/utils/strings");
+        await strings.evaluate();
+        strings.namespace.stringsInit();
+        for (const value of ["", "HOST_RUNTIME_CONTRACT", "TRUSTED_PLATFORM_ASSEMBLIES", "/System.Private.CoreLib.dll", "A\0B", "\u6f22\u5b57\u{10437}"]) {
+            const expected = encode(value);
+            assert.deepEqual([...strings.namespace.stringToUTF8(value)], [...expected]);
+            assert.equal(strings.namespace.stringToUTF8Ptr(value), 8);
+            assert.deepEqual([...bytes.subarray(8, 8 + expected.length)], [...expected]);
+            assert.equal(bytes[8 + expected.length], 0);
+            assert.equal(bytes[9 + expected.length], 0xcc);
+        }
+    }
+});
+
+test("browser capacity probe unwinds its enclosing managed completion before saturating the entry budget", async () => {
+    const module = await import("../../libraries/System.Runtime.InteropServices.JavaScript/tests/System.Runtime.InteropServices.JavaScript.UnitTests/System/Runtime/InteropServices/JavaScript/JavaScriptWorkerTest.mjs");
+    let enclosingCompletion = true;
+    let imports;
+    const depths = [];
+    const exports = {
+        Nested(depth) {
+            assert.equal(enclosingCompletion, false, "The enclosing completion still owns an entry slot");
+            depths.push(depth);
+            if (depth >= 16) throw new Error("runInWorker: native call capacity exceeded");
+            return depth;
+        },
+        Echo: value => value,
+    };
+    await module.setup({
+        INTERNAL: { nativeBoundary: { getScratchCount: () => 0 } },
+        getConfig: () => ({ runInWorker: true }),
+        getAssemblyExports: async () => ({ System: { Runtime: { InteropServices: { JavaScript: { Tests: { WorkerInteropTest: exports } } } } } }),
+        setModuleImports: (_name, value) => {
+            imports = value;
+        },
+    });
+    const result = imports.nativeBoundaryCapacity();
+    assert.equal(typeof result.then, "function");
+    enclosingCompletion = false;
+    assert.equal(await result, 42);
+    assert.deepEqual(depths, [15, 16, 4]);
+});
+
 test("thenable detection does not start user code or duplicate Task completion", async () => {
     const changed = await readFile(new URL("../libs/System.Runtime.InteropServices.JavaScript.Native/interop/cancelable-promise.ts", import.meta.url), "utf8");
     async function check(source) {
