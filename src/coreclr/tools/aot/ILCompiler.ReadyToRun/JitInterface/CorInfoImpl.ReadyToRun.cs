@@ -1779,10 +1779,13 @@ namespace Internal.JitInterface
             if (cVars == 0)
                 return;
 
-            _debugVarInfos = new NativeVarInfo[cVars];
-            for (int i = 0; i < cVars; i++)
+            if (!_compilation.NodeFactory.OptimizationFlags.StripDebugInfo)
             {
-                _debugVarInfos[i] = vars[i];
+                _debugVarInfos = new NativeVarInfo[cVars];
+                for (int i = 0; i < cVars; i++)
+                {
+                    _debugVarInfos[i] = vars[i];
+                }
             }
 
             // JIT gave the ownership of this to us, so need to free this.
@@ -1796,10 +1799,13 @@ namespace Internal.JitInterface
         {
             Debug.Assert(_debugLocInfos == null);
 
-            _debugLocInfos = new OffsetMapping[cMap];
-            for (int i = 0; i < cMap; i++)
+            if (!_compilation.NodeFactory.OptimizationFlags.StripDebugInfo)
             {
-                _debugLocInfos[i] = pMap[i];
+                _debugLocInfos = new OffsetMapping[cMap];
+                for (int i = 0; i < cMap; i++)
+                {
+                    _debugLocInfos[i] = pMap[i];
+                }
             }
 
             // JIT gave the ownership of this to us, so need to free this.

@@ -93,6 +93,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     location.nativeOffset = checked((uint)mapOffset((int)location.nativeOffset));
                 }
+                InitializeDebugLocInfos(data.Locations);
             }
             if (data.Variables is not null)
             {
@@ -101,9 +102,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     variable.startOffset = checked((uint)mapOffset((int)variable.startOffset));
                     variable.endOffset = checked((uint)mapOffset((int)variable.endOffset));
                 }
+                InitializeDebugVarInfos(data.Variables);
             }
-            InitializeDebugLocInfos(data.Locations);
-            InitializeDebugVarInfos(data.Variables);
             _deferredWasmData = null;
         }
 
