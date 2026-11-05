@@ -995,7 +995,9 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     /// <summary>
     /// Resolves a variable location on WASM. A WASM debug-info register names a WASM local, which
     /// is engine-private and not readable through the data target, so it has no location. Stack
-    /// slots are in linear memory and resolve against the frame's logical frame pointer.
+    /// slots are in linear memory and resolve against the frame pointer in the context: the logical
+    /// frame pointer for ReadyToRun code, and <c>InterpMethodContextFrame.pStack</c> for
+    /// interpreted code.
     /// </summary>
     private static NativeVarLocation[] ResolveWasmVarLocation(
         DebugVarInfo varInfo,
@@ -1003,7 +1005,9 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         Target target,
         int pointerSize)
     {
-        // See "WebAssembly Stack Base Encoding" in DebugInfo.md.
+        // ICorDebugInfo::REGNUM_FP, which is 0 on WASM. The interpreter bases every stack slot on it.
+        const uint InterpreterFrameBaseRegister = 0;
+        // ReadyToRun code; see "WebAssembly Stack Base Encoding" in DebugInfo.md.
         const uint WasmFrameBaseRegister = 2;
         switch (varInfo.Kind)
         {
@@ -1015,8 +1019,9 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                 return [];
         }
 
-        Debug.Assert(varInfo.BaseRegister == WasmFrameBaseRegister, $"Unexpected WASM stack base register {varInfo.BaseRegister}");
-        if (varInfo.BaseRegister != WasmFrameBaseRegister)
+        bool isFrameBase = varInfo.BaseRegister is WasmFrameBaseRegister or InterpreterFrameBaseRegister;
+        Debug.Assert(isFrameBase, $"Unexpected WASM stack base register {varInfo.BaseRegister}");
+        if (!isFrameBase)
             return [];
 
         TargetPointer framePointer = context.FramePointer;

@@ -145,6 +145,37 @@ public unsafe class WasmDebugInfoTests
     }
 
     /// <summary>
+    /// The interpreter bases its stack slots on <c>ICorDebugInfo::REGNUM_FP</c>, which is 0 on WASM,
+    /// and an interpreted frame's context frame pointer is <c>InterpMethodContextFrame.pStack</c>.
+    /// </summary>
+    [Fact]
+    public void ResolveVarLocation_WasmInterpretedStack_ResolvesAgainstFramePointer()
+    {
+        const uint InterpreterRegNumFP = 0;
+        const ulong InterpStack = 0x0030_0000;
+        const int StackOffset = 0x10;
+
+        Target target = CreateTarget(RuntimeInfoArchitecture.Wasm, is64Bit: false);
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        context.StackPointer = new TargetPointer(0x0020_0000);
+        context.FramePointer = new TargetPointer(InterpStack);
+
+        DebugVarInfo varInfo = new()
+        {
+            StartOffset = 0,
+            EndOffset = 0x100,
+            VarNumber = 0,
+            Kind = DebugVarLocKind.Stack,
+            BaseRegister = InterpreterRegNumFP,
+            StackOffset = StackOffset,
+        };
+
+        NativeVarLocation location = Assert.Single(ClrDataFrame.ResolveVarLocation(varInfo, context, target));
+        Assert.False(location.IsRegisterValue);
+        Assert.Equal(InterpStack + StackOffset, location.AddressOrValue);
+    }
+
+    /// <summary>
     /// For a funclet frame the context's frame pointer is the establishing method's frame, not the
     /// funclet's own frame base, so the resolved address must use the frame pointer rather than SP.
     /// </summary>
