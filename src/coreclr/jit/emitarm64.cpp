@@ -10623,6 +10623,8 @@ BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, inst
         assert(fmt == IF_LARGEADR);
         ssize_t relPageAddr = id->idIsReloc() ? 0 : computeRelPageAddr((size_t)dstAddr, (size_t)srcAddr);
         dst                 = emitOutputShortAddress(dst, INS_adrp, IF_DI_1E, relPageAddr, dstReg);
+        // ADRP overwrites the destination before ADD computes the full address.
+        emitGCregDeadUpd(dstReg, dst);
         if (id->idIsReloc())
         {
             emitRecordRelocation(dst - sizeof(code_t), dstAddr, CorInfoReloc::ARM64_PAGEBASE_REL21);
@@ -11812,11 +11814,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // Local jmp/load case
                 assert(id->idIsBound());
                 dst = emitOutputLJ(ig, dst, id);
-                if (fmt == IF_LARGEADR)
-                {
-                    // ADRP overwrites the destination before ADD computes the full address.
-                    emitGCregDeadUpd(id->idReg1(), odst + sizeof(code_t));
-                }
             }
             sz = sizeof(instrDescJmp);
             break;
