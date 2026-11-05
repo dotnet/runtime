@@ -23,7 +23,7 @@ namespace System.Text
     // class to carry out modifications upon strings.
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed partial class StringBuilder : ISerializable
+    public sealed partial class StringBuilder : ISerializable, ISpanFormattable, IUtf8SpanFormattable
     {
         // A StringBuilder is internally represented as a linked list of blocks each of which holds
         // a chunk of the string.  It turns out string as a whole can also be represented as just a chunk,
@@ -374,6 +374,138 @@ namespace System.Text
             CopyTo(startIndex, new Span<char>(ref result.GetRawStringData(), result.Length), result.Length);
             return result;
         }
+
+        /// <summary>Tries to copy the contents of this builder into the provided span of characters.</summary>
+        /// <param name="destination">The span in which to write the contents of this builder.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of characters that were written in <paramref name="destination"/>.</param>
+        /// <returns><see langword="true"/> if the contents were successfully written; <see langword="false"/> if <paramref name="destination"/> was too small.</returns>
+        public bool TryFormat(Span<char> destination, out int charsWritten) =>
+            TryFormat(destination, Range.All, out charsWritten);
+
+        /// <summary>Tries to copy a range of the contents of this builder into the provided span of characters.</summary>
+        /// <param name="destination">The span in which to write the contents of this builder.</param>
+        /// <param name="sourceRange">The range of characters in this builder to write.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of characters that were written in <paramref name="destination"/>.</param>
+        /// <returns><see langword="true"/> if the contents were successfully written; <see langword="false"/> if <paramref name="destination"/> was too small.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="sourceRange"/> is outside the bounds of this builder.</exception>
+        public bool TryFormat(Span<char> destination, Range sourceRange, out int charsWritten)
+        {
+            (int offset, int length) = sourceRange.GetOffsetAndLength(Length);
+
+            if (length > destination.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            CopyTo(offset, destination, length);
+            charsWritten = length;
+            return true;
+        }
+
+        /// <summary>Tries to write the contents of this builder as UTF-8 into the provided span of bytes.</summary>
+        /// <param name="utf8Destination">The span in which to write the UTF-8 encoded contents of this builder.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
+        /// <returns><see langword="true"/> if the contents were successfully written; <see langword="false"/> if <paramref name="utf8Destination"/> was too small.</returns>
+        /// <remarks>Invalid UTF-16 sequences, such as unpaired surrogates, are written as the UTF-8 encoding of U+FFFD.</remarks>
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) =>
+            TryFormat(utf8Destination, Range.All, out bytesWritten);
+
+        /// <summary>Tries to write a range of the contents of this builder as UTF-8 into the provided span of bytes.</summary>
+        /// <param name="utf8Destination">The span in which to write the UTF-8 encoded contents of this builder.</param>
+        /// <param name="sourceRange">The range of characters in this builder to write.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
+        /// <returns><see langword="true"/> if the contents were successfully written; <see langword="false"/> if <paramref name="utf8Destination"/> was too small.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="sourceRange"/> is outside the bounds of this builder.</exception>
+        /// <remarks>Invalid UTF-16 sequences, such as unpaired surrogates, are written as the UTF-8 encoding of U+FFFD.</remarks>
+        public bool TryFormat(Span<byte> utf8Destination, Range sourceRange, out int bytesWritten)
+        {
+            (int offset, int remaining) = sourceRange.GetOffsetAndLength(Length);
+            AssertInvariants();
+
+            int totalWritten = 0;
+            char pendingHighSurrogate = '\0';
+            Span<char> boundary = stackalloc char[2];
+
+            foreach (ReadOnlyMemory<char> chunkMemory in GetChunks())
+            {
+                if (remaining == 0)
+                {
+                    break;
+                }
+
+                ReadOnlySpan<char> chunk = chunkMemory.Span;
+                if (offset >= chunk.Length)
+                {
+                    offset -= chunk.Length;
+                    continue;
+                }
+
+                chunk = chunk.Slice(offset);
+                offset = 0;
+                if (chunk.Length > remaining)
+                {
+                    chunk = chunk.Slice(0, remaining);
+                }
+                remaining -= chunk.Length;
+
+                // A surrogate pair may be split across two chunks. A high surrogate at the end of the
+                // previous chunk is held back and encoded together with the start of this chunk.
+                if (pendingHighSurrogate != '\0')
+                {
+                    boundary[0] = pendingHighSurrogate;
+                    int boundaryLength = 1;
+                    if (char.IsLowSurrogate(chunk[0]))
+                    {
+                        boundary[1] = chunk[0];
+                        boundaryLength = 2;
+                        chunk = chunk.Slice(1);
+                    }
+
+                    pendingHighSurrogate = '\0';
+                    if (!TryEncodeUtf8(boundary.Slice(0, boundaryLength), utf8Destination, ref totalWritten))
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+                }
+
+                if (remaining != 0 && !chunk.IsEmpty && char.IsHighSurrogate(chunk[^1]))
+                {
+                    pendingHighSurrogate = chunk[^1];
+                    chunk = chunk.Slice(0, chunk.Length - 1);
+                }
+
+                if (!TryEncodeUtf8(chunk, utf8Destination, ref totalWritten))
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+            }
+
+            Debug.Assert(pendingHighSurrogate == '\0', "A pending high surrogate is only held back while more characters remain.");
+
+            bytesWritten = totalWritten;
+            return true;
+
+            static bool TryEncodeUtf8(ReadOnlySpan<char> source, Span<byte> utf8Destination, ref int totalWritten)
+            {
+                OperationStatus status = Unicode.Utf8.FromUtf16(source, utf8Destination.Slice(totalWritten), out _, out int written, replaceInvalidSequences: true, isFinalBlock: true);
+                totalWritten += written;
+                return status == OperationStatus.Done;
+            }
+        }
+
+        /// <inheritdoc cref="ToString()"/>
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();
+
+        /// <inheritdoc cref="TryFormat(Span{char}, out int)"/>
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            TryFormat(destination, out charsWritten);
+
+        /// <inheritdoc cref="TryFormat(Span{byte}, out int)"/>
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            TryFormat(utf8Destination, out bytesWritten);
 
         public StringBuilder Clear()
         {
