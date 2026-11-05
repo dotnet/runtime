@@ -24,7 +24,7 @@ steps:
         fi
 
         tool=""
-        for candidate in "$(Build.SourcesDirectory)"/artifacts/bin/ILLink.CacheTool/*/net*/dotnet-illink-cache.dll; do
+        for candidate in "$(Build.SourcesDirectory)"/artifacts/bin/BuildCache/*/net*/dotnet-build-cache.dll; do
             if [[ -f "$candidate" ]]; then
                 tool="$candidate"
                 break
@@ -64,13 +64,13 @@ steps:
             exit 0
         }
 
-        $toolRoot = Join-Path "$(Build.SourcesDirectory)" "artifacts/bin/ILLink.CacheTool"
+        $toolRoot = Join-Path "$(Build.SourcesDirectory)" "artifacts/bin/BuildCache"
         if (-not (Test-Path -LiteralPath $toolRoot -PathType Container)) {
             Write-Host "##vso[task.logissue type=warning]The ILLink cache maintenance tool was not built; skipping purge."
             exit 1
         }
 
-        $tool = Get-ChildItem -LiteralPath $toolRoot -Filter "dotnet-illink-cache.dll" -File -Recurse |
+        $tool = Get-ChildItem -LiteralPath $toolRoot -Filter "dotnet-build-cache.dll" -File -Recurse |
             Sort-Object FullName | Select-Object -First 1
         if ($null -eq $tool) {
             Write-Host "##vso[task.logissue type=warning]The ILLink cache maintenance tool was not built; skipping purge."

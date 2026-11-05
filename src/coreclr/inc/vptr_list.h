@@ -46,8 +46,10 @@ VPTR_CLASS(AsyncThunkStubManager)
 
 VPTR_CLASS(PEImageLayout)
 VPTR_CLASS(ConvertedImageLayout)
+#ifdef TARGET_WINDOWS
 VPTR_CLASS(LoadedImageLayout)
 VPTR_CLASS(NativeImageLayout)
+#endif // TARGET_WINDOWS
 VPTR_CLASS(FlatImageLayout)
 
 #ifdef DEBUGGING_SUPPORTED

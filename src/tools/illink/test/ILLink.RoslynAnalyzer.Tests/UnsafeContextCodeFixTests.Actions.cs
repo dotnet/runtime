@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using System.Threading.Tasks;
 using ILLink.CodeFix;
 using Microsoft.CodeAnalysis.Testing;
@@ -433,9 +433,10 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task NotUpdatedMemorySafetyRules_NoFix()
+        public Task NotUpdatedMemorySafetyRules_Fixed()
         {
-            // Legacy rules also report CS9360 under the new language version, but only v2 code gets inner contexts.
+            // Legacy rules also report CS9360 under the new language version, e.g. in a file shared with a migrated
+            // assembly, so the same inner context fixes it.
             const string source = """
                 class C
                 {
@@ -445,7 +446,20 @@ namespace ILLink.RoslynAnalyzer.Tests
                     }
                 }
                 """;
-            return VerifyAsync(source, source, updatedMemorySafetyRules: false);
+            const string fixedSource = """
+                class C
+                {
+                    void M(int* p)
+                    {
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            *p = 0;
+                        }
+                    }
+                }
+                """;
+            return VerifyAsync(source, fixedSource, updatedMemorySafetyRules: false);
         }
     }
 }

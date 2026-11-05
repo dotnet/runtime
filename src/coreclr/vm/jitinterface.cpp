@@ -3655,6 +3655,48 @@ bool CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 /*********************************************************************/
+bool CEEInfo::isByRefLike(CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    _ASSERTE(clsHnd);
+    result = TypeHandle(clsHnd).IsByRefLike();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+/*********************************************************************/
+bool CEEInfo::isSharedInst(CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    _ASSERTE(clsHnd);
+    result = TypeHandle(clsHnd).IsCanonicalSubtype();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+/*********************************************************************/
 uint32_t CEEInfo::getClassAttribs (CORINFO_CLASS_HANDLE clsHnd)
 {
     STANDARD_VM_CONTRACT;
@@ -3918,45 +3960,6 @@ exit: ;
     EE_TO_JIT_TRANSITION();
 
     return (CorInfoInitClassResult)result;
-}
-
-
-
-void CEEInfo::classMustBeLoadedBeforeCodeIsRun (CORINFO_CLASS_HANDLE typeToLoadHnd)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    TypeHandle th = TypeHandle(typeToLoadHnd);
-
-    // Type handles returned to JIT at runtime are always fully loaded. Verify that it is the case.
-    _ASSERTE(th.IsFullyLoaded());
-
-    EE_TO_JIT_TRANSITION_LEAF();
-}
-
-/*********************************************************************/
-void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    MethodDesc *pMD = (MethodDesc*) methHnd;
-
-    // MethodDescs returned to JIT at runtime are always fully loaded. Verify that it is the case.
-    _ASSERTE(pMD->GetMethodTable()->IsFullyLoaded());
-
-    EE_TO_JIT_TRANSITION_LEAF();
 }
 
 /*********************************************************************/

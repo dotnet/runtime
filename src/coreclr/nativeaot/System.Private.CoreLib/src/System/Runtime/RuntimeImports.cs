@@ -98,7 +98,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGenerationSize")]
-        internal static extern int RhGetGenerationSize(int gen);
+        internal static extern ulong RhGetGenerationSize(int gen);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetLastGCPercentTimeInGC")]
@@ -847,6 +847,14 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, MathImportPrefix + "modff")]
         internal static extern unsafe float modff(float x, float* intptr);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "Rhp_sincos")]
+        internal static extern unsafe void sincos(double x, double* sin, double* cos);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "Rhp_sincosf")]
+        internal static extern unsafe void sincosf(float x, float* sin, float* cos);
 
 #if TARGET_WINDOWS
         [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf16)]

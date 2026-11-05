@@ -138,6 +138,8 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 * [Windows x64](https://learn.microsoft.com/en-us/cpp/build/exception-handling-x64)
 * [Windows ARM64](https://learn.microsoft.com/en-us/cpp/build/arm64-exception-handling)
 
+On ARM64, the `pac` unwind opcode strips pointer authentication bits from `Lr` using the target's [PlatformMetadata](./PlatformMetadata.md) pointer-authentication mask before `Lr` is copied to `Pc`. The same mask is applied to return addresses recovered from explicit Frames, both when reporting the return address and when updating the context's instruction pointer.  Since pointer authentication keys are not available via the data contract, return addresses cannot be authenticated.
+
 <!-- BEGIN GENERATED: usage contract=StackWalk version=c1 -->
 ### Data descriptors used
 

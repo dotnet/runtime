@@ -11,4 +11,6 @@ internal sealed partial class PlatformMetadata : IData<PlatformMetadata>
     public partial TargetPointer PrecodeMachineDescriptor { get; }
 
     [Field] public partial byte CodePointerFlags { get; }
+
+    [Field] public partial ulong? PointerAuthenticationMask { get; }
 }
