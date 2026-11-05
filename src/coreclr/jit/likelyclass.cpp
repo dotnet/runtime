@@ -405,17 +405,15 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyValues(LikelyValueRecord*           
 
         // We currently re-use existing infrastructure for type handles for simplicity.
         //
-        const bool isIntHistogramCount =
-            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount);
-        const bool isLongHistogramCount =
+        const bool isHistogramCount =
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount) ||
             (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount);
-        const bool isHistogramCount = isIntHistogramCount || isLongHistogramCount;
 
         if (isHistogramCount && (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
             (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogram))
         {
             LikelyClassMethodHistogram h((INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count,
-                                         isIntHistogramCount);
+                                         /* int32Data */ true);
             LikelyClassMethodHistogramEntry sortedEntries[HISTOGRAM_MAX_SIZE_COUNT];
 
             if (h.countHistogramElements == 0)

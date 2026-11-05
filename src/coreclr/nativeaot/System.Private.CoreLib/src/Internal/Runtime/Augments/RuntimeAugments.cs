@@ -631,15 +631,25 @@ namespace Internal.Runtime.Augments
             return modulePath;
         }
 
-        // if functionPointer points at an import or unboxing stub, find the target of the stub
-        public static IntPtr GetCodeTarget(IntPtr functionPointer)
-        {
-            return RuntimeImports.RhGetCodeTarget(functionPointer);
-        }
+        // Resolve wrapper stubs, optionally including unboxing stubs that supply an instantiation argument.
+        // Return the original pointer if no matching wrapper is found.
+        public static IntPtr GetTargetOfWrapperStub(IntPtr functionPointer, bool includeInstantiatingStubs)
+            => GetTargetOfWrapperStub(functionPointer, includeInstantiatingStubs, out _);
 
-        public static IntPtr GetTargetOfUnboxingAndInstantiatingStub(IntPtr functionPointer)
+        public static IntPtr GetTargetOfWrapperStub(IntPtr functionPointer, bool includeInstantiatingStubs, out bool isInstantiatingStub)
         {
-            return RuntimeImports.RhGetTargetOfUnboxingAndInstantiatingStub(functionPointer);
+#if TARGET_WASM
+            return UnboxingStubMap.GetTarget(functionPointer, includeInstantiatingStubs, out isInstantiatingStub);
+#else
+            isInstantiatingStub = false;
+            IntPtr target = RuntimeImports.RhGetCodeTarget(functionPointer);
+            if (target != functionPointer || !includeInstantiatingStubs)
+                return target;
+
+            target = RuntimeImports.RhGetTargetOfUnboxingAndInstantiatingStub(functionPointer);
+            isInstantiatingStub = target != IntPtr.Zero;
+            return isInstantiatingStub ? target : functionPointer;
+#endif
         }
 
         //==============================================================================================
