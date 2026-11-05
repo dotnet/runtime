@@ -197,6 +197,11 @@
         <target state="translated">Die GeneratedRegexAttribute-Methode oder -Eigenschaft muss partiell, parameterlos, nicht generisch, nicht abstrakt sein und RegEx zurückgeben. Wenn eine Eigenschaft, muss sie auch "get-only" sein.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RegexMemberMustNotBeInFileLocalTypeMessage">
+        <source>GeneratedRegexAttribute cannot be used within a file-local type. Move the member outside any file-local types.</source>
+        <target state="new">GeneratedRegexAttribute cannot be used within a file-local type. Move the member outside any file-local types.</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
+      </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
         <target state="translated">[x-y]-Bereich in umgekehrter Reihenfolge.</target>

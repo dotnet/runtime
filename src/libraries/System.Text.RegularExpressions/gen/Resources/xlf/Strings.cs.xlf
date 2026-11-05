@@ -197,6 +197,11 @@
         <target state="translated">Metoda nebo vlastnost GeneratedRegexAttribute musí být částečná, bez parametrů, neobecná, neabstraktní a návratová metoda Regex. Pokud jde o vlastnost, musí být také get-only.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RegexMemberMustNotBeInFileLocalTypeMessage">
+        <source>GeneratedRegexAttribute cannot be used within a file-local type. Move the member outside any file-local types.</source>
+        <target state="new">GeneratedRegexAttribute cannot be used within a file-local type. Move the member outside any file-local types.</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
+      </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
         <target state="translated">Rozsah [x-y] je v obráceném pořadí.</target>
