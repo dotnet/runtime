@@ -489,18 +489,19 @@ counts include activity since startup, including activity before `collectPgoTrac
 `DOTNET_DiagnosticPorts=js://pgo` arms tracing before managed startup. Reload the application for
 another training run.
 
-For interpreter-only block-count collection, the existing `DOTNET_InterpPGO=1` mode remains
-available separately:
+Interpreter and R2R execution use the same entry-only schema, method filter, and PgoManager
+counter storage. For an interpreter-only development build, configure the runtime filter directly:
 
 ```xml
 <ItemGroup>
   <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="js://pgo" />
-  <WasmEnvironmentVariable Include="DOTNET_InterpPGO" Value="1" />
+  <WasmEnvironmentVariable Include="DOTNET_WasmPgoInstrumentation" Value="*" />
 </ItemGroup>
 ```
 
-That interpreter block-count mode can be scoped with `DOTNET_InterpPGOMethods` (standard MethodSet
-filter format; empty = all methods). It is not the entry-only `WasmPgoInstrumentation` mode.
+`DOTNET_WasmPgoInstrumentation` uses the standard MethodSet format; an empty value disables
+collection. The separate `DOTNET_InterpPGO` and `DOTNET_InterpPGOMethods` options have been removed.
+Interpreter collection no longer records loop-head block counts.
 
 Convert the downloaded `xxx.nettrace` into an `.mibc` with a matching `dotnet-pgo` build. Prefer the
 in-tree tool from `artifacts/bin/coreclr/<host-os>.<arch>.<config>/dotnet-pgo/`, or a tool version

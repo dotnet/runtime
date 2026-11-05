@@ -143,16 +143,14 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     [InlineData(Configuration.Release, false)]
     public async Task BlazorEventPipeTestWithInterpPgo(Configuration config, bool aot)
     {
-        // Interpreter block-count PGO: instrumentation is armed from startup by DOTNET_InterpPGO, the
-        // counters are collected into an EventPipe trace while the app runs, and dotnet-pgo turns that
-        // trace into an .mibc. R2R is forced off until https://github.com/dotnet/runtime/issues/130521.
+        // Development builds use the same entry-only runtime filter as published R2R applications.
         string extraProperties = @"
                 <EnableDiagnostics>true</EnableDiagnostics>
                 <WasmDebugLevel>0</WasmDebugLevel>
                 <PublishReadyToRun>false</PublishReadyToRun>
                 <WBTDevServer>true</WBTDevServer>
             ";
-        string extraItems = @"<WasmEnvironmentVariable Include=""DOTNET_InterpPGO"" Value=""1"" />";
+        string extraItems = @"<WasmEnvironmentVariable Include=""DOTNET_WasmPgoInstrumentation"" Value=""*Counter:IncrementCount"" />";
 
         ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp, "blazor_interp_pgo", extraProperties: extraProperties, extraItems: extraItems);
 
@@ -819,7 +817,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         Assert.True(File.Exists(tracePath), $"PGO trace {tracePath} was not created");
 
         // The untrimmed IL assemblies next to the app (bin/<Config>/<TFM>) share the MVID of the served
-        // webcil, so dotnet-pgo can resolve the block-count events against them.
+        // webcil, so dotnet-pgo can resolve the method-entry events against them.
         string referenceDir = Path.Combine(_projectDir, "bin", config.ToString(), DefaultTargetFrameworkForBlazor);
         Assert.True(Directory.Exists(referenceDir), $"Reference assembly directory {referenceDir} was not found");
 
@@ -844,9 +842,14 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         }
         string dumpText = File.ReadAllText(dumpPath);
         Assert.Contains(expectedMethod, dumpText);
-        // The method list alone can be populated by Jit method-start events; require actual block-count
-        // instrumentation so the test fails if no INTOP_PGO_COUNT probe ran or the counters weren't flushed.
-        Assert.Contains("BasicBlockIntCount", dumpText);
+        using JsonDocument dump = JsonDocument.Parse(dumpText);
+        JsonElement method = Assert.Single(dump.RootElement.GetProperty("Methods").EnumerateArray(),
+            method => method.GetProperty("Method").GetString()!.Contains("." + expectedMethod + "(", StringComparison.Ordinal));
+        JsonElement entry = Assert.Single(method.GetProperty("InstrumentationData").EnumerateArray());
+        Assert.Equal("MethodEntryIntCount", entry.GetProperty("InstrumentationKind").GetString());
+        Assert.Equal(0, entry.GetProperty("ILOffset").GetInt32());
+        Assert.Equal(5, entry.GetProperty("Data").GetInt64());
+        Assert.DoesNotContain("BasicBlockIntCount", dumpText);
     }
 
     private string ConvertTrace(ProjectInfo info, string fileName)

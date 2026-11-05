@@ -12596,14 +12596,6 @@ CORJIT_FLAGS* CEECodeGenInfo::getJitFlagsInternal()
 }
 
 /*********************************************************************/
-#ifdef FEATURE_PGO
-static bool InterpreterPgoInstrumentationEnabled()
-{
-    static ConfigDWORD s_interpPgo;
-    return s_interpPgo.val(CLRConfig::INTERNAL_InterpPGO) != 0;
-}
-#endif // FEATURE_PGO
-
 HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
             PgoInstrumentationSchema* pSchema, /* IN/OUT */
@@ -12636,10 +12628,9 @@ HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
     }
     else
     {
-        // Only try instrumenting tiering-eligible methods, unless interpreter PGO is enabled, in
-        // which case we instrument every method for offline profile collection.
+        // Other instrumentation schemas are limited to tiering-eligible methods.
         MethodDesc* pMD = (MethodDesc*)ftnHnd;
-        if (pMD->IsEligibleForTieredCompilation() || InterpreterPgoInstrumentationEnabled())
+        if (pMD->IsEligibleForTieredCompilation())
         {
             hr = PgoManager::allocPgoInstrumentationBySchema(pMD, m_ILHeader, pSchema, countSchemaItems, pInstrumentationData);
         }

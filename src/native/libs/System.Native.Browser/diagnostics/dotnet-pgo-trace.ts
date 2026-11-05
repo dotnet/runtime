@@ -14,7 +14,7 @@ const DEFAULT_PGO_DURATION_SECONDS = 10;
 // the session currently collecting a PGO trace; stopped internally when the duration elapses
 let pgoSession: IDiagnosticSession | undefined = undefined;
 
-// one-shot latch: the interpreter's block-count counters are cumulative and flushed once per collection,
+// one-shot latch: method-entry counters are cumulative and flushed once per collection,
 // so a second collection would re-emit data dotnet-pgo rejects as duplicate chunks; allow one per process.
 let pgoCollected = false;
 
