@@ -1115,7 +1115,8 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS; // For GetXxxException
+        // Self-abort and reentrant waits can collect; a native debugger helper does neither.
+        if (GetThreadNULLOk() != nullptr) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3698,7 +3699,18 @@ ThrowControlForThread(
 
     OBJECTREF throwable = ExInfo::CreateThrowable(&exceptionRecord, TRUE);
     pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    TADDR resumeSSP = ssp;
+#else
+    TADDR resumeSSP = 0;
+#endif
+
+    // The abort can be caught by an interpreted frame further up the stack. Resuming there unwinds the native frames
+    // with a ResumeAfterCatchException, which must not run into the managed frames this thread was redirected from.
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_INTERRUPTED_CONTEXT(pfef->GetExceptionContext(), resumeSSP);
     DispatchManagedException(throwable, pfef->GetExceptionContext());
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -4516,6 +4528,7 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
 #endif
 
 #ifndef TARGET_X86
+#if defined(FEATURE_INTERPRETER) || defined(_DEBUG)
     // Except for x86, no registers are scanned as part of the HijackFrame on top of the stack.
     // This still allows scanning of the return value because the registers in question are
     // scanned as part of the calling method's roots. The problem arises if we are returning to
@@ -4528,11 +4541,6 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
     hijackedReturnAddress = (PCODE)PacStripPtr((void*)hijackedReturnAddress);
 #endif // TARGET_ARM64
 
-    if (IsCallDescrWorkerInternalReturnAddress(hijackedReturnAddress))
-    {
-        return;
-    }
-#if defined(FEATURE_INTERPRETER) || defined(_DEBUG)
     EECodeInfo codeInfo(hijackedReturnAddress);
     if (!codeInfo.IsValid())
     {
@@ -4547,10 +4555,6 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
 #endif // !TARGET_X86
 
     IS_VALID_CODE_PTR((FARPROC) (TADDR)m_pvHJRetAddr);
-    // TODO [DAVBR]: For the full fix for VsWhidbey 450273, the below
-    // may be uncommented once isLegalManagedCodeCaller works properly
-    // with non-return address inputs, and with non-DEBUG builds
-    //_ASSERTE(isLegalManagedCodeCaller((TADDR)m_pvHJRetAddr));
     STRESS_LOG2(LF_SYNC, LL_INFO100, "Hijacking return address 0x%p for thread %p\n", m_pvHJRetAddr, this);
 
     // Remember the method we're executing
@@ -5664,8 +5668,8 @@ retry_for_debugger:
 
         LOG((LF_GCROOTS | LF_GC | LF_CORDB, LL_INFO10, "The EE is free now...\n"));
 
-        // If someone's trying to suspend *this* thread, this is a good opportunity.
-        if (pCurThread && pCurThread->CatchAtSafePoint())
+        // Only cooperative threads need to rendezvous; preemptive threads are already safe for suspension.
+        if (pCurThread && pCurThread->PreemptiveGCDisabled() && pCurThread->CatchAtSafePoint())
         {
             pCurThread->PulseGCMode();  // Go suspend myself.
         }

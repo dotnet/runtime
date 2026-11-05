@@ -204,7 +204,8 @@ namespace System.Runtime.Tests
         }
 
         // Tests cancellation by the action itself
-//        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135914", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void CancelItselfOutsideOfTryCatchFinally()
         {
             var cts = new CancellationTokenSource();

@@ -35,12 +35,7 @@ struct InterfaceMapData
 
 #include <poppack.h>
 
-class ArgDestination;
-
-// This class abstracts the functionality which creats the
-//  parameters on the call stack and deals with the return type
-//  inside reflection.
-//
+// Helpers for reflection field access, primitive conversions, and exception wrapping.
 class InvokeUtil
 {
 

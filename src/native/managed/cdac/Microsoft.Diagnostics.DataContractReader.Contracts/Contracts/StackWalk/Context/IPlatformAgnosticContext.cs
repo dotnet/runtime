@@ -8,6 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 public interface IPlatformAgnosticContext
 {
     public abstract uint Size { get; }
+    public abstract uint GetSize();
     public abstract uint ContextControlFlags { get; }
     public abstract uint FullContextFlags { get; }
     public abstract uint AllContextFlags { get; }
@@ -29,6 +30,9 @@ public interface IPlatformAgnosticContext
     public abstract bool TryReadRegister(string fieldName, out TargetNUInt value);
     public abstract bool TrySetRegister(int number, TargetNUInt value);
     public abstract bool TryReadRegister(int number, out TargetNUInt value);
+    public abstract bool TryReadFloatingPointRegister(int index, out double value);
+    public abstract bool TryWriteFloatingPointRegister(int index, double value);
+    public abstract void CopyContext(IPlatformAgnosticContext source);
 
     public abstract void Unwind(Target target);
 

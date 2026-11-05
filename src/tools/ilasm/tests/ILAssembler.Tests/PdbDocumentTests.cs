@@ -8,7 +8,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     /// <summary>
     /// The Portable PDB documents of sequence points: which document each point belongs to, and how a method

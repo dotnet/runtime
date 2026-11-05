@@ -6,6 +6,7 @@ project(PortableRuntime)
 add_definitions(-DFEATURE_PORTABLE_HELPERS)
 
 add_library(Runtime.GC.Workstation OBJECT ${GC_WKS_SVR_SOURCES})
+add_dependencies(Runtime.GC.Workstation aot_eventing_headers)
 set_target_properties(Runtime.GC.Workstation PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
 
 add_library(PortableRuntime STATIC
@@ -14,8 +15,10 @@ add_library(PortableRuntime STATIC
     ${PORTABLE_RUNTIME_SOURCES}
     $<TARGET_OBJECTS:Runtime.GC.Workstation>)
 target_link_libraries(PortableRuntime PRIVATE aotminipal)
+add_dependencies(PortableRuntime aot_eventing_headers)
 
 add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
+add_dependencies(standalonegc-disabled aot_eventing_headers)
 
 # Get the current list of definitions
 get_compile_definitions(DEFINITIONS)
