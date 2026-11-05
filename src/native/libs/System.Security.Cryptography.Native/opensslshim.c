@@ -4,13 +4,13 @@
 
 #include <assert.h>
 #include <dlfcn.h>
+#include <limits.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 
 #if defined(__OpenBSD__)
 #include <dirent.h>
-#include <limits.h>
 #include <stdlib.h>
 #endif
 
@@ -59,6 +59,27 @@ static void DlOpen(const char* libraryName)
         dlclose(libsslNew);
     }
 }
+
+#if defined(TARGET_OPENHARMONY)
+// OpenHarmony has no system libssl.so.3, and a shell-launched process only searches system
+// directories, so fall back to the libssl deployed next to this library.
+static void DlOpenNextToShim(const char* libraryName)
+{
+    Dl_info info;
+    const char* slash;
+    if (dladdr((void*)&DlOpenNextToShim, &info) == 0 || info.dli_fname == NULL || (slash = strrchr(info.dli_fname, '/')) == NULL)
+    {
+        return;
+    }
+
+    char path[PATH_MAX];
+    int written = snprintf(path, sizeof(path), "%.*s/%s", (int)(slash - info.dli_fname), info.dli_fname, libraryName);
+    if (written > 0 && (size_t)written < sizeof(path))
+    {
+        DlOpen(path);
+    }
+}
+#endif
 
 #if defined(__OpenBSD__)
 // OpenBSD's base system ships LibreSSL, which does not implement the full
@@ -247,6 +268,23 @@ static void OpenLibraryOnce(void)
     {
         DlOpen(MAKELIB("4"));
     }
+
+#if defined(TARGET_OPENHARMONY)
+    if (libssl == NULL)
+    {
+        DlOpenNextToShim(MAKELIB("3"));
+    }
+
+    if (libssl == NULL)
+    {
+        DlOpenNextToShim(MAKELIB("1.1"));
+    }
+
+    if (libssl == NULL)
+    {
+        DlOpenNextToShim(MAKELIB("4"));
+    }
+#endif
 }
 
 static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;
