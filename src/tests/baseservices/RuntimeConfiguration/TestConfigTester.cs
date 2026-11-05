@@ -65,6 +65,47 @@ public class TestConfigTester
         }
     }
 
+    [Theory]
+    [InlineData(null, false)]
+    [InlineData(null, true)]
+    [InlineData("..", false)]
+    [InlineData("..", true)]
+    public static void PrecomputedResultsUsePlanPaths(string? testPathPrefix, bool useResultDirectory)
+    {
+        const string ResultTokenVariable = "__TestOutOfProcessResultToken";
+        const string ResultDirectoryVariable = "__TestOutOfProcessResultDirectory";
+        string previousToken = Environment.GetEnvironmentVariable(ResultTokenVariable);
+        string previousDirectory = Environment.GetEnvironmentVariable(ResultDirectoryVariable);
+        string directoryName = $"outofprocess-{Guid.NewGuid():N}";
+        string directory = Path.Combine(Directory.GetCurrentDirectory(), directoryName);
+        string assemblyPath = $"{directoryName}/test@name.dll";
+        string resultFile = Path.Combine(directory, useResultDirectory
+            ? $"{directoryName}@stest@aname.dll.outofprocess-result"
+            : "test@name.dll.outofprocess-result");
+        string token = Guid.NewGuid().ToString();
+
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllLines(resultFile, ["2", token, "0", "Pass", "", "Precomputed test output."]);
+            Environment.SetEnvironmentVariable(ResultTokenVariable, token);
+            Environment.SetEnvironmentVariable(ResultDirectoryVariable, useResultDirectory ? directory : null);
+
+            OutOfProcessTest.RunOutOfProcessTest(assemblyPath, testPathPrefix);
+
+            Environment.SetEnvironmentVariable(ResultTokenVariable, "stale");
+            Assert.Contains("is stale or belongs to another run",
+                Assert.Throws<Xunit.Sdk.FailException>(() =>
+                    OutOfProcessTest.RunOutOfProcessTest(assemblyPath, testPathPrefix)).Message);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(ResultTokenVariable, previousToken);
+            Environment.SetEnvironmentVariable(ResultDirectoryVariable, previousDirectory);
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     static string GetCorerunPath()
     {
         string corerunName = "corerun";
