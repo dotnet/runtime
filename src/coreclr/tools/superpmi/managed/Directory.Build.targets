@@ -1,5 +1,9 @@
 <Project>
+  <PropertyGroup>
+    <UseLocalTargetingRuntimePack Condition="'$(UseBootstrapLayout)' == 'true'">true</UseLocalTargetingRuntimePack>
+  </PropertyGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', '$(MSBuildThisFileDirectory)..'))" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseBootstrapLayout)' == 'true'" />
 
   <!-- On Windows, the symbols go to PDB\, like those of the native binaries. -->
   <Target Name="PublishSymbolsToPdbDirectory"

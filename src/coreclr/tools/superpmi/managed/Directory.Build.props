@@ -11,5 +11,6 @@
     <Optimize>true</Optimize>
     <!-- The tools are published with their own symbols only, as the native tools were. -->
     <PublishReferencesSymbols>false</PublishReferencesSymbols>
+    <UseBootstrapLayout Condition="'$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
   </PropertyGroup>
 </Project>

@@ -383,10 +383,6 @@
       Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="($(_subset.Contains('+clr.spmi+')) or $(_subset.Contains('+clr.native+'))) and '$(SdkToolsSupported)' == 'true' and '$(UseNativeAotForComponents)' == 'true'">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\superpmi\managed\superpmi-tools.proj" Category="clr" />
-  </ItemGroup>
-
   <!--
     Build the CoreCLR cross tools when we're doing a cross build and either we're building any CoreCLR native tools for platforms CoreCLR fully supports or when someone explicitly requests them.
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
@@ -520,6 +516,10 @@
     <ProjectToBuild Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')) or '$(TargetOS)' == 'osx'" Include="$(CoreClrProjectRoot)tools\SuperFileCheck\SuperFileCheck.csproj" Category="clr" />
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\cdac-build-tool\cdac-build-tool.csproj" Category="clr" />
+  </ItemGroup>
+
+  <ItemGroup Condition="($(_subset.Contains('+clr.spmi+')) or $(_subset.Contains('+clr.native+'))) and '$(SdkToolsSupported)' == 'true' and '$(UseNativeAotForComponents)' == 'true'">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\superpmi\managed\superpmi-tools.proj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.toolstests+'))">
