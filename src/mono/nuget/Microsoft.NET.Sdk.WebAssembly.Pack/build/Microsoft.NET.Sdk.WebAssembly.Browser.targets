@@ -993,8 +993,13 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Resolve satellite assemblies and runtime feature switches before trimming, including publishing without a build. -->
   <Target Name="_WasmPrepareForPublish"
-    DependsOnTargets="PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;ResolveAssemblyReferences;_ResolveWasmConfiguration"
+    DependsOnTargets="PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;ResolveAssemblyReferences;_ResolveWasmPublishConfiguration"
     BeforeTargets="PrepareForPublish" />
+
+  <!-- Native-only nested publishes must not initialize boot configuration or its shared incremental outputs. -->
+  <Target Name="_ResolveWasmPublishConfiguration"
+    DependsOnTargets="_ResolveWasmConfiguration"
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
 
   <Target Name="_PrintWasmBrowserPublishOutputDirectory" AfterTargets="Publish" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <Message Importance="High" Text="$(MSBuildProjectName) (wwwroot) -&gt; $([MSBuild]::NormalizeDirectory('$(PublishDir)', 'wwwroot'))" />
