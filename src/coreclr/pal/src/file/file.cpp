@@ -828,10 +828,14 @@ CreateFileW(
 
     pThread = InternalGetCurrentThread();
 
-    if (lpFileName != NULL)
+    if (lpFileName == NULL)
     {
-        length = (PAL_wcslen(lpFileName)+1) * MaxWCharToAcpLengthFactor;
+        ERROR("CreateFileW called with NULL filename\n");
+        palError = ERROR_PATH_NOT_FOUND;
+        goto done;
     }
+
+    length = (PAL_wcslen(lpFileName)+1) * MaxWCharToAcpLengthFactor;
 
     name = namePathString.OpenStringBuffer(length);
     if (NULL == name)

@@ -3838,7 +3838,7 @@ CMiniMdRW::Impl_GetStringW(
     if (cchBuffer == 0)
         iSize = (int)minipal_get_length_utf8_to_utf16(szString, cchString, 0);
     else
-        iSize = (int)minipal_convert_utf8_to_utf16(szString, cchString, (CHAR16_T*)szOut, cchBuffer, 0);
+        iSize = szOut != NULL ? (int)minipal_convert_utf8_to_utf16(szString, cchString, (CHAR16_T*)szOut, cchBuffer, 0) : 0;
     if (iSize == 0)
     {
         // Truncation error; get the size required.

@@ -67,6 +67,13 @@ CreateDirectoryW(
         goto done;
     }
 
+    if (lpPathName == NULL)
+    {
+        ERROR("CreateDirectoryW called with NULL pathname!\n");
+        dwLastError = ERROR_PATH_NOT_FOUND;
+        goto done;
+    }
+
     /* translate the wide char lpPathName string to multibyte string */
     if(0 == (mb_size = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpPathName, PAL_wcslen(lpPathName) + 1, 0)))
     {
