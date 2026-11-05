@@ -12,6 +12,12 @@ namespace System.Threading
     {
         private const long EstimatedMemoryPressure = 20_000;
 
+        private Thread()
+        {
+            Debug.Assert(_DONT_USE_InternalThread != IntPtr.Zero);
+            GC.AddMemoryPressure(EstimatedMemoryPressure);
+        }
+
 #if !TARGET_WINDOWS
         internal WaitSubsystem.ThreadWaitInfo WaitInfo
         {
@@ -53,8 +59,11 @@ namespace System.Threading
         /// <summary>Clean up the thread when it goes away.</summary>
         ~Thread()
         {
-            InternalFinalize();
-            GC.RemoveMemoryPressure(EstimatedMemoryPressure);
+            if (_DONT_USE_InternalThread != IntPtr.Zero)
+            {
+                InternalFinalize();
+                GC.RemoveMemoryPressure(EstimatedMemoryPressure);
+            }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

@@ -518,8 +518,7 @@ extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t, QCal
 }
 #endif
 
-// If the exposed object is created after-the-fact, for an existing thread, we call
-// InitExisting on it instead of running the managed constructor.
+// Initialize the native-backed properties of an existing thread's managed wrapper.
 void ThreadBaseObject::InitExisting()
 {
     CONTRACTL
