@@ -23,14 +23,14 @@ namespace System.Reflection
     //
     internal sealed partial class LoaderAllocatorScout
     {
-        private const long MemoryPressure = 30_000;
+        private const long EstimatedMemoryPressure = 30_000;
 
         // This field is set by the VM to atomically transfer the ownership to the managed loader allocator
         internal IntPtr m_nativeLoaderAllocator;
 
         internal LoaderAllocatorScout()
         {
-            GC.AddMemoryPressure(MemoryPressure);
+            GC.AddMemoryPressure(EstimatedMemoryPressure);
         }
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
@@ -49,7 +49,7 @@ namespace System.Reflection
                 return;
             }
 
-            GC.RemoveMemoryPressure(MemoryPressure);
+            GC.RemoveMemoryPressure(EstimatedMemoryPressure);
         }
     }
 
