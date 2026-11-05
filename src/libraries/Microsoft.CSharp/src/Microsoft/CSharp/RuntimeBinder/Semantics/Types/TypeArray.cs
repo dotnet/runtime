@@ -56,7 +56,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return false;
                 }
 
-                return new ReadOnlySpan<CType>(types).SequenceEqual(otherTypes);
+                for (int i = 0; i < types.Length; i++)
+                {
+                    if (types[i] != otherTypes[i])
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
             }
 
             [ExcludeFromCodeCoverage(Justification = "Typed overload should always be the method called")]

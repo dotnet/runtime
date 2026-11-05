@@ -3793,7 +3793,8 @@ namespace Internal.JitInterface
                 if (_inlinedMethods != null)
                 {
                     previouslyStashedInlinees = previouslyStashedInlinees ?? new HashSet<MethodDesc>();
-                    previouslyStashedInlinees.UnionWith(_inlinedMethods);
+                    foreach (var inlineeInHashSet in _inlinedMethods)
+                        previouslyStashedInlinees.Add(inlineeInHashSet);
                 }
                 _inlinedMethods = previouslyStashedInlinees;
 
