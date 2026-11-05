@@ -35,7 +35,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_RunWorkingDirectory), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
 
     <_RunExtraArguments Condition="'$(WasmEnableThreads)' == 'true'">--apply-cop-headers</_RunExtraArguments>
-    <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --use-staticwebassets --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(_RunExtraArguments) $(WasmHostArguments)</RunArguments>
+    <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --use-staticwebassets --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(_RunExtraArguments) $(WasmHostArguments) --</RunArguments>
     <RunWorkingDirectory>$(_RunWorkingDirectory)</RunWorkingDirectory>
   </PropertyGroup>
 

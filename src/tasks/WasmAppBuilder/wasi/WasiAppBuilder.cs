@@ -11,6 +11,7 @@ namespace Microsoft.WebAssembly.Build.Tasks;
 
 public class WasiAppBuilder : WasmAppBuilderBaseTask
 {
+    public string RuntimeFlavor { get; set; } = "Mono";
     public bool IsSingleFileBundle { get; set; }
     public bool OutputSymbolsToAppBundle { get; set; }
 
@@ -18,6 +19,9 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
     {
         if (!base.ValidateArguments())
             return false;
+
+        if (RuntimeFlavor is not ("Mono" or "CoreCLR"))
+            throw new LogAsErrorException($"Unsupported runtime flavor '{RuntimeFlavor}'.");
 
         if (!InvariantGlobalization && !IsSingleFileBundle && (IcuDataFileNames == null || IcuDataFileNames.Length == 0))
             throw new LogAsErrorException($"{nameof(IcuDataFileNames)} property shouldn't be empty when {nameof(InvariantGlobalization)}=false");
@@ -138,6 +142,7 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
 
     protected override void AddToRuntimeConfig(JsonObject wasmHostProperties, JsonArray runtimeArgsArray, JsonArray perHostConfigs)
     {
+        wasmHostProperties["runtimeFlavor"] = RuntimeFlavor;
         if (IsSingleFileBundle)
             wasmHostProperties["singleFileBundle"] = true;
     }

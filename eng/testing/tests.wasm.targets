@@ -114,7 +114,7 @@
     <!-- Use BundleDir here, since WasmAppDir is set in a target, and `dotnet run` reads
          $(Run*) without running any targets -->
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(BundleDir), 'WasmTestRunner.runtimeconfig.json'))</_RuntimeConfigJsonPath>
-    <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments) $(StartArguments) $(WasmXHarnessMonoArgs) $(_AppArgs)</RunArguments>
+    <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments) -- $(StartArguments) $(WasmXHarnessMonoArgs) $(_AppArgs)</RunArguments>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">

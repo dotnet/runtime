@@ -6,7 +6,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using Mono.Options;
 
 namespace Microsoft.WebAssembly.AppHost;
 
@@ -19,14 +18,10 @@ internal sealed class BrowserArguments
     public BrowserArguments(CommonConfiguration commonConfig)
     {
         CommonConfig = commonConfig;
-        AppArgs = GetOptions().Parse(commonConfig.RemainingArgs).ToArray();
+        AppArgs = commonConfig.LaunchOptions.ApplicationArguments;
 
         ParseJsonProperties(CommonConfig.HostConfig.Properties);
     }
-
-    private static OptionSet GetOptions() => new OptionSet
-    {
-    };
 
     public void ParseJsonProperties(IDictionary<string, JsonElement>? properties)
     {

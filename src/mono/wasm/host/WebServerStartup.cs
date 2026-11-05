@@ -87,6 +87,7 @@ internal sealed class WebServerStartup
         }
 
         WebServerOptions options = optionsContainer.Value;
+        BrowserHost.ConfigureLaunchEndpoint(app, options.LaunchArguments, options.LaunchConfigPath);
         if (options.WebServerUseCrossOriginPolicy)
         {
             app.Use((context, next) =>

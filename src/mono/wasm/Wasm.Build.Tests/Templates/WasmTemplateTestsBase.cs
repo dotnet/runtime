@@ -545,7 +545,12 @@ public class WasmTemplateTestsBase : BuildTestBase
             onConsoleMessage: OnConsoleMessage,
             onServerMessage: OnServerMessage,
             onError: OnErrorMessage,
-            modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + queryString).ToString());
+            modifyBrowserUrl: browserUrl =>
+            {
+                var url = new UriBuilder(new Uri(new Uri(browserUrl), runOptions.BrowserPath));
+                url.Query = string.Join("&", new[] { new Uri(browserUrl).Query.TrimStart('?'), queryString.TrimStart('?') }.Where(value => value.Length > 0));
+                return url.ToString();
+            });
 
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new() { Timeout = 1 * 60 * 1000 });
