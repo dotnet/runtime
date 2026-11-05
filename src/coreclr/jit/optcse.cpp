@@ -696,6 +696,14 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdIsSharedConst = isSharedConst;
         }
 
+        // Availability only needs the exceptions that defs rule out when occurrences
+        // differ in their exception sets.
+        if (!hashDsc->csdMixedExcSets && (vnStore->VNExceptionSet(vnLib) !=
+                                          vnStore->VNExceptionSet(hashDsc->csdTreeList.tslTree->GetVN(VNK_Liberal))))
+        {
+            hashDsc->csdMixedExcSets = true;
+        }
+
         // Append this expression to the end of the list
 
         treeStmtLst* newElem = new (this, CMK_TreeStatementList) treeStmtLst;
@@ -767,6 +775,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdConstDefVN        = vnStore->VNForNull(); // uninit value
             hashDsc->csdIndex             = 0;
             hashDsc->csdIsSharedConst     = false;
+            hashDsc->csdMixedExcSets      = false;
             hashDsc->csdLiveAcrossCall    = false;
             hashDsc->csdDefCount          = 0;
             hashDsc->csdUseCount          = 0;
@@ -1631,12 +1640,17 @@ void Compiler::optValnumCSE_Availability()
                         // operations it evaluates would raise if they could fault. Once its statement has
                         // completed, the same holds for all operations in the statement.
                         //
-                        if (stmtImpliedExcSet == ValueNumStore::NoVN)
+                        ValueNum defExcSet     = theLiberalExcSet;
+                        ValueNum defStmtExcSet = theLiberalExcSet;
+                        if (desc->csdMixedExcSets)
                         {
-                            stmtImpliedExcSet = optValnumCSE_ImpliedExcSet(stmt->GetRootNode());
+                            if (stmtImpliedExcSet == ValueNumStore::NoVN)
+                            {
+                                stmtImpliedExcSet = optValnumCSE_ImpliedExcSet(stmt->GetRootNode());
+                            }
+                            defExcSet     = vnStore->VNExcSetUnion(theLiberalExcSet, optValnumCSE_ImpliedExcSet(tree));
+                            defStmtExcSet = vnStore->VNExcSetUnion(defExcSet, stmtImpliedExcSet);
                         }
-                        ValueNum defExcSet = vnStore->VNExcSetUnion(theLiberalExcSet, optValnumCSE_ImpliedExcSet(tree));
-                        ValueNum defStmtExcSet = vnStore->VNExcSetUnion(defExcSet, stmtImpliedExcSet);
 
                         // Is defExcSetCurrent still set to the uninit marker value of VNForNull() ?
                         if (desc->defExcSetCurrent == vnStore->VNForNull())
