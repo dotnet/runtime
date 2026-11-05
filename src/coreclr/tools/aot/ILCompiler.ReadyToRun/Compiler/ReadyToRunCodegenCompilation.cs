@@ -328,6 +328,7 @@ namespace ILCompiler
         private readonly ConcurrentDictionary<MethodWithToken, DeferredWasmCallNode> _deferredWasmTargets;
         private readonly HashSet<MethodWithGCInfo> _deferredWasmMethods;
         private readonly HashSet<MethodWithGCInfo> _finalizedWasmMethods;
+        private readonly HashSet<Import> _deferredWasmFixupScratch;
         private bool _deferredWasmPolicyFrozen;
 
         public ProfileDataManager ProfileData => _profileData;
@@ -449,6 +450,7 @@ namespace ILCompiler
                 _deferredWasmTargets = new();
                 _deferredWasmMethods = new();
                 _finalizedWasmMethods = new();
+                _deferredWasmFixupScratch = new();
                 _callGraphBuilder = new ReadyToRunCallGraphBuilder();
                 _dependencyGraph.DependencyAnalysisQuiesced += FinalizeDeferredWasmCalls;
                 foreach (MethodDesc method in _startupEagerMethods)
@@ -924,7 +926,7 @@ namespace ILCompiler
             if (!method.IsEmpty)
             {
                 DeferredWasmCallRewriter.Rewrite(this, method);
-                method.FinalizePrecodeFixups();
+                method.FinalizePrecodeFixups(scratch: _deferredWasmFixupScratch);
             }
             _finalizedWasmMethods.Add(method);
         }

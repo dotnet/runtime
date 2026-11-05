@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using Internal.JitInterface;
 using Internal.Pgo;
@@ -32,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<ISymbolNode> _fixups;
         private HashSet<MethodWithGCInfo> _directCallTargets;
         private HashSet<Import> _moduleEagerFixups;
-        private ImmutableHashSet<Import> _guaranteedPrecodeFixups = ImmutableHashSet<Import>.Empty;
+        private Import[] _guaranteedPrecodeFixups = Array.Empty<Import>();
         private bool _precodeFixupsFinalized;
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
@@ -185,18 +184,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         internal HashSet<MethodWithGCInfo> DirectCallTargets => _directCallTargets;
 
-        internal ImmutableHashSet<Import> GuaranteedPrecodeFixups => _guaranteedPrecodeFixups;
+        internal Import[] GuaranteedPrecodeFixups => _guaranteedPrecodeFixups;
 
-        internal void FinalizePrecodeFixups()
+        internal void FinalizePrecodeFixups(HashSet<Import> scratch = null)
         {
             Debug.Assert(!_precodeFixupsFinalized);
             _precodeFixupsFinalized = true;
 
-            ImmutableHashSet<Import> coveredFixups = ImmutableHashSet<Import>.Empty;
+            HashSet<Import> coveredFixups = scratch ?? new HashSet<Import>();
+            coveredFixups.Clear();
+            Import[] seed = Array.Empty<Import>();
 
             if (_moduleEagerFixups is not null)
             {
-                coveredFixups = coveredFixups.Union(_moduleEagerFixups);
+                foreach (Import fixup in _moduleEagerFixups)
+                {
+                    coveredFixups.Add(fixup);
+                }
             }
 
             if (_directCallTargets is not null)
@@ -204,27 +208,43 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 foreach (MethodWithGCInfo target in _directCallTargets)
                 {
                     Debug.Assert(target._precodeFixupsFinalized);
-                    coveredFixups = coveredFixups.Union(target._guaranteedPrecodeFixups);
-                }
-            }
-
-            _guaranteedPrecodeFixups = coveredFixups;
-            foreach (ISymbolNode fixup in _fixups)
-            {
-                if (fixup is Import import)
-                {
-                    _guaranteedPrecodeFixups = _guaranteedPrecodeFixups.Add(import);
+                    foreach (Import fixup in target._guaranteedPrecodeFixups)
+                    {
+                        coveredFixups.Add(fixup);
+                    }
+                    if (target._guaranteedPrecodeFixups.Length > seed.Length)
+                    {
+                        seed = target._guaranteedPrecodeFixups;
+                    }
                 }
             }
 
             // Making a direct callee ReadyToRun applies its transitive fixup requirements first.
             // Module-eager fixups are likewise guaranteed before any method precode executes.
-            if (!coveredFixups.IsEmpty)
+            if (coveredFixups.Count != 0)
             {
                 _fixups.RemoveAll(fixup =>
                     fixup is Import import &&
                     coveredFixups.Contains(import));
             }
+            foreach (ISymbolNode fixup in _fixups)
+            {
+                if (fixup is Import import)
+                {
+                    coveredFixups.Add(import);
+                }
+            }
+            // The union contains seed, so equal counts mean its array can be shared unchanged.
+            if (coveredFixups.Count == seed.Length)
+            {
+                _guaranteedPrecodeFixups = seed;
+            }
+            else
+            {
+                _guaranteedPrecodeFixups = new Import[coveredFixups.Count];
+                coveredFixups.CopyTo(_guaranteedPrecodeFixups);
+            }
+            coveredFixups.Clear();
         }
 
         internal void ApplyModuleEagerFixups(HashSet<Import> fixups)

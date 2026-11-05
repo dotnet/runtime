@@ -205,9 +205,12 @@ public class ReadyToRunLibraryRootProviderTests
         Assert.Same(cell, Assert.Single(caller.GuaranteedPrecodeFixups));
     }
 
-    [Fact]
-    public void TransitivePrecodeGuaranteesDoNotMutateSharedCallees()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TransitivePrecodeGuaranteesDoNotMutateSharedCallees(bool reuseScratch)
     {
+        HashSet<Import>? scratch = reuseScratch ? new HashSet<Import>() : null;
         ReadyToRunCompilerContext context = CreateContext();
         MethodDesc method = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
         ImportSectionNode table = new("TestImports", ReadyToRunImportSectionType.Unknown,
@@ -219,26 +222,30 @@ public class ReadyToRunLibraryRootProviderTests
         Import outerCell = new(table, signature);
         MethodWithGCInfo leaf = new(method);
         leaf.Fixups.Add(leafCell);
-        leaf.FinalizePrecodeFixups();
+        leaf.FinalizePrecodeFixups(scratch: scratch);
         MethodWithGCInfo left = new(method);
         left.AddDirectCallTarget(leaf);
         left.Fixups.Add(leftCell);
-        left.FinalizePrecodeFixups();
+        left.FinalizePrecodeFixups(scratch: scratch);
         MethodWithGCInfo right = new(method);
         right.AddDirectCallTarget(leaf);
         right.Fixups.Add(rightCell);
-        right.FinalizePrecodeFixups();
+        right.FinalizePrecodeFixups(scratch: scratch);
         MethodWithGCInfo outer = new(method);
         outer.AddDirectCallTarget(left);
         outer.AddDirectCallTarget(right);
         outer.Fixups.AddRange([leafCell, leftCell, rightCell, outerCell]);
-        outer.FinalizePrecodeFixups();
+        outer.FinalizePrecodeFixups(scratch: scratch);
 
         Assert.Same(leafCell, Assert.Single(leaf.GuaranteedPrecodeFixups));
-        Assert.True(left.GuaranteedPrecodeFixups.SetEquals([leafCell, leftCell]));
-        Assert.True(right.GuaranteedPrecodeFixups.SetEquals([leafCell, rightCell]));
-        Assert.True(outer.GuaranteedPrecodeFixups.SetEquals([leafCell, leftCell, rightCell, outerCell]));
+        Assert.True(new HashSet<Import>(left.GuaranteedPrecodeFixups).SetEquals([leafCell, leftCell]));
+        Assert.True(new HashSet<Import>(right.GuaranteedPrecodeFixups).SetEquals([leafCell, rightCell]));
+        Assert.True(new HashSet<Import>(outer.GuaranteedPrecodeFixups).SetEquals([leafCell, leftCell, rightCell, outerCell]));
         Assert.Same(outerCell, Assert.Single(outer.Fixups));
+        if (scratch is not null)
+        {
+            Assert.Empty(scratch);
+        }
     }
 
     [Theory]

@@ -615,7 +615,7 @@ namespace Internal.JitInterface
             }
             if (!_compilation.DeferredWasmCalls)
             {
-                _methodCodeNode.FinalizePrecodeFixups();
+                _methodCodeNode.FinalizePrecodeFixups(scratch: _precodeFixupScratch);
             }
 
             if (_synthesizedPgoDependencies != null)

@@ -496,6 +496,7 @@ namespace Internal.JitInterface
         private HashSet<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
+        private readonly HashSet<Import> _precodeFixupScratch = new();
         private Dictionary<MethodWithGCInfo, ISymbolNode> _relocationDrivenPrecodeFixups;
         private List<MethodDesc> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
