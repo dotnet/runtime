@@ -81,6 +81,37 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<int, string>(() => 42, "test", LazyThreadSafetyMode.ExecutionAndPublication + 1)); // Invalid mode
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void Ctor_ValueFactory_TMetadata_LazyThreadSafetyMode_CacheExceptions(bool cacheExceptions)
+        {
+            var lazy = new Lazy<string, int>(() => "foo", 6, LazyThreadSafetyMode.ExecutionAndPublication, cacheExceptions);
+            VerifyLazy(lazy, "foo", 6);
+        }
+
+        [Fact]
+        public static void Value_TMetadata_CacheExceptionsFalse_RetriesFactory()
+        {
+            int calls = 0;
+            var lazy = new Lazy<int, string>(() => ++calls == 1 ? throw new InvalidOperationException() : 42, "test", LazyThreadSafetyMode.ExecutionAndPublication, cacheExceptions: false);
+
+            Assert.Throws<InvalidOperationException>(() => lazy.Value);
+            Assert.False(lazy.IsValueFaulted);
+            Assert.Equal(42, lazy.Value);
+            Assert.Equal("test", lazy.Metadata);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void Ctor_ValueFactory_TMetadata_LazyThreadSafetyMode_CacheExceptions_Invalid(bool cacheExceptions)
+        {
+            AssertExtensions.Throws<ArgumentNullException>("valueFactory", () => new Lazy<int, string>(null, "test", LazyThreadSafetyMode.PublicationOnly, cacheExceptions));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<int, string>(() => 42, "test", LazyThreadSafetyMode.None - 1, cacheExceptions));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<int, string>(() => 42, "test", LazyThreadSafetyMode.ExecutionAndPublication + 1, cacheExceptions));
+        }
+
         private static void VerifyLazy<T, TMetadata>(Lazy<T, TMetadata> lazy, T expectedValue, TMetadata expectedMetadata)
         {
             // Accessing metadata doesn't create the value
