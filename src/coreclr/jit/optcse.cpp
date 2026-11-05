@@ -668,17 +668,12 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                 {
                     ValueNum prevExceptionSet = vnStore->VNExceptionSet(prevVnLib);
                     ValueNum curExceptionSet  = vnStore->VNExceptionSet(vnLib);
-                    // The first value remains a valid def for the second if evaluating it (or, when it is
-                    // in an earlier statement, evaluating that statement) already rules out the extra
-                    // exceptions.
+                    // The first value remains a valid def for the second if evaluating it already
+                    // rules out the extra exceptions.
                     if ((prevExceptionSet != curExceptionSet) &&
                         vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet) &&
                         !vnStore->VNExcIsSubset(vnStore->VNExcSetUnion(prevExceptionSet,
-                                                                       optValnumCSE_ImpliedExcSet(
-                                                                           (hashDsc->csdTreeList.tslStmt == stmt)
-                                                                               ? prevTree
-                                                                               : hashDsc->csdTreeList.tslStmt
-                                                                                     ->GetRootNode())),
+                                                                       optValnumCSE_ImpliedExcSet(prevTree)),
                                                 curExceptionSet))
                     {
                         JITDUMP("Skipping CSE candidate for tree [%06u]; tree [%06u] is a better candidate with "
@@ -770,21 +765,19 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             ++optCSEhashCount;
             hashDsc = new (this, CMK_CSE) CSEdsc;
 
-            hashDsc->csdHashKey           = key;
-            hashDsc->csdConstDefValue     = 0;
-            hashDsc->csdConstDefVN        = vnStore->VNForNull(); // uninit value
-            hashDsc->csdIndex             = 0;
-            hashDsc->csdIsSharedConst     = false;
-            hashDsc->csdMixedExcSets      = false;
-            hashDsc->csdLiveAcrossCall    = false;
-            hashDsc->csdDefCount          = 0;
-            hashDsc->csdUseCount          = 0;
-            hashDsc->csdDefWtCnt          = 0;
-            hashDsc->csdUseWtCnt          = 0;
-            hashDsc->defExcSetPromise     = vnStore->VNForEmptyExcSet();
-            hashDsc->defExcSetCurrent     = vnStore->VNForNull(); // uninit value
-            hashDsc->defExcSetCurrentStmt = vnStore->VNForNull(); // uninit value
-            hashDsc->csdLastDefStmt       = nullptr;
+            hashDsc->csdHashKey        = key;
+            hashDsc->csdConstDefValue  = 0;
+            hashDsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
+            hashDsc->csdIndex          = 0;
+            hashDsc->csdIsSharedConst  = false;
+            hashDsc->csdMixedExcSets   = false;
+            hashDsc->csdLiveAcrossCall = false;
+            hashDsc->csdDefCount       = 0;
+            hashDsc->csdUseCount       = 0;
+            hashDsc->csdDefWtCnt       = 0;
+            hashDsc->csdUseWtCnt       = 0;
+            hashDsc->defExcSetPromise  = vnStore->VNForEmptyExcSet();
+            hashDsc->defExcSetCurrent  = vnStore->VNForNull(); // uninit value
 
             hashDsc->csdTreeList.tslTree  = tree;
             hashDsc->csdTreeList.tslStmt  = stmt;
@@ -1430,9 +1423,6 @@ void Compiler::optValnumCSE_DataFlow()
 //    Earlier phases may have marked these operations as unable to fault, which removes the
 //    exceptions from their VNs, but other trees with the same operands still carry them.
 //
-// Notes:
-//    QMARK operands are evaluated conditionally, so they are skipped.
-//
 ValueNum Compiler::optValnumCSE_ImpliedExcSet(GenTree* tree)
 {
     class ImpliedExcSetVisitor final : public GenTreeVisitor<ImpliedExcSetVisitor>
@@ -1454,11 +1444,6 @@ ValueNum Compiler::optValnumCSE_ImpliedExcSet(GenTree* tree)
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* const node = *use;
-
-            if (node->OperIs(GT_QMARK))
-            {
-                return fgWalkResult::WALK_SKIP_SUBTREES;
-            }
 
             GenTree* addr = nullptr;
             if (node->OperIsIndir())
@@ -1534,7 +1519,7 @@ ValueNum Compiler::optValnumCSE_ImpliedExcSet(GenTree* tree)
 //
 //     A use may also rely on exceptions that a def rules out by executing even though
 //     they are not in the def's exception set (see optValnumCSE_ImpliedExcSet). This
-//     handles case 3, and the second example of case 2 when the use loads m.a again.
+//     handles case 3.
 //
 void Compiler::optValnumCSE_Availability()
 {
@@ -1560,9 +1545,6 @@ void Compiler::optValnumCSE_Availability()
 
         for (Statement* const stmt : block->NonPhiStatements())
         {
-            // Exceptions ruled out by this statement once it completes; computed on demand.
-            ValueNum stmtImpliedExcSet = ValueNumStore::NoVN;
-
             // We walk the tree in the forwards direction (bottom up)
 
             for (GenTree* const tree : stmt->TreeList())
@@ -1637,19 +1619,12 @@ void Compiler::optValnumCSE_Availability()
                         // This is a CSE def
 
                         // Besides the exceptions in its own VN, a def rules out the exceptions that the
-                        // operations it evaluates would raise if they could fault. Once its statement has
-                        // completed, the same holds for all operations in the statement.
+                        // operations it evaluates would raise if they could fault.
                         //
-                        ValueNum defExcSet     = theLiberalExcSet;
-                        ValueNum defStmtExcSet = theLiberalExcSet;
+                        ValueNum defExcSet = theLiberalExcSet;
                         if (desc->csdMixedExcSets)
                         {
-                            if (stmtImpliedExcSet == ValueNumStore::NoVN)
-                            {
-                                stmtImpliedExcSet = optValnumCSE_ImpliedExcSet(stmt->GetRootNode());
-                            }
-                            defExcSet     = vnStore->VNExcSetUnion(theLiberalExcSet, optValnumCSE_ImpliedExcSet(tree));
-                            defStmtExcSet = vnStore->VNExcSetUnion(defExcSet, stmtImpliedExcSet);
+                            defExcSet = vnStore->VNExcSetUnion(theLiberalExcSet, optValnumCSE_ImpliedExcSet(tree));
                         }
 
                         // Is defExcSetCurrent still set to the uninit marker value of VNForNull() ?
@@ -1690,21 +1665,13 @@ void Compiler::optValnumCSE_Availability()
                             desc->defExcSetCurrent = intersectionExcSet;
                         }
 
-                        desc->defExcSetCurrentStmt =
-                            (desc->defExcSetCurrentStmt == vnStore->VNForNull())
-                                ? defStmtExcSet
-                                : vnStore->VNExcSetIntersection(desc->defExcSetCurrentStmt, defStmtExcSet);
-                        desc->csdLastDefStmt = stmt;
-
                         // Have we seen a CSE use and made a promise of an exception set?
                         //
                         if (desc->defExcSetPromise != vnStore->VNForEmptyExcSet())
                         {
-                            // The exception set held in desc->defExcSetPromise must be a subset of the exceptions
-                            // this def rules out. The uses that made the promise were visited earlier, so they are
-                            // in other statements and are reached only after this def's statement completes.
+                            // The exception set held in desc->defExcSetPromise must be a subset of defExcSet
                             //
-                            if (vnStore->VNExcIsSubset(defStmtExcSet, desc->defExcSetPromise))
+                            if (vnStore->VNExcIsSubset(defExcSet, desc->defExcSetPromise))
                             {
                                 // This new def still satisfies any promise made to all the CSE uses that we have
                                 // encountered
@@ -1765,12 +1732,7 @@ void Compiler::optValnumCSE_Availability()
                             }
                             else // we have already seen a def for this CSE and defExcSetCurrent is setup
                             {
-                                // Uses outside the statement of the most recent def can also rely on
-                                // the exceptions ruled out by the defs' statements.
-                                //
-                                ValueNum availExcSet = (desc->csdLastDefStmt == stmt) ? desc->defExcSetCurrent
-                                                                                      : desc->defExcSetCurrentStmt;
-                                if (vnStore->VNExcIsSubset(availExcSet, theLiberalExcSet))
+                                if (vnStore->VNExcIsSubset(desc->defExcSetCurrent, theLiberalExcSet))
                                 {
                                     // The current set of exceptions produced by all CSE defs have (that we have
                                     // visited so far) meets our requirement
