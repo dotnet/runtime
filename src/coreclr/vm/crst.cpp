@@ -24,6 +24,7 @@
 #ifndef DACCESS_COMPILE
 Volatile<LONG> g_ShutdownCrstUsageCount = 0;
 
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
 //-----------------------------------------------------------------
 // Initialize critical section
 //-----------------------------------------------------------------
@@ -76,43 +77,7 @@ void CrstBase::Destroy()
 
     ResetFlags();
 }
-
-extern void WaitForEndOfShutdown();
-
-//-----------------------------------------------------------------
-// If we're in shutdown (as determined by caller since each lock needs its
-// own shutdown flag) and this is a non-special thread (not helper/finalizer/shutdown),
-// then release the crst and block forever.
-// See the prototype for more details.
-//-----------------------------------------------------------------
-void CrstBase::ReleaseAndBlockForShutdownIfNotSpecialThread()
-{
-    CONTRACTL {
-        NOTHROW;
-
-        // We're almost always MODE_PREEMPTIVE, but if it's a thread suspending for GC,
-        // then we might be MODE_COOPERATIVE. Fortunately in that case, we don't block on shutdown.
-        // We assert this below.
-        MODE_ANY;
-        GC_NOTRIGGER;
-
-        PRECONDITION(this->OwnedByCurrentThread());
-    }
-    CONTRACTL_END;
-
-    if ((t_ThreadType & (ThreadType_Finalizer|ThreadType_DbgHelper|ThreadType_Shutdown|ThreadType_GC)) == 0)
-    {
-        // The process is shutting down. Release the lock and just block forever.
-        this->Leave();
-
-        // is this safe to use here since we never return?
-        GCX_ASSERT_PREEMP();
-
-        WaitForEndOfShutdown();
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
-        _ASSERTE (!"Can not reach here");
-    }
-}
+#endif // FEATURE_MULTITHREADING || _DEBUG
 
 #endif // DACCESS_COMPILE
 
@@ -127,6 +92,7 @@ void CrstBase::ReleaseAndBlockForShutdownIfNotSpecialThread()
 // Argument:
 //     input: noLevelCheckFlag - indicates whether to check the crst level
 // Note: Throws
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
 void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CHECK*/))
 {
 #ifdef _DEBUG
@@ -136,12 +102,11 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     }
 #endif
 }
+#endif // FEATURE_MULTITHREADING || _DEBUG
 #else // !DACCESS_COMPILE
 
-
-
-
-void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CHECK*/))
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
+void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CHECK*/)) noexcept
 {
     //-------------------------------------------------------------------------------------------
     // What, no CONTRACT?
@@ -272,7 +237,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 //-----------------------------------------------------------------
 // Release the lock.
 //-----------------------------------------------------------------
-void CrstBase::Leave()
+void CrstBase::Leave() noexcept
 {
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_NOTHROW;
@@ -318,7 +283,7 @@ void CrstBase::Leave()
     }
 #endif //_DEBUG
 } // CrstBase::Leave
-
+#endif // FEATURE_MULTITHREADING || _DEBUG
 
 #ifdef _DEBUG
 

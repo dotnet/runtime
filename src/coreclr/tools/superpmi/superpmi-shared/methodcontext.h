@@ -130,9 +130,9 @@ public:
     void dmpNotifyMethodInfoUsage(DWORDLONG key, DWORD value);
     bool repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn);
 
-    void recNotifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported, bool result);
+    void recNotifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported, bool preserveNegativeDependency, bool result);
     void dmpNotifyInstructionSetUsage(DD key, DWORD supported);
-    bool repNotifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported);
+    bool repNotifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported, bool preserveNegativeDependency);
 
     void recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs);
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
@@ -217,6 +217,14 @@ public:
     void recIsValueClass(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpIsValueClass(DWORDLONG key, DWORD value);
     bool repIsValueClass(CORINFO_CLASS_HANDLE cls);
+
+    void recIsByRefLike(CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpIsByRefLike(DWORDLONG key, DWORD value);
+    bool repIsByRefLike(CORINFO_CLASS_HANDLE cls);
+
+    void recIsSharedInst(CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpIsSharedInst(DWORDLONG key, DWORD value);
+    bool repIsSharedInst(CORINFO_CLASS_HANDLE cls);
 
     void recGetClassSize(CORINFO_CLASS_HANDLE cls, unsigned result);
     void dmpGetClassSize(DWORDLONG key, DWORD val);
@@ -1114,10 +1122,10 @@ enum mcPackets
     PacketCR_AllocGCInfo = 114,
     PacketCR_AllocMem = 115,
     PacketCR_CallLog = 116,
-    PacketCR_ClassMustBeLoadedBeforeCodeIsRun = 117,
+    //PacketCR_ClassMustBeLoadedBeforeCodeIsRun = 117,
     PacketCR_CompileMethod = 118,
     PacketCR_MessageLog = 119,
-    PacketCR_MethodMustBeLoadedBeforeCodeIsRun = 120,
+    //PacketCR_MethodMustBeLoadedBeforeCodeIsRun = 120,
     PacketCR_ProcessName = 121,
     PacketCR_RecordRelocation = 122,
     PacketCR_ReportFatalError = 123,
@@ -1240,6 +1248,8 @@ enum mcPackets
     Packet_GetWasmWellKnownGlobals = 240,
     Packet_CanValueClassInstancePointerEscape = 241,
     Packet_GetAwaitAwaiterInContinuationCall = 242,
+    Packet_IsByRefLike = 243,
+    Packet_IsSharedInst = 244,
 };
 
 void SetDebugDumpVariables();

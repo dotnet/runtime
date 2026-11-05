@@ -47,7 +47,8 @@ namespace System.Diagnostics
 
         private ActivitySource(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope, string? telemetrySchemaUrl)
         {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+            Name = name;
             Version = version;
             Scope = scope;
             TelemetrySchemaUrl = telemetrySchemaUrl;
@@ -153,8 +154,16 @@ namespace System.Diagnostics
         /// <param name="name">The operation name of the Activity.</param>
         /// <param name="kind">The <see cref="ActivityKind"/></param>
         /// <param name="parentContext">The parent <see cref="ActivityContext"/> object to initialize the created Activity object with.</param>
-        /// <param name="tags">The optional tags list to initialize the created Activity object with.</param>
-        /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
+        /// <param name="tags">
+        /// The optional tags list to initialize the created Activity object with. The tags are made available to sampling callbacks,
+        /// but are only copied to the created Activity if the combined sampling result is <see cref="ActivitySamplingResult.AllData"/>
+        /// or <see cref="ActivitySamplingResult.AllDataAndRecorded"/>.
+        /// </param>
+        /// <param name="links">
+        /// The optional <see cref="ActivityLink"/> list to initialize the created Activity object with. The links are made available to sampling callbacks,
+        /// but are only copied to the created Activity if the combined sampling result is <see cref="ActivitySamplingResult.AllData"/>
+        /// or <see cref="ActivitySamplingResult.AllDataAndRecorded"/>.
+        /// </param>
         /// <param name="idFormat">The default Id format to use.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
         /// <remarks>
@@ -169,8 +178,16 @@ namespace System.Diagnostics
         /// <param name="name">The operation name of the Activity.</param>
         /// <param name="kind">The <see cref="ActivityKind"/></param>
         /// <param name="parentId">The parent Id to initialize the created Activity object with.</param>
-        /// <param name="tags">The optional tags list to initialize the created Activity object with.</param>
-        /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
+        /// <param name="tags">
+        /// The optional tags list to initialize the created Activity object with. The tags are made available to sampling callbacks,
+        /// but are only copied to the created Activity if the combined sampling result is <see cref="ActivitySamplingResult.AllData"/>
+        /// or <see cref="ActivitySamplingResult.AllDataAndRecorded"/>.
+        /// </param>
+        /// <param name="links">
+        /// The optional <see cref="ActivityLink"/> list to initialize the created Activity object with. The links are made available to sampling callbacks,
+        /// but are only copied to the created Activity if the combined sampling result is <see cref="ActivitySamplingResult.AllData"/>
+        /// or <see cref="ActivitySamplingResult.AllDataAndRecorded"/>.
+        /// </param>
         /// <param name="idFormat">The default Id format to use.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
         /// <remarks>
@@ -194,8 +211,16 @@ namespace System.Diagnostics
         /// <param name="name">The operation name of the Activity.</param>
         /// <param name="kind">The <see cref="ActivityKind"/></param>
         /// <param name="parentContext">The parent <see cref="ActivityContext"/> object to initialize the created Activity object with.</param>
-        /// <param name="tags">The optional tags list to initialize the created Activity object with.</param>
-        /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
+        /// <param name="tags">
+        /// The optional tags list to initialize the created Activity object with. The tags are made available to sampling callbacks,
+        /// but are only copied to the created Activity if the combined sampling result is <see cref="ActivitySamplingResult.AllData"/>
+        /// or <see cref="ActivitySamplingResult.AllDataAndRecorded"/>.
+        /// </param>
+        /// <param name="links">
+        /// The optional <see cref="ActivityLink"/> list to initialize the created Activity object with. The links are made available to sampling callbacks,
+        /// but are only copied to the created Activity if the combined sampling result is <see cref="ActivitySamplingResult.AllData"/>
+        /// or <see cref="ActivitySamplingResult.AllDataAndRecorded"/>.
+        /// </param>
         /// <param name="startTime">The optional start timestamp to set on the created Activity object.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
         public Activity? StartActivity(string name, ActivityKind kind, ActivityContext parentContext, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
@@ -207,8 +232,16 @@ namespace System.Diagnostics
         /// <param name="name">The operation name of the Activity.</param>
         /// <param name="kind">The <see cref="ActivityKind"/></param>
         /// <param name="parentId">The parent Id to initialize the created Activity object with.</param>
-        /// <param name="tags">The optional tags list to initialize the created Activity object with.</param>
-        /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
+        /// <param name="tags">
+        /// The optional tags list to initialize the created Activity object with. The tags are made available to sampling callbacks,
+        /// but are only copied to the created Activity if the combined sampling result is <see cref="ActivitySamplingResult.AllData"/>
+        /// or <see cref="ActivitySamplingResult.AllDataAndRecorded"/>.
+        /// </param>
+        /// <param name="links">
+        /// The optional <see cref="ActivityLink"/> list to initialize the created Activity object with. The links are made available to sampling callbacks,
+        /// but are only copied to the created Activity if the combined sampling result is <see cref="ActivitySamplingResult.AllData"/>
+        /// or <see cref="ActivitySamplingResult.AllDataAndRecorded"/>.
+        /// </param>
         /// <param name="startTime">The optional start timestamp to set on the created Activity object.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
         public Activity? StartActivity(string name, ActivityKind kind, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
@@ -219,8 +252,16 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="kind">The <see cref="ActivityKind"/></param>
         /// <param name="parentContext">The parent <see cref="ActivityContext"/> object to initialize the created Activity object with.</param>
-        /// <param name="tags">The optional tags list to initialize the created Activity object with.</param>
-        /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
+        /// <param name="tags">
+        /// The optional tags list to initialize the created Activity object with. The tags are made available to sampling callbacks,
+        /// but are only copied to the created Activity if the combined sampling result is <see cref="ActivitySamplingResult.AllData"/>
+        /// or <see cref="ActivitySamplingResult.AllDataAndRecorded"/>.
+        /// </param>
+        /// <param name="links">
+        /// The optional <see cref="ActivityLink"/> list to initialize the created Activity object with. The links are made available to sampling callbacks,
+        /// but are only copied to the created Activity if the combined sampling result is <see cref="ActivitySamplingResult.AllData"/>
+        /// or <see cref="ActivitySamplingResult.AllDataAndRecorded"/>.
+        /// </param>
         /// <param name="startTime">The optional start timestamp to set on the created Activity object.</param>
         /// <param name="name">The operation name of the Activity.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>

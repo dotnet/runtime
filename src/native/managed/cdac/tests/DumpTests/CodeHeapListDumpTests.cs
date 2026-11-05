@@ -28,7 +28,7 @@ public class CodeHeapListDumpTests : DumpTestBase
         InitializeDumpTest(config);
 
         IExecutionManager em = Target.Contracts.ExecutionManager;
-        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos(JitManagerKind.EE).ToList();
 
         Assert.True(heapInfos.Count > 0, "Expected at least one code heap in the runtime");
     }
@@ -41,7 +41,7 @@ public class CodeHeapListDumpTests : DumpTestBase
         InitializeDumpTest(config);
 
         IExecutionManager em = Target.Contracts.ExecutionManager;
-        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos(JitManagerKind.EE).ToList();
 
         Assert.Contains(heapInfos, h => h is LoaderCodeHeapInfo);
     }
@@ -54,7 +54,7 @@ public class CodeHeapListDumpTests : DumpTestBase
         InitializeDumpTest(config);
 
         IExecutionManager em = Target.Contracts.ExecutionManager;
-        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos(JitManagerKind.EE).ToList();
 
         Assert.Contains(heapInfos, h => h is HostCodeHeapInfo);
     }
@@ -67,7 +67,7 @@ public class CodeHeapListDumpTests : DumpTestBase
         InitializeDumpTest(config);
 
         IExecutionManager em = Target.Contracts.ExecutionManager;
-        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos(JitManagerKind.EE).ToList();
 
         LoaderCodeHeapInfo loader = Assert.IsType<LoaderCodeHeapInfo>(heapInfos.First(h => h is LoaderCodeHeapInfo));
 
@@ -82,7 +82,7 @@ public class CodeHeapListDumpTests : DumpTestBase
         InitializeDumpTest(config);
 
         IExecutionManager em = Target.Contracts.ExecutionManager;
-        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos(JitManagerKind.EE).ToList();
 
         HostCodeHeapInfo host = Assert.IsType<HostCodeHeapInfo>(heapInfos.First(h => h is HostCodeHeapInfo));
 
@@ -95,12 +95,12 @@ public class CodeHeapListDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Code heap list APIs were added after net10.0")]
-    public void GetEEJitManagerInfo_ReturnsValidInfo(TestConfiguration config)
+    public void GetJitManagerInfo_EE_ReturnsValidInfo(TestConfiguration config)
     {
         InitializeDumpTest(config);
 
         IExecutionManager em = Target.Contracts.ExecutionManager;
-        JitManagerInfo info = em.GetEEJitManagerInfo();
+        JitManagerInfo info = em.GetJitManagerInfo(JitManagerKind.EE)!.Value;
 
         Assert.NotEqual(TargetPointer.Null, info.ManagerAddress);
         Assert.NotEqual(TargetPointer.Null, info.HeapListAddress);

@@ -409,7 +409,7 @@ namespace System.Net.Http
                 }
 
                 _lastPendingWriterShouldFlush = false;
-                _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
+                _outgoingBuffer.DiscardAll();
             }
         }
 

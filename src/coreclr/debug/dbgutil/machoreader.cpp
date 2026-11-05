@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !defined(HOST_WASM) && (defined(HOST_WINDOWS) || defined(HOST_APPLE) || defined(__linux__))
+
 #include <windows.h>
 #include <clrdata.h>
 #include <cor.h>
@@ -8,20 +10,6 @@
 #include <inttypes.h>
 #include <holder.h>
 #include "machoreader.h"
-
-#if TARGET_64BIT
-#define PRIx PRIx64
-#define PRIu PRIu64
-#define PRId PRId64
-#define PRIA "016"
-#define PRIxA PRIA PRIx
-#else
-#define PRIx PRIx32
-#define PRIu PRIu32
-#define PRId PRId32
-#define PRIA "08"
-#define PRIxA PRIA PRIx
-#endif
 
 class MachOReaderExport : public MachOReader
 {
@@ -41,18 +29,15 @@ public:
     }
 
 private:
-    virtual bool ReadMemory(void* address, void* buffer, size_t size)
+    bool ReadMemory(void* address, void* buffer, size_t size) override
     {
         uint32_t read = 0;
         return SUCCEEDED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), (uint32_t)size, &read));
     }
 };
 
-//
-// Main entry point to get an export symbol
-//
-extern "C" bool
-TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
+bool
+TryGetMachOSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
     MachOReaderExport reader(dataTarget);
     MachOModule module(reader, baseAddress);
@@ -60,10 +45,10 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
     {
         return false;
     }
-    uint64_t symbolOffset;
-    if (module.TryLookupSymbol(symbolName, &symbolOffset))
+    uint64_t address;
+    if (module.TryLookupSymbol(symbolName, &address))
     {
-        *symbolAddress = symbolOffset;
+        *symbolAddress = address;
         return true;
     }
     *symbolAddress = 0;
@@ -113,9 +98,9 @@ MachOModule::ReadHeader()
 }
 
 bool
-MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolValue)
+MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolAddress)
 {
-    _ASSERTE(symbolValue != nullptr);
+    _ASSERTE(symbolAddress != nullptr);
 
     if (ReadSymbolTable())
     {
@@ -123,7 +108,7 @@ MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolValue)
         _ASSERTE(m_strtabAddress != 0);
 
         // First, search just the "external" export symbols
-        if (TryLookupSymbol(m_dysymtabCommand->iextdefsym, m_dysymtabCommand->nextdefsym, symbolName, symbolValue))
+        if (TryLookupSymbol(m_dysymtabCommand->iextdefsym, m_dysymtabCommand->nextdefsym, symbolName, symbolAddress))
         {
             m_reader.Trace("SYM: Found '%s' in external symbols\n", symbolName);
             return true;
@@ -131,19 +116,19 @@ MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolValue)
         m_reader.Trace("SYM: Missed '%s' in external symbols\n", symbolName);
 
         // If not found in external symbols, search all of them
-        if (TryLookupSymbol(0, m_symtabCommand->nsyms, symbolName, symbolValue))
+        if (TryLookupSymbol(0, m_symtabCommand->nsyms, symbolName, symbolAddress))
         {
             m_reader.Trace("SYM: Found '%s' in all symbols\n", symbolName);
             return true;
         }
         m_reader.Trace("SYM: Missed '%s' in all symbols\n", symbolName);
     }
-    *symbolValue = 0;
+    *symbolAddress = 0;
     return false;
 }
 
 bool
-MachOModule::TryLookupSymbol(int start, int nsyms, const char* symbolName, uint64_t* symbolValue)
+MachOModule::TryLookupSymbol(int start, int nsyms, const char* symbolName, uint64_t* symbolAddress)
 {
     for (int i = 0; i < nsyms; i++)
     {
@@ -155,11 +140,11 @@ MachOModule::TryLookupSymbol(int start, int nsyms, const char* symbolName, uint6
         // Does this symbol match?
         if (strcmp(currentName, symbolName) == 0)
         {
-            *symbolValue = m_loadBias + m_nlists[start + i].n_value;
+            *symbolAddress = m_loadBias + m_nlists[start + i].n_value;
             return true;
         }
     }
-    *symbolValue = 0;
+    *symbolAddress = 0;
     return false;
 }
 
@@ -178,7 +163,7 @@ MachOModule::EnumerateSegments()
 
         const section_64* section = (section_64*)((uint64_t)segment + sizeof(segment_command_64));
 
-        for (int s = 0; s < segment->nsects; s++, section++)
+        for (uint32_t s = 0; s < segment->nsects; s++, section++)
         {
             m_reader.VisitSection(*this, *section);
         }
@@ -206,7 +191,7 @@ MachOModule::ReadLoadCommands()
         }
         load_command* command = m_commands;
 
-        for (int i = 0; i < m_header.ncmds; i++)
+        for (uint32_t i = 0; i < m_header.ncmds; i++)
         {
             m_reader.TraceVerbose("CMD: load command cmd %02x (%d) size %d\n", command->cmd, command->cmd, command->cmdsize);
 
@@ -247,7 +232,7 @@ MachOModule::ReadLoadCommands()
                     segment->segname);
 
                 section_64* section = (section_64*)((uint64_t)segment + sizeof(segment_command_64));
-                for (int s = 0; s < segment->nsects; s++, section++)
+                for (uint32_t s = 0; s < segment->nsects; s++, section++)
                 {
                     m_reader.TraceVerbose("     addr %016llx size %016llx off %08x align %02x flags %02x %s\n",
                         section->addr,
@@ -358,6 +343,7 @@ MachOReader::MachOReader()
 {
 }
 
+#ifdef HOST_APPLE
 bool
 MachOReader::EnumerateModules(mach_vm_address_t dyldInfoAddress)
 {
@@ -427,6 +413,8 @@ MachOReader::TryRegisterModule(const struct mach_header* imageAddress, const cha
     return true;
 }
 
+#endif
+
 bool
 MachOReader::ReadString(const char* address, std::string& str)
 {
@@ -446,3 +434,5 @@ MachOReader::ReadString(const char* address, std::string& str)
     }
     return true;
 }
+
+#endif

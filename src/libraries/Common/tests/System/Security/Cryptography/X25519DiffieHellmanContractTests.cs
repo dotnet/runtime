@@ -648,7 +648,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(TryExportPkcs8PasswordKind.StringPassword)]
         [InlineData(TryExportPkcs8PasswordKind.SpanOfBytesPassword)]
         [InlineData(TryExportPkcs8PasswordKind.SpanOfCharsPassword)]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not support symmetric encryption")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser does not support symmetric encryption")]
         public static void TryExportEncryptedPkcs8PrivateKey_ExportsPkcs8(TryExportPkcs8PasswordKind kind)
         {
             using X25519DiffieHellmanContract xdh = new()
@@ -678,7 +678,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(TryExportPkcs8PasswordKind.StringPassword)]
         [InlineData(TryExportPkcs8PasswordKind.SpanOfBytesPassword)]
         [InlineData(TryExportPkcs8PasswordKind.SpanOfCharsPassword)]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not support symmetric encryption")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser does not support symmetric encryption")]
         public static void TryExportEncryptedPkcs8PrivateKey_InnerBuffer_LargePkcs8(TryExportPkcs8PasswordKind kind)
         {
             using X25519DiffieHellmanContract xdh = new();
@@ -711,7 +711,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(TryExportPkcs8PasswordKind.StringPassword)]
         [InlineData(TryExportPkcs8PasswordKind.SpanOfBytesPassword)]
         [InlineData(TryExportPkcs8PasswordKind.SpanOfCharsPassword)]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not support symmetric encryption")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser does not support symmetric encryption")]
         public static void TryExportEncryptedPkcs8PrivateKey_DestinationTooSmall(TryExportPkcs8PasswordKind kind)
         {
             using X25519DiffieHellmanContract xdh = new()
@@ -817,7 +817,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not support symmetric encryption")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser does not support symmetric encryption")]
         public static void ExportEncryptedPkcs8PrivateKeyPem_Works()
         {
             using X25519DiffieHellmanContract xdh = new()

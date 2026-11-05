@@ -51,7 +51,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             }
         }
 
-        private byte[] Encrypt(
+        private static byte[] Encrypt(
             CmsRecipientCollection recipients,
             ContentInfo contentInfo,
             AlgorithmIdentifier contentEncryptionAlgorithm,
@@ -102,11 +102,21 @@ namespace Internal.Cryptography.Pal.AnyOS
             envelopedData.RecipientInfos = new RecipientInfoAsn[recipients.Count];
 
             bool allRecipientsVersion0 = true;
+            bool hasOtherRecipientInfo = false;
 
             for (var i = 0; i < recipients.Count; i++)
             {
                 CmsRecipient recipient = recipients[i];
                 bool v0Recipient;
+
+#if NET11_0_OR_GREATER
+                if (PkcsHelpers.IsKeyEncapsulationAlgorithm(recipient.Certificate.GetKeyAlgorithm()))
+                {
+                    envelopedData.RecipientInfos[i] = MakeKemRecipientInfo(cek, recipient);
+                    hasOtherRecipientInfo = true;
+                    continue;
+                }
+#endif
 
                 envelopedData.RecipientInfos[i].Ktri = recipient.Certificate.GetKeyAlgorithm() switch
                 {
@@ -126,7 +136,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             // v3 (RFC 3369):
             //   * OriginatorInfo contains v2 attribute certificates (not supported)
             //   * Any PWRI (password) recipients are present (not supported)
-            //   * Any ORI (other) recipients are present (not supported)
+            //   * Any ORI (other) recipients are present
             // v2 (RFC 2630):
             //   * OriginatorInfo is present
             //   * Any RecipientInfo has a non-zero version number
@@ -135,7 +145,11 @@ namespace Internal.Cryptography.Pal.AnyOS
             // v0 (RFC 2315):
             //   * Anything not already matched
 
-            if (envelopedData.OriginatorInfo != null ||
+            if (hasOtherRecipientInfo)
+            {
+                envelopedData.Version = 3;
+            }
+            else if (envelopedData.OriginatorInfo != null ||
                 !allRecipientsVersion0 ||
                 envelopedData.UnprotectedAttributes != null)
             {

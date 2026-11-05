@@ -12,8 +12,10 @@ using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler
 {
@@ -313,12 +315,19 @@ namespace ILCompiler
                     break;
 
                     case ILOpcode.dup:
+                    {
                         if (stack.Count == 0)
                         {
                             ThrowHelper.ThrowInvalidProgramException();
                         }
-                        stack.Push(stack.Peek());
+
+                        StackEntry entry = stack.Peek();
+                        if (entry.ValueKind is not StackValueKind.ByRef and not StackValueKind.ObjRef)
+                            entry = new StackEntry(entry.ValueKind, entry.Value.Clone());
+
+                        stack.Push(entry);
                         break;
+                    }
 
                     case ILOpcode.pop:
                     {
@@ -929,18 +938,10 @@ namespace ILCompiler
                                         context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((long)(ulong)val) : ValueTypeValue.FromInt32((int)(uint)val));
                                     break;
                                 case ILOpcode.conv_i1:
-                                    // TODO: Once the fix for unchecked float->small integer saturation propagates into
-                                    // the ILC toolchain, the Math.Clamp can be removed and this simplified to:
-                                    // stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
-                                    stack.Push(StackValueKind.Int32,
-                                        ValueTypeValue.FromInt32((sbyte)(int)Math.Clamp(double.IsNaN(val) ? 0 : val, sbyte.MinValue, sbyte.MaxValue)));
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
                                     break;
                                 case ILOpcode.conv_i2:
-                                    // TODO: Once the fix for unchecked float->small integer saturation propagates into
-                                    // the ILC toolchain, the Math.Clamp can be removed and this simplified to:
-                                    // stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
-                                    stack.Push(StackValueKind.Int32,
-                                        ValueTypeValue.FromInt32((short)(int)Math.Clamp(double.IsNaN(val) ? 0 : val, short.MinValue, short.MaxValue)));
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
                                     break;
                                 case ILOpcode.conv_i4:
                                     stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
@@ -949,18 +950,10 @@ namespace ILCompiler
                                     stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)val));
                                     break;
                                 case ILOpcode.conv_u1:
-                                    // TODO: Once the fix for unchecked float->small integer saturation propagates into
-                                    // the ILC toolchain, the Math.Clamp can be removed and this simplified to:
-                                    // stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
-                                    stack.Push(StackValueKind.Int32,
-                                        ValueTypeValue.FromInt32((byte)(int)Math.Clamp(double.IsNaN(val) ? 0 : val, byte.MinValue, byte.MaxValue)));
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
                                     break;
                                 case ILOpcode.conv_u2:
-                                    // TODO: Once the fix for unchecked float->small integer saturation propagates into
-                                    // the ILC toolchain, the Math.Clamp can be removed and this simplified to:
-                                    // stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
-                                    stack.Push(StackValueKind.Int32,
-                                        ValueTypeValue.FromInt32((ushort)(int)Math.Clamp(double.IsNaN(val) ? 0 : val, ushort.MinValue, ushort.MaxValue)));
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
                                     break;
                                 case ILOpcode.conv_u4:
                                     stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)(uint)val));
@@ -1706,6 +1699,9 @@ namespace ILCompiler
                             if (type.IsNullable)
                                 return Status.Fail(methodIL.OwningMethod, opcode);
 
+                            if (((DefType)type).ContainsGCPointers)
+                                return Status.Fail(methodIL.OwningMethod, opcode, "GC pointers");
+
                             if (type.RequiresAlign8())
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
 
@@ -1782,29 +1778,16 @@ namespace ILCompiler
                     case ILOpcode.stind_i4:
                     case ILOpcode.stind_i8:
                     {
-                        if (opcode == ILOpcode.stobj)
+                        TypeDesc type = opcode switch
                         {
-                            TypeDesc type = methodIL.GetObject(reader.ReadILToken()) as TypeDesc;
-                            opcode = type.Category switch
-                            {
-                                TypeFlags.SByte or TypeFlags.Boolean or TypeFlags.Byte => ILOpcode.stind_i1,
-                                TypeFlags.Int16 or TypeFlags.Char or TypeFlags.UInt16 => ILOpcode.stind_i2,
-                                TypeFlags.Int32 or TypeFlags.UInt32 => ILOpcode.stind_i4,
-                                TypeFlags.Int64 or TypeFlags.UInt64 => ILOpcode.stind_i8,
-                                TypeFlags.IntPtr or TypeFlags.UIntPtr => ILOpcode.stind_i,
-                                _ => ILOpcode.stobj,
-                            };
-                        }
-
-                        Value val = opcode switch
-                        {
-                            ILOpcode.stind_i1 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.Byte)),
-                            ILOpcode.stind_i2 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt16)),
-                            ILOpcode.stind_i4 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt32)),
-                            ILOpcode.stind_i8 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt64)),
-                            ILOpcode.stind_i => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UIntPtr)),
-                            _ => stack.Pop().Value
+                            ILOpcode.stind_i1 => context.GetWellKnownType(WellKnownType.Byte),
+                            ILOpcode.stind_i2 => context.GetWellKnownType(WellKnownType.UInt16),
+                            ILOpcode.stind_i4 => context.GetWellKnownType(WellKnownType.UInt32),
+                            ILOpcode.stind_i8 => context.GetWellKnownType(WellKnownType.UInt64),
+                            ILOpcode.stind_i => context.GetWellKnownType(WellKnownType.UIntPtr),
+                            _ /* stobj */ => (TypeDesc)methodIL.GetObject(reader.ReadILToken()),
                         };
+                        Value val = stack.PopIntoLocation(type);
 
                         StackEntry location = stack.Pop();
                         if (location.ValueKind != StackValueKind.ByRef && location.ValueKind != StackValueKind.NativeInt)
@@ -1934,7 +1917,7 @@ namespace ILCompiler
                     {
                         var elementType = (MetadataType)method.Instantiation[0];
                         int elementSize = elementType.InstanceFieldSize.AsInt;
-                        byte[] rvaData = Internal.TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData(createSpanEcmaField);
+                        byte[] rvaData = GetFieldRvaData(createSpanEcmaField);
                         if (rvaData.Length % elementSize != 0)
                             return false;
                         retVal = new SpanValue(elementType, rvaData, 0, rvaData.Length);
@@ -1968,7 +1951,8 @@ namespace ILCompiler
                         && isReferenceOrContainsReferencesType.Name == "RuntimeHelpers"u8 && isReferenceOrContainsReferencesType.Namespace == "System.Runtime.CompilerServices"u8
                         && isReferenceOrContainsReferencesType.Module == method.Context.SystemModule:
                 {
-                    bool result = method.Instantiation[0].IsGCPointer || (method.Instantiation[0] is DefType defType && defType.ContainsGCPointers);
+                    bool result = method.Instantiation[0].IsGCPointer
+                        || (method.Instantiation[0] is DefType defType && (defType.ContainsGCPointers || defType.ContainsByRefs));
                     retVal = ValueTypeValue.FromSByte(result ? (sbyte)1 : (sbyte)0);
                     return true;
                 }
@@ -2251,7 +2235,7 @@ namespace ILCompiler
             TypeDesc Type { get; }
             void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
             bool HasConditionalDependencies { get; }
-            void GetConditionalDependencies(ref CombinedDependencyList dependencies, NodeFactory factory);
+            void AddConditionalDependencies(DependencySink dependencies, NodeFactory factory);
             bool IsKnownImmutable { get; }
             int ArrayLength { get; }
         }
@@ -2926,7 +2910,7 @@ namespace ILCompiler
             }
         }
 
-        private sealed class SpanValue : BaseValueTypeValue, IInternalModelingOnlyValue
+        private sealed class SpanValue : BaseValueTypeValue, IInternalModelingOnlyValue, IAssignableValue
         {
             private readonly MetadataType _elementType;
             private byte[] _bytes;
@@ -2970,6 +2954,17 @@ namespace ILCompiler
             public override bool TryCreateByRef(out Value value)
             {
                 value = new SpanReferenceValue(this);
+                return true;
+            }
+
+            bool IAssignableValue.TryAssign(Value value)
+            {
+                if (value is not SpanValue other || other._elementType != _elementType)
+                    return false;
+
+                _bytes = other._bytes;
+                _index = other._index;
+                _length = other._length;
                 return true;
             }
 
@@ -3257,7 +3252,7 @@ namespace ILCompiler
 
             public virtual bool HasConditionalDependencies => false;
 
-            public virtual void GetConditionalDependencies(ref CombinedDependencyList dependencies, NodeFactory factory)
+            public virtual void AddConditionalDependencies(DependencySink dependencies, NodeFactory factory)
             {
             }
         }
@@ -3284,14 +3279,13 @@ namespace ILCompiler
 
             public override bool HasConditionalDependencies => true;
 
-            public override void GetConditionalDependencies(ref CombinedDependencyList dependencies, NodeFactory factory)
+            public override void AddConditionalDependencies(DependencySink dependencies, NodeFactory factory)
             {
-                dependencies ??= new CombinedDependencyList();
 
                 DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
 
                 MethodDesc targetMethod = creationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, creationInfo.DelegateType, targetMethod);
+                factory.MetadataManager.GetConditionalDependenciesDueToDelegateCreation(dependencies, factory, creationInfo.DelegateType, targetMethod);
             }
 
             public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)

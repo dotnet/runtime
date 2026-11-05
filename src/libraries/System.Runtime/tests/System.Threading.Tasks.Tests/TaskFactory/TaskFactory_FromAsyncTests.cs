@@ -10,6 +10,119 @@ namespace System.Threading.Tasks.Tests
 {
     public class TaskFactory_FromAsyncTests
     {
+        [Fact]
+        public static void CompletedAsyncResultPreservesSchedulerAndExceptions()
+        {
+            var scheduler = new FromAsyncInlineTaskScheduler();
+            var result = Task.FromResult(42);
+            Task<int> task = Task<int>.Factory.FromAsync(result, asyncResult =>
+            {
+                Assert.Same(result, asyncResult);
+                Assert.Same(scheduler, TaskScheduler.Current);
+                return result.Result;
+            }, TaskCreationOptions.None, scheduler);
+            Assert.True(task.IsCompletedSuccessfully);
+            Assert.Equal(42, task.Result);
+
+            var error = new InvalidOperationException();
+            Task failed = Task.Factory.FromAsync(Task.CompletedTask, _ => throw error, TaskCreationOptions.None, scheduler);
+            Assert.True(failed.IsFaulted);
+            Assert.Same(error, Assert.Throws<InvalidOperationException>(() => failed.GetAwaiter().GetResult()));
+            Assert.Equal(2, scheduler.InlineExecutions);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void IncompleteAsyncResultDoesNotAccessWaitHandle(bool returnResult)
+        {
+            var result = new IncompleteAsyncResult();
+            var scheduler = new FromAsyncInlineTaskScheduler();
+            if (returnResult)
+            {
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                {
+                    Task<int>.Factory.FromAsync(result, _ => 42, TaskCreationOptions.None, scheduler);
+                });
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                {
+                    Task.Factory.FromAsync(result, _ => { }, TaskCreationOptions.None, scheduler);
+                });
+            }
+            Assert.Equal(0, scheduler.InlineExecutions);
+            Assert.Equal(1, result.CompletionChecks);
+            Assert.Throws<ArgumentNullException>("endMethod", () =>
+            {
+                Task<int>.Factory.FromAsync(result, null, TaskCreationOptions.None, scheduler);
+            });
+            Assert.Throws<ArgumentNullException>("scheduler", () =>
+            {
+                Task<int>.Factory.FromAsync(result, _ => 42, TaskCreationOptions.None, null);
+            });
+            foreach (TaskCreationOptions options in new[]
+            {
+                TaskCreationOptions.PreferFairness,
+                TaskCreationOptions.LongRunning,
+                TaskCreationOptions.DenyChildAttach,
+                TaskCreationOptions.HideScheduler,
+                TaskCreationOptions.RunContinuationsAsynchronously,
+                (TaskCreationOptions)int.MaxValue
+            })
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("creationOptions", () =>
+                {
+                    Task<int>.Factory.FromAsync(result, _ => 42, options, scheduler);
+                });
+            }
+            Assert.Equal(1, result.CompletionChecks);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void UnsupportedFromAsyncDoesNotLeaveAnAttachedChild()
+        {
+            var scheduler = new FromAsyncInlineTaskScheduler();
+            var parent = new Task(() =>
+            {
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                {
+                    Task<int>.Factory.FromAsync(new IncompleteAsyncResult(), _ => 42, TaskCreationOptions.AttachedToParent, scheduler);
+                });
+            });
+            parent.RunSynchronously(scheduler);
+            Assert.True(parent.IsCompletedSuccessfully);
+        }
+
+        private sealed class IncompleteAsyncResult : IAsyncResult
+        {
+            public int CompletionChecks { get; private set; }
+            public bool IsCompleted
+            {
+                get
+                {
+                    CompletionChecks++;
+                    return false;
+                }
+            }
+            public bool CompletedSynchronously => false;
+            public object AsyncState => null;
+            public WaitHandle AsyncWaitHandle => throw new InvalidOperationException("The wait handle must not be accessed.");
+        }
+
+        private sealed class FromAsyncInlineTaskScheduler : TaskScheduler
+        {
+            public int InlineExecutions { get; private set; }
+            protected override void QueueTask(Task task) => throw new InvalidOperationException("The completed callback must run inline.");
+            protected override IEnumerable<Task> GetScheduledTasks() => [];
+            protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
+            {
+                InlineExecutions++;
+                return TryExecuteTask(task);
+            }
+        }
+
         // Exercise the FromAsync() methods in Task and Task<TResult>.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunAPMFactoryTests()

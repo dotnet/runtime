@@ -13,10 +13,11 @@
 #include "../binder/inc/defaultassemblybinder.h"
 #include "../binder/inc/applicationcontext.hpp"
 #include <corehost/host_runtime_contract.h>
+#include "hostinformation.h"
 #include "stringarraylist.h"
 
 // static
-extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyLoadContext, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, QCall::ObjectHandleOnStack retAssembly)
+extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyLoadContext, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -41,7 +42,7 @@ extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnS
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandleOnStack retAssemblies)
+extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandleOnStack retAssemblies, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -141,7 +142,7 @@ namespace
 }
 
 // Get the value of a known host property from the binder/AppDomain state.
-extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall::StringHandleOnStack retValue)
+extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall::StringHandleOnStack retValue, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -165,12 +166,27 @@ extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall
             BINDER_SPACE::SimpleNameToFileNameMap::Iterator end = pMap->End();
             while (i != end)
             {
+                SString path;
                 if (i->m_wszILFileName != NULL)
+                {
+                    path.Set(i->m_wszILFileName);
+                }
+                else
+                {
+                    HostInformation::ResolveAssemblyToPath(i->m_wszSimpleName, path);
+                    if (path.IsEmpty())
+                    {
+                        ++i;
+                        continue;
+                    }
+                }
+
+                if (!path.IsEmpty())
                 {
                     if (!result.IsEmpty())
                         result.Append(PATH_SEPARATOR_CHAR_W);
 
-                    result.Append(i->m_wszILFileName);
+                    result.Append(path);
                 }
 
                 ++i;
@@ -234,7 +250,7 @@ extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall
     return found;
 }
 
-extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str)
+extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -251,7 +267,7 @@ extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str)
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str)
+extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

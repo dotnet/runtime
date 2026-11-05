@@ -8,11 +8,11 @@ namespace System.Net
 {
     internal static class InteropIPAddressExtensions
     {
-        public static unsafe Interop.Sys.IPAddress GetNativeIPAddress(this IPAddress ipAddress)
+        public static Interop.Sys.IPAddress GetNativeIPAddress(this IPAddress ipAddress)
         {
             var nativeIPAddress = default(Interop.Sys.IPAddress);
 
-            ipAddress.TryWriteBytes(new Span<byte>(nativeIPAddress.Address, Interop.Sys.IPv6AddressBytes), out int bytesWritten);
+            ipAddress.TryWriteBytes(nativeIPAddress.Address, out int bytesWritten);
             Debug.Assert(bytesWritten == sizeof(uint) || bytesWritten == Interop.Sys.IPv6AddressBytes, $"Unexpected length: {bytesWritten}");
 
             if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
@@ -24,18 +24,16 @@ namespace System.Net
             return nativeIPAddress;
         }
 
-        public static unsafe IPAddress GetIPAddress(this Interop.Sys.IPAddress nativeIPAddress)
+        public static IPAddress GetIPAddress(this Interop.Sys.IPAddress nativeIPAddress)
         {
             if (!nativeIPAddress.IsIPv6)
             {
-                uint address = *(uint*)nativeIPAddress.Address;
+                uint address = BitConverter.ToUInt32(nativeIPAddress.Address);
                 return new IPAddress((long)address);
             }
             else
             {
-                return new IPAddress(
-                    new ReadOnlySpan<byte>(nativeIPAddress.Address, Interop.Sys.IPv6AddressBytes),
-                    (long)nativeIPAddress.ScopeId);
+                return new IPAddress(nativeIPAddress.Address, (long)nativeIPAddress.ScopeId);
             }
         }
     }

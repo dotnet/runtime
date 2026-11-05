@@ -83,6 +83,21 @@ namespace ILCompiler.ObjectWriter
         Global = 0x03,
     }
 
+    internal sealed class WasmFunctionImportType : WasmImportType
+    {
+        private readonly int _typeIndex;
+
+        public WasmFunctionImportType(int typeIndex) : base(WasmExternalKind.Function)
+        {
+            _typeIndex = typeIndex;
+        }
+
+        public override int Encode(Span<byte> buffer) => DwarfHelper.WriteULEB128(buffer, (ulong)_typeIndex);
+        public override int EncodeSize() => (int)DwarfHelper.SizeOfULEB128((ulong)_typeIndex);
+        public override int EncodeRelocationCount() => 0;
+        public override int EncodeRelocations(Span<Relocation> buffer) => 0;
+    }
+
     public class WasmGlobalImportType : WasmImportType
     {
         private readonly WasmValueType _valueType;

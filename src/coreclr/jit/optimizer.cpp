@@ -272,65 +272,6 @@ unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
 }
 
 //----------------------------------------------------------------------------------
-// optIsLoopTestEvalIntoTemp:
-//      Pattern match if the test tree is computed into a tmp
-//      and the "tmp" is used as jump condition for loop termination.
-//
-// Arguments:
-//      testStmt    - is the JTRUE statement that is of the form: jmpTrue (Vtmp != 0)
-//                    where Vtmp contains the actual loop test result.
-//      newTestStmt - contains the statement that is the actual test stmt involving
-//                    the loop iterator.
-//
-//  Return Value:
-//      Returns true if a new test tree can be obtained.
-//
-//  Operation:
-//      Scan if the current stmt is a jtrue with (Vtmp != 0) as condition
-//      Then returns the rhs for def of Vtmp as the "test" node.
-//
-//  Note:
-//      This method just retrieves what it thinks is the "test" node,
-//      the callers are expected to verify that "iterVar" is used in the test.
-//
-bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt)
-{
-    GenTree* test = testStmt->GetRootNode();
-
-    if (!test->OperIs(GT_JTRUE))
-    {
-        return false;
-    }
-
-    GenTree* relop = test->gtGetOp1();
-    noway_assert(relop->OperIsCompare());
-
-    GenTree* opr1 = relop->AsOp()->gtOp1;
-    GenTree* opr2 = relop->AsOp()->gtOp2;
-
-    // Make sure we have jtrue (vtmp != 0)
-    if (relop->OperIs(GT_NE) && opr1->OperIs(GT_LCL_VAR) && opr2->OperIs(GT_CNS_INT) && opr2->IsIntegralConst(0))
-    {
-        // Get the previous statement to get the def (rhs) of Vtmp to see
-        // if the "test" is evaluated into Vtmp.
-        Statement* prevStmt = testStmt->GetPrevStmt();
-        if (prevStmt == nullptr)
-        {
-            return false;
-        }
-
-        GenTree* tree = prevStmt->GetRootNode();
-        if (tree->OperIs(GT_STORE_LCL_VAR) && (tree->AsLclVar()->GetLclNum() == opr1->AsLclVar()->GetLclNum()) &&
-            tree->AsLclVar()->Data()->OperIsCompare())
-        {
-            *newTestStmt = prevStmt;
-            return true;
-        }
-    }
-    return false;
-}
-
-//----------------------------------------------------------------------------------
 // optExtractTestIncr:
 //      Extract the "test" and "incr" nodes of the loop.
 //
@@ -362,12 +303,6 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     noway_assert(cond->firstStmt() != nullptr);
     Statement* testStmt = cond->lastStmt();
     noway_assert(testStmt != nullptr && testStmt->GetNextStmt() == nullptr);
-
-    Statement* newTestStmt;
-    if (optIsLoopTestEvalIntoTemp(testStmt, &newTestStmt))
-    {
-        testStmt = newTestStmt;
-    }
 
     // Walk backward from the test statement looking for a candidate IV increment
     // of the form 'v = v op c'. For each such candidate, verify it is suitable:
@@ -794,6 +729,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
 
     int64_t constInitX;
     int64_t constLimitX;
+    int64_t iterIncX;
 
     unsigned loopCount;
     int      iterSign;
@@ -847,17 +783,24 @@ bool Compiler::optComputeLoopRep(int        constInit,
             NO_WAY("Bad type");
     }
 
-    // If iterInc is zero we have an infinite loop.
-    if (iterInc == 0)
+    // Normalize subtraction into an additive step before reasoning about loop direction.
+    iterIncX = iterInc;
+    if (iterOper == GT_SUB)
+    {
+        iterIncX = -iterIncX;
+    }
+
+    // If iterIncX is zero we have an infinite loop.
+    if (iterIncX == 0)
     {
         return false;
     }
 
-    iterSign  = (iterInc > 0) ? +1 : -1;
+    iterSign  = (iterIncX > 0) ? +1 : -1;
     loopCount = 0;
 
     // bail if count is based on wrap-around math
-    if (iterInc > 0)
+    if (iterIncX > 0)
     {
         if (constLimitX < constInitX)
         {
@@ -886,12 +829,12 @@ bool Compiler::optComputeLoopRep(int        constInit,
             // If "mod iterInc" is not zero then the limit test will miss and a wrap will occur
             // which is probably not what the end user wanted, but it is legal.
 
-            if (iterInc > 0)
+            if (iterIncX > 0)
             {
                 // Stepping by one, i.e. Mod with 1 is always zero.
-                if (iterInc != 1)
+                if (iterIncX != 1)
                 {
-                    if (((constLimitX - constInitX) % iterInc) != 0)
+                    if (((constLimitX - constInitX) % iterIncX) != 0)
                     {
                         return false;
                     }
@@ -900,9 +843,9 @@ bool Compiler::optComputeLoopRep(int        constInit,
             else
             {
                 // Stepping by -1, i.e. Mod with 1 is always zero.
-                if (iterInc != -1)
+                if (iterIncX != -1)
                 {
-                    if (((constInitX - constLimitX) % (-iterInc)) != 0)
+                    if (((constInitX - constLimitX) % (-iterIncX)) != 0)
                     {
                         return false;
                     }
@@ -912,16 +855,13 @@ bool Compiler::optComputeLoopRep(int        constInit,
             switch (iterOper)
             {
                 case GT_SUB:
-                    iterInc = -iterInc;
-                    FALLTHROUGH;
-
                 case GT_ADD:
                     if (constInitX != constLimitX)
                     {
-                        loopCount += (unsigned)((constLimitX - constInitX - iterSign) / iterInc) + 1;
+                        loopCount += (unsigned)((constLimitX - constInitX - iterSign) / iterIncX) + 1;
                     }
 
-                    iterAtExitX = (int)(constInitX + iterInc * (int)loopCount);
+                    iterAtExitX = (int)(constInitX + iterIncX * (int)loopCount);
 
                     if (unsTest)
                     {
@@ -959,16 +899,13 @@ bool Compiler::optComputeLoopRep(int        constInit,
             switch (iterOper)
             {
                 case GT_SUB:
-                    iterInc = -iterInc;
-                    FALLTHROUGH;
-
                 case GT_ADD:
                     if (constInitX < constLimitX)
                     {
-                        loopCount += (unsigned)((constLimitX - constInitX - iterSign) / iterInc) + 1;
+                        loopCount += (unsigned)((constLimitX - constInitX - iterSign) / iterIncX) + 1;
                     }
 
-                    iterAtExitX = (int)(constInitX + iterInc * (int)loopCount);
+                    iterAtExitX = (int)(constInitX + iterIncX * (int)loopCount);
 
                     if (unsTest)
                     {
@@ -1006,16 +943,13 @@ bool Compiler::optComputeLoopRep(int        constInit,
             switch (iterOper)
             {
                 case GT_SUB:
-                    iterInc = -iterInc;
-                    FALLTHROUGH;
-
                 case GT_ADD:
                     if (constInitX <= constLimitX)
                     {
-                        loopCount += (unsigned)((constLimitX - constInitX) / iterInc) + 1;
+                        loopCount += (unsigned)((constLimitX - constInitX) / iterIncX) + 1;
                     }
 
-                    iterAtExitX = (int)(constInitX + iterInc * (int)loopCount);
+                    iterAtExitX = (int)(constInitX + iterIncX * (int)loopCount);
 
                     if (unsTest)
                     {
@@ -1053,16 +987,13 @@ bool Compiler::optComputeLoopRep(int        constInit,
             switch (iterOper)
             {
                 case GT_SUB:
-                    iterInc = -iterInc;
-                    FALLTHROUGH;
-
                 case GT_ADD:
                     if (constInitX > constLimitX)
                     {
-                        loopCount += (unsigned)((constLimitX - constInitX - iterSign) / iterInc) + 1;
+                        loopCount += (unsigned)((constLimitX - constInitX - iterSign) / iterIncX) + 1;
                     }
 
-                    iterAtExitX = (int)(constInitX + iterInc * (int)loopCount);
+                    iterAtExitX = (int)(constInitX + iterIncX * (int)loopCount);
 
                     if (unsTest)
                     {
@@ -1100,16 +1031,13 @@ bool Compiler::optComputeLoopRep(int        constInit,
             switch (iterOper)
             {
                 case GT_SUB:
-                    iterInc = -iterInc;
-                    FALLTHROUGH;
-
                 case GT_ADD:
                     if (constInitX >= constLimitX)
                     {
-                        loopCount += (unsigned)((constLimitX - constInitX) / iterInc) + 1;
+                        loopCount += (unsigned)((constLimitX - constInitX) / iterIncX) + 1;
                     }
 
-                    iterAtExitX = (int)(constInitX + iterInc * (int)loopCount);
+                    iterAtExitX = (int)(constInitX + iterIncX * (int)loopCount);
 
                     if (unsTest)
                     {
@@ -1676,7 +1604,7 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
         GenTree*   testCopyExpr = testCopyStmt->GetRootNode();
         assert(testCopyExpr->OperIs(GT_JTRUE));
         GenTree* sideEffList = nullptr;
-        gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
+        gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_OBS_EFFECT);
         if (sideEffList == nullptr)
         {
             fgRemoveStmt(prevTestBlock, testCopyStmt);
@@ -2213,6 +2141,11 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     // Split the preheader so we can duplicate the statements into it. The new
     // block will be the new preheader.
     BasicBlock* const newPreheader = fgSplitBlockAtEnd(preheader);
+
+    // 'preheader' stays the entry of any EH region it begins, so the new block does not
+    // need the BBF_DONT_REMOVE it inherited; keeping it would leave an unremovable block
+    // behind if the loop later becomes unreachable.
+    newPreheader->RemoveFlags(BBF_DONT_REMOVE);
 
     // Make sure exit stays canonical
     BasicBlock* nonEnterBlock = fgSplitBlockAtBeginning(exit);
@@ -3379,9 +3312,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                         if (srcSize == 8)
                         {
                             assert(tree->TypeIs(TYP_INT));
-                            GenTree* castOp = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
-                            castOp->SetMorphed(this);
-                            *otherOpPtr = castOp;
+                            *otherOpPtr = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
                         }
                     }
                     return true;
@@ -4106,6 +4037,12 @@ bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
         varInOutCount    = hoistCtxt->m_loopVarInOutFPCount;
 
         availRegCount = CNT_CALLEE_SAVED_FLOAT;
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        if (loopContainsCall && varTypeNeedsPartialCalleeSave(tree->TypeGet()))
+        {
+            availRegCount = 0;
+        }
+#endif
         if (!loopContainsCall)
         {
             availRegCount += CNT_CALLEE_TRASH_FLOAT - 1;
@@ -4727,7 +4664,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
 
                 // If it's a call, it must be a helper call, and be pure.
                 // Further, if it may run a cctor, it must be labeled as "Hoistable"
-                // (meaning it won't run a cctor because the class is not precise-init).
+                // (meaning the class is not precise-init, so the cctor may run earlier).
                 if (treeIsHoistable && tree->IsCall())
                 {
                     GenTreeCall* call = tree->AsCall();
@@ -4788,14 +4725,11 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             //
             if (m_canHoistSideEffects)
             {
-                // Is the value of the whole tree loop invariant?
-                if (!treeIsInvariant)
+                if (!treeIsHoistable)
                 {
-                    // We have a tree that is not loop invariant and we thus cannot hoist
-                    assert(treeIsHoistable == false);
-
                     // Check if we should clear m_canHoistSideEffects.
-                    // If 'tree' can throw an exception then we need to set m_canHoistSideEffects to false.
+                    // If 'tree' cannot be hoisted and can throw an exception then we need to set
+                    // m_canHoistSideEffects to false.
                     // Note that calls are handled below
                     if (tree->OperMayThrow(m_compiler) && !tree->IsCall())
                     {
@@ -4811,7 +4745,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 {
                     // If it's a call, it must be a helper call that does not mutate the heap.
                     // Further, if it may run a cctor, it must be labeled as "Hoistable"
-                    // (meaning it won't run a cctor because the class is not precise-init).
+                    // (meaning the class is not precise-init, so the cctor may run earlier).
                     GenTreeCall* call = tree->AsCall();
                     if (!call->IsHelperCall())
                     {
@@ -4824,6 +4758,10 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                         {
                             m_canHoistSideEffects = false;
                         }
+                        else if ((call->gtCallMoreFlags & GTF_CALL_M_ALLOC_SIDE_EFFECTS) != 0)
+                        {
+                            m_canHoistSideEffects = false;
+                        }
                         else if (s_helperCallProperties.MayRunCctor(helpFunc) &&
                                  (call->gtFlags & GTF_CALL_HOISTABLE) == 0)
                         {
@@ -4831,11 +4769,8 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                         }
 
                         // Additional check for helper calls that throw exceptions
-                        if (!treeIsInvariant)
+                        if (!treeIsHoistable)
                         {
-                            // We have a tree that is not loop invariant and we thus cannot hoist
-                            assert(treeIsHoistable == false);
-
                             // Does this helper call throw?
                             if (!s_helperCallProperties.NoThrow(helpFunc))
                             {
@@ -4847,10 +4782,14 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 else if (tree->OperRequiresAsgFlag())
                 {
                     // Assume all stores except "STORE_LCL_VAR<non-addr-exposed lcl>(...)" are globally visible.
+                    // A store to a local is also visible to a handler that catches an exception thrown later.
                     bool isGloballyVisibleStore;
                     if (tree->OperIsLocalStore())
                     {
-                        isGloballyVisibleStore = m_compiler->lvaGetDesc(tree->AsLclVarCommon())->IsAddressExposed();
+                        const LclVarDsc* dsc = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
+                        isGloballyVisibleStore =
+                            dsc->IsAddressExposed() || (m_currentBlock->HasPotentialEHSuccs(m_compiler) &&
+                                                        (!dsc->lvTracked || dsc->IsLiveInOutOfHandler()));
                     }
                     else
                     {
@@ -5376,6 +5315,17 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                 }
                 break;
 
+                case GT_IND:
+                case GT_BLK:
+                {
+                    if (tree->AsIndir()->IsVolatile())
+                    {
+                        // On a loop backedge, memory operations in a subsequent iteration may follow this acquire.
+                        memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
+                    }
+                }
+                break;
+
                 case GT_STOREIND:
                 case GT_STORE_BLK:
                 {
@@ -5503,20 +5453,11 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                     if (call->IsHelperCall())
                     {
                         CorInfoHelpFunc helpFunc = call->GetHelperNum();
-                        if (s_helperCallProperties.MutatesHeap(helpFunc))
+                        // A class constructor run by the helper may modify the heap.
+                        if (s_helperCallProperties.MutatesHeap(helpFunc) ||
+                            s_helperCallProperties.MayRunCctor(helpFunc))
                         {
                             memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
-                        }
-                        else if (s_helperCallProperties.MayRunCctor(helpFunc))
-                        {
-                            // If the call is labeled as "Hoistable", then we've checked the
-                            // class that would be constructed, and it is not precise-init, so
-                            // the cctor will not be run by this call.  Otherwise, it might be,
-                            // and might have arbitrary side effects.
-                            if ((tree->gtFlags & GTF_CALL_HOISTABLE) == 0)
-                            {
-                                memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
-                            }
                         }
                     }
                     else
@@ -5778,6 +5719,14 @@ void Compiler::optRemoveRedundantZeroInits()
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->GetUniqueSucc())
     {
+        // The scan assumes that all paths from the prolog to this block went through the blocks analyzed so far. Other
+        // predecessors (e.g. a catch handler that rejoins here) may have referenced or redefined the locals we track.
+        if ((block != fgFirstBB) && (BlockPredsWithEH(block)->getNextPredEdge() != nullptr))
+        {
+            JITDUMP(FMT_BB " has multiple predecessors, stopping the block scan\n", block->bbNum);
+            break;
+        }
+
         if (m_dfsTree->HasCycle())
         {
             // See if this block is a cycle entry

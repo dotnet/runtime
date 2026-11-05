@@ -71,9 +71,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 moduleToken = new ModuleToken(factory.ManifestMetadataTable._mutableModule, handle.Value);
             }
 
+            CompilerTypeSystemContext context = (CompilerTypeSystemContext)method.Context;
+            bool isUnboxStub = context.IsUnboxingThunk(method);
+            MethodDesc signatureMethod = isUnboxStub ? context.GetTargetOfUnboxingThunk(method) : method;
+
             ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
             signatureBuilder.EmitMethodSignature(
-                new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, genericContextObject: null),
+                new MethodWithToken(signatureMethod, moduleToken, constrainedType: null, unboxing: isUnboxStub, genericContextObject: null),
                 enforceDefEncoding: true,
                 enforceOwningType: moduleToken.Module is EcmaModule ? factory.CompilationModuleGroup.EnforceOwningType((EcmaModule)moduleToken.Module) : true,
                 factory.SignatureContext,
@@ -110,7 +114,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (method.Method is AsyncResumptionStub)
                     continue;
 
-                Debug.Assert(method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation || method.Method.IsAsyncVariant());
+                CompilerTypeSystemContext context = (CompilerTypeSystemContext)method.Method.Context;
+                bool isUnboxingThunk = context.IsUnboxingThunk(method.Method);
+
+                Debug.Assert(method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation || method.Method.IsAsyncVariant() ||
+                    isUnboxingThunk);
 
                 int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
 
@@ -132,7 +140,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 EntryPointVertex entryPointVertex = new EntryPointWithBlobVertex((uint)methodIndex, fixupBlob, signatureBlob);
                 hashtableSection.Place(entryPointVertex);
-                vertexHashtable.Append(unchecked((uint)method.Method.GetHashCode()), entryPointVertex);
+                // The runtime probes this table using GetVersionResilientMethodHashCode of the method it is
+                // looking for. It has no notion of the synthetic boxed type a thunk lives on, so key unboxing
+                // thunks by their target. The resulting collision with the regular entry is resolved by
+                // SigMatchesMethodDesc, since the signature records whether the entry is an unboxing one.
+                MethodDesc hashtableKeyMethod = isUnboxingThunk ? context.GetTargetOfUnboxingThunk(method.Method) : method.Method;
+                vertexHashtable.Append(unchecked((uint)hashtableKeyMethod.GetHashCode()), entryPointVertex);
             }
 
             MemoryStream hashtableContent = new MemoryStream();

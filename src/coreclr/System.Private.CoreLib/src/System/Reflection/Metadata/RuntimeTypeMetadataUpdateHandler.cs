@@ -18,7 +18,7 @@ namespace System.Reflection.Metadata
         internal static bool FilterDeletedMembers { get; private set; }
 
         internal static bool IsMetadataUpdateDeleted(RuntimeModule module, int memberToken)
-            => CustomAttribute.IsCustomAttributeDefined(module, memberToken, (RuntimeType)typeof(MetadataUpdateDeletedAttribute));
+            => RuntimeCustomAttribute.IsCustomAttributeDefined(module, memberToken, (RuntimeType)typeof(MetadataUpdateDeletedAttribute));
 
         /// <summary>Clear type caches in response to an update notification.</summary>
         /// <param name="types">The specific types to be cleared, or null to clear everything.</param>

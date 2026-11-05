@@ -333,23 +333,23 @@ namespace System.Runtime.Serialization
                 case TypeCode.DBNull:
                 case TypeCode.Object:
                 default:
-                    if (valueType == Globals.TypeOfByteArray)
+                    if (valueType == typeof(byte[]))
                         WriteBase64((byte[])value);
-                    else if (valueType == Globals.TypeOfObject)
+                    else if (valueType == typeof(object))
                     {
                         //Write Nothing
                     }
-                    else if (valueType == Globals.TypeOfTimeSpan)
+                    else if (valueType == typeof(TimeSpan))
                         WriteTimeSpan((TimeSpan)value);
-                    else if (valueType == Globals.TypeOfGuid)
+                    else if (valueType == typeof(Guid))
                         WriteGuid((Guid)value);
-                    else if (valueType == Globals.TypeOfUri)
+                    else if (valueType == typeof(Uri))
                         WriteUri((Uri)value);
-                    else if (valueType == Globals.TypeOfXmlQualifiedName)
+                    else if (valueType == typeof(XmlQualifiedName))
                         WriteQName((XmlQualifiedName)value);
-                    else if (valueType == Globals.TypeOfDateOnly)
+                    else if (valueType == typeof(DateOnly))
                         WriteDateOnly((DateOnly)value);
-                    else if (valueType == Globals.TypeOfTimeOnly)
+                    else if (valueType == typeof(TimeOnly))
                         WriteTimeOnly((TimeOnly)value);
                     else
                         handled = false;
@@ -414,25 +414,25 @@ namespace System.Runtime.Serialization
                 case TypeCode.DBNull:
                 case TypeCode.Object:
                 default:
-                    if (valueType == Globals.TypeOfByteArray)
+                    if (valueType == typeof(byte[]))
                         WriteBase64(((DataNode<byte[]>)dataNode).GetValue());
-                    else if (valueType == Globals.TypeOfObject)
+                    else if (valueType == typeof(object))
                     {
                         object? obj = dataNode.Value;
                         if (obj != null)
                             WriteAnyType(obj);
                     }
-                    else if (valueType == Globals.TypeOfTimeSpan)
+                    else if (valueType == typeof(TimeSpan))
                         WriteTimeSpan(((DataNode<TimeSpan>)dataNode).GetValue());
-                    else if (valueType == Globals.TypeOfGuid)
+                    else if (valueType == typeof(Guid))
                         WriteGuid(((DataNode<Guid>)dataNode).GetValue());
-                    else if (valueType == Globals.TypeOfUri)
+                    else if (valueType == typeof(Uri))
                         WriteUri(((DataNode<Uri>)dataNode).GetValue());
-                    else if (valueType == Globals.TypeOfXmlQualifiedName)
+                    else if (valueType == typeof(XmlQualifiedName))
                         WriteQName(((DataNode<XmlQualifiedName>)dataNode).GetValue());
-                    else if (valueType == Globals.TypeOfDateOnly)
+                    else if (valueType == typeof(DateOnly))
                         WriteDateOnly(((DataNode<DateOnly>)dataNode).GetValue());
-                    else if (valueType == Globals.TypeOfTimeOnly)
+                    else if (valueType == typeof(TimeOnly))
                         WriteTimeOnly(((DataNode<TimeOnly>)dataNode).GetValue());
                     else
                         handled = false;

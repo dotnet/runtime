@@ -23,6 +23,9 @@ namespace System.Reflection
         internal Type GetTypeParameter(Type unmodifiedType, int index)
         {
             MetadataReader reader = _typeSignature.Reader;
+            if (reader is null)
+                return Create(unmodifiedType);
+
             Handle handle = _typeSignature.Handle;
 
             while (handle.HandleType == HandleType.ModifiedType)
@@ -77,6 +80,9 @@ namespace System.Reflection
         internal SignatureCallingConvention GetCallingConventionFromFunctionPointer()
         {
             MetadataReader reader = _typeSignature.Reader;
+            if (reader is null)
+                return default;
+
             Handle fnPtrTypeSigHandle = reader.GetTypeSpecification(
                 _typeSignature.Handle.ToTypeSpecificationHandle(reader)).Signature;
             MethodSignatureHandle methodSigHandle = reader.GetFunctionPointerSignature(
@@ -88,11 +94,14 @@ namespace System.Reflection
                 & Internal.Metadata.NativeFormat.SignatureCallingConvention.UnmanagedCallingConventionMask);
         }
 
-        private Type[] GetCustomModifiers(bool required)
+        private Type[] GetCustomModifiers(bool isOptional)
         {
             ArrayBuilder<Type> builder = default;
 
             MetadataReader reader = _typeSignature.Reader;
+            if (reader is null)
+                return [];
+
             Handle handle = _typeSignature.Handle;
 
             while (handle.HandleType == HandleType.ModifiedType)
@@ -101,7 +110,7 @@ namespace System.Reflection
 
                 handle = modifiedType.Type;
 
-                if (modifiedType.IsOptional == required)
+                if (modifiedType.IsOptional != isOptional)
                     continue;
 
                 builder.Add(modifiedType.ModifierType.Resolve(reader, new TypeContext(null, null)).ToType());
@@ -116,6 +125,9 @@ namespace System.Reflection
 
             return result;
         }
+
+        internal static Type Create(Type unmodifiedType)
+            => Create(unmodifiedType, default(TypeSignature));
 
         public static Type Create(Type unmodifiedType, MetadataReader reader, Handle typeSignature)
             => ModifiedType.Create(unmodifiedType, new TypeSignature(reader, typeSignature));

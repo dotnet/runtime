@@ -28,19 +28,19 @@ namespace System.Text.Json.Serialization
         /// Initializes a new instance of the <see cref="JsonTypeClassifierContext"/> class.
         /// </summary>
         /// <param name="kind">The type of classifier metadata being configured.</param>
-        /// <param name="declaringType">The type being configured for classification.</param>
+        /// <param name="declaringTypeInfo">The contract being configured for classification.</param>
         /// <param name="unionCases">The union cases of the declaring type, or an empty list.</param>
         /// <param name="derivedTypes">The derived types of the declaring type, or an empty list.</param>
         /// <param name="typeDiscriminatorPropertyName">The JSON property name used for type discrimination, or <see langword="null"/>.</param>
         internal JsonTypeClassifierContext(
             JsonTypeClassifierKind kind,
-            Type declaringType,
+            JsonTypeInfo declaringTypeInfo,
             IReadOnlyList<JsonUnionCaseInfo> unionCases,
             IReadOnlyList<JsonDerivedType> derivedTypes,
             string? typeDiscriminatorPropertyName)
         {
             Kind = kind;
-            DeclaringType = declaringType;
+            DeclaringTypeInfo = declaringTypeInfo;
             UnionCases = unionCases;
             DerivedTypes = derivedTypes;
             TypeDiscriminatorPropertyName = typeDiscriminatorPropertyName;
@@ -58,7 +58,10 @@ namespace System.Text.Json.Serialization
         /// For polymorphic types, this is the base class (e.g., <c>Animal</c>).
         /// For union types, this is the union type (e.g., <c>IntOrString</c>).
         /// </remarks>
-        public Type DeclaringType { get; }
+        public Type DeclaringType => DeclaringTypeInfo.Type;
+
+        // The contract may still be mutable when a modifier reads TypeClassifier.
+        internal JsonTypeInfo DeclaringTypeInfo { get; }
 
         /// <summary>
         /// Gets the union cases of <see cref="DeclaringType"/>.

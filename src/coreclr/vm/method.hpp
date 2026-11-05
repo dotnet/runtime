@@ -238,9 +238,6 @@ enum MethodDescFlags
     // Method is static
     mdfStatic                           = 0x0080,
 
-    mdfValueTypeParametersWalked        = 0x0100, // Indicates that all typeref's in the signature of the method have been resolved
-                                                  // to typedefs (or that process failed).
-
     mdfValueTypeParametersLoaded        = 0x0200, // Indicates if the valuetype parameter types have been loaded.
 
     // Duplicate method. When a method needs to be placed in multiple slots in the
@@ -278,6 +275,7 @@ struct MethodDescCodeData final
     NativeCodeVersion::OptimizationTier OptimizationTier;
 #endif // FEATURE_CODE_VERSIONING
     PCODE TemporaryEntryPoint;
+    PTR_BYTE GCRefMap;
 #ifdef FEATURE_INTERPRETER
     InterpreterCalliCookie CalliCookie;
 #endif // FEATURE_INTERPRETER
@@ -780,6 +778,7 @@ public:
     inline bool IsLCGMethod();
 
     inline bool IsDiagnosticsHidden();
+    inline bool IsDiagnosticsHiddenLCGMethod();
 
     inline DWORD IsPInvoke()
     {
@@ -916,7 +915,7 @@ public:
     // Additionally, if the non-BoxedEntryPointStub is RequiresInstMethodTableArg()
     // then pass on the MethodTable as an extra argument to the
     // underlying unboxed-this-MethodDesc.
-    BOOL IsUnboxingStub()
+    bool IsUnboxingStub()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -1004,24 +1003,6 @@ public:
         return pModule->GetCustomAttribute(GetMemberDef(), attribute, ppData, pcbData);
     }
 
-#ifndef DACCESS_COMPILE
-    IMetaDataEmit* GetEmitter()
-    {
-        WRAPPER_NO_CONTRACT;
-        Module *pModule = GetModule();
-        _ASSERTE(pModule != NULL);
-        return pModule->GetEmitter();
-    }
-
-    IMetaDataImport* GetRWImporter()
-    {
-        WRAPPER_NO_CONTRACT;
-        Module *pModule = GetModule();
-        _ASSERTE(pModule != NULL);
-        return pModule->GetRWImporter();
-    }
-#endif // !DACCESS_COMPILE
-
 #ifdef FEATURE_COMINTEROP
     WORD GetComSlot();
     LONG GetComDispid();
@@ -1032,6 +1013,9 @@ public:
         WRAPPER_NO_CONTRACT;
         return IsMdInstanceInitializer(GetAttrs(), GetName());
     }
+
+    bool IsStringCtor();
+    bool IsObjectReturningCtor();
 
     inline DWORD IsFinal()
     {
@@ -1670,6 +1654,9 @@ public:
     //*******************************************************************************
     // Returns the address of the native code.
     PCODE GetNativeCode();
+#ifndef DACCESS_COMPILE
+    PCODE GetNativeCodeVolatile();
+#endif
 
     // Returns either the jitted code or the interpreter code (will not return the InterpreterStub which GetNativeCode might return)
     PCODE GetCodeForInterpreterOrJitted()
@@ -1898,12 +1885,47 @@ public:
 
     void WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParameterFnPtr function, void *pData);
 
+    PTR_BYTE GetGCRefMap();
+    // Exact entry frames can use their own map, including explicit generic-context arguments.
+    // Dispatch and borrowing use only ABI-compatible maps; slot relationships are immutable
+    // DispatchMap data. Memoize hits only when code data already exists; never allocate here.
+    PTR_BYTE FindGCRefMap(MethodTable* pReceiverMT = nullptr, bool isDispatch = false);
+    void SetGCRefMap(PTR_BYTE pGCRefMap);
+
+    // Publish on the already-resolved call declaration; do not search slots or decode maps.
+    // Every supported R2R image uses contextual THIS, so no format check is necessary.
+    // Without an import map, use only this method's cached map or prepare signature layouts.
+    void PrepareForUseAsAVirtualCallTargetOfANativeImage(PTR_BYTE pGCRefMap = nullptr);
+
+    // Load closed value-type signature layouts for signature-scanning frames and ABI lowering.
+    // Required for interpreter ABI lowering, argument-transforming stubs, and map misses.
+    // A GCRefMap hit alone never promises layout readiness.
     void PrepareForUseAsADependencyOfANativeImage()
     {
         WRAPPER_NO_CONTRACT;
-        if (!HaveValueTypeParametersBeenWalked())
+        if (!HaveNativeImageDependenciesBeenPrepared())
             PrepareForUseAsADependencyOfANativeImageWorker();
     }
+
+    // Prepare an exact method entrypoint, not a virtual-dispatch stub or an interpreter ABI.
+    // Non-wrapper targets, including explicit-context generic bodies, can use supplied or
+    // cached exact GCRefMaps instead of loading layouts. nullptr permits reuse, not forced loading.
+    // Callers requiring signature layouts must use PrepareForUseAsADependencyOfANativeImage.
+    void PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap = nullptr);
+
+    bool HaveNativeImageDependenciesBeenPrepared()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (VolatileLoad(&m_bFlags4) & enum_flag4_NativeImageDependenciesPrepared) != 0;
+    }
+
+#ifndef DACCESS_COMPILE
+    void SetNativeImageDependenciesPrepared()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedUpdateFlags4(enum_flag4_NativeImageDependenciesPrepared, TRUE);
+    }
+#endif // !DACCESS_COMPILE
 
     void PrepareForUseAsAFunctionPointer();
 
@@ -1919,6 +1941,7 @@ public:
 #endif
 private:
     void PrepareForUseAsADependencyOfANativeImageWorker();
+    PTR_BYTE CacheGCRefMapIfCodeDataExists(PTR_BYTE pGCRefMap);
 
     //================================================================
     // The actual data stored in a MethodDesc follows.
@@ -1952,6 +1975,7 @@ protected:
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         enum_flag4_PendingThunkResolution                   = 0x10,
 #endif
+        enum_flag4_NativeImageDependenciesPrepared          = 0x20,
     };
 
     BYTE        m_bFlags4; // Used to hold more flags
@@ -1960,6 +1984,7 @@ protected:
     WORD m_wFlags; // See MethodDescFlags
     PTR_MethodDescCodeData m_codeData;
 #ifdef FEATURE_INTERPRETER
+// [cDAC] [ExecutionManager]: Contract depends on the value of INTERPRETER_CODE_POISON.
 #define INTERPRETER_CODE_POISON 1
     PTR_InterpByteCodeStart m_interpreterCode;
 public:
@@ -2284,20 +2309,6 @@ public:
 
     SIZE_T SizeOf();
 
-    inline BOOL HaveValueTypeParametersBeenWalked()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdfValueTypeParametersWalked) != 0;
-    }
-
-#ifndef DACCESS_COMPILE
-    inline void SetValueTypeParametersWalked()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags(mdfValueTypeParametersWalked, TRUE);
-    }
-#endif // DACCESS_COMPILE
-
     inline BOOL HaveValueTypeParametersBeenLoaded()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2353,6 +2364,9 @@ public:
 public:
     PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
+#ifdef FEATURE_READYTORUN
+    PCODE PublishPrecompiledCode(PrepareCodeConfig* pConfig, PCODE pCode, bool shouldTier);
+#endif // FEATURE_READYTORUN
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     // Probe for precompiled R2R native code for an UnmanagedCallersOnly method and, if present,
@@ -2394,7 +2408,7 @@ public:
 };
 
 #ifndef DACCESS_COMPILE
-extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex);
+extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex, QCallExceptionStatus* qcallError);
 #endif // DACCESS_COMPILE
 
 template<> struct cdac_data<MethodDesc>
@@ -2405,6 +2419,9 @@ template<> struct cdac_data<MethodDesc>
     static constexpr size_t Flags3AndTokenRemainder = offsetof(MethodDesc, m_wFlags3AndTokenRemainder);
     static constexpr size_t EntryPointFlags = offsetof(MethodDesc, m_bFlags4);
     static constexpr size_t CodeData = offsetof(MethodDesc, m_codeData);
+#ifdef FEATURE_INTERPRETER
+    static constexpr size_t InterpreterCode = offsetof(MethodDesc, m_interpreterCode);
+#endif // FEATURE_INTERPRETER
 };
 
 #ifndef DACCESS_COMPILE
@@ -2565,21 +2582,6 @@ public:
     bool FinalizeOptimizationTierForTier0LoadOrJit();
 #endif
 
-public:
-    PrepareCodeConfig *GetNextInSameThread() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_nextInSameThread;
-    }
-
-    void SetNextInSameThread(PrepareCodeConfig *config)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(config == nullptr || m_nextInSameThread == nullptr);
-
-        m_nextInSameThread = config;
-    }
-
 protected:
     MethodDesc* m_pMethodDesc;
     NativeCodeVersion m_nativeCodeVersion;
@@ -2610,7 +2612,6 @@ private:
 #ifdef FEATURE_TIERED_COMPILATION
     bool m_jitSwitchedToOptimized; // when a different tier was requested
 #endif
-    PrepareCodeConfig *m_nextInSameThread;
 };
 
 #ifdef FEATURE_CODE_VERSIONING
@@ -3019,7 +3020,8 @@ public:
     {
         // Flags for DynamicMethodDesc
         // Define new flags in descending order. This allows the IL type enumeration to increase naturally.
-        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of FlagIsLCGMethod, FlagIsILStub, and ILStubTypeMask.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of FlagIsLCGMethod, FlagIsILStub,
+        // FlagIsDiagnosticsHidden, and ILStubTypeMask.
         FlagNone                = 0x00000000,
         FlagPublic              = 0x00000800,
         FlagStatic              = 0x00001000,
@@ -3027,7 +3029,7 @@ public:
         FlagIsLCGMethod         = 0x00004000,
         FlagIsILStub            = 0x00008000,
         // unused               = 0x00010000,
-        // unused               = 0x00020000,
+        FlagIsDiagnosticsHidden = 0x00020000,
         FlagMask                = 0x0003f800,
         StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs
         ILStubTypeMask          = ~(FlagMask | StackArgSizeMask)

@@ -71,7 +71,6 @@ private:
 
 public:
     static void ClearDirty(void *baseAddress, size_t regionByteSize);
-    static void SetDirty(void *address, size_t writeByteSize);
     static void SetDirtyRegion(void *baseAddress, size_t regionByteSize);
 private:
     static bool GetDirtyFromBlock(uint8_t *block, uint8_t *firstPageAddressInBlock, size_t startByteIndex, size_t endByteIndex, void **dirtyPages, size_t *dirtyPageIndexRef, size_t dirtyPageCount, bool clearDirty);
@@ -302,23 +301,6 @@ inline void SoftwareWriteWatch::ClearDirty(void *baseAddress, size_t regionByteS
     size_t tableRegionByteSize;
     TranslateToTableRegion(baseAddress, regionByteSize, &tableBaseAddress, &tableRegionByteSize);
     memset(tableBaseAddress, 0, tableRegionByteSize);
-}
-
-inline void SoftwareWriteWatch::SetDirty(void *address, size_t writeByteSize)
-{
-    VerifyCreated();
-    VerifyMemoryRegion(address, writeByteSize);
-    assert(address != nullptr);
-    assert(writeByteSize <= sizeof(void *));
-
-    size_t tableByteIndex = GetTableByteIndex(address);
-    assert(GetTableByteIndex(reinterpret_cast<uint8_t *>(address) + (writeByteSize - 1)) == tableByteIndex);
-
-    uint8_t *tableByteAddress = &GetTable()[tableByteIndex];
-    if (*tableByteAddress == 0)
-    {
-        *tableByteAddress = 0xff;
-    }
 }
 
 inline void SoftwareWriteWatch::SetDirtyRegion(void *baseAddress, size_t regionByteSize)

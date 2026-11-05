@@ -16,4 +16,5 @@ internal sealed partial class MethodTable : IData<MethodTable>
     [Field] public partial ushort NumInterfaces { get; }
     [Field] public partial ushort NumVirtuals { get; }
     [Field] public partial TargetPointer AuxiliaryData { get; }
+    [Field] public partial TargetPointer? InterfaceMap { get; }
 }

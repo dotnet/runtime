@@ -125,17 +125,6 @@ public:
     //   true if the initialization succeeded, false if it did not
     bool CreateAutoEventNoThrow(bool initialState);
 
-    // Initializes this event to be a host-unaware manual reset event with the
-    // given initial state.
-    // Returns:
-    //   true if the initialization succeeded, false if it did not
-    bool CreateOSManualEventNoThrow(bool initialState);
-
-    // Initializes this event to be a host-unaware auto-resetting event with the
-    // given initial state.
-    // Returns:
-    //   true if the initialization succeeded, false if it did not
-    bool CreateOSAutoEventNoThrow(bool initialState);
 };
 
 // GC thread function prototype

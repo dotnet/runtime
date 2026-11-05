@@ -25,7 +25,6 @@ using Xunit;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
         [Theory]

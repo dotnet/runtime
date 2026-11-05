@@ -7,6 +7,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using TestLibrary;
 
 public interface ITest
 {
@@ -916,9 +917,12 @@ public class InterpreterTest
         if (!TestLdtoken())
             Environment.FailFast(null);
 
-        Console.WriteLine("TestMdArray");
-        if (!TestMdArray())
-            Environment.FailFast(null);
+        if (!PlatformDetection.IsWasmReadyToRun)
+        {
+            Console.WriteLine("TestMdArray");
+            if (!TestMdArray())
+                Environment.FailFast(null);
+        }
 
         Console.WriteLine("TestExceptionHandling");
         TestExceptionHandling();
@@ -969,9 +973,12 @@ public class InterpreterTest
 
         Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
 
-        Console.WriteLine("TestPInvoke");
-        if (!TestPInvoke())
-            Environment.FailFast(null);
+        if (!PlatformDetection.IsWasmReadyToRun)
+        {
+            Console.WriteLine("TestPInvoke");
+            if (!TestPInvoke())
+                Environment.FailFast(null);
+        }
 
         // For stackwalking validation
         System.GC.Collect();

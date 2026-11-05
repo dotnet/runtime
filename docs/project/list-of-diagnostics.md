@@ -333,3 +333,4 @@ Diagnostic id values for experimental APIs must not be recycled, as that could s
 |  __`SYSLIB5006`__ |    .NET 10 |     TBD | Types for Post-Quantum Cryptography (PQC) are experimental. |
 |  __`SYSLIB5007`__ |    .NET 11 |     TBD | Low-level TLS engine types (`TlsContext`, `TlsSession`) in `System.Net.Security` are experimental. |
 |  __`SYSLIB5008`__ |    .NET 11 |     TBD | `SocketsHttpHandler` connection eviction control and `HttpRequestMessage.ConnectionId` APIs are experimental. |
+|  __`SYSLIB5009`__ |    .NET 11 |     TBD | Types for HPKE (Hybrid Public Key Encryption) are experimental. |

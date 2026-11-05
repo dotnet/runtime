@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     file.cpp
 
 Abstract:
-
     Implementation of the file WIN API for the PAL
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -71,10 +67,7 @@ CObjectType CorUnix::otFile(
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CFileProcessLocalData),
-                CFileProcessLocalDataCleanupRoutine,
-                CObjectType::UnwaitableObject,
-                CObjectType::SignalingNotApplicable,
-                CObjectType::ThreadReleaseNotApplicable
+                CFileProcessLocalDataCleanupRoutine
                 );
 
 CAllowedObjectTypes CorUnix::aotFile(otiFile);
@@ -2010,12 +2003,6 @@ FlushFileBuffers(
     PERF_EXIT(FlushFileBuffers);
     return NO_ERROR == palError;
 }
-
-#define ENSURE_UNIQUE_NOT_ZERO \
-    if ( uUniqueSeed == 0 ) \
-    {\
-        uUniqueSeed++;\
-    }
 
 /*++
 Function:

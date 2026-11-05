@@ -667,7 +667,7 @@ namespace System.Net.Http.Functional.Tests
             HttpRequestMessage? callbackRequest = null;
             int invocationCount = 0;
 
-            var httpClientHandler = CreateHttpClientHandler();
+            var httpClientHandler = CreateHttpClientHandler(allowTlsResume: false);
             httpClientHandler.ServerCertificateCustomValidationCallback = (request, _, _, _) =>
             {
                 callbackRequest = request;

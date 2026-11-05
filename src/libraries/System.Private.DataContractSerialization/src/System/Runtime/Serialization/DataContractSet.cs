@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Xml;
 using System.Xml.Schema;
+using System.Xml.Serialization;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
@@ -324,7 +325,7 @@ namespace System.Runtime.Serialization.DataContracts
                 _referencedTypesDictionary = new Dictionary<XmlQualifiedName, object>();
                 //Always include Nullable as referenced type
                 //Do not allow surrogating Nullable<T>
-                _referencedTypesDictionary.Add(DataContract.GetXmlName(Globals.TypeOfNullable), Globals.TypeOfNullable);
+                _referencedTypesDictionary.Add(DataContract.GetXmlName(typeof(Nullable<>)), typeof(Nullable<>));
                 if (_referencedTypes != null)
                 {
                     foreach (Type type in _referencedTypes)
@@ -355,9 +356,9 @@ namespace System.Runtime.Serialization.DataContracts
                         AddReferencedType(_referencedCollectionTypesDictionary, type);
                     }
                 }
-                XmlQualifiedName genericDictionaryName = DataContract.GetXmlName(Globals.TypeOfDictionaryGeneric);
+                XmlQualifiedName genericDictionaryName = DataContract.GetXmlName(typeof(Dictionary<,>));
                 if (!_referencedCollectionTypesDictionary.ContainsKey(genericDictionaryName) && GetReferencedTypes().ContainsKey(genericDictionaryName))
-                    AddReferencedType(_referencedCollectionTypesDictionary, Globals.TypeOfDictionaryGeneric);
+                    AddReferencedType(_referencedCollectionTypesDictionary, typeof(Dictionary<,>));
             }
             return _referencedCollectionTypesDictionary;
         }
@@ -419,8 +420,8 @@ namespace System.Runtime.Serialization.DataContracts
 #pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
                         type.IsSerializable ||
 #pragma warning restore SYSLIB0050
-                        type.IsDefined(Globals.TypeOfDataContractAttribute, false) ||
-                        (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type) && !type.IsGenericTypeDefinition) ||
+                        type.IsDefined(typeof(DataContractAttribute), false) ||
+                        (typeof(IXmlSerializable).IsAssignableFrom(type) && !type.IsGenericTypeDefinition) ||
                         CollectionDataContract.IsCollection(type, out _) ||
                         ClassDataContract.IsNonAttributedTypeValidForSerialization(type));
             }
@@ -489,7 +490,7 @@ namespace System.Runtime.Serialization.DataContracts
             // referencedContract is still null, but will be set if we can verify all parameters.
             if (genInfo.Parameters != null)
             {
-                bool enableStructureCheck = (type != Globals.TypeOfNullable);
+                bool enableStructureCheck = (type != typeof(Nullable<>));
                 genericParameters = new object[genInfo.Parameters.Count];
                 DataContract[] structureCheckContracts = new DataContract[genInfo.Parameters.Count];
                 for (int i = 0; i < genInfo.Parameters.Count; i++)

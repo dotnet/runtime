@@ -6,8 +6,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
@@ -29,24 +29,35 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
-
         public abstract override Type DeclaringType { get; }
 
-        public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object), inherit);
+        public sealed override object[] GetCustomAttributes(bool inherit) =>
+            RuntimeCustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object));
 
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
+
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
 
         public sealed override bool IsDefined(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType);
         }
 
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
@@ -69,6 +80,26 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override ReadOnlySpan<ParameterInfo> GetParametersAsSpan()
         {
             return RuntimeParameters;
+        }
+
+        internal RuntimeType[] ArgumentTypes
+        {
+            get
+            {
+                RuntimeType[]? argumentTypes = _lazyArgumentTypes;
+                if (argumentTypes is null)
+                {
+                    ReadOnlySpan<ParameterInfo> parameters = GetParametersAsSpan();
+                    argumentTypes = new RuntimeType[parameters.Length];
+                    for (int i = 0; i < argumentTypes.Length; i++)
+                    {
+                        argumentTypes[i] = (RuntimeType)parameters[i].ParameterType;
+                    }
+                    _lazyArgumentTypes = argumentTypes;
+                }
+
+                return argumentTypes;
+            }
         }
 
         public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
@@ -184,5 +215,6 @@ namespace System.Reflection.Runtime.MethodInfos
         protected abstract MethodBaseInvoker UncachedMethodInvoker { get; }
 
         private volatile MethodBaseInvoker _lazyMethodInvoker;
+        private volatile RuntimeType[]? _lazyArgumentTypes;
     }
 }

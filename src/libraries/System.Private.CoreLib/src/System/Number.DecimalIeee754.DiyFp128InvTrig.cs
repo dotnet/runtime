@@ -207,7 +207,7 @@ internal static partial class Number
     private static DiyFp128 DiyFp128Atan(scoped in DiyFp128 arg) => DiyFp128Atan2(arg, default, false);
 
     // UX_ASIN_ACOS with the asin/acos interval maps precomputed. Callers guarantee |arg| <= 1.
-    private static DiyFp128 DiyFp128AsinAcos(DiyFp128 arg, bool isAcos)
+    private static DiyFp128 DiyFp128AsinAcos(DiyFp128 arg, DiyFp128 magnitudeMinusOne, bool isAcos)
     {
         int indexMap = isAcos ? InvTrigAcosMap : InvTrigAsinMap;
 
@@ -223,9 +223,10 @@ internal static partial class Number
             {
                 // 1/2 <= |x| < 1: compute sqrt((1-x)/2).
                 exponentIncrement = 1;
-                DiyFp128 t = default;
-                DiyFp128AddSub(new DiyFp128(0, 1, UxMsb, 0), arg, UxSub | UxMagnitudeOnly, new Span<DiyFp128>(ref t));
-                arg = t;
+                arg = DiyFp128IsZero(magnitudeMinusOne)
+                    ? DiyFp128Difference(arg, DiyFp128One)
+                    : magnitudeMinusOne;
+                arg._sign = 0;
                 arg._exponent -= 1;
                 arg = DiyFp128Sqrt(arg);
             }
@@ -255,9 +256,9 @@ internal static partial class Number
         return value;
     }
 
-    private static DiyFp128 DiyFp128Asin(scoped in DiyFp128 arg) => DiyFp128AsinAcos(arg, false);
+    private static DiyFp128 DiyFp128Asin(scoped in DiyFp128 arg, scoped in DiyFp128 magnitudeMinusOne) => DiyFp128AsinAcos(arg, magnitudeMinusOne, false);
 
-    private static DiyFp128 DiyFp128Acos(scoped in DiyFp128 arg) => DiyFp128AsinAcos(arg, true);
+    private static DiyFp128 DiyFp128Acos(scoped in DiyFp128 arg, scoped in DiyFp128 magnitudeMinusOne) => DiyFp128AsinAcos(arg, magnitudeMinusOne, true);
 
     // True when a normalized, non-zero |arg| is strictly greater than 1 (outside the asin/acos domain).
     private static bool DiyFp128MagnitudeExceedsOne(in DiyFp128 arg)

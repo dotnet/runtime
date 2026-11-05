@@ -137,6 +137,8 @@ namespace System.Net
         }
 
         public readonly DnsTxtEnumerator GetEnumerator() => this;
+
+        public readonly bool IsValid => _remaining.IsEmpty;
     }
 
     internal readonly ref struct DnsPtrRecordData

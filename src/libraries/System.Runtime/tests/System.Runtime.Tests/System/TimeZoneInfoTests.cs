@@ -2979,34 +2979,34 @@ namespace System.Tests
         }
 
         [ConditionalTheory(typeof(TimeZoneInfoTests), nameof(SupportIanaNamesConversion))]
-        [InlineData("Pacific Standard Time", "America/Vancouver", "CA")]
-        [InlineData("Pacific Standard Time", "America/Los_Angeles", "US")]
-        [InlineData("Pacific Standard Time", "America/Los_Angeles", "\u0600NotValidRegion")]
-        [InlineData("Central Europe Standard Time", "Europe/Budapest", "DJ")]
-        [InlineData("Central Europe Standard Time", "Europe/Budapest", "\uFFFFNotValidRegion")]
-        [InlineData("Central Europe Standard Time", "Europe/Prague", "CZ")]
-        [InlineData("Central Europe Standard Time", "Europe/Ljubljana", "SI")]
-        [InlineData("Central Europe Standard Time", "Europe/Bratislava", "SK")]
-        [InlineData("Central Europe Standard Time", "Europe/Tirane", "AL")]
-        [InlineData("Central Europe Standard Time", "Europe/Podgorica", "ME")]
-        [InlineData("Central Europe Standard Time", "Europe/Belgrade", "RS")]
+        [InlineData("Pacific Standard Time", "CA", "America/Vancouver", "America/Los_Angeles")]
+        [InlineData("Pacific Standard Time", "US", "America/Los_Angeles")]
+        [InlineData("Pacific Standard Time", "\u0600NotValidRegion", "America/Los_Angeles")]
+        [InlineData("Central Europe Standard Time", "DJ", "Europe/Budapest")]
+        [InlineData("Central Europe Standard Time", "\uFFFFNotValidRegion", "Europe/Budapest")]
+        [InlineData("Central Europe Standard Time", "CZ", "Europe/Prague")]
+        [InlineData("Central Europe Standard Time", "SI", "Europe/Ljubljana")]
+        [InlineData("Central Europe Standard Time", "SK", "Europe/Bratislava")]
+        [InlineData("Central Europe Standard Time", "AL", "Europe/Tirane")]
+        [InlineData("Central Europe Standard Time", "ME", "Europe/Podgorica")]
+        [InlineData("Central Europe Standard Time", "RS", "Europe/Belgrade")]
         // lowercased region name cases:
-        [InlineData("Cen. Australia Standard Time", "Australia/Adelaide", "au")]
-        [InlineData("AUS Central Standard Time", "Australia/Darwin", "au")]
-        [InlineData("E. Australia Standard Time", "Australia/Brisbane", "au")]
-        [InlineData("AUS Eastern Standard Time", "Australia/Sydney", "au")]
-        [InlineData("Tasmania Standard Time", "Australia/Hobart", "au")]
-        [InlineData("Romance Standard Time", "Europe/Madrid", "es")]
-        [InlineData("Romance Standard Time", "Europe/Madrid", "Es")]
-        [InlineData("Romance Standard Time", "Europe/Madrid", "eS")]
-        [InlineData("GMT Standard Time", "Europe/London", "gb")]
-        [InlineData("GMT Standard Time", "Europe/Dublin", "ie")]
-        [InlineData("W. Europe Standard Time", "Europe/Rome", "it")]
-        [InlineData("New Zealand Standard Time", "Pacific/Auckland", "nz")]
-        public static void IdsConversionsWithRegionTest(string windowsId, string ianaId, string region)
+        [InlineData("Cen. Australia Standard Time", "au", "Australia/Adelaide")]
+        [InlineData("AUS Central Standard Time", "au", "Australia/Darwin")]
+        [InlineData("E. Australia Standard Time", "au", "Australia/Brisbane")]
+        [InlineData("AUS Eastern Standard Time", "au", "Australia/Sydney")]
+        [InlineData("Tasmania Standard Time", "au", "Australia/Hobart")]
+        [InlineData("Romance Standard Time", "es", "Europe/Madrid")]
+        [InlineData("Romance Standard Time", "Es", "Europe/Madrid")]
+        [InlineData("Romance Standard Time", "eS", "Europe/Madrid")]
+        [InlineData("GMT Standard Time", "gb", "Europe/London")]
+        [InlineData("GMT Standard Time", "ie", "Europe/Dublin")]
+        [InlineData("W. Europe Standard Time", "it", "Europe/Rome")]
+        [InlineData("New Zealand Standard Time", "nz", "Pacific/Auckland")]
+        public static void IdsConversionsWithRegionTest(string windowsId, string region, params string[] ianaIds)
         {
             Assert.True(TimeZoneInfo.TryConvertWindowsIdToIanaId(windowsId, region, out string ianaConvertedId));
-            Assert.Equal(ianaId, ianaConvertedId);
+            Assert.Contains(ianaConvertedId, ianaIds);
         }
 
         // We test the existence of a specific English time zone name to avoid failures on non-English platforms.
@@ -3320,6 +3320,48 @@ namespace System.Tests
         {
             TimeZoneInfo timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
             Assert.Equal(expectedIsInvalid, timeZone.IsInvalidTime(testTime));
+        }
+
+        public static TheoryData<string, DateTime, DateTime> InvalidLocalTimeToUniversalTimeData => new()
+        {
+            // Spring-forward gap (invalid local times); expected UTC subtracts the standard offset.
+            // Each row lists the time zone, the invalid local wall-clock time, and the expected UTC result.
+
+            // UTC+1 standard offset.
+            { "Europe/Berlin", new DateTime(2026, 3, 29, 2, 30, 0), new DateTime(2026, 3, 29, 1, 30, 0) },
+            // UTC+0 standard offset.
+            { "Europe/Lisbon", new DateTime(2026, 3, 29, 1, 30, 0), new DateTime(2026, 3, 29, 1, 30, 0) },
+            { "Europe/London", new DateTime(2026, 3, 29, 1, 30, 0), new DateTime(2026, 3, 29, 1, 30, 0) },
+            // Negative (behind UTC) standard offset: EST is UTC-5, so UTC is ahead of the local wall clock.
+            { "America/New_York", new DateTime(2026, 3, 8, 2, 30, 0), new DateTime(2026, 3, 8, 7, 30, 0) },
+        };
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [MemberData(nameof(InvalidLocalTimeToUniversalTimeData))]
+        public static void ToUniversalTime_InvalidLocalTime_SubtractsStandardOffset(string timeZoneId, DateTime wallClock, DateTime expectedUtcWallClock)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/134846.
+            // For a Local DateTime in the spring-forward gap (an invalid time), ToUniversalTime()
+            // must subtract the standard UTC offset. The expected result is asserted against an
+            // independent literal value and cross-checked with GetUtcOffset and DateTimeOffset.
+            RemoteExecutor.Invoke(static (id, ticks, expectedTicks) =>
+            {
+                Environment.SetEnvironmentVariable("TZ", id);
+                TimeZoneInfo.ClearCachedData();
+
+                TimeZoneInfo local = TimeZoneInfo.Local;
+                DateTime invalidLocal = DateTime.SpecifyKind(new DateTime(long.Parse(ticks)), DateTimeKind.Local);
+                DateTime expectedUtc = new DateTime(long.Parse(expectedTicks), DateTimeKind.Utc);
+                Assert.True(local.IsInvalidTime(invalidLocal), $"Expected an invalid time for '{id}'.");
+
+                Assert.Equal(expectedUtc, invalidLocal.ToUniversalTime());
+                Assert.Equal(expectedUtc, new DateTimeOffset(invalidLocal).UtcDateTime);
+
+                // The subtracted offset must match the standard (non-daylight) offset reported for this time.
+                TimeSpan offset = local.GetUtcOffset(invalidLocal);
+                Assert.Equal(expectedUtc, new DateTime(invalidLocal.Ticks - offset.Ticks, DateTimeKind.Utc));
+            }, timeZoneId, wallClock.Ticks.ToString(), expectedUtcWallClock.Ticks.ToString()).Dispose();
         }
 
         public static TheoryData<DateTime, string, bool> AmbiguousTimeTestData => new()

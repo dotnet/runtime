@@ -71,20 +71,6 @@ struct ee_alloc_context
         m_GCAllocContext.alloc_ptr = ptr;
     }
 
-    uint8_t* getAllocLimit()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_GCAllocContext.alloc_limit;
-    }
-
-    // Regenerate the randomized sampling limit and update the m_CombinedLimit field.
-    inline void UpdateCombinedLimit()
-    {
-        // The randomized sampling feature is being submitted in stages. At this point the sampling is never
-        // activated so m_CombinedLimit is always equal to alloc_limit.
-        m_CombinedLimit = m_GCAllocContext.alloc_limit;
-    }
-
     static inline bool IsRandomizedSamplingEnabled()
     {
 #ifdef FEATURE_EVENT_TRACE
@@ -229,6 +215,21 @@ public:
         return IsServerHeap() && g_SystemInfo.dwNumberOfProcessors >= 2;
     }
 
+    // Returns true if only the single-pass roots should be scanned for the given scan context.
+    // When scanning over GC roots that are unpinned on the EE side,
+    // we need to ensure that we don't ever double-scan the same roots at the same addresses.
+    // When GC compaction occurs, we would end up moving the addresses of the target objects multiple times
+    // and possibly end up with them pointing at incorrect objects.
+    // Therefore, we restrict scanning these unpinned roots to a single pass.
+    inline static bool ShouldScanUnpinnedRoots(ScanContext* sc)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        // Only scan unpinned roots on the 0th thread's scan context.
+        // Every GC MUST always report exactly one context with thread number 0.
+        return (sc->thread_number == 0);
+    }
+
     // Waits until a GC is complete, if the heap has been initialized.
     inline static void WaitForGCCompletion(bool bConsiderGCStart = false)
     {
@@ -335,4 +336,3 @@ private:
 };
 
 #endif // _GCHEAPUTILITIES_H_
-

@@ -46,6 +46,7 @@
     <Compile Include="..\..\Common\Pgo\PgoFormat.cs" Link="Common\Pgo\PgoFormat.cs" />
     <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="Common\Pgo\TypeSystemEntityOrUnknown.cs" />
     <Compile Include="..\..\Common\System\FormattingHelpers.cs" Link="Common\FormattingHelpers.cs" />
+    <Compile Include="..\..\Common\TypeSystem\CodeGen\INonEmittableType.cs" Link="TypeSystem\CodeGen\INonEmittableType.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILProvider.cs" Link="IL\ILProvider.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="IL\ILReader.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncThunks.cs" Link="IL\Stubs\AsyncThunks.cs" />
@@ -57,6 +58,7 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs" Link="IL\Stubs\UnsafeIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeILCodeStreams.cs" Link="IL\Stubs\PInvokeILCodeStreams.cs" />
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\LinkageMetadata.cs" Link="Interop\IL\LinkageMetadata.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\Marshaller.cs" Link="Interop\IL\Marshaller.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshallerKind.cs" Link="Interop\IL\MarshallerKind.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs" Link="Interop\IL\MarshalHelpers.cs" />
@@ -70,6 +72,7 @@
     <Compile Include="..\..\Common\Compiler\CompilationBuilder.cs" Link="Compiler\CompilationBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\CompilationModuleGroup.cs" Link="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.cs" Link="Compiler\CompilerTypeSystemContext.cs" />
+    <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.BoxedTypes.cs" Link="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Validation.cs" Link="Compiler\CompilerTypeSystemContext.Validation.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Async.cs" Link="Compiler\CompilerTypeSystemContext.Async.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Wasm.cs" Link="Compiler\CompilerTypeSystemContext.Wasm.cs" />
@@ -93,6 +96,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithFunclets.cs" Link="Compiler\DependencyAnalysis\INodeWithFunclets.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\FuncletKind.cs" Link="Compiler\DependencyAnalysis\FuncletKind.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" Link="Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithLinkageMetadata.cs" Link="Compiler\DependencyAnalysis\INodeWithLinkageMetadata.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectDumper.cs" Link="Compiler\DependencyAnalysis\IObjectDumper.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" Link="Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" />
@@ -197,11 +201,14 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\StringTableBuilder.cs" Link="Compiler\ObjectWriter\StringTableBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmDataSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmDataSection.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmDataSegment.cs" Link="Compiler\ObjectWriter\Wasm\WasmDataSegment.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmNameSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmNameSection.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\IWasmDataSegment.cs" Link="Compiler\ObjectWriter\Wasm\IWasmDataSegment.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmByteArrayDataSegment.cs" Link="Compiler\ObjectWriter\Wasm\WasmByteArrayDataSegment.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WebcilPayloadDataSegment.cs" Link="Compiler\ObjectWriter\Wasm\WebcilPayloadDataSegment.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmSection.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmSections.cs" Link="Compiler\ObjectWriter\Wasm\WasmSections.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WebcilSection.cs" Link="Compiler\ObjectWriter\Wasm\WebcilSection.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmFunctionBodyDeduplicator.cs" Link="Compiler\ObjectWriter\WasmFunctionBodyDeduplicator.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmObjectWriter.cs" Link="Compiler\ObjectWriter\WasmObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WebCilObjectWriter.cs" Link="Compiler\ObjectWriter\WebCilObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmSymbolManager.cs" Link="Compiler\ObjectWriter\WasmSymbolManager.cs" />
@@ -239,10 +246,12 @@
     <Compile Include="Compiler\Logger.cs" />
     <Compile Include="Compiler\ReadyToRunExternalTypeMapNode.cs" />
     <Compile Include="Compiler\ReadyToRunProxyTypeMapNode.cs" />
+    <Compile Include="Compiler\ReadyToRunTypeMapEncoding.cs" />
     <Compile Include="Compiler\ReadyToRunTypeMapManager.cs" />
     <Compile Include="Compiler\ReadyToRunVisibilityRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunProfilingRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunHardwareIntrinsicRootProvider.cs" />
+    <Compile Include="Compiler\ReadyToRunJitHelperRootProvider.cs" />
     <Compile Include="Compiler\TypeMapAssemblyTargetsNode.cs" />
     <Compile Include="ObjectWriter\MapFileBuilder.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
@@ -276,7 +285,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugInfoTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GCRefMapBuilder.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GCRefMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GenericLookupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelegateCtorSignature.cs" />
@@ -330,10 +338,17 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeHandle.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\VirtualResolutionFixupSignature.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunkPortableEntrypoint.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmAsyncResumeInfoFixupsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmClosedStaticRetBufThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunkPortableEntrypoint.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmInterpreterToR2RThunkNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmMethodFrameIdentityNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmMethodRelativeVirtualIPNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmR2RToInterpreterThunkNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmThunkArgLayout.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmUnboxingStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmVirtualDispatchThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Win32ResourcesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
@@ -377,6 +392,13 @@
     <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />
     <Compile Include="IL\ReadyToRunILProvider.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
+    <Compile Include="PortableCallHelpers\PortableCallHelpersGenerator.cs" />
+    <Compile Include="PortableCallHelpers\InteropSignature.cs" />
+    <Compile Include="PortableCallHelpers\InternalCallSignatureCollector.cs" />
+    <Compile Include="PortableCallHelpers\InterpToNativeGenerator.cs" />
+    <Compile Include="PortableCallHelpers\PInvokeCollector.cs" />
+    <Compile Include="PortableCallHelpers\PInvokeTableGenerator.cs" />
+    <Compile Include="PortableCallHelpers\TypeNames.cs" />
     <Compile Include="JitInterface\WasmLowering.ReadyToRun.cs" />
     <Compile Include="ObjectWriter\TargetExtensions.cs" />
     <Compile Include="TypeSystem\MethodDescExtensions.cs" />

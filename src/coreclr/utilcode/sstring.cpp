@@ -1,10 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// ---------------------------------------------------------------------------
-// SString.cpp
-//
-
-// ---------------------------------------------------------------------------
 
 #include "stdafx.h"
 #include "sstring.h"
@@ -1644,31 +1639,6 @@ void SString::LowerCase(__inout_z LPWSTR wszString)
     for (WCHAR * pwch = wszString; *pwch != '\0'; ++pwch)
     {
         *pwch = (CAN_SIMPLE_DOWNCASE(*pwch) ? SIMPLE_DOWNCASE(*pwch) : MapChar(*pwch, LCMAP_LOWERCASE));
-    }
-}
-
-//-----------------------------------------------------------------------------
-// Convert string to unicode uppercase using the invariant culture
-// Note: Please don't use it in PATH as multiple character can map to the same
-// upper case symbol
-//-----------------------------------------------------------------------------
-void SString::UpperCase()
-{
-    SS_CONTRACT_VOID
-    {
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(this));
-        if (IsRepresentation(REPRESENTATION_UNICODE)) NOTHROW; else THROWS;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    SS_CONTRACT_END;
-
-    ConvertToUnicode();
-
-    for (WCHAR *pwch = GetRawUnicode(); pwch < GetRawUnicode() + GetRawCount(); ++pwch)
-    {
-        *pwch = (CAN_SIMPLE_UPCASE(*pwch) ? SIMPLE_UPCASE(*pwch) : MapChar(*pwch, LCMAP_UPPERCASE));
     }
 }
 
