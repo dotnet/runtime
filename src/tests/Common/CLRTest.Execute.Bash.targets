@@ -260,7 +260,7 @@ fi
     </ItemGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
-      <!-- WASI corerun.wasm needs to be launched under wasmtime. The wasm
+      <!-- WASI executables need to be launched under wasmtime. The wasm
            exception handling proposal must be enabled, both the CORE_ROOT
            and the per-test bin directory must be preopened so corerun can
            probe for CoreLib (in CORE_ROOT, via $CORE_ROOT=/core) and load
@@ -275,7 +275,8 @@ fi
            configuration and the out-of-process test protocol variables
            from the host. wasmtime keeps the first value given for a variable,
            so it comes last and cannot override the guest settings. -->
-      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y -S http --dir "$PWD::/" --dir "$CORE_ROOT::/core" "${__WasiUploadArgs[@]}" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true ${__WasiR2RArgs} ${__WasiEnvArgs} "$__WasiCorerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y -S http --dir "$PWD::/" --dir "$CORE_ROOT::/core" "${__WasiUploadArgs[@]}" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true ${__WasiR2RArgs} ${__WasiEnvArgs}</CLRTestRunFile>
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi' and '$(TestBuildMode)' != 'nativeaot'">$(CLRTestRunFile) "$__WasiCorerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
       <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMins</WatcherRunFile>
       <!-- WASI has no watchdog binary in Core_Root (skipped in
            src/coreclr/CMakeLists.txt for wasm targets); use coreutils
@@ -513,6 +514,12 @@ if [ ! -z ${RunCrossGen2+x} ] && [ "$(CrossGenTest)" != "false" ]; then
   # cannot discover a composite that is not spliced into its own corerun.
   __WasiR2RArgs="--env TEST_READY_TO_RUN_MODE=1 --env APP_ASSEMBLIES=EXTERNAL --env CORE_LIBRARIES=/IL-CG2/wasi-r2r"
 fi
+      ]]>
+      </CLRTestBashPreCommands>
+
+      <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestIsHosted)' == 'true' and '$(TargetOS)' == 'wasi' and '$(TestBuildMode)' == 'nativeaot'"><![CDATA[
+$(CLRTestBashPreCommands)
+ExePath="$PWD/native/%24(basename "$ExePath" .dll).wasm"
       ]]>
       </CLRTestBashPreCommands>
 
