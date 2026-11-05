@@ -616,9 +616,10 @@ internal partial class MockDescriptors
         internal MockTypeVarTypeDesc AddTypeVarTypeDesc()
             => Add(TypeVarTypeDescLayout, "TypeVarTypeDesc");
 
-        // Value of the native FieldDesc::m_dwOffset sentinel FIELD_OFFSET_BIG_RVA (FIELD_OFFSET_MAX - 5,
-        // where FIELD_OFFSET_MAX == (1 << 27) - 1). See src/coreclr/vm/field.h.
+        // Native FieldDesc::m_dwOffset sentinels relative to FIELD_OFFSET_MAX == (1 << 27) - 1.
+        // See src/coreclr/vm/field.h.
         internal const uint FieldOffsetBigRVAValue = ((1u << 27) - 1) - 5;
+        internal const uint FieldOffsetDynamicRVAValue = ((1u << 27) - 1) - 6;
 
         // Allocates a FieldDesc whose packed DWord2 stores the given 5-bit field type and 27-bit offset.
         internal MockFieldDesc AddFieldDesc(ulong mtOfEnclosingClass, CorElementType type, uint offset, uint memberDef = 0)
@@ -655,6 +656,32 @@ internal partial class MockDescriptors
         {
             MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(size, name);
             return layout.Create(fragment.Data.AsMemory(), fragment.Address);
+        }
+
+        /// <summary>
+        /// Allocates a method table followed by one vtable indirection and its chunk of virtual slots
+        /// (MethodTable::GetSlotPtrRaw: the indirections start immediately after the MethodTable).
+        /// Sets <c>NumVirtuals</c> to the number of slots given.
+        /// </summary>
+        internal MockMethodTable AddMethodTableWithVtable(string name, ulong[] vtableSlots)
+        {
+            const int SlotsPerIndirection = 8;
+            if (vtableSlots.Length > SlotsPerIndirection)
+                throw new ArgumentOutOfRangeException(nameof(vtableSlots));
+
+            int pointerSize = Builder.TargetTestHelpers.PointerSize;
+            int indirectionOffset = MethodTableLayout.Size;
+            int chunkOffset = indirectionOffset + pointerSize;
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(
+                (ulong)(chunkOffset + SlotsPerIndirection * pointerSize), $"MethodTable+vtable '{name}'");
+
+            Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(indirectionOffset, pointerSize), fragment.Address + (ulong)chunkOffset);
+            for (int i = 0; i < vtableSlots.Length; i++)
+                Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(chunkOffset + i * pointerSize, pointerSize), vtableSlots[i]);
+
+            MockMethodTable mt = MethodTableLayout.Create(fragment.Data.AsMemory(0, MethodTableLayout.Size), fragment.Address);
+            mt.NumVirtuals = (ushort)vtableSlots.Length;
+            return mt;
         }
 
         /// <summary>

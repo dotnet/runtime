@@ -735,7 +735,6 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - phil-allen-msft
             - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -760,7 +759,6 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - phil-allen-msft
             - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1094,7 +1092,6 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - phil-allen-msft
             - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1222,7 +1219,6 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - phil-allen-msft
             - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}

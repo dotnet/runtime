@@ -4382,6 +4382,18 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
             memSize = defaultSize / 2;
         }
     }
+    else if (tupleType == INS_TT_QUARTER)
+    {
+        // Embedded broadcast supported, so either loading scalar or quarter vector
+        if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
+        {
+            memSize = GetInputSizeInBytes(id);
+        }
+        else
+        {
+            memSize = defaultSize / 4;
+        }
+    }
     else if (tupleType == INS_TT_FULL_MEM)
     {
         // Embedded broadcast not supported, load full vector

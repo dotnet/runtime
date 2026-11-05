@@ -24,6 +24,10 @@
     <DirectPInvoke Include="__Internal" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(PublishReadyToRun)' == 'true'">
+    <EnvironmentVariables Include="TEST_READY_TO_RUN_MODE=1" />
+  </ItemGroup>
+
   <PropertyGroup>
     <BuildTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(Scenario)' == 'BuildAppleApps'">helix</BuildTestsOn>
     <BuildTestsOn Condition="'$(BuildTestsOnHelix)' == 'true'">helix</BuildTestsOn>

@@ -624,6 +624,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_MustBeEnum);
             }
         }
+        public override bool IsByRefLike => false;
         public override bool IsSZArray => false;
         public override Guid GUID => throw new NotSupportedException();
         public override Type? BaseType => _typeParent;

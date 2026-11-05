@@ -3827,7 +3827,7 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        if (m_compiler->lvaLocalIsOnUnknownSizeFrame(varNum))
         {
             continue;
         }
@@ -4202,7 +4202,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
             noway_assert(varDsc->lvOnFrame);
 
-            if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+            if (m_compiler->lvaLocalIsOnUnknownSizeFrame(varNum))
             {
                 // This local will belong on the UnknownSizeFrame, which will handle zeroing instead.
                 continue;
@@ -4931,20 +4931,6 @@ void CodeGen::genFinalizeFrame()
         JITDUMP("Setting genReverseAndPairCalleeSavedRegisters = true");
 
         genReverseAndPairCalleeSavedRegisters = true;
-
-        // Make sure we push the registers in pairs if possible. If we only allocate a contiguous
-        // block of registers this should add at most one integer and at most one floating point
-        // register to the list. The stack has to be 16-byte aligned, so in worst case it results
-        // in allocating 16 bytes more space on stack if odd number of integer and odd number of
-        // FP registers were occupied. Same number of instructions will be generated, just the
-        // STR instructions are replaced with STP (store pair).
-        regMaskTP maskModifiedRegs = regSet.rsGetModifiedRegsMask();
-        regMaskTP maskPairRegs     = ((maskModifiedRegs & (RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14)).getLow() << 1) |
-                                 ((maskModifiedRegs & (RBM_R19 | RBM_R21 | RBM_R23 | RBM_R25 | RBM_R27)).getLow() << 1);
-        if (maskPairRegs != RBM_NONE)
-        {
-            regSet.rsSetRegsModified(maskPairRegs);
-        }
     }
 
     if (m_compiler->compUsesUnknownSizeFrame)
@@ -5015,6 +5001,19 @@ void CodeGen::genFinalizeFrame()
         regSet.rsSetRegsModified(RBM_PROFILER_ENTER_ARG_0 | RBM_PROFILER_ENTER_ARG_1);
     }
 #endif
+
+#ifdef TARGET_ARM64
+    // Keep register pairs aligned to avoid expensive page-crossing saves and restores.
+    // For contiguous save sets, this adds at most one integer and one floating-point register, replacing
+    // STR/LDR with STP/LDP. If both sets have odd sizes, the frame grows by 16 bytes.
+    regMaskTP maskModifiedRegs = regSet.rsGetModifiedRegsMask();
+    regMaskTP maskPairRegs     = ((maskModifiedRegs & (RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14)).getLow() << 1) |
+                             ((maskModifiedRegs & (RBM_R19 | RBM_R21 | RBM_R23 | RBM_R25 | RBM_R27)).getLow() << 1);
+    if (maskPairRegs != RBM_NONE)
+    {
+        regSet.rsSetRegsModified(maskPairRegs);
+    }
+#endif // TARGET_ARM64
 
     /* Count how many callee-saved registers will actually be saved (pushed) */
 
@@ -5302,7 +5301,7 @@ void CodeGen::genFnProlog()
             continue;
         }
 
-        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        if (m_compiler->lvaLocalIsOnUnknownSizeFrame(varNum))
         {
             continue;
         }
@@ -6410,151 +6409,6 @@ void CodeGen::genSinglePush()
     AddStackLevel(REGSIZE_BYTES);
 }
 
-//------------------------------------------------------------------------
-// genSinglePop: Report a change in stack level caused by a single word-sized pop instruction
-//
-void CodeGen::genSinglePop()
-{
-    SubtractStackLevel(REGSIZE_BYTES);
-}
-
-//------------------------------------------------------------------------
-// genPushRegs: Push the given registers.
-//
-// Arguments:
-//    regs - mask or registers to push
-//    byrefRegs - OUT arg. Set to byref registers that were pushed.
-//    noRefRegs - OUT arg. Set to non-GC ref registers that were pushed.
-//
-// Return Value:
-//    Mask of registers pushed.
-//
-// Notes:
-//    This function does not check if the register is marked as used, etc.
-//
-regMaskTP CodeGen::genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs)
-{
-    *byrefRegs = RBM_NONE;
-    *noRefRegs = RBM_NONE;
-
-    if (regs == RBM_NONE)
-    {
-        return RBM_NONE;
-    }
-
-#if FEATURE_FIXED_OUT_ARGS
-
-    NYI("Don't call genPushRegs with real regs!");
-    return RBM_NONE;
-
-#else // FEATURE_FIXED_OUT_ARGS
-
-    noway_assert(genTypeStSz(TYP_REF) == genTypeStSz(TYP_I_IMPL));
-    noway_assert(genTypeStSz(TYP_BYREF) == genTypeStSz(TYP_I_IMPL));
-
-    regMaskTP pushedRegs = regs;
-    for (regNumber reg = REG_INT_FIRST; reg <= get_REG_INT_LAST(); reg = REG_NEXT(reg))
-    {
-        regMaskTP regMask = genRegMask(reg);
-
-        if ((regMask & pushedRegs) == RBM_NONE)
-            continue;
-
-        var_types type;
-        if (regMask & gcInfo.gcRegGCrefSetCur)
-        {
-            type = TYP_REF;
-        }
-        else if (regMask & gcInfo.gcRegByrefSetCur)
-        {
-            *byrefRegs |= regMask;
-            type = TYP_BYREF;
-        }
-        else if (noRefRegs != NULL)
-        {
-            *noRefRegs |= regMask;
-            type = TYP_I_IMPL;
-        }
-        else
-        {
-            continue;
-        }
-
-        inst_RV(INS_push, reg, type);
-
-        genSinglePush();
-        gcInfo.gcMarkRegSetNpt(regMask);
-    }
-
-    return pushedRegs;
-
-#endif // FEATURE_FIXED_OUT_ARGS
-}
-
-//------------------------------------------------------------------------
-// genPopRegs: Pop the registers that were pushed by genPushRegs().
-//
-// Arguments:
-//    regs - mask of registers to pop
-//    byrefRegs - The byref registers that were pushed by genPushRegs().
-//    noRefRegs - The non-GC ref registers that were pushed by genPushRegs().
-//
-// Return Value:
-//    None
-//
-void CodeGen::genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs)
-{
-    if (regs == RBM_NONE)
-    {
-        return;
-    }
-
-#if FEATURE_FIXED_OUT_ARGS
-
-    NYI("Don't call genPopRegs with real regs!");
-
-#else // FEATURE_FIXED_OUT_ARGS
-
-    noway_assert((regs & byrefRegs) == byrefRegs);
-    noway_assert((regs & noRefRegs) == noRefRegs);
-    noway_assert((regs & (gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur)) == RBM_NONE);
-
-    noway_assert(genTypeStSz(TYP_REF) == genTypeStSz(TYP_INT));
-    noway_assert(genTypeStSz(TYP_BYREF) == genTypeStSz(TYP_INT));
-
-    regMaskTP popedRegs = regs;
-
-    // Walk the registers in the reverse order as genPushRegs()
-    for (regNumber reg = get_REG_INT_LAST(); reg >= REG_INT_FIRST; reg = REG_PREV(reg))
-    {
-        regMaskTP regMask = genRegMask(reg);
-
-        if ((regMask & popedRegs) == RBM_NONE)
-            continue;
-
-        var_types type;
-        if (regMask & byrefRegs)
-        {
-            type = TYP_BYREF;
-        }
-        else if (regMask & noRefRegs)
-        {
-            type = TYP_INT;
-        }
-        else
-        {
-            type = TYP_REF;
-        }
-
-        inst_RV(INS_pop, reg, type);
-        genSinglePop();
-
-        if (type != TYP_INT)
-            gcInfo.gcMarkRegPtrVal(reg, type);
-    }
-
-#endif // FEATURE_FIXED_OUT_ARGS
-}
 #endif // !TARGET_WASM
 
 #ifdef DEBUG
@@ -8491,7 +8345,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
         assert(varDsc->lvOnFrame);
 
 #ifdef TARGET_ARM64
-        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        if (m_compiler->lvaLocalIsOnUnknownSizeFrame(varNum))
         {
             genPoisonUnknownSizeVariable(varNum, (char)poisonVal);
             continue;

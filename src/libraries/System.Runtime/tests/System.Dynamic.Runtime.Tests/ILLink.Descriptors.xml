@@ -1,0 +1,6 @@
+<linker>
+  <!-- Conformance tests call DateTime members only through 'dynamic', which the trimmer can't see. -->
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.DateTime" preserve="methods" />
+  </assembly>
+</linker>

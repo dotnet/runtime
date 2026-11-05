@@ -946,6 +946,15 @@ namespace ILCompiler
                         {
                             if (genericParam.HasReferenceTypeConstraint)
                                 return false;
+
+                            // C# encodes the 'struct' and 'unmanaged' constraints as a System.ValueType type constraint.
+                            // Every primitive satisfies it, and it exposes nothing beyond what an unconstrained
+                            // type parameter already can, so only other (interface or class) constraints disqualify.
+                            foreach (TypeDesc constraint in genericParam.TypeConstraints)
+                            {
+                                if (!constraint.IsWellKnownType(WellKnownType.ValueType))
+                                    return false;
+                            }
                         }
                         else
                         {
@@ -955,11 +964,11 @@ namespace ILCompiler
 
                             if (instType.IsString && genericParam.HasDefaultConstructorConstraint)
                                 return false;
-                        }
 
-                        // This checks to see if the type constraints list is empty
-                        if (genericParam.TypeConstraints.GetEnumerator().MoveNext())
-                            return false;
+                            // This checks to see if the type constraints list is empty
+                            if (genericParam.TypeConstraints.GetEnumerator().MoveNext())
+                                return false;
+                        }
                     }
                     else
                     {

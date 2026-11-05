@@ -99,6 +99,37 @@ namespace ILCompiler.ObjectWriter
             bufferWriter.Advance(value.Length);
         }
 
+        public readonly void WriteUnsigned(uint value)
+        {
+            if (value < 128)
+            {
+                WriteByte((byte)(value * 2));
+            }
+            else if (value < 128 * 128)
+            {
+                WriteByte((byte)(value * 4 + 1));
+                WriteByte((byte)(value >> 6));
+            }
+            else if (value < 128 * 128 * 128)
+            {
+                WriteByte((byte)(value * 8 + 3));
+                WriteByte((byte)(value >> 5));
+                WriteByte((byte)(value >> 13));
+            }
+            else if (value < 128 * 128 * 128 * 128)
+            {
+                WriteByte((byte)(value * 16 + 7));
+                WriteByte((byte)(value >> 4));
+                WriteByte((byte)(value >> 12));
+                WriteByte((byte)(value >> 20));
+            }
+            else
+            {
+                WriteByte(15);
+                WriteLittleEndian(value);
+            }
+        }
+
         public readonly void WriteULEB128(ulong value) => DwarfHelper.WriteULEB128(_sectionData.BufferWriter, value);
 
         public readonly void WriteSLEB128(long value) => DwarfHelper.WriteSLEB128(_sectionData.BufferWriter, value);

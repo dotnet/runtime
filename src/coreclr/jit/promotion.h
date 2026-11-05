@@ -17,16 +17,12 @@ const int PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT = 64;
 // Represents a single replacement of a (field) access into a struct local.
 struct Replacement
 {
-    unsigned  Offset;
-    var_types AccessType;
-    unsigned  LclNum = BAD_VAR_NUM;
-    // Is the replacement local (given by LclNum) fresher than the value in the struct local?
-    bool NeedsWriteBack = true;
-    // Is the value in the struct local fresher than the replacement local?
-    // Note that the invariant is that this is always false at the entrance to
-    // a basic block, i.e. all predecessors would have read the replacement
-    // back before transferring control if necessary.
-    bool NeedsReadBack = false;
+    BasicBlock* ReadBackPlacement = nullptr;
+    unsigned    Offset;
+    var_types   AccessType;
+    unsigned    LclNum = BAD_VAR_NUM;
+    // Index in dense set of all replacements
+    unsigned ReplacementIndex = BAD_VAR_NUM;
 #ifdef DEBUG
     const char* Description = "";
 #endif
@@ -154,8 +150,7 @@ class Promotion
 
     static bool     IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
     static GenTree* EffectiveUser(Compiler::GenTreeStack& ancestors);
-    static bool     MapsToParameterRegister(
-            Compiler* comp, unsigned lclNum, unsigned offs, var_types accessType, bool allowBitwiseExtraction = true);
+    static bool     MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offs, var_types accessType);
 public:
     explicit Promotion(Compiler* compiler)
         : m_compiler(compiler)
@@ -214,20 +209,25 @@ public:
     }
 
     void         Run();
+    bool         IsReplacementUsed(BasicBlock* bb, unsigned structLcl, unsigned replacement);
+    bool         IsReplacementDefined(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     bool         IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     bool         IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     StructDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
 
 private:
-    void     MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet);
-    unsigned GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarCommon* lcl);
-    void     MarkIndex(unsigned index, bool isUse, bool isDef, BitVec& useSet, BitVec& defSet);
-    void     ComputeUseDefSets();
-    void     InterBlockLiveness();
-    bool     PerBlockLiveness(BasicBlock* block);
-    void     AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars);
-    void     FillInLiveness();
-    void     FillInLiveness(BitVec& life, BitVec volatileVars, Statement* stmt, GenTreeLclVarCommon* lcl);
+    template <typename TOccurrence>
+    void MarkUseDef(Statement* stmt, const TOccurrence& occurrence, BitVec& useSet, BitVec& defSet);
+
+    unsigned GetSizeOfLocalAddrDef(Statement* stmt, GenTree* lclAddr);
+
+    void MarkIndex(unsigned index, bool isUse, bool isDef, BitVec& useSet, BitVec& defSet);
+    void ComputeUseDefSets();
+    void InterBlockLiveness();
+    bool PerBlockLiveness(BasicBlock* block);
+    void AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars);
+    void FillInLiveness();
+    void FillInLiveness(BitVec& life, BitVec volatileVars, Statement* stmt, GenTreeLclVarCommon* lcl);
 #ifdef DEBUG
     void DumpVarSet(BitVec set, BitVec allVars);
 #endif
@@ -243,11 +243,37 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     Promotion*         m_promotion;
     AggregateInfoMap&  m_aggregates;
     PromotionLiveness* m_liveness;
-    bool               m_madeChanges         = false;
-    unsigned           m_numPendingReadBacks = 0;
-    bool               m_mayHaveForwardSub   = false;
-    Statement*         m_currentStmt         = nullptr;
-    BasicBlock*        m_currentBlock        = nullptr;
+    bool               m_madeChanges       = false;
+    bool               m_mayHaveForwardSub = false;
+    Statement*         m_currentStmt       = nullptr;
+    BasicBlock*        m_currentBlock      = nullptr;
+
+    FlowGraphDfsTree* m_dfsTree;
+    BitVecTraits*     m_replacementsTraits;
+    BitVecTraits      m_postOrderTraits;
+    BitVec*           m_pendingReadBacks;
+    BitVec*           m_currentStructFields;
+    BitVec            m_requiresAlreadyReadBackOnEntry;
+    BitVec            m_requiresReadBackOnExit;
+
+    // Replacements that need to be read back into their locals.
+    BitVec m_needsReadBack;
+    // Replacements that are up-to-date in their struct home.
+    BitVec m_structCurrent;
+
+    // Scratch bit vector used to compute replacements that disagree on status
+    // in some predecessors.
+    BitVec m_reconcileReadBacks;
+    // Replacements that need readbacks in the entry block (parameters/OSR locals).
+    BitVec m_entryReadBacks;
+
+    struct ReplacementInfo
+    {
+        AggregateInfo* Aggregate;
+        unsigned       Index;
+    };
+
+    ReplacementInfo* m_replacementInfo;
 
 public:
     enum
@@ -257,13 +283,12 @@ public:
         ComputeStack      = true,
     };
 
-    ReplaceVisitor(Promotion* prom, AggregateInfoMap& aggregates, PromotionLiveness* liveness)
-        : GenTreeVisitor(prom->m_compiler)
-        , m_promotion(prom)
-        , m_aggregates(aggregates)
-        , m_liveness(liveness)
-    {
-    }
+    ReplaceVisitor(Promotion*         prom,
+                   AggregateInfoMap&  aggregates,
+                   PromotionLiveness* liveness,
+                   FlowGraphDfsTree*  dfsTree);
+
+    void PrepareReadBacks();
 
     bool MadeChanges()
     {
@@ -275,13 +300,27 @@ public:
         return m_mayHaveForwardSub;
     }
 
-    Statement* StartBlock(BasicBlock* block);
-    void       EndBlock();
-    void       StartStatement(Statement* stmt);
+    void StartBlock(BasicBlock* block);
+    void EndBlock();
+    void StartStatement(Statement* stmt);
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
 private:
+    void PlanReadBacks();
+    bool MustMaterializeReadBacks(BasicBlock* block);
+    void InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, Replacement& rep);
+
+    bool NeedsReadBack(const Replacement& rep) const
+    {
+        return BitVecOps::IsMember(m_replacementsTraits, m_needsReadBack, rep.ReplacementIndex);
+    }
+
+    bool NeedsWriteBack(const Replacement& rep) const
+    {
+        return !BitVecOps::IsMember(m_replacementsTraits, m_structCurrent, rep.ReplacementIndex);
+    }
+
     void SetNeedsWriteBack(Replacement& rep);
     void ClearNeedsWriteBack(Replacement& rep);
     void SetNeedsReadBack(Replacement& rep);

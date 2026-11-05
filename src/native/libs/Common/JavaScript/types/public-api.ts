@@ -68,6 +68,10 @@ export interface DotnetHostBuilder {
      */
     withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder;
     /**
+     * Sets a callback that is invoked after the runtime configuration is loaded.
+     */
+    withConfigLoaded(callback?: (config: LoaderConfig) => void | Promise<void>): DotnetHostBuilder;
+    /**
      * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
      * from a custom source, such as an external CDN.
      */
@@ -226,6 +230,7 @@ export interface Assets {
     modulesAfterRuntimeReady?: JsAsset[];
     extensions?: ResourceExtensions;
     vfs?: VfsAsset[];
+    appsettings?: AppSettings[];
 }
 export type Asset = {
     /**
@@ -269,6 +274,11 @@ export type WebcilAsset = AssemblyAsset & {
      * plain (non-R2R) webcil.
      */
     tableSize?: number;
+    /**
+     * Set on the composite ReadyToRun owner image. It carries native code for its component assemblies
+     * but is not itself a managed assembly: it keeps its .wasm virtual path and is not a trusted platform assembly.
+     */
+    isCompositeImage?: boolean;
 };
 export type PdbAsset = Asset & {
     virtualPath: string;
@@ -291,6 +301,9 @@ export type VfsAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+};
+export type AppSettings = VfsAsset & {
+    loadIntoVfs: boolean;
 };
 export type IcuAsset = Asset & {
     virtualPath: string;
@@ -423,6 +436,10 @@ export type AssetBehaviors = SingleAssetBehaviors |
      */
     | "vfs"
     /**
+     * Retain application settings in JavaScript memory and optionally install them into VFS.
+     */
+    | "appsettings"
+    /**
      * The javascript module that came from nuget package .
      */
     | "js-module-library-initializer"
@@ -452,9 +469,6 @@ export declare const enum GlobalizationMode {
 
 export type DotnetModuleConfig = {
     config?: LoaderConfig;
-    onConfigLoaded?: (config: LoaderConfig) => void | Promise<void>;
-    onDotnetReady?: () => void | Promise<void>;
-    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     imports?: any;
     exports?: string[];
 } & Partial<EmscriptenModule>;
@@ -748,4 +762,3 @@ export declare function exit(exitCode: number, reason?: any): void;
 export declare const dotnet: DotnetHostBuilder;
 
 export declare const createDotnetRuntime: CreateDotnetRuntimeType;
-

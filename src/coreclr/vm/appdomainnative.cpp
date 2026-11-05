@@ -13,6 +13,7 @@
 #include "../binder/inc/defaultassemblybinder.h"
 #include "../binder/inc/applicationcontext.hpp"
 #include <corehost/host_runtime_contract.h>
+#include "hostinformation.h"
 #include "stringarraylist.h"
 
 // static
@@ -165,12 +166,27 @@ extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall
             BINDER_SPACE::SimpleNameToFileNameMap::Iterator end = pMap->End();
             while (i != end)
             {
+                SString path;
                 if (i->m_wszILFileName != NULL)
+                {
+                    path.Set(i->m_wszILFileName);
+                }
+                else
+                {
+                    HostInformation::ResolveAssemblyToPath(i->m_wszSimpleName, path);
+                    if (path.IsEmpty())
+                    {
+                        ++i;
+                        continue;
+                    }
+                }
+
+                if (!path.IsEmpty())
                 {
                     if (!result.IsEmpty())
                         result.Append(PATH_SEPARATOR_CHAR_W);
 
-                    result.Append(i->m_wszILFileName);
+                    result.Append(path);
                 }
 
                 ++i;

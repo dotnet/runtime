@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Project="$(RepositoryEngineeringDir)restore\browserWasmMibcProfile.props" />
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
@@ -54,6 +55,7 @@
     <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.10" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
+    <ProjectReference Include="$(RepoTasksDir)MonoTargetsTasks\MonoTargetsTasks.csproj" />
     <!-- Only needed to build the task used by GenerateHelixJobsList below. -->
     <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" ReferenceOutputAssembly="false" />
 
@@ -68,6 +70,10 @@
     <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(BrowserWasmMibcProfile)"
+          Condition="'$(BrowserWasmMibcProfile)' != ''"
+          Link="data\DotNet_Blazor_Wasm.mibc"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Deploy dotnet-pgo (and its managed dependencies) into a dotnet-pgo/ subfolder next to the test so
@@ -107,7 +113,7 @@
       <SetScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
+    <ItemGroup>
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
     </ItemGroup>
@@ -187,6 +193,15 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)/" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />
+
+    </ItemGroup>
+
+    <ItemGroup>
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK=$(AspNetCoreAppCurrent)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK=$(AspNetCoreAppCurrent)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WBT_NETCOREAPP_MAXIMUM_VERSION=$(NetCoreAppCurrentVersion)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WBT_NETCOREAPP_MAXIMUM_VERSION=$(NetCoreAppCurrentVersion)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -194,10 +209,13 @@
       <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' != ''">$(ProductVersion)</_RuntimePackCurrentVersion>
       <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' == ''">$(PackageVersion)</_RuntimePackCurrentVersion>
     </PropertyGroup>
-    <ItemGroup>
-      <!-- net11 Add new entry when adding major version -->
-      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER11" />
 
+    <ItemGroup>
+      <!-- net12 Add new entry when adding major version -->
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER12" />
+
+      <_RuntimePackVersions Include="$(PackageVersionNet11)" EnvVarName="RUNTIME_PACK_VER11" Condition="'$(PackageVersionNet11)' != ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER11" Condition="'$(PackageVersionNet11)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet10)" EnvVarName="RUNTIME_PACK_VER10" Condition="'$(PackageVersionNet10)' != ''" />
       <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER10" Condition="'$(PackageVersionNet10)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet9)" EnvVarName="RUNTIME_PACK_VER9" Condition="'$(PackageVersionNet9)' != ''" />

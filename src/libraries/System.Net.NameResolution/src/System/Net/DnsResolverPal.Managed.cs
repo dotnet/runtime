@@ -35,8 +35,8 @@ namespace System.Net
         // Maximum UDP DNS message size without EDNS0 (RFC 1035 §4.2.1).
         private const int MaxUdpResponseSize = 512;
 
-        // Initial buffer size for TCP responses; grown based on the 2-byte length prefix.
-        private const int InitialTcpBufferSize = 4096;
+        // Maximum TCP DNS message size, bounded by the 2-byte length prefix (RFC 1035 §4.2.2).
+        private const int MaxTcpResponseSize = ushort.MaxValue;
 
         // Default per-attempt timeout and retry count (DnsResolverOptions exposes only Servers).
         private static readonly TimeSpan s_queryTimeout = TimeSpan.FromSeconds(3);
@@ -698,7 +698,7 @@ namespace System.Net
 
             await socket.ConnectAsync(server, timeoutCts.Token).ConfigureAwait(false);
 
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(InitialTcpBufferSize);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(MaxTcpResponseSize);
             try
             {
                 BinaryPrimitives.WriteUInt16BigEndian(buffer, (ushort)query.Length);
@@ -707,12 +707,6 @@ namespace System.Net
 
                 await ReceiveExactAsync(socket, buffer.AsMemory(0, 2), timeoutCts.Token).ConfigureAwait(false);
                 int responseLength = BinaryPrimitives.ReadUInt16BigEndian(buffer);
-
-                if (responseLength > buffer.Length)
-                {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                    buffer = ArrayPool<byte>.Shared.Rent(responseLength);
-                }
 
                 await ReceiveExactAsync(socket, buffer.AsMemory(0, responseLength), timeoutCts.Token).ConfigureAwait(false);
                 return (buffer, responseLength);
@@ -735,7 +729,7 @@ namespace System.Net
             // the server's TCP endpoint is unreachable.
             socket.ConnectWithTimeout(server, s_queryTimeout);
 
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(InitialTcpBufferSize);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(MaxTcpResponseSize);
             try
             {
                 BinaryPrimitives.WriteUInt16BigEndian(buffer, (ushort)query.Length);
@@ -744,12 +738,6 @@ namespace System.Net
 
                 ReceiveExactSync(socket, buffer.AsSpan(0, 2));
                 int responseLength = BinaryPrimitives.ReadUInt16BigEndian(buffer);
-
-                if (responseLength > buffer.Length)
-                {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                    buffer = ArrayPool<byte>.Shared.Rent(responseLength);
-                }
 
                 ReceiveExactSync(socket, buffer.AsSpan(0, responseLength));
                 return (buffer, responseLength);

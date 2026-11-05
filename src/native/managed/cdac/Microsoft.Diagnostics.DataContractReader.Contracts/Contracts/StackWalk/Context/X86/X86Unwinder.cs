@@ -782,13 +782,13 @@ public class X86Unwinder(Target target)
                 }
                 else
                 {
-                    // In .NET 5.0 and later JIT emits a call to JIT_StackProbe helper.
+                    // In .NET 5.0 and later JIT emits a call to RhpStackProbe helper.
 
                     if (pushedStubParam)
                     {
                         // lea eax, [esp-size+4]
                         offset = SKIP_LEA_EAX_ESP(-size + 4, baseAddress, offset);
-                        // call JIT_StackProbe
+                        // call RhpStackProbe
                         offset = SKIP_HELPER_CALL(baseAddress, offset);
                         // pop eax
                         offset = SKIP_POP_REG(baseAddress, offset);
@@ -799,7 +799,7 @@ public class X86Unwinder(Target target)
                     {
                         // lea eax, [esp-size]
                         offset = SKIP_LEA_EAX_ESP(-size, baseAddress, offset);
-                        // call JIT_StackProbe
+                        // call RhpStackProbe
                         offset = SKIP_HELPER_CALL(baseAddress, offset);
                         // mov esp, eax
                         return SKIP_MOV_REG_REG(baseAddress, offset);

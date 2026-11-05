@@ -1,11 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: StubGen.cpp
-//
-
-//
-
 
 #include "common.h"
 #include <limits>
@@ -391,26 +385,6 @@ lShortForm:
 
     pInstr->uInstruction = static_cast<UINT16>(instr);
     return instr;
-}
-
-void ILStubLinker::PatchInstructionArgument(ILCodeLabel* pLabel, UINT_PTR uNewArg
-    DEBUG_ARG(UINT16 uExpectedInstruction))
-{
-    LIMITED_METHOD_CONTRACT;
-
-    UINT            idx                 = pLabel->m_idxLabeledInstruction;
-    ILCodeStream*   pLabelCodeStream    = pLabel->m_pCodeStreamOfLabel;
-    ILInstruction*  pLabelInstrBuffer   = (ILInstruction*)pLabelCodeStream->m_pqbILInstructions->Ptr();
-
-    CONSISTENCY_CHECK(pLabelInstrBuffer[idx].uInstruction == ILCodeStream::CEE_CODE_LABEL);
-    CONSISTENCY_CHECK(pLabelInstrBuffer[idx].iStackDelta == 0);
-
-    idx++;
-
-    CONSISTENCY_CHECK(idx < pLabelCodeStream->m_uCurInstrIdx);
-    CONSISTENCY_CHECK(pLabelInstrBuffer[idx].uInstruction == uExpectedInstruction);
-
-    pLabelInstrBuffer[idx].uArg = uNewArg;
 }
 
 ILCodeLabel::ILCodeLabel()

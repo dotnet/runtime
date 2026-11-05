@@ -778,16 +778,7 @@ public:
         else if (lcl->lvIsParam)
         {
             // For parameters, the backend may be able to map it directly from a register.
-            // Small fields can pack many values into each parameter register, so eagerly
-            // extracting rarely used fields can add substantial work and register pressure.
-            // Wider fields naturally limit the number of extractions per register.
-            // Restrict the credit for small fields with few accesses to target these cases.
-            const weight_t MIN_RELATIVE_ACCESS_WEIGHT = 0.10;
-            bool           allowBitwiseExtraction =
-                !varTypeIsSmall(access.AccessType) ||
-                (access.CountWtd + inducedCountWtd) >= MIN_RELATIVE_ACCESS_WEIGHT * comp->fgFirstBB->getBBWeight(comp);
-            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType,
-                                                   allowBitwiseExtraction))
+            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType))
             {
                 // No promotion will result in a store to stack in the prolog.
                 costWithout += COST_STRUCT_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
@@ -1659,44 +1650,123 @@ GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, co
 }
 
 //------------------------------------------------------------------------
-// StartBlock:
-//   Handle reaching the end of the currently started block by preparing
-//   internal state for upcoming basic blocks, and inserting any necessary
-//   readbacks.
+// ReplaceVisitor:
+//   Initialize the replacement visitor.
 //
 // Parameters:
-//   block - The block
+//   prom       - Promotion phase.
+//   aggregates - Promoted aggregates.
+//   liveness   - Liveness of the replacements.
+//   dfsTree    - Traversal order, including exceptional flow.
 //
-// Returns:
-//   Statement in block to start from.
-//
-Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
+ReplaceVisitor::ReplaceVisitor(Promotion*         prom,
+                               AggregateInfoMap&  aggregates,
+                               PromotionLiveness* liveness,
+                               FlowGraphDfsTree*  dfsTree)
+    : GenTreeVisitor(prom->m_compiler)
+    , m_promotion(prom)
+    , m_aggregates(aggregates)
+    , m_liveness(liveness)
+    , m_dfsTree(dfsTree)
+    , m_postOrderTraits(dfsTree->PostOrderTraits())
 {
-    m_currentBlock = block;
+}
 
-#ifdef DEBUG
-    // At the start of every block we expect all replacements to be in their
-    // local home.
+//------------------------------------------------------------------------
+// PrepareReadBacks:
+//   Initialize field tracking, compute loop/EH materialization boundaries,
+//   and plan common readbacks before replacing uses.
+//
+void ReplaceVisitor::PrepareReadBacks()
+{
+    FlowGraphDfsTree* dfsTree = m_dfsTree;
+    unsigned          index   = 0;
     for (AggregateInfo* agg : m_aggregates)
     {
         for (Replacement& rep : agg->Replacements)
         {
-            assert(!rep.NeedsReadBack);
-            assert(rep.NeedsWriteBack);
+            rep.ReplacementIndex = index++;
         }
     }
 
-    assert(m_numPendingReadBacks == 0);
-#endif
+    m_replacementsTraits             = new (m_compiler, CMK_Promotion) BitVecTraits(index, m_compiler);
+    m_pendingReadBacks               = new (m_compiler, CMK_Promotion) BitVec[dfsTree->GetPostOrderCount()]{};
+    m_currentStructFields            = new (m_compiler, CMK_Promotion) BitVec[dfsTree->GetPostOrderCount()]{};
+    m_requiresAlreadyReadBackOnEntry = BitVecOps::MakeEmpty(&m_postOrderTraits);
+    m_requiresReadBackOnExit         = BitVecOps::MakeEmpty(&m_postOrderTraits);
+    m_needsReadBack                  = BitVecOps::MakeEmpty(m_replacementsTraits);
+    m_structCurrent                  = BitVecOps::MakeEmpty(m_replacementsTraits);
+    m_reconcileReadBacks             = BitVecOps::MakeEmpty(m_replacementsTraits);
+    m_entryReadBacks                 = BitVecOps::MakeEmpty(m_replacementsTraits);
+    m_replacementInfo                = new (m_compiler, CMK_Promotion) ReplacementInfo[index];
 
-    // OSR locals and parameters may need an initial read back, which we mark
-    // when we start the initial BB.
-    if (block != m_compiler->fgFirstBB)
+    for (AggregateInfo* agg : m_aggregates)
     {
-        return block->firstStmt();
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
+        for (unsigned i = 0; i < agg->Replacements.size(); i++)
+        {
+            Replacement& rep                        = agg->Replacements[i];
+            m_replacementInfo[rep.ReplacementIndex] = {agg, i};
+            if ((dsc->lvIsParam || dsc->lvIsOSRLocal) &&
+                m_liveness->IsReplacementLiveIn(m_compiler->fgFirstBB, agg->LclNum, i))
+            {
+                BitVecOps::AddElemD(m_replacementsTraits, m_entryReadBacks, rep.ReplacementIndex);
+            }
+        }
     }
 
-    Statement* lastInsertedStmt = nullptr;
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* block = dfsTree->GetPostOrder(i);
+        if (m_compiler->bbIsHandlerBeg(block))
+        {
+            BitVecOps::AddElemD(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, block->bbPostorderNum);
+        }
+        block->VisitRegularSuccs(m_compiler, [&](BasicBlock* succ) {
+            if (succ->bbPostorderNum >= block->bbPostorderNum)
+            {
+                // This includes irreducible backedge targets: their incoming state
+                // must be settled before visiting predecessors later in RPO.
+                BitVecOps::AddElemD(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, succ->bbPostorderNum);
+            }
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    // The CFG does not change during replacement. Share boundary decisions
+    // between the planner and the actual materialization.
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        if (MustMaterializeReadBacks(dfsTree->GetPostOrder(i)))
+        {
+            BitVecOps::AddElemD(&m_postOrderTraits, m_requiresReadBackOnExit, i);
+        }
+    }
+
+    if (!BitVecOps::IsEmpty(m_replacementsTraits, m_entryReadBacks))
+    {
+        PlanReadBacks();
+    }
+}
+
+//------------------------------------------------------------------------
+// PlanReadBacks:
+//   Estimate lazy readbacks from liveness use/def sets and choose shared
+//   materialization points for fields requiring mixed-join reconciliation.
+//
+// Remarks:
+//   This is a profitability model, not a correctness analysis. Uses are assumed
+//   to materialize pending fields, and definitions end the incoming value.
+//   Replacement retains its exact state transitions and inserts any readbacks
+//   still required, including after partial writes and at EH boundaries.
+//
+void ReplaceVisitor::PlanReadBacks()
+{
+    BasicBlock*             entry        = m_compiler->fgFirstBB;
+    FlowGraphDfsTree*       placementDfs = m_dfsTree;
+    FlowGraphDominatorTree* domTree      = m_compiler->m_domTree;
+    BitVec                  pendingOut   = BitVecOps::MakeEmpty(&m_postOrderTraits);
+    BitVec                  sites        = BitVecOps::MakeEmpty(&m_postOrderTraits);
 
     for (AggregateInfo* agg : m_aggregates)
     {
@@ -1706,115 +1776,333 @@ Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
             continue;
         }
 
-        JITDUMP("Processing fields of %s V%02u in entry BB " FMT_BB "\n", dsc->lvIsParam ? "parameter" : "OSR-local",
-                agg->LclNum, block->bbNum);
-
-        for (size_t i = 0; i < agg->Replacements.size(); i++)
+        for (unsigned i = 0; i < agg->Replacements.size(); i++)
         {
             Replacement& rep = agg->Replacements[i];
-            ClearNeedsWriteBack(rep);
-            if (!m_liveness->IsReplacementLiveIn(block, agg->LclNum, (unsigned)i))
+            if (!m_liveness->IsReplacementLiveIn(entry, agg->LclNum, i))
             {
-                JITDUMP("  V%02u (%s) ignored because it is not live-in to entry BB\n", rep.LclNum, rep.Description);
                 continue;
             }
 
-            if (!dsc->lvIsParam ||
-                !Promotion::MapsToParameterRegister(m_compiler, agg->LclNum, rep.Offset, rep.AccessType))
+            BitVecOps::ClearD(&m_postOrderTraits, pendingOut);
+            BitVecOps::ClearD(&m_postOrderTraits, sites);
+            bool hasReconciliation = false;
+            for (unsigned j = m_dfsTree->GetPostOrderCount(); j > 0; j--)
             {
-                SetNeedsReadBack(rep);
-                JITDUMP("  V%02u (%s) marked as needing read back\n", rep.LclNum, rep.Description);
+                BasicBlock* block = m_dfsTree->GetPostOrder(j - 1);
+                if (!m_liveness->IsReplacementLiveIn(block, agg->LclNum, i))
+                {
+                    continue;
+                }
+
+                bool pending = block == entry;
+                if ((block != entry) &&
+                    !BitVecOps::IsMember(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, block->bbPostorderNum))
+                {
+                    bool anyPending = false;
+                    bool allPending = true;
+                    for (BasicBlock* pred : block->PredBlocks())
+                    {
+                        if (!m_dfsTree->Contains(pred))
+                        {
+                            continue;
+                        }
+                        bool predPending = BitVecOps::IsMember(&m_postOrderTraits, pendingOut, pred->bbPostorderNum);
+                        anyPending |= predPending;
+                        allPending &= predPending;
+                    }
+                    pending = anyPending && allPending;
+                    if (anyPending && !allPending)
+                    {
+                        hasReconciliation = true;
+                        for (BasicBlock* pred : block->PredBlocks())
+                        {
+                            if (m_dfsTree->Contains(pred) &&
+                                BitVecOps::IsMember(&m_postOrderTraits, pendingOut, pred->bbPostorderNum))
+                            {
+                                BitVecOps::AddElemD(&m_postOrderTraits, sites, pred->bbPostorderNum);
+                                BitVecOps::RemoveElemD(&m_postOrderTraits, pendingOut, pred->bbPostorderNum);
+                            }
+                        }
+                    }
+                }
+                if (pending && m_liveness->IsReplacementUsed(block, agg->LclNum, i))
+                {
+                    BitVecOps::AddElemD(&m_postOrderTraits, sites, block->bbPostorderNum);
+                    pending = false;
+                }
+                if (pending && m_liveness->IsReplacementDefined(block, agg->LclNum, i))
+                {
+                    pending = false;
+                }
+                if (pending && m_liveness->IsReplacementLiveOut(block, agg->LclNum, i))
+                {
+                    if (BitVecOps::IsMember(&m_postOrderTraits, m_requiresReadBackOnExit, block->bbPostorderNum))
+                    {
+                        BitVecOps::AddElemD(&m_postOrderTraits, sites, block->bbPostorderNum);
+                    }
+                    else
+                    {
+                        BitVecOps::AddElemD(&m_postOrderTraits, pendingOut, block->bbPostorderNum);
+                    }
+                }
+            }
+
+            if (!hasReconciliation || (BitVecOps::Count(&m_postOrderTraits, sites) < 2))
+            {
                 continue;
             }
 
-            // Insert read backs of parameters mapping to registers eagerly to
-            // set the backend up for recognizing these as register accesses.
-            GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
-            Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-            JITDUMP("  V%02u (%s) is read back eagerly because it is a register parameter\n", rep.LclNum,
-                    rep.Description);
-            DISPSTMT(stmt);
-            if (lastInsertedStmt == nullptr)
+            if (domTree == nullptr)
             {
-                m_compiler->fgInsertStmtAtBeg(block, stmt);
+                if (entry->bbPostorderNum + 1 != m_dfsTree->GetPostOrderCount())
+                {
+                    // Before global morph the DFS may also retain the original
+                    // OSR entry and a disconnected merged return. Dominators
+                    // require a single root; its subtree is a postorder prefix.
+                    placementDfs = new (m_compiler, CMK_Promotion)
+                        FlowGraphDfsTree(m_compiler, m_dfsTree->GetPostOrder(), entry->bbPostorderNum + 1,
+                                         m_dfsTree->HasCycle(), m_dfsTree->IsProfileAware());
+                }
+                domTree = FlowGraphDominatorTree::Build(placementDfs);
+                if (placementDfs == m_dfsTree)
+                {
+                    m_compiler->m_domTree = domTree;
+                }
             }
-            else
+
+            BasicBlock* common    = nullptr;
+            weight_t    oldWeight = 0;
+            BitVecOps::VisitBits(&m_postOrderTraits, sites, [&](unsigned j) {
+                BasicBlock* block = m_dfsTree->GetPostOrder(j);
+                if (!placementDfs->Contains(block))
+                {
+                    common = nullptr;
+                    return false;
+                }
+                common = common == nullptr ? block : domTree->Intersect(common, block);
+                oldWeight += block->getBBWeight(m_compiler);
+                return true;
+            });
+
+            if (common == nullptr)
             {
-                m_compiler->fgInsertStmtAfter(block, lastInsertedStmt, stmt);
+                continue;
             }
-            lastInsertedStmt = stmt;
+
+            weight_t commonWeight = common->getBBWeight(m_compiler);
+            // If the sites merely partition execution, commoning saves no
+            // dynamic work and can hurt allocation by extending live ranges.
+            if ((commonWeight >= oldWeight) ||
+                Compiler::fgProfileWeightsEqual(commonWeight, oldWeight, oldWeight * 1e-6))
+            {
+                continue;
+            }
+
+            rep.ReadBackPlacement = common;
+            JITDUMP("Planning common readback for %u estimated sites V%02u.[%03u..%03u) -> V%02u in " FMT_BB
+                    " (weight " FMT_WT ", previous total " FMT_WT ")\n",
+                    BitVecOps::Count(&m_postOrderTraits, sites), agg->LclNum, rep.Offset,
+                    rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, common->bbNum,
+                    common->getBBWeight(m_compiler), oldWeight);
         }
     }
+}
 
-    // Skip all the eager read-backs if any were inserted.
-    return lastInsertedStmt == nullptr ? block->firstStmt() : lastInsertedStmt->GetNextStmt();
+//------------------------------------------------------------------------
+// StartBlock:
+//   Reconcile predecessor states and restore readback/writeback status for this block.
+//
+// Parameters:
+//   block - The block
+//
+void ReplaceVisitor::StartBlock(BasicBlock* block)
+{
+    m_currentBlock = block;
+
+    if (block == m_compiler->fgFirstBB)
+    {
+        BitVecOps::Assign(m_replacementsTraits, m_needsReadBack, m_entryReadBacks);
+        BitVecOps::Assign(m_replacementsTraits, m_structCurrent, m_entryReadBacks);
+        return;
+    }
+    if (BitVecOps::IsMember(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, block->bbPostorderNum))
+    {
+        // Predecessors materialize pending readbacks before reaching this block.
+        BitVecOps::ClearD(m_replacementsTraits, m_needsReadBack);
+        BitVecOps::ClearD(m_replacementsTraits, m_structCurrent);
+        return;
+    }
+
+    bool first = true;
+    BitVecOps::ClearD(m_replacementsTraits, m_reconcileReadBacks);
+    for (BasicBlock* pred : block->PredBlocks())
+    {
+        if (!m_dfsTree->Contains(pred))
+        {
+            continue;
+        }
+
+        assert(pred->bbPostorderNum > block->bbPostorderNum);
+        BitVecOps::UnionD(m_replacementsTraits, m_reconcileReadBacks, m_pendingReadBacks[pred->bbPostorderNum]);
+        if (first)
+        {
+            BitVecOps::Assign(m_replacementsTraits, m_needsReadBack, m_pendingReadBacks[pred->bbPostorderNum]);
+            BitVecOps::Assign(m_replacementsTraits, m_structCurrent, m_currentStructFields[pred->bbPostorderNum]);
+        }
+        else
+        {
+            BitVecOps::IntersectionD(m_replacementsTraits, m_needsReadBack, m_pendingReadBacks[pred->bbPostorderNum]);
+            BitVecOps::IntersectionD(m_replacementsTraits, m_structCurrent,
+                                     m_currentStructFields[pred->bbPostorderNum]);
+        }
+        first = false;
+    }
+
+    if (first)
+    {
+        BitVecOps::ClearD(m_replacementsTraits, m_needsReadBack);
+        BitVecOps::ClearD(m_replacementsTraits, m_structCurrent);
+    }
+    else
+    {
+        // Only mixed incoming states need reconciliation; unanimous pending states
+        // can remain lazy. Do this before dropping fields that are not live-in.
+        BitVecOps::DiffD(m_replacementsTraits, m_reconcileReadBacks, m_needsReadBack);
+        BitVecOps::VisitBits(m_replacementsTraits, m_structCurrent, [&](unsigned index) {
+            const ReplacementInfo& info = m_replacementInfo[index];
+            if (!m_liveness->IsReplacementLiveIn(block, info.Aggregate->LclNum, info.Index))
+            {
+                BitVecOps::RemoveElemD(m_replacementsTraits, m_structCurrent, index);
+                BitVecOps::RemoveElemD(m_replacementsTraits, m_needsReadBack, index);
+            }
+            return true;
+        });
+    }
+
+    BitVecOps::VisitBits(m_replacementsTraits, m_reconcileReadBacks, [&](unsigned index) {
+        const ReplacementInfo& info = m_replacementInfo[index];
+        AggregateInfo*         agg  = info.Aggregate;
+        if (!m_liveness->IsReplacementLiveIn(block, agg->LclNum, info.Index))
+        {
+            return true;
+        }
+
+        // Loading at the join could read a stale home from a path that updated
+        // the replacement. Materialize only on pending predecessors.
+        for (BasicBlock* pred : block->PredBlocks())
+        {
+            if (m_dfsTree->Contains(pred) && (pred->bbPostorderNum > block->bbPostorderNum) &&
+                BitVecOps::IsMember(m_replacementsTraits, m_pendingReadBacks[pred->bbPostorderNum], index))
+            {
+                InsertReadBackAtEnd(pred, agg->LclNum, agg->Replacements[info.Index]);
+                BitVecOps::RemoveElemD(m_replacementsTraits, m_pendingReadBacks[pred->bbPostorderNum], index);
+            }
+        }
+        return true;
+    });
+}
+
+//------------------------------------------------------------------------
+// InsertReadBackAtEnd:
+//   Materialize a pending replacement before leaving a block.
+//
+// Parameters:
+//   block        - Block in which the struct contains the current value.
+//   structLclNum - Struct local.
+//   rep          - Replacement to initialize.
+//
+void ReplaceVisitor::InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, Replacement& rep)
+{
+    JITDUMP("Reading back V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB "\n", structLclNum, rep.Offset,
+            rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, block->bbNum);
+
+    GenTree*   readBack = Promotion::CreateReadBack(m_compiler, structLclNum, rep);
+    Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+    m_compiler->fgInsertStmtNearEnd(block, stmt);
+}
+
+//------------------------------------------------------------------------
+// MustMaterializeReadBacks:
+//   Check whether pending readbacks must be materialized before leaving a block.
+//
+// Parameters:
+//   block - The block to check.
+//
+// Returns:
+//   True at loop/EH boundaries requiring current replacement locals.
+//
+bool ReplaceVisitor::MustMaterializeReadBacks(BasicBlock* block)
+{
+    if (block->HasPotentialEHSuccs(m_compiler) ||
+        block->KindIs(BBJ_CALLFINALLY, BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET))
+    {
+        return true;
+    }
+
+    return block->VisitRegularSuccs(m_compiler, [&](BasicBlock* succ) {
+        return BitVecOps::IsMember(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, succ->bbPostorderNum)
+                   ? BasicBlockVisit::Abort
+                   : BasicBlockVisit::Continue;
+    }) == BasicBlockVisit::Abort;
 }
 
 //------------------------------------------------------------------------
 // EndBlock:
-//   Handle reaching the end of the currently started block by preparing
-//   internal state for upcoming basic blocks, and inserting any necessary
-//   readbacks.
+//   Save readback/writeback status for successors, materializing readbacks at loop/EH boundaries.
 //
 // Remarks:
-//   We currently expect all fields to be most up-to-date in their field locals
-//   at the beginning of every basic block. That means all replacements should
-//   have Replacement::NeedsReadBack == false and Replacement::NeedsWriteBack
-//   == true at the beginning of every block. This function makes it so that is
-//   the case.
+//   StartBlock restores the working bitsets; the saved state determines
+//   which replacements and original fields are current on entry to successors.
 //
 void ReplaceVisitor::EndBlock()
 {
-    for (AggregateInfo* agg : m_aggregates)
-    {
-        for (size_t i = 0; i < agg->Replacements.size(); i++)
+    assert(BitVecOps::IsSubset(m_replacementsTraits, m_needsReadBack, m_structCurrent));
+    bool materialize =
+        BitVecOps::IsMember(&m_postOrderTraits, m_requiresReadBackOnExit, m_currentBlock->bbPostorderNum);
+
+    BitVecOps::VisitBits(m_replacementsTraits, m_needsReadBack, [&](unsigned index) {
+        const ReplacementInfo& info = m_replacementInfo[index];
+        AggregateInfo*         agg  = info.Aggregate;
+        Replacement&           rep  = agg->Replacements[info.Index];
+        if (m_liveness->IsReplacementLiveOut(m_currentBlock, agg->LclNum, info.Index))
         {
-            Replacement& rep = agg->Replacements[i];
-            assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
-            if (rep.NeedsReadBack)
+            if (materialize || (rep.ReadBackPlacement == m_currentBlock))
             {
-                if (m_liveness->IsReplacementLiveOut(m_currentBlock, agg->LclNum, (unsigned)i))
-                {
-                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n",
-                            agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
-                            m_currentBlock->bbNum);
-
-                    GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
-                    Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-                    DISPSTMT(stmt);
-                    m_compiler->fgInsertStmtNearEnd(m_currentBlock, stmt);
-                }
-                else
-                {
-                    // We only mark fields as requiring read-back if they are
-                    // live at the point where the stack local was written, so
-                    // at first glance we would not expect this case to ever
-                    // happen. However, it is possible that the field is live
-                    // because it has a future struct use, in which case we may
-                    // not need to insert any readbacks anywhere. For example,
-                    // consider:
-                    //
-                    //   V03 = CALL() // V03 is a struct with promoted V03.[000..008)
-                    //   CALL(struct V03)    // V03.[000.008) marked as live here
-                    //
-                    // While V03.[000.008) gets marked for readback at the
-                    // store, no readback is necessary at the location of
-                    // the call argument, and it may die after that.
-
-                    JITDUMP("Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB
-                            "\n",
-                            agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
-                            m_currentBlock->bbNum);
-                }
-
+                InsertReadBackAtEnd(m_currentBlock, agg->LclNum, rep);
                 ClearNeedsReadBack(rep);
             }
-
-            SetNeedsWriteBack(rep);
         }
-    }
+        else
+        {
+            // We only mark fields as requiring read-back if they are
+            // live at the point where the stack local was written, so
+            // at first glance we would not expect this case to ever
+            // happen. However, it is possible that the field is live
+            // because it has a future struct use, in which case we may
+            // not need to insert any readbacks anywhere. For example,
+            // consider:
+            //
+            //   V03 = CALL() // V03 is a struct with promoted V03.[000..008)
+            //   CALL(struct V03)    // V03.[000.008) marked as live here
+            //
+            // While V03.[000.008) gets marked for readback at the
+            // store, no readback is necessary at the location of
+            // the call argument, and it may die after that.
 
-    assert(m_numPendingReadBacks == 0);
+            JITDUMP("Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB "\n",
+                    agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
+                    m_currentBlock->bbNum);
+            ClearNeedsReadBack(rep);
+        }
+
+        return true;
+    });
+
+    // Snapshots must not alias the working sets: reconciliation can update a
+    // predecessor's pending set after subsequent blocks have been processed.
+    BitVecOps::Assign(m_replacementsTraits, m_pendingReadBacks[m_currentBlock->bbPostorderNum], m_needsReadBack);
+    BitVecOps::Assign(m_replacementsTraits, m_currentStructFields[m_currentBlock->bbPostorderNum], m_structCurrent);
 }
 
 //------------------------------------------------------------------------
@@ -1893,8 +2181,8 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
 //
 void ReplaceVisitor::SetNeedsWriteBack(Replacement& rep)
 {
-    rep.NeedsWriteBack = true;
-    assert(!rep.NeedsReadBack);
+    BitVecOps::RemoveElemD(m_replacementsTraits, m_structCurrent, rep.ReplacementIndex);
+    assert(!NeedsReadBack(rep));
 }
 
 //------------------------------------------------------------------------
@@ -1904,7 +2192,7 @@ void ReplaceVisitor::SetNeedsWriteBack(Replacement& rep)
 //
 void ReplaceVisitor::ClearNeedsWriteBack(Replacement& rep)
 {
-    rep.NeedsWriteBack = false;
+    BitVecOps::AddElemD(m_replacementsTraits, m_structCurrent, rep.ReplacementIndex);
 }
 
 //------------------------------------------------------------------------
@@ -1919,13 +2207,7 @@ void ReplaceVisitor::ClearNeedsWriteBack(Replacement& rep)
 //
 void ReplaceVisitor::SetNeedsReadBack(Replacement& rep)
 {
-    if (rep.NeedsReadBack)
-    {
-        return;
-    }
-
-    rep.NeedsReadBack = true;
-    m_numPendingReadBacks++;
+    BitVecOps::AddElemD(m_replacementsTraits, m_needsReadBack, rep.ReplacementIndex);
 }
 
 //------------------------------------------------------------------------
@@ -1935,14 +2217,7 @@ void ReplaceVisitor::SetNeedsReadBack(Replacement& rep)
 //
 void ReplaceVisitor::ClearNeedsReadBack(Replacement& rep)
 {
-    if (!rep.NeedsReadBack)
-    {
-        return;
-    }
-
-    assert(m_numPendingReadBacks > 0);
-    rep.NeedsReadBack = false;
-    m_numPendingReadBacks--;
+    BitVecOps::RemoveElemD(m_replacementsTraits, m_needsReadBack, rep.ReplacementIndex);
 }
 
 //------------------------------------------------------------------------
@@ -1951,7 +2226,7 @@ void ReplaceVisitor::ClearNeedsReadBack(Replacement& rep)
 //
 void ReplaceVisitor::InsertPreStatementReadBacks()
 {
-    if (m_numPendingReadBacks <= 0)
+    if (BitVecOps::IsEmpty(m_replacementsTraits, m_needsReadBack))
     {
         return;
     }
@@ -1987,28 +2262,28 @@ void ReplaceVisitor::InsertPreStatementReadBacks()
     else
     {
         // Otherwise just read back the locals we see uses of.
-        for (GenTreeLclVarCommon* lcl : m_currentStmt->LocalsTreeList())
-        {
-            if (lcl->TypeIs(TYP_STRUCT))
+        m_currentStmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+            if (!occurrence.GetNode()->OperIs(GT_LCL_ADDR) && (occurrence.GetAccessType(m_compiler) == TYP_STRUCT))
             {
-                continue;
+                return GenTree::VisitResult::Continue;
             }
 
-            AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
+            AggregateInfo* agg = m_aggregates.Lookup(occurrence.GetLclNum());
             if (agg == nullptr)
             {
-                continue;
+                return GenTree::VisitResult::Continue;
             }
 
             size_t index =
-                Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, lcl->GetLclOffs());
+                Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, occurrence.GetLclOffs());
             if ((ssize_t)index < 0)
             {
-                continue;
+                return GenTree::VisitResult::Continue;
             }
 
             InsertPreStatementReadBackIfNecessary(agg->LclNum, agg->Replacements[index]);
-        }
+            return GenTree::VisitResult::Continue;
+        });
     }
 }
 
@@ -2023,7 +2298,7 @@ void ReplaceVisitor::InsertPreStatementReadBacks()
 //
 void ReplaceVisitor::InsertPreStatementReadBackIfNecessary(unsigned aggLclNum, Replacement& rep)
 {
-    if (!rep.NeedsReadBack)
+    if (!NeedsReadBack(rep))
     {
         return;
     }
@@ -2172,14 +2447,14 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
 //   to its field local.
 //
 //   We normally do this before the first use of the field we find, or before
-//   we transfer control to any successor. This method handles the case of
+//   control flow requires a materialized value. This method handles the case of
 //   implicit control flow related to EH; when this basic block is in a
 //   try-region (or filter block) and we find a tree that may throw it eagerly
 //   inserts pending readbacks.
 //
 GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
 {
-    if ((m_numPendingReadBacks == 0) || !m_compiler->ehBlockHasExnFlowDsc(m_currentBlock))
+    if (BitVecOps::IsEmpty(m_replacementsTraits, m_needsReadBack) || !m_compiler->ehBlockHasExnFlowDsc(m_currentBlock))
     {
         return use;
     }
@@ -2202,7 +2477,7 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
     {
         for (Replacement& rep : agg->Replacements)
         {
-            if (!rep.NeedsReadBack)
+            if (!NeedsReadBack(rep))
             {
                 continue;
             }
@@ -2219,7 +2494,7 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
         }
     }
 
-    assert(m_numPendingReadBacks == 0);
+    assert(BitVecOps::IsEmpty(m_replacementsTraits, m_needsReadBack));
     return use;
 }
 
@@ -2361,7 +2636,7 @@ GenTreeFieldList* ReplaceVisitor::CreateFieldListForStructLocal(GenTreeLclVarCom
 
     auto addField = [=](Replacement& rep) {
         GenTree* fieldValue;
-        if (!rep.NeedsReadBack)
+        if (!NeedsReadBack(rep))
         {
             fieldValue = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
 
@@ -2539,7 +2814,7 @@ bool ReplaceVisitor::IsPromotedStructLocalDying(GenTreeLclVarCommon* lcl)
 
     for (Replacement& rep : agg->Replacements)
     {
-        if (rep.NeedsReadBack)
+        if (NeedsReadBack(rep))
         {
             return false;
         }
@@ -2687,7 +2962,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         ClearNeedsReadBack(rep);
         SetNeedsWriteBack(rep);
     }
-    else if (rep.NeedsReadBack)
+    else if (NeedsReadBack(rep))
     {
         // This is an uncommon case -- typically all readbacks are handled in
         // InsertPreStatementReadBacks. This case is still needed to handle the
@@ -2767,7 +3042,7 @@ void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
 void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs, unsigned size)
 {
     VisitOverlappingReplacements(lcl, offs, size, [this, lcl](Replacement& rep) {
-        if (!rep.NeedsWriteBack)
+        if (!NeedsWriteBack(rep))
         {
             return true;
         }
@@ -2796,7 +3071,7 @@ void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs
 void ReplaceVisitor::WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned offs, unsigned size)
 {
     VisitOverlappingReplacements(lcl, offs, size, [this, &use, lcl](Replacement& rep) {
-        if (!rep.NeedsWriteBack)
+        if (!NeedsWriteBack(rep))
         {
             return true;
         }
@@ -2902,14 +3177,14 @@ PhaseStatus Promotion::Run()
 
         for (Statement* stmt : bb->Statements())
         {
-            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-            {
-                if (Promotion::IsCandidateForPhysicalPromotion(m_compiler->lvaGetDesc(lcl)))
+            stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                if (Promotion::IsCandidateForPhysicalPromotion(m_compiler->lvaGetDesc(occurrence.GetLclNum())))
                 {
                     localsUse.WalkTree(stmt->GetRootNodePointer(), nullptr);
-                    break;
+                    return GenTree::VisitResult::Abort;
                 }
-            }
+                return GenTree::VisitResult::Continue;
+            });
         }
     }
 
@@ -2931,17 +3206,26 @@ PhaseStatus Promotion::Run()
 
     JITDUMP("Making replacements\n\n");
 
-    // Make all replacements we decided on.
-    ReplaceVisitor replacer(this, aggregates, &liveness);
-    for (BasicBlock* bb : m_compiler->Blocks())
+    // Make all replacements in reverse postorder so that forward predecessor
+    // states are available before processing a block.
+    if (m_compiler->m_dfsTree == nullptr)
     {
-        Statement* firstStmt = replacer.StartBlock(bb);
+        m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
+    }
+
+    FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    ReplaceVisitor    replacer(this, aggregates, &liveness, dfsTree);
+    replacer.PrepareReadBacks();
+    for (unsigned i = dfsTree->GetPostOrderCount(); i > 0; i--)
+    {
+        BasicBlock* bb = dfsTree->GetPostOrder(i - 1);
+        replacer.StartBlock(bb);
 
         JITDUMP("\nReplacing in ");
         DBEXEC(m_compiler->verbose, bb->dspBlockHeader());
         JITDUMP("\n");
 
-        for (Statement* stmt : StatementList(firstStmt))
+        for (Statement* stmt : bb->Statements())
         {
             replacer.StartStatement(stmt);
 
@@ -3058,17 +3342,15 @@ GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
 //   expected to map to a register.
 //
 // Parameters:
-//   comp                   - Compiler instance
-//   lclNum                 - Local being accessed into
-//   offset                 - Offset being accessed at
-//   accessType             - Type of access
-//   allowBitwiseExtraction - Whether to allow mappings requiring extraction or a register-class change
+//   comp       - Compiler instance
+//   lclNum     - Local being accessed into
+//   offset     - Offset being accessed at
+//   accessType - Type of access
 //
 // Returns:
 //   True if the access can be efficiently done via a parameter register.
 //
-bool Promotion::MapsToParameterRegister(
-    Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType, bool allowBitwiseExtraction)
+bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType)
 {
     assert(lclNum < comp->info.compArgsCount);
 
@@ -3097,12 +3379,6 @@ bool Promotion::MapsToParameterRegister(
         }
 
         if (genIsValidFloatReg(seg.GetRegister()) && (offset != seg.Offset))
-        {
-            continue;
-        }
-
-        if (!allowBitwiseExtraction && ((offset != seg.Offset) || (genTypeSize(accessType) != seg.Size) ||
-                                        (varTypeUsesIntReg(accessType) != genIsValidIntReg(seg.GetRegister()))))
         {
             continue;
         }

@@ -3520,7 +3520,7 @@ gc_heap_dump_context_alloc_bulk_data (
 	data->index = 0;
 	data->count = 0;
 
-	return data->data_start;
+	return data->data_start != NULL;
 }
 
 static

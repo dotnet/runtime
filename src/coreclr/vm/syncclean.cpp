@@ -8,6 +8,10 @@
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
 
+#ifdef FEATURE_MULTITHREADING
+#include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
+
 #ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
 #endif
@@ -23,6 +27,10 @@ void SyncClean::CleanUp()
 
     // Give others we want to reclaim during the GC sync point a chance to do it
     VirtualCallStubManager::ReclaimAll();
+
+#ifdef FEATURE_MULTITHREADING
+    CleanupRetiredTLSIndices();
+#endif // FEATURE_MULTITHREADING
 
 #ifdef FEATURE_INTERPRETER
     // Reclaim dead interpreter dispatch cache entries

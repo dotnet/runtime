@@ -424,20 +424,23 @@ namespace System.Reflection
                 ParameterInfo[] parameters = mi.GetParameters();
                 Type[] paramTypes = new Type[parameters.Length];
                 Type[][] paramReqMods = new Type[paramTypes.Length][];
+                Type[][] paramOptMods = new Type[paramTypes.Length][];
 
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     paramTypes[i] = parameters[i].ParameterType;
                     paramReqMods[i] = parameters[i].GetRequiredCustomModifiers();
+                    paramOptMods[i] = parameters[i].GetOptionalCustomModifiers();
                 }
 
                 MethodAttributes attributes = MethodAttributes.Public;
 
                 attributes |= mi.IsStatic ? MethodAttributes.Static : MethodAttributes.Virtual;
 
+                ParameterInfo returnParameter = mi.ReturnParameter;
                 MethodBuilder mdb = _tb.DefineMethod(mi.Name, attributes, CallingConventions.Standard,
-                    mi.ReturnType, null, null,
-                    paramTypes, paramReqMods, null);
+                    mi.ReturnType, returnParameter.GetRequiredCustomModifiers(), returnParameter.GetOptionalCustomModifiers(),
+                    paramTypes, paramReqMods, paramOptMods);
 
                 if (mi.ContainsGenericParameters)
                 {
