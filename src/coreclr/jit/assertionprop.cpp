@@ -4427,6 +4427,12 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
+    // Value facts first, they need no pin, where what the assertions add below does
+    GenTreeFlags const noThrowFlags = GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW;
+    GenTreeFlags const recorded     = tree->gtFlags & noThrowFlags;
+    tree->SetDivModExceptionFlags(this);
+    bool changed = (tree->gtFlags & noThrowFlags) != recorded;
+
     bool op1IsNotZero;
     bool op2IsNotZero;
     bool op1IsNotNegative;
@@ -4434,7 +4440,6 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
     optAssertionProp_RangeProperties(assertions, op1, stmt, block, &op1IsNotZero, &op1IsNotNegative);
     optAssertionProp_RangeProperties(assertions, op2, stmt, block, &op2IsNotZero, &op2IsNotNegative);
 
-    bool changed = false;
     if (op1IsNotNegative && op2IsNotNegative && tree->OperIs(GT_DIV, GT_MOD))
     {
         JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
