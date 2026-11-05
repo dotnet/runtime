@@ -254,15 +254,15 @@ initial state.
 
 #### Compiler promotion of method fixups
 
-For two-phase compilations containing CoreLib, crossgen2 records explicit and relocation-derived
-precode requirements while compiling methods in callee-first levels. After precompilation and before
-the final dependency traversal, it collects the preparation closure of startup entry points and
-already-rooted managed JIT helpers, including targets of `MethodEntry_ReadyToRun` fixups.
+For deferred Wasm compilations containing CoreLib, crossgen2 records explicit and relocation-derived
+precode requirements, then finalizes deferred calls in callee-first levels. Before emitting the image,
+it collects the preparation closure of startup entry points and already-rooted managed JIT helpers,
+including targets of `MethodEntry_ReadyToRun` fixups.
 
 The compiler promotes the actual required import cells into eager sections, preserving the
 `StringHandle` classification for string cells. Validation and data fixups precede eager method
 activation. Covered cells are removed from per-method fixup lists, including those of eagerly
-prepared methods. Precompilation does not itself root every candidate method.
+prepared methods. Deferred-call processing does not make every compiled method eager.
 
 Concrete type-handle imports are interned by resolved type, not by the original IL token. For example,
 `typeof(T)` in a specialization with `T = int` uses the same cell as `typeof(int)` and encodes
