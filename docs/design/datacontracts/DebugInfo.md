@@ -78,8 +78,6 @@ _None._
 | `VLT_FIXED_VA` | Fixed argument in a varargs function | `10` |
 | `VLT_COUNT` | Number of valid `VarLocType` values | `11` |
 | `VLT_INVALID` | Sentinel for invalid locations | `12` |
-| `WASM_LOCAL_REGNUM_BASE` | WebAssembly only: bias added to a local index to form a register number (see [WebAssembly Variable Register Encoding](#webassembly-variable-register-encoding)) | `3` |
-| WebAssembly stack base register | WebAssembly only: the base register of every `VLT_STK` / `VLT_STK2` record in ReadyToRun code, meaning the logical frame pointer (see [WebAssembly Stack Base Encoding](#webassembly-stack-base-encoding)) | `2` |
 
 ### DebugInfo Stream Encoding
 
