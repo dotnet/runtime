@@ -76,8 +76,8 @@ enum class AsyncMethodFlags
     // A special thunk to drop return value in covariant return scenario
     ReturnDroppingThunk        = 32,
     // A special thunk for an override that covariantly returns a type derived from Task/Task<T>.
-    // Such a method does not formally return Task/Task<T>, so its IL cannot be compiled as an
-    // async version. The thunk calls the ordinary variant and awaits the returned Task instead.
+    // The thunk gives only such covariant overrides an Async variant; other overrides of the
+    // same slot remain ordinary, non-task-returning methods.
     CovariantForwardingThunk   = 64,
     // Note: If adding more flags make sure to modify RequiresAsyncContextSaveAndRestore
 
