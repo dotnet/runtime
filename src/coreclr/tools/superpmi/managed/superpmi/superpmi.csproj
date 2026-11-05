@@ -13,6 +13,8 @@
     <LinkStandardCPlusPlusLibrary>true</LinkStandardCPlusPlusLibrary>
     <!-- PIN (for the throughput measurements) moves threads with SetThreadContext, which CET shadow stacks deny. -->
     <CETCompat>false</CETCompat>
+    <!-- Under PIN on Windows, the replay thread crashes when the background GC suspends it (with a special user-mode APC). -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>
