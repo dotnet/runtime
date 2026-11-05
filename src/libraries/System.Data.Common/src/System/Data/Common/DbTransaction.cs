@@ -72,10 +72,15 @@ namespace System.Data.Common
 
         /// <summary>
         /// Gets a value that indicates whether this <see cref="DbTransaction" /> instance supports database savepoints.
-        /// If <see langword="false" />, the methods <see cref="SaveAsync" />,
-        /// <see cref="RollbackAsync(string, System.Threading.CancellationToken)"/> and <see cref="ReleaseAsync" /> as
-        /// well as their synchronous counterparts are expected to throw <see cref="NotSupportedException" />.
+        /// If <see langword="false" />, the methods <see cref="SaveAsync" /> and
+        /// <see cref="RollbackAsync(string, System.Threading.CancellationToken)"/> as well as their synchronous
+        /// counterparts are expected to throw <see cref="NotSupportedException" />.
         /// </summary>
+        /// <remarks>
+        /// <see cref="ReleaseAsync" /> and its synchronous counterpart <see cref="Release(string)" /> do nothing by default,
+        /// whether or not savepoints are supported: releasing a savepoint only frees resources and has no other
+        /// visible effect, so it does not throw when savepoints are unsupported.
+        /// </remarks>
         /// <returns>
         /// <see langword="true" /> if this <see cref="DbTransaction"/> instance supports database savepoints; otherwise,
         /// <see langword="false" />.
@@ -144,6 +149,9 @@ namespace System.Data.Common
         /// An optional token to cancel the asynchronous operation. The default value is <see cref="CancellationToken.None" />.
         /// </param>
         /// <returns>A <see cref="Task " /> representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// The default implementation calls <see cref="Release(string)" />, which does nothing.
+        /// </remarks>
         public virtual Task ReleaseAsync(string savepointName, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -180,6 +188,10 @@ namespace System.Data.Common
         /// reclaim some resources before the transaction ends.
         /// </summary>
         /// <param name="savepointName">The name of the savepoint to release.</param>
+        /// <remarks>
+        /// The default implementation does nothing. It does not throw <see cref="NotSupportedException" /> when
+        /// <see cref="SupportsSavepoints" /> is <see langword="false" />.
+        /// </remarks>
         public virtual void Release(string savepointName) { }
 
         #endregion
