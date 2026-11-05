@@ -10,12 +10,12 @@
     <PackageDownloadAndReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" Folder="lib/netstandard2.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' != 'true'">
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' != 'true' or '$(DotNetBuildFromVMR)' != 'true'">
     <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/net8.0" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/net472" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(DotNetBuildFromVMR)' == 'true'">
     <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/net10.0" />
   </ItemGroup>
 

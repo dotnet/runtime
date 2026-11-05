@@ -10,13 +10,13 @@
          We do this to avoid bringing the package closure for assemblies we don't use here. -->
     <PackageDownloadAndReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" Folder="lib/netstandard2.0" />
   </ItemGroup>
-  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' != 'true'">
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' != 'true' or '$(DotNetBuildFromVMR)' != 'true'">
     <PackageDownloadAndReference Include="NuGet.Frameworks" Version="$(NugetFrameworksVersion)" Folder="lib/net8.0" />
     <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/net8.0" />
     <PackageDownloadAndReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" Folder="lib/net8.0" />
     <PackageDownloadAndReference Include="NuGet.Versioning" Version="$(NugetVersioningVersion)" Folder="lib/net8.0" />
   </ItemGroup>
-  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(DotNetBuildFromVMR)' == 'true'">
     <PackageDownloadAndReference Include="NuGet.Frameworks" Version="$(NugetFrameworksVersion)" Folder="lib/net10.0" />
     <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/net10.0" />
     <PackageDownloadAndReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" Folder="lib/net10.0" />
