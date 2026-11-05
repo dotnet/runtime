@@ -118,6 +118,8 @@ AdjustContextForVirtualStub(
     size_t stackArgumentsSize;
     if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
+        ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
+
         DispatchHolder *holder = DispatchHolder::FromDispatchEntry(f_IP);
         ResolveHolder *resolveHolder = ResolveHolder::FromFailEntry(holder->stub()->failTarget());
         DispatchToken token(resolveHolder->stub()->token());
@@ -138,7 +140,6 @@ AdjustContextForVirtualStub(
             }
             else
             {
-                ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
                 stackArgumentsSize = pMD->SizeOfArgStack();
             }
         }
