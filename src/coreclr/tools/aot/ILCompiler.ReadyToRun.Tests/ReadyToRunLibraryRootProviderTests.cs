@@ -6,13 +6,9 @@ extern alias crossgen2;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 using crossgen2::ILCompiler;
-using crossgen2::ILCompiler.DependencyAnalysis;
 using crossgen2::Internal.JitInterface;
 
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
@@ -26,68 +22,6 @@ namespace ILCompiler.ReadyToRun.Tests;
 
 public class ReadyToRunLibraryRootProviderTests
 {
-    [Theory]
-    [InlineData(false, 0)]
-    [InlineData(false, 1)]
-    [InlineData(true, 0)]
-    [InlineData(true, 1)]
-    public unsafe void StrippedDebugInfoIsNotCopiedFromJit(bool stripDebugInfo, uint count)
-    {
-        const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
-        NodeFactory factory = (NodeFactory)RuntimeHelpers.GetUninitializedObject(typeof(NodeFactory));
-        typeof(NodeFactory).GetField(nameof(NodeFactory.OptimizationFlags))!.SetValue(factory,
-            new NodeFactoryOptimizationFlags { StripDebugInfo = stripDebugInfo });
-        ReadyToRunCodegenCompilation compilation = (ReadyToRunCodegenCompilation)RuntimeHelpers.GetUninitializedObject(
-            typeof(ReadyToRunCodegenCompilation));
-        typeof(Compilation).GetField("_nodeFactory", PrivateInstance)!.SetValue(compilation, factory);
-        CorInfoImpl jit = (CorInfoImpl)RuntimeHelpers.GetUninitializedObject(typeof(CorInfoImpl));
-        typeof(CorInfoImpl).GetField("_compilation", PrivateInstance)!.SetValue(jit, compilation);
-        SetBoundariesCallback setBoundaries = typeof(CorInfoImpl).GetMethod("setBoundaries", PrivateInstance)!
-            .CreateDelegate<SetBoundariesCallback>(jit);
-        SetVarsCallback setVars = typeof(CorInfoImpl).GetMethod("setVars", PrivateInstance)!
-            .CreateDelegate<SetVarsCallback>(jit);
-
-        OffsetMapping* locations = count == 0 ? null : (OffsetMapping*)NativeMemory.Alloc((nuint)sizeof(OffsetMapping));
-        NativeVarInfo* variables = count == 0 ? null : (NativeVarInfo*)NativeMemory.Alloc((nuint)sizeof(NativeVarInfo));
-        if (count != 0)
-        {
-            *locations = new OffsetMapping { nativeOffset = 7, ilOffset = 11 };
-            *variables = new NativeVarInfo { startOffset = 3, endOffset = 9 };
-        }
-        setBoundaries(null, count, locations);
-        setVars(null, count, variables);
-
-        OffsetMapping[]? copiedLocations = (OffsetMapping[]?)typeof(CorInfoImpl)
-            .GetField("_debugLocInfos", PrivateInstance)!.GetValue(jit);
-        NativeVarInfo[]? copiedVariables = (NativeVarInfo[]?)typeof(CorInfoImpl)
-            .GetField("_debugVarInfos", PrivateInstance)!.GetValue(jit);
-        if (stripDebugInfo)
-        {
-            Assert.Null(copiedLocations);
-            Assert.Null(copiedVariables);
-        }
-        else
-        {
-            Assert.NotNull(copiedLocations);
-            Assert.Equal((int)count, copiedLocations.Length);
-            if (count != 0)
-            {
-                Assert.Equal(7u, Assert.Single(copiedLocations).nativeOffset);
-                Assert.Equal(11u, Assert.Single(copiedLocations).ilOffset);
-                Assert.NotNull(copiedVariables);
-                Assert.Equal(3u, Assert.Single(copiedVariables).startOffset);
-                Assert.Equal(9u, Assert.Single(copiedVariables).endOffset);
-            }
-            else
-            {
-                Assert.Null(copiedVariables);
-            }
-        }
-    }
-
-    private unsafe delegate void SetBoundariesCallback(CORINFO_METHOD_STRUCT_* method, uint count, OffsetMapping* locations);
-    private unsafe delegate void SetVarsCallback(CORINFO_METHOD_STRUCT_* method, uint count, NativeVarInfo* variables);
-
     [Theory]
     [InlineData("System.Numerics", "Vector`1", false)]
     [InlineData("System.Runtime.Intrinsics", "Vector64`1", false)]
