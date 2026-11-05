@@ -42,7 +42,11 @@ namespace System.Xml.Schema
 
         public void Clear()
         {
-            Array.Clear(_bits);
+            uint[] bits = _bits;
+            for (int i = 0; i < bits.Length; i++)
+            {
+                bits[i] = 0;
+            }
         }
 
         public void Set(int index)
@@ -156,10 +160,37 @@ namespace System.Xml.Schema
                 }
                 BitSet other = (BitSet)obj;
 
-                int length = Math.Min(_bits.Length, other._bits.Length);
-                return _bits.AsSpan(0, length).SequenceEqual(other._bits.AsSpan(0, length)) &&
-                    !_bits.AsSpan(length).ContainsAnyExcept(0u) &&
-                    !other._bits.AsSpan(length).ContainsAnyExcept(0u);
+                int bitsLength = _bits.Length;
+                int setLength = other._bits.Length;
+                int n = (bitsLength > setLength) ? setLength : bitsLength;
+                for (int i = n; i-- > 0;)
+                {
+                    if (_bits[i] != other._bits[i])
+                    {
+                        return false;
+                    }
+                }
+                if (bitsLength > n)
+                {
+                    for (int i = bitsLength; i-- > n;)
+                    {
+                        if (_bits[i] != 0)
+                        {
+                            return false;
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = setLength; i-- > n;)
+                    {
+                        if (other._bits[i] != 0)
+                        {
+                            return false;
+                        }
+                    }
+                }
+                return true;
             }
             return false;
         }

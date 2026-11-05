@@ -110,13 +110,16 @@ namespace System.Diagnostics
                 int keyStart = currentIndex;
 
                 // Search end of the key
-                int keyLength = baggageString.AsSpan(currentIndex).IndexOfAny(Space, Tab, '=');
-                if (keyLength < 0)
+                while (currentIndex < baggageString.Length && baggageString[currentIndex] != Space && baggageString[currentIndex] != Tab && baggageString[currentIndex] != '=')
+                {
+                    currentIndex++;
+                }
+
+                if (currentIndex >= baggageString.Length)
                 {
                     break;
                 }
 
-                currentIndex += keyLength;
                 int keyEnd = currentIndex;
 
                 if (baggageString[currentIndex] != '=')
@@ -154,8 +157,11 @@ namespace System.Diagnostics
                 int valueStart = currentIndex;
 
                 // Search end of the value
-                int valueLength = baggageString.AsSpan(currentIndex).IndexOfAny([Space, Tab, Comma, Semicolon]);
-                currentIndex = valueLength < 0 ? baggageString.Length : currentIndex + valueLength;
+                while (currentIndex < baggageString.Length && baggageString[currentIndex] != Space && baggageString[currentIndex] != Tab &&
+                       baggageString[currentIndex] != Comma && baggageString[currentIndex] != Semicolon)
+                {
+                    currentIndex++;
+                }
 
                 if (keyStart < keyEnd && valueStart < currentIndex)
                 {
@@ -167,8 +173,10 @@ namespace System.Diagnostics
                 }
 
                 // Skip to end of values
-                int nextComma = baggageString.IndexOf(Comma, currentIndex);
-                currentIndex = nextComma < 0 ? baggageString.Length : nextComma;
+                while (currentIndex < baggageString.Length && baggageString[currentIndex] != Comma)
+                {
+                    currentIndex++;
+                }
 
                 currentIndex++; // Move to next key-value entry
             } while (currentIndex < baggageString.Length);
