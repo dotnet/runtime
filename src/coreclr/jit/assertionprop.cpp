@@ -4408,7 +4408,7 @@ GenTree* Compiler::optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions,
 // optAssertionProp_ModDiv: Optimizes DIV/UDIV/MOD/UMOD via assertions
 //    1) Convert DIV/MOD to UDIV/UMOD if both operands are proven to be never negative
 //    2) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_BY_ZERO if divisor is proven to be never zero
-//    3) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_OVERFLOW if both operands are proven to be never negative
+//    3) Marks DIV/MOD with GTF_DIV_MOD_NO_OVERFLOW if either operand is proven to be never negative
 //
 // Arguments:
 //    assertions - set of live assertions
@@ -4444,7 +4444,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
 
     if (op2IsNotZero && ((tree->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) == 0))
     {
-        JITDUMP("Divisor for DIV/MOD is proven to be never negative...\n")
+        JITDUMP("Divisor for DIV/MOD is proven to be never zero...\n")
         tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
         tree->SetHasOrderingSideEffect();
         changed = true;
