@@ -44,7 +44,7 @@ bool FinalizerThread::IsCurrentThreadFinalizer()
     return GetThreadNULLOk() == g_pFinalizerThread;
 }
 
-#if defined(TARGET_BROWSER) || defined(TARGET_WASI)
+#if !defined(FEATURE_MULTITHREADING) && (defined(TARGET_BROWSER) || defined(TARGET_WASI))
 
 #ifdef TARGET_BROWSER
 // Browser provides this in its JS host (libSystem.Native.Browser scheduling.ts);
@@ -97,7 +97,7 @@ extern "C" void QCALLTYPE WasiFinalizer_RunWorker(QCallExceptionStatus* qcallErr
 }
 #endif
 
-#endif // TARGET_BROWSER || TARGET_WASI
+#endif // !FEATURE_MULTITHREADING && (TARGET_BROWSER || TARGET_WASI)
 
 #ifdef TARGET_WASI
 
@@ -230,10 +230,10 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef TARGET_WASM
+#ifndef FEATURE_MULTITHREADING
     return false;
 
-#else // !TARGET_WASM
+#else // FEATURE_MULTITHREADING
     Thread* finalizerThread = GetFinalizerThread();
     return finalizerThread->RequireSyncBlockCleanup()
         || SystemDomain::System()->RequireAppDomainCleanup()
@@ -244,7 +244,7 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
         || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads()
         || g_EbrCollector.CleanUpRequested();
 
-#endif // TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 }
 
 static void DoExtraWorkForFinalizer(Thread* finalizerThread)
@@ -396,7 +396,7 @@ void FinalizerThread::RaiseShutdownEvents()
 {
     WRAPPER_NO_CONTRACT;
     fQuitFinalizer = TRUE;
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
     EnableFinalization();
 
     // Do not wait for FinalizerThread if the current one is FinalizerThread.
@@ -406,11 +406,11 @@ void FinalizerThread::RaiseShutdownEvents()
         // thread's context is needed (i.e. RCW cleanup)
         hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE, false);
     }
-#else // TARGET_WASM
-    // No dedicated finalizer thread on WASM. Like every other CoreCLR
+#else // !FEATURE_MULTITHREADING
+    // No dedicated finalizer thread. Like every other CoreCLR
     // target, finalizers queued at process exit are not pumped and
     // leak by design.
-#endif // !TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 }
 
 void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
@@ -585,7 +585,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
         pWork = pNext;
     }
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
     if (g_TriggerHeapDump && (minipal_lowres_ticks() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
     {
@@ -622,13 +622,11 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
         }
     }
 
-#ifdef FEATURE_MULTITHREADING
     if (!s_PriorityBoosted)
     {
         if (GetFinalizerThread()->SetThreadPriority(THREAD_PRIORITY_HIGHEST))
             s_PriorityBoosted = true;
     }
-#endif // FEATURE_MULTITHREADING
 
     // The Finalizer thread is started very early in EE startup. We deferred
     // some initialization until a point we are sure the EE is up and running. At
@@ -638,7 +636,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
         s_InitializedFinalizerThreadForPlatform = true;
         Thread::InitializationForManagedThreadInNative(GetFinalizerThread());
     }
-#endif // !TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 
     JitHost::Reclaim();
 

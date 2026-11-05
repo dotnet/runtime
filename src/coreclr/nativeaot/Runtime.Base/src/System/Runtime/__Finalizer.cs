@@ -7,7 +7,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 //
-// Runs finalizers on a dedicated thread, or through a current-thread callback on WASM.
+// Runs finalizers on a dedicated thread, or through a current-thread callback without multithreading.
 //
 
 namespace System.Runtime
@@ -24,7 +24,7 @@ namespace System.Runtime
             }
         }
 
-#if TARGET_WASM
+#if !FEATURE_MULTITHREADING
         [UnmanagedCallersOnly(EntryPoint = "ProcessFinalizersWorkerIteration")]
         public static void RunFinalizerIteration()
         {

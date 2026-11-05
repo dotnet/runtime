@@ -34,11 +34,11 @@ static bool g_ComAndFlsInitSucceeded = false;
 
 EXTERN_C void QCALLTYPE ProcessFinalizers();
 
-#ifdef TARGET_WASM
+#ifndef FEATURE_MULTITHREADING
 EXTERN_C void QCALLTYPE ProcessFinalizersWorkerIteration();
-#endif // TARGET_WASM
+#endif // !FEATURE_MULTITHREADING
 
-#if defined(TARGET_BROWSER) || defined(TARGET_WASI)
+#if !defined(FEATURE_MULTITHREADING) && (defined(TARGET_BROWSER) || defined(TARGET_WASI))
 #ifdef TARGET_BROWSER
 EXTERN_C void SystemJS_ScheduleFinalization();
 #endif // TARGET_BROWSER
@@ -63,7 +63,7 @@ EXTERN_C void QCALLTYPE WasiFinalizer_RunWorker()
     RunFinalizerIterationOnCurrentThread();
 }
 #endif // TARGET_BROWSER
-#endif // TARGET_BROWSER || TARGET_WASI
+#endif // !FEATURE_MULTITHREADING && (TARGET_BROWSER || TARGET_WASI)
 
 #ifdef TARGET_WASI
 #ifdef FEATURE_WASM_MANAGED_THREADS
