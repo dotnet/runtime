@@ -4,3 +4,11 @@
 ; This file is used to allow sharing of assembly code between NativeAOT and CoreCLR, which have different conventions about how to ensure that constants offsets are accessible
 
 include AsmMacros.inc
+
+G_TRAP_THREADS TEXTEQU <RhpTrapThreads>
+
+EXTERN RhpGcPollRare : PROC
+
+TAILCALL_GC_POLL_RARE macro
+        jmp     RhpGcPollRare
+        endm

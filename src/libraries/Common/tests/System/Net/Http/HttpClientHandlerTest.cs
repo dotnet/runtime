@@ -66,7 +66,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         [SkipOnPlatform(TestPlatforms.Browser, "MaxResponseHeadersLength is not supported on Browser")]
         public void Ctor_ExpectedDefaultPropertyValues()
         {
@@ -157,6 +157,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "System.Net.NetworkInformation is not supported on WASI")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -271,6 +272,12 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
                 // Host header is not supported on HTTP/2 and later.
@@ -434,9 +441,12 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Connection.Add("close");
                     request.Headers.Add("Cookie", "$Version=1; Skin=new");
                     request.Content.Headers.ContentLength = contentArray.Length;
-                    if (PlatformDetection.IsNotBrowser)
+                    if (PlatformDetection.IsMD5Supported)
                     {
                         request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(contentArray);
+                    }
+                    if (PlatformDetection.IsNotBrowser)
+                    {
                         request.Headers.Expect.Add(new NameValueWithParametersHeaderValue("100-continue"));
                     }
                     request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
@@ -984,6 +994,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, false, false)]
         [InlineData(null, false, false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [SkipOnPlatform(TestPlatforms.Wasi, "APM (Begin/End) methods are not supported on WASI")]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming, bool slowChunks)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1221,6 +1232,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "APM (Begin/End) methods are not supported on WASI")]
         public async Task ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)

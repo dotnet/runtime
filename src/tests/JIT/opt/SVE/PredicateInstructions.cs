@@ -36,6 +36,50 @@ public class PredicateInstructions
         }
     }
 
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
+    public static void TestReinterpretedBitwiseClearSelect()
+    {
+        Vector<byte> allTrue = SelectReinterpretedBitwiseClear(Vector<int>.Zero, Vector<int>.Zero);
+        for (int i = 0; i < Vector<byte>.Count; i++)
+        {
+            Assert.Equal((byte)0x5A, allTrue[i]);
+        }
+
+        int[] left = new int[Vector<int>.Count];
+        int[] right = new int[Vector<int>.Count];
+        for (int i = 0; i < left.Length; i++)
+        {
+            left[i] = i;
+            right[i] = i + ((i % 3) - 1);
+        }
+
+        Vector<byte> selected = SelectReinterpretedBitwiseClear(new Vector<int>(left), new Vector<int>(right));
+        Vector<byte> direct = SelectReinterpretedDirectBitwiseClear(new Vector<int>(left), new Vector<int>(right));
+
+        for (int i = 0; i < Vector<byte>.Count; i++)
+        {
+            byte expected = left[i / sizeof(int)] == right[i / sizeof(int)] ? (byte)0x5A : (byte)0xA5;
+            Assert.Equal(expected, selected[i]);
+            Assert.Equal(expected, direct[i]);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<byte> SelectReinterpretedBitwiseClear(Vector<int> left, Vector<int> right)
+    {
+        Vector<int> firstMask = Sve.CompareEqual(left, right);
+        Vector<int> secondMask = Sve.CompareGreaterThan(left, right);
+        return Sve.ConditionalSelect(Vector.AsVectorByte(firstMask & ~secondMask),
+            Vector.Create((byte)0x5A), Vector.Create((byte)0xA5));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<byte> SelectReinterpretedDirectBitwiseClear(Vector<int> left, Vector<int> right)
+    {
+        Vector<int> mask = Sve.BitwiseClear(Sve.CompareEqual(left, right), Sve.CompareGreaterThan(left, right));
+        return Sve.ConditionalSelect(Vector.AsVectorByte(mask), Vector.Create((byte)0x5A), Vector.Create((byte)0xA5));
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Vector<byte> ReverseReinterpretedComparison(Vector<int> left, Vector<int> right) =>
         Sve.ReverseElement(Vector.AsVectorByte(Sve.CompareEqual(left, right)));
@@ -76,6 +120,12 @@ public class PredicateInstructions
 
             UnzipEvenZipLowMask(vecs, vecs);
             TransposeEvenAndMask(vecs, vecs, vecs);
+            Assert.Equal(Vector.Create<short>(1), AndMaskWithOnes(Vector.Create<short>(3), vecs));
+            VectorAndNot(vecs, vecs);
+            PredicateBitwiseClearFloat(Vector.Create<float>(1), Vector.Create<float>(2));
+            Assert.Equal(Vector<int>.Zero, PredicateBitwiseClearMixedWidths(veci, Vector.Create<int>(5), vecl, vecl + vecl));
+            Assert.Equal(Vector.Create(-1), PredicateBitwiseClearMixedWidthsReversed(veci, veci, vecl, vecl + vecl));
+            Assert.Equal(Vector.Create(-1), PredicateBitwiseClearReinterpreted(vecl, vecl + vecl));
 
             PredicateCastFloatLoad(s_floatValues, 0, s_floatValues.Length);
             PredicateCastFloatLocalLoad(s_floatValues, 0, s_floatValues.Length);
@@ -226,6 +276,63 @@ public class PredicateInstructions
                     Sve.CreateTrueMaskInt16(),
                     Sve.And(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
                     Sve.CompareLessThan(a, b)));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> AndMaskWithOnes(Vector<short> a, Vector<short> b)
+    {
+        // A vector containing ones is not a per-element mask. Ensure this remains a vector AND
+        // so that true lanes contain one rather than all bits set.
+        //ARM64-FULL-LINE: and {{z[0-9]+}}.d, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        return Sve.And(Sve.CompareGreaterThan(a, b), Vector.Create<short>(1));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> VectorAndNot(Vector<short> a, Vector<short> b)
+    {
+        // Verify that ordinary vector AND-NOT expressions still reach AdvSimd BitwiseClear lowering.
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.8h, {{v[0-9]+}}.8h, {{v[0-9]+}}.8h
+        return ~a & b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<float> PredicateBitwiseClearFloat(Vector<float> left, Vector<float> right)
+    {
+        //ARM64-FULL-LINE: {{bic .*}}
+        // {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        Vector<float> firstMask = Sve.CompareLessThan(left, right);
+        Vector<float> secondMask = Sve.ZipLow(
+            Sve.CompareGreaterThan(left, right),
+            Sve.CompareEqual(left, right));
+
+        return firstMask & ~secondMask;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> PredicateBitwiseClearMixedWidths(Vector<int> a, Vector<int> b, Vector<long> c, Vector<long> d)
+    {
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.4s, {{v[0-9]+}}.4s, {{v[0-9]+}}.4s
+        Vector<int> maskS = Sve.CompareLessThan(a, b);
+        Vector<long> maskD = Sve.CompareLessThan(c, d);
+        return maskS & ~Vector.AsVectorInt32(maskD);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> PredicateBitwiseClearMixedWidthsReversed(Vector<int> a, Vector<int> b, Vector<long> c, Vector<long> d)
+    {
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.4s, {{v[0-9]+}}.4s, {{v[0-9]+}}.4s
+        Vector<int> maskS = Sve.CompareLessThan(a, b);
+        Vector<long> maskD = Sve.CompareLessThan(c, d);
+        return ~maskS & Vector.AsVectorInt32(maskD);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> PredicateBitwiseClearReinterpreted(Vector<long> a, Vector<long> b)
+    {
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.4s, {{v[0-9]+}}.4s, {{v[0-9]+}}.4s
+        Vector<long> firstMask = Sve.CompareLessThan(a, b);
+        Vector<long> secondMask = Sve.CompareGreaterThan(a, b);
+        return Vector.AsVectorInt32(firstMask) & ~Vector.AsVectorInt32(secondMask);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

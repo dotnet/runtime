@@ -4931,20 +4931,6 @@ void CodeGen::genFinalizeFrame()
         JITDUMP("Setting genReverseAndPairCalleeSavedRegisters = true");
 
         genReverseAndPairCalleeSavedRegisters = true;
-
-        // Make sure we push the registers in pairs if possible. If we only allocate a contiguous
-        // block of registers this should add at most one integer and at most one floating point
-        // register to the list. The stack has to be 16-byte aligned, so in worst case it results
-        // in allocating 16 bytes more space on stack if odd number of integer and odd number of
-        // FP registers were occupied. Same number of instructions will be generated, just the
-        // STR instructions are replaced with STP (store pair).
-        regMaskTP maskModifiedRegs = regSet.rsGetModifiedRegsMask();
-        regMaskTP maskPairRegs     = ((maskModifiedRegs & (RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14)).getLow() << 1) |
-                                 ((maskModifiedRegs & (RBM_R19 | RBM_R21 | RBM_R23 | RBM_R25 | RBM_R27)).getLow() << 1);
-        if (maskPairRegs != RBM_NONE)
-        {
-            regSet.rsSetRegsModified(maskPairRegs);
-        }
     }
 
     if (m_compiler->compUsesUnknownSizeFrame)
@@ -5015,6 +5001,19 @@ void CodeGen::genFinalizeFrame()
         regSet.rsSetRegsModified(RBM_PROFILER_ENTER_ARG_0 | RBM_PROFILER_ENTER_ARG_1);
     }
 #endif
+
+#ifdef TARGET_ARM64
+    // Keep register pairs aligned to avoid expensive page-crossing saves and restores.
+    // For contiguous save sets, this adds at most one integer and one floating-point register, replacing
+    // STR/LDR with STP/LDP. If both sets have odd sizes, the frame grows by 16 bytes.
+    regMaskTP maskModifiedRegs = regSet.rsGetModifiedRegsMask();
+    regMaskTP maskPairRegs     = ((maskModifiedRegs & (RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14)).getLow() << 1) |
+                             ((maskModifiedRegs & (RBM_R19 | RBM_R21 | RBM_R23 | RBM_R25 | RBM_R27)).getLow() << 1);
+    if (maskPairRegs != RBM_NONE)
+    {
+        regSet.rsSetRegsModified(maskPairRegs);
+    }
+#endif // TARGET_ARM64
 
     /* Count how many callee-saved registers will actually be saved (pushed) */
 

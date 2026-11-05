@@ -39,6 +39,7 @@
 #include "posterror.h"
 #include "pedecoder.h"
 #include "pedecoder.inl"
+#include <minipal.h>
 
 //********** Types. ***********************************************************
 #define SMALL_ALLOC_MAP_SIZE (64 * 1024) // 64 kb is the minimum size of virtual
@@ -882,7 +883,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
             memset(m_rgPageMap, 0, sizeof(BYTE) * (iMaxSize / m_iPageSize));
 
             // Allocate space for the file contents.
-            if ((m_pBaseData = m_pData = ::ClrVirtualAlloc(0, iMaxSize, MEM_RESERVE, PAGE_NOACCESS)) == 0)
+            if ((m_pBaseData = m_pData = VMToOSInterface::ReserveMemory(iMaxSize)) == 0)
             {
                 hr = PostError(OutOfMemory());
                 goto ErrExit;
@@ -1009,8 +1010,8 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
             }
 
             // First commit the memory for this part of the file.
-            if (::ClrVirtualAlloc((void *) ((DWORD_PTR) m_pData + iOffset),
-                    iSize, MEM_COMMIT, PAGE_READWRITE) == 0)
+            if (VMToOSInterface::CommitReservedMemory((void *) ((DWORD_PTR) m_pData + iOffset),
+                    iSize, VMToOSInterface::MemoryProtection::ReadWrite) == 0)
                 return (PostError(OutOfMemory()));
 
             // Now load that portion of the file from disk.
@@ -1020,11 +1021,13 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
                 return (hr);
             }
 
+#ifndef TARGET_WASM
             // Change the memory to read only to avoid any modifications.  Any faults
             // that occur indicate a bug whereby the engine is trying to write to
             // protected memory.
-            _ASSERTE(::ClrVirtualAlloc((void *) ((DWORD_PTR) m_pData + iOffset),
-                    iSize, MEM_COMMIT, PAGE_READONLY) != 0);
+            _ASSERTE(VMToOSInterface::ProtectMemory((void *) ((DWORD_PTR) m_pData + iOffset),
+                    iSize, VMToOSInterface::MemoryProtection::ReadOnly));
+#endif // !TARGET_WASM
 
             // Record each new loaded page.
             for (;  j<i;  j++)
@@ -1228,8 +1231,9 @@ void StgIO::FreePageMap()
     {
         delete [] m_rgPageMap;
         m_rgPageMap = 0;
-        VERIFY(::ClrVirtualFree(m_pBaseData, (((m_cbData - 1) & ~(m_iPageSize - 1)) + m_iPageSize), MEM_DECOMMIT));
-        VERIFY(::ClrVirtualFree(m_pBaseData, 0, MEM_RELEASE));
+        ULONG iMaxSize = (((m_cbData - 1) & ~(m_iPageSize - 1)) + m_iPageSize);
+        VERIFY(VMToOSInterface::DecommitMemory(m_pBaseData, iMaxSize));
+        VERIFY(VMToOSInterface::ReleaseMemoryReservation(m_pBaseData, iMaxSize));
         m_pBaseData = 0;
         m_cbData = 0;
     }

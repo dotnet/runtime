@@ -2901,13 +2901,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compScopeInfo = opts.compDbgInfo;
 
-#ifdef TARGET_WASM
-    // Wasm uses virtual registers that cannot be encoded in the
-    // ICorDebugInfo register scheme, and there is no native debugger
-    // to consume scope info, so disable it entirely.
-    opts.compScopeInfo = false;
-#endif
-
 #ifdef LATE_DISASM
     codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName,
                                                     info.compMethodInfo->args.pSig);
@@ -5018,6 +5011,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Transform any strongly connected components into reducible flow.
     //
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
+
+    // Insert EventPipe CPU-sampling samplepoints before lowering.
+    //
+    DoPhase(this, PHASE_WASM_PROF_INSTRUMENT, &Compiler::fgWasmProfInstrument);
 #endif
 
     // Assign registers to variables, etc.
@@ -6142,6 +6139,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64SveAes() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_SveAes);
+        }
+
+        if (JitConfig.EnableArm64SvePmull128() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SvePmull128);
         }
 
         if (JitConfig.EnableArm64SveSha3() != 0)
