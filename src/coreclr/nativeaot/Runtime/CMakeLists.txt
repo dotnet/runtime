@@ -205,6 +205,7 @@ else()
 
   if(CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND COMMON_RUNTIME_SOURCES
+      wasm/ExceptionHandling.cpp
       wasm/MiscStubs.cpp
       wasm/PInvoke.cpp
       wasm/WasmCodeManager.cpp
@@ -305,10 +306,8 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 
-if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
-  set(FEATURE_PERFTRACING 1)
-  set(FEATURE_EVENT_TRACE 1)
-endif()
+set(FEATURE_PERFTRACING 1)
+set(FEATURE_EVENT_TRACE 1)
 
 if(FEATURE_PERFTRACING)
   add_definitions(-DFEATURE_PERFTRACING)

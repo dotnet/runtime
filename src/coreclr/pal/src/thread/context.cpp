@@ -22,7 +22,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/debug.h"
 #include "pal/thread.hpp"
 #include "pal/utils.h"
-#include "pal/virtual.h"
+#include <minipal/ospagesize.h>
 
 #if HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
@@ -2220,7 +2220,7 @@ DBG_FlushInstructionCache(
     //
     // As a workaround, we call __builtin___clear_cache on each page separately.
 
-    const SIZE_T pageSize = GetVirtualPageSize();
+    const SIZE_T pageSize = minipal_getpagesize();
     UINT_PTR begin = (UINT_PTR)lpBaseAddress;
     const UINT_PTR end = begin + dwSize;
 

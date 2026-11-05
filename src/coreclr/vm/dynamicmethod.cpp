@@ -370,7 +370,7 @@ HostCodeHeap::~HostCodeHeap()
         delete[] m_pHeapList->pHdrMap;
 
     if (m_pBaseAddr)
-        ExecutableAllocator::Instance()->Release(m_pBaseAddr);
+        ExecutableAllocator::Instance()->Release(m_pBaseAddr, m_TotalBytesAvailable);
     LOG((LF_BCL, LL_INFO10, "Level1 - CodeHeap destroyed {0x%p}\n", this));
 }
 
