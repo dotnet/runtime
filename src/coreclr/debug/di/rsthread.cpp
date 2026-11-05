@@ -9590,7 +9590,8 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
         }
         else
         {
-            bool boxed = m_resultType.elementType != ELEMENT_TYPE_VALUETYPE;
+            bool boxed = GetProcess()->GetDCB()->m_leftSideProtocolCurrent < 3 ||
+                m_resultType.elementType != ELEMENT_TYPE_VALUETYPE;
             if (!boxed && m_pValueClassResult != NULL)
             {
                 CordbVCObjectValue *pValueClassResult = m_pValueClassResult;

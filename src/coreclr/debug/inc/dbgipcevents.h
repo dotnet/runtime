@@ -99,10 +99,12 @@ typedef enum
 
 //
 // Defines for current version numbers for the left and right sides
+// Protocol 3 appends the external memory owner to FuncEvalComplete_3 and adds
+// DB_IPCE_DISPOSE_EXTERNAL_MEMORY_OWNER. The DBI retains support for protocol 2 runtimes.
 //
-#define CorDB_LeftSideProtocolCurrent           2
-#define CorDB_LeftSideProtocolMinSupported      2
-#define CorDB_RightSideProtocolCurrent          2
+#define CorDB_LeftSideProtocolCurrent           3
+#define CorDB_LeftSideProtocolMinSupported      3
+#define CorDB_RightSideProtocolCurrent          3
 #define CorDB_RightSideProtocolMinSupported     2
 
 //
@@ -1690,9 +1692,24 @@ struct MSLAYOUT DebuggerIPCEvent
             Portable<VMPTR_AppDomain> vmAppDomain;
 
             Portable<VMPTR_OBJECTHANDLE> vmObjectHandle;
-            Portable<VMPTR_DebuggerExternalMemoryOwner> vmExternalMemoryOwner;
             DebuggerIPCE_ExpandedTypeData resultType;
         } FuncEvalComplete;
+
+        // Protocol 3 preserves the protocol 2 prefix and appends the owner.
+        struct MSLAYOUT
+        {
+            RSPTR_CORDBEVAL funcEvalKey;
+            Portable<bool> successful;
+            Portable<bool> aborted;
+            Portable<CORDB_ADDRESS> resultAddr;
+
+            // AppDomain that the result is in.
+            Portable<VMPTR_AppDomain> vmAppDomain;
+
+            Portable<VMPTR_OBJECTHANDLE> vmObjectHandle;
+            DebuggerIPCE_ExpandedTypeData resultType;
+            Portable<VMPTR_DebuggerExternalMemoryOwner> vmExternalMemoryOwner;
+        } FuncEvalComplete_3;
 
         struct MSLAYOUT
         {
@@ -1825,6 +1842,10 @@ struct MSLAYOUT DebuggerIPCEvent
     };
 };
 
+static_assert(offsetof(DebuggerIPCEvent, FuncEvalComplete_3.resultType) ==
+              offsetof(DebuggerIPCEvent, FuncEvalComplete.resultType));
+static_assert(offsetof(DebuggerIPCEvent, FuncEvalComplete_3.vmExternalMemoryOwner) ==
+              offsetof(DebuggerIPCEvent, FuncEvalComplete) + sizeof(DebuggerIPCEvent::FuncEvalComplete));
 
 // When using a network transport rather than shared memory buffers CorDBIPC_BUFFER_SIZE is the upper bound
 // for a single DebuggerIPCEvent structure. This now relates to the maximal size of a network message and is

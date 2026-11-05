@@ -5142,7 +5142,9 @@ void CordbProcess::RawDispatchEvent(
             pEval->m_aborted        = !!pEvent->FuncEvalComplete.aborted;
             pEval->m_resultAddr     = pEvent->FuncEvalComplete.resultAddr;
             pEval->m_vmObjectHandle = pEvent->FuncEvalComplete.vmObjectHandle;
-            pEval->m_vmExternalMemoryOwner = pEvent->FuncEvalComplete.vmExternalMemoryOwner;
+            pEval->m_vmExternalMemoryOwner = GetDCB()->m_leftSideProtocolCurrent >= 3
+                ? pEvent->FuncEvalComplete_3.vmExternalMemoryOwner
+                : VMPTR_DebuggerExternalMemoryOwner::NullPtr();
             pEval->m_resultType     = pEvent->FuncEvalComplete.resultType;
             pEval->m_resultAppDomainToken = pEvent->FuncEvalComplete.vmAppDomain;
 

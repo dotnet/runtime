@@ -2274,7 +2274,7 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         break;
 
     case DB_IPCE_FUNC_EVAL_COMPLETE:
-        cbAdditionalSize = sizeof(pEvent->FuncEvalComplete);
+        cbAdditionalSize = sizeof(pEvent->FuncEvalComplete_3);
         break;
 
     case DB_IPCE_SET_REFERENCE_RESULT:

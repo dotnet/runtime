@@ -9758,34 +9758,34 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
     InitIPCEvent(ipce, DB_IPCE_FUNC_EVAL_COMPLETE, pThread);
 
-    ipce->FuncEvalComplete.funcEvalKey = pDE->m_funcEvalKey;
-    ipce->FuncEvalComplete.successful = pDE->m_successful;
-    ipce->FuncEvalComplete.aborted = pDE->m_aborted;
+    ipce->FuncEvalComplete_3.funcEvalKey = pDE->m_funcEvalKey;
+    ipce->FuncEvalComplete_3.successful = pDE->m_successful;
+    ipce->FuncEvalComplete_3.aborted = pDE->m_aborted;
     void *pResult = pDE->m_externalMemoryOwner != NULL
         ? static_cast<void *>(pDE->m_externalMemoryOwner->GetMemory())
         : static_cast<void *>(pDE->m_result);
-    ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)pResult;
-    ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pDomain);
-    ipce->FuncEvalComplete.vmObjectHandle = pDE->m_vmObjectHandle;
-    ipce->FuncEvalComplete.vmExternalMemoryOwner.SetRawPtr(pDE->m_externalMemoryOwner.GetValue());
+    ipce->FuncEvalComplete_3.resultAddr = (CORDB_ADDRESS)pResult;
+    ipce->FuncEvalComplete_3.vmAppDomain.SetRawPtr(pDomain);
+    ipce->FuncEvalComplete_3.vmObjectHandle = pDE->m_vmObjectHandle;
+    ipce->FuncEvalComplete_3.vmExternalMemoryOwner.SetRawPtr(pDE->m_externalMemoryOwner.GetValue());
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: TypeHandle is %p\n", pDE->m_resultType.AsPtr()));
 
     Debugger::TypeHandleToExpandedTypeInfo(pDE->m_retValueBoxing, // whether return values get boxed or not depends on the particular FuncEval we're doing...
                                            pDomain,
                                            pDE->m_resultType,
-                                           &ipce->FuncEvalComplete.resultType);
+                                           &ipce->FuncEvalComplete_3.resultType);
 
-    if (ipce->FuncEvalComplete.resultType.elementType != ELEMENT_TYPE_VALUETYPE)
+    if (ipce->FuncEvalComplete_3.resultType.elementType != ELEMENT_TYPE_VALUETYPE)
     {
         // We must adjust the result address to point to the right place
-        ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)(ArgSlotEndiannessFixup((ARG_SLOT*)(CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr)),
-            GetSizeForCorElementType(ipce->FuncEvalComplete.resultType.elementType)));
+        ipce->FuncEvalComplete_3.resultAddr = (CORDB_ADDRESS)(ArgSlotEndiannessFixup((ARG_SLOT*)(CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete_3.resultAddr)),
+            GetSizeForCorElementType(ipce->FuncEvalComplete_3.resultType.elementType)));
     }
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: returned el %04x resultAddr %p\n",
-        static_cast<unsigned>(ipce->FuncEvalComplete.resultType.elementType),
-        (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr))));
+        static_cast<unsigned>(ipce->FuncEvalComplete_3.resultType.elementType),
+        (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete_3.resultAddr))));
 
     IfFailThrow(m_pRCThread->SendIPCEvent());
     pDE->m_externalMemoryOwner.SuppressRelease();
