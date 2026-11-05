@@ -349,6 +349,8 @@ try {
                 library.AssemblyProviderTest.Exports["Add.1018901745"](41) !== 42 ||
                 library.AssemblyProviderTest.Exports.Echo("type-map") !== "type-map" ||
                 await library.AssemblyProviderTest.Exports.AddAsync(20, 22) !== 42 ||
+                library.AssemblyProviderTest.InaccessibleExports.Private.Add(17, 25) !== 42 ||
+                library.AssemblyProviderTest.InaccessibleExports.Protected.Negate(-42) !== 42 ||
                 again.AssemblyProviderTest.Exports.Add(19, 23) !== 42) {
                 throw new Error("Mapped JSExport invocation failed");
             }

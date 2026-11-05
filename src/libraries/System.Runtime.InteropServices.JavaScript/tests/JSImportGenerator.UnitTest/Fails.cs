@@ -3,6 +3,9 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Testing;
+using Microsoft.CodeAnalysis.Testing;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading.Tasks;
@@ -93,7 +96,7 @@ namespace JSImportGenerator.Unit.Tests
         }
 
         [Fact]
-        public async Task JSExportInInaccessibleNestedTypeWarns()
+        public async Task JSExportInInaccessibleNestedTypeDoesNotWarn()
         {
             string source = """
                 using System.Runtime.InteropServices.JavaScript;
@@ -106,10 +109,7 @@ namespace JSImportGenerator.Unit.Tests
                     }
                 }
                 """;
-            Compilation comp = TestUtils.CreateCompilation(new[] { source });
-            ImmutableArray<Diagnostic> analyzerDiags = await RunAnalyzerAsync(comp);
-
-            Assert.NotEmpty(analyzerDiags.Where(d => d.Id == "SYSLIB1076"));
+            await new ExportAnalyzerTest { TestCode = source }.RunAsync();
         }
 
         public static IEnumerable<object[]> NonReferenceableExportSources()
@@ -121,7 +121,7 @@ namespace JSImportGenerator.Unit.Tests
                 partial class Outer<T>
                 {
                     [JSExport]
-                    internal static void Export() { }
+                    internal static void {|SYSLIB1076:Export|}() { }
                 }
                 """,
             ];
@@ -132,7 +132,7 @@ namespace JSImportGenerator.Unit.Tests
                 file partial class FileLocal
                 {
                     [JSExport]
-                    internal static void Export() { }
+                    internal static void {|SYSLIB1076:Export|}() { }
                 }
                 """,
             ];
@@ -142,10 +142,7 @@ namespace JSImportGenerator.Unit.Tests
         [MemberData(nameof(NonReferenceableExportSources))]
         public async Task JSExportInNonReferenceableTypeWarns(string source)
         {
-            Compilation comp = TestUtils.CreateCompilation(new[] { source });
-            ImmutableArray<Diagnostic> analyzerDiags = await RunAnalyzerAsync(comp);
-
-            Assert.NotEmpty(analyzerDiags.Where(d => d.Id == "SYSLIB1076"));
+            await new ExportAnalyzerTest { TestCode = source }.RunAsync();
         }
 
         [Fact]
@@ -162,10 +159,19 @@ namespace JSImportGenerator.Unit.Tests
                     }
                 }
                 """;
-            Compilation comp = TestUtils.CreateCompilation(new[] { source });
-            ImmutableArray<Diagnostic> analyzerDiags = await RunAnalyzerAsync(comp);
+            await new ExportAnalyzerTest { TestCode = source }.RunAsync();
+        }
 
-            Assert.Empty(analyzerDiags.Where(d => d.Id == "SYSLIB1076"));
+        private sealed class ExportAnalyzerTest : CSharpAnalyzerTest<Microsoft.Interop.JavaScript.JSExportDiagnosticsAnalyzer, DefaultVerifier>
+        {
+            public ExportAnalyzerTest()
+            {
+                ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
+                TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+            }
+
+            protected override CompilationOptions CreateCompilationOptions() =>
+                ((CSharpCompilationOptions)base.CreateCompilationOptions()).WithAllowUnsafe(true);
         }
 
         private static Task<ImmutableArray<Diagnostic>> RunAnalyzerAsync(Compilation comp)

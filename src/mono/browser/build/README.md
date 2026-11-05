@@ -23,6 +23,8 @@ build rather than stable names or signature hashes. A generated string switch bi
 only the selected method. Binder delegates survive ordinary proxy cleanup and are
 released with the runtime's method state.
 Legacy assemblies retain their existing registration path.
+Private and protected nested exports use managed unsafe accessors to their generated
+wrappers. Generic and file-local containing types retain the diagnostic and reflection fallback.
 Mono supports the unconditional external type-map entries used by JSExports.
 Conditional entries and proxy type maps remain unsupported on Mono.
 

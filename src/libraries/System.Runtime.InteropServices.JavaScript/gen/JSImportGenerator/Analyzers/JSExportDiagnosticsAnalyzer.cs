@@ -45,7 +45,8 @@ namespace Microsoft.Interop.JavaScript
                     new NoSpanAndTaskMixingResolver(),
                     new JSGeneratorResolver()));
 
-            if (!JSExportGenerator.IsReferenceableByMethodGroup(symbol.ContainingType))
+            if (!JSExportGenerator.IsReferenceableByMethodGroup(symbol.ContainingType)
+                && !JSExportGenerator.CanUseUnsafeAccessor(symbol.ContainingType))
             {
                 generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(
                     GeneratorDiagnostics.JSExportInaccessibleNestedType,

@@ -21,7 +21,18 @@ namespace Microsoft.Interop.JavaScript
             ContainingSyntaxContext ContainingSyntaxContext,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             JSExportData JSExportData,
-            bool IsReflectionFree);
+            bool IsReflectionFree,
+            string? UnsafeAccessorTarget);
+
+        internal static bool CanUseUnsafeAccessor(INamedTypeSymbol type)
+        {
+            for (INamedTypeSymbol? current = type; current is not null; current = current.ContainingType)
+            {
+                if (current.Arity != 0 || current.IsFileLocal)
+                    return false;
+            }
+            return true;
+        }
 
         /// <summary>
         /// Whether the wrapper can be named from the generated registration, which requires every
@@ -143,7 +154,19 @@ namespace Microsoft.Interop.JavaScript
             var signatureContext = JSSignatureContext.Create(symbol, environment, generatorDiagnostics, ct);
             ContainingSyntaxContext containingTypeContext = originalSyntax.GetContainingSyntaxContext();
 
-            return new IncrementalStubGenerationContext(signatureContext, containingTypeContext, locations, jsExportData, IsReferenceableByMethodGroup(symbol.ContainingType));
+            string? accessorTarget = null;
+            if (!IsReferenceableByMethodGroup(symbol.ContainingType) && CanUseUnsafeAccessor(symbol.ContainingType))
+            {
+                var names = new List<string>();
+                for (INamedTypeSymbol? type = symbol.ContainingType; type is not null; type = type.ContainingType)
+                    names.Insert(0, type.MetadataName);
+                string typeName = string.Join("+", names);
+                for (INamespaceSymbol ns = symbol.ContainingNamespace; !ns.IsGlobalNamespace; ns = ns.ContainingNamespace)
+                    typeName = ns.MetadataName + "." + typeName;
+                accessorTarget = typeName + ", " + symbol.ContainingAssembly.Identity.GetDisplayName();
+            }
+            return new IncrementalStubGenerationContext(signatureContext, containingTypeContext, locations, jsExportData,
+                IsReferenceableByMethodGroup(symbol.ContainingType), accessorTarget);
         }
 
         private static void WriteProviderSource(
@@ -267,8 +290,17 @@ namespace Microsoft.Interop.JavaScript
                 return (writer.ToString(), fastRegistration, null, signature.QualifiedMethodName, signature.TypesHash);
             }
 
-            // Inaccessible (private or protected nested) types cannot be named from the registration,
-            // so bind them through the reflection-based overload and keep the wrapper alive explicitly.
+            if (incrementalContext.UnsafeAccessorTarget is string target)
+            {
+                string accessorRegistration =
+                    $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, {signatures}, &__Invoke);\n" +
+                    $"static void __Invoke({Constants.JSMarshalerArgumentGlobal}* arguments) => __Access(null, arguments);\n" +
+                    $"[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = {CodeWriterHelpers.StringLiteral(signature.WrapperName)})]\n" +
+                    $"static extern void __Access([global::System.Runtime.CompilerServices.UnsafeAccessorType({CodeWriterHelpers.StringLiteral(target)})] object target, {Constants.JSMarshalerArgumentGlobal}* arguments);";
+                return (writer.ToString(), accessorRegistration, null, signature.QualifiedMethodName, signature.TypesHash);
+            }
+
+            // Generic and file-local containing types cannot be targeted by this accessor.
             string registration = $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, {signatures});";
             string attribute = $"{Constants.DynamicDependencyAttributeGlobal}({CodeWriterHelpers.StringLiteral(signature.WrapperName)}, {CodeWriterHelpers.StringLiteral(signature.StubTypeFullName)}, {CodeWriterHelpers.StringLiteral(signature.AssemblyName)})";
 

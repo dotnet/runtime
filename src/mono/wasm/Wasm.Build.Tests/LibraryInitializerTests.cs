@@ -133,6 +133,8 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         Assert.DoesNotContain("__GeneratedJSExportProvider_", generatedCode);
         Assert.DoesNotContain("JSExportCatalog", generatedCode);
         Assert.DoesNotContain("ModuleInitializer", generatedCode);
+        Assert.Contains("UnsafeAccessorType(", generatedCode);
+        Assert.DoesNotContain("DynamicDependencyAttribute(\"__Wrapper", generatedCode);
         string appGeneratedFile = Directory.GetFiles(Path.Combine(_projectDir, "obj"), "JSExports.g.cs", SearchOption.AllDirectories).Single();
         Assert.Contains("JSExportProvider>(\"Library\")", File.ReadAllText(appGeneratedFile));
         RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DeferredJSExports"));

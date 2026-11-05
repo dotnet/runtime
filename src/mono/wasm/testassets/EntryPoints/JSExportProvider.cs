@@ -26,4 +26,20 @@ public static partial class Exports
         await Task.Yield();
         return left + right;
     }
+
+}
+
+public partial class InaccessibleExports
+{
+    private static partial class Private
+    {
+        [JSExport]
+        public static int Add(int left, int right) => left + right;
+    }
+
+    protected static partial class Protected
+    {
+        [JSExport]
+        public static int Negate(int value) => -value;
+    }
 }

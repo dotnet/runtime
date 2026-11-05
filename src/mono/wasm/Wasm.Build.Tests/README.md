@@ -91,6 +91,8 @@ On both runtimes, a counting provider verifies one activation at discovery, no b
 property read, exactly one binding on first invocation, stable aliases, and an
 unused method that must never be bound. Mono coverage uses trimmed apps and
 the unconditional external type-map support required by JSExports.
+Private and protected nested exports exercise generated unsafe accessors on both
+runtimes, including trimmed publication.
 
 `Blazor.AssetCachingTests` exercises the browser HTTP cache using the hosted
 `BlazorWebWasm` test asset. Its recovery cases seed cacheable invalid boot

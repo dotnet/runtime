@@ -3,7 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Reflection;
 using System.Runtime.Loader;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,7 +15,6 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             ArgumentException.ThrowIfNullOrEmpty(assemblyName);
 
-            Assembly.Load(new AssemblyName(assemblyName));
             if (TryBindMappedAssemblyExports(assemblyName))
             {
                 return Task.CompletedTask;
