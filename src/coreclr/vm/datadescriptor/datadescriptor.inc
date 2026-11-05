@@ -490,9 +490,8 @@ CDAC_TYPE_END(AppDomain)
 CDAC_TYPE_BEGIN(ExternalMemoryHandle)
 CDAC_TYPE_INDETERMINATE(ExternalMemoryHandle)
 CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, Next, cdac_data<ExternalMemoryHandle>::Next)
-CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, MethodTable, cdac_data<ExternalMemoryHandle>::MethodTable)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, TypeHandle, cdac_data<ExternalMemoryHandle>::TypeHandle)
 CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, Memory, cdac_data<ExternalMemoryHandle>::Memory)
-CDAC_TYPE_FIELD(ExternalMemoryHandle, T_UINT32, GCFlags, cdac_data<ExternalMemoryHandle>::GCFlags)
 CDAC_TYPE_END(ExternalMemoryHandle)
 
 CDAC_TYPE_BEGIN(SystemDomain)
@@ -944,6 +943,7 @@ CDAC_TYPE_INDETERMINATE(PlatformMetadata)
 CDAC_TYPE_FIELD(PlatformMetadata, TYPE(PrecodeMachineDescriptor), PrecodeMachineDescriptor, offsetof(CDacPlatformMetadata, precode))
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_FIELD(PlatformMetadata, T_UINT8, CodePointerFlags, offsetof(CDacPlatformMetadata, codePointerFlags))
+CDAC_TYPE_FIELD(PlatformMetadata, T_UINT64, PointerAuthenticationMask, offsetof(CDacPlatformMetadata, pointerAuthenticationMask))
 CDAC_TYPE_END(PlatformMetadata)
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS

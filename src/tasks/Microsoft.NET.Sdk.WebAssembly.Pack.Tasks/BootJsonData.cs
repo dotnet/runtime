@@ -364,6 +364,9 @@ public class AssetsData
 
     [DataMember(EmitDefaultValue = false)]
     public List<VfsAsset> vfs { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<AppSettings> appsettings { get; set; }
 }
 
 [DataContract]
@@ -436,6 +439,12 @@ public class VfsAsset
     public string hash { get; set; }
     public string resolvedUrl { get; set; }
     public string cache { get; set; }
+}
+
+[DataContract]
+public class AppSettings : VfsAsset
+{
+    public bool loadIntoVfs { get; set; }
 }
 
 public enum GlobalizationMode : int

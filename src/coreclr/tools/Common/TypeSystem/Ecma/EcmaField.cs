@@ -330,16 +330,13 @@ namespace Internal.TypeSystem.Ecma
         {
             Debug.Assert(field.HasRva);
             int addr = field.MetadataReader.GetFieldDefinition(field.Handle).GetRelativeVirtualAddress();
-            var memBlock = field.Module.PEReader.GetSectionData(addr).GetContent();
+            var memBlock = field.Module.PEReader.GetSectionData(addr);
 
             int size = field.FieldType.GetElementSize().AsInt;
             if (size > memBlock.Length)
                 throw new BadImageFormatException();
 
-            byte[] result = new byte[size];
-            memBlock.CopyTo(0, result, 0, size);
-
-            return result;
+            return memBlock.GetReader(0, size).ReadBytes(size);
         }
     }
 }
