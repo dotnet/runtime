@@ -447,12 +447,14 @@ namespace System.Numerics
                 }
                 else
                 {
-                    product.Clear();
-                    Multiply(stepQuotient.Slice(0, quotientLength), v, product);
-                    AddSelf(product, u);
+                    // Multiply wants trimmed operands and an exact-width destination.
+                    int vLength = ActualLength(v);
+                    Span<nuint> stepProduct = product.Slice(0, quotientLength + vLength);
+                    stepProduct.Clear();
+                    Multiply(stepQuotient.Slice(0, quotientLength), v.Slice(0, vLength), stepProduct);
 
-                    Debug.Assert(!product.Slice(cofactorLength).ContainsAnyExcept((nuint)0));
-                    product.Slice(0, cofactorLength).CopyTo(cofactorLow);
+                    u.CopyTo(cofactorLow);
+                    AddSelf(cofactorLow, stepProduct.Slice(0, ActualLength(stepProduct)));
                 }
 
                 // (x, y) <- (y, x mod y) and (u, v) <- (v, u + q * v)
@@ -553,7 +555,9 @@ namespace System.Numerics
                 {
                     int nextLimbs = Math.Min(correctLimbs * 2, limbCount);
                     int resultLength = ActualLength(result.Slice(0, correctLimbs));
-                    int valueFactorLength = Math.Min(valueLength, nextLimbs);
+
+                    // Truncating can leave zero top limbs, and Multiply wants trimmed operands.
+                    int valueFactorLength = ActualLength(value.Slice(0, Math.Min(valueLength, nextLimbs)));
 
                     // factor = 2 - value * result, modulo the limb radix to nextLimbs.
                     // Dropping limbs above nextLimbs from either operand is exactly the
@@ -572,14 +576,17 @@ namespace System.Numerics
                     SubtractFromTwo(factor.Slice(0, nextLimbs));
 
                     // result = result * factor, again modulo the limb radix to nextLimbs.
-                    int highWidth = nextLimbs + resultLength;
+                    // factor is often 1 + k * B^correctLimbs, so its top limbs can be zero.
+                    int factorLength = ActualLength(factor.Slice(0, nextLimbs));
+                    int highWidth = factorLength + resultLength;
                     Span<nuint> highProduct = product.Slice(0, highWidth);
                     highProduct.Clear();
 
-                    Multiply(factor.Slice(0, nextLimbs), result.Slice(0, resultLength), highProduct);
+                    Multiply(factor.Slice(0, factorLength), result.Slice(0, resultLength), highProduct);
 
-                    Debug.Assert(highWidth >= nextLimbs);
-                    highProduct.Slice(0, nextLimbs).CopyTo(result);
+                    int copied = Math.Min(highWidth, nextLimbs);
+                    highProduct.Slice(0, copied).CopyTo(result);
+                    result.Slice(copied, nextLimbs - copied).Clear();
 
                     correctLimbs = nextLimbs;
                 }

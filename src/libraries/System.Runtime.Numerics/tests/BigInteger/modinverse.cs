@@ -12,6 +12,8 @@ namespace System.Numerics.Tests
 
         private static readonly Random s_random = new Random(100);
 
+        private static readonly BigInteger s_limbRadix = BigInteger.One << (8 * nint.Size);
+
         // Mersenne exponents: 2^p - 1 is prime for each of these. Used to cross-check
         // against ModPow via Fermat's little theorem, and to cover a range of limb counts.
         private static readonly int[] s_mersenneExponents = new int[] { 31, 61, 89, 127, 521, 607, 1279 };
@@ -322,6 +324,49 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void EuclidStepWithShiftedCofactor()
+        {
+            // With q = B^k + 5, value = 3q + 1 and modulus = B^s * value + 3, the first
+            // quotient is B^s, so the next multiply sees a cofactor with s zero low limbs.
+            foreach ((int k, int s) in new (int, int)[] { (31, 2), (31, 4), (40, 8), (100, 4), (255, 4), (300, 4), (300, 16) })
+            {
+                BigInteger q = BigInteger.Pow(s_limbRadix, k) + 5;
+                BigInteger value = (3 * q) + 1;
+                BigInteger modulus = (BigInteger.Pow(s_limbRadix, s) * value) + 3;
+
+                AssertIsInverse(value, modulus);
+                AssertIsInverse(-value, modulus);
+            }
+        }
+
+        [Fact]
+        public static void PowerOfTwoModulusTruncatedValueWithZeroTopLimbs()
+        {
+            // Truncating the value to the next lift width leaves zero limbs between
+            // B^mid and the width, with nonzero limbs above it.
+            foreach ((int limbs, int mid, int high) in new (int, int, int)[] { (100, 32, 80), (600, 256, 550) })
+            {
+                BigInteger modulus = BigInteger.Pow(s_limbRadix, limbs);
+                BigInteger value = 3 + BigInteger.Pow(s_limbRadix, mid) + BigInteger.Pow(s_limbRadix, high);
+
+                AssertIsInverse(value, modulus);
+            }
+        }
+
+        [Fact]
+        public static void PowerOfTwoModulusLiftFactorOfOne()
+        {
+            // (1 - B^k)(1 + B^k) == 1 (mod B^n) when 2k >= n, so the last lift multiplies by 1.
+            foreach ((int n, int k) in new (int, int)[] { (64, 40), (300, 200), (400, 255), (513, 300) })
+            {
+                BigInteger modulus = BigInteger.Pow(s_limbRadix, n);
+                BigInteger value = modulus - BigInteger.Pow(s_limbRadix, k) + 1;
+
+                Assert.Equal(BigInteger.Pow(s_limbRadix, k) + 1, BigInteger.ModInverse(value, modulus));
+            }
+        }
+
+        [Fact]
         public static void NonCoprimeLargeOperands()
         {
             BigInteger shared = BigInteger.Pow(2, 521) - 1;
@@ -393,6 +438,41 @@ namespace System.Numerics.Tests
         {
             BigInteger remainder = value % modulus;
             return remainder.Sign < 0 ? remainder + modulus : remainder;
+        }
+
+        private static void AssertIsInverse(BigInteger value, BigInteger modulus)
+        {
+            BigInteger inverse = BigInteger.ModInverse(value, modulus);
+
+            Assert.True(inverse.Sign > 0 && inverse < modulus);
+            Assert.Equal(BigInteger.One, Mod(value * inverse, modulus));
+        }
+    }
+
+    [Collection(nameof(DisableParallelization))]
+    public class ModInverseThresholdTests
+    {
+        [Fact]
+        public static void RunWithKaratsuba()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyToom3Threshold, int.MaxValue, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, RunAll));
+        }
+
+        [Fact]
+        public static void RunWithToom3()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyToom3Threshold, 9, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 9, RunAll));
+        }
+
+        private static void RunAll()
+        {
+            ModInverseTests.EuclidStepWithShiftedCofactor();
+            ModInverseTests.PowerOfTwoModulusTruncatedValueWithZeroTopLimbs();
+            ModInverseTests.PowerOfTwoModulusLiftFactorOfOne();
+            ModInverseTests.LargeOperands();
+            ModInverseTests.PowerOfTwoModulusResultIsUniqueAndOdd();
         }
     }
 }
