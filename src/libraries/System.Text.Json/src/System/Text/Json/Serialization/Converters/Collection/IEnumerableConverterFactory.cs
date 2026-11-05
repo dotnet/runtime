@@ -30,8 +30,6 @@ namespace System.Text.Json.Serialization.Converters
             return typeof(IEnumerable).IsAssignableFrom(typeToConvert);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Type converterType;
