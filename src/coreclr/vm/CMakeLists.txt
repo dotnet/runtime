@@ -398,6 +398,10 @@ set(VM_SOURCES_WKS
     ${VM_SOURCES_GDBJIT}
 )
 
+if (CLR_CMAKE_TARGET_BROWSER)
+    list(REMOVE_ITEM VM_SOURCES_WKS eventpipeinternal.cpp)
+endif()
+
 if (FEATURE_MULTICOREJIT)
     list(APPEND VM_SOURCES_WKS
         multicorejit.cpp

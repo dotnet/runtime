@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.Build.NoTargets"
-         TreatAsLocalProperty="IsBrowserWasmProject;RequiresCrossgen2Pack;InvariantGlobalization;InvariantTimezone;EnableDiagnostics;WasmInitialHeapSize;EmccMaximumHeapSize;EmccStackSize">
+         TreatAsLocalProperty="BrowserHostNativeFlavor;IsBrowserWasmProject;RequiresCrossgen2Pack;InvariantGlobalization;InvariantTimezone;EnableDiagnostics;WasmInitialHeapSize;EmccMaximumHeapSize;EmccStackSize">
   <PropertyGroup>
     <IsBrowserWasmProject>false</IsBrowserWasmProject>
     <RequiresCrossgen2Pack>false</RequiresCrossgen2Pack>
-    <IntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'browserhost', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</IntermediateOutputPath>
+    <BrowserHostNativeFlavor Condition="'$(BrowserHostNativeFlavor)' == ''">production</BrowserHostNativeFlavor>
+    <IntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'browserhost', '$(TargetOS).$(TargetArchitecture).$(Configuration)', '$(BrowserHostNativeFlavor)'))</IntermediateOutputPath>
     <MicrosoftNetCoreAppRuntimePackRidNativeDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
     <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == '' and '$(Configuration)' == 'Debug'">true</WasmNativeDebugSymbols>
     <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Checked'">-O2</EmccLinkOptimizationFlag>
@@ -14,7 +15,8 @@
   <PropertyGroup>
     <InvariantGlobalization>$(BrowserHostInvariantGlobalization)</InvariantGlobalization>
     <InvariantTimezone>$(BrowserHostInvariantTimezone)</InvariantTimezone>
-    <EnableDiagnostics>$(BrowserHostEnableDiagnostics)</EnableDiagnostics>
+    <EnableDiagnostics Condition="'$(BrowserHostNativeFlavor)' == 'production'">false</EnableDiagnostics>
+    <EnableDiagnostics Condition="'$(BrowserHostNativeFlavor)' == 'diagnostics'">true</EnableDiagnostics>
     <WasmInitialHeapSize>$(BrowserHostInitialHeapSize)</WasmInitialHeapSize>
     <EmccMaximumHeapSize>$(BrowserHostMaximumHeapSize)</EmccMaximumHeapSize>
     <EmccStackSize>$(BrowserHostStackSize)</EmccStackSize>
@@ -30,9 +32,11 @@
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild;ResolveLibrariesRuntimeFilesFromLocalBuild">
     <Error Condition="'$(TargetOS)' != 'browser' or '$(TargetArchitecture)' != 'wasm' or '$(RuntimeFlavor)' != 'CoreCLR'"
            Text="The prebuilt browserhost requires CoreCLR for browser-wasm." />
+    <Error Condition="'$(BrowserHostNativeFlavor)' != 'production' and '$(BrowserHostNativeFlavor)' != 'diagnostics'"
+           Text="Unsupported prebuilt browserhost native flavor '$(BrowserHostNativeFlavor)'." />
     <ItemGroup>
       <_BrowserHostNativeFile Include="@(RuntimeFiles->WithMetadataValue('IsNative', 'true'));@(LibrariesRuntimeFiles->WithMetadataValue('IsNative', 'true'))"
-                              Exclude="$(LibrariesSharedFrameworkDir)dotnet.native.js"
+                              Exclude="$(LibrariesSharedFrameworkDir)dotnet.native.js;$(LibrariesSharedFrameworkDir)native-flavors\**\*"
                               Condition="'%(Extension)' == '.a' or '%(Extension)' == '.js'" />
     </ItemGroup>
     <Copy SourceFiles="@(_BrowserHostNativeFile->Distinct())"
@@ -56,8 +60,12 @@
   <Target Name="CopyBrowserHost"
           AfterTargets="Build"
           DependsOnTargets="BuildBrowserHost">
+    <PropertyGroup>
+      <BrowserHostNativeOutputDir Condition="'$(BrowserHostNativeFlavor)' == 'production'">$(LibrariesSharedFrameworkDir)</BrowserHostNativeOutputDir>
+      <BrowserHostNativeOutputDir Condition="'$(BrowserHostNativeFlavor)' != 'production'">$([MSBuild]::NormalizeDirectory('$(LibrariesSharedFrameworkDir)', 'native-flavors', '$(BrowserHostNativeFlavor)'))</BrowserHostNativeOutputDir>
+    </PropertyGroup>
     <Copy SourceFiles="@(WasmNativeAsset)"
-          DestinationFolder="$(LibrariesSharedFrameworkDir)"
+          DestinationFolder="$(BrowserHostNativeOutputDir)"
           SkipUnchangedFiles="true">
       <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
     </Copy>

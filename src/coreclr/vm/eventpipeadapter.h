@@ -18,6 +18,33 @@
 #include <eventpipe/ep-buffer-manager.h>
 
 
+#if defined(TARGET_BROWSER)
+
+class EventPipeProviderConfigurationAdapter final
+{
+public:
+    EventPipeProviderConfigurationAdapter(const COR_PRF_EVENTPIPE_PROVIDER_CONFIG *providerConfigs, uint32_t providerConfigsLen);
+    ~EventPipeProviderConfigurationAdapter();
+
+    inline const EventPipeProviderConfiguration * GetProviderConfigs() const
+    {
+        STATIC_CONTRACT_NOTHROW;
+        return m_providerConfigs;
+    }
+
+    inline uint32_t GetProviderConfigsLen() const
+    {
+        STATIC_CONTRACT_NOTHROW;
+        return m_providerConfigsLen;
+    }
+
+private:
+    EventPipeProviderConfiguration *m_providerConfigs;
+    uint32_t m_providerConfigsLen;
+};
+
+#else // TARGET_BROWSER
+
 class EventPipeProviderConfigurationAdapter final
 {
 public:
@@ -80,6 +107,8 @@ private:
 	EventPipeProviderConfiguration *m_providerConfigs;
 	uint32_t m_providerConfigsLen;
 };
+
+#endif // TARGET_BROWSER
 
 class EventPipeParameterDescAdapter final
 {
@@ -149,6 +178,93 @@ private:
 	EventData *m_data;
 	uint32_t m_dataLen;
 };
+
+#if defined(TARGET_BROWSER)
+
+class EventPipeAdapter final
+{
+public:
+    static void Initialize();
+    static void FinishInitialize();
+    static void Shutdown();
+    static bool Enabled();
+    static EventPipeSessionID Enable(
+        LPCWSTR outputPath,
+        uint32_t circularBufferSizeInMB,
+        const EventPipeProviderConfigurationAdapter &providerConfigs,
+        EventPipeSessionType sessionType,
+        EventPipeSerializationFormat format,
+        const bool rundownRequested,
+        IpcStream *const stream,
+        EventPipeSessionSynchronousCallback callback,
+        void *callbackAdditionalData);
+    static void Disable(EventPipeSessionID id);
+    static void StartStreaming(EventPipeSessionID id);
+    static EventPipeSession * GetSession(EventPipeSessionID id);
+    static bool SignalSession(EventPipeSessionID id);
+    static bool WaitForSessionSignal(EventPipeSessionID id, INT32 timeoutMs);
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+    static bool RunWasiJobs();
+#endif // TARGET_WASI && PERFTRACING_DISABLE_THREADS
+    static FILETIME GetSessionStartTime(EventPipeSession *session);
+    static LONGLONG GetSessionStartTimestamp(EventPipeSession *session);
+    static void AddProviderToSession(EventPipeSessionProvider *provider, EventPipeSession *session);
+    static EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* callbackContext = nullptr);
+    static void DeleteProvider(EventPipeProvider *provider);
+    static EventPipeProvider * GetProvider(LPCWSTR providerName);
+    static EventPipeSessionProvider * CreateSessionProvider(const EventPipeProviderConfigurationAdapter &providerConfig);
+    static HRESULT GetProviderName(const EventPipeProvider *provider, ULONG numNameChars, ULONG *numNameCharsOut, LPWSTR name);
+    static EventPipeEvent * AddEvent(
+        EventPipeProvider *provider,
+        uint32_t eventID,
+        LPCWSTR eventName,
+        int64_t keywords,
+        uint32_t eventVersion,
+        EventPipeEventLevel level,
+        uint8_t opcode,
+        const EventPipeParameterDescAdapter &params,
+        bool needStack);
+    static EventPipeEvent * AddEvent(
+        EventPipeProvider *provider,
+        uint32_t eventID,
+        int64_t keywords,
+        uint32_t eventVersion,
+        EventPipeEventLevel level,
+        bool needStack,
+        BYTE *metadata = NULL,
+        uint32_t metadataLen = 0);
+    static void WriteEvent(
+        EventPipeEvent *epEvent,
+        BYTE *data,
+        uint32_t dataLen,
+        LPCGUID activityId,
+        LPCGUID relatedActivityId);
+    static void WriteEvent(
+        EventPipeEvent *epEvent,
+        EventData *data,
+        uint32_t dataLen,
+        LPCGUID activityId,
+        LPCGUID relatedActivityId);
+    static void WriteEvent(
+        EventPipeEvent *epEvent,
+        EventDataAdapter &data,
+        LPCGUID activityId,
+        LPCGUID relatedActivityId);
+    static bool EventIsEnabled(const EventPipeEvent *epEvent);
+    static EventPipeEventInstance * GetNextEvent(EventPipeSessionID id);
+    static EventPipeProvider * GetEventProvider(EventPipeEventInstance *eventInstance);
+    static uint32_t GetEventID(EventPipeEventInstance *eventInstance);
+    static uint64_t GetEventThreadID(EventPipeEventInstance *eventInstance);
+    static int64_t GetEventTimestamp(EventPipeEventInstance *eventInstance);
+    static LPCGUID GetEventActivityID(EventPipeEventInstance *eventInstance);
+    static LPCGUID GetEventRelativeActivityID(EventPipeEventInstance *eventInstance);
+    static const BYTE * GetEventData(EventPipeEventInstance *eventInstance);
+    static uint32_t GetEventDataLen(EventPipeEventInstance *eventInstance);
+    static void ResumeSession(EventPipeSession *session);
+    static void PauseSession(EventPipeSession *session);
+};
+
+#else // TARGET_BROWSER
 
 class EventPipeAdapter final
 {
@@ -635,6 +751,8 @@ public:
 		ep_session_pause (session);
 	}
 };
+
+#endif // TARGET_BROWSER
 
 #endif // FEATURE_PERFTRACING
 #endif // __EVENTPIPE_ADAPTER_H__
