@@ -6,8 +6,8 @@ using System.Runtime.CompilerServices;
 using Xunit;
 
 // A pair of constant tests folds to one test of an interval. The interval has four encodings, and the
-// fold takes the one with the cheapest constants; a value known to be never negative narrows the
-// interval before that choice.
+// fold takes the one with the cheapest constants; a value's type or non-negativity narrows the interval
+// before that choice.
 public class RangeFoldEncodings
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -42,9 +42,42 @@ public class RangeFoldEncodings
         return (uint)length < 257 || unchecked(length - 257) < 6 ? 42 : length;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ByteLocal(byte[] array)
+    {
+        // A byte is bounded to [0, 255], so "x != 255 && x > 99" is the one interval [100, 254].
+        // ARM64-NOT: ccmp
+        // X64-NOT: 255
+        byte x = array[0];
+        if (x != 255 && x > 99)
+            return 1;
+        return 2;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CharLocal(string s)
+    {
+        // ARM64-NOT: ccmp
+        // X64-NOT: 0xFFFF
+        char c = s[0];
+        if (c != '\uFFFF' && c > '\u007F')
+            return 1;
+        return 2;
+    }
+
     [Fact]
     public static void TestEntryPoint()
     {
+        foreach (byte x in new byte[] { 0, 99, 100, 254, 255 })
+        {
+            Assert.Equal(x != 255 && x > 99 ? 1 : 2, ByteLocal(new[] { x }));
+        }
+
+        foreach (char c in new[] { '\0', '\u007F', '\u0080', '\uFFFE', '\uFFFF' })
+        {
+            Assert.Equal(c != '\uFFFF' && c > '\u007F' ? 1 : 2, CharLocal(c.ToString()));
+        }
+
         foreach (int x in new[] { int.MinValue, -1, 0, 4, 5, 6, 7, int.MaxValue })
         {
             Assert.Equal(x != 5 && x != 6, ExcludedPair(x));

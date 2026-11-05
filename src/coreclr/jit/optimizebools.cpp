@@ -449,7 +449,10 @@ bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cns
     {
         GenTree* op1 = tree->gtGetOp1();
         GenTree* op2 = tree->gtGetOp2();
-        if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) && op1->TypeIs(op2->TypeGet()))
+        // A small-typed value is compared at int width, where its type bounds it.
+        if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) &&
+            (op1->TypeIs(op2->TypeGet()) || (varTypeIsSmall(op1) && op2->TypeIs(TYP_INT)) ||
+             (varTypeIsSmall(op2) && op1->TypeIs(TYP_INT))))
         {
             if (op2->IsCnsIntOrI())
             {
@@ -522,7 +525,8 @@ static GenTree* FoldComparisons(
     GenTreeIntCon* bound2;
     genTreeOps     op1;
     genTreeOps     op2;
-    if (!IsConstantRangeTest(cmp1, &value1, &bound1, &op1) || !varTypeIsIntOrI(value1) || bound1->IsIconHandle())
+    if (!IsConstantRangeTest(cmp1, &value1, &bound1, &op1) || !varTypeIsIntOrI(genActualType(value1)) ||
+        bound1->IsIconHandle())
     {
         return nullptr;
     }
@@ -534,10 +538,34 @@ static GenTree* FoldComparisons(
         return nullptr;
     }
 
-    target_size_t mask = value1->TypeIs(TYP_INT) ? UINT32_MAX : static_cast<target_size_t>(-1);
+    target_size_t mask = (genActualType(value1) == TYP_INT) ? UINT32_MAX : static_cast<target_size_t>(-1);
     op1                = cmp1IsReversed ? GenTree::ReverseRelop(op1) : op1;
     ModularRange first = ModularRange::FromComparison(op1, static_cast<target_size_t>(bound1->IconValue()),
                                                       cmp1->IsUnsigned(), mask, offset1);
+    // The value's type and shape bound it, a byte to [0, 255], a cast or a shift to its result range.
+    // Narrowing the first test to that interval makes a pair fold that would otherwise straddle it.
+    {
+        IntegralRange const typeRange = IntegralRange::ForNode(base1, comp);
+        IntegralRange const fullRange = IntegralRange::ForType(genActualType(value1));
+        if (!typeRange.Equals(fullRange))
+        {
+            target_size_t const lo =
+                static_cast<target_size_t>(IntegralRange::SymbolicToRealValue(typeRange.GetLowerBound())) & mask;
+            target_size_t const hi =
+                static_cast<target_size_t>(IntegralRange::SymbolicToRealValue(typeRange.GetUpperBound())) & mask;
+            ModularRange const               bounded(lo, hi);
+            ModularRange                     narrowed;
+            ModularRange::Intersection const kind = first.Intersect(bounded, mask, &narrowed);
+            if (kind == ModularRange::Intersection::Single)
+            {
+                first = narrowed;
+            }
+            else if (kind == ModularRange::Intersection::Empty)
+            {
+                first = ModularRange();
+            }
+        }
+    }
     // A never-negative value takes only the nonnegative half of the ring. Narrowing the first test to
     // it lets a pair whose result would otherwise straddle the sign boundary fold to one test with
     // small constants.
@@ -648,7 +676,7 @@ static GenTree* FoldComparisons(
     }
     else
     {
-        var_types     type = value1->TypeGet();
+        var_types     type = genActualType(value1);
         target_size_t constant;
         target_size_t lower   = range.Lower();
         target_size_t upper   = range.Upper();
