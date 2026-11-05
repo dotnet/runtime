@@ -3867,9 +3867,10 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
     DebugInfo par;
     if (!di.GetParent(&par))
     {
+        // Optimization may leave block ranges that no longer cover the await.
         IL_OFFSET awaitOffset    = di.GetLocation().GetOffset();
-        block->bbCodeOffsEnd     = awaitOffset + 1;
-        (*remainder)->bbCodeOffs = awaitOffset + 1;
+        block->bbCodeOffsEnd     = max(block->bbCodeOffs, awaitOffset + 1);
+        (*remainder)->bbCodeOffs = min(awaitOffset + 1, (*remainder)->bbCodeOffsEnd);
     }
 
     if (alwaysSuspends)
