@@ -815,8 +815,8 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             }
 
 #if !defined(TARGET_ARM)
-            // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
-            if ((TargetOS::IsWindows || compUnixX86Abi()) && srcCall->IsUnmanaged())
+            // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
+            if (TargetOS::IsWindows && srcCall->IsUnmanaged())
             {
                 if (callConvIsInstanceMethodCallConv(srcCall->GetUnmanagedCallConv()))
                 {

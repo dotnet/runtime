@@ -4938,15 +4938,6 @@ class CallArgs
     CallArg* m_lateHead;
 
     unsigned m_argsStackSize;
-#ifdef UNIX_X86_ABI
-    // Number of stack bytes pushed before we start pushing these arguments.
-    unsigned m_stkSizeBytes;
-    // Stack alignment in bytes required before arguments are pushed for this
-    // call. Computed dynamically during codegen, based on m_stkSizeBytes and the
-    // current stack level (genStackLevel) when the first stack adjustment is
-    // made for this call.
-    unsigned m_padStkAlign;
-#endif
     bool m_hasThisPointer           : 1;
     bool m_hasRetBuffer             : 1;
     bool m_isVarArgs                : 1;
@@ -4959,10 +4950,6 @@ class CallArgs
     bool m_argsComplete : 1;
     // One or more arguments must be copied to a temp by EvalArgsToTemps.
     bool m_needsTemps : 1;
-#ifdef UNIX_X86_ABI
-    // Updateable flag, set to 'true' after we've done any required alignment.
-    bool m_alignmentDone : 1;
-#endif
 
     void AddedWellKnownArg(WellKnownArg arg);
     void RemovedWellKnownArg(WellKnownArg arg);
@@ -5040,17 +5027,6 @@ public:
     bool HasStackArgs() const { return m_hasStackArgs; }
     bool NeedsTemps() const { return m_needsTemps; }
 
-#ifdef UNIX_X86_ABI
-    void ComputeStackAlignment(unsigned curStackLevelInBytes)
-    {
-        m_padStkAlign = AlignmentPad(curStackLevelInBytes, STACK_ALIGN);
-    }
-    unsigned GetStkAlign() const { return m_padStkAlign; }
-    unsigned GetStkSizeBytes() { return m_stkSizeBytes; }
-    void SetStkSizeBytes(unsigned bytes) { m_stkSizeBytes = bytes; }
-    bool IsStkAlignmentDone() const { return m_alignmentDone; }
-    void SetStkAlignmentDone() { m_alignmentDone = true; }
-#endif
     // clang-format on
 
     unsigned OutgoingArgsStackSize() const;
@@ -8901,10 +8877,7 @@ private:
     unsigned m_byteSize; // The number of bytes that this argument is occupying on the stack with padding.
 
 public:
-#if defined(UNIX_X86_ABI)
-    unsigned gtPadAlign; // Number of padding slots for stack alignment
-#endif
-#if defined(DEBUG) || defined(UNIX_X86_ABI)
+#ifdef DEBUG
     GenTreeCall* gtCall; // the call node to which this argument belongs
 #endif
 
@@ -8947,10 +8920,7 @@ public:
         : GenTreeUnOp(oper, type, op1 DEBUGARG(/*largeNode*/ false))
         , m_byteOffset(stackByteOffset)
         , m_byteSize(stackByteSize)
-#if defined(UNIX_X86_ABI)
-        , gtPadAlign(0)
-#endif
-#if defined(DEBUG) || defined(UNIX_X86_ABI)
+#ifdef DEBUG
         , gtCall(callNode)
 #endif
 #if FEATURE_FASTTAILCALL
@@ -8987,18 +8957,6 @@ public:
     {
         return m_byteOffset;
     }
-
-#if defined(UNIX_X86_ABI)
-    unsigned getArgPadding() const
-    {
-        return gtPadAlign;
-    }
-
-    void setArgPadding(unsigned padAlign)
-    {
-        gtPadAlign = padAlign;
-    }
-#endif
 
     unsigned GetStackByteSize() const
     {

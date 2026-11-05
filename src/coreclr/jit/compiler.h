@@ -10949,7 +10949,7 @@ private:
     //
     bool isSIMDTypeLocalAligned(unsigned varNum)
     {
-#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES && !defined(UNIX_X86_ABI)
+#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
         LclVarDsc* lcl = lvaGetDesc(varNum);
         if (varTypeIsSIMD(lcl))
         {

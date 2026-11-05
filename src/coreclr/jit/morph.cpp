@@ -190,9 +190,6 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
     INDEBUG(call->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     call->gtControlExpr = nullptr;
     call->ClearInlineInfo();
-#ifdef UNIX_X86_ABI
-    call->gtFlags |= GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
 
 #if DEBUG
     // Helper calls are never candidates.
@@ -15655,8 +15652,8 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
 //
 bool Compiler::fgCanTailCallViaJitHelper(GenTreeCall* call)
 {
-#if !defined(TARGET_X86) || defined(UNIX_X86_ABI)
-    // On anything except windows X86 we have no faster mechanism available.
+#ifndef TARGET_X86
+    // On anything except X86 we have no faster mechanism available.
     return false;
 #else
     // For R2R make sure we go through portable mechanism that the 'EE' side
