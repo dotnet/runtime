@@ -30,8 +30,35 @@ internal static class DeferredWasmCallRewriter
 
     internal static void Rewrite(ReadyToRunCodegenCompilation compilation, MethodWithGCInfo method)
     {
+        ObjectNode.ObjectData original = method.GetData(compilation.NodeFactory, relocsOnly: false);
+        foreach (Relocation relocation in original.Relocs.AsSpan())
+        {
+            if (relocation.Target is DeferredWasmCallNode call &&
+                !compilation.CanUseDirectCall(call.Method, out _))
+            {
+                RewriteWithIndirectCalls(compilation, method, original);
+                return;
+            }
+        }
+
+        foreach (ref Relocation relocation in original.Relocs.AsSpan())
+        {
+            if (relocation.Target is DeferredWasmCallNode call)
+            {
+                Debug.Assert(relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB);
+                bool direct = compilation.CanUseDirectCall(call.Method, out ReadyToRunMethodCompilationInfo info);
+                Debug.Assert(direct);
+                compilation.SelectDeferredWasmCall(method, call, useDirectCall: true, info.IsEager);
+                relocation = new Relocation(relocation.RelocType, relocation.Offset, call.Target);
+            }
+        }
+        method.FinalizeDeferredWasmCode(original, method.FrameInfos);
+    }
+
+    private static void RewriteWithIndirectCalls(
+        ReadyToRunCodegenCompilation compilation, MethodWithGCInfo method, ObjectNode.ObjectData original)
+    {
         NodeFactory factory = compilation.NodeFactory;
-        ObjectNode.ObjectData original = method.GetData(factory, relocsOnly: false);
         Relocation[] originalRelocations = original.Relocs ?? [];
         FrameInfo[] frames = method.FrameInfos;
         var edits = new List<Edit>();

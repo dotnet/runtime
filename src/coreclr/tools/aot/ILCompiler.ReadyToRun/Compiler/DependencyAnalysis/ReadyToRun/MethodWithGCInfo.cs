@@ -81,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _nonRelocationDependencies.Add(node, "Selected deferred Wasm call");
         }
 
-        internal void FinalizeDeferredWasmCode(ObjectData code, FrameInfo[] frames, Func<int, int> mapOffset)
+        internal void FinalizeDeferredWasmCode(ObjectData code, FrameInfo[] frames, Func<int, int> mapOffset = null)
         {
             Debug.Assert(!_precodeFixupsFinalized);
             _methodCode = code;
@@ -89,18 +89,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             DeferredWasmCompilationData data = _deferredWasmData;
             if (data.Locations is not null)
             {
-                foreach (ref OffsetMapping location in data.Locations.AsSpan())
+                if (mapOffset is not null)
                 {
-                    location.nativeOffset = checked((uint)mapOffset((int)location.nativeOffset));
+                    foreach (ref OffsetMapping location in data.Locations.AsSpan())
+                    {
+                        location.nativeOffset = checked((uint)mapOffset((int)location.nativeOffset));
+                    }
                 }
                 InitializeDebugLocInfos(data.Locations);
             }
             if (data.Variables is not null)
             {
-                foreach (ref NativeVarInfo variable in data.Variables.AsSpan())
+                if (mapOffset is not null)
                 {
-                    variable.startOffset = checked((uint)mapOffset((int)variable.startOffset));
-                    variable.endOffset = checked((uint)mapOffset((int)variable.endOffset));
+                    foreach (ref NativeVarInfo variable in data.Variables.AsSpan())
+                    {
+                        variable.startOffset = checked((uint)mapOffset((int)variable.startOffset));
+                        variable.endOffset = checked((uint)mapOffset((int)variable.endOffset));
+                    }
                 }
                 InitializeDebugVarInfos(data.Variables);
             }

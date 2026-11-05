@@ -31,6 +31,101 @@ namespace ILCompiler.ReadyToRun.Tests;
 public class ReadyToRunLibraryRootProviderTests
 {
     [Theory]
+    [InlineData(0, false, false)]
+    [InlineData(0, false, true)]
+    [InlineData(1, false, false)]
+    [InlineData(1, false, true)]
+    [InlineData(2, true, false)]
+    [InlineData(2, true, true)]
+    public void DeferredWasmDirectCallsPreserveBodyLayout(int callCount, bool eager, bool debugInfo)
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        EcmaMethod targetMethod = (EcmaMethod)context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
+        MethodWithGCInfo target = new(targetMethod);
+        MethodWithGCInfo caller = new(targetMethod);
+        NodeFactory factory = (NodeFactory)RuntimeHelpers.GetUninitializedObject(typeof(NodeFactory));
+        SetField(factory, "<Target>k__BackingField", context.Target);
+        ReadyToRunCodegenCompilation compilation = (ReadyToRunCodegenCompilation)RuntimeHelpers.GetUninitializedObject(
+            typeof(ReadyToRunCodegenCompilation));
+        SetField(compilation, "_nodeFactory", factory);
+        SetField(compilation, "_isCoreLibCompilation", true);
+        SetField(compilation, "_previousCompilationInfo", new Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo>
+        {
+            [targetMethod] = new(1, 0, eager),
+        });
+
+        ImportSectionNode table = new("TestImports", ReadyToRunImportSectionType.Unknown,
+            eager ? ReadyToRunImportSectionFlags.Eager : ReadyToRunImportSectionFlags.PCode,
+            8, emitPrecode: !eager, emitGCRefMap: false);
+        Import import = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
+        ReadyToRunSymbolNodeFactory symbols = (ReadyToRunSymbolNodeFactory)RuntimeHelpers.GetUninitializedObject(
+            typeof(ReadyToRunSymbolNodeFactory));
+        SetField(symbols, eager ? "_eagerReadyToRunMethodEntries" : "_precodeReadyToRunMethodEntries",
+            new NodeCache<MethodWithToken, Import>(_ => import));
+        SetField(compilation, "<SymbolNodeFactory>k__BackingField", symbols);
+        DelayLoadMethodImport fallback = (DelayLoadMethodImport)RuntimeHelpers.GetUninitializedObject(typeof(DelayLoadMethodImport));
+        SetField(fallback, "_localMethod", target);
+        DeferredWasmCallNode call = new(fallback);
+        WasmMethodFrameIdentityNode identity = new(factory, target);
+        MethodWithToken token = new(targetMethod, new ModuleToken(targetMethod.Module, targetMethod.Handle),
+            constrainedType: null, unboxing: false, genericContextObject: null);
+        Relocation[] relocations = new Relocation[1 + callCount * 2];
+        relocations[0] = new(RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB, 2, identity);
+        for (int i = 0; i < callCount; i++)
+        {
+            relocations[1 + i * 2] = new(RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB, 8 + i * 12, identity);
+            relocations[2 + i * 2] = new(RelocType.WASM_FUNCTION_INDEX_LEB, 14 + i * 12, call);
+        }
+        ObjectNode.ObjectData original = new(new byte[64], relocations, 16, [caller]);
+        caller.SetCode(original);
+        FrameInfo[] frames = [new(FrameInfoFlags.HasEHInfo, 0, 32, [1]), new(FrameInfoFlags.Handler, 32, 64, [2])];
+        caller.InitializeFrameInfos(frames);
+        OffsetMapping[]? locations = debugInfo ? [new() { nativeOffset = 17, ilOffset = 2 }] : null;
+        NativeVarInfo[]? variables = debugInfo ? [new() { startOffset = 3, endOffset = 29 }] : null;
+        caller.InitializeDeferredWasmDebugInfo(locations, variables);
+        caller.InitializeDeferredWasmCalls(null, new Dictionary<MethodWithGCInfo, MethodWithToken> { [target] = token });
+        MethodWithGCInfo expectedDebugInfo = new(targetMethod);
+        if (debugInfo)
+        {
+            expectedDebugInfo.InitializeDebugLocInfos(locations);
+            expectedDebugInfo.InitializeDebugVarInfos(variables);
+        }
+
+        DeferredWasmCallRewriter.Rewrite(compilation, caller);
+
+        Assert.Same(original, caller.GetData(factory, relocsOnly: false));
+        Assert.Same(frames, caller.FrameInfos);
+        Assert.Same(identity, relocations[0].Target);
+        for (int i = 0; i < callCount; i++)
+        {
+            Assert.Same(identity, relocations[1 + i * 2].Target);
+            Assert.Same(target, relocations[2 + i * 2].Target);
+            Assert.Equal(14 + i * 12, relocations[2 + i * 2].Offset);
+        }
+        if (callCount != 0)
+        {
+            if (eager)
+            {
+                Assert.Contains(import, (HashSet<Import>)typeof(MethodWithGCInfo)
+                    .GetField("_moduleEagerFixups", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(caller)!);
+            }
+            else
+            {
+                Assert.Contains(import, caller.Fixups);
+            }
+            Assert.Same(target, Assert.Single((HashSet<MethodWithGCInfo>)typeof(MethodWithGCInfo)
+                .GetField("_directCallTargets", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(caller)!));
+        }
+        Assert.Equal(expectedDebugInfo.DebugLocInfos, caller.DebugLocInfos);
+        Assert.Equal(expectedDebugInfo.DebugVarInfos, caller.DebugVarInfos);
+        Assert.Null(typeof(MethodWithGCInfo).GetField("_deferredWasmData", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(caller));
+
+        static void SetField(object instance, string name, object value) =>
+            instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(instance, value);
+    }
+
+    [Theory]
     [InlineData(false, 0)]
     [InlineData(false, 1)]
     [InlineData(true, 0)]
