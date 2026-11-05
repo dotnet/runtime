@@ -1396,6 +1396,57 @@ void Compiler::optValnumCSE_DataFlow()
 #endif // DEBUG
 }
 
+//------------------------------------------------------------------------
+// optCSE_ExtraExceptionsAreOwnNullChecks: Whether the exception items a CSE use requires beyond
+//    what the defs promise are all null checks of the use's own indirection.
+//
+// Arguments:
+//    vnStore     - the value number store
+//    useExcSet   - the use's exception set
+//    defPromise  - the exception set the defs promise
+//    use         - the use
+//    firstOccurrence - the candidate's first occurrence, the shape its defs have
+//
+// Return Value:
+//    True if dropping the use's extra exception items is safe.
+//
+// Notes:
+//    The defs load the same address value on every path to the use, and one of them did so without
+//    the null check the use still carries, so the address is non-null at the use and its check cannot
+//    fire. Morph's local assertion propagation proves the early copy of a load non-faulting and leaves a
+//    later copy, with the same value number, carrying the check.
+//
+static bool optCSE_ExtraExceptionsAreOwnNullChecks(
+    ValueNumStore* vnStore, ValueNum useExcSet, ValueNum defPromise, GenTree* use, GenTree* firstOccurrence)
+{
+    if (!use->OperIsIndirOrArrMetaData() || !firstOccurrence->OperIs(use->OperGet()))
+    {
+        return false;
+    }
+
+    for (ValueNum set = useExcSet; set != vnStore->VNForEmptyExcSet();)
+    {
+        VNFuncApp  cons;
+        bool const isCons = vnStore->GetVNFunc(set, &cons);
+        assert(isCons && cons.FuncIs(VNF_ExcSetCons));
+        ValueNum const item = cons.GetArg(0);
+        set                 = cons.GetArg(1);
+
+        if (vnStore->VNExcIsSubset(defPromise, vnStore->VNExcSetSingleton(item)))
+        {
+            continue;
+        }
+
+        VNFuncApp itemApp;
+        if (!vnStore->GetVNFunc(item, &itemApp) || !itemApp.FuncIs(VNF_NullPtrExc))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 //---------------------------------------------------------------------------
 // optValnumCSE_Availability:
 //
@@ -1647,7 +1698,10 @@ void Compiler::optValnumCSE_Availability()
                             // At this point defExcSetPromise contains all of the exception items that we can promise
                             // here.
                             //
-                            if (!vnStore->VNExcIsSubset(desc->defExcSetPromise, theLiberalExcSet))
+                            if (!vnStore->VNExcIsSubset(desc->defExcSetPromise, theLiberalExcSet) &&
+                                !optCSE_ExtraExceptionsAreOwnNullChecks(vnStore, theLiberalExcSet,
+                                                                        desc->defExcSetPromise, tree,
+                                                                        desc->csdTreeList.tslTree))
                             {
                                 // We can't safely make this into a CSE use, because this
                                 // CSE use has an exception set item that is not promised
