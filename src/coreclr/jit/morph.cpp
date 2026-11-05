@@ -2691,6 +2691,11 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
     call->gtArgs.SetNeedsTemp(arg);
 
+    if (arg->AbiInfo.IsPassedByReference())
+    {
+        lvaSetVarAddrExposed(tmp DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+    }
+
     // Copy the valuetype to the temp
     GenTree* copyBlk = gtNewStoreLclVarNode(tmp, argx);
     copyBlk          = fgMorphCopyBlock(copyBlk);
@@ -2699,7 +2704,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     if (arg->AbiInfo.IsPassedByReference())
     {
         argNode = gtNewLclVarAddrNode(tmp);
-        lvaSetVarAddrExposed(tmp DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
     }
     else
     {
@@ -3222,11 +3226,7 @@ GenTree* Compiler::fgMorphLeafLocal(GenTreeLclVarCommon* lclNode)
     // on them until that point. However, we must still mark them with
     // GTF_GLOB_REF to avoid illegal reordering with the call passing their
     // address.
-    if (varDsc->IsAddressExposed()
-#if FEATURE_IMPLICIT_BYREFS
-        || varDsc->lvIsLastUseCopyOmissionCandidate
-#endif
-    )
+    if (varDsc->RequiresGlobRefFlag())
     {
         lclNode->gtFlags |= GTF_GLOB_REF;
     }
@@ -6993,11 +6993,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
         case GT_STORE_LCL_FLD:
         {
             LclVarDsc* lclDsc = lvaGetDesc(tree->AsLclVarCommon());
-            if (lclDsc->IsAddressExposed()
-#if FEATURE_IMPLICIT_BYREFS
-                || lclDsc->lvIsLastUseCopyOmissionCandidate
-#endif
-            )
+            if (lclDsc->RequiresGlobRefFlag())
             {
                 tree->AddAllEffectsFlags(GTF_GLOB_REF);
             }
@@ -8495,6 +8491,10 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
             addr->AsLclFld()->SetLclOffs(offset);
             addr->SetVNsFromNode(indir);
             addr->AddAllEffectsFlags(indir->gtFlags & GTF_GLOB_REF);
+            if (lvaGetDesc(lclNum)->RequiresGlobRefFlag())
+            {
+                addr->AddAllEffectsFlags(GTF_GLOB_REF);
+            }
 
             if (addr->OperIs(GT_STORE_LCL_FLD) && addr->IsPartialLclFld(this))
             {

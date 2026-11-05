@@ -9035,7 +9035,7 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_LCL_FLD:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
-            return comp->lvaGetDesc(AsLclVarCommon())->IsAddressExposed();
+            return comp->lvaGetDesc(AsLclVarCommon())->RequiresGlobRefFlag();
 
         case GT_IND:
         case GT_BLK:
@@ -9077,7 +9077,7 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
 #endif // FEATURE_HW_INTRINSICS
 
         default:
-            assert(!OperRequiresCallFlag(comp) || OperIs(GT_INTRINSIC));
+            assert(!OperRequiresCallFlag(comp) || OperIs(GT_INTRINSIC, GT_LSH, GT_RSH, GT_RSZ));
             assert((!OperIsIndir() || OperIs(GT_NULLCHECK)) && !OperRequiresAsgFlag());
             return false;
     }
@@ -10187,7 +10187,7 @@ GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* value)
     var_types      type   = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc);
     GenTreeLclVar* store  = new (this, GT_STORE_LCL_VAR) GenTreeLclVar(type, lclNum, value);
     store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
-    if (varDsc->IsAddressExposed())
+    if (varDsc->RequiresGlobRefFlag())
     {
         store->gtFlags |= GTF_GLOB_REF;
     }
@@ -10221,7 +10221,7 @@ GenTreeLclFld* Compiler::gtNewStoreLclFldNode(
     {
         store->gtFlags |= GTF_VAR_USEASG;
     }
-    if (lvaGetDesc(lclNum)->IsAddressExposed())
+    if (lvaGetDesc(lclNum)->RequiresGlobRefFlag())
     {
         store->gtFlags |= GTF_GLOB_REF;
     }
@@ -10404,7 +10404,7 @@ GenTreeLclVar* Compiler::gtNewLclVarNode(unsigned lclNum, var_types type)
     }
 
     GenTreeLclVar* lclVar = gtNewLclvNode(lclNum, type);
-    if (varDsc->IsAddressExposed())
+    if (varDsc->RequiresGlobRefFlag())
     {
         lclVar->gtFlags |= GTF_GLOB_REF;
     }
@@ -10462,6 +10462,11 @@ GenTreeFieldList* Compiler::gtNewFieldList()
 GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout)
 {
     GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, type, lnum, offset, layout);
+    if (lvaGetDesc(lnum)->RequiresGlobRefFlag())
+    {
+        node->gtFlags |= GTF_GLOB_REF;
+    }
+
     return node;
 }
 
@@ -22663,7 +22668,7 @@ void GenTreeJitIntrinsic::SetMethodHandle(Compiler*                          com
                                           CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
 {
     assert(OperIsHWIntrinsic() && !IsUserCall());
-    gtFlags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
+    gtFlags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL | GTF_GLOB_REF);
 
     size_t operandCount = GetOperandCount();
 
