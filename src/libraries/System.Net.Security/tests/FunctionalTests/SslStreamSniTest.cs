@@ -229,13 +229,13 @@ namespace System.Net.Security.Tests
                 commonName: "192.0.2.1", targetHost: "192.0.2.2", expectNameMatch: false);
             AddCase("IPv4: CN matches, IP SAN mismatches",
                 commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: true,
-                sanAddress: "192.0.2.2");
+                sanIpAddress: "192.0.2.2");
             AddCase("IPv4: IP SAN matches, CN mismatches",
                 commonName: "192.0.2.1", targetHost: "192.0.2.2", expectNameMatch: true,
-                sanAddress: "192.0.2.2");
+                sanIpAddress: "192.0.2.2");
             AddCase("IPv4: neither CN nor IP SAN matches",
                 commonName: "192.0.2.1", targetHost: "192.0.2.3", expectNameMatch: false,
-                sanAddress: "192.0.2.2");
+                sanIpAddress: "192.0.2.2");
 
             // A DNS SAN suppresses CN fallback, but does not prevent an IP SAN from matching.
             AddCase("IPv4: DNS SAN blocks matching CN",
@@ -243,10 +243,10 @@ namespace System.Net.Security.Tests
                 sanDnsName: "example.test");
             AddCase("IPv4: DNS SAN blocks CN; IP SAN mismatches",
                 commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: false,
-                sanAddress: "192.0.2.2", sanDnsName: "example.test");
+                sanIpAddress: "192.0.2.2", sanDnsName: "example.test");
             AddCase("IPv4: IP SAN matches, DNS SAN mismatches",
                 commonName: "192.0.2.1", targetHost: "192.0.2.2", expectNameMatch: true,
-                sanAddress: "192.0.2.2", sanDnsName: "example.test");
+                sanIpAddress: "192.0.2.2", sanDnsName: "example.test");
 
             // A numeric DNS SAN can match the IP target as text, independently of CN.
             AddCase("IPv4: numeric DNS SAN and CN match",
@@ -268,22 +268,22 @@ namespace System.Net.Security.Tests
                 commonName: "2001:db8::1", targetHost: "2001:db8::2", expectNameMatch: false);
             AddCase("IPv6: CN matches, IP SAN mismatches",
                 commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: true,
-                sanAddress: "2001:db8::2");
+                sanIpAddress: "2001:db8::2");
             AddCase("IPv6: IP SAN matches, CN mismatches",
                 commonName: "2001:db8::1", targetHost: "2001:db8::2", expectNameMatch: true,
-                sanAddress: "2001:db8::2");
+                sanIpAddress: "2001:db8::2");
             AddCase("IPv6: neither CN nor IP SAN matches",
                 commonName: "2001:db8::1", targetHost: "2001:db8::3", expectNameMatch: false,
-                sanAddress: "2001:db8::2");
+                sanIpAddress: "2001:db8::2");
             AddCase("IPv6: DNS SAN blocks matching CN",
                 commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: false,
                 sanDnsName: "example.test");
             AddCase("IPv6: DNS SAN blocks CN; IP SAN mismatches",
                 commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: false,
-                sanAddress: "2001:db8::2", sanDnsName: "example.test");
+                sanIpAddress: "2001:db8::2", sanDnsName: "example.test");
             AddCase("IPv6: IP SAN matches, DNS SAN mismatches",
                 commonName: "2001:db8::1", targetHost: "2001:db8::2", expectNameMatch: true,
-                sanAddress: "2001:db8::2", sanDnsName: "example.test");
+                sanIpAddress: "2001:db8::2", sanDnsName: "example.test");
             AddCase("IPv6: numeric DNS SAN and CN match",
                 commonName: "2001:db8::1", targetHost: "2001:db8::1", expectNameMatch: true,
                 sanDnsName: "2001:db8::1");
@@ -303,9 +303,9 @@ namespace System.Net.Security.Tests
 
             void AddCase(
                 string scenario, string commonName, string targetHost, bool expectNameMatch,
-                string? sanAddress = null, string? sanDnsName = null)
+                string? sanIpAddress = null, string? sanDnsName = null)
             {
-                data.Add(scenario, commonName, sanAddress, sanDnsName, targetHost, expectNameMatch);
+                data.Add(scenario, commonName, sanIpAddress, sanDnsName, targetHost, expectNameMatch);
             }
         }
 
@@ -313,7 +313,7 @@ namespace System.Net.Security.Tests
         [MemberData(nameof(IpLiteralCertificateNameValidationData))]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_IpLiteral_CertificateNameValidation(
-            string scenario, string commonName, string? sanAddress, string? sanDnsName, string targetHost, bool expectNameMatch)
+            string scenario, string commonName, string? sanIpAddress, string? sanDnsName, string targetHost, bool expectNameMatch)
         {
             // The scenario describes the rule being checked and appears in the test case name.
             _ = scenario;
@@ -322,7 +322,7 @@ namespace System.Net.Security.Tests
             CertificateRequest request = new CertificateRequest(
                 $"CN={commonName}", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
-            if (sanAddress is not null || sanDnsName is not null)
+            if (sanIpAddress is not null || sanDnsName is not null)
             {
                 SubjectAlternativeNameBuilder san = new SubjectAlternativeNameBuilder();
 
@@ -332,9 +332,9 @@ namespace System.Net.Security.Tests
                     san.AddDnsName(sanDnsName);
                 }
 
-                if (sanAddress is not null)
+                if (sanIpAddress is not null)
                 {
-                    san.AddIpAddress(IPAddress.Parse(sanAddress));
+                    san.AddIpAddress(IPAddress.Parse(sanIpAddress));
                 }
 
                 request.CertificateExtensions.Add(san.Build());
