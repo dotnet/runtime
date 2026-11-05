@@ -149,6 +149,66 @@ rounding. `N = max(1, StepData.rangeCount)`.
 | `DB_IPCE_FORCE_CATCH_HANDLER_FOUND` | `0x025a` | Debugger -> runtime | `ForceCatchHandlerFoundData` | `Portable<bool> enableEvents @0, Portable<VMPTR_Object> vmObj @8` | `H + 16` |
 | `DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION` | `0x025b` | Debugger -> runtime | `CustomNotificationData` | `Portable<VMPTR_Module> vmModule @0, Portable<mdTypeDef> classMetadataToken @8, Portable<bool> Enabled @12` | `H + 16` |
 
+### Referenced structures
+
+The layouts below come from
+[`dbgipcevents.h`](https://github.com/dotnet/runtime/blob/bf500a0eea0ac203cba07587c29652474627cc6e/src/coreclr/debug/inc/dbgipcevents.h).
+Offsets are relative to the named record, not the containing event.
+`Portable<T>` preserves the size and alignment of `T`. `bool`/`BYTE` occupy
+1 byte; enum values, metadata tokens, `DWORD`, `ULONG`, `UINT`, `HRESULT` and
+`int` occupy 4; `CORDB_ADDRESS`, `ULONG64`, `VMPTR_*` and `LSPTR_*` occupy 8
+with 8-byte alignment. `RSPTR_CORDBEVAL` is a 4-byte debugger cookie, not a
+native pointer. Record lengths include trailing alignment padding.
+
+| Record | Field layout | Length | Alignment |
+| ------ | ------------ | ------ | --------- |
+| `DebuggerIPCE_BasicTypeData` | `Portable<CorElementType> elementType @0, Portable<mdTypeDef> metadataToken @4, Portable<VMPTR_Assembly> vmAssembly @8, Portable<VMPTR_TypeHandle> vmTypeHandle @16` | 24 | 8 |
+| `DebuggerIPCE_ExpandedTypeData` | `Portable<CorElementType> elementType @0, ClassTypeData @8, UnaryTypeData @8, ArrayTypeData @8, NaryTypeData @8` (overlapping union members) | 40 | 8 |
+| `ClassTypeData` | `Portable<mdTypeDef> metadataToken @0, Portable<VMPTR_Assembly> vmAssembly @8, Portable<VMPTR_TypeHandle> typeHandle @16` | 24 | 8 |
+| `UnaryTypeData` | `DebuggerIPCE_BasicTypeData unaryTypeArg @0` | 24 | 8 |
+| `ArrayTypeData` | `DebuggerIPCE_BasicTypeData arrayTypeArg @0, Portable<DWORD> arrayRank @24` | 32 | 8 |
+| `NaryTypeData` | `Portable<VMPTR_TypeHandle> typeHandle @0` | 8 | 8 |
+| `DebuggerIPCE_TypeArgData` | `DebuggerIPCE_ExpandedTypeData data @0, Portable<UINT> numTypeArgs @40` | 48 | 8 |
+| `RemoteAddress` | `Portable<RemoteAddressKind> kind @0, Portable<CorDebugRegister> reg1 @4, Portable<CORDB_ADDRESS> reg1Addr @8, Portable<ULONG64> reg1Value @16, u @24, Portable<CORDB_ADDRESS> addr @24, Portable<DWORD> floatIndex @24` (last three overlap) | 48 | 8 |
+| `RemoteAddress.u` | `Portable<CorDebugRegister> reg2 @0, Portable<CORDB_ADDRESS> reg2Addr @8, Portable<ULONG64> reg2Value @16` | 24 | 8 |
+| `DebuggerIPCE_FuncEvalArgData` | `RemoteAddress argHome @0, Portable<CORDB_ADDRESS> argAddr @48, Portable<CorElementType> argElementType @56, Portable<UINT> fullArgTypeNodeCount @60, Portable<CORDB_ADDRESS> fullArgType @64, Portable<BYTE> argLiteralData[8] @72, Portable<bool> argIsLiteral @80, Portable<bool> argIsHandleValue @81` | 88 | 8 |
+| `COR_DEBUG_STEP_RANGE` | `ULONG32 startOffset @0, ULONG32 endOffset @4` | 8 | 4 |
+| `DebuggerIPCFirstChanceData` | `LSPTR_CONTEXT pLeftSideContext @0, Portable<HijackAction> action @8, Portable<UINT> debugCounter @12` | 16 | 8 |
+
+`DebuggerIPCE_FuncEvalInfo` is 64 bytes; its fields are shown in the
+`DB_IPCE_FUNC_EVAL` event row.
+
+`RemoteAddress.kind` selects the register, register-pair, register/memory,
+memory/register or floating-point home. The `u`, `addr` and `floatIndex`
+members are alternatives, not additional fields.
+`kLeafFrameRegAddr=0` and `kNonLeafFrameRegAddr=0xffffffffffffffff` are the
+defined register-address sentinels.
+
+#### Func-eval setup buffer
+
+`argDataArea` points to these contiguous regions, with no padding.
+The request counts determine their sizes.
+
+| Region | Byte offset | Byte length |
+| ------ | ----------- | ----------- |
+| Generic types (`DebuggerIPCE_TypeArgData[]`) | 0 | `48 * genericArgsNodeCount` |
+| Call/new-object arguments (`DebuggerIPCE_FuncEvalArgData[]`) | `48 * genericArgsNodeCount` | `88 * argCount` |
+| New-string data (instead of argument records) | 0 (`genericArgsNodeCount=0`) | `stringSize` UTF-16 bytes, without a required terminator |
+| New-array dimensions (instead of argument records) | `48 * genericArgsNodeCount` | `arrayRank * sizeof(SIZE_T)` |
+
+Generic-type and `fullArgType` records use depth-first preorder: each parent
+precedes its complete child subtrees, with siblings and roots in argument order.
+
+`numTypeArgs` counts immediate children,
+`genericArgsCount` counts roots, and `genericArgsNodeCount` counts all nodes.
+New arrays have one element-type root and native `SIZE_T` dimensions,
+without lower bounds.
+
+`fullArgType` points to a separate array of `fullArgTypeNodeCount`
+`DebuggerIPCE_TypeArgData` records.
+
+`DataBreakpointData` carries the platform's native `CONTEXT` in full.
+
 ### Enum values
 
 IPC enum fields occupy 4 bytes, including `CorElementType` (not its one-byte
