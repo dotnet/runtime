@@ -102,6 +102,7 @@ CompPhaseNameMacro(PHASE_OPTIMIZE_INDEX_CHECKS,      "Optimize index checks",   
 CompPhaseNameMacro(PHASE_OPTIMIZE_VALNUM_CSES,       "Optimize Valnum CSEs",           false, -1, false)
 CompPhaseNameMacro(PHASE_VN_COPY_PROP,               "VN based copy prop",             false, -1, false)
 CompPhaseNameMacro(PHASE_VN_BASED_INTRINSIC_EXPAND,  "VN based intrinsic expansion",   false, -1, false)
+CompPhaseNameMacro(PHASE_RECORD_FACTS_ON_LOCALS,     "Record facts on locals",         false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_BRANCHES,          "Redundant branch opts",          false, -1, false)
 CompPhaseNameMacro(PHASE_BOUNDS_CHECK_COALESCE,      "Coalesce bounds checks",         false, -1, false)
 CompPhaseNameMacro(PHASE_ASSERTION_PROP_MAIN,        "Assertion prop",                 false, -1, false)
