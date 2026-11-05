@@ -501,13 +501,57 @@ static bool GetComparisonBase(GenTree* value, GenTree** base, target_size_t* off
         node = node->gtGetOp1();
     }
     *base = node;
-    return node->OperIs(GT_LCL_VAR, GT_LCL_FLD) && node->TypeIs(value->TypeGet());
+    if (!node->TypeIs(value->TypeGet()))
+    {
+        return false;
+    }
+    if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    {
+        *base = node;
+        return true;
+    }
+
+    // A load the two tests share. The first test evaluates it; the second would only read the same
+    // location again, with nothing in between that could store to it. It must not sit under effects
+    // that would have to be kept apart from it, and a volatile load is a read that must happen.
+    if (node->OperIs(GT_IND, GT_ARR_LENGTH) && (node == value) &&
+        ((node->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0) &&
+        !(node->OperIs(GT_IND) && node->AsIndir()->IsVolatile()))
+    {
+        *base = node;
+        return true;
+    }
+    return false;
 }
 
 static GenTreeIntCon* NewRangeConstant(Compiler* comp, target_size_t bits, var_types type)
 {
     ssize_t value = type == TYP_INT ? static_cast<int32_t>(bits) : static_cast<ssize_t>(bits);
     return comp->gtNewIconNode(value, type);
+}
+
+//------------------------------------------------------------------------------
+// SameBase: Are the two comparison bases the same value?
+//    The second test's load is the first's again, so it is marked non-faulting once the first has
+//    taken the null check; that difference does not make it another load.
+//
+static bool SameBase(GenTree* base1, GenTree* base2)
+{
+    if (GenTree::Compare(base1, base2))
+    {
+        return true;
+    }
+    if (base1->OperIs(GT_IND) && base2->OperIs(GT_IND) && base1->TypeIs(base2->TypeGet()) &&
+        (((base1->gtFlags ^ base2->gtFlags) & GTF_IND_FLAGS & ~GTF_IND_NONFAULTING) == 0))
+    {
+        return GenTree::Compare(base1->AsIndir()->Addr(), base2->AsIndir()->Addr());
+    }
+    if (base1->OperIs(GT_ARR_LENGTH) && base2->OperIs(GT_ARR_LENGTH) &&
+        (base1->AsArrLen()->ArrLenOffset() == base2->AsArrLen()->ArrLenOffset()))
+    {
+        return GenTree::Compare(base1->AsArrLen()->ArrRef(), base2->AsArrLen()->ArrRef());
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -590,8 +634,11 @@ static GenTree* FoldComparisons(
     {
         GenTree*      base2;
         target_size_t offset2;
-        if (!value2->TypeIs(value1->TypeGet()) || bound2->IsIconHandle() || ((value2->gtFlags & GTF_OBS_EFFECT) != 0) ||
-            !GetComparisonBase(value2, &base2, &offset2) || !GenTree::Compare(base1, base2))
+        // The second value is dropped, so it may carry no effect of its own; a load's exception is
+        // the one the first test's identical load already decided.
+        if (!value2->TypeIs(value1->TypeGet()) || bound2->IsIconHandle() ||
+            ((value2->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0) || !GetComparisonBase(value2, &base2, &offset2) ||
+            !SameBase(base1, base2))
         {
             return nullptr;
         }
@@ -602,11 +649,11 @@ static GenTree* FoldComparisons(
     else
     {
         op2 = cmp2IsReversed ? GenTree::ReverseRelop(cmp2->OperGet()) : cmp2->OperGet();
-        if (GenTree::Compare(base1, cmp2->gtGetOp1()))
+        if (SameBase(base1, cmp2->gtGetOp1()))
         {
             symbolicBound = cmp2->gtGetOp2();
         }
-        else if (GenTree::Compare(base1, cmp2->gtGetOp2()))
+        else if (SameBase(base1, cmp2->gtGetOp2()))
         {
             symbolicBound = cmp2->gtGetOp1();
             op2           = GenTree::SwapRelop(op2);
@@ -809,7 +856,9 @@ static GenTree* FoldComparisons(
     }
 #endif
 
-    cmp1->gtOp1 = comp->gtWrapWithSideEffects(value, value1, GTF_OBS_EFFECT);
+    // A load base is not wrapped: it is the first test's own load, kept in place.
+    cmp1->gtOp1 =
+        (value1 == value1->gtEffectiveVal()) ? value : comp->gtWrapWithSideEffects(value, value1, GTF_OBS_EFFECT);
     cmp1->gtOp2 = newBound;
     cmp1->SetOper(cmp2IsReversed ? GenTree::ReverseRelop(oper) : oper);
     if (isUnsigned)
