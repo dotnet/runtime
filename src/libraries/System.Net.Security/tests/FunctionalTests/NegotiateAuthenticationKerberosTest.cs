@@ -120,6 +120,12 @@ namespace System.Net.Security.Tests
                 Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
                 Assert.NotNull(clientBlob);
 
+                using NegotiateAuthentication ntlmControl = new(new NegotiateAuthenticationServerOptions { Package = "NTLM" });
+                byte[] ntlmBlob = Convert.FromHexString("4e544c4d535350000100000033828ae2000000000000000000000000000000000601b01d0000000f");
+                byte[]? ntlmChallenge = ntlmControl.GetOutgoingBlob(ntlmBlob, out statusCode);
+                Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+                Assert.NotNull(ntlmChallenge);
+
                 using NegotiateAuthentication server = new(new NegotiateAuthenticationServerOptions { Package = "NTLM" });
                 byte[]? serverBlob = server.GetOutgoingBlob(clientBlob, out statusCode);
                 Assert.True(statusCode >= NegotiateAuthenticationStatusCode.GenericFailure, $"Server accepted Kerberos with {statusCode}");
