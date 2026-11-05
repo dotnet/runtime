@@ -24,11 +24,6 @@ namespace System.Runtime.Caching
             get { return _pressureHigh; }
         }
 
-        private PhysicalMemoryMonitor()
-        {
-            // hide default ctor
-        }
-
         internal PhysicalMemoryMonitor(int physicalMemoryLimitPercentage)
         {
             /*

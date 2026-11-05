@@ -29,10 +29,10 @@ namespace System.Runtime.Caching
         private static readonly object s_initLock = new object();
         private static MemoryCache? s_defaultCache;
         private static readonly CacheEntryRemovedCallback s_sentinelRemovedCallback = new CacheEntryRemovedCallback(SentinelEntry.OnCacheEntryRemovedCallback);
-        private GCHandleRef<MemoryCacheStore>[] _storeRefs = null!;
+        private GCHandleRef<MemoryCacheStore>[] _storeRefs;
         private int _storeCount;
         private int _disposed;
-        private MemoryCacheStatistics _stats = null!;
+        private MemoryCacheStatistics _stats;
         private readonly string _name;
         private Counters? _perfCounters;
         private readonly bool _configLess;
@@ -186,6 +186,7 @@ namespace System.Runtime.Caching
             }
         }
 
+        [MemberNotNull(nameof(_stats))]
         private void InitDisposableMembers(NameValueCollection? config)
         {
             bool dispose = true;
@@ -347,6 +348,8 @@ namespace System.Runtime.Caching
             Init(config);
         }
 
+        [MemberNotNull(nameof(_storeRefs))]
+        [MemberNotNull(nameof(_stats))]
         private void Init(NameValueCollection? config)
         {
             _storeCount = Environment.ProcessorCount;

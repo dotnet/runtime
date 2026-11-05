@@ -23,8 +23,6 @@ namespace System.Runtime.Caching
         private DateTimeOffset _lastModified;
         private List<MemoryCacheEntry>? _dependencies;
 
-        private MemoryCacheEntryChangeMonitor() { _keys = null!; _uniqueId = null!; } // hide default .ctor
-
         [MemberNotNull(nameof(_uniqueId))]
         private void InitDisposableMembers(MemoryCache cache)
         {
