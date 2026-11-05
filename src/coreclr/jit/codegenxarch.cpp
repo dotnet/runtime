@@ -1569,9 +1569,9 @@ instruction CodeGen::JumpKindToCcmp(emitJumpKind condition)
 instruction CodeGen::JumpKindToCfcmov(emitJumpKind condition)
 {
     static constexpr instruction s_table[EJ_COUNT] = {
-        INS_none,     INS_none,     INS_cfcmovo,  INS_cfcmovno, INS_cfcmovb,  INS_cfcmovae,
-        INS_cfcmove,  INS_cfcmovne, INS_cfcmovbe, INS_cfcmova,  INS_cfcmovs,  INS_cfcmovns,
-        INS_cfcmovp,  INS_cfcmovnp, INS_cfcmovl,  INS_cfcmovge, INS_cfcmovle, INS_cfcmovg,
+        INS_none,    INS_none,     INS_cfcmovo,  INS_cfcmovno, INS_cfcmovb,  INS_cfcmovae,
+        INS_cfcmove, INS_cfcmovne, INS_cfcmovbe, INS_cfcmova,  INS_cfcmovs,  INS_cfcmovns,
+        INS_cfcmovp, INS_cfcmovnp, INS_cfcmovl,  INS_cfcmovge, INS_cfcmovle, INS_cfcmovg,
     };
 
     static_assert(s_table[EJ_NONE] == INS_none);
