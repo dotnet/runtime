@@ -4938,11 +4938,11 @@ class CallArgs
     CallArg* m_lateHead;
 
     unsigned m_argsStackSize;
-    bool m_hasThisPointer           : 1;
-    bool m_hasRetBuffer             : 1;
-    bool m_isVarArgs                : 1;
-    bool m_abiInformationDetermined : 1;
-    bool m_hasAddedFinalArgs        : 1;
+    bool     m_hasThisPointer           : 1;
+    bool     m_hasRetBuffer             : 1;
+    bool     m_isVarArgs                : 1;
+    bool     m_abiInformationDetermined : 1;
+    bool     m_hasAddedFinalArgs        : 1;
     // True if we have one or more register arguments.
     bool m_hasRegArgs : 1;
     // True if we have one or more stack arguments.
