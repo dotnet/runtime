@@ -1,0 +1,5 @@
+variables:
+  - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
+  - template: /eng/pipelines/helix-platforms.yml

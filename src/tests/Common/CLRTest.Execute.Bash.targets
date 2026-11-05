@@ -378,7 +378,6 @@ run_out_of_process_tests() {
     # Keep the status file next to the test so a sandboxed test host can write it.
     local oop_status="${PWD}/${oop_assembly}.outofprocess-result.status.$$"
     local oop_exit
-    local oop_missing_wrapper_reason=
 
     rm -f "$oop_result" "$oop_output" "$oop_result_tmp" "$oop_status"
     : > "$oop_output"
@@ -389,20 +388,16 @@ run_out_of_process_tests() {
       oop_exit=$?
       unset __TestOutOfProcessStatusFile
     else
-      # allTargets runners can include tests whose target-specific wrapper was not generated.
-      oop_exit=0
-      oop_missing_wrapper_reason="Test executable '${PWD}/${oop_wrapper}' was not found on this platform."
+      # A planned wrapper missing on disk is a test infrastructure failure.
+      oop_exit=1
+      echo "Test Infrastructure Failure: planned out-of-process wrapper '${PWD}/${oop_wrapper}' was not found." > "$oop_output"
     fi
 
     {
       echo 2
       echo "$oop_result_token"
       echo "$oop_exit"
-      if [ -n "$oop_missing_wrapper_reason" ]
-      then
-        echo Skip
-        echo "$oop_missing_wrapper_reason"
-      elif [ -f "$oop_status" ]
+      if [ -f "$oop_status" ]
       then
         echo Skip
         cat "$oop_status"
@@ -929,15 +924,12 @@ $(BashCLRTestExitCodeCheck)
          Note: under the hood, this will rely on Environment.NewLine for line
          endings. This means that if the scripts are being generated on Windows,
          the line endings will need to be changed from CR-LF to Unix (LF) line
-         endings before running the scripts on Unix platforms. In our current lab
-         infra it shouldn't really matter as the execution scripts are regenerated
-         in the 'test run' phase before sending the items to Helix i.o.w. at
-         the point where we already know the exact targeting platform. -->
+         endings before running the scripts on Unix platforms. -->
     <WriteLinesToFile
       File="$(ExecutionBashScriptPath)"
       Lines="$(_CLRTestExecutionScriptText)"
       Overwrite="true" />
-    <Exec Condition="'$(SkipChmodOfGeneratedCommandScript)' != 'true'" Command="chmod +x $(ExecutionBashScriptPath)" EchoOff="true" />
+    <Exec Command="chmod +x $(ExecutionBashScriptPath)" EchoOff="true" />
   </Target>
 
 </Project>

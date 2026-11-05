@@ -51,11 +51,8 @@ jobs:
       parameters:
         osGroup: ${{ parameters.osGroup }}
 
-    - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-      parameters:
-        runtimeFlavor: coreclr
-        testGroup: ${{ parameters.testGroup }}
-        liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    - name: buildProductRootFolderPath
+      value: $(Build.SourcesDirectory)/artifacts/bin/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: SpmiCollectionLocation

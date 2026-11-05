@@ -27,6 +27,8 @@ parameters:
   isOfficialBuild: false
   runtimeFlavor: 'coreclr'
   runtimeVariant: ''
+  testGroup: ''
+  liveLibrariesBuildConfig: ''
   helixQueues: ''
   enablePublishTestResults: false
   testResultsFormat: ''

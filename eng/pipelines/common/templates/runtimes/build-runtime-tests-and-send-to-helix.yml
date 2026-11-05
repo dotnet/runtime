@@ -2,29 +2,36 @@ parameters:
   buildConfig: ''
   osGroup: ''
   osSubgroup: ''
+  archType: ''
   container: ''
+  testGroup: ''
   testBuildArgs: ''
   crossBuild: false
   readyToRun: false
   compositeBuildMode: false
   helixQueues: ''
-  displayNameArgs: ''
+  displayNameArgs: RuntimeTests
   runInUnloadableContext: false
+  runInterpreter: false
+  tieringTest: false
+  hotColdSplitting: false
+  largeVersionBubble: false
   nativeAotTest: false
   runtimeFlavor: 'mono'
   runtimeVariant: 'monointerpreter'
   useHelixMonitor: false
   llvmAotStepContainer: ''
-  scenarios:
-    - normal
+  scenarios: []
   variables: {}
   pool: ''
   dependsOn: []
   extraHelixArguments: ''
   buildAllTestsAsStandalone: false
+  runAfterPreviousFailure: false
+  SuperPmiCollect: false
   sendToHelix: true
   #arcade-specific parameters
-  condition: always()
+  condition: true
   continueOnError: false
   displayName: ''
   timeoutInMinutes: ''
@@ -34,6 +41,16 @@ parameters:
   shouldContinueOnError: false
 
 steps:
+  - ${{ if eq(parameters.osGroup, 'windows') }}:
+    - script: |
+        echo ##vso[task.setvariable variable=_ProductBuildSucceeded]true
+      displayName: Mark product build complete
+      condition: succeeded()
+  - ${{ if ne(parameters.osGroup, 'windows') }}:
+    - script: echo "##vso[task.setvariable variable=_ProductBuildSucceeded]true"
+      displayName: Mark product build complete
+      condition: succeeded()
+
   - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
     parameters:
       osGroup: ${{ parameters.osGroup }}
@@ -42,7 +59,16 @@ steps:
       buildConfig: ${{ parameters.buildConfig }}
       testBuildArgs: ${{ parameters.testBuildArgs }}
       buildAllTestsAsStandalone: ${{ parameters.buildAllTestsAsStandalone }}
-      condition: ${{ parameters.condition }}
+      buildSucceededVariable: _RuntimeTestsBuilt_${{ parameters.displayNameArgs }}
+      logRootName: ${{ parameters.displayNameArgs }}
+      ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        continueOnError: true
+      ${{ else }}:
+        continueOnError: ${{ parameters.continueOnError }}
+      ${{ if eq(parameters.runAfterPreviousFailure, true) }}:
+        condition: and(succeededOrFailed(), eq(variables['_ProductBuildSucceeded'], 'true'), ${{ parameters.condition }})
+      ${{ else }}:
+        condition: and(succeeded(), ${{ parameters.condition }})
   # Build a Mono AOT cross-compiler for non-amd64 targets (in this case, just arm64)
   - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), in(parameters.runtimeVariant, 'llvmaot', 'llvmfullaot', 'minifullaot')) }}:
     - ${{ if eq(parameters.archType, 'arm64') }}:
@@ -99,13 +125,15 @@ steps:
   - ${{ if eq(parameters.sendToHelix, true) }}:
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
       parameters:
-        displayName: Send tests to Helix
+        displayName: Send tests to Helix ${{ parameters.displayNameArgs }}
         buildConfig: $(buildConfigUpper)
         archType: ${{ parameters.archType }}
         osGroup: ${{ parameters.osGroup }}
         osSubgroup: ${{ parameters.osSubgroup}}
-        coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
-        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          shouldContinueOnError: true
+        ${{ else }}:
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         runtimeVariant: ${{ parameters.runtimeVariant }}
 
@@ -125,18 +153,234 @@ steps:
 
         helixQueues: ${{ parameters.helixQueues }}
         useHelixMonitor: ${{ parameters.useHelixMonitor }}
-        # This tests whether an array is empty
+        logRootName: SendToHelix_${{ parameters.displayNameArgs }}
+        # This tests whether an array is empty.
         ${{ if eq(join('', parameters.helixQueues), '') }}:
           condition: false
+        ${{ elseif eq(parameters.runAfterPreviousFailure, true) }}:
+          condition: and(succeededOrFailed(), eq(variables['_ProductBuildSucceeded'], 'true'), eq(variables['_RuntimeTestsBuilt_${{ parameters.displayNameArgs }}'], 'true'), ${{ parameters.condition }})
         ${{ else }}:
-          condition: ${{ parameters.condition }}
+          condition: and(succeeded(), eq(variables['_RuntimeTestsBuilt_${{ parameters.displayNameArgs }}'], 'true'), ${{ parameters.condition }})
         publishTestResults: true
         timeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
         timeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
         runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+        runInterpreter: ${{ parameters.runInterpreter }}
+        tieringTest: ${{ parameters.tieringTest }}
+        hotColdSplitting: ${{ parameters.hotColdSplitting }}
+        largeVersionBubble: ${{ parameters.largeVersionBubble }}
         nativeAotTest: ${{ parameters.nativeAotTest }}
+        longRunningGcTests: ${{ eq(parameters.testGroup, 'gc-longrunning') }}
+        gcSimulatorTests: ${{ eq(parameters.testGroup, 'gc-simulator') }}
+        SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
         extraHelixArguments: ${{ parameters.extraHelixArguments }}
-        scenarios: ${{ parameters.scenarios }}
+        ${{ if ne(join('', parameters.scenarios), '') }}:
+          scenarios: ${{ parameters.scenarios }}
+        ${{ else }}:
+          ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
+            ${{ if and(eq(parameters.runInterpreter, true), eq(variables['Build.Reason'], 'PullRequest')) }}:
+              scenarios:
+              - interpmode3_no_tiered_compilation
+              - interpmode2_no_tiered_compilation
+              - interpmode1_no_tiered_compilation
+              - no_tiered_compilation
+            ${{ elseif eq(parameters.runInterpreter, true) }}:
+              scenarios:
+              - interpmode3_no_tiered_compilation
+              - interpmode3
+              - interpmode2_no_tiered_compilation
+              - interpmode2
+              - normal
+              - no_tiered_compilation
+              - interpmode1_no_tiered_compilation
+              - interpmode1
+            ${{ elseif eq(parameters.runtimeFlavor, 'mono') }}:
+              scenarios:
+              - normal
+            ${{ elseif eq(variables['Build.Reason'], 'PullRequest') }}:
+              scenarios:
+              - no_tiered_compilation
+            ${{ else }}:
+              scenarios:
+              - normal
+              - no_tiered_compilation
+          ${{ if eq(parameters.testGroup, 'jitstress') }}:
+            scenarios:
+            - jitminopts
+            - jitstress1
+            - jitstress1_tiered
+            - jitstress2
+            - jitstress2_tiered
+            - disabler2r
+            - tailcallstress
+          ${{ if eq(parameters.testGroup, 'jitstress-random') }}:
+            scenarios:
+            - jitstress_random_1
+            - jitstress_random_2
+          ${{ if eq(parameters.testGroup, 'jitstress-isas-arm') }}:
+            scenarios:
+            - jitstress_isas_nohwintrinsic
+          ${{ if eq(parameters.testGroup, 'jitstress-isas-x86') }}:
+            scenarios:
+            - jitstress_isas_nohwintrinsic
+            - jitstress_isas_x86_evex
+            - jitstress_isas_x86_noavx
+            - jitstress_isas_x86_noavx2
+            - jitstress_isas_x86_noavx512
+            - jitstress_isas_x86_vectort128
+            - jitstress_isas_x86_vectort512
+            - jitstress_isas_x86_noavx512_vectort128
+            - jitstress_isas_1_x86_evex
+            - jitstress_isas_1_x86_noavx
+            - jitstress_isas_1_x86_noavx2
+            - jitstress_isas_1_x86_noavx512
+            - jitstress_isas_1_x86_vectort128
+            - jitstress_isas_1_x86_vectort512
+            - jitstress_isas_1_x86_noavx512_vectort128
+            - jitstress_isas_2_x86_evex
+            - jitstress_isas_2_x86_noavx
+            - jitstress_isas_2_x86_noavx2
+            - jitstress_isas_2_x86_noavx512
+            - jitstress_isas_2_x86_vectort128
+            - jitstress_isas_2_x86_vectort512
+            - jitstress_isas_2_x86_noavx512_vectort128
+          ${{ if eq(parameters.testGroup, 'jitstress-isas-avx512') }}:
+            scenarios:
+            - jitstress_isas_x86_evex
+            - jitstress_isas_x86_noavx512
+            - jitstressregs0x2000
+          ${{ if eq(parameters.testGroup, 'jitstressregs-x86') }}:
+            scenarios:
+            - jitstressregs1_x86_noavx
+            - jitstressregs2_x86_noavx
+            - jitstressregs3_x86_noavx
+            - jitstressregs4_x86_noavx
+            - jitstressregs8_x86_noavx
+            - jitstressregs0x10_x86_noavx
+            - jitstressregs0x80_x86_noavx
+            - jitstressregs0x1000_x86_noavx
+            - jitstressregs0x2000_x86_noavx
+          ${{ if eq(parameters.testGroup, 'jitstressregs') }}:
+            scenarios:
+            - jitstressregs1
+            - jitstressregs2
+            - jitstressregs3
+            - jitstressregs4
+            - jitstressregs8
+            - jitstressregs0x10
+            - jitstressregs0x80
+            - jitstressregs0x1000
+            - jitstressregs0x2000
+          ${{ if eq(parameters.testGroup, 'jitstress2-jitstressregs') }}:
+            scenarios:
+            - jitstress2_jitstressregs1
+            - jitstress2_jitstressregs2
+            - jitstress2_jitstressregs3
+            - jitstress2_jitstressregs4
+            - jitstress2_jitstressregs8
+            - jitstress2_jitstressregs0x10
+            - jitstress2_jitstressregs0x80
+            - jitstress2_jitstressregs0x1000
+            - jitstress2_jitstressregs0x2000
+          ${{ if eq(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
+            scenarios:
+            - gcstress0x3
+            - gcstress0xc
+          ${{ if eq(parameters.testGroup, 'gcstress-extra') }}:
+            scenarios:
+            - heapverify1
+            - gcstress0xc_disabler2r
+            - gcstress0xc_disabler2r_jitstress2
+            - gcstress0xc_disabler2r_heapverify1
+            - gcstress0xc_jitstress1
+            - gcstress0xc_jitstress2
+            - gcstress0xc_tailcallstress
+            - gcstress0xc_jitminopts_heapverify1
+          ${{ if eq(parameters.testGroup, 'r2r-extra') }}:
+            scenarios:
+            - jitstress1
+            - jitstress2
+            - jitstress1_tiered
+            - jitstress2_tiered
+            - jitstressregs1
+            - jitstressregs2
+            - jitstressregs3
+            - jitstressregs4
+            - jitstressregs8
+            - jitstressregs0x10
+            - jitstressregs0x80
+            - jitstressregs0x1000
+            - jitstressregs0x2000
+            - jitminopts
+            - forcerelocs
+            - gcstress0xc
+          ${{ if eq(parameters.testGroup, 'pgo') }}:
+            scenarios:
+            - defaultpgo
+          ${{ if eq(parameters.testGroup, 'pgostress') }}:
+            ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+              scenarios:
+              - fullpgo
+              - fullpgo_random_gdv_edge
+            ${{ else }}:
+              scenarios:
+              - fullpgo
+              - fullpgo_methodprofiling
+              - fullpgo_random_gdv
+              - fullpgo_random_gdv_methodprofiling_only
+              - fullpgo_random_gdv_edge
+              - fullpgo_methodprofiling_always_optimized
+              - syntheticpgo
+              - syntheticpgo_blend
+              - instrument_if_optimizing
+          ${{ if eq(parameters.testGroup, 'gc-longrunning') }}:
+            scenarios:
+            - normal
+          ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
+            scenarios:
+            - normal
+          ${{ if eq(parameters.testGroup, 'gc-standalone') }}:
+            scenarios:
+            - gcstandalone
+          ${{ if eq(parameters.testGroup, 'gc-standalone-server') }}:
+            scenarios:
+            - gcstandaloneserver
+          ${{ if eq(parameters.testGroup, 'jitelthookenabled') }}:
+            scenarios:
+            - jitelthookenabled
+            - jitelthookenabled_tiered
+          ${{ if eq(parameters.testGroup, 'jit-experimental') }}:
+            ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+              scenarios:
+              - jitosr_stress
+              - jitpartialcompilation_pgo
+              - jitpartialcompilation_pgo_stress_random
+              - jitoptrepeat
+            ${{ else }}:
+              scenarios:
+              - jitosr_stress
+              - jitosr_stress_random
+              - jit_stress_splitting
+              - jitpartialcompilation
+              - jitpartialcompilation_pgo
+              - jitpartialcompilation_pgo_stress_random
+              - jitobjectstackallocation
+              - jitphysicalpromotion_only
+              - jitphysicalpromotion_full
+              - jitrlcse
+              - jitoptrepeat
+          ${{ if eq(parameters.testGroup, 'jit-cfg') }}:
+            scenarios:
+            - jitcfg
+            - jitcfg_dispatcher_always
+            - jitcfg_dispatcher_never
+            - jitcfg_gcstress0xc
+          ${{ if eq(parameters.testGroup, 'ilasm') }}:
+            scenarios:
+            - ilasmroundtrip
+          ${{ if eq(parameters.testGroup, '') }}:
+            scenarios:
+            - normal

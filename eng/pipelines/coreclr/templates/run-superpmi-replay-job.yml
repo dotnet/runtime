@@ -39,11 +39,8 @@ jobs:
       displayName: '${{ parameters.jobName }}'
 
     variables:
-    - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-      parameters:
-        runtimeFlavor: coreclr
-        testGroup: ${{ parameters.testGroup }}
-        liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    - name: buildProductRootFolderPath
+      value: $(Build.SourcesDirectory)/artifacts/bin/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)
 
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}

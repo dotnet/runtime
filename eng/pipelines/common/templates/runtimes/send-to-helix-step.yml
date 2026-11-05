@@ -1,6 +1,6 @@
 parameters:
   displayName: ''
-  condition: true
+  condition: succeeded()
   archType: ''
   osGroup: ''
   osSubgroup: ''
@@ -36,6 +36,7 @@ parameters:
   SuperPmiDiffType: ''
   SuperPmiBaseJitOptions: ''
   SuperPmiDiffJitOptions: ''
+  logRootName: SendToHelix
 
 
 steps:
@@ -45,7 +46,7 @@ steps:
     sendParams: >
       ${{ parameters.helixProjectArguments }}
       /m
-      /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
+      /bl:$(Build.SourcesDirectory)/artifacts/log/${{ parameters.logRootName }}.binlog
       /p:TargetArchitecture=${{ parameters.archType }}
       /p:TargetOS=${{ parameters.osGroup }}
       /p:TargetOSSubgroup=${{ parameters.osSubgroup }}

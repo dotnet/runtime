@@ -20,7 +20,7 @@
     <LibrarySubdirectory>$(OutputPath)/subdirectory</LibrarySubdirectory>
   </PropertyGroup>
 
-  <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyNativeProjectBinaries">
+  <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyAllNativeProjectReferenceBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
     <ItemGroup>
       <NativeLibrariesToMove Include="$(OutDir)/libNativeLibrary.*" />
       <NativeLibrariesToMove Include="$(OutDir)/libNativeLibraryWithDependency.*" />
@@ -37,20 +37,20 @@
     <Move SourceFiles="@(NativeLibrariesToMove)" DestinationFiles="@(NativeLibrariesToMove -> '$(LibrarySubdirectory)/%(Filename)%(Extension)')" />
   </Target>
 
-  <Target Name="SetUpSubdirectoryManaged" AfterTargets="Build">
+  <Target Name="SetUpSubdirectoryManaged" AfterTargets="Build" Condition="'$(_WillCLRTestProjectBuild)' == 'true'">
     <ItemGroup>
       <AssembliesToCopy Include="$(OutDir)/$(TargetName).dll" />
     </ItemGroup>
     <Copy SourceFiles="@(AssembliesToCopy)" DestinationFiles="@(AssembliesToCopy -> '$(LibrarySubdirectory)/%(Filename)%(Extension)')"/>
   </Target>
 
-  <Target Name="SetUpAOTDirectory" Condition="'$(TestBuildMode)' == 'nativeaot'" AfterTargets="Build">
+  <Target Name="SetUpAOTDirectory" Condition="'$(TestBuildMode)' == 'nativeaot' and '$(_WillCLRTestProjectBuild)' == 'true'" AfterTargets="Build">
     <ItemGroup>
-      <NativeLibrariesToCopy Include="$(LibrarySubdirectory)/libNativeLibrary.*" />
-      <NativeLibrariesToCopy Include="$(LibrarySubdirectory)/NativeLibrary.*" />
+      <NativeLibrariesToCopyAOT Include="$(LibrarySubdirectory)/libNativeLibrary.*" />
+      <NativeLibrariesToCopyAOT Include="$(LibrarySubdirectory)/NativeLibrary.*" />
     </ItemGroup>
-    <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(NativeOutputPath)/%(Filename)-in-native%(Extension)')" />
-    <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(NativeOutputPath)/%(Filename)-in-native-default-flags%(Extension)')" />
-    <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(NativeOutputPath)/%(Filename)-in-native-system32%(Extension)')" />
+    <Copy SourceFiles="@(NativeLibrariesToCopyAOT)" DestinationFiles="@(NativeLibrariesToCopyAOT -> '$(NativeOutputPath)/%(Filename)-in-native%(Extension)')" />
+    <Copy SourceFiles="@(NativeLibrariesToCopyAOT)" DestinationFiles="@(NativeLibrariesToCopyAOT -> '$(NativeOutputPath)/%(Filename)-in-native-default-flags%(Extension)')" />
+    <Copy SourceFiles="@(NativeLibrariesToCopyAOT)" DestinationFiles="@(NativeLibrariesToCopyAOT -> '$(NativeOutputPath)/%(Filename)-in-native-system32%(Extension)')" />
   </Target>
 </Project>

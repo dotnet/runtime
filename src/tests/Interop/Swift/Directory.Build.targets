@@ -1,0 +1,29 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', $(MSBuildThisFileDirectory)..))" />
+
+  <!-- Swift libraries are produced by CMake custom targets, so they are not reported as target
+       artifacts by the CMake File API like regular macOS dylibs are. -->
+  <Target Name="CopySwiftNativeProjectReferenceOutputs"
+          AfterTargets="CopyAllNativeProjectReferenceBinaries"
+          Condition="'@(CMakeProjectReference)' != '' and '$(_CopyNativeProjectBinaries)' == 'true'">
+    <MSBuild Projects="$(DefaultCMakeProject)"
+             Targets="GetOutputPathForProjectReference"
+             Properties="ReferencedCMakeLists=%(CMakeProjectReference.FullPath)">
+      <Output TaskParameter="TargetOutputs" ItemName="_SwiftNativeProjectReferenceOutputDirectories" />
+    </MSBuild>
+    <ItemGroup>
+      <_SwiftNativeProjectReferenceOutputs Include="%(_SwiftNativeProjectReferenceOutputDirectories.Identity)\*.dylib" />
+    </ItemGroup>
+    <Error Text="No Swift native project output was found for $(ReferencedCMakeLists)."
+           Condition="'@(_SwiftNativeProjectReferenceOutputs)' == ''" />
+    <Copy SourceFiles="@(_SwiftNativeProjectReferenceOutputs)"
+          DestinationFiles="@(_SwiftNativeProjectReferenceOutputs->'$(OutDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+          OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+          Retries="$(CopyRetryCount)"
+          RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+          UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
+</Project>
