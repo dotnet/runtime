@@ -39,7 +39,7 @@ public class ReadyToRunLibraryRootProviderTests
     [InlineData(2, true, true)]
     public void DeferredWasmDirectCallsPreserveBodyLayout(int callCount, bool eager, bool debugInfo)
     {
-        ReadyToRunCompilerContext context = CreateContext();
+        ReadyToRunCompilerContext context = CreateContext(targetArchitecture: TargetArchitecture.Wasm32);
         EcmaMethod targetMethod = (EcmaMethod)context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
         MethodWithGCInfo target = new(targetMethod);
         MethodWithGCInfo caller = new(targetMethod);
@@ -48,8 +48,7 @@ public class ReadyToRunLibraryRootProviderTests
         ReadyToRunCodegenCompilation compilation = (ReadyToRunCodegenCompilation)RuntimeHelpers.GetUninitializedObject(
             typeof(ReadyToRunCodegenCompilation));
         SetField(compilation, "_nodeFactory", factory);
-        SetField(compilation, "_isCoreLibCompilation", true);
-        SetField(compilation, "_previousCompilationInfo", new Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo>
+        SetField(compilation, "_finalizedWasmCompilationInfo", new Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo>
         {
             [targetMethod] = new(1, 0, eager),
         });
@@ -851,10 +850,12 @@ public class ReadyToRunLibraryRootProviderTests
         return new WeakReference(metadata);
     }
 
-    private static ReadyToRunCompilerContext CreateContext(string? assemblyPath = null)
+    private static ReadyToRunCompilerContext CreateContext(
+        string? assemblyPath = null, TargetArchitecture targetArchitecture = TargetArchitecture.X64)
     {
-        InstructionSetSupport instructionSetSupport = new(default, default, TargetArchitecture.X64);
-        TargetDetails target = new(TargetArchitecture.X64, TargetOS.Linux, TargetAbi.NativeAot);
+        bool isWasm = targetArchitecture == TargetArchitecture.Wasm32;
+        InstructionSetSupport instructionSetSupport = new(default, default, targetArchitecture);
+        TargetDetails target = new(targetArchitecture, isWasm ? TargetOS.Browser : TargetOS.Linux, TargetAbi.NativeAot);
         Dictionary<string, string> inputFilePaths = new(StringComparer.OrdinalIgnoreCase)
         {
             ["System.Private.CoreLib"] = TestPaths.SystemPrivateCoreLibPath,
@@ -863,7 +864,7 @@ public class ReadyToRunLibraryRootProviderTests
             inputFilePaths.Add(Path.GetFileNameWithoutExtension(assemblyPath), assemblyPath);
 
         ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes,
-            bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: true, targetIsSingleThreaded: false,
+            bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: !isWasm, targetIsSingleThreaded: isWasm,
             instructionSetSupport, oldTypeSystemContext: null)
         {
             InputFilePaths = inputFilePaths,

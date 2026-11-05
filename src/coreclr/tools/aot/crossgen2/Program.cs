@@ -732,38 +732,6 @@ namespace ILCompiler
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
-                    bool useTwoPhaseCompilation = Get(_command.TwoPhaseCompilation);
-                    bool deferredWasmCalls = Get(_command.DeferredWasmCalls);
-                    bool containsCoreLib = false;
-                    foreach (EcmaModule compilationModule in compilationGroup.CompilationModuleSet)
-                    {
-                        containsCoreLib |= compilationModule == typeSystemContext.SystemModule;
-                    }
-                    if (deferredWasmCalls)
-                    {
-                        if (useTwoPhaseCompilation ||
-                            typeSystemContext.Target.Architecture != TargetArchitecture.Wasm32 ||
-                            optimizationMode == OptimizationMode.None ||
-                            !containsCoreLib)
-                        {
-                            throw new CommandLineException(SR.DeferredWasmCallsRequiresOptimizedCoreLib);
-                        }
-                        builder.UseDeferredWasmCalls();
-                    }
-                    if (!useTwoPhaseCompilation &&
-                        !deferredWasmCalls &&
-                        typeSystemContext.Target.Architecture == TargetArchitecture.Wasm32 &&
-                        optimizationMode != OptimizationMode.None &&
-                        containsCoreLib)
-                    {
-                        useTwoPhaseCompilation = true;
-                    }
-
-                    if (useTwoPhaseCompilation)
-                    {
-                        builder.UseCompilationPlan(builder.CreateCompilationPlan());
-                    }
-
                     compilation = (ReadyToRunCodegenCompilation)builder.ToCompilation();
 
                 }

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
@@ -66,8 +65,6 @@ namespace ILCompiler
         private int _genericCycleDetectionDepthCutoff = -1;
         private int _genericCycleDetectionBreadthCutoff = -1;
         private ReadyToRunContainerFormat _format = ReadyToRunContainerFormat.PE;
-        private ReadyToRunCompilationPlan _compilationPlan;
-        private bool _deferredWasmCalls;
 
         private string _jitPath;
         private string _outputFile;
@@ -262,35 +259,6 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UseCompilationPlan(ReadyToRunCompilationPlan compilationPlan)
-        {
-            _compilationPlan = compilationPlan;
-            return this;
-        }
-
-        public ReadyToRunCodegenCompilationBuilder UseDeferredWasmCalls()
-        {
-            _deferredWasmCalls = true;
-            return this;
-        }
-
-        // Keep discovery's graph and IL provider out of the final compilation's stack frame.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public ReadyToRunCompilationPlan CreateCompilationPlan()
-        {
-            ILProvider finalILProvider = _ilProvider;
-            _ilProvider = new ReadyToRunILProvider(_compilationGroup);
-            try
-            {
-                using ReadyToRunCodegenCompilation discoveryCompilation = (ReadyToRunCodegenCompilation)ToCompilation();
-                return discoveryCompilation.CreateCompilationPlan();
-            }
-            finally
-            {
-                _ilProvider = finalILProvider;
-            }
-        }
-
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -414,7 +382,20 @@ namespace ILCompiler
                 compilationRoots.Add(new ReadyToRunJitHelperRootProvider(_r2rContext));
             }
 
-            factory.DeferredImportPlacement = _deferredWasmCalls ? new List<Import>() : null;
+            bool deferredWasmCalls = false;
+            if (_context.Target.Architecture == TargetArchitecture.Wasm32 && _optimizationMode != OptimizationMode.None)
+            {
+                foreach (EcmaModule compilationModule in inputModules)
+                {
+                    if (compilationModule == _r2rContext.SystemModule)
+                    {
+                        deferredWasmCalls = true;
+                        break;
+                    }
+                }
+            }
+
+            factory.DeferredImportPlacement = deferredWasmCalls ? new List<Import>() : null;
             return new ReadyToRunCodegenCompilation(
                 graph,
                 factory,
@@ -443,8 +424,7 @@ namespace ILCompiler
                 _verifyTypeAndFieldLayout,
                 _format,
                 _wasmDebugInfo,
-                _compilationPlan,
-                _deferredWasmCalls);
+                deferredWasmCalls);
         }
     }
 }

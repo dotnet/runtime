@@ -319,9 +319,7 @@ namespace ILCompiler
         private HashSet<MethodDesc> _deniedManagedHelpers;
         private bool _directManagedHelpersInitialized;
         private ReadyToRunCallGraphBuilder _callGraphBuilder;
-        private ReadyToRunCompilationPlan _compilationPlan;
-        private readonly Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo> _previousCompilationInfo;
-        private readonly bool _isCoreLibCompilation;
+        private readonly Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo> _finalizedWasmCompilationInfo;
         private readonly HashSet<MethodDesc> _startupEagerMethods;
         private bool _compilingEagerMethods;
         internal bool DeferredWasmCalls { get; }
@@ -387,8 +385,7 @@ namespace ILCompiler
             bool verifyTypeAndFieldLayout,
             ReadyToRunContainerFormat format,
             WasmDebugInfo wasmDebugInfo,
-            ReadyToRunCompilationPlan compilationPlan,
-            bool deferredWasmCalls = false)
+            bool deferredWasmCalls)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -413,11 +410,10 @@ namespace ILCompiler
             _customPESectionAlignment = customPESectionAlignment;
             _format = format;
             _wasmDebugInfo = wasmDebugInfo;
-            _compilationPlan = compilationPlan;
             DeferredWasmCalls = deferredWasmCalls;
-            if (_compilationPlan is not null || deferredWasmCalls)
+            if (deferredWasmCalls)
             {
-                _previousCompilationInfo = new Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo>();
+                _finalizedWasmCompilationInfo = new Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo>();
             }
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
@@ -431,22 +427,9 @@ namespace ILCompiler
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
-            foreach (EcmaModule compilationModule in CompilationModuleGroup.CompilationModuleSet)
-            {
-                if (compilationModule == TypeSystemContext.SystemModule)
-                {
-                    _isCoreLibCompilation = true;
-                    break;
-                }
-            }
-
-            if (_isCoreLibCompilation && (_compilationPlan is not null || deferredWasmCalls))
-            {
-                _startupEagerMethods = GetStartupEagerMethods();
-            }
-
             if (deferredWasmCalls)
             {
+                _startupEagerMethods = GetStartupEagerMethods();
                 _deferredWasmTargets = new();
                 _deferredWasmMethods = new();
                 _finalizedWasmMethods = new();
@@ -477,7 +460,6 @@ namespace ILCompiler
 
         public override void Compile(string outputFile)
         {
-            PrecompileCompilationPlan();
             _dependencyGraph.ComputeMarkedNodes();
 
             // Release single-threaded JIT state before object emission to reduce peak memory usage.
@@ -553,29 +535,16 @@ namespace ILCompiler
             }
         }
 
-        private void PrecompileCompilationPlan()
+        private void FinalizeCompilationPlan(ReadyToRunCompilationPlan compilationPlan)
         {
-            if (_compilationPlan is null)
-            {
-                return;
-            }
-
             var methodNodes = new List<MethodWithGCInfo>();
             var managedHelpers = new List<MethodWithGCInfo>();
             var compiledMethods = new HashSet<MethodDesc>();
-            var eagerRoots = new HashSet<MethodDesc>();
-            if (_startupEagerMethods is not null)
-            {
-                foreach (MethodDesc method in _startupEagerMethods)
-                {
-                    eagerRoots.Add(method);
-                    _dependencyGraph.AddRoot(NodeFactory.CompiledMethodNode(method), "Native-facing startup method");
-                }
-            }
+            var eagerRoots = new HashSet<MethodDesc>(_startupEagerMethods);
 
-            for (int level = 0; level < _compilationPlan.LevelCount; level++)
+            for (int level = 0; level < compilationPlan.LevelCount; level++)
             {
-                IReadOnlyList<MethodDesc> methodsAtLevel = _compilationPlan.GetMethodsAtLevel(level);
+                IReadOnlyList<MethodDesc> methodsAtLevel = compilationPlan.GetMethodsAtLevel(level);
                 foreach (MethodDesc method in methodsAtLevel)
                 {
                     MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
@@ -583,10 +552,7 @@ namespace ILCompiler
                     if (methodNode.IsJitHelper)
                     {
                         managedHelpers.Add(methodNode);
-                        if (_startupEagerMethods is not null)
-                        {
-                            eagerRoots.Add(method);
-                        }
+                        eagerRoots.Add(method);
                     }
                 }
             }
@@ -597,20 +563,20 @@ namespace ILCompiler
                 _directManagedHelpersInitialized = true;
             }
 
-            ReadyToRunCompilationPlan eagerPlan = _compilationPlan.CreateEagerPlan(eagerRoots);
+            ReadyToRunCompilationPlan eagerPlan = compilationPlan.CreateEagerPlan(eagerRoots);
             _compilingEagerMethods = true;
-            PrecompileMethods(eagerPlan, isEager: true);
+            FinalizeMethods(eagerPlan, isEager: true);
             _compilingEagerMethods = false;
 
             // Only successful eager compilations are available before non-eager level zero.
             var compiledEagerMethods = new HashSet<MethodDesc>(compiledMethods);
-            ReadyToRunCompilationPlan nonEagerPlan = _compilationPlan.CreateNonEagerPlan(compiledEagerMethods);
-            PrecompileMethods(nonEagerPlan, isEager: false);
+            ReadyToRunCompilationPlan nonEagerPlan = compilationPlan.CreateNonEagerPlan(compiledEagerMethods);
+            FinalizeMethods(nonEagerPlan, isEager: false);
 
             ValidateManagedHelpers(managedHelpers);
             PromoteModuleEagerFixups(methodNodes, compiledMethods, compiledEagerMethods);
 
-            void PrecompileMethods(ReadyToRunCompilationPlan plan, bool isEager)
+            void FinalizeMethods(ReadyToRunCompilationPlan plan, bool isEager)
             {
                 for (int level = 0; level < plan.LevelCount; level++)
                 {
@@ -620,43 +586,34 @@ namespace ILCompiler
                         continue;
                     }
 
-                    var dependencies = new List<DependencyNodeCore<NodeFactory>>(methodsAtLevel.Count);
+                    var methodsToFinalize = new List<MethodWithGCInfo>(methodsAtLevel.Count);
                     foreach (MethodDesc method in methodsAtLevel)
                     {
                         MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
-                        if (DeferredWasmCalls ? !_finalizedWasmMethods.Contains(methodNode) : !methodNode.StaticDependenciesAreComputed)
+                        if (!_finalizedWasmMethods.Contains(methodNode))
                         {
-                            dependencies.Add(methodNode);
+                            methodsToFinalize.Add(methodNode);
                         }
                     }
 
                     string phase = isEager ? "eager" : "non-eager";
                     if (Logger.IsVerbose)
                     {
-                        string operation = DeferredWasmCalls ? "Finalizing deferred Wasm calls" : "Precompiling two-phase";
-                        Logger.Writer.WriteLine($"{operation} {phase} level {level} with {methodsAtLevel.Count} methods");
+                        Logger.Writer.WriteLine($"Finalizing deferred Wasm calls {phase} level {level} with {methodsAtLevel.Count} methods");
                     }
 
-                    if (DeferredWasmCalls)
+                    foreach (MethodWithGCInfo method in methodsToFinalize)
                     {
-                        foreach (DependencyNodeCore<NodeFactory> dependency in dependencies)
-                        {
-                            FinalizeDeferredWasmMethod((MethodWithGCInfo)dependency);
-                        }
-                    }
-                    else
-                    {
-                        ComputeDependencyNodeDependencies(dependencies);
+                        FinalizeDeferredWasmMethod(method);
                     }
 
                     int compiledCount = 0;
-                    foreach (DependencyNodeCore<NodeFactory> dependency in dependencies)
+                    foreach (MethodWithGCInfo method in methodsToFinalize)
                     {
-                        var method = (MethodWithGCInfo)dependency;
                         if (!method.IsEmpty)
                         {
                             compiledMethods.Add(method.Method);
-                            _previousCompilationInfo.Add(
+                            _finalizedWasmCompilationInfo.Add(
                                 method.Method,
                                 new ReadyToRunMethodCompilationInfo(method.Size, level, isEager));
                             compiledCount++;
@@ -665,7 +622,7 @@ namespace ILCompiler
 
                     if (Logger.IsVerbose)
                     {
-                        Logger.Writer.WriteLine($"Precompiled two-phase {phase} level {level}: {compiledCount} compiled methods");
+                        Logger.Writer.WriteLine($"Finalized deferred Wasm calls {phase} level {level}: {compiledCount} compiled methods");
                     }
                 }
             }
@@ -794,37 +751,6 @@ namespace ILCompiler
             }
         }
 
-        public ReadyToRunCompilationPlan CreateCompilationPlan()
-        {
-            Debug.Assert(_callGraphBuilder is null);
-            _callGraphBuilder = new ReadyToRunCallGraphBuilder();
-            if (_isCoreLibCompilation)
-            {
-                foreach (MethodDesc method in GetStartupEagerMethods())
-                {
-                    _dependencyGraph.AddRoot(NodeFactory.CompiledMethodNode(method), "Native-facing startup method");
-                }
-            }
-            _dependencyGraph.ComputeMarkedNodes();
-
-            var methods = new List<MethodDesc>();
-            foreach (DependencyNodeCore<NodeFactory> node in _dependencyGraph.MarkedNodeList)
-            {
-                if (node is MethodWithGCInfo method && !method.IsEmpty)
-                {
-                    methods.Add(method.Method);
-                }
-            }
-
-            ReadyToRunCompilationPlan plan = _callGraphBuilder.CreatePlan(methods);
-            if (Logger.IsVerbose)
-            {
-                Logger.Writer.WriteLine($"Two-phase discovery found {methods.Count} methods in {plan.LevelCount} levels");
-            }
-
-            return plan;
-        }
-
         internal void RecordCall(MethodDesc caller, MethodDesc callee)
         {
             ReadyToRunCallGraphBuilder callGraphBuilder = _callGraphBuilder;
@@ -850,24 +776,12 @@ namespace ILCompiler
             }
         }
 
-        internal bool TryGetPreviousCompilationInfo(MethodDesc method, out ReadyToRunMethodCompilationInfo compilationInfo)
-        {
-            if (_previousCompilationInfo is null)
-            {
-                compilationInfo = default;
-                return false;
-            }
-
-            return _previousCompilationInfo.TryGetValue(method, out compilationInfo);
-        }
-
         internal bool CanUseDirectCall(MethodDesc method, out ReadyToRunMethodCompilationInfo compilationInfo)
         {
             compilationInfo = default;
-            TargetArchitecture architecture = NodeFactory.Target.Architecture;
-            return _isCoreLibCompilation &&
-                architecture is TargetArchitecture.X86 or TargetArchitecture.X64 or TargetArchitecture.Wasm32 &&
-                TryGetPreviousCompilationInfo(method, out compilationInfo) &&
+            return NodeFactory.Target.Architecture == TargetArchitecture.Wasm32 &&
+                _finalizedWasmCompilationInfo is not null &&
+                _finalizedWasmCompilationInfo.TryGetValue(method, out compilationInfo) &&
                 (compilationInfo.IsEager || _compilingEagerMethods ||
                     (!method.IsNoInlining && !method.IsNoOptimization &&
                         // Include the caller and the level-zero leaf in the activation depth.
@@ -899,9 +813,9 @@ namespace ILCompiler
                     }
                 }
 
-                _compilationPlan = _callGraphBuilder.CreatePlan(methods);
+                ReadyToRunCompilationPlan compilationPlan = _callGraphBuilder.CreatePlan(methods);
                 _callGraphBuilder = null;
-                PrecompileCompilationPlan();
+                FinalizeCompilationPlan(compilationPlan);
                 _deferredWasmPolicyFrozen = true;
                 NodeFactory.CompleteDeferredImportPlacement();
             }
