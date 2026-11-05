@@ -1416,12 +1416,12 @@ class PrestubMethodFrame : public FramedMethodFrame
 public:
     PrestubMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD);
 
-#ifndef DACCESS_COMPILE
+#if defined(FEATURE_INTERPRETER) && !defined(DACCESS_COMPILE)
     ~PrestubMethodFrame() noexcept
     {
         PopIfChained();
     }
-#endif // DACCESS_COMPILE
+#endif // FEATURE_INTERPRETER && !DACCESS_COMPILE
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     void MarkPrestubComplete()
