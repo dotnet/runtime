@@ -431,7 +431,7 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 
 //------------------------------------------------------------------------------
 // IsConstantRangeTest: Does the given compare node represent a constant range test? E.g.
-//    "X relop CNS" or "CNS relop X" where relop is [<, <=, >, >=]
+//    "X relop CNS" or "CNS relop X" where relop is [<, <=, >, >=, ==, !=]
 //
 // Arguments:
 //    tree - compare node
@@ -445,7 +445,7 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 //
 bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cnsNode, genTreeOps* cmp)
 {
-    if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT))
+    if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT, GT_EQ, GT_NE))
     {
         GenTree* op1 = tree->gtGetOp1();
         GenTree* op2 = tree->gtGetOp2();
@@ -553,17 +553,7 @@ static GenTree* FoldComparisons(
         second = ModularRange::FromComparison(op2, static_cast<target_size_t>(bound2->IconValue()), cmp2->IsUnsigned(),
                                               mask, offset2);
 
-        // Keep this conversion free of new folds. Like the previous constant range fold, only
-        // accept two tests of the same signedness that enclose a range of nonnegative values
-        // from both sides, where the second operand is a plain local rather than one behind
-        // an effect-free COMMA. The remaining shapes are enabled separately.
-        bool lowerBound1 = (op1 == GT_GE) || (op1 == GT_GT);
-        bool lowerBound2 = (op2 == GT_GE) || (op2 == GT_GT);
-        if ((cmp1->IsUnsigned() != cmp2->IsUnsigned()) || !value2->OperIs(GT_LCL_VAR) || (offset1 != 0) ||
-            (offset2 != 0) || (lowerBound1 == lowerBound2))
-        {
-            return nullptr;
-        }
+        // Negative bounds are enabled separately.
         if ((bound1->IconValue() < 0) || (bound2->IconValue() < 0))
         {
             return nullptr;
@@ -592,12 +582,6 @@ static GenTree* FoldComparisons(
         {
             // The fold makes the bound evaluate unconditionally, so it must be safe to speculate.
             // GTF_ORDER_SIDEEFF covers e.g. "a[X]" whose bounds check was removed via "X >= 0".
-            return nullptr;
-        }
-
-        // Like the previous never-negative fold, only combine "X >= 0" with the symbolic bound.
-        if ((op1 != GT_GE) || (bound1->IconValue() != 0) || cmp1->IsUnsigned())
-        {
             return nullptr;
         }
     }
@@ -632,13 +616,6 @@ static GenTree* FoldComparisons(
         {
             return nullptr;
         }
-    }
-
-    if ((symbolicBound == nullptr) && (range.IsEmpty() || range.IsFull(mask) || (range.Lower() == range.Upper())))
-    {
-        // The previous fold required a range of at least two values. Constant results and
-        // single values are enabled separately.
-        return nullptr;
     }
 
     GenTree*   value = base1;
