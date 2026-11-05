@@ -12,32 +12,6 @@ namespace System.IO.Compression.Tests
 {
     public partial class zip_UpdateTests : ZipFileTestBase
     {
-        // Created by 7-Zip with -tzip -mem=ZipCrypto -pPLACEHOLDER -mx=0.
-        private const string MetadataZipCryptoArchive =
-            "UEsDBBQAAQAAAOZUYl2GphA2EQAAAAUAAAAFAAAAYS50eHS0Pec3BaP8QZj9AiAipnI13VBLAwQUAAEAAADmVGJdjoaxkxIAAAAGAAAACgAAAHByZWZpeC50eHTY1BiWAGxQ2dbVIM7ciA3UE1pQSwECPwAUAAEAAADmVGJdhqYQNhEAAAAFAAAABQAkAAAAAAAAACAAAAAAAAAAYS50eHQKACAAAAAAAAEAGADMPOWhpWrdAQAAAAAAAAAAAAAAAAAAAABQSwECPwAUAAEAAADmVGJdjoaxkxIAAAAGAAAACgAkAAAAAAAAACAAAAA0AAAAcHJlZml4LnR4dAoAIAAAAAAAAQAYAFPu5KGlat0BAAAAAAAAAAAAAAAAAAAAAFBLBQYAAAAAAgACALMAAABuAAAAAAA=";
-
-        // Created by Python zipfile.ZipFile.open("a.txt", "w", force_zip64=True).
-        private const string MetadataZip64Archive =
-            "UEsDBC0AAAAAAAAAIQCGphA2//////////8FABQAYS50eHQBABAABQAAAAAAAAAFAAAAAAAAAGhlbGxvUEsBAi0ALQAAAAAAAAAhAIamEDYFAAAABQAAAAUAAAAAAAAAAAAAAIABAAAAAGEudHh0UEsFBgAAAAABAAEAMwAAADwAAAAAAA==";
-
-        // Created by pyzipper with WZ_AES, nbits=256 and force_wz_aes_version=1 or 2.
-        // Each archive contains an unencrypted prefix followed by nonempty and empty AES entries.
-        private const string MetadataAes1StoredArchive =
-            "UEsDBBQAAAAAAFxkIlCOhrGTBgAAAAYAAAAKAAAAcHJlZml4LnR4dHByZWZpeFBLAwQUAAEAYwBcZCJQYxp3vEUAAAApAAAABQALAGEudHh0AZkHAAEAQUUDAADMWRLmDZMwmN8vUzsSZbfWyewATwp8o2pHKuPyO00gBR4or9elRpu3K7aAJcb9AYw3ubiLHWW7jGj35F6QSm4GWH4AErJQSwMEFAABAGMAXGQiUAAAAAAcAAAAAAAAAAkACwBlbXB0eS50eHQBmQcAAQBBRQMAAEjl+Lqfh5w+Jt40jyrg4adn1J5Hqp/1K/uI7khQSwECFAAUAAAAAABcZCJQjoaxkwYAAAAGAAAACgAAAAAAAAAAAAAAgAEAAAAAcHJlZml4LnR4dFBLAQIUABQAAQBjAFxkIlBjGne8RQAAACkAAAAFAAsAAAAAAAAAAACAAS4AAABhLnR4dAGZBwABAEFFAwAAUEsBAhQAFAABAGMAXGQiUAAAAAAcAAAAAAAAAAkACwAAAAAAAAAAAIABoQAAAGVtcHR5LnR4dAGZBwABAEFFAwAAUEsFBgAAAAADAAMAuAAAAO8AAAAAAA==";
-
-        private const string MetadataAes1DeflateArchive =
-            "UEsDBBQAAAAIAFxkIlCOhrGTCAAAAAYAAAAKAAAAcHJlZml4LnR4dCsoSk3LrAAAUEsDBBQAAQBjAFxkIlBjGne8RwAAACkAAAAFAAsAYS50eHQBmQcAAQBBRQMIAJ6ZcXTA3/cmpO5P03RU7+8ODvkO4oI3b9LTQDar8OaeEQjIKwwLZRi+JgYBYASAoNvhUPVm2UQjVTbFuGski2g+LvmXv1lGUEsDBBQAAQBjAFxkIlAAAAAAHgAAAAAAAAAJAAsAZW1wdHkudHh0AZkHAAEAQUUDCACQCyRLn3QynOijJ41eNjOtaK+W2Rp3sQCA4xuG6PJQSwECFAAUAAAACABcZCJQjoaxkwgAAAAGAAAACgAAAAAAAAAAAAAAgAEAAAAAcHJlZml4LnR4dFBLAQIUABQAAQBjAFxkIlBjGne8RwAAACkAAAAFAAsAAAAAAAAAAACAATAAAABhLnR4dAGZBwABAEFFAwgAUEsBAhQAFAABAGMAXGQiUAAAAAAeAAAAAAAAAAkACwAAAAAAAAAAAIABpQAAAGVtcHR5LnR4dAGZBwABAEFFAwgAUEsFBgAAAAADAAMAuAAAAPUAAAAAAA==";
-
-        private const string MetadataAes2StoredArchive =
-            "UEsDBBQAAAAAAFxkIlCOhrGTBgAAAAYAAAAKAAAAcHJlZml4LnR4dHByZWZpeFBLAwQUAAEAYwBcZCJQAAAAAEUAAAApAAAABQALAGEudHh0AZkHAAIAQUUDAADTjG6RGnRNWL5KMqW7EtrbZgLzS/4IfZwGHdHCvJfTh2NBM6xOYbWGukziYN21921kgIOOhbv3C36+zZzLsarnNQMTLWJQSwMEFAABAGMAXGQiUAAAAAAcAAAAAAAAAAkACwBlbXB0eS50eHQBmQcAAgBBRQMAAJjX7HCduoI2BrUvsW8L4zgEPJm3bh63PnNTGh5QSwECFAAUAAAAAABcZCJQjoaxkwYAAAAGAAAACgAAAAAAAAAAAAAAgAEAAAAAcHJlZml4LnR4dFBLAQIUABQAAQBjAFxkIlAAAAAARQAAACkAAAAFAAsAAAAAAAAAAACAAS4AAABhLnR4dAGZBwACAEFFAwAAUEsBAhQAFAABAGMAXGQiUAAAAAAcAAAAAAAAAAkACwAAAAAAAAAAAIABoQAAAGVtcHR5LnR4dAGZBwACAEFFAwAAUEsFBgAAAAADAAMAuAAAAO8AAAAAAA==";
-
-        private const string MetadataAes2DeflateArchive =
-            "UEsDBBQAAAAIAFxkIlCOhrGTCAAAAAYAAAAKAAAAcHJlZml4LnR4dCsoSk3LrAAAUEsDBBQAAQBjAFxkIlAAAAAARwAAACkAAAAFAAsAYS50eHQBmQcAAgBBRQMIAKbeOSzXvaEBCruzvx2cY7JbaJLN/yxyl0cChZqfS/lfkC/fwG9S12IX83oTrQihia16u7XcXPw6NWtJNHmlCMYENm+gpMOAUEsDBBQAAQBjAFxkIlAAAAAAHgAAAAAAAAAJAAsAZW1wdHkudHh0AZkHAAIAQUUDCAAK7So6BLydA2vOxDLOrv8YY9TcpR25UAf/8l3IenZQSwECFAAUAAAACABcZCJQjoaxkwgAAAAGAAAACgAAAAAAAAAAAAAAgAEAAAAAcHJlZml4LnR4dFBLAQIUABQAAQBjAFxkIlAAAAAARwAAACkAAAAFAAsAAAAAAAAAAACAATAAAABhLnR4dAGZBwACAEFFAwgAUEsBAhQAFAABAGMAXGQiUAAAAAAeAAAAAAAAAAkACwAAAAAAAAAAAIABpQAAAGVtcHR5LnR4dAGZBwACAEFFAwgAUEsFBgAAAAADAAMAuAAAAPUAAAAAAA==";
-
-        // Created with the same pyzipper settings over a non-seekable output stream.
-        private const string MetadataAes1DescriptorArchive =
-            "UEsDBBQACAAIAFxkIlAAAAAAAAAAAAAAAAAKAAAAcHJlZml4LnR4dCsoSk3LrAAAUEsHCI6GsZMIAAAABgAAAFBLAwQUAAkAYwBcZCJQAAAAAAAAAAAAAAAABQALAGEudHh0AZkHAAEAQUUDCAALAs8LY3a0GAh95mYrr5LqZ48lSNsennqeFZ6xwxfQ17XzKitvikvc8WLXnzOEghGc7daOZdTBhhVAuA6tj55iLzsCHEqgc1BLBwhjGne8RwAAACkAAABQSwMEFAAJAGMAXGQiUAAAAAAAAAAAAAAAAAkACwBlbXB0eS50eHQBmQcAAQBBRQMIAESpgqXAm4dqBDen9l1vViMNYzS7sMOlO2XBamFgXlBLBwgAAAAAHgAAAAAAAABQSwECFAAUAAgACABcZCJQjoaxkwgAAAAGAAAACgAAAAAAAAAAAAAAgAEAAAAAcHJlZml4LnR4dFBLAQIUABQACQBjAFxkIlBjGne8RwAAACkAAAAFAAsAAAAAAAAAAACAAUAAAABhLnR4dAGZBwABAEFFAwgAUEsBAhQAFAAJAGMAXGQiUAAAAAAeAAAAAAAAAAkACwAAAAAAAAAAAIABxQAAAGVtcHR5LnR4dAGZBwABAEFFAwgAUEsFBgAAAAADAAMAuAAAACUBAAAAAA==";
-
         public static IEnumerable<object[]> Get_UpdateReadNormal_Data()
         {
             foreach (bool async in _bools)
@@ -1839,7 +1813,7 @@ namespace System.IO.Compression.Tests
         [InlineData(true, true, true)]
         public async Task Update_MetadataOnlyChange_PreservesLocalEntry(bool async, bool encrypted, bool changeTimestamp)
         {
-            byte[] originalBytes = Convert.FromBase64String(encrypted ? MetadataZipCryptoArchive : MetadataZip64Archive);
+            byte[] originalBytes = await File.ReadAllBytesAsync(zfile(encrypted ? "metadata-zipcrypto.zip" : "metadata-zip64.zip"));
             int centralDirectoryOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(originalBytes.AsSpan(originalBytes.Length - 6)));
             ushort originalFlags = BinaryPrimitives.ReadUInt16LittleEndian(originalBytes.AsSpan(6));
             Assert.Equal(encrypted ? 1 : 0, originalFlags);
@@ -1901,7 +1875,7 @@ namespace System.IO.Compression.Tests
         [MemberData(nameof(Get_Booleans_Data))]
         public async Task Update_RelocatedZipCryptoEntry_PreservesEncryptionHeader(bool async)
         {
-            byte[] originalBytes = Convert.FromBase64String(MetadataZipCryptoArchive);
+            byte[] originalBytes = await File.ReadAllBytesAsync(zfile("metadata-zipcrypto.zip"));
             List<(int LocalHeaderOffset, uint CompressedSize)> originalEntries = ParseZipEntryHeaders(originalBytes, out _);
             int originalOffset = originalEntries[1].LocalHeaderOffset;
             int dataLength = 30 + "prefix.txt".Length + checked((int)originalEntries[1].CompressedSize);
@@ -2114,7 +2088,9 @@ namespace System.IO.Compression.Tests
         public async Task Update_MetadataOnlyChange_PreservesAesEntry(
             bool async, int vendorVersion, bool stored, bool changeTimestamp, bool relocate, bool descriptor)
         {
-            byte[] originalBytes = descriptor ? Convert.FromBase64String(MetadataAes1DescriptorArchive) : GetAesMetadataArchive(vendorVersion, stored);
+            byte[] originalBytes = descriptor
+                ? await File.ReadAllBytesAsync(zfile("metadata-aes1-descriptor.zip"))
+                : await ReadAesMetadataArchiveAsync(vendorVersion, stored);
             List<(int LocalHeaderOffset, uint CompressedSize)> originalEntries = ParseZipEntryHeaders(originalBytes, out _);
             using MemoryStream ms = new MemoryStream();
             ms.Write(originalBytes);
@@ -2215,7 +2191,7 @@ namespace System.IO.Compression.Tests
         public async Task Update_AesEntry_ReencryptsAsAe2(bool async, int vendorVersion, bool stored, bool truncate)
         {
             using MemoryStream ms = new MemoryStream();
-            ms.Write(GetAesMetadataArchive(vendorVersion, stored));
+            ms.Write(await ReadAesMetadataArchiveAsync(vendorVersion, stored));
             ms.Position = 0;
             ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
             string contents = truncate ? "" : "WinZip AES metadata preservation payload. Updated contents.";
@@ -2249,15 +2225,15 @@ namespace System.IO.Compression.Tests
             await DisposeZipArchive(async, archive);
         }
 
-        private static byte[] GetAesMetadataArchive(int vendorVersion, bool stored) =>
-            Convert.FromBase64String((vendorVersion, stored) switch
+        private static Task<byte[]> ReadAesMetadataArchiveAsync(int vendorVersion, bool stored) =>
+            File.ReadAllBytesAsync(zfile((vendorVersion, stored) switch
             {
-                (1, true) => MetadataAes1StoredArchive,
-                (1, false) => MetadataAes1DeflateArchive,
-                (2, true) => MetadataAes2StoredArchive,
-                (2, false) => MetadataAes2DeflateArchive,
+                (1, true) => "metadata-aes1-stored.zip",
+                (1, false) => "metadata-aes1-deflate.zip",
+                (2, true) => "metadata-aes2-stored.zip",
+                (2, false) => "metadata-aes2-deflate.zip",
                 _ => throw new ArgumentOutOfRangeException(nameof(vendorVersion))
-            });
+            }));
 
         private static async Task CreateZipCryptoArchive(bool async, Stream stream, string password)
         {
