@@ -3751,8 +3751,11 @@ namespace Internal.JitInterface
         {
             _stashedPrecodeFixups.Push(_precodeFixups);
             _precodeFixups = null;
-            _stashedInlinedMethods.Push(_inlinedMethods);
-            _inlinedMethods = null;
+            if (!_compilation.NodeFactory.OptimizationFlags.StripInliningInfo)
+            {
+                _stashedInlinedMethods.Push(_inlinedMethods);
+                _inlinedMethods = null;
+            }
         }
 
         private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
@@ -3787,20 +3790,21 @@ namespace Internal.JitInterface
                     classMustBeLoadedBeforeCodeIsRun(inlineeModule.GetGlobalModuleType());
                 }
 
-                // If during inlining we found new inlinees, then if the inline was successful, add them to the set of fixups
-                // for the entire method.
-                HashSet<MethodDesc> previouslyStashedInlinees = _stashedInlinedMethods.Pop();
-                if (_inlinedMethods != null)
+                if (!_compilation.NodeFactory.OptimizationFlags.StripInliningInfo)
                 {
-                    previouslyStashedInlinees = previouslyStashedInlinees ?? new HashSet<MethodDesc>();
-                    foreach (var inlineeInHashSet in _inlinedMethods)
-                        previouslyStashedInlinees.Add(inlineeInHashSet);
-                }
-                _inlinedMethods = previouslyStashedInlinees;
+                    // Propagate nested inlinees only when the enclosing inline succeeds.
+                    HashSet<MethodDesc> previouslyStashedInlinees = _stashedInlinedMethods.Pop();
+                    if (_inlinedMethods != null)
+                    {
+                        previouslyStashedInlinees = previouslyStashedInlinees ?? new HashSet<MethodDesc>();
+                        foreach (var inlineeInHashSet in _inlinedMethods)
+                            previouslyStashedInlinees.Add(inlineeInHashSet);
+                    }
+                    _inlinedMethods = previouslyStashedInlinees;
 
-                // Then add the fact we inlined this method.
-                _inlinedMethods = _inlinedMethods ?? new HashSet<MethodDesc>();
-                _inlinedMethods.Add(inlinee);
+                    _inlinedMethods = _inlinedMethods ?? new HashSet<MethodDesc>();
+                    _inlinedMethods.Add(inlinee);
+                }
 
                 var typicalMethod = inlinee.GetTypicalMethodDefinition();
 
@@ -3852,7 +3856,10 @@ namespace Internal.JitInterface
             {
                 // If we didn't succeed on the inline, just pop back to the state before inlining
                 _precodeFixups = _stashedPrecodeFixups.Pop();
-                _inlinedMethods = _stashedInlinedMethods.Pop();
+                if (!_compilation.NodeFactory.OptimizationFlags.StripInliningInfo)
+                {
+                    _inlinedMethods = _stashedInlinedMethods.Pop();
+                }
             }
         }
 
