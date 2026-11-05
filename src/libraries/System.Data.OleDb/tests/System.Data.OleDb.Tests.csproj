@@ -13,6 +13,7 @@
     <Compile Include="OleDbConnectionTests.cs" />
     <Compile Include="OleDbDataAdapterTests.cs" />
     <Compile Include="OleDbDataReaderTests.cs" />
+    <Compile Include="OleDbParameterCollectionTests.cs" />
     <Compile Include="OleDbParameterTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
