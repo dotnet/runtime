@@ -679,12 +679,12 @@ void ILWSTRBufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
     // stack: capacity
 
     pslILEmit->EmitLDC(2);
-    pslILEmit->EmitMUL();
+    pslILEmit->EmitMUL_OVF();
 
     // stack: capacity_in_bytes
 
     pslILEmit->EmitLDC(2);
-    pslILEmit->EmitADD();
+    pslILEmit->EmitADD_OVF();
 
     // stack: offset_of_secret_null
 
@@ -693,7 +693,7 @@ void ILWSTRBufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
     pslILEmit->EmitSTLOC(dwTmpOffsetOfSecretNull); // make sure the stack is empty for localloc
 
     pslILEmit->EmitLDC(2);
-    pslILEmit->EmitADD();
+    pslILEmit->EmitADD_OVF();
 
     // stack: alloc_size_in_bytes
     ILCodeLabel *pAllocRejoin = pslILEmit->NewCodeLabel();
