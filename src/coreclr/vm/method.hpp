@@ -430,7 +430,8 @@ public:
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         return FALSE;
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
-        return (m_wFlags3AndTokenRemainder & enum_flag3_HasPrecode) != 0;
+        // Ensure the HasPrecode flag is read before the entry point slot is read
+        return (VolatileLoad(&m_wFlags3AndTokenRemainder) & enum_flag3_HasPrecode) != 0;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
