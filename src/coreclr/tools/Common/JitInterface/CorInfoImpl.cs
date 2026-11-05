@@ -568,7 +568,7 @@ namespace Internal.JitInterface
                 _methodCodeNode.InitializeDeferredWasmDebugInfo(_debugLocInfos, _debugVarInfos);
                 _methodCodeNode.InitializeDeferredWasmCalls(_deferredWasmCallSignatures, _deferredWasmActivationTokens);
             }
-            else if (!_compilation.NodeFactory.OptimizationFlags.StripDebugInfo)
+            else
 #endif
             {
                 _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
