@@ -21,20 +21,17 @@
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
     <!-- SdkVersionForWorkloadTesting is used to compute the sdk band and version for workload testing.
          The published manifests are built in dotnet/sdk so these values are for testing purposes only.
-         We use the manifest transport package version number unless it is lower
-         than the sdk version specified in global.json
+         Use the SDK specified in global.json so RTM manifest transport updates do not
+         select an SDK requiring stable packages before they are publicly available.
       -->
     <!-- NETCoreSdkVersion is normally set by the SDK, but for non-SDK projects we need extract from global.json -->
     <_GlobalJsonContent>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../global.json'))</_GlobalJsonContent>
     <_GlobalJsonSdkVersion Condition="'$(_GlobalJsonContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(_GlobalJsonContent), '"sdk"\s*:\s*\{[^\}]*"version"\s*:\s*"([^"]+)"', System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value)</_GlobalJsonSdkVersion>
-    <_DotnetSdkVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportVersion)</_DotnetSdkVersion>
-    <SdkVersionForWorkloadTesting Condition="$([System.String]::Compare('$(_GlobalJsonSdkVersion)', '$(_DotnetSdkVersion)')) &lt;= 0">$(_DotnetSdkVersion)</SdkVersionForWorkloadTesting>
     <SdkVersionForWorkloadTesting Condition="'$(SdkVersionForWorkloadTesting)' == ''">$(_GlobalJsonSdkVersion)</SdkVersionForWorkloadTesting>
     <SdkMajorVersion>$([System.String]::Copy('$(SdkVersionForWorkloadTesting)').Split('.')[0])</SdkMajorVersion>
     <SdkBandVersion>$(SdkMajorVersion).0.100</SdkBandVersion>
-    <SdkPreReleaseLabel>$([System.Text.RegularExpressions.Regex]::Match($(SdkVersionForWorkloadTesting), '-(?!rtm|servicing)(.+)\.[^.]+\.[^.]+$').Groups[1].Value)</SdkPreReleaseLabel>
-    <SdkBandVersionForWorkload_FromRuntimeVersions Condition="'$(SdkPreReleaseLabel)' == ''">$(SdkBandVersion)</SdkBandVersionForWorkload_FromRuntimeVersions>
-    <SdkBandVersionForWorkload_FromRuntimeVersions Condition="'$(SdkPreReleaseLabel)' != ''">$(SdkBandVersion)-$(SdkPreReleaseLabel)</SdkBandVersionForWorkload_FromRuntimeVersions>
+    <!-- RTM manifest package IDs use the stable band independently of the test SDK. -->
+    <SdkBandVersionForWorkload_FromRuntimeVersions>$(SdkBandVersion)</SdkBandVersionForWorkload_FromRuntimeVersions>
 
     <!-- Set assembly version to align with major and minor version,
          as for the patches and revisions should be manually updated per assembly if it is serviced. -->

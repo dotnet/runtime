@@ -43,6 +43,10 @@ For this, the builds get cached using `ProjectInfo` as the key.
   with `$(SdkVersionForWorkloadTesting)` is installed in
   `artifacts/bin/dotnet-latest`. And the workload packs are installed there
   using packages in `artifacts/packages/$(Configuration)/Shipping`.
+    - On release/11.0, the test SDK defaults to the version in `global.json`,
+      independently of RTM manifest transport updates. Manifest packages use
+      the stable `11.0.100` band and are installed into the selected SDK's
+      manifest directory, which may have a prerelease band.
     - If the packages get updated, then the workload will get installed again.
 
     - Keep in mind, that if you have any non-test changes, and don't regenerate
