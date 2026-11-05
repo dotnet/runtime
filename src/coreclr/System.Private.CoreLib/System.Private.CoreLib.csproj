@@ -132,6 +132,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Delegate.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.FunctionEvaluation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.CoreCLR.cs" />
@@ -173,6 +174,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\InstanceCalliHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\IntrinsicInvokeHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\InvokerEmitUtil.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MdConstant.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MdFieldInfo.cs" />

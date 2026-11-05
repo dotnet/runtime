@@ -11,6 +11,14 @@ internal sealed partial class GrammarActions
 {
     internal void BeginTopLevelDirective() => PrepareTopLevelDeclaration();
 
+    internal void ProcessCoreLibraryDirective()
+    {
+        if (!IsDeclarationSuppressed)
+        {
+            _entityRegistry.IsCoreLibrary = true;
+        }
+    }
+
     internal void ProcessTopLevelDataDeclaration(CILParser.DataDeclContext context)
         => _ = context;
 

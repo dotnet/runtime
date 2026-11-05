@@ -1668,12 +1668,15 @@ namespace System.Text.Json.SourceGeneration
 
                     string propValueExpr;
                     // For inaccessible [JsonInclude] properties, use UnsafeAccessor or reflection.
-                    string? rawValueExpr = GetFastPathPropertyValueExpr(propertyGenSpec, typeGenSpec, objectExpr, i, duplicateMemberNames.Contains(propertyGenSpec.MemberName));
+                    bool needsDisambiguation = duplicateMemberNames.Contains(propertyGenSpec.MemberName);
+                    string? rawValueExpr = GetFastPathPropertyValueExpr(propertyGenSpec, typeGenSpec, objectExpr, i, needsDisambiguation);
 
                     if (defaultCheckType != SerializedValueCheckType.None)
                     {
                         // Use temporary variable to evaluate property value only once
-                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode.TrimStart('@')}";
+                        string localVariableName = needsDisambiguation
+                            ? $"__value_{propertyGenSpec.NameSpecifiedInSourceCode.TrimStart('@')}_{i}"
+                            : $"__value_{propertyGenSpec.NameSpecifiedInSourceCode.TrimStart('@')}";
                         writer.WriteLine($"{propertyGenSpec.PropertyType.FullyQualifiedName} {localVariableName} = {rawValueExpr};");
                         propValueExpr = localVariableName;
                     }

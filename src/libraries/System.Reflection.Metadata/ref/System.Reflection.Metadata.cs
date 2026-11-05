@@ -2442,6 +2442,7 @@ namespace System.Reflection.Metadata
         public bool IsVariableBoundArrayType { get { throw null; } }
         public string Name { get { throw null; } }
         public string Namespace { get { throw null; } }
+        public static System.Reflection.Metadata.TypeName CreateSimpleTypeName(string metadataName, System.Reflection.Metadata.TypeName? declaringType = null, System.Reflection.Metadata.AssemblyNameInfo? assemblyInfo = null) { throw null; }
         public int GetArrayRank() { throw null; }
         public System.Reflection.Metadata.TypeName GetElementType() { throw null; }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.TypeName> GetGenericArguments() { throw null; }

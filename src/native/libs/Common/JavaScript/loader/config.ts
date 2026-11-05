@@ -73,6 +73,7 @@ function mergeResources(target: Assets, source: Assets): Assets {
     source.wasmNative = [...target.wasmNative!, ...source.wasmNative || []];
     source.icu = [...target.icu!, ...source.icu || []];
     source.vfs = [...target.vfs!, ...source.vfs || []];
+    source.appsettings = [...target.appsettings!, ...source.appsettings || []];
     source.modulesAfterConfigLoaded = [...target.modulesAfterConfigLoaded!, ...source.modulesAfterConfigLoaded || []];
     source.modulesAfterRuntimeReady = [...target.modulesAfterRuntimeReady!, ...source.modulesAfterRuntimeReady || []];
     source.extensions = { ...target.extensions!, ...source.extensions || {} };
@@ -128,4 +129,5 @@ function normalizeResources(target: Assets) {
     if (!target.satelliteResources) target.satelliteResources = {};
     if (!target.extensions) target.extensions = {};
     if (!target.vfs) target.vfs = [];
+    if (!target.appsettings) target.appsettings = [];
 }
