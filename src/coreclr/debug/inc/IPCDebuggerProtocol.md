@@ -4,6 +4,12 @@
 | ------- | ------------------------- | ------- |
 | 2       | 2                         |         |
 
+### List of Runtime IPC protocol changes
+
+| Version | Changes |
+| ------- | ------- |
+| 2       |         |
+
 ### Current debugger IPC events
 
 #### Type wrappers
@@ -19,126 +25,136 @@ All events use the common `DebuggerIPCEvent` header layout:
 `Portable<VMPTR_Thread> vmThread`, `Portable<HRESULT> hr`,
 `Portable<bool> replyRequired`, `Portable<bool> asyncSend`.
 
-The table lists the active events and their event-specific payloads.
+The table lists declared event IDs and their event-specific storage. A declared
+ID is not necessarily implemented by the current sender, receiver, or transport.
+A response does not return all the fields of the corresponding request.
 
-| Event | Direction | Payload | Payload layout |
-| ----- | --------- | ------- | -------------- |
-| `DB_IPCE_BREAKPOINT` | Runtime -> debugger notification | `BreakpointData` | `LSPTR_BREAKPOINT breakpointToken, Portable<mdMethodDef> funcMetadataToken, Portable<VMPTR_Assembly> vmAssembly, Portable<bool> isIL, Portable<UINT> offset, Portable<UINT> encVersion, LSPTR_METHODDESC nativeCodeMethodDescToken, Portable<CORDB_ADDRESS> codeStartAddress` |
-| `DB_IPCE_SYNC_COMPLETE` | Runtime -> debugger notification | None | Common header only |
-| `DB_IPCE_THREAD_ATTACH` | Runtime -> debugger notification | None | Common header only |
-| `DB_IPCE_THREAD_DETACH` | Runtime -> debugger notification | None | Common header only |
-| `DB_IPCE_LOAD_MODULE` | Runtime -> debugger notification | `LoadModuleData` | `Portable<VMPTR_Assembly> vmAssembly` |
-| `DB_IPCE_UNLOAD_MODULE` | Runtime -> debugger notification | `UnloadModuleData` | `Portable<VMPTR_Assembly> vmAssembly, LSPTR_ASSEMBLY debuggerAssemblyToken` |
-| `DB_IPCE_LOAD_CLASS` | Runtime -> debugger notification | `LoadClass` | `Portable<mdTypeDef> classMetadataToken, Portable<VMPTR_Assembly> vmAssembly, LSPTR_ASSEMBLY classDebuggerAssemblyToken` |
-| `DB_IPCE_UNLOAD_CLASS` | Runtime -> debugger notification | `UnloadClass` | `Portable<mdTypeDef> classMetadataToken, Portable<VMPTR_Assembly> vmAssembly, LSPTR_ASSEMBLY classDebuggerAssemblyToken` |
-| `DB_IPCE_EXCEPTION` | Runtime -> debugger notification | `Exception` | `Portable<VMPTR_OBJECTHANDLE> vmExceptionHandle, Portable<bool> firstChance, Portable<bool> continuable` |
-| `DB_IPCE_UNHANDLED_EXCEPTION` | Runtime -> debugger notification | None | Common header only |
-| `DB_IPCE_BREAKPOINT_ADD_RESULT` | Runtime -> debugger response | `BreakpointData` | `LSPTR_BREAKPOINT breakpointToken, Portable<mdMethodDef> funcMetadataToken, Portable<VMPTR_Assembly> vmAssembly, Portable<bool> isIL, Portable<UINT> offset, Portable<UINT> encVersion, LSPTR_METHODDESC nativeCodeMethodDescToken, Portable<CORDB_ADDRESS> codeStartAddress` |
-| `DB_IPCE_STEP_RESULT` | Runtime -> debugger response | `StepData` | `LSPTR_STEPPER stepperToken, Portable<VMPTR_Thread> vmThreadToken, Portable<CORDB_ADDRESS> frameToken, Portable<bool> stepIn, Portable<bool> rangeIL, Portable<bool> IsJMCStop, Portable<UINT> totalRangeCount, Portable<CorDebugStepReason> reason, Portable<CorDebugUnmappedStop> rgfMappingStop, Portable<CorDebugIntercept> rgfInterceptStop, Portable<UINT> rangeCount, COR_DEBUG_STEP_RANGE range` |
-| `DB_IPCE_STEP_COMPLETE` | Runtime -> debugger notification | `StepData` | `LSPTR_STEPPER stepperToken, Portable<VMPTR_Thread> vmThreadToken, Portable<CORDB_ADDRESS> frameToken, Portable<bool> stepIn, Portable<bool> rangeIL, Portable<bool> IsJMCStop, Portable<UINT> totalRangeCount, Portable<CorDebugStepReason> reason, Portable<CorDebugUnmappedStop> rgfMappingStop, Portable<CorDebugIntercept> rgfInterceptStop, Portable<UINT> rangeCount, COR_DEBUG_STEP_RANGE range` |
-| `DB_IPCE_BREAKPOINT_REMOVE_RESULT` | Runtime -> debugger response | `BreakpointData` | `LSPTR_BREAKPOINT breakpointToken, Portable<mdMethodDef> funcMetadataToken, Portable<VMPTR_Assembly> vmAssembly, Portable<bool> isIL, Portable<UINT> offset, Portable<UINT> encVersion, LSPTR_METHODDESC nativeCodeMethodDescToken, Portable<CORDB_ADDRESS> codeStartAddress` |
-| `DB_IPCE_GET_BUFFER_RESULT` | Runtime -> debugger response | `GetBufferResult` | `Portable<CORDB_ADDRESS> pBuffer, Portable<HRESULT> hr` |
-| `DB_IPCE_RELEASE_BUFFER_RESULT` | Runtime -> debugger response | `ReleaseBufferResult` | `Portable<HRESULT> hr` |
-| `DB_IPCE_ENC_ADD_FIELD` | Runtime -> debugger notification | `EnCUpdate` | `Portable<VMPTR_Assembly> vmAssembly, Portable<mdToken> memberMetadataToken, Portable<mdTypeDef> classMetadataToken, Portable<ULONG64> newVersionNumber` |
-| `DB_IPCE_APPLY_CHANGES_RESULT` | Runtime -> debugger response | `ApplyChangesResult` | `Portable<HRESULT> hr` |
-| `DB_IPCE_CUSTOM_NOTIFICATION` | Runtime -> debugger notification | `CustomNotification` | `Portable<VMPTR_Assembly> vmAssembly, Portable<mdTypeDef> classToken` |
-| `DB_IPCE_USER_BREAKPOINT` | Runtime -> debugger notification | None | Common header only |
-| `DB_IPCE_FIRST_LOG_MESSAGE` | Runtime -> debugger notification | `FirstLogMessage` | `Portable<int> iLevel, Portable<CORDB_ADDRESS> szCategory, Portable<ULONG> cchCategory, Portable<CORDB_ADDRESS> szContent, Portable<ULONG> cchContent` |
-| `DB_IPCE_CREATE_APP_DOMAIN` | Runtime -> debugger notification | `AppDomainData` | `Portable<VMPTR_AppDomain> vmAppDomain` |
-| `DB_IPCE_LOAD_ASSEMBLY` | Runtime -> debugger notification | `AssemblyData` | `Portable<VMPTR_Assembly> vmAssembly` |
-| `DB_IPCE_UNLOAD_ASSEMBLY` | Runtime -> debugger notification | `AssemblyData` | `Portable<VMPTR_Assembly> vmAssembly` |
-| `DB_IPCE_SET_DEBUG_STATE_RESULT` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` |
-| `DB_IPCE_FUNC_EVAL_SETUP_RESULT` | Runtime -> debugger response | `FuncEvalSetupComplete` | `Portable<CORDB_ADDRESS> argDataArea, LSPTR_DEBUGGEREVAL debuggerEvalKey` |
-| `DB_IPCE_FUNC_EVAL_COMPLETE` | Runtime -> debugger notification | `FuncEvalComplete` | `RSPTR_CORDBEVAL funcEvalKey, Portable<bool> successful, Portable<bool> aborted, Portable<CORDB_ADDRESS> resultAddr, Portable<VMPTR_AppDomain> vmAppDomain, Portable<VMPTR_OBJECTHANDLE> vmObjectHandle, DebuggerIPCE_ExpandedTypeData resultType` |
-| `DB_IPCE_SET_REFERENCE_RESULT` | Runtime -> debugger response | `SetReference` | `Portable<CORDB_ADDRESS> objectRefAddress, Portable<VMPTR_OBJECTHANDLE> vmObjectHandle, Portable<CORDB_ADDRESS> newReference` |
-| `DB_IPCE_FUNC_EVAL_ABORT_RESULT` | Runtime -> debugger response | `FuncEvalAbort` | `LSPTR_DEBUGGEREVAL debuggerEvalKey` |
-| `DB_IPCE_NAME_CHANGE` | Runtime -> debugger notification | `NameChange` | `Portable<NameChangeType> eventType, Portable<VMPTR_AppDomain> vmAppDomain, Portable<VMPTR_Thread> vmThread` |
-| `DB_IPCE_UPDATE_MODULE_SYMS` | Runtime -> debugger notification | `UpdateModuleSymsData` | `Portable<VMPTR_Assembly> vmAssembly` |
-| `DB_IPCE_CONTROL_C_EVENT` | Runtime -> debugger notification | None | Common header only |
-| `DB_IPCE_FUNC_EVAL_CLEANUP_RESULT` | Runtime -> debugger response | `FuncEvalCleanup` | `LSPTR_DEBUGGEREVAL debuggerEvalKey` |
-| `DB_IPCE_ENC_REMAP` | Runtime -> debugger notification | `EnCRemap` | `Portable<VMPTR_Assembly> vmAssembly, Portable<mdMethodDef> funcMetadataToken, Portable<ULONG64> currentVersionNumber, Portable<ULONG64> resumeVersionNumber, Portable<ULONG64> currentILOffset, Portable<CORDB_ADDRESS> resumeILOffset` |
-| `DB_IPCE_SET_VALUE_CLASS_RESULT` | Runtime -> debugger response | `SetValueClass` | `Portable<CORDB_ADDRESS> oldData, Portable<CORDB_ADDRESS> newData, DebuggerIPCE_BasicTypeData type` |
-| `DB_IPCE_BREAKPOINT_SET_ERROR` | Runtime -> debugger notification | `BreakpointSetErrorData` | `LSPTR_BREAKPOINT breakpointToken` |
-| `DB_IPCE_ENC_UPDATE_FUNCTION` | Runtime -> debugger notification | `EnCUpdate` | `Portable<VMPTR_Assembly> vmAssembly, Portable<mdToken> memberMetadataToken, Portable<mdTypeDef> classMetadataToken, Portable<ULONG64> newVersionNumber` |
-| `DB_IPCE_SET_METHOD_JMC_STATUS_RESULT` | Runtime -> debugger response | `SetJMCFunctionStatus` | `Portable<VMPTR_Assembly> vmAssembly, Portable<mdMethodDef> funcMetadataToken, Portable<DWORD> dwStatus` |
-| `DB_IPCE_GET_METHOD_JMC_STATUS_RESULT` | Runtime -> debugger response | `SetJMCFunctionStatus` | `Portable<VMPTR_Assembly> vmAssembly, Portable<mdMethodDef> funcMetadataToken, Portable<DWORD> dwStatus` |
-| `DB_IPCE_SET_MODULE_JMC_STATUS_RESULT` | Runtime -> debugger response | `SetJMCFunctionStatus` | `Portable<VMPTR_Assembly> vmAssembly, Portable<mdMethodDef> funcMetadataToken, Portable<DWORD> dwStatus` |
-| `DB_IPCE_FUNC_EVAL_RUDE_ABORT_RESULT` | Runtime -> debugger response | `FuncEvalRudeAbort` | `LSPTR_DEBUGGEREVAL debuggerEvalKey` |
-| `DB_IPCE_EXCEPTION_CALLBACK2` | Runtime -> debugger notification | `ExceptionCallback2` | `Portable<CORDB_ADDRESS> framePointer, Portable<UINT> nOffset, Portable<CorDebugExceptionCallbackType> eventType, Portable<DWORD> dwFlags, Portable<VMPTR_OBJECTHANDLE> vmExceptionHandle` |
-| `DB_IPCE_EXCEPTION_UNWIND` | Runtime -> debugger notification | `ExceptionUnwind` | `Portable<CorDebugExceptionUnwindCallbackType> eventType, Portable<DWORD> dwFlags` |
-| `DB_IPCE_INTERCEPT_EXCEPTION_RESULT` | Runtime -> debugger response | `InterceptException` | `Portable<VMPTR_Thread> vmThreadToken, Portable<CORDB_ADDRESS> frameToken` |
-| `DB_IPCE_CREATE_HANDLE_RESULT` | Runtime -> debugger response | `CreateHandleResult` | `Portable<VMPTR_OBJECTHANDLE> vmObjectHandle` |
-| `DB_IPCE_INTERCEPT_EXCEPTION_COMPLETE` | Runtime -> debugger notification | None | Common header only |
-| `DB_IPCE_ENC_REMAP_COMPLETE` | Runtime -> debugger notification | `EnCRemapComplete` | `Portable<VMPTR_Assembly> vmAssembly, Portable<mdMethodDef> funcMetadataToken` |
-| `DB_IPCE_CREATE_PROCESS` | Runtime -> debugger notification | None | Common header only |
-| `DB_IPCE_ENC_ADD_FUNCTION` | Runtime -> debugger notification | `EnCUpdate` | `Portable<VMPTR_Assembly> vmAssembly, Portable<mdToken> memberMetadataToken, Portable<mdTypeDef> classMetadataToken, Portable<ULONG64> newVersionNumber` |
-| `DB_IPCE_LEFTSIDE_STARTUP` | Runtime -> debugger notification | None | Common header only |
-| `DB_IPCE_METADATA_UPDATE` | Runtime -> debugger notification | `MetadataUpdateData` | `Portable<VMPTR_Assembly> vmAssembly` |
-| `DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT` | Runtime -> debugger response | `MetadataUpdateRequest` | `Portable<VMPTR_Module> vmModule, Portable<CORDB_ADDRESS> pMetadataStart, Portable<ULONG> nMetadataSize` |
-| `DB_IPCE_RESOLVE_UPDATE_METADATA_2_RESULT` | Runtime -> debugger response | `MetadataUpdateRequest` | `Portable<VMPTR_Module> vmModule, Portable<CORDB_ADDRESS> pMetadataStart, Portable<ULONG> nMetadataSize` |
-| `DB_IPCE_DATA_BREAKPOINT` | Runtime -> debugger notification | `DataBreakpointData` | `Portable<UINT> contextSize, CONTEXT context` |
-| `DB_IPCE_BEFORE_GARBAGE_COLLECTION` | Runtime -> debugger notification | None | Common header only |
-| `DB_IPCE_AFTER_GARBAGE_COLLECTION` | Runtime -> debugger notification | None | Common header only |
-| `DB_IPCE_DISABLE_OPTS_RESULT` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` |
-| `DB_IPCE_CATCH_HANDLER_FOUND_RESULT` | Runtime -> debugger response | `ForceCatchHandlerFoundData` | `Portable<bool> enableEvents, Portable<VMPTR_Object> vmObj` |
-| `DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` |
-| `DB_IPCE_ASYNC_BREAK` | Debugger -> runtime | None | Common header only |
-| `DB_IPCE_CONTINUE` | Debugger -> runtime | None | Common header only |
-| `DB_IPCE_LIST_THREADS` | Debugger -> runtime | None | Common header only |
-| `DB_IPCE_SET_IP` | Debugger -> runtime; runtime -> debugger response | `SetIP` | `Portable<CORDB_ADDRESS> startAddress, Portable<bool> fCanSetIPOnly, Portable<VMPTR_Thread> vmThreadToken, Portable<VMPTR_Assembly> vmAssembly, Portable<mdMethodDef> mdMethod, Portable<VMPTR_MethodDesc> vmMethodDesc, Portable<ULONG64> offset, Portable<bool> fIsIL` |
-| `DB_IPCE_SUSPEND_THREAD` | Debugger -> runtime | None | Common header only |
-| `DB_IPCE_RESUME_THREAD` | Debugger -> runtime | None | Common header only |
-| `DB_IPCE_BREAKPOINT_ADD` | Debugger -> runtime | `BreakpointData` | `LSPTR_BREAKPOINT breakpointToken, Portable<mdMethodDef> funcMetadataToken, Portable<VMPTR_Assembly> vmAssembly, Portable<bool> isIL, Portable<UINT> offset, Portable<UINT> encVersion, LSPTR_METHODDESC nativeCodeMethodDescToken, Portable<CORDB_ADDRESS> codeStartAddress` |
-| `DB_IPCE_BREAKPOINT_REMOVE` | Debugger -> runtime | `BreakpointData` | `LSPTR_BREAKPOINT breakpointToken, Portable<mdMethodDef> funcMetadataToken, Portable<VMPTR_Assembly> vmAssembly, Portable<bool> isIL, Portable<UINT> offset, Portable<UINT> encVersion, LSPTR_METHODDESC nativeCodeMethodDescToken, Portable<CORDB_ADDRESS> codeStartAddress` |
-| `DB_IPCE_STEP_CANCEL` | Debugger -> runtime | `StepData` | `LSPTR_STEPPER stepperToken, Portable<VMPTR_Thread> vmThreadToken, Portable<CORDB_ADDRESS> frameToken, Portable<bool> stepIn, Portable<bool> rangeIL, Portable<bool> IsJMCStop, Portable<UINT> totalRangeCount, Portable<CorDebugStepReason> reason, Portable<CorDebugUnmappedStop> rgfMappingStop, Portable<CorDebugIntercept> rgfInterceptStop, Portable<UINT> rangeCount, COR_DEBUG_STEP_RANGE range` |
-| `DB_IPCE_STEP` | Debugger -> runtime | `StepData` | `LSPTR_STEPPER stepperToken, Portable<VMPTR_Thread> vmThreadToken, Portable<CORDB_ADDRESS> frameToken, Portable<bool> stepIn, Portable<bool> rangeIL, Portable<bool> IsJMCStop, Portable<UINT> totalRangeCount, Portable<CorDebugStepReason> reason, Portable<CorDebugUnmappedStop> rgfMappingStop, Portable<CorDebugIntercept> rgfInterceptStop, Portable<UINT> rangeCount, COR_DEBUG_STEP_RANGE range` |
-| `DB_IPCE_STEP_OUT` | Debugger -> runtime | `StepData` | `LSPTR_STEPPER stepperToken, Portable<VMPTR_Thread> vmThreadToken, Portable<CORDB_ADDRESS> frameToken, Portable<bool> stepIn, Portable<bool> rangeIL, Portable<bool> IsJMCStop, Portable<UINT> totalRangeCount, Portable<CorDebugStepReason> reason, Portable<CorDebugUnmappedStop> rgfMappingStop, Portable<CorDebugIntercept> rgfInterceptStop, Portable<UINT> rangeCount, COR_DEBUG_STEP_RANGE range` |
-| `DB_IPCE_GET_BUFFER` | Debugger -> runtime | `GetBuffer` | `Portable<ULONG> bufSize` |
-| `DB_IPCE_RELEASE_BUFFER` | Debugger -> runtime | `ReleaseBuffer` | `Portable<CORDB_ADDRESS> pBuffer` |
-| `DB_IPCE_SET_CLASS_LOAD_FLAG` | Debugger -> runtime | `SetClassLoad` | `Portable<VMPTR_Assembly> vmAssembly, Portable<bool> flag` |
-| `DB_IPCE_CONTINUE_EXCEPTION` | Debugger -> runtime | None | Common header only |
-| `DB_IPCE_ATTACHING` | Debugger -> runtime | None | Common header only |
-| `DB_IPCE_APPLY_CHANGES` | Debugger -> runtime | `ApplyChanges` | `Portable<VMPTR_Assembly> vmAssembly, Portable<DWORD> cbDeltaMetadata, Portable<CORDB_ADDRESS> pDeltaMetadata, Portable<CORDB_ADDRESS> pDeltaIL, Portable<DWORD> cbDeltaIL` |
-| `DB_IPCE_IS_TRANSITION_STUB` | Debugger -> runtime | `IsTransitionStub` | `Portable<CORDB_ADDRESS> address` |
-| `DB_IPCE_IS_TRANSITION_STUB_RESULT` | Runtime -> debugger response | `IsTransitionStubResult` | `Portable<bool> isStub` |
-| `DB_IPCE_ENABLE_LOG_MESSAGES` | Debugger -> runtime | `LogSwitchSettingMessage` | `Portable<int> iLevel` |
-| `DB_IPCE_FUNC_EVAL` | Debugger -> runtime | `FuncEval` (`DebuggerIPCE_FuncEvalInfo`) | `Portable<VMPTR_Thread> vmThreadToken, Portable<DebuggerIPCE_FuncEvalType> funcEvalType, Portable<mdMethodDef> funcMetadataToken, Portable<mdTypeDef> funcClassMetadataToken, Portable<VMPTR_Assembly> vmAssembly, RSPTR_CORDBEVAL funcEvalKey, Portable<bool> evalDuringException, Portable<UINT> argCount, Portable<UINT> genericArgsCount, Portable<UINT> genericArgsNodeCount, Portable<UINT> stringSize, Portable<UINT> arrayRank` |
-| `DB_IPCE_SET_REFERENCE` | Debugger -> runtime | `SetReference` | `Portable<CORDB_ADDRESS> objectRefAddress, Portable<VMPTR_OBJECTHANDLE> vmObjectHandle, Portable<CORDB_ADDRESS> newReference` |
-| `DB_IPCE_FUNC_EVAL_ABORT` | Debugger -> runtime | `FuncEvalAbort` | `LSPTR_DEBUGGEREVAL debuggerEvalKey` |
-| `DB_IPCE_DETACH_FROM_PROCESS` | Debugger -> runtime; runtime -> debugger response | None | Common header only |
-| `DB_IPCE_CONTROL_C_EVENT_RESULT` | Debugger -> runtime | None | Common header only |
-| `DB_IPCE_FUNC_EVAL_CLEANUP` | Debugger -> runtime | `FuncEvalCleanup` | `LSPTR_DEBUGGEREVAL debuggerEvalKey` |
-| `DB_IPCE_SET_ALL_DEBUG_STATE` | Debugger -> runtime | `SetAllDebugState` | `Portable<VMPTR_Thread> vmThreadToken, Portable<CorDebugThreadState> debugState` |
-| `DB_IPCE_SET_VALUE_CLASS` | Debugger -> runtime | `SetValueClass` | `Portable<CORDB_ADDRESS> oldData, Portable<CORDB_ADDRESS> newData, DebuggerIPCE_BasicTypeData type` |
-| `DB_IPCE_SET_METHOD_JMC_STATUS` | Debugger -> runtime | `SetJMCFunctionStatus` | `Portable<VMPTR_Assembly> vmAssembly, Portable<mdMethodDef> funcMetadataToken, Portable<DWORD> dwStatus` |
-| `DB_IPCE_GET_METHOD_JMC_STATUS` | Debugger -> runtime | `SetJMCFunctionStatus` | `Portable<VMPTR_Assembly> vmAssembly, Portable<mdMethodDef> funcMetadataToken, Portable<DWORD> dwStatus` |
-| `DB_IPCE_SET_MODULE_JMC_STATUS` | Debugger -> runtime | `SetJMCFunctionStatus` | `Portable<VMPTR_Assembly> vmAssembly, Portable<mdMethodDef> funcMetadataToken, Portable<DWORD> dwStatus` |
-| `DB_IPCE_FUNC_EVAL_RUDE_ABORT` | Debugger -> runtime | `FuncEvalRudeAbort` | `LSPTR_DEBUGGEREVAL debuggerEvalKey` |
-| `DB_IPCE_CREATE_HANDLE` | Debugger -> runtime | `CreateHandle` | `Portable<CORDB_ADDRESS> objectToken, Portable<CorDebugHandleType> handleType` |
-| `DB_IPCE_DISPOSE_HANDLE` | Debugger -> runtime | `DisposeHandle` | `Portable<VMPTR_OBJECTHANDLE> vmObjectHandle, Portable<CorDebugHandleType> handleType` |
-| `DB_IPCE_INTERCEPT_EXCEPTION` | Debugger -> runtime | `InterceptException` | `Portable<VMPTR_Thread> vmThreadToken, Portable<CORDB_ADDRESS> frameToken` |
-| `DB_IPCE_RESOLVE_UPDATE_METADATA_1` | Debugger -> runtime | `MetadataUpdateRequest` | `Portable<VMPTR_Module> vmModule, Portable<CORDB_ADDRESS> pMetadataStart, Portable<ULONG> nMetadataSize` |
-| `DB_IPCE_RESOLVE_UPDATE_METADATA_2` | Debugger -> runtime | `MetadataUpdateRequest` | `Portable<VMPTR_Module> vmModule, Portable<CORDB_ADDRESS> pMetadataStart, Portable<ULONG> nMetadataSize` |
-| `DB_IPCE_DISABLE_OPTS` | Debugger -> runtime | `DisableOptData` | `Portable<mdMethodDef> funcMetadataToken, Portable<VMPTR_Module> pModule` |
-| `DB_IPCE_FORCE_CATCH_HANDLER_FOUND` | Debugger -> runtime | `ForceCatchHandlerFoundData` | `Portable<bool> enableEvents, Portable<VMPTR_Object> vmObj` |
-| `DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION` | Debugger -> runtime | `CustomNotificationData` | `Portable<VMPTR_Module> vmModule, Portable<mdTypeDef> classMetadataToken, Portable<bool> Enabled` |
+Event IDs are hexadecimal values, not table ordinals. `DB_IPCE_TYPE_MASK=0x0fff`
+selects the event type; `DB_IPCE_INVALID_EVENT=0x0000` and
+`DB_IPCE_DEBUGGER_INVALID=0x0249` are invalid-event sentinels. The range markers
+are `DB_IPCE_RUNTIME_FIRST=0x0100`, `DB_IPCE_RUNTIME_LAST=0x0167` (exclusive),
+`DB_IPCE_DEBUGGER_FIRST=0x0200`, and `DB_IPCE_DEBUGGER_LAST=0x025c` (exclusive).
+Range membership alone is not a direction guarantee:
+`DB_IPCE_IS_TRANSITION_STUB_RESULT=0x0222` is a runtime reply despite its
+debugger-range ID.
 
-`DebuggerIPCE_BasicTypeData` is laid out as `Portable<CorElementType> elementType`,
-`Portable<mdTypeDef> metadataToken`, `Portable<VMPTR_Assembly> vmAssembly`,
-`Portable<VMPTR_TypeHandle> vmTypeHandle`. `DebuggerIPCE_ExpandedTypeData` starts
-with `Portable<CorElementType> elementType`, followed by its `ClassTypeData`,
-`UnaryTypeData`, `ArrayTypeData`, or `NaryTypeData` union member. `ClassTypeData`
-contains `Portable<mdTypeDef> metadataToken`, `Portable<VMPTR_Assembly> vmAssembly`,
-and `Portable<VMPTR_TypeHandle> typeHandle`; `UnaryTypeData` contains
-`DebuggerIPCE_BasicTypeData unaryTypeArg`; `ArrayTypeData` contains
-`DebuggerIPCE_BasicTypeData arrayTypeArg` and `Portable<DWORD> arrayRank`;
-`NaryTypeData` contains `Portable<VMPTR_TypeHandle> typeHandle`.
+In the table, `field @n` gives the field's byte offset relative to the
+payload union; its offset from the event start is `H+n`. `H` is 40 for
+Windows x86 and 32-bit ARM, or 48 for the 64-bit layouts. `C` is `alignof(CONTEXT)`
+(4, 8 or 16).
 
+Transport lengths are event bytes from `DbgTransportSession::GetEventSize`,
+including the common header but excluding transport framing, with no extra
+rounding. `N = max(1, StepData.rangeCount)`.
+
+| Event | ID | Direction | Payload | Payload layout | Transport length |
+| ----- | -- | --------- | ------- | -------------- | ---------------- |
+| `DB_IPCE_BREAKPOINT` | `0x0100` | Runtime -> debugger notification | `BreakpointData` | `LSPTR_BREAKPOINT breakpointToken @0, Portable<mdMethodDef> funcMetadataToken @8, Portable<VMPTR_Assembly> vmAssembly @16, Portable<bool> isIL @24, Portable<UINT> offset @28, Portable<UINT> encVersion @32, LSPTR_METHODDESC nativeCodeMethodDescToken @40, Portable<CORDB_ADDRESS> codeStartAddress @48` | `H + 56` |
+| `DB_IPCE_SYNC_COMPLETE` | `0x0102` | Runtime -> debugger notification | None | Common header only | `H` |
+| `DB_IPCE_THREAD_ATTACH` | `0x0103` | Runtime -> debugger notification | None | Common header only | `H` |
+| `DB_IPCE_THREAD_DETACH` | `0x0104` | Runtime -> debugger notification | None | Common header only | `H` |
+| `DB_IPCE_LOAD_MODULE` | `0x0105` | Runtime -> debugger notification | `LoadModuleData` | `Portable<VMPTR_Assembly> vmAssembly @0` | `H + 8` |
+| `DB_IPCE_UNLOAD_MODULE` | `0x0106` | Runtime -> debugger notification | `UnloadModuleData` | `Portable<VMPTR_Assembly> vmAssembly @0, LSPTR_ASSEMBLY debuggerAssemblyToken @8` | `H + 16` |
+| `DB_IPCE_LOAD_CLASS` | `0x0107` | Runtime -> debugger notification | `LoadClass` | `Portable<mdTypeDef> classMetadataToken @0, Portable<VMPTR_Assembly> vmAssembly @8, LSPTR_ASSEMBLY classDebuggerAssemblyToken @16` | `H + 24` |
+| `DB_IPCE_UNLOAD_CLASS` | `0x0108` | Runtime -> debugger notification | `UnloadClass` | `Portable<mdTypeDef> classMetadataToken @0, Portable<VMPTR_Assembly> vmAssembly @8, LSPTR_ASSEMBLY classDebuggerAssemblyToken @16` | `H + 24` |
+| `DB_IPCE_EXCEPTION` | `0x0109` | Runtime -> debugger notification | `Exception` | `Portable<VMPTR_OBJECTHANDLE> vmExceptionHandle @0, Portable<bool> firstChance @8, Portable<bool> continuable @9` | `H + 16` |
+| `DB_IPCE_UNHANDLED_EXCEPTION` | `0x010a` | Runtime -> debugger notification | None | Common header only | `H` |
+| `DB_IPCE_BREAKPOINT_ADD_RESULT` | `0x010d` | Runtime -> debugger response | `BreakpointData` | `LSPTR_BREAKPOINT breakpointToken @0, Portable<mdMethodDef> funcMetadataToken @8, Portable<VMPTR_Assembly> vmAssembly @16, Portable<bool> isIL @24, Portable<UINT> offset @28, Portable<UINT> encVersion @32, LSPTR_METHODDESC nativeCodeMethodDescToken @40, Portable<CORDB_ADDRESS> codeStartAddress @48` | `H + 56` |
+| `DB_IPCE_STEP_RESULT` | `0x010e` | Runtime -> debugger response | `StepData` | `LSPTR_STEPPER stepperToken @0, Portable<VMPTR_Thread> vmThreadToken @8, Portable<CORDB_ADDRESS> frameToken @16, Portable<bool> stepIn @24, Portable<bool> rangeIL @25, Portable<bool> IsJMCStop @26, Portable<UINT> totalRangeCount @28, Portable<CorDebugStepReason> reason @32, Portable<CorDebugUnmappedStop> rgfMappingStop @36, Portable<CorDebugIntercept> rgfInterceptStop @40, Portable<UINT> rangeCount @44, COR_DEBUG_STEP_RANGE range @48` | `H + 48 + 8*N` |
+| `DB_IPCE_STEP_COMPLETE` | `0x010f` | Runtime -> debugger notification | `StepData` | `LSPTR_STEPPER stepperToken @0, Portable<VMPTR_Thread> vmThreadToken @8, Portable<CORDB_ADDRESS> frameToken @16, Portable<bool> stepIn @24, Portable<bool> rangeIL @25, Portable<bool> IsJMCStop @26, Portable<UINT> totalRangeCount @28, Portable<CorDebugStepReason> reason @32, Portable<CorDebugUnmappedStop> rgfMappingStop @36, Portable<CorDebugIntercept> rgfInterceptStop @40, Portable<UINT> rangeCount @44, COR_DEBUG_STEP_RANGE range @48` | `H + 56` |
+| `DB_IPCE_BREAKPOINT_REMOVE_RESULT` | `0x0111` | Runtime -> debugger response | `BreakpointData` | `LSPTR_BREAKPOINT breakpointToken @0, Portable<mdMethodDef> funcMetadataToken @8, Portable<VMPTR_Assembly> vmAssembly @16, Portable<bool> isIL @24, Portable<UINT> offset @28, Portable<UINT> encVersion @32, LSPTR_METHODDESC nativeCodeMethodDescToken @40, Portable<CORDB_ADDRESS> codeStartAddress @48` | `H` |
+| `DB_IPCE_GET_BUFFER_RESULT` | `0x0115` | Runtime -> debugger response | `GetBufferResult` | `Portable<CORDB_ADDRESS> pBuffer @0, Portable<HRESULT> hr @8` | `H + 16` |
+| `DB_IPCE_RELEASE_BUFFER_RESULT` | `0x0116` | Runtime -> debugger response | `ReleaseBufferResult` | `Portable<HRESULT> hr @0` | `H + 4` |
+| `DB_IPCE_ENC_ADD_FIELD` | `0x0117` | Runtime -> debugger notification | `EnCUpdate` | `Portable<VMPTR_Assembly> vmAssembly @0, Portable<mdToken> memberMetadataToken @8, Portable<mdTypeDef> classMetadataToken @12, Portable<ULONG64> newVersionNumber @16` | `H + 24` |
+| `DB_IPCE_APPLY_CHANGES_RESULT` | `0x0118` | Runtime -> debugger response | `ApplyChangesResult` | `Portable<HRESULT> hr @0` | `H + 4` |
+| `DB_IPCE_CUSTOM_NOTIFICATION` | `0x011b` | Runtime -> debugger notification | `CustomNotification` | `Portable<VMPTR_Assembly> vmAssembly @0, Portable<mdTypeDef> classToken @8` | `H + 16` |
+| `DB_IPCE_USER_BREAKPOINT` | `0x011c` | Runtime -> debugger notification | None | Common header only | `H` |
+| `DB_IPCE_FIRST_LOG_MESSAGE` | `0x011d` | Runtime -> debugger notification | `FirstLogMessage` | `Portable<int> iLevel @0, Portable<CORDB_ADDRESS> szCategory @8, Portable<ULONG> cchCategory @16, Portable<CORDB_ADDRESS> szContent @24, Portable<ULONG> cchContent @32` | `H + 40` |
+| `DB_IPCE_CREATE_APP_DOMAIN` | `0x0120` | Runtime -> debugger notification | `AppDomainData` | `Portable<VMPTR_AppDomain> vmAppDomain @0` | `H + 8` |
+| `DB_IPCE_LOAD_ASSEMBLY` | `0x0122` | Runtime -> debugger notification | `AssemblyData` | `Portable<VMPTR_Assembly> vmAssembly @0` | `H + 8` |
+| `DB_IPCE_UNLOAD_ASSEMBLY` | `0x0123` | Runtime -> debugger notification | `AssemblyData` | `Portable<VMPTR_Assembly> vmAssembly @0` | `H + 8` |
+| `DB_IPCE_SET_DEBUG_STATE_RESULT` | `0x0124` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` | `H` |
+| `DB_IPCE_FUNC_EVAL_SETUP_RESULT` | `0x0125` | Runtime -> debugger response | `FuncEvalSetupComplete` | `Portable<CORDB_ADDRESS> argDataArea @0, LSPTR_DEBUGGEREVAL debuggerEvalKey @8` | `H + 16` |
+| `DB_IPCE_FUNC_EVAL_COMPLETE` | `0x0126` | Runtime -> debugger notification | `FuncEvalComplete` | `RSPTR_CORDBEVAL funcEvalKey @0, Portable<bool> successful @4, Portable<bool> aborted @5, Portable<CORDB_ADDRESS> resultAddr @8, Portable<VMPTR_AppDomain> vmAppDomain @16, Portable<VMPTR_OBJECTHANDLE> vmObjectHandle @24, DebuggerIPCE_ExpandedTypeData resultType @32` | `H + 72` |
+| `DB_IPCE_SET_REFERENCE_RESULT` | `0x0127` | Runtime -> debugger response | `SetReference` | `Portable<CORDB_ADDRESS> objectRefAddress @0, Portable<VMPTR_OBJECTHANDLE> vmObjectHandle @8, Portable<CORDB_ADDRESS> newReference @16` | `H + 24` |
+| `DB_IPCE_FUNC_EVAL_ABORT_RESULT` | `0x0129` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` | `H` |
+| `DB_IPCE_NAME_CHANGE` | `0x012a` | Runtime -> debugger notification | `NameChange` | `Portable<NameChangeType> eventType @0, Portable<VMPTR_AppDomain> vmAppDomain @8, Portable<VMPTR_Thread> vmThread @16` | `H + 24` |
+| `DB_IPCE_UPDATE_MODULE_SYMS` | `0x012c` | Runtime -> debugger notification | `UpdateModuleSymsData` | `Portable<VMPTR_Assembly> vmAssembly @0` | `H + 8` |
+| `DB_IPCE_CONTROL_C_EVENT` | `0x012f` | Runtime -> debugger notification | None | Common header only | `H` |
+| `DB_IPCE_FUNC_EVAL_CLEANUP_RESULT` | `0x0130` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` | `H` |
+| `DB_IPCE_ENC_REMAP` | `0x0131` | Runtime -> debugger notification | `EnCRemap` | `Portable<VMPTR_Assembly> vmAssembly @0, Portable<mdMethodDef> funcMetadataToken @8, Portable<ULONG64> currentVersionNumber @16, Portable<ULONG64> resumeVersionNumber @24, Portable<ULONG64> currentILOffset @32, Portable<CORDB_ADDRESS> resumeILOffset @40` | `H + 48` |
+| `DB_IPCE_SET_VALUE_CLASS_RESULT` | `0x0133` | Runtime -> debugger response | `SetValueClass` | `Portable<CORDB_ADDRESS> oldData @0, Portable<CORDB_ADDRESS> newData @8, DebuggerIPCE_BasicTypeData type @16` | `H + 40` |
+| `DB_IPCE_BREAKPOINT_SET_ERROR` | `0x0134` | Runtime -> debugger notification | `BreakpointSetErrorData` | `LSPTR_BREAKPOINT breakpointToken @0` | `H + 8` |
+| `DB_IPCE_ENC_UPDATE_FUNCTION` | `0x0137` | Runtime -> debugger notification | `EnCUpdate` | `Portable<VMPTR_Assembly> vmAssembly @0, Portable<mdToken> memberMetadataToken @8, Portable<mdTypeDef> classMetadataToken @12, Portable<ULONG64> newVersionNumber @16` | `H + 24` |
+| `DB_IPCE_SET_METHOD_JMC_STATUS_RESULT` | `0x013a` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` | `H` |
+| `DB_IPCE_GET_METHOD_JMC_STATUS_RESULT` | `0x013b` | Runtime -> debugger response | `SetJMCFunctionStatus` | `Portable<VMPTR_Assembly> vmAssembly @0, Portable<mdMethodDef> funcMetadataToken @8, Portable<DWORD> dwStatus @12` | `H + 16` |
+| `DB_IPCE_SET_MODULE_JMC_STATUS_RESULT` | `0x013c` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` | `H` |
+| `DB_IPCE_FUNC_EVAL_RUDE_ABORT_RESULT` | `0x0144` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` | `H` |
+| `DB_IPCE_EXCEPTION_CALLBACK2` | `0x0147` | Runtime -> debugger notification | `ExceptionCallback2` | `Portable<CORDB_ADDRESS> framePointer @0, Portable<UINT> nOffset @8, Portable<CorDebugExceptionCallbackType> eventType @12, Portable<DWORD> dwFlags @16, Portable<VMPTR_OBJECTHANDLE> vmExceptionHandle @24` | `H + 32` |
+| `DB_IPCE_EXCEPTION_UNWIND` | `0x0148` | Runtime -> debugger notification | `ExceptionUnwind` | `Portable<CorDebugExceptionUnwindCallbackType> eventType @0, Portable<DWORD> dwFlags @4` | `H + 8` |
+| `DB_IPCE_INTERCEPT_EXCEPTION_RESULT` | `0x0149` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` | `H` |
+| `DB_IPCE_CREATE_HANDLE_RESULT` | `0x014a` | Runtime -> debugger response | `CreateHandleResult` | `Portable<VMPTR_OBJECTHANDLE> vmObjectHandle @0` | `H + 8` |
+| `DB_IPCE_INTERCEPT_EXCEPTION_COMPLETE` | `0x014b` | Runtime -> debugger notification | None | Common header only | `H` |
+| `DB_IPCE_ENC_REMAP_COMPLETE` | `0x014c` | Runtime -> debugger notification | `EnCRemapComplete` | `Portable<VMPTR_Assembly> vmAssembly @0, Portable<mdMethodDef> funcMetadataToken @8` | `H + 16` |
+| `DB_IPCE_CREATE_PROCESS` | `0x014d` | Runtime -> debugger notification | None | Common header only | `H` |
+| `DB_IPCE_ENC_ADD_FUNCTION` | `0x014e` | Runtime -> debugger notification | `EnCUpdate` | `Portable<VMPTR_Assembly> vmAssembly @0, Portable<mdToken> memberMetadataToken @8, Portable<mdTypeDef> classMetadataToken @12, Portable<ULONG64> newVersionNumber @16` | `H + 24` |
+| `DB_IPCE_LEFTSIDE_STARTUP` | `0x015c` | Runtime -> debugger notification | None | Common header only | `H` |
+| `DB_IPCE_METADATA_UPDATE` | `0x015d` | Runtime -> debugger notification | `MetadataUpdateData` | `Portable<VMPTR_Assembly> vmAssembly @0` | `H` |
+| `DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT` | `0x015e` | Runtime -> debugger response | `MetadataUpdateRequest` | `Portable<VMPTR_Module> vmModule @0, Portable<CORDB_ADDRESS> pMetadataStart @8, Portable<ULONG> nMetadataSize @16` | `H` |
+| `DB_IPCE_RESOLVE_UPDATE_METADATA_2_RESULT` | `0x015f` | Runtime -> debugger response | `MetadataUpdateRequest` | `Portable<VMPTR_Module> vmModule @0, Portable<CORDB_ADDRESS> pMetadataStart @8, Portable<ULONG> nMetadataSize @16` | `H` |
+| `DB_IPCE_DATA_BREAKPOINT` | `0x0160` | Runtime -> debugger notification | `DataBreakpointData` | `Portable<UINT> contextSize @0, CONTEXT context @C` | `H + C + sizeof(CONTEXT)` |
+| `DB_IPCE_BEFORE_GARBAGE_COLLECTION` | `0x0161` | Runtime -> debugger notification | None | Common header only | `H` |
+| `DB_IPCE_AFTER_GARBAGE_COLLECTION` | `0x0162` | Runtime -> debugger notification | None | Common header only | `H` |
+| `DB_IPCE_DISABLE_OPTS_RESULT` | `0x0163` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` | `H` |
+| `DB_IPCE_CATCH_HANDLER_FOUND_RESULT` | `0x0165` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` | `H` |
+| `DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT` | `0x0166` | Runtime -> debugger response | None | Common header; result in `Portable<HRESULT> hr` | `H` |
+| `DB_IPCE_ASYNC_BREAK` | `0x0200` | Debugger -> runtime | None | Common header only | `H` |
+| `DB_IPCE_CONTINUE` | `0x0201` | Debugger -> runtime | None | Common header only | `H` |
+| `DB_IPCE_LIST_THREADS` | `0x0202` | Debugger -> runtime | None | Common header only | `H` |
+| `DB_IPCE_SET_IP` | `0x0205` | Debugger -> runtime; runtime -> debugger response | `SetIP` | `Portable<CORDB_ADDRESS> startAddress @0, Portable<bool> fCanSetIPOnly @8, Portable<VMPTR_Thread> vmThreadToken @16, Portable<VMPTR_Assembly> vmAssembly @24, Portable<mdMethodDef> mdMethod @32, Portable<VMPTR_MethodDesc> vmMethodDesc @40, Portable<ULONG64> offset @48, Portable<bool> fIsIL @56` | `H + 64` |
+| `DB_IPCE_SUSPEND_THREAD` | `0x0206` | Debugger -> runtime | None | Common header only | `H` |
+| `DB_IPCE_RESUME_THREAD` | `0x0207` | Debugger -> runtime | None | Common header only | `H` |
+| `DB_IPCE_BREAKPOINT_ADD` | `0x0209` | Debugger -> runtime | `BreakpointData` | `LSPTR_BREAKPOINT breakpointToken @0, Portable<mdMethodDef> funcMetadataToken @8, Portable<VMPTR_Assembly> vmAssembly @16, Portable<bool> isIL @24, Portable<UINT> offset @28, Portable<UINT> encVersion @32, LSPTR_METHODDESC nativeCodeMethodDescToken @40, Portable<CORDB_ADDRESS> codeStartAddress @48` | `H + 56` |
+| `DB_IPCE_BREAKPOINT_REMOVE` | `0x020a` | Debugger -> runtime | `BreakpointData` | `LSPTR_BREAKPOINT breakpointToken @0, Portable<mdMethodDef> funcMetadataToken @8, Portable<VMPTR_Assembly> vmAssembly @16, Portable<bool> isIL @24, Portable<UINT> offset @28, Portable<UINT> encVersion @32, LSPTR_METHODDESC nativeCodeMethodDescToken @40, Portable<CORDB_ADDRESS> codeStartAddress @48` | `H + 56` |
+| `DB_IPCE_STEP_CANCEL` | `0x020b` | Debugger -> runtime | `StepData` | `LSPTR_STEPPER stepperToken @0, Portable<VMPTR_Thread> vmThreadToken @8, Portable<CORDB_ADDRESS> frameToken @16, Portable<bool> stepIn @24, Portable<bool> rangeIL @25, Portable<bool> IsJMCStop @26, Portable<UINT> totalRangeCount @28, Portable<CorDebugStepReason> reason @32, Portable<CorDebugUnmappedStop> rgfMappingStop @36, Portable<CorDebugIntercept> rgfInterceptStop @40, Portable<UINT> rangeCount @44, COR_DEBUG_STEP_RANGE range @48` | `H + 56` |
+| `DB_IPCE_STEP` | `0x020c` | Debugger -> runtime | `StepData` | `LSPTR_STEPPER stepperToken @0, Portable<VMPTR_Thread> vmThreadToken @8, Portable<CORDB_ADDRESS> frameToken @16, Portable<bool> stepIn @24, Portable<bool> rangeIL @25, Portable<bool> IsJMCStop @26, Portable<UINT> totalRangeCount @28, Portable<CorDebugStepReason> reason @32, Portable<CorDebugUnmappedStop> rgfMappingStop @36, Portable<CorDebugIntercept> rgfInterceptStop @40, Portable<UINT> rangeCount @44, COR_DEBUG_STEP_RANGE range @48` | `H + 48 + 8*N` |
+| `DB_IPCE_STEP_OUT` | `0x020d` | Debugger -> runtime | `StepData` | `LSPTR_STEPPER stepperToken @0, Portable<VMPTR_Thread> vmThreadToken @8, Portable<CORDB_ADDRESS> frameToken @16, Portable<bool> stepIn @24, Portable<bool> rangeIL @25, Portable<bool> IsJMCStop @26, Portable<UINT> totalRangeCount @28, Portable<CorDebugStepReason> reason @32, Portable<CorDebugUnmappedStop> rgfMappingStop @36, Portable<CorDebugIntercept> rgfInterceptStop @40, Portable<UINT> rangeCount @44, COR_DEBUG_STEP_RANGE range @48` | `H + 56` |
+| `DB_IPCE_GET_BUFFER` | `0x0211` | Debugger -> runtime | `GetBuffer` | `Portable<ULONG> bufSize @0` | `H + 4` |
+| `DB_IPCE_RELEASE_BUFFER` | `0x0212` | Debugger -> runtime | `ReleaseBuffer` | `Portable<CORDB_ADDRESS> pBuffer @0` | `H + 8` |
+| `DB_IPCE_SET_CLASS_LOAD_FLAG` | `0x0217` | Debugger -> runtime | `SetClassLoad` | `Portable<VMPTR_Assembly> vmAssembly @0, Portable<bool> flag @8` | `H + 16` |
+| `DB_IPCE_CONTINUE_EXCEPTION` | `0x0219` | Debugger -> runtime | None | Common header only | `H` |
+| `DB_IPCE_ATTACHING` | `0x021a` | Debugger -> runtime | None | Common header only | `H` |
+| `DB_IPCE_APPLY_CHANGES` | `0x021b` | Debugger -> runtime | `ApplyChanges` | `Portable<VMPTR_Assembly> vmAssembly @0, Portable<DWORD> cbDeltaMetadata @8, Portable<CORDB_ADDRESS> pDeltaMetadata @16, Portable<CORDB_ADDRESS> pDeltaIL @24, Portable<DWORD> cbDeltaIL @32` | `H + 40` |
+| `DB_IPCE_IS_TRANSITION_STUB` | `0x0221` | Debugger -> runtime | `IsTransitionStub` | `Portable<CORDB_ADDRESS> address @0` | `H + 8` |
+| `DB_IPCE_IS_TRANSITION_STUB_RESULT` | `0x0222` | Runtime -> debugger response | `IsTransitionStubResult` | `Portable<bool> isStub @0` | `H + 1` |
+| `DB_IPCE_ENABLE_LOG_MESSAGES` | `0x0224` | Debugger -> runtime | `LogSwitchSettingMessage` | `Portable<int> iLevel @0` | `H + 4` |
+| `DB_IPCE_FUNC_EVAL` | `0x0225` | Debugger -> runtime | `FuncEval` (`DebuggerIPCE_FuncEvalInfo`) | `Portable<VMPTR_Thread> vmThreadToken @0, Portable<DebuggerIPCE_FuncEvalType> funcEvalType @8, Portable<mdMethodDef> funcMetadataToken @12, Portable<mdTypeDef> funcClassMetadataToken @16, Portable<VMPTR_Assembly> vmAssembly @24, RSPTR_CORDBEVAL funcEvalKey @32, Portable<bool> evalDuringException @36, Portable<UINT> argCount @40, Portable<UINT> genericArgsCount @44, Portable<UINT> genericArgsNodeCount @48, Portable<UINT> stringSize @52, Portable<UINT> arrayRank @56` | `H + 64` |
+| `DB_IPCE_SET_REFERENCE` | `0x0228` | Debugger -> runtime | `SetReference` | `Portable<CORDB_ADDRESS> objectRefAddress @0, Portable<VMPTR_OBJECTHANDLE> vmObjectHandle @8, Portable<CORDB_ADDRESS> newReference @16` | `H + 24` |
+| `DB_IPCE_FUNC_EVAL_ABORT` | `0x022c` | Debugger -> runtime | `FuncEvalAbort` | `LSPTR_DEBUGGEREVAL debuggerEvalKey @0` | `H + 8` |
+| `DB_IPCE_DETACH_FROM_PROCESS` | `0x022f` | Debugger -> runtime; runtime -> debugger response | None | Common header only | `H` |
+| `DB_IPCE_CONTROL_C_EVENT_RESULT` | `0x0230` | Debugger -> runtime | None | Common header only | `H` |
+| `DB_IPCE_FUNC_EVAL_CLEANUP` | `0x0231` | Debugger -> runtime | `FuncEvalCleanup` | `LSPTR_DEBUGGEREVAL debuggerEvalKey @0` | `H + 8` |
+| `DB_IPCE_SET_ALL_DEBUG_STATE` | `0x0232` | Debugger -> runtime | `SetAllDebugState` | `Portable<VMPTR_Thread> vmThreadToken @0, Portable<CorDebugThreadState> debugState @8` | `H + 16` |
+| `DB_IPCE_SET_VALUE_CLASS` | `0x0234` | Debugger -> runtime | `SetValueClass` | `Portable<CORDB_ADDRESS> oldData @0, Portable<CORDB_ADDRESS> newData @8, DebuggerIPCE_BasicTypeData type @16` | `H + 40` |
+| `DB_IPCE_SET_METHOD_JMC_STATUS` | `0x023a` | Debugger -> runtime | `SetJMCFunctionStatus` | `Portable<VMPTR_Assembly> vmAssembly @0, Portable<mdMethodDef> funcMetadataToken @8, Portable<DWORD> dwStatus @12` | `H + 16` |
+| `DB_IPCE_GET_METHOD_JMC_STATUS` | `0x023b` | Debugger -> runtime | `SetJMCFunctionStatus` | `Portable<VMPTR_Assembly> vmAssembly @0, Portable<mdMethodDef> funcMetadataToken @8, Portable<DWORD> dwStatus @12` | `H + 16` |
+| `DB_IPCE_SET_MODULE_JMC_STATUS` | `0x023c` | Debugger -> runtime | `SetJMCFunctionStatus` | `Portable<VMPTR_Assembly> vmAssembly @0, Portable<mdMethodDef> funcMetadataToken @8, Portable<DWORD> dwStatus @12` | `H + 16` |
+| `DB_IPCE_FUNC_EVAL_RUDE_ABORT` | `0x0241` | Debugger -> runtime | `FuncEvalRudeAbort` | `LSPTR_DEBUGGEREVAL debuggerEvalKey @0` | `H + 8` |
+| `DB_IPCE_CREATE_HANDLE` | `0x0244` | Debugger -> runtime | `CreateHandle` | `Portable<CORDB_ADDRESS> objectToken @0, Portable<CorDebugHandleType> handleType @8` | `H + 16` |
+| `DB_IPCE_DISPOSE_HANDLE` | `0x0245` | Debugger -> runtime | `DisposeHandle` | `Portable<VMPTR_OBJECTHANDLE> vmObjectHandle @0, Portable<CorDebugHandleType> handleType @8` | `H + 16` |
+| `DB_IPCE_INTERCEPT_EXCEPTION` | `0x0246` | Debugger -> runtime | `InterceptException` | `Portable<VMPTR_Thread> vmThreadToken @0, Portable<CORDB_ADDRESS> frameToken @8` | `H + 16` |
+| `DB_IPCE_RESOLVE_UPDATE_METADATA_1` | `0x0256` | Debugger -> runtime | `MetadataUpdateRequest` | `Portable<VMPTR_Module> vmModule @0, Portable<CORDB_ADDRESS> pMetadataStart @8, Portable<ULONG> nMetadataSize @16` | `H` |
+| `DB_IPCE_RESOLVE_UPDATE_METADATA_2` | `0x0257` | Debugger -> runtime | `MetadataUpdateRequest` | `Portable<VMPTR_Module> vmModule @0, Portable<CORDB_ADDRESS> pMetadataStart @8, Portable<ULONG> nMetadataSize @16` | `H` |
+| `DB_IPCE_DISABLE_OPTS` | `0x0258` | Debugger -> runtime | `DisableOptData` | `Portable<mdMethodDef> funcMetadataToken @0, Portable<VMPTR_Module> pModule @8` | `H + 16` |
+| `DB_IPCE_FORCE_CATCH_HANDLER_FOUND` | `0x025a` | Debugger -> runtime | `ForceCatchHandlerFoundData` | `Portable<bool> enableEvents @0, Portable<VMPTR_Object> vmObj @8` | `H + 16` |
+| `DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION` | `0x025b` | Debugger -> runtime | `CustomNotificationData` | `Portable<VMPTR_Module> vmModule @0, Portable<mdTypeDef> classMetadataToken @8, Portable<bool> Enabled @12` | `H + 16` |
 
 ### Debugger IPC control block baseline
 
-`CorDBIPC_BUFFER_SIZE` is 4016 when the host is 64-bit, or 2092 on a x86/ARM host.
-Those buffers start at the same offset and add 24 bytes to every field after them (`sizeof` 4312).
+`CorDBIPC_BUFFER_SIZE` is 2092 for `TARGET_X86`/`TARGET_ARM` and 4016 for
+other targets. These are byte capacities, not actual event lengths.
+The native tables below describe same-bitness builds, not the debugger-only
+wrapper containing `m_version` and `m_dcb2` or cross-bitness conversion.
 
 #### Shared-memory control block
 
@@ -182,7 +198,8 @@ Those buffers start at the same offset and add 24 bytes to every field after the
 | `sizeof` | | 8184 | 4288 | 8136 | |
 
 Other 32-bit is any 32-bit target other than x86 or ARM, including WASM.
-Its buffer size is 4016.
+Its buffer size is 4016; this describes the conditional structure definition,
+not support for live debugging on those targets.
 
 #### Transport control block
 
@@ -220,3 +237,4 @@ substitute offsets; marshaling copies the remaining fields by name.
 | `m_specialThreadListDirty` | `bool` | 102 | 78 |
 | `m_rightSideShouldCreateHelperThread` | `bool` | 103 | 79 |
 | `sizeof` | | 104 | 80 |
+
