@@ -98,7 +98,7 @@ namespace System.Reflection.Emit.Tests
 
             var checkType = checkTypeBuilder.CreateType();
 
-            CheckFieldAlignment(field1Byte.Name, 4);
+            CheckFieldAlignment(field1Byte.Name, PlatformDetection.IsMonoRuntime ? 1 : 4);
             CheckFieldAlignment(field4Byte_1.Name, 4);
             CheckFieldAlignment(field8Byte_1.Name, 8);
             CheckFieldAlignment(field4Byte_2.Name, 4);
