@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref int[] instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
-            var temp1 = new List<int>();
+            var temp1 = new global::System.Collections.Generic.List<int>();
 
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
