@@ -134,6 +134,14 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Plane Normalize(Plane value) => Normalize(value.AsVector128()).AsPlane();
 
+        /// <summary>Projects a point onto a normalized plane.</summary>
+        /// <param name="plane">The normalized plane to project onto.</param>
+        /// <param name="point">The point to project.</param>
+        /// <returns>The point on <paramref name="plane" /> that is closest to <paramref name="point" />.</returns>
+        /// <remarks><paramref name="plane" /> must already be normalized so that its <see cref="Normal" /> vector is of unit length before this method is called.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Project(Plane plane, Vector3 point) => point - (DotCoordinate(plane, point) * plane.Normal);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector128<float> Normalize(Vector128<float> value)
         {

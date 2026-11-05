@@ -184,6 +184,7 @@ namespace System.Numerics
         public static System.Numerics.Plane Normalize(System.Numerics.Plane value) { throw null; }
         public static bool operator ==(System.Numerics.Plane value1, System.Numerics.Plane value2) { throw null; }
         public static bool operator !=(System.Numerics.Plane value1, System.Numerics.Plane value2) { throw null; }
+        public static System.Numerics.Vector3 Project(System.Numerics.Plane plane, System.Numerics.Vector3 point) { throw null; }
         public override readonly string ToString() { throw null; }
         public static System.Numerics.Plane Transform(System.Numerics.Plane plane, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Plane Transform(System.Numerics.Plane plane, System.Numerics.Quaternion rotation) { throw null; }

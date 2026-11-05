@@ -228,6 +228,46 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void PlaneProjectTest()
+        {
+            // Example from the API proposal: the plane y = 5.
+            Plane plane = new Plane(Vector3.UnitY, -5);
+            Vector3 actual = Plane.Project(plane, new Vector3(1, 2, 3));
+            Assert.True(MathHelper.Equal(new Vector3(1, 5, 3), actual), "Plane.Project returns unexpected value.");
+
+            // Points on either side of the plane project to the same point.
+            actual = Plane.Project(plane, new Vector3(1, 8, 3));
+            Assert.True(MathHelper.Equal(new Vector3(1, 5, 3), actual), "Plane.Project returns unexpected value.");
+
+            // A point already on the plane is unchanged.
+            actual = Plane.Project(plane, new Vector3(-4, 5, 7));
+            Assert.True(MathHelper.Equal(new Vector3(-4, 5, 7), actual), "Plane.Project returns unexpected value.");
+        }
+
+        [Theory]
+        [InlineData(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, -6.0f, 7.0f)]
+        [InlineData(-3.0f, 0.5f, 2.0f, -1.5f, 0.0f, 0.0f, 0.0f)]
+        [InlineData(0.0f, 0.0f, 1.0f, 0.0f, 10.0f, 20.0f, -30.0f)]
+        public void PlaneProjectArbitraryPlaneTest(float x, float y, float z, float d, float px, float py, float pz)
+        {
+            Plane plane = Plane.Normalize(new Plane(x, y, z, d));
+            Vector3 point = new Vector3(px, py, pz);
+
+            Vector3 actual = Plane.Project(plane, point);
+
+            // The projected point lies on the plane.
+            Assert.True(MathHelper.Equal(0.0f, Plane.DotCoordinate(plane, actual)), "Plane.Project did not return a point on the plane.");
+
+            // The projection moves the point along the plane's normal by its signed distance to the plane.
+            Vector3 expected = point - ((Vector3.Dot(plane.Normal, point) + plane.D) * plane.Normal);
+            Assert.True(MathHelper.Equal(expected, actual), "Plane.Project returns unexpected value.");
+            Assert.True(MathHelper.Equal(Vector3.Zero, Vector3.Cross(point - actual, plane.Normal)), "Plane.Project did not move the point along the plane's normal.");
+
+            // Projecting again doesn't move the point.
+            Assert.True(MathHelper.Equal(actual, Plane.Project(plane, actual)), "Plane.Project is not idempotent.");
+        }
+
+        [Fact]
         // Transform by matrix
         public void PlaneTransformTest1()
         {
