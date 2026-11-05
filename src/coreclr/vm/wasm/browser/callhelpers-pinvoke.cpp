@@ -381,10 +381,16 @@ extern "C" {
     int32_t QCall_CustomAttribute_ParseAttributeUsageAttribute (void *, int32_t, void *, void *, void *) __asm__("CustomAttribute_ParseAttributeUsageAttribute");
     void QCall_DebugDebugger_Break (void *) __asm__("DebugDebugger_Break");
     void QCall_DebugDebugger_CustomNotification (void *, void *) __asm__("DebugDebugger_CustomNotification");
+    void QCall_DebugDebugger_GetFuncEvalArgumentType (void *, uint32_t, void *, void *) __asm__("DebugDebugger_GetFuncEvalArgumentType");
+    void QCall_DebugDebugger_GetFuncEvalMethod (void *, void *, void *, void *) __asm__("DebugDebugger_GetFuncEvalMethod");
     int32_t QCall_DebugDebugger_IsLoggingHelper () __asm__("DebugDebugger_IsLoggingHelper");
     int32_t QCall_DebugDebugger_IsManagedDebuggerAttached () __asm__("DebugDebugger_IsManagedDebuggerAttached");
     int32_t QCall_DebugDebugger_Launch () __asm__("DebugDebugger_Launch");
     void QCall_DebugDebugger_Log (int32_t, void *, void *) __asm__("DebugDebugger_Log");
+    void QCall_DebugDebugger_PrepareFuncEvalResult (void *, void *, void *) __asm__("DebugDebugger_PrepareFuncEvalResult");
+    int32_t QCall_DebugDebugger_ReadFuncEvalPrimitiveRegister (void *, uint32_t, void *) __asm__("DebugDebugger_ReadFuncEvalPrimitiveRegister");
+    void QCall_DebugDebugger_WriteFuncEvalObjectRegister (void *, uint32_t, void *, void *) __asm__("DebugDebugger_WriteFuncEvalObjectRegister");
+    void QCall_DebugDebugger_WriteFuncEvalRegister (void *, uint32_t, void *, uint32_t, void *) __asm__("DebugDebugger_WriteFuncEvalRegister");
     void * QCall_Delegate_AdjustTarget (void *, void *, void *) __asm__("Delegate_AdjustTarget");
     int32_t QCall_Delegate_BindToMethodInfo (void *, void *, void *, void *, int32_t, void *, void *, void *) __asm__("Delegate_BindToMethodInfo");
     int32_t QCall_Delegate_BindToMethodName (void *, void *, void *, void *, int32_t, void *, void *, void *) __asm__("Delegate_BindToMethodName");
@@ -472,7 +478,7 @@ extern "C" {
     int32_t QCall_ModuleBuilder_GetTokenFromTypeSpec (void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetTokenFromTypeSpec");
     int32_t QCall_ModuleBuilder_GetTypeRef (void *, void *, void *, int32_t, void *) __asm__("ModuleBuilder_GetTypeRef");
     void QCall_ModuleBuilder_SetFieldRVAContent (void *, int32_t, void *, int32_t, void *) __asm__("ModuleBuilder_SetFieldRVAContent");
-    void QCall_ModuleHandle_GetDynamicMethod (void *, void *, void *, int32_t, void *, void *, void *) __asm__("ModuleHandle_GetDynamicMethod");
+    void QCall_ModuleHandle_GetDynamicMethod (void *, void *, void *, int32_t, void *, int32_t, void *, void *) __asm__("ModuleHandle_GetDynamicMethod");
     int32_t QCall_ModuleHandle_GetMDStreamVersion (void *) __asm__("ModuleHandle_GetMDStreamVersion");
     void QCall_ModuleHandle_GetModuleType (void *, void *, void *) __asm__("ModuleHandle_GetModuleType");
     void QCall_ModuleHandle_GetPEKind (void *, void *, void *, void *) __asm__("ModuleHandle_GetPEKind");
@@ -678,10 +684,16 @@ static const Entry s_QCall[] = {
     { "CustomAttribute_ParseAttributeUsageAttribute", (void*)&QCall_CustomAttribute_ParseAttributeUsageAttribute },
     { "DebugDebugger_Break", (void*)&QCall_DebugDebugger_Break },
     { "DebugDebugger_CustomNotification", (void*)&QCall_DebugDebugger_CustomNotification },
+    { "DebugDebugger_GetFuncEvalArgumentType", (void*)&QCall_DebugDebugger_GetFuncEvalArgumentType },
+    { "DebugDebugger_GetFuncEvalMethod", (void*)&QCall_DebugDebugger_GetFuncEvalMethod },
     { "DebugDebugger_IsLoggingHelper", (void*)&QCall_DebugDebugger_IsLoggingHelper },
     { "DebugDebugger_IsManagedDebuggerAttached", (void*)&QCall_DebugDebugger_IsManagedDebuggerAttached },
     { "DebugDebugger_Launch", (void*)&QCall_DebugDebugger_Launch },
     { "DebugDebugger_Log", (void*)&QCall_DebugDebugger_Log },
+    { "DebugDebugger_PrepareFuncEvalResult", (void*)&QCall_DebugDebugger_PrepareFuncEvalResult },
+    { "DebugDebugger_ReadFuncEvalPrimitiveRegister", (void*)&QCall_DebugDebugger_ReadFuncEvalPrimitiveRegister },
+    { "DebugDebugger_WriteFuncEvalObjectRegister", (void*)&QCall_DebugDebugger_WriteFuncEvalObjectRegister },
+    { "DebugDebugger_WriteFuncEvalRegister", (void*)&QCall_DebugDebugger_WriteFuncEvalRegister },
     { "Delegate_AdjustTarget", (void*)&QCall_Delegate_AdjustTarget },
     { "Delegate_BindToMethodInfo", (void*)&QCall_Delegate_BindToMethodInfo },
     { "Delegate_BindToMethodName", (void*)&QCall_Delegate_BindToMethodName },
