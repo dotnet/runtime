@@ -18,6 +18,7 @@
     <WorkItemPrefix Condition="'$(WasmEnableWebcil)' == 'false'">WBT-NoWebcil-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmFingerprintAssets)' == 'false'">WBT-NoFingerprint-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">WBT-JavascriptBundler-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WasmRunWasmOpt)' == 'true'">WBT-WasmOpt-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(RuntimeFlavor)' == 'Mono'">$(WorkItemPrefix)MONO-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(WorkItemPrefix)CLR-</WorkItemPrefix>
   </PropertyGroup>
@@ -39,12 +40,12 @@
     </ItemGroup>
     <PropertyGroup>
       <_BuildWasmAppsPayloadArchive>@(_WasmWorkItem)</_BuildWasmAppsPayloadArchive>
-      <!-- Lanes that run with the workload installed and with the default fingerprinting/bundler
+      <!-- Lanes that run with the workload installed and with the default fingerprinting/bundler/wasm-opt
            settings fan out per test class (this includes the webcil permutations); every other
            lane runs as a single work item. Identical for every runtime flavor - only
            $(BuildWasmAppsJobsList) differs. -->
       <_FanOutPerTestClass>false</_FanOutPerTestClass>
-      <_FanOutPerTestClass Condition="'$(TestUsingWorkloads)' == 'true' and '$(WasmFingerprintAssets)' == 'true' and '$(WasmBundlerFriendlyBootConfig)' == 'false'">true</_FanOutPerTestClass>
+      <_FanOutPerTestClass Condition="'$(TestUsingWorkloads)' == 'true' and '$(WasmFingerprintAssets)' == 'true' and '$(WasmBundlerFriendlyBootConfig)' == 'false' and '$(WasmRunWasmOpt)' != 'true'">true</_FanOutPerTestClass>
     </PropertyGroup>
 
     <!-- The fan-out lane has no catch-all work item, so a missing list means the tests silently do not run. -->
