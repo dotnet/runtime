@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -305,6 +307,36 @@ namespace System.Reflection.Emit.Tests
 
             Assert.True(signatureToken > 0);
             Assert.True(stringToken > 0);
+        }
+
+        [Fact]
+        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
+        public void SignatureHelper_ModifiedTypeFromMetadataLoadContext_WritesModifiers()
+        {
+            PersistedAssemblyBuilder source = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("Source"));
+            TypeBuilder holder = source.DefineDynamicModule("Source").DefineType("Holder", TypeAttributes.Public);
+            holder.DefineField("F", holder, [typeof(IsVolatile)], null, FieldAttributes.Public | FieldAttributes.Static);
+            holder.CreateType();
+
+            using MemoryStream stream = new MemoryStream();
+            using MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver());
+            source.Save(stream);
+            stream.Position = 0;
+            Type modifiedType = mlc.LoadFromStream(stream).GetType("Holder").GetField("F").GetModifiedFieldType();
+            Type isVolatile = Assert.Single(modifiedType.GetRequiredCustomModifiers());
+            Assert.Equal(typeof(IsVolatile).FullName, isVolatile.FullName);
+
+            ModuleBuilder module = new PersistedAssemblyBuilder(new AssemblyName("MyAssembly"), mlc.CoreAssembly).DefineDynamicModule("MyModule");
+            SignatureHelper actual = SignatureHelper.GetLocalVarSigHelper(module);
+            actual.AddArgument(modifiedType);
+            SignatureHelper expected = SignatureHelper.GetLocalVarSigHelper(module);
+            expected.AddArgument(modifiedType.UnderlyingSystemType, [isVolatile], null);
+
+            byte[] signature = actual.GetSignature();
+            // The expected bytes come from the same SignatureHelper, so one byte is checked by itself: CMOD_REQD after
+            // LOCAL_SIG and the count.
+            Assert.Equal((byte)SignatureTypeCode.RequiredModifier, signature[2]);
+            Assert.Equal(expected.GetSignature(), signature);
         }
 
         [Fact]

@@ -283,6 +283,34 @@ namespace System.Reflection.Emit.Tests
             public static void N<U>(U value) { }
         }
 
+        public class OpenGenericParameterHolder<TA, TB>
+        {
+            public static void M<UA, UB>(UB methodParameter, TA typeParameter) { }
+        }
+
+        [Fact]
+        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
+        public void DefineMethod_ModifiedOpenGenericParameterTypes_KeepParameterKinds()
+        {
+            // The modified type of a method type parameter doesn't report the method that declares it, so the parameter
+            // kind must come from the unmodified type.
+            ParameterInfo[] source = typeof(OpenGenericParameterHolder<,>).GetMethod(nameof(OpenGenericParameterHolder<int, int>.M)).GetParameters();
+            Type[] parameterTypes = Array.ConvertAll(source, p => p.GetModifiedParameterType());
+
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.DefineGenericParameters("TA", "TB");
+            MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Static);
+            method.DefineGenericParameters("UA", "UB");
+            method.SetParameters(parameterTypes);
+            method.GetILGenerator().Emit(OpCodes.Ret);
+            ParameterInfo[] parameters = type.CreateType().GetMethod("M").GetParameters();
+
+            Assert.True(parameters[0].ParameterType.IsGenericMethodParameter);
+            Assert.Equal(1, parameters[0].ParameterType.GenericParameterPosition);
+            Assert.True(parameters[1].ParameterType.IsGenericTypeParameter);
+            Assert.Equal(0, parameters[1].ParameterType.GenericParameterPosition);
+        }
+
         [Fact]
         [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
         public void DefineMethod_ModifiedParameterTypeFromGenericParameter_WritesUnmodifiedTypes()

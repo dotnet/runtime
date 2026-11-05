@@ -326,12 +326,12 @@ namespace System.Reflection.Emit
             // Required modifiers come first.
             if (requiredCustomModifiers != null)
                 AddCustomModifiers(requiredCustomModifiers, isOptional: false, nameof(requiredCustomModifiers));
-            else if (IsEncodedModifiedType(clsArgument))
+            else if (EncodesTypeModifiers)
                 AddCustomModifiers(clsArgument.GetRequiredCustomModifiers(), isOptional: false, paramName: null);
 
             if (optionalCustomModifiers != null)
                 AddCustomModifiers(optionalCustomModifiers, isOptional: true, nameof(optionalCustomModifiers));
-            else if (IsEncodedModifiedType(clsArgument))
+            else if (EncodesTypeModifiers)
                 AddCustomModifiers(clsArgument.GetOptionalCustomModifiers(), isOptional: true, paramName: null);
 
             // The overload taking a DynamicScope would write the type's own modifiers again, including those an array
@@ -350,10 +350,10 @@ namespace System.Reflection.Emit
                 ArgumentNullException.ThrowIfNull(t, paramName);
 
                 if (t.HasElementType)
-                    throw new ArgumentException(SR.Format(SR.Argument_CustomModifierElementType, t), paramName);
+                    throw new ArgumentException(SR.Argument_ArraysInvalid, paramName);
 
                 if (t.ContainsGenericParameters)
-                    throw new ArgumentException(SR.Format(SR.Argument_CustomModifierGeneric, t), paramName);
+                    throw new ArgumentException(SR.Argument_GenericsInvalid, paramName);
 
                 AddElementType(isOptional ? CorElementType.ELEMENT_TYPE_CMOD_OPT : CorElementType.ELEMENT_TYPE_CMOD_REQD);
 
@@ -364,12 +364,17 @@ namespace System.Reflection.Emit
         }
 
         // Modifier tokens come from m_module, which a DynamicMethod's signature doesn't have.
-        private bool IsEncodedModifiedType(Type type) =>
-            m_module is not null && type is ModifiedType or SignatureModifiedType;
+        private bool EncodesTypeModifiers => m_module is not null;
+
+        // A modified type's UnderlyingSystemType is its unmodified type, whichever Type implementation it is. A runtime
+        // TypeBuilder's or EnumBuilder's can be its created type or its enum's underlying type, which a token or
+        // signature must not name instead.
+        internal static Type GetUnmodifiedType(Type type) =>
+            type is RuntimeTypeBuilder or RuntimeEnumBuilder ? type : type.UnderlyingSystemType;
 
         // Reflection returns each kind's modifiers separately, without their interleaving. Required modifiers come
         // first.
-        private void AddModifiedTypeCustomModifiers(Type type)
+        private void AddTypeCustomModifiers(Type type)
         {
             AddCustomModifiers(type.GetRequiredCustomModifiers(), isOptional: false, paramName: null);
             AddCustomModifiers(type.GetOptionalCustomModifiers(), isOptional: true, paramName: null);
@@ -377,19 +382,25 @@ namespace System.Reflection.Emit
 
         private void AddOneArgTypeHelper(Type clsArgument, DynamicScope? scope = null)
         {
-            if (IsEncodedModifiedType(clsArgument))
-                AddModifiedTypeCustomModifiers(clsArgument);
+            if (EncodesTypeModifiers)
+                AddTypeCustomModifiers(clsArgument);
 
             AddOneArgTypeHelperWorker(clsArgument, lastWasGenericInst: false, scope);
         }
 
         private void AddOneArgTypeHelperWorker(Type clsArgument, bool lastWasGenericInst, DynamicScope? scope)
         {
-            // For a modified type in a module's signature, the caller has written its modifiers. UnderlyingSystemType
-            // would also drop the modifiers of an element or type argument, so arrays, pointers, by-refs and
-            // constructed generic types stay wrapped.
-            if (IsEncodedModifiedType(clsArgument) && !clsArgument.HasElementType && !clsArgument.IsConstructedGenericType)
-                clsArgument = clsArgument.UnderlyingSystemType;
+            // In a module's signature the caller has written the type's modifiers. Custom modifiers can also precede
+            // element and type argument types (docs/design/specs/Ecma-335-Augments.md, "Custom modifiers can go in more
+            // places than specified"), so arrays, pointers, by-refs and constructed generic types stay wrapped and
+            // their parts are written with their own modifiers. A modified method type parameter doesn't report its
+            // declaring method, so unwrapping comes before the generic parameter check.
+            if (EncodesTypeModifiers)
+            {
+                Type unmodifiedType = GetUnmodifiedType(clsArgument);
+                if (!ReferenceEquals(unmodifiedType, clsArgument) && !unmodifiedType.HasElementType && !unmodifiedType.IsConstructedGenericType)
+                    clsArgument = unmodifiedType;
+            }
 
             if (clsArgument.IsGenericParameter)
             {
