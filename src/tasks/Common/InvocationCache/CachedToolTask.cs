@@ -14,21 +14,41 @@ namespace Microsoft.NET.Build.Tasks;
 /// </summary>
 public abstract class CachedToolTask : ToolTask
 {
-    private List<string>? _standardOutput;
-    private List<string>? _standardError;
+    private InvocationCache.PendingInvocation? _pendingInvocation;
 
     private protected abstract InvocationCacheConfiguration CacheConfiguration { get; }
 
     private protected abstract InvocationDescription? DescribeInvocation(
         string pathToTool, string responseFileCommands, string commandLineCommands);
 
+    // Defer ToolTask's logging-based exit-code adjustment until after cache completion.
+    protected override bool HasLoggedErrors => _pendingInvocation is null && base.HasLoggedErrors;
+
     protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
-        => InvocationCache.TryExecuteCached(Log, CacheConfiguration,
-            () => DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands),
-            () => ExecuteAndCaptureOutput(pathToTool, responseFileCommands, commandLineCommands),
-            ReplayOutput, out InvocationResult result)
-            ? result.ExitCode
-            : ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
+    {
+        try
+        {
+            _pendingInvocation = InvocationCache.PrepareInvocation(Log, CacheConfiguration,
+                () => DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands),
+                ReplayOutput, out InvocationResult? restoredResult);
+            InvocationResult result;
+            if (restoredResult is { } restored)
+            {
+                result = restored;
+            }
+            else
+            {
+                int exitCode = ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
+                result = _pendingInvocation?.Complete(exitCode) ?? new InvocationResult(exitCode);
+            }
+
+            return result.ExitCode == 0 && base.HasLoggedErrors ? -1 : result.ExitCode;
+        }
+        finally
+        {
+            _pendingInvocation = null;
+        }
+    }
 
     /// <summary>
     /// Executes the tool on cache misses and bypasses, including any tool-specific output preparation.
@@ -40,57 +60,37 @@ public abstract class CachedToolTask : ToolTask
     protected virtual int ExecuteToolCore(string pathToTool, string responseFileCommands, string commandLineCommands)
         => base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
 
-    private InvocationResult ExecuteAndCaptureOutput(
-        string pathToTool, string responseFileCommands, string commandLineCommands)
-    {
-        _standardOutput = new List<string>();
-        _standardError = new List<string>();
-        try
-        {
-            int exitCode = ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
-            return new InvocationResult(exitCode, _standardOutput, _standardError);
-        }
-        finally
-        {
-            _standardOutput = null;
-            _standardError = null;
-        }
-    }
-
     protected override Process StartToolProcess(Process process)
     {
-        if (_standardOutput is { } standardOutput && _standardError is { } standardError)
+        if (_pendingInvocation is { } pending)
         {
             // Capture before ToolTask applies stream logging policy, including LogStandardErrorAsError.
             // Each stream has one reader; ToolTask drains both before execution returns.
             process.OutputDataReceived += (_, args) =>
             {
                 if (args.Data is not null)
-                    standardOutput.Add(args.Data);
+                    pending.StandardOutput.Add(args.Data);
             };
             process.ErrorDataReceived += (_, args) =>
             {
                 if (args.Data is not null)
-                    standardError.Add(args.Data);
+                    pending.StandardError.Add(args.Data);
             };
         }
 
         return base.StartToolProcess(process);
     }
 
-    private InvocationResult ReplayOutput(InvocationResult result)
+    private void ReplayOutput(IReadOnlyList<string> standardOutput, IReadOnlyList<string> standardError)
     {
-        foreach (string line in result.StandardOutput)
+        foreach (string line in standardOutput)
             LogEventsFromTextOutput(line, StandardOutputImportanceToUse);
-        foreach (string line in result.StandardError)
+        foreach (string line in standardError)
         {
             if (LogStandardErrorAsError)
                 Log.LogError(line);
             else
                 LogEventsFromTextOutput(line, StandardErrorImportanceToUse);
         }
-
-        return new InvocationResult(Log.HasLoggedErrors ? -1 : result.ExitCode,
-            result.StandardOutput, result.StandardError);
     }
 }

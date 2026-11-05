@@ -1734,8 +1734,30 @@ namespace ILLink.Tasks.Tests
                 if (mode == "engine-cold")
                 {
                     Assert.True(task.Log.HasLoggedErrors);
+                    Assert.Equal(-1, task.ExitCode);
                     Assert.Equal("IL2026", Assert.Single(engine.Errors).Code);
-                    Assert.False(Directory.Exists(cacheDirectory));
+                    Assert.Contains(engine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
+                    for (int i = 0; i < 2; i++)
+                    {
+                        engine.Errors.Clear();
+                        engine.Warnings.Clear();
+                        engine.Messages.Clear();
+                        engine.TreatWarningsAsErrors = i == 0;
+                        task = CreateTask();
+                        Assert.Equal(i == 1, task.Execute());
+                        Assert.Equal(i == 0 ? -1 : 0, task.ExitCode);
+                        Assert.Contains(engine.Messages, message => message.Message.StartsWith("ILLink cache hit:"));
+                        if (i == 0)
+                        {
+                            Assert.Equal("IL2026", Assert.Single(engine.Errors).Code);
+                            Assert.Empty(engine.Warnings);
+                        }
+                        else
+                        {
+                            Assert.Equal("IL2026", Assert.Single(engine.Warnings).Code);
+                            Assert.Empty(engine.Errors);
+                        }
+                    }
                     return;
                 }
                 if (mode == "tool-error")
@@ -1849,8 +1871,17 @@ namespace ILLink.Tasks.Tests
                 Assert.Equal(!coldError, task.Execute());
                 if (coldError)
                 {
-                    Assert.False(Directory.Exists(cacheDirectory));
+                    Assert.Equal(-1, task.ExitCode);
                     Assert.Equal(2, test.BuildEngine.Errors.Count);
+                    Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
+                    test.BuildEngine.Errors.Clear();
+                    test.BuildEngine.Messages.Clear();
+                    task = CreateTask();
+                    Assert.True(task.Execute());
+                    Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache hit:"));
+                    Assert.Empty(test.BuildEngine.Errors);
+                    Assert.Equal("IL2026", Assert.Single(test.BuildEngine.Warnings).Code);
+                    Assert.Single(test.BuildEngine.Messages, message => message.Message == "stderr {0}");
                     return;
                 }
 

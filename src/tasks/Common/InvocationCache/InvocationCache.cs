@@ -61,46 +61,65 @@ internal sealed partial class InvocationCache
         _importance = importance;
     }
 
-    internal static bool TryExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
-        Func<InvocationDescription?> describeInvocation, Func<InvocationResult> execute,
-        Func<InvocationResult, InvocationResult> replayOutput, out InvocationResult result)
+    internal static PendingInvocation? PrepareInvocation(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
+        Func<InvocationDescription?> describeInvocation,
+        Action<IReadOnlyList<string>, IReadOnlyList<string>> replayOutput, out InvocationResult? restoredResult)
     {
-        result = default;
+        restoredResult = null;
         InvocationCache? cache = TryCreateFromEnvironment(log, configuration);
         if (cache is null)
-            return false;
+            return null;
 
         InvocationDescription? invocation = describeInvocation();
         if (invocation is null)
-            return false;
+            return null;
 
         cache.ValidateOutputs(invocation.Outputs);
 
         DateTime outputTimestampUtc = DateTime.UtcNow;
         if (!TryComputeKey(log, configuration.ToolName, invocation, out string key))
-            return false;
+            return null;
 
-        result = ExecutePrepared(cache, outputTimestampUtc,
-            new InvocationCacheRequest(key, invocation.Outputs), execute, out bool cacheHit);
-        if (cacheHit)
-            result = replayOutput(result);
-        return true;
+        return cache.PrepareInvocation(outputTimestampUtc,
+            new InvocationCacheRequest(key, invocation.Outputs), replayOutput, out restoredResult);
     }
 
-    internal static InvocationResult ExecutePrepared(InvocationCache cache, DateTime outputTimestampUtc,
-        InvocationCacheRequest request, Func<InvocationResult> execute, out bool cacheHit)
+    internal PendingInvocation? PrepareInvocation(DateTime outputTimestampUtc, InvocationCacheRequest request,
+        Action<IReadOnlyList<string>, IReadOnlyList<string>> replayOutput, out InvocationResult? restoredResult)
     {
-        string key = request.Key;
-        InvocationOutputs outputs = request.Outputs;
-        cacheHit = cache.TryRestore(key, outputs, outputTimestampUtc, out InvocationResult result);
-        if (cacheHit)
+        restoredResult = null;
+        if (TryRestore(request.Key, request.Outputs, outputTimestampUtc, out InvocationResult result))
+        {
+            replayOutput(result.StandardOutput, result.StandardError);
+            restoredResult = result;
+            return null;
+        }
+
+        return new PendingInvocation(this, request);
+    }
+
+    internal sealed class PendingInvocation
+    {
+        private readonly InvocationCache _cache;
+        private readonly InvocationCacheRequest _request;
+
+        internal List<string> StandardOutput { get; } = new();
+        internal List<string> StandardError { get; } = new();
+
+        internal PendingInvocation(InvocationCache cache, InvocationCacheRequest request)
+        {
+            _cache = cache;
+            _request = request;
+        }
+
+        internal InvocationResult Complete(int exitCode)
+        {
+            var result = new InvocationResult(exitCode, StandardOutput, StandardError);
+            if (exitCode == 0)
+                _cache.Store(_request.Key, _request.Outputs, StandardOutput, StandardError);
+
             return result;
-
-        result = execute();
-        if (result.ExitCode == 0 && !cache._log.HasLoggedErrors)
-            cache.Store(key, outputs, result.StandardOutput, result.StandardError);
-
-        return result;
+        }
     }
 
     internal bool TryRestore(string inputHash, InvocationOutputs outputs, DateTime outputTimestampUtc,
