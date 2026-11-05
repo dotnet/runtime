@@ -341,3 +341,48 @@ substitute offsets; marshaling copies the remaining fields by name.
 | `m_rightSideShouldCreateHelperThread` | `bool` | 103 | 79 |
 | `sizeof` | | 104 | 80 |
 
+### Startup
+
+#### Finding the control block
+
+Open the runtime's data target using the target architecture, byte order and
+pointer size. For cDAC, resolve `DotNetRuntimeContractDescriptor`. The
+[Debugger contract](https://github.com/dotnet/runtime/blob/bf500a0eea0ac203cba07587c29652474627cc6e/docs/design/datacontracts/Debugger.md)
+finds the DCB: the `Debugger` global points to `g_pDebugger`; dereference it,
+then follow `Debugger.RCThread` and `DebuggerRCThread.DCB`.
+
+Wait for nonzero `m_DCBSize`: the runtime publishes it last, after a memory
+barrier. Check the block's size and protocol before writing the debugger's
+fields.
+
+#### Startup release
+
+The startup handshake lets initialization proceed.
+
+| Path | Runtime action | When |
+| ---- | -------------- | ---- |
+| Windows ([NotifyDebuggerOfStartup](https://github.com/dotnet/runtime/blob/bf500a0eea0ac203cba07587c29652474627cc6e/src/coreclr/debug/ee/debugger.cpp#L1699)) | Create a manual-reset continue event (handle in engine metrics), signal the debugger's `TelestoStartupEvent_<8-digit hex PID>`, then wait for continue. | Before RC-thread/DCB initialization. |
+| Unix semaphores ([NotifyRuntimeUsingSemaphores](https://github.com/dotnet/runtime/blob/bf500a0eea0ac203cba07587c29652474627cc6e/src/coreclr/pal/src/thread/process.cpp#L795)) | Post `st`, then wait on `co`. | After DCB/transport initialization, outside the debugger lock. |
+| Unix startup pipes ([NotifyRuntimeUsingPipes](https://github.com/dotnet/runtime/blob/bf500a0eea0ac203cba07587c29652474627cc6e/src/coreclr/pal/src/thread/process.cpp#L671)) | Write byte `Started=1` to `st`, then read byte `Continue=2` from `co`. | [PAL_NotifyRuntimeStarted](https://github.com/dotnet/runtime/blob/bf500a0eea0ac203cba07587c29652474627cc6e/src/coreclr/pal/src/thread/process.cpp#L881) falls back to semaphores on `Disabled`, not `Failed`. |
+
+After initialization,
+[RaiseStartupNotification](https://github.com/dotnet/runtime/blob/bf500a0eea0ac203cba07587c29652474627cc6e/src/coreclr/debug/ee/debugger.cpp#L1730)
+sets `LeftSideInitialized`
+and, without transport, raises `DB_IPCE_LEFTSIDE_STARTUP`.
+
+#### Notifications
+
+A native notification is a continuable exception `0x04242420` with exactly
+three native-width `ULONG_PTR` slots:
+
+| Slot | Value |
+| ---- | ----- |
+| 0 | Cookie `0x31415927` (validation compares its low 32 bits). |
+| 1 | Runtime module base, identifying the CLR instance. |
+| 2 | Address of the `DebuggerIPCEvent`. |
+
+[IsEventDebuggerNotification](https://github.com/dotnet/runtime/blob/bf500a0eea0ac203cba07587c29652474627cc6e/src/coreclr/debug/shared/utils.cpp#L36)
+checks the module base; native debugging copies the target event.
+[InitEventForDebuggerNotification](https://github.com/dotnet/runtime/blob/bf500a0eea0ac203cba07587c29652474627cc6e/src/coreclr/debug/shared/utils.cpp#L93)
+creates the transport notification around a local event copy, without
+the module-base check.
