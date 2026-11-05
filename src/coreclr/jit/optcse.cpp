@@ -897,126 +897,8 @@ bool Compiler::optValnumCSE_Locate(CSE_HeuristicCommon* heuristic)
 
     optCSEstop();
 
-#ifdef TARGET_XARCH
-    optValnumCSE_ScreenMemoryUpdates();
-#endif
-
     return true;
 }
-
-#ifdef TARGET_XARCH
-//------------------------------------------------------------------------
-// GetMemoryUpdateOp: Is this load the source of an in-place memory update?
-//
-// Arguments:
-//    load - The GT_IND to check
-//
-// Return Value:
-//    The operator, if the load feeds one that has a memory-operand form
-//    (e.g. "add [mem], reg") whose result is stored back to the same address;
-//    otherwise nullptr.
-//
-static GenTree* GetMemoryUpdateOp(GenTree* load)
-{
-    if (!load->OperIs(GT_IND) || !varTypeIsIntegral(load))
-    {
-        return nullptr;
-    }
-
-    GenTree* op    = load->gtGetParent(nullptr);
-    GenTree* store = (op != nullptr) ? op->gtGetParent(nullptr) : nullptr;
-    if ((store == nullptr) || !store->OperIs(GT_STOREIND) || (store->AsStoreInd()->Data() != op))
-    {
-        return nullptr;
-    }
-
-    if (!op->OperIs(GT_NOT, GT_NEG) &&
-        (!op->OperIsBinary() || !op->OperIsRMWMemOp() || ((op->gtGetOp1() != load) && !op->OperIsCommutative())))
-    {
-        return nullptr;
-    }
-
-    // Match the address the way lowering does.
-    return GenTree::Compare(store->AsStoreInd()->Addr(), load->AsIndir()->Addr()) ? op : nullptr;
-}
-
-//------------------------------------------------------------------------
-// optValnumCSE_ScreenMemoryUpdates: Remove CSE occurrences that would block
-//    an in-place memory update.
-//
-// Notes:
-//    Replacing (or defining) the load in "*p = *p op x" with a CSE temp keeps
-//    its value in a register, which prevents lowering from using the
-//    memory-operand form of 'op'. Such loads are removed from their candidates
-//    after the candidates are located, so the remaining occurrences can still
-//    be CSE'd.
-//
-//    A load is kept if 'op' is itself a CSE candidate with another remaining
-//    occurrence: the result of 'op' then has other uses, so lowering could not
-//    use the memory-operand form anyway. Since removing a load can remove the
-//    only other occurrence of another load's 'op' (as in "*p &= a; *p |= b;"),
-//    this is iterated to a fixed point.
-//
-void Compiler::optValnumCSE_ScreenMemoryUpdates()
-{
-    ArrayStack<GenTree*> loads(getAllocator(CMK_CSE));
-    ArrayStack<GenTree*> ops(getAllocator(CMK_CSE));
-    ArrayStack<int>      indices(getAllocator(CMK_CSE));
-
-    for (unsigned inx = 0; inx < optCSECandidateCount; inx++)
-    {
-        for (treeStmtLst* lst = &optCSEtab[inx]->csdTreeList; lst != nullptr; lst = lst->tslNext)
-        {
-            GenTree* const tree = lst->tslTree;
-            GenTree* const op   = GetMemoryUpdateOp(tree);
-            if (op != nullptr)
-            {
-                loads.Push(tree);
-                ops.Push(op);
-                indices.Push(tree->gtCSEnum);
-                tree->gtCSEnum = NO_CSE;
-            }
-        }
-    }
-
-    bool changed = !loads.Empty();
-    while (changed)
-    {
-        changed = false;
-        for (int i = 0; i < loads.Height(); i++)
-        {
-            GenTree* const load = loads.Bottom(i);
-            GenTree* const op   = ops.Bottom(i);
-            if (IS_CSE_INDEX(load->gtCSEnum) || !IS_CSE_INDEX(op->gtCSEnum))
-            {
-                continue;
-            }
-
-            for (treeStmtLst* lst = &optCSEfindDsc(GET_CSE_INDEX(op->gtCSEnum))->csdTreeList; lst != nullptr;
-                 lst              = lst->tslNext)
-            {
-                if ((lst->tslTree != op) && IS_CSE_INDEX(lst->tslTree->gtCSEnum))
-                {
-                    load->gtCSEnum = (signed char)indices.Bottom(i);
-                    changed        = true;
-                    break;
-                }
-            }
-        }
-    }
-
-#ifdef DEBUG
-    for (int i = 0; i < loads.Height(); i++)
-    {
-        if (!IS_CSE_INDEX(loads.Bottom(i)->gtCSEnum))
-        {
-            JITDUMP("Removed " FMT_CSE " occurrence [%06u]: source of an in-place memory update\n", indices.Bottom(i),
-                    dspTreeID(loads.Bottom(i)));
-        }
-    }
-#endif
-}
-#endif // TARGET_XARCH
 
 /*****************************************************************************
  *
@@ -1102,12 +984,6 @@ void Compiler::optValnumCSE_InitDataFlow()
 
         while (lst != nullptr)
         {
-            if (!IS_CSE_INDEX(lst->tslTree->gtCSEnum))
-            {
-                lst = lst->tslNext;
-                continue;
-            }
-
             BasicBlock* block                = lst->tslBlock;
             unsigned    cseAvailBit          = getCSEAvailBit(CSEindex);
             unsigned    cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEindex);
