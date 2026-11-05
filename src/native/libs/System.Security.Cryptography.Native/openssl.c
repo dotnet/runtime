@@ -808,7 +808,8 @@ int32_t CryptoNative_CheckX509IpAddress(
 
     if (!success)
     {
-        // Match Windows: DNS SAN entries take precedence over CN, without wildcard matching for IP literals.
+        // Windows compatibility: match the IP literal as text against DNS SANs,
+        // falling back to CN only when no DNS SANs exist. Disable wildcard matching.
         success = X509_check_host(x509, hostname, (size_t)cchHostname, X509_CHECK_FLAG_NO_WILDCARDS, NULL);
     }
 
