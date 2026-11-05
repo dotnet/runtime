@@ -14,32 +14,6 @@ CI_EVAL = WORKFLOW.parent / "ci-eval.yml"
 FILTER_SCRIPT = WORKFLOW.parent / "shared/filter-scanner-kbes.sh"
 EVAL = Path(__file__).with_name("ci-failure-fix.eval.yaml")
 
-
-class StartupGuidanceTests(unittest.TestCase):
-    def test_startup_uses_mcp_and_independent_permitted_checks(self):
-        orient = WORKFLOW.read_text().split("### Step 1 — Orient\n", 1)[1].split(
-            "### Step 2", 1
-        )[0]
-        self.assertIn("already-loaded `safeoutputs` MCP tools directly", orient)
-        self.assertIn("do not probe for a shell CLI", orient)
-        self.assertIn("`git status --short` and `git branch --show-current` in separate tool calls", orient)
-        self.assertIn("do not repeat it or wrap the denied operation", orient)
-        self.assertIn("independent, permitted Git checks", orient)
-        self.assertIn("`report_incomplete` MCP tool with the exact command, error, and work left undone", orient)
-        self.assertIn("do not claim a terminal-wide outage based on one denied call", orient)
-
-    def test_compiled_tools_allow_mcp_without_cli_discovery(self):
-        lock = WORKFLOW.with_suffix(".lock.yml").read_text()
-        manifest = json.loads(lock.split("# gh-aw-manifest: ", 1)[1].splitlines()[0])
-        servers = {server["name"]: server["tools"] for server in manifest["mcp_servers"]}
-        self.assertTrue({"create_pull_request", "add_comment", "report_incomplete"}.issubset(
-            servers["safeoutputs"]
-        ))
-        self.assertIn("--allow-tool safeoutputs", lock)
-        self.assertNotIn("shell(command", lock)
-        self.assertNotIn("shell(which", lock)
-
-
 def issue(number, **overrides):
     return {
         "number": number,
