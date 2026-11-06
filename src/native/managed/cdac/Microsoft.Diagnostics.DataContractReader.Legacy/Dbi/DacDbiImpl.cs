@@ -2220,7 +2220,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     private byte[] GetCurrentContextBytes(IStackDataFrameHandle handle)
     {
         IStackWalk sw = _target.Contracts.StackWalk;
-        byte[] context = sw.GetRawContext(handle);
+        byte[] context = sw.GetRawContext(handle).ToArray();
 
         // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L184
         RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
@@ -2229,7 +2229,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IPlatformAgnosticContext stripped = IPlatformAgnosticContext.GetContextForPlatform(_target);
             stripped.FillFromBuffer(context);
             stripped.RawContextFlags &= ~0x40u;
-            context = stripped.GetBytes();
+            context = stripped.GetBytes().ToArray();
         }
         return context;
     }

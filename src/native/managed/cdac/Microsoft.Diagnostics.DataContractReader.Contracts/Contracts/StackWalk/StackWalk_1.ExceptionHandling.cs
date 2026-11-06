@@ -109,7 +109,7 @@ internal partial class StackWalk_1 : IStackWalk
 
         // The funclet frame we are searching for in the fresh walk
         TargetPointer targetSP = funclet.Context.StackPointer;
-        byte[] seed = funclet.Context.GetBytes();
+        byte[] seed = funclet.Context.GetBytes().ToArray();
 
         bool foundTarget = false;
         TargetPointer skipTo = TargetPointer.Null;
