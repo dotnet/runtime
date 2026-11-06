@@ -285,7 +285,9 @@ public class Test
         UTF8StringTests.EmptyStringTest();
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.Is64BitProcess), nameof(TestLibrary.PlatformDetection.IsCoreCLR))]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.Is64BitProcess))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123529", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [SkipOnMono("Mono sizes the native buffer from Capacity + 1 bytes, which cannot overflow")]
     [OuterLoop]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void StringBuilderNativeBufferSizeOverflow()

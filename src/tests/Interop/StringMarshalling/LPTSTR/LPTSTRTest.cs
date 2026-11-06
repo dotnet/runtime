@@ -48,7 +48,7 @@ public class LPTStrTest
         Assert.True(Verify_NullTerminators_PastEnd_Out(nullTerminatorBuilder, length));
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.Is64BitProcess), nameof(TestLibrary.PlatformDetection.IsCoreCLR))]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.Is64BitProcess))]
     public static void StringBuilderNativeBufferSizeOverflow()
     {
         // The native buffer for a UTF-16 StringBuilder is Capacity * 2 + 4 bytes,
