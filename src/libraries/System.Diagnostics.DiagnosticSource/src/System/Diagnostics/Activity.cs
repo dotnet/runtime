@@ -1143,7 +1143,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// SetCustomProperty allow attaching any custom object to this Activity object.
-        /// If the property name was previously associated with other object, SetCustomProperty will update to use the new propert value instead.
+        /// If the property name was previously associated with other object, SetCustomProperty will update to use the new property value instead.
         /// </summary>
         /// <param name="propertyName"> The name to associate the value with.<see cref="OperationName"/></param>
         /// <param name="propertyValue">The object to attach and map to the property name.</param>
