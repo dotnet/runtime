@@ -16,27 +16,27 @@
                       ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmEmitProducersObject"
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmEmitProducersSource"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))" />
 
-  <Target Name="GenerateBrowserWasmProducersObject"
+  <Target Name="GenerateBrowserWasmProducersSource"
           BeforeTargets="AddRuntimeFilesToPackage"
           DependsOnTargets="ResolveProjectReferences"
           Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))">
     <PropertyGroup>
-      <_BrowserWasmProducersObject>$(IntermediateOutputPath)dotnet-producers.o</_BrowserWasmProducersObject>
+      <_BrowserWasmProducersSource>$(IntermediateOutputPath)dotnet-producers.s</_BrowserWasmProducersSource>
     </PropertyGroup>
-    <WasmEmitProducersObject
-        OutputPath="$(_BrowserWasmProducersObject)"
+    <WasmEmitProducersSource
+        OutputPath="$(_BrowserWasmProducersSource)"
         RuntimeName="$(RuntimeFlavor)"
         ProductVersion="$(Version)" />
     <ItemGroup>
-      <RuntimeFiles Include="$(_BrowserWasmProducersObject)" IsNative="true" />
-      <FileWrites Include="$(_BrowserWasmProducersObject)" />
+      <RuntimeFiles Include="$(_BrowserWasmProducersSource)" IsNative="true" />
+      <FileWrites Include="$(_BrowserWasmProducersSource)" />
     </ItemGroup>
-    <Copy SourceFiles="$(_BrowserWasmProducersObject)"
+    <Copy SourceFiles="$(_BrowserWasmProducersSource)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
   </Target>

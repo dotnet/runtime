@@ -12,42 +12,42 @@
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(UsingNativeAOT)' == 'true' and '$(EMSDK_PATH)' != ''" />
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.InTree.CI.targets" Condition="'$(ContinuousIntegrationBuild)' == 'true'" />
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmEmitProducersObject"
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmEmitProducersSource"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(UsingNativeAOT)' != 'true'" />
 
-  <Target Name="_BrowserWasmEmitProducersObject"
+  <Target Name="_BrowserWasmEmitProducersSource"
           BeforeTargets="_BrowserWasmWriteRspForLinking"
-          Condition="'$(RuntimeFlavor)' == 'Mono' and '$(WasmEmitProducersSection)' != 'false' and !Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.o')">
+          Condition="'$(RuntimeFlavor)' == 'Mono' and '$(WasmEmitProducersSection)' != 'false' and !Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s')">
     <PropertyGroup>
       <WasmEmitProducersSection>true</WasmEmitProducersSection>
       <_WasmEmitProducersSection>true</_WasmEmitProducersSection>
-      <_WasmProducersObjectPath>$(_WasmIntermediateOutputPath)dotnet-producers.o</_WasmProducersObjectPath>
+      <_WasmProducersSourcePath>$(_WasmIntermediateOutputPath)dotnet-producers.s</_WasmProducersSourcePath>
     </PropertyGroup>
-    <WasmEmitProducersObject
-        OutputPath="$(_WasmProducersObjectPath)"
+    <WasmEmitProducersSource
+        OutputPath="$(_WasmProducersSourcePath)"
         RuntimeName="Mono"
         ProductVersion="$(ProductVersion)" />
     <ItemGroup>
-      <FileWrites Include="$(_WasmProducersObjectPath)" />
+      <FileWrites Include="$(_WasmProducersSourcePath)" />
     </ItemGroup>
   </Target>
 
-  <Target Name="_CoreCLREmitProducersObject"
+  <Target Name="_CoreCLREmitProducersSource"
           BeforeTargets="_CoreCLRWriteLinkRsp"
-          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmEmitProducersSection)' != 'false' and !Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.o')">
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmEmitProducersSection)' != 'false' and !Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s')">
     <PropertyGroup>
       <WasmEmitProducersSection>true</WasmEmitProducersSection>
       <_WasmEmitProducersSection>true</_WasmEmitProducersSection>
-      <_WasmProducersObjectPath>$(_WasmIntermediateOutputPath)dotnet-producers.o</_WasmProducersObjectPath>
+      <_WasmProducersSourcePath>$(_WasmIntermediateOutputPath)dotnet-producers.s</_WasmProducersSourcePath>
     </PropertyGroup>
-    <WasmEmitProducersObject
-        OutputPath="$(_WasmProducersObjectPath)"
+    <WasmEmitProducersSource
+        OutputPath="$(_WasmProducersSourcePath)"
         RuntimeName="CoreCLR"
         ProductVersion="$(ProductVersion)" />
     <ItemGroup>
-      <FileWrites Include="$(_WasmProducersObjectPath)" />
+      <FileWrites Include="$(_WasmProducersSourcePath)" />
     </ItemGroup>
   </Target>
 

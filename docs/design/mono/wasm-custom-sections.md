@@ -48,9 +48,9 @@ Behavior:
 The `producers` section records the toolchain. Per the spec it must appear at most once. `wasm-ld`
 already **merges** the `producers` sections found in its input objects (clang/LLVM contribute
 `language`/`processed-by` automatically). `wasm-ld` has no command-line option to inject additional
-`producers` entries, so each .NET 12+ browser runtime pack ships a tiny **relocatable wasm object**
-whose only meaningful content is a `producers` custom section. Native relinks hand that object to
-`wasm-ld`, which merges it with the rest while keeping the section single. .NET contributes:
+`producers` entries, so each .NET 12+ browser runtime pack ships a tiny **WebAssembly assembly
+source** defining a `producers` custom section. Native relinks hand that source to Emscripten, which
+assembles it before `wasm-ld` merges it with the rest while keeping the section single. .NET contributes:
 
 - `language`: `C#`
 - `processed-by`: the runtime name (`Mono` or `CoreCLR`) with the product version
@@ -64,17 +64,16 @@ single section merged by `wasm-ld` through Emscripten's post-link processing.
 
 ## Implementation
 
-- `src/tasks/Microsoft.NET.WebAssembly.Webcil/WasmCustomSectionWriter.cs` – a reusable managed writer.
-  `WriteProducersObject` emits a minimal relocatable wasm object (module header + an empty `linking`
-  section that marks it as an object + the `producers` custom section).
-- `src/tasks/WasmAppBuilder/WasmEmitProducersObject.cs` – the MSBuild task wrapping the writer. The
-  .NET 12+ Mono and CoreCLR browser runtime-pack builds use it to create their flavor-specific
-  `dotnet-producers.o`.
+- `src/coreclr/tools/Common/Wasm/WasmCustomSectionWriter.cs` – a reusable managed writer for Webcil,
+  R2R Webcil, and build-ID stamping.
+- `src/tasks/WasmAppBuilder/WasmEmitProducersSource.cs` – emits the flavor- and version-specific
+  `dotnet-producers.s` assembly source. Labels let the assembler encode string lengths without
+  duplicating WebAssembly object-file logic in managed code.
 - `src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.props` – packages the
-  prebuilt producer object under `runtimes/browser-wasm/native`.
-- Full repo builds generate an intermediate fallback while linking the prebuilt Mono/CoreCLR
+  producer source under `runtimes/browser-wasm/native`.
+- Full repo builds generate an intermediate source while linking the prebuilt Mono/CoreCLR
   browser runtime, which runs before the runtime pack is assembled. Application relinks consume the
-  shipped runtime-pack object.
+  shipped runtime-pack source.
 - `src/tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/WasmStampBuildId.cs` – copies the selected
   native module to a project-local path and replaces or appends its `build_id`.
 - MSBuild wiring:

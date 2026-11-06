@@ -18,7 +18,7 @@ namespace Wasm.Build.NativeRebuild.Tests
     //   - emitted into every webcil module (independent of native re-link).
     //
     // Workload-free cases validate managed stamping of the runtime-pack binary. Native re-link cases
-    // run in workload lanes and also validate that wasm-ld accepts the producers object and Emscripten preserves it.
+    // run in workload lanes and also validate that Emscripten assembles the producers source and preserves it.
     [TestCategory("native")]
     public class WasmMetadataSectionsTests : NativeRebuildTestsBase
     {
@@ -168,7 +168,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [TestCategory("no-workload")]
         [Fact]
-        public void RuntimePack_ContainsPrebuiltProducersObject()
+        public void RuntimePack_ContainsProducersAssemblySource()
         {
             string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
             string runtimePackName = IsCoreClrRuntime
@@ -179,12 +179,16 @@ namespace Wasm.Build.NativeRebuild.Tests
                 $"{runtimePackName}.{runtimePackVersion}.nupkg");
 
             using ZipArchive package = ZipFile.OpenRead(packagePath);
-            ZipArchiveEntry? entry = package.GetEntry("runtimes/browser-wasm/native/dotnet-producers.o");
+            ZipArchiveEntry? entry = package.GetEntry("runtimes/browser-wasm/native/dotnet-producers.s");
             Assert.NotNull(entry);
-            using Stream stream = entry.Open();
-            using var buffer = new MemoryStream(checked((int)entry.Length));
-            stream.CopyTo(buffer);
-            AssertProducers(buffer.ToArray(), NativeRuntimeProducer);
+            using var reader = new StreamReader(entry.Open());
+            string source = reader.ReadToEnd();
+            Assert.Contains(".section .custom_section.producers", source);
+            Assert.Contains(".ascii \"C#\"", source);
+            Assert.Contains($".ascii \"{NativeRuntimeProducer}\"", source);
+            Assert.Contains(".ascii \".NET\"", source);
+            Assert.Contains($".ascii \"{runtimePackVersion}\"", source);
+            Assert.Null(package.GetEntry("runtimes/browser-wasm/native/dotnet-producers.o"));
         }
 
         // -------------------- helpers --------------------

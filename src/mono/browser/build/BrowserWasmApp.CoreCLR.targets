@@ -470,7 +470,7 @@
 
       <_WasmIntermediateOutputPath Condition="'$(WasmBuildingForNestedPublish)' != 'true'">$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm', 'for-build'))</_WasmIntermediateOutputPath>
       <_WasmIntermediateOutputPath Condition="'$(WasmBuildingForNestedPublish)' == 'true'">$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm', 'for-publish'))</_WasmIntermediateOutputPath>
-      <_WasmProducersObjectPath>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.o</_WasmProducersObjectPath>
+      <_WasmProducersSourcePath>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.s</_WasmProducersSourcePath>
 
       <_WasmCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_WasmCompileRsp>
       <_WasmCompileRspGenerated>$(_WasmIntermediateOutputPath)emcc-compile-generated.rsp</_WasmCompileRspGenerated>
@@ -824,8 +824,8 @@
   <Target Name="_CoreCLRWriteLinkRsp"
           DependsOnTargets="GenerateEmccExports">
 
-    <Error Condition="'$(_WasmEmitProducersSection)' == 'true' and !Exists('$(_WasmProducersObjectPath)')"
-           Text="The browser runtime pack is missing '$(_WasmProducersObjectPath)'." />
+    <Error Condition="'$(_WasmEmitProducersSection)' == 'true' and !Exists('$(_WasmProducersSourcePath)')"
+           Text="The browser runtime pack is missing '$(_WasmProducersSourcePath)'." />
 
     <PropertyGroup>
       <_EmccExportedRuntimeMethods>"[BROWSER_HOST,@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
@@ -934,9 +934,10 @@
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />
 
-      <!-- Emscripten strips producers by default. Preserve the section that wasm-ld merges from this object. -->
+      <!-- Emscripten strips producers by default. Assemble the source and preserve the section wasm-ld merges from it. -->
+      <_EmccLinkStepArgs Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="-Wno-unused-command-line-argument" />
       <_EmccLinkStepArgs Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="-sEMIT_PRODUCERS_SECTION=1" />
-      <_EmccLinkStepArgs Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="&quot;$(_WasmProducersObjectPath)&quot;" />
+      <_EmccLinkStepArgs Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="&quot;$(_WasmProducersSourcePath)&quot;" />
     </ItemGroup>
 
     <!-- Collect all link dependencies for incremental build -->
@@ -944,7 +945,7 @@
       <_WasmLinkDependencies Include="@(_WasmNativeFileForLinking)" />
       <_WasmLinkDependencies Include="@(_CoreCLRNativeLibs)" />
       <_WasmLinkDependencies Include="@(_CoreCLRJsLibrary)" />
-      <_WasmLinkDependencies Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="$(_WasmProducersObjectPath)" />
+      <_WasmLinkDependencies Condition="'$(_WasmEmitProducersSection)' == 'true'" Include="$(_WasmProducersSourcePath)" />
       <_WasmLinkDependencies Include="$(_WasmLinkRsp)" />
     </ItemGroup>
 
