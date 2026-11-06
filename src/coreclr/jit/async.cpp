@@ -3858,19 +3858,19 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
     *remainder = m_compiler->fgSplitBlockAfterNode(block, lastNode);
     JITDUMP("  Remainder is " FMT_BB "\n", (*remainder)->bbNum);
 
-    // For non-inlined calls adjust offset for the split. We have the exact
+    // When debug info is available, adjust the offset for the split. We have the exact
     // offset of the await call, so we can do better than
     // fgSplitBlockAfterNode. The previous block contains the call so add 1 to
     // include its start offset (the IL offsets are only used for range checks
     // in the backend, so having the offset be inside an IL instruction is ok.)
     DebugInfo di = call->GetAsyncInfo().CallAsyncDebugInfo.GetRoot();
-    DebugInfo par;
-    if (!di.GetParent(&par))
+    if (di.IsValid())
     {
-        // Optimization may leave block ranges that no longer cover the await.
+        // Scope tracking requires ordered ranges with a shared split boundary.
         IL_OFFSET awaitOffset    = di.GetLocation().GetOffset();
-        block->bbCodeOffsEnd     = max(block->bbCodeOffs, awaitOffset + 1);
-        (*remainder)->bbCodeOffs = min(awaitOffset + 1, (*remainder)->bbCodeOffsEnd);
+        IL_OFFSET splitOffset    = min(max(awaitOffset + 1, block->bbCodeOffs), (*remainder)->bbCodeOffsEnd);
+        block->bbCodeOffsEnd     = splitOffset;
+        (*remainder)->bbCodeOffs = splitOffset;
     }
 
     if (alwaysSuspends)
