@@ -667,12 +667,7 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 
     UINT stackSizeDelta;
 
-#ifdef UNIX_X86_ABI
-    // Stack does not shrink as UNIX_X86_ABI uses CDECL (instead of STDCALL).
-    stackSizeDelta = 0;
-#else
     stackSizeDelta = stackSizeSrc - stackSizeDst;
-#endif
 
     INT ofsSrc, ofsDst;
 
