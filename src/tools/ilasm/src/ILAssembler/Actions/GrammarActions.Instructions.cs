@@ -226,7 +226,12 @@ internal sealed partial class GrammarActions
 
         Span<byte> utf8Bytes = new byte[byteCount];
         Encoding.UTF8.GetBytes(value, utf8Bytes);
-        EmitStringInstruction(opcodeToken, new string(MemoryMarshal.Cast<byte, char>(utf8Bytes)));
+#if NETFRAMEWORK
+        string text = MemoryMarshal.Cast<byte, char>(utf8Bytes).ToString();
+#else
+        string text = new string(MemoryMarshal.Cast<byte, char>(utf8Bytes));
+#endif
+        EmitStringInstruction(opcodeToken, text);
     }
 
     internal void EmitRawTokenInstruction(IToken opcodeToken, IToken valueToken)
