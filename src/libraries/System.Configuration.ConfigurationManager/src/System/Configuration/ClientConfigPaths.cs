@@ -22,6 +22,8 @@ namespace System.Configuration
         private const string StrongNameDesc = "StrongName";
         private const string UrlDesc = "Url";
         private const string PathDesc = "Path";
+        private const string BundleIdentifierDesc = "BundleIdentifier";
+        private const string PackageFamilyNameDesc = "PackageFamilyName";
 
         private static ClientConfigPaths s_current;
         private static volatile bool s_currentIncludesUserConfig;
@@ -142,9 +144,21 @@ namespace System.Configuration
             string applicationUriLower = !string.IsNullOrEmpty(ApplicationUri)
                 ? ApplicationUri.ToLowerInvariant()
                 : null;
-            string hashSuffix = GetTypeAndHashSuffix(applicationUriLower, isSingleFile);
+            GetStableApplicationIdentity(out string stableIdentityType, out string stableIdentity);
+            string hashSuffix = GetApplicationIdentitySuffix(
+                applicationUriLower,
+                isSingleFile,
+                stableIdentityType,
+                stableIdentity);
             string part2 = !string.IsNullOrEmpty(namePrefix) && !string.IsNullOrEmpty(hashSuffix)
                 ? namePrefix + hashSuffix
+                : null;
+            LegacyConfigDirectoryPrefix = !string.IsNullOrEmpty(stableIdentity) &&
+                !string.IsNullOrEmpty(namePrefix)
+                ? namePrefix + "_"
+                : null;
+            StableConfigDirectoryName = LegacyConfigDirectoryPrefix is not null
+                ? part2
                 : null;
 
             // (3) The product version
@@ -191,6 +205,10 @@ namespace System.Configuration
 
         internal string ProductVersion { get; private set; }
 
+        internal string LegacyConfigDirectoryPrefix { get; }
+
+        internal string StableConfigDirectoryName { get; }
+
         internal static ClientConfigPaths GetPaths(string exePath, bool includeUserConfig)
         {
             ClientConfigPaths result;
@@ -228,6 +246,58 @@ namespace System.Configuration
             catch
             {
                 return null;
+            }
+        }
+
+        internal static string GetApplicationIdentitySuffix(
+            string exePath,
+            bool isSingleFile,
+            string stableIdentityType,
+            string stableIdentity)
+        {
+            if (!string.IsNullOrEmpty(stableIdentityType) && !string.IsNullOrEmpty(stableIdentity))
+            {
+                try
+                {
+                    string hash = IdentityHelper.GetStrongHashSuitableForObjectName(stableIdentity);
+                    return "_" + stableIdentityType + "_" + hash;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                }
+            }
+
+            return GetTypeAndHashSuffix(exePath, isSingleFile);
+        }
+
+        private static void GetStableApplicationIdentity(out string identityType, out string identity)
+        {
+            if (IsAlwaysSandboxedAppleMobile())
+            {
+                identityType = BundleIdentifierDesc;
+                identity = AppleApplication.GetMainBundleIdentifier();
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                identityType = PackageFamilyNameDesc;
+                try
+                {
+                    identity = WindowsApplication.GetCurrentPackageFamilyName();
+                }
+                catch (EntryPointNotFoundException)
+                {
+                    identity = null;
+                }
+            }
+            else
+            {
+                identityType = null;
+                identity = null;
+            }
+
+            if (string.IsNullOrEmpty(identity))
+            {
+                identityType = null;
             }
         }
 
@@ -285,6 +355,13 @@ namespace System.Configuration
 
             if (!string.IsNullOrEmpty(hash)) suffix = "_" + typeName + "_" + hash;
             return suffix;
+        }
+
+        private static bool IsAlwaysSandboxedAppleMobile()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS")) ||
+                (RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) &&
+                !RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST")));
         }
 
         private void SetNamesAndVersion(Assembly exeAssembly, bool isHttp)
