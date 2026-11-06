@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers.X86;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
@@ -112,7 +113,8 @@ public unsafe class GCInfoTests
         Assert.Equal(0, header.PSPSymStackSlot);
         Assert.Equal(hasSpecialSlots ? 1 : 0, header.GenericsInstContextIsPresent);
         Assert.Equal(hasSpecialSlots ? -32 : 0, header.GenericsInstContextStackSlot);
-        Assert.Equal((uint)contextKind, header.GenericsInstContextKind);
+        Assert.Equal(contextKind == GenericsContextKind.MethodDesc ? 1u :
+            contextKind == GenericsContextKind.MethodHandle ? 2u : 0u, header.GenericsInstContextKind);
     }
 
     [Theory]
@@ -271,6 +273,259 @@ public unsafe class GCInfoTests
         uint needed = 0;
         Assert.Equal(HResults.COR_E_INVALIDOPERATION, sos.GetGCInfoSlotLifetimes(MethodIP, 1, result, &needed));
         Assert.Equal(123, result[0].SpOffset);
+    }
+
+    [Theory]
+    [InlineData(4u, false)]
+    [InlineData(5u, false)]
+    [InlineData(4u, true)]
+    [InlineData(5u, true)]
+    public void X86RegisterLifetimesPreserveLiveInteriorFlags(uint version, bool survives)
+    {
+        byte[] stream = survives ? [0xBF, 0x49, 0xFF] : [0xBF, 0x49, 0x0B, 0xFF];
+        (IGCInfo gcInfo, IGCInfoHandle handle, _) = CreateX86GCInfo([64, 0x81, 0x40, .. stream], version);
+        GCSlotLifetime slot = Assert.Single(gcInfo.GetSlotLifetimes(handle));
+        Assert.Equal(new GCSlotLifetime(true, 1, 0, 0, 1, 1, survives ? 64u : 4u), slot);
+    }
+
+    [Theory]
+    [InlineData(4u)]
+    [InlineData(5u)]
+    public void X86PointerLocationsFollowPushPopAndKill(uint version)
+    {
+        (IGCInfo gcInfo, IGCInfoHandle handle, _) = CreateX86GCInfo(
+            [64, 0x81, 0x40, 0x81, 0xB1, 0xC9, 0xC9, 0xFF], version);
+        IReadOnlyList<GCSlotLifetime> slots = gcInfo.GetSlotLifetimes(handle);
+        Assert.Equal(new GCSlotLifetime[]
+        {
+            new(false, 0, 0, 1, 0, 1, 2),
+            new(false, 0, 4, 1, 0, 2, 3),
+            new(false, 0, 0, 1, 0, 3, 4),
+        }, slots);
+
+        (gcInfo, handle, _) = CreateX86GCInfo(
+            [64, 0x81, 0x40, 0x81, 0xBF, 0x89, 0xB8, 1, 0xFD, 1, 0xFF], version);
+        slots = gcInfo.GetSlotLifetimes(handle);
+        Assert.Contains(new GCSlotLifetime(false, 0, 0, 1, 1, 2, 3), slots);
+        Assert.Contains(new GCSlotLifetime(false, 0, 4, 1, 0, 2, 64), slots);
+        Assert.Equal(4, Assert.Single(gcInfo.EnumerateLiveSlots(handle, 3, new() { IsActiveFrame = true })).SpOffset);
+    }
+
+    [Theory]
+    [InlineData(4u)]
+    [InlineData(5u)]
+    public void X86UntrackedLocationsAreSplitWithoutLosingFlags(uint version)
+    {
+        // Frame size 2, one untracked local at SP+0, then one non-pointer push/pop.
+        (IGCInfo gcInfo, IGCInfoHandle handle, _) = CreateX86GCInfo(
+            [64, 0x81, 0x82, 0xB8, 0x40, 0, 0xB1, 0xC9, 0xFF], version);
+        Assert.Equal(new GCSlotLifetime[]
+        {
+            new(false, 0, 0, 1, 4, 0, 1),
+            new(false, 0, 4, 1, 4, 1, 2),
+            new(false, 0, 0, 1, 4, 2, 64),
+        }, gcInfo.GetSlotLifetimes(handle));
+    }
+
+    [Theory]
+    [InlineData(4u)]
+    [InlineData(5u)]
+    public void X86CallSitesHaveRegisterAndArgumentRoots(uint version)
+    {
+        // EBP frame, one byref EDI and byref argument at SP+0 at offset 3.
+        (_, _, SOSDacImpl impl) = CreateX86GCInfo(
+            [64, 0x81, 0xBE, 0x3F, 0xF9, 3, 0x21, 0x21, 0xFF], version);
+        ISOSDacInterface18 sos = impl;
+        uint needed;
+        Assert.Equal(HResults.S_OK, sos.GetGCInfoInterruptibleRanges(MethodIP, 0, null, &needed));
+        Assert.Equal(0u, needed);
+        uint[] safePoints = new uint[1];
+        Assert.Equal(HResults.S_OK, sos.GetGCInfoSafePoints(MethodIP, 1, safePoints, &needed));
+        Assert.Equal(3u, Assert.Single(safePoints));
+        SOSGCSlotLifetime[] slots = new SOSGCSlotLifetime[2];
+        Assert.Equal(HResults.S_OK, sos.GetGCInfoSlotLifetimes(MethodIP, 2, slots, &needed));
+        Assert.Equal(2u, needed);
+        Assert.Contains(slots, s => s.IsRegister == 1 && s.RegisterNumber == 7 && s.GcFlags == 1);
+        Assert.Contains(slots, s => s.IsRegister == 0 && s.SpOffset == 0 && s.BaseRegister == 0 && s.GcFlags == 1);
+        Assert.All(slots, s =>
+        {
+            Assert.Equal(3u, s.BeginOffset);
+            Assert.Equal(4u, s.EndOffset);
+        });
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void X86InterfaceExposesHeaderEpilogsAndTransitions(int count)
+    {
+        (_, _, SOSDacImpl impl) = CreateX86GCInfo([64, 0x81, 0x40, 0xB1, 0xC9, 0xFF], 5);
+        ISOSDacInterface19 sos = impl;
+        SOSGCInfoX86Header header = new() { SizeOf = (uint)sizeof(SOSGCInfoX86Header) };
+        Assert.Equal(HResults.S_OK, sos.GetGCInfoX86Header(MethodIP, &header));
+        Assert.Equal(1u, header.EpilogSize);
+        Assert.Equal(1u, header.EpilogCount);
+        Assert.Equal(5u, header.Flags);
+        uint needed;
+        uint[]? epilogs = count == 0 ? null : new uint[count];
+        SOSGCInfoX86Transition[]? transitions = count == 0 ? null : new SOSGCInfoX86Transition[count];
+        Assert.Equal(count < 1 ? HResults.S_FALSE : HResults.S_OK,
+            sos.GetGCInfoX86Epilogs(MethodIP, (uint)count, epilogs, &needed));
+        Assert.Equal(1u, needed);
+        Assert.Equal(count < 2 ? HResults.S_FALSE : HResults.S_OK,
+            sos.GetGCInfoX86Transitions(MethodIP, (uint)count, transitions, &needed));
+        Assert.Equal(2u, needed);
+        if (count >= 1)
+            Assert.Equal(63u, epilogs.AsSpan()[0]);
+        if (count >= 2)
+        {
+            Assert.Equal(4, transitions.AsSpan()[0].StackDepthChange);
+            Assert.Equal(-4, transitions.AsSpan()[1].StackDepthChange);
+        }
+        Assert.Equal(HResults.E_POINTER, sos.GetGCInfoX86Header(MethodIP, null));
+        Assert.Equal(HResults.E_POINTER, sos.GetGCInfoX86Transitions(MethodIP, 0, null, null));
+        Assert.Equal(HResults.E_INVALIDARG, sos.GetGCInfoX86Transitions(MethodIP, 1, null, &needed));
+        Assert.Equal(0u, needed);
+
+        void* process = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
+        try
+        {
+            Guid iid = typeof(ISOSDacInterface19).GUID;
+            Assert.Equal(HResults.S_OK, Marshal.QueryInterface((nint)process, in iid, out nint x86));
+            try
+            {
+                void** vtable = *(void***)x86;
+                header.SizeOf = (uint)sizeof(SOSGCInfoX86Header);
+                Assert.Equal(HResults.S_OK,
+                    ((delegate* unmanaged[MemberFunction]<nint, ClrDataAddress, SOSGCInfoX86Header*, int>)vtable[3])(x86, MethodIP, &header));
+                Assert.Equal(5u, header.Flags);
+                uint* offsets = stackalloc uint[1];
+                Assert.Equal(HResults.S_OK,
+                    ((delegate* unmanaged[MemberFunction]<nint, ClrDataAddress, uint, uint*, uint*, int>)vtable[4])
+                        (x86, MethodIP, 1, offsets, &needed));
+                Assert.Equal(63u, offsets[0]);
+                SOSGCInfoX86Transition* raw = stackalloc SOSGCInfoX86Transition[2];
+                Assert.Equal(HResults.S_OK,
+                    ((delegate* unmanaged[MemberFunction]<nint, ClrDataAddress, uint, SOSGCInfoX86Transition*, uint*, int>)vtable[5])
+                        (x86, MethodIP, 2, raw, &needed));
+                Assert.Equal(2u, needed);
+                Assert.Equal(4, raw[0].StackDepthChange);
+                Assert.Equal(-4, raw[1].StackDepthChange);
+            }
+            finally
+            {
+                Marshal.Release(x86);
+            }
+        }
+        finally
+        {
+            ComInterfaceMarshaller<IXCLRDataProcess>.Free(process);
+        }
+    }
+
+    [Theory]
+    [InlineData(4u, true)]
+    [InlineData(5u, true)]
+    [InlineData(4u, false)]
+    [InlineData(5u, false)]
+    public void X86HugeCallRootsAndReceiverMetadataRemainAvailable(uint version, bool ebpFrame)
+    {
+        byte[] encoded = ebpFrame
+            ? [64, 0x81, 0xBE, 0x3F, 0x20, 0xFB, 0x11,
+                3, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 5, 0xFF]
+            : [64, 1, 0xF5, 0xF8, 0x11,
+                3, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 5, 0xFF];
+        (IGCInfo contract, IGCInfoHandle handle, _) = CreateX86GCInfo(encoded, version);
+        IReadOnlyList<GCSlotLifetime> slots = contract.GetSlotLifetimes(handle);
+        Assert.Equal(3, slots.Count);
+        Assert.Contains(new GCSlotLifetime(true, 7, 0, 0, 1, 3, 4), slots);
+        Assert.Contains(new GCSlotLifetime(false, 0, 0, 1, 0, 3, 4), slots);
+        Assert.Contains(new GCSlotLifetime(false, 0, 4, 1, 1, 3, 4), slots);
+        X86GCTransition receiver = Assert.Single(contract.GetX86Transitions(handle),
+            t => t.Kind == X86GCTransitionKind.ThisRegister);
+        Assert.Equal(6u, receiver.RegisterNumber);
+        Assert.Equal(4u, receiver.Flags);
+    }
+
+    [Theory]
+    [InlineData(4u)]
+    [InlineData(5u)]
+    public void X86EbpPointerIndicesCanHaveGaps(uint version)
+    {
+        (IGCInfo contract, IGCInfoHandle handle, _) = CreateX86GCInfo(
+            [64, 0x81, 0xBE, 0xBF, 0x40, 0x91, 0xBF, 0xA1, 0xC9, 0xFF], version);
+        Assert.Equal(new GCSlotLifetime[]
+        {
+            new(false, 0, -20, 2, 1, 2, 3),
+            new(false, 0, -12, 2, 0, 1, 64),
+        }, contract.GetSlotLifetimes(handle));
+        Assert.Equal(new LiveSlot(false, 0, -12, 2, 0),
+            Assert.Single(contract.EnumerateLiveSlots(handle, 3, new() { IsActiveFrame = true })));
+        Assert.All(contract.GetX86Transitions(handle), t => Assert.Equal(0, t.StackDepthChange));
+    }
+
+    [Theory]
+    [InlineData(4u)]
+    [InlineData(5u)]
+    public void X86InterruptibilityExcludesExplicitNoGCRegions(uint version)
+    {
+        byte countEncoding = version >= 5 ? (byte)9 : (byte)5;
+        (IGCInfo contract, IGCInfoHandle handle, _) = CreateX86GCInfo(
+            [64, 0x81, 0xC0, 0x4F, countEncoding, 2, 8, 4, 0xFF], version);
+        Assert.Equal(new InterruptibleRange[] { new(0, 8), new(12, 64) },
+            contract.GetInterruptibleRanges(handle));
+        Assert.False(contract.IsGcSafe(handle, 8));
+        Assert.True(contract.IsGcSafe(handle, 12));
+    }
+
+    private static (IGCInfo Contract, IGCInfoHandle Handle, SOSDacImpl Impl) CreateX86GCInfo(byte[] encoded, uint version)
+    {
+        TestPlaceholderTarget.Builder builder = new(new() { IsLittleEndian = true, Is64Bit = false });
+        const ulong GCInfoAddress = 0x20000;
+        builder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = GCInfoAddress,
+            Data = encoded,
+            Name = "X86 GCInfo",
+        });
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(RuntimeInfoArchitecture.X86);
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x30000));
+        TargetPointer address = new(GCInfoAddress);
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(MethodIP))).Returns(codeBlock);
+        executionManager.Setup(e => e.GetCodeKind(new TargetCodePointer(MethodIP))).Returns(CodeKind.Jitted);
+        executionManager.Setup(e => e.GetGCInfo(codeBlock, out address, out version));
+        Target target = builder.AddMockContract(runtimeInfo).AddMockContract(executionManager)
+            .AddContract<IGCInfo>("c1").Build();
+        IGCInfo contract = target.Contracts.GCInfo;
+        return (contract, contract.DecodePlatformSpecificGCInfo(address, version), new SOSDacImpl(target, null, new()));
+    }
+
+    [Fact]
+    public void X86InterfaceRejectsUnsupportedDecoderAndInitializesOutputs()
+    {
+        ISOSDacInterface18 common = CreateGCInfoInterface(
+            new() { IsLittleEndian = true, Is64Bit = true }, CodeKind.Interpreter, (_, gcInfo, handle) =>
+            {
+                gcInfo.Setup(g => g.GetX86Header(handle)).Throws(new PlatformNotSupportedException());
+                gcInfo.Setup(g => g.GetX86Epilogs(handle)).Throws(new PlatformNotSupportedException());
+                gcInfo.Setup(g => g.GetX86Transitions(handle)).Throws(new PlatformNotSupportedException());
+            });
+        ISOSDacInterface19 sos = Assert.IsAssignableFrom<ISOSDacInterface19>(common);
+        SOSGCInfoX86Header header = new() { SizeOf = (uint)sizeof(SOSGCInfoX86Header), Flags = uint.MaxValue };
+        Assert.Equal(HResults.E_NOTIMPL, sos.GetGCInfoX86Header(MethodIP, &header));
+        Assert.Equal(0u, header.Flags);
+        uint needed = uint.MaxValue;
+        Assert.Equal(HResults.E_NOTIMPL, sos.GetGCInfoX86Epilogs(MethodIP, 0, null, &needed));
+        Assert.Equal(0u, needed);
+        needed = uint.MaxValue;
+        Assert.Equal(HResults.E_NOTIMPL, sos.GetGCInfoX86Transitions(MethodIP, 0, null, &needed));
+        Assert.Equal(0u, needed);
+        header.SizeOf--;
+        Assert.Equal(HResults.E_INVALIDARG, sos.GetGCInfoX86Header(MethodIP, &header));
     }
 
     private static ISOSDacInterface18 CreateGCInfoInterface(

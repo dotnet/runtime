@@ -34,7 +34,7 @@ public sealed unsafe partial class SOSDacImpl
     : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
       ISOSDacInterface6, ISOSDacInterface7, ISOSDacInterface8, ISOSDacInterface9, ISOSDacInterface10,
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
-      ISOSDacInterface16, ISOSDacInterface17, ISOSDacInterface18
+      ISOSDacInterface16, ISOSDacInterface17, ISOSDacInterface18, ISOSDacInterface19
 {
     private const uint DefaultAppDomainId = 1;
 
@@ -7640,7 +7640,12 @@ public sealed unsafe partial class SOSDacImpl
                 PSPSymStackSlot = info.PSPSym?.SpOffset ?? 0,
                 GenericsInstContextIsPresent = info.GenericsInstContext.HasValue ? 1 : 0,
                 GenericsInstContextStackSlot = info.GenericsInstContext?.SpOffset ?? 0,
-                GenericsInstContextKind = (uint)info.GenericsInstContextKind,
+                GenericsInstContextKind = info.GenericsInstContextKind switch
+                {
+                    GenericsContextKind.MethodDesc => 1,
+                    GenericsContextKind.MethodHandle => 2,
+                    _ => 0,
+                },
             };
         }
         catch (System.Exception ex)
@@ -7666,6 +7671,10 @@ public sealed unsafe partial class SOSDacImpl
 
             (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
             IReadOnlyList<InterruptibleRange> info = gcInfo.GetInterruptibleRanges(handle);
+            // The X86 contract also exposes call-site ranges for stack walking.
+            // Interface18 has a separate safe-point table; those are not interruptible regions.
+            if (handle is Contracts.GCInfoHelpers.X86.X86GCInfo { Header.Interruptible: false })
+                info = Array.Empty<InterruptibleRange>();
             *pNeeded = (uint)info.Count;
             if (count < *pNeeded)
                 return HResults.S_FALSE;
@@ -7768,6 +7777,121 @@ public sealed unsafe partial class SOSDacImpl
         }
 
         return hr;
+    }
+
+    int ISOSDacInterface19.GetGCInfoX86Header(ClrDataAddress ip, SOSGCInfoX86Header* header)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        try
+        {
+            if (header is null)
+                return HResults.E_POINTER;
+            if (header->SizeOf < (uint)sizeof(SOSGCInfoX86Header))
+                return HResults.E_INVALIDARG;
+            *header = new() { SizeOf = (uint)sizeof(SOSGCInfoX86Header) };
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            X86GCInfoHeader info = gcInfo.GetX86Header(handle);
+            *header = new()
+            {
+                SizeOf = (uint)sizeof(SOSGCInfoX86Header),
+                EpilogSize = info.EpilogSize,
+                EpilogCount = info.EpilogCount,
+                SavedRegisters = info.SavedRegisters,
+                Flags = info.Flags,
+                ArgumentSize = info.ArgumentSize,
+                FrameSize = info.FrameSize,
+                UntrackedCount = info.UntrackedCount,
+                VarPtrTableSize = info.VarPtrTableSize,
+                SyncStartOffset = info.SyncStartOffset,
+                SyncEndOffset = info.SyncEndOffset,
+                NoGCRegionCount = info.NoGCRegionCount,
+                ArgumentTableOffset = info.ArgumentTableOffset,
+                ReturnKind = info.ReturnKind,
+                ReversePInvokeOffset = info.ReversePInvokeOffset,
+            };
+            return HResults.S_OK;
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return HResults.E_NOTIMPL;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
+    int ISOSDacInterface19.GetGCInfoX86Epilogs(ClrDataAddress ip, uint count, uint[]? offsets, uint* pNeeded)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+            *pNeeded = 0;
+            if (count > (uint)(offsets?.Length ?? 0))
+                return HResults.E_INVALIDARG;
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            IReadOnlyList<uint> info = gcInfo.GetX86Epilogs(handle);
+            *pNeeded = (uint)info.Count;
+            if (count < *pNeeded)
+                return HResults.S_FALSE;
+            Span<uint> output = offsets.AsSpan();
+            for (int i = 0; i < info.Count; i++)
+                output[i] = info[i];
+            return HResults.S_OK;
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return HResults.E_NOTIMPL;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
+    int ISOSDacInterface19.GetGCInfoX86Transitions(
+        ClrDataAddress ip, uint count, SOSGCInfoX86Transition[]? transitions, uint* pNeeded)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+            *pNeeded = 0;
+            if (count > (uint)(transitions?.Length ?? 0))
+                return HResults.E_INVALIDARG;
+            (IGCInfo gcInfo, IGCInfoHandle handle) = GetGCInfoForAddress(ip);
+            IReadOnlyList<X86GCTransition> info = gcInfo.GetX86Transitions(handle);
+            *pNeeded = (uint)info.Count;
+            if (count < *pNeeded)
+                return HResults.S_FALSE;
+            Span<SOSGCInfoX86Transition> output = transitions.AsSpan();
+            for (int i = 0; i < info.Count; i++)
+            {
+                X86GCTransition transition = info[i];
+                output[i] = new()
+                {
+                    CodeOffset = transition.CodeOffset,
+                    Kind = (uint)transition.Kind,
+                    StackDepthChange = transition.StackDepthChange,
+                    RegisterNumber = transition.RegisterNumber,
+                    ArgumentOffset = transition.ArgumentOffset,
+                    Count = transition.Count,
+                    Flags = transition.Flags,
+                };
+            }
+            return HResults.S_OK;
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return HResults.E_NOTIMPL;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
     }
 
     private (IGCInfo Contract, IGCInfoHandle Handle) GetGCInfoForAddress(ClrDataAddress ip)
