@@ -408,7 +408,6 @@ convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 convert_to_absolute_path(VXSORT_SOURCES ${VXSORT_SOURCES})
 convert_to_absolute_path(DUMMY_VXSORT_SOURCES ${DUMMY_VXSORT_SOURCES})
 
-# Configure these children before applying helper-specific definitions and include paths.
 if(FEATURE_PERFTRACING)
   add_subdirectory(eventpipe)
 endif()
@@ -432,7 +431,7 @@ else()
     add_definitions(-DFEATURE_RX_THUNKS)
   endif()
 
-  if(CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64))
+  if(CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_HOST_ARCH_ARM64)
     # Needed to include AsmOffsets.inc
     include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR})
     preprocess_files(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
@@ -597,7 +596,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif()
 
 add_custom_command(
-  # The AsmOffsets.cs is consumed later by the managed build.
+  # AsmOffsets.cs is consumed later by the managed build.
   TARGET Runtime.WorkstationGC
   POST_BUILD
   COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS}
