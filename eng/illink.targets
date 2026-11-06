@@ -231,9 +231,14 @@
                              Condition="$([System.String]::Copy('%(AdditionalProperties)').StartsWith('TargetFramework=$(NetCoreAppCurrent)'))" />
     </ItemGroup>
 
-    <!-- The flavor isn't necessarily the one the project reference built, so make sure it is up to date. -->
+    <!-- The flavor isn't necessarily the one the project reference built, so make sure it is up to date. Build is
+         invoked separately as its outputs aren't part of the closure. -->
     <MSBuild Projects="@(_ILLinkBestInnerBuild)"
-             Targets="Build;GetILLinkImplementationClosure"
+             Targets="Build"
+             Condition="'$(IsCrossTargetingBuild)' == 'true'" />
+
+    <MSBuild Projects="@(_ILLinkBestInnerBuild)"
+             Targets="GetILLinkImplementationClosure"
              SkipNonexistentTargets="true"
              Condition="'$(IsCrossTargetingBuild)' == 'true'">
       <Output TaskParameter="TargetOutputs" ItemName="_ILLinkImplementationClosureForTargetOS" />
@@ -285,8 +290,9 @@
          implementations can be propagated. -->
     <PropertyGroup>
       <!-- The implementations (and their constants) are those of the TargetOS being built, so only use them
-           for flavors which run on that OS. -->
+           for flavors which run on that OS, and not for packable libraries whose assets run on any OS. -->
       <_ILLinkUseImplementationReferences Condition="'$(IsNETCoreAppSrc)' == 'true' and
+                                                     '$(IsPackable)' != 'true' and
                                                      ('$(TargetPlatformIdentifier)' == '' or
                                                       '$(TargetPlatformIdentifier)' == '$(TargetOS)' or
                                                       ('$(TargetPlatformIdentifier)' == 'unix' and '$(TargetsUnix)' == 'true') or
