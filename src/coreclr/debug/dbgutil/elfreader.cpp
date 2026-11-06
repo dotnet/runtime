@@ -350,7 +350,7 @@ ElfReader<Types>::HasMuslDependency(uint64_t loadbias, Elf_Dyn* dynamicAddr, uin
         if (offset >= stringSize) {
             return false;
         }
-        std::string name;
+        uint64_t nameOffset = offset;
         for (; offset < stringSize; offset++)
         {
             char ch;
@@ -359,15 +359,22 @@ ElfReader<Types>::HasMuslDependency(uint64_t loadbias, Elf_Dyn* dynamicAddr, uin
             }
             if (ch == '\0')
             {
-                if (name.size() > sizeof(MuslPrefix) + sizeof(MuslSuffix) - 2 &&
-                    name.compare(0, sizeof(MuslPrefix) - 1, MuslPrefix) == 0 &&
-                    name.compare(name.size() - (sizeof(MuslSuffix) - 1), sizeof(MuslSuffix) - 1, MuslSuffix) == 0) {
-                    *hasMuslDependency = true;
-                    return true;
+                if (offset - nameOffset > sizeof(MuslPrefix) + sizeof(MuslSuffix) - 2)
+                {
+                    char prefix[sizeof(MuslPrefix) - 1];
+                    char suffix[sizeof(MuslSuffix) - 1];
+                    if (!ReadMemory((void*)(stringAddress + nameOffset), prefix, sizeof(prefix)) ||
+                        !ReadMemory((void*)(stringAddress + offset - sizeof(suffix)), suffix, sizeof(suffix))) {
+                        return false;
+                    }
+                    if (memcmp(prefix, MuslPrefix, sizeof(prefix)) == 0 &&
+                        memcmp(suffix, MuslSuffix, sizeof(suffix)) == 0) {
+                        *hasMuslDependency = true;
+                        return true;
+                    }
                 }
                 break;
             }
-            name.append(1, ch);
         }
         if (offset == stringSize) {
             return false;
