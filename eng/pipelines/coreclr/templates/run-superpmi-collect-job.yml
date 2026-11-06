@@ -121,19 +121,11 @@ jobs:
 
     - ${{ if eq(parameters.collectionName, 'libraries') }}:
       # Crossgen2 collections targeting browser/wasm compile the browser-wasm CoreCLR
-      # runtime pack rather than the host Core_Root. InputDirectory is the runtime pack
-      # RID directory; superpmi_collect_setup.py flattens lib/<tfm>/*.dll together with
-      # native/System.Private.CoreLib.dll into the assembly set to collect over.
-      - ${{ if eq(parameters.targetArch, 'wasm') }}:
-        - ${{ if eq(parameters.osGroup, 'windows') }}:
-          - name: InputDirectory
-            value: '$(Build.SourcesDirectory)\artifacts\bin\microsoft.netcore.app.runtime.browser-wasm\Release\runtimes\browser-wasm'
-        - ${{ if ne(parameters.osGroup, 'windows') }}:
-          - name: InputDirectory
-            value: '$(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/runtimes/browser-wasm'
-      - ${{ if ne(parameters.targetArch, 'wasm') }}:
-        - name: InputDirectory
-          value: '$(Core_Root_Dir)'
+      # runtime pack (see TargetRuntimePackCLIArg below) together with the non-framework
+      # managed assemblies at the top level of Core_Root, which superpmi_collect_setup.py
+      # stages in place of InputDirectory.
+      - name: InputDirectory
+        value: '$(Core_Root_Dir)'
     - ${{ if eq(parameters.collectionName, 'benchmarks') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
@@ -148,7 +140,11 @@ jobs:
         value: '$(Core_Root_Dir)'
     - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
       - name: InputDirectory
-        value: '$(managedTestArtifactRootFolderPath)'
+        # Cross-target crossgen2 collections over the coreclr tests compile just the JIT tests.
+        ${{ if eq(parameters.targetArch, 'wasm') }}:
+          value: '$(managedTestArtifactRootFolderPath)/JIT'
+        ${{ else }}:
+          value: '$(managedTestArtifactRootFolderPath)'
     - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
       - name: InputDirectory
         value: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
@@ -159,6 +155,16 @@ jobs:
     - name: PublicQueuesCLIArg
       ${{ if ne(variables['System.TeamProject'], 'internal') }}:
         value: '-public_queues'
+      ${{ else }}:
+        value: ''
+
+    # Crossgen2 collections targeting browser/wasm compile against (and, for the libraries
+    # collection, over) the managed assemblies of the browser-wasm CoreCLR runtime pack.
+    - name: TargetRuntimePackCLIArg
+      ${{ if and(eq(parameters.targetArch, 'wasm'), eq(parameters.osGroup, 'windows')) }}:
+        value: '-target_runtime_pack_directory $(Build.SourcesDirectory)\artifacts\bin\microsoft.netcore.app.runtime.browser-wasm\Release\runtimes\browser-wasm'
+      ${{ elseif eq(parameters.targetArch, 'wasm') }}:
+        value: '-target_runtime_pack_directory $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/runtimes/browser-wasm'
       ${{ else }}:
         value: ''
 
@@ -173,7 +179,7 @@ jobs:
       displayName: Enable python venv
       condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -release_core_root_directory $(Release_Core_Root_Dir) -arch $(archType) -platform $(osGroup) -target_os $(TargetOSForCollection) -target_arch $(TargetArchForCollection) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) $(PublicQueuesCLIArg) -max_size ${{ parameters.maxPartitionSizeMB }} # size in MB
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -release_core_root_directory $(Release_Core_Root_Dir) -arch $(archType) -platform $(osGroup) -target_os $(TargetOSForCollection) -target_arch $(TargetArchForCollection) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) $(PublicQueuesCLIArg) $(TargetRuntimePackCLIArg) -max_size ${{ parameters.maxPartitionSizeMB }} # size in MB
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
     # Create required directories for merged mch collection and superpmi logs

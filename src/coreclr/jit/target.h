@@ -41,10 +41,6 @@ inline bool compFeatureArgSplit()
     return TargetArchitecture::IsLoongArch64 || TargetArchitecture::IsArm32 || TargetArchitecture::IsRiscV64 ||
            (TargetOS::IsWindows && TargetArchitecture::IsArm64);
 }
-inline bool compUnixX86Abi()
-{
-    return TargetArchitecture::IsX86 && TargetOS::IsUnix;
-}
 
 /*****************************************************************************/
 // The following are human readable names for the target architectures

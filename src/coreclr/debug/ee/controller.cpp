@@ -1601,7 +1601,6 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
         //
         // !!! IL patch logic assumes reference insruction encoding
         //
-#ifndef TARGET_UNIX
         DWORD oldProt;
 
         if (!VirtualProtect((void *) patch->address, 2,
@@ -1614,13 +1613,6 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
                 return false;
             }
         }
-#else // TARGET_UNIX
-        if (!MakePatchMemoryWritable((void*)patch->address, 2))
-        {
-            _ASSERTE(!"ProtectMemory of code page failed");
-            return false;
-        }
-#endif // TARGET_UNIX
 
         patch->opcode =
           (unsigned int) *(unsigned short*)(patch->address+1);
@@ -1630,15 +1622,11 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
         ExecutableWriterHolder<BYTE> breakpointWriterHolder((BYTE*)patch->address, 2);
         *(unsigned short *) (breakpointWriterHolder.GetRW()+1) = CEE_BREAK;
 
-#ifndef TARGET_UNIX
         if (!VirtualProtect((void *) patch->address, 2, oldProt, &oldProt))
         {
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
-#else // TARGET_UNIX
-        // No oldProt to restore to on Unix; see MakePatchMemoryWritable comment above.
-#endif // TARGET_UNIX
     }
 #endif //TARGET_X86
 

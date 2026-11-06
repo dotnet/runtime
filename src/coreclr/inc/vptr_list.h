@@ -39,7 +39,7 @@ VPTR_CLASS(CLRToCOMStubManager)
 #ifdef FEATURE_VARARGS
 VPTR_CLASS(InteropDispatchStubManager)
 #endif
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
 VPTR_CLASS(TailCallStubManager)
 #endif
 VPTR_CLASS(AsyncThunkStubManager)
