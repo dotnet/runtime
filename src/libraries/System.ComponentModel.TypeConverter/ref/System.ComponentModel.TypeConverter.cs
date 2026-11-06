@@ -1347,7 +1347,9 @@ namespace System.ComponentModel
         public string? ConvertToString(object? value) { throw null; }
         public object? CreateInstance(System.Collections.IDictionary propertyValues) { throw null; }
         public virtual object? CreateInstance(System.ComponentModel.ITypeDescriptorContext? context, System.Collections.IDictionary propertyValues) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         protected System.Exception GetConvertFromException(object? value) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         protected System.Exception GetConvertToException(object? value, System.Type destinationType) { throw null; }
         public bool GetCreateInstanceSupported() { throw null; }
         public virtual bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }

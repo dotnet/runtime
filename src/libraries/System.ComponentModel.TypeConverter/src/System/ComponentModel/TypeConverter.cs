@@ -57,7 +57,7 @@ namespace System.ComponentModel
             {
                 return instanceDescriptor.Invoke();
             }
-            throw GetConvertFromException(value);
+            throw CreateConvertFromException(value);
         }
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace System.ComponentModel
                 }
                 return value.ToString();
             }
-            throw GetConvertToException(value, destinationType);
+            throw CreateConvertToException(value, destinationType);
         }
 
         /// <summary>
@@ -187,22 +187,33 @@ namespace System.ComponentModel
         public virtual object? CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues) => null;
 
         /// <summary>
-        /// Gets a suitable exception to throw when a conversion cannot be performed.
+        /// Throws a <see cref="NotSupportedException"/> when a conversion cannot be performed.
         /// </summary>
+        [DoesNotReturn]
         protected Exception GetConvertFromException(object? value)
         {
-            string? valueTypeName = value == null ? (SR.UsingResourceKeys() ? "(null)" : SR.Null) : value.GetType().FullName;
-            throw new NotSupportedException(SR.Format(SR.ConvertFromException, GetType().Name, valueTypeName));
+            throw CreateConvertFromException(value);
         }
 
         /// <summary>
-        /// Retrieves a suitable exception to throw when a conversion cannot
-        /// be performed.
+        /// Throws a <see cref="NotSupportedException"/> when a conversion cannot be performed.
         /// </summary>
+        [DoesNotReturn]
         protected Exception GetConvertToException(object? value, Type destinationType)
         {
-            string? valueTypeName = value == null ? (SR.UsingResourceKeys() ? "(null)" : SR.Null) : value.GetType().FullName;
-            throw new NotSupportedException(SR.Format(SR.ConvertToException, GetType().Name, valueTypeName, destinationType.FullName));
+            throw CreateConvertToException(value, destinationType);
+        }
+
+        private Exception CreateConvertFromException(object? value)
+        {
+            string? valueTypeName = value is null ? (SR.UsingResourceKeys() ? "(null)" : SR.Null) : value.GetType().FullName;
+            return new NotSupportedException(SR.Format(SR.ConvertFromException, GetType().Name, valueTypeName));
+        }
+
+        private Exception CreateConvertToException(object? value, Type destinationType)
+        {
+            string? valueTypeName = value is null ? (SR.UsingResourceKeys() ? "(null)" : SR.Null) : value.GetType().FullName;
+            return new NotSupportedException(SR.Format(SR.ConvertToException, GetType().Name, valueTypeName, destinationType.FullName));
         }
 
         /// <summary>
