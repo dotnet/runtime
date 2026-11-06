@@ -149,7 +149,6 @@ public:
 
     FCDECL0(static INT64,   GetTotalPauseDuration);
     FCDECL2(static void,    GetMemoryInfo, Object* objUNSAFE, int kind);
-    FCDECL0(static UINT32,  GetMemoryLoad);
     FCDECL0(static int,     GetGcLatencyMode);
     FCDECL1(static int,     SetGcLatencyMode, int newLatencyMode);
     FCDECL0(static int,     GetLOHCompactionMode);
