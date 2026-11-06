@@ -1813,6 +1813,21 @@ constexpr unsigned ROOT_FUNC_IDX = 0;
 
 class emitLocation;
 
+#if defined(TARGET_AMD64)
+// Unwind Information V3 for a function or funclet. Like the V1 codes in FuncInfoDsc, the prolog
+// WODs and their IP offsets are filled from the end of their arrays backwards, which leaves them
+// in the reverse execution order V3 requires. Maximum of 31 prolog WODs, each at most the size of
+// WOD_ALLOC_HUGE; the JIT emits at most 24 (see "Limits" in unwindamd64.cpp).
+struct UnwindInfoV3
+{
+    UNWIND_INFO_V3 header;
+    BYTE           wods[UNWIND_INFO_V3_MAX_OPS * sizeof(WOD_ALLOC_HUGE)];
+    unsigned       wodSlot;
+    BYTE           ipOffsets[UNWIND_INFO_V3_MAX_OPS];
+    unsigned       ipOffsetSlot;
+};
+#endif // TARGET_AMD64
+
 struct FuncInfoDsc
 {
     FuncKind       funKind;
@@ -1866,6 +1881,9 @@ struct FuncInfoDsc
     // number of codes, the VM or Zapper will 4-byte align the whole thing.
     BYTE     unwindCodes[offsetof(UNWIND_INFO, UnwindCode) + (0xFF * sizeof(UNWIND_CODE))];
     unsigned unwindCodeSlot;
+
+    // Unwind Information V3, allocated by unwindBegPrologV3; nullptr unless V3 is used.
+    UnwindInfoV3* unwindV3;
 
 #elif defined(TARGET_X86)
 
@@ -6675,7 +6693,10 @@ public:
     void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
 
     // Compute exceptions for a division operation
-    ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper, GenTree* dividend, GenTree* divisor);
+    ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper,
+                                                 GenTree*   dividend,
+                                                 GenTree*   divisor,
+                                                 var_types  simdBaseType = TYP_UNDEF);
 
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);
@@ -7026,6 +7047,7 @@ public:
     PhaseStatus fgWasmVirtualIP();
     PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
+    PhaseStatus fgWasmProfInstrument();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();
@@ -7339,7 +7361,6 @@ private:
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
     bool fgAddrCouldBeHeap(GenTree* addr);
-    void fgAssignSetVarDef(GenTree* tree);
 
 private:
     GenTree* fgMorphFieldAddr(GenTree* tree);
@@ -9213,23 +9234,23 @@ public:
             return dsc;
         }
 
-        // Create a no-throw bounds check assertion: idxVN u< lenVN where lenVN is never negative
-        // Effectively, this means "idxVN is in range [0, lenVN)".
-        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp, ValueNum idxVN, ValueNum lenVN)
+        // Create a no-throw bounds check assertion: idxVN u< lenVN
+        // When lenVN is never negative, this means "idxVN is in range [0, lenVN)".
+        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp,
+                                                ValueNum        idxVN,
+                                                ValueNum        lenVN,
+                                                bool            isLenNeverNegative)
         {
             assert(idxVN != ValueNumStore::NoVN);
             assert(lenVN != ValueNumStore::NoVN);
 
-            AssertionDsc dsc    = CreateEmptyAssertion(comp);
-            dsc.m_assertionKind = OAK_LT_UN;
-            dsc.m_op1.m_kind    = O1K_VN;
-            dsc.m_op1.m_vn      = idxVN;
-            dsc.m_op2.m_kind    = O2K_VN_ADD_CNS;
-            dsc.m_op2.m_vn      = lenVN;
-
-            // Normally, the VN of an O2K_VN_ADD_CNS assertion isn't proven non-negative, but
-            // in this particular case we know it is (it's a length).
-            dsc.m_op2.m_isVNNeverNegative = true;
+            AssertionDsc dsc              = CreateEmptyAssertion(comp);
+            dsc.m_assertionKind           = OAK_LT_UN;
+            dsc.m_op1.m_kind              = O1K_VN;
+            dsc.m_op1.m_vn                = idxVN;
+            dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
+            dsc.m_op2.m_vn                = lenVN;
+            dsc.m_op2.m_isVNNeverNegative = isLenNeverNegative;
             dsc.m_op2.m_icon.m_iconVal    = 0;
             return dsc;
         }
@@ -10193,6 +10214,14 @@ private:
     void unwindAllocStackWindows(unsigned size);
     void unwindSetFrameRegWindows(regNumber reg, unsigned offset);
     void unwindSaveRegWindows(regNumber reg, unsigned offset);
+
+    void  unwindBegPrologV3();
+    BYTE* unwindAllocWodV3(FuncInfoDsc* func, unsigned size);
+    void  unwindPushV3(regNumber reg);
+    void  unwindPush2V3(regNumber reg1, regNumber reg2);
+    void  unwindAllocStackV3(unsigned size);
+    void  unwindSetFrameRegV3(regNumber reg, unsigned offset);
+    void  unwindSaveRegV3(regNumber reg, unsigned offset);
 
 #ifdef UNIX_AMD64_ABI
     void unwindSaveRegCFI(regNumber reg, unsigned offset);

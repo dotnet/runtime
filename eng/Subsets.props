@@ -190,6 +190,7 @@
     <_subset>$(_subset.Replace('+host+', '+$(DefaultHostSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+packs+', '+$(DefaultPacksSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+bootstrap+', '+bootstrap+$(BootstrapSubsets)+'))</_subset>
+    <_subset Condition="'$(SdkToolsSupported)' == 'true'">$(_subset.Replace('+clr.tools+', '+clr.tools+tools.ilasm+'))</_subset>
     <_subset Condition="'$(TargetOS)' == 'browser'">$(_subset.Replace('+clr.runtime+', '+provision.emsdk+clr.corelib+clr.runtime+'))</_subset>
 
     <!-- Surround _subset in dashes to simplify checks below -->
@@ -266,7 +267,7 @@
     <SubsetName Include="Tools.CdacTests" OnDemand="true" Description="Unit tests for the diagnostic data contract reader." />
     <SubsetName Include="Tools.CdacDumpTests" OnDemand="true" Description="Dump-based integration tests for the diagnostic data contract reader." />
     <SubsetName Include="Tools.CdacStressTests" OnDemand="true" Description="Stress integration tests for the diagnostic data contract reader." />
-    <SubsetName Include="Tools.ILAsm" OnDemand="true" Description="Build only the managed ilasm tool." />
+    <SubsetName Include="Tools.ILAsm" OnDemand="true" Description="Build and package the ilasm tool." />
 
     <!-- Host -->
     <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests. Equivalent to: $(DefaultHostSubsets)" />
@@ -508,7 +509,6 @@
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
-    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
@@ -603,6 +603,23 @@
   <ItemGroup Condition="$(_subset.Contains('+tools.ilasm+'))">
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ILAssembler\ILAssembler.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\tests\ILAssembler.Tests\ILAssembler.Tests.csproj" Category="tools" Test="true" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm_inbuild.csproj"
+                    Condition="'$(BuildHostILTools)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'"
+                    Category="tools" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.Package.csproj"
+                    Category="tools" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+clr.packages+')) and !$(_subset.Contains('+tools.ilasm+')) and ('$(RuntimeFlavor)' != 'CoreCLR' or '$(SdkToolsSupported)' != 'true')">
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj"
+                    Condition="'$(SdkToolsSupported)' == 'true'"
+                    Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.Package.csproj"
+                    Category="clr" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm_inbuild.csproj"
+                    Condition="'$(BuildHostILTools)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'"
+                    Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">

@@ -2647,9 +2647,10 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
 //
 void AsyncTransformation::HandleReusedSuspension(BasicBlock* callBlock, GenTreeCall* call)
 {
-    static const WellKnownArg argsToRemove[] = {WellKnownArg::AsyncAwaiter, WellKnownArg::AsyncResumedUse,
-                                                WellKnownArg::AsyncResumedDef, WellKnownArg::AsyncExecutionContext,
-                                                WellKnownArg::AsyncSynchronizationContext};
+    call->GetAsyncInfo().DefinesResumedIndicator = false;
+    static const WellKnownArg argsToRemove[]     = {WellKnownArg::AsyncAwaiter, WellKnownArg::AsyncResumedUse,
+                                                    WellKnownArg::AsyncResumedDef, WellKnownArg::AsyncExecutionContext,
+                                                    WellKnownArg::AsyncSynchronizationContext};
     for (WellKnownArg wka : argsToRemove)
     {
         // These can be duplicated: general async inlining adds one set of context args
@@ -3976,9 +3977,17 @@ void AsyncTransformation::CreateResumption(BasicBlock*                      call
         storeResultBB = RethrowExceptionOnResumption(callBlock, layout, resumeBB);
     }
 
-    if ((call->gtReturnType != TYP_VOID) && (callDefInfo.DefinitionNode != nullptr))
+    if (call->gtReturnType != TYP_VOID)
     {
-        CopyReturnValueOnResumption(call, callDefInfo, layout, storeResultBB);
+        const ReturnInfo* retInfo = layout.FindReturn(m_compiler, call);
+        assert(retInfo != nullptr);
+
+        if (callDefInfo.DefinitionNode != nullptr)
+        {
+            CopyReturnValueOnResumption(call, callDefInfo, retInfo, storeResultBB);
+        }
+
+        ClearReturnValueOnResumption(retInfo, storeResultBB);
     }
 }
 
@@ -4072,6 +4081,7 @@ void AsyncTransformation::StoreResumedDef(BasicBlock* callBlock, GenTreeCall* ca
 
     LIR::AsRange(callBlock).Remove(resumedDef);
     call->gtArgs.RemoveUnsafe(resumedDefArg);
+    call->GetAsyncInfo().DefinesResumedIndicator = false;
 }
 
 //------------------------------------------------------------------------
@@ -4206,22 +4216,19 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
 //------------------------------------------------------------------------
 // AsyncTransformation::CopyReturnValueOnResumption:
 //   Create IR that copies the return value from the continuation object to the
-//   right local. When continuations may be reused, also clears out any GC
-//   references in the return value from the continuation afterwards.
+//   right local.
 //
 // Parameters:
 //   call          - The async call.
 //   callDefInfo   - Information about the async call's definition.
-//   layout        - Layout information for the continuation object.
+//   retInfo       - Information about the return value in the continuation.
 //   storeResultBB - Basic block to append IR to.
 //
 void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              call,
                                                       const CallDefinitionInfo& callDefInfo,
-                                                      const ContinuationLayout& layout,
+                                                      const ReturnInfo*         retInfo,
                                                       BasicBlock*               storeResultBB)
 {
-    const ReturnInfo* retInfo = layout.FindReturn(m_compiler, call);
-    assert(retInfo != nullptr);
     GenTree* resultBase   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
     unsigned resultOffset = OFFSETOF__CORINFO_Continuation__data + retInfo->Offset;
 
@@ -4306,26 +4313,22 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
 
         LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResult));
     }
-
-    ClearReturnValueOnResumption(retInfo, resultOffset, storeResultBB);
 }
 
 //------------------------------------------------------------------------
 // AsyncTransformation::ClearReturnValueOnResumption:
 //   Create IR that clears out any GC references in the return value from the
-//   continuation object. This is used after the return value has been copied
-//   out to ensure that a reused continuation does not keep those references
-//   alive.
+//   continuation object after the return value has been copied out or discarded
+//   to ensure that a reused continuation does not keep those references alive.
 //
 // Parameters:
 //   retInfo       - Information about the return value in the continuation.
-//   resultOffset  - Offset of the return value from the start of the continuation object.
 //   storeResultBB - Basic block to append IR to.
 //
-void AsyncTransformation::ClearReturnValueOnResumption(const ReturnInfo* retInfo,
-                                                       unsigned          resultOffset,
-                                                       BasicBlock*       storeResultBB)
+void AsyncTransformation::ClearReturnValueOnResumption(const ReturnInfo* retInfo, BasicBlock* storeResultBB)
 {
+    unsigned resultOffset = OFFSETOF__CORINFO_Continuation__data + retInfo->Offset;
+
     auto clearGCRef = [=](unsigned offset, var_types type) {
         GenTree* base  = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
         GenTree* zero  = m_compiler->gtNewZeroConNode(type);
@@ -4859,6 +4862,7 @@ GenTreeLclVarCommon* AsyncTransformation::FindAndRemoveCommonAsyncResumedDef()
         CallArg* arg = state.Call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
         LIR::AsRange(state.CallBlock).Remove(arg->GetNode());
         state.Call->gtArgs.RemoveUnsafe(arg);
+        state.Call->GetAsyncInfo().DefinesResumedIndicator = false;
     }
 
     return commonDef;

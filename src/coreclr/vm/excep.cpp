@@ -4074,8 +4074,7 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
 //
 // Updated to be in its own code segment named CLR_UEF_SECTION_NAME to prevent
 // "VirtualProtect" calls from affecting its pages and thus, its
-// invocation. For details, see the comment within the implementation of
-// ClrVirtualProtect.
+// invocation.
 //
 // Parameters
 //   pExceptionInfo -- information about the exception
