@@ -17,6 +17,7 @@ extern "C"
 //   write_thread_context: optional callback that sets the context of a thread in the target process (may be NULL)
 //   alloc_virtual: optional callback that allocates memory in the target process (may be NULL)
 //   read_context: a context pointer that will be passed to callbacks
+//   data_target: optional debugger data target used to recover missing metadata
 //   handle: returned opaque the handle to the reader. This should be passed to other functions in this API.
 int cdac_reader_init(
     uint64_t descriptor,
@@ -26,6 +27,7 @@ int cdac_reader_init(
     int(*write_thread_context)(uint32_t, uint32_t, const uint8_t*, void*),
     int(*alloc_virtual)(uint32_t, uint64_t*, void*),
     void* read_context,
+    IUnknown* data_target,
     /*out*/ intptr_t* handle);
 
 // Free the cDAC reader

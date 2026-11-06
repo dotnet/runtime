@@ -39,6 +39,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     private readonly TargetPointer _runtimeImageBase;
 
     private DataTargetDelegates _dataTargetDelegates;
+    private MetadataMemoryCache? _metadataMemoryCache;
 
     private readonly List<Descriptor> _descriptors = [];
 
@@ -200,9 +201,19 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override void Flush(FlushScope scope)
     {
+        if (scope == FlushScope.All)
+            _metadataMemoryCache?.Flush();
+
         base.Flush(scope);
 
         BuildDescriptors();
+    }
+
+    internal void EnableMetadataRecovery(MetadataMemoryCache.GetMetadataDelegate getMetadata)
+    {
+        Debug.Assert(_metadataMemoryCache is null);
+        _metadataMemoryCache = new MetadataMemoryCache(this, getMetadata);
+        _dataTargetDelegates = _dataTargetDelegates.WithMetadataRecovery(_metadataMemoryCache);
     }
 
     private void AddDescriptor(Descriptor descriptor)
@@ -1059,15 +1070,18 @@ public sealed unsafe class ContractDescriptorTarget : Target
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
         SetTargetThreadContextDelegate setThreadContext,
-        AllocVirtualDelegate allocVirtual)
+        AllocVirtualDelegate allocVirtual,
+        MetadataMemoryCache? metadataMemoryCache = null)
     {
         public int ReadFromTarget(ulong address, Span<byte> buffer)
         {
-            return readFromTarget(address, buffer);
+            int hr = readFromTarget(address, buffer);
+            const int S_OK = 0;
+            return hr < 0 && metadataMemoryCache is not null && metadataMemoryCache.TryRead(address, buffer) ? S_OK : hr;
         }
 
         public int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
-            => readFromTarget(address, new Span<byte>(buffer, checked((int)bytesToRead)));
+            => ReadFromTarget(address, new Span<byte>(buffer, checked((int)bytesToRead)));
 
         public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
         {
@@ -1088,11 +1102,11 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         public DataTargetDelegates WithReadCallback(Action<ulong, ulong> reportRead)
         {
-            ReadFromTargetDelegate reader = readFromTarget;
+            DataTargetDelegates original = this;
             return new(
                 (address, buffer) =>
                 {
-                    int hr = reader(address, buffer);
+                    int hr = original.ReadFromTarget(address, buffer);
                     if (hr >= 0)
                         reportRead(address, (ulong)buffer.Length);
 
@@ -1100,5 +1114,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 },
                 writeToTarget, getThreadContext, setThreadContext, allocVirtual);
         }
+
+        public DataTargetDelegates WithMetadataRecovery(MetadataMemoryCache cache)
+            => new(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual, cache);
     }
 }
