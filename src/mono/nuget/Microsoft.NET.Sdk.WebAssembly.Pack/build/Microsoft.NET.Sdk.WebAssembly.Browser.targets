@@ -999,7 +999,16 @@ Copyright (c) .NET Foundation. All rights reserved.
   <!-- Native-only nested publishes must not initialize boot configuration or its shared incremental outputs. -->
   <Target Name="_ResolveWasmPublishConfiguration"
     DependsOnTargets="_ResolveWasmConfiguration"
-    Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+    <!-- Direct MSBuild publish does not set _IsPublishing, and build may have already resolved configuration. -->
+    <PropertyGroup>
+      <StackTraceLineNumberSupport Condition="'$(StackTraceLineNumberSupport)' == ''">false</StackTraceLineNumberSupport>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(StackTraceLineNumberSupport)' == 'false'">
+      <RuntimeHostConfigurationOption Remove="System.Diagnostics.StackTrace.IsLineNumberSupported" />
+      <RuntimeHostConfigurationOption Include="System.Diagnostics.StackTrace.IsLineNumberSupported" Value="false" Trim="true" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="_PrintWasmBrowserPublishOutputDirectory" AfterTargets="Publish" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <Message Importance="High" Text="$(MSBuildProjectName) (wwwroot) -&gt; $([MSBuild]::NormalizeDirectory('$(PublishDir)', 'wwwroot'))" />

@@ -115,13 +115,17 @@ public class DebugLevelTests : WasmTemplateTestsBase
         AssertDebugLevel(result.TestOutput, -1);
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-    [InlineData(null, false)]
-    [InlineData(null, true)]
-    [InlineData(true, false)]
-    [InlineData(false, false)]
-    [TestCategory("no-workload")]
-    public async Task StackTraceLineNumbersBuildPublishBuild(bool? lineNumberSupport, bool noBuild)
+    [Theory]
+    [InlineData(null, false, false)]
+    [InlineData(null, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, false, false)]
+    [InlineData(null, false, true)]
+    [InlineData(null, true, true)]
+    [InlineData(true, false, true)]
+    [InlineData(false, false, true)]
+    [TestCategory("coreclr"), TestCategory("no-workload")]
+    public async Task StackTraceLineNumbersBuildPublishBuild(bool? lineNumberSupport, bool noBuild, bool useMSBuild)
     {
         Configuration configuration = Configuration.Debug;
         string lineNumberProperty = lineNumberSupport is bool enabled
@@ -139,26 +143,9 @@ public class DebugLevelTests : WasmTemplateTestsBase
                 <CopyOutputSymbolsToPublishDirectory>true</CopyOutputSymbolsToPublishDirectory>
                 <WasmDebugLevel>-1</WasmDebugLevel>
                 {lineNumberProperty}
-                """,
-            extraItems: "<Compile Remove=\"*.cs\" />");
-        File.WriteAllText(Path.Combine(_projectDir, "Common", "Program.cs"), """
-            using System;
-            using System.Diagnostics;
-            using System.Runtime.InteropServices.JavaScript;
+                """);
 
-            public static partial class Program
-            {
-                [JSExport]
-                public static void Main()
-                {
-                    StackFrame frame = new StackTrace(true).GetFrame(0)!;
-                    Console.WriteLine($"TestOutput -> Source info: {frame.GetFileLineNumber() > 0}");
-                    Console.WriteLine($"TestOutput -> Method: {DiagnosticMethodInfo.Create(frame)?.Name}");
-                }
-            }
-            """);
-
-        BrowserRunOptions runOptions = new(configuration, TestScenario: "DotnetRun");
+        BrowserRunOptions runOptions = new(configuration, TestScenario: "StackTraceTest");
         for (int step = 0; step < 3; step++)
         {
             bool publish = step == 1;
@@ -166,9 +153,23 @@ public class DebugLevelTests : WasmTemplateTestsBase
             RunResult result;
             if (publish)
             {
-                PublishProject(info, configuration,
-                    new PublishOptions(UseCache: false, ExtraMSBuildArgs: noBuild ? "--no-build" : ""),
-                    isNativeBuild: false);
+                if (useMSBuild)
+                {
+                    using var command = new DotNetCommand(s_buildEnv, _testOutput);
+                    command.WithWorkingDirectory(_projectDir)
+                        .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                        .ExecuteWithCapturedOutput(
+                            "msbuild", "-t:Publish", $"-p:Configuration={configuration}",
+                            $"-p:NoBuild={noBuild}", "-p:CompressionEnabled=false", "-p:WasmEnableHotReload=false",
+                            "-nr:false", $"-bl:{Path.Combine(_logPath, $"{info.ProjectName}-msbuild-publish.binlog")}")
+                        .EnsureSuccessful();
+                }
+                else
+                {
+                    PublishProject(info, configuration,
+                        new PublishOptions(UseCache: false, ExtraMSBuildArgs: noBuild ? "--no-build" : ""),
+                        isNativeBuild: false);
+                }
                 result = await RunForPublishWithWebServer(runOptions);
             }
             else
@@ -178,7 +179,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
             }
 
             Assert.Contains(result.TestOutput, line => line.Contains($"Source info: {expectLineNumbers}"));
-            Assert.Contains(result.TestOutput, line => line.Contains("Method: Main"));
+            Assert.Contains(result.TestOutput, line => line.Contains("Method: Run"));
         }
     }
 
