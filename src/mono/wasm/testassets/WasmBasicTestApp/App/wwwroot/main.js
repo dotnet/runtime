@@ -489,6 +489,10 @@ try {
             testOutput("WasmDebugLevel: " + config.debugLevel);
             exit(42);
             break;
+        case "StackTraceTest":
+            exports.StackTraceTest.Run();
+            exit(0);
+            break;
         case "InterpPgoTest":
             setModuleImports('main.js', {
                 window: {

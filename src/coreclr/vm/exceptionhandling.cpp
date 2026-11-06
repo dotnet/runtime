@@ -34,7 +34,7 @@ extern MethodDesc* g_pDebuggerInvokeFunctionMethodDesc;
 // For ARM/ARM64, EstablisherFrame is Caller-SP (SP just before executing call instruction).
 // This has been confirmed by AaronGi from the kernel team for Windows.
 //
-// For x86/Linux, RtlVirtualUnwind sets EstablisherFrame as Caller-SP.
+// For x86, RtlVirtualUnwind sets EstablisherFrame as Caller-SP.
 #define ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_X86 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
@@ -827,7 +827,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     UNREACHABLE();
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64)
 
 /*++
 Function :
@@ -1241,7 +1241,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
     // must have been an overflow.
     return divisor != 0;
 }
-#endif // TARGET_AMD64 || TARGET_X86
+#endif // TARGET_AMD64
 
 BOOL IsSafeToCallExecutionManager()
 {
@@ -1338,7 +1338,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             return TRUE;
         }
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64)
         // It is possible that an overflow was mapped to a divide-by-zero exception.
         // This happens when we try to divide the maximum negative value of a
         // signed integer with -1.
@@ -1351,7 +1351,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             // The exception was an integer overflow, so augment the exception code.
             ex->GetExceptionRecord()->ExceptionCode = EXCEPTION_INT_OVERFLOW;
         }
-#endif // TARGET_AMD64 || TARGET_X86
+#endif // TARGET_AMD64
 
         // Create frame necessary for the exception handling
         FaultingExceptionFrame fef;

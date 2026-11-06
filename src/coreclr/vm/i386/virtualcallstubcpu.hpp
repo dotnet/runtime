@@ -265,10 +265,8 @@ struct ResolveStub
     inline size_t cacheAddress()            { LIMITED_METHOD_CONTRACT; return _cacheAddress;   }
     inline size_t token()                   { LIMITED_METHOD_CONTRACT; return _token;          }
     inline size_t size()                    { LIMITED_METHOD_CONTRACT; return sizeof(ResolveStub); }
-#ifndef UNIX_X86_ABI
     inline static size_t offsetOfThisDeref(){ LIMITED_METHOD_CONTRACT; return offsetof(ResolveStub, part1) - offsetof(ResolveStub, _resolveEntryPoint); }
     inline size_t stackArgumentsSize()      { LIMITED_METHOD_CONTRACT; return _stackArgumentsSize; }
-#endif
 
 private:
     friend struct ResolveHolder;
@@ -332,9 +330,7 @@ private:
     DISPL _backpatcherDispl;        // xx xx xx xx          backpatcherWorker  == BackPatchWorkerAsmStub
     BYTE  part11 [1];               // eb           jmp
     BYTE toResolveStub;             // xx                   resolveStub, i.e. go back to _resolveEntryPoint
-#ifndef UNIX_X86_ABI
     size_t _stackArgumentsSize;     // xx xx xx xx
-#endif
 };
 
 /* ResolveHolders are the containers for ResolveStubs,  They provide
@@ -351,9 +347,7 @@ struct ResolveHolder
                      PCODE resolveWorkerTarget, PCODE patcherTarget,
                      size_t dispatchToken, UINT32 hashedToken,
                      void * cacheAddr, INT32 * counterAddr
-#ifndef UNIX_X86_ABI
                      , size_t stackArgumentsSize
-#endif
                      );
 
     ResolveStub* stub()      { LIMITED_METHOD_CONTRACT;  return &_stub; }
@@ -488,24 +482,18 @@ StubCallSite::StubCallSite(TADDR siteAddrForRegisterIndirect, PCODE returnAddr)
     }
 }
 
-#ifndef UNIX_X86_ABI
 // the special return address for VSD tailcalls
 extern "C" void STDCALL JIT_TailCallReturnFromVSD();
-#endif // UNIX_X86_ABI
 
 PCODE StubCallSite::GetCallerAddress()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef UNIX_X86_ABI
-    return m_returnAddr;
-#else // UNIX_X86_ABI
     if (m_returnAddr != (PCODE)JIT_TailCallReturnFromVSD)
         return m_returnAddr;
 
     // Find the tailcallframe in the frame chain and get the actual caller from the first TailCallFrame
     return TailCallFrame::FindTailCallFrame(GetThread()->GetFrame())->GetCallerAddress();
-#endif // UNIX_X86_ABI
 }
 
 #ifdef STUB_LOGGING
@@ -748,9 +736,7 @@ void  ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
                                 PCODE resolveWorkerTarget, PCODE patcherTarget,
                                 size_t dispatchToken, UINT32 hashedToken,
                                 void * cacheAddr, INT32 * counterAddr
-#ifndef UNIX_X86_ABI
                                 , size_t stackArgumentsSize
-#endif
                                 )
 {
     _stub = resolveInit;
@@ -764,9 +750,7 @@ void  ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _stub._tokenPush          = dispatchToken;
     _stub._resolveWorkerDispl = resolveWorkerTarget - ((PCODE) &pResolveHolderRX->_stub._resolveWorkerDispl + sizeof(DISPL));
     _stub._backpatcherDispl   = patcherTarget       - ((PCODE) &pResolveHolderRX->_stub._backpatcherDispl   + sizeof(DISPL));
-#ifndef UNIX_X86_ABI
     _stub._stackArgumentsSize = stackArgumentsSize;
-#endif
 }
 
 ResolveHolder* ResolveHolder::FromFailEntry(PCODE failEntry)
