@@ -140,15 +140,38 @@ public static unsafe class EntrypointHelpers
             allocVirtual,
             [CoreCLRContracts.Register],
             runtimeImageBase,
-            CreateCLRMetadataLocatorCallback(dataTarget),
-            CreateIXCLRDataTargetMetadataCallback(dataTarget),
-            CreateCorDebugMetadataLocatorCallback(dataTarget));
+            CreateMetadataCallback(dataTarget));
+    }
+
+    /// <summary>Creates a callback that tries the host's metadata locators in order: ICLRMetadataLocator, IXCLRDataTarget3, then ICorDebugMetaDataLocator.</summary>
+    /// <param name="dataTarget">The debugger-provided data target.</param>
+    /// <returns>A metadata callback, or <see langword="null"/> if no metadata locator is available.</returns>
+    public static ContractDescriptorTarget.GetMetadataDelegate? CreateMetadataCallback(object dataTarget)
+    {
+        ContractDescriptorTarget.GetMetadataDelegate? clrLocator = CreateCLRMetadataLocatorCallback(dataTarget);
+        ContractDescriptorTarget.GetMetadataDelegate? ixclrDataTarget = CreateIXCLRDataTargetMetadataCallback(dataTarget);
+        ContractDescriptorTarget.GetMetadataDelegate? corDebugLocator = CreateCorDebugMetadataLocatorCallback(dataTarget);
+        if (clrLocator is null && ixclrDataTarget is null && corDebugLocator is null)
+            return null;
+
+        return (string path, uint timestamp, uint imageSize, uint rva, Span<byte> buffer, out uint dataSize) =>
+        {
+            dataSize = 0;
+            int hr = HResults.E_NOTIMPL;
+            if (clrLocator is not null)
+                hr = clrLocator(path, timestamp, imageSize, rva, buffer, out dataSize);
+            if (hr < 0 && ixclrDataTarget is not null)
+                hr = ixclrDataTarget(path, timestamp, imageSize, rva, buffer, out dataSize);
+            if (hr < 0 && corDebugLocator is not null)
+                hr = corDebugLocator(path, timestamp, imageSize, rva, buffer, out dataSize);
+            return hr;
+        };
     }
 
     /// <summary>Creates a forwarding callback for the target's ICLRMetadataLocator, if available.</summary>
     /// <param name="dataTarget">The debugger-provided data target.</param>
     /// <returns>A metadata callback, or <see langword="null"/> if the interface is unavailable.</returns>
-    public static ContractDescriptorTarget.GetMetadataDelegate? CreateCLRMetadataLocatorCallback(object dataTarget)
+    private static ContractDescriptorTarget.GetMetadataDelegate? CreateCLRMetadataLocatorCallback(object dataTarget)
     {
         if (dataTarget is not ICLRMetadataLocator locator)
             return null;
@@ -169,7 +192,7 @@ public static unsafe class EntrypointHelpers
     /// <summary>Creates a forwarding callback for the target's IXCLRDataTarget3, if available.</summary>
     /// <param name="dataTarget">The debugger-provided data target.</param>
     /// <returns>A metadata callback, or <see langword="null"/> if the interface is unavailable.</returns>
-    public static ContractDescriptorTarget.GetMetadataDelegate? CreateIXCLRDataTargetMetadataCallback(object dataTarget)
+    private static ContractDescriptorTarget.GetMetadataDelegate? CreateIXCLRDataTargetMetadataCallback(object dataTarget)
     {
         if (dataTarget is not IXCLRDataTarget3 locator)
             return null;
@@ -190,7 +213,7 @@ public static unsafe class EntrypointHelpers
     /// <summary>Creates a callback that reads metadata from an image located through the target's ICorDebugMetaDataLocator, if available.</summary>
     /// <param name="dataTarget">The debugger-provided data target.</param>
     /// <returns>A metadata callback, or <see langword="null"/> if the interface is unavailable.</returns>
-    public static ContractDescriptorTarget.GetMetadataDelegate? CreateCorDebugMetadataLocatorCallback(object dataTarget)
+    private static ContractDescriptorTarget.GetMetadataDelegate? CreateCorDebugMetadataLocatorCallback(object dataTarget)
     {
         if (dataTarget is not ICorDebugMetaDataLocator locator)
             return null;

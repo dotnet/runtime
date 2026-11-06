@@ -64,7 +64,7 @@ public class EcmaMetadataTests
         int metadataSize = checked((int)fixture.Contract.GetReadOnlyMetadataAddress(fixture.Module).Size);
         byte[] buffer = new byte[metadataSize - 1];
         ContractDescriptorTarget.GetMetadataDelegate callback =
-            Assert.IsType<ContractDescriptorTarget.GetMetadataDelegate>(EntrypointHelpers.CreateCorDebugMetadataLocatorCallback(fixture));
+            Assert.IsType<ContractDescriptorTarget.GetMetadataDelegate>(EntrypointHelpers.CreateMetadataCallback(fixture));
 
         int result = callback("TestModule.dll", 0, 0, 0, buffer, out uint dataSize);
         Assert.Equal(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER, result);
@@ -81,7 +81,7 @@ public class EcmaMetadataTests
         Assert.Equal(0, fixture.PathCalls);
     }
 
-    private sealed class MetadataFixture : IDisposable, ICorDebugMetaDataLocator
+    private sealed unsafe class MetadataFixture : IDisposable, ICLRMetadataLocator, IXCLRDataTarget3, ICorDebugMetaDataLocator
     {
         private const ulong ImageBase = 0x10000;
         private readonly byte[] _image;
@@ -162,24 +162,24 @@ public class EcmaMetadataTests
                     CoreCLRContracts.Register(registry);
                     registry.Register<ILoader>("c1", _ => loader.Object);
                 }],
-                getMetadataFromCLRLocator: locator == -2 ? null : GetCLRMetadata,
-                getMetadataFromIXCLRDataTarget: locator == -2 ? null : GetIXCLRMetadata,
-                getMetadataFromCorDebugLocator: locator == -2 ? null : EntrypointHelpers.CreateCorDebugMetadataLocatorCallback(this));
+                getMetadata: locator == -2 ? null : EntrypointHelpers.CreateMetadataCallback(this));
             Contract = target.Contracts.EcmaMetadata;
             _filePath = Path.GetTempFileName();
             File.WriteAllBytes(_filePath, _image);
         }
 
-        private int GetCLRMetadata(string path, uint timestamp, uint imageSize, uint rva, Span<byte> buffer, out uint dataSize)
+        public int GetMetadata(char* path, uint timestamp, uint imageSize, Guid* mvid, uint rva, uint flags,
+            uint bufferSize, byte* buffer, uint* dataSize)
         {
             CLRCalls++;
-            return GetMetadata(0, path, buffer, out dataSize);
+            return GetMetadata(0, new string(path), new Span<byte>(buffer, checked((int)bufferSize)), out *dataSize);
         }
 
-        private int GetIXCLRMetadata(string path, uint timestamp, uint imageSize, uint rva, Span<byte> buffer, out uint dataSize)
+        public int GetMetaData(char* path, uint timestamp, uint imageSize, Guid* mvid, uint rva, uint flags,
+            uint bufferSize, byte* buffer, uint* dataSize)
         {
             IXCLRCalls++;
-            return GetMetadata(1, path, buffer, out dataSize);
+            return GetMetadata(1, new string(path), new Span<byte>(buffer, checked((int)bufferSize)), out *dataSize);
         }
 
         private int GetMetadata(int locator, string path, Span<byte> buffer, out uint dataSize)
@@ -197,7 +197,7 @@ public class EcmaMetadataTests
             return 0;
         }
 
-        public unsafe int GetMetaData(char* path, uint timestamp, uint imageSize, uint bufferSize, uint* pathLength, char* buffer)
+        public int GetMetaData(char* path, uint timestamp, uint imageSize, uint bufferSize, uint* pathLength, char* buffer)
         {
             PathCalls++;
             Assert.Equal("TestModule.dll", new string(path));
@@ -214,6 +214,20 @@ public class EcmaMetadataTests
             *pathLength = (uint)_filePath.Length;
             return 0;
         }
+
+        public int GetMachineType(uint* machineType) => throw new NotImplementedException();
+        public int GetPointerSize(uint* pointerSize) => throw new NotImplementedException();
+        public int GetImageBase(string imagePath, ulong* baseAddress) => throw new NotImplementedException();
+        public int ReadVirtual(ulong address, byte* buffer, uint bytesRequested, uint* bytesRead) => throw new NotImplementedException();
+        public int WriteVirtual(ulong address, byte* buffer, uint bytesRequested, uint* bytesWritten) => throw new NotImplementedException();
+        public int GetTLSValue(uint threadID, uint index, ulong* value) => throw new NotImplementedException();
+        public int SetTLSValue(uint threadID, uint index, ulong value) => throw new NotImplementedException();
+        public int GetCurrentThreadID(uint* threadID) => throw new NotImplementedException();
+        public int GetThreadContext(uint threadID, uint contextFlags, uint contextSize, byte* context) => throw new NotImplementedException();
+        public int SetThreadContext(uint threadID, uint contextSize, byte* context) => throw new NotImplementedException();
+        public int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer) => throw new NotImplementedException();
+        public int AllocVirtual(ClrDataAddress addr, uint size, uint typeFlags, uint protectFlags, ClrDataAddress* virt) => throw new NotImplementedException();
+        public int FreeVirtual(ClrDataAddress addr, uint size, uint typeFlags) => throw new NotImplementedException();
 
         public void Dispose() => File.Delete(_filePath);
     }

@@ -172,9 +172,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
             path = loader.GetFileName(handle);
 
         // No RVA hint: locate metadata through the IL image's CLR header.
-        return target.TryGetMetadataFromCLRLocator(path, timestamp, imageSize, 0, data, out _)
-            || target.TryGetMetadataFromIXCLRDataTarget(path, timestamp, imageSize, 0, data, out _)
-            || target.TryGetMetadataFromCorDebugLocator(path, timestamp, imageSize, 0, data, out _)
+        return target.TryGetMetadata(path, timestamp, imageSize, 0, data, out _)
             ? MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data))
             : null;
     }

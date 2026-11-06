@@ -151,9 +151,7 @@ public static class Entrypoints
                 setThreadContextDelegate,
                 allocDelegate,
                 [Contracts.CoreCLRContracts.Register],
-                getMetadataFromCLRLocator: debuggerTarget is null ? null : EntrypointHelpers.CreateCLRMetadataLocatorCallback(debuggerTarget),
-                getMetadataFromIXCLRDataTarget: debuggerTarget is null ? null : EntrypointHelpers.CreateIXCLRDataTargetMetadataCallback(debuggerTarget),
-                getMetadataFromCorDebugLocator: debuggerTarget is null ? null : EntrypointHelpers.CreateCorDebugMetadataLocatorCallback(debuggerTarget));
+                getMetadata: debuggerTarget is null ? null : EntrypointHelpers.CreateMetadataCallback(debuggerTarget));
 
             GCHandle gcHandle = GCHandle.Alloc(new CdacHandle(target, new Lock()));
             *handle = GCHandle.ToIntPtr(gcHandle);
@@ -477,8 +475,6 @@ public static class Entrypoints
             },
             [Contracts.CoreCLRContracts.Register],
             runtimeBase,
-            EntrypointHelpers.CreateCLRMetadataLocatorCallback(targetObject),
-            EntrypointHelpers.CreateIXCLRDataTargetMetadataCallback(targetObject),
-            EntrypointHelpers.CreateCorDebugMetadataLocatorCallback(targetObject));
+            EntrypointHelpers.CreateMetadataCallback(targetObject));
     }
 }
