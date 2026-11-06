@@ -104,6 +104,9 @@ internal static partial class Interop
         return handle;
     }
 
+    internal static Exception GetExceptionForIoErrno(ErrorInfo errorInfo) =>
+        GetExceptionForIoErrno<NoPathHandling>(errorInfo, path: null, isDirError: false);
+
     /// <summary>
     /// Gets an Exception to represent the supplied error info.
     /// </summary>
@@ -111,7 +114,11 @@ internal static partial class Interop
     /// <param name="path">The path with which this error is associated.  This may be null.</param>
     /// <param name="isDirError">true if error is caused by a directory issue.</param>
     /// <returns></returns>
-    internal static Exception GetExceptionForIoErrno(ErrorInfo errorInfo, string? path = null, bool isDirError = false)
+    internal static Exception GetExceptionForIoErrno(ErrorInfo errorInfo, string? path, bool isDirError = false) =>
+        GetExceptionForIoErrno<PathHandling>(errorInfo, path, isDirError);
+
+    private static Exception GetExceptionForIoErrno<TPathHandling>(ErrorInfo errorInfo, string? path, bool isDirError)
+        where TPathHandling : IPathHandling
     {
         // Translate the errno into a known set of exception types.  For cases where multiple errnos map
         // to the same exception type, include an inner exception with the details.
@@ -120,7 +127,7 @@ internal static partial class Interop
             case Error.ENOENT:
                 // For Windows compatibility, throw DirectoryNotFoundException instead of FileNotFoundException
                 // when the parent folder does not exist.
-                if (!isDirError && (path is null || ParentDirectoryExists(path)))
+                if (!isDirError && (path is null || TPathHandling.ParentDirectoryExists(path)))
                 {
                     return !string.IsNullOrEmpty(path) ?
                         new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, path), path) :
@@ -170,13 +177,26 @@ internal static partial class Interop
 
             default:
                 return GetIOException(errorInfo, path);
+        }
+    }
 
-            static bool ParentDirectoryExists(string fullPath)
-            {
-                string? parentPath = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(fullPath));
+    private interface IPathHandling
+    {
+        static abstract bool ParentDirectoryExists(string fullPath);
+    }
 
-                return Directory.Exists(parentPath);
-            }
+    private sealed class NoPathHandling : IPathHandling
+    {
+        public static bool ParentDirectoryExists(string fullPath) => true;
+    }
+
+    private sealed class PathHandling : IPathHandling
+    {
+        public static bool ParentDirectoryExists(string fullPath)
+        {
+            string? parentPath = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(fullPath));
+
+            return Directory.Exists(parentPath);
         }
     }
 
