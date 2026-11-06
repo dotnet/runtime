@@ -9,6 +9,16 @@ public static class ExternalLib
         public int Value { get; set; }
     }
 
+    public struct ExternalStruct
+    {
+        public int Value;
+    }
+
+    public class ExternalGenericBase<T>
+    {
+        public int BaseValue { get; set; }
+    }
+
     public class Outer
     {
         public class Inner
