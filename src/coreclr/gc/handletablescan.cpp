@@ -193,6 +193,7 @@ If you change any of those algorithm, please verify it by this program:
 
 
 
+#ifdef FEATURE_MULTITHREADING
 /****************************************************************************
  *
  * SUPPORT STRUCTURES FOR ASYNCHRONOUS SCANNING
@@ -252,6 +253,7 @@ struct ScanQNode
      */
     ScanRange         rgRange[HANDLE_BLOCKS_PER_SEGMENT / 4];
 };
+#endif // FEATURE_MULTITHREADING
 
 /*--------------------------------------------------------------------------*/
 
@@ -1076,6 +1078,7 @@ void CALLBACK BlockVerifyAgeMapForBlocks(TableSegment *pSegment, uint32_t uBlock
     }
 }
 
+#ifdef FEATURE_MULTITHREADING
 /*
  * BlockLockBlocks
  *
@@ -1106,8 +1109,10 @@ void CALLBACK BlockUnlockBlocks(TableSegment *pSegment, uint32_t uBlock, uint32_
     for (uCount += uBlock; uBlock < uCount; uBlock++)
         BlockUnlock(pSegment, uBlock);
 }
+#endif // FEATURE_MULTITHREADING
 #endif // !DACCESS_COMPILE
 
+#ifdef FEATURE_MULTITHREADING
 /*
  * BlockQueueBlocksForAsyncScan
  *
@@ -1382,6 +1387,7 @@ void xxxTableScanQueuedBlocksAsync(PTR_HandleTable pTable, PTR_TableSegment pSeg
     // reset the "queue tail" pointer to indicate an empty queue
     pAsyncInfo->pQueueTail = NULL;
 }
+#endif // FEATURE_MULTITHREADING
 
 /*--------------------------------------------------------------------------*/
 
@@ -1567,6 +1573,7 @@ PTR_TableSegment CALLBACK FullSegmentIterator(PTR_HandleTable pTable, PTR_TableS
     return pNextSegment;
 }
 
+#ifdef FEATURE_MULTITHREADING
 /*
  * xxxAsyncSegmentIterator
  *
@@ -1599,6 +1606,7 @@ PTR_TableSegment CALLBACK xxxAsyncSegmentIterator(PTR_HandleTable pTable, PTR_Ta
     // call the underlying iterator to get the next segment
     return pfnCoreIterator(pTable, pPrevSegment, pCrstHolder);
 }
+#endif // FEATURE_MULTITHREADING
 
 /*--------------------------------------------------------------------------*/
 
@@ -1781,6 +1789,7 @@ void CALLBACK TableScanHandles(PTR_HandleTable pTable,
 }
 
 
+#ifdef FEATURE_MULTITHREADING
 /*
  * xxxTableScanHandlesAsync
  *
@@ -1860,6 +1869,7 @@ void CALLBACK xxxTableScanHandlesAsync(PTR_HandleTable pTable,
     // unlink our async scanning info from the table
     pTable->pAsyncScanInfo = NULL;
 }
+#endif // FEATURE_MULTITHREADING
 
 #ifdef DACCESS_COMPILE
 // TableSegment is variable size, where the data up to "rgValue" is static,

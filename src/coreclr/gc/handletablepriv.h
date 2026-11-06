@@ -889,6 +889,7 @@ void CALLBACK TableScanHandles(PTR_HandleTable pTable,
                                CrstHolderWithState *pCrstHolder);
 
 
+#ifdef FEATURE_MULTITHREADING
 /*
  * xxxTableScanHandlesAsync
  *
@@ -902,6 +903,7 @@ void CALLBACK xxxTableScanHandlesAsync(PTR_HandleTable pTable,
                                        BLOCKSCANPROC pfnBlockHandler,
                                        ScanCallbackInfo *pInfo,
                                        CrstHolderWithState *pCrstHolder);
+#endif // FEATURE_MULTITHREADING
 
 
 /*
@@ -1027,6 +1029,7 @@ void CALLBACK BlockResetAgeMapForBlocks(PTR_TableSegment pSegment, uint32_t uBlo
 void CALLBACK BlockVerifyAgeMapForBlocks(PTR_TableSegment pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo);
 
 
+#ifdef FEATURE_MULTITHREADING
 /*
  * xxxAsyncSegmentIterator
  *
@@ -1034,5 +1037,6 @@ void CALLBACK BlockVerifyAgeMapForBlocks(PTR_TableSegment pSegment, uint32_t uBl
  *
  */
 PTR_TableSegment CALLBACK xxxAsyncSegmentIterator(PTR_HandleTable pTable, TableSegment *pPrevSegment, CrstHolderWithState *pCrstHolder);
+#endif // FEATURE_MULTITHREADING
 
 /*--------------------------------------------------------------------------*/
