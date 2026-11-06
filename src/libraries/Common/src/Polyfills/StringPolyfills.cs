@@ -5,11 +5,14 @@ using System.Buffers;
 
 namespace System;
 
-/// <summary>Provides a downlevel polyfill for creating strings with a span callback.</summary>
+/// <summary>Provides downlevel polyfills for string methods.</summary>
 internal static partial class StringPolyfills
 {
     extension(string)
     {
+        public static string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1) =>
+            string.Concat(str0.ToString(), str1.ToString());
+
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -24,5 +27,11 @@ internal static partial class StringPolyfills
             action(chars, state);
             return new string(chars);
         }
+    }
+
+    extension(string text)
+    {
+        public bool Contains(string value, StringComparison comparisonType) =>
+            text.IndexOf(value, comparisonType) >= 0;
     }
 }

@@ -30,7 +30,7 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppMinimum)'">
     <!-- Extended layout metadata values were introduced after .NET 10. -->
-    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\ReflectionPolyfills.MetadataEnums.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\ReflectionPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
@@ -42,20 +42,20 @@
     <Compile Include="$(CoreLibSharedDir)System\Index.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\BitConverterPolyfills.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\BitConverterPolyfills.ToChar.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\CharPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\CollectionsPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\DictionaryPolyfills.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\DictionaryPolyfills.Remove.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\EncodingPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\ExceptionPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\HashCodePolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\IncrementalHashPolyfills.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MathPolyfills.Clamp.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MathPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MemoryExtensionsPolyfills.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\NumericPolyfills.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\ReflectionPolyfills.MetadataEnums.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\StringPolyfills.ConcatContains.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\ReflectionPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\StringPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\UInt32Polyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\UInt64Polyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Buffers\SpanAction.cs" />
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\StringPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Common\UnreachableException.cs" />
     <Compile Include="$(RepoTasksDir)Common\IsExternalInit.cs" />

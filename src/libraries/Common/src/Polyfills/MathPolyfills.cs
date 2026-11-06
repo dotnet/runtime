@@ -10,6 +10,16 @@ internal static class MathPolyfills
 {
     extension(Math)
     {
+        public static int Clamp(int value, int min, int max)
+        {
+            if (min > max)
+            {
+                throw new ArgumentException($"{min} cannot be greater than {max}.");
+            }
+
+            return value < min ? min : value > max ? max : value;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong BigMul(ulong a, ulong b, out ulong low)
         {
