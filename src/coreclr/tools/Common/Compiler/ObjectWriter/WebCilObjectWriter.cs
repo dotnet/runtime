@@ -49,25 +49,7 @@ namespace ILCompiler.ObjectWriter
             : base(factory, options, outputInfoBuilder)
         {
             _emitNameSection = emitNameSection;
-            _wasmNativeBuildId = ParseHexBuildId(wasmNativeBuildId);
-        }
-
-        private static byte[] ParseHexBuildId(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-                return null;
-
-            string hex = value.Trim();
-            if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                hex = hex.Substring(2);
-
-            if (hex.Length == 0 || (hex.Length % 2) != 0)
-                throw new ArgumentException($"WasmNativeBuildId '{value}' is not a valid hex string.");
-
-            var bytes = new byte[hex.Length / 2];
-            for (int i = 0; i < bytes.Length; i++)
-                bytes[i] = byte.Parse(hex.AsSpan(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-            return bytes;
+            _wasmNativeBuildId = WasmCustomSectionWriter.ParseBuildId(wasmNativeBuildId);
         }
 
         private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();

@@ -45,8 +45,8 @@
     <WasmEnableStreamingResponse Condition="'$(WasmEnableStreamingResponse)' == ''">true</WasmEnableStreamingResponse>
 
     <!-- WebAssembly tool-conventions custom sections (https://github.com/WebAssembly/tool-conventions).
-         producers: a linkable object carrying the .NET toolchain info is passed to wasm-ld, which
-                    merges it into the relinked dotnet.native.wasm 'producers' section.
+         producers: assembly source carrying the .NET toolchain info is assembled by Emscripten and
+                    merged into the relinked dotnet.native.wasm 'producers' section by wasm-ld.
          build_id:  stamped into a project-local dotnet.native.wasm after selecting the runtime-pack
                     or relinked binary. -->
   </PropertyGroup>

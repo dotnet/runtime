@@ -7,6 +7,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -78,34 +79,16 @@ public static class WasmCustomSectionWriter
     }
 
     /// <summary>
-    /// Rewrites <paramref name="wasmPath"/> in place, replacing any existing <c>producers</c> and
-    /// <c>build_id</c> custom sections with fresh ones built from the supplied data. Existing
-    /// producers entries emitted by other tools (clang/LLVM/Emscripten) are preserved and merged.
+    /// Replaces any existing <c>build_id</c> custom section in <paramref name="moduleBytes"/>.
     /// </summary>
-    /// <param name="wasmPath">Path to the WebAssembly module to modify.</param>
-    /// <param name="producers">Producers values to add. May be <see langword="null"/> to leave the section untouched.</param>
-    /// <param name="buildId">Raw build id bytes. May be <see langword="null"/> to leave the section untouched.</param>
-    public static void WriteMetadata(string wasmPath, IEnumerable<ProducerValue>? producers, byte[]? buildId)
-    {
-        if (wasmPath is null)
-            ThrowArgumentNull(nameof(wasmPath));
-
-        byte[] input = File.ReadAllBytes(wasmPath);
-        byte[] output = WriteMetadata(input, producers, buildId);
-        File.WriteAllBytes(wasmPath, output);
-    }
-
-    /// <summary>
-    /// Pure-in-memory variant of <see cref="WriteMetadata(string, IEnumerable{ProducerValue}, byte[])"/>.
-    /// </summary>
-    public static byte[] WriteMetadata(byte[] moduleBytes, IEnumerable<ProducerValue>? producers, byte[]? buildId)
+    public static byte[] ReplaceBuildId(byte[] moduleBytes, byte[] buildId)
     {
         if (moduleBytes is null)
             ThrowArgumentNull(nameof(moduleBytes));
-
-        // Nothing to do.
-        if (producers is null && (buildId is null || buildId.Length == 0))
-            return moduleBytes;
+        if (buildId is null)
+            ThrowArgumentNull(nameof(buildId));
+        if (buildId.Length == 0)
+            throw new ArgumentException("Build ID cannot be empty.", nameof(buildId));
 
         if (moduleBytes.Length < 8 || BinaryPrimitives.ReadUInt32LittleEndian(moduleBytes.AsSpan(0, 4)) != WasmMagic)
             throw new InvalidDataException("Not a WebAssembly module (bad magic).");
@@ -116,92 +99,65 @@ public static class WasmCustomSectionWriter
 
         const int bodyStart = 8; // magic (4) + version (4)
 
-        var existingProducers = new List<ProducerValue>();
-        var records = new List<(byte id, int recordStart, int recordLength, string? customName)>();
+        using var output = new MemoryStream(moduleBytes.Length + buildId.Length + 32);
+        output.Write(moduleBytes, 0, bodyStart);
 
         int pos = bodyStart;
         while (pos < moduleBytes.Length)
         {
             int recordStart = pos;
             byte id = moduleBytes[pos++];
-            uint size = ReadULEB128(moduleBytes, ref pos);
+            uint size = ReadULEB128(moduleBytes, ref pos, moduleBytes.Length);
+            if (size > int.MaxValue)
+                throw new InvalidDataException("WebAssembly section is too large.");
+
             int payloadStart = pos;
-            int payloadEnd = payloadStart + (int)size;
+            int payloadEnd = checked(payloadStart + (int)size);
             if (payloadEnd > moduleBytes.Length)
                 throw new InvalidDataException("Truncated WebAssembly section.");
 
-            string? customName = null;
+            bool isBuildId = false;
             if (id == CustomSectionId)
             {
                 int p = payloadStart;
-                customName = ReadName(moduleBytes, ref p);
-                if (customName == ProducersSectionName)
-                    ReadProducers(moduleBytes, p, payloadEnd, existingProducers);
+                isBuildId = ReadName(moduleBytes, ref p, payloadEnd) == BuildIdSectionName;
             }
 
-            records.Add((id, recordStart, payloadEnd - recordStart, customName));
+            if (!isBuildId)
+                output.Write(moduleBytes, recordStart, payloadEnd - recordStart);
+
             pos = payloadEnd;
         }
 
-        // Merge new producers on top of the ones we found (dedupe by field + name, new value wins for version).
-        List<ProducerValue>? mergedProducers = null;
-        if (producers is not null)
-        {
-            mergedProducers = new List<ProducerValue>(existingProducers);
-            foreach (ProducerValue value in producers)
-            {
-                int existingIndex = mergedProducers.FindIndex(p =>
-                    string.Equals(p.Field, value.Field, StringComparison.Ordinal) &&
-                    string.Equals(p.Name, value.Name, StringComparison.Ordinal));
-                if (existingIndex >= 0)
-                    mergedProducers[existingIndex] = value;
-                else
-                    mergedProducers.Add(value);
-            }
-        }
-
-        bool replaceBuildId = buildId is { Length: > 0 };
-
-        using var ms = new MemoryStream(moduleBytes.Length + 256);
-        ms.Write(moduleBytes, 0, bodyStart);
-
-        foreach ((byte id, int recordStart, int recordLength, string? customName) in records)
-        {
-            // Drop the sections we are going to (re)write, so we never emit duplicates.
-            if (mergedProducers is not null && customName == ProducersSectionName)
-                continue;
-            if (replaceBuildId && customName == BuildIdSectionName)
-                continue;
-
-            // Re-emit the full section record (id byte + size + payload) verbatim.
-            ms.Write(moduleBytes, recordStart, recordLength);
-        }
-
-        if (mergedProducers is not null)
-            WriteProducersSection(ms, mergedProducers);
-
-        if (replaceBuildId)
-            WriteBuildIdSection(ms, buildId!);
-
-        return ms.ToArray();
+        WriteBuildIdSection(output, buildId);
+        return output.ToArray();
     }
 
-    private static void ReadProducers(byte[] bytes, int pos, int end, List<ProducerValue> into)
+    public static byte[]? ParseBuildId(string? value)
     {
-        if (pos >= end)
-            return;
-        uint fieldCount = ReadULEB128(bytes, ref pos);
-        for (uint f = 0; f < fieldCount && pos < end; f++)
+        if (string.IsNullOrEmpty(value))
+            return null;
+
+        string hex = value!.Trim();
+        if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            hex = hex.Substring(2);
+
+        if (hex.Length == 0 || (hex.Length % 2) != 0)
+            throw InvalidBuildId(value);
+
+        var bytes = new byte[hex.Length / 2];
+        for (int i = 0; i < bytes.Length; i++)
         {
-            string field = ReadName(bytes, ref pos);
-            uint valueCount = ReadULEB128(bytes, ref pos);
-            for (uint v = 0; v < valueCount && pos < end; v++)
-            {
-                string name = ReadName(bytes, ref pos);
-                string version = ReadName(bytes, ref pos);
-                into.Add(new ProducerValue(field, name, version));
-            }
+#if NETFRAMEWORK
+            bool parsed = byte.TryParse(hex.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bytes[i]);
+#else
+            bool parsed = byte.TryParse(hex.AsSpan(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bytes[i]);
+#endif
+            if (!parsed)
+                throw InvalidBuildId(value);
         }
+
+        return bytes;
     }
 
     // ------------------------------------------------------------------
@@ -267,11 +223,17 @@ public static class WasmCustomSectionWriter
     [DoesNotReturn]
     private static void ThrowArgumentNull(string paramName) => throw new ArgumentNullException(paramName);
 
-    private static string ReadName(byte[] bytes, ref int pos)
+    private static ArgumentException InvalidBuildId(string value)
+        => new($"WasmNativeBuildId '{value}' is not a valid hex string.");
+
+    private static string ReadName(byte[] bytes, ref int pos, int end)
     {
-        uint len = ReadULEB128(bytes, ref pos);
-        string s = Encoding.UTF8.GetString(bytes, pos, (int)len);
-        pos += (int)len;
+        uint len = ReadULEB128(bytes, ref pos, end);
+        if (len > int.MaxValue || len > end - pos)
+            throw new InvalidDataException("Truncated WebAssembly name.");
+
+        string s = Encoding.UTF8.GetString(bytes, pos, checked((int)len));
+        pos += checked((int)len);
         return s;
     }
 
@@ -282,12 +244,15 @@ public static class WasmCustomSectionWriter
         output.Write(utf8, 0, utf8.Length);
     }
 
-    private static uint ReadULEB128(byte[] bytes, ref int pos)
+    private static uint ReadULEB128(byte[] bytes, ref int pos, int end)
     {
         uint val = 0;
         int shift = 0;
         while (true)
         {
+            if (pos >= end)
+                throw new InvalidDataException("Truncated ULEB128 value.");
+
             byte b = bytes[pos++];
             val |= (b & 0x7fu) << shift;
             if ((b & 0x80u) == 0)

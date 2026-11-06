@@ -109,7 +109,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         {
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_webcil_id");
             PublishProject(info, config,
-                new PublishOptions(ExtraMSBuildArgs: $"-p:_WasmDevel=true -p:WasmNativeBuildId={PinnedBuildId}"),
+                new PublishOptions(ExtraMSBuildArgs: $"-p:_WasmDevel=true -p:WasmNativeBuildId=0X{PinnedBuildId.ToUpperInvariant()}"),
                 isNativeBuild: false);
 
             string webcil = FindWasmAsset(GetBinFrameworkDir(config, forPublish: true), info.ProjectName);
@@ -119,15 +119,21 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [TestCategory("no-workload")]
         [Theory]
-        [InlineData(Configuration.Release)]
-        public void InvalidBuildId_FailsWithoutWorkload(Configuration config)
+        [InlineData("not-hex", "non_hex")]
+        [InlineData("0x", "empty_prefix")]
+        [InlineData("aa0xbb", "embedded_prefix")]
+        [InlineData("123", "odd_length")]
+        public void InvalidBuildId_FailsWithoutWorkload(string buildId, string testId)
         {
-            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_invalid_id");
-            (_, string output) = PublishProject(info, config,
-                new PublishOptions(ExpectSuccess: false, ExtraMSBuildArgs: "-p:_WasmDevel=true -p:WasmNativeBuildId=not-hex"),
+            const Configuration config = Configuration.Release;
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, $"meta_invalid_id_{testId}");
+            (_, string output) = PublishProject(
+                info,
+                config,
+                new PublishOptions(ExpectSuccess: false, ExtraMSBuildArgs: $"-p:_WasmDevel=true -p:WasmNativeBuildId={buildId}"),
                 isNativeBuild: false);
 
-            Assert.Contains("WasmNativeBuildId 'not-hex' is not a valid hex string.", output);
+            Assert.Contains($"WasmNativeBuildId '{buildId}' is not a valid hex string.", output);
         }
 
         [TestCategory("no-workload")]

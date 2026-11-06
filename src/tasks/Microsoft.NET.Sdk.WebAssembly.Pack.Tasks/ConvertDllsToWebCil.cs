@@ -101,9 +101,19 @@ public class ConvertDllsToWebcil : Task
             return true;
         }
 
-        byte[]? buildId = ParseBuildId(WasmNativeBuildId);
-        if (Log.HasLoggedErrors)
-            return false;
+        byte[]? buildId = null;
+        if (EmitMetadataSections)
+        {
+            try
+            {
+                buildId = WasmCustomSectionWriter.ParseBuildId(WasmNativeBuildId);
+            }
+            catch (ArgumentException ex)
+            {
+                Log.LogError(ex.Message);
+                return false;
+            }
+        }
 
         if (!Directory.Exists(OutputPath))
             Directory.CreateDirectory(OutputPath);
@@ -260,40 +270,6 @@ public class ConvertDllsToWebcil : Task
         }
 
         return webcilItem;
-    }
-
-    // Parses a hex build_id (optionally 0x-prefixed) into raw bytes. Returns null when empty so the
-    // wrapper falls back to a per-file content hash.
-    private byte[]? ParseBuildId(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return null;
-
-        string hex = value!.Trim();
-        if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-            hex = hex.Substring(2);
-
-        if (hex.Length == 0 || (hex.Length % 2) != 0)
-        {
-            Log.LogError($"WasmNativeBuildId '{value}' is not a valid hex string.");
-            return null;
-        }
-
-        var bytes = new byte[hex.Length / 2];
-        for (int i = 0; i < bytes.Length; i++)
-        {
-#if NETFRAMEWORK
-            if (!byte.TryParse(hex.Substring(i * 2, 2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out bytes[i]))
-#else
-            if (!byte.TryParse(hex.AsSpan(i * 2, 2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out bytes[i]))
-#endif
-            {
-                Log.LogError($"WasmNativeBuildId '{value}' is not a valid hex string.");
-                return null;
-            }
-        }
-
-        return bytes;
     }
 
     private static bool OutputHasExpectedWebcilFlavor(string path, bool useR2R)

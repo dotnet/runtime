@@ -17,7 +17,7 @@ Specs:
 
 | Section     | Purpose                                                                 | How it is produced |
 |-------------|-------------------------------------------------------------------------|--------------------|
-| `producers` | Static telemetry about the toolchain that produced the module.          | A small linkable object is passed to `wasm-ld`, which merges it into the module's `producers` section. |
+| `producers` | Static telemetry about the toolchain that produced the module.          | Assembly source is passed to Emscripten and merged by `wasm-ld` into the module's `producers` section. |
 | `build_id`  | A value used to correlate a module with its symbols/sources.            | Stamped into a project-local final module by a managed MSBuild task. |
 
 `producers` is linker-driven so `wasm-ld` can merge entries from every tool. `build_id` is stamped
@@ -27,9 +27,6 @@ toolchain.
 ## Scope
 
 - Applies to application builds for both **Mono** and **CoreCLR**, with or without native relinking.
-- The **default** `dotnet.native.wasm` shipped in the runtime pack (consumed by non-relinking app
-  builds) is intended to carry a `build_id` equal to the runtime git hash, stamped at runtime-build
-  time and surfaced the same way the git hash is (see [Default runtime pack](#default-runtime-pack)).
 
 ## `build_id`
 
@@ -116,7 +113,7 @@ instead of creating another copy.
 
 | Property                     | Default | Meaning |
 |------------------------------|---------|---------|
-| `WasmEmitProducersSection`   | `true` on .NET 12+ | Emit/merge the `producers` section from the runtime-pack object. |
+| `WasmEmitProducersSection`   | `true` on .NET 12+ | Emit/merge the `producers` section from the runtime-pack assembly source. |
 | `WasmNativeBuildId`          | (unset) | .NET 12+: hex string to stamp as the `build_id` without forcing a native build. Empty means no application-stamped `build_id` section. |
 
 ## Open questions / future work

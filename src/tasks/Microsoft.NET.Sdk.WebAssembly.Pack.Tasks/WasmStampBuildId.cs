@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Globalization;
 using System.IO;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -32,9 +31,10 @@ public sealed class WasmStampBuildId : Task
         string? temporaryPath = null;
         try
         {
-            byte[] buildId = ParseBuildId(BuildId);
+            byte[] buildId = WasmCustomSectionWriter.ParseBuildId(BuildId)
+                ?? throw new ArgumentException($"WasmNativeBuildId '{BuildId}' is not a valid hex string.");
             byte[] module = File.ReadAllBytes(InputWasm.ItemSpec);
-            byte[] output = WasmCustomSectionWriter.WriteMetadata(module, producers: null, buildId);
+            byte[] output = WasmCustomSectionWriter.ReplaceBuildId(module, buildId);
 
             string outputDirectory = Path.GetDirectoryName(OutputPath);
             if (!string.IsNullOrEmpty(outputDirectory))
@@ -59,29 +59,5 @@ public sealed class WasmStampBuildId : Task
         }
 
         return !Log.HasLoggedErrors;
-    }
-
-    private static byte[] ParseBuildId(string value)
-    {
-        string hex = value.Trim();
-        if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-            hex = hex.Substring(2);
-
-        if (hex.Length == 0 || (hex.Length % 2) != 0)
-            throw new ArgumentException($"WasmNativeBuildId '{value}' is not a valid hex string.");
-
-        var bytes = new byte[hex.Length / 2];
-        for (int i = 0; i < bytes.Length; i++)
-        {
-#if NETFRAMEWORK
-            bool parsed = byte.TryParse(hex.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bytes[i]);
-#else
-            bool parsed = byte.TryParse(hex.AsSpan(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bytes[i]);
-#endif
-            if (!parsed)
-                throw new ArgumentException($"WasmNativeBuildId '{value}' is not a valid hex string.");
-        }
-
-        return bytes;
     }
 }
