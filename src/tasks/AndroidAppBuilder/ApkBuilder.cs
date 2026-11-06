@@ -333,6 +333,7 @@ public partial class ApkBuilder
             }
         }
         string abi;
+        AndroidProject? project = null;
         if (IsNativeAOT)
         {
             abi = AndroidProject.DetermineAbi(runtimeIdentifier);
@@ -410,12 +411,12 @@ public partial class ApkBuilder
             }
             File.WriteAllText(Path.Combine(OutputDir, monodroidSource), monodroidContent);
 
-            AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
-            project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
-            project.BuildCMake(OutputDir, StripDebugSymbols);
+            project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
+            project.GenerateCMake(OutputDir, MinApiLevel);
+            project.BuildCMake(OutputDir);
             abi = project.Abi;
 
-            // TODO: https://github.com/dotnet/runtime/issues/115717
+
         }
 
         // 2. Compile Java files
@@ -537,7 +538,9 @@ public partial class ApkBuilder
 
         // 3. Generate APK
 
-        string debugModeArg = StripDebugSymbols ? string.Empty : "--debug-mode";
+        // Always keep the app debuggable to enable adb shell run-as access during test runs.
+        // Symbol stripping is done post-build via llvm-strip rather than by setting android:debuggable=false.
+        string debugModeArg = "--debug-mode";
         string apkFile = Path.Combine(OutputDir, "bin", $"{ProjectName}.unaligned.apk");
         Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"package -f -m -F {apkFile} -A assets {resourceDirArg}-M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
 
@@ -552,15 +555,6 @@ public partial class ApkBuilder
         else
         {
             var excludedLibs = new HashSet<string> { "libmonodroid.so" };
-            if (IsCoreCLR)
-            {
-                if (StripDebugSymbols)
-                {
-                    // exclude debugger support libs
-                    excludedLibs.Add("libmscordbi.so");
-                    excludedLibs.Add("libmscordaccore.so");
-                }
-            }
             if (!StaticLinkedRuntime)
                 dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => !excludedLibs.Contains(Path.GetFileName(file))));
         }
@@ -605,8 +599,13 @@ public partial class ApkBuilder
                 }
             }
 
-            // NOTE: we can run android-strip tool from NDK to shrink native binaries here even more.
             File.Copy(dynamicLib, Path.Combine(OutputDir, destRelative), true);
+            if (StripDebugSymbols)
+            {
+                if (project is null)
+                    throw new InvalidOperationException("StripDebugSymbols is enabled, but no Android project is available to strip native libraries during APK packaging.");
+                project.StripBinaryInPlace(Path.Combine(OutputDir, destRelative));
+            }
             Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} {NormalizePathToUnix(destRelative)}", workingDir: OutputDir);
         }
         Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} classes.dex", workingDir: OutputDir);
