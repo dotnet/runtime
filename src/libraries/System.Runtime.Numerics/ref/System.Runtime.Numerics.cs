@@ -66,6 +66,7 @@ namespace System.Numerics
         public static bool IsPositive(System.Numerics.BigInteger value) { throw null; }
         public static bool IsPow2(System.Numerics.BigInteger value) { throw null; }
         public static System.Numerics.BigInteger LeadingZeroCount(System.Numerics.BigInteger value) { throw null; }
+        public static System.Numerics.BigInteger LeastCommonMultiple(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public static double Log(System.Numerics.BigInteger value) { throw null; }
         public static double Log(System.Numerics.BigInteger value, double baseValue) { throw null; }
         public static double Log10(System.Numerics.BigInteger value) { throw null; }
@@ -74,6 +75,7 @@ namespace System.Numerics
         public static System.Numerics.BigInteger MaxMagnitude(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
         public static System.Numerics.BigInteger Min(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public static System.Numerics.BigInteger MinMagnitude(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
+        public static System.Numerics.BigInteger ModInverse(System.Numerics.BigInteger value, System.Numerics.BigInteger modulus) { throw null; }
         public static System.Numerics.BigInteger ModPow(System.Numerics.BigInteger value, System.Numerics.BigInteger exponent, System.Numerics.BigInteger modulus) { throw null; }
         public static System.Numerics.BigInteger Multiply(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public static System.Numerics.BigInteger Negate(System.Numerics.BigInteger value) { throw null; }
