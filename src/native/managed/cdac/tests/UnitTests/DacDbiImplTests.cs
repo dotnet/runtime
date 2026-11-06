@@ -1123,7 +1123,7 @@ public unsafe class DacDbiImplTests
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
         ctx.RawContextFlags = ctx.ContextControlFlags;
         ctx.StackPointer = new TargetPointer(sp);
-        byte[] bytes = ctx.GetBytes().ToArray();
+        byte[] bytes = ctx.GetBytes();
 
         fixed (byte* pCtx = bytes)
         {
@@ -1168,7 +1168,7 @@ public unsafe class DacDbiImplTests
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
         ctx.RawContextFlags = 0;
         ctx.StackPointer = new TargetPointer(0x2000);
-        byte[] bytes = ctx.GetBytes().ToArray();
+        byte[] bytes = ctx.GetBytes();
 
         fixed (byte* pCtx = bytes)
         {
@@ -2327,5 +2327,4 @@ public unsafe class DacDbiImplTests
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(Interop.BOOL.TRUE, result);
     }
-
 }
