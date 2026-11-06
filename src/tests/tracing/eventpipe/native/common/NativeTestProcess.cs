@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 internal static class NativeTestProcess
 {
     internal static (int ExitCode, string Output, string Error) Run(string executable, params string[] arguments)
+        => Run(executable, TimeSpan.FromSeconds(60), arguments);
+
+    internal static (int ExitCode, string Output, string Error) Run(string executable, TimeSpan timeout, params string[] arguments)
     {
         string baseDirectory = AppContext.BaseDirectory;
         if (string.IsNullOrEmpty(baseDirectory))
@@ -41,9 +44,9 @@ internal static class NativeTestProcess
                 Task<string> output = process.StandardOutput.ReadToEndAsync();
                 Task<string> error = process.StandardError.ReadToEndAsync();
 
-                if (!process.WaitForExit(60_000))
+                if (!process.WaitForExit(timeout))
                 {
-                    throw new TimeoutException($"Native test executable '{fileName}' did not exit within 60 seconds.");
+                    throw new TimeoutException($"Native test executable '{fileName}' did not exit within {timeout.TotalSeconds} seconds.");
                 }
 
                 return (process.ExitCode, output.GetAwaiter().GetResult(), error.GetAwaiter().GetResult());

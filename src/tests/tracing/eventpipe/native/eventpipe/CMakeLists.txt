@@ -26,20 +26,19 @@ add_executable(NativeEventPipeTestsDriver
     ep-buffer-tests.c
     ep-fastserializer-tests.c
     ep-file-tests.c
+    ep-perf-tests.c
     ep-provider-callback-dataqueue-tests.c
     ep-rt-tests.c
     ep-session-tests.c
     ep-tests.c
     ep-thread-tests.c)
 
-option(TEST_PERF "Run native EventPipe performance tests in Release builds" ON)
 target_compile_definitions(NativeEventPipeTestsDriver PRIVATE
     ENABLE_PERFTRACING
     EP_CUSTOM_RT_CONFIG
     EP_RT_H=\"ep-rt-test.h\"
     EP_RT_TYPES_H=\"ep-rt-types-test.h\"
-    EP_RT_CONFIG_H=\"ep-rt-config-test.h\"
-    TEST_PERF=$<AND:$<CONFIG:Release>,$<BOOL:${TEST_PERF}>>)
+    EP_RT_CONFIG_H=\"ep-rt-config-test.h\")
 
 target_include_directories(NativeEventPipeTestsDriver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ../common)
 target_link_libraries(NativeEventPipeTestsDriver PRIVATE dn-eventpipe dn-containers minipal Threads::Threads)

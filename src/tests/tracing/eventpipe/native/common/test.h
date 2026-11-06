@@ -51,6 +51,7 @@ typedef struct
 {
     const char *name;
     LoadGroupHandler handler;
+    bool run_by_default;
 } Group;
 
 #define OK NULL
