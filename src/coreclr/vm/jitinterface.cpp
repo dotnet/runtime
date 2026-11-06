@@ -15355,6 +15355,14 @@ void CEEInfo::recordWasmManagedCallSig(
     // No-op for the VM. Only meaningful for ReadyToRun Wasm compilation.
 }
 
+void CEEInfo::recordWasmVirtualFunctionPointerLookup(
+        CORINFO_METHOD_HANDLE method        /* IN */
+        )
+{
+    LIMITED_METHOD_CONTRACT;
+    // No-op for the VM. Only meaningful for ReadyToRun Wasm compilation.
+}
+
 void CEEInfo::recordRelocation(
         void *                 location,   /* IN  */
         void *                 locationRW, /* IN  */
