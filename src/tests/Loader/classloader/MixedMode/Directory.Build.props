@@ -1,0 +1,12 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
+  <PropertyGroup>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true' or '$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
+    <!-- CrossGen, IL round-trip, and unloadability exclusions require per-process test wrappers. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CrossGenTest>false</CrossGenTest>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+</Project>

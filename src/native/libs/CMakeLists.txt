@@ -9,6 +9,11 @@ if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
     include(../../../eng/native/configurepaths.cmake)
     include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
+    if (CLR_CMAKE_TARGET_BROWSER AND CLR_CMAKE_WASM_ENABLE_THREADS)
+        add_compile_options(-pthread)
+        add_link_options(-pthread)
+    endif ()
+
     add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
 endif()
 

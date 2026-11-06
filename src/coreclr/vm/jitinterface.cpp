@@ -1068,6 +1068,12 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 // we cannot resolve to an Async variant in such case.
                 // return NULL, so that caller would re-resolve as a regular method call
                 pMD = pMD->ReturnsTaskOrValueTask() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
+                if (pMD != NULL && pMD->IsCovariantForwardingThunk())
+                {
+                    // This variant preserves the base slot's return type and dispatches virtually.
+                    // It cannot replace a direct await or a nonvirtual call to the ordinary variant.
+                    pMD = NULL;
+                }
             }
             break;
 
@@ -11603,7 +11609,8 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
     EX_TRY
     {
         const InstrumentedILOffsetMapping *pILOffsetMapping = NULL;
-        InstrumentedILOffsetMapping loadTimeMapping;
+        // Owns the copy of the load-time map. The ReJIT map is borrowed and must not be freed.
+        InstrumentedILOffsetMappingHolder loadTimeMapping;
 #ifdef FEATURE_REJIT
         ILCodeVersion ilVersion;
 
@@ -11624,8 +11631,8 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
             // if there is a profiler load-time mapping and not a rejit mapping, apply that instead
             loadTimeMapping =
                 m_pMethodBeingCompiled->GetAssembly()->GetModule()->GetInstrumentedILOffsetMapping(m_pMethodBeingCompiled->GetMemberDef());
-            if (!loadTimeMapping.IsNull())
-                pILOffsetMapping = &loadTimeMapping;
+            if (!loadTimeMapping.Get().IsNull())
+                pILOffsetMapping = &loadTimeMapping.Get();
         }
 
         PTR_BYTE pDebugInfo = CompressDebugInfo::Compress(

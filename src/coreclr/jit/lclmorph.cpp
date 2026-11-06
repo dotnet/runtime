@@ -2058,9 +2058,9 @@ private:
     bool MorphStructField(GenTreeIndir* node, GenTree* user)
     {
         GenTree* addr = node->Addr();
-        if (node->IsVolatile() && (!addr->OperIs(GT_FIELD_ADDR) || ((addr->gtFlags & GTF_FLD_DEREFERENCED) == 0)))
+        if (node->IsVolatile())
         {
-            // TODO-Bug: transforming volatile indirections like this is not legal. The above condition is a quirk.
+            // A volatile indirection must stay an indirection, so the address escapes and the struct gets exposed.
             return false;
         }
 

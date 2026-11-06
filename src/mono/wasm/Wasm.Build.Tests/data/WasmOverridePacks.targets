@@ -1,6 +1,26 @@
 <Project>
+  <!-- Current-runtime opt-in leaves SDK restore intact; legacy path overrides remain the default for existing imports. -->
+  <Target Name="_UseCurrentMonoRuntimeForTests" BeforeTargets="ProcessFrameworkReferences"
+          Condition="'$(WBTMonoRuntimePackVersion)' != '' and '$(RuntimeIdentifier)' == 'browser-wasm'">
+    <ItemGroup>
+      <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                               Condition="'%(KnownFrameworkReference.TargetFramework)' == '$(TargetFramework)'">
+        <LatestRuntimeFrameworkVersion>$(WBTMonoRuntimePackVersion)</LatestRuntimeFrameworkVersion>
+      </KnownFrameworkReference>
+      <KnownRuntimePack Update="@(KnownRuntimePack)"
+                        Condition="'%(KnownRuntimePack.TargetFramework)' == '$(TargetFramework)' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">
+        <LatestRuntimeFrameworkVersion>$(WBTMonoRuntimePackVersion)</LatestRuntimeFrameworkVersion>
+      </KnownRuntimePack>
+      <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)"
+                               Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '$(TargetFramework)'">
+        <WebAssemblySdkPackVersion>$(WBTMonoRuntimePackVersion)</WebAssemblySdkPackVersion>
+      </KnownWebAssemblySdkPack>
+    </ItemGroup>
+  </Target>
+
   <!-- SDK tries to download runtime packs when RuntimeIdentifier is set, remove them from PackageDownload item. -->
   <Target Name="RemoveRuntimePackFromDownloadItem"
+          Condition="'$(WBTMonoRuntimePackVersion)' == ''"
           AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <PackageDownload Remove="@(PackageDownload)"
@@ -12,6 +32,7 @@
 
   <!-- Use local targeting pack for NetCoreAppCurrent. -->
   <Target Name="UpdateTargetingAndRuntimePack"
+          Condition="'$(WBTMonoRuntimePackVersion)' == ''"
           AfterTargets="ResolveFrameworkReferences">
     <ItemGroup>
       <ResolvedRuntimePack
@@ -32,6 +53,7 @@
 
   <!-- Update the local targeting pack's version as it's written into the runtimeconfig.json file to select the right framework. -->
   <Target Name="UpdateRuntimeFrameworkVersion"
+          Condition="'$(WBTMonoRuntimePackVersion)' == ''"
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
       <RuntimeFramework Version="$(_RuntimePackInWorkloadVersionCurrent)"
@@ -41,6 +63,7 @@
 
   <!-- Filter out conflicting implicit assembly references. -->
   <Target Name="FilterImplicitAssemblyReferences"
+          Condition="'$(WBTMonoRuntimePackVersion)' == ''"
           DependsOnTargets="ResolveProjectReferences"
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
@@ -58,7 +81,7 @@
     </ItemGroup>
   </Target>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(WBTMonoRuntimePackVersion)' == ''">
     <KnownWebAssemblySdkPack Update="Microsoft.NET.Sdk.WebAssembly.Pack"
       WebAssemblySdkPackVersion="$(_RuntimePackInWorkloadVersionCurrent)" />
   </ItemGroup>

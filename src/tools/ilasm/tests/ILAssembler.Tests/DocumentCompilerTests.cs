@@ -10,7 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class DocumentCompilerTests
     {

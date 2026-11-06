@@ -334,8 +334,11 @@ extends:
             collectionType: crossgen2
             collectionName: libraries
 
-      # Crossgen2 of the release browser/wasm managed assembly set (the browser-wasm
-      # CoreCLR runtime pack: all shared framework libraries plus System.Private.CoreLib.dll).
+      # Crossgen2 of the release browser/wasm managed assembly set: the browser-wasm CoreCLR
+      # runtime pack (all shared framework libraries plus System.Private.CoreLib.dll), plus
+      # the portable non-framework IL at the top level of Core_Root (Roslyn, TraceEvent,
+      # FSharp.Core, Newtonsoft.Json, xunit, out-of-band libraries), mirroring what the host
+      # libraries crossgen2 collections compile from Core_Root.
       # Runs crossgen2 on a windows_x64 host with the wasm cross-targeting JIT
       # (clrjit_universal_wasm_x64.dll) under superpmi-shim-collector, producing an MCH
       # uploaded under <jit_ee_version>/browser/x64/ (the wasm mch_arch override in
@@ -372,6 +375,30 @@ extends:
             # 109,684 kept). That costs CPU rather than coverage, and keeps a failed
             # partition from losing the whole collection. Work items ran 1-2 minutes each.
             maxPartitionSizeMB: 5
+
+      # Crossgen2 of the JIT tests from the coreclr test build, targeting browser/wasm.
+      # Wasm has no runtime JIT, so the *.run coreclr_tests collections other targets get
+      # can't be done; compiling the test assemblies ahead of time with the wasm
+      # cross-targeting JIT still covers the JIT-focused test IL. Each assembly is compiled on
+      # its own (not composite), so tests built with optimizations disabled also contribute
+      # MinOpts contexts. References are the browser-wasm runtime pack plus the staged test
+      # infrastructure. Produces coreclr_tests.crossgen2.*.mch under
+      # <jit_ee_version>/browser/x64/.
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: crossgen2
+            collectionName: coreclr_tests
+            targetOS: browser
+            targetArch: wasm
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
