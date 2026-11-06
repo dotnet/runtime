@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -24,6 +25,10 @@ public class InPlaceMemoryUpdate
         Assert.Equal(15, holder.Count);
         Assert.Equal(0x53, OrFieldCommuted(holder, 0x100));
         Assert.Equal(0x153, holder.Flags);
+        Assert.Equal(15, CheckedAddField(holder, 2));
+        Assert.Equal(17, holder.Count);
+        Assert.Throws<OverflowException>(() => CheckedAddField(holder, long.MaxValue));
+        Assert.Equal(17, holder.Count);
 
         int value = 0x13;
         Assert.Equal(0x13, AndRef(ref value));
@@ -58,6 +63,18 @@ public class InPlaceMemoryUpdate
         // X64: or dword ptr [{{[a-z0-9]+}}+{{[0-9A-Fa-fx]+}}], {{[a-z0-9]+}}
         int old = holder.Flags;
         holder.Flags = x | holder.Flags;
+        return old;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long CheckedAddField(Holder holder, long x)
+    {
+        // Overflow-checked ops have no memory-operand form, so the load stays CSE'd.
+        // X64: mov [[OLD:[a-z0-9]+]], qword ptr [{{[a-z0-9]+}}+{{[0-9A-Fa-fx]+}}]
+        // X64-NOT: qword ptr [{{[a-z0-9]+}}+{{[0-9A-Fa-fx]+}}]
+        // X64: jo
+        long old = holder.Count;
+        holder.Count = checked(holder.Count + x);
         return old;
     }
 

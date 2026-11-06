@@ -930,6 +930,11 @@ static GenTree* GetMemoryUpdateOp(GenTree* load)
         return nullptr;
     }
 
+    if (op->gtOverflowEx())
+    {
+        return nullptr;
+    }
+
     if (!op->OperIs(GT_NOT, GT_NEG) &&
         (!op->OperIsBinary() || !op->OperIsRMWMemOp() || ((op->gtGetOp1() != load) && !op->OperIsCommutative())))
     {
@@ -951,17 +956,24 @@ static GenTree* GetMemoryUpdateOp(GenTree* load)
 //    after the candidates are located, so the remaining occurrences can still
 //    be CSE'd.
 //
-//    A load is kept if 'op' is itself a CSE candidate with another remaining
-//    occurrence: the result of 'op' then has other uses, so lowering could not
-//    use the memory-operand form anyway. Since removing a load can remove the
-//    only other occurrence of another load's 'op' (as in "*p &= a; *p |= b;"),
-//    this is iterated to a fixed point.
+//    Initially all such loads are disqualified. A load is then reinstated if
+//    'op' is itself a CSE candidate whose occurrences include another
+//    still-qualified one besides 'op': the result of 'op' may have other uses,
+//    so lowering might not be able to use the memory-operand form anyway.
+//    A load can itself be an occurrence of another load's 'op' (as in
+//    "*p &= a; *p |= b;"), so reinstating one load can reinstate others; this
+//    is repeated until no further loads are reinstated.
 //
 void Compiler::optValnumCSE_ScreenMemoryUpdates()
 {
-    ArrayStack<GenTree*> loads(getAllocator(CMK_CSE));
-    ArrayStack<GenTree*> ops(getAllocator(CMK_CSE));
-    ArrayStack<int>      indices(getAllocator(CMK_CSE));
+    struct MemoryUpdate
+    {
+        GenTree* load;
+        GenTree* op;
+        int      cseIndex;
+    };
+
+    ArrayStack<MemoryUpdate> updates(getAllocator(CMK_CSE));
 
     for (unsigned inx = 0; inx < optCSECandidateCount; inx++)
     {
@@ -971,34 +983,30 @@ void Compiler::optValnumCSE_ScreenMemoryUpdates()
             GenTree* const op   = GetMemoryUpdateOp(tree);
             if (op != nullptr)
             {
-                loads.Push(tree);
-                ops.Push(op);
-                indices.Push(tree->gtCSEnum);
+                updates.Push({tree, op, tree->gtCSEnum});
                 tree->gtCSEnum = NO_CSE;
             }
         }
     }
 
-    bool changed = !loads.Empty();
+    bool changed = !updates.Empty();
     while (changed)
     {
         changed = false;
-        for (int i = 0; i < loads.Height(); i++)
+        for (const MemoryUpdate& update : updates.BottomUpOrder())
         {
-            GenTree* const load = loads.Bottom(i);
-            GenTree* const op   = ops.Bottom(i);
-            if (IS_CSE_INDEX(load->gtCSEnum) || !IS_CSE_INDEX(op->gtCSEnum))
+            if (IS_CSE_INDEX(update.load->gtCSEnum) || !IS_CSE_INDEX(update.op->gtCSEnum))
             {
                 continue;
             }
 
-            for (treeStmtLst* lst = &optCSEfindDsc(GET_CSE_INDEX(op->gtCSEnum))->csdTreeList; lst != nullptr;
+            for (treeStmtLst* lst = &optCSEfindDsc(GET_CSE_INDEX(update.op->gtCSEnum))->csdTreeList; lst != nullptr;
                  lst              = lst->tslNext)
             {
-                if ((lst->tslTree != op) && IS_CSE_INDEX(lst->tslTree->gtCSEnum))
+                if ((lst->tslTree != update.op) && IS_CSE_INDEX(lst->tslTree->gtCSEnum))
                 {
-                    load->gtCSEnum = (signed char)indices.Bottom(i);
-                    changed        = true;
+                    update.load->gtCSEnum = (signed char)update.cseIndex;
+                    changed               = true;
                     break;
                 }
             }
@@ -1006,12 +1014,12 @@ void Compiler::optValnumCSE_ScreenMemoryUpdates()
     }
 
 #ifdef DEBUG
-    for (int i = 0; i < loads.Height(); i++)
+    for (const MemoryUpdate& update : updates.BottomUpOrder())
     {
-        if (!IS_CSE_INDEX(loads.Bottom(i)->gtCSEnum))
+        if (!IS_CSE_INDEX(update.load->gtCSEnum))
         {
-            JITDUMP("Removed " FMT_CSE " occurrence [%06u]: source of an in-place memory update\n", indices.Bottom(i),
-                    dspTreeID(loads.Bottom(i)));
+            JITDUMP("Removed " FMT_CSE " occurrence [%06u]: source of an in-place memory update\n", update.cseIndex,
+                    dspTreeID(update.load));
         }
     }
 #endif
@@ -1102,6 +1110,8 @@ void Compiler::optValnumCSE_InitDataFlow()
 
         while (lst != nullptr)
         {
+            // Some occurrences may have been dropped because they are part of an
+            // in-place memory update (see optValnumCSE_ScreenMemoryUpdates).
             if (!IS_CSE_INDEX(lst->tslTree->gtCSEnum))
             {
                 lst = lst->tslNext;
