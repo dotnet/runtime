@@ -92,19 +92,35 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ObjectConverterHandlingStrings_DictionaryWithStringKey_DoesNotCauseStackOverflow()
         {
-            // Regression test: A custom JsonConverter<object> that claims to handle strings
-            // via CanConvert was causing StackOverflowException when serializing dictionaries
-            // with string keys, due to infinite recursion in the CastingConverter.
-            // The converter writes an empty string for property names and returns a constant on read,
-            // which lets us verify the fallback converter is being used instead of the custom converter.
+            // Regression test for https://github.com/dotnet/runtime/issues/122835: a custom
+            // JsonConverter<object> that claims to handle strings via CanConvert was causing a
+            // StackOverflowException when serializing dictionaries with string keys, due to infinite
+            // recursion in the CastingConverter.
             var options = new JsonSerializerOptions { Converters = { new GenericObjectConverterHandlingStrings() } };
             var value = new Dictionary<string, int> { ["key"] = 123 };
 
-            // The fallback StringConverter should be used for property names, preserving "key"
+            // Since the converter doesn't override the property name methods, the fallback
+            // StringConverter should be used for property names, preserving "key".
             string json = JsonSerializer.Serialize(value, options);
             Assert.Equal("""{"key":123}""", json);
 
             // Deserialization should also use the fallback converter for property names
+            var deserialized = JsonSerializer.Deserialize<Dictionary<string, int>>(json, options);
+            Assert.Equal(123, deserialized["key"]);
+        }
+
+        [Fact]
+        public static void ObjectConverterHandlingStrings_WithPropertyNameOverrides_DictionaryWithStringKey_HonorsOverrides()
+        {
+            // Counterpart to the test above: an object converter that *does* override the property
+            // name methods handles keys directly, so it never enters the object fallback and must
+            // keep being delegated to. This matches the .NET 10 behavior.
+            var options = new JsonSerializerOptions { Converters = { new ObjectConverterHandlingStringsWithPropertyNameOverrides() } };
+            var value = new Dictionary<string, int> { ["key"] = 123 };
+
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("""{"custom:key":123}""", json);
+
             var deserialized = JsonSerializer.Deserialize<Dictionary<string, int>>(json, options);
             Assert.Equal(123, deserialized["key"]);
         }
@@ -114,6 +130,19 @@ namespace System.Text.Json.Serialization.Tests
             public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(string);
             public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.GetString()!;
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options) => writer.WriteStringValue(value?.ToString());
+        }
+
+        public class ObjectConverterHandlingStringsWithPropertyNameOverrides : JsonConverter<object>
+        {
+            private const string Prefix = "custom:";
+
+            public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(string);
+            public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.GetString()!;
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options) => writer.WriteStringValue(value?.ToString());
+            public override object ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => reader.GetString()!.Substring(Prefix.Length);
+            public override void WriteAsPropertyName(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+                => writer.WritePropertyName(Prefix + (string)value);
         }
 
         [Fact]

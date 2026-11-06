@@ -16,16 +16,6 @@ namespace System.Text.Json.Serialization.Converters
     {
         private readonly JsonConverter _sourceConverter;
 
-        // Whether property name serialization can be delegated to the source converter.
-        //
-        // Delegation is unsafe only for converters declared for object: their inherited property name
-        // implementations fall back to ObjectConverter, which is the one converter that re-dispatches
-        // on the runtime type. That lookup resolves back to this casting converter, which delegates
-        // again, recursing until the stack overflows (see dotnet/runtime#118381). For every other
-        // declared type the inherited implementation either has no fallback at all or a fallback that
-        // serializes the type directly, so delegating cannot resolve back to this instance.
-        private readonly bool _delegatePropertyNameSerialization;
-
         internal override Type? KeyType => _sourceConverter.KeyType;
         internal override Type? ElementType => _sourceConverter.ElementType;
         internal override JsonConverter? NullableElementConverter => _sourceConverter.NullableElementConverter;
@@ -48,8 +38,6 @@ namespace System.Text.Json.Serialization.Converters
             HandleNullOnRead = sourceConverter.HandleNullOnRead;
             HandleNullOnWrite = sourceConverter.HandleNullOnWrite;
             HandleNull = sourceConverter.HandleNullOnWrite;
-
-            _delegatePropertyNameSerialization = sourceConverter.Type != typeof(object);
         }
 
         internal override JsonConverter? SourceConverterForCastingConverter => _sourceConverter;
@@ -70,61 +58,22 @@ namespace System.Text.Json.Serialization.Converters
         internal override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
             => _sourceConverter.OnTryWriteAsObject(writer, value, options, ref state);
 
+        // Property name serialization is always delegated to the source converter, so that overrides
+        // declared by converters targeting a base type (e.g. JsonConverter<Enum>) keep handling keys
+        // of the derived type. The one converter that would recurse back into this instance --
+        // ObjectConverter, whose property name implementation re-dispatches on the key type -- breaks
+        // the cycle itself (see dotnet/runtime#122835).
         public override T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (_delegatePropertyNameSerialization)
-            {
-                return JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadAsPropertyNameAsObject(ref reader, typeToConvert, options))!;
-            }
-            else
-            {
-                // Delegating to a converter declared for object would recurse back into this instance.
-                // Use our base class logic instead, which resolves the fallback for type T.
-                return base.ReadAsPropertyName(ref reader, typeToConvert, options);
-            }
-        }
+            => JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadAsPropertyNameAsObject(ref reader, typeToConvert, options))!;
 
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (_delegatePropertyNameSerialization)
-            {
-                return JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadAsPropertyNameCoreAsObject(ref reader, typeToConvert, options))!;
-            }
-            else
-            {
-                // Delegating to a converter declared for object would recurse back into this instance.
-                // Use our base class logic instead, which resolves the fallback for type T.
-                return base.ReadAsPropertyNameCore(ref reader, typeToConvert, options);
-            }
-        }
+            => JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadAsPropertyNameCoreAsObject(ref reader, typeToConvert, options))!;
 
         public override void WriteAsPropertyName(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options)
-        {
-            if (_delegatePropertyNameSerialization)
-            {
-                _sourceConverter.WriteAsPropertyNameAsObject(writer, value, options);
-            }
-            else
-            {
-                // Delegating to a converter declared for object would recurse back into this instance.
-                // Use our base class logic instead, which resolves the fallback for type T.
-                base.WriteAsPropertyName(writer, value, options);
-            }
-        }
+            => _sourceConverter.WriteAsPropertyNameAsObject(writer, value, options);
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
-        {
-            if (_delegatePropertyNameSerialization)
-            {
-                _sourceConverter.WriteAsPropertyNameCoreAsObject(writer, value, options, isWritingExtensionDataProperty);
-            }
-            else
-            {
-                // Delegating to a converter declared for object would recurse back into this instance.
-                // Use our base class logic instead, which resolves the fallback for type T.
-                base.WriteAsPropertyNameCore(writer, value!, options, isWritingExtensionDataProperty);
-            }
-        }
+            => _sourceConverter.WriteAsPropertyNameCoreAsObject(writer, value, options, isWritingExtensionDataProperty);
 
         internal override T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
             => JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadNumberWithCustomHandlingAsObject(ref reader, handling, options))!;
