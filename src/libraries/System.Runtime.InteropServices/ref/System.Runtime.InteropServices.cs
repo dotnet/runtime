@@ -212,6 +212,18 @@ namespace System.Runtime.InteropServices
         public int MajorVersion { get { throw null; } }
         public int MinorVersion { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited = false)]
+    public abstract partial class TypeMapFactoryAttribute<TContract> : System.Attribute
+    {
+        protected TypeMapFactoryAttribute() { }
+        public abstract TContract CreateInstance();
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited = false)]
+    public sealed partial class TypeMapFactoryAttribute<TContract, TImplementation> : System.Runtime.InteropServices.TypeMapFactoryAttribute<TContract> where TImplementation : TContract, new()
+    {
+        public TypeMapFactoryAttribute() { }
+        public override TContract CreateInstance() { throw null; }
+    }
 }
 namespace System.Runtime.InteropServices.ComTypes
 {

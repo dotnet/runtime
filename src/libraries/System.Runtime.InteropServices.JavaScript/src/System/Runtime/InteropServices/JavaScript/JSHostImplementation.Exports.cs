@@ -12,17 +12,19 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private static readonly Lazy<IReadOnlyDictionary<string, Type>> s_exportProviders = new(CreateExportProviderMap);
 
-        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Generated type-map providers preserve their constructors and directly reference their export wrappers.")]
         private static IReadOnlyDictionary<string, Type> CreateExportProviderMap()
             => TypeMapping.GetOrCreateExternalTypeMapping<JSExportProvider>();
 
-        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "The generated GetExportNames override preserves the provider's public parameterless constructor with DynamicDependency.")]
         private static bool TryBindMappedAssemblyExports(string assemblyName)
         {
             if (!s_exportProviders.Value.TryGetValue(assemblyName, out Type? providerType))
                 return false;
 
-            var provider = (JSExportProvider)Activator.CreateInstance(providerType)!;
+            TypeMapFactoryAttribute<JSExportProvider>? factory = providerType.GetCustomAttribute<TypeMapFactoryAttribute<JSExportProvider>>(inherit: false);
+            if (factory is null)
+                throw new InvalidOperationException(SR.Format(SR.JSExportProviderMissingFactory, providerType));
+
+            JSExportProvider provider = factory.CreateInstance();
             JavaScriptImports.RegisterLazyCSFunctions(assemblyName, provider.GetExportNames().ToArray(), provider.Bind);
             return true;
         }

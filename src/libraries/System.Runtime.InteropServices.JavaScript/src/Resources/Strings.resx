@@ -120,6 +120,9 @@
   <data name="ArgumentCannotBeNull" xml:space="preserve">
     <value>Invalid argument: {0} can not be null.</value>
   </data>
+  <data name="JSExportProviderMissingFactory" xml:space="preserve">
+    <value>JSExport provider '{0}' must declare a type-map factory attribute.</value>
+  </data>
   <data name="ArgumentCannotBeNullWithLength" xml:space="preserve">
     <value>Invalid argument: {0} can not be null and must have a length.</value>
   </data>

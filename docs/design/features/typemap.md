@@ -166,6 +166,23 @@ closure.
 5. Trimming tools will consider calls to `TypeMapping.GetOrCreateExternalTypeMapping<>` and
 `TypeMapping.GetOrCreateProxyTypeMapping<>` as intrinsics (for example, Java via `JavaTypeMapGroup`). As a result, it is not trim-compatible to call either of these methods with non-fully-instantiated generic (such as a type argument or a type that is instantiated over a type argument).
 
+## Optional factory activation prototype
+
+The `TypeMapFactoryAttribute<TContract, TImplementation>` prototype supplies an
+optional activation policy on a mapped type. Its
+`TypeMapFactoryAttribute<TContract>` base lets a consumer retrieve the factory
+without knowing the implementation type and call `CreateInstance()`.
+The implementation must satisfy `TImplementation : TContract, new()`, so the
+trimmer can preserve its public parameterless constructor through generic data
+flow rather than a consumer's `Activator.CreateInstance(Type)` suppression.
+
+The attribute does not add map entries, change map discovery or permit map
+enumeration. The attributed type may be a descriptor rather than the
+implementation itself. The concrete two-argument attribute creates a fresh
+instance on every call; it does not cache instances. The JSExport generator and
+host are the first adoption site. These attributes are an unapproved API
+prototype for discussion, not part of the existing type-map contract.
+
 ## Type Map entry trimming rules
 
 This section provides the minimum rules for entries to be included in a given type map by a trimming tool (ie. ILLink or NativeAOT). Due to restrictions in some form factors, some trimming tools may include more entries than would be included based on the rules described below.

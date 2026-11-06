@@ -72,6 +72,7 @@
     <Compile Include="System\Runtime\InteropServices\TypeLibVarAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibVarFlags.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibVersionAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeMapFactoryAttribute.cs" />
     <Compile Include="System\Security\SecureStringMarshal.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>

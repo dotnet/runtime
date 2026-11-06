@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
@@ -12,11 +11,11 @@ using System.Runtime.Versioning;
 
 namespace AssemblyProviderTest;
 
+[TypeMapFactory<JSExportProvider, CountingAssemblyProvider>]
 internal sealed partial class CountingAssemblyProvider : JSExportProvider
 {
     public CountingAssemblyProvider() => Console.WriteLine("TestOutput -> lazy:constructor");
 
-    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(CountingAssemblyProvider))]
     public override ReadOnlySpan<string> GetExportNames() =>
         new string[] { "[CountingLibrary]AssemblyProviderTest.CountingExports:Add#1", "[CountingLibrary]AssemblyProviderTest.CountingExports:Unused#2" };
 

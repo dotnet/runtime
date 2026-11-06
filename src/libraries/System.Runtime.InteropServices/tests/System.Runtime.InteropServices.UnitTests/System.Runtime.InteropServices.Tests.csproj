@@ -165,6 +165,7 @@
     <Compile Include="System\Runtime\InteropServices\StandardOleMarshalObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\StructLayoutAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeIdentifierAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeMapFactoryAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\UnknownWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\UnmanagedFunctionPointerAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\VariantWrapperTests.cs" />
