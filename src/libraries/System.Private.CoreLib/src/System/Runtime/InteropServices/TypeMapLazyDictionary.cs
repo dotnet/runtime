@@ -254,12 +254,9 @@ namespace System.Runtime.InteropServices
             RuntimeAssembly? startingAssembly = null)
         {
             bool followAssemblyTargets = startingAssembly is null;
-            if (startingAssembly is null)
-            {
-                startingAssembly = AppContext.GetData("System.Runtime.InteropServices.TypeMappingEntryAssembly") is string entryAssemblyName
-                    ? (RuntimeAssembly?)Assembly.Load(entryAssemblyName)
-                    : (RuntimeAssembly?)Assembly.GetEntryAssembly();
-            }
+            startingAssembly ??= AppContext.GetData("System.Runtime.InteropServices.TypeMappingEntryAssembly") is string entryAssemblyName
+                ? (RuntimeAssembly?)Assembly.Load(entryAssemblyName)
+                : (RuntimeAssembly?)Assembly.GetEntryAssembly();
 
             if (startingAssembly is null)
             {
