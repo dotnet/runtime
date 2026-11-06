@@ -178,13 +178,18 @@ namespace Wasm.Build.Tests
             Assert.DoesNotContain("args:", output);
 
             RunResult browserResult = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 42,
+                BrowserPath: "index.html?asset=a%20b.wasm",
+                BrowserQueryString: new NameValueCollection { { "marker", "additional" } },
                 ExtraArgs: "-p:WasmHostArguments=--host=browser -- --dotnet-env=CLI_VALUE=browser --dotnet-runtime-property=Cli.Property=17 --dotnet-runtime-property=Cli.Number=42.5 --dotnet-runtime-property=Cli.Flag=true -- --debug --host=application --")
             {
                 ExecuteAfterLoaded = async (_, page) =>
                 {
                     string headers = await page.EvaluateAsync<string>("""
                         async () => {
-                            const path = new URLSearchParams(location.search).get("dotnet-launch");
+                            const params = new URLSearchParams(location.search);
+                            if (params.get("asset") !== "a b.wasm" || params.get("marker") !== "additional")
+                                throw new Error("Missing browser path or additional query parameters");
+                            const path = params.get("dotnet-launch");
                             if (!path) throw new Error("Missing launch configuration URL");
                             const response = await fetch(path);
                             return `${response.status}:${response.headers.get("Cache-Control")}`;
@@ -254,6 +259,21 @@ namespace Wasm.Build.Tests
                 _testOutput.WriteLine(text);
                 return (process.ExitCode, text);
             }
+        }
+
+        [Theory]
+        [InlineData("http://localhost:9000/?dotnet-launch=launch", "cache-seed.html?asset=a%20b.wasm", "?test=cache", "/cache-seed.html", "?dotnet-launch=launch&asset=a%20b.wasm&test=cache", "")]
+        [InlineData("http://localhost:9000/", "cache-seed.html?asset=a.wasm", "", "/cache-seed.html", "?asset=a.wasm", "")]
+        [InlineData("http://localhost:9000/?dotnet-launch=launch", "", "?arg=one&arg=two", "/", "?dotnet-launch=launch&arg=one&arg=two", "")]
+        [InlineData("http://localhost:9000/?dotnet-launch=launch", "index.html#section", "", "/index.html", "?dotnet-launch=launch", "#section")]
+        [InlineData("http://localhost:9000/?dotnet-launch=launch", "?asset=a.wasm#section", "?arg=", "/", "?dotnet-launch=launch&asset=a.wasm&arg=", "#section")]
+        [TestCategory("no-workload")]
+        public void BrowserUrlPreservesQuerySources(string browserUrl, string browserPath, string queryString, string expectedPath, string expectedQuery, string expectedFragment)
+        {
+            var result = new Uri(BuildBrowserUrl(browserUrl, browserPath, queryString));
+            Assert.Equal(expectedPath, result.AbsolutePath);
+            Assert.Equal(expectedQuery, result.Query);
+            Assert.Equal(expectedFragment, result.Fragment);
         }
 
         [Theory]
