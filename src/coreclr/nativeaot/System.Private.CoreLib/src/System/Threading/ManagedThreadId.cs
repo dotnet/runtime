@@ -3,8 +3,8 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// Thread tracks managed thread IDs, recycling them when threads die to keep the set of
-// live IDs compact.
+// Thread tracks managed thread IDs, recycling them on multithreaded targets when
+// threads die to keep the set of live IDs compact.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -14,6 +14,7 @@ namespace System.Threading
 {
     internal class ManagedThreadId
     {
+#if FEATURE_MULTITHREADING
         //
         // Binary tree used to keep track of active thread ids. Each node of the tree keeps track of 32 consecutive ids.
         // Implemented as immutable collection to avoid locks. Each modification creates a new top level node.
@@ -173,6 +174,7 @@ namespace System.Threading
                 return new ImmutableIdDispenser(left, right, _used - 1, _size, bitmap);
             }
         }
+#endif
 
         public const int IdNone = 0;
 
@@ -180,6 +182,11 @@ namespace System.Threading
         // We use this id to detect the main thread and report it as a foreground one.
         public const int IdMainThread = 1;
 
+        private int _managedThreadId;
+
+        public int Id => _managedThreadId;
+
+#if FEATURE_MULTITHREADING
         // We store ManagedThreadId both here and in the Thread.CurrentThread object. We store it here,
         // because we may need the id very early in the process lifetime (e.g., in ClassConstructorRunner),
         // when a Thread object cannot be created yet. We also store it in the Thread.CurrentThread object,
@@ -199,10 +206,6 @@ namespace System.Threading
         //      System::Environment.get_CurrentManagedThreadId
 
         private static ImmutableIdDispenser? s_idDispenser;
-
-        private int _managedThreadId;
-
-        public int Id => _managedThreadId;
 
         public static int AllocateId()
         {
@@ -289,5 +292,27 @@ namespace System.Threading
         {
             RecycleId(_managedThreadId);
         }
+#else
+        private static int s_threadIdCounter;
+
+        internal static int CurrentManagedThreadIdUnchecked => IdMainThread;
+
+        public static int Current => IdMainThread;
+
+        public static ManagedThreadId GetCurrentThreadId() => new ManagedThreadId(IdMainThread);
+
+        public ManagedThreadId()
+        {
+            // Unstarted Thread objects still need distinct IDs, separate from the executing thread.
+            int id = checked(s_threadIdCounter + IdMainThread + 1);
+            s_threadIdCounter++;
+            _managedThreadId = id;
+        }
+
+        private ManagedThreadId(int id)
+        {
+            _managedThreadId = id;
+        }
+#endif
     }
 }
