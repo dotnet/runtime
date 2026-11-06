@@ -14,6 +14,9 @@
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
+    <!-- Keep WBT dependencies publicly restorable without changing the shared manifest package band. -->
+    <SdkVersionForWorkloadTesting>$(_GlobalJsonSdkVersion)</SdkVersionForWorkloadTesting>
+
     <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">false</TestUsingWorkloads>
     <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
     <!-- these are imported in this project instead -->

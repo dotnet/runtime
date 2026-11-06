@@ -43,10 +43,13 @@ For this, the builds get cached using `ProjectInfo` as the key.
   with `$(SdkVersionForWorkloadTesting)` is installed in
   `artifacts/bin/dotnet-latest`. And the workload packs are installed there
   using packages in `artifacts/packages/$(Configuration)/Shipping`.
-    - On release/11.0, the test SDK defaults to the version in `global.json`,
-      independently of RTM manifest transport updates. Manifest packages use
-      the stable `11.0.100` band and are installed into the selected SDK's
-      manifest directory, which may have a prerelease band.
+    - On release/11.0, this test project selects the SDK version in `global.json`
+      after the shared manifest package band has been computed. This keeps WBT
+      dependencies publicly restorable without changing manifest packaging or
+      other workload-test consumers. An explicit command-line SDK override still applies.
+      The selected SDK supplies SDK-default dependencies such as ILLink and Blazor;
+      this does not validate their newer RTM versions. Locally built packs are
+      still used where the tests explicitly select them.
     - If the packages get updated, then the workload will get installed again.
 
     - Keep in mind, that if you have any non-test changes, and don't regenerate
