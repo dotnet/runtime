@@ -47,7 +47,6 @@ ReadyToRun code with Crossgen2's `--instruction-set:relaxed-simd`, so `RelaxedSi
 that code. Wasm has no runtime feature detection; the runtime accepts the instruction sets an image requires
 because the engine validated the module. A host without relaxed SIMD (for example wasmtime with
 `-W relaxed-simd=n`) fails to compile the module; publish with `-p:WasmEnableRelaxedSimd=false` for such hosts. Relaxed SIMD results may differ between hosts and CPUs.
-Interpreted code always reports `RelaxedSimd.IsSupported` as `false`.
 
 ## Runtime tests
 
