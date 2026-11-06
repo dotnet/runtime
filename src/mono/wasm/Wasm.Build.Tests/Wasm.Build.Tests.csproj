@@ -56,6 +56,7 @@
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
 
     <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(RepoRoot)NuGet.config" Link="data\nuget.config" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
