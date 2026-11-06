@@ -162,6 +162,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     case CFI_OPCODE.CFI_NEGATE_RA_STATE:
                         // Fall back to DWARF so the AArch64 negate_ra_state opcode is preserved for libunwind.
+                        // TODO-PAC: Avoid falling back to DWARF as it is suboptimal.
                         return UNWIND_ARM64_MODE_DWARF;
 
                     case CFI_OPCODE.CFI_DEF_CFA_REGISTER:
