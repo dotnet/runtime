@@ -72,8 +72,8 @@
          wasihost corehost (libWasiHost.a) per-app through its own targets below. -->
     <WasmBuildNative>false</WasmBuildNative>
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
-    <!-- On by default, unlike browser. WASI has no runtime feature detection: ReadyToRun code compiled for relaxed
-         SIMD requires a host that supports it. Set to false for hosts without it. -->
+    <!-- On by default for WASI (browser defaults to false). As on browser, ReadyToRun code compiled for relaxed SIMD
+         fails to compile on an engine without it; set to false for such hosts. -->
     <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">true</WasmEnableRelaxedSimd>
   </PropertyGroup>
 
