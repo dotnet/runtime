@@ -1180,9 +1180,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         return tree;
     };
 
-    auto getCopyIndirFlags = [](var_types type) {
+    auto getCopyIndirFlags = [](var_types type, GenTreeFlags indirFlags) {
         // These accesses are pieces of a whole struct copy, so non-GC accesses do not need to be atomic.
-        return varTypeIsGC(type) ? GTF_EMPTY : GTF_IND_ALLOW_NON_ATOMIC;
+        return (indirFlags & GTF_IND_COPYABLE_FLAGS) | (varTypeIsGC(type) ? GTF_EMPTY : GTF_IND_ALLOW_NON_ATOMIC);
     };
 
     auto grabAddr = [=, &result](unsigned offs) {
@@ -1247,7 +1247,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         else
         {
             JITDUMP("  ...but keeping a nullcheck\n");
-            return m_compiler->gtNewIndir(TYP_BYTE, grabAddr(0));
+            return m_compiler->gtNewIndir(TYP_BYTE, grabAddr(0), getCopyIndirFlags(TYP_BYTE, m_src->gtFlags));
         }
     }
 
@@ -1329,7 +1329,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     else
                     {
                         GenTree* fldAddr = grabAddr(fldOffset);
-                        srcFld           = m_compiler->gtNewIndir(destType, fldAddr, getCopyIndirFlags(destType));
+                        srcFld = m_compiler->gtNewIndir(destType, fldAddr, getCopyIndirFlags(destType, m_src->gtFlags));
                     }
                 }
             }
@@ -1379,7 +1379,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 else
                 {
                     GenTree*     fldAddr    = grabAddr(srcFieldOffset);
-                    GenTreeFlags indirFlags = getCopyIndirFlags(srcType);
+                    GenTreeFlags indirFlags = getCopyIndirFlags(srcType, m_store->gtFlags);
                     if (m_store->OperIs(GT_STORE_BLK, GT_STOREIND))
                     {
                         indirFlags |= m_store->gtFlags & (GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP);
