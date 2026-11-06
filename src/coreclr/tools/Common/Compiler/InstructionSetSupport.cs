@@ -100,8 +100,8 @@ namespace ILCompiler
             }
             else if (architecture is TargetArchitecture.Wasm32)
             {
-                // TODO-WASM: return the correct intrinsic id once xplat intrinsics are implemented.
-                return "";
+                if (potentialType.Namespace != "System.Runtime.Intrinsics.Wasm"u8)
+                    return "";
             }
             else
             {
