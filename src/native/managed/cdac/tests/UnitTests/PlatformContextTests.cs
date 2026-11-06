@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Xunit;
 
@@ -218,10 +217,10 @@ public class PlatformContextTests
     [MemberData(nameof(EmulatedSingleStepContexts))]
     public void UnsetSingleStepFlag_IsNoOp_OnEmulatedSingleStepArches(IPlatformAgnosticContext ctx)
     {
-        byte[] before = ctx.GetBytes().ToArray();
+        byte[] before = ctx.GetBytes();
 
         ctx.UnsetSingleStepFlag();
 
-        Assert.Equal(before, ctx.GetBytes().ToArray());
+        Assert.Equal(before, ctx.GetBytes());
     }
 }
