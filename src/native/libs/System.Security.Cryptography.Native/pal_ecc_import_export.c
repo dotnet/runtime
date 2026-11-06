@@ -458,6 +458,106 @@ int32_t CryptoNative_EvpPKeyGetEcGroupNid(const EVP_PKEY *pkey, int32_t* nidName
 #endif
 }
 
+#ifdef NEED_OPENSSL_3_0
+static int EvpPKeyGetEcPublicKeyCoordinates(const EVP_PKEY* pkey, BIGNUM* x, BIGNUM* y)
+{
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EVP_PKEY_get_octet_string_param) ||
+        !API_EXISTS(EC_GROUP_new_by_curve_name) ||
+        !API_EXISTS(EC_POINT_oct2point))
+    {
+        return 0;
+    }
+#endif
+
+    int ret = 0;
+    uint8_t* pubKeyBuf = NULL;
+    const uint8_t* pubKeyData = NULL;
+    size_t pubKeyLen = 0;
+    OSSL_PARAM* exportedParameters = NULL;
+    const OSSL_PARAM* publicKeyParameter = NULL;
+    const void* publicKeyValue = NULL;
+    EC_GROUP* group = NULL;
+    EC_POINT* point = NULL;
+    int32_t curveNid = NID_undef;
+    ECCurveType curveType = Unspecified;
+
+    ERR_clear_error();
+
+    if (EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_PUB_KEY, NULL, 0, &pubKeyLen))
+    {
+        if (pubKeyLen == 0)
+            goto done;
+
+        pubKeyBuf = (uint8_t*)OPENSSL_malloc(pubKeyLen);
+        if (pubKeyBuf == NULL)
+            goto done;
+
+        if (EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_PUB_KEY, pubKeyBuf, pubKeyLen, &pubKeyLen))
+        {
+            pubKeyData = pubKeyBuf;
+            goto public_key_exported;
+        }
+    }
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EVP_PKEY_todata) ||
+        !API_EXISTS(OSSL_PARAM_free) ||
+        !API_EXISTS(OSSL_PARAM_get_octet_string_ptr) ||
+        !API_EXISTS(OSSL_PARAM_locate_const))
+    {
+        goto done;
+    }
+#endif
+
+    ERR_clear_error();
+
+    // Some providers (e.g., PKCS#11) only expose the public key through KEYMGMT export, not get_params.
+    if (!EVP_PKEY_todata(pkey, EVP_PKEY_PUBLIC_KEY, &exportedParameters) || exportedParameters == NULL)
+        goto done;
+
+    publicKeyParameter = OSSL_PARAM_locate_const(exportedParameters, OSSL_PKEY_PARAM_PUB_KEY);
+
+    if (publicKeyParameter == NULL ||
+        !OSSL_PARAM_get_octet_string_ptr(publicKeyParameter, &publicKeyValue, &pubKeyLen) ||
+        publicKeyValue == NULL ||
+        pubKeyLen == 0)
+    {
+        goto done;
+    }
+
+    pubKeyData = (const uint8_t*)publicKeyValue;
+
+public_key_exported:
+    if (!CryptoNative_EvpPKeyGetEcGroupNid(pkey, &curveNid) || curveNid == NID_undef)
+        goto done;
+
+    group = EC_GROUP_new_by_curve_name(curveNid);
+    if (group == NULL)
+        goto done;
+
+    point = EC_POINT_new(group);
+
+    // EC_POINT_oct2point accepts both compressed and uncompressed encodings.
+    if (point == NULL || !EC_POINT_oct2point(group, point, pubKeyData, pubKeyLen, NULL))
+        goto done;
+
+    curveType = MethodToCurveType(EC_GROUP_method_of(group));
+    if (curveType == Unspecified || !EcPointGetAffineCoordinates(group, curveType, point, x, y))
+        goto done;
+
+    ret = 1;
+
+done:
+    if (exportedParameters) OSSL_PARAM_free(exportedParameters);
+    if (pubKeyBuf) OPENSSL_free(pubKeyBuf);
+    if (point) EC_POINT_free(point);
+    if (group) EC_GROUP_free(group);
+
+    return ret;
+}
+#endif
+
 int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     const EVP_PKEY* pkey,
     int32_t includePrivate,
@@ -495,10 +595,15 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
 
     ERR_clear_error();
 
-    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_PUB_X, &xBn))
-        goto error;
-    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_PUB_Y, &yBn))
-        goto error;
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_PUB_X, &xBn) ||
+        !EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_PUB_Y, &yBn))
+    {
+        if (xBn == NULL) xBn = BN_new();
+        if (yBn == NULL) yBn = BN_new();
+
+        if (xBn == NULL || yBn == NULL || !EvpPKeyGetEcPublicKeyCoordinates(pkey, xBn, yBn))
+            goto error;
+    }
 
     *qx = xBn;
     *cbQx = BN_num_bytes(xBn);
