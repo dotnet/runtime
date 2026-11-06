@@ -25,6 +25,9 @@ import { call_delegate } from "./managed-exports";
 import { mono_log_debug } from "./logging";
 import { invoke_later_when_on_ui_thread_async } from "./invoke-js";
 
+const eager_task_handle_symbol = Symbol("wasm eager_task_handle");
+type EagerPromise = Promise<any> & { [eager_task_handle_symbol]: JSHandle };
+
 export function initialize_marshalers_to_js (): void {
     if (cs_to_js_marshalers.size == 0) {
         cs_to_js_marshalers.set(MarshalerType.Array, _marshal_array_to_js);
@@ -256,6 +259,7 @@ export function begin_marshal_task_to_js (arg: JSMarshalerArgument, _?: Marshale
     }
     set_js_handle(arg, js_handle);
     set_arg_type(arg, MarshalerType.TaskPreCreated);
+    (holder.promise as EagerPromise)[eager_task_handle_symbol] = js_handle;
     return holder.promise;
 }
 
@@ -270,7 +274,7 @@ export function end_marshal_task_to_js (args: JSMarshalerArguments, res_converte
     }
 
     // otherwise drop the eagerPromise's handle
-    const js_handle = mono_wasm_get_js_handle(eagerPromise);
+    const js_handle = (eagerPromise as EagerPromise)[eager_task_handle_symbol];
     mono_wasm_release_cs_owned_object(js_handle);
 
     // get the synchronous result

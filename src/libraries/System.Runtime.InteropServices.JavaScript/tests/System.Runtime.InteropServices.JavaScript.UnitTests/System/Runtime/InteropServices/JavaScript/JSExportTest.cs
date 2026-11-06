@@ -443,5 +443,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             string result = await JavaScriptTestHelper.InvokeReturnCompletedTask();
             Assert.Equal("resolved", result);
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task JSExportCompletedTaskReleasesPromiseHandle(bool awaitResult)
+        {
+            await JavaScriptTestHelper.InvokeReturnCompletedTask(1, awaitResult);
+            int before;
+            using (JSObject probe = JavaScriptTestHelper.createData("probe"))
+            {
+                before = JavaScriptTestHelper.GetJSHandle(probe);
+            }
+
+            await JavaScriptTestHelper.InvokeReturnCompletedTask(100, awaitResult);
+
+            using JSObject after = JavaScriptTestHelper.createData("probe");
+            Assert.Equal(before, JavaScriptTestHelper.GetJSHandle(after));
+        }
     }
 }
