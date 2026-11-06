@@ -2270,9 +2270,7 @@ BOOL EEJitManager::LoadJIT()
             altJitName = MAKEDLLNAME_W(W("clrjit_win_x64_x64"));
 #endif
 #else // TARGET_WINDOWS
-#ifdef TARGET_X86
-            altJitName = MAKEDLLNAME_W(W("clrjit_unix_x86_x86"));
-#elif defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
             altJitName = MAKEDLLNAME_W(W("clrjit_unix_x64_x64"));
 #elif defined(TARGET_LOONGARCH64)
             altJitName = MAKEDLLNAME_W(W("clrjit_unix_loongarch64_loongarch64"));

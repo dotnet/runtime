@@ -2209,6 +2209,12 @@ void Thread::HandleThreadAbort ()
 
         PreparingAbortHolder paHolder;
 
+#if defined(TARGET_UNIX) && defined(FEATURE_THREAD_ACTIVATION)
+        // Abort dispatch may bypass native destructors and the activation signal handler's return through sigreturn.
+        m_hasPendingActivation = false;
+        PAL_UnmaskActivationSignal();
+#endif // TARGET_UNIX && FEATURE_THREAD_ACTIVATION
+
         OBJECTREF exceptObj;
 
         if (IsRudeAbort())
@@ -4982,9 +4988,7 @@ static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind 
 
 #ifdef TARGET_X86
 
-#ifndef TARGET_UNIX
 #define WORKAROUND_RACES_WITH_KERNEL_MODE_EXCEPTION_HANDLING
-#endif // !TARGET_UNIX
 
 #ifdef WORKAROUND_RACES_WITH_KERNEL_MODE_EXCEPTION_HANDLING
 BOOL ThreadCaughtInKernelModeExceptionHandling(Thread *pThread, CONTEXT *ctx)
