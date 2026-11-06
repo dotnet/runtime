@@ -125,7 +125,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (!result && factory.TypeSystemContext.IsGenericArrayInterfaceType(owningType))
+            if (!result && (factory.TypeSystemContext.IsGenericArrayInterfaceType(owningType)
+                || factory.TypeSystemContext.IsGenericArrayEnumeratorInterfaceType(owningType)))
             {
                 // We need to also do this for generic interfaces on arrays because they have a weird casting rule
                 // that doesn't require the implemented interface to be variant to consider it castable.
