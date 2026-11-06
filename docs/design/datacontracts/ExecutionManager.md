@@ -556,6 +556,14 @@ bool TryGetWasmVirtualIPFromFunctionTableIndex(uint functionTableIndex, out ulon
     // R2RModule's ReadyToRunInfo, step back past funclet entries to the controlling function, then
     // virtualIP = ReadyToRunInfo.MinVirtualIP + RuntimeFunction.BeginAddress.
 }
+
+// Mirrors ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex.
+bool TryGetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(uint runtimeFunctionIndex, out ulong virtualIP)
+{
+    // Find the R2R module whose ReadyToRunInfo.MinVirtualIP is the reserved initial WebAssembly
+    // virtual IP, 0x80000001. Reject an out-of-range index or a funclet entry, then compute
+    // virtualIP = ReadyToRunInfo.MinVirtualIP + RuntimeFunctions[runtimeFunctionIndex].BeginAddress.
+}
 ```
 
 The `CodeBlock` encapsulates the `MethodDesc` data from the target runtime together with the start of the jitted method
@@ -602,7 +610,7 @@ The `GetMethodDesc`, `GetStartAddress`, and `GetRelativeOffset` APIs extract fie
     }
 ```
 
-`IExecutionManager.GetUnwindInfo` gets the Windows style unwind data in the form of `RUNTIME_FUNCTION` which has a platform dependent implementation. The ExecutionManager delegates to the JitManager implementations as the unwind infos (`RUNTIME_FUNCTION`) are stored differently on jitted and R2R code.
+`IExecutionManager.GetUnwindInfo` gets the platform-dependent `RUNTIME_FUNCTION` for an existing `CodeBlockHandle`. The ExecutionManager delegates to the JitManager implementations as the unwind infos are stored differently on jitted and R2R code.
 
 * For jitted code (`EEJitManager`) a list of sorted `RUNTIME_FUNCTION` are stored on the `RealCodeHeader` which is accessed in the same was as `GetMethodInfo` described above. The correct `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
 

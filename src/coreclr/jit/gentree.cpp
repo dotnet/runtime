@@ -1236,10 +1236,6 @@ CallArgs::CallArgs()
     : m_head(nullptr)
     , m_lateHead(nullptr)
     , m_argsStackSize(0)
-#ifdef UNIX_X86_ABI
-    , m_stkSizeBytes(0)
-    , m_padStkAlign(0)
-#endif
     , m_hasThisPointer(false)
     , m_hasRetBuffer(false)
     , m_isVarArgs(false)
@@ -1249,9 +1245,6 @@ CallArgs::CallArgs()
     , m_hasStackArgs(false)
     , m_argsComplete(false)
     , m_needsTemps(false)
-#ifdef UNIX_X86_ABI
-    , m_alignmentDone(false)
-#endif
 {
 }
 
@@ -2576,7 +2569,8 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
         const AsyncCallInfo& i1 = c1->GetAsyncInfo();
         const AsyncCallInfo& i2 = c2->GetAsyncInfo();
         if ((i1.ContinuationContextHandling != i2.ContinuationContextHandling) ||
-            (i1.IsValueTaskAsTask != i2.IsValueTaskAsTask) || (i1.IsTailAwait != i2.IsTailAwait))
+            (i1.IsValueTaskAsTask != i2.IsValueTaskAsTask) || (i1.IsTailAwait != i2.IsTailAwait) ||
+            (i1.DefinesResumedIndicator != i2.DefinesResumedIndicator))
         {
             return false;
         }
@@ -8677,10 +8671,9 @@ bool GenTree::OperRequiresAsgFlag() const
         case GT_MEMORYBARRIER:
             return true;
 
-        // If the call has return buffer argument, it produced a definition and hence
-        // should be marked with GTF_ASG.
         case GT_CALL:
-            return AsCall()->IsOptimizingRetBufAsLocal();
+            return AsCall()->IsOptimizingRetBufAsLocal() ||
+                   (AsCall()->IsAsync() && AsCall()->GetAsyncInfo().DefinesResumedIndicator);
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -8947,6 +8940,11 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
                 assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
                 flags |= ExceptionSetFlags::OverflowException | ExceptionSetFlags::DivideByZeroException;
             }
+            else if ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))
+            {
+                // div/idiv fault on a zero divisor and on a quotient that doesn't fit.
+                flags |= ExceptionSetFlags::OverflowException | ExceptionSetFlags::DivideByZeroException;
+            }
 #endif
 
             return flags;
@@ -9030,7 +9028,7 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_LCL_FLD:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
-            return comp->lvaGetDesc(AsLclVarCommon())->IsAddressExposed();
+            return comp->lvaGetDesc(AsLclVarCommon())->RequiresGlobRefFlag();
 
         case GT_IND:
         case GT_BLK:
@@ -9072,7 +9070,7 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
 #endif // FEATURE_HW_INTRINSICS
 
         default:
-            assert(!OperRequiresCallFlag(comp) || OperIs(GT_INTRINSIC));
+            assert(!OperRequiresCallFlag(comp) || OperIs(GT_INTRINSIC, GT_LSH, GT_RSH, GT_RSZ));
             assert((!OperIsIndir() || OperIs(GT_NULLCHECK)) && !OperRequiresAsgFlag());
             return false;
     }
@@ -10182,7 +10180,7 @@ GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* value)
     var_types      type   = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc);
     GenTreeLclVar* store  = new (this, GT_STORE_LCL_VAR) GenTreeLclVar(type, lclNum, value);
     store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
-    if (varDsc->IsAddressExposed())
+    if (varDsc->RequiresGlobRefFlag())
     {
         store->gtFlags |= GTF_GLOB_REF;
     }
@@ -10216,7 +10214,7 @@ GenTreeLclFld* Compiler::gtNewStoreLclFldNode(
     {
         store->gtFlags |= GTF_VAR_USEASG;
     }
-    if (lvaGetDesc(lclNum)->IsAddressExposed())
+    if (lvaGetDesc(lclNum)->RequiresGlobRefFlag())
     {
         store->gtFlags |= GTF_GLOB_REF;
     }
@@ -10239,10 +10237,6 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     GenTreeCall* node = new (this, GT_CALL) GenTreeCall(genActualType(type));
 
     node->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
-#ifdef UNIX_X86_ABI
-    if (callType == CT_INDIRECT || callType == CT_HELPER)
-        node->gtFlags |= GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
     node->gtCallType = callType;
     INDEBUG_OR_WASM(node->callSig = nullptr;)
     node->tailCallInfo    = nullptr;
@@ -10399,7 +10393,7 @@ GenTreeLclVar* Compiler::gtNewLclVarNode(unsigned lclNum, var_types type)
     }
 
     GenTreeLclVar* lclVar = gtNewLclvNode(lclNum, type);
-    if (varDsc->IsAddressExposed())
+    if (varDsc->RequiresGlobRefFlag())
     {
         lclVar->gtFlags |= GTF_GLOB_REF;
     }
@@ -10457,6 +10451,11 @@ GenTreeFieldList* Compiler::gtNewFieldList()
 GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout)
 {
     GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, type, lnum, offset, layout);
+    if (lvaGetDesc(lnum)->RequiresGlobRefFlag())
+    {
+        node->gtFlags |= GTF_GLOB_REF;
+    }
+
     return node;
 }
 
@@ -11064,11 +11063,9 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
                                              CORINFO_METHOD_HANDLE   callerHandle,
                                              bool                    useParent)
 {
-    const bool      mustRestoreHandle     = true;
-    bool* const     pRuntimeLookup        = nullptr;
     bool            usingReadyToRunHelper = false;
     CorInfoHelpFunc helper                = CORINFO_HELP_UNDEF;
-    GenTree*        opHandle = impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, useParent);
+    GenTree*        opHandle              = impTokenToHandle(pResolvedToken, nullptr, useParent);
 
 #ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP lookup = {};
@@ -11794,9 +11791,6 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     m_hasStackArgs             = other->m_hasStackArgs;
     m_argsComplete             = other->m_argsComplete;
     m_needsTemps               = other->m_needsTemps;
-
-    // Unix x86 flags related to stack alignment intentionally not copied as
-    // they depend on where the call will be inserted.
 
     CallArg** tail = &m_head;
     for (CallArg& arg : other->Args())
@@ -22071,16 +22065,13 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 //
 GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall* call)
 {
-    if (!call->IsAsync())
+    if (!call->IsAsync() || !call->GetAsyncInfo().DefinesResumedIndicator)
     {
         return nullptr;
     }
 
     CallArg* arg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
-    if (arg == nullptr)
-    {
-        return nullptr;
-    }
+    assert(arg != nullptr);
 
     GenTree* node = arg->GetNode();
     assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
@@ -22660,7 +22651,7 @@ void GenTreeJitIntrinsic::SetMethodHandle(Compiler*                          com
                                           CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
 {
     assert(OperIsHWIntrinsic() && !IsUserCall());
-    gtFlags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
+    gtFlags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL | GTF_GLOB_REF);
 
     size_t operandCount = GetOperandCount();
 
@@ -32347,6 +32338,13 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
                 gtFlags |= GTF_EXCEPT;
                 break;
             }
+
+            case NI_X86Base_DivRem:
+            case NI_X86Base_X64_DivRem:
+            {
+                gtFlags |= GTF_EXCEPT;
+                break;
+            }
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)
@@ -35371,6 +35369,18 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
     return true;
 }
 
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
+//------------------------------------------------------------------------
+// GenTree::IsSveMaskOperand:
+//   Return true if this node can be represented directly as an SVE predicate.
+//
+bool GenTree::IsSveMaskOperand() const
+{
+    return OperIsConvertMaskToVector() || varTypeIsMask(this) || IsVectorZero();
+}
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
+
 //------------------------------------------------------------------------
 // gtFoldExprHWIntrinsic: Attempt to fold a HWIntrinsic
 //
@@ -35380,7 +35390,6 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 // Return Value:
 //    folded expression if it could be folded, else the original tree
 //
-#if defined(FEATURE_HW_INTRINSICS)
 GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
     assert(!optValnumCSE_phase);
@@ -35661,8 +35670,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         for (size_t i = firstVectorOperand; (i <= opCount) && canFold; i++)
         {
             GenTree* operand = tree->Op(i);
-            canFold          = operand->OperIsConvertMaskToVector() &&
-                      (genTypeSize(operand->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType));
+            canFold          = operand->IsSveMaskOperand() &&
+                      (!operand->OperIsConvertMaskToVector() ||
+                       (genTypeSize(operand->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType)));
         }
 
         if (canFold)
@@ -37167,20 +37177,20 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     // op2 = op2 & op1
                     simdmask_t result = {};
-                    EvaluateBinaryMask<simd16_t>(GT_AND, false, simdBaseType, &result, op2->AsMskCon()->gtSimdMaskVal,
-                                                 op1->AsMskCon()->gtSimdMaskVal);
+                    EvaluateBinaryMask(GT_AND, false, simdBaseType, simdSize, &result, op2->AsMskCon()->gtSimdMaskVal,
+                                       op1->AsMskCon()->gtSimdMaskVal);
                     op2->AsMskCon()->gtSimdMaskVal = result;
 
                     // op3 = op3 & ~op1
                     result = {};
-                    EvaluateBinaryMask<simd16_t>(GT_AND_NOT, false, simdBaseType, &result,
-                                                 op3->AsMskCon()->gtSimdMaskVal, op1->AsMskCon()->gtSimdMaskVal);
+                    EvaluateBinaryMask(GT_AND_NOT, false, simdBaseType, simdSize, &result,
+                                       op3->AsMskCon()->gtSimdMaskVal, op1->AsMskCon()->gtSimdMaskVal);
                     op3->AsMskCon()->gtSimdMaskVal = result;
 
                     // op2 = op2 | op3
                     result = {};
-                    EvaluateBinaryMask<simd16_t>(GT_OR, false, simdBaseType, &result, op2->AsMskCon()->gtSimdMaskVal,
-                                                 op3->AsMskCon()->gtSimdMaskVal);
+                    EvaluateBinaryMask(GT_OR, false, simdBaseType, simdSize, &result, op2->AsMskCon()->gtSimdMaskVal,
+                                       op3->AsMskCon()->gtSimdMaskVal);
                     op2->AsMskCon()->gtSimdMaskVal = result;
 
                     resultNode = op2;

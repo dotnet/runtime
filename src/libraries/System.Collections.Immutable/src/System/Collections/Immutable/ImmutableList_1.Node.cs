@@ -524,7 +524,16 @@ namespace System.Collections.Immutable
             /// Reverses the order of the elements in the entire <see cref="ImmutableList{T}"/>.
             /// </summary>
             /// <returns>The reversed list.</returns>
-            internal Node Reverse() => this.Reverse(0, this.Count);
+            internal Node Reverse()
+            {
+                if (_count <= 1)
+                {
+                    return this;
+                }
+
+                // Mirroring preserves subtree heights and keeps the tree balanced.
+                return this.MutateBoth(_right!.Reverse(), _left!.Reverse());
+            }
 
             /// <summary>
             /// Reverses the order of the elements in the specified range.
@@ -537,6 +546,11 @@ namespace System.Collections.Immutable
                 Requires.Range(index >= 0, nameof(index));
                 Requires.Range(count >= 0, nameof(count));
                 Requires.Range(index + count <= this.Count, nameof(index));
+
+                if (index == 0 && count == _count)
+                {
+                    return this.Reverse();
+                }
 
                 Node result = this;
                 int start = index;

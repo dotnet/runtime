@@ -13,6 +13,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
 using ILCompiler.ReadyToRun.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -21,6 +22,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly ReadyToRunFixupKind _fixupKind;
 
         private readonly MethodWithToken _method;
+
+        private byte[] _gcRefMap;
+
+        internal bool EmitGCRefMap { get; set; }
+
+        public override int Offset => _gcRefMap?.Length ?? 0;
 
         public MethodFixupSignature(
             ReadyToRunFixupKind fixupKind,
@@ -51,22 +58,42 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool NeedsInstantiationArg => _method.ConstrainedType?.IsCanonicalSubtype(CanonicalFormKind.Any) ?? false;
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        internal byte[] GetGCRefMap(NodeFactory factory)
         {
-            DependencyList list = base.ComputeNonRelocationBasedDependencies(factory);
-            MethodDesc canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
-                !Method.IsAbstract &&
-                !Method.HasInstantiation &&
+            if (_gcRefMap is null)
+            {
+                GCRefMapBuilder builder = new GCRefMapBuilder(factory.Target, relocsOnly: false);
+                builder.GetCallRefMap(Method, IsUnboxingStub || IsInstantiatingStub);
+                _gcRefMap = builder.Builder.ToObjectData().Data;
+            }
+            return _gcRefMap;
+        }
+
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
+        {
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
+            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry)
+            {
+                AddVirtualEntryDependencies(sink, factory, Method);
+            }
+        }
+
+        /// <summary>
+        /// Adds the dependencies of a virtual dispatch to <paramref name="method"/>.
+        /// </summary>
+        internal static void AddVirtualEntryDependencies(IDependencySink sink, NodeFactory factory, MethodDesc method)
+        {
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (!method.IsAbstract &&
+                !method.HasInstantiation &&
                 !factory.CompilationModuleGroup.VersionsWithMethodBody(canonMethod) &&
                 factory.CompilationModuleGroup.CrossModuleCompileable(canonMethod) &&
                 factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
             {
-                list = list ?? new DependencyList();
                 try
                 {
-                    factory.DetectGenericCycles(_method.Method, canonMethod);
-                    list.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
+                    factory.DetectGenericCycles(method, canonMethod);
+                    sink.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
                 }
                 catch (TypeSystemException)
                 {
@@ -75,37 +102,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // For generic virtual method calls, create a virtual dependency node that will
             // dynamically discover implementations on types as they are added to the graph.
-            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
-                Method.IsVirtual &&
-                Method.HasInstantiation &&
-                !Method.IsFinal &&
-                !Method.IsGenericMethodDefinition &&
-                !Method.OwningType.IsGenericDefinition &&
-                (Method.OwningType.IsInterface || !Method.OwningType.IsSealed()))
+            if (method.IsVirtual &&
+                method.HasInstantiation &&
+                !method.IsFinal &&
+                !method.IsGenericMethodDefinition &&
+                !method.OwningType.IsGenericDefinition &&
+                (method.OwningType.IsInterface || !method.OwningType.IsSealed()))
             {
                 // Because methods with generic parameters are already compiled in their canonical form, we are only interested in finding
                 // instantiations of virtual methods that have at least one non-canonical argument (aka a valuetype).
-                if (HasNonCanonicalInstantiationArguments(canonMethod) && !factory.CanBeInGenericCycle(Method))
+                if (HasNonCanonicalInstantiationArguments(canonMethod) && !factory.CanBeInGenericCycle(method))
                 {
-                    list = list ?? new DependencyList();
-                    list.Add(factory.GVMDependencies(Method), "Virtual dispatch dependency");
+                    sink.Add(factory.GVMDependencies(method), "Virtual dispatch dependency");
                 }
             }
 
             // For non-GVM virtual method calls, mark the virtual slot as used so that
             // conditional dependencies on InheritedVirtualMethodsNode can trigger compilation
             // of concrete implementations.
-            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
-                Method.IsVirtual &&
-                !Method.HasInstantiation &&
-                !Method.IsFinal &&
-                !Method.OwningType.IsGenericDefinition)
+            if (method.IsVirtual &&
+                !method.HasInstantiation &&
+                !method.IsFinal &&
+                !method.OwningType.IsGenericDefinition)
             {
-                list = list ?? new DependencyList();
-                list.Add(factory.VirtualMethodUse(canonMethod), "Non-GVM virtual slot use");
+                sink.Add(factory.VirtualMethodUse(canonMethod), "Non-GVM virtual slot use");
             }
-
-            return list;
         }
 
         private static bool HasNonCanonicalInstantiationArguments(MethodDesc canonMethod)
@@ -128,6 +149,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder(factory, relocsOnly);
+            if (EmitGCRefMap)
+            {
+                foreach (byte value in GetGCRefMap(factory))
+                {
+                    dataBuilder.EmitByte(value);
+                }
+            }
+
+            // Keep the symbol at the fixup opcode so plain signature consumers do not mistake
+            // the preceding GCRefMap for a fixup.
             dataBuilder.AddSymbol(this);
 
             // Optimize some of the fixups into a more compact form.

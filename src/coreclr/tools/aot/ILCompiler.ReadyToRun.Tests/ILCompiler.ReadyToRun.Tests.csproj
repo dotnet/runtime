@@ -7,6 +7,7 @@
     <AssemblyName>ILCompiler.ReadyToRun.Tests</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
     <!-- These tests build for AnyCPU, but the assets copied for crossgen compilations within the
          tests are tied to the outer runtime build's Target -->
@@ -35,6 +36,8 @@
   <ItemGroup>
     <Compile Remove="TestCases/*/**/*.cs" />
     <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="$(LibrariesProjectRoot)System.Private.CoreLib/src/System/Runtime/SuppressReadyToRunCanonicalRootingAttribute.cs"
+                      LogicalName="SuppressReadyToRunCanonicalRootingAttribute.cs" />
   </ItemGroup>
 
   <Target Name="SetupCopyCrossgen2CompilationAssets"

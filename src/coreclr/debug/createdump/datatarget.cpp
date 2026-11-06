@@ -33,6 +33,12 @@ DumpDataTarget::QueryInterface(
         AddRef();
         return S_OK;
     }
+    else if (InterfaceId == IID_ICLRContractLocator)
+    {
+        *Interface = static_cast<ICLRContractLocator*>(this);
+        AddRef();
+        return S_OK;
+    }
     else
     {
         *Interface = NULL;
@@ -68,8 +74,6 @@ DumpDataTarget::GetMachineType(
     *machine = IMAGE_FILE_MACHINE_ARMNT;
 #elif HOST_ARM64
     *machine = IMAGE_FILE_MACHINE_ARM64;
-#elif HOST_X86
-    *machine = IMAGE_FILE_MACHINE_I386;
 #elif HOST_LOONGARCH64
     *machine = IMAGE_FILE_MACHINE_LOONGARCH64;
 #elif HOST_RISCV64
@@ -86,7 +90,7 @@ DumpDataTarget::GetPointerSize(
 {
 #if defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
     *size = 8;
-#elif defined(HOST_ARM) || defined(HOST_X86)
+#elif defined(HOST_ARM)
     *size = 4;
 #else
 #error Unsupported architecture
@@ -224,4 +228,18 @@ DumpDataTarget::GetRuntimeBase(
 {
     *baseAddress = m_crashInfo.RuntimeBaseAddress();
     return S_OK;
+}
+
+// ICLRContractLocator
+
+HRESULT STDMETHODCALLTYPE
+DumpDataTarget::GetContractDescriptor(
+    /* [out] */ CLRDATA_ADDRESS* contractAddress)
+{
+    if (contractAddress == nullptr)
+    {
+        return E_POINTER;
+    }
+    *contractAddress = m_crashInfo.ContractDescriptorAddress();
+    return *contractAddress != 0 ? S_OK : E_FAIL;
 }

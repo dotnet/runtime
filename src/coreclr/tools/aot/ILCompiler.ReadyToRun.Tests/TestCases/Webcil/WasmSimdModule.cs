@@ -85,4 +85,17 @@ public static class WasmSimdModule
     {
         return EchoWrappedVectorT(value);
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static (Vector<double>, Vector<double>) EchoVectorPair((Vector<double>, Vector<double>) value)
+    {
+        return value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static (Vector<double>, Vector<double>, Vector<long>) EchoVectorTriple(
+        (Vector<double>, Vector<double>, Vector<long>) value)
+    {
+        return value;
+    }
 }

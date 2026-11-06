@@ -20,6 +20,9 @@
 
 extern MethodDesc* g_pThreadStartCallbackMethodDesc;
 extern MethodDesc* g_pGCRunFinalizersMethodDesc;
+#ifdef DEBUGGING_SUPPORTED
+extern MethodDesc* g_pDebuggerInvokeFunctionMethodDesc;
+#endif // DEBUGGING_SUPPORTED
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
@@ -31,7 +34,7 @@ extern MethodDesc* g_pGCRunFinalizersMethodDesc;
 // For ARM/ARM64, EstablisherFrame is Caller-SP (SP just before executing call instruction).
 // This has been confirmed by AaronGi from the kernel team for Windows.
 //
-// For x86/Linux, RtlVirtualUnwind sets EstablisherFrame as Caller-SP.
+// For x86, RtlVirtualUnwind sets EstablisherFrame as Caller-SP.
 #define ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_X86 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
@@ -69,6 +72,10 @@ inline void RestoreNonvolatileRegisterPointers(PT_KNONVOLATILE_CONTEXT_POINTERS 
 }
 #endif
 #ifndef DACCESS_COMPILE
+
+#ifdef DEBUGGING_SUPPORTED
+MethodDesc* g_pDebuggerInvokeFunctionMethodDesc = nullptr;
+#endif // DEBUGGING_SUPPORTED
 
 // o Functions and funclets are tightly associated.  In fact, they are laid out in contiguous memory.
 //   They also present some interesting issues with respect to EH because we will see callstacks with
@@ -820,7 +827,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     UNREACHABLE();
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64)
 
 /*++
 Function :
@@ -1234,7 +1241,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
     // must have been an overflow.
     return divisor != 0;
 }
-#endif // TARGET_AMD64 || TARGET_X86
+#endif // TARGET_AMD64
 
 BOOL IsSafeToCallExecutionManager()
 {
@@ -1331,7 +1338,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             return TRUE;
         }
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64)
         // It is possible that an overflow was mapped to a divide-by-zero exception.
         // This happens when we try to divide the maximum negative value of a
         // signed integer with -1.
@@ -1344,7 +1351,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             // The exception was an integer overflow, so augment the exception code.
             ex->GetExceptionRecord()->ExceptionCode = EXCEPTION_INT_OVERFLOW;
         }
-#endif // TARGET_AMD64 || TARGET_X86
+#endif // TARGET_AMD64
 
         // Create frame necessary for the exception handling
         FaultingExceptionFrame fef;
@@ -1457,12 +1464,14 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 #if defined(FEATURE_INTERPRETER) && !defined(HOST_WASM)
 
 // The ssp argument needs to match the pContext (SSP register value at that context)
-VOID DECLSPEC_NORETURN RethrowResumeAfterCatchExceptionSkipManagedFrames(const ResumeAfterCatchException& ex, CONTEXT *pContext, TADDR ssp)
+// isInterruptedContext: the context is where a thread was interrupted and redirected, not a call site. No shadow stack slot
+// holds its instruction pointer and the ssp is the precise value already.
+VOID DECLSPEC_NORETURN RethrowResumeAfterCatchExceptionSkipManagedFrames(const ResumeAfterCatchException& ex, CONTEXT *pContext, TADDR ssp, bool isInterruptedContext)
 {
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     // Find precise SSP value. We cannot use the instruction pointer from the context here because for PInvoke frames it points to the return address
     // of the JIT_PInvokeBegin call that is called before the actual target function.
-    if (ssp != 0)
+    if (ssp != 0 && !isInterruptedContext)
     {
         while (!ExecutionManager::IsManagedCode(*(PCODE*)(ssp - 8)))
         {
@@ -2041,10 +2050,6 @@ void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFr
 
     EH_LOG((LL_INFO100, "Exception is going into unmanaged code, unwinding frame chain to %p\n", MemoryStackFpForFrameChain));
 
-    // On AMD64 the establisher pointer is the live stack pointer, but on
-    // ARM and ARM64 it's the caller's stack pointer.  It makes no difference, since there
-    // is no Frame anywhere in CallDescrWorker's region of stack.
-
     // First make sure that unwinding the frame chain does not remove any transition frames
     // that report managed methods that will not be unwound.
     // If this assert fires it's probably the personality routine of some assembly code that
@@ -2159,37 +2164,6 @@ UMEntryPrestubUnwindFrameChainHandler(
                 );
 
     return disposition;
-}
-
-// This is the personality routine setup for the assembly helper (CallDescrWorker) that calls into
-// managed code.
-EXTERN_C EXCEPTION_DISPOSITION __cdecl
-CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                                       IN     PVOID               pEstablisherFrame,
-                                       IN OUT PCONTEXT            pContextRecord,
-                                       IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                                      )
-{
-
-    Thread* pThread = GetThread();
-    if (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
-    {
-        if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
-        {
-            GCX_COOP_NO_DTOR();
-            CleanUpForSecondPass(pThread, true, pEstablisherFrame, pEstablisherFrame);
-        }
-
-        InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
-        // We'll let the SO infrastructure handle this exception... at that point, we
-        // know that we'll have enough stack to do it.
-    }
-    else if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
-    {
-        CleanUpForSecondPass(pThread, false, pEstablisherFrame, pEstablisherFrame);
-    }
-
-    return ExceptionContinueSearch;
 }
 
 #endif // TARGET_UNIX
@@ -3004,16 +2978,6 @@ void ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t ta
     SetSP(pContext, targetSp - 8);
 #elif defined(HOST_X86)
 
-#ifdef HOST_WINDOWS
-    // Disarm the managed code SEH handler installed in CallDescrWorkerInternal
-    if (IsCallDescrWorkerInternalReturnAddress(pContext->Eip))
-    {
-        PEXCEPTION_REGISTRATION_RECORD currentContext = GetCurrentSEHRecord();
-        if (currentContext->Handler == (PEXCEPTION_ROUTINE)ProcessCLRException)
-            currentContext->Handler = (PEXCEPTION_ROUTINE)CallDescrWorkerUnwindFrameChainHandler;
-    }
-#endif
-
     ULONG32* returnAddress = (ULONG32*)(targetSp - 4);
     *returnAddress = pContext->Eip;
     SetSP(pContext, targetSp - 4);
@@ -3694,13 +3658,8 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
             if (pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION)
             {
                 Frame* pFrame = pThis->m_crawl.GetFrame();
-                // If the frame is ProtectValueClassFrame, move to the next one as we want to report the FuncEvalFrame
-                if (pFrame->GetFrameIdentifier() == FrameIdentifier::ProtectValueClassFrame)
-                {
-                    pFrame = pFrame->PtrNextFrame();
-                    _ASSERTE(pFrame != FRAME_TOP);
-                }
-                if ((pFrame->GetFrameIdentifier() == FrameIdentifier::FuncEvalFrame) || IsTopmostDebuggerU2MCatchHandlerFrame(pFrame))
+                if (pFrame != FRAME_TOP &&
+                    ((pFrame->GetFrameIdentifier() == FrameIdentifier::FuncEvalFrame) || IsTopmostDebuggerU2MCatchHandlerFrame(pFrame)))
                 {
                     EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pExInfo->m_ptrs, pFrame);
                 }
@@ -3955,7 +3914,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
 
     isNativeTransition = (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME);
 
-    // Check for reverse pinvoke or CallDescrWorkerInternal.
+    // Check for a reverse pinvoke transition.
     if (isNativeTransition)
     {
         bool isPropagatingToNativeCode = false;
@@ -3966,8 +3925,18 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
         if (!doingFuncletUnwind)
         {
 #ifdef USE_GC_INFO_DECODER
-            GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
-            isPropagatingToNativeCode = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
+#ifdef FEATURE_INTERPRETER
+            if (codeInfo.GetCodeManager() == ExecutionManager::GetInterpreterCodeManager())
+            {
+                InterpreterGcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+                isPropagatingToNativeCode = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
+            }
+            else
+#endif // FEATURE_INTERPRETER
+            {
+                GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+                isPropagatingToNativeCode = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
+            }
 #else // USE_GC_INFO_DECODER
             hdrInfo *hdrInfoBody;
             codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
@@ -4003,7 +3972,11 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 if ((pMethodDesc != NULL) &&
                     (pMethodDesc == g_pEnvironmentCallEntryPointMethodDesc ||
                      pMethodDesc == g_pThreadStartCallbackMethodDesc ||
-                     pMethodDesc == g_pGCRunFinalizersMethodDesc))
+                     pMethodDesc == g_pGCRunFinalizersMethodDesc
+#ifdef DEBUGGING_SUPPORTED
+                     || pMethodDesc == VolatileLoad(&g_pDebuggerInvokeFunctionMethodDesc)
+#endif // DEBUGGING_SUPPORTED
+                     ))
                 {
                     // Runtime-invoked UCO entrypoint calls should behave like the
                     // internal call path and not as external-native propagation.
@@ -4011,19 +3984,10 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 }
             }
         }
-        else
+        else if (doingFuncletUnwind && codeInfo.GetJitManager()->IsFilterFunclet(&codeInfo))
         {
-            // Propagating to CallDescrWorkerInternal, filter funclet or CallEHFunclet.
-            if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext)))
-            {
-                EH_LOG((LL_INFO100, "SfiNext: the native frame is CallDescrWorkerInternal\n"));
-                isPropagatingToNativeCode = true;
-            }
-            else if (doingFuncletUnwind && codeInfo.GetJitManager()->IsFilterFunclet(&codeInfo))
-            {
-                EH_LOG((LL_INFO100, "SfiNext: current frame is filter funclet\n"));
-                isPropagatingToNativeCode = true;
-            }
+            EH_LOG((LL_INFO100, "SfiNext: current frame is filter funclet\n"));
+            isPropagatingToNativeCode = true;
         }
 
         if (isPropagatingToNativeCode)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -17,6 +18,27 @@ namespace System.Threading.Tests
         // provide a better stack trace for the failure
         public static readonly int UnexpectedThreadTimeoutMilliseconds =
             UnexpectedTimeoutMilliseconds + RemoteExecutor.FailWaitTimeoutMilliseconds;
+
+        public static void RunWithJSInteropBlockingPolicy(Action action, bool warnOnly = false)
+        {
+            FieldInfo throwField = typeof(Thread).GetField("ThrowOnBlockingWaitOnJSInteropThread");
+            FieldInfo warnField = typeof(Thread).GetField("WarnOnBlockingWaitOnJSInteropThread");
+            Assert.NotNull(throwField);
+            Assert.NotNull(warnField);
+            bool previousThrowValue = (bool)throwField.GetValue(null);
+            bool previousWarnValue = (bool)warnField.GetValue(null);
+            try
+            {
+                throwField.SetValue(null, !warnOnly);
+                warnField.SetValue(null, warnOnly);
+                action();
+            }
+            finally
+            {
+                throwField.SetValue(null, previousThrowValue);
+                warnField.SetValue(null, previousWarnValue);
+            }
+        }
 
         public static Thread CreateGuardedThread(out Action waitForThread, Action start)
         {

@@ -22,6 +22,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         GenericInstContext,
         EditAndContinue,
         ReversePInvoke,
+        StackParameterArea,
         InterruptibleRanges,
         SlotTable,
         Complete,
@@ -395,6 +396,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.GenericInstContext;
         yield return DecodePoints.EditAndContinue;
         yield return DecodePoints.ReversePInvoke;
+        yield return DecodePoints.StackParameterArea;
 
         if (PartiallyInterruptibleGCSupported)
         {
@@ -487,6 +489,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             _fixedStackParameterScratchArea =
                 TTraits.DenormalizeSizeOfStackArea(_reader.DecodeVarLengthUnsigned(TTraits.SIZE_OF_STACK_AREA_ENCBASE, ref _bitOffset));
         }
+        yield return DecodePoints.StackParameterArea;
 
         if (PartiallyInterruptibleGCSupported)
         {
@@ -514,7 +517,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     public GCInfoHeader GetHeader()
     {
-        EnsureDecodedTo(DecodePoints.ReversePInvoke);
+        EnsureDecodedTo(DecodePoints.StackParameterArea);
 
         GcInfoHeaderFlags genericsInstContextFlags = _headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK;
         SpecialSlot? gsCookie = _gsCookieStackSlot != TTraits.NO_GS_COOKIE ? new SpecialSlot(_gsCookieStackSlot) : null;

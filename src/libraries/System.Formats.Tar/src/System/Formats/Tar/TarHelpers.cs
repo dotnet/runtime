@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -17,8 +18,35 @@ namespace System.Formats.Tar
     // Static class containing a variety of helper methods.
     internal static partial class TarHelpers
     {
+        private const int MaxSymlinkDepth = 40;
+
         internal const short RecordSize = 512;
         internal const int MaxBufferLength = 4096;
+
+        internal struct ExtractState
+        {
+            internal SortedDictionary<string, UnixFileMode>? PendingModes;
+            internal Stack<(string, DateTimeOffset)> DirectoryModificationTimes;
+            internal TarHardLinkMode HardLinkMode;
+            // Allocated lazily on the first deferred symlink; most archives have none.
+            internal Dictionary<FileId, (string SymlinkPath, string LinkTarget)>? PendingLinks;
+
+            public ExtractState()
+            {
+                PendingModes = CreatePendingModesDictionary();
+                DirectoryModificationTimes = new();
+            }
+
+            internal Dictionary<FileId, (string SymlinkPath, string LinkTarget)> GetOrCreatePendingLinks()
+                => PendingLinks ??= new();
+
+            internal readonly void Apply(string destinationDirectoryPath)
+            {
+                CreatePendingLinks(destinationDirectoryPath, PendingLinks);
+                SetPendingModes(PendingModes);
+                SetPendingModificationTimes(DirectoryModificationTimes);
+            }
+        }
 
         internal const UnixFileMode ValidUnixFileModes =
             UnixFileMode.UserRead |
@@ -475,6 +503,298 @@ namespace System.Formats.Tar
             {
                 // Some OSes like Android might not support setting the last write time, the extraction should not fail because of that
             }
+        }
+
+        // We delayed creating some symbolic links because they might target locations outside the destination.
+        // Any symlink that is in the destination directory at the time this method is called is either one that points in the destination
+        // or a pre-existing symlink that we are allowed to follow outside.
+        internal static void CreatePendingLinks(string destinationDirectoryFullPath, Dictionary<FileId, (string SymlinkPath, string LinkTarget)>? pendingLinks)
+        {
+            Debug.Assert(destinationDirectoryFullPath[^1] == Path.DirectorySeparatorChar);
+
+            if (pendingLinks is not { Count: > 0 })
+            {
+                // No pending links, nothing to do.
+                return;
+            }
+
+            // Resolve the destination directory against the filesystem root, following any pre-existing symlinks in its path.
+            string resolvedDestinationDirectoryFullPath;
+            int destinationSymlinkDepth;
+            {
+                string root = Path.GetPathRoot(destinationDirectoryFullPath)!;
+                var rootResolver = new PendingLinkResolver(root, root, destinationSymlinkDepth: 0, pendingLinks: null);
+                resolvedDestinationDirectoryFullPath = rootResolver.ResolveDestinationDirectory(destinationDirectoryFullPath.AsSpan(root.Length));
+                destinationSymlinkDepth = rootResolver.SymlinkDepth;
+
+                // Ensure DirectorySeparatorChar.
+                if (!resolvedDestinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
+                {
+                    resolvedDestinationDirectoryFullPath += Path.DirectorySeparatorChar;
+                }
+            }
+
+            // Now create all pending links (that have ".." segments)
+            var resolver = new PendingLinkResolver(destinationDirectoryFullPath, resolvedDestinationDirectoryFullPath, destinationSymlinkDepth, pendingLinks);
+
+            // CreateLink removes the link from pendingLinks once it is created, and it may create (and remove) several
+            // more when a link resolves through other pending links. Because that mutates the dictionary, we can't
+            // enumerate it directly, so we take a snapshot of the keys and skip the ones that were already created.
+            // The order of creation doesn't matter.
+            FileId[] fileIds = new FileId[pendingLinks.Count];
+            pendingLinks.Keys.CopyTo(fileIds, 0);
+
+            foreach (FileId fileId in fileIds)
+            {
+                if (pendingLinks.TryGetValue(fileId, out (string SymlinkPath, string LinkTarget) pendingLink))
+                {
+                    resolver.CreateLink(fileId, pendingLink.SymlinkPath, pendingLink.LinkTarget);
+                }
+            }
+
+            Debug.Assert(pendingLinks.Count == 0);
+        }
+
+        // checks if a path is equal to or nested under a full path. The full path must end with a directory separator.
+        // examples:
+        //    FullPathIsEqualOrNested("C:\foo\", "C:\foo\bar") => true
+        //    FullPathIsEqualOrNested("C:\foo\", "C:\foo") => true
+        //    FullPathIsEqualOrNested("C:\foo\", "C:\foobar") => false
+        internal static bool FullPathIsEqualOrNested(string fullPath, string nestedFullPath)
+        {
+            Debug.Assert(fullPath[^1] == Path.DirectorySeparatorChar);
+
+            return nestedFullPath.StartsWith(fullPath, PathInternal.StringComparison)
+                || string.Equals(nestedFullPath, fullPath.TrimEnd(Path.DirectorySeparatorChar), PathInternal.StringComparison);
+        }
+
+        // Resolves the targets of deferred (pending) symbolic links produced during extraction, ensuring none of them
+        // resolve outside the destination directory. Pre-existing symlinks that already point outside the destination
+        // widen the allowed region: a pending link may point under the location such a symlink resolved to.
+        private sealed class PendingLinkResolver
+        {
+            // Invariant for the lifetime of the resolver.
+            private readonly string _destination;
+            private readonly string _resolvedDestination;
+            private readonly int _destinationSymlinkDepth;
+            private readonly Dictionary<FileId, (string SymlinkPath, string LinkTarget)>? _pendingLinks;
+
+            // Reset at the start of each top-level link resolution; shared (via ref semantics) across the recursive walk.
+            private int _symlinkDepth;
+
+            internal PendingLinkResolver(string destination, string resolvedDestination, int destinationSymlinkDepth, Dictionary<FileId, (string SymlinkPath, string LinkTarget)>? pendingLinks)
+            {
+                Debug.Assert(destination[^1] == Path.DirectorySeparatorChar);
+
+                _destination = destination;
+                _resolvedDestination = resolvedDestination;
+                _destinationSymlinkDepth = destinationSymlinkDepth;
+                _pendingLinks = pendingLinks;
+                _symlinkDepth = destinationSymlinkDepth;
+            }
+
+            internal int SymlinkDepth => _symlinkDepth;
+
+            // Resolves the destination directory itself (used by RealPath). Nothing is ever outside the filesystem root.
+            internal string ResolveDestinationDirectory(ReadOnlySpan<char> relativePath)
+            {
+                string? rootPath = _destination;
+                Resolve(ref rootPath, _destination, relativePath, out string resolvedPath, visitedLinks: null);
+                return resolvedPath;
+            }
+
+            // Resolves and creates a single top-level pending link.
+            internal void CreateLink(FileId fileId, string symlinkPath, string linkTarget)
+            {
+                // Each top-level link starts a fresh resolution walk.
+                _symlinkDepth = _destinationSymlinkDepth;
+                AddPendingLink(_resolvedDestination, fileId, symlinkPath, linkTarget, visitedLinks: null, out _);
+            }
+
+            private void AddPendingLink(string rootPath, FileId fileId, string symlinkPath, string linkTarget, HashSet<FileId>? visitedLinks, out string resolvedFullPath)
+            {
+                Debug.Assert(rootPath is not null);
+
+                string? rootPathLocal = rootPath;
+                ReadOnlySpan<char> relativeLinkPath = symlinkPath.AsSpan(_destination.Length);
+                string resolvedPath = _resolvedDestination;
+                ReadOnlySpan<char> directoryPath = Path.GetDirectoryName(relativeLinkPath);
+                if (!directoryPath.IsEmpty)
+                {
+                    if (!Resolve(ref rootPathLocal, resolvedPath, directoryPath, out resolvedPath, visitedLinks))
+                    {
+                        throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkTarget, _destination));
+                    }
+                    Debug.Assert(rootPathLocal is not null);
+                }
+
+                ReadOnlySpan<char> resolveTarget = linkTarget;
+                if (Path.IsPathFullyQualified(linkTarget))
+                {
+                    rootPathLocal = _resolvedDestination;
+                    resolvedPath = Path.GetPathRoot(linkTarget)!;
+                    resolveTarget = linkTarget.AsSpan(resolvedPath.Length);
+                }
+
+                if (!Resolve(ref rootPathLocal, resolvedPath, resolveTarget, out resolvedFullPath, visitedLinks))
+                {
+                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkTarget, _destination));
+                }
+                Debug.Assert(rootPathLocal is not null);
+
+                if (_pendingLinks!.Remove(fileId))
+                {
+                    File.Delete(symlinkPath);
+                    File.CreateSymbolicLink(symlinkPath, linkTarget);
+                }
+            }
+
+            // Returns whether the path formed by combining baseFullPath and relativePath resides in either the root path or the destination path.
+            // The containmentRootPath path tracks a location that may not be in the destination path but which is reachable (via preexisting links)
+            // and considered a root that a delayed link target may point under.
+            private bool Resolve(ref string? containmentRootPath, string baseFullPath, ReadOnlySpan<char> relativePath, out string resolvedFullPath, HashSet<FileId>? visitedLinks)
+            {
+                resolvedFullPath = baseFullPath;
+                bool checkExists = true;
+
+                // walk the relative path and resolve each component, following symlinks and checking for loops.
+                foreach (Range range in relativePath.SplitAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+                {
+                    ReadOnlySpan<char> component = relativePath[range];
+                    if (component.IsEmpty || component is ".")
+                    {
+                        continue;
+                    }
+                    if (component is "..")
+                    {
+                        // Traverse to the parent. Strip any trailing separators first, otherwise
+                        // GetDirectoryName only strips them and doesn't move up a level.
+                        ReadOnlySpan<char> resolvedFullPathSpan = resolvedFullPath.AsSpan();
+                        while (!resolvedFullPathSpan.IsEmpty && PathInternal.IsDirectorySeparator(resolvedFullPathSpan[^1]))
+                        {
+                            resolvedFullPathSpan = resolvedFullPathSpan[..^1];
+                        }
+
+                        // GetDirectoryName returns null at the root, map back to root (.. on / yields /).
+                        resolvedFullPathSpan = Path.GetDirectoryName(resolvedFullPathSpan);
+                        resolvedFullPath = resolvedFullPathSpan.IsEmpty ? resolvedFullPath : resolvedFullPathSpan.ToString();
+
+                        if (containmentRootPath is not null && !IsInRootOrDestination(containmentRootPath, resolvedFullPath))
+                        {
+                            return false;
+                        }
+                        continue;
+                    }
+
+                    string componentPath = Path.Join(resolvedFullPath, component);
+
+                    // TryGetPathInfo throws on error and returns false when the path does not exist.
+                    if (!checkExists || !TryGetPathInfo(componentPath, out FileId fileId, out bool isSymlink))
+                    {
+                        // Path doesn't exist; remaining components can't exist either.
+                        // short-circuit to simply appending the remaining components to the path for the final check.
+                        resolvedFullPath = componentPath;
+                        checkExists = false;
+                        continue;
+                    }
+
+                    string? linkTarget = null;
+                    (string SymlinkPath, string LinkTarget) pendingLink = default;
+                    if (isSymlink)
+                    {
+                        linkTarget = new FileInfo(componentPath).LinkTarget;
+                    }
+                    else if (_pendingLinks?.TryGetValue(fileId, out pendingLink) == true)
+                    {
+                        linkTarget = pendingLink.LinkTarget;
+                    }
+
+                    if (linkTarget is null)
+                    {
+                        resolvedFullPath = componentPath;
+                        continue;
+                    }
+
+                    if (++_symlinkDepth > MaxSymlinkDepth)
+                    {
+                        throw new IOException(SR.Format(SR.IO_TooManySymbolicLinkLevels, componentPath));
+                    }
+
+                    // To allow creating symbolic links that cause loops we need to detect the loops.
+                    // visitedLinks tracks the links we've followed.
+                    visitedLinks ??= new HashSet<FileId>();
+                    if (!visitedLinks.Add(fileId))
+                    {
+                        // Already visited.
+                        visitedLinks.Clear(); // Clear the set so callers detect circularity via Remove returning false below.
+                        resolvedFullPath = componentPath;
+                        break;
+                    }
+
+                    if (isSymlink)
+                    {
+                        if (!FollowExistingSymlink(ref containmentRootPath, resolvedFullPath, linkTarget, visitedLinks, out resolvedFullPath))
+                        {
+                            Debug.Fail("Should be able to follow existing symlinks");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // Pending link. A fully qualified target must point inside the destination.
+                        if (Path.IsPathFullyQualified(linkTarget))
+                        {
+                            containmentRootPath = _resolvedDestination;
+                        }
+                        // If no rootPath was set yet, limit the pending link to the destination dir.
+                        AddPendingLink(containmentRootPath ?? _resolvedDestination, fileId, pendingLink.SymlinkPath!, pendingLink.LinkTarget!, visitedLinks, out resolvedFullPath);
+                    }
+
+                    if (!visitedLinks.Remove(fileId))
+                    {
+                        // Circular reference detected while resolving the link above.
+                        break;
+                    }
+                }
+
+                return containmentRootPath is null || IsInRootOrDestination(containmentRootPath, resolvedFullPath);
+            }
+
+            // Follows a pre-existing symlink that is already on disk. Existing symlinks are not limited to a root path;
+            // after resolving, the root path is widened to the resolved location so pending links may also point under it.
+            private bool FollowExistingSymlink(ref string? rootPath, string linkDirectory, string linkTarget, HashSet<FileId>? visitedLinks, out string resolvedFullPath)
+            {
+                string resolveFrom;
+                ReadOnlySpan<char> resolveTarget;
+                if (Path.IsPathFullyQualified(linkTarget))
+                {
+                    resolveFrom = Path.GetPathRoot(linkTarget)!;
+                    resolveTarget = linkTarget.AsSpan(resolveFrom.Length);
+                }
+                else
+                {
+                    resolveFrom = linkDirectory;
+                    resolveTarget = linkTarget;
+                }
+
+                // set root path as null to disable the containment checks inside Resolve
+                string? symlinkRootPath = null;
+                if (!Resolve(ref symlinkRootPath, resolveFrom, resolveTarget, out resolvedFullPath, visitedLinks))
+                {
+                    return false;
+                }
+
+                rootPath = resolvedFullPath;
+                if (!rootPath.EndsWith(Path.DirectorySeparatorChar))
+                {
+                    rootPath += Path.DirectorySeparatorChar;
+                }
+                return true;
+            }
+
+            private bool IsInRootOrDestination(string rootPath, string resolvedPath)
+                => FullPathIsEqualOrNested(rootPath, resolvedPath)
+                || (!ReferenceEquals(rootPath, _resolvedDestination) && FullPathIsEqualOrNested(_resolvedDestination, resolvedPath));
         }
     }
 }

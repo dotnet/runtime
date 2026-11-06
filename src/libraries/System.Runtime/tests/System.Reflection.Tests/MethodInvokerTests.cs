@@ -381,6 +381,24 @@ namespace System.Reflection.Tests
             Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, new Span<object?>()));
         }
 
+        [Theory]
+        [InlineData(typeof(MI_GenericClass<>), nameof(MI_GenericClass<int>.GenericMethod4))]
+        [InlineData(typeof(MI_SubClass), nameof(MI_SubClass.StaticGenericMethod))]
+        public void Invoke_OpenGeneric_Throws(Type declaringType, string methodName)
+        {
+            MethodInvoker invoker = MethodInvoker.Create(declaringType.GetMethod(methodName)!);
+
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, Span<object?>.Empty));
+            Assert.Throws<InvalidOperationException>(() => invoker.Invoke(null, new object?[] { 1 }.AsSpan()));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, new object?[] { 1, 2 }.AsSpan()));
+
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null));
+            Assert.Throws<InvalidOperationException>(() => invoker.Invoke(null, 1));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, 1, 2));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, 1, 2, 3));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, 1, 2, 3, 4));
+        }
+
         [Fact]
         public void Args_ByRef()
         {

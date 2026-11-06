@@ -88,6 +88,34 @@ class CheckDuplicatedStructLayouts
     CHECK_OFFSET(RealCodeHeader,    unwindInfos);
 #endif  // !TARGET_X86
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_64BIT)
+    // Keep the descriptor-free reader in mscordaccore_enummemory/FunctionTableCallbacks.cs in sync.
+    static_assert(offsetof(DYNAMIC_FUNCTION_TABLE, MinimumAddress) == 0x20);
+    static_assert(offsetof(DYNAMIC_FUNCTION_TABLE, Context) == 0x40);
+    static_assert(offsetof(EEJitManager, m_pAllCodeHeaps) == 0x10);
+    static_assert(offsetof(HeapList, hpNext) == 0x00);
+    static_assert(offsetof(HeapList, startAddress) == 0x10);
+    static_assert(offsetof(HeapList, endAddress) == 0x18);
+    static_assert(offsetof(HeapList, mapBase) == 0x20);
+    static_assert(offsetof(HeapList, pHdrMap) == 0x28);
+    static_assert(offsetof(HeapList, CLRPersonalityRoutine) == 0x40);
+    static_assert(offsetof(RealCodeHeader, nUnwindInfos) == 0x20);
+    static_assert(offsetof(RealCodeHeader, unwindInfos) == 0x24);
+    static_assert(sizeof(CodeHeader) == sizeof(uint64_t));
+    static_assert(STUB_CODE_BLOCK_LAST == 0xf);
+    static_assert(VALUE_MASK == 0x7FFFFFFFFFFFFFFFLL);
+    static_assert(BYTES_PER_BUCKET == 32);
+    static_assert(CODE_ALIGN == 4);
+    static_assert(NIBBLES_PER_DWORD == 8);
+    static_assert(NIBBLE_SIZE == 4);
+    static_assert(NIBBLE_MASK == 0xf);
+#if defined(TARGET_AMD64)
+    static_assert(sizeof(T_RUNTIME_FUNCTION) == 12);
+#elif defined(TARGET_ARM64)
+    static_assert(sizeof(T_RUNTIME_FUNCTION) == 8);
+#endif // TARGET_AMD64
+#endif // TARGET_WINDOWS && TARGET_64BIT
+
 #undef CHECK_OFFSET
 };
 

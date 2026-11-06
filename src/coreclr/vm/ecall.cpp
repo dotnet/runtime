@@ -92,6 +92,15 @@ void ECall::PopulateManagedStringConstructors()
     _ASSERTE(!fInitialized);    // assume this method is only called once
 
     _ASSERTE(g_pStringClass != NULL);
+#ifdef _DEBUG
+    // Validate the metadata-free classification used by MethodDesc::IsStringCtor.
+    for (MethodTable::IntroducedMethodIterator it(g_pStringClass); it.IsValid(); it.Next())
+    {
+        MethodDesc* pMD = it.GetMethodDesc();
+        _ASSERTE(pMD->IsStringCtor() == (pMD->IsCtor() != 0));
+    }
+#endif // _DEBUG
+
     for (int i = 0; i < NumberOfStringConstructors; i++)
     {
         MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__STRING__CTORF_FIRST + i));

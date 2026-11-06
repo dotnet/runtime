@@ -23,6 +23,7 @@ using ILCompiler.ReadyToRun.TypeSystem;
 using ILCompiler.ReadyToRun;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -224,7 +225,7 @@ namespace ILCompiler.DependencyAnalysis
             return _arrayInterfaceMethods.GetOrAdd((ArrayType)arrayType.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
-        public void AddVirtualMethodDiscoveryDependencies(ref DependencyList dependencies, TypeDesc type)
+        public void AddVirtualMethodDiscoveryDependencies(DependencySink dependencies, TypeDesc type)
         {
             if (CompilationCurrentPhase != 0)
                 return;
@@ -239,14 +240,12 @@ namespace ILCompiler.DependencyAnalysis
                 type.IsDefType &&
                 CompilationModuleGroup.VersionsWithType(type))
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(InheritedVirtualMethods(type), "Inherited virtual/interface methods on type");
             }
             // Arrays implement the generic collection interfaces through SZArrayHelper. Discover those
             // implementations so that e.g. ((ICollection<int>)intArray).Count gets discovered.
             else if (type.IsSzArray)
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(ArrayInterfaceMethods((ArrayType)type), "Array generic interface methods");
             }
         }
@@ -567,6 +566,10 @@ namespace ILCompiler.DependencyAnalysis
             _wasmMethodRelativeVirtualIPs = new(method =>
             {
                 return new WasmMethodRelativeVirtualIPNode(this, method);
+            });
+            _wasmMethodFrameIdentities = new(method =>
+            {
+                return new WasmMethodFrameIdentityNode(this, method);
             });
         }
 
@@ -1501,6 +1504,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
 
         private NodeCache<MethodWithGCInfo, WasmMethodRelativeVirtualIPNode> _wasmMethodRelativeVirtualIPs;
+        private NodeCache<MethodWithGCInfo, WasmMethodFrameIdentityNode> _wasmMethodFrameIdentities;
 
         private readonly struct WasmUnboxingStubKey : IEquatable<WasmUnboxingStubKey>
         {
@@ -1556,6 +1560,11 @@ namespace ILCompiler.DependencyAnalysis
         internal WasmMethodRelativeVirtualIPNode WasmMethodRelativeVirtualIP(MethodWithGCInfo method)
         {
             return _wasmMethodRelativeVirtualIPs.GetOrAdd(method);
+        }
+
+        internal WasmMethodFrameIdentityNode WasmMethodFrameIdentity(MethodWithGCInfo method)
+        {
+            return _wasmMethodFrameIdentities.GetOrAdd(method);
         }
     }
 }

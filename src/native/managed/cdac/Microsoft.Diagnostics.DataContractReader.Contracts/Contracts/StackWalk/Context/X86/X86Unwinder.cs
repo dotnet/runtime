@@ -19,7 +19,6 @@ public class X86Unwinder(Target target)
     private const byte X86_INSTR_PUSH_EAX = 0x50; // push eax
     private const byte X86_INSTR_XOR = 0x33; // xor
     private const byte X86_INSTR_NOP = 0x90; // nop
-    private const byte X86_INSTR_RETN = 0xC3; // ret
     private const byte X86_INSTR_PUSH_EBP = 0x55; // push ebp
     private const ushort X86_INSTR_W_MOV_EBP_ESP = 0xEC8B; // mov ebp, esp
     private const byte X86_INSTR_CALL_REL32 = 0xE8; // call rel32
@@ -35,7 +34,6 @@ public class X86Unwinder(Target target)
     private readonly Target _target = target;
     private readonly uint _pointerSize = (uint)target.PointerSize;
     private readonly bool _updateAllRegs = true;
-    private readonly bool _unixX86ABI = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() != RuntimeInfoOperatingSystem.Windows;
 
     private static readonly RegMask[] registerOrder =
     [
@@ -60,7 +58,6 @@ public class X86Unwinder(Target target)
         eman.GetGCInfo(cbh, out TargetPointer gcInfoAddress, out uint gcInfoVersion);
         uint relOffset = (uint)eman.GetRelativeOffset(cbh).Value;
         TargetPointer methodStart = eman.GetStartAddress(cbh);
-        TargetPointer funcletStart = eman.GetFuncletStartAddress(cbh);
         bool isFunclet = eman.IsFunclet(cbh);
 
         X86GCInfo gcInfo = new(_target, gcInfoAddress, gcInfoVersion, relOffset);
@@ -83,7 +80,6 @@ public class X86Unwinder(Target target)
                 ref context,
                 gcInfo,
                 methodStart,
-                funcletStart,
                 isFunclet))
             {
                 return false;
@@ -429,7 +425,6 @@ public class X86Unwinder(Target target)
         ref X86Context context,
         X86GCInfo gcInfo,
         TargetPointer methodStart,
-        TargetPointer funcletStart,
         bool isFunclet)
     {
         Debug.Assert(gcInfo.Header.EbpFrame || gcInfo.Header.DoubleAlign);
@@ -447,19 +442,6 @@ public class X86Unwinder(Target target)
                 baseSP = curEsp;
                 // Set baseSP as initial SP
                 baseSP += gcInfo.PushedArgSize;
-
-                if (_unixX86ABI)
-                {
-                    // 16-byte stack alignment padding (allocated in genFuncletProlog)
-                    // Current funclet frame layout (see CodeGen::genFuncletProlog() and genFuncletEpilog()):
-                    //   prolog: sub esp, 12
-                    //   epilog: add esp, 12
-                    //           ret
-                    // SP alignment padding should be added for all instructions except the first one and the last one.
-                    // Epilog may not exist (unreachable), so we need to check the instruction code.
-                    if (funcletStart != methodStart + gcInfo.RelativeOffset && ReadByteAt(methodStart + gcInfo.RelativeOffset) != X86_INSTR_RETN)
-                        baseSP += 12;
-                }
 
                 context.Eip = (uint)_target.ReadPointer(baseSP);
                 context.Esp = (uint)baseSP + _pointerSize;
@@ -782,13 +764,13 @@ public class X86Unwinder(Target target)
                 }
                 else
                 {
-                    // In .NET 5.0 and later JIT emits a call to JIT_StackProbe helper.
+                    // In .NET 5.0 and later JIT emits a call to RhpStackProbe helper.
 
                     if (pushedStubParam)
                     {
                         // lea eax, [esp-size+4]
                         offset = SKIP_LEA_EAX_ESP(-size + 4, baseAddress, offset);
-                        // call JIT_StackProbe
+                        // call RhpStackProbe
                         offset = SKIP_HELPER_CALL(baseAddress, offset);
                         // pop eax
                         offset = SKIP_POP_REG(baseAddress, offset);
@@ -799,7 +781,7 @@ public class X86Unwinder(Target target)
                     {
                         // lea eax, [esp-size]
                         offset = SKIP_LEA_EAX_ESP(-size, baseAddress, offset);
-                        // call JIT_StackProbe
+                        // call RhpStackProbe
                         offset = SKIP_HELPER_CALL(baseAddress, offset);
                         // mov esp, eax
                         return SKIP_MOV_REG_REG(baseAddress, offset);

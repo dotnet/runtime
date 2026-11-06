@@ -232,7 +232,7 @@ namespace Internal.TypeSystem.Ecma
                 private bool _disposed;
 
                 /// <remarks>
-                /// <paramref="punk" /> is simply a boxed IntPtr, because we don't need an RCW.
+                /// <paramref name="pUnk"/> is simply a boxed IntPtr, because we don't need an RCW.
                 /// </remarks>
                 public int OpenScope(string szScope, int dwOpenFlags, ref Guid riid, out MetadataImportRcw? pUnk)
                 {

@@ -391,6 +391,10 @@ void SetThread(Thread* t)
         {
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into signal-safe map due to out of memory."));
         }
+
+        // Native threads may enter with the GC activation signal blocked.
+        // Unmask it on CLR attachment so GC can interrupt managed execution.
+        PAL_UnmaskActivationSignal();
 #endif // TARGET_UNIX && !TARGET_WASM
     }
     else
@@ -603,11 +607,7 @@ typedef StateHolder<DoNothing, EnsurePreemptive> EnsurePreemptiveModeIfException
 
 Thread* SetupThread()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     Thread* pThread;
     if ((pThread = GetThreadNULLOk()) != NULL)
@@ -808,9 +808,11 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
 #ifdef FEATURE_MULTITHREADING
 Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1181,11 +1183,7 @@ void ReportCopiedWriteBarriersToEventTracing(DWORD eventOptions)
 
 void InitThreadManagerTracingData()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 #ifndef FEATURE_PORTABLE_HELPERS
     ReportCopiedWriteBarriersToPerfMap();
 
@@ -1202,11 +1200,7 @@ void InitThreadManagerTracingData()
 //---------------------------------------------------------------------------
 void InitThreadManager()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifndef FEATURE_PORTABLE_HELPERS
     // All patched helpers should fit into one page.
@@ -1217,10 +1211,15 @@ void InitThreadManager()
     if (IsWriteBarrierCopyEnabled())
     {
         s_barrierCopy = ExecutableAllocator::Instance()->Reserve(g_SystemInfo.dwAllocationGranularity);
-        ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true);
         if (s_barrierCopy == NULL)
         {
             _ASSERTE(!"Allocation of GC barrier code page failed");
+            COMPlusThrowWin32();
+        }
+
+        if (ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true) == NULL)
+        {
+            _ASSERTE(!"Commit of GC barrier code page failed");
             COMPlusThrowWin32();
         }
 
@@ -1330,9 +1329,11 @@ static  DWORD dwHashCodeSeed = 123456789;
 //--------------------------------------------------------------------
 Thread::Thread()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -3019,12 +3020,7 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
 
 DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout, WaitMode mode)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef TARGET_WINDOWS
     return DoAppropriateAptStateWait(numWaiters, pHandles, FALSE, timeout, mode);
@@ -3036,12 +3032,7 @@ DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout
 
 DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef TARGET_UNIX
     _ASSERTE(handle == GetThreadHandle());
@@ -3163,9 +3154,11 @@ void Thread::UserInterrupt(ThreadInterruptMode mode)
 // Correspondence between an EE Thread and an exposed System.Thread:
 OBJECTREF Thread::GetExposedObject()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -3600,11 +3593,7 @@ public:
 
 void Thread::PrepareApartmentAndContext()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef TARGET_UNIX
     m_OSThreadId = ::PAL_GetCurrentOSThreadId();
@@ -3939,11 +3928,7 @@ ThreadStore::ThreadStore()
 
 void ThreadStore::InitThreadStore()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     s_pThreadStore = new ThreadStore;
 
@@ -4274,9 +4259,11 @@ bool ThreadStore::ShouldTriggerGCForDeadThreads()
 
 void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -4470,11 +4457,7 @@ BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, D
 // wait before tearing down the EE.
 void ThreadStore::WaitForOtherThreads()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     CHECK_ONE_STORE();
 
@@ -4808,7 +4791,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
     {
         MEMORY_BASIC_INFORMATION mbi;
 
-        if (ClrVirtualQuery(getStackHash, &mbi, sizeof(mbi)))
+        if (VirtualQuery(getStackHash, &mbi, sizeof(mbi)))
         {
             moduleBase = (size_t)mbi.AllocationBase;
             moduleTop = (size_t)mbi.BaseAddress + mbi.RegionSize;
@@ -4816,7 +4799,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
         else
         {
             // way bad error, probably just assert and exit
-            _ASSERTE (!"ClrVirtualQuery failed");
+            _ASSERTE (!"VirtualQuery failed");
             moduleBase = 0;
             moduleTop = 0;
         }
@@ -5070,7 +5053,7 @@ void * Thread::GetStackLowerBound()
    MEMORY_BASIC_INFORMATION lowerBoundMemInfo;
     SIZE_T dwRes;
 
-    dwRes = ClrVirtualQuery((const void *)&lowerBoundMemInfo, &lowerBoundMemInfo, sizeof(MEMORY_BASIC_INFORMATION));
+    dwRes = VirtualQuery((const void *)&lowerBoundMemInfo, &lowerBoundMemInfo, sizeof(MEMORY_BASIC_INFORMATION));
 
     if (sizeof(MEMORY_BASIC_INFORMATION) == dwRes)
     {
@@ -5323,7 +5306,7 @@ static void DebugLogMBIFlags(UINT uState, UINT uProtect)
 #endif // !TARGET_UNIX
 }
 
-
+#ifndef TARGET_UNIX
 static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 {
     CONTRACTL
@@ -5341,7 +5324,7 @@ static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 
     while (uStartOfThisRegion < uHighAddress)
     {
-        SIZE_T res = ClrVirtualQuery((const void *)uStartOfThisRegion, &meminfo, sizeof(meminfo));
+        SIZE_T res = VirtualQuery((const void *)uStartOfThisRegion, &meminfo, sizeof(meminfo));
 
         if (sizeof(meminfo) != res)
         {
@@ -5407,6 +5390,7 @@ void Thread::DebugLogStackMBIs()
 
     DebugLogStackRegionMBIs(uStackLimit, uStackBase);
 }
+#endif // !TARGET_UNIX
 #endif // _DEBUG
 
 NOINLINE void AllocateSomeStack(){
@@ -5590,8 +5574,8 @@ BOOL Thread::MarkPageAsGuard(UINT_PTR uGuardPageBase)
 
     DWORD flOldProtect;
 
-    ClrVirtualProtect((LPVOID)uGuardPageBase, 1,
-                      (PAGE_READWRITE | PAGE_GUARD), &flOldProtect);
+    VirtualProtect((LPVOID)uGuardPageBase, 1,
+                   (PAGE_READWRITE | PAGE_GUARD), &flOldProtect);
 
     // Intentionally ignore return value -- if it failed, we'll find out below
     // and keep moving up the stack until we either succeed or we hit the guard
@@ -5604,7 +5588,7 @@ BOOL Thread::MarkPageAsGuard(UINT_PTR uGuardPageBase)
     MEMORY_BASIC_INFORMATION meminfo;
     SIZE_T dwRes;
 
-    dwRes = ClrVirtualQuery((const void *)uGuardPageBase, &meminfo, sizeof(meminfo));
+    dwRes = VirtualQuery((const void *)uGuardPageBase, &meminfo, sizeof(meminfo));
 
     return ((sizeof(meminfo) == dwRes) && (meminfo.Protect & PAGE_GUARD));
 }
@@ -6833,16 +6817,14 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
 
         EX_TRY
         {
-            bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-
             INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pPFrame);
-            INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+            INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
             pThreadContext = GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Worker(CURRENT_THREAD, pByteCodeStart);
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
             UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         }
         EX_CATCH
