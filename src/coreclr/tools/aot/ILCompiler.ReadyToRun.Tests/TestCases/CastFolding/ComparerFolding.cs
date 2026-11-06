@@ -68,4 +68,12 @@ public static class ComparerFolding
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static object ExternalStructEqualityComparerCreate() =>
         CreateExternalStructComparer(null);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int SharedGenericSpanIndexOf<T>(ReadOnlySpan<T> span, T value) where T : IEquatable<T>? =>
+        span.IndexOf(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int CallSharedGenericSpanIndexOf(ReadOnlySpan<string> span, string value) =>
+        SharedGenericSpanIndexOf(span, value);
 }

@@ -715,14 +715,13 @@ public class R2RTestSuites
             bool HasFixupContaining(string methodName, string substring, out string diag)
             {
                 ReadyToRunMethod method = Assert.Single(methods,
-                    m => m.SignatureString.Contains($".{methodName}(", StringComparison.Ordinal));
+                    m => m.Name == methodName);
                 var fixups = (method.Fixups ?? Array.Empty<FixupCell>()).Select(f => f.Signature.ToString(formattingOptions)).ToList();
                 diag = $"{methodName}: [{string.Join(", ", fixups)}]";
                 return fixups.Any(s => s.Contains(substring, StringComparison.Ordinal));
             }
 
-            var isInstanceImports = new HashSet<string>();
-            var newobjImports = new HashSet<string>();
+            var importedTypes = new HashSet<string>();
             foreach (ReadyToRunImportSection section in reader.ImportSections)
             {
                 foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
@@ -735,29 +734,27 @@ public class R2RTestSuites
                     if (kindStart <= 0)
                         continue;
 
-                    if (entry.Signature.FixupKind == ReadyToRunFixupKind.IsInstanceOf)
-                        isInstanceImports.Add(signature[..kindStart]);
-                    else if (entry.Signature.FixupKind == ReadyToRunFixupKind.NewObject)
-                        newobjImports.Add(signature[..kindStart]);
+                    importedTypes.Add(signature[..kindStart]);
                 }
             }
 
-            string d = $"IsInstanceOf imports: [{string.Join(", ", isInstanceImports)}], NewObject imports: [{string.Join(", ", newobjImports)}]";
+            string d = $"Imported types: [{string.Join(", ", importedTypes)}]";
             // EqualityComparer<T>.Default exact return type inference folds `is ICheckComparer<T>`
             // (eliminating the ICheckComparer<T> cast import when ObjectEqualityComparer<T> is in the bubble)
             // only when T and its non-Object/ValueType base hierarchy version with the current bubble.
-            Assert.True(isInstanceImports.Contains("ICheckComparer`1<LocalStruct>") != inputBubble, d);
-            Assert.True(isInstanceImports.Contains("ICheckComparer`1<LocalSealedClass>") != inputBubble, d);
-            Assert.True(isInstanceImports.Contains("ICheckComparer`1<LocalDerivedFromExternal>"), d);
-            Assert.True(isInstanceImports.Contains("ICheckComparer`1<ExternalLib+ExternalStruct>"), d);
-            Assert.True(isInstanceImports.Contains("ICheckComparer`1<ExternalLib+ExternalType>"), d);
+            Assert.True(importedTypes.Contains("ICheckComparer`1<LocalStruct>") != inputBubble, d);
+            Assert.True(importedTypes.Contains("ICheckComparer`1<LocalSealedClass>") != inputBubble, d);
+            Assert.True(importedTypes.Contains("ICheckComparer`1<LocalDerivedFromExternal>"), d);
+            Assert.True(importedTypes.Contains("ICheckComparer`1<ExternalLib+ExternalStruct>"), d);
+            Assert.True(importedTypes.Contains("ICheckComparer`1<ExternalLib+ExternalType>"), d);
 
             // Per-instantiation synthesized intrinsics (EqualityComparer<T>.Create / RuntimeHelpers.IsBitwiseEquatable<T>)
             // inline only when T versions with the bubble or opt-cross-module set.
             if (inputBubble)
-                Assert.Contains(newobjImports, s => s.Contains("ObjectEqualityComparer`1<LocalStruct>", StringComparison.Ordinal));
-            Assert.DoesNotContain(newobjImports, s => s.Contains("ObjectEqualityComparer`1<ExternalLib+ExternalStruct>", StringComparison.Ordinal));
+                Assert.Contains(importedTypes, s => s.Contains("ObjectEqualityComparer`1<LocalStruct>", StringComparison.Ordinal));
+            Assert.DoesNotContain(importedTypes, s => s.Contains("ObjectEqualityComparer`1<ExternalLib+ExternalStruct>", StringComparison.Ordinal));
             Assert.False(HasFixupContaining("ExternalStructDefaultComparerEquals", "System.ValueType.Equals", out d), d);
+            Assert.False(HasFixupContaining("SharedGenericSpanIndexOf", "UnreachableException", out d), d);
         }
     }
 

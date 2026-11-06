@@ -1778,13 +1778,13 @@ namespace Internal.JitInterface
 #if READYTORUN
             // A type (or one of its base types) can gain IEquatable<T> or IComparable<T> across version bubbles
             // unless the hierarchy versions with the compilation. Nullable<T> delegates to its underlying value type T,
-            // and primitives, enums, and strings have fixed comparers.
+            // and primitives, enums, strings, and canonical types have fixed or runtime-determined comparers.
             if (type.IsNullable)
             {
                 type = type.Instantiation[0];
             }
 
-            if (type.IsPrimitive || type.IsEnum || type.IsString)
+            if (type.IsPrimitive || type.IsEnum || type.IsString || type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 return true;
             }

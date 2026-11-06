@@ -104,16 +104,16 @@ namespace Internal.IL
         {
             // Per-instantiation intrinsics inspect compile-time metadata (fields, interfaces, constructors)
             // of their generic arguments without emitting runtime layout or interface checks, so every
-            // instantiation argument must version with the current compilation.
+            // non-canonical instantiation argument must version with the current compilation.
             foreach (TypeDesc t in method.Instantiation)
             {
-                if (!_compilationModuleGroup.VersionsWithType(t))
+                if (!t.IsCanonicalSubtype(CanonicalFormKind.Any) && !_compilationModuleGroup.VersionsWithType(t))
                     return null;
             }
 
             foreach (TypeDesc t in method.OwningType.Instantiation)
             {
-                if (!_compilationModuleGroup.VersionsWithType(t))
+                if (!t.IsCanonicalSubtype(CanonicalFormKind.Any) && !_compilationModuleGroup.VersionsWithType(t))
                     return null;
             }
 
