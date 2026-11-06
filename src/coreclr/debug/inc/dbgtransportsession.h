@@ -369,7 +369,7 @@ public:
 #ifdef RIGHT_SIDE_COMPILE
     HRESULT Init(const ProcessDescriptor& pd, const WaitHandle& processExited);
 #else
-    HRESULT Init(DebuggerIPCControlBlock * pDCB);
+    HRESULT Init(DebuggerIPCControlBlock_2 * pDCB);
 #endif // RIGHT_SIDE_COMPILE
 
     // Drive the session to the SS_Closed state, which will deallocate all remaining transport resources
@@ -444,10 +444,6 @@ public:
     // Read and write memory on the LS from the RS.
     HRESULT ReadMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, SIZE_T cbBuffer);
     HRESULT WriteMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, SIZE_T cbBuffer);
-
-    // Read and write the debugger control block on the LS from the RS.
-    HRESULT GetDCB(DebuggerIPCControlBlock *pDCB);
-    HRESULT SetDCB(DebuggerIPCControlBlock *pDCB);
 
 #endif // RIGHT_SIDE_COMPILE
 
@@ -695,7 +691,7 @@ private:
 #ifndef RIGHT_SIDE_COMPILE
     // The LS requires the addresses of a couple of runtime data structures in order to service MT_GetDCB etc.
     // These are provided by the runtime at initialization time.
-    DebuggerIPCControlBlock *m_pDCB;
+    DebuggerIPCControlBlock_2 *m_pDCB;
 #endif // !RIGHT_SIDE_COMPILE
 
 #ifdef _DEBUG
