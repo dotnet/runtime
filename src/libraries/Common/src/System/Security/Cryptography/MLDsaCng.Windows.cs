@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 using BCRYPT_PQDSA_PADDING_INFO = Interop.BCrypt.BCRYPT_PQDSA_PADDING_INFO;
@@ -378,7 +379,7 @@ namespace System.Security.Cryptography
 #if SYSTEM_SECURITY_CRYPTOGRAPHY
             ReadOnlySpan<byte> pkcs8Source = source.AsSpan(0, len);
 #else
-            using (TrimAndTrack(source, bytesRead, out byte[] pkcs8Source))
+            using (Helpers.TrimAndTrack(source, bytesRead, out byte[] pkcs8Source))
 #endif
             {
                 try
@@ -397,40 +398,6 @@ namespace System.Security.Cryptography
             CngKeyExtensions.SetExportPolicy(key, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
 #endif
             return new MLDsaCng(key, transferOwnership: true);
-
-#if !SYSTEM_SECURITY_CRYPTOGRAPHY
-            // Pinning and clearing keyMaterial must be done by the caller.
-            // The returned PinAndClear only applies to arrays that this method creates.
-            static PinAndClear? TrimAndTrack(byte[] keyMaterial, int length, out byte[] trimmed)
-            {
-                int keyMaterialLength = keyMaterial.Length;
-
-                if (keyMaterialLength == length)
-                {
-                    trimmed = keyMaterial;
-                    return null; // Tracking original array is up to the caller
-                }
-
-                // AsSpan will validate length so we won't need to
-                ReadOnlySpan<byte> bytesToCopy = keyMaterial.AsSpan(0, length);
-                byte[] trimmedKeyMaterial = new byte[length];
-                PinAndClear ret = PinAndClear.Track(trimmedKeyMaterial);
-
-                try
-                {
-                    bytesToCopy.CopyTo(trimmedKeyMaterial);
-                    trimmed = trimmedKeyMaterial;
-                    return ret;
-                }
-                catch
-                {
-                    // This should never happen, but let's be safe and clean up the GC Handle if it does
-                    ret.Dispose();
-                    Debug.Fail("Copy failed.");
-                    throw;
-                }
-            }
-#endif
         }
 
         /// <inheritdoc/>

@@ -274,6 +274,36 @@ namespace Internal.Cryptography
         }
 
 #if !BUILDING_PKCS
+        // Pinning and clearing keyMaterial must be done by the caller.
+        // The returned PinAndClear only applies to arrays that this method creates.
+        internal static PinAndClear? TrimAndTrack(byte[] keyMaterial, int length, out byte[] trimmed)
+        {
+            int keyMaterialLength = keyMaterial.Length;
+
+            if (keyMaterialLength == length)
+            {
+                trimmed = keyMaterial;
+                return null;
+            }
+
+            ReadOnlySpan<byte> bytesToCopy = keyMaterial.AsSpan(0, length);
+            byte[] trimmedKeyMaterial = new byte[length];
+            PinAndClear ret = PinAndClear.Track(trimmedKeyMaterial);
+
+            try
+            {
+                bytesToCopy.CopyTo(trimmedKeyMaterial);
+                trimmed = trimmedKeyMaterial;
+                return ret;
+            }
+            catch
+            {
+                ret.Dispose();
+                Debug.Fail("Copy failed.");
+                throw;
+            }
+        }
+
         internal static void ThrowIfDestinationWrongLength(
             Span<byte> destination,
             int expectedLength,
