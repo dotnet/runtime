@@ -67,7 +67,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <_WasmEmitMetadataSections Condition="'$(TargetFrameworkVersion)' == 'v12.0'">true</_WasmEmitMetadataSections>
+    <_WasmEmitMetadataSections Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0'))">true</_WasmEmitMetadataSections>
     <_WasmNormalizedBuildId Condition="'$(_WasmEmitMetadataSections)' == 'true' and '$(WasmNativeBuildId)' != ''">$(WasmNativeBuildId.Replace('0x', '').Replace('0X', '').ToLowerInvariant())</_WasmNormalizedBuildId>
 
     <!-- Runtime feature defaults to trim unnecessary code -->
@@ -359,6 +359,8 @@ Copyright (c) .NET Foundation. All rights reserved.
                                     Condition="'$(UseMonoRuntime)' == 'false' and '@(_DebugSymbolsIntermediatePath)' != '' and Exists('%(_WasmProjectAssemblyBuild.RootDir)%(_WasmProjectAssemblyBuild.Directory)%(_WasmProjectAssemblyBuild.FileName).pdb')" />
       <_WasmProjectAssemblyBuild Include="@(IntermediateAssembly)" Condition="@(_WasmProjectAssemblyBuild->Count()) == 0" />
       <_WasmBuildAssetCandidates Include="@(ReferenceCopyLocalPaths)" />
+      <!-- Replace the shared runtime-pack module with its project-local stamped copy. Native relinks
+           instead remove the runtime-pack item above through _WasmNativeAssetFileNames. -->
       <_WasmBuildAssetCandidates Remove="@(_WasmBuildIdRuntimePackBuildSource)"
                                  Condition="@(_WasmBuildIdRuntimePackBuildSource->Count()) != 0" />
       <_WasmBuildAssetCandidates Include="@(_WasmStampedBuildWasm)"
@@ -1473,52 +1475,35 @@ Copyright (c) .NET Foundation. All rights reserved.
           BeforeTargets="ProcessPublishFilesForWasm"
           Condition="'$(_WasmNormalizedBuildId)' != '' and '$(WasmBuildingForNestedPublish)' != 'true'">
     <PropertyGroup>
-      <_WasmBuildIdForBuildPath>$([MSBuild]::NormalizePath($(IntermediateOutputPath), 'wasm-build-id', 'for-build', 'dotnet.native.wasm'))</_WasmBuildIdForBuildPath>
+      <_WasmBuildIdBuildOutputPath Condition="'$(_WasmBuildIdBuildOutputPath)' == ''">$([MSBuild]::NormalizePath($(IntermediateOutputPath), 'wasm-build-id', 'for-build', 'dotnet.native.wasm'))</_WasmBuildIdBuildOutputPath>
     </PropertyGroup>
 
     <ItemGroup>
-      <_WasmBuildIdPublishSource Remove="@(_WasmBuildIdPublishSource)" />
-      <_WasmBuildIdResolvedPublishCandidates Remove="@(_WasmBuildIdResolvedPublishCandidates)" />
-      <_WasmBuildIdRuntimePackPublishSource Remove="@(_WasmBuildIdRuntimePackPublishSource)" />
-      <_WasmBuildIdReferencePublishSource Remove="@(_WasmBuildIdReferencePublishSource)" />
-      <_WasmStampedPublishWasm Remove="@(_WasmStampedPublishWasm)" />
-      <_WasmBuildIdPublishSource Include="@(WasmNativeAsset)"
-                                 Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'" />
+      <_WasmBuildIdPublishRelinkSource Include="@(WasmNativeAsset)"
+                                       Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'" />
       <_WasmBuildIdResolvedPublishCandidates Include="@(ResolvedFileToPublish)"
-                                             Condition="@(_WasmBuildIdPublishSource->Count()) == 0 and '%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)' == 'dotnet.native.wasm'" />
-      <_WasmBuildIdRuntimePackPublishSource Include="@(_WasmBuildIdResolvedPublishCandidates)"
-                                            Condition="'%(_WasmBuildIdResolvedPublishCandidates.FullPath)' != '$(_WasmBuildIdForBuildPath)'" />
-      <_WasmBuildIdRuntimePackPublishSource Include="@(_WasmBuildIdResolvedPublishCandidates)"
-                                            Condition="@(_WasmBuildIdRuntimePackPublishSource->Count()) == 0 and '%(_WasmBuildIdResolvedPublishCandidates.FullPath)' == '$(_WasmBuildIdForBuildPath)'" />
-      <_WasmBuildIdPublishSource Include="@(_WasmBuildIdRuntimePackPublishSource)" />
-      <_WasmBuildIdReferencePublishSource Include="@(ReferenceCopyLocalPaths)"
-                                          Condition="@(_WasmBuildIdPublishSource->Count()) == 0 and '%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'dotnet.native.wasm'" />
-      <_WasmBuildIdPublishSource Include="@(_WasmBuildIdReferencePublishSource)" />
+                                             Condition="@(_WasmBuildIdPublishRelinkSource->Count()) == 0 and '%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)' == 'dotnet.native.wasm'" />
+      <_WasmBuildIdBuildPublishSource Include="@(_WasmBuildIdResolvedPublishCandidates->'$(_WasmBuildIdBuildOutputPath)')"
+                                      Condition="@(_WasmBuildIdResolvedPublishCandidates->Count()) == 1 and Exists('$(_WasmBuildIdBuildOutputPath)')" />
     </ItemGroup>
 
-    <Error Condition="@(_WasmBuildIdPublishSource->Count()) != 1"
-           Text="Expected exactly one dotnet.native.wasm input for WasmNativeBuildId, but found @(_WasmBuildIdPublishSource->Count())." />
+    <Error Condition="@(_WasmBuildIdPublishRelinkSource->Count()) > 1"
+           Text="Expected at most one relinked dotnet.native.wasm input for WasmNativeBuildId, but found @(_WasmBuildIdPublishRelinkSource->Count())." />
+    <Error Condition="@(_WasmBuildIdPublishRelinkSource->Count()) == 0 and @(_WasmBuildIdResolvedPublishCandidates->Count()) != 1"
+           Text="Expected exactly one runtime-pack dotnet.native.wasm publish input for WasmNativeBuildId, but found @(_WasmBuildIdResolvedPublishCandidates->Count())." />
+    <Error Condition="@(_WasmBuildIdPublishRelinkSource->Count()) == 0 and @(_WasmBuildIdBuildPublishSource->Count()) != 1"
+           Text="The build-stamped dotnet.native.wasm was not found at '$(_WasmBuildIdBuildOutputPath)'." />
 
-    <PropertyGroup>
-      <_WasmBuildIdPublishOutputPath />
-      <_WasmBuildIdPublishOutputPath Condition="@(_WasmBuildIdRuntimePackPublishSource->Count()) != 0 or @(_WasmBuildIdReferencePublishSource->Count()) != 0">$([MSBuild]::NormalizePath($(IntermediateOutputPath), 'wasm-build-id', 'for-publish', 'dotnet.native.wasm'))</_WasmBuildIdPublishOutputPath>
-      <_WasmBuildIdPublishOutputPath Condition="'$(_WasmBuildIdPublishOutputPath)' == ''">@(_WasmBuildIdPublishSource->'%(FullPath)')</_WasmBuildIdPublishOutputPath>
-    </PropertyGroup>
-
-    <WasmStampBuildId InputWasm="@(_WasmBuildIdPublishSource)"
-                      OutputPath="$(_WasmBuildIdPublishOutputPath)"
+    <WasmStampBuildId Condition="@(_WasmBuildIdPublishRelinkSource->Count()) == 1"
+                      InputWasm="@(_WasmBuildIdPublishRelinkSource)"
+                      OutputPath="@(_WasmBuildIdPublishRelinkSource->'%(FullPath)')"
                       BuildId="$(_WasmNormalizedBuildId)">
-      <Output TaskParameter="StampedWasm" ItemName="_WasmStampedPublishWasm" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmStampBuildId>
 
-    <ItemGroup Condition="@(_WasmBuildIdRuntimePackPublishSource->Count()) != 0">
+    <ItemGroup Condition="@(_WasmBuildIdBuildPublishSource->Count()) == 1">
       <ResolvedFileToPublish Remove="@(_WasmBuildIdResolvedPublishCandidates)" />
-      <ResolvedFileToPublish Include="@(_WasmStampedPublishWasm)" />
-    </ItemGroup>
-    <ItemGroup Condition="@(_WasmBuildIdReferencePublishSource->Count()) != 0">
-      <ReferenceCopyLocalPaths Remove="@(_WasmBuildIdReferencePublishSource)" />
-      <ReferenceCopyLocalPaths Include="@(_WasmStampedPublishWasm)" />
+      <ResolvedFileToPublish Include="@(_WasmBuildIdBuildPublishSource)" />
     </ItemGroup>
   </Target>
 

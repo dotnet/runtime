@@ -1,6 +1,6 @@
 # WebAssembly `producers` and `build_id` custom sections
 
-This document describes how .NET 12 emits the two WebAssembly [tool-conventions](https://github.com/WebAssembly/tool-conventions)
+This document describes how .NET 12 and later emit the two WebAssembly [tool-conventions](https://github.com/WebAssembly/tool-conventions)
 custom sections into `dotnet.native.wasm` for browser-wasm applications, and the decisions behind the
 current (prototype) implementation. Older target frameworks retain their existing output without
 these metadata sections.
@@ -48,7 +48,7 @@ Behavior:
 The `producers` section records the toolchain. Per the spec it must appear at most once. `wasm-ld`
 already **merges** the `producers` sections found in its input objects (clang/LLVM contribute
 `language`/`processed-by` automatically). `wasm-ld` has no command-line option to inject additional
-`producers` entries, so each .NET 12 browser runtime pack ships a tiny **relocatable wasm object**
+`producers` entries, so each .NET 12+ browser runtime pack ships a tiny **relocatable wasm object**
 whose only meaningful content is a `producers` custom section. Native relinks hand that object to
 `wasm-ld`, which merges it with the rest while keeping the section single. .NET contributes:
 
@@ -68,7 +68,7 @@ single section merged by `wasm-ld` through Emscripten's post-link processing.
   `WriteProducersObject` emits a minimal relocatable wasm object (module header + an empty `linking`
   section that marks it as an object + the `producers` custom section).
 - `src/tasks/WasmAppBuilder/WasmEmitProducersObject.cs` – the MSBuild task wrapping the writer. The
-  .NET 12 Mono and CoreCLR browser runtime-pack builds use it to create their flavor-specific
+  .NET 12+ Mono and CoreCLR browser runtime-pack builds use it to create their flavor-specific
   `dotnet-producers.o`.
 - `src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.props` – packages the
   prebuilt producer object under `runtimes/browser-wasm/native`.
@@ -117,8 +117,8 @@ instead of creating another copy.
 
 | Property                     | Default | Meaning |
 |------------------------------|---------|---------|
-| `WasmEmitProducersSection`   | `true` on .NET 12 | Emit/merge the `producers` section from the runtime-pack object. |
-| `WasmNativeBuildId`          | (unset) | .NET 12: hex string to stamp as the `build_id` without forcing a native build. Empty means no application-stamped `build_id` section. |
+| `WasmEmitProducersSection`   | `true` on .NET 12+ | Emit/merge the `producers` section from the runtime-pack object. |
+| `WasmNativeBuildId`          | (unset) | .NET 12+: hex string to stamp as the `build_id` without forcing a native build. Empty means no application-stamped `build_id` section. |
 
 ## Open questions / future work
 

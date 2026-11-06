@@ -320,11 +320,12 @@
 
   <Target Name="_BrowserWasmWriteRspForLinking" BeforeTargets="_WasmWriteRspForLinking">
     <PropertyGroup>
-      <WasmEmitProducersSection Condition="'$(TargetFrameworkVersion)' == 'v12.0' and '$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
-      <_WasmEmitProducersSection Condition="'$(TargetFrameworkVersion)' == 'v12.0' and '$(WasmEmitProducersSection)' == 'true'">true</_WasmEmitProducersSection>
+      <WasmEmitProducersSection Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0')) and '$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
+      <_WasmEmitProducersSection Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0')) and '$(WasmEmitProducersSection)' == 'true'">true</_WasmEmitProducersSection>
       <_WasmProducersObjectPath>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.o</_WasmProducersObjectPath>
-      <_WasmProducersObjectPath Condition="!Exists('$(_WasmProducersObjectPath)')">$(_WasmIntermediateOutputPath)dotnet-producers.o</_WasmProducersObjectPath>
     </PropertyGroup>
+    <Error Condition="'$(_WasmEmitProducersSection)' == 'true' and !Exists('$(_WasmProducersObjectPath)')"
+           Text="The browser runtime pack is missing '$(_WasmProducersObjectPath)'." />
     <ItemGroup>
       <EmccExportedRuntimeMethod Include="PThread" Condition="'$(WasmEnableThreads)' == 'true'" />
       <!-- _EmccIncomingModuleJSAPI defaults (incl. wasmMemory when threads are enabled) come from wasm-props.json
@@ -403,19 +404,6 @@
 
       <_WasmLinkStepArgs Include="@(_EmccLinkStepArgs)" />
       <_WasmLinkStepArgs Include="@(LinkerArg)" />
-    </ItemGroup>
-  </Target>
-
-  <!-- Full repo builds link the prebuilt browser runtime before its runtime pack is assembled. -->
-  <Target Name="_BrowserWasmEmitProducersObject"
-          BeforeTargets="_BrowserWasmWriteRspForLinking"
-          Condition="'$(TargetFrameworkVersion)' == 'v12.0' and '$(WasmEmitProducersSection)' == 'true' and !Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-producers.o')">
-    <WasmEmitProducersObject
-        OutputPath="$(_WasmIntermediateOutputPath)dotnet-producers.o"
-        RuntimeName="Mono"
-        ProductVersion="$(ProductVersion)" />
-    <ItemGroup>
-      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet-producers.o" />
     </ItemGroup>
   </Target>
 

@@ -11,7 +11,7 @@
     <MacOSPackageDescription>The .NET Shared Framework</MacOSPackageDescription>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(NetCoreAppCurrent)' == 'net12.0'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))">
     <ProjectReference Include="$(RepoRoot)src\tasks\WasmAppBuilder\WasmAppBuilder.csproj"
                       ReferenceOutputAssembly="false" />
   </ItemGroup>
@@ -19,12 +19,12 @@
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmEmitProducersObject"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
-             Condition="'$(TargetOS)' == 'browser' and '$(NetCoreAppCurrent)' == 'net12.0'" />
+             Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))" />
 
   <Target Name="GenerateBrowserWasmProducersObject"
           BeforeTargets="AddRuntimeFilesToPackage"
           DependsOnTargets="ResolveProjectReferences"
-          Condition="'$(TargetOS)' == 'browser' and '$(NetCoreAppCurrent)' == 'net12.0'">
+          Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))">
     <PropertyGroup>
       <_BrowserWasmProducersObject>$(IntermediateOutputPath)dotnet-producers.o</_BrowserWasmProducersObject>
     </PropertyGroup>
