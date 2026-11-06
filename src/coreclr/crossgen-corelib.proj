@@ -202,6 +202,9 @@
       <!-- wasm: enable cross-module inlining/optimization across the whole shared framework (the -r IL closure). -->
       <_CoreLibCrossgen2ExtraArgs Include="--opt-cross-module:*"
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
+      <!-- Every ReadyToRun image in a wasm app must target the same instruction sets. -->
+      <_CoreLibCrossgen2ExtraArgs Include="--instruction-set:relaxed-simd"
+        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(WasmEnableRelaxedSimd)' == 'true'" />
       <_CoreLibCrossgen2ExtraArgs Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)')"
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'browser'" />
       <_CoreLibCrossgen2ExtraArgs Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)')"

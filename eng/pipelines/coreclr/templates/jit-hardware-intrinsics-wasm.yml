@@ -6,6 +6,9 @@ parameters:
   - name: compositeBuildMode
     type: boolean
     default: false
+  - name: extraBuildArgs
+    type: string
+    default: ''
 
 jobs:
 # Build CoreCLR + libraries for wasm, build the wasm HardwareIntrinsics tests,
@@ -25,7 +28,7 @@ jobs:
     jobParameters:
       testGroup: outerloop
       nameSuffix: CoreCLR
-      buildArgs: -s clr+libs+packs -c $(_BuildConfig) /p:TestAssemblies=false
+      buildArgs: -s clr+libs+packs -c $(_BuildConfig) /p:TestAssemblies=false ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 180
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
