@@ -9,6 +9,7 @@ import { runtimeState } from "./exit";
 import { loaderCallbacks } from "./callbacks";
 import { loadDotnetModule, loadJSModule, callLibraryInitializerOnRuntimeReady, updateWorkerDownloadProgress } from "./assets";
 import { initializeLoaderConfig } from "./run";
+import { storeAppSettingsBytes } from "../appsettings";
 import { serveWorkerResource } from "./worker-assets";
 import { createWorkerLocal } from "./worker-local";
 import { createWorkerBootConfig } from "./worker-config";
@@ -279,12 +280,14 @@ async function createWorkerSession(config: LoaderConfig, preload: boolean): Prom
                 return;
             }
             if (timeout !== undefined) clearTimeout(timeout);
+            for (const [fileName, bytes] of message.appSettings) storeAppSettingsBytes(fileName, bytes);
             downloaded.resolve(dotnetApi);
         } else if (message.type === "ready") {
             if (!uiAttached) {
                 terminate(new Error("runInWorker: worker became ready before UI attachment")); return;
             }
             if (timeout !== undefined) clearTimeout(timeout);
+            for (const [fileName, bytes] of message.appSettings) storeAppSettingsBytes(fileName, bytes);
             runtimeState.dotnetReady = true;
             Object.assign(dotnetApi.runtimeBuildInfo, message.runtimeBuildInfo);
             dotnetApi.INTERNAL.nativeBoundary.workerProxyCounts = message.workerProxyCounts;

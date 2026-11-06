@@ -23,6 +23,7 @@ test("worker boot metadata is cloneable while providers and module namespaces re
             jsModuleRuntime: [{ name: "runtime.js", moduleExports: uiModule }],
             modulesAfterConfigLoaded: [{ moduleExports: uiModule }],
             satelliteResources: { fr: [{ ...asset, name: "satellite.dll" }] },
+            appsettings: [{ ...asset, name: "appsettings.json", virtualPath: "appsettings.json", loadIntoVfs: false }],
         },
     };
     const load = createWorkerModuleLoader(createContext({}), {});
@@ -37,6 +38,9 @@ test("worker boot metadata is cloneable while providers and module namespaces re
     assert.equal(boot.assets.get(wire.resources.coreAssembly[0].workerAssetId), asset);
     assert.equal(asset.buffer, bytes);
     assert.equal(asset.pendingDownload.response, response);
+    assert.equal(wire.resources.appsettings[0].buffer, undefined);
+    assert.equal(wire.resources.appsettings[0].pendingDownload, undefined);
+    assert.equal(boot.assets.get(wire.resources.appsettings[0].workerAssetId), source.resources.appsettings[0]);
     module.namespace.restoreWorkerModules(wire, { resources: { jsModuleRuntime: [{ name: "runtime.js", moduleExports: workerModule }] } });
     assert.equal(wire.resources.jsModuleRuntime[0].moduleExports, workerModule);
     assert.equal(source.resources.jsModuleRuntime[0].moduleExports, uiModule);

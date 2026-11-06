@@ -30,6 +30,7 @@ export function createWorkerBootConfig(config: LoaderConfig): { config: LoaderCo
         wasmSymbols: map(original.wasmSymbols),
         icu: map(original.icu),
         vfs: map(original.vfs),
+        appsettings: map(original.appsettings),
         modulesAfterConfigLoaded: [],
         modulesAfterRuntimeReady: [],
         libraryInitializers: [],

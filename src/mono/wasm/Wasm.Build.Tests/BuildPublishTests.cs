@@ -45,6 +45,7 @@ namespace Wasm.Build.Tests
                     """);
             UpdateFile("Program.cs", """
                 using System.Runtime.InteropServices.JavaScript;
+                using System.Text;
                 using System.Threading.Tasks;
 
                 internal static partial class Program
@@ -60,19 +61,37 @@ namespace Wasm.Build.Tests
                     internal static int ThroughImport(int value) => Import(value);
                     [JSExport]
                     internal static Task<int> ThroughAsyncImport(int value) => Delayed(value);
+                    [JSImport("INTERNAL.getAppSettingsBytes")]
+                    [return: JSMarshalAs<JSType.Array<JSType.Number>>]
+                    internal static partial byte[] ReadSettings(string fileName);
+                    [JSExport]
+                    internal static string ReadAppSettings() => Encoding.UTF8.GetString(ReadSettings("appsettings.json"));
                 }
                 """);
+            File.WriteAllText(Path.Combine(_projectDir, "wwwroot", "appsettings.json"), """{"source":"file"}""");
             UpdateFile(Path.Combine("wwwroot", "main.js"), $$"""
                 import { dotnet, exit } from "./_framework/dotnet.js";
                 const shared = new URLSearchParams(location.search).get("shared") === "true";
                 const check = (value, message) => { if (!value) throw new Error(message); };
                 const builder = dotnet.withConfig({ logExitCode: true, exitOnUnhandledError: true });
+                const settingsText = '{"source":"provider","value":42}';
+                const checkSettings = () => {
+                    const internal = getDotnetRuntime(0).INTERNAL;
+                    check(internal.getAppSettingsFiles().includes("appsettings.json"), "UI settings list is missing");
+                    check(new TextDecoder().decode(internal.getAppSettingsBytes("appsettings.json")) === settingsText, "UI settings bytes changed");
+                };
                 let configCalls = 0;
                 builder.withConfigLoaded(config => {
                     configCalls++;
                     check(!!config.runInWorker === shared, "Embedded boot flag does not match the build property");
+                    const asset = config.resources.appsettings.find(asset => asset.virtualPath === "appsettings.json");
+                    check(asset, "Appsettings boot asset is missing");
+                    asset.buffer = Promise.resolve(new TextEncoder().encode(settingsText).buffer);
+                    asset.loadIntoVfs = false;
                 });
+                builder.withDotnetReady(checkSettings);
                 await builder.download({{nativeRelink.ToString().ToLowerInvariant()}});
+                if (!{{nativeRelink.ToString().ToLowerInvariant()}}) checkSettings();
                 const runtime = await builder.create();
                 check(configCalls === 1, "Preload/create initialized config more than once");
                 check(!!runtime.getConfig().runInWorker === shared, "Boot config does not match WasmRunInWorker");
@@ -93,6 +112,7 @@ namespace Wasm.Build.Tests
                     delayed: async value => value + 1
                 });
                 const exports = (await runtime.getAssemblyExports("{{info.ProjectName}}")).Program;
+                check(exports.ReadAppSettings() === settingsText, "Native-host settings bytes changed");
                 check(exports.Increment(41) === 42, "Scalar export failed");
                 check(exports.ThroughImport(41) === 42, "Scalar import failed");
                 const results = await Promise.all(Array.from({ length: 70 }, (_, value) => exports.ThroughAsyncImport(value)));

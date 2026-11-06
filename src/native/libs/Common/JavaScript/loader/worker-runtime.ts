@@ -17,6 +17,7 @@ import type { WorkerLocalRequest } from "./worker-local";
 import { deserializeWorkerError, serializeWorkerError } from "./worker-errors";
 import type { WorkerError } from "./worker-errors";
 import { restoreWorkerModules } from "./worker-config";
+import { getAppSettingsFiles, getAppSettingsBytes } from "../appsettings";
 import {
     createSignalingBuffer, SignalState, CommandId, OFFSET_COMMAND_RESULT, OFFSET_COMMAND_SIGNAL,
     OFFSET_COMMAND_PROMISE_ID, OFFSET_WORKER_STATE, OFFSET_WORKER_ERROR_LENGTH, writeSharedError, wakeMain,
@@ -29,8 +30,8 @@ export interface WorkerCommandMessage {
 }
 export type WorkerToMainMessage =
     | { type: "attach", wasmMemory: WebAssembly.Memory, signalBuffer: SharedArrayBuffer, nativeBuffer: SharedArrayBuffer }
-    | { type: "ready", runtimeBuildInfo: RuntimeAPI["runtimeBuildInfo"], workerProxyCounts: number[] }
-    | { type: "preloaded" }
+    | { type: "ready", runtimeBuildInfo: RuntimeAPI["runtimeBuildInfo"], workerProxyCounts: number[], appSettings: [string, Uint8Array][] }
+    | { type: "preloaded", appSettings: [string, Uint8Array][] }
     | { type: "error", error: WorkerError }
     | WorkerResourceRequest
     | { type: "diagnostic-download"; chunks: Uint8Array[] }
@@ -155,7 +156,11 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage, bootCon
         starting = true;
         runtime = await builder.create();
         self.postMessage({ type: "ready", runtimeBuildInfo: runtime.runtimeBuildInfo,
-            workerProxyCounts: runtime.INTERNAL.nativeBoundary.getProxyCounts() });
+            workerProxyCounts: runtime.INTERNAL.nativeBoundary.getProxyCounts(), appSettings: appSettingsSnapshot() });
+    }
+
+    function appSettingsSnapshot(): [string, Uint8Array][] {
+        return getAppSettingsFiles().map(fileName => [fileName, getAppSettingsBytes(fileName)!]);
     }
 
     dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext] = {
@@ -185,7 +190,7 @@ export async function bootstrapWorkerRuntime(message: WorkerInitMessage, bootCon
         mergeLoaderConfig(message.config);
         if (message.downloadOnly) {
             await builder.download(false);
-            self.postMessage({ type: "preloaded" });
+            self.postMessage({ type: "preloaded", appSettings: appSettingsSnapshot() });
         } else await start();
     } catch (error) {
         fail(error);

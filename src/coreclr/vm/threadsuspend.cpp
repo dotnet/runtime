@@ -2209,6 +2209,12 @@ void Thread::HandleThreadAbort ()
 
         PreparingAbortHolder paHolder;
 
+#if defined(TARGET_UNIX) && defined(FEATURE_THREAD_ACTIVATION)
+        // Abort dispatch may bypass native destructors and the activation signal handler's return through sigreturn.
+        m_hasPendingActivation = false;
+        PAL_UnmaskActivationSignal();
+#endif // TARGET_UNIX && FEATURE_THREAD_ACTIVATION
+
         OBJECTREF exceptObj;
 
         if (IsRudeAbort())
@@ -4555,10 +4561,6 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
 #endif // !TARGET_X86
 
     IS_VALID_CODE_PTR((FARPROC) (TADDR)m_pvHJRetAddr);
-    // TODO [DAVBR]: For the full fix for VsWhidbey 450273, the below
-    // may be uncommented once isLegalManagedCodeCaller works properly
-    // with non-return address inputs, and with non-DEBUG builds
-    //_ASSERTE(isLegalManagedCodeCaller((TADDR)m_pvHJRetAddr));
     STRESS_LOG2(LF_SYNC, LL_INFO100, "Hijacking return address 0x%p for thread %p\n", m_pvHJRetAddr, this);
 
     // Remember the method we're executing
@@ -4986,9 +4988,7 @@ static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind 
 
 #ifdef TARGET_X86
 
-#ifndef TARGET_UNIX
 #define WORKAROUND_RACES_WITH_KERNEL_MODE_EXCEPTION_HANDLING
-#endif // !TARGET_UNIX
 
 #ifdef WORKAROUND_RACES_WITH_KERNEL_MODE_EXCEPTION_HANDLING
 BOOL ThreadCaughtInKernelModeExceptionHandling(Thread *pThread, CONTEXT *ctx)

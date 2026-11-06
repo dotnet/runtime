@@ -48,8 +48,6 @@ using libunwind::CompactUnwinder_arm64;
 using libunwind::Registers_loongarch;
 #elif defined(TARGET_RISCV64)
 using libunwind::Registers_riscv;
-#elif defined(TARGET_X86)
-using libunwind::Registers_x86;
 #else
 #error "Unwinding is not implemented for this architecture yet."
 #endif
@@ -245,131 +243,6 @@ struct Registers_REGDISPLAY : REGDISPLAY
 };
 
 #endif // TARGET_AMD64
-#if defined(TARGET_X86)
-struct Registers_REGDISPLAY : REGDISPLAY
-{
-    typedef uint32_t reg_t;
-    typedef uint32_t link_reg_t;
-    typedef const link_reg_t &link_hardened_reg_arg_t;
-
-    static int  getArch() { return libunwind::REGISTERS_X86; }
-
-    inline uint64_t getRegister(int regNum) const
-    {
-        switch (regNum)
-        {
-        case UNW_REG_IP:
-            return IP;
-        case UNW_REG_SP:
-            return SP;
-        case UNW_X86_EAX:
-            return *pRax;
-        case UNW_X86_EDX:
-            return *pRdx;
-        case UNW_X86_ECX:
-            return *pRcx;
-        case UNW_X86_EBX:
-            return *pRbx;
-        case UNW_X86_ESI:
-            return *pRsi;
-        case UNW_X86_EDI:
-            return *pRdi;
-        case UNW_X86_EBP:
-            return *pRbp;
-        case UNW_X86_ESP:
-            return SP;
-        }
-
-        // Unsupported register requested
-        abort();
-    }
-
-    // Callee-saved registers are tracked by the location they were saved at, see setRegisterLocation
-    inline void setRegister(int regNum, uint64_t value)
-    {
-        switch (regNum)
-        {
-        case UNW_REG_IP:
-            IP = value;
-            return;
-        case UNW_REG_SP:
-        case UNW_X86_ESP:
-            SP = value;
-            return;
-        }
-    }
-
-    inline void setRegisterLocation(int regNum, uint64_t location)
-    {
-        switch (regNum)
-        {
-        case UNW_REG_IP:
-        case UNW_REG_SP:
-        case UNW_X86_ESP:
-            return;
-        case UNW_X86_EAX:
-            pRax = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_EDX:
-            pRdx = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_ECX:
-            pRcx = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_EBX:
-            pRbx = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_ESI:
-            pRsi = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_EDI:
-            pRdi = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_EBP:
-            pRbp = (PTR_uintptr_t)location;
-            return;
-        }
-
-        // Unsupported x86_64 register
-        abort();
-    }
-
-    // N/A for x86
-    inline bool validFloatRegister(int) { return false; }
-    inline bool validVectorRegister(int) { return false; }
-
-    static constexpr int lastDwarfRegNum() { return 16; }
-
-    inline bool validRegister(int regNum) const
-    {
-        if (regNum == UNW_REG_IP)
-            return true;
-        if (regNum == UNW_REG_SP)
-            return true;
-        if (regNum < 0)
-            return false;
-        if (regNum > 15)
-            return false;
-        return true;
-    }
-
-    // N/A for x86
-    inline double getFloatRegister(int) const { abort(); }
-    inline   void setFloatRegister(int, double) { abort(); }
-    inline double getVectorRegister(int) const { abort(); }
-    inline   void setVectorRegister(int, ...) { abort(); }
-
-    void      setSP(uint64_t value) { SP = value; }
-
-    uint64_t  getIP() const { return IP; }
-
-    void      setIP(uint64_t value) { IP = value; }
-
-    uint64_t  getEBP() const { return *pRbp; }
-    uint64_t  getEBX() const { return *pRbx; }
-};
-
-#endif // TARGET_X86
 #if defined(TARGET_ARM)
 
 struct Registers_REGDISPLAY : REGDISPLAY
@@ -1409,8 +1282,6 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
     libunwind::UnwindCursor<LocalAddressSpace, Registers_arm> uc(_addressSpace, nullptr);
 #elif defined(TARGET_ARM64)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_arm64> uc(_addressSpace, nullptr);
-#elif defined(HOST_X86)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_x86> uc(_addressSpace, nullptr);
 #elif defined(HOST_LOONGARCH64)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_loongarch> uc(_addressSpace, nullptr);
 #elif defined(HOST_RISCV64)

@@ -1025,7 +1025,9 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     // Pick a unique initial value (-10) so that the 1st doesn't accidentally match.
     int ilPrevOld = -10;
 
+    // mapping views either the borrowed ReJIT map or the copy that loadTimeMapping owns.
     InstrumentedILOffsetMapping mapping;
+    InstrumentedILOffsetMappingHolder loadTimeMapping;
 
 #ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion ilVersion = m_nativeCodeVersion.GetILCodeVersion();
@@ -1052,7 +1054,8 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     if (m_methodInfo->HasInstrumentedILMap())
     {
         // If a ReJIT hasn't happened, check for a profiler provided map.
-        mapping = m_methodInfo->GetRuntimeModule()->GetInstrumentedILOffsetMapping(m_methodInfo->m_token);
+        loadTimeMapping = m_methodInfo->GetRuntimeModule()->GetInstrumentedILOffsetMapping(m_methodInfo->m_token);
+        mapping = loadTimeMapping.Get();
     }
 
 

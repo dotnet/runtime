@@ -44,5 +44,8 @@ namespace Internal.Runtime
         StaticsInfoHashtable                        = 34,
         GenericMethodsHashtable                     = 35,
         ExactMethodInstantiationsHashtable          = 36,
+
+        // WASM-only: pairs of (unboxing stub, target) function table indices
+        UnboxingStubMap                             = 37,
     }
 }

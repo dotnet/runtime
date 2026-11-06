@@ -6981,7 +6981,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // First argument is the address of the frame variable.
         GenTree* frameAddr = m_compiler->gtNewLclVarAddrNode(m_compiler->lvaInlinedPInvokeFrameVar, TYP_BYREF);
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
         // On x86 targets, PInvoke calls need the size of the stack args in InlinedCallFrame.m_Datum.
         // This is because the callee pops stack arguments, and we need to keep track of this during stack
         // walking
