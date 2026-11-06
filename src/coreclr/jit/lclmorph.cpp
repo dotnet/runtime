@@ -118,7 +118,7 @@ public:
             return GenTree::VisitResult::Continue;
         };
 
-        call->VisitPhysicalLocalDefNodes(m_compiler, moveToEnd);
+        call->VisitCallLocalDefNodes(m_compiler, moveToEnd);
     }
 
     //-------------------------------------------------------------------
@@ -1509,7 +1509,8 @@ private:
                 CallArg* asyncResumedDef = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
                 if ((asyncResumedDef != nullptr) && (val.Node() == asyncResumedDef->GetNode()))
                 {
-                    defSize = TARGET_POINTER_SIZE;
+                    callUser->GetAsyncInfo().DefinesResumedIndicator = true;
+                    defSize                                          = TARGET_POINTER_SIZE;
                 }
             }
 
