@@ -1496,10 +1496,33 @@ public class WasmArgumentLayoutTests
             Assert.Contains("double QCall_Math_Ceiling (uintptr_t, double, uintptr_t) __asm__(\"Math_Ceiling\");", table);
             Assert.Contains("float QCall_MathF_FusedMultiplyAdd (uintptr_t, float, float, float, uintptr_t) __asm__(\"MathF_FusedMultiplyAdd\");", table);
             Assert.Contains("void QCall_Math_SinCos (uintptr_t, double, void *, void *, uintptr_t) __asm__(\"Math_SinCos\");", table);
-            Assert.Contains("int32_t QCall_Math_DivInt32Internal (uintptr_t, int32_t, int32_t, uintptr_t) __asm__(\"Math_DivInt32Internal\");", table);
-            Assert.Contains("int32_t QCall_Interlocked_CompareExchange32 (uintptr_t, void *, int32_t, int32_t, uintptr_t)", table);
-            Assert.Contains("\"Interlocked_CompareExchange32Pointer\"", table);
+            if (context.SystemModule.GetType("System"u8, "Math"u8).GetMethod("DivInt32Internal"u8, null) is not null)
+            {
+                Assert.Contains("int32_t QCall_Math_DivInt32Internal (uintptr_t, int32_t, int32_t, uintptr_t) __asm__(\"Math_DivInt32Internal\");", table);
+            }
+            else
+            {
+                Assert.DoesNotContain("QCall_Math_DivInt32Internal", table);
+            }
+            MetadataType interlocked = context.SystemModule.GetType("System.Threading"u8, "Interlocked"u8);
+            if (interlocked.GetMethod("CompareExchange32"u8, null) is not null)
+            {
+                Assert.Contains("int32_t QCall_Interlocked_CompareExchange32 (uintptr_t, void *, int32_t, int32_t, uintptr_t)", table);
+            }
+            else
+            {
+                Assert.DoesNotContain("\"Interlocked_CompareExchange32\"", table);
+            }
+            if (interlocked.GetMethod("CompareExchange32Pointer"u8, null) is not null)
+            {
+                Assert.Contains("\"Interlocked_CompareExchange32Pointer\"", table);
+            }
+            else
+            {
+                Assert.DoesNotContain("\"Interlocked_CompareExchange32Pointer\"", table);
+            }
             Assert.Contains("\"GCInterface_GetTotalMemory\"", table);
+            Assert.DoesNotContain("\"GC_GetMemoryLoad\"", table);
             Assert.DoesNotContain("String_FastAllocateString", table);
             Assert.DoesNotContain("String_.ctor", table);
             Assert.DoesNotContain("RuntimeHelpers_NewobjHelperDummy", table);

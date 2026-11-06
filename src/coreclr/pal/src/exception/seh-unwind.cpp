@@ -98,14 +98,6 @@ enum
     ASSIGN_REG(R13)        \
     ASSIGN_REG(R14)        \
     ASSIGN_REG(R15)
-#elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
-#define ASSIGN_UNWIND_REGS \
-    ASSIGN_REG(Eip)        \
-    ASSIGN_REG(Esp)        \
-    ASSIGN_REG(Ebp)        \
-    ASSIGN_REG(Ebx)        \
-    ASSIGN_REG(Esi)        \
-    ASSIGN_REG(Edi)
 #elif (defined(HOST_UNIX) && defined(HOST_S390X))
 #define ASSIGN_UNWIND_REGS \
     ASSIGN_REG(PSWAddr)    \
@@ -287,13 +279,6 @@ static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
     unw_set_reg(cursor, UNW_X86_64_R13, winContext->R13);
     unw_set_reg(cursor, UNW_X86_64_R14, winContext->R14);
     unw_set_reg(cursor, UNW_X86_64_R15, winContext->R15);
-#elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
-    unw_set_reg(cursor, UNW_REG_IP, winContext->Eip);
-    unw_set_reg(cursor, UNW_REG_SP, winContext->Esp);
-    unw_set_reg(cursor, UNW_X86_EBP, winContext->Ebp);
-    unw_set_reg(cursor, UNW_X86_EBX, winContext->Ebx);
-    unw_set_reg(cursor, UNW_X86_ESI, winContext->Esi);
-    unw_set_reg(cursor, UNW_X86_EDI, winContext->Edi);
 #elif defined(HOST_ARM64) && defined(__APPLE__)
     // unw_cursor_t is an opaque data structure on macOS
     // As noted in WinContextToUnwindContext this didn't work for Linux
@@ -351,13 +336,6 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_X86_64_R13, (unw_word_t *) &winContext->R13);
     unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &winContext->R14);
     unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &winContext->R15);
-#elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
-    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Eip);
-    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Esp);
-    unw_get_reg(cursor, UNW_X86_EBP, (unw_word_t *) &winContext->Ebp);
-    unw_get_reg(cursor, UNW_X86_EBX, (unw_word_t *) &winContext->Ebx);
-    unw_get_reg(cursor, UNW_X86_ESI, (unw_word_t *) &winContext->Esi);
-    unw_get_reg(cursor, UNW_X86_EDI, (unw_word_t *) &winContext->Edi);
 #elif (defined(HOST_UNIX) && defined(HOST_ARM)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM))
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);

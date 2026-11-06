@@ -56,8 +56,8 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(
     byte[] contextBuffer,
     bool isFirst = true);
 
-// Gets the thread context at the given stack dataframe.
-byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
+// Gets a read-only view of the context snapshot retained by the given stack dataframe.
+ReadOnlySpan<byte> GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
@@ -137,6 +137,8 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 
 * [Windows x64](https://learn.microsoft.com/en-us/cpp/build/exception-handling-x64)
 * [Windows ARM64](https://learn.microsoft.com/en-us/cpp/build/arm64-exception-handling)
+
+On ARM64, the `pac` unwind opcode strips pointer authentication bits from `Lr` using the target's [PlatformMetadata](./PlatformMetadata.md) pointer-authentication mask before `Lr` is copied to `Pc`. The same mask is applied to return addresses recovered from explicit Frames, both when reporting the return address and when updating the context's instruction pointer.  Since pointer authentication keys are not available via the data contract, return addresses cannot be authenticated.
 
 <!-- BEGIN GENERATED: usage contract=StackWalk version=c1 -->
 ### Data descriptors used
@@ -596,14 +598,15 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData);
 
 The rest of the APIs convey state about the stack walk at a given point which fall out of the stack walking algorithm relatively simply.
 
-`GetRawContext` Retrieves the raw Windows style thread context of the current frame as a byte array. The size and shape of the context is platform dependent.
+`GetRawContext` retrieves the raw Windows style thread context of the current frame as a read-only span.
+The size and shape of the context is platform dependent.
 
 * On Windows the context is defined directly in Windows header `winnt.h`. See [CONTEXT structure](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-context) for more info.
 * On non-Windows platform the context's are defined in `src/coreclr/pal/inc/pal.h` and should mimic the Windows structure.
 
 This context is not guaranteed to be complete. Not all capital "F" Frames store the entire context, some only store the IP/SP/FP. Therefore, at points where the context is based on these Frames it will be incomplete.
 ```csharp
-byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
+ReadOnlySpan<byte> GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 `GetFrameAddress` gets the address of the current capital "F" Frame. This is only valid if the `IStackDataFrameHandle` is at a point where the context is based on a capital "F" Frame. For example, it is not valid when when the current context was created by using the stack frame unwinder.

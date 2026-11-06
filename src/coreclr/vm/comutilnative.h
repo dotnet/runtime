@@ -106,9 +106,7 @@ public:
     UINT32 pauseTimePercent;
     UINT8 isCompaction;
     UINT8 isConcurrent;
-#ifndef UNIX_X86_ABI
     UINT8 padding[6];
-#endif
     GCGenerationInfo generationInfo[5];
     UINT64 pauseDurations[2];
 };
@@ -168,7 +166,6 @@ extern "C"
 {
     FCDECL0(INT64,   GC__GetTotalPauseDuration);
     FCDECL2(void,    GC_GetMemoryInfo, Object* objUNSAFE, int kind);
-    FCDECL0(UINT32,  GC_GetMemoryLoad);
     FCDECL0(int,     GCSettings_GetGCLatencyMode);
     FCDECL1(int,     GCSettings_SetGCLatencyMode, int newLatencyMode);
     FCDECL0(int,     GCSettings_GetLOHCompactionMode);

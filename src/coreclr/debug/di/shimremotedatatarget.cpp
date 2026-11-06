@@ -249,9 +249,7 @@ ShimRemoteDataTarget::GetPlatform(
         CorDebugPlatform *pPlatform)
 {
 #ifdef HOST_UNIX
-     #if defined(HOST_X86)
-         *pPlatform = CORDB_PLATFORM_POSIX_X86;
-     #elif defined(HOST_AMD64)
+     #if defined(HOST_AMD64)
          *pPlatform = CORDB_PLATFORM_POSIX_AMD64;
      #elif defined(HOST_ARM)
          *pPlatform = CORDB_PLATFORM_POSIX_ARM;

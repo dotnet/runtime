@@ -297,9 +297,9 @@ void ValidateWriteBarrierHelpers();
 
 extern "C"
 {
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
     void STDCALL JIT_TailCall();                    // JIThelp.asm
-#endif // defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#endif // TARGET_X86
 
 #ifdef PROFILING_SUPPORTED
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);

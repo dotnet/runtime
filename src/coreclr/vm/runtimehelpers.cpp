@@ -301,7 +301,6 @@ static const Entry s_RuntimeHelpers[] =
     DllImportEntry(GC_GetLastGCPercentTimeInGC)
     DllImportEntry(GC_GetMaxGeneration)
     DllImportEntry(GC_GetMemoryInfo)
-    DllImportEntry(GC_GetMemoryLoad)
     DllImportEntry(GC_GetSegmentSize)
     DllImportEntry(GC_GetTotalAllocatedBytesApproximate)
     DllImportEntry(GC_SuppressFinalizeInternal)
