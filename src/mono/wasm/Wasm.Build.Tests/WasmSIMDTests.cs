@@ -74,7 +74,8 @@ namespace Wasm.Build.Tests
         {
             Configuration config = Configuration.Debug;
             string relaxedSimdValue = relaxedSimd.ToString().ToLowerInvariant();
-            string extraProperties = $"<WasmEnableRelaxedSimd>{relaxedSimdValue}</WasmEnableRelaxedSimd>";
+            // ReadyToRun code is what uses relaxed SIMD; the interpreter always reports it unsupported.
+            string extraProperties = $"<WasmEnableRelaxedSimd>{relaxedSimdValue}</WasmEnableRelaxedSimd><PublishReadyToRun>true</PublishReadyToRun>";
             ProjectInfo info = CopyTestAsset(
                 config,
                 aot: false,
@@ -83,7 +84,7 @@ namespace Wasm.Build.Tests
                 extraProperties: extraProperties);
             UpdateFile(
                 Path.Combine("Common", "Program.cs"),
-                GetCoreClrRelaxedSimdProgramText(relaxedSimdValue));
+                s_coreClrRelaxedSimdProgramText);
             ReplaceMainJsWithMinimalRunMain();
 
             PublishProject(info, config, isNativeBuild: relaxedSimd);
@@ -92,24 +93,20 @@ namespace Wasm.Build.Tests
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42));
-            string expectedOutput = $"RelaxedSimd config: {(relaxedSimd ? "true" : "<null>")}";
+            string expectedOutput = $"RelaxedSimd.IsSupported: {relaxedSimd}";
             Assert.Contains(result.TestOutput, message => message.Contains(expectedOutput));
         }
 
-        private static string GetCoreClrRelaxedSimdProgramText(string expectedConfigValue) => $$"""
+        private static string s_coreClrRelaxedSimdProgramText = """
             using System;
+            using System.Runtime.Intrinsics.Wasm;
 
             public class TestClass
             {
                 public static int Main()
                 {
-                    string configuredValue = AppContext.GetData(
-                        "System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported") as string;
-                    Console.WriteLine($"TestOutput -> RelaxedSimd config: {configuredValue ?? "<null>"}");
-
-                    return configuredValue == {{(expectedConfigValue == "true" ? "\"true\"" : "null")}}
-                        ? 42
-                        : 1;
+                    Console.WriteLine($"TestOutput -> RelaxedSimd.IsSupported: {RelaxedSimd.IsSupported}");
+                    return 42;
                 }
             }
             """;

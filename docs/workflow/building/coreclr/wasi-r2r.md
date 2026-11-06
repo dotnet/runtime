@@ -43,11 +43,10 @@ Non-composite R2R and `WasmSingleFileBundle` are not supported by this path.
 ### Relaxed SIMD
 
 `WasmEnableRelaxedSimd` defaults to `true` for CoreCLR-WASI (browser defaults to `false`). It compiles
-ReadyToRun code with Crossgen2's `--instruction-set:relaxed-simd` and sets the
-`System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported` runtime property, which the host uses to enable
-`RelaxedSimd.IsSupported`. WASI has no runtime feature detection, so a host without relaxed SIMD (for
-example wasmtime with `-W relaxed-simd=n`) fails to compile the module; publish with
-`-p:WasmEnableRelaxedSimd=false` for such hosts. Relaxed SIMD results may differ between hosts and CPUs.
+ReadyToRun code with Crossgen2's `--instruction-set:relaxed-simd`, so `RelaxedSimd.IsSupported` is `true` in
+that code. Wasm has no runtime feature detection; the runtime accepts the instruction sets an image requires
+because the engine validated the module. A host without relaxed SIMD (for example wasmtime with
+`-W relaxed-simd=n`) fails to compile the module; publish with `-p:WasmEnableRelaxedSimd=false` for such hosts. Relaxed SIMD results may differ between hosts and CPUs.
 Interpreted code always reports `RelaxedSimd.IsSupported` as `false`.
 
 ## Runtime tests

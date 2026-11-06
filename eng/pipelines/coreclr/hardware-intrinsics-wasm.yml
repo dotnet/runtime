@@ -11,7 +11,6 @@ pr:
     - eng/pipelines/coreclr/hardware-intrinsics-wasm.yml
     - eng/pipelines/coreclr/templates/jit-hardware-intrinsics-wasm.yml
     - src/coreclr/jit/*wasm*
-    - src/coreclr/hosts/corerun/**
     - src/tests/Directory.Build.targets
     - src/tests/build.proj
     - src/tests/JIT/HardwareIntrinsics/Wasm/**

@@ -72,8 +72,6 @@ extern "C"
         int* latchedExitCode);
 
     int coreclr_set_error_writer(void (*errorWriter)(const char* line));
-
-    void coreclr_wasm_set_relaxed_simd_supported();
 }
 
 // App-generated P/Invoke resolver (per-app, replaces libcoreclr_gen_static.a at the relink), passed
@@ -381,18 +379,6 @@ int main(int argc, char* argv[])
     runtimeconfig_path.append(W("runtimeconfig.bin"));
     if (!add_runtimeconfig_properties(runtimeconfig_path))
         return -1;
-
-    // WASI has no runtime feature detection; the app opts in (WasmEnableRelaxedSimd) through this property.
-    for (size_t i = 0; i < s_property_keys.size(); ++i)
-    {
-        if (s_property_keys[i] == "System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported")
-        {
-            if (s_property_values[i] == "true")
-                coreclr_wasm_set_relaxed_simd_supported();
-
-            break;
-        }
-    }
 
     std::vector<const char*> property_keys;
     std::vector<const char*> property_values;

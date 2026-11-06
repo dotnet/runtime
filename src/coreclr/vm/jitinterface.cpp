@@ -14638,6 +14638,14 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 DWORD instructionSetEncoded = CorSigUncompressData(pBlob);
                 bool mustInstructionSetBeSupported = !!(instructionSetEncoded & 1);
                 ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
+#ifdef TARGET_WASM
+                // Wasm has no runtime feature detection. The engine validated this code when it compiled the
+                // module, so an instruction set the code requires is supported by construction.
+                if (mustInstructionSetBeSupported)
+                {
+                    continue;
+                }
+#endif // TARGET_WASM
                 if (IsInstructionSetSupported(corjitFlags, instructionSet) != mustInstructionSetBeSupported)
                 {
                     return FALSE;

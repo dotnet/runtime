@@ -74,12 +74,6 @@
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
-    <RuntimeHostConfigurationOption Include="System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"
-                                    Value="true"
-                                    Trim="true" />
-  </ItemGroup>
-
   <!-- EmccInitialHeapSize is the documented browser property (src/mono/browser/README.md) and
        EmccTotalMemory is its legacy alias; the Mono path collapses both into WasmInitialHeapSize
        (BrowserWasmApp.targets). Do the same here at evaluation time so the relink registry in
