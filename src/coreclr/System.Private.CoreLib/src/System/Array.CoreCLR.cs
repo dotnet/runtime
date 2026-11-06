@@ -317,6 +317,7 @@ namespace System
         // if this is an array of value classes and that value class has a default constructor
         // then this calls this default constructor on every element in the value class array.
         // otherwise this is a no-op.  Generally this method is called automatically by the compiler
+        [RequiresUnreferencedCode("The default constructor of the array's element type might be removed")]
         public unsafe void Initialize()
         {
             MethodTable* pArrayMT = RuntimeHelpers.GetMethodTable(this);

@@ -38,6 +38,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         [Kept]
+        [ExpectedWarning("IL2026", "Array.Initialize")]
         static void TestArray()
         {
             RequirePublicMethods(typeof(ArrayElementType[]));
@@ -50,6 +51,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         [Kept]
+        [ExpectedWarning("IL2026", "Array.Initialize")]
         static void RequirePublicMethodsOnArrayOfGeneric<T>()
         {
             RequirePublicMethods(typeof(T[]));
@@ -75,6 +77,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         [Kept]
+        [ExpectedWarning("IL2026", "Array.Initialize")]
         static void TestArrayOnGeneric()
         {
             _ = new RequirePublicMethodsGeneric<ArrayElementInGenericType[]>();
@@ -87,6 +90,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         [Kept]
+        [ExpectedWarning("IL2026", "Array.Initialize")]
         static void RequirePublicMethodsOnArrayOfGenericParameter<T>()
         {
             _ = new RequirePublicMethodsGeneric<T[]>();
@@ -100,6 +104,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         [Kept]
+        [ExpectedWarning("IL2026", "Array.Initialize")]
         static void TestArrayGetTypeFromMethodParamHelper(ArrayGetTypeFromMethodParamElement[] p)
         {
             RequirePublicMethods(p.GetType());
@@ -122,6 +127,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static ArrayGetTypeFromFieldElement[] _arrayGetTypeFromField;
 
         [Kept]
+        [ExpectedWarning("IL2026", "Array.Initialize")]
         static void TestArrayGetTypeFromField()
         {
             RequirePublicMethods(_arrayGetTypeFromField.GetType());
@@ -135,6 +141,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         [Kept]
+        [ExpectedWarning("IL2026", "Array.Initialize")]
         static void TestArrayTypeGetType()
         {
             RequirePublicMethods(Type.GetType("Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayTypeGetTypeElement[]"));
@@ -168,6 +175,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [Kept]
         [KeptAttributeAttribute(typeof(RequiresPublicMethodAttribute))]
         [RequiresPublicMethod(typeof(ArrayInAttributeParamElement[]))]
+        [ExpectedWarning("IL2026", "Array.Initialize")]
         static void TestArrayInAttributeParameterImpl()
         {
         }

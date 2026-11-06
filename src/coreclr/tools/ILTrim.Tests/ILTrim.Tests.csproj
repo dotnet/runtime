@@ -62,11 +62,11 @@
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.MicrosoftNetCoreAppRuntimePackDirectory">
       <Value>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</Value>
     </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.CoreCLRArtifactsPath">
+      <Value>$(CoreCLRArtifactsPath)</Value>
+    </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.Configuration">
       <Value>$(Configuration)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ILToolsDir">
-      <Value>$(CoreCLRArtifactsPath)</Value>
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsBinDir">
       <Value>$(ArtifactsBinDir)</Value>
