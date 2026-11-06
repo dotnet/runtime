@@ -61,4 +61,11 @@ public static class ExternalInterfaceCaller
         ITestInterface obj = new GenericImpl<ExternalLib.ExternalType>();
         return obj.GetId();
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool CallDevirtOnCrossModuleCreatedType(ExternalLib.PublicNonVersionableHolder<LocalTag> holder, bool flag, object other)
+    {
+        object obj = holder.GetDerived(flag);
+        return obj.GetType() == other.GetType();
+    }
 }
