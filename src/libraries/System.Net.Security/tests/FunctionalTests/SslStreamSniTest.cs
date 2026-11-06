@@ -255,6 +255,15 @@ namespace System.Net.Security.Tests
             AddCase("IPv4: numeric DNS SAN matches, CN unrelated",
                 commonName: "other.test", targetHost: "192.0.2.1", expectNameMatch: true,
                 sanDnsName: "192.0.2.1");
+            AddCase("IPv4: distinct CN and SAN addresses, CN target rejected",
+                commonName: "192.168.2.1", targetHost: "192.168.2.1", expectNameMatch: false,
+                sanIpAddress: "192.168.2.3", sanDnsName: "192.168.2.2");
+            AddCase("IPv4: distinct CN and SAN addresses, numeric DNS SAN target matches",
+                commonName: "192.168.2.1", targetHost: "192.168.2.2", expectNameMatch: true,
+                sanIpAddress: "192.168.2.3", sanDnsName: "192.168.2.2");
+            AddCase("IPv4: distinct CN and SAN addresses, IP SAN target matches",
+                commonName: "192.168.2.1", targetHost: "192.168.2.3", expectNameMatch: true,
+                sanIpAddress: "192.168.2.3", sanDnsName: "192.168.2.2");
             AddCase("IPv4: wildcard DNS SAN does not match",
                 commonName: "192.0.2.1", targetHost: "192.0.2.1", expectNameMatch: false,
                 sanDnsName: "*.0.2.1");
