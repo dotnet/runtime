@@ -634,7 +634,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
             {
                 case TokenType.NumberToken:
                 case TokenType.YearNumberToken:
-                    if (raw.numCount == 3 || tokenValue == -1)
+                    if (raw.numCount == DateTimeRawInfo.MaxBufferLength || tokenValue == -1)
                     {
                         result.SetBadDateTimeFailure();
                         LexTraceExit("0010", dps);
@@ -928,6 +928,13 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                     }
                     else
                     {
+                        if (raw.numCount == DateTimeRawInfo.MaxBufferLength)
+                        {
+                            result.SetBadDateTimeFailure();
+                            LexTraceExit("0105 (Not enough space in the raw info buffer when parsing Hebrew numbers)", dps);
+                            return false;
+                        }
+
                         // This is a day number
                         dtok.num = tokenValue;
                         raw.AddNumber(dtok.num);
@@ -6106,6 +6113,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
     //
     internal struct DateTimeRawInfo
     {
+        internal const int MaxBufferLength = 3;
         private InlineArray3<int> num;
         internal int numCount;
         internal int month;
@@ -6128,7 +6136,17 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
 
         internal void AddNumber(int value)
         {
+            if (numCount >= MaxBufferLength)
+            {
+                // defense in depth. we shouldn't come here though.
+                ThrowNumberBufferOverflow();
+
+            }
+
             num[numCount++] = value;
+
+            [DoesNotReturn]
+            static void ThrowNumberBufferOverflow() => throw new InvalidOperationException(SR.InvalidOperation_DateTimeParsing);
         }
 
         internal int GetNumber(int index)

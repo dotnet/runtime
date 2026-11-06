@@ -782,6 +782,112 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        public async Task ProxiedRequest_HttpToHttpsRedirect_ProxyAuthNotSentToServer()
+        {
+            if (IsWinHttpHandler)
+            {
+                return; // Test targets SocketsHttpHandler proxy behavior.
+            }
+
+            const string Content = "Hello world";
+            var proxyCreds = new NetworkCredential("username", "password");
+
+            // Normal HTTP proxy that requires Basic authentication.
+            var proxyOptions = new LoopbackProxyServer.Options { AuthenticationSchemes = AuthenticationSchemes.Basic };
+            using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(proxyOptions);
+
+            // HTTPS server that ultimately handles the request (reached via a CONNECT tunnel).
+            var httpsOptions = new LoopbackServer.Options { UseSsl = true };
+            await LoopbackServer.CreateServerAsync(async (httpsServer, httpsUri) =>
+            {
+                // Plain HTTP server that returns a redirect to the HTTPS server (reached via plain forwarding).
+                await LoopbackServer.CreateServerAsync(async (httpServer, httpUri) =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
+                    handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = proxyCreds };
+                    using HttpClient client = CreateHttpClient(handler);
+
+                    // Client sends the request to the HTTP server through the HTTP proxy.
+                    Task<HttpResponseMessage> clientTask = client.GetAsync(httpUri);
+
+                    // The HTTP server responds with a redirect pointing at the HTTPS server.
+                    await httpServer.AcceptConnectionSendResponseAndCloseAsync(
+                        HttpStatusCode.Redirect,
+                        additionalHeaders: $"Location: {httpsUri.AbsoluteUri}\r\n");
+
+                    // The HTTPS server handles the redirected request and captures the headers it received.
+                    List<string> serverRequestHeaders = null;
+                    await httpsServer.AcceptConnectionAsync(async connection =>
+                    {
+                        serverRequestHeaders = await connection.ReadRequestHeaderAndSendResponseAsync(content: Content);
+                    });
+
+                    using HttpResponseMessage response = await clientTask;
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal(Content, await response.Content.ReadAsStringAsync());
+
+                    // The credentials used to authenticate to the proxy must never be forwarded to the origin server.
+                    Assert.DoesNotContain(serverRequestHeaders, h => h.StartsWith("Proxy-Authorization", StringComparison.OrdinalIgnoreCase));
+                }, new LoopbackServer.Options());
+            }, httpsOptions);
+        }
+
+        [ConditionalFact(typeof(HttpClientHandler_Proxy_Test), nameof(IsSocketsHttpHandlerAndRemoteExecutorSupported))]
+        public async Task ProxiedRequest_HttpToNoProxyRedirect_ProxyAuthNotSentToServer()
+        {
+            await RemoteExecutor.Invoke(async (useVersionString) =>
+            {
+                const string Content = "Hello world";
+                var proxyCreds = new NetworkCredential("username", "password");
+
+                // Normal HTTP proxy that requires Basic authentication.
+                var proxyOptions = new LoopbackProxyServer.Options { AuthenticationSchemes = AuthenticationSchemes.Basic };
+                using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(proxyOptions);
+
+                // HTTP server that ultimately handles the request.
+                await LoopbackServer.CreateServerAsync(async (httpServer2, httpUri2) =>
+                {
+                    // Plain HTTP server that returns a redirect to the HTTPS server (reached via plain forwarding).
+                    await LoopbackServer.CreateServerAsync(async (httpServer1, httpUri1) =>
+                    {
+                        Console.WriteLine($"{proxyServer.Uri}, {httpUri1}, {httpUri2}");
+                        Environment.SetEnvironmentVariable("http_proxy", proxyServer.Uri.AbsoluteUri.ToString());
+                        Environment.SetEnvironmentVariable("no_proxy", "localhost");
+
+                        using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
+                        handler.DefaultProxyCredentials = proxyCreds;
+                        using HttpClient client = CreateHttpClient(handler, useVersionString);
+
+                        // Client sends the request to the HTTP server through the HTTP proxy.
+                        Task<HttpResponseMessage> clientTask = client.GetAsync(httpUri1);
+
+                        // The HTTP server responds with a redirect pointing at the HTTPS server.
+                        await httpServer1.AcceptConnectionSendResponseAndCloseAsync(
+                            HttpStatusCode.Redirect,
+                            additionalHeaders: $"Location: {httpUri2.Scheme}://localhost:{httpUri2.Port}\r\n");
+
+                        // The HTTPS server handles the redirected request and captures the headers it received.
+                        List<string> serverRequestHeaders = null;
+                        await httpServer2.AcceptConnectionAsync(async connection =>
+                        {
+                            serverRequestHeaders = await connection.ReadRequestHeaderAndSendResponseAsync(content: Content);
+                        });
+
+                        using HttpResponseMessage response = await clientTask;
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        Assert.Equal(Content, await response.Content.ReadAsStringAsync());
+
+                        Assert.Equal(2, proxyServer.Requests.Count);
+                        Assert.NotNull(proxyServer.Requests[1].AuthorizationHeaderValueToken);
+
+                        // The credentials used to authenticate to the proxy must never be forwarded to the origin server.
+                        Assert.DoesNotContain(serverRequestHeaders, h => h.StartsWith("Proxy-Authorization", StringComparison.OrdinalIgnoreCase));
+                    }, new LoopbackServer.Options());
+                });
+            }, UseVersion.ToString()).DisposeAsync();
+        }
+
         private sealed class TrackDisposalProxy : IWebProxy, IDisposable
         {
             public bool Disposed;

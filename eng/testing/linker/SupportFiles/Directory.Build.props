@@ -2,6 +2,8 @@
   <PropertyGroup>
     <SkipConfigureTrimming>true</SkipConfigureTrimming>
     <PublishTrimmed>true</PublishTrimmed>
+    <!-- TODO: Remove after updating to the .NET 11 GA SDK: https://github.com/dotnet/runtime/issues/136283 -->
+    <UseOptimizedPublish>false</UseOptimizedPublish>
     <TrimMode>full</TrimMode>
     <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>

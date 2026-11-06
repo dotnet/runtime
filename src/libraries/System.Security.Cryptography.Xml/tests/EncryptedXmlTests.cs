@@ -17,7 +17,13 @@ namespace System.Security.Cryptography.Xml.Tests
         private const string AllowDangerousEncryptedXmlTransformsAppContextSwitch = "System.Security.Cryptography.Xml.AllowDangerousEncryptedXmlTransforms";
         private const int DefaultMaxTransformsPerChain = 20;
         private const string MaxTransformsPerChainAppContextSwitch = "System.Security.Cryptography.Xml.MaxTransformsPerChain";
+        private const string CryptoXmlAllowDtdProcessingAppContextSwitch = "System.Security.Cryptography.Xml.CryptoXmlAllowDtdProcessing";
+        private const string CryptoXmlMaxInputDocumentDepthAppContextSwitch = "System.Security.Cryptography.Xml.CryptoXmlMaxInputDocumentDepth";
+        internal const string MaxDecryptedDataElementsAppContextSwitch = "System.Security.Cryptography.Xml.MaxDecryptedDataElements";
+        private const string DangerousMaxDecryptionCountAppContextSwitch = "System.Security.Cryptography.Xml.DangerousMaxDecryptionCount";
         private const string MalformedTransformsMessage = "Malformed element Transforms.";
+        private const int DefaultMaxCount = 256;
+        private const string MaxDecryptionCountExceededMessage = "The XML document has exceeded the maximum number of elements allowed for decryption.";
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49871", TestPlatforms.Android)]
@@ -1687,6 +1693,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             RemoteExecutor.Invoke(static (string maxTransformsPerChainText, string expectTransformLimitText) =>
             {
+                AppContext.SetSwitch(CryptoXmlAllowDtdProcessingAppContextSwitch, true);
                 AppContext.SetData(MaxTransformsPerChainAppContextSwitch, int.Parse(maxTransformsPerChainText, CultureInfo.InvariantCulture));
 
                 if (bool.Parse(expectTransformLimitText))
@@ -1707,6 +1714,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             RemoteExecutor.Invoke(static () =>
             {
+                AppContext.SetSwitch(CryptoXmlAllowDtdProcessingAppContextSwitch, true);
                 AppContext.SetData(MaxTransformsPerChainAppContextSwitch, 0);
                 LoadEncodedDtdPayload();
             }).Dispose();
@@ -1750,6 +1758,503 @@ namespace System.Security.Cryptography.Xml.Tests
 
             return encryptedXml;
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void NestedParentPlusDeepDecryptedFragment_Throws()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                // ReplaceData mutates the containing document in-place, so the fragment-relative
+                // depth check must include the target parent's ancestor depth. Placing the
+                // EncryptedData under a wrapper chain that is already near the cap and
+                // decrypting to a fragment near the cap must be rejected, not silently
+                // produce a document deeper than the configured maximum.
+                const int MaxDepth = 30;
+                const int WrapperDepth = 20;
+                const int FragmentDepth = 20;
+
+                AppContext.SetData(CryptoXmlMaxInputDocumentDepthAppContextSwitch, MaxDepth);
+
+                using Aes aes = Aes.Create();
+
+                XmlDocument doc = new XmlDocument { PreserveWhitespace = true };
+                doc.LoadXml("<Root>" + BuildDeepMarkup(WrapperDepth, "<target/>") + "</Root>");
+                XmlElement target = (XmlElement)doc.SelectSingleNode("//target");
+
+                XmlDocument plaintextDoc = new XmlDocument { PreserveWhitespace = true };
+                plaintextDoc.LoadXml("<x>" + BuildDeepMarkup(FragmentDepth, "y") + "</x>");
+                EncryptedXml encryptor = new EncryptedXml();
+                encryptor.AddKeyNameMapping("k", aes);
+                EncryptedData ed = encryptor.Encrypt(plaintextDoc.DocumentElement, "k");
+                EncryptedXml.ReplaceElement(target, ed, false);
+
+                EncryptedXml decryptor = new EncryptedXml(doc);
+                decryptor.AddKeyNameMapping("k", aes);
+                Assert.Throws<CryptographicException>(() => decryptor.DecryptDocument());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DeepNonRootDecryptedXml_Throws()
+        {
+            RemoteExecutor.Invoke(static () => Assert.Throws<CryptographicException>(() => DecryptDeepXml(root: false))).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DeepRootDecryptedXml_Throws()
+        {
+            RemoteExecutor.Invoke(static () => Assert.Throws<CryptographicException>(() => DecryptDeepXml(root: true))).Dispose();
+        }
+
+        private static void DecryptDeepXml(bool root)
+        {
+            const int Depth = 100000;
+            XmlDocument doc = new XmlDocument { PreserveWhitespace = true };
+            string plaintext = "<target>" + BuildDeepMarkup(Depth, "x") + "</target>";
+            doc.LoadXml(root ? plaintext : "<root><data>" + plaintext + "</data></root>");
+            XmlElement target = root ? doc.DocumentElement : (XmlElement)doc.SelectSingleNode("//target");
+            using (Aes aes = Aes.Create())
+            {
+                EncryptedXml encryptedXml = new EncryptedXml();
+                encryptedXml.AddKeyNameMapping("k", aes);
+                EncryptedXml.ReplaceElement(target, encryptedXml.Encrypt(target, "k"), false);
+
+                EncryptedXml decryptor = new EncryptedXml(doc);
+                decryptor.AddKeyNameMapping("k", aes);
+                decryptor.DecryptDocument();
+            }
+        }
+
+        private static string BuildDeepMarkup(int depth, string inner)
+        {
+            StringBuilder builder = new StringBuilder(depth * 7 + inner.Length);
+            for (int i = 0; i < depth; i++)
+                builder.Append("<a>");
+            builder.Append(inner);
+            for (int i = 0; i < depth; i++)
+                builder.Append("</a>");
+            return builder.ToString();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void DtdOptIn_EntityRefInDecryptedNonRoot_Resolves(bool disableDepthLimit)
+        {
+            RemoteExecutor.Invoke(static (string disableDepthLimitText) =>
+            {
+                // With DTD processing opted in, entity references defined by the containing
+                // document's DTD must still resolve on the non-root decrypt path, matching
+                // the root and stream re-parse paths. The depth guard's EntityReference
+                // rejection is a default-safe measure and must not fire when the caller
+                // has opted in.
+                AppContext.SetSwitch(CryptoXmlAllowDtdProcessingAppContextSwitch, true);
+                if (bool.Parse(disableDepthLimitText))
+                {
+                    AppContext.SetData(CryptoXmlMaxInputDocumentDepthAppContextSwitch, 0);
+                }
+
+                XmlDocument wire = new XmlDocument { PreserveWhitespace = true };
+                using (System.IO.StringReader sr = new System.IO.StringReader("<!DOCTYPE root [<!ENTITY e \"x\">]><root><wrap></wrap></root>"))
+                using (XmlReader xr = XmlReader.Create(sr, new XmlReaderSettings { DtdProcessing = DtdProcessing.Parse }))
+                {
+                    wire.Load(xr);
+                }
+                XmlElement wrap = (XmlElement)wire.SelectSingleNode("//wrap");
+
+                using (Aes aes = Aes.Create())
+                {
+                    aes.KeySize = 256;
+                    wrap.AppendChild(BuildEncryptedDataElement("<r>&e;</r>", aes, wire));
+                    EncryptedXml decryptor = new EncryptedXml(wire);
+                    decryptor.AddKeyNameMapping("k", aes);
+                    decryptor.DecryptDocument();
+                    Assert.Equal("x", wire.SelectSingleNode("//r").InnerText);
+                }
+            }, disableDepthLimit.ToString()).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DtdInDecryptedNonRoot_WithDepthDisabled_Throws()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                // Disabling the depth cap must not also disable DTD enforcement on the
+                // non-root re-parse path.
+                AppContext.SetData(CryptoXmlMaxInputDocumentDepthAppContextSwitch, 0);
+
+                XmlDocument wire = new XmlDocument { PreserveWhitespace = true };
+                wire.LoadXml("<root><wrap></wrap></root>");
+                XmlElement wrap = (XmlElement)wire.SelectSingleNode("//wrap");
+
+                using (Aes aes = Aes.Create())
+                {
+                    aes.KeySize = 256;
+                    // Non-root replacement: EncryptedData sits under <wrap>, so ReplaceData
+                    // hits the "dummy" child branch that reparses via InnerXml.
+                    wrap.AppendChild(BuildEncryptedDataElement("<r>&test;</r>", aes, wire));
+                    EncryptedXml decryptor = new EncryptedXml(wire);
+                    decryptor.AddKeyNameMapping("k", aes);
+                    Assert.ThrowsAny<Exception>(() => decryptor.DecryptDocument());
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DtdInDecryptedRoot_Throws()
+        {
+            RemoteExecutor.Invoke(static () => Assert.Throws<XmlException>(() => DecryptRootDtdPayload())).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DtdInDecryptedRoot_WithOptIn_Succeeds()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetSwitch(CryptoXmlAllowDtdProcessingAppContextSwitch, true);
+                DecryptRootDtdPayload();
+            }).Dispose();
+        }
+
+        private static void DecryptRootDtdPayload()
+        {
+            const string dtdContent = "<!DOCTYPE r []><r>x</r>";
+            XmlDocument wire = new XmlDocument { PreserveWhitespace = true };
+            using (Aes aes = Aes.Create())
+            {
+                aes.KeySize = 256;
+                wire.AppendChild(BuildEncryptedDataElement(dtdContent, aes, wire));
+                EncryptedXml decryptor = new EncryptedXml(wire);
+                decryptor.AddKeyNameMapping("k", aes);
+                decryptor.DecryptDocument();
+            }
+        }
+
+        private static XmlElement BuildEncryptedDataElement(string plaintext, Aes aes, XmlDocument targetDoc)
+        {
+            EncryptedXml helper = new EncryptedXml();
+            helper.AddKeyNameMapping("k", aes);
+            byte[] cipher = helper.EncryptData(Encoding.UTF8.GetBytes(plaintext), aes);
+            EncryptedData encData = new EncryptedData
+            {
+                Type = EncryptedXml.XmlEncElementUrl,
+                EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url),
+                KeyInfo = new KeyInfo(),
+                CipherData = new CipherData(cipher),
+            };
+            encData.KeyInfo.AddClause(new KeyInfoName("k"));
+            XmlElement encXml = encData.GetXml();
+            return (XmlElement)targetDoc.ImportNode(encXml, deep: true);
+        }
+
+        [Fact]
+        public static void EncryptedXml_GetDecryptionKey_MaxCount_Default()
+        {
+            AssertKeyDecryptionCount(DefaultMaxCount, useGetDecryptionKey: true, operationCount: 2);
+            CryptographicException exception = Assert.Throws<CryptographicException>(
+                () => AssertKeyDecryptionCount(DefaultMaxCount + 1, useGetDecryptionKey: true));
+            Assert.Equal(MaxDecryptionCountExceededMessage, exception.Message);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void EncryptedXml_GetDecryptionKey_MaxCount_AppContext()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                const int ConfiguredMaxCount = 1;
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, ConfiguredMaxCount);
+
+                AssertKeyDecryptionCount(ConfiguredMaxCount, useGetDecryptionKey: true);
+                CryptographicException exception = Assert.Throws<CryptographicException>(
+                    () => AssertKeyDecryptionCount(ConfiguredMaxCount + 1, useGetDecryptionKey: true));
+                Assert.Equal(MaxDecryptionCountExceededMessage, exception.Message);
+            }).Dispose();
+        }
+
+        [Fact]
+        public static void EncryptedXml_DecryptEncryptedKey_MaxCount_Default()
+        {
+            AssertKeyDecryptionCount(DefaultMaxCount, useGetDecryptionKey: false, operationCount: 2);
+            CryptographicException exception = Assert.Throws<CryptographicException>(
+                () => AssertKeyDecryptionCount(DefaultMaxCount + 1, useGetDecryptionKey: false));
+            Assert.Equal(MaxDecryptionCountExceededMessage, exception.Message);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void EncryptedXml_DecryptEncryptedKey_MaxCount_AppContext()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                const int ConfiguredMaxCount = 1;
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, ConfiguredMaxCount);
+
+                AssertKeyDecryptionCount(ConfiguredMaxCount, useGetDecryptionKey: false);
+                CryptographicException exception = Assert.Throws<CryptographicException>(
+                    () => AssertKeyDecryptionCount(ConfiguredMaxCount + 1, useGetDecryptionKey: false));
+                Assert.Equal(MaxDecryptionCountExceededMessage, exception.Message);
+            }).Dispose();
+        }
+
+        [Fact]
+        public static void EncryptedXml_DecryptDocument_MaxCount_Default()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                // Make sure we don't hit the decrypt data count, which is a different counter.
+                AppContext.SetData(MaxDecryptedDataElementsAppContextSwitch, 0);
+
+                AssertDecryptDocumentCount(DefaultMaxCount / 2);
+                CryptographicException exception = Assert.Throws<CryptographicException>(() => AssertDecryptDocumentCount(DefaultMaxCount / 2 + 1));
+                Assert.Equal(MaxDecryptionCountExceededMessage, exception.Message);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void EncryptedXml_DecryptDocument_MaxCount_AppContext()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                const int ConfiguredMaxCount = 2;
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, ConfiguredMaxCount);
+
+                AssertDecryptDocumentCount(ConfiguredMaxCount / 2);
+                CryptographicException exception = Assert.Throws<CryptographicException>(() => AssertDecryptDocumentCount(ConfiguredMaxCount / 2 + 1));
+                Assert.Equal(MaxDecryptionCountExceededMessage, exception.Message);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void EncryptedXml_DecryptData_NestedDecryptionCountExceeded()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetData(DangerousMaxDecryptionCountAppContextSwitch, 1);
+
+                using Aes aes = Aes.Create();
+                XmlDocument document = new();
+                document.LoadXml("<root><cipher Id=\"cipher\" /></root>");
+
+                EncryptedXml encryptedXml = new(document);
+                byte[] cipherValue = encryptedXml.EncryptData("<secret />"u8.ToArray(), aes);
+                CipherReference cipherReference = new("#cipher");
+                cipherReference.AddTransform(new NestedDecryptionTransform(cipherValue));
+                EncryptedData encryptedData = new()
+                {
+                    EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url),
+                    CipherData = new CipherData(cipherReference),
+                };
+
+                CryptographicException exception = Assert.Throws<CryptographicException>(
+                    () => encryptedXml.DecryptData(encryptedData, aes));
+                Assert.Equal(MaxDecryptionCountExceededMessage, exception.Message);
+            }).Dispose();
+        }
+
+        private static void AssertKeyDecryptionCount(int count, bool useGetDecryptionKey, int operationCount = 1)
+        {
+            const string EncNamespace = "http://www.w3.org/2001/04/xmlenc#";
+            const string DsigNamespace = "http://www.w3.org/2000/09/xmldsig#";
+
+            using Aes contentKey = Aes.Create();
+            using Aes keyEncryptionKey = Aes.Create();
+            using Aes outerKey = Aes.Create();
+            bool useNestedKey = count > 1;
+            string outerCipher = Convert.ToBase64String(
+                EncryptedXml.EncryptKey(contentKey.Key, useNestedKey ? outerKey : keyEncryptionKey));
+            string innerCipher = Convert.ToBase64String(EncryptedXml.EncryptKey(outerKey.Key, keyEncryptionKey));
+
+            StringBuilder builder = new(count * 200 + 4096);
+            builder.Append("<root>");
+            builder.Append("<EncryptedData xmlns=\"").Append(EncNamespace).Append("\">");
+            builder.Append("<EncryptionMethod Algorithm=\"").Append(EncNamespace).Append("aes256-cbc\"/>");
+            builder.Append("<KeyInfo xmlns=\"").Append(DsigNamespace).Append("\">");
+            builder.Append("<EncryptedKey xmlns=\"").Append(EncNamespace).Append("\">");
+            builder.Append("<EncryptionMethod Algorithm=\"").Append(EncNamespace).Append("kw-aes256\"/>");
+            if (useNestedKey)
+            {
+                builder.Append("<KeyInfo xmlns=\"").Append(DsigNamespace).Append("\">");
+                for (int i = 0; i < count - 2; i++)
+                {
+                    builder.Append("<EncryptedKey xmlns=\"").Append(EncNamespace).Append("\">");
+                    builder.Append("<EncryptionMethod Algorithm=\"").Append(EncNamespace).Append("kw-aes256\"/>");
+                    builder.Append("<KeyInfo xmlns=\"").Append(DsigNamespace).Append("\"><KeyName>no-such-key</KeyName></KeyInfo>");
+                    builder.Append("<CipherData><CipherValue>AAAA</CipherValue></CipherData>");
+                    builder.Append("</EncryptedKey>");
+                }
+                builder.Append("<EncryptedKey xmlns=\"").Append(EncNamespace).Append("\">");
+                builder.Append("<EncryptionMethod Algorithm=\"").Append(EncNamespace).Append("kw-aes256\"/>");
+                builder.Append("<KeyInfo xmlns=\"").Append(DsigNamespace).Append("\"><KeyName>kek</KeyName></KeyInfo>");
+                builder.Append("<CipherData><CipherValue>").Append(innerCipher).Append("</CipherValue></CipherData>");
+                builder.Append("</EncryptedKey>");
+                builder.Append("</KeyInfo>");
+            }
+            else
+            {
+                builder.Append("<KeyInfo xmlns=\"").Append(DsigNamespace).Append("\"><KeyName>kek</KeyName></KeyInfo>");
+            }
+            builder.Append("<CipherData><CipherValue>").Append(outerCipher).Append("</CipherValue></CipherData>");
+            builder.Append("</EncryptedKey>");
+            builder.Append("</KeyInfo>");
+            builder.Append("<CipherData><CipherValue>AAAA</CipherValue></CipherData>");
+            builder.Append("</EncryptedData>");
+            builder.Append("</root>");
+
+            XmlDocument document = new() { PreserveWhitespace = true };
+            document.LoadXml(builder.ToString());
+            EncryptedData encryptedData = new();
+            encryptedData.LoadXml((XmlElement)document.GetElementsByTagName("EncryptedData", EncNamespace)[0]);
+            EncryptedKey encryptedKey = new();
+            encryptedKey.LoadXml((XmlElement)document.GetElementsByTagName("EncryptedKey", EncNamespace)[0]);
+
+            EncryptedXml encryptedXml = new(document);
+            encryptedXml.AddKeyNameMapping("kek", keyEncryptionKey);
+
+            for (int i = 0; i < operationCount; i++)
+            {
+                if (useGetDecryptionKey)
+                {
+                    using SymmetricAlgorithm decryptionKey = encryptedXml.GetDecryptionKey(encryptedData, null);
+                    Assert.NotNull(decryptionKey);
+                    Assert.Equal(contentKey.Key, decryptionKey.Key);
+                }
+                else
+                {
+                    Assert.Equal(contentKey.Key, encryptedXml.DecryptEncryptedKey(encryptedKey));
+                }
+            }
+        }
+
+        private static void AssertDecryptDocumentCount(int count)
+        {
+            using RSA rsa = RSA.Create(2048);
+            using Aes aes = Aes.Create();
+            aes.KeySize = 256;
+            aes.GenerateKey();
+
+            XmlDocument seed = new();
+            seed.LoadXml("<data>secret</data>");
+            string encryptedDataCipher = Convert.ToBase64String(new EncryptedXml().EncryptData(seed.DocumentElement, aes, false));
+            string encryptedKeyCipher = Convert.ToBase64String(EncryptedXml.EncryptKey(aes.Key, rsa, useOAEP: false));
+
+            StringBuilder builder = new(count * 400);
+            builder.Append("<root>");
+            builder.Append("<EncryptedKey Id=\"k\" xmlns=\"http://www.w3.org/2001/04/xmlenc#\">");
+            builder.Append("<EncryptionMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#rsa-1_5\"/>");
+            builder.Append("<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><KeyName>rsaKey</KeyName></KeyInfo>");
+            builder.Append("<CipherData><CipherValue>").Append(encryptedKeyCipher).Append("</CipherValue></CipherData>");
+            builder.Append("</EncryptedKey>");
+            for (int i = 0; i < count; i++)
+            {
+                builder.Append("<EncryptedData xmlns=\"http://www.w3.org/2001/04/xmlenc#\">");
+                builder.Append("<EncryptionMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#aes256-cbc\"/>");
+                builder.Append("<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\">");
+                builder.Append("<RetrievalMethod URI=\"#k\" Type=\"http://www.w3.org/2001/04/xmlenc#EncryptedKey\"/></KeyInfo>");
+                builder.Append("<CipherData><CipherValue>").Append(encryptedDataCipher).Append("</CipherValue></CipherData>");
+                builder.Append("</EncryptedData>");
+            }
+            builder.Append("</root>");
+
+            XmlDocument document = new() { PreserveWhitespace = true };
+            document.LoadXml(builder.ToString());
+            EncryptedXml encryptedXml = new(document);
+            encryptedXml.AddKeyNameMapping("rsaKey", rsa);
+
+            encryptedXml.DecryptDocument();
+            Assert.Equal(0, document.GetElementsByTagName("EncryptedData", EncryptedXml.XmlEncNamespaceUrl).Count);
+        }
+
+        private sealed class NestedDecryptionTransform : Transform
+        {
+            private static readonly Type[] s_inputTypes = { typeof(Stream) };
+            private static readonly Type[] s_outputTypes = { typeof(Stream) };
+            private readonly byte[] _cipherValue;
+
+            public NestedDecryptionTransform(byte[] cipherValue)
+            {
+                _cipherValue = cipherValue;
+                Algorithm = SignedXml.XmlDecryptionTransformUrl;
+            }
+
+            public override Type[] InputTypes => s_inputTypes;
+
+            public override Type[] OutputTypes => s_outputTypes;
+
+            public override void LoadInnerXml(XmlNodeList nodeList)
+            {
+            }
+
+            protected override XmlNodeList GetInnerXml()
+            {
+                return null;
+            }
+
+            public override void LoadInput(object obj)
+            {
+            }
+
+            public override object GetOutput()
+            {
+                new EncryptedXml().DecryptEncryptedKey(new EncryptedKey());
+                return new MemoryStream(_cipherValue);
+            }
+
+            public override object GetOutput(Type type)
+            {
+                return GetOutput();
+            }
+        }
 #endif
+
+        [Fact]
+        public static void EncryptedKeyNameRescan_Completes()
+        {
+            using (Aes wrappingKey = Aes.Create())
+            using (Aes dataKey = Aes.Create())
+            {
+                wrappingKey.KeySize = 256;
+                dataKey.KeySize = 256;
+                string xml = BuildEncryptedKeyRescanDocument(20, dataKey, wrappingKey);
+                XmlDocument doc = new XmlDocument { PreserveWhitespace = true };
+                doc.LoadXml(xml);
+                EncryptedXml encryptedXml = new EncryptedXml(doc);
+                encryptedXml.AddKeyNameMapping("wrapping-key", wrappingKey);
+
+                encryptedXml.DecryptDocument();
+
+                Assert.Equal(20, doc.GetElementsByTagName("payload").Count);
+            }
+        }
+
+        private static string BuildEncryptedKeyRescanDocument(int count, SymmetricAlgorithm dataKey, SymmetricAlgorithm wrappingKey)
+        {
+            XmlDocument scratch = new XmlDocument { PreserveWhitespace = true };
+            scratch.LoadXml("<payload />");
+            EncryptedXml helper = new EncryptedXml(scratch);
+            string encryptedElement = Convert.ToBase64String(helper.EncryptData(scratch.DocumentElement, dataKey, false));
+            string encryptedKey = Convert.ToBase64String(EncryptedXml.EncryptKey(dataKey.Key, wrappingKey));
+
+            StringWriter writer = new StringWriter();
+            writer.Write("<root xmlns:enc=\"");
+            writer.Write(EncryptedXml.XmlEncNamespaceUrl);
+            writer.Write("\" xmlns:ds=\"");
+            writer.Write(SignedXml.XmlDsigNamespaceUrl);
+            writer.Write("\">");
+            for (int i = 0; i < count; i++)
+            {
+                writer.Write("<enc:EncryptedData Type=\"");
+                writer.Write(EncryptedXml.XmlEncElementUrl);
+                writer.Write("\"><enc:EncryptionMethod Algorithm=\"");
+                writer.Write(EncryptedXml.XmlEncAES256Url);
+                writer.Write("\" /><ds:KeyInfo><ds:KeyName>data-key</ds:KeyName></ds:KeyInfo><enc:CipherData><enc:CipherValue>");
+                writer.Write(encryptedElement);
+                writer.Write("</enc:CipherValue></enc:CipherData></enc:EncryptedData>");
+            }
+            writer.Write("<enc:EncryptedKey><enc:EncryptionMethod Algorithm=\"");
+            writer.Write(EncryptedXml.XmlEncAES256KeyWrapUrl);
+            writer.Write("\" /><ds:KeyInfo><ds:KeyName>wrapping-key</ds:KeyName></ds:KeyInfo><enc:CipherData><enc:CipherValue>");
+            writer.Write(encryptedKey);
+            writer.Write("</enc:CipherValue></enc:CipherData><enc:CarriedKeyName>data-key</enc:CarriedKeyName></enc:EncryptedKey></root>");
+            return writer.ToString();
+        }
     }
 }

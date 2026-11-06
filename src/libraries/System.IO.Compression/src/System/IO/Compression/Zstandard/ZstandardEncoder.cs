@@ -387,6 +387,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>Resets the encoder session, allowing reuse for the next compression operation.</summary>
+        /// <remarks>Clears any prefix and restores the dictionary supplied when the encoder was constructed.</remarks>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
         /// <exception cref="IOException">Failed to reset the encoder session.</exception>
         public void Reset()
@@ -398,7 +399,11 @@ namespace System.IO.Compression
         }
 
         /// <summary>References a prefix for the next compression operation.</summary>
-        /// <remarks>The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the compression operation.</remarks>
+        /// <remarks>
+        /// The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called.
+        /// The prefix replaces any dictionary supplied when the encoder was constructed until <see cref="Reset"/> restores that dictionary.
+        /// The referenced data must remain valid and unmodified for the duration of the compression operation.
+        /// </remarks>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The encoder is in an invalid state for setting a prefix.</exception>
         public void SetPrefix(ReadOnlyMemory<byte> prefix)

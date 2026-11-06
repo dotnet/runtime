@@ -212,7 +212,9 @@ namespace System.Net.Test.Common
                 requestMessage.Headers.Add("Via", ViaHeaderValue);
             }
 
-            var handler = new HttpClientHandler() { UseProxy = false };
+            // A forwarding proxy relays responses (including 3xx redirects) back to the client
+            // instead of following them itself, so disable auto-redirect on the outbound client.
+            var handler = new HttpClientHandler() { UseProxy = false, AllowAutoRedirect = false };
             using (HttpClient outboundClient = new HttpClient(handler))
             using (HttpResponseMessage response = await outboundClient.SendAsync(requestMessage).ConfigureAwait(false))
             {
