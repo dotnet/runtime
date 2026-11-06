@@ -84,9 +84,9 @@ internal sealed partial class GrammarActions
                 break;
             case ClassElementTypeValue classType:
                 EntityRegistry.TypeEntity typeEntity = ResolveClassName(classType.ClassName);
-                if (TryGetPrimitiveTypeCode(typeEntity, classType.IsValueType) is { } primitiveTypeCode)
+                if (TryGetNormalizedTypeCode(typeEntity, classType.IsValueType) is { } normalizedTypeCode)
                 {
-                    blob.WriteByte((byte)primitiveTypeCode);
+                    blob.WriteByte((byte)normalizedTypeCode);
                 }
                 else
                 {
@@ -258,7 +258,7 @@ internal sealed partial class GrammarActions
         }
     }
 
-    private static SignatureTypeCode? TryGetPrimitiveTypeCode(EntityRegistry.TypeEntity typeEntity, bool isValueType)
+    private static SignatureTypeCode? TryGetNormalizedTypeCode(EntityRegistry.TypeEntity typeEntity, bool isValueType)
     {
         // Preserve explicit valuetype encodings, including long forms disallowed by ECMA-335 II.23.2.16.
         if (isValueType || typeEntity is not EntityRegistry.TypeReferenceEntity typeReference || typeReference.Namespace != "System")
@@ -266,6 +266,7 @@ internal sealed partial class GrammarActions
             return null;
         }
 
+        // COMPAT: Normalize the invalid long forms for System.Object and System.String only.
         return typeReference.Name switch
         {
             "String" => SignatureTypeCode.String,
