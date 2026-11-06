@@ -93,12 +93,22 @@ namespace Wasm.Build.Tests
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42));
-            string expectedOutput = $"RelaxedSimd.IsSupported: {relaxedSimd}";
-            Assert.Contains(result.TestOutput, message => message.Contains(expectedOutput));
+            Assert.Contains(result.TestOutput, m => m.Contains($"RelaxedSimd.IsSupported: {relaxedSimd}"));
+            if (relaxedSimd)
+            {
+                Assert.Contains(result.TestOutput, m => m.Contains("ConvertToInt32Native: <1, -2, 3, -4>"));
+                Assert.Contains(result.TestOutput, m => m.Contains("MultiplyAddEstimate: <7, 7, 7, 7>"));
+            }
+            else
+            {
+                Assert.Contains(result.TestOutput, m => m.Contains("ConvertToInt32Native: PlatformNotSupportedException"));
+            }
         }
 
         private static string s_coreClrRelaxedSimdProgramText = """
             using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.Intrinsics;
             using System.Runtime.Intrinsics.Wasm;
 
             public class TestClass
@@ -106,8 +116,29 @@ namespace Wasm.Build.Tests
                 public static int Main()
                 {
                     Console.WriteLine($"TestOutput -> RelaxedSimd.IsSupported: {RelaxedSimd.IsSupported}");
+                    try
+                    {
+                        Console.WriteLine($"TestOutput -> ConvertToInt32Native: {ConvertToInt32Native(Vector128.Create(1.75f, -2.25f, 3.0f, -4.99f))}");
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                        Console.WriteLine("TestOutput -> ConvertToInt32Native: PlatformNotSupportedException");
+                    }
+
+                    if (RelaxedSimd.IsSupported)
+                    {
+                        Console.WriteLine($"TestOutput -> MultiplyAddEstimate: {MultiplyAddEstimate(Vector128.Create(2f), Vector128.Create(3f), Vector128.Create(1f))}");
+                    }
+
                     return 42;
                 }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static Vector128<int> ConvertToInt32Native(Vector128<float> value) => RelaxedSimd.ConvertToInt32Native(value);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static Vector128<float> MultiplyAddEstimate(Vector128<float> left, Vector128<float> right, Vector128<float> addend) =>
+                    RelaxedSimd.MultiplyAddEstimate(left, right, addend);
             }
             """;
 
