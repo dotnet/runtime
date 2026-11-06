@@ -14639,8 +14639,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 bool mustInstructionSetBeSupported = !!(instructionSetEncoded & 1);
                 ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
 #ifdef TARGET_WASM
-                // Wasm has no runtime feature detection. The engine validated this code when it compiled the
-                // module, so an instruction set the code requires is supported by construction.
+                // The wasm engine validated the instructions when it compiled the module.
                 if (mustInstructionSetBeSupported)
                 {
                     continue;

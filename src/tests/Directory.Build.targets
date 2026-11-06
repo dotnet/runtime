@@ -294,8 +294,7 @@
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.WasmCorerun.targets"
           Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'coreclr'" />
 
-  <!-- WasmEnableRelaxedSimd, as the wasm app builders apply it: Crossgen2 targets the instruction set. On by default
-       for WASI, matching WasiApp.CoreCLR.targets. -->
+  <!-- Matches WasiApp.CoreCLR.targets. -->
   <PropertyGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr'">
     <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">true</WasmEnableRelaxedSimd>
   </PropertyGroup>

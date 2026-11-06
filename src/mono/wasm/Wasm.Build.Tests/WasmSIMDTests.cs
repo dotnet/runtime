@@ -74,7 +74,6 @@ namespace Wasm.Build.Tests
         {
             Configuration config = Configuration.Debug;
             string relaxedSimdValue = relaxedSimd.ToString().ToLowerInvariant();
-            // Relaxed SIMD is selected by the ReadyToRun compiler's instruction set.
             string extraProperties = $"<WasmEnableRelaxedSimd>{relaxedSimdValue}</WasmEnableRelaxedSimd><PublishReadyToRun>true</PublishReadyToRun>";
             ProjectInfo info = CopyTestAsset(
                 config,
