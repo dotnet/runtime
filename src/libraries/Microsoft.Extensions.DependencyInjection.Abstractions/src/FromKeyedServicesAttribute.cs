@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// The key of the keyed service to bind to.
         /// </summary>
         /// <remarks>A <see langword="null"/> value with indicates there is not a key and just the parameter type is used to resolve the service.
-        /// This is useful for DI implementations that require an explict way to declare that the parameter should be resolved for unkeyed services.
+        /// This is useful for DI implementations that require an explicit way to declare that the parameter should be resolved for unkeyed services.
         /// A <see langword="null"/> value is also used along with <see cref="LookupMode"/> set to <see cref="ServiceKeyLookupMode.InheritKey"/> to indicate that the key should be inherited from the parent scope.
         /// </remarks>
         public object? Key { get; }
