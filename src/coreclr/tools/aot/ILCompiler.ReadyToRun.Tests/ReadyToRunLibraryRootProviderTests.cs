@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 using crossgen2::ILCompiler;
 using crossgen2::ILCompiler.DependencyAnalysis;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
+using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
+using crossgen2::ILCompiler.ObjectWriter;
+using crossgen2::ILCompiler.ObjectWriter.WasmInstructions;
 using crossgen2::Internal.ReadyToRunConstants;
 using crossgen2::Internal.JitInterface;
 using crossgen2::Internal.Text;
@@ -29,6 +32,191 @@ namespace ILCompiler.ReadyToRun.Tests;
 
 public class ReadyToRunLibraryRootProviderTests
 {
+    [Theory]
+    [InlineData(false, 0, WasmValueType.I32)]
+    [InlineData(true, 0, WasmValueType.I32)]
+    [InlineData(false, 2, WasmValueType.I32)]
+    [InlineData(true, 127, WasmValueType.I32)]
+    [InlineData(false, 2, WasmValueType.F64)]
+    [InlineData(true, 2, WasmValueType.F64)]
+    public void DeferredWasmIndirectCallsRemapFramesAndDebugInfo(bool tailCall, int localCount, WasmValueType localType)
+    {
+        const byte DropOpcode = 0x1A;
+        ReadyToRunCompilerContext context = CreateContext(targetArchitecture: TargetArchitecture.Wasm32);
+        MethodDesc method = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
+        MethodWithGCInfo target = new(method);
+        MethodWithGCInfo caller = new(method);
+        NodeFactory factory = (NodeFactory)RuntimeHelpers.GetUninitializedObject(typeof(NodeFactory));
+        SetField(factory, typeof(NodeFactory), "<Target>k__BackingField", context.Target);
+        ReadyToRunCodegenCompilation compilation = (ReadyToRunCodegenCompilation)RuntimeHelpers.GetUninitializedObject(
+            typeof(ReadyToRunCodegenCompilation));
+        SetField(compilation, typeof(ReadyToRunCodegenCompilation), "_nodeFactory", factory);
+        ImportSectionNode table = new("TestImports", ReadyToRunImportSectionType.Unknown,
+            ReadyToRunImportSectionFlags.PCode, 4, emitPrecode: false, emitGCRefMap: false);
+        DelayLoadMethodImport fallback = (DelayLoadMethodImport)RuntimeHelpers.GetUninitializedObject(typeof(DelayLoadMethodImport));
+        SetField(fallback, typeof(Import), "<Table>k__BackingField", table);
+        SetField(fallback, typeof(DelayLoadMethodImport), "_localMethod", target);
+        DeferredWasmCallNode call = new(fallback);
+        WasmMethodFrameIdentityNode callerIdentity = new(factory, caller);
+        WasmMethodFrameIdentityNode targetIdentity = new(factory, target);
+        WasmTypeNode signature = new(WasmLowering.GetSignature(method).FuncType);
+        FuncletKind[] funcletKinds = [FuncletKind.CatchOrFilterHandler, FuncletKind.Filter, FuncletKind.Finally, FuncletKind.Fault];
+        int[] parameterCounts = [3, 3, 3, 2, 2];
+        FrameInfo[] frames = new FrameInfo[parameterCounts.Length];
+        OffsetMapping[] locations = new OffsetMapping[frames.Length];
+        NativeVarInfo[] variables = new NativeVarInfo[1];
+        List<byte> bytes = new();
+        List<Relocation> relocations = new();
+        Dictionary<int, WasmTypeNode> signatures = new();
+
+        for (int i = 0; i < frames.Length; i++)
+        {
+            int start = bytes.Count;
+            bytes.AddRange(new byte[5]);
+            bytes.Add((byte)(localCount == 0 ? 0 : 1));
+            if (localCount != 0)
+            {
+                bytes.AddRange([(byte)localCount, (byte)localType]);
+            }
+            EmitRelocation(WasmExprKind.I32Const, RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB, callerIdentity);
+            bytes.Add(DropOpcode);
+            if (i == 0)
+            {
+                variables[0].startOffset = (uint)bytes.Count;
+            }
+            bytes.AddRange([(byte)WasmExprKind.LocalGet, 0, (byte)WasmExprKind.LocalGet, 0]);
+            EmitRelocation(WasmExprKind.I32Const, RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB, targetIdentity);
+            bool returnsValue = i < 3;
+            int callOffset = EmitRelocation(tailCall && returnsValue ? WasmExprKind.ReturnCall : WasmExprKind.Call,
+                RelocType.WASM_FUNCTION_INDEX_LEB, call);
+            signatures.Add(callOffset, signature);
+            locations[i] = new OffsetMapping { nativeOffset = (uint)bytes.Count, ilOffset = (uint)i };
+            if (i == 0)
+            {
+                variables[0].endOffset = (uint)bytes.Count;
+            }
+            if (!returnsValue)
+            {
+                bytes.Add(DropOpcode);
+            }
+            bytes.Add((byte)WasmExprKind.End);
+            byte[] size = new byte[5];
+            DwarfHelper.WritePaddedULEB128(size, (ulong)(bytes.Count - start - size.Length));
+            for (int j = 0; j < size.Length; j++)
+            {
+                bytes[start + j] = size[j];
+            }
+            frames[i] = new FrameInfo(i == 0 ? FrameInfoFlags.HasEHInfo : FrameInfoFlags.Handler,
+                start, bytes.Count, [(byte)i]);
+        }
+        caller.SetCode(new ObjectNode.ObjectData(bytes.ToArray(), relocations.ToArray(), 1, [caller]));
+        caller.InitializeFrameInfos(frames);
+        caller.InitializeFuncletKinds(funcletKinds);
+        caller.InitializeDeferredWasmDebugInfo(locations, variables);
+        caller.InitializeDeferredWasmCalls(signatures, null);
+
+        new DeferredWasmCallRewriter(compilation).Rewrite(caller);
+
+        ObjectNode.ObjectData rewritten = caller.GetData(factory, relocsOnly: false);
+        OffsetMapping[] expectedLocations = new OffsetMapping[frames.Length];
+        NativeVarInfo[] expectedVariables = new NativeVarInfo[1];
+        ISymbolNode imageBase = factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.ImageBaseName));
+        int position = 0;
+        for (int i = 0; i < frames.Length; i++)
+        {
+            FrameInfo frame = caller.FrameInfos[i];
+            Assert.Equal(position, frame.StartOffset);
+            Assert.Equal(frames[i].Flags, frame.Flags);
+            Assert.Same(frames[i].BlobData, frame.BlobData);
+            AssertImmediate((uint)(frame.EndOffset - frame.StartOffset - 5));
+            Assert.Equal(frame.StartOffset + 5, position);
+            bool extendGroup = localCount != 0 && localType == WasmValueType.I32;
+            AssertImmediate((uint)(localCount == 0 || extendGroup ? 1 : 2));
+            if (localCount != 0)
+            {
+                AssertImmediate((uint)(localCount + (extendGroup ? 1 : 0)));
+                Assert.Equal((byte)localType, rewritten.Data[position++]);
+            }
+            if (!extendGroup)
+            {
+                AssertImmediate(1);
+                Assert.Equal((byte)WasmValueType.I32, rewritten.Data[position++]);
+            }
+            AssertInstruction(WasmExprKind.I32Const);
+            AssertImmediate(0, RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB, callerIdentity);
+            Assert.Equal(DropOpcode, rewritten.Data[position++]);
+            if (i == 0)
+            {
+                expectedVariables[0].startOffset = (uint)position;
+            }
+            AssertInstruction(WasmExprKind.LocalGet);
+            AssertImmediate(0);
+            AssertInstruction(WasmExprKind.LocalGet);
+            AssertImmediate(0);
+            AssertInstruction(WasmExprKind.GlobalGet);
+            AssertImmediate(0, RelocType.WASM_GLOBAL_INDEX_LEB, imageBase);
+            AssertInstruction(WasmExprKind.I32Load);
+            AssertImmediate(2);
+            AssertImmediate(0, RelocType.WASM_MEMORY_ADDR_REL_LEB, fallback);
+            AssertInstruction(WasmExprKind.LocalTee);
+            AssertImmediate((uint)(parameterCounts[i] + localCount));
+            AssertInstruction(WasmExprKind.LocalGet);
+            AssertImmediate((uint)(parameterCounts[i] + localCount));
+            AssertInstruction(WasmExprKind.I32Load);
+            AssertImmediate(2);
+            AssertImmediate(0);
+            bool returnsValue = i < 3;
+            AssertInstruction(tailCall && returnsValue ? WasmExprKind.ReturnCallIndirect : WasmExprKind.CallIndirect);
+            AssertImmediate(0, RelocType.WASM_TYPE_INDEX_LEB, signature);
+            AssertImmediate(0);
+            expectedLocations[i] = new OffsetMapping { nativeOffset = (uint)position, ilOffset = (uint)i };
+            if (i == 0)
+            {
+                expectedVariables[0].endOffset = (uint)position;
+            }
+            if (!returnsValue)
+            {
+                Assert.Equal(DropOpcode, rewritten.Data[position++]);
+            }
+            AssertInstruction(WasmExprKind.End);
+            Assert.Equal(frame.EndOffset, position);
+        }
+        Assert.Equal(rewritten.Data.Length, position);
+        Assert.Equal(frames.Length * 4, rewritten.Relocs.Length);
+        Assert.Empty(caller.DirectCallTargets);
+        MethodWithGCInfo expectedDebugInfo = new(method);
+        expectedDebugInfo.InitializeDebugLocInfos(expectedLocations);
+        expectedDebugInfo.InitializeDebugVarInfos(expectedVariables);
+        Assert.Equal(expectedDebugInfo.DebugLocInfos, caller.DebugLocInfos);
+        Assert.Equal(expectedDebugInfo.DebugVarInfos, caller.DebugVarInfos);
+
+        int EmitRelocation(WasmExprKind instruction, RelocType type, ISymbolNode symbol)
+        {
+            bytes.Add((byte)instruction);
+            int offset = bytes.Count;
+            relocations.Add(new Relocation(type, offset, symbol));
+            bytes.AddRange([0x80, 0x80, 0x80, 0x80, 0]);
+            return offset;
+        }
+
+        void AssertInstruction(WasmExprKind instruction) => Assert.Equal((byte)instruction, rewritten.Data[position++]);
+
+        void AssertImmediate(uint expected, RelocType? type = null, ISymbolNode? symbol = null)
+        {
+            if (type is not null)
+            {
+                Relocation relocation = Assert.Single(rewritten.Relocs, relocation => relocation.Offset == position);
+                Assert.Equal(type.Value, relocation.RelocType);
+                Assert.Same(symbol, relocation.Target);
+            }
+            Assert.Equal(expected, DwarfHelper.ReadULEB128(rewritten.Data.AsSpan(position), out int count));
+            position += count;
+        }
+
+        static void SetField(object instance, Type type, string name, object value) =>
+            type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(instance, value);
+    }
+
     [Theory]
     [InlineData(0, false, false)]
     [InlineData(0, false, true)]

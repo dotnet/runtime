@@ -1305,6 +1305,7 @@ public class R2RTestSuites
                             break;
                         case VarLocType.VLT_STK:
                         case VarLocType.VLT_STK2:
+                        case VarLocType.VLT_STK_BYREF:
                             Assert.Equal(WasmEncodedFrameBase, record.VariableLocation.Data1);
                             break;
                         default:
