@@ -2209,6 +2209,12 @@ void Thread::HandleThreadAbort ()
 
         PreparingAbortHolder paHolder;
 
+#if defined(TARGET_UNIX) && defined(FEATURE_THREAD_ACTIVATION)
+        // Abort dispatch may bypass native destructors and the activation signal handler's return through sigreturn.
+        m_hasPendingActivation = false;
+        PAL_UnmaskActivationSignal();
+#endif // TARGET_UNIX && FEATURE_THREAD_ACTIVATION
+
         OBJECTREF exceptObj;
 
         if (IsRudeAbort())
