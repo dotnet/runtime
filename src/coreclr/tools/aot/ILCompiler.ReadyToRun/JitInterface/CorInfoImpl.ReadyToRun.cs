@@ -3158,8 +3158,6 @@ namespace Internal.JitInterface
                 ppIndirection = (void*)ObjectToHandle(import);
                 return null;
             }
-            if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
-                throw new RequiresRuntimeJitException(type.ToString());
 
             Import typeHandleImport = GetTypeHandleImport(type);
             Debug.Assert(typeHandleImport.RepresentsIndirectionCell);
