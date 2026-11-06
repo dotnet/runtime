@@ -649,6 +649,7 @@ public class R2RTestSuites
             Assert.False(importedTypes.Contains("byte"), diagnostic);
             Assert.False(importedTypes.Contains("SourceStruct"), diagnostic);
             Assert.False(importedTypes.Contains("TargetStruct"), diagnostic);
+            Assert.False(importedTypes.Contains("System.Enum"), diagnostic);
 
             // Casts to interfaces fold only when every type in the hierarchy is in the version bubble,
             // which includes System.Object and System.ValueType only with the framework in the bubble.
