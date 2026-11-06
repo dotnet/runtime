@@ -3,8 +3,10 @@
 
 using System;
 using System.CodeDom;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace System.Management.Tests
@@ -135,6 +137,34 @@ namespace System.Management.Tests
             }
         }
 
+#if NET
+        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public void MoveNext_ThrowsManagementException_ForEmptySuccessfulBatch()
+        {
+            ManagementObjectCollection collection = CreateManagementObjectCollection(EmptySuccessfulWbemEnumeratorProxy.Create());
+            ManagementObjectCollection.ManagementObjectEnumerator enumerator = null;
+
+            try
+            {
+                enumerator = collection.GetEnumerator();
+                ManagementException exception = Assert.Throws<ManagementException>(() => enumerator.MoveNext());
+                Assert.Equal(ManagementStatus.Failed, exception.ErrorCode);
+
+                ManagementException retryException = Assert.Throws<ManagementException>(() => enumerator.MoveNext());
+                Assert.Equal(ManagementStatus.Failed, retryException.ErrorCode);
+            }
+            finally
+            {
+                // The managed proxy is not a COM RCW, so its owners must not call ReleaseComObject in their finalizers.
+                if (enumerator is not null)
+                    GC.SuppressFinalize(enumerator);
+
+                GC.SuppressFinalize(collection);
+            }
+        }
+#endif
+
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsElevatedAndSupportsWmi))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Create_Delete_Namespace()
@@ -156,6 +186,42 @@ namespace System.Management.Tests
                 Assert.Equal(ManagementStatus.NotFound, managementException.ErrorCode);
             }
         }
+
+#if NET
+        private static ManagementObjectCollection CreateManagementObjectCollection(object enumWbem)
+        {
+            Type enumWbemType = typeof(ManagementObjectCollection).Assembly.GetType("System.Management.IEnumWbemClassObject", throwOnError: true);
+            ConstructorInfo constructor = Assert.IsAssignableFrom<ConstructorInfo>(
+                typeof(ManagementObjectCollection).GetConstructor(
+                    BindingFlags.Instance | BindingFlags.NonPublic,
+                    binder: null,
+                    new Type[] { typeof(ManagementScope), typeof(EnumerationOptions), enumWbemType },
+                    modifiers: null));
+
+            return (ManagementObjectCollection)constructor.Invoke(new object[] { null, new EnumerationOptions { Rewindable = false }, enumWbem });
+        }
+
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The test uses DispatchProxy only to create a fake internal WMI enumerator for this reflection-based regression test.")]
+        private class EmptySuccessfulWbemEnumeratorProxy : DispatchProxy
+        {
+            public static object Create()
+            {
+                Type enumWbemType = typeof(ManagementObjectCollection).Assembly.GetType("System.Management.IEnumWbemClassObject", throwOnError: true);
+                return DispatchProxy.Create(enumWbemType, typeof(EmptySuccessfulWbemEnumeratorProxy));
+            }
+
+            protected override object Invoke(MethodInfo targetMethod, object[] args)
+            {
+                if (targetMethod.Name == "Next_")
+                {
+                    args[3] = (uint)0;
+                    return 0;
+                }
+
+                throw new NotImplementedException(targetMethod.Name);
+            }
+        }
+#endif
 
         private static void AssertDisposableWrapper(CodeTypeDeclaration wrapper, string wrappedFieldName)
         {
