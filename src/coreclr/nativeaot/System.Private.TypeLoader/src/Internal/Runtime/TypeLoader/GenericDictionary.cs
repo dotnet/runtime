@@ -30,7 +30,7 @@ namespace Internal.Runtime.TypeLoader
             IntPtr* realCells = (IntPtr*)_addressOfFirstCellSlot;
             for (int i = 0; i < _cells.Length; i++)
             {
-                _cells[i].WriteCellIntoDictionary(typeBuilder, realCells, i);
+                realCells[i] = _cells[i].Create(typeBuilder);
             }
         }
     }

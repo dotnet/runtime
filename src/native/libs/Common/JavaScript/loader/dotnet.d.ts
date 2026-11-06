@@ -100,6 +100,14 @@ interface DotnetHostBuilder {
      */
     withApplicationCulture(applicationCulture?: string): DotnetHostBuilder;
     /**
+     * Sets a callback that is invoked after each resource finishes downloading.
+     */
+    withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder;
+    /**
+     * Sets a callback that is invoked after the runtime configuration is loaded.
+     */
+    withConfigLoaded(callback?: (config: LoaderConfig) => void | Promise<void>): DotnetHostBuilder;
+    /**
      * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
      * from a custom source, such as an external CDN.
      */
@@ -258,6 +266,7 @@ interface Assets {
     modulesAfterRuntimeReady?: JsAsset[];
     extensions?: ResourceExtensions;
     vfs?: VfsAsset[];
+    appsettings?: AppSettings[];
 }
 type Asset = {
     /**
@@ -303,11 +312,15 @@ type JsAsset = Asset & {
 };
 type SymbolsAsset = Asset & {
     name: string;
+    hash?: string | null | "";
 };
 type VfsAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+};
+type AppSettings = VfsAsset & {
+    loadIntoVfs: boolean;
 };
 type IcuAsset = Asset & {
     virtualPath: string;
@@ -395,6 +408,10 @@ type AssetBehaviors = SingleAssetBehaviors |
  */
  | "vfs"
 /**
+ * Retain application settings in JavaScript memory and optionally install them into VFS.
+ */
+ | "appsettings"
+/**
  * The javascript module that came from nuget package .
  */
  | "js-module-library-initializer"
@@ -422,9 +439,6 @@ declare const enum GlobalizationMode {
 }
 type DotnetModuleConfig = {
     config?: LoaderConfig;
-    onConfigLoaded?: (config: LoaderConfig) => void | Promise<void>;
-    onDotnetReady?: () => void | Promise<void>;
-    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     imports?: any;
     exports?: string[];
 } & Partial<EmscriptenModule>;
@@ -617,22 +631,28 @@ type MemoryAPIType = {
 };
 type DiagnosticsAPIType = {
     /**
-     * creates diagnostic trace file. Default is 60 seconds.
+     * Creates diagnostic trace file. Default is 60 seconds.
      * It could be opened in PerfView or Visual Studio as is.
      */
     collectCpuSamples: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
-     * creates diagnostic trace file. Default is 60 seconds.
+     * Creates diagnostic trace file. Default is 60 seconds.
      * It could be opened in PerfView or Visual Studio as is.
      * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
      */
     collectMetrics: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
-     * creates diagnostic trace file.
+     * Creates diagnostic trace file.
      * It could be opened in PerfView as is.
      * It could be converted for Visual Studio using `dotnet-gcdump convert`.
      */
     collectGcDump: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * Creates a startup PGO trace file (method list, and block counts when the interpreter is instrumented).
+     * The trace stops and downloads automatically after `durationSeconds` (default 10s).
+     * Convert it with `dotnet-pgo create-mibc --trace xxx.nettrace ...` to drive a profile-guided crossgen2 build.
+     */
+    collectPgoTrace: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
      * changes DOTNET_DiagnosticPorts and makes a new connection to WebSocket on that URL.
      */
@@ -709,4 +729,4 @@ declare global {
 }
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };
-export type { AssemblyAsset, Asset, AssetBehaviors, Assets, BootModule, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, IcuAsset, JsAsset, LoadBootResourceCallback, LoaderConfig, LoadingResource, ModuleAPI, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType };
+export type { AppSettings, AssemblyAsset, Asset, AssetBehaviors, Assets, BootModule, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, IcuAsset, JsAsset, LoadBootResourceCallback, LoaderConfig, LoadingResource, ModuleAPI, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType };

@@ -23,6 +23,7 @@
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 
 #include "MethodTable.h"
 #include "TypeManager.h"
@@ -32,252 +33,12 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(FEATURE_PORTABLE_HELPERS)
-EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame);
-
-static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, intptr_t numElements)
-{
-    Object* pObject = (Object*)RhpGcAlloc(pEEType, uFlags, numElements, nullptr);
-    if (pObject == nullptr)
-    {
-        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
-    }
-
-    return pObject;
-}
-
-struct gc_alloc_context
-{
-    uint8_t* alloc_ptr;
-    uint8_t* alloc_limit;
-};
-
-//
-// Allocations
-//
-FCIMPL1(Object *, RhpNewFast, MethodTable* pEEType)
-{
-    ASSERT(!pEEType->HasFinalizer());
-
-    Thread * pCurThread = ThreadStore::GetCurrentThread();
-    gc_alloc_context * acontext = pCurThread->GetAllocContext();
-    size_t size = pEEType->GetBaseSize();
-
-    uint8_t* alloc_ptr = acontext->alloc_ptr;
-    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
-    ASSERT(alloc_ptr <= combined_limit);
-    if ((size_t)(combined_limit - alloc_ptr) >= size)
-    {
-        acontext->alloc_ptr = alloc_ptr + size;
-        Object* pObject = (Object *)alloc_ptr;
-        pObject->SetMethodTable(pEEType);
-        return pObject;
-    }
-
-    return AllocateObject(pEEType, 0, 0);
-}
-FCIMPLEND
-
-#define GC_ALLOC_FINALIZE    0x1 // TODO: Defined in gc.h
-#define GC_ALLOC_ALIGN8_BIAS 0x4 // TODO: Defined in gc.h
-#define GC_ALLOC_ALIGN8      0x8 // TODO: Defined in gc.h
-
-FCIMPL1(Object *, RhpNewFinalizable, MethodTable* pEEType)
-{
-    ASSERT(pEEType->HasFinalizer());
-    return AllocateObject(pEEType, GC_ALLOC_FINALIZE, 0);
-}
-FCIMPLEND
-
-FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, intptr_t numElements)
-{
-    Thread * pCurThread = ThreadStore::GetCurrentThread();
-    gc_alloc_context * acontext = pCurThread->GetAllocContext();
-
-    if (numElements < 0)
-    {
-        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
-    }
-
-#ifndef HOST_64BIT
-    // if the element count is <= 0x10000, no overflow is possible because the component size is
-    // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
-    if (numElements > 0x10000)
-    {
-        // Overflow here should result in an OOM. Let the slow path take care of it.
-        return (Array*)AllocateObject(pArrayEEType, 0, numElements);
-    }
-#endif // !HOST_64BIT
-
-    size_t size = (size_t)pArrayEEType->GetBaseSize() + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
-    size = ALIGN_UP(size, sizeof(uintptr_t));
-
-    uint8_t* alloc_ptr = acontext->alloc_ptr;
-    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
-    ASSERT(alloc_ptr <= combined_limit);
-    if ((size_t)(combined_limit - alloc_ptr) >= size)
-    {
-        acontext->alloc_ptr = alloc_ptr + size;
-        Array* pObject = (Array*)alloc_ptr;
-        pObject->SetMethodTable(pArrayEEType);
-        pObject->SetNumComponents((uint32_t)numElements);
-        return pObject;
-    }
-
-    return (Array*)AllocateObject(pArrayEEType, 0, numElements);
-}
-FCIMPLEND
-
-FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, intptr_t numElements)
-{
-    // TODO: Implement. We tail call to RhpNewArrayFast for now since there's a bunch of TODOs in the places
-    // that matter anyway.
-    return (String*)RhpNewArrayFast(pArrayEEType, numElements);
-}
-FCIMPLEND
-
-#if defined(FEATURE_64BIT_ALIGNMENT)
-
-GPTR_DECL(MethodTable, g_pFreeObjectEEType);
-
-FCIMPL1(Object *, RhpNewFinalizableAlign8, MethodTable* pEEType)
-{
-    return AllocateObject(pEEType, GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8, 0);
-}
-FCIMPLEND
-
-#ifndef HOST_64BIT
-FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pEEType)
-{
-    ASSERT(!pEEType->HasFinalizer());
-
-    Thread* pCurThread = ThreadStore::GetCurrentThread();
-    gc_alloc_context* acontext = pCurThread->GetAllocContext();
-
-    size_t size = pEEType->GetBaseSize();
-    size = (size + (sizeof(uintptr_t) - 1)) & ~(sizeof(uintptr_t) - 1);
-
-    uint8_t* alloc_ptr = acontext->alloc_ptr;
-    int requiresPadding = ((uint32_t)alloc_ptr) & 7;
-    size_t paddedSize = size;
-    if (requiresPadding)
-    {
-        paddedSize += 12;
-    }
-
-    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
-    ASSERT(alloc_ptr <= combined_limit);
-    if ((size_t)(combined_limit - alloc_ptr) >= paddedSize)
-    {
-        acontext->alloc_ptr = alloc_ptr + paddedSize;
-        if (requiresPadding)
-        {
-            Object* dummy = (Object*)alloc_ptr;
-            dummy->SetMethodTable(g_pFreeObjectEEType);
-            alloc_ptr += 12;
-        }
-        Object* pObject = (Object *)alloc_ptr;
-        pObject->SetMethodTable(pEEType);
-        return pObject;
-    }
-
-    return AllocateObject(pEEType, GC_ALLOC_ALIGN8, 0);
-}
-FCIMPLEND
-
-FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
-{
-    Thread* pCurThread = ThreadStore::GetCurrentThread();
-    gc_alloc_context* acontext = pCurThread->GetAllocContext();
-
-    size_t size = pEEType->GetBaseSize();
-
-    uint8_t* alloc_ptr = acontext->alloc_ptr;
-    int requiresPadding = (((uint32_t)alloc_ptr) & 7) != 4;
-    size_t paddedSize = size;
-    if (requiresPadding)
-    {
-        paddedSize += 12;
-    }
-
-    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
-    ASSERT(alloc_ptr <= combined_limit);
-    if ((size_t)(combined_limit - alloc_ptr) >= paddedSize)
-    {
-        acontext->alloc_ptr = alloc_ptr + paddedSize;
-        if (requiresPadding)
-        {
-            Object* dummy = (Object*)alloc_ptr;
-            dummy->SetMethodTable(g_pFreeObjectEEType);
-            alloc_ptr += 12;
-        }
-        Object* pObject = (Object *)alloc_ptr;
-        pObject->SetMethodTable(pEEType);
-        return pObject;
-    }
-
-    return AllocateObject(pEEType, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0);
-}
-FCIMPLEND
-
-FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, intptr_t numElements)
-{
-    Thread* pCurThread = ThreadStore::GetCurrentThread();
-    gc_alloc_context* acontext = pCurThread->GetAllocContext();
-
-    if (numElements < 0)
-    {
-        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
-    }
-
-    // if the element count is <= 0x10000, no overflow is possible because the component size is
-    // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
-    if (numElements > 0x10000)
-    {
-        // Overflow here should result in an OOM. Let the slow path take care of it.
-        return (Array*)AllocateObject(pArrayEEType, GC_ALLOC_ALIGN8, numElements);
-    }
-
-    uint32_t baseSize = pArrayEEType->GetBaseSize();
-    size_t size = (size_t)baseSize + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
-    size = ALIGN_UP(size, sizeof(uintptr_t));
-
-    uint8_t* alloc_ptr = acontext->alloc_ptr;
-    int requiresAlignObject = ((uint32_t)alloc_ptr) & 7;
-    size_t paddedSize = size;
-    if (requiresAlignObject)
-    {
-        paddedSize += 12;
-    }
-
-    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
-    ASSERT(alloc_ptr <= combined_limit);
-    if ((size_t)(combined_limit - alloc_ptr) >= paddedSize)
-    {
-        acontext->alloc_ptr = alloc_ptr + paddedSize;
-        if (requiresAlignObject)
-        {
-            Object* dummy = (Object*)alloc_ptr;
-            dummy->SetMethodTable(g_pFreeObjectEEType);
-            alloc_ptr += 12;
-        }
-        Array* pObject = (Array*)alloc_ptr;
-        pObject->SetMethodTable(pArrayEEType);
-        pObject->SetNumComponents((uint32_t)numElements);
-        return pObject;
-    }
-
-    return (Array*)AllocateObject(pArrayEEType, GC_ALLOC_ALIGN8, numElements);
-}
-FCIMPLEND
-#endif // !HOST_64BIT
-#endif // defined(HOST_ARM) || defined(HOST_WASM)
-
 // @TODO Implement UniversalTransitionTailCall
 EXTERN_C void * ReturnFromUniversalTransitionTailCall;
 void * ReturnFromUniversalTransitionTailCall;
 
-#if !defined (HOST_ARM64)
-FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
+#if !defined(HOST_WASM)
+FCIMPL2_RAW(void, RhpAssignRef, Object ** dst, Object * ref)
 {
     // @TODO: FEATURE_PORTABLE_HELPERS - Null check
     *dst = ref;
@@ -285,7 +46,7 @@ FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
 }
 FCIMPLEND
 
-FCIMPL2(void, RhpCheckedAssignRef, Object ** dst, Object * ref)
+FCIMPL2_RAW(void, RhpCheckedAssignRef, Object ** dst, Object * ref)
 {
     // @TODO: FEATURE_PORTABLE_HELPERS - Null check
     *dst = ref;
@@ -311,11 +72,10 @@ FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
 }
 FCIMPLEND
 
-FCIMPL1(HRESULT, RhAllocateThunksMapping, void ** ppThunksSection)
+EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
     return E_FAIL;
 }
-FCIMPLEND
 
 FCIMPL0(void *, RhpGetThunksBase)
 {
@@ -362,20 +122,6 @@ FCIMPL0(int, RhpGetThunkBlockSize)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return 0;
-}
-FCIMPLEND
-
-FCIMPL0(void *, RhGetCommonStubAddress)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return NULL;
-}
-FCIMPLEND
-
-FCIMPL0(void *, RhGetCurrentThunkContext)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return NULL;
 }
 FCIMPLEND
 

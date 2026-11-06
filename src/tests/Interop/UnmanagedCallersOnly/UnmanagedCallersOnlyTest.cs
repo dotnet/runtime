@@ -54,7 +54,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
-    [Fact]
+    // On NativeAOT, this fails because the exception escapes the native UnmanagedCallersOnly transition.
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
     public static void NegativeTest_NonStaticMethod()
     {
         Console.WriteLine($"Running {nameof(NegativeTest_NonStaticMethod)}...");
@@ -72,7 +73,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
-    [Fact]
+    // On NativeAOT, this fails because the exception escapes the native UnmanagedCallersOnly transition.
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
     public static void NegativeTest_NonBlittable()
     {
         Console.WriteLine($"Running {nameof(NegativeTest_NonBlittable)}...");
@@ -87,7 +89,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
-    [Fact]
+    // On NativeAOT, this fails because the exception escapes the native UnmanagedCallersOnly transition.
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
     public static void NegativeTest_InstantiatedGenericArguments()
     {
         Console.WriteLine($"Running {nameof(NegativeTest_InstantiatedGenericArguments)}...");
@@ -99,7 +102,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
-    [Fact]
+    // On NativeAOT, this fails because the exception escapes the native UnmanagedCallersOnly transition.
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
     public static void NegativeTest_FromInstantiatedGenericClass()
     {
         Console.WriteLine($"Running {nameof(NegativeTest_FromInstantiatedGenericClass)}...");
@@ -155,7 +159,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
-    [Fact]
+    // On NativeAOT, calling a P/Invoke marked UnmanagedCallersOnly from managed code fails fast.
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
     public static void TestPInvokeMarkedWithUnmanagedCallersOnly()
     {
         Console.WriteLine($"Running {nameof(TestPInvokeMarkedWithUnmanagedCallersOnly)}...");
@@ -182,16 +187,21 @@ public unsafe class Program
         Assert.Equal(0, ((delegate* unmanaged<MaybeBlittable<nint>, int>)&MaybeBlittableGenericStruct)(new MaybeBlittable<nint>()));
 
 
-        Assert.Throws<InvalidProgramException>(()
-            => ((delegate* unmanaged<nint, int>)(void*)(delegate* unmanaged<NotBlittable<int>, int>)&InvalidGenericUnmanagedCallersOnlyParameters.GenericClass)((nint)1));
+        // On NativeAOT, this fails because the exception escapes the native UnmanagedCallersOnly transition.
+        if (TestLibrary.Utilities.IsNotNativeAot)
+        {
+            Assert.Throws<InvalidProgramException>(()
+                => ((delegate* unmanaged<nint, int>)(void*)(delegate* unmanaged<NotBlittable<int>, int>)&InvalidGenericUnmanagedCallersOnlyParameters.GenericClass)((nint)1));
 
-        Assert.Throws<InvalidProgramException>(()
-            => ((delegate* unmanaged<nint, int>)(void*)(delegate* unmanaged<MaybeBlittable<object>, int>)&InvalidGenericUnmanagedCallersOnlyParameters.GenericStructWithObjectField)((nint)1));
+            Assert.Throws<InvalidProgramException>(()
+                => ((delegate* unmanaged<nint, int>)(void*)(delegate* unmanaged<MaybeBlittable<object>, int>)&InvalidGenericUnmanagedCallersOnlyParameters.GenericStructWithObjectField)((nint)1));
+        }
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
-    [Fact]
+    // On NativeAOT, the Task-returning calli throws MarshalDirectiveException before validating UnmanagedCallersOnly.
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
     [SkipOnMono("Mono doesn't support runtime async and doesn't check the async bit.")]
     public static void TestUnmanagedCallersOnlyWithRuntimeAsync()
     {

@@ -1,19 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-
-//
 
 /*============================================================
-**
 ** Header:  COMUtilNative
-**
 **
 ** Purpose: A dumping ground for classes which aren't large
 ** enough to get their own file in the VM.
-**
-**
 ===========================================================*/
+
 #ifndef _COMUTILNATIVE_H_
 #define _COMUTILNATIVE_H_
 
@@ -152,11 +146,9 @@ private:
 
 public:
     static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
-    static FORCEINLINE UINT64 InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend);
 
     FCDECL0(static INT64,   GetTotalPauseDuration);
     FCDECL2(static void,    GetMemoryInfo, Object* objUNSAFE, int kind);
-    FCDECL0(static UINT32,  GetMemoryLoad);
     FCDECL0(static int,     GetGcLatencyMode);
     FCDECL1(static int,     SetGcLatencyMode, int newLatencyMode);
     FCDECL0(static int,     GetLOHCompactionMode);
@@ -282,7 +274,6 @@ public:
     FCDECL1(static UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
     FCDECL1(static CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
     FCDECL2(static MethodTable*, GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
-    FCDECL1(static MethodTable*, InstantiationArg0, MethodTable* mt);
     FCDECL1(static OBJECTHANDLE, GetLoaderAllocatorHandle, MethodTable* mt);
 };
 

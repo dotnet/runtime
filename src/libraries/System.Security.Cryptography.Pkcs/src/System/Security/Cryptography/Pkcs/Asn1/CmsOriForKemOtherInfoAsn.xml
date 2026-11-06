@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="CmsOriForKemOtherInfoAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://www.rfc-editor.org/rfc/rfc9629.html#section-5
+
+    CMSORIforKEMOtherInfo ::= SEQUENCE {
+        wrap KeyEncryptionAlgorithmIdentifier,
+        kekLength INTEGER (1..65535),
+        ukm [0] EXPLICIT UserKeyingMaterial OPTIONAL
+    }
+  -->
+  <asn:AsnType name="Wrap" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:Integer name="KekLength" backingType="int" />
+  <asn:OctetString name="Ukm" explicitTag="0" optional="true" />
+</asn:Sequence>

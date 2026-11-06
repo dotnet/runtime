@@ -1096,7 +1096,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(UnionCases.Count > 0);
                 ctx = new JsonTypeClassifierContext(
                     JsonTypeClassifierKind.Union,
-                    Type,
+                    this,
                     new List<JsonUnionCaseInfo>(UnionCases),
                     Array.Empty<JsonDerivedType>(),
                     typeDiscriminatorPropertyName: null);
@@ -1108,7 +1108,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 ctx = new JsonTypeClassifierContext(
                     JsonTypeClassifierKind.PolymorphicType,
-                    Type,
+                    this,
                     Array.Empty<JsonUnionCaseInfo>(),
                     new List<JsonDerivedType>(polymorphismOptions.DerivedTypes),
                     polymorphismOptions.TypeDiscriminatorPropertyName);
@@ -1175,7 +1175,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 JsonNumberHandling effectiveNumberHandling =
-                    caseTypeInfo.NumberHandling ?? options.NumberHandling;
+                    target.NumberHandling ?? caseTypeInfo.NumberHandling ?? options.NumberHandling;
                 JsonValueType valueTypes = converter.GetSupportedJsonValueTypes(effectiveNumberHandling);
 
                 AddUnionValueTypes(valueTypes, caseType, map, ref ambiguousValueTypes);
@@ -1474,7 +1474,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         // Untyped, root-level serialization methods
         internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue);
-        internal abstract Task SerializeAsObjectAsync(PipeWriter pipeWriter, object? rootValue, int flushThreshold, CancellationToken cancellationToken);
+        internal abstract Task<FlushResult> SerializeAsObjectAsync(PipeWriter pipeWriter, object? rootValue, int flushThreshold, CancellationToken cancellationToken, Utf8JsonWriter? jsonLineWriter = null);
         internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken);
         internal abstract Task SerializeAsObjectAsync(PipeWriter utf8Json, object? rootValue, CancellationToken cancellationToken);
         internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue);
@@ -1666,7 +1666,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal static bool IsInvalidForSerialization(Type type)
         {
-            return type == typeof(void) || type.IsPointer || type.IsByRef || IsByRefLike(type) || type.ContainsGenericParameters;
+            return type == typeof(void) || type.IsPointer || type.IsByRef || type.IsByRefLike || type.ContainsGenericParameters;
         }
 
         internal void MapInterfaceTypesToCallbacks()
@@ -1707,30 +1707,6 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 SetCreateObject(createObject);
             }
-        }
-
-        private static bool IsByRefLike(Type type)
-        {
-#if NET
-            return type.IsByRefLike;
-#else
-            if (!type.IsValueType)
-            {
-                return false;
-            }
-
-            object[] attributes = type.GetCustomAttributes(inherit: false);
-
-            for (int i = 0; i < attributes.Length; i++)
-            {
-                if (attributes[i].GetType().FullName == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
-                {
-                    return true;
-                }
-            }
-
-            return false;
-#endif
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

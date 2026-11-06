@@ -144,6 +144,10 @@ foreach ($target in $instrumentationTargets) {
     $pdbName = [System.IO.Path]::ChangeExtension($target.DllName, ".pdb")
     $destPdb = Join-Path $assemblyDir $pdbName
 
+    if ($target.DllName -eq [System.IO.Path]::GetFileName($assemblyPath)) {
+        continue
+    }
+
     # Try runtime directory first
     $sourcePdb = Join-Path $runtimeDir $pdbName
 
@@ -190,6 +194,7 @@ $coverletArgs = @(
     "--targetargs", "run --project $PSScriptRoot --no-build -- $FuzzerName $InputPath",
     "--output", "$OutputDir/",
     "--format", "opencover",
+    "--include-test-assembly",
     "--use-source-link",
     "--does-not-return-attribute", "DoesNotReturn"
 )

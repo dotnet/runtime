@@ -343,8 +343,8 @@ namespace System.Net.Sockets
             }
         }
 
-        public override unsafe void WriteByte(byte value) =>
-            Write(new ReadOnlySpan<byte>(&value, 1));
+        public override void WriteByte(byte value) =>
+            Write(new ReadOnlySpan<byte>(in value));
 
         private int _closeTimeout = Socket.DefaultCloseTimeout; // -1 = respect linger options
 

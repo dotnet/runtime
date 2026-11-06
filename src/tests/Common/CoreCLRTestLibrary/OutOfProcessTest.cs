@@ -25,6 +25,7 @@ namespace TestLibrary
     public static class OutOfProcessTest
     {
         private const string OutOfProcessPlanFileEnvironmentVariable = "__TestOutOfProcessPlanFile";
+        private const string OutOfProcessResultDirectoryEnvironmentVariable = "__TestOutOfProcessResultDirectory";
         private const string OutOfProcessResultFileSuffix = ".outofprocess-result";
         private const string OutOfProcessResultFormatVersion = "2";
         private const string OutOfProcessResultPassed = "Pass";
@@ -209,6 +210,20 @@ namespace TestLibrary
             }
         }
 
+        private static string GetResultFile(string testAssemblyPath)
+        {
+            // Hosts that only expose the merged runner's directory (WASI) collect the results there,
+            // with the relative test path flattened into a file name. The run script must match.
+            string resultDirectory = Environment.GetEnvironmentVariable(OutOfProcessResultDirectoryEnvironmentVariable);
+            if (!String.IsNullOrEmpty(resultDirectory))
+            {
+                string resultName = testAssemblyPath.Replace("@", "@a").Replace("/", "@s");
+                return Path.Combine(resultDirectory, resultName + OutOfProcessResultFileSuffix);
+            }
+
+            return Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), testAssemblyPath)) + OutOfProcessResultFileSuffix;
+        }
+
         private static void ImportPrecomputedResult(string assemblyPath, string testPathPrefix)
         {
             string resultToken = Environment.GetEnvironmentVariable(OutOfProcessResultTokenEnvironmentVariable);
@@ -228,7 +243,7 @@ namespace TestLibrary
                 testAssemblyPath = testAssemblyPath.Replace("\\", "/");
             }
 
-            string resultFile = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), testAssemblyPath)) + OutOfProcessResultFileSuffix;
+            string resultFile = GetResultFile(testAssemblyPath);
             if (!File.Exists(resultFile))
             {
                 Assert.Fail($"Test Infrastructure Failure: Out-of-process result file '{resultFile}' was not found.");

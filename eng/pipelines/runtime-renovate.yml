@@ -8,6 +8,7 @@ schedules:
   displayName: Weekly Renovate Run
   branches:
     include:
+    # the pipeline only needs to run on main, the baseBranches below configure the update targets
     - main
   always: true
 
@@ -28,6 +29,10 @@ variables:
 extends:
   template: /eng/common/core-templates/stages/renovate.yml@self
   parameters:
+    baseBranches:
+      - main
+      - release/11.0
+      - release/10.0
     dryRun: ${{ parameters.dryRun }}
     forceRecreatePR: ${{ parameters.forceRecreatePR }}
     gitHubRepo: ${{ variables.gitHubRepo }}

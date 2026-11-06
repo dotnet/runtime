@@ -36,6 +36,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 
     // initialize all members up front to NULL so that short-circuit failure won't cause invalid values
     m_InitialReservedMemForLoaderHeaps = NULL;
+    m_InitialReservedMemForLoaderHeapsSize = 0;
     m_pLowFrequencyHeap = NULL;
     m_pHighFrequencyHeap = NULL;
     m_pExecutableHeap = NULL;
@@ -78,6 +79,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pCodeHeapInitialAlloc = NULL;
     m_pVSDHeapInitialAlloc = NULL;
     m_pLastUsedCodeHeap = NULL;
+    m_pLastUsedOptimizedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
 #ifdef FEATURE_INTERPRETER
     m_pLastUsedInterpreterCodeHeap = NULL;
@@ -195,7 +197,7 @@ BOOL LoaderAllocator::AddReferenceIfAlive()
 
 //---------------------------------------------------------------------------------------
 //
-BOOL LoaderAllocator::Release()
+BOOL LoaderAllocator::Release() noexcept
 {
     CONTRACTL
     {
@@ -376,13 +378,7 @@ void LoaderAllocator::Mark()
 //static
 LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain * pAppDomain)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
     // List of LoaderAllocators being deleted
     LoaderAllocator * pFirstDestroyedLoaderAllocator = NULL;
 
@@ -1164,6 +1160,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     BYTE * initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
     m_InitialReservedMemForLoaderHeaps = initReservedMem;
+    m_InitialReservedMemForLoaderHeapsSize = dwTotalReserveMemSize;
 
     if (initReservedMem == NULL)
         COMPlusThrowOM();
@@ -1477,7 +1474,7 @@ void LoaderAllocator::Terminate()
 
     if (m_InitialReservedMemForLoaderHeaps)
     {
-        ExecutableAllocator::Instance()->Release(m_InitialReservedMemForLoaderHeaps);
+        ExecutableAllocator::Instance()->Release(m_InitialReservedMemForLoaderHeaps, m_InitialReservedMemForLoaderHeapsSize);
         m_InitialReservedMemForLoaderHeaps=NULL;
     }
 
@@ -1959,11 +1956,13 @@ void AssemblyLoaderAllocator::CleanupHandles()
     CONTRACTL_END;
 
 
+#ifdef FEATURE_MULTITHREADING
     if (m_hLoaderAllocatorObjectHandle != NULL)
     {
         GCX_COOP();
         FreeTLSIndicesForLoaderAllocator(this);
     }
+#endif // FEATURE_MULTITHREADING
 
     // This method doesn't take a lock around RemoveHead because it's supposed to
     // be called only from Terminate
@@ -2023,7 +2022,9 @@ void AssemblyLoaderAllocator::CleanupDependentHandlesToNativeObjects()
     // Locks under which dependent handles may be used must all be taken here to ensure that a thread using a dependent handle
     // would either observe it cleared, or that the dependent object remains valid under those locks. In particular, any locks
     // used to synchronize uses of CrossLoaderAllocatorHash instances must also be taken here.
+#ifdef FEATURE_INLINE_TRACKING
     CrstHolder jitInlineTrackingMapLockHolder(JITInlineTrackingMap::GetMapCrst());
+#endif // FEATURE_INLINE_TRACKING
     MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
 
     CrstHolder setLockHolder(&m_dependentHandleToNativeObjectSetCrst);
@@ -2305,6 +2306,7 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -2378,6 +2380,7 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -2494,6 +2497,19 @@ void LoaderAllocator::AddPendingPortableEntryPointThunk(MethodDesc* pMD)
     CONTRACTL_END;
 
     AddPendingPortableEntryPointThunkUnderLock(this, pMD);
+}
+
+void LoaderAllocator::AddPendingClosedStaticRetBufThunk(ClosedStaticRetBufPortableEntryPoint* pEntryPoint)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    AddPendingClosedStaticRetBufThunkUnderLock(this, pEntryPoint);
 }
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS

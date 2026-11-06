@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
 // EXCEPTMACROS.H -
 //
 // This header file exposes mechanisms to:
@@ -26,7 +25,6 @@
 // COMPlusThrow() must only be called within the scope of a EX_TRY
 // block. See below for more information.
 //
-//
 // THROWING A RUNTIME EXCEPTION
 // ----------------------------
 // COMPlusThrow() is overloaded to take a constant describing
@@ -50,15 +48,12 @@
 //                   IDS_CANTREFORMATCDRIVEBECAUSE,
 //                   W("Formatting C drive permissions not granted."));
 //
-//
-//
 // TO CATCH CLR EXCEPTIONS:
 // ----------------------------
 //
 // Use the following syntax:
 //
 //      #include "exceptmacros.h"
-//
 //
 //      OBJECTREF pThrownObject;
 //
@@ -67,7 +62,6 @@
 //      } EX_CATCH {
 //          ...handler...
 //      } EX_END_CATCH
-//
 //
 // EX_TRY blocks can be nested.
 //
@@ -89,7 +83,6 @@
 // self-document its contract, the checked version of this will fire
 // an assert if the function is ever called without being in scope.
 //
-//
 // AVOIDING EX_TRY GOTCHAS
 // ----------------------------
 // EX_TRY/EX_CATCH actually expands into a Win32 SEH
@@ -104,7 +97,6 @@
 //       of these things is not simple (you can wrap another EX_TRY
 //       around the call to simulate a CLR "try-finally" but EX_TRY
 //       is relatively expensive compared to the real thing.)
-//
 
 #ifndef __exceptmacros_h__
 #define __exceptmacros_h__
@@ -240,8 +232,19 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
 #define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContext, ssp) \
         CONTEXT *__pResumeAfterCatchContext = pContext;                \
         TADDR __pResumeAfterCatchSSP = ssp;                            \
+        bool __resumeAfterCatchContextIsInterrupted = false;           \
         TADDR __resumeSP = 0, __resumeIP = 0;                          \
         try                                                            \
+        {
+
+// The same for a context where the thread was interrupted and redirected rather than one at a call site.
+// The ssp is the SSP register value at that context.
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_INTERRUPTED_CONTEXT(pContext, ssp) \
+        CONTEXT *__pResumeAfterCatchContext = pContext;                            \
+        TADDR __pResumeAfterCatchSSP = ssp;                                        \
+        bool __resumeAfterCatchContextIsInterrupted = true;                        \
+        TADDR __resumeSP = 0, __resumeIP = 0;                                      \
+        try                                                                        \
         {
 
 #define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame) \
@@ -262,7 +265,8 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
         if (__resumeSP != 0)                                                                                           \
         {                                                                                                              \
             ResumeAfterCatchException ex(__resumeSP, __resumeIP);                                                      \
-            RethrowResumeAfterCatchExceptionSkipManagedFrames(ex, __pResumeAfterCatchContext, __pResumeAfterCatchSSP); \
+            RethrowResumeAfterCatchExceptionSkipManagedFrames(ex, __pResumeAfterCatchContext, __pResumeAfterCatchSSP,  \
+                                                              __resumeAfterCatchContextIsInterrupted);                 \
         }
 
 
@@ -283,6 +287,7 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
 #else // FEATURE_INTERPRETER && !HOST_WASM
 #define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame)
 #define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContext, ssp)
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_INTERRUPTED_CONTEXT(pContext, ssp)
 #define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
 #define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT
 #endif // FEATURE_INTERPRETER && !HOST_WASM
@@ -290,19 +295,16 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
 
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX     \
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
         PAL_SEHException exCopy;                    \
         bool hasCaughtException = false;            \
         try {
 
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
-
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER       \
         }                                           \
         catch (PAL_SEHException& ex)                \
         {                        \
-            if (nativeRethrow || (ex.HasTargetFrame() && ex.TargetFrameSp > (SIZE_T)&exCopy))               \
+            if (ex.HasTargetFrame() && ex.TargetFrameSp > (SIZE_T)&exCopy)               \
             { \
                 throw; \
             } \
@@ -313,9 +315,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         {                                           \
             DispatchManagedException(exCopy, false);\
         }
-
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER      \
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(false)
 
 // Install trap that catches unhandled managed exception and dumps its stack
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP                                            \
@@ -364,47 +363,10 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     }
 
 
-#elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
-
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-
-#define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
-#define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
-
-// We use [UN]INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX to backpatch the SEH record installed
-// in CallDescrWorkerInternal from ProcessCLRException to CallDescrWorkerUnwindFrameChainHandler
-// when throwing an exception. This ensures that class loading exceptions are propagated through
-// unmanaged code before being forwarded to the managed one.
-
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX \
-        try \
-        {
-
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
-        } \
-        catch (...) \
-        { \
-            if (nativeRethrow) \
-            { \
-                PEXCEPTION_REGISTRATION_RECORD pExceptionRecord = GetCurrentSEHRecord(); \
-                _ASSERTE(pExceptionRecord != EXCEPTION_CHAIN_END); \
-                while (pExceptionRecord->Handler != (PEXCEPTION_ROUTINE)ProcessCLRException) \
-                { \
-                    pExceptionRecord = pExceptionRecord->Next; \
-                    _ASSERTE(pExceptionRecord != EXCEPTION_CHAIN_END); \
-                } \
-                pExceptionRecord->Handler = (PEXCEPTION_ROUTINE)CallDescrWorkerUnwindFrameChainHandler; \
-            } \
-            throw; \
-        }
-
 #else // TARGET_UNIX
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
 
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
 #define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
@@ -427,9 +389,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                             \
         }                                                                                   \
-        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
+        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::exception&)                             \
         {                                                                                   \
-            __pUnCException = Exception::GetOOMException();                                 \
+            __pUnCException = GetExceptionFromCxxException();                               \
             UnwindAndContinueRethrowHelperInsideCatch(__pUnCEntryFrame, __pUnCException);   \
             __fExceptionCaught = true;                                                      \
         }                                                                                   \
@@ -596,8 +558,6 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame);
 
 extern LONG UserBreakpointFilter(EXCEPTION_POINTERS *ep);
 extern LONG DefaultCatchFilter(EXCEPTION_POINTERS *ep, LPVOID pv);
-extern LONG DefaultCatchNoSwallowFilter(EXCEPTION_POINTERS *ep, LPVOID pv);
-
 
 // the only valid parameter for DefaultCatchFilter
 #define COMPLUS_EXCEPTION_EXECUTE_HANDLER   (PVOID)EXCEPTION_EXECUTE_HANDLER

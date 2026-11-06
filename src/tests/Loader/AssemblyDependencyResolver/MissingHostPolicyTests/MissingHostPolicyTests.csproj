@@ -3,7 +3,8 @@
     <!-- Needed for NativeAotIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <!-- AssemblyDependencyResolver throws PlatformNotSupportedException on WebAssembly, which has no host policy. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
     <!-- AssemblyDependencyResolver is not supported -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>

@@ -682,6 +682,7 @@ IniKey1=IniValue2");
                 Path.Combine(_fileSystem.RootPath, FileName));
 
             await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
+            await WaitForChange(() => reloadToken.HasChanged, "Reload token did not fire in time.");
 
             Assert.IsType<InvalidDataException>(failureException);
 
@@ -776,7 +777,8 @@ IniKey1=IniValue2");
             await WaitForChange(
                 () => config["JsonKey1"] == "JsonValue2"
                     && config["IniKey1"] == "IniValue2"
-                    && config["XmlKey1"] == "XmlValue2",
+                    && config["XmlKey1"] == "XmlValue2"
+                    && token.HasChanged,
                 "Reload failed after touching files.");
 
             Assert.Equal("JsonValue2", config["JsonKey1"]);
@@ -810,7 +812,7 @@ IniKey1=IniValue2");
             await Task.Delay(2500);
 
             await WaitForChange(
-                () => config["JsonKey1"] == "JsonValue1",
+                () => config["JsonKey1"] == "JsonValue1" && createToken.HasChanged,
                 "Notification failed for file when it did not previously exist.",
                 multiplier: 4);
 
@@ -840,7 +842,7 @@ IniKey1=IniValue2");
             _fileSystem.DeleteFile(_iniFile);
 
             await WaitForChange(
-                () => config["Key"] == "JsonValue1",
+                () => config["Key"] == "JsonValue1" && token.HasChanged,
                 "Notification failed for deleting ini file.");
 
             Assert.Equal("JsonValue1", config["Key"]);
@@ -850,7 +852,7 @@ IniKey1=IniValue2");
             _fileSystem.DeleteFile(_jsonFile);
 
             await WaitForChange(
-                () => config["Key"] == "XmlValue1",
+                () => config["Key"] == "XmlValue1" && token.HasChanged,
                 "Notification failed for deleting JSON file.");
 
             Assert.Equal("XmlValue1", config["Key"]);
@@ -860,7 +862,7 @@ IniKey1=IniValue2");
             _fileSystem.DeleteFile(_xmlFile);
 
             await WaitForChange(
-                () => config["Key"] == null,
+                () => config["Key"] is null && token.HasChanged,
                 "Notification failed for deleting XML file.");
 
             Assert.Null(config["Key"]);
@@ -870,7 +872,7 @@ IniKey1=IniValue2");
             _fileSystem.WriteFile(_jsonFile, @"{""Key"": ""JsonValue1""}");
 
             await WaitForChange(
-                () => config["Key"] == "JsonValue1",
+                () => config["Key"] == "JsonValue1" && token.HasChanged,
                 "Notification failed for re-creating JSON file.");
 
             Assert.Equal("JsonValue1", config["Key"]);
@@ -891,7 +893,7 @@ IniKey1=IniValue2");
             _fileSystem.WriteFile(_iniFile, @"Key = IniValue1");
 
             await WaitForChange(
-                () => config["Key"] == "IniValue1",
+                () => config["Key"] == "IniValue1" && token.HasChanged,
                 "Notification failed for re-creating ini file.");
 
             Assert.Equal("IniValue1", config["Key"]);
@@ -927,7 +929,8 @@ IniKey1=IniValue2");
             await WaitForChange(
                 () => config["JsonKey1"] == null
                     && config["IniKey1"] == null
-                    && config["XmlKey1"] == null,
+                    && config["XmlKey1"] == null
+                    && token.HasChanged,
                 "Reload failed after deleting files.");
 
             Assert.Null(config["JsonKey1"]);
@@ -958,7 +961,8 @@ IniKey1=IniValue2");
             await WaitForChange(
                 () => config["JsonKey1"] == "JsonValue1"
                     && config["IniKey1"] == "IniValue1"
-                    && config["XmlKey1"] == "XmlValue1",
+                    && config["XmlKey1"] == "XmlValue1"
+                    && createToken.HasChanged,
                 "Reload failed after files created.");
 
             Assert.Equal("JsonValue1", config["JsonKey1"]);
@@ -983,7 +987,8 @@ IniKey1=IniValue2");
             await WaitForChange(
                 () => config["JsonKey1"] == "JsonValue2"
                     && config["IniKey1"] == "IniValue2"
-                    && config["XmlKey1"] == "XmlValue2",
+                    && config["XmlKey1"] == "XmlValue2"
+                    && writeToken.HasChanged,
                 "Reload failed after files changed after creation.");
 
             Assert.Equal("JsonValue2", config["JsonKey1"]);
@@ -1001,7 +1006,8 @@ IniKey1=IniValue2");
             await WaitForChange(
                 () => config["JsonKey1"] == null
                     && config["IniKey1"] == null
-                    && config["XmlKey1"] == null,
+                    && config["XmlKey1"] == null
+                    && deleteToken.HasChanged,
                 "Reload failed after deleted after creation.");
 
             Assert.Null(config["JsonKey1"]);
@@ -1018,7 +1024,8 @@ IniKey1=IniValue2");
             await WaitForChange(
                 () => config["JsonKey1"] == "JsonValue1"
                     && config["IniKey1"] == "IniValue1"
-                    && config["XmlKey1"] == "XmlValue1",
+                    && config["XmlKey1"] == "XmlValue1"
+                    && createAgainToken.HasChanged,
                 "Reload failed after create-delete-create.");
 
             Assert.Equal("JsonValue1", config["JsonKey1"]);
@@ -1124,6 +1131,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135225", TestPlatforms.Wasi)]
         public async Task TouchingFileWillReloadForUserSecrets()
         {
             // A unique id keeps concurrently running assemblies from sharing the same secrets folder.
@@ -1155,7 +1163,7 @@ IniKey1=IniValue2");
                     userSecretsPath);
 
                 await WaitForChange(
-                    () => config["UserSecretKey1"] == "UserSecretValue2",
+                    () => config["UserSecretKey1"] == "UserSecretValue2" && token.HasChanged,
                     "Reload failed after create-delete-create.");
 
                 Assert.Equal("UserSecretValue2", config["UserSecretKey1"]);

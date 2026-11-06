@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Runtime.BindingFlagSupport;
-using System.Reflection.Runtime.General;
 
 using Internal.Runtime.Augments;
 
@@ -18,6 +17,12 @@ namespace System
         public static object CreateInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type type, bool nonPublic)
+            => CreateInstance(type, nonPublic, wrapExceptions: true);
+
+        [DebuggerGuidedStepThrough]
+        internal static object CreateInstance(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type, bool nonPublic, bool wrapExceptions)
         {
             ArgumentNullException.ThrowIfNull(type);
 
@@ -42,7 +47,9 @@ namespace System
 
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, type));
             }
-            object result = constructor.Invoke(Array.Empty<object>());
+            object result = constructor.Invoke(
+                wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions,
+                binder: null, parameters: null, culture: null);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -144,7 +151,7 @@ namespace System
             return result;
         }
 
-        private static void CreateInstanceCheckType(Type type)
+        internal static void CreateInstanceCheckType(Type type)
         {
             if (type is not RuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));

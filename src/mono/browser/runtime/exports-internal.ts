@@ -18,20 +18,25 @@ import { getOptions, applyOptions } from "./jiterpreter-support";
 import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
 import { loadLazyAssembly } from "./lazyLoading";
 import { loadSatelliteAssemblies } from "./satelliteAssemblies";
-import { forceDisposeProxies } from "./gc-handles";
+import { forceDisposeProxies, get_proxy_counts } from "./gc-handles";
 import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
 import { monoStringToStringUnsafe } from "./strings";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
+import { getAppSettingsFiles, getAppSettingsBytes } from "./appsettings";
 
 import { mono_wasm_dump_threads } from "./pthreads";
 
 export function export_internal (): any {
     return {
+        getAppSettingsFiles: () => getAppSettingsFiles(runtimeHelpers.config),
+        getAppSettingsBytes: (fileName: string) => getAppSettingsBytes(Module.FS, fileName),
+
         // tests
         mono_wasm_exit: (exit_code: number) => {
             Module.err("early exit " + exit_code);
         },
         forceDisposeProxies,
+        getProxyCounts: get_proxy_counts,
         mono_wasm_dump_threads: WasmEnableThreads ? mono_wasm_dump_threads : undefined,
 
         // with mono_wasm_debugger_log and mono_wasm_trace_logger

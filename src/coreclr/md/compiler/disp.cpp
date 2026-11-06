@@ -208,13 +208,13 @@ Disp::OpenRawScope(
     // Add the new RegMeta to the cache.
     IfFailGo(pMeta->AddToCache());
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
     {
         int DumpMD_impl(RegMeta *pMD);
         DumpMD_impl(pMeta);
     }
-#endif // _DEBUG
+#endif // _DEBUG && FEATURE_METADATA_PUBLIC_INTERFACES
 
 
 ErrExit:
@@ -291,13 +291,13 @@ HRESULT Disp::OpenRawScopeOnMemory(        // Return code.
     // Add the new RegMeta to the cache.
     IfFailGo(pMeta->AddToCache());
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
     {
         int DumpMD_impl(RegMeta *pMD);
         DumpMD_impl(pMeta);
     }
-#endif // _DEBUG
+#endif // _DEBUG && FEATURE_METADATA_PUBLIC_INTERFACES
 
 ErrExit:
     if (FAILED(hr))

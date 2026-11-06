@@ -4,6 +4,8 @@
     <CustomNativeMain>true</CustomNativeMain>
     <NativeLib>Shared</NativeLib>
     <UseNativeLibPrefix>false</UseNativeLibPrefix>
+    <!-- NativeAOT WebAssembly shared libraries are not supported. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWasm)' == 'true'">true</CLRTestTargetUnsupported>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>

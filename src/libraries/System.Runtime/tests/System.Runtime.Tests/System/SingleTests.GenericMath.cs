@@ -2019,6 +2019,15 @@ namespace System.Tests
             Assert.True(NumberBaseHelper<float>.IsInfinity(float.PositiveInfinity));
         }
 
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public static void IntegerClassificationTest(float value)
+        {
+            Assert.Equal(value % 1.0f == 0.0f, NumberBaseHelper<float>.IsInteger(value));
+            Assert.Equal(value % 2.0f == 0.0f, NumberBaseHelper<float>.IsEvenInteger(value));
+            Assert.Equal(float.Abs(value % 2.0f) == 1.0f, NumberBaseHelper<float>.IsOddInteger(value));
+        }
+
         [Fact]
         public static void IsIntegerTest()
         {

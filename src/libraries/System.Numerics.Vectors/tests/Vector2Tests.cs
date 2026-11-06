@@ -1816,9 +1816,76 @@ namespace System.Numerics.Tests
         [Theory]
         [InlineData(1.0f, 2.0f, 3.0f)]
         [InlineData(5.0f, 6.0f, 11.0f)]
-        public void SumTest(float x, float y, float expectedResult)
+        [InlineData(-0.0f, -0.0f, -0.0f)]
+        [InlineData(1.0f, -1.0f, +0.0f)]
+        [InlineData(float.Epsilon, -float.Epsilon, +0.0f)]
+        public void SumAndDotTest(float x, float y, float expectedResult)
         {
-            Assert.Equal(expectedResult, Vector2.Sum(Vector2.Create(x, y)));
+            Vector2 value = Vector2.Create(x, y);
+            Assert.Equal(BitConverter.SingleToInt32Bits(expectedResult), BitConverter.SingleToInt32Bits(Vector2.Sum(value)));
+            Assert.Equal(BitConverter.SingleToInt32Bits(expectedResult), BitConverter.SingleToInt32Bits(Vector2.Dot(value, Vector2.One)));
+
+            Vector2 sum = Vector2.Create(Vector2.Sum(value));
+            Vector2 dot = Vector2.Create(Vector2.Dot(value, Vector2.One));
+            for (int i = 0; i < ElementCount; i++)
+            {
+                Assert.Equal(BitConverter.SingleToInt32Bits(expectedResult), BitConverter.SingleToInt32Bits(sum[i]));
+                Assert.Equal(BitConverter.SingleToInt32Bits(expectedResult), BitConverter.SingleToInt32Bits(dot[i]));
+            }
+        }
+
+        [Theory]
+        [InlineData(float.NaN, 1.0f, float.NaN)]
+        [InlineData(1.0f, float.NaN, float.NaN)]
+        [InlineData(float.PositiveInfinity, 1.0f, float.PositiveInfinity)]
+        [InlineData(1.0f, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, 1.0f, float.NegativeInfinity)]
+        [InlineData(1.0f, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NaN)]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NaN)]
+        public void ReductionsWithNonFiniteElementsTest(float x, float y, float expectedResult)
+        {
+            Vector2 value = Vector2.Create(x, y);
+            Assert.Equal(expectedResult, Vector2.Sum(value));
+            Assert.Equal(expectedResult, Vector2.Dot(value, Vector2.One));
+
+            float lengthSquared = (x * x) + (y * y);
+            float length = float.Sqrt(lengthSquared);
+            Assert.Equal(length, value.Length());
+            Assert.Equal(lengthSquared, value.LengthSquared());
+            Assert.Equal(length, Vector2.Distance(value, Vector2.Zero));
+            Assert.Equal(lengthSquared, Vector2.DistanceSquared(value, Vector2.Zero));
+
+            Vector2 reflected = Vector2.Reflect(value, Vector2.One);
+            float reflectionScale = -(expectedResult + expectedResult);
+            Vector2 normalized = Vector2.Normalize(value);
+            for (int i = 0; i < ElementCount; i++)
+            {
+                Assert.Equal(float.MultiplyAddEstimate(reflectionScale, 1.0f, value[i]), reflected[i]);
+                Assert.Equal(value[i] / length, normalized[i]);
+            }
+        }
+
+        [Theory]
+        [InlineData(float.NaN)]
+        [InlineData(float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity)]
+        [InlineData(42.0f)]
+        public void ReductionsIgnoreUpperElementsTest(float upper)
+        {
+            // The JIT can retain the upper SIMD lanes through AsVector2 and inlined reductions.
+            // This exercises poisoned lanes when retained, but their preservation is not guaranteed.
+            Vector2 value = Vector128.Create(3.0f, 4.0f, upper, upper).AsVector2();
+            Vector2 normal = Vector128.Create(1.0f, 0.0f, upper, upper).AsVector2();
+
+            Assert.Equal(7.0f, Vector2.Sum(value));
+            Assert.Equal(25.0f, Vector2.Dot(value, value));
+            Assert.Equal(5.0f, value.Length());
+            Assert.Equal(25.0f, value.LengthSquared());
+            Assert.Equal(5.0f, Vector2.Distance(value, Vector2.Zero));
+            Assert.Equal(25.0f, Vector2.DistanceSquared(value, Vector2.Zero));
+            Assert.Equal(Vector2.Create(3.0f / 5.0f, 4.0f / 5.0f), Vector2.Normalize(value));
+            Assert.Equal(Vector2.Create(-3.0f, 4.0f), Vector2.Reflect(value, normal));
         }
 
         [Theory]

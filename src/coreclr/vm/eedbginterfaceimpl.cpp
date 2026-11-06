@@ -171,62 +171,6 @@ void* EEDbgInterfaceImpl::GetObjectFromHandle(OBJECTHANDLE handle)
     return OBJECTREFToObject(ObjectFromHandle(handle));
 }
 
-OBJECTHANDLE EEDbgInterfaceImpl::GetHandleFromObject(void *obj,
-                                              bool fStrongNewRef,
-                                              AppDomain *pAppDomain)
-{
-    CONTRACTL
-    {
-        THROWS;  // From CreateHandle
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pAppDomain));
-    }
-    CONTRACTL_END;
-
-    OBJECTHANDLE oh;
-
-    if (fStrongNewRef)
-    {
-        oh = pAppDomain->CreateStrongHandle(ObjectToOBJECTREF((Object *)obj));
-
-        LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Given objectref %p,"
-            "created strong handle %p!\n", obj, oh));
-    }
-    else
-    {
-        oh = pAppDomain->CreateLongWeakHandle( ObjectToOBJECTREF((Object *)obj));
-
-        LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Given objectref %p,"
-            "created long weak handle %p!\n", obj, oh));
-    }
-
-    return oh;
-}
-
-void EEDbgInterfaceImpl::DbgDestroyHandle(OBJECTHANDLE oh,
-                                          bool fStrongNewRef)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Destroyed given handle %p,"
-        "fStrong: 0x%x!\n", oh, fStrongNewRef));
-
-    if (fStrongNewRef)
-    {
-        DestroyStrongHandle(oh);
-    }
-    else
-    {
-        DestroyLongWeakHandle(oh);
-    }
-}
-
-
 OBJECTHANDLE EEDbgInterfaceImpl::GetThreadException(Thread *pThread)
 {
     CONTRACTL
@@ -703,91 +647,6 @@ MethodDesc *EEDbgInterfaceImpl::FindLoadedMethodRefOrDef(Module* pModule,
     return pModule->LookupMethodDef(memberRef);
 }
 
-MethodDesc *EEDbgInterfaceImpl::LoadMethodDef(Module* pModule,
-                                              mdMethodDef methodDef,
-                                              DWORD numGenericArgs,
-                                              TypeHandle *pGenericArgs,
-                                              TypeHandle *pOwnerType)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(CheckPointer(pModule));
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(TypeFromToken(methodDef) == mdtMethodDef);
-
-    // The generic class and method args are sent as one array
-    // by the debugger.  We now split this into two by finding out how
-    // many generic args are for the class and how many for the
-    // method.  The actual final checks are done in MemberLoader::GetMethodDescFromMethodDef.
-
-    DWORD numGenericClassArgs = 0;
-    TypeHandle *pGenericClassArgs = NULL;
-    DWORD nGenericMethodArgs = 0;
-    TypeHandle *pGenericMethodArgs = NULL;
-    mdTypeDef typeDef = 0;
-
-    TypeHandle thOwner;
-
-    BOOL forceRemotable = FALSE;
-    if (numGenericArgs != 0)
-    {
-        HRESULT hr = pModule->GetMDImport()->GetParentToken(methodDef, &typeDef);
-        if (FAILED(hr))
-            COMPlusThrowHR(E_INVALIDARG);
-
-        TypeHandle thClass = LoadClass(pModule, typeDef);
-        _ASSERTE(!thClass.IsNull());
-
-        numGenericClassArgs = thClass.GetNumGenericArgs();
-        if (numGenericArgs < numGenericClassArgs)
-        {
-            COMPlusThrowHR(COR_E_TARGETPARAMCOUNT);
-        }
-        pGenericClassArgs = (numGenericClassArgs > 0) ? pGenericArgs : NULL;
-        nGenericMethodArgs = (numGenericArgs >= numGenericClassArgs) ? (numGenericArgs - numGenericClassArgs) : 0;
-        pGenericMethodArgs = (nGenericMethodArgs > 0) ? (pGenericArgs + numGenericClassArgs) : NULL;
-
-#ifdef FEATURE_COMINTEROP
-        if (numGenericClassArgs > 0)
-        {
-            thOwner = ClassLoader::LoadGenericInstantiationThrowing(pModule, typeDef, Instantiation(pGenericClassArgs, numGenericClassArgs));
-            forceRemotable = false;
-        }
-#endif // FEATURE_COMINTEROP
-    }
-
-    MethodDesc *pRes = MemberLoader::GetMethodDescFromMethodDef(pModule,
-                                                                methodDef,
-                                                                Instantiation(pGenericClassArgs, numGenericClassArgs),
-                                                                Instantiation(pGenericMethodArgs, nGenericMethodArgs),
-                                                                forceRemotable);
-
-    // The ownerType is extra information that augments the specification of an interface MD.
-    // It is only needed if generics code sharing is supported, because otherwise MDs are
-    // fully self-describing.
-    if (pOwnerType != NULL)
-    {
-        if (numGenericClassArgs != 0)
-        {
-            if (thOwner.IsNull())
-                *pOwnerType = ClassLoader::LoadGenericInstantiationThrowing(pModule, typeDef, Instantiation(pGenericClassArgs, numGenericClassArgs));
-            else
-                *pOwnerType = thOwner;
-        }
-        else
-        {
-            *pOwnerType = TypeHandle(pRes->GetMethodTable());
-        }
-    }
-    return pRes;
-
-}
-
-
 TypeHandle EEDbgInterfaceImpl::FindLoadedClass(Module *pModule,
                                              mdTypeDef classToken)
 {
@@ -880,6 +739,7 @@ TypeHandle EEDbgInterfaceImpl::LoadClass(Module *pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -899,6 +759,7 @@ TypeHandle EEDbgInterfaceImpl::LoadInstantiation(Module *pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -914,6 +775,7 @@ TypeHandle EEDbgInterfaceImpl::LoadArrayType(CorElementType et,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -930,6 +792,7 @@ TypeHandle EEDbgInterfaceImpl::LoadPointerOrByrefType(CorElementType et,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -943,6 +806,7 @@ TypeHandle EEDbgInterfaceImpl::LoadFnptrType(TypeHandle *inst,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -956,6 +820,7 @@ TypeHandle EEDbgInterfaceImpl::LoadElementType(CorElementType et)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1305,6 +1170,7 @@ HRESULT EEDbgInterfaceImpl::SetIPFromSrcToDst(Thread *pThread,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

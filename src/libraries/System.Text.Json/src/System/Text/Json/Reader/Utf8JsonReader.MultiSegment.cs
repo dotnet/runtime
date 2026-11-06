@@ -23,7 +23,7 @@ namespace System.Text.Json
         /// </remarks>
         public Utf8JsonReader(ReadOnlySequence<byte> jsonData, bool isFinalBlock, JsonReaderState state)
         {
-            _buffer = jsonData.First.Span;
+            _buffer = jsonData.FirstSpan;
 
             _isFinalBlock = isFinalBlock;
             _isInputSequence = true;
@@ -634,20 +634,7 @@ namespace System.Text.Json
         {
             Debug.Assert(span.Length > 0);
 
-            int indexOfFirstMismatch;
-
-#if NET
-            indexOfFirstMismatch = span.CommonPrefixLength(literal);
-#else
-            int minLength = Math.Min(span.Length, literal.Length);
-            for (indexOfFirstMismatch = 0; indexOfFirstMismatch < minLength; indexOfFirstMismatch++)
-            {
-                if (span[indexOfFirstMismatch] != literal[indexOfFirstMismatch])
-                {
-                    break;
-                }
-            }
-#endif
+            int indexOfFirstMismatch = span.CommonPrefixLength(literal);
 
             Debug.Assert(indexOfFirstMismatch >= 0 && indexOfFirstMismatch < literal.Length);
 
@@ -855,8 +842,7 @@ namespace System.Text.Json
                                 }
                                 else if (nextCharEscaped)
                                 {
-                                    int index = JsonConstants.EscapableChars.IndexOf(currentByte);
-                                    if (index == -1)
+                                    if (!JsonConstants.EscapableChars.Contains(currentByte))
                                     {
                                         RollBackState(rollBackState, isError: true);
                                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAfterEscapeWithinString, currentByte);
@@ -992,8 +978,7 @@ namespace System.Text.Json
                     }
                     else if (nextCharEscaped)
                     {
-                        int index = JsonConstants.EscapableChars.IndexOf(currentByte);
-                        if (index == -1)
+                        if (!JsonConstants.EscapableChars.Contains(currentByte))
                         {
                             RollBackState(rollBackState, isError: true);
                             ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAfterEscapeWithinString, currentByte);
@@ -1174,7 +1159,7 @@ namespace System.Text.Json
 
                 Debug.Assert(result == ConsumeNumberResult.OperationIncomplete);
                 nextByte = data[i];
-                if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
+                if (nextByte is not ((byte)'.' or (byte)'E' or (byte)'e'))
                 {
                     RollBackState(rollBackState, isError: true);
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
@@ -1200,7 +1185,7 @@ namespace System.Text.Json
 
                 Debug.Assert(result == ConsumeNumberResult.OperationIncomplete);
                 nextByte = data[i];
-                if (nextByte != 'E' && nextByte != 'e')
+                if (nextByte is not ((byte)'E' or (byte)'e'))
                 {
                     RollBackState(rollBackState, isError: true);
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedNextDigitEValueNotFound, nextByte);
@@ -1341,7 +1326,7 @@ namespace System.Text.Json
                 }
             }
             nextByte = data[i];
-            if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
+            if (nextByte is not ((byte)'.' or (byte)'E' or (byte)'e'))
             {
                 RollBackState(rollBackState, isError: true);
                 ThrowHelper.ThrowJsonReaderException(ref this,
@@ -1490,7 +1475,7 @@ namespace System.Text.Json
             }
 
             byte nextByte = data[i];
-            if (nextByte == '+' || nextByte == '-')
+            if (nextByte is (byte)'+' or (byte)'-')
             {
                 i++;
                 _bytePositionInLine++;
@@ -2208,7 +2193,7 @@ namespace System.Text.Json
                     }
                     else
                     {
-                        ValueSpan = commentSequence.First.Span;
+                        ValueSpan = commentSequence.FirstSpan;
                     }
 
                     if (_tokenType != JsonTokenType.Comment)
@@ -2264,7 +2249,7 @@ namespace System.Text.Json
             }
 
             byte marker = localBuffer[0];
-            if (marker != JsonConstants.Slash && marker != JsonConstants.Asterisk)
+            if (marker is not (JsonConstants.Slash or JsonConstants.Asterisk))
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAtStartOfComment, marker);
             }

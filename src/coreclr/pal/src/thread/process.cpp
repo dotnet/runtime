@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     process.cpp
 
 Abstract:
-
     Implementation of process object and functions related to processes.
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -28,7 +24,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/debug.h"
 #include "pal/utils.h"
 #include "pal/environ.h"
-#include "pal/virtual.h"
 #include "pal/stackstring.hpp"
 #include "pal/signal.hpp"
 
@@ -222,11 +217,6 @@ struct UnambiguousProcessDescriptor
     DWORD m_processId;
 };
 #pragma pack(pop)
-
-static
-DWORD
-StartupHelperThread(
-    LPVOID p);
 
 static
 BOOL
@@ -580,7 +570,6 @@ static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
 #endif
 
 static const char *const TwoWayNamedPipePrefix = "clr-debug-pipe";
-static const char* IpcNameFormat = "%s-%d-%llu-%s";
 
 #ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
 static const char* RuntimeStartupPipeName = "st";
@@ -1164,10 +1153,10 @@ PAL_GetTransportName(
     *name = '\0';
     DWORD dwRetVal = 0;
     UINT64 disambiguationKey = 0;
-    PathCharString formatBufferString;
+    PathCharString directoryString;
     BOOL ret = GetProcessIdDisambiguationKey(id, &disambiguationKey);
-    char *formatBuffer = formatBufferString.OpenStringBuffer(MAX_TRANSPORT_NAME_LENGTH-1);
-    if (formatBuffer == nullptr)
+    char *directoryBuffer = directoryString.OpenStringBuffer(MAX_TRANSPORT_NAME_LENGTH-1);
+    if (directoryBuffer == nullptr)
     {
         ERROR("Out Of Memory");
         return;
@@ -1191,14 +1180,14 @@ PAL_GetTransportName(
         // In sandbox, all IPC files (locks, pipes) should be written to the application group
         // container. The path returned by GetTempPathA will be unique for each process and cannot
         // be used for IPC between two different processes
-        if (!GetApplicationContainerFolder(formatBufferString, applicationGroupId, applicationGroupIdLength))
+        if (!GetApplicationContainerFolder(directoryString, applicationGroupId, applicationGroupIdLength))
         {
             ERROR("Out Of Memory");
             return;
         }
 
         // Verify the size of the path won't exceed maximum allowed size
-        if (formatBufferString.GetCount() >= MAX_TRANSPORT_NAME_LENGTH)
+        if (directoryString.GetCount() >= MAX_TRANSPORT_NAME_LENGTH)
         {
             ERROR("GetApplicationContainerFolder returned a path that was larger than MAX_TRANSPORT_NAME_LENGTH");
             return;
@@ -1208,27 +1197,28 @@ PAL_GetTransportName(
 #endif // __APPLE__
     {
         // Get a temp file location
-        dwRetVal = ::GetTempPathA(MAX_TRANSPORT_NAME_LENGTH, formatBuffer);
+        dwRetVal = ::GetTempPathA(MAX_TRANSPORT_NAME_LENGTH, directoryBuffer);
         if (dwRetVal == 0)
         {
             ERROR("GetTempPath failed (0x%08x)", ::GetLastError());
             return;
         }
-        if (dwRetVal > MAX_TRANSPORT_NAME_LENGTH)
+        if (dwRetVal >= MAX_TRANSPORT_NAME_LENGTH)
         {
             ERROR("GetTempPath returned a path that was larger than MAX_TRANSPORT_NAME_LENGTH");
             return;
         }
+        directoryString.CloseBuffer(dwRetVal);
     }
 
-    if (strncat_s(formatBuffer, MAX_TRANSPORT_NAME_LENGTH, IpcNameFormat, strlen(IpcNameFormat)) == STRUNCATE)
+    int chars = snprintf(name, MAX_TRANSPORT_NAME_LENGTH, "%s%s-%d-%llu-%s",
+                         directoryString.GetString(), prefix, (int)id, (unsigned long long)disambiguationKey, suffix);
+    if (chars < 0 || (unsigned int)chars >= MAX_TRANSPORT_NAME_LENGTH)
     {
         ERROR("TransportPipeName was larger than MAX_TRANSPORT_NAME_LENGTH");
+        *name = '\0';
         return;
     }
-
-    int chars = snprintf(name, MAX_TRANSPORT_NAME_LENGTH, formatBuffer, prefix, id, disambiguationKey, suffix);
-    _ASSERTE(chars > 0 && (unsigned int)chars < MAX_TRANSPORT_NAME_LENGTH);
 }
 
 /*++
@@ -1348,7 +1338,6 @@ BOOL
 PROCBuildCreateDumpCommandLine(
     const char* argv[],
     char** pprogram,
-    char** ppidarg,
     const char* dumpName,
     const char* logFileName,
     INT dumpType,
@@ -1379,11 +1368,6 @@ PROCBuildCreateDumpCommandLine(
         program[0] = '\0';
     }
     if (strcat_s(program, programLen, DumpGeneratorName) != SAFECRT_SUCCESS)
-    {
-        return FALSE;
-    }
-    *ppidarg = PROCFormatInt(gPID);
-    if (*ppidarg == nullptr)
     {
         return FALSE;
     }
@@ -1445,8 +1429,6 @@ PROCBuildCreateDumpCommandLine(
         argv[argc++] = "--logtofile";
         argv[argc++] = logFileName;
     }
-
-    argv[argc++] = *ppidarg;
 
     argv[argc] = nullptr;
     _ASSERTE(argc < MAX_ARGV_ENTRIES);
@@ -1526,7 +1508,7 @@ PROCLaunchCreateDump(
         {
             fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
             close(child_write_pipe);
-            exit(-1);
+            _exit(EXIT_FAILURE);
         }
 
         // Only dup the child's stderr if there is error buffer
@@ -1558,7 +1540,7 @@ PROCLaunchCreateDump(
             if (execve(argv[0], (char**)argv, palEnvironment) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
-                exit(-1);
+                _exit(EXIT_FAILURE);
             }
         }
     }
@@ -1728,8 +1710,7 @@ PROCAbortInitialize()
         }
 
         char* program = nullptr;
-        char* pidarg = nullptr;
-        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dumpName, logFilePath, dumpType, flags))
+        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, dumpName, logFilePath, dumpType, flags))
         {
             return FALSE;
         }
@@ -1778,14 +1759,12 @@ PAL_GenerateCoreDump(
         dumpName = nullptr;
     }
     char* program = nullptr;
-    char* pidarg = nullptr;
-    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, nullptr, dumpType, flags);
+    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, dumpName, nullptr, dumpType, flags);
     if (result)
     {
         result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer, CrashDumpSerialize_None);
     }
     free(program);
-    free(pidarg);
     return result;
 }
 
@@ -2085,17 +2064,6 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     abort();
 }
 
-#define FATAL_ASSERT(e, msg) \
-    do \
-    { \
-        if (!(e)) \
-        { \
-            fprintf(stderr, "FATAL ERROR: " msg); \
-            PROCAbort(); \
-        } \
-    } \
-    while(0)
-
 /*++
 Function:
   CreateInitialProcessAndThreadObjects
@@ -2203,7 +2171,6 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
     if(locked && PALIsInitialized())
     {
         PROCNotifyProcessShutdown();
-        PALCommonCleanup();
     }
 }
 

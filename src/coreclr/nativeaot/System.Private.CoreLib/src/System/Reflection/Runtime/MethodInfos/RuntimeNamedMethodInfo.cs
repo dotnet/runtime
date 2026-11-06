@@ -6,12 +6,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.InteropServices;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
@@ -71,20 +70,9 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                foreach (CustomAttributeData cad in _common.TrueCustomAttributes)
-                {
-                    yield return cad;
-                }
+        internal sealed override MetadataReader GetMetadataReader() => _common.GetMetadataReader();
 
-                MethodImplAttributes implAttributes = _common.MethodImplementationFlags;
-                if (0 != (implAttributes & MethodImplAttributes.PreserveSig))
-                    yield return new RuntimePseudoCustomAttributeData(typeof(PreserveSigAttribute), null);
-            }
-        }
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _common.GetCustomAttributeHandles();
 
         public sealed override MethodInfo GetGenericMethodDefinition()
         {
@@ -240,9 +228,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter)
+        internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod)
         {
-            return RuntimeMethodHelpers.GetRuntimeParameters(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters, out returnParameter);
+            return RuntimeParameterInfo.GetParameters(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
+        }
+
+        internal sealed override RuntimeParameterInfo GetRuntimeReturnParameter(RuntimeMethodInfo contextMethod)
+        {
+            return RuntimeParameterInfo.GetReturnParameter(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
         }
 
         internal sealed override RuntimeTypeInfo RuntimeDeclaringType

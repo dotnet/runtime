@@ -1,14 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback, SymbolsAsset, AssetBehaviors, VfsAsset } from "./types";
+import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback, SymbolsAsset, AssetBehaviors } from "./types";
 
-import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetDiagnosticsExports, dotnetNativeBrowserExports, dotnetApi } from "./cross-module";
+import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, dotnetDiagnosticsExports, dotnetNativeBrowserExports, dotnetApi } from "./cross-module";
 import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, browserVirtualAppBase } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
 import { fetchLike, responseLike } from "./polyfills";
 import { loaderConfig } from "./config";
+import { loaderCallbacks } from "./callbacks";
+import type { AppSettings } from "./types";
+import { storeAppSettingsBytes } from "../appsettings";
 
 let throttlingPCS: PromiseCompletionSource<void> | undefined;
 let currentParallelDownloads = 0;
@@ -103,6 +106,8 @@ export function fetchMainWasm(asset: WasmAsset): Promise<Response> {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
     assetInternal.behavior = "dotnetwasm";
+    // Assembly instantiation holds download slots until the main Wasm module supplies memory.
+    assetInternal.priority = true;
     if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
     mainWasmAsset = asset;
     wasmBinaryPromise = loadResource(assetInternal);
@@ -218,7 +223,7 @@ export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
     }
     if (bytes) {
         await nativeModulePromiseController.promise;
-        dotnetBrowserHostExports.registerPdbBytes(bytes, assetInternal.virtualPath);
+        dotnetBrowserHostExports.registerPdbBytes(bytes, assetInternal.virtualPath, assetInternal.shortName!);
     }
 }
 
@@ -238,6 +243,28 @@ export async function fetchVfs(asset: AssemblyAsset): Promise<void> {
     if (bytes) {
         await nativeModulePromiseController.promise;
         dotnetBrowserHostExports.installVfsFile(bytes, asset);
+    }
+}
+
+export async function fetchAppSettings(asset: AppSettings): Promise<void> {
+    const assetInternal: AssetEntryInternal = Object.assign(asset, {
+        behavior: "appsettings" as const,
+        cache: "no-cache" as const,
+        useCredentials: true,
+    });
+    try {
+        totalAssetsToDownload++;
+        asset.resolvedUrl ??= locateFile(asset.name);
+        const bytes = await fetchBytes(assetInternal);
+        if (bytes) {
+            storeAppSettingsBytes(asset.virtualPath, bytes);
+            if (asset.loadIntoVfs) {
+                await nativeModulePromiseController.promise;
+                dotnetBrowserHostExports.installVfsFile(bytes.slice(), asset);
+            }
+        }
+    } finally {
+        onDownloadedAsset(assetInternal);
     }
 }
 
@@ -391,7 +418,8 @@ function loadResource(asset: AssetEntryInternal): Promise<Response> {
         // no need to retry or throttle local file access
         return loadResourceFetch(asset);
     }
-    if (!loaderConfig.enableDownloadRetry || noRetry[asset.behavior]) {
+    const retryCachedWasm = asset.behavior === "dotnetwasm" && asset.cache === "force-cache";
+    if (!loaderConfig.enableDownloadRetry || (noRetry[asset.behavior] && !retryCachedWasm)) {
         // only throttle, no retry
         return loadResourceThrottle(asset);
     }
@@ -403,8 +431,13 @@ const noRetryStatusCodes = new Set<number>([400, 401, 403, 404, 405, 406, 409, 4
 async function loadResourceRetry(asset: AssetEntryInternal): Promise<Response> {
     let response: Response;
     response = await loadResourceAttempt();
-    if (response.ok || asset.isOptional || noRetryStatusCodes.has(response.status)) {
+    const retryWithCacheReload = asset.cache === "force-cache";
+    if (response.ok || asset.isOptional || (!retryWithCacheReload && noRetryStatusCodes.has(response.status))) {
         return response;
+    }
+    if (retryWithCacheReload) {
+        // A cached failure is not authoritative, even for an otherwise terminal status.
+        asset.cache = "reload";
     }
     // second attempt only after all first attempts are queued
     await allDownloadsQueuedPCS.promise;
@@ -458,10 +491,21 @@ async function loadResourceThrottle(asset: AssetEntryInternal): Promise<Response
         const response = await responsePromise;
         dotnetAssert.check(response, "Bad response in loadResourceThrottle");
 
-        if (!noBuffer[asset.behavior]) {
-            asset.buffer = await response.arrayBuffer();
+        const checkEmpty = response.ok && (asset.cache === "force-cache" || asset.cache === "reload") &&
+            asset.behavior !== "vfs" && asset.behavior !== "symbols";
+        if (checkEmpty && response.headers.get("Content-Length") === "0") {
+            throw new Error(`Failed to load resource '${asset.name}': empty response`);
         }
-        if (!leaveAfterInstantiation[asset.behavior]) {
+        if (!noBuffer[asset.behavior]) {
+            const buffer = await response.arrayBuffer();
+            if (checkEmpty && buffer.byteLength === 0) {
+                throw new Error(`Failed to load resource '${asset.name}': empty response`);
+            }
+            if (response.ok) {
+                asset.buffer = buffer;
+            }
+        }
+        if (!response.ok || !leaveAfterInstantiation[asset.behavior]) {
             finishThrottling(asset);
         }
         return response;
@@ -515,7 +559,7 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
         const customLoadResult = loadBootResourceCallback(blazorType, asset.name, asset.resolvedUrl!, asset.hash ?? "", asset.behavior);
         if (typeof customLoadResult === "string") {
             asset.resolvedUrl = makeURLAbsoluteWithApplicationBase(customLoadResult);
-        } else if (typeof customLoadResult === "object") {
+        } else if (customLoadResult !== null && typeof customLoadResult === "object") {
             return customLoadResult as any;
         }
     }
@@ -551,9 +595,7 @@ function onDownloadedAsset(asset: AssetEntryInternal): void {
         finishThrottling(asset);
     }
     ++downloadedAssetsCount;
-    if (Module.onDownloadResourceProgress) {
-        Module.onDownloadResourceProgress(downloadedAssetsCount, totalAssetsToDownload);
-    }
+    loaderCallbacks.downloadResourceProgress?.(downloadedAssetsCount, totalAssetsToDownload);
     // release memory
     asset.buffer = null!;
     asset.pendingDownload = undefined;
@@ -565,7 +607,11 @@ export function verifyAllAssetsDownloaded(): void {
 
 function normalizeVirtualPath(asset: AssetEntryInternal): void {
     dotnetAssert.check(asset.virtualPath, "Asset must have virtualPath");
-    asset.virtualPath = asset.virtualPath!.replace(/\.wasm$/, ".dll");
+    // Component stubs probe for the composite owner by its crossgen2 name (<entry>.r2r.wasm), so it keeps
+    // its .wasm virtual path; it is not a managed assembly (see initializeCoreCLR's TPA).
+    if (!asset.isCompositeImage) {
+        asset.virtualPath = asset.virtualPath!.replace(/\.wasm$/, ".dll");
+    }
     asset.virtualPath = asset.virtualPath.startsWith("/")
         ? asset.virtualPath
         : asset.culture
@@ -582,6 +628,7 @@ const behaviorToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType
     "pdb": "pdb",
     "icu": "globalization",
     "vfs": "configuration",
+    "appsettings": "configuration",
     "manifest": "manifest",
     "symbols": "pdb",
     "dotnetwasm": "dotnetwasm",
@@ -597,6 +644,7 @@ const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
     "pdb": "application/octet-stream",
     "icu": "application/octet-stream",
     "vfs": "application/octet-stream",
+    "appsettings": "application/json",
     "manifest": "application/json",
     "symbols": "text/plain; charset=utf-8",
     "dotnetwasm": "application/wasm",
@@ -621,7 +669,7 @@ const leaveAfterInstantiation: { [key: string]: number | undefined } = {
 
 // Fetches all data resources into the browser HTTP cache without loading them into memory.
 // JS modules get <link rel="prefetch"> hints instead of fetch() since they use import().
-export async function prefetchAllResources(extraVfs?: VfsAsset[]): Promise<void> {
+export async function prefetchAllResources(appsettings?: AppSettings[]): Promise<void> {
     const resources = loaderConfig.resources;
     if (!resources) return;
 
@@ -642,7 +690,7 @@ export async function prefetchAllResources(extraVfs?: VfsAsset[]): Promise<void>
     if (resources.coreAssembly) resources.coreAssembly.forEach(a => enqueueAsset(a, "assembly"));
     if (resources.assembly) resources.assembly.forEach(a => enqueueAsset(a, "assembly"));
     if (resources.vfs) resources.vfs.forEach(a => enqueueAsset(a, "vfs"));
-    if (extraVfs) extraVfs.forEach(a => enqueueAsset(a, "vfs"));
+    if (appsettings) appsettings.forEach(a => enqueueAsset(a, "appsettings"));
     if (resources.icu) resources.icu.forEach(a => enqueueAsset(a, "icu"));
     if (resources.wasmNative) resources.wasmNative.forEach(a => enqueueAsset(a, "dotnetwasm"));
     if (resources.corePdb) resources.corePdb.forEach(a => enqueueAsset(a, "pdb"));
@@ -727,6 +775,10 @@ async function prefetchUrl(url: string, hash?: string | null | "", name?: string
         }
     }
     const fetchOptions: RequestInit = {};
+    if (behavior === "appsettings") {
+        fetchOptions.cache = "no-cache";
+        fetchOptions.credentials = "include";
+    }
     if (!loaderConfig.disableNoCacheFetch) {
         fetchOptions.cache = "no-cache";
     }

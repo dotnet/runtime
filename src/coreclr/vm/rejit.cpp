@@ -132,6 +132,7 @@
 // ======================================================================================
 
 #include "common.h"
+#include <minipal/time.h>
 #include "rejit.h"
 #include "method.hpp"
 #include "eeconfig.h"
@@ -985,6 +986,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
         HRESULT hr = S_OK;
         ReleaseHolder<ProfilerFunctionControl> pFuncControl;
 
+#ifdef PROFILING_SUPPORTED
         if (ilCodeVersion.GetEnableReJITCallback())
         {
             // Here's where we give a chance for the rejit requestor to
@@ -1010,6 +1012,9 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 END_PROFILER_CALLBACK();
             }
         }
+#else
+        _ASSERTE(!ilCodeVersion.GetEnableReJITCallback());
+#endif // PROFILING_SUPPORTED
 
         if (!ilCodeVersion.GetEnableReJITCallback() || FAILED(hr))
         {
@@ -1092,7 +1097,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                     break; // the other thread got the parameters successfully, go race to rejit
                 }
             }
-            ClrSleepEx(1, FALSE);
+            minipal_sleep(1);
         }
     }
 

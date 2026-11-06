@@ -21,8 +21,5 @@ public class StaticVirtual
     static async Task CallDoTask<T>() where T : IHaveStaticVirtuals => await T.DoTask();
 
     [Fact]
-    public static void TestEntryPoint()
-    {
-        CallDoTask<ClassWithStaticVirtuals>().Wait();
-    }
+    public static Task TestEntryPoint() => CallDoTask<ClassWithStaticVirtuals>();
 }

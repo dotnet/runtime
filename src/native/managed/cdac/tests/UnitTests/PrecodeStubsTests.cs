@@ -541,4 +541,5 @@ public class PrecodeStubsTests
 
         Assert.Equal(unreadableAddress, actual);
     }
+
 }

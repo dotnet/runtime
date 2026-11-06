@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Unicode;
@@ -12,6 +13,7 @@ namespace System.Numerics
 {
     /// <summary>Defines the base of other number types.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
+    [SuppressReadyToRunCanonicalRooting]
     public interface INumberBase<TSelf>
         : IAdditionOperators<TSelf, TSelf, TSelf>,
           IAdditiveIdentity<TSelf, TSelf>,

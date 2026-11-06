@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 /*
- *
  * EE to Debugger Interface Implementation
- *
  */
+
 #ifndef _eedbginterfaceimpl_h_
 #define _eedbginterfaceimpl_h_
 
@@ -79,13 +77,6 @@ public:
 
     void* GetObjectFromHandle(OBJECTHANDLE handle);
 
-    OBJECTHANDLE GetHandleFromObject(void *obj,
-                              bool fStrongNewRef,
-                              AppDomain *pAppDomain);
-
-    void DbgDestroyHandle(OBJECTHANDLE oh,
-                          bool fStrongNewRef);
-
     OBJECTHANDLE GetThreadException(Thread *pThread);
 
     bool IsThreadExceptionNull(Thread *pThread);
@@ -156,12 +147,6 @@ public:
 
     MethodDesc *FindLoadedMethodRefOrDef(Module* pModule,
                                           mdToken memberRef);
-
-    MethodDesc *LoadMethodDef(Module* pModule,
-                              mdMethodDef methodDef,
-                              DWORD numGenericArgs = 0,
-                              TypeHandle *pGenericArgs = NULL,
-                              TypeHandle *pOwnerTypeRes = NULL);
 
     TypeHandle FindLoadedClass(Module *pModule,
                              mdTypeDef classToken);

@@ -13,7 +13,8 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
         public DefaultActivityListenerConfigurationFactory(IEnumerable<TracingConfiguration> configurations)
         {
-            _configurations = configurations ?? throw new ArgumentNullException(nameof(configurations));
+            ArgumentNullException.ThrowIfNull(configurations);
+            _configurations = configurations;
         }
 
         public override IConfiguration GetConfiguration(string listenerName)

@@ -10,19 +10,10 @@ using Xunit;
 public class ValueTaskSourceAndStubs
 {
     [Fact]
-    public static void EntryPoint()
+    public static async Task EntryPoint()
     {
-        SynchronizationContext? original = SynchronizationContext.Current;
         SynchronizationContext.SetSynchronizationContext(new MySyncContext());
-
-        try
-        {
-            new ValueTaskSourceAndStubs().TestAsync(new C()).GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(original);
-        }
+        await new ValueTaskSourceAndStubs().TestAsync(new C());
     }
 
     private async Task TestAsync(IFace i)

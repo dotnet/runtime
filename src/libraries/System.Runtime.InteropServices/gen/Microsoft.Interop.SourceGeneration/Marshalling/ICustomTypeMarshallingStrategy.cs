@@ -1,9 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-
 namespace Microsoft.Interop
 {
     /// <summary>
@@ -17,25 +14,25 @@ namespace Microsoft.Interop
 
         ManagedTypeInfo NativeType { get; }
 
-        IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(StubIdentifierContext context);
+        void GenerateCleanupCallerAllocatedResourcesStatements(IndentedTextWriter writer, StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(StubIdentifierContext context);
+        void GenerateCleanupCalleeAllocatedResourcesStatements(IndentedTextWriter writer, StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(StubIdentifierContext context);
+        void GenerateGuaranteedUnmarshalStatements(IndentedTextWriter writer, StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GenerateMarshalStatements(StubIdentifierContext context);
+        void GenerateMarshalStatements(IndentedTextWriter writer, StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(StubIdentifierContext context);
+        void GenerateNotifyForSuccessfulInvokeStatements(IndentedTextWriter writer, StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(StubIdentifierContext context);
+        void GeneratePinnedMarshalStatements(IndentedTextWriter writer, StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GeneratePinStatements(StubIdentifierContext context);
+        void GeneratePinStatements(IndentedTextWriter writer, StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GenerateSetupStatements(StubIdentifierContext context);
+        void GenerateSetupStatements(IndentedTextWriter writer, StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(StubIdentifierContext context);
+        void GenerateUnmarshalCaptureStatements(IndentedTextWriter writer, StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GenerateUnmarshalStatements(StubIdentifierContext context);
+        void GenerateUnmarshalStatements(IndentedTextWriter writer, StubIdentifierContext context);
 
         bool UsesNativeIdentifier { get; }
     }

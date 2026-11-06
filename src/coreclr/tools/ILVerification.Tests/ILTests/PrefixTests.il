@@ -14,6 +14,11 @@
     .method public hidebysig newslot abstract virtual static void StaticAbstractMethod() cil managed
     {
     }
+
+    .method public hidebysig newslot virtual static void StaticVirtualMethod() cil managed
+    {
+        ret
+    }
 }
 
 .class public sequential ansi sealed beforefieldinit ImplStruct
@@ -120,6 +125,42 @@
         ret
     }
 
+    .method static public hidebysig void ConstrainedLdftn.StaticAbstractDelegateOnTypeParam_Valid<(IStaticInterface) T>() cil managed
+    {
+        ldnull
+        constrained. !!T
+        ldftn   void IStaticInterface::StaticAbstractMethod()
+        newobj  instance void [System.Runtime]System.Action::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.StaticVirtualDelegateOnTypeParam_Valid<(IStaticInterface) T>() cil managed
+    {
+        ldnull
+        constrained. !!T
+        ldftn   void IStaticInterface::StaticVirtualMethod()
+        newobj  instance void [System.Runtime]System.Action::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Ldftn.StaticVirtualDelegateWithoutConstrained_Valid() cil managed
+    {
+        ldnull
+        ldftn   void IStaticInterface::StaticVirtualMethod()
+        newobj  instance void [System.Runtime]System.Action::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Ldftn.StaticAbstractWithoutConstrained_Invalid_CallAbstract() cil managed
+    {
+        ldftn   void IStaticInterface::StaticAbstractMethod()
+        pop
+        ret
+    }
+
     .method static public hidebysig void Readonly.Ldelema_Valid() cil managed 
     {
         .locals init (int32[] V_0)
@@ -192,6 +233,24 @@
         ldloc.0
         volatile.
         unaligned. 4
+        ldind.i4
+        stloc.1
+        ldloc.0
+        unaligned. 1
+        ldind.i4
+        stloc.1
+        ldloc.0
+        unaligned. 2
+        ldind.i4
+        stloc.1
+        ret
+    }
+
+    .method static public hidebysig void Prefix.InvalidUnalignedAlignment_Invalid_UnalignedAlignment() cil managed
+    {
+        .locals init (int32& V_0, int32 V_1)
+        ldloc.0
+        unaligned. 3
         ldind.i4
         stloc.1
         ret

@@ -263,6 +263,9 @@ namespace System.Text.Json
             Debug.Assert(jsonTypeInfo.IsConfigured);
 
             JsonWriterOptions writerOptions = jsonTypeInfo.Options.GetWriterOptionsForJsonLines();
+            int flushThreshold = (int)(FlushThreshold * (utf8Json is PooledByteBufferWriter bufferWriter
+                ? bufferWriter.Capacity
+                : 4 * PipeOptions.Default.MinimumSegmentSize));
             var writer = new Utf8JsonWriter(utf8Json, writerOptions);
 
             try
@@ -276,20 +279,7 @@ namespace System.Text.Json
                     }
 
                     first = false;
-                    jsonTypeInfo.Serialize(writer, item);
-
-                    // The JSON Lines spec mandates a single line-feed character as the line separator,
-                    // independently of any platform-specific or user-configured newline preference.
-                    Span<byte> dest = utf8Json.GetSpan(1);
-                    dest[0] = (byte)'\n';
-                    utf8Json.Advance(1);
-
-                    FlushResult result = await utf8Json.FlushAsync(cancellationToken).ConfigureAwait(false);
-
-                    if (result.IsCanceled)
-                    {
-                        ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
-                    }
+                    FlushResult result = await jsonTypeInfo.SerializeAsync(utf8Json, item, flushThreshold, cancellationToken, jsonLineWriter: writer).ConfigureAwait(false);
 
                     if (result.IsCompleted)
                     {

@@ -79,6 +79,15 @@ namespace System.Reflection.Context.Projection
             return base.IsDefined(attributeType, inherit);
         }
 
+        public override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            ArgumentNullException.ThrowIfNull(other);
+
+            return other is ProjectingEventInfo otherEvent &&
+                   Projector == otherEvent.Projector &&
+                   UnderlyingEvent.HasSameMetadataDefinitionAs(otherEvent.UnderlyingEvent);
+        }
+
         public override bool Equals([NotNullWhen(true)] object? o)
         {
             return o is ProjectingEventInfo other &&
