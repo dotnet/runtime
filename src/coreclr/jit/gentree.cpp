@@ -1236,10 +1236,6 @@ CallArgs::CallArgs()
     : m_head(nullptr)
     , m_lateHead(nullptr)
     , m_argsStackSize(0)
-#ifdef UNIX_X86_ABI
-    , m_stkSizeBytes(0)
-    , m_padStkAlign(0)
-#endif
     , m_hasThisPointer(false)
     , m_hasRetBuffer(false)
     , m_isVarArgs(false)
@@ -1249,9 +1245,6 @@ CallArgs::CallArgs()
     , m_hasStackArgs(false)
     , m_argsComplete(false)
     , m_needsTemps(false)
-#ifdef UNIX_X86_ABI
-    , m_alignmentDone(false)
-#endif
 {
 }
 
@@ -10244,10 +10237,6 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     GenTreeCall* node = new (this, GT_CALL) GenTreeCall(genActualType(type));
 
     node->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
-#ifdef UNIX_X86_ABI
-    if (callType == CT_INDIRECT || callType == CT_HELPER)
-        node->gtFlags |= GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
     node->gtCallType = callType;
     INDEBUG_OR_WASM(node->callSig = nullptr;)
     node->tailCallInfo    = nullptr;
@@ -11797,9 +11786,6 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     m_hasStackArgs             = other->m_hasStackArgs;
     m_argsComplete             = other->m_argsComplete;
     m_needsTemps               = other->m_needsTemps;
-
-    // Unix x86 flags related to stack alignment intentionally not copied as
-    // they depend on where the call will be inserted.
 
     CallArg** tail = &m_head;
     for (CallArg& arg : other->Args())
