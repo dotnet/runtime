@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <Compile Include="..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
+    <Compile Include="..\Common\CommandLineHelpers.TargetArchitecture.cs" Link="CommandLineHelpers.TargetArchitecture.cs" />
   </ItemGroup>
 
   <ItemGroup>

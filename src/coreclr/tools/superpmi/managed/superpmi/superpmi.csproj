@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>superpmi</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
+
+    <!-- Published as a NativeAOT executable next to the other SuperPMI tools. -->
+    <PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>$(PortableOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    <PublishDir>$(RuntimeBinDir)</PublishDir>
+    <!-- The native side uses C++ exceptions. -->
+    <LinkStandardCPlusPlusLibrary>true</LinkStandardCPlusPlusLibrary>
+    <!-- PIN (for the throughput measurements) moves threads with SetThreadContext, which CET shadow stacks deny. -->
+    <CETCompat>false</CETCompat>
+    <!-- Under PIN on Windows, the replay thread crashes when the background GC suspends it (with a special user-mode APC). -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\Common\JitInterface\CorInfoImpl_generated.cs" Link="JitInterface\CorInfoImpl_generated.cs" />
+    <Compile Include="..\..\..\Common\CommandLineHelpers.TargetArchitecture.cs" Link="CommandLineHelpers.TargetArchitecture.cs" />
+    <ProjectReference Include="..\SuperPmi.Shared\SuperPmi.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <DirectPInvoke Include="superpmi-jitinterface" />
+    <NativeLibrary Include="$(RuntimeBinDir)superpmi-lib\$(LibPrefix)superpmi-jitinterface$(StaticLibSuffix)" />
+  </ItemGroup>
+
+  <!-- PIN finds the instruction counter of the throughput measurements by its name, so it must be exported (which
+       DLL_EXPORT does on Windows). -->
+  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+    <IlcArg Include="--export-dynamic-symbol:Instrumentor_GetInsCount" />
+  </ItemGroup>
+</Project>

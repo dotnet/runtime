@@ -1,0 +1,16 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLSCompliant>false</CLSCompliant>
+    <RunAnalyzers>false</RunAnalyzers>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- The tools process large collections, so they are optimized even in Debug builds. -->
+    <Optimize>true</Optimize>
+    <!-- The tools are published with their own symbols only, as the native tools were. -->
+    <PublishReferencesSymbols>false</PublishReferencesSymbols>
+    <UseBootstrapLayout Condition="'$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
+  </PropertyGroup>
+</Project>
