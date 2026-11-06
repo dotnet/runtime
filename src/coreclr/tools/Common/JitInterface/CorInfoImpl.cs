@@ -5075,7 +5075,13 @@ namespace Internal.JitInterface
 
                 if (pgoResultsSchemas[i].DataObject == null)
                 {
-                    bwInstrumentationData.Write(pgoResultsSchemas[i].DataLong);
+                    long value = pgoResultsSchemas[i].DataLong;
+                    if (pgoResultsSchemas[i].InstrumentationKind == PgoInstrumentationKind.MethodEntryIntCount)
+                    {
+                        // Merged totals can exceed the JIT's uint32 entry counter without any producer wrapping.
+                        value = Math.Min(value, uint.MaxValue);
+                    }
+                    bwInstrumentationData.Write(value);
                 }
                 else
                 {

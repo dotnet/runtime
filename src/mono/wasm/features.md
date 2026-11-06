@@ -442,9 +442,6 @@ Publish a single-threaded Browser/CoreCLR application with method-entry instrume
   <WasmEnableThreads>false</WasmEnableThreads>
   <WasmPgoInstrumentation>all</WasmPgoInstrumentation>
 </PropertyGroup>
-<ItemGroup>
-  <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="js://pgo" />
-</ItemGroup>
 ```
 
 ```console
@@ -471,7 +468,8 @@ invocations**, including inlinees. Regular inlining retains in-body logical entr
 intrinsic expansions of eligible IL methods use call-site probes after argument evaluation and,
 for `callvirt`, the receiver null check. Shared generic instantiations may aggregate into the same
 count. Counters are 32-bit and wrap on overflow; keep training runs
-bounded. This is entry-only data: it does not measure branch frequencies, block counts, CPU samples,
+bounded. Offline merged totals remain intact in MIBC; totals above `uint.MaxValue` saturate rather
+than wrap when passed to the JIT. This is entry-only data: it does not measure branch frequencies, block counts, CPU samples,
 or `ExclusiveWeight`. The profile uses `PgoInstrumentationKind.MethodEntryIntCount`, not
 `BasicBlockIntCount`, to preserve its provenance. The consumer automatically recognizes this schema
 and conservatively synthesizes profile data; no separate consumption mode or option is needed.
@@ -479,22 +477,33 @@ and conservatively synthesizes profile data; no separate consumption mode or opt
 Load the published application, exercise a representative scenario, and export the trace:
 
 ```js
-globalThis.getDotnetRuntime(0).collectPgoTrace()
-// stops and downloads automatically after 10s; pass a different duration with:
 globalThis.getDotnetRuntime(0).collectPgoTrace({durationSeconds: 30})
 ```
 
+The trace stops and downloads after the requested duration; omit the options for the default ten
+seconds. Leave `DOTNET_DiagnosticPorts` unset to use the default `js://ready` connection for this
+manual collection workflow.
+
 This is a startup-cumulative, one-shot snapshot, not an interval counter or a counter reset:
 counts include activity since startup, including activity before `collectPgoTrace()` is called.
-`DOTNET_DiagnosticPorts=js://pgo` arms tracing before managed startup. Reload the application for
-another training run.
+Reload the application for another training run.
+
+For automatic startup collection instead, configure:
+
+```xml
+<ItemGroup>
+  <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="js://pgo" />
+</ItemGroup>
+```
+
+This starts tracing before managed startup, then stops and downloads after ten seconds. It consumes
+the one-shot collection, so do not also call `collectPgoTrace()` manually in that runtime instance.
 
 Interpreter and R2R execution use the same entry-only schema, method filter, and PgoManager
 counter storage. For an interpreter-only development build, configure the runtime filter directly:
 
 ```xml
 <ItemGroup>
-  <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="js://pgo" />
   <WasmEnvironmentVariable Include="DOTNET_WasmPgoInstrumentation" Value="*" />
 </ItemGroup>
 ```

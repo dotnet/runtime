@@ -471,7 +471,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             GenTree*   entryCounter       = nullptr;
             GenTree*   entryReceiver      = nullptr;
             Statement* intrinsicEntryStmt = nullptr;
-            if (!JitConfig.WasmPgoInstrumentation().isEmpty() &&
+            if (!JitConfig.WasmPgoInstrumentation().isEmpty() && !gtIsRecursiveCall(methHnd, false) &&
                 JitConfig.WasmPgoInstrumentation().contains(methHnd, clsHnd, sig))
             {
                 entryCounter = fgMethodEntryCount(methHnd);

@@ -466,6 +466,13 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         AssertMethodEntryCount(Assert.Single(generics, method => method.GetProperty("Method").GetString()!.Contains("<int32>", StringComparison.Ordinal)), 6);
         Assert.DoesNotContain(allMethods, method => method.GetProperty("Method").GetString()!.Contains(
             "BlazorBasicTestApp.WasmPgoScenariosReceiver.NullReceiverTarget(", StringComparison.Ordinal));
+        JsonElement[] outOfFilter = allMethods.Where(method => method.GetProperty("Method").GetString()!.Contains(
+            "BlazorBasicTestApp.IntrinsicPgoCalls.DeferredFillCalls(", StringComparison.Ordinal) &&
+            method.TryGetProperty("InstrumentationData", out _)).ToArray();
+        if (assertIntrinsics)
+            AssertMethodEntryCount(Assert.Single(outOfFilter), 1);
+        else
+            Assert.Empty(outOfFilter);
         if (assertIntrinsics)
         {
             AssertMethodEntryCount(Assert.Single(allMethods, method =>
