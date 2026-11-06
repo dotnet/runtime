@@ -30,40 +30,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private byte[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
         private List<ISymbolNode> _fixups;
-        private MethodWithGCInfo[] _directCallTargets;
-        private Import[] _moduleEagerFixups;
         private Import[] _guaranteedPrecodeFixups;
+#if DEBUG
         private bool _precodeFixupsFinalized;
+#endif
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
         private DependencyList _nonRelocationDependencies;
-        private DeferredWasmCompilationData _deferredWasmData;
-        internal bool DeferredWasmDependenciesPublished { get; set; }
-
-        private sealed class DeferredWasmCompilationData(OffsetMapping[] locations, NativeVarInfo[] variables)
-        {
-            internal readonly OffsetMapping[] Locations = locations;
-            internal readonly NativeVarInfo[] Variables = variables;
-            internal Dictionary<int, WasmTypeNode> Signatures;
-            internal Dictionary<MethodWithGCInfo, MethodWithToken> ActivationTokens;
-        }
-
-        internal void InitializeDeferredWasmCalls(Dictionary<int, WasmTypeNode> signatures, Dictionary<MethodWithGCInfo, MethodWithToken> tokens)
-        {
-            _deferredWasmData.Signatures = signatures;
-            _deferredWasmData.ActivationTokens = tokens;
-        }
-
-        internal WasmTypeNode GetDeferredWasmCallSignature(int offset) =>
-            _deferredWasmData.Signatures[offset];
-
-        internal MethodWithToken GetDeferredWasmActivationToken(MethodWithGCInfo target) =>
-            _deferredWasmData.ActivationTokens[target];
-
-        internal void InitializeDeferredWasmDebugInfo(OffsetMapping[] locations, NativeVarInfo[] variables)
-        {
-            _deferredWasmData = new DeferredWasmCompilationData(locations, variables);
-        }
 
         internal void AddDeferredWasmDependency(ISymbolNode node)
         {
@@ -71,36 +44,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _nonRelocationDependencies.Add(node, "Selected deferred Wasm call");
         }
 
-        internal void FinalizeDeferredWasmCode(ObjectData code, FrameInfo[] frames, Func<int, int> mapOffset = null)
+        internal void FinalizeDeferredWasmCode(
+            ObjectData code, FrameInfo[] frames, OffsetMapping[] locations, NativeVarInfo[] variables,
+            Func<int, int> mapOffset = null)
         {
+#if DEBUG
             Debug.Assert(!_precodeFixupsFinalized);
+#endif
             _methodCode = code;
             _frameInfos = frames;
-            DeferredWasmCompilationData data = _deferredWasmData;
-            if (data.Locations is not null)
+            if (locations is not null)
             {
                 if (mapOffset is not null)
                 {
-                    foreach (ref OffsetMapping location in data.Locations.AsSpan())
+                    foreach (ref OffsetMapping location in locations.AsSpan())
                     {
                         location.nativeOffset = checked((uint)mapOffset((int)location.nativeOffset));
                     }
                 }
-                InitializeDebugLocInfos(data.Locations);
+                InitializeDebugLocInfos(locations);
             }
-            if (data.Variables is not null)
+            if (variables is not null)
             {
                 if (mapOffset is not null)
                 {
-                    foreach (ref NativeVarInfo variable in data.Variables.AsSpan())
+                    foreach (ref NativeVarInfo variable in variables.AsSpan())
                     {
                         variable.startOffset = checked((uint)mapOffset((int)variable.startOffset));
                         variable.endOffset = checked((uint)mapOffset((int)variable.endOffset));
                     }
                 }
-                InitializeDebugVarInfos(data.Variables);
+                InitializeDebugVarInfos(variables);
             }
-            _deferredWasmData = null;
         }
 
         public MethodWithGCInfo(MethodDesc methodDesc)
@@ -167,20 +142,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public List<ISymbolNode> Fixups => _fixups;
 
-        internal void InitializeDirectCallTargets(MethodWithGCInfo[] targets) => _directCallTargets = targets;
+        internal ReadOnlySpan<Relocation> CodeRelocations => _methodCode?.Relocs;
 
-        internal void InitializeModuleEagerFixups(Import[] fixups) => _moduleEagerFixups = fixups;
+        internal MethodWithGCInfo GetDirectCallTarget(int relocationIndex)
+        {
+            ReadOnlySpan<Relocation> relocations = CodeRelocations;
+            Relocation relocation = relocations[relocationIndex];
+            if (relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB &&
+                relocation.Target is MethodWithGCInfo target && target != this && relocationIndex > 0)
+            {
+                // Only bundled calls inherit the callee's activation guarantees.
+                // Helper calls and calls to this method's funclets do not.
+                Relocation identity = relocations[relocationIndex - 1];
+                if (identity.RelocType == RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB &&
+                    identity.Offset + Relocation.WASM_PADDED_RELOC_SIZE_32 + 1 == relocation.Offset &&
+                    identity.Target is WasmMethodFrameIdentityNode { Method: var identityMethod } &&
+                    identityMethod == target)
+                {
+                    return target;
+                }
+            }
 
-        internal MethodWithGCInfo[] DirectCallTargets => _directCallTargets ?? Array.Empty<MethodWithGCInfo>();
-
-        internal Import[] ModuleEagerFixups => _moduleEagerFixups ?? Array.Empty<Import>();
+            return null;
+        }
 
         internal Import[] GuaranteedPrecodeFixups => Volatile.Read(ref _guaranteedPrecodeFixups);
 
         internal void FinalizePrecodeFixups(HashSet<Import> scratch = null)
         {
+#if DEBUG
             Debug.Assert(!_precodeFixupsFinalized);
             _precodeFixupsFinalized = true;
+#endif
 
             HashSet<Import> coveredFixups = scratch ?? new HashSet<Import>();
             CollectCoveredPrecodeFixups(coveredFixups);
@@ -204,7 +197,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return guarantees;
             }
 
+#if DEBUG
             Debug.Assert(_precodeFixupsFinalized);
+#endif
             Import[] seed = CollectCoveredPrecodeFixups(scratch);
             foreach (ISymbolNode fixup in _fixups)
             {
@@ -231,9 +226,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private Import[] CollectCoveredPrecodeFixups(HashSet<Import> coveredFixups)
         {
             // Materialize callees before using the same scratch storage for this method.
-            if (_directCallTargets is not null)
+            ReadOnlySpan<Relocation> relocations = CodeRelocations;
+            for (int i = 0; i < relocations.Length; i++)
             {
-                foreach (MethodWithGCInfo target in _directCallTargets)
+                if (GetDirectCallTarget(i) is MethodWithGCInfo target)
                 {
                     target.GetGuaranteedPrecodeFixups(coveredFixups);
                 }
@@ -242,19 +238,29 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             coveredFixups.Clear();
             Import[] seed = Array.Empty<Import>();
 
-            if (_moduleEagerFixups is not null)
+            CollectModuleEagerFixups(_methodCode, coveredFixups);
+            if (ColdCodeNode is not null)
             {
-                foreach (Import fixup in _moduleEagerFixups)
+                CollectModuleEagerFixups(ColdCodeNode.GetData(null), coveredFixups);
+            }
+            if (_nonRelocationDependencies is not null)
+            {
+                foreach (DependencyListEntry dependency in _nonRelocationDependencies)
                 {
-                    coveredFixups.Add(fixup);
+                    if (dependency.Node is Import { Table.IsEager: true } import)
+                    {
+                        coveredFixups.Add(import);
+                    }
                 }
             }
 
-            if (_directCallTargets is not null)
+            for (int i = 0; i < relocations.Length; i++)
             {
-                foreach (MethodWithGCInfo target in _directCallTargets)
+                if (GetDirectCallTarget(i) is MethodWithGCInfo target)
                 {
+#if DEBUG
                     Debug.Assert(target._precodeFixupsFinalized);
+#endif
                     Import[] targetFixups = target.GuaranteedPrecodeFixups;
                     foreach (Import fixup in targetFixups)
                     {
@@ -270,9 +276,34 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return seed;
         }
 
+        private static void CollectModuleEagerFixups(ObjectData data, HashSet<Import> fixups, bool includeDataReferences = true)
+        {
+            MethodReadOnlyDataNode readOnlyData = null;
+            MethodReadWriteDataNode readWriteData = null;
+            foreach (Relocation relocation in (data?.Relocs).AsSpan())
+            {
+                if (relocation.Target is Import { Table.IsEager: true } import)
+                {
+                    fixups.Add(import);
+                }
+                else if (includeDataReferences && relocation.Target is MethodReadOnlyDataNode roData && roData != readOnlyData)
+                {
+                    readOnlyData = roData;
+                    CollectModuleEagerFixups(roData.GetData(null), fixups, includeDataReferences: false);
+                }
+                else if (includeDataReferences && relocation.Target is MethodReadWriteDataNode rwData && rwData != readWriteData)
+                {
+                    readWriteData = rwData;
+                    CollectModuleEagerFixups(rwData.GetData(null), fixups, includeDataReferences: false);
+                }
+            }
+        }
+
         internal void ApplyModuleEagerFixups(HashSet<Import> fixups)
         {
+#if DEBUG
             Debug.Assert(_precodeFixupsFinalized);
+#endif
 
             _fixups.RemoveAll(fixup =>
                 fixup is Import import &&

@@ -8,9 +8,10 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun;
 
-internal sealed class DeferredWasmCallNode(DelayLoadMethodImport fallback) : SortableDependencyNode, IMethodCodeNodeWithTypeSignature
+internal sealed class DeferredWasmCallNode(DelayLoadMethodImport fallback, WasmTypeNode signature = null) : SortableDependencyNode, IMethodCodeNodeWithTypeSignature
 {
     internal DelayLoadMethodImport Fallback => fallback;
+    internal WasmTypeNode Signature => signature;
     internal MethodWithGCInfo Target => fallback.MethodCodeNode;
     public MethodDesc Method => Target.Method;
     public int Offset => 0;
@@ -29,8 +30,12 @@ internal sealed class DeferredWasmCallNode(DelayLoadMethodImport fallback) : Sor
 
     protected override string GetName(NodeFactory factory) => $"Deferred Wasm call: {Method}";
     public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder builder) => fallback.AppendMangledName(nameMangler, builder);
-    public override int CompareToImpl(ISortableNode other, CompilerComparer comparer) =>
-        comparer.Compare(fallback, ((DeferredWasmCallNode)other).Fallback);
+    public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+    {
+        DeferredWasmCallNode otherCall = (DeferredWasmCallNode)other;
+        int result = comparer.Compare(fallback, otherCall.Fallback);
+        return result != 0 ? result : comparer.Compare(signature, otherCall.Signature);
+    }
     public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
     public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> nodes, int firstNode, DependencySink sink, NodeFactory factory) { }
 }

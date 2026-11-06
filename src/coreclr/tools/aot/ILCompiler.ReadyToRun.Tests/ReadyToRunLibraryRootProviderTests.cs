@@ -56,10 +56,10 @@ public class ReadyToRunLibraryRootProviderTests
         DelayLoadMethodImport fallback = (DelayLoadMethodImport)RuntimeHelpers.GetUninitializedObject(typeof(DelayLoadMethodImport));
         SetField(fallback, typeof(Import), "<Table>k__BackingField", table);
         SetField(fallback, typeof(DelayLoadMethodImport), "_localMethod", target);
-        DeferredWasmCallNode call = new(fallback);
         WasmMethodFrameIdentityNode callerIdentity = new(factory, caller);
         WasmMethodFrameIdentityNode targetIdentity = new(factory, target);
         WasmTypeNode signature = new(WasmLowering.GetSignature(method).FuncType);
+        DeferredWasmCallNode call = new(fallback, signature);
         FuncletKind[] funcletKinds = [FuncletKind.CatchOrFilterHandler, FuncletKind.Filter, FuncletKind.Finally, FuncletKind.Fault];
         int[] parameterCounts = [3, 3, 3, 2, 2];
         FrameInfo[] frames = new FrameInfo[parameterCounts.Length];
@@ -67,7 +67,6 @@ public class ReadyToRunLibraryRootProviderTests
         NativeVarInfo[] variables = new NativeVarInfo[1];
         List<byte> bytes = new();
         List<Relocation> relocations = new();
-        Dictionary<int, WasmTypeNode> signatures = new();
 
         for (int i = 0; i < frames.Length; i++)
         {
@@ -87,9 +86,8 @@ public class ReadyToRunLibraryRootProviderTests
             bytes.AddRange([(byte)WasmExprKind.LocalGet, 0, (byte)WasmExprKind.LocalGet, 0]);
             EmitRelocation(WasmExprKind.I32Const, RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB, targetIdentity);
             bool returnsValue = i < 3;
-            int callOffset = EmitRelocation(tailCall && returnsValue ? WasmExprKind.ReturnCall : WasmExprKind.Call,
+            EmitRelocation(tailCall && returnsValue ? WasmExprKind.ReturnCall : WasmExprKind.Call,
                 RelocType.WASM_FUNCTION_INDEX_LEB, call);
-            signatures.Add(callOffset, signature);
             locations[i] = new OffsetMapping { nativeOffset = (uint)bytes.Count, ilOffset = (uint)i };
             if (i == 0)
             {
@@ -112,10 +110,7 @@ public class ReadyToRunLibraryRootProviderTests
         caller.SetCode(new ObjectNode.ObjectData(bytes.ToArray(), relocations.ToArray(), 1, [caller]));
         caller.InitializeFrameInfos(frames);
         caller.InitializeFuncletKinds(funcletKinds);
-        caller.InitializeDeferredWasmDebugInfo(locations, variables);
-        caller.InitializeDeferredWasmCalls(signatures, null);
-
-        new DeferredWasmCallRewriter(compilation).Rewrite(caller);
+        new DeferredWasmCallRewriter(compilation).Rewrite(caller, locations, variables);
 
         ObjectNode.ObjectData rewritten = caller.GetData(factory, relocsOnly: false);
         OffsetMapping[] expectedLocations = new OffsetMapping[frames.Length];
@@ -183,7 +178,10 @@ public class ReadyToRunLibraryRootProviderTests
         }
         Assert.Equal(rewritten.Data.Length, position);
         Assert.Equal(frames.Length * 4, rewritten.Relocs.Length);
-        Assert.Empty(caller.DirectCallTargets);
+        for (int i = 0; i < rewritten.Relocs.Length; i++)
+        {
+            Assert.Null(caller.GetDirectCallTarget(i));
+        }
         MethodWithGCInfo expectedDebugInfo = new(method);
         expectedDebugInfo.InitializeDebugLocInfos(expectedLocations);
         expectedDebugInfo.InitializeDebugVarInfos(expectedVariables);
@@ -246,8 +244,13 @@ public class ReadyToRunLibraryRootProviderTests
         Import import = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
         ReadyToRunSymbolNodeFactory symbols = (ReadyToRunSymbolNodeFactory)RuntimeHelpers.GetUninitializedObject(
             typeof(ReadyToRunSymbolNodeFactory));
+        List<MethodWithToken> selectedTokens = new();
         SetField(symbols, eager ? "_eagerReadyToRunMethodEntries" : "_precodeReadyToRunMethodEntries",
-            new NodeCache<MethodWithToken, Import>(_ => import));
+            new NodeCache<MethodWithToken, Import>(selectedToken =>
+            {
+                selectedTokens.Add(selectedToken);
+                return import;
+            }));
         SetField(compilation, "<SymbolNodeFactory>k__BackingField", symbols);
         DelayLoadMethodImport fallback = (DelayLoadMethodImport)RuntimeHelpers.GetUninitializedObject(typeof(DelayLoadMethodImport));
         SetField(fallback, "_localMethod", target);
@@ -255,6 +258,12 @@ public class ReadyToRunLibraryRootProviderTests
         WasmMethodFrameIdentityNode identity = new(factory, target);
         MethodWithToken token = new(targetMethod, new ModuleToken(targetMethod.Module, targetMethod.Handle),
             constrainedType: null, unboxing: false, genericContextObject: null);
+        SetField(fallback, "<MethodWithToken>k__BackingField",
+            new MethodWithToken(targetMethod, token.Token, constrainedType: targetMethod.OwningType,
+                unboxing: false, genericContextObject: null));
+        DelayLoadMethodImport activationImport = (DelayLoadMethodImport)RuntimeHelpers.GetUninitializedObject(typeof(DelayLoadMethodImport));
+        SetField(activationImport, "<MethodWithToken>k__BackingField", token);
+        Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports = new() { [target] = activationImport };
         Relocation[] relocations = new Relocation[1 + callCount * 2];
         relocations[0] = new(RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB, 2, identity);
         for (int i = 0; i < callCount; i++)
@@ -274,8 +283,6 @@ public class ReadyToRunLibraryRootProviderTests
         caller.InitializeFrameInfos(frames);
         OffsetMapping[]? locations = debugInfo ? [new() { nativeOffset = 17, ilOffset = 2 }] : null;
         NativeVarInfo[]? variables = debugInfo ? [new() { startOffset = 3, endOffset = 29 }] : null;
-        caller.InitializeDeferredWasmDebugInfo(locations, variables);
-        caller.InitializeDeferredWasmCalls(null, new Dictionary<MethodWithGCInfo, MethodWithToken> { [target] = token });
         MethodWithGCInfo expectedDebugInfo = new(targetMethod);
         if (debugInfo)
         {
@@ -287,14 +294,15 @@ public class ReadyToRunLibraryRootProviderTests
         Import existingEagerImport = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
         if (eager && callCount != 0)
         {
-            caller.InitializeModuleEagerFixups([existingEagerImport, import]);
+            caller.AddDeferredWasmDependency(existingEagerImport);
+            caller.AddDeferredWasmDependency(import);
         }
         if (!eager && callCount != 0)
         {
             caller.Fixups.Add(import);
         }
         DeferredWasmCallRewriter rewriter = new(compilation);
-        rewriter.Rewrite(caller);
+        rewriter.Rewrite(caller, locations, variables, activationImports);
 
         Assert.Same(original, caller.GetData(factory, relocsOnly: false));
         Assert.Same(frames, caller.FrameInfos);
@@ -307,31 +315,35 @@ public class ReadyToRunLibraryRootProviderTests
         }
         if (callCount != 0)
         {
+            Assert.Null(Assert.Single(selectedTokens).ConstrainedType);
+            target.FinalizePrecodeFixups();
+            caller.FinalizePrecodeFixups();
             if (eager)
             {
-                Assert.Equal(2, caller.ModuleEagerFixups.Length);
-                Assert.Contains(import, caller.ModuleEagerFixups);
-                Assert.Contains(existingEagerImport, caller.ModuleEagerFixups);
+                Import[] guarantees = caller.GetGuaranteedPrecodeFixups(new HashSet<Import>());
+                Assert.Equal(2, guarantees.Length);
+                Assert.Contains(import, guarantees);
+                Assert.Contains(existingEagerImport, guarantees);
             }
             else
             {
                 Assert.Same(import, Assert.Single(caller.Fixups));
             }
-            Assert.Same(target, Assert.Single(caller.DirectCallTargets));
+            Assert.Same(target, caller.GetDirectCallTarget(2));
         }
         Assert.Equal(expectedDebugInfo.DebugLocInfos, caller.DebugLocInfos);
         Assert.Equal(expectedDebugInfo.DebugVarInfos, caller.DebugVarInfos);
-        Assert.Null(typeof(MethodWithGCInfo).GetField("_deferredWasmData", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .GetValue(caller));
 
         MethodWithGCInfo nextCaller = new(targetMethod);
         nextCaller.SetCode(new ObjectNode.ObjectData(original.Data, repeatedRelocations, 16, [nextCaller]));
         nextCaller.InitializeFrameInfos(frames);
-        nextCaller.InitializeDeferredWasmDebugInfo(null, null);
-        nextCaller.InitializeDeferredWasmCalls(null, new Dictionary<MethodWithGCInfo, MethodWithToken> { [target] = token });
-        rewriter.Rewrite(nextCaller);
-        Assert.Equal(callCount == 0 ? 0 : 1, nextCaller.DirectCallTargets.Length);
-        Assert.Equal(eager && callCount != 0 ? 1 : 0, nextCaller.ModuleEagerFixups.Length);
+        rewriter.Rewrite(nextCaller, activationImports: activationImports);
+        if (callCount != 0)
+        {
+            Assert.Same(target, nextCaller.GetDirectCallTarget(2));
+        }
+        nextCaller.FinalizePrecodeFixups();
+        Assert.Equal(callCount == 0 ? 0 : 1, nextCaller.GetGuaranteedPrecodeFixups(new HashSet<Import>()).Length);
         Assert.Equal(!eager && callCount != 0 ? 1 : 0, nextCaller.Fixups.Count);
 
         static void SetField(object instance, string name, object value) =>
@@ -539,20 +551,101 @@ public class ReadyToRunLibraryRootProviderTests
     }
 
     [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void ModuleEagerGuaranteesIncludeRelocatedAndExplicitDependencies(int source)
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        MethodDesc method = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
+        MethodWithGCInfo caller = new(method);
+        ImportSectionNode table = new("EagerImports", ReadyToRunImportSectionType.Unknown,
+            ReadyToRunImportSectionFlags.Eager, 8, emitPrecode: false, emitGCRefMap: false);
+        Import cell = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
+        Relocation importRelocation = new(RelocType.IMAGE_REL_BASED_HIGHLOW, 0, cell);
+        Relocation[] codeRelocations = [];
+        switch (source)
+        {
+            case 0:
+                codeRelocations = [importRelocation];
+                break;
+            case 1:
+                MethodColdCodeNode coldCode = new(method);
+                coldCode.SetCode(new ObjectNode.ObjectData([], [importRelocation], 1, [coldCode]));
+                caller.ColdCodeNode = coldCode;
+                break;
+            case 2:
+                MethodReadOnlyDataNode readOnlyData = new(method);
+                Relocation roReference = new(RelocType.IMAGE_REL_BASED_HIGHLOW, 4, readOnlyData);
+                readOnlyData.InitializeData(new ObjectNode.ObjectData([], [importRelocation, roReference], 1, [readOnlyData]));
+                codeRelocations = [roReference, roReference];
+                break;
+            case 3:
+                MethodReadWriteDataNode readWriteData = new(method);
+                Relocation rwReference = new(RelocType.IMAGE_REL_BASED_HIGHLOW, 4, readWriteData);
+                readWriteData.InitializeData(new ObjectNode.ObjectData([], [importRelocation, rwReference], 1, [readWriteData]));
+                codeRelocations = [rwReference, rwReference];
+                break;
+            case 4:
+                caller.AddDeferredWasmDependency(cell);
+                break;
+        }
+        caller.SetCode(new ObjectNode.ObjectData([], codeRelocations, 1, [caller]));
+        caller.Fixups.Add(cell);
+
+        caller.FinalizePrecodeFixups();
+
+        Assert.Empty(caller.Fixups);
+        Assert.Same(cell, Assert.Single(caller.GetGuaranteedPrecodeFixups(new HashSet<Import>())));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HelperAndFuncletCallsDoNotInheritActivationGuarantees(bool funclet)
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        MethodDesc method = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
+        MethodWithGCInfo caller = new(method);
+        MethodWithGCInfo target = funclet ? caller : new(method) { IsJitHelper = true };
+        ImportSectionNode table = new("PrecodeImports", ReadyToRunImportSectionType.Unknown,
+            ReadyToRunImportSectionFlags.PCode, 8, emitPrecode: true, emitGCRefMap: false);
+        Import cell = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
+        if (!funclet)
+        {
+            target.Fixups.Add(cell);
+            target.FinalizePrecodeFixups();
+        }
+        SetDirectCallTargets(caller, target);
+        if (!funclet)
+        {
+            Relocation[] relocations = caller.GetData(null, relocsOnly: false).Relocs;
+            relocations[0] = new(RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB, 0,
+                new WasmMethodFrameIdentityNode((NodeFactory)RuntimeHelpers.GetUninitializedObject(typeof(NodeFactory)), caller));
+        }
+        caller.FinalizePrecodeFixups();
+
+        Assert.Null(caller.GetDirectCallTarget(1));
+        Assert.Empty(caller.GetGuaranteedPrecodeFixups(new HashSet<Import>()));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void PrecodeGuaranteesShareUnchangedCalleeCoverage(bool moduleEager)
     {
         ReadyToRunCompilerContext context = CreateContext();
         MethodDesc method = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
-        MethodWithGCInfo callee = new(method);
+        MethodWithGCInfo callee = new(method) { IsJitHelper = true };
         MethodWithGCInfo caller = new(method);
         ImportSectionNode table = new("TestImports", ReadyToRunImportSectionType.Unknown,
             ReadyToRunImportSectionFlags.PCode, 8, emitPrecode: true, emitGCRefMap: false);
         Import cell = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
         callee.Fixups.Add(cell);
         callee.FinalizePrecodeFixups();
-        caller.InitializeDirectCallTargets([callee]);
+        SetDirectCallTargets(caller, callee);
         caller.Fixups.Add(cell);
         caller.FinalizePrecodeFixups();
         Import[] callerGuarantees = caller.GetGuaranteedPrecodeFixups(new HashSet<Import>());
@@ -592,15 +685,15 @@ public class ReadyToRunLibraryRootProviderTests
         leaf.FinalizePrecodeFixups(scratch: scratch);
         Assert.Null(leaf.GuaranteedPrecodeFixups);
         MethodWithGCInfo left = new(method);
-        left.InitializeDirectCallTargets([leaf]);
+        SetDirectCallTargets(left, leaf);
         left.Fixups.Add(leftCell);
         left.FinalizePrecodeFixups(scratch: scratch);
         MethodWithGCInfo right = new(method);
-        right.InitializeDirectCallTargets([leaf]);
+        SetDirectCallTargets(right, leaf);
         right.Fixups.Add(rightCell);
         right.FinalizePrecodeFixups(scratch: scratch);
         MethodWithGCInfo outer = new(method);
-        outer.InitializeDirectCallTargets([left, right]);
+        SetDirectCallTargets(outer, left, right);
         outer.Fixups.AddRange([leafCell, leftCell, rightCell, outerCell]);
         outer.FinalizePrecodeFixups(scratch: scratch);
         Assert.Null(outer.GuaranteedPrecodeFixups);
@@ -702,7 +795,7 @@ public class ReadyToRunLibraryRootProviderTests
         Import callerCell = sharedCell ? calleeCell : new(table, signature);
         callee.Fixups.Add(calleeCell);
         callee.FinalizePrecodeFixups();
-        caller.InitializeDirectCallTargets([callee]);
+        SetDirectCallTargets(caller, callee);
         caller.Fixups.Add(callerCell);
         caller.FinalizePrecodeFixups();
 
@@ -714,6 +807,19 @@ public class ReadyToRunLibraryRootProviderTests
         {
             Assert.Same(callerCell, Assert.Single(caller.Fixups));
         }
+    }
+
+    private static void SetDirectCallTargets(MethodWithGCInfo caller, params MethodWithGCInfo[] targets)
+    {
+        NodeFactory factory = (NodeFactory)RuntimeHelpers.GetUninitializedObject(typeof(NodeFactory));
+        Relocation[] relocations = new Relocation[targets.Length * 2];
+        for (int i = 0; i < targets.Length; i++)
+        {
+            relocations[i * 2] = new(RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB, i * 12,
+                new WasmMethodFrameIdentityNode(factory, targets[i]));
+            relocations[i * 2 + 1] = new(RelocType.WASM_FUNCTION_INDEX_LEB, i * 12 + 6, targets[i]);
+        }
+        caller.SetCode(new ObjectNode.ObjectData([], relocations, 1, [caller]));
     }
 
     [Theory]

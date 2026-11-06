@@ -497,13 +497,12 @@ namespace Internal.JitInterface
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
         private readonly HashSet<Import> _precodeFixupScratch = new();
-        private readonly HashSet<Import> _moduleEagerFixupScratch = new();
         private List<MethodDesc> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
         private List<(ISymbolNode Location, int Offset)> _wasmMethodVirtualIPFixups;
-        private Dictionary<int, WasmTypeNode> _deferredWasmCallSignatures;
-        private Dictionary<MethodWithGCInfo, MethodWithToken> _deferredWasmActivationTokens;
+        private WasmTypeNode _deferredWasmCallSignature;
+        private Dictionary<MethodWithGCInfo, DelayLoadMethodImport> _deferredWasmActivationImports;
         public bool HasColdCode { get; private set; }
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
@@ -520,36 +519,14 @@ namespace Internal.JitInterface
 
         partial void RecordRelocationDependencies(ISymbolNode relocTarget)
         {
-            if (relocTarget is Import import)
+            if (relocTarget is Import { Table.IsEager: false, EmitPrecode: true } import)
             {
-                if (import.Table.IsEager)
-                {
-                    _moduleEagerFixupScratch.Add(import);
-                }
-                else if (import.EmitPrecode)
-                {
-                    AddPrecodeFixup(import);
-                }
+                AddPrecodeFixup(import);
             }
         }
 
-        private void AddAdditionalDependency(ISymbolNode node, string reason)
-        {
+        private void AddAdditionalDependency(ISymbolNode node, string reason) =>
             _additionalDependencies.Add(node, reason);
-
-            if (node is Import { Table.IsEager: true } eagerImport)
-            {
-                _moduleEagerFixupScratch.Add(eagerImport);
-            }
-        }
-
-        private void PublishModuleEagerFixups()
-        {
-            if (_moduleEagerFixupScratch.Count != _methodCodeNode.ModuleEagerFixups.Length)
-            {
-                _methodCodeNode.InitializeModuleEagerFixups([.. _moduleEagerFixupScratch]);
-            }
-        }
 
         private void AddResumptionStubFixup(MethodWithGCInfo compiledStubNode)
         {
@@ -853,7 +830,6 @@ namespace Internal.JitInterface
             ManagedHelperProbeResult result = default;
             _isCompilationProbe = !publishCode;
             _methodCodeNode = methodCodeNodeNeedingCode;
-            _moduleEagerFixupScratch.UnionWith(_methodCodeNode.ModuleEagerFixups);
 
             try
             {
@@ -969,7 +945,6 @@ namespace Internal.JitInterface
                     PublishEmptyCode();
                 }
 
-                PublishModuleEagerFixups();
                 HasColdCode = (_methodColdCodeNode != null);
                 CompileMethodCleanup();
                 _isCompilationProbe = false;
@@ -2822,8 +2797,8 @@ namespace Internal.JitInterface
                             ISymbolNode deferredTarget = _compilation.GetDeferredWasmCall(targetMethodWithToken, fallback);
                             if (deferredTarget is DeferredWasmCallNode deferredCall)
                             {
-                                _deferredWasmActivationTokens ??= new Dictionary<MethodWithGCInfo, MethodWithToken>();
-                                _deferredWasmActivationTokens.TryAdd(deferredCall.Target, targetMethodWithToken);
+                                _deferredWasmActivationImports ??= new Dictionary<MethodWithGCInfo, DelayLoadMethodImport>();
+                                _deferredWasmActivationImports.TryAdd(deferredCall.Target, deferredCall.Fallback);
                             }
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(deferredTarget);
                         }
@@ -3585,8 +3560,8 @@ namespace Internal.JitInterface
         partial void ClearWasmMethodVirtualIPFixups()
         {
             _wasmMethodVirtualIPFixups = null;
-            _deferredWasmCallSignatures = null;
-            _deferredWasmActivationTokens = null;
+            _deferredWasmCallSignature = null;
+            _deferredWasmActivationImports = null;
         }
 
         private unsafe HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)

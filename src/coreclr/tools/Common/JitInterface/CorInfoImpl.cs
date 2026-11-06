@@ -466,6 +466,12 @@ namespace Internal.JitInterface
             PublishRWData();
             PublishWasmMethodVirtualIPFixups();
 
+#if READYTORUN
+            if (!_compilation.DeferredWasmCalls)
+            {
+                _methodCodeNode.FinalizePrecodeFixups(scratch: _precodeFixupScratch);
+            }
+#endif
             return CompilationResult.CompilationComplete;
         }
 
@@ -565,8 +571,8 @@ namespace Internal.JitInterface
 #if READYTORUN
             if (_compilation.DeferredWasmCalls)
             {
-                _methodCodeNode.InitializeDeferredWasmDebugInfo(_debugLocInfos, _debugVarInfos);
-                _methodCodeNode.InitializeDeferredWasmCalls(_deferredWasmCallSignatures, _deferredWasmActivationTokens);
+                _compilation.InitializeDeferredWasmCompilationData(
+                    _methodCodeNode, _debugLocInfos, _debugVarInfos, _deferredWasmActivationImports);
             }
             else
 #endif
@@ -613,12 +619,6 @@ namespace Internal.JitInterface
                     }
                 }
             }
-            PublishModuleEagerFixups();
-            if (!_compilation.DeferredWasmCalls)
-            {
-                _methodCodeNode.FinalizePrecodeFixups(scratch: _precodeFixupScratch);
-            }
-
             if (_synthesizedPgoDependencies != null)
             {
                 Debug.Assert(_compilation.NodeFactory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to be non-null with synthesized PGO data to embed");
@@ -789,7 +789,6 @@ namespace Internal.JitInterface
             _actualInstructionSetSupported = default(InstructionSetFlags);
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
             _precodeFixups = null;
-            _moduleEagerFixupScratch.Clear();
             _stashedPrecodeFixups.Clear();
             _stashedInlinedMethods.Clear();
             _ilBodiesNeeded = null;
@@ -4771,8 +4770,8 @@ namespace Internal.JitInterface
             if (fRelocType == CorInfoReloc.WASM_DEFERRED_CALL)
             {
                 Debug.Assert(locationBlock == BlockType.Code && addlDelta == 0);
-                _deferredWasmCallSignatures ??= new Dictionary<int, WasmTypeNode>();
-                _deferredWasmCallSignatures.Add(relocOffset, (WasmTypeNode)HandleToObject(target));
+                Debug.Assert(_deferredWasmCallSignature is null);
+                _deferredWasmCallSignature = (WasmTypeNode)HandleToObject(target);
                 return;
             }
 #endif
@@ -4851,6 +4850,14 @@ namespace Internal.JitInterface
 
             relocDelta += addlDelta;
 
+#if READYTORUN
+            if (relocTarget is DeferredWasmCallNode call)
+            {
+                Debug.Assert(fRelocType == CorInfoReloc.WASM_FUNCTION_INDEX_LEB && _deferredWasmCallSignature is not null);
+                relocTarget = _compilation.GetDeferredWasmCall(call.Fallback.MethodWithToken, call.Fallback, _deferredWasmCallSignature);
+                _deferredWasmCallSignature = null;
+            }
+#endif
             // relocDelta is stored as the value
             Relocation.WriteValue(relocType, location, relocDelta);
 

@@ -323,11 +323,27 @@ namespace ILCompiler
         private readonly HashSet<MethodDesc> _startupEagerMethods;
         private bool _compilingEagerMethods;
         internal bool DeferredWasmCalls { get; }
-        private readonly ConcurrentDictionary<MethodWithToken, DeferredWasmCallNode> _deferredWasmTargets;
-        private readonly HashSet<MethodWithGCInfo> _deferredWasmMethods;
-        private readonly HashSet<MethodWithGCInfo> _finalizedWasmMethods;
+        private readonly ConcurrentDictionary<(MethodWithToken Method, WasmTypeNode Signature), DeferredWasmCallNode> _deferredWasmTargets;
+        private readonly Dictionary<MethodWithGCInfo, DeferredWasmCompilationData> _deferredWasmMethods;
         private readonly HashSet<Import> _deferredWasmFixupScratch;
         private bool _deferredWasmPolicyFrozen;
+
+        private sealed class DeferredWasmCompilationData
+        {
+            internal OffsetMapping[] Locations;
+            internal NativeVarInfo[] Variables;
+            internal Dictionary<MethodWithGCInfo, DelayLoadMethodImport> ActivationImports;
+        }
+
+        internal void InitializeDeferredWasmCompilationData(
+            MethodWithGCInfo method, OffsetMapping[] locations, NativeVarInfo[] variables,
+            Dictionary<MethodWithGCInfo, DelayLoadMethodImport> activationImports)
+        {
+            DeferredWasmCompilationData data = _deferredWasmMethods[method];
+            data.Locations = locations;
+            data.Variables = variables;
+            data.ActivationImports = activationImports;
+        }
 
         public ProfileDataManager ProfileData => _profileData;
 
@@ -432,7 +448,6 @@ namespace ILCompiler
                 _startupEagerMethods = GetStartupEagerMethods();
                 _deferredWasmTargets = new();
                 _deferredWasmMethods = new();
-                _finalizedWasmMethods = new();
                 _deferredWasmFixupScratch = new();
                 _deferredWasmCallRewriter = new DeferredWasmCallRewriter(this);
                 _dependencyGraph.DependencyAnalysisQuiesced += FinalizeDeferredWasmCalls;
@@ -590,7 +605,7 @@ namespace ILCompiler
                     foreach (MethodDesc method in methodsAtLevel)
                     {
                         MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
-                        if (!_finalizedWasmMethods.Contains(methodNode))
+                        if (_deferredWasmMethods[methodNode] is not null)
                         {
                             methodsToFinalize.Add(methodNode);
                         }
@@ -715,9 +730,9 @@ namespace ILCompiler
                     }
                 }
 
-                if (method.DirectCallTargets is not null)
+                for (int i = 0; i < method.CodeRelocations.Length; i++)
                 {
-                    foreach (MethodWithGCInfo target in method.DirectCallTargets)
+                    if (method.GetDirectCallTarget(i) is MethodWithGCInfo target)
                     {
                         methodsToVisit.Push(target);
                     }
@@ -764,7 +779,7 @@ namespace ILCompiler
                             IsDirectCallDepthExempt(method.OwningType))));
         }
 
-        internal ISymbolNode GetDeferredWasmCall(MethodWithToken method, ISymbolNode fallback)
+        internal ISymbolNode GetDeferredWasmCall(MethodWithToken method, ISymbolNode fallback, WasmTypeNode signature = null)
         {
             if (fallback is not DelayLoadMethodImport { MethodCodeNode: not null } import ||
                 import.MethodCodeNode.Method != method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific))
@@ -772,7 +787,8 @@ namespace ILCompiler
                 return fallback;
             }
 
-            return _deferredWasmTargets.GetOrAdd(method, static (_, fallback) => new DeferredWasmCallNode(fallback), import);
+            return _deferredWasmTargets.GetOrAdd(
+                (method, signature), static (key, fallback) => new DeferredWasmCallNode(fallback, key.Signature), import);
         }
 
         private void FinalizeDeferredWasmCalls()
@@ -780,7 +796,7 @@ namespace ILCompiler
             if (!_deferredWasmPolicyFrozen)
             {
                 var methods = new List<MethodWithGCInfo>();
-                foreach (MethodWithGCInfo method in _deferredWasmMethods)
+                foreach (MethodWithGCInfo method in _deferredWasmMethods.Keys)
                 {
                     if (!method.IsEmpty)
                     {
@@ -793,28 +809,27 @@ namespace ILCompiler
                 _deferredWasmPolicyFrozen = true;
                 NodeFactory.CompleteDeferredImportPlacement();
             }
-            foreach (MethodWithGCInfo method in _deferredWasmMethods)
+            foreach (MethodWithGCInfo method in _deferredWasmMethods.Keys)
             {
-                if (!_finalizedWasmMethods.Contains(method))
+                if (_deferredWasmMethods[method] is not null)
                 {
                     FinalizeDeferredWasmMethod(method);
                 }
-                if (!method.DeferredWasmDependenciesPublished)
-                {
-                    method.DeferredWasmDependenciesPublished = true;
-                    _dependencyGraph.RevisitStaticDependencies(method);
-                }
+                _dependencyGraph.RevisitStaticDependencies(method);
             }
+            _deferredWasmMethods.Clear();
         }
 
         private void FinalizeDeferredWasmMethod(MethodWithGCInfo method)
         {
             if (!method.IsEmpty)
             {
-                _deferredWasmCallRewriter.Rewrite(method);
+                DeferredWasmCompilationData data = _deferredWasmMethods[method];
+                _deferredWasmCallRewriter.Rewrite(method, data.Locations, data.Variables, data.ActivationImports);
                 method.FinalizePrecodeFixups(scratch: _deferredWasmFixupScratch);
             }
-            _finalizedWasmMethods.Add(method);
+            // Keep the method queued for dependency publication, but release its raw debug data.
+            _deferredWasmMethods[method] = null;
         }
 
         internal static bool IsDirectCallDepthExempt(TypeDesc type)
@@ -1144,7 +1159,7 @@ namespace ILCompiler
                             // Late compilation is safe, but indicates that dependency analysis missed part of the method closure.
                             Debug.Assert(!_deferredWasmPolicyFrozen,
                                 $"Method {method.Method} requires compilation after the deferred Wasm call policy was frozen.");
-                            _deferredWasmMethods.Add(method);
+                            _deferredWasmMethods.TryAdd(method, new DeferredWasmCompilationData());
                         }
                     }
                 }
