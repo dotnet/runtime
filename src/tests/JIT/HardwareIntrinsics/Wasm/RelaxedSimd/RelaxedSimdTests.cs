@@ -12,6 +12,7 @@ public sealed class RelaxedSimdTests
     public static bool IsNotSupported => !RelaxedSimd.IsSupported;
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134949", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasi), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
     public static void RelaxedSimdIsSupportedReflects()
     {
         MethodInfo? methodInfo = typeof(RelaxedSimd).GetMethod("get_IsSupported");
@@ -19,11 +20,9 @@ public sealed class RelaxedSimdTests
         Assert.Equal(RelaxedSimd.IsSupported, methodInfo.Invoke(null, null));
     }
 
-    public static bool IsReadyToRun => Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
-
     // ReadyToRun code compiled for relaxed SIMD is rejected unless the host enables the instruction set,
     // so a host that ignores the WasmEnableRelaxedSimd setting silently reports IsSupported == false.
-    [ConditionalFact(typeof(RelaxedSimdTests), nameof(IsReadyToRun))]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasmReadyToRun))]
     public static void IsSupportedMatchesHostConfiguration()
     {
         bool expected = AppContext.TryGetSwitch("System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported", out bool isEnabled) && isEnabled;
