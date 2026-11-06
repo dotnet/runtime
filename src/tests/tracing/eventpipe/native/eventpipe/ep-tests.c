@@ -875,6 +875,7 @@ typedef struct {
 	ep_rt_wait_event_handle_t writer_started;
 	ep_rt_wait_event_handle_t writer_done;
 	ep_rt_wait_event_handle_t capture_entered;
+	ep_rt_wait_event_handle_t capture_done;
 	ep_rt_wait_event_handle_t stop_done;
 	volatile uint32_t pause_reader;
 	uint32_t writes;
@@ -954,6 +955,8 @@ stop_capture_state_blocking_callback (
 	data->event_before_stop = stop_capture_state_read_events (data->stopping_session, data->marker_event, marker, 1);
 	if (data->wait_for_writer_lock)
 		minipal_mutex_leave (&data->capture_lock);
+	if (!ep_rt_wait_event_set (&data->capture_done))
+		EP_UNREACHABLE ("Failed to signal stop capture-state test callback completion");
 }
 
 EP_RT_DEFINE_THREAD_FUNC (stop_capture_state_blocked_writer)
@@ -1037,7 +1040,7 @@ test_stop_capture_state_with_other_session_blocked (bool wait_for_writer_lock)
 	StopCaptureStateBlockingData data = {0};
 	ep_rt_wait_event_handle_t *waits [] = {
 		&data.reader_paused, &data.allow_reader, &data.writer_started,
-		&data.writer_done, &data.capture_entered, &data.stop_done
+		&data.writer_done, &data.capture_entered, &data.capture_done, &data.stop_done
 	};
 	bool lock_initialized = false;
 	bool writer_created = false;
@@ -1099,17 +1102,19 @@ test_stop_capture_state_with_other_session_blocked (bool wait_for_writer_lock)
 		result = FAILED ("Session stop did not enter the capture callback while the other session's writer was blocked");
 		ep_raise_error ();
 	}
-	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_done, 0, false) == 258 /* WAIT_TIMEOUT */);
+	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_done, 0, false) == EP_RT_TEST_WAIT_TIMEOUT);
 	if (wait_for_writer_lock) {
-		ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.stop_done, 0, false) == 258 /* WAIT_TIMEOUT */);
+		ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.capture_done, 0, false) == EP_RT_TEST_WAIT_TIMEOUT);
+		ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.stop_done, 0, false) == EP_RT_TEST_WAIT_TIMEOUT);
 	} else {
 		// Keep B's reader gated: capture must bypass its parked writer rather than join the wait queue.
-		if (ep_rt_wait_event_wait (&data.stop_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) != 0) {
-			result = FAILED ("Capture-state write did not finish while the other session's reader remained gated");
+		// Teardown's subsequent ProcessInfo write can block on B after the capture scope has ended.
+		if (ep_rt_wait_event_wait (&data.capture_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) != 0) {
+			result = FAILED ("Capture-state callback did not finish while the other session's reader remained gated");
 			ep_raise_error ();
 		}
 		ep_raise_error_if_nok (data.captures == 1 && data.event_before_stop);
-		ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_done, 0, false) == 258 /* WAIT_TIMEOUT */);
+		ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_done, 0, false) == EP_RT_TEST_WAIT_TIMEOUT);
 		ep_raise_error_if_nok (ep_thread_get_session_use_in_progress (data.writer_thread) ==
 			ep_session_get_index ((EventPipeSession *)(uintptr_t)sessions [1]));
 	}
@@ -1117,8 +1122,12 @@ test_stop_capture_state_with_other_session_blocked (bool wait_for_writer_lock)
 
 	test_location = 4;
 	ep_raise_error_if_nok (ep_rt_wait_event_set (&data.allow_reader));
+	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.capture_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) == 0);
 	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) == 0);
-	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.stop_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) == 0);
+	if (ep_rt_wait_event_wait (&data.stop_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) != 0) {
+		result = FAILED ("Session teardown did not finish after releasing the other session's reader");
+		ep_raise_error ();
+	}
 	if (data.writes != STOP_CAPTURE_STATE_WRITE_COUNT || data.captures != 1 || !data.event_before_stop) {
 		result = FAILED ("Expected %u writes, one capture and a pre-stop marker; observed %u writes, %u captures, marker=%u",
 			STOP_CAPTURE_STATE_WRITE_COUNT, data.writes, data.captures, (uint32_t)data.event_before_stop);
