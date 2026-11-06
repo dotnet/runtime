@@ -2031,6 +2031,13 @@ void interceptor_ICJI::recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig /* IN 
     // No-op in the VM, nothing to record for replay.
 }
 
+void interceptor_ICJI::recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_HANDLE method /* IN */)
+{
+    mc->cr->AddCall("recordWasmVirtualFunctionPointerLookup");
+    original_ICorJitInfo->recordWasmVirtualFunctionPointerLookup(method);
+    // No-op in the VM, nothing to record for replay.
+}
+
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 void interceptor_ICJI::recordRelocation(void*    location,   /* IN  */

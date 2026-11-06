@@ -1726,6 +1726,7 @@ namespace Internal.JitInterface
         private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
         {
             Debug.Assert(_debugVarInfos == null);
+            Debug.Assert(!_compilation.NodeFactory.OptimizationFlags.StripDebugInfo);
 
             if (cVars == 0)
                 return;
@@ -1746,6 +1747,7 @@ namespace Internal.JitInterface
         private void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
         {
             Debug.Assert(_debugLocInfos == null);
+            Debug.Assert(!_compilation.NodeFactory.OptimizationFlags.StripDebugInfo);
 
             _debugLocInfos = new OffsetMapping[cMap];
             for (int i = 0; i < cMap; i++)
@@ -4086,6 +4088,16 @@ namespace Internal.JitInterface
                         AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
                     }
                 }
+            }
+        }
+
+        private void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
+        {
+            // The Wasm JIT calls CORINFO_HELP_VIRTUAL_FUNC_PTR instead of using the VirtualEntry dynamic helper cell,
+            // so add the dependencies of the cell's signature for each lookup that survives to lowering.
+            if (_compilation.NodeFactory.Target.IsWasm)
+            {
+                MethodFixupSignature.AddVirtualEntryDependencies(_additionalDependencies, _compilation.NodeFactory, HandleToObject(method));
             }
         }
 

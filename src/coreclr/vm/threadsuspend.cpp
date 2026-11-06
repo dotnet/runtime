@@ -4988,9 +4988,7 @@ static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind 
 
 #ifdef TARGET_X86
 
-#ifndef TARGET_UNIX
 #define WORKAROUND_RACES_WITH_KERNEL_MODE_EXCEPTION_HANDLING
-#endif // !TARGET_UNIX
 
 #ifdef WORKAROUND_RACES_WITH_KERNEL_MODE_EXCEPTION_HANDLING
 BOOL ThreadCaughtInKernelModeExceptionHandling(Thread *pThread, CONTEXT *ctx)
