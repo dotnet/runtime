@@ -121,7 +121,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
 
         // Find a frame whose SP+IP differs from the leaf context
         byte[]? nonLeafContext = DumpTestStackWalker.LegacyVisibleFrames(sw, crashingThread)
-            .Select(h => sw.GetRawContext(h))
+            .Select(h => sw.GetRawContext(h).ToArray())
             .FirstOrDefault(ctx =>
             {
                 IPlatformAgnosticContext frameCtx = IPlatformAgnosticContext.GetContextForPlatform(Target);

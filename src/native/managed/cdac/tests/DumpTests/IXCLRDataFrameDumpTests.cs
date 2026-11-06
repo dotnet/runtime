@@ -52,7 +52,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
 
         AssertHResult(HResults.S_OK, hr);
 
-        byte[] rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
+        ReadOnlySpan<byte> rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
         Assert.Equal((uint)rawContext.Length, contextSize);
     }
 
@@ -65,14 +65,14 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
         IXCLRDataFrame frame = CreateFrame(dataFrame);
 
-        byte[] rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
+        ReadOnlySpan<byte> rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
         byte[] contextBuf = new byte[rawContext.Length];
         uint contextSize;
         int hr = frame.GetContext(0, (uint)contextBuf.Length, &contextSize, contextBuf);
 
         AssertHResult(HResults.S_OK, hr);
         Assert.Equal((uint)rawContext.Length, contextSize);
-        Assert.True(contextBuf.SequenceEqual(rawContext), "Context bytes should match raw context exactly");
+        Assert.True(contextBuf.AsSpan().SequenceEqual(rawContext), "Context bytes should match raw context exactly");
     }
 
     [ConditionalTheory]
@@ -84,7 +84,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
         IXCLRDataFrame frame = CreateFrame(dataFrame);
 
-        byte[] rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
+        ReadOnlySpan<byte> rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
         Assert.True(rawContext.Length > 0, "Raw context should not be empty for this test.");
 
         byte[] tinyBuf = new byte[rawContext.Length - 1];
@@ -104,7 +104,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
         IXCLRDataFrame frame = CreateFrame(dataFrame);
 
-        byte[] rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
+        ReadOnlySpan<byte> rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
         int oversized = rawContext.Length + 128;
         byte[] contextBuf = new byte[oversized];
         // Fill extra region with a sentinel to verify it's untouched.
