@@ -143,7 +143,7 @@ namespace System.Formats.Cbor
                 // the string will be converted to a definite-length encoding later,
                 // so we need to record the ranges of each chunk
                 Debug.Assert(_currentIndefiniteLengthStringRanges != null);
-                _currentIndefiniteLengthStringRanges.Add((_offset, value.Length));
+                _currentIndefiniteLengthStringRanges.Add((_offset, length));
             }
 
             utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset, length));

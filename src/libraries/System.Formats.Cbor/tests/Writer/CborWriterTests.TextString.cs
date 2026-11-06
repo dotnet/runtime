@@ -42,6 +42,10 @@ namespace System.Formats.Cbor.Tests
         [InlineData(new string[] { "" }, "60")]
         [InlineData(new string[] { "ab", "" }, "626162")]
         [InlineData(new string[] { "ab", "bc", "" }, "6461626263")]
+        [InlineData(new string[] { "\u00fca" }, "63c3bc61")]
+        [InlineData(new string[] { "\u6c34" }, "63e6b0b4")]
+        [InlineData(new string[] { "\ud800\udd51" }, "64f0908591")]
+        [InlineData(new string[] { "\u00fc", "\u6c34" }, "65c3bce6b0b4")]
         public static void WriteTextString_IndefiniteLength_WithPatching_SingleValue_HappyPath(string[] chunkInputs, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
