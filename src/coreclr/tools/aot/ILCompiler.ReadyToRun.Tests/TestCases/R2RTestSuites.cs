@@ -669,6 +669,85 @@ public class R2RTestSuites
         }
     }
 
+    [Fact]
+    public void EmbedClassHandleAndInterfaceDevirtRespectVersionBubble()
+    {
+        var externalLib = new CompiledAssembly
+        {
+            AssemblyName = "ExternalLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/ExternalLib.cs"],
+        };
+        var testAssembly = new CompiledAssembly
+        {
+            AssemblyName = nameof(EmbedClassHandleAndInterfaceDevirtRespectVersionBubble),
+            SourceResourceNames = ["CrossModuleInlining/DevirtExternalTypeArg.cs"],
+            References = [externalLib],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(EmbedClassHandleAndInterfaceDevirtRespectVersionBubble),
+            [
+                new(nameof(EmbedClassHandleAndInterfaceDevirtRespectVersionBubble),
+                    [
+                        new CrossgenAssembly(externalLib) { Kind = Crossgen2InputKind.Reference },
+                        new CrossgenAssembly(testAssembly),
+                    ])
+                {
+                    Options = [Crossgen2Option.Optimize],
+                    AdditionalArgs = ["--opt-cross-module", "System.Private.CoreLib"],
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+
+            // Methods embedding class handles to external type instantiations (via typeof or guarded class devirtualization)
+            // should compile cleanly into the R2R image without throwing RequiresRuntimeJitException.
+            Assert.True(methods.Any(m => m.SignatureString.Contains("DevirtExternalTypeArg.GetExternalConstructedType(", StringComparison.Ordinal)));
+            Assert.True(methods.Any(m => m.SignatureString.Contains("DevirtExternalTypeArg.CallVirtualOnExternalArg(", StringComparison.Ordinal)));
+            Assert.True(methods.Any(m => m.SignatureString.Contains("DevirtExternalTypeArg.CallGuardedInterfaceOnLocalArg(", StringComparison.Ordinal)));
+            Assert.True(methods.Any(m => m.SignatureString.Contains("DevirtExternalTypeArg.CallInterfaceOnLocalArg(", StringComparison.Ordinal)));
+            Assert.True(methods.Any(m => m.SignatureString.Contains("ExternalInterfaceCaller.CallGuardedInterfaceOnExternalArg(", StringComparison.Ordinal)));
+            Assert.True(methods.Any(m => m.SignatureString.Contains("ExternalInterfaceCaller.CallInterfaceOnExternalArg(", StringComparison.Ordinal)));
+
+            var typeHandles = new HashSet<string>();
+            var virtualEntries = new HashSet<string>();
+            var allImports = new HashSet<string>();
+            var formattingOptions = new SignatureFormattingOptions();
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    if (entry.Signature is null)
+                        continue;
+
+                    string signature = entry.Signature.ToString(formattingOptions);
+                    allImports.Add(signature);
+                    int kindStart = signature.LastIndexOf(" (", StringComparison.Ordinal);
+                    if (kindStart <= 0)
+                        continue;
+
+                    if (entry.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle)
+                        typeHandles.Add(signature[..kindStart]);
+                    else if (entry.Signature.FixupKind == ReadyToRunFixupKind.VirtualEntry)
+                        virtualEntries.Add(signature[..kindStart]);
+                }
+            }
+
+            string d = $"All imports: [{string.Join(", ", allImports)}]";
+            Assert.True(typeHandles.Contains("GenericImpl`1<ExternalLib+ExternalType>"), d);
+            // Calling a virtual class method on GenericImpl<ExternalType> emits a class VIRTUAL_ENTRY import.
+            Assert.True(virtualEntries.Contains("int GenericImpl`1<ExternalLib+ExternalType>.GetId()"), d);
+            // Interface devirtualization succeeds for GenericImpl<LocalTag> (resolving ITestInterface.GetId()
+            // to GenericImpl<LocalTag>.GetId()) and is blocked for GenericImpl<ExternalType> (retaining
+            // the ITestInterface.GetId() VIRTUAL_ENTRY import).
+            Assert.True(allImports.Any(s => s.Contains("GenericImpl`1<LocalTag>.GetId()", StringComparison.Ordinal)), d);
+            Assert.True(virtualEntries.Contains("int ITestInterface.GetId()"), d);
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmWebcilModule()
     {
