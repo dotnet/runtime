@@ -770,6 +770,16 @@ public:
         return m_addrExposed;
     }
 
+    bool RequiresGlobRefFlag() const
+    {
+#if FEATURE_IMPLICIT_BYREFS
+        // Copy-omission candidates must be ordered before their addresses escape.
+        return IsAddressExposed() || lvIsLastUseCopyOmissionCandidate;
+#else
+        return IsAddressExposed();
+#endif // FEATURE_IMPLICIT_BYREFS
+    }
+
 #ifdef DEBUG
     void SetDefinedViaAddress(char value)
     {
