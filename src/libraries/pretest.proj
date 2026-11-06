@@ -67,6 +67,18 @@
     <MSBuild Projects="@(BrowserHostProject)"
              Targets="Build"
              Properties="$(TraversalGlobalProperties);Configuration=$(HostConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);BrowserHostNativeFlavor=diagnostics" />
+    <PropertyGroup>
+      <_BrowserHostNativeFlavorDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'data', 'native-flavors', 'diagnostics'))</_BrowserHostNativeFlavorDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_BrowserHostNativeFlavorAsset Include="$(LibrariesSharedFrameworkDir)native-flavors\diagnostics\dotnet.native.js;
+                                               $(LibrariesSharedFrameworkDir)native-flavors\diagnostics\dotnet.native.js.symbols;
+                                               $(LibrariesSharedFrameworkDir)native-flavors\diagnostics\dotnet.native.wasm" />
+    </ItemGroup>
+    <MakeDir Directories="$(_BrowserHostNativeFlavorDir)" />
+    <Copy SourceFiles="@(_BrowserHostNativeFlavorAsset)"
+          DestinationFolder="$(_BrowserHostNativeFlavorDir)"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="BuildExternalsProject"
