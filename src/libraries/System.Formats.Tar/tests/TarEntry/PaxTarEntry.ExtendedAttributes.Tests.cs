@@ -290,7 +290,7 @@ namespace System.Formats.Tar.Tests
             using MemoryStream ms = BuildRawPaxArchiveStream("file.txt",
                 extraEAs: new Dictionary<string, string> { ["uid"] = "notanumber" });
             using TarReader reader = new(ms);
-            Assert.Throws<FormatException>(() => reader.GetNextEntry());
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
         }
     }
 }
