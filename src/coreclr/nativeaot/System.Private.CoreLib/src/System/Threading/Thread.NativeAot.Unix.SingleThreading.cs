@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
-
 namespace System.Threading
 {
     public sealed partial class Thread
@@ -15,15 +13,6 @@ namespace System.Threading
 
         private void PlatformSpecificInitializeExistingThread()
         {
-        }
-
-        [UnmanagedCallersOnly]
-        private static void OnThreadExit()
-        {
-            if (t_currentThread is Thread currentThread)
-            {
-                StopThread(currentThread);
-            }
         }
 
         public void Interrupt() => _isPendingInterrupt = true;

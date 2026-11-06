@@ -34,20 +34,24 @@ namespace System.Threading
         [DataContract]
         private string? _name;
 
+#if FEATURE_MULTITHREADING
         // Protects starting the thread and setting its priority
         private Lock _lock = new Lock(useTrivialWaits: true);
+#endif
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
         // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
         // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
         private bool _mayNeedResetForThreadPool;
 
+#if FEATURE_MULTITHREADING
         // so far the only place we initialize it is `WaitForForegroundThreads`
         // and only in the case when there are running foreground threads
         // by the moment of `StartupCodeHelpers.Shutdown()` invocation
         private static ManualResetEvent s_allDone;
 
         private static int s_foregroundRunningCount;
+#endif
 
         private Thread()
         {
@@ -68,7 +72,9 @@ namespace System.Threading
 
         private static unsafe void RegisterThreadExitCallback()
         {
+#if FEATURE_MULTITHREADING
             RuntimeImports.RhSetThreadExitCallback(&OnThreadExit);
+#endif
         }
 
         // Slow path executed once per thread
@@ -82,6 +88,7 @@ namespace System.Threading
 
             ThreadState state = 0;
 
+#if FEATURE_MULTITHREADING
             // The main thread is foreground, other ones are background
             if (currentThread._managedThreadId.Id != System.Threading.ManagedThreadId.IdMainThread)
             {
@@ -91,6 +98,7 @@ namespace System.Threading
             {
                 Interlocked.Increment(ref s_foregroundRunningCount);
             }
+#endif
 
             currentThread._threadState = (int)(state | ThreadState.Running);
             currentThread.PlatformSpecificInitializeExistingThread();
@@ -141,12 +149,16 @@ namespace System.Threading
                 // on thread start we count its state in `StartThread`
                 if (value)
                 {
+#if FEATURE_MULTITHREADING
                     int threadState = SetThreadStateBit(ThreadState.Background);
                     // was foreground and has started
                     if ((threadState & ((int)ThreadState.Background | (int)ThreadState.Unstarted | (int)ThreadState.Stopped)) == 0)
                     {
                         DecrementRunningForeground();
                     }
+#else
+                    SetThreadStateBit(ThreadState.Background);
+#endif
                 }
                 else
                 {
@@ -154,7 +166,9 @@ namespace System.Threading
                     // was background and has started
                     if ((threadState & ((int)ThreadState.Background | (int)ThreadState.Unstarted | (int)ThreadState.Stopped)) == (int)ThreadState.Background)
                     {
+#if FEATURE_MULTITHREADING
                         IncrementRunningForeground();
+#endif
                         _mayNeedResetForThreadPool = true;
                     }
                 }
@@ -237,8 +251,10 @@ namespace System.Threading
                     throw new ThreadStateException(SR.ThreadState_Dead_Priority);
                 }
 
+#if FEATURE_MULTITHREADING
                 // Prevent race condition with starting this thread
                 using (_lock.EnterScope())
+#endif
                 {
                     if (HasStarted() && !SetPriorityLive(value))
                     {
@@ -302,6 +318,7 @@ namespace System.Threading
 
         partial void StartCore();
 
+#if FEATURE_MULTITHREADING
         private static void StopThread(Thread thread)
         {
             if ((thread._threadState & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
@@ -330,10 +347,13 @@ namespace System.Threading
                 s_allDone?.Set();
             }
         }
+#endif
 
         internal static void WaitForForegroundThreads()
         {
+            // ProcessExit handlers observe this state even on single-threaded targets.
             Thread.CurrentThread.IsBackground = true;
+#if FEATURE_MULTITHREADING
             // last read/write inside `IsBackground` issues full barrier no matter of logic flow
             // so we can just read `s_foregroundRunningCount`
             if (s_foregroundRunningCount == 0)
@@ -350,6 +370,7 @@ namespace System.Threading
                 return;
             }
             s_allDone.WaitOne();
+#endif
         }
     }
 }
