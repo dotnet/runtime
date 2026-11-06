@@ -94,6 +94,8 @@ namespace System.Formats.Tar
         /// <returns>A <see cref="TarEntry"/> instance if a valid entry was found, or <see langword="null"/> if the end of the archive has been reached.</returns>
         /// <exception cref="InvalidDataException"><para>The entry's data is malformed.</para>
         /// <para>-or-</para>
+        /// <para>A numeric field of an entry's header is not a valid number, or its value is out of the range the field can represent.</para>
+        /// <para>-or-</para>
         /// <para>The archive contains entries in different formats.</para>
         /// <para>-or-</para>
         /// <para>More than one Global Extended Attributes Entry was found in the current <see cref="TarEntryFormat.Pax"/> archive.</para>
@@ -130,6 +132,8 @@ namespace System.Formats.Tar
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <returns>A value task containing a <see cref="TarEntry"/> instance if a valid entry was found, or <see langword="null"/> if the end of the archive has been reached.</returns>
         /// <exception cref="InvalidDataException"><para>The archive is malformed.</para>
+        /// <para>-or-</para>
+        /// <para>A numeric field of an entry's header is not a valid number, or its value is out of the range the field can represent.</para>
         /// <para>-or-</para>
         /// <para>The archive contains entries in different formats.</para>
         /// <para>-or-</para>
