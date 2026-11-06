@@ -921,22 +921,6 @@ typedef struct _DISPATCHER_CONTEXT {
     PVOID HistoryTable;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
-#elif defined(HOST_X86)
-
-typedef struct _DISPATCHER_CONTEXT {
-    DWORD ControlPc;
-    DWORD ImageBase;
-    PRUNTIME_FUNCTION FunctionEntry;
-    DWORD EstablisherFrame;
-    DWORD TargetIp;
-    PKNONVOLATILE_CONTEXT CurrentNonVolatileContextRecord;
-    PCONTEXT ContextRecord;
-    PEXCEPTION_ROUTINE LanguageHandler;
-    PVOID HandlerData;
-    PVOID HistoryTable;
-    BOOLEAN ControlPcIsUnwound;
-} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
-
 #elif defined(HOST_S390X)
 
 typedef struct _DISPATCHER_CONTEXT {

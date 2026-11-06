@@ -16,9 +16,6 @@ GetFrameLocation(CONTEXT* pContext, uint64_t* ip, uint64_t* sp)
 #if defined(__x86_64__)
     *ip = pContext->Rip;
     *sp = pContext->Rsp;
-#elif defined(__i386__)
-    *ip = pContext->Eip;
-    *sp = pContext->Esp;
 #elif defined(__aarch64__)
     *ip = pContext->Pc;
     *sp = pContext->Sp;

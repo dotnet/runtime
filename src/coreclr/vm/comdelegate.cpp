@@ -461,7 +461,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
     {
         // The return buffer argument is implicit in both signatures.
 
-#if !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
+#ifndef HAS_RETBUFF_ARGUMENT_REGISTER
         // The ifdef above disables this code if the ret buff arg is always in the same register, which
         // means that we don't need to do any shuffling for it.
 
@@ -470,7 +470,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 
         if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
             return FALSE;
-#endif // !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
+#endif // !HAS_RETBUFF_ARGUMENT_REGISTER
     }
 
     // Handle async continuation argument.
@@ -667,12 +667,7 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 
     UINT stackSizeDelta;
 
-#ifdef UNIX_X86_ABI
-    // Stack does not shrink as UNIX_X86_ABI uses CDECL (instead of STDCALL).
-    stackSizeDelta = 0;
-#else
     stackSizeDelta = stackSizeSrc - stackSizeDst;
-#endif
 
     INT ofsSrc, ofsDst;
 

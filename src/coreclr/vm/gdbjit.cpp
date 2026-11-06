@@ -2344,27 +2344,6 @@ static void BuildDebugFrame(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize
        // DW_CFA_def_cfa_register 11(r11)
        0x0d, 0x0b,
     };
-#elif defined(TARGET_X86)
-    const unsigned int code_alignment_factor = 1;
-    const int data_alignment_factor = -4;
-
-    UINT8 cieCode[] = {
-        // DW_CFA_def_cfa 4(esp), 4
-        0x0c, 0x04, 0x04,
-        // DW_CFA_offset 8(eip), -4(= -4 * 1)
-       (0x02 << 6) | 0x08, 0x01,
-    };
-
-    UINT8 fdeCode[] = {
-        // DW_CFA_advance_loc 1
-       0x02, 0x01,
-       // DW_CFA_def_cfa_offset 8
-       0x0e, 0x08,
-       // DW_CFA_offset 5(ebp), -8(= -4 * 2)
-       (0x02 << 6) | 0x05, 0x02,
-       // DW_CFA_def_cfa_register 5(ebp)
-       0x0d, 0x05,
-    };
 #elif defined(TARGET_AMD64)
     const unsigned int code_alignment_factor = 1;
     const int data_alignment_factor = -8;
@@ -3570,9 +3549,7 @@ Elf32_Ehdr::Elf32_Ehdr()
         e_ident[i] = 0;
 
     e_type = ET_REL;
-#if defined(TARGET_X86)
-    e_machine = EM_386;
-#elif defined(TARGET_ARM)
+#if defined(TARGET_ARM)
     e_machine = EM_ARM;
 #endif
     e_flags = 0;
