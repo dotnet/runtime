@@ -669,6 +669,98 @@ public class R2RTestSuites
         }
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void DebugInfoEmissionFollowsStripOption(bool optimize, bool stripDebugInfo)
+    {
+        List<string> args = [];
+        if (!optimize)
+        {
+            args.Add("--optimize-disabled");
+        }
+        if (stripDebugInfo)
+        {
+            args.Add("--strip-debug-info");
+        }
+
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(DebugInfoEmissionFollowsStripOption),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(DebugInfoEmissionFollowsStripOption),
+            [
+                new(nameof(DebugInfoEmissionFollowsStripOption), [new CrossgenAssembly(input)])
+                {
+                    Options = optimize ? [Crossgen2Option.Optimize] : [],
+                    AdditionalArgs = args,
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = reader =>
+                    {
+                        Assert.Equal(!stripDebugInfo, reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.DebugInfo));
+                        List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+                        Assert.NotEmpty(methods);
+                        if (stripDebugInfo)
+                        {
+                            Assert.All(methods, method =>
+                                Assert.All(method.RuntimeFunctions, runtimeFunction => Assert.Null(runtimeFunction.DebugInfo)));
+                        }
+                        else
+                        {
+                            Assert.Contains(methods, method => method.RuntimeFunctions.Any(runtimeFunction =>
+                                runtimeFunction.DebugInfo is DebugInfo debugInfo &&
+                                debugInfo.BoundsList.Count > 0 && debugInfo.VariablesList.Count > 0));
+                        }
+                    },
+                },
+            ]));
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsNotReleaseCoreCLR))]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void DebugInfoGenerationFollowsStripOption(bool optimize, bool stripDebugInfo)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string input = Path.Combine(directory, "DebugInfo.dll");
+            R2RTestCaseCompiler compiler = new([TestPaths.SystemPrivateCoreLibPath]);
+            compiler.CompileAssembly("DebugInfo",
+                ["public static class DebugInfo { public static int Add(int x, int y) => x + y; }"], input);
+            List<string> args =
+            [
+                input, "-r", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS, "--targetarch", TestPaths.TargetArchitecture,
+                "--out", Path.Combine(directory, TestPaths.IsWasmTarget ? "DebugInfo.wasm" : "DebugInfo.r2r.dll"),
+                "--codegenopt", "JitDump=DebugInfo:Add",
+                optimize ? "--optimize" : "--optimize-disabled",
+            ];
+            if (stripDebugInfo)
+            {
+                args.Add("--strip-debug-info");
+            }
+
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardError + result.StandardOutput);
+            Assert.Contains($"OPTIONS: compDbgInfo = {(stripDebugInfo ? "false" : "true")}", result.StandardOutput);
+            Assert.Contains($"OPTIONS: compDbgCode = {(optimize ? "false" : "true")}", result.StandardOutput);
+            Assert.Equal(!stripDebugInfo, result.StandardOutput.Contains("In genIPmappingGen()", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmWebcilModule()
     {
@@ -692,6 +784,12 @@ public class R2RTestSuites
                     AdditionalArgs = ["--wasm-debug-info=none"],
                     Validate = ValidateNone,
                 },
+                new("WasmWebcilModuleStrippedDebugInfo", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--strip-debug-info"],
+                    Validate = ValidateStripped,
+                },
                 new("WasmWebcilModuleSymbolMap", [new CrossgenAssembly(wasmWebcilModule)])
                 {
                     OutputFileExtension = ".wasm",
@@ -705,6 +803,14 @@ public class R2RTestSuites
                     Validate = ValidateAll,
                 },
             ]));
+
+        static void ValidateStripped(ReadyToRunReader reader)
+        {
+            Assert.False(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.DebugInfo));
+            Assert.All(R2RAssert.GetAllMethods(reader), method =>
+                Assert.All(method.RuntimeFunctions, runtimeFunction => Assert.Null(runtimeFunction.DebugInfo)));
+            WasmR2RAssert.AssertFrameIdentityPrologs(Assert.IsType<WebcilImageReader>(reader.CompositeReader));
+        }
 
         static void ValidateDefault(ReadyToRunReader reader)
         {
@@ -3394,6 +3500,55 @@ public class R2RTestSuites
                     method.InstanceArgs is ["int"] &&
                     method.SignatureString.Contains("[UNBOX]", StringComparison.Ordinal));
             Assert.NotEmpty(unboxingThunk.RuntimeFunctions);
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
+    public void VirtualFunctionOverrideFixupFormatting()
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(VirtualFunctionOverrideFixupFormatting),
+            SourceResourceNames = ["VirtualFunctionOverrideSignatureFormatting/DefaultInterfaceMethod.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(VirtualFunctionOverrideFixupFormatting),
+            [
+                new(nameof(VirtualFunctionOverrideFixupFormatting), [new CrossgenAssembly(input)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            ReadyToRunImportSection.ImportSectionEntry? checkFixup = reader.ImportSections
+                .SelectMany(section => section.Entries)
+                .FirstOrDefault(entry => entry.Signature.FixupKind == ReadyToRunFixupKind.Check_VirtualFunctionOverride);
+            Assert.NotNull(checkFixup);
+
+            Assert.EndsWith(
+                " (CHECK_VIRTUAL_FUNCTION_OVERRIDE)",
+                checkFixup.Signature.ToString(new SignatureFormattingOptions()),
+                StringComparison.Ordinal);
+
+            int signatureOffset = checkFixup.GetSignatureOffset(reader);
+            byte originalFixupType = reader.Image[signatureOffset];
+            reader.Image[signatureOffset] = (byte)(
+                (originalFixupType & (byte)ReadyToRunFixupKind.ModuleOverride) |
+                (byte)ReadyToRunFixupKind.Verify_VirtualFunctionOverride);
+            try
+            {
+                Assert.EndsWith(
+                    " (VERIFY_VIRTUAL_FUNCTION_OVERRIDE)",
+                    checkFixup.Signature.ToString(new SignatureFormattingOptions()),
+                    StringComparison.Ordinal);
+            }
+            finally
+            {
+                reader.Image[signatureOffset] = originalFixupType;
+            }
         }
     }
 
