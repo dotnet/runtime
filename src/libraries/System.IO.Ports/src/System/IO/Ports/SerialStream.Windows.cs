@@ -241,6 +241,8 @@ namespace System.IO.Ports
         [MemberNotNullWhen(true, nameof(_handle))]
         internal bool IsOpen => _handle != null && !_eventRunner.ShutdownLoop;
 
+        internal bool NeedDispose => _handle != null && !_handle.IsClosed;
+
         internal Parity Parity
         {
             set
