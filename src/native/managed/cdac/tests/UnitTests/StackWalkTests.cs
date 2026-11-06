@@ -1260,10 +1260,11 @@ public unsafe class StackWalkTests
             byte[] module = new byte[4];
             helpers.Write(module, 0x4000u);
             builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x3000, Data = module, Name = "Module" });
-            byte[] r2rInfo = new byte[12];
+            byte[] r2rInfo = new byte[16];
             helpers.Write(r2rInfo.AsSpan(0), ImageBase);
             helpers.Write(r2rInfo.AsSpan(4), 1u);
             helpers.Write(r2rInfo.AsSpan(8), 0x5000u);
+            helpers.Write(r2rInfo.AsSpan(12), 0x4000u);
             builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x4000, Data = r2rInfo, Name = "ReadyToRun info" });
             byte[] importSection = new byte[20];
             helpers.Write(importSection.AsSpan(0), ImportSectionRva);
@@ -1340,7 +1341,8 @@ public unsafe class StackWalkTests
                 (nameof(X86Context.Ebp), 0), (nameof(X86Context.Ebx), 4), (nameof(X86Context.Edi), 8), (nameof(X86Context.Esi), 12)),
             [DataType.Module] = CreateTypeInfo((nameof(Data.Module.ReadyToRunInfo), 0)),
             [DataType.ReadyToRunInfo] = CreateTypeInfo(
-                (nameof(Data.ReadyToRunInfo.LoadedImageBase), 0), (nameof(Data.ReadyToRunInfo.NumImportSections), 4), (nameof(Data.ReadyToRunInfo.ImportSections), 8)),
+                (nameof(Data.ReadyToRunInfo.LoadedImageBase), 0), (nameof(Data.ReadyToRunInfo.NumImportSections), 4), (nameof(Data.ReadyToRunInfo.ImportSections), 8),
+                (nameof(Data.ReadyToRunInfo.CompositeInfo), 12)),
         };
         if (methodDescMap)
         {
