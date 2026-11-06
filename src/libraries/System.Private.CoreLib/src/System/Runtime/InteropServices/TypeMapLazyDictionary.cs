@@ -26,10 +26,12 @@ namespace System.Runtime.InteropServices
             private LazyExternalTypeDictionary? _externalTypeMap;
             private LazyProxyTypeDictionary? _proxyTypeMap;
             private ExceptionDispatchInfo? _creationException;
+            private readonly Interop.BOOL _followAssemblyTargets;
 
-            public CallbackContext(RuntimeType groupType)
+            public CallbackContext(RuntimeType groupType, bool followAssemblyTargets)
             {
                 _groupType = groupType;
+                _followAssemblyTargets = followAssemblyTargets ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             }
 
             public RuntimeAssembly CurrentAssembly
@@ -248,16 +250,15 @@ namespace System.Runtime.InteropServices
         private static unsafe CallbackContext CreateMaps(
             RuntimeType groupType,
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newExternalTypeEntry,
-            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry)
+            delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry,
+            RuntimeAssembly? startingAssembly = null)
         {
-            RuntimeAssembly? startingAssembly;
-            if (AppContext.GetData("System.Runtime.InteropServices.TypeMappingEntryAssembly") is string entryAssemblyName)
+            bool followAssemblyTargets = startingAssembly is null;
+            if (startingAssembly is null)
             {
-                startingAssembly = (RuntimeAssembly?)Assembly.Load(entryAssemblyName);
-            }
-            else
-            {
-                startingAssembly = (RuntimeAssembly?)Assembly.GetEntryAssembly();
+                startingAssembly = AppContext.GetData("System.Runtime.InteropServices.TypeMappingEntryAssembly") is string entryAssemblyName
+                    ? (RuntimeAssembly?)Assembly.Load(entryAssemblyName)
+                    : (RuntimeAssembly?)Assembly.GetEntryAssembly();
             }
 
             if (startingAssembly is null)
@@ -265,7 +266,7 @@ namespace System.Runtime.InteropServices
                 throw new InvalidOperationException(SR.InvalidOperation_TypeMapMissingEntryAssembly);
             }
 
-            CallbackContext context = new(groupType);
+            CallbackContext context = new(groupType, followAssemblyTargets);
             ProcessAttributes(
                 new QCallAssembly(ref startingAssembly),
                 new QCallTypeHandle(ref groupType),
@@ -282,14 +283,15 @@ namespace System.Runtime.InteropServices
             return context;
         }
 
-        public static IReadOnlyDictionary<string, Type> CreateExternalTypeMap(RuntimeType groupType)
+        public static IReadOnlyDictionary<string, Type> CreateExternalTypeMap(RuntimeType groupType, RuntimeAssembly? assembly = null)
         {
             unsafe
             {
                 return CreateMaps(
                     groupType,
                     &NewExternalTypeEntry,
-                    null).ExternalTypeMap;
+                    null,
+                    assembly).ExternalTypeMap;
             }
         }
 

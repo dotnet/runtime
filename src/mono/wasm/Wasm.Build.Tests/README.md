@@ -131,14 +131,19 @@ separately and referenced unchanged by the current app. The test runs in the `no
 both runtime flavors.
 
 `LibraryInitializerTests.JSExportFromAssemblyProvider` checks a library reached only from
-JavaScript through one generated type-map provider per assembly. It covers multiple exports,
+JavaScript through one generated type-map provider per assembly. Both provider libraries
+are downloaded lazily, after the application's own exports have been discovered.
+It covers multiple exports,
 overloads, repeated assembly lookup, and trimmed and untrimmed publication without explicitly
 rooting the library. The provider's `ReadOnlySpan<string>` catalog supports discovery without enumerating
 the type map, and `Bind(string methodId)` dispatches on invariant decimal catalog indexes.
 On both runtimes, a counting provider verifies one activation at discovery, no binding at discovery or
 property read, exactly one binding on first invocation, stable aliases, and an
-unused method that must never be bound. Mono coverage uses trimmed apps and
-the unconditional external type-map support required by JSExports.
+unused method that must never be bound. Reentrant binding is rejected, and an
+async binding failure must reject its Promise and permit retry.
+Mono coverage includes trimmed and untrimmed apps using the internal
+assembly-local lookup required by JSExports. Signature metadata is
+published during discovery, while marshalers and managed callbacks remain lazy.
 Private and protected nested exports exercise generated unsafe accessors on both
 runtimes, including trimmed publication.
 

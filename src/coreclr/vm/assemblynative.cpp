@@ -1767,6 +1767,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
 
     BEGIN_QCALL;
 
+    BOOL followAssemblyTargets = context->_followAssemblyTargets;
     TypeHandle groupTypeTH = pGroupType.AsTypeHandle();
     _ASSERTE(!groupTypeTH.IsTypeDesc());
     MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
@@ -1834,28 +1835,30 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
                 currAssembly);
         }
 
-        COUNT_T assemblyTargetCount = 0;
-        hasPrecachedTargets = ProcessPrecachedTypeMapInfo(
-            [=, &assemblyTargetCount](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasTypeMapAssemblyTargets(groupTypeMT, &assemblyTargetCount); },
-            [&](PTR_ReadyToRunInfo pR2RInfo)
-             {
-                CQuickArray<Module*> targetModules;
-                targetModules.ReSizeThrows(assemblyTargetCount);
-                COUNT_T numReturnedTargets = pR2RInfo->GetTypeMapAssemblyTargets(groupTypeMT, targetModules.Ptr(), assemblyTargetCount);
-                _ASSERTE(numReturnedTargets == assemblyTargetCount);
-                for (COUNT_T i = 0; i < assemblyTargetCount; i++)
+        if (followAssemblyTargets)
+        {
+            COUNT_T assemblyTargetCount = 0;
+            hasPrecachedTargets = ProcessPrecachedTypeMapInfo(
+                [=, &assemblyTargetCount](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasTypeMapAssemblyTargets(groupTypeMT, &assemblyTargetCount); },
+                [&](PTR_ReadyToRunInfo pR2RInfo)
                 {
-                    if (targetModules[i] == nullptr)
+                    CQuickArray<Module*> targetModules;
+                    targetModules.ReSizeThrows(assemblyTargetCount);
+                    COUNT_T numReturnedTargets = pR2RInfo->GetTypeMapAssemblyTargets(groupTypeMT, targetModules.Ptr(), assemblyTargetCount);
+                    _ASSERTE(numReturnedTargets == assemblyTargetCount);
+                    for (COUNT_T i = 0; i < assemblyTargetCount; i++)
                     {
-                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                        if (targetModules[i] == nullptr)
+                        {
+                            ThrowHR(COR_E_BADIMAGEFORMAT);
+                        }
+                        Assembly* targetAssembly = targetModules[i]->GetAssembly();
+                        assemblies.Add(targetAssembly);
                     }
-                    Assembly* targetAssembly = targetModules[i]->GetAssembly();
-                    assemblies.Add(targetAssembly);
-                }
-                return true;
-             },
-             currAssembly
-        );
+                    return true;
+                },
+                currAssembly);
+        }
 #endif // FEATURE_READYTORUN
 
         if ((newExternalTypeEntry != nullptr && !hasPrecachedExternal) ||
@@ -1870,11 +1873,14 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
             // target attributes in that case ensures the runtime correctly loads (and
             // throws for) unresolvable assemblies. The AssemblyTargetProcessor already
             // deduplicates, so re-processing is safe.
-            ProcessTypeMapAttribute(
-                TypeMapAssemblyTargetAttributeName,
-                assemblies,
-                groupTypeMT,
-                currAssembly);
+            if (followAssemblyTargets)
+            {
+                ProcessTypeMapAttribute(
+                    TypeMapAssemblyTargetAttributeName,
+                    assemblies,
+                    groupTypeMT,
+                    currAssembly);
+            }
 
             // We will only process the specific type maps if we have a callback to process
             // the entry and the precached map was not calculated for this module.

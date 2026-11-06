@@ -132,7 +132,7 @@ namespace JSImportGenerator.Unit.Tests
                     }
                     else
                     {
-                        Assert.IsType<(string Source, string Registration, string Attribute, string Name, int Hash)>(output.Value);
+                        Assert.IsType<(string Source, string Registration, string Attribute, string Name, int Hash, string Signature)>(output.Value);
                     }
 
                     if (changeSignature)
@@ -227,7 +227,15 @@ namespace JSImportGenerator.Unit.Tests
                         [global::System.Diagnostics.DebuggerNonUserCode]
                         public override global::System.ReadOnlySpan<string> GetExportNames()
                         {
+                            unsafe
+                            {
+                                __RegisterSignature(this, [global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Discard]);
+                                __RegisterSignature(this, [global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Discard]);
+                            }
                             return new string[] { "[TestProject]Exports:First#19325221", "[TestProject]Exports:Second#19325221" };
+
+                            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "RegisterSignature")]
+                            static unsafe extern void __RegisterSignature(global::System.Runtime.InteropServices.JavaScript.JSExportProvider provider, global::System.ReadOnlySpan<global::System.Runtime.InteropServices.JavaScript.JSMarshalerType> signatures);
                         }
 
                         [global::System.Diagnostics.DebuggerNonUserCode]
@@ -521,7 +529,14 @@ namespace JSImportGenerator.Unit.Tests
                                     [global::System.Diagnostics.DebuggerNonUserCode]
                                     public override global::System.ReadOnlySpan<string> GetExportNames()
                                     {
+                                        unsafe
+                                        {
+                                            __RegisterSignature(this, [global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Discard, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Object, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int52, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.BigInt64, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Action(), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Function(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int32), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Span(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Byte), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.ArraySegment(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Byte), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Object), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Array(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Object), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTime, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTimeOffset, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTime), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTimeOffset), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int52), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.BigInt64), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.ArraySegment(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Single)]);
+                                        }
                                         return new string[] { "[TestProject]Basic:AnnotatedExport#2034238666" };
+
+                                        [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "RegisterSignature")]
+                                        static unsafe extern void __RegisterSignature(global::System.Runtime.InteropServices.JavaScript.JSExportProvider provider, global::System.ReadOnlySpan<global::System.Runtime.InteropServices.JavaScript.JSMarshalerType> signatures);
                                     }
 
                                     [global::System.Diagnostics.DebuggerNonUserCode]
@@ -706,7 +721,14 @@ namespace JSImportGenerator.Unit.Tests
                                     [global::System.Diagnostics.DebuggerNonUserCode]
                                     public override global::System.ReadOnlySpan<string> GetExportNames()
                                     {
+                                        unsafe
+                                        {
+                                            __RegisterSignature(this, [global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int32)]);
+                                        }
                                         return new string[] { "[TestProject]Basic:Export1#622134597" };
+
+                                        [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "RegisterSignature")]
+                                        static unsafe extern void __RegisterSignature(global::System.Runtime.InteropServices.JavaScript.JSExportProvider provider, global::System.ReadOnlySpan<global::System.Runtime.InteropServices.JavaScript.JSMarshalerType> signatures);
                                     }
 
                                     [global::System.Diagnostics.DebuggerNonUserCode]

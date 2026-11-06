@@ -11,16 +11,18 @@ import { bind_arg_marshal_to_js, end_marshal_task_to_js, release_eager_task_hold
 import {
     get_sig, get_signature_argument_count,
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
+    JSMarshalerSignatureHeaderSize, JSMarshalerTypeSize,
 } from "./marshal";
 import { JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, MarshalerType, CSFnHandle } from "./types/internal";
 import { assert_js_interop } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 import { bind_assembly_exports, invoke_async_jsexport_by_handle, invoke_sync_jsexport_by_handle } from "./managed-exports";
 import { mono_log_debug } from "./logging";
-import { do_not_force_dispose } from "./gc-handles";
+import { localHeapViewU8 } from "./memory";
+import type { NativePointer } from "./types/emscripten";
 
 type DeferredBinding = {
-    bind?: (methodId: string) => void,
+    signature?: Uint8Array,
     boundFn?: Function,
     wrapper?: Function,
     isBinding: boolean,
@@ -28,14 +30,17 @@ type DeferredBinding = {
 };
 
 export const deferredCsFunctions = new Map<string, DeferredBinding>();
-export const deferredCsBinders = new Set<(methodId: string) => void>();
 
-export function registerLazyCsFunctions (assemblyName: string, exportNames: string[], bind: (methodId: string) => void): void {
+export function registerLazyCsFunctions (assemblyName: string, exportNames: string[], methodHandles: ArrayLike<CSFnHandle>, signatures: ArrayLike<JSFunctionSignature>): void {
     loaderHelpers.assert_runtime_running();
     const names = parseJSExportNames(assemblyName, exportNames);
-    // The binder is runtime infrastructure, not an application delegate proxy.
-    Object.assign(bind, { [do_not_force_dispose]: true });
-    deferredCsBinders.add(bind);
+    mono_assert(names.length === methodHandles.length && names.length === signatures.length, "JSExport signatures do not match the catalog.");
+    const snapshots = Array.from(signatures, signature => {
+        mono_assert(get_signature_version(signature) === 2, "JSExport signature version mismatch.");
+        const size = JSMarshalerSignatureHeaderSize + (get_signature_argument_count(signature) + 2) * JSMarshalerTypeSize;
+        const start = Number(signature) >>> 0;
+        return localHeapViewU8().slice(start, start + size);
+    });
     if (!exportsByAssembly.has(assemblyName)) {
         const exports = {};
         exportsByAssembly.set(assemblyName, exports);
@@ -49,18 +54,23 @@ export function registerLazyCsFunctions (assemblyName: string, exportNames: stri
             continue;
         }
 
-        const binding: DeferredBinding = { bind, isBinding: false, isDisposed: false };
+        const index = Number(methodId);
+        const binding: DeferredBinding = { signature: snapshots[index], isBinding: false, isDisposed: false };
         const deferredFn = function (this: unknown, ...args: unknown[]) {
             loaderHelpers.assert_runtime_running();
             mono_assert(!binding.isDisposed, () => `The JSExport '${key}' is disposed.`);
             if (!binding.boundFn) {
                 mono_assert(!binding.isBinding, () => `Reentrant binding of JSExport '${key}'.`);
-                const bind = binding.bind;
-                mono_assert(bind, () => `Missing binder for JSExport '${key}'.`);
+                const signature = binding.signature;
+                mono_assert(signature, () => `Missing signature for JSExport '${key}'.`);
                 binding.isBinding = true;
+                const sp = Module.stackSave();
                 try {
-                    bind(methodId);
+                    const pointer: NativePointer = Module.stackAlloc(signature.length);
+                    localHeapViewU8().set(signature, Number(pointer) >>> 0);
+                    mono_wasm_bind_cs_function(methodHandles[index], assemblyName, namespaceName, shortClassName, methodName, signatureHash, pointer as JSFunctionSignature);
                 } finally {
+                    if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
                     binding.isBinding = false;
                 }
             }
@@ -168,7 +178,7 @@ export function mono_wasm_bind_cs_function (handle: CSFnHandle, assemblyName: st
     const deferred = deferredCsFunctions.get(getCsFunctionKey(assemblyName, namespaceName, shortClassName, methodName, signatureHash));
     if (deferred) {
         deferred.boundFn = bound_fn;
-        deferred.bind = undefined;
+        deferred.signature = undefined;
     } else {
         _walk_exports_to_set_function(assemblyName, namespaceName, shortClassName, methodName, signatureHash, bound_fn);
     }

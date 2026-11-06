@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName(assemblyName));
 
-            if (TryBindMappedAssemblyExports(assemblyName))
+            if (TryBindMappedAssemblyExports(assembly, assemblyName))
             {
                 return Task.CompletedTask;
             }

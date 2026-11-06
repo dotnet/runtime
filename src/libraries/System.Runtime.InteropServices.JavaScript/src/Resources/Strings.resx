@@ -204,4 +204,25 @@
   <data name="ValueOutOf52BitRange" xml:space="preserve">
     <value>Overflow: value {0} is out of {1} {2} range.</value>
   </data>
+  <data name="JSExportMissingSignatures" xml:space="preserve">
+    <value>The JavaScript export provider did not register signatures for its export catalog.</value>
+  </data>
+  <data name="JSExportInvalidCatalog" xml:space="preserve">
+    <value>The JavaScript export catalog contains an invalid method name or signature hash.</value>
+  </data>
+  <data name="JSExportMissingBinding" xml:space="preserve">
+    <value>Unable to resolve the JavaScript export binding.</value>
+  </data>
+  <data name="JSExportReentrantBinding" xml:space="preserve">
+    <value>A JavaScript export cannot be bound recursively.</value>
+  </data>
+  <data name="JSExportInvalidBinding" xml:space="preserve">
+    <value>The JavaScript export provider bound a method that does not match the requested export.</value>
+  </data>
+  <data name="JSExportConditionalProviderNotSupported" xml:space="preserve">
+    <value>Conditional JavaScript export provider mappings are not supported on Mono.</value>
+  </data>
+  <data name="JSExportDuplicateProvider" xml:space="preserve">
+    <value>Multiple JavaScript export providers were declared for '{0}'.</value>
+  </data>
 </root>

@@ -27,11 +27,35 @@ namespace System.Runtime.InteropServices.JavaScript
         // Guarded by lock (this) in the multi-threaded build: BindManagedFunction can register an export
         // into another thread's context via BindingContextOrMain, concurrently with CallJSExport reading it.
         private readonly Dictionary<int, JSExportEntry> JSExportByHandle = new Dictionary<int, JSExportEntry>();
+        // Discard binding-only state once the compact callback entry has been published.
+        private readonly Dictionary<int, PendingJSExport> PendingJSExportByHandle = new();
         private int NextJSExportHandle = 1;
+        // Keep provider assemblies alive for the lifetime of their cached function pointers.
+        internal readonly Dictionary<string, JSExportProvider> BoundExportAssemblies = new(StringComparer.Ordinal);
 
         internal unsafe readonly struct JSExportEntry(delegate*<JSMarshalerArgument*, void> callback)
         {
             internal readonly delegate*<JSMarshalerArgument*, void> Callback = callback;
+        }
+
+        internal sealed unsafe class PendingJSExport
+        {
+            internal delegate*<JSMarshalerArgument*, void> Callback;
+            internal readonly JSExportProvider Provider;
+            internal readonly string MethodId;
+            internal readonly string FullyQualifiedName;
+            internal readonly int SignatureHash;
+            internal readonly JSFunctionBinding Signature;
+            internal bool IsBinding;
+
+            internal PendingJSExport(JSExportProvider provider, string methodId, string fullyQualifiedName, int signatureHash, JSFunctionBinding signature)
+            {
+                Provider = provider;
+                MethodId = methodId;
+                FullyQualifiedName = fullyQualifiedName;
+                SignatureHash = signatureHash;
+                Signature = signature;
+            }
         }
 
         public int PromiseHolderCount
@@ -308,6 +332,19 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        internal int AllocJSExportHandle(PendingJSExport entry)
+        {
+#if FEATURE_WASM_MANAGED_THREADS
+            lock (this)
+#endif
+            {
+                int methodHandle = NextJSExportHandle++;
+                JSExportByHandle[methodHandle] = default;
+                PendingJSExportByHandle[methodHandle] = entry;
+                return methodHandle;
+            }
+        }
+
         public bool TryGetJSExport(int methodHandle, out JSExportEntry entry)
         {
 #if FEATURE_WASM_MANAGED_THREADS
@@ -315,6 +352,39 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
             {
                 return JSExportByHandle.TryGetValue(methodHandle, out entry);
+            }
+        }
+
+        internal bool TryGetPendingJSExport(int methodHandle, [NotNullWhen(true)] out PendingJSExport? entry)
+        {
+#if FEATURE_WASM_MANAGED_THREADS
+            lock (this)
+#endif
+            {
+                return PendingJSExportByHandle.TryGetValue(methodHandle, out entry);
+            }
+        }
+
+        internal void CompleteJSExportBinding(int methodHandle, JSExportEntry entry)
+        {
+#if FEATURE_WASM_MANAGED_THREADS
+            lock (this)
+#endif
+            {
+                ObjectDisposedException.ThrowIf(_isDisposed, this);
+                JSExportByHandle[methodHandle] = entry;
+                PendingJSExportByHandle.Remove(methodHandle);
+            }
+        }
+
+        internal void FreeJSExportHandle(int methodHandle)
+        {
+#if FEATURE_WASM_MANAGED_THREADS
+            lock (this)
+#endif
+            {
+                JSExportByHandle.Remove(methodHandle);
+                PendingJSExportByHandle.Remove(methodHandle);
             }
         }
 
@@ -651,6 +721,9 @@ namespace System.Runtime.InteropServices.JavaScript
                     ThreadCsOwnedObjects.Clear();
                     ThreadJsOwnedObjects.Clear();
                     ThreadJsOwnedHolders.Clear();
+                    JSExportByHandle.Clear();
+                    PendingJSExportByHandle.Clear();
+                    BoundExportAssemblies.Clear();
                     JSVHandleFreeList.Clear();
                     NextJSVHandle = IntPtr.Zero;
 

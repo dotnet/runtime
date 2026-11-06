@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.JavaScript;
@@ -13,7 +15,20 @@ namespace System.Runtime.InteropServices.JavaScript;
 [EditorBrowsable(EditorBrowsableState.Never)]
 public abstract class JSExportProvider
 {
+    private List<JSMarshalerType[]>? _signatures;
+
+    internal void RegisterSignature(ReadOnlySpan<JSMarshalerType> signatures)
+        => (_signatures ??= new List<JSMarshalerType[]>()).Add(signatures.ToArray());
+
+    internal List<JSMarshalerType[]>? TakeSignatures()
+    {
+        List<JSMarshalerType[]>? signatures = _signatures;
+        _signatures = null;
+        return signatures;
+    }
+
     /// <summary>Initializes a new instance of the <see cref="JSExportProvider"/> class.</summary>
+    [DynamicDependency(nameof(RegisterSignature), typeof(JSExportProvider))]
     protected JSExportProvider() { }
 
     /// <summary>Gets the fully qualified export names, including signature hashes, in method ID order.</summary>

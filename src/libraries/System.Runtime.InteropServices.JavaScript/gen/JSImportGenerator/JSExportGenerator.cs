@@ -74,7 +74,7 @@ namespace Microsoft.Interop.JavaScript
                         requiresImplementation: true) is null);
 
             IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
-            IncrementalValuesProvider<(string Source, string Registration, string? Attribute, string Name, int Hash)> generateSingleStub = methodsToGenerate
+            IncrementalValuesProvider<(string Source, string Registration, string? Attribute, string Name, int Hash, string Signature)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
                 .Select(static (data, ct) => CalculateStubInformation(data.Left.Syntax, data.Left.Symbol, data.Right, ct))
                 .WithTrackingName(StepNames.CalculateStubInformation)
@@ -171,7 +171,7 @@ namespace Microsoft.Interop.JavaScript
 
         private static void WriteProviderSource(
             IndentedTextWriter writer,
-            ImmutableArray<(string Source, string Registration, string? Attribute, string Name, int Hash)> methods,
+            ImmutableArray<(string Source, string Registration, string? Attribute, string Name, int Hash, string Signature)> methods,
             string assemblyName)
         {
             const string GeneratedNamespace = "System.Runtime.InteropServices.JavaScript";
@@ -194,9 +194,20 @@ namespace Microsoft.Interop.JavaScript
                     writer.WriteLine("public override global::System.ReadOnlySpan<string> GetExportNames()");
                     using (writer.WriteBlock())
                     {
+                        writer.WriteLine("unsafe");
+                        using (writer.WriteBlock())
+                        {
+                            foreach (var method in methods)
+                            {
+                                writer.WriteLine($"__RegisterSignature(this, {method.Signature});");
+                            }
+                        }
                         string names = string.Join(", ", methods.Select(static method =>
                             CodeWriterHelpers.StringLiteral($"{method.Name}#{method.Hash.ToString(CultureInfo.InvariantCulture)}")));
                         writer.WriteLine($"return new string[] {{ {names} }};");
+                        writer.WriteLine();
+                        writer.WriteLine("[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = \"RegisterSignature\")]");
+                        writer.WriteLine($"static unsafe extern void __RegisterSignature({Constants.JSExportProviderGlobal} provider, global::System.ReadOnlySpan<{Constants.JSMarshalerTypeGlobal}> signatures);");
                     }
                     writer.WriteLine();
                     foreach (var method in methods)
@@ -235,7 +246,7 @@ namespace Microsoft.Interop.JavaScript
             }
         }
 
-        private static (string Source, string Registration, string? Attribute, string Name, int Hash) GenerateSource(IncrementalStubGenerationContext incrementalContext)
+        private static (string Source, string Registration, string? Attribute, string Name, int Hash, string Signature) GenerateSource(IncrementalStubGenerationContext incrementalContext)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
             ImmutableArray<TypePositionInfo> signatureElements = incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation;
@@ -287,7 +298,7 @@ namespace Microsoft.Interop.JavaScript
             {
                 string wrapperReference = $"&{signature.StubTypeQualifiedName}.{signature.WrapperName}";
                 string fastRegistration = $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, {signatures}, {wrapperReference});";
-                return (writer.ToString(), fastRegistration, null, signature.QualifiedMethodName, signature.TypesHash);
+                return (writer.ToString(), fastRegistration, null, signature.QualifiedMethodName, signature.TypesHash, signatures);
             }
 
             if (incrementalContext.UnsafeAccessorTarget is string target)
@@ -297,14 +308,14 @@ namespace Microsoft.Interop.JavaScript
                     $"static void __Invoke({Constants.JSMarshalerArgumentGlobal}* arguments) => __Access(null, arguments);\n" +
                     $"[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = {CodeWriterHelpers.StringLiteral(signature.WrapperName)})]\n" +
                     $"static extern void __Access([global::System.Runtime.CompilerServices.UnsafeAccessorType({CodeWriterHelpers.StringLiteral(target)})] object target, {Constants.JSMarshalerArgumentGlobal}* arguments);";
-                return (writer.ToString(), accessorRegistration, null, signature.QualifiedMethodName, signature.TypesHash);
+                return (writer.ToString(), accessorRegistration, null, signature.QualifiedMethodName, signature.TypesHash, signatures);
             }
 
             // Generic and file-local containing types cannot be targeted by this accessor.
             string registration = $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, {signatures});";
             string attribute = $"{Constants.DynamicDependencyAttributeGlobal}({CodeWriterHelpers.StringLiteral(signature.WrapperName)}, {CodeWriterHelpers.StringLiteral(signature.StubTypeFullName)}, {CodeWriterHelpers.StringLiteral(signature.AssemblyName)})";
 
-            return (writer.ToString(), registration, attribute, signature.QualifiedMethodName, signature.TypesHash);
+            return (writer.ToString(), registration, attribute, signature.QualifiedMethodName, signature.TypesHash, signatures);
         }
 
         private static void WriteWrapper(

@@ -3,33 +3,157 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
     internal static partial class JSHostImplementation
     {
-        private static readonly Lazy<IReadOnlyDictionary<string, Type>> s_exportProviders = new(CreateExportProviderMap);
+        [ThreadStatic]
+        private static JSProxyContext.PendingJSExport? t_bindingExport;
+
+#if !MONO
+        [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetExternalTypeMappingForAssembly")]
+        private static extern Type? GetExternalTypeMappingForAssembly<TTypeMapGroup>(
+            [UnsafeAccessorType("System.Runtime.InteropServices.TypeMapping, System.Private.CoreLib")] object? target, Assembly assembly, string key);
+#endif
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Generated type-map providers preserve their constructors and directly reference their export wrappers.")]
-        private static IReadOnlyDictionary<string, Type> CreateExportProviderMap()
+        [DynamicDependency(nameof(PreserveExportProviderMap))]
+        private static Type? GetExportProviderType(Assembly assembly, string assemblyName)
+#if MONO
+            => GetExternalTypeMappingForAssembly<JSExportProvider>(assembly, assemblyName);
+#else
+            => GetExternalTypeMappingForAssembly<JSExportProvider>(null, assembly, assemblyName);
+#endif
+
+        // Declare the group through the SDK's existing intrinsic without performing global runtime discovery.
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "This method is rooted only to preserve the generated JSExport type-map group.")]
+        private static IReadOnlyDictionary<string, Type> PreserveExportProviderMap()
             => TypeMapping.GetOrCreateExternalTypeMapping<JSExportProvider>();
 
-        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "The generated GetExportNames override preserves the provider's public parameterless constructor with DynamicDependency.")]
-        private static bool TryBindMappedAssemblyExports(string assemblyName)
+        [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "The generated GetExportNames override preserves the provider's public parameterless constructor with DynamicDependency.")]
+        private static unsafe bool TryBindMappedAssemblyExports(Assembly assembly, string assemblyName)
         {
-            if (!s_exportProviders.Value.TryGetValue(assemblyName, out Type? providerType))
+            var ctx = JSProxyContext.AssertIsInteropThread();
+            if (ctx.BoundExportAssemblies.ContainsKey(assemblyName))
+                return true;
+
+            Type? providerType = GetExportProviderType(assembly, assemblyName);
+            if (providerType is null)
                 return false;
 
             var provider = (JSExportProvider)Activator.CreateInstance(providerType)!;
-            JavaScriptImports.RegisterLazyCSFunctions(assemblyName, provider.GetExportNames().ToArray(), provider.Bind);
+            string[] names = provider.GetExportNames().ToArray();
+            List<JSMarshalerType[]> signatures = provider.TakeSignatures() ?? new List<JSMarshalerType[]>();
+            if (signatures.Count != names.Length)
+                throw new InvalidOperationException(SR.JSExportMissingSignatures);
+
+            var bindings = new JSFunctionBinding?[names.Length];
+            var handles = new int[names.Length];
+            var signaturePointers = new int[names.Length];
+            bool registered = false;
+            try
+            {
+                for (int index = 0; index < names.Length; index++)
+                {
+                    int separator = names[index].LastIndexOf('#');
+                    if (separator <= 0 || !int.TryParse(names[index].AsSpan(separator + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out int hash))
+                        throw new InvalidOperationException(SR.JSExportInvalidCatalog);
+
+                    string name = names[index].Substring(0, separator);
+                    JSFunctionBinding signature = GetMethodSignature(signatures[index], null, null);
+                    bindings[index] = signature;
+                    handles[index] = ctx.AllocJSExportHandle(new JSProxyContext.PendingJSExport(
+                        provider, index.ToString(CultureInfo.InvariantCulture), name, hash, signature));
+                    signaturePointers[index] = (int)signature.Header;
+                }
+
+                JavaScriptImports.RegisterLazyCSFunctions(assemblyName, names, handles, signaturePointers);
+                ctx.BoundExportAssemblies.Add(assemblyName, provider);
+                registered = true;
+            }
+            finally
+            {
+                foreach (JSFunctionBinding? signature in bindings)
+                {
+                    if (signature is not null)
+                        FreeMethodSignatureBuffer(signature);
+                }
+                if (!registered)
+                {
+                    foreach (int handle in handles)
+                    {
+                        if (handle != 0)
+                            ctx.FreeJSExportHandle(handle);
+                    }
+                }
+            }
+
             return true;
+        }
+
+        internal static unsafe bool TryBindJSExport(JSProxyContext ctx, int methodHandle, JSMarshalerArgument* arguments, out JSProxyContext.JSExportEntry export)
+        {
+            export = default;
+            ref JSMarshalerArgument exception = ref arguments[0];
+            JSProxyContext.PendingJSExport? previous = t_bindingExport;
+            JSProxyContext.PendingJSExport? entry = null;
+            bool wasBinding = false;
+            try
+            {
+                if (!ctx.TryGetPendingJSExport(methodHandle, out entry))
+                    throw new InvalidOperationException(SR.JSExportMissingBinding);
+
+                wasBinding = entry.IsBinding;
+                if (wasBinding)
+                    throw new InvalidOperationException(SR.JSExportReentrantBinding);
+
+                entry.IsBinding = true;
+                t_bindingExport = entry;
+                entry.Provider.Bind(entry.MethodId);
+                if (entry.Callback == null)
+                    throw new InvalidOperationException(SR.JSExportMissingBinding);
+
+                export = new JSProxyContext.JSExportEntry(entry.Callback);
+                ctx.CompleteJSExportBinding(methodHandle, export);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (entry is not null && !wasBinding)
+                    entry.Callback = null;
+                if (arguments[1].slot.Type == MarshalerType.TaskPreCreated)
+                    arguments[1].ToJS(Task.FromException(ex));
+                else
+                    exception.ToJS(ex);
+
+                return false;
+            }
+            finally
+            {
+                if (entry is not null)
+                    entry.IsBinding = wasBinding;
+                t_bindingExport = previous;
+            }
         }
 
         // Current generators pass the wrapper directly as a managed function pointer.
         public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures, delegate*<JSMarshalerArgument*, void> callback)
         {
+            if (t_bindingExport is JSProxyContext.PendingJSExport entry)
+            {
+                if (entry.FullyQualifiedName != fullyQualifiedName || entry.SignatureHash != signatureHash || callback == null || entry.Callback != null)
+                    throw new InvalidOperationException(SR.JSExportInvalidBinding);
+
+                entry.Callback = callback;
+                return entry.Signature;
+            }
+
             var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
             return BindManagedFunctionCore(assemblyName, nameSpace, shortClassName, methodName, signatureHash, signatures, callback);
         }
@@ -61,6 +185,15 @@ namespace System.Runtime.InteropServices.JavaScript
 
             RuntimeHelpers.PrepareMethod(wrapperInfo.MethodHandle);
             var callback = (delegate*<JSMarshalerArgument*, void>)wrapperInfo.MethodHandle.GetFunctionPointer();
+
+            if (t_bindingExport is JSProxyContext.PendingJSExport entry)
+            {
+                if (entry.FullyQualifiedName != fullyQualifiedName || entry.SignatureHash != signatureHash || entry.Callback != null)
+                    throw new InvalidOperationException(SR.JSExportInvalidBinding);
+
+                entry.Callback = callback;
+                return entry.Signature;
+            }
 
             return BindManagedFunctionCore(assemblyName, nameSpace, shortClassName, methodName, signatureHash, signatures, callback);
         }

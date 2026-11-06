@@ -80,8 +80,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     {
         yield return new object[] { Configuration.Debug, true };
         yield return new object[] { Configuration.Release, true };
-        if (IsCoreClrRuntime)
-            yield return new object[] { Configuration.Debug, false };
+        yield return new object[] { Configuration.Debug, false };
     }
 
     [Theory, TestCategory("no-workload")]
@@ -101,7 +100,10 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(
             config, false, TestAsset.WasmBasicTestApp, "mapped_exports",
             extraProperties: $"<PublishTrimmed>{trimmed.ToString().ToLowerInvariant()}</PublishTrimmed><EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>",
-            extraItems: """<ProjectReference Include="..\Library\Library.csproj" />""",
+            extraItems: $"""
+                <ProjectReference Include="..\Library\Library.csproj" />
+                <BlazorWebAssemblyLazyLoad Include="Library{ProjectProviderBase.WasmAssemblyExtension}" />
+                """,
             insertAtEnd: useLocalTargetingPack);
         File.Copy(
             Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "JSExportProvider.cs"),
@@ -118,7 +120,10 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
             extraProperties: IsCoreClrRuntime ? "" : "<DefineConstants>$(DefineConstants);TEST_MONO</DefineConstants>",
             insertAtEnd: useLocalTargetingPack);
         AddItemsPropertiesToProject(info.ProjectFilePath,
-            extraItems: """<ProjectReference Include="..\CountingLibrary\CountingLibrary.csproj" />""");
+            extraItems: $"""
+                <ProjectReference Include="..\CountingLibrary\CountingLibrary.csproj" />
+                <BlazorWebAssemblyLazyLoad Include="CountingLibrary{ProjectProviderBase.WasmAssemblyExtension}" />
+                """);
         AddItemsPropertiesToProject(
             Path.Combine(libraryDir, "Library.csproj"),
             extraProperties: "<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>",

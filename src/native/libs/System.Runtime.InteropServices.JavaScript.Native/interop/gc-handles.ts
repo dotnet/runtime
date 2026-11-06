@@ -39,7 +39,6 @@ let nextGcvHandle = -2;
 export const jsImportWrapperByFnHandle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 export const exportsByAssembly: Map<string, any> = new Map();
 export const deferredCsFunctions = new Map<string, DeferredBindingCS>();
-export const deferredCsBinders = new Set<(methodId: string) => void>();
 
 // GCVHandle is like GCHandle, but it's not tracked and allocated by the coreCLR GC, but just by JS.
 // It's used when we need to create GCHandle-like identity ahead of time, before calling coreCLR.
@@ -247,11 +246,6 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
     let doneExports = 0;
     let doneGCHandles = 0;
     let doneJSHandles = 0;
-    if (disposeMethods) {
-        for (const bind of deferredCsBinders) {
-            Object.assign(bind, { [doNotForceDispose]: false });
-        }
-    }
     // dispose all proxies to C# objects
     const gcHandles = [...jsOwnedObjectTable.keys()];
     for (const gcHandle of gcHandles) {
@@ -371,12 +365,11 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
         exportsByAssembly.clear();
         for (const binding of deferredCsFunctions.values()) {
             binding.isDisposed = true;
-            binding.bind = undefined;
+            binding.signature = undefined;
             binding.boundFn = undefined;
             binding.wrapper = undefined;
         }
         deferredCsFunctions.clear();
-        deferredCsBinders.clear();
     }
     dotnetLogger.info(`forceDisposeProxies done: ${doneImports} imports, ${doneExports} exports, ${doneGCHandles} GCHandles, ${doneJSHandles} JSHandles.`);
 }
