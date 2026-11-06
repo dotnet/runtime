@@ -859,6 +859,54 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)] // Windows builds this chain; OpenSSL 3.0.6 and later report PartialChain.
+        public static void MismatchKeyIdentifiersAtTrustAnchor()
+        {
+            X509Extension[] rootExtensions = new []
+            {
+                BasicConstraintsCA,
+                new X509Extension(
+                    "2.5.29.14",
+                    "0414C7AC28EFB300F46F9406ED155628A123633E556F".HexToByteArray(),
+                    critical: false),
+            };
+
+            X509Extension[] intermediateExtensions = new []
+            {
+                BasicConstraintsCA,
+                new X509Extension(
+                    "2.5.29.35",
+                    "30168014A84A6A63047DDDBAE6D139B7A64565EFF3A8ECA1".HexToByteArray(),
+                    critical: false),
+            };
+
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                intermediateExtensions: intermediateExtensions,
+                rootExtensions: rootExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert);
+
+                // A trust anchor rejected as the intermediate's issuer leaves the chain partial; the reason it was
+                // rejected is not the chain's error.
+                Assert.False(chain.Build(endEntityCert), "chain.Build");
+                Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+            }
+        }
+
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_RequireExplicitPolicy()
         {
