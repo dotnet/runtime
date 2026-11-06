@@ -16,7 +16,7 @@
     <IsMobileLike Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(IsiOSLike)' == 'true' or '$(TargetsAndroid)' == 'true'">true</IsMobileLike>
     <SupportsArmIntrinsics Condition="'$(Platform)' == 'arm64'">true</SupportsArmIntrinsics>
     <SupportsWasmIntrinsics Condition="'$(Platform)' == 'wasm' and '$(FeatureMono)' == 'true'">true</SupportsWasmIntrinsics>
-    <SupportsWasmIntrinsics Condition="'$(Platform)' == 'wasm' and '$(FeatureCoreCLR)' == 'true'">true</SupportsWasmIntrinsics>
+    <SupportsWasmIntrinsics Condition="'$(Platform)' == 'wasm' and ('$(FeatureCoreCLR)' == 'true' or '$(FeatureNativeAot)' == 'true')">true</SupportsWasmIntrinsics>
     <SupportsWasmIntrinsics Condition="'$(SupportsWasmIntrinsics)' == ''">false</SupportsWasmIntrinsics>
     <!-- Mono does not implement RelaxedSimd, so it uses the PlatformNotSupported implementation. -->
     <SupportsWasmRelaxedSimdIntrinsics Condition="'$(SupportsWasmIntrinsics)' == 'true' and '$(FeatureCoreCLR)' == 'true'">true</SupportsWasmRelaxedSimdIntrinsics>
