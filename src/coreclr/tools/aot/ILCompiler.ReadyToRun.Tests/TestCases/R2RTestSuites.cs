@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+extern alias crossgen2;
+
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -12,6 +14,7 @@ using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
 using Internal.Runtime;
+using DwarfHelper = crossgen2::ILCompiler.ObjectWriter.DwarfHelper;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -77,6 +80,28 @@ public class R2RTestSuites
         void Validate(ReadyToRunReader reader)
         {
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            if (!disableDeferredWasmCalls)
+            {
+                ReadyToRunMethod caller = Assert.Single(methods,
+                    method => method.SignatureString.Contains(".DeferredCallArgumentOrder(", StringComparison.Ordinal));
+                ReadyToRunMethod callee = Assert.Single(methods,
+                    method => method.SignatureString.Contains("+DeferredCallReceiver.Read(", StringComparison.Ordinal));
+                WebcilImageReader webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+                WebcilImageReader.WasmFunctionInfo body = ResolveWasmBody(reader, webcilReader, caller);
+                uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)callee.EntryPointRuntimeFunctionId);
+                int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
+                Assert.True(functionIndex >= 0);
+                Span<byte> pattern = stackalloc byte[12];
+                int length = 0;
+                pattern[length++] = 0x41; // i32.const
+                length += DwarfHelper.WriteSLEB128(pattern[length..],
+                    checked(-(callee.EntryPointRuntimeFunctionId * 2 + 1)));
+                pattern[length++] = 0x10; // call
+                length += DwarfHelper.WriteULEB128(pattern[length..], (uint)functionIndex);
+                Assert.True(body.Image.AsSpan(body.InstructionOffset, body.InstructionLength).IndexOf(pattern[..length]) >= 0,
+                    "The deferred call must generate its frame identity after argument evaluation and the receiver null check.");
+            }
+
             foreach (string name in new[]
             {
                 "FixupLeaf", "FixupMiddle", "FixupOuter", "FixupAtDepthLimit", "FixupBeyondDepthLimit", "UncoveredFixup",

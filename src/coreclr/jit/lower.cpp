@@ -2987,7 +2987,9 @@ GenTree* Lowering::LowerCall(GenTree* node)
     // the call according to the portable entrypoint abi
     if (!call->IsUnmanaged() && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
     {
-        if (call->gtDirectCallAddress != nullptr)
+        // Deferred instructions supply the final PEP argument after all other operands.
+        if ((call->gtDirectCallAddress != nullptr) &&
+            (m_compiler->eeGetRelocTypeHint(call->gtDirectCallAddress) != CorInfoReloc::WASM_DEFERRED_CALL))
         {
             GenTree* portableEntryPoint;
             if ((call->gtCallMethHnd != nullptr) && !call->IsHelperCall())
@@ -3002,7 +3004,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
             }
             AddWasmPortableEntryPointArg(call, portableEntryPoint);
         }
-        else
+        else if (call->gtDirectCallAddress == nullptr)
         {
             LowerPEPCall(call);
         }

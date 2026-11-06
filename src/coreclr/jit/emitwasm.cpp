@@ -317,8 +317,12 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         case EC_FUNC_TOKEN:
             if (m_compiler->eeGetRelocTypeHint(params.addr) == CorInfoReloc::WASM_DEFERRED_CALL)
             {
-                emitIns_I(INS_deferred_call, EA_HANDLE_CNS_RELOC,
-                          reinterpret_cast<cnsval_ssize_t>(params.wasmSignature));
+                ins = params.isJump ? INS_deferred_return_call : INS_deferred_call;
+                id  = emitNewInstrCns(EA_HANDLE_CNS_RELOC, reinterpret_cast<cnsval_ssize_t>(params.addr));
+                id->idIns(ins);
+                id->idInsFmt(IF_DEFERRED_CALL);
+                id->idAddr()->iiaWasmSignature = params.wasmSignature;
+                break;
             }
             ins = params.isJump ? INS_return_call : INS_call;
             id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)params.addr);
@@ -738,7 +742,7 @@ unsigned emitter::instrDesc::idCodeSize() const
     switch (idInsFmt())
     {
         case IF_DEFERRED_CALL:
-            size = 0;
+            size += 1 + 2 * PADDED_RELOC_SIZE;
             break;
         case IF_OPCODE:
             break;
@@ -999,8 +1003,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         case IF_DEFERRED_CALL:
         {
-            // The following call opcode is one byte; retain its exact signature without changing the code.
-            emitRecordRelocation(dst + 1, reinterpret_cast<void*>(emitGetInsSC(id)), CorInfoReloc::WASM_DEFERRED_CALL);
+            dst += emitOutputOpcode(dst, INS_i32_const);
+            emitRecordRelocation(dst, reinterpret_cast<void*>(emitGetInsSC(id)),
+                                 CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
+            dst += emitOutputPaddedReloc(dst);
+            dst += emitOutputOpcode(dst, ins);
+            emitRecordRelocation(dst, reinterpret_cast<void*>(id->idAddr()->iiaWasmSignature),
+                                 CorInfoReloc::WASM_DEFERRED_CALL);
+            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_FUNCTION_INDEX_LEB);
             break;
         }
         case IF_OPCODE:

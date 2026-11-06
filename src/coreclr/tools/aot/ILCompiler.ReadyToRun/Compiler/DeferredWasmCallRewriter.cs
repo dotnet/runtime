@@ -18,6 +18,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
 {
     private const int BodySizePrefixLength = 5;
     private const int RelocInstructionLength = 6;
+    private const int DeferredCallLength = 2 * RelocInstructionLength;
     private readonly HashSet<MethodWithGCInfo> _directTargets = new();
     private readonly HashSet<Import> _moduleEagerFixups = new();
     private readonly HashSet<ISymbolNode> _fixups = new();
@@ -108,6 +109,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
             if (relocation.Target is DeferredWasmCallNode call)
             {
                 Debug.Assert(relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB);
+                AssertDeferredCall(original.Data, relocation.Offset);
                 bool direct = compilation.CanUseDirectCall(call.Method, out ReadyToRunMethodCompilationInfo info);
                 Debug.Assert(direct);
                 SelectCall(method, call, useDirectCall: true, info.IsEager);
@@ -123,29 +125,17 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         Relocation[] originalRelocations = original.Relocs ?? [];
         FrameInfo[] frames = method.FrameInfos;
         var edits = new List<Edit>();
-        var frameIdentities = new Dictionary<MethodWithGCInfo, Stack<int>>();
         var scratchLocals = new Dictionary<int, int>();
         var directTargets = new Dictionary<int, MethodWithGCInfo>();
 
         foreach (Relocation relocation in originalRelocations)
         {
-            if (relocation.RelocType == RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB &&
-                relocation.Target is WasmMethodFrameIdentityNode identity)
-            {
-                if (!frameIdentities.TryGetValue(identity.Method, out Stack<int> offsets))
-                {
-                    offsets = new Stack<int>();
-                    frameIdentities.Add(identity.Method, offsets);
-                }
-                offsets.Push(relocation.Offset);
-            }
-            else if (relocation.Target is DeferredWasmCallNode call)
+            if (relocation.Target is DeferredWasmCallNode call)
             {
                 Debug.Assert(relocation.RelocType == RelocType.WASM_FUNCTION_INDEX_LEB);
+                AssertDeferredCall(original.Data, relocation.Offset);
                 bool direct = compilation.CanUseDirectCall(call.Method, out ReadyToRunMethodCompilationInfo info);
                 SelectCall(method, call, direct, info.IsEager);
-                Debug.Assert(frameIdentities.TryGetValue(call.Target, out Stack<int> pending) && pending.Count != 0);
-                int identityOffset = frameIdentities[call.Target].Pop();
                 if (direct)
                 {
                     directTargets.Add(relocation.Offset, call.Target);
@@ -157,7 +147,8 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
                 {
                     frameIndex++;
                 }
-                Debug.Assert(identityOffset > frames[frameIndex].StartOffset);
+                int instructionOffset = relocation.Offset - RelocInstructionLength - 1;
+                Debug.Assert(instructionOffset > frames[frameIndex].StartOffset);
                 if (!scratchLocals.TryGetValue(frameIndex, out int scratchLocal))
                 {
                     scratchLocal = AddScratchLocal(method, original.Data, frameIndex, edits);
@@ -165,13 +156,10 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
                 }
 
                 ISymbolNode imageBase = factory.GetWellKnownWasmGlobalSymbol(new Utf8String(WasmWellKnownGlobalSymbolNode.ImageBaseName));
-                edits.Add(EncodeEdit(identityOffset - 1, RelocInstructionLength,
-                    new WasmLEBConstantReloc(WasmExprKind.GlobalGet, imageBase, RelocType.WASM_GLOBAL_INDEX_LEB),
-                    I32.LoadWithRVAOffset(call.Fallback), Local.Tee(scratchLocal)));
-
                 bool tailCall = original.Data[relocation.Offset - 1] == (byte)WasmExprKind.ReturnCall;
-                edits.Add(EncodeEdit(relocation.Offset - 1, RelocInstructionLength,
-                    Local.Get(scratchLocal), I32.Load(0),
+                edits.Add(EncodeEdit(instructionOffset, DeferredCallLength,
+                    new WasmLEBConstantReloc(WasmExprKind.GlobalGet, imageBase, RelocType.WASM_GLOBAL_INDEX_LEB),
+                    I32.LoadWithRVAOffset(call.Fallback), Local.Tee(scratchLocal), Local.Get(scratchLocal), I32.Load(0),
                     new WasmIndirectCallInstruction(
                         tailCall ? WasmExprKind.ReturnCallIndirect : WasmExprKind.CallIndirect,
                         method.GetDeferredWasmCallSignature(relocation.Offset), 0)));
@@ -304,8 +292,7 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         declarations[^1] = (byte)WasmValueType.I32;
         edits.Add(new Edit(start, position - start, declarations, []));
 
-        // Appending a non-GC local preserves every JIT-assigned index and keeps the PEP
-        // live across the null check without loading it twice.
+        // Appending a non-GC local preserves every JIT-assigned index and avoids loading the PEP twice.
         int parameterCount = frameIndex == 0
             ? WasmLowering.GetSignature(method).FuncType.Params.Types.Length
             : method.GetFuncletKinds()[frameIndex - 1] is FuncletKind.CatchOrFilterHandler or FuncletKind.Filter ? 3 : 2;
@@ -317,6 +304,14 @@ internal sealed class DeferredWasmCallRewriter(ReadyToRunCodegenCompilation comp
         int value = checked((int)DwarfHelper.ReadULEB128(code.AsSpan(position), out int count));
         position += count;
         return value;
+    }
+
+    [Conditional("DEBUG")]
+    private static void AssertDeferredCall(byte[] code, int callOffset)
+    {
+        Debug.Assert(callOffset >= RelocInstructionLength + 1);
+        Debug.Assert(code[callOffset - RelocInstructionLength - 1] == (byte)WasmExprKind.I32Const);
+        Debug.Assert(code[callOffset - 1] is (byte)WasmExprKind.Call or (byte)WasmExprKind.ReturnCall);
     }
 
     private static Edit EncodeEdit(int offset, int length, params ReadOnlySpan<WasmExpr> instructions)

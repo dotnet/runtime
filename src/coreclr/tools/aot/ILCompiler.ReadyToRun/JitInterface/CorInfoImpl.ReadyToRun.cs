@@ -3543,8 +3543,10 @@ namespace Internal.JitInterface
             if (fRelocType == CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB)
             {
                 Debug.Assert(locationBlock == BlockType.Code);
-                MethodDesc targetMethod = HandleToObject((CORINFO_METHOD_STRUCT_*)target);
-                MethodWithGCInfo method = _compilation.NodeFactory.CompiledMethodNode(targetMethod);
+                object targetObject = HandleToObject(target);
+                MethodWithGCInfo method = targetObject is DeferredWasmCallNode call
+                    ? call.Target
+                    : _compilation.NodeFactory.CompiledMethodNode((MethodDesc)targetObject);
                 relocTarget = _compilation.NodeFactory.WasmMethodFrameIdentity(method);
                 relocType = RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB;
                 handled = true;

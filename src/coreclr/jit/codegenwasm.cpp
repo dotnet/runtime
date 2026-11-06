@@ -3338,6 +3338,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 
+    if ((call->gtDirectCallAddress != nullptr) &&
+        (m_compiler->eeGetRelocTypeHint(call->gtDirectCallAddress) == CorInfoReloc::WASM_DEFERRED_CALL))
+    {
+        assert(!call->IsHelperCall() && !call->IsUnmanaged());
+        assert(call->gtArgs.FindWellKnownArg(WellKnownArg::WasmPortableEntryPoint) == nullptr);
+        typeStack.Push(CORINFO_WASM_TYPE_I32);
+    }
+
     // Report managed call signatures to the R2R compiler for thunk generation.
     if (!call->IsHelperCall() && !call->IsUnmanaged())
     {

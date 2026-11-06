@@ -14,6 +14,21 @@ public static class WasmWebcilModule
 {
     public static string FixupLeaf() => "transitive-precode-string";
 
+    public static int DeferredCallArgumentOrder(DeferredCallReceiver receiver, int value)
+    {
+        return receiver.Read(AddIntegers(value, value), AddIntegers(value + 1, value)) + 1;
+    }
+
+    public sealed class DeferredCallReceiver
+    {
+        public int Value;
+
+        public int Read(int first, int second)
+        {
+            return Value + first + second;
+        }
+    }
+
     public static string FixupMiddle(bool useCallee)
     {
         string value = FixupLeaf();

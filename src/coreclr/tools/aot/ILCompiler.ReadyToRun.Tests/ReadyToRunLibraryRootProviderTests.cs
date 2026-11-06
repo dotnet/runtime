@@ -262,7 +262,13 @@ public class ReadyToRunLibraryRootProviderTests
             relocations[1 + i * 2] = new(RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB, 8 + i * 12, identity);
             relocations[2 + i * 2] = new(RelocType.WASM_FUNCTION_INDEX_LEB, 14 + i * 12, call);
         }
-        ObjectNode.ObjectData original = new(new byte[64], relocations, 16, [caller]);
+        byte[] code = new byte[64];
+        for (int i = 0; i < callCount; i++)
+        {
+            code[7 + i * 12] = (byte)WasmExprKind.I32Const;
+            code[13 + i * 12] = (byte)(i == 0 ? WasmExprKind.Call : WasmExprKind.ReturnCall);
+        }
+        ObjectNode.ObjectData original = new(code, relocations, 16, [caller]);
         caller.SetCode(original);
         FrameInfo[] frames = [new(FrameInfoFlags.HasEHInfo, 0, 32, [1]), new(FrameInfoFlags.Handler, 32, 64, [2])];
         caller.InitializeFrameInfos(frames);
