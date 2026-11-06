@@ -645,7 +645,7 @@ private:
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
 
-    bool m_emitInterpPGO;
+    bool m_emitMethodEntryPGO;
 
     void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
     {
@@ -774,7 +774,7 @@ private:
 
     void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
 
-    void InstrumentBlockCounts();
+    void InstrumentMethodEntry();
     InterpBasicBlock* GenerateCodeForLeaveChainIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
@@ -1158,7 +1158,6 @@ public:
     static bool s_browserProfilerEnabled;
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
-    static bool s_interpPgoEnabled;
 
 #if MEASURE_MEM_ALLOC
     // Memory statistics for profiling.

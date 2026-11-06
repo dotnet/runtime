@@ -31,6 +31,7 @@ namespace ILCompiler.DependencyAnalysis
         DeclaringTypeHandle,
         MethodHandle,
         FieldHandle,
+        MethodEntryCounter,
         MethodDictionary,
         TypeDictionary,
         MethodEntry,
@@ -305,6 +306,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.MethodHandle:
                     return CreateMethodHandleHelper((MethodWithToken)key.Target);
+
+                case ReadyToRunHelperId.MethodEntryCounter:
+                    return new PrecodeHelperImport(_codegenNodeFactory,
+                        _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.MethodEntryCounter,
+                            (MethodWithToken)key.Target, isInstantiatingStub: false));
 
                 case ReadyToRunHelperId.FieldHandle:
                     return CreateFieldHandleHelper((FieldWithToken)key.Target);

@@ -18,4 +18,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
   </Target>
 
+  <Target Name="_WasmCoreClrAddPgoInstrumentationToReadyToRun"
+          Condition="'$(WasmPgoInstrumentation)' != ''"
+          DependsOnTargets="_AddWasmPgoInstrumentationEnvironmentVariables"
+          BeforeTargets="_PrepareForReadyToRunCompilation">
+    <PropertyGroup>
+      <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:WasmPgoInstrumentation=&quot;$(_WasmPgoInstFilter)&quot;</PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+  </Target>
+
 </Project>

@@ -4,9 +4,11 @@
 extern alias crossgen2;
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -27,6 +29,8 @@ using Internal.TypeSystem.Ecma;
 
 using Xunit;
 using Xunit.Abstractions;
+
+using CompilerPgo = crossgen2::Internal.Pgo;
 
 namespace ILCompiler.ReadyToRun.Tests;
 
@@ -54,6 +58,70 @@ public class WasmArgumentLayoutTests
     public WasmArgumentLayoutTests(ITestOutputHelper output)
     {
         _output = output;
+    }
+
+    [Theory]
+    [InlineData(0L, 0L, 0u)]
+    [InlineData(2147483655L, 0L, 2147483655u)]
+    [InlineData(4294967295L, 0L, uint.MaxValue)]
+    [InlineData(2147483655L, 2147483655L, uint.MaxValue)]
+    [InlineData(4294967295L, 1L, uint.MaxValue)]
+    public void MethodEntryProfileMarshallingPreservesMergedHotness(long firstCount, long secondCount, uint expected)
+    {
+        CompilerPgo.PgoSchemaElem[] merged = CompilerPgo.PgoProcessor.Merge<object, object>(
+        [
+            [new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.MethodEntryIntCount, Count = 1, DataLong = firstCount }],
+            [new() { InstrumentationKind = CompilerPgo.PgoInstrumentationKind.MethodEntryIntCount, Count = 1, DataLong = secondCount }],
+        ]);
+        Assert.Equal(firstCount + secondCount, Assert.Single(merged,
+            schema => schema.InstrumentationKind == CompilerPgo.PgoInstrumentationKind.MethodEntryIntCount).DataLong);
+
+        using var data = new MemoryStream();
+        CorInfoImpl.ComputeJitPgoInstrumentationSchema(_ => throw new InvalidOperationException(),
+            merged, out PgoInstrumentationSchema[] nativeSchemas, data);
+        PgoInstrumentationSchema entry = Assert.Single(nativeSchemas,
+            schema => schema.InstrumentationKind == CompilerPgo.PgoInstrumentationKind.MethodEntryIntCount);
+        Assert.Equal(expected, BinaryPrimitives.ReadUInt32LittleEndian(data.GetBuffer().AsSpan((int)entry.Offset, sizeof(uint))));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RecursiveIntrinsicBodyHasOneMethodEntryProbe(bool instrument)
+    {
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            string listingPath = Path.Combine(workingDirectory, "intrinsic.jit.txt");
+            var args = new List<string>
+            {
+                TestPaths.SystemPrivateCoreLibPath,
+                "--reference", Path.Combine(TestPaths.LibrariesDir, "*.dll"),
+                "--targetos", TestPaths.TargetOS,
+                "--targetarch", TestPaths.TargetArchitecture,
+                "--obj-format", "wasm",
+                "--optimize",
+                "--parallelism", "1",
+                "--singlemethodtypename", "System.Runtime.Intrinsics.Wasm.PackedSimd",
+                "--singlemethodname", "PopCount",
+                "--codegenopt:JitDisasm=*",
+                $"--codegenopt:JitStdOutFile={listingPath}",
+                "--out", Path.Combine(workingDirectory, "intrinsic.wasm"),
+            };
+            if (instrument)
+                args.Add("--codegenopt:WasmPgoInstrumentation=*");
+
+            R2RCompilationResult result = new R2RDriver(_output).Compile(args);
+            Assert.True(result.Success, result.StandardOutput + result.StandardError);
+            string listing = File.ReadAllText(listingPath);
+            Assert.Equal(1, Regex.Matches(listing, @"\bi8x16\.popcnt\b").Count);
+            Assert.Equal(instrument ? 1 : 0, Regex.Matches(listing, @"\bi32\.add\b").Count);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
     }
 
     [Theory]

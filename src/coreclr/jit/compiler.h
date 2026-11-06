@@ -5248,6 +5248,7 @@ public:
         MethodAndClassProfile,
     };
 
+    bool         compCanCollectHistogramProfile();
     GDVProbeType compClassifyGDVProbeType(GenTreeCall* call);
 
     //=========================================================================
@@ -7048,6 +7049,7 @@ public:
     PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
     PhaseStatus fgWasmProfInstrument();
+    GenTree* fgMethodEntryCount(CORINFO_METHOD_HANDLE method);
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();

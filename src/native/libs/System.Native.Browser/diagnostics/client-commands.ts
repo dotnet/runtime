@@ -131,7 +131,7 @@ export function commandPgoTrace(options: DiagnosticCommandOptions) {
                 //   0x2000000000   CompilationDiagnostic
                 //   0x4000000000   MethodDiagnostic        (MethodDetails - generic instantiation resolution)
                 //   0x8000000000   TypeDiagnostic          (type identity for generics)
-                //   0x10000000000  JitInstrumentationData  (JitInstrumentationDataVerbose - block counts)
+                //   0x10000000000  JitInstrumentationData  (JitInstrumentationDataVerbose - method-entry counts)
                 // keyword is serialized as [hi, lo]: 0x1F000080018 -> hi 0x000001F0, lo 0x00080018
                 keywords: [
                     0x0000_01F0,

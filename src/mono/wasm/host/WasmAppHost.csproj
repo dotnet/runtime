@@ -7,6 +7,8 @@
     <Nullable>enable</Nullable>
     <UseAppHost>false</UseAppHost>
     <RollForward>LatestMajor</RollForward>
+    <!-- Hot Reload belongs to the hosted application, not this packaged command-line tool. -->
+    <EnableHotReloadInRuntimeConfigDevFile>false</EnableHotReloadInRuntimeConfigDevFile>
   </PropertyGroup>
 
   <ItemGroup>

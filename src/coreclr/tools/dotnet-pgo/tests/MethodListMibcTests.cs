@@ -5,8 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+
+using Internal.Pgo;
 
 using Microsoft.Diagnostics.Tools.Pgo;
 
@@ -21,6 +24,50 @@ namespace DotNetPgo.Tests
             ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator);
         private static readonly string s_testAssemblyPath = typeof(MethodListMibcTests).Assembly.Location;
         private static readonly string s_testAssemblyName = typeof(MethodListMibcTests).Assembly.GetName().Name;
+
+        [Theory]
+        [InlineData(0L, 0L)]
+        [InlineData(2147483647L, 2147483647L)]
+        [InlineData(-2147483648L, 2147483648L)]
+        [InlineData(-2147483641L, 2147483655L)]
+        [InlineData(-1L, 4294967295L)]
+        [InlineData(4294967295L, 4294967295L)]
+        [InlineData(4294967303L, 4294967303L)]
+        public void ReadsUnsignedMethodEntries(long encodedValue, long expectedValue)
+        {
+            PgoSchemaElem[] schemas =
+            [
+                new() { InstrumentationKind = PgoInstrumentationKind.MethodEntryIntCount, Count = 1, DataLong = encodedValue },
+                new() { InstrumentationKind = PgoInstrumentationKind.BasicBlockIntCount, ILOffset = 1, Count = 1, DataLong = -1 },
+                new() { InstrumentationKind = PgoInstrumentationKind.MethodEntryIntCount, ILOffset = 2, Count = 1, DataLong = 9 },
+            ];
+            foreach (bool compressed in new[] { false, true })
+            {
+                var stream = new SchemaStream(compressed);
+                PgoProcessor.EncodePgoData(schemas, stream, emitAllElementsUnconditionally: false);
+                PgoSchemaElem[] decoded = PgoProcessor.ParsePgoData(stream, stream.Values, compressed).ToArray();
+
+                Assert.Equal(3, decoded.Length);
+                Assert.Equal(expectedValue, decoded[0].DataLong);
+                Assert.Equal(-1, decoded[1].DataLong);
+                Assert.Equal(9, decoded[2].DataLong);
+
+                var roundTrip = new SchemaStream(compressed);
+                PgoProcessor.EncodePgoData(decoded, roundTrip, emitAllElementsUnconditionally: false);
+                Assert.Equal(expectedValue, PgoProcessor.ParsePgoData(roundTrip, roundTrip.Values, compressed).First().DataLong);
+            }
+        }
+
+        private sealed class SchemaStream(bool compressed) : IPgoSchemaDataLoader<object, object>, IPgoEncodedValueEmitter<object, object>
+        {
+            public List<long> Values { get; } = new();
+            public void EmitLong(long value, long previousValue) => Values.Add(compressed ? value - previousValue : value);
+            public bool EmitDone() => false;
+            public void EmitType(object type, object previousValue) => throw new NotSupportedException();
+            public void EmitMethod(object method, object previousValue) => throw new NotSupportedException();
+            public object TypeFromLong(long input) => throw new NotSupportedException();
+            public object MethodFromLong(long input) => throw new NotSupportedException();
+        }
 
         [Fact]
         public void CreatesDeterministicMibcAndRoundTripsThroughDump()
