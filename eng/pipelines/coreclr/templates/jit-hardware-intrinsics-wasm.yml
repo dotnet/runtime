@@ -3,6 +3,9 @@ parameters:
     type: object
   - name: testBuildArgs
     type: string
+  - name: compositeBuildMode
+    type: boolean
+    default: false
 
 jobs:
 # Build CoreCLR + libraries for wasm, build the wasm HardwareIntrinsics tests,
@@ -32,6 +35,7 @@ jobs:
             testRunNamePrefixSuffix: CoreCLR_R2R
             # The CoreCLR interpreter does not implement Wasm SIMD; ReadyToRun code does.
             readyToRun: true
+            compositeBuildMode: ${{ parameters.compositeBuildMode }}
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:

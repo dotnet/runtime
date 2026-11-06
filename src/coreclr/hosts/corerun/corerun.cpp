@@ -11,6 +11,8 @@
 
 #ifdef TARGET_WASM
 #include <pinvoke_override.hpp>
+
+extern "C" void coreclr_wasm_set_relaxed_simd_supported();
 #endif // TARGET_WASM
 
 #ifdef TARGET_BROWSER
@@ -728,6 +730,18 @@ static int run(const configuration& config)
 #ifdef TARGET_WASM
     // install the pinvoke override callback to resolve p/invokes to statically linked libraries
     add_pinvoke_override();
+
+    // Wasm has no runtime feature detection; the test opts in through this property, as the app hosts do.
+    for (size_t i = 0; i < config.user_defined_keys.size(); ++i)
+    {
+        if (config.user_defined_keys[i] == W("System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"))
+        {
+            if (config.user_defined_values[i] == W("true"))
+                coreclr_wasm_set_relaxed_simd_supported();
+
+            break;
+        }
+    }
 #endif // TARGET_WASM
 
     int result;

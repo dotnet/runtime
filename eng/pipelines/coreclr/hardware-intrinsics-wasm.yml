@@ -11,6 +11,9 @@ pr:
     - eng/pipelines/coreclr/hardware-intrinsics-wasm.yml
     - eng/pipelines/coreclr/templates/jit-hardware-intrinsics-wasm.yml
     - src/coreclr/jit/*wasm*
+    - src/coreclr/hosts/corerun/**
+    - src/tests/Directory.Build.targets
+    - src/tests/build.proj
     - src/tests/JIT/HardwareIntrinsics/Wasm/**
 
 variables:
@@ -29,3 +32,10 @@ extends:
           platforms:
             - browser_wasm
           testBuildArgs: '/p:WasmEnableRelaxedSimd=true -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_r.csproj -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_ro.csproj'
+      # WASI loads ReadyToRun code from a single composite. Relaxed SIMD is on by default for CoreCLR WASI.
+      - template: /eng/pipelines/coreclr/templates/jit-hardware-intrinsics-wasm.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+          compositeBuildMode: true
+          testBuildArgs: '-test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_r.csproj -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_ro.csproj'
