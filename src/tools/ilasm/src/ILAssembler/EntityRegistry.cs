@@ -1524,8 +1524,9 @@ namespace Microsoft.DotNet.ILAssembler
                     newBlob.WriteByte(reader.ReadByte());
                     newBlob.WriteCompressedInteger(reader.ReadCompressedInteger());
                     decoder.DecodeType(ref reader).WriteBlobTo(newBlob);
-                    // Preserve native ilasm's sentinel bytes, even though ECMA-335 II.23.2.5
-                    // does not include them in property signatures.
+                    // COMPAT: Preserve sentinel bytes, even though ECMA-335 II.23.2.5
+                    // does not include them in property signatures. This retains malformed
+                    // signatures rather than normalizing them.
                     while (reader.RemainingBytes > 0)
                     {
                         if (reader.ReadByte() == (byte)SignatureTypeCode.Sentinel)
