@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- Needed to stay isolated, as any IEnumerator<T>.Current call over a reference type keeps the slot and hides the bug -->
+    <!-- Needed to stay isolated, as any IEnumerator<T>.Current call over a reference type keeps the slot and hides the Native AOT bug -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
