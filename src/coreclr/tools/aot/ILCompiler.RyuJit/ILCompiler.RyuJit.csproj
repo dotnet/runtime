@@ -28,6 +28,8 @@
   <ItemGroup>
     <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RyuJitNodeFactory.cs" />
+    <Compile Include="Compiler\LlvmLtoWriter.cs" />
+    <Compile Include="Compiler\LlvmLtoILTranslator.cs" />
     <Compile Include="Compiler\ProfileDataManager.cs" />
     <Compile Include="Compiler\RyuJitCompilation.cs" />
     <Compile Include="Compiler\RyuJitCompilationBuilder.cs" />
@@ -56,6 +58,7 @@
     <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs">
       <Link>IL\ILReader.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\ILScalarSemantics.cs" Link="IL\ILScalarSemantics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\TypeSystemThrowingILEmitter.cs">
       <Link>IL\Stubs\TypeSystemThrowingILEmitter.cs</Link>
     </Compile>
