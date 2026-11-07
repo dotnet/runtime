@@ -136,7 +136,7 @@ char* EqualOrColon(_In_ __nullterminated char* szArg)
 void GetInputFileFullPath()
 {
 #ifdef TARGET_UNIX
-    MultiByteToWideChar(g_uConsoleCP, 0, g_szInputFile, -1, g_wszFullInputFile, MAX_PATH + 1);
+    minipal_convert_utf8_to_utf16(g_szInputFile, strlen(g_szInputFile) + 1, (CHAR16_T*)g_wszFullInputFile, MAX_PATH + 1, 0);
 #else
     // We need the input file's full path to make uses of it later, despite changing CurrentDirectory
 
