@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This is a programmatically generated file from Regex.GenerateUnicodeTables.
-// It provides serialized BDD Unicode category definitions for System.Environment.Version = 12.0.0
+// It provides serialized BDD Unicode category definitions.
 
 using System.Globalization;
 
