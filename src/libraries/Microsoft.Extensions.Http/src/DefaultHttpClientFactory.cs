@@ -18,7 +18,17 @@ namespace Microsoft.Extensions.Http
 {
     internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory
     {
-        private static readonly TimerCallback _cleanupCallback = (s) => ((DefaultHttpClientFactory)s!).CleanupTimer_Tick();
+        // The cleanup timer only holds a weak reference to the factory. Otherwise a pending cleanup cycle would keep
+        // the factory, and through it the service provider and its singletons, alive. If one of those singletons holds
+        // an HttpClient, the expired handler can never be collected and the cleanup cycle would reschedule itself forever.
+        private static readonly TimerCallback _cleanupCallback = (s) =>
+        {
+            if (((WeakReference<DefaultHttpClientFactory>)s!).TryGetTarget(out DefaultHttpClientFactory? factory))
+            {
+                factory.CleanupTimer_Tick();
+            }
+        };
+        private readonly WeakReference<DefaultHttpClientFactory> _weakThis;
         private readonly IServiceProvider _services;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IOptionsMonitor<HttpClientFactoryOptions> _optionsMonitor;
@@ -37,7 +47,7 @@ namespace Microsoft.Extensions.Http
         // doesn't give us anything to dispose, as the timer is started/stopped as needed.
         //
         // There's no need for the factory itself to be disposable. If you stop using it, eventually everything will
-        // get reclaimed.
+        // get reclaimed. This relies on the timers holding only weak references to the factory and its entries.
         private Timer? _cleanupTimer;
         private readonly object _cleanupTimerLock;
         private readonly object _cleanupActiveLock;
@@ -88,6 +98,7 @@ namespace Microsoft.Extensions.Http
             _expiredHandlers = new ConcurrentQueue<ExpiredHandlerTrackingEntry>();
             _expiryCallback = ExpiryTimer_Tick;
 
+            _weakThis = new WeakReference<DefaultHttpClientFactory>(this);
             _cleanupTimerLock = new object();
             _cleanupActiveLock = new object();
 
@@ -225,7 +236,7 @@ namespace Microsoft.Extensions.Http
         {
             lock (_cleanupTimerLock)
             {
-                _cleanupTimer ??= NonCapturingTimer.Create(_cleanupCallback, this, DefaultCleanupInterval, Timeout.InfiniteTimeSpan);
+                _cleanupTimer ??= NonCapturingTimer.Create(_cleanupCallback, _weakThis, DefaultCleanupInterval, Timeout.InfiniteTimeSpan);
             }
         }
 
