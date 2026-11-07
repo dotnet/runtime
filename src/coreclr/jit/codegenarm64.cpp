@@ -2205,23 +2205,45 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
         }
         else
         {
-            // Arm64 allows any arbitrary 16-bit constant to be loaded into a register halfword
-            // There are three forms
-            //    movk which loads into any halfword preserving the remaining halfwords
-            //    movz which loads into any halfword zeroing the remaining halfwords
-            //    movn which loads into any halfword zeroing the remaining halfwords then bitwise inverting the register
-            // In some cases it is preferable to use movn, because it has the side effect of filling the other halfwords
-            // with ones
+            // Count the halfwords needed by MOVZ/MOVN once, and reuse them when
+            // checking for shorter 64-bit constant materializations.
+            const uint16_t imm0       = static_cast<uint16_t>(imm);
+            const uint16_t imm1       = static_cast<uint16_t>(imm >> 16);
+            int            preferMovn = (imm0 == 0xffff) + (imm1 == 0xffff) - (imm0 == 0) - (imm1 == 0);
 
-            // Determine whether movn or movz will require the fewest instructions to populate the immediate
-            int preferMovn = 0;
-
-            for (int i = (immSize == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
+            if (immSize == EA_8BYTE)
             {
-                if (uint16_t(imm >> i) == 0xffff)
-                    ++preferMovn; // a single movk 0xffff could be skipped if movn was used
-                else if (uint16_t(imm >> i) == 0x0000)
-                    --preferMovn; // a single movk 0 could be skipped if movz was used
+                const uint16_t imm2 = static_cast<uint16_t>(imm >> 32);
+                const uint16_t imm3 = static_cast<uint16_t>(imm >> 48);
+                preferMovn += (imm2 == 0xffff) + (imm3 == 0xffff) - (imm2 == 0) - (imm3 == 0);
+
+                if ((size == EA_8BYTE) && m_compiler->opts.OptimizationEnabled())
+                {
+                    // Nonzero, non-ones repeated halfwords cannot use MOVZ/MOVN:
+                    // only the logical-immediate encoding needs to be checked.
+                    if ((flags == INS_FLAGS_DONT_CARE) && (imm1 != 0) && (imm1 != 0xffff) && (imm1 == imm2) &&
+                        ((imm2 == imm3) || ((imm0 != 0) && (imm0 != 0xffff) && (imm3 != 0) && (imm3 != 0xffff))))
+                    {
+                        // If both outer halfwords differ, require four wide moves so that
+                        // a logical immediate and at most two MOVKs still save an instruction.
+                        const uint64_t bitmask = static_cast<uint64_t>(imm1) * UINT64_C(0x0001000100010001);
+                        if (emitter::canEncodeBitMaskImm(static_cast<int64_t>(bitmask), EA_8BYTE))
+                        {
+                            GetEmitter()->emitIns_R_I(INS_mov, size, reg, static_cast<ssize_t>(bitmask));
+                            if (imm0 != imm1)
+                            {
+                                GetEmitter()->emitIns_R_I_I(INS_movk, size, reg, imm0, 0,
+                                                            INS_OPTS_LSL DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+                            }
+                            if (imm3 != imm1)
+                            {
+                                GetEmitter()->emitIns_R_I_I(INS_movk, size, reg, imm3, 48, INS_OPTS_LSL);
+                            }
+                            regSet.verifyRegUsed(reg);
+                            return;
+                        }
+                    }
+                }
             }
 
             // Select the first instruction.  Any additional instruction will use movk

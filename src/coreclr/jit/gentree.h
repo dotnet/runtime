@@ -1886,6 +1886,7 @@ public:
             case GT_LEA:
 #if defined(TARGET_ARM64)
             case GT_SELECT_NEGCC:
+            case GT_SELECT_INVCC:
             case GT_SELECT_INCCC:
 #endif // defined(TARGET_ARM64)
 

@@ -187,6 +187,12 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
     }
 #endif // DEBUG
 
+    // Reject unsupported child operations before checking the parent and its operands.
+    if (!childNode->OperIs(GT_MUL, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR, GT_NEG, GT_CAST))
+    {
+        return false;
+    }
+
     // We cannot contain if the parent node
     // * is contained
     // * is not operating on an integer
@@ -385,7 +391,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             }
         }
 
-        // TODO: Handle BIC/BICS, EON, MVN, ORN, TST
+        // TODO: Handle BICS, TST
         return false;
     }
 
@@ -3487,70 +3493,67 @@ void Lowering::TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond)
 {
     assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 
-    bool     shouldReverseCondition;
-    GenTree* operatedVal;
-    GenTree* nonOperatedVal;
-    GenTree* nodeToRemove;
-    GenTree* trueVal  = select->gtOp1;
-    GenTree* falseVal = select->gtOp2;
+    bool     shouldReverseCondition = false;
+    GenTree* operatedVal            = nullptr;
+    GenTree* nonOperatedVal         = nullptr;
+    GenTree* nodeToRemove           = nullptr;
 
-    // Determine the resulting operation type.
-    genTreeOps resultingOp;
-    if (trueVal->OperIs(GT_NEG) || falseVal->OperIs(GT_NEG))
+    // Prefer negate, invert, then increment, trying both arms before giving up on an operation.
+    for (genTreeOps oper : {GT_NEG, GT_NOT, GT_ADD})
     {
-        resultingOp            = GT_SELECT_NEG;
-        shouldReverseCondition = trueVal->OperIs(GT_NEG);
-    }
-    else if (trueVal->OperIs(GT_NOT) || falseVal->OperIs(GT_NOT))
-    {
-        resultingOp            = GT_SELECT_INV;
-        shouldReverseCondition = trueVal->OperIs(GT_NOT);
-    }
-    else
-    {
-        assert(trueVal->OperIs(GT_ADD) || falseVal->OperIs(GT_ADD));
-        resultingOp            = GT_SELECT_INC;
-        shouldReverseCondition = trueVal->OperIs(GT_ADD);
+        for (unsigned operandIndex = 0; operandIndex < 2; operandIndex++)
+        {
+            GenTree* candidate = (operandIndex == 0) ? select->gtOp1 : select->gtOp2;
+            GenTree* other     = (operandIndex == 0) ? select->gtOp2 : select->gtOp1;
+
+            if (!candidate->OperIs(oper))
+            {
+                continue;
+            }
+
+            if ((operandIndex == 0) && !cond->OperIsCompare() && select->OperIs(GT_SELECT))
+            {
+                // Reversing a non-compare condition adds a GT_NOT, eliminating the benefit.
+                continue;
+            }
+
+            if (candidate->OperMayOverflow() && candidate->gtOverflow())
+            {
+                continue;
+            }
+
+            // CSINC can only absorb an addition of one.
+            if ((oper == GT_ADD) && !candidate->gtGetOp2()->IsIntegralConst(1))
+            {
+                continue;
+            }
+
+            if (!IsInvariantInRange(candidate->gtGetOp1(), select) || !IsInvariantInRange(other, select))
+            {
+                continue;
+            }
+
+            shouldReverseCondition = (operandIndex == 0);
+            operatedVal            = candidate->gtGetOp1();
+            nonOperatedVal         = other;
+            nodeToRemove           = candidate;
+            break;
+        }
+
+        if (nodeToRemove != nullptr)
+        {
+            break;
+        }
     }
 
-    // Values to which the operation are applied must come last.
-    if (shouldReverseCondition)
+    if (nodeToRemove == nullptr)
     {
-        operatedVal    = trueVal->gtGetOp1();
-        nonOperatedVal = falseVal;
-        nodeToRemove   = trueVal;
-    }
-    else
-    {
-        operatedVal    = falseVal->gtGetOp1();
-        nonOperatedVal = trueVal;
-        nodeToRemove   = falseVal;
-    }
-
-    if (shouldReverseCondition && !cond->OperIsCompare() && select->OperIs(GT_SELECT))
-    {
-        // Non-compare nodes add additional GT_NOT node after reversing.
-        // This would remove gains from this optimisation so don't proceed.
         return;
     }
 
-    if (nodeToRemove->OperMayOverflow() && nodeToRemove->gtOverflow())
-    {
-        return;
-    }
-
-    // For Csinc candidates, the second argument of the GT_ADD must be +1 (increment).
-    if (resultingOp == GT_SELECT_INC &&
-        !(nodeToRemove->gtGetOp2()->IsCnsIntOrI() && nodeToRemove->gtGetOp2()->AsIntCon()->IconValue() == 1))
-    {
-        return;
-    }
-
-    // Check that we are safe to move both values.
-    if (!(IsInvariantInRange(operatedVal, select) && IsInvariantInRange(nonOperatedVal, select)))
-    {
-        return;
-    }
+    genTreeOps resultingOp = nodeToRemove->OperIs(GT_NEG)   ? GT_SELECT_NEG
+                             : nodeToRemove->OperIs(GT_NOT) ? GT_SELECT_INV
+                                                            : GT_SELECT_INC;
 
     // Passed all checks, move on to block modification.
     // If this is a Cinc candidate, we must remove the dangling second argument node.
@@ -3615,15 +3618,15 @@ void Lowering::TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond)
 }
 
 //----------------------------------------------------------------------------------------------
-// TryLowerCnsIntCselToCinc: Try converting SELECT/SELECTCC to SELECT_INC/SELECT_INCCC.
-// Conversion is possible if both the trueVal and falseVal are integer constants and abs(trueVal - falseVal) = 1,
-// or if one of trueVal/falseVal is 1 greater than the value being compared against
+// TryLowerCnsIntCselToCSOp: Fold constant selects into conditional increment, invert, or negate.
+// Constants may differ by one (modulo the select width), be complements, or be negatives.
+// Also handles a constant one greater than the local value being compared against.
 //
 // Arguments:
 //     select - The select node that is now SELECT or SELECTCC
 //     cond   - The condition node that SELECT or SELECTCC uses
 //
-void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
+void Lowering::TryLowerCnsIntCselToCSOp(GenTreeOp* select, GenTree* cond)
 {
     assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 
@@ -3632,12 +3635,21 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
 
     if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI())
     {
-        size_t op1Val = (size_t)trueVal->AsIntCon()->IconValue();
-        size_t op2Val = (size_t)falseVal->AsIntCon()->IconValue();
-
-        if ((op1Val + 1 == op2Val) || (op2Val + 1 == op1Val))
+        // A handle's value can change during relocation. Numeric relationships between the current
+        // values of two handles, such as increment or negation, may not hold after relocation.
+        if (trueVal->AsIntCon()->ImmedValNeedsReloc(m_compiler) || falseVal->AsIntCon()->ImmedValNeedsReloc(m_compiler))
         {
-            const bool shouldReverseCondition = (op1Val + 1 == op2Val);
+            return;
+        }
+
+        // Compare constants modulo the select's width, so INT_MAX + 1 matches INT_MIN as well.
+        const uint64_t mask   = select->TypeIs(TYP_INT) ? UINT32_MAX : UINT64_MAX;
+        const uint64_t op1Val = static_cast<uint64_t>(trueVal->AsIntCon()->IconValue()) & mask;
+        const uint64_t op2Val = static_cast<uint64_t>(falseVal->AsIntCon()->IconValue()) & mask;
+
+        if ((((op1Val + 1) & mask) == op2Val) || (((op2Val + 1) & mask) == op1Val))
+        {
+            const bool shouldReverseCondition = (((op1Val + 1) & mask) == op2Val);
 
             if (select->OperIs(GT_SELECT))
             {
@@ -3687,6 +3699,42 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
                 DISPTREERANGE(BlockRange(), selectcc);
                 JITDUMP("\n");
             }
+        }
+        else if (select->OperIs(GT_SELECTCC))
+        {
+            genTreeOps oper;
+            bool       shouldReverseCondition = true;
+            if (op2Val == ((~op1Val) & mask))
+            {
+                oper = GT_SELECT_INVCC;
+            }
+            else if (op2Val == ((0 - op1Val) & mask))
+            {
+                oper = GT_SELECT_NEGCC;
+
+                // Prefer the nonnegative constant, which can also preserve common values such as +1 for reuse.
+                if (op1Val > op2Val)
+                {
+                    std::swap(select->gtOp1, select->gtOp2);
+                    shouldReverseCondition = false;
+                }
+            }
+            else
+            {
+                return;
+            }
+
+            // Invert or negate the retained constant on the path that selected the other constant.
+            if (shouldReverseCondition)
+            {
+                select->AsOpCC()->gtCondition = GenCondition::Reverse(select->AsOpCC()->gtCondition);
+            }
+            BlockRange().Remove(select->gtOp2, true);
+            select->gtOp2 = nullptr;
+            select->SetOper(oper);
+
+            JITDUMP("Converted constant select to %s\n", GenTree::OpName(oper));
+            DISPTREERANGE(BlockRange(), select);
         }
     }
     else
