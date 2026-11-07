@@ -38,6 +38,9 @@ IGCHandleStore* g_pGlobalHandleStore = nullptr;
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);
 
+// The linked-in GC matches this interface; standalone loading overwrites the version.
+VersionInfo g_gc_version_info = { GC_INTERFACE_MAJOR_VERSION, GC_INTERFACE_MINOR_VERSION, 0, nullptr };
+
 // GC entrypoints for the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
 extern "C" HRESULT LOCALGC_CALLCONV GC_Initialize(
@@ -48,6 +51,15 @@ extern "C" HRESULT LOCALGC_CALLCONV GC_Initialize(
 );
 
 #ifndef DACCESS_COMPILE
+
+bool GCHeapUtilities::SupportsPauseRecordCallbacks()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return (g_gc_version_info.MajorVersion > GC_INTERFACE_MAJOR_VERSION) ||
+        ((g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+         (g_gc_version_info.MinorVersion >= GC_INTERFACE_MINOR_VERSION_PAUSE_RECORD_CALLBACK));
+}
 
 HRESULT InitializeGCSelector();
 

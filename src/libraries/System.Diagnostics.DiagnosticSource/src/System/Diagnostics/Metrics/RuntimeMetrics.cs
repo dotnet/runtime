@@ -22,6 +22,13 @@ namespace System.Diagnostics.Metrics
 
         private static readonly Counter<long> s_exceptions;
 
+#if NET11_0_OR_GREATER
+        private static readonly Meter s_detailedGcMeter = new("System.Runtime.Detailed.GC");
+        private static readonly object s_pauseLock = new();
+        private static readonly Histogram<double> s_pauseDuration;
+        private static IDisposable? s_pauseSubscription;
+#endif
+
         public static void EnsureInitialized()
         {
             // Dummy method to ensure that the static constructor run and created the meters
@@ -29,6 +36,15 @@ namespace System.Diagnostics.Metrics
 
         static RuntimeMetrics()
         {
+#if NET11_0_OR_GREATER
+            s_pauseDuration = s_detailedGcMeter.CreateHistogram<double>(
+                "dotnet.gc.pause.duration",
+                unit: "s",
+                description: "The duration of individual pauses attributed to garbage collection.");
+            s_pauseDuration.ListenerStateChanged = UpdatePauseSubscription;
+            UpdatePauseSubscription();
+#endif
+
             s_meter.CreateObservableCounter(
                 "dotnet.gc.collections",
                 GetGarbageCollectionCounts,
@@ -155,6 +171,31 @@ namespace System.Diagnostics.Metrics
                     description: "CPU time used by the process.");
             }
         }
+
+#if NET11_0_OR_GREATER
+        private static void UpdatePauseSubscription()
+        {
+            lock (s_pauseLock)
+            {
+                if (!s_detailedGcMeter.Disposed && s_pauseDuration.Enabled)
+                {
+                    s_pauseSubscription ??= GC.RegisterPauseRecordCallback(RecordPause);
+                }
+                else
+                {
+                    s_pauseSubscription?.Dispose();
+                    s_pauseSubscription = null;
+                }
+            }
+        }
+
+        private static void RecordPause(GCPauseRecord pause, long _)
+        {
+            s_pauseDuration.Record(pause.Duration.TotalSeconds,
+                new KeyValuePair<string, object?>("gc.heap.generation", s_genNames[pause.Generation]),
+                new KeyValuePair<string, object?>("gc.pause.type", pause.Concurrent ? "background" : "blocking"));
+        }
+#endif
 
         private static IEnumerable<Measurement<long>> GetGarbageCollectionCounts()
         {

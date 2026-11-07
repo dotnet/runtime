@@ -1602,6 +1602,7 @@ void gc_heap::do_post_gc()
         last_gc_info->pause_durations[0] = pause_duration;
         total_suspended_time += pause_duration;
         last_gc_info->pause_durations[1] = 0;
+        record_pause_record(last_gc_info->index, pause_duration, settings.condemned_generation, false);
     }
 
     uint64_t total_process_time = end_gc_time - process_start_time;
