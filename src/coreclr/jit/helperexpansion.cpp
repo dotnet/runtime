@@ -1719,15 +1719,17 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     const size_t convertedLen = minipal_convert_utf16_to_utf8((const CHAR16_T*)bufferU16, srcLenCnsU16, (char*)bufferU8,
                                                               MaxU8BufferSizeInBytes, 0);
-    if (convertedLen == 0 || convertedLen > (size_t)MaxU8BufferSizeInBytes)
+    if (convertedLen == 0)
     {
         // E.g. output buffer is too small
-        JITDUMP("ReadUtf8: minipal_convert_utf16_to_utf8 returned 0 or too large\n")
+        JITDUMP("ReadUtf8: minipal_convert_utf16_to_utf8 returned 0\n")
         return false;
     }
 
-    // Bounded by MaxU8BufferSizeInBytes above; narrow for the unsigned JIT helpers below.
+    // Narrow for the unsigned JIT helpers below. minipal_convert_utf16_to_utf8 cannot write
+    // more than MaxU8BufferSizeInBytes into the buffer.
     const unsigned srcLenU8 = (unsigned)convertedLen;
+    assert(srcLenU8 <= (unsigned)MaxU8BufferSizeInBytes);
 
     // Now that we know the exact UTF8 buffer length we can check if it's unrollable
     if (srcLenU8 > getUnrollThreshold(UnrollKind::Memcpy))
