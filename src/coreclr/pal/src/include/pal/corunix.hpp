@@ -157,11 +157,7 @@ namespace CorUnix
 
     enum PalObjectTypeId
     {
-        otiFile = 0,
-        otiFileMapping,
-        otiSocket,
-        otiThread,
-        otiIOCompletionPort,
+        otiThread = 0,
         ObjectTypeIdCount    // This entry must come last in the enumeration
     };
 
