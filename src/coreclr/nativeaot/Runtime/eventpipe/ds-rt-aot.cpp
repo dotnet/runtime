@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #endif
 
+#include <minipal/environ.h>
+
 #include <sys/types.h>
 
 #ifdef __APPLE__
@@ -237,16 +239,7 @@ ep_on_error:
 uint32_t
 ds_rt_aot_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-#ifdef TARGET_UNIX
-    ep_char8_t *nameNarrow = ep_rt_utf16le_to_utf8_string (name);
-    ep_char8_t *valueNarrow = ep_rt_utf16le_to_utf8_string (value);
-    int32_t ret_value = setenv(nameNarrow, valueNarrow, 1);
-    free(nameNarrow);
-    free(valueNarrow);
-    return ret_value;
-#else
-    return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
-#endif
+    return minipal_environ_set_variable_u16((const CHAR16_T*)name, (const CHAR16_T*)value) ? 0 : (uint32_t)0x80004005;
 }
 
 #endif /* ENABLE_PERFTRACING */

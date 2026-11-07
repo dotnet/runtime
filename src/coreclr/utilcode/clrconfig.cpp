@@ -10,6 +10,7 @@
 #include "ex.h"
 
 #include "clrconfignocache.h"
+#include <minipal/environ.h>
 
 using ConfigDWORDInfo = CLRConfig::ConfigDWORDInfo;
 using ConfigStringInfo = CLRConfig::ConfigStringInfo;
@@ -201,11 +202,7 @@ namespace
                 // Validate the cache and no-cache logic result in the same answer
                 SString nameToConvert(name);
 
-#ifdef HOST_WINDOWS
                 CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix, nullptr, coreclrFallbackPrefix);
-#else
-                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix, &PAL_getenv, coreclrFallbackPrefix);
-#endif
                 LPCSTR valueNoCache = nonCache.AsString();
 
                 _ASSERTE(SString::_stricmp(valueNoCache, temp.GetUTF8()) == 0);
@@ -629,11 +626,10 @@ void CLRConfig::Initialize()
     const WCHAR prefixD = (WCHAR)towlower(DOTNET_PREFIX[0]);
 
     // Create a cache of environment variables
-    WCHAR* wszStrings = GetEnvironmentStringsW();
+    WCHAR* wszStrings = reinterpret_cast<WCHAR*>(minipal_environ_get_strings_u16());
     if (wszStrings != NULL)
     {
-        // GetEnvironmentStrings returns pointer to a null terminated block containing
-        // null terminated strings
+        // Returns pointer to a null terminated block containing null terminated strings
         for(WCHAR *wszCurr = wszStrings; *wszCurr; wszCurr++)
         {
             WCHAR wch = (WCHAR)towlower(*wszCurr);
@@ -679,7 +675,7 @@ void CLRConfig::Initialize()
                 wszCurr++;
         }
 
-        FreeEnvironmentStringsW(wszStrings);
+        minipal_environ_free_strings_u16(wszStrings);
         s_fUseEnvCache = true;
     }
 }

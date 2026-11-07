@@ -2110,47 +2110,6 @@ VOID
 PALAPI
 DebugBreak();
 
-PALIMPORT
-DWORD
-PALAPI
-GetEnvironmentVariableW(
-            IN LPCWSTR lpName,
-            OUT LPWSTR lpBuffer,
-            IN DWORD nSize);
-
-#ifdef UNICODE
-#define GetEnvironmentVariable GetEnvironmentVariableW
-#else
-#define GetEnvironmentVariable GetEnvironmentVariableA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-SetEnvironmentVariableW(
-            IN LPCWSTR lpName,
-            IN LPCWSTR lpValue);
-
-#ifdef UNICODE
-#define SetEnvironmentVariable SetEnvironmentVariableW
-#else
-#define SetEnvironmentVariable SetEnvironmentVariableA
-#endif
-
-PALIMPORT
-LPWSTR
-PALAPI
-GetEnvironmentStringsW();
-
-#define GetEnvironmentStrings GetEnvironmentStringsW
-
-PALIMPORT
-BOOL
-PALAPI
-FreeEnvironmentStringsW(
-            IN LPWSTR);
-
-#define FreeEnvironmentStrings FreeEnvironmentStringsW
 
 PALIMPORT
 BOOL
@@ -2874,8 +2833,6 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 }
 
 #endif // !__has_builtin(_rotr)
-
-PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
 
 #ifndef ERANGE
 #define ERANGE          34

@@ -20,7 +20,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
-#include "pal/environ.h"
 #include "pal/utils.h"
 #include "pal/debug.h"
 #include "pal/init.h"
@@ -339,13 +338,6 @@ Initialize(
 
         InitializeCGroup();
 
-        // Initialize the environment.
-        if (FALSE == EnvironInitialize())
-        {
-            palError = ERROR_PALINIT_ENV;
-            goto CLEANUP1;
-        }
-
         if (!minipal_increase_descriptor_limit())
         {
             ERROR("Unable to increase the file descriptor limit!\n");
@@ -360,7 +352,7 @@ Initialize(
         {
             ERROR("SEHInitializeMachExceptions failed!\n");
             palError = ERROR_PALINIT_INITIALIZE_MACH_EXCEPTION;
-            goto CLEANUP1;
+            goto CLEANUP1a;
         }
 #endif // HAVE_MACH_EXCEPTIONS
 
@@ -505,7 +497,6 @@ CLEANUP1b:
     // Cleanup initial thread data
 CLEANUP1a:
     // Cleanup global process data
-CLEANUP1:
     CleanupCGroup();
 CLEANUP0a:
     TLSCleanup();

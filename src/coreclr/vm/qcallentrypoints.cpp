@@ -525,11 +525,7 @@ static const Entry s_QCall[] =
 #endif // TARGET_WASI && PERFTRACING_DISABLE_THREADS
 #endif // FEATURE_PERFTRACING
 #if defined(TARGET_UNIX)
-    DllImportEntry(FreeEnvironmentStringsW)
-    DllImportEntry(GetEnvironmentStringsW)
-    DllImportEntry(GetEnvironmentVariableW)
     DllImportEntry(OutputDebugStringW)
-    DllImportEntry(SetEnvironmentVariableW)
 #endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     DllImportEntry(X86Base_CpuId)

@@ -11,6 +11,7 @@
 #include "ep-rt-coreclr.h"
 #include <clrconfignocache.h>
 #include <generatedumpflags.h>
+#include <minipal/environ.h>
 #include <minipal/log.h>
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
@@ -227,7 +228,7 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+	return minipal_environ_set_variable_u16((const CHAR16_T*)name, (const CHAR16_T*)value) ? S_OK : E_FAIL;
 }
 
 static
@@ -317,11 +318,7 @@ ds_rt_server_log_pause_message (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	const char diagPortsName[] = "DiagnosticPorts";
-#ifdef HOST_WINDOWS
     CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
-#else
-    CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName, /* noPrefix */ false, &PAL_getenv);
-#endif
 	LPCSTR ports = nullptr;
 	if (diagPorts.IsSet())
 	{

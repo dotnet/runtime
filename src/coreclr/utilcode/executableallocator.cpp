@@ -95,6 +95,7 @@ void ExecutableAllocator::UnmapRW(void*) noexcept
 #include "pedecoder.h"
 #include "executableallocator.h"
 #include <configuration.h>
+#include <minipal/environ.h>
 
 #if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
 // On Unix-like platforms, memory that may written to
@@ -346,10 +347,11 @@ HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandle
 
 #ifdef VARIABLE_SIZED_CACHEDMAPPING_SIZE
     g_cachedMappingSize = ARRAY_SIZE(m_cachedMapping);
-    auto envString = getenv("EXECUTABLE_ALLOCATOR_CACHE_SIZE");
+    char* envString = minipal_environ_getenv("EXECUTABLE_ALLOCATOR_CACHE_SIZE");
     if (envString != NULL)
     {
         int customCacheSize = atoi(envString);
+        free(envString);
         if (customCacheSize != 0)
         {
             if ((customCacheSize > ARRAY_SIZE(m_cachedMapping)) || (customCacheSize <= 0))

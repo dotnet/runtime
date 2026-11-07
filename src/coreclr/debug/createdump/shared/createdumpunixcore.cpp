@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdumpcore.h"
+#include <minipal/environ.h>
 
 bool GetProcessInfo(pid_t pid, pid_t* ppid, pid_t* tgid, char *name, size_t nameSize);
 
@@ -47,15 +48,17 @@ bool ProcessInfo::Initialize()
     }
 
 #ifndef __APPLE__
-    const char* disablePagemapUse = getenv("DOTNET_DbgDisablePagemapUse");
+    char* disablePagemapUse = minipal_environ_getenv("DOTNET_DbgDisablePagemapUse");
     if (disablePagemapUse == nullptr)
     {
-        disablePagemapUse = getenv("COMPlus_DbgDisablePagemapUse");
+        disablePagemapUse = minipal_environ_getenv("COMPlus_DbgDisablePagemapUse");
     }
     char* end = nullptr;
     errno = 0;
     unsigned long value = disablePagemapUse != nullptr ? strtoul(disablePagemapUse, &end, 10) : 1;
-    if (disablePagemapUse != nullptr && end != disablePagemapUse && errno != ERANGE && value == 0)
+    bool enablePagemapCheck = disablePagemapUse != nullptr && end != disablePagemapUse && errno != ERANGE && value == 0;
+    free(disablePagemapUse);
+    if (enablePagemapCheck)
     {
         TRACE("DbgDisablePagemapUse detected - pagemap file checking is enabled\n");
         char pagemapPath[128];

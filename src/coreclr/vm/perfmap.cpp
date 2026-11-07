@@ -12,7 +12,6 @@
 #include "pal.h"
 #include <dn-stdio.h>
 
-
 // The code addresses are actually native image offsets during crossgen. Print
 // them as 32-bit numbers for consistent output when cross-targeting and to
 // make the output more compact.
@@ -64,11 +63,7 @@ void PerfMap::Initialize()
 
 const char * PerfMap::InternalConstructPath()
 {
-#ifdef HOST_WINDOWS
     CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
-#else
-    CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath", /* noPrefix */ false, &PAL_getenv);
-#endif
     if (value.IsSet())
     {
         return value.AsString();

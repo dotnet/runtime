@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #endif
 
+#include <minipal/environ.h>
 #include <minipal/utf8.h>
 #include <minipal/time.h>
 
@@ -1121,17 +1122,25 @@ ep_rt_temp_path_get (
     EP_ASSERT (buffer != NULL);
     EP_ASSERT (buffer_len > 0);
 
-    const ep_char8_t *path = getenv ("TMPDIR");
-    if (path == NULL){
-        path = getenv ("TMP");
-        if (path == NULL){
-            path = getenv ("TEMP");
+    char *tmpdir = minipal_environ_getenv ("TMPDIR");
+    char *tmp = NULL;
+    char *temp = NULL;
+    const ep_char8_t *path = tmpdir;
+    if (path == NULL) {
+        tmp = minipal_environ_getenv ("TMP");
+        path = tmp;
+        if (path == NULL) {
+            temp = minipal_environ_getenv ("TEMP");
+            path = temp;
             if (path == NULL)
                 path = "/tmp/";
         }
     }
 
     int32_t result = snprintf (buffer, buffer_len, path[strlen(path) - 1] == '/' ? "%s" : "%s/", path);
+    free (tmpdir);
+    free (tmp);
+    free (temp);
     if (result <= 0 || (uint32_t)result >= buffer_len)
         ep_raise_error ();
 

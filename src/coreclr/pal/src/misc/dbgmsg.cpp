@@ -16,8 +16,8 @@ Abstract:
 
 #include "config.h"
 #include "pal/dbgmsg.h"
+#include <minipal/environ.h>
 #include "pal/cruntime.h"
-#include "pal/environ.h"
 
 /* standard headers */
 
@@ -153,11 +153,7 @@ BOOL DBG_init_channels(void)
 
     /* parse PAL_DBG_CHANNELS environment variable */
 
-    env_string = getenv(ENV_CHANNELS);
-    if (env_string != NULL)
-    {
-        env_string = strdup(env_string);
-    }
+    env_string = minipal_environ_getenv(ENV_CHANNELS);
     env_pcache = env_workstring = env_string;
 
     while(env_workstring)
@@ -293,7 +289,7 @@ BOOL DBG_init_channels(void)
     free(env_pcache);
 
     /* select output file */
-    env_string = getenv(ENV_FILE);
+    env_string = minipal_environ_getenv(ENV_FILE);
     if(env_string && *env_string!='\0')
     {
         if(!strcmp(env_string, "stderr"))
@@ -322,9 +318,10 @@ BOOL DBG_init_channels(void)
     {
         output_file = stderr; /* output to stderr by default */
     }
+    free(env_string);
 
     /* see if we need to disable assertions */
-    env_string = getenv(ENV_ASSERTS);
+    env_string = minipal_environ_getenv(ENV_ASSERTS);
     if(env_string && 0 == strcmp(env_string,"1"))
     {
         g_Dbg_asserts_enabled = FALSE;
@@ -333,9 +330,10 @@ BOOL DBG_init_channels(void)
     {
         g_Dbg_asserts_enabled = TRUE;
     }
+    free(env_string);
 
     /* select ENTRY level limitation */
-    env_string = getenv(ENV_ENTRY_LEVELS);
+    env_string = minipal_environ_getenv(ENV_ENTRY_LEVELS);
     if(env_string)
     {
         max_entry_level = atoi(env_string);
@@ -344,6 +342,7 @@ BOOL DBG_init_channels(void)
     {
         max_entry_level = 1;
     }
+    free(env_string);
 
     /* if necessary, allocate TLS key for entry nesting level */
     if(0 != max_entry_level)
@@ -663,27 +662,12 @@ bool DBG_ShouldCheckStackAlignment()
 
     if (caMode == CheckAlignment_Uninitialized)
     {
-        char* checkAlignmentSettings;
-        bool shouldFreeCheckAlignmentSettings = false;
-        if (palEnvironment == nullptr)
-        {
-            // This function might be called before the PAL environment is initialized.
-            // In this case, use the system getenv instead.
-            checkAlignmentSettings = ::getenv(PAL_CHECK_ALIGNMENT_MODE);
-        }
-        else
-        {
-            checkAlignmentSettings = EnvironGetenv(PAL_CHECK_ALIGNMENT_MODE);
-            shouldFreeCheckAlignmentSettings = true;
-        }
+        char* checkAlignmentSettings = minipal_environ_getenv(PAL_CHECK_ALIGNMENT_MODE);
 
         caMode = checkAlignmentSettings ?
             (CheckAlignmentMode)atoi(checkAlignmentSettings) : CheckAlignment_Default;
 
-        if (checkAlignmentSettings && shouldFreeCheckAlignmentSettings)
-        {
-            free(checkAlignmentSettings);
-        }
+        free(checkAlignmentSettings);
     }
 
     return caMode == CheckAlignment_On;
@@ -721,7 +705,7 @@ void PAL_DisplayDialog(const char *szTitle, const char *szText)
 
     if (dispDialog == DisplayDialog_Uninitialized)
     {
-        char* displayDialog = EnvironGetenv(PAL_DISPLAY_DIALOG);
+        char* displayDialog = minipal_environ_getenv(PAL_DISPLAY_DIALOG);
         if (displayDialog)
         {
             int i = atoi(displayDialog);

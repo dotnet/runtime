@@ -22,9 +22,10 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/init.h"
 #include "pal/debug.h"
 #include "pal/utils.h"
-#include "pal/environ.h"
 #include "pal/stackstring.hpp"
 #include "pal/signal.hpp"
+
+#include <minipal/environ.h>
 
 #include <generatedumpflags.h>
 #include <clrconfignocache.h>
@@ -1203,14 +1204,12 @@ PAL_GetTransportName(
 #endif // __APPLE__
     {
         // Must match the out-of-process clients that compute the same names (Path.GetTempPath() rules).
-        const char* tmpDir = getenv("TMPDIR");
-        if (tmpDir == nullptr || tmpDir[0] == '\0')
-        {
-            tmpDir = TEMP_DIRECTORY_PATH;
-        }
+        char* tmpDirAlloc = minipal_environ_getenv("TMPDIR");
+        const char* tmpDir = (tmpDirAlloc != nullptr && tmpDirAlloc[0] != '\0') ? tmpDirAlloc : TEMP_DIRECTORY_PATH;
 
         const char* slash = (tmpDir[strlen(tmpDir) - 1] == '/') ? "" : "/";
         int len = snprintf(directoryBuffer, MAX_TRANSPORT_NAME_LENGTH, "%s%s", tmpDir, slash);
+        free(tmpDirAlloc);
         if (len < 0 || (unsigned int)len >= MAX_TRANSPORT_NAME_LENGTH)
         {
             ERROR("TMPDIR is longer than MAX_TRANSPORT_NAME_LENGTH");
@@ -1545,7 +1544,7 @@ PROCLaunchCreateDump(
         else
         {
             // Execute the createdump program
-            if (execve(argv[0], (char**)argv, palEnvironment) == -1)
+            if (execve(argv[0], (char**)argv, minipal_environ_get()) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
                 _exit(EXIT_FAILURE);

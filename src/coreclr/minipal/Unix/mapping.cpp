@@ -20,6 +20,7 @@ typedef char16_t WCHAR;
 typedef int32_t HRESULT;
 
 #include <dn-stdio.h>
+#include <minipal/environ.h>
 
 #if !defined(MAP_ANON) && defined(MAP_ANONYMOUS)
 #define MAP_ANON MAP_ANONYMOUS
@@ -579,8 +580,10 @@ bool VMToOSInterface::UseSharedReadOnlyMapping(size_t sectionAlignment)
         return false;
     }
 
-    const char* configuration = getenv("PAL_MAP_READONLY_PE_HUGE_PAGE_AS_SHARED");
-    return configuration != nullptr && strcmp(configuration, "1") == 0;
+    char* configuration = minipal_environ_getenv("PAL_MAP_READONLY_PE_HUGE_PAGE_AS_SHARED");
+    bool enabled = configuration != nullptr && strcmp(configuration, "1") == 0;
+    free(configuration);
+    return enabled;
 }
 
 int VMToOSInterface::MarkMemoryAsNotNeeded(void* address, size_t size)

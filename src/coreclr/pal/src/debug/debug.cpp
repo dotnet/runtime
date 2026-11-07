@@ -19,10 +19,10 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include "pal/process.h"
 #include "pal/context.h"
 #include "pal/debug.h"
-#include "pal/environ.h"
 #include "pal/module.h"
 #include "pal/stackstring.hpp"
 #include "pal/utils.h"
+#include <minipal/environ.h>
 #include <minipal/ospagesize.h>
 
 #include <signal.h>
@@ -145,11 +145,9 @@ OutputDebugStringA(
           lpOutputString ? lpOutputString : "NULL");
 
     // As we don't support debug events, we are going to output the debug string
-    // to stderr instead of generating OUT_DEBUG_STRING_EVENT. It's safe to tell
-    // EnvironGetenv not to make a copy of the value here since we only want to
-    // check whether it exists, not actually use it.
+    // to stderr instead of generating OUT_DEBUG_STRING_EVENT.
     if ((lpOutputString != NULL) &&
-        (NULL != EnvironGetenv(PAL_OUTPUTDEBUGSTRING, /* copyValue */ FALSE)))
+        (minipal_environ_get_variable(PAL_OUTPUTDEBUGSTRING, NULL, 0) != 0))
     {
         fprintf(stderr, "%s", lpOutputString);
     }
@@ -305,6 +303,28 @@ run_debug_command (const char *command)
 #define PID_TEXT "PAL_EXE_PID="
 #define EXE_TEXT "PAL_EXE_NAME="
 
+static bool PutenvEntry(const char* entry)
+{
+    const char* equals = strchr(entry, '=');
+    if (equals == NULL || equals == entry)
+    {
+        return false;
+    }
+
+    size_t nameLength = (size_t)(equals - entry);
+    char* name = (char*)malloc(nameLength + 1);
+    if (name == NULL)
+    {
+        return false;
+    }
+
+    memcpy(name, entry, nameLength);
+    name[nameLength] = '\0';
+    bool result = minipal_environ_set_variable(name, equals + 1);
+    free(name);
+    return result;
+}
+
 static
 int
 DebugBreakCommand()
@@ -312,7 +332,7 @@ DebugBreakCommand()
 #ifdef ENABLE_RUN_ON_DEBUG_BREAK
     extern MODSTRUCT exe_module;
 
-    char *command_string = EnvironGetenv(PAL_RUN_ON_DEBUG_BREAK);
+    char *command_string = minipal_environ_getenv(PAL_RUN_ON_DEBUG_BREAK);
     if (command_string)
     {
         char pid_buf[sizeof (PID_TEXT) + 32];
@@ -347,7 +367,7 @@ DebugBreakCommand()
            variables in the child process, but if we do that we can't check
            for errors. putenv/setenv can fail when out of memory */
 
-        if (!EnvironPutenv (pid_buf) || !EnvironPutenv (exe_buf))
+        if (!PutenvEntry(pid_buf) || !PutenvEntry(exe_buf))
         {
             goto FAILED;
         }

@@ -131,6 +131,7 @@
 
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeadapter.h"
+#include <minipal/environ.h>
 #endif // FEATURE_PERFTRACING
 
 //---------------------------------------------------------------------------------------
@@ -6910,10 +6911,10 @@ HRESULT ProfToEEInterfaceImpl::GetEnvironmentVariable(
 
     if ((pcchValue != nullptr) || (szValue != nullptr))
     {
-        DWORD trueLen = ::GetEnvironmentVariable(szName, szValue, cchValue);
+        DWORD trueLen = minipal_environ_get_variable_u16((const CHAR16_T*)szName, (CHAR16_T*)szValue, cchValue);
         if (trueLen == 0)
         {
-            hr = HRESULT_FROM_WIN32(GetLastError());
+            hr = HRESULT_FROM_WIN32(ERROR_ENVVAR_NOT_FOUND);
         }
         else if ((trueLen > cchValue) && (szValue != nullptr))
         {
@@ -6954,7 +6955,7 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
         return E_INVALIDARG;
     }
 
-    return ::SetEnvironmentVariable(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+    return minipal_environ_set_variable_u16((const CHAR16_T*)szName, (const CHAR16_T*)szValue) ? S_OK : E_FAIL;
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(

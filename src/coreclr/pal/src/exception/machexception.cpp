@@ -26,7 +26,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/utils.h"
 #include "pal/context.h"
 #include "pal/process.h"
-#include "pal/environ.h"
 
 #include <minipal/debugger.h>
 #include <minipal/utils.h>
@@ -41,6 +40,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include <dlfcn.h>
 #include <mach-o/loader.h>
 #include <sys/mman.h>
+#include <minipal/environ.h>
 
 using namespace CorUnix;
 
@@ -171,7 +171,7 @@ GetExceptionMask()
     {
         exMode = MachException_Default;
 
-        char* exceptionSettings = EnvironGetenv(PAL_MACH_EXCEPTION_MODE);
+        char* exceptionSettings = minipal_environ_getenv(PAL_MACH_EXCEPTION_MODE);
         if (exceptionSettings)
         {
             exMode = (MachExceptionMode)atoi(exceptionSettings);

@@ -33,6 +33,7 @@
 
 #if defined(HOST_AMD64)
 #include <x86intrin.h>
+#include <minipal/environ.h>
 #endif
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
@@ -74,8 +75,9 @@ namespace
         if (!initialized)
         {
 #if defined(HOST_AMD64)
-            const char* archTimestamp = getenv("JITDUMP_USE_ARCH_TIMESTAMP");
+            char* archTimestamp = minipal_environ_getenv("JITDUMP_USE_ARCH_TIMESTAMP");
             useArchTimestamp = (archTimestamp != nullptr && strcmp(archTimestamp, "1") == 0);
+            free(archTimestamp);
 #endif
             initialized = true;
         }
