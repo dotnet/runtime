@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <crtdbg.h>
 #include "mdinfo.h"
+#include "minipal.h"
 
 #ifndef STRING_BUFFER_LEN
 #define STRING_BUFFER_LEN 4096
@@ -59,38 +60,33 @@ static HRESULT FindObjMetaData(PVOID pImage, PVOID *ppMetaData, long *pcbMetaDat
 // This function returns the address to the MapView of file and file size.
 void GetMapViewOfFile(_In_ WCHAR *szFile, PBYTE *ppbMap, DWORD *pdwFileSize)
 {
-    HANDLE      hMapFile;
-    DWORD       dwHighSize;
+    VMToOSInterface::MemoryMapHandle hFile = VMToOSInterface::OpenFile(reinterpret_cast<const char16_t*>(szFile), /* executable */ false);
+    if (hFile == VMToOSInterface::InvalidFileHandle)
+        MDInfo::Error("OpenFile failed!");
 
-    HANDLE hFile = WszCreateFile(szFile,
-                               GENERIC_READ,
-                               FILE_SHARE_READ,
-                               NULL,
-                               OPEN_EXISTING,
-                               FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-                               NULL);
-    if (hFile == INVALID_HANDLE_VALUE)
-        MDInfo::Error("CreateFileA failed!");
-
-    *pdwFileSize = GetFileSize(hFile, &dwHighSize);
-
-    if ((*pdwFileSize == 0xFFFFFFFF) && (GetLastError() != NO_ERROR))
+    uint64_t fileSize;
+    if (!VMToOSInterface::GetFileSize(hFile, &fileSize) || fileSize > UINT32_MAX)
     {
-        CloseHandle(hFile);
+        VMToOSInterface::CloseFile(hFile);
         MDInfo::Error("GetFileSize failed!");
     }
-    _ASSERTE(dwHighSize == 0);
+    *pdwFileSize = (DWORD)fileSize;
 
-    hMapFile = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    CloseHandle(hFile);
-    if (!hMapFile)
-        MDInfo::Error("CreateFileMappingW failed!");
+    VMToOSInterface::MemoryMapHandle hMapFile =
+        VMToOSInterface::CreateMemoryMapping(hFile, 0, VMToOSInterface::MemoryProtection::ReadOnly);
+    if (hMapFile == VMToOSInterface::InvalidMemoryMapHandle)
+    {
+        VMToOSInterface::CloseFile(hFile);
+        MDInfo::Error("CreateMemoryMapping failed!");
+    }
 
-    *ppbMap = (PBYTE) MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 0);
-    CloseHandle(hMapFile);
+    *ppbMap = (PBYTE) VMToOSInterface::MapMemory(hMapFile, 0, nullptr, *pdwFileSize,
+        VMToOSInterface::MemoryProtection::ReadOnly, true);
+    VMToOSInterface::CloseMemoryMapping(hMapFile);
+    VMToOSInterface::CloseFile(hFile);
 
     if (!*ppbMap)
-        MDInfo::Error("MapViewOfFile failed!");
+        MDInfo::Error("MapMemory failed!");
 } // void GetMapViewOfFile()
 
 // This function skips a member given the pointer to the member header
@@ -241,7 +237,7 @@ void DisplayArchive(_In_z_ WCHAR* szFile, ULONG DumpFilter, _In_opt_z_ WCHAR* sz
         pbMapAddress = SkipMember(pbMapAddress);
     }
 
-    UnmapViewOfFile(pbStartAddress);
+    VMToOSInterface::UnmapMemory(pbStartAddress, dwFileSize);
 } // void DisplayArchive()
 
 // DisplayFile() function

@@ -39,8 +39,6 @@ extern unsigned g_uConsoleCP;
 
 extern BOOL                 g_fThisIsInstanceMethod;
 extern unsigned             g_uCodePage;
-extern HANDLE               hConsoleOut;
-extern HANDLE               hConsoleErr;
 // globals for source file info
 ULONG_PTR ulWasFileToken = 0xFFFFFFFF;
 GUID guidWasLang={0}, guidWasLangVendor={0},guidWasDoc={0};
@@ -131,10 +129,6 @@ char* AnsiToUtf(_In_ __nullterminated const char* sz) { return UnicodeToUtf(Ansi
 static void UnicodeToConsoleOrMsgBox(_In_ __nullterminated const WCHAR* wz)
 {
     {
-        //DWORD dw;
-        //char* sz = UnicodeToAnsi(wz);
-        //WriteFile(hConsoleOut,(CONST VOID *)sz, (ULONG32)strlen(sz),&dw,NULL);
-        //WriteFile(hConsoleOut,(CONST VOID *)"\r\n", 2,&dw,NULL);
         printf("%s\n",UnicodeToAnsi(wz));
     }
 }
@@ -156,12 +150,8 @@ static void ToGUIOrFile(_In_ __nullterminated const char* sz, void* GUICookie)
 void printError(void* GUICookie, _In_ __nullterminated const char* string)
 {
     {
-        //DWORD dw;
         const char* sz = ERRORMSG(string);
         if(GUICookie) printLine(GUICookie, sz);
-        //sz = UnicodeToAnsi(UtfToUnicode(string));
-        //WriteFile(hConsoleErr,(CONST VOID *)sz, (ULONG32)strlen(sz),&dw,NULL);
-        //WriteFile(hConsoleErr,(CONST VOID *)"\r\n", 2,&dw,NULL);
         fprintf(stderr,"%s\n",UnicodeToAnsi(UtfToUnicode(string)));
     }
 }
