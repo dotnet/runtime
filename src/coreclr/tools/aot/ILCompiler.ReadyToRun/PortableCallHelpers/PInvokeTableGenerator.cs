@@ -210,7 +210,9 @@ namespace ILCompiler.PortableCallHelpers
 
                 """);
 
+            w.WriteLine("#ifndef CORECLR_PREGENERATED_CALLHELPERS");
             EmitQCallTable(w, target, qcallImports);
+            w.WriteLine("#endif // !CORECLR_PREGENERATED_CALLHELPERS");
 
             static bool ShouldTreatAsVariadic(PInvokeInfo[] candidates)
             {
@@ -235,6 +237,19 @@ namespace ILCompiler.PortableCallHelpers
 
         private void EmitQCallTable(TextWriter w, TargetDetails target, List<PInvokeInfo> qcallImports)
         {
+            var identities = new Dictionary<string, PInvokeInfo>(StringComparer.Ordinal);
+            foreach (PInvokeInfo entry in qcallImports)
+            {
+                if (identities.TryGetValue(entry.EntryPoint, out PInvokeInfo previous)
+                    && (entry.Method.IsInternalCall || previous.Method.IsInternalCall)
+                    && entry.Method != previous.Method)
+                {
+                    throw new LogAsErrorException(
+                        $"Native entrypoint '{entry.EntryPoint}' conflicts between '{previous.Method}' and '{entry.Method}'.");
+                }
+                identities[entry.EntryPoint] = entry;
+            }
+
             var qcalls = qcallImports
                 .OrderBy(p => p.EntryPoint, StringComparer.Ordinal)
                 .DistinctBy(p => p.EntryPoint, StringComparer.Ordinal)
@@ -273,7 +288,7 @@ namespace ILCompiler.PortableCallHelpers
             }
             w.WriteLine("} // extern \"C\"");
             w.WriteLine();
-            w.WriteLine("static const Entry s_QCall[] = {");
+            w.WriteLine("static const Entry s_RuntimeHelpers[] = {");
             foreach (PInvokeInfo qcall in qcalls)
             {
                 if (target.OperatingSystem == TargetOS.Browser && qcall.EntryPoint is "memmove" or "memset")
@@ -289,7 +304,7 @@ namespace ILCompiler.PortableCallHelpers
 
                 const void* QCallResolveDllImport(const char* name)
                 {
-                    return minipal_resolve_dllimport(s_QCall, sizeof(s_QCall) / sizeof(s_QCall[0]), name);
+                    return minipal_resolve_dllimport(s_RuntimeHelpers, sizeof(s_RuntimeHelpers) / sizeof(s_RuntimeHelpers[0]), name);
                 }
                 """);
         }
@@ -530,6 +545,14 @@ namespace ILCompiler.PortableCallHelpers
             List<string> parameterTypes = [];
             foreach (TypeDesc parameter in ParameterTypes(signature))
                 parameterTypes.Add(MapType(parameter));
+
+            if (pinvoke.Method.IsInternalCall)
+            {
+                if (!signature.IsStatic)
+                    parameterTypes.Insert(0, "void *");
+                parameterTypes.Insert(0, "uintptr_t");
+                parameterTypes.Add("uintptr_t");
+            }
 
             if (IsPassedByReference(returnType))
             {

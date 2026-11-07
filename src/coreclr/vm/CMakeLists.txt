@@ -376,10 +376,10 @@ set(VM_SOURCES_WKS
     profilinghelper.cpp
     proftoeeinterfaceimpl.cpp
     qcall.cpp
-    qcallentrypoints.cpp
     reflectclasswriter.cpp
     reflectioninvocation.cpp
     runtimehandles.cpp
+    runtimehelpers.cpp
     simplerwlock.cpp
     stackingallocator.cpp
     stringliteralmap.cpp
@@ -979,8 +979,10 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
     )
     if (GEN_PINVOKE)
         add_compile_definitions(GEN_PINVOKE=1)
+        list(REMOVE_ITEM VM_SOURCES_WKS runtimehelpers.cpp)
         list(APPEND VM_SOURCES_WKS_GEN
             ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-pinvoke.cpp
+            runtimehelpers.cpp
         )
     endif(GEN_PINVOKE)
 endif()

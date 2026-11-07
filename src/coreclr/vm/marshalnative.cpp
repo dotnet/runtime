@@ -276,7 +276,7 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
  */
 static thread_local int t_lastPInvokeError;
 
-FCIMPL0(int, MarshalNative::GetLastPInvokeError)
+FCIMPL0(int, Marshal_GetLastPInvokeError)
 {
     FCALL_CONTRACT;
 
@@ -284,7 +284,7 @@ FCIMPL0(int, MarshalNative::GetLastPInvokeError)
 }
 FCIMPLEND
 
-FCIMPL1(void, MarshalNative::SetLastPInvokeError, int error)
+FCIMPL1(void, Marshal_SetLastPInvokeError, int error)
 {
     FCALL_CONTRACT;
 
@@ -292,7 +292,7 @@ FCIMPL1(void, MarshalNative::SetLastPInvokeError, int error)
 }
 FCIMPLEND
 
-FCIMPL0(void, StubHelpers::SetLastError)
+FCIMPL0(void, StubHelpers_SetLastError)
 {
     // Make sure this is the first thing we do after returning from the target, as almost everything can cause the last error to get trashed
     DWORD lastError = ::GetLastError();
@@ -333,7 +333,7 @@ extern "C" OBJECTHANDLE QCALLTYPE GCHandle_InternalAllocWithGCTransition(QCall::
     return hnd;
 }
 
-FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
+FCIMPL2(LPVOID, GCHandle__InternalAlloc, Object *obj, int type)
 {
     FCALL_CONTRACT;
 
@@ -363,7 +363,7 @@ extern "C" void QCALLTYPE GCHandle_InternalFreeWithGCTransition(OBJECTHANDLE han
 }
 
 // Free a GC handle.
-FCIMPL1(FC_BOOL_RET, MarshalNative::GCHandleInternalFree, OBJECTHANDLE handle)
+FCIMPL1(FC_BOOL_RET, GCHandle__InternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
@@ -378,7 +378,7 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::GCHandleInternalFree, OBJECTHANDLE handle)
 FCIMPLEND
 
 // Get the object referenced by a GC handle.
-FCIMPL1(LPVOID, MarshalNative::GCHandleInternalGet, OBJECTHANDLE handle)
+FCIMPL1(LPVOID, GCHandle_InternalGet, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
@@ -393,7 +393,7 @@ FCIMPLEND
 #ifdef FEATURE_JAVAMARSHAL
 // Get the object referenced by a GC handle, also waiting for bridge procesing to finish.
 // Used by WeakReference
-FCIMPL2(FC_BOOL_RET, MarshalNative::GCHandleInternalTryGetBridgeWait, OBJECTHANDLE handle, Object **pObjResult)
+FCIMPL2(FC_BOOL_RET, GCHandle_InternalTryGetBridgeWait, OBJECTHANDLE handle, Object **pObjResult)
 {
     FCALL_CONTRACT;
 
@@ -428,7 +428,7 @@ extern "C" void QCALLTYPE GCHandle_InternalGetBridgeWait(OBJECTHANDLE handle, QC
 #endif // FEATURE_JAVAMARSHAL
 
 // Update the object referenced by a GC handle.
-FCIMPL2(VOID, MarshalNative::GCHandleInternalSet, OBJECTHANDLE handle, Object *obj)
+FCIMPL2(VOID, GCHandle_InternalSet, OBJECTHANDLE handle, Object *obj)
 {
     FCALL_CONTRACT;
 
@@ -438,7 +438,7 @@ FCIMPL2(VOID, MarshalNative::GCHandleInternalSet, OBJECTHANDLE handle, Object *o
 FCIMPLEND
 
 // Update the object referenced by a GC handle.
-FCIMPL3(Object*, MarshalNative::GCHandleInternalCompareExchange, OBJECTHANDLE handle, Object *obj, Object* oldObj)
+FCIMPL3(Object*, GCHandle_InternalCompareExchange, OBJECTHANDLE handle, Object *obj, Object* oldObj)
 {
     FCALL_CONTRACT;
 
@@ -797,7 +797,7 @@ extern "C" void QCALLTYPE MarshalNative_CleanupUnusedObjectsInCurrentContext(QCa
 //====================================================================
 // Checks whether there are RCWs from any context available for cleanup.
 //====================================================================
-FCIMPL0(FC_BOOL_RET, MarshalNative::AreComObjectsAvailableForCleanup)
+FCIMPL0(FC_BOOL_RET, Marshal_AreComObjectsAvailableForCleanup)
 {
     FCALL_CONTRACT;
 

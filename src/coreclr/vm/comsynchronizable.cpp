@@ -572,7 +572,7 @@ void ThreadBaseObject::InitExisting()
 }
 
 #ifdef FEATURE_MULTITHREADING
-FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
+FCIMPL1(void, Thread_InternalFinalize, ThreadBaseObject* pThisUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -598,7 +598,7 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL0(FC_BOOL_RET, ThreadNative::CatchAtSafePoint)
+FCIMPL0(FC_BOOL_RET, Thread_CatchAtSafePoint)
 {
     FCALL_CONTRACT;
 
@@ -787,7 +787,7 @@ extern "C" void QCALLTYPE ThreadNative_ResetAbort()
 }
 
 #ifdef FEATURE_MULTITHREADING
-FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
+FCIMPL0(FC_BOOL_RET, Thread_CurrentThreadIsFinalizerThread)
 {
     FCALL_CONTRACT;
 

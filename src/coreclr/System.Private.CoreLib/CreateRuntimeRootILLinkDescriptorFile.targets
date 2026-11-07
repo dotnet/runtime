@@ -35,15 +35,16 @@
              Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CreateILLinkRuntimeRootDescriptorFile"
           DependsOnTargets="_CombineILLinkTrimXmlFilePaths;ResolveProjectReferences"
-          Inputs="$(_NamespaceFilePath);$(_MscorlibFilePath);$(_CortypeFilePath);$(_RexcepFilePath);$(_ILLinkDescriptorsIntermediatePath)"
+          Inputs="$(MSBuildThisFileFullPath);$(ILLinkTasksAssembly);$(_NamespaceFilePath);$(_MscorlibFilePath);$(_CortypeFilePath);$(_RexcepFilePath);$(_ILLinkDescriptorsIntermediatePath)"
           Outputs="$(_ILLinkRuntimeRootDescriptorFilePath)">
     <Message Text="Generating ILLink roots file: $(_ILLinkRuntimeRootDescriptorFilePath)" />
+    <!-- DEBUGGING_SUPPORTED is unconditional in clrdefinitions.cmake. -->
     <CreateRuntimeRootILLinkDescriptorFile NamespaceFilePath="$(_NamespaceFilePath)"
                                            MscorlibFilePath="$(_MscorlibFilePath)"
                                            CortypeFilePath="$(_CortypeFilePath)"
                                            RexcepFilePath="$(_RexcepFilePath)"
                                            ILLinkTrimXmlFilePath="$(_ILLinkDescriptorsIntermediatePath)"
-                                           DefineConstants="$(DefineConstants);FOR_ILLINK"
+                                           DefineConstants="$(DefineConstants);FOR_ILLINK;DEBUGGING_SUPPORTED"
                                            RuntimeRootDescriptorFilePath="$(_ILLinkRuntimeRootDescriptorFilePath)" />
   </Target>
 

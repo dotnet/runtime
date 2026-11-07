@@ -3706,7 +3706,7 @@ public:
         inline MethodDesc *GetMethodDesc() const;
 
         // Static worker methods of the iterator. These are meant to be used
-        // by RuntimeTypeHandle::GetFirstIntroducedMethod and RuntimeTypeHandle::GetNextIntroducedMethod
+        // by RuntimeTypeHandle_GetFirstIntroducedMethod and RuntimeTypeHandle_GetNextIntroducedMethod
         // only to expose this iterator to managed code.
         static MethodDesc * GetFirst(MethodTable * pMT);
         static MethodDesc * GetNext(MethodDesc * pMD);
