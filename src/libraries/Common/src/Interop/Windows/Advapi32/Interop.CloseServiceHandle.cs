@@ -11,6 +11,6 @@ internal static partial class Interop
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool CloseServiceHandle(IntPtr handle);
+        internal static unsafe partial bool CloseServiceHandle(IntPtr handle);
     }
 }

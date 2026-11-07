@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.User32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        public static partial short UnregisterClassW(string lpClassName, IntPtr hInstance);
+        public static unsafe partial short UnregisterClassW(string lpClassName, IntPtr hInstance);
     }
 }

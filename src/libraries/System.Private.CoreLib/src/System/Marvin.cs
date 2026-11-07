@@ -243,7 +243,7 @@ namespace System
             rp1 = p1;
         }
 
-        public static ulong DefaultSeed { get; } = GenerateSeed();
+        public static ulong DefaultSeed { get; } = /* SAFETY: To be audited */ unsafe(GenerateSeed());
 
         private static unsafe ulong GenerateSeed()
         {
@@ -257,7 +257,11 @@ namespace System
                 rng.GetBytes(seedBytes);
                 fixed (byte* b = seedBytes)
                 {
-                    seed = *(ulong*)b;
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        seed = *(ulong*)b;
+                    }
                 }
             }
 #endif

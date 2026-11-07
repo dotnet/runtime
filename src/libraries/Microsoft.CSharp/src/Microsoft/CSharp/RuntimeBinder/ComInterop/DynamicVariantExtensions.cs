@@ -55,7 +55,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             switch (tc)
             {
                 case TypeCode.Empty: break;
-                case TypeCode.Object: variant = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, Marshal.GetIUnknownForObject(value)); break;
+                case TypeCode.Object: variant = /* SAFETY: To be audited */ unsafe(ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, Marshal.GetIUnknownForObject(value))); break;
                 case TypeCode.DBNull: variant = ComVariant.Null; break;
                 case TypeCode.Boolean: variant = ComVariant.Create<bool>(value.ToBoolean(ci)); break;
                 case TypeCode.Char: variant = ComVariant.Create<ushort>(value.ToChar(ci)); break;
@@ -217,10 +217,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             variant.SetAsByref(ref value, VarEnum.VT_DISPATCH);
         }
 
-        private static unsafe void SetAsByref<T>(ref this ComVariant variant, ref T value, VarEnum type)
+        private static void SetAsByref<T>(ref this ComVariant variant, ref T value, VarEnum type)
         {
             Debug.Assert(variant.VarType == VarEnum.VT_EMPTY); // The setter can only be called once as VariantClear might be needed otherwise
-            variant = ComVariant.CreateRaw(type | VarEnum.VT_BYREF, (nint)Unsafe.AsPointer(ref value));
+            // SAFETY: To be audited
+            unsafe
+            {
+                variant = ComVariant.CreateRaw(type | VarEnum.VT_BYREF, (nint)Unsafe.AsPointer(ref value));
+            }
         }
 
         public static void SetAsByrefVariant(ref this ComVariant variant, ref ComVariant value)
@@ -236,7 +240,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         // constructs a ByRef variant to pass contents of another variant ByRef.
-        public static unsafe void SetAsByrefVariantIndirect(ref this ComVariant variant, ref ComVariant value)
+        public static void SetAsByrefVariantIndirect(ref this ComVariant variant, ref ComVariant value)
         {
             Debug.Assert(variant.VarType == VarEnum.VT_EMPTY); // The setter can only be called once as VariantClear might be needed otherwise
             Debug.Assert((value.VarType & VarEnum.VT_BYREF) == 0, "double indirection");
@@ -249,14 +253,26 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     variant.SetAsByrefVariant(ref value);
                     return;
                 case VarEnum.VT_RECORD:
-                    variant = ComVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, value.GetRawDataRef<Record>());
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        variant = ComVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, value.GetRawDataRef<Record>());
+                    }
                     break;
                 case VarEnum.VT_DECIMAL:
                     // The DECIMAL value in an OLE Variant is stored at the start of the structure.
-                    variant = ComVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, (nint)Unsafe.AsPointer(ref value));
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        variant = ComVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, (nint)Unsafe.AsPointer(ref value));
+                    }
                     break;
                 default:
-                    variant = ComVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, (nint)Unsafe.AsPointer(ref value.GetRawDataRef<nint>()));
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        variant = ComVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, (nint)Unsafe.AsPointer(ref value.GetRawDataRef<nint>()));
+                    }
                     break;
             }
         }
@@ -339,12 +355,20 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         public static void SetInt(this ref ComVariant variant, int value)
         {
-            variant = ComVariant.CreateRaw(VarEnum.VT_INT, value);
+            // SAFETY: To be audited
+            unsafe
+            {
+                variant = ComVariant.CreateRaw(VarEnum.VT_INT, value);
+            }
         }
 
         public static void SetUint(this ref ComVariant variant, uint value)
         {
-            variant = ComVariant.CreateRaw(VarEnum.VT_UINT, value);
+            // SAFETY: To be audited
+            unsafe
+            {
+                variant = ComVariant.CreateRaw(VarEnum.VT_UINT, value);
+            }
         }
 
         public static void SetBool(this ref ComVariant variant, bool value)
@@ -379,25 +403,41 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         public static void SetUnknown(this ref ComVariant variant, object? value)
         {
-            variant = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, value is null ? IntPtr.Zero : Marshal.GetIUnknownForObject(value));
+            // SAFETY: To be audited
+            unsafe
+            {
+                variant = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, value is null ? IntPtr.Zero : Marshal.GetIUnknownForObject(value));
+            }
         }
 
         public static void SetDispatch(this ref ComVariant variant, object? value)
         {
-            variant = ComVariant.CreateRaw(VarEnum.VT_DISPATCH, value is null ? IntPtr.Zero : Marshal.GetIDispatchForObject(value));
+            // SAFETY: To be audited
+            unsafe
+            {
+                variant = ComVariant.CreateRaw(VarEnum.VT_DISPATCH, value is null ? IntPtr.Zero : Marshal.GetIDispatchForObject(value));
+            }
         }
 
         public static void SetError(this ref ComVariant variant, int value)
         {
-            variant = ComVariant.CreateRaw(VarEnum.VT_ERROR, value);
+            // SAFETY: To be audited
+            unsafe
+            {
+                variant = ComVariant.CreateRaw(VarEnum.VT_ERROR, value);
+            }
         }
 
         public static void SetCy(this ref ComVariant variant, decimal value)
         {
-            variant = ComVariant.CreateRaw(VarEnum.VT_CY, decimal.ToOACurrency(value));
+            // SAFETY: To be audited
+            unsafe
+            {
+                variant = ComVariant.CreateRaw(VarEnum.VT_CY, decimal.ToOACurrency(value));
+            }
         }
 
-        public static unsafe void SetVariant(this ref ComVariant variant, object value)
+        public static void SetVariant(this ref ComVariant variant, object value)
         {
             Debug.Assert(variant.VarType == VarEnum.VT_EMPTY); // The setter can only be called once as VariantClear might be needed otherwise
             if (value != null)

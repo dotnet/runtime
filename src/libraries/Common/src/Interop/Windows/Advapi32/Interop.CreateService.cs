@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "CreateServiceW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        public static partial IntPtr CreateService(SafeServiceHandle databaseHandle, string serviceName, string displayName, int access, int serviceType,
+        public static unsafe partial IntPtr CreateService(SafeServiceHandle databaseHandle, string serviceName, string displayName, int access, int serviceType,
             int startType, int errorControl, string binaryPath, string loadOrderGroup, IntPtr pTagId, string dependencies,
             string servicesStartName, string password);
 

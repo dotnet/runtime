@@ -11,6 +11,6 @@ internal static partial class Interop
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.User32, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static partial bool GetClassInfoW(IntPtr hInst, string lpszClass, ref WNDCLASS wc);
+        public static unsafe partial bool GetClassInfoW(IntPtr hInst, string lpszClass, ref WNDCLASS wc);
     }
 }

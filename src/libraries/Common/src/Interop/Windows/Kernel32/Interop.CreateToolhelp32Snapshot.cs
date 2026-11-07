@@ -43,14 +43,14 @@ internal static partial class Interop
                 private char _element0;
             }
 #else
-            internal unsafe fixed char szExeFile[MAX_PATH];
+            internal fixed char szExeFile[MAX_PATH];
 #endif
         }
 
         // https://learn.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial nint CreateToolhelp32Snapshot(SnapshotFlags dwFlags, uint th32ProcessID);
+        internal static unsafe partial nint CreateToolhelp32Snapshot(SnapshotFlags dwFlags, uint th32ProcessID);
 
         // https://learn.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32first
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

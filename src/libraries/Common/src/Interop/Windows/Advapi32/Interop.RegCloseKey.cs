@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32)]
-        internal static partial int RegCloseKey(IntPtr hKey);
+        internal static unsafe partial int RegCloseKey(IntPtr hKey);
     }
 }

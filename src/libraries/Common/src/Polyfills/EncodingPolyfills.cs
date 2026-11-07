@@ -10,19 +10,27 @@ namespace System.Text;
 /// <summary>Provides downlevel polyfills for span-based Encoding APIs.</summary>
 internal static class EncodingPolyfills
 {
-    public static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> chars)
+    public static int GetByteCount(this Encoding encoding, ReadOnlySpan<char> chars)
     {
         fixed (char* charsPtr = &GetNonNullPinnableReference(chars))
         {
-            return encoding.GetByteCount(charsPtr, chars.Length);
+            // SAFETY: To be audited
+            unsafe
+            {
+                return encoding.GetByteCount(charsPtr, chars.Length);
+            }
         }
     }
 
-    public static unsafe int GetCharCount(this Encoding encoding, ReadOnlySpan<byte> bytes)
+    public static int GetCharCount(this Encoding encoding, ReadOnlySpan<byte> bytes)
     {
         fixed (byte* bytesPtr = &GetNonNullPinnableReference(bytes))
         {
-            return encoding.GetCharCount(bytesPtr, bytes.Length);
+            // SAFETY: To be audited
+            unsafe
+            {
+                return encoding.GetCharCount(bytesPtr, bytes.Length);
+            }
         }
     }
 
@@ -31,29 +39,41 @@ internal static class EncodingPolyfills
         return GetBytes(encoding, str.AsSpan(), bytes);
     }
 
-    public static unsafe int GetBytes(this Encoding encoding, ReadOnlySpan<char> chars, Span<byte> bytes)
+    public static int GetBytes(this Encoding encoding, ReadOnlySpan<char> chars, Span<byte> bytes)
     {
         fixed (char* charsPtr = &GetNonNullPinnableReference(chars))
         fixed (byte* bytesPtr = &GetNonNullPinnableReference(bytes))
         {
-            return encoding.GetBytes(charsPtr, chars.Length, bytesPtr, bytes.Length);
+            // SAFETY: To be audited
+            unsafe
+            {
+                return encoding.GetBytes(charsPtr, chars.Length, bytesPtr, bytes.Length);
+            }
         }
     }
 
-    public static unsafe int GetChars(this Encoding encoding, ReadOnlySpan<byte> bytes, Span<char> chars)
+    public static int GetChars(this Encoding encoding, ReadOnlySpan<byte> bytes, Span<char> chars)
     {
         fixed (byte* bytesPtr = &GetNonNullPinnableReference(bytes))
         fixed (char* charsPtr = &GetNonNullPinnableReference(chars))
         {
-            return encoding.GetChars(bytesPtr, bytes.Length, charsPtr, chars.Length);
+            // SAFETY: To be audited
+            unsafe
+            {
+                return encoding.GetChars(bytesPtr, bytes.Length, charsPtr, chars.Length);
+            }
         }
     }
 
-    public static unsafe string GetString(this Encoding encoding, ReadOnlySpan<byte> bytes)
+    public static string GetString(this Encoding encoding, ReadOnlySpan<byte> bytes)
     {
         fixed (byte* bytesPtr = &GetNonNullPinnableReference(bytes))
         {
-            return encoding.GetString(bytesPtr, bytes.Length);
+            // SAFETY: To be audited
+            unsafe
+            {
+                return encoding.GetString(bytesPtr, bytes.Length);
+            }
         }
     }
 
@@ -73,9 +93,13 @@ internal static class EncodingPolyfills
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe ref readonly T GetNonNullPinnableReference<T>(ReadOnlySpan<T> buffer)
+    private static ref readonly T GetNonNullPinnableReference<T>(ReadOnlySpan<T> buffer)
     {
         // Based on the internal implementation from MemoryMarshal.
-        return ref buffer.Length != 0 ? ref MemoryMarshal.GetReference(buffer) : ref Unsafe.AsRef<T>((void*)1);
+        // SAFETY: To be audited
+        unsafe
+        {
+            return ref buffer.Length != 0 ? ref MemoryMarshal.GetReference(buffer) : ref Unsafe.AsRef<T>((void*)1);
+        }
     }
 }

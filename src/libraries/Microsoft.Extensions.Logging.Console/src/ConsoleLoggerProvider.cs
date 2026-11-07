@@ -78,10 +78,20 @@ namespace Microsoft.Extensions.Logging.Console
             }
 
             // for Windows, check the console mode
-            var stdOutHandle = Interop.Kernel32.GetStdHandle(Interop.Kernel32.STD_OUTPUT_HANDLE);
-            if (!Interop.Kernel32.GetConsoleMode(stdOutHandle, out int consoleMode))
+            nint stdOutHandle;
+            // SAFETY: To be audited
+            unsafe
             {
-                return false;
+                stdOutHandle = Interop.Kernel32.GetStdHandle(Interop.Kernel32.STD_OUTPUT_HANDLE);
+            }
+            int consoleMode;
+            // SAFETY: To be audited
+            unsafe
+            {
+                if (!Interop.Kernel32.GetConsoleMode(stdOutHandle, out consoleMode))
+                {
+                    return false;
+                }
             }
 
             return (consoleMode & Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING) == Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING;

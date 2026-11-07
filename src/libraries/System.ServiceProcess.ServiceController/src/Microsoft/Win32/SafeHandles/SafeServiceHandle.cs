@@ -27,7 +27,11 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            return Interop.Advapi32.CloseServiceHandle(handle);
+            // SAFETY: To be audited
+            unsafe
+            {
+                return Interop.Advapi32.CloseServiceHandle(handle);
+            }
         }
     }
 }

@@ -14,6 +14,6 @@ internal static partial class Interop
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool SetConsoleCtrlHandler(ConsoleCtrlHandlerRoutine handler, [MarshalAs(UnmanagedType.Bool)] bool addOrRemove);
+        internal static unsafe partial bool SetConsoleCtrlHandler(ConsoleCtrlHandlerRoutine handler, [MarshalAs(UnmanagedType.Bool)] bool addOrRemove);
     }
 }

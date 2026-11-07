@@ -19,7 +19,11 @@ namespace Microsoft.Win32.SystemEventsTests
         protected IntPtr SendMessage(int msg, IntPtr wParam, IntPtr lParam)
         {
             EnsureHwnd();
-            return User32.SendMessageW(s_hwnd, msg, wParam, lParam);
+            // SAFETY: To be audited
+            unsafe
+            {
+                return User32.SendMessageW(s_hwnd, msg, wParam, lParam);
+            }
         }
 
         private void EnsureHwnd()
@@ -39,7 +43,11 @@ namespace Microsoft.Win32.SystemEventsTests
                 var windowClassName = windowClassNameField.GetValue(null) as string;
                 Assert.NotNull(windowClassName);
 
-                s_hwnd = User32.FindWindowW(windowClassName, null);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    s_hwnd = User32.FindWindowW(windowClassName, null);
+                }
                 Assert.NotEqual(s_hwnd, IntPtr.Zero);
             }
         }

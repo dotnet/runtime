@@ -11,27 +11,35 @@ namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
     [SupportedOSPlatform("windows")]
     internal static class Win32
     {
-        internal static unsafe Process? GetParentProcess()
+        internal static Process? GetParentProcess()
         {
             nint snapshotHandle = 0;
             try
             {
                 // Get a list of all processes
-                snapshotHandle = Interop.Kernel32.CreateToolhelp32Snapshot(Interop.Kernel32.SnapshotFlags.Process, 0);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    snapshotHandle = Interop.Kernel32.CreateToolhelp32Snapshot(Interop.Kernel32.SnapshotFlags.Process, 0);
+                }
 
                 Interop.Kernel32.PROCESSENTRY32 procEntry = default;
                 procEntry.dwSize = sizeof(Interop.Kernel32.PROCESSENTRY32);
-                if (Interop.Kernel32.Process32First(snapshotHandle, &procEntry))
+                // SAFETY: To be audited
+                unsafe
                 {
-                    int currentProcessId = Environment.ProcessId;
-                    do
+                    if (Interop.Kernel32.Process32First(snapshotHandle, &procEntry))
                     {
-                        if (currentProcessId == procEntry.th32ProcessID)
+                        int currentProcessId = Environment.ProcessId;
+                        do
                         {
-                            return Process.GetProcessById(procEntry.th32ParentProcessID);
+                            if (currentProcessId == procEntry.th32ProcessID)
+                            {
+                                return Process.GetProcessById(procEntry.th32ParentProcessID);
+                            }
                         }
+                        while (Interop.Kernel32.Process32Next(snapshotHandle, &procEntry));
                     }
-                    while (Interop.Kernel32.Process32Next(snapshotHandle, &procEntry));
                 }
             }
             catch (Exception)
@@ -39,7 +47,11 @@ namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
             }
             finally
             {
-                Interop.Kernel32.CloseHandle(snapshotHandle);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    Interop.Kernel32.CloseHandle(snapshotHandle);
+                }
             }
 
             return null;

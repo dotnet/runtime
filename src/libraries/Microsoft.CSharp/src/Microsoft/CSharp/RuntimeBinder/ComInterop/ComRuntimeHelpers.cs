@@ -157,17 +157,25 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             ComTypes.ITypeInfo typeInfo = null;
             try
             {
-                typeInfo = Marshal.GetObjectForIUnknown(typeInfoPtr) as ComTypes.ITypeInfo;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    typeInfo = Marshal.GetObjectForIUnknown(typeInfoPtr) as ComTypes.ITypeInfo;
+                }
             }
             finally
             {
-                Marshal.Release(typeInfoPtr);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    Marshal.Release(typeInfoPtr);
+                }
             }
 
             return typeInfo;
         }
 
-        internal static unsafe ComTypes.TYPEATTR GetTypeAttrForTypeInfo(ComTypes.ITypeInfo typeInfo)
+        internal static ComTypes.TYPEATTR GetTypeAttrForTypeInfo(ComTypes.ITypeInfo typeInfo)
         {
             IntPtr pAttrs;
             typeInfo.GetTypeAttr(out pAttrs);
@@ -180,15 +188,23 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             try
             {
-                return *(ComTypes.TYPEATTR*)pAttrs;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return *(ComTypes.TYPEATTR*)pAttrs;
+                }
             }
             finally
             {
-                typeInfo.ReleaseTypeAttr(pAttrs);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    typeInfo.ReleaseTypeAttr(pAttrs);
+                }
             }
         }
 
-        internal static unsafe ComTypes.TYPELIBATTR GetTypeAttrForTypeLib(ComTypes.ITypeLib typeLib)
+        internal static ComTypes.TYPELIBATTR GetTypeAttrForTypeLib(ComTypes.ITypeLib typeLib)
         {
             IntPtr pAttrs;
             typeLib.GetLibAttr(out pAttrs);
@@ -201,11 +217,19 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             try
             {
-                return *(ComTypes.TYPELIBATTR*)pAttrs;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return *(ComTypes.TYPELIBATTR*)pAttrs;
+                }
             }
             finally
             {
-                typeLib.ReleaseTLibAttr(pAttrs);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    typeLib.ReleaseTLibAttr(pAttrs);
+                }
             }
         }
 
@@ -233,8 +257,22 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     {
         #region public members
 
-        public static unsafe IntPtr ConvertInt32ByrefToPtr(ref int value) { return (IntPtr)System.Runtime.CompilerServices.Unsafe.AsPointer(ref value); }
-        public static unsafe IntPtr ConvertVariantByrefToPtr(ref ComVariant value) { return (IntPtr)System.Runtime.CompilerServices.Unsafe.AsPointer(ref value); }
+        public static IntPtr ConvertInt32ByrefToPtr(ref int value)
+        {
+            // SAFETY: To be audited
+            unsafe
+            {
+                return (IntPtr)System.Runtime.CompilerServices.Unsafe.AsPointer(ref value);
+            }
+        }
+        public static IntPtr ConvertVariantByrefToPtr(ref ComVariant value)
+        {
+            // SAFETY: To be audited
+            unsafe
+            {
+                return (IntPtr)System.Runtime.CompilerServices.Unsafe.AsPointer(ref value);
+            }
+        }
 
         internal static ComVariant GetVariantForObject(object obj)
         {
@@ -256,24 +294,40 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             // Therefore we are going to test for IDispatch before defaulting to GetNativeVariantForObject.
             if (obj is IDispatch)
             {
-                variant = ComVariant.CreateRaw(VarEnum.VT_DISPATCH, obj is not null ? Marshal.GetIDispatchForObject(obj) : 0);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    variant = ComVariant.CreateRaw(VarEnum.VT_DISPATCH, obj is not null ? Marshal.GetIDispatchForObject(obj) : 0);
+                }
                 return;
             }
 
-            Marshal.GetNativeVariantForObject(obj, ConvertVariantByrefToPtr(ref variant));
+            // SAFETY: To be audited
+            unsafe
+            {
+                Marshal.GetNativeVariantForObject(obj, ConvertVariantByrefToPtr(ref variant));
+            }
         }
 
         // This method is intended for use through reflection and should not be used directly
         public static object GetObjectForVariant(ComVariant variant)
         {
             IntPtr ptr = UnsafeMethods.ConvertVariantByrefToPtr(ref variant);
-            return Marshal.GetObjectForNativeVariant(ptr);
+            // SAFETY: To be audited
+            unsafe
+            {
+                return Marshal.GetObjectForNativeVariant(ptr);
+            }
         }
 
         // This method is intended for use through reflection and should only be used directly by IUnknownReleaseNotZero
-        public static unsafe int IUnknownRelease(IntPtr interfacePointer)
+        public static int IUnknownRelease(IntPtr interfacePointer)
         {
-            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)interfacePointer + 2 /* IUnknown.Release slot */)))(interfacePointer);
+            // SAFETY: To be audited
+            unsafe
+            {
+                return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)interfacePointer + 2 /* IUnknown.Release slot */)))(interfacePointer);
+            }
         }
 
         // This method is intended for use through reflection and should not be used directly
@@ -286,7 +340,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         // This method is intended for use through reflection and should not be used directly
-        public static unsafe int IDispatchInvoke(
+        public static int IDispatchInvoke(
             IntPtr dispatchPointer,
             int memberDispId,
             ComTypes.INVOKEKIND flags,
@@ -297,27 +351,31 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         {
             Guid IID_NULL = default;
 
-            fixed (ComTypes.DISPPARAMS* pDispParams = &dispParams)
-            fixed (ComVariant* pResult = &result)
-            fixed (ExcepInfo* pExcepInfo = &excepInfo)
-            fixed (uint* pArgErr = &argErr)
+            // SAFETY: To be audited
+            unsafe
             {
-                var pfnIDispatchInvoke = (delegate* unmanaged<IntPtr, int, Guid*, int, ushort, ComTypes.DISPPARAMS*, ComVariant*, ExcepInfo*, uint*, int>)
-                    (*(*(void***)dispatchPointer + 6 /* IDispatch.Invoke slot */));
-
-                int hresult = pfnIDispatchInvoke(dispatchPointer,
-                    memberDispId, &IID_NULL, 0, (ushort)flags, pDispParams, pResult, pExcepInfo, pArgErr);
-
-                if (hresult == ComHresults.DISP_E_MEMBERNOTFOUND
-                    && (flags & ComTypes.INVOKEKIND.INVOKE_FUNC) != 0
-                    && (flags & (ComTypes.INVOKEKIND.INVOKE_PROPERTYPUT | ComTypes.INVOKEKIND.INVOKE_PROPERTYPUTREF)) == 0)
+                fixed (ComTypes.DISPPARAMS* pDispParams = &dispParams)
+                fixed (ComVariant* pResult = &result)
+                fixed (ExcepInfo* pExcepInfo = &excepInfo)
+                fixed (uint* pArgErr = &argErr)
                 {
-                    // Re-invoke with no result argument to accommodate Word
-                    hresult = pfnIDispatchInvoke(dispatchPointer,
-                        memberDispId, &IID_NULL, 0, (ushort)ComTypes.INVOKEKIND.INVOKE_FUNC, pDispParams, null, pExcepInfo, pArgErr);
-                }
+                    var pfnIDispatchInvoke = (delegate* unmanaged<IntPtr, int, Guid*, int, ushort, ComTypes.DISPPARAMS*, ComVariant*, ExcepInfo*, uint*, int>)
+                        (*(*(void***)dispatchPointer + 6 /* IDispatch.Invoke slot */));
 
-                return hresult;
+                    int hresult = pfnIDispatchInvoke(dispatchPointer,
+                        memberDispId, &IID_NULL, 0, (ushort)flags, pDispParams, pResult, pExcepInfo, pArgErr);
+
+                    if (hresult == ComHresults.DISP_E_MEMBERNOTFOUND
+                        && (flags & ComTypes.INVOKEKIND.INVOKE_FUNC) != 0
+                        && (flags & (ComTypes.INVOKEKIND.INVOKE_PROPERTYPUT | ComTypes.INVOKEKIND.INVOKE_PROPERTYPUTREF)) == 0)
+                    {
+                        // Re-invoke with no result argument to accommodate Word
+                        hresult = pfnIDispatchInvoke(dispatchPointer,
+                            memberDispId, &IID_NULL, 0, (ushort)ComTypes.INVOKEKIND.INVOKE_FUNC, pDispParams, null, pExcepInfo, pArgErr);
+                    }
+
+                    return hresult;
+                }
             }
         }
 

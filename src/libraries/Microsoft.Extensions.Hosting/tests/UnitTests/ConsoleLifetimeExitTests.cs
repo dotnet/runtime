@@ -72,7 +72,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             else
             {
                 // on Unix, we send the signal directly
-                kill(remoteHandle.Process.Id, signal);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    kill(remoteHandle.Process.Id, signal);
+                }
             }
 
             remoteHandle.Process.WaitForExit();
@@ -87,7 +91,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         private const int SIGTERM = 15;
 
         [DllImport("libc", SetLastError = true)]
-        private static extern int kill(int pid, int sig);
+        private static extern unsafe int kill(int pid, int sig);
 
 
         private const int CTRL_C_EVENT = 0;
@@ -96,7 +100,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         private const int CTRL_LOGOFF_EVENT = 5;
         private const int CTRL_SHUTDOWN_EVENT = 6;
 
-        private static unsafe void SimulatePosixSignalWindows(string pipeHandleAsString)
+        private static void SimulatePosixSignalWindows(string pipeHandleAsString)
         {
             try
             {
@@ -135,7 +139,11 @@ namespace Microsoft.Extensions.Hosting.Tests
                 var handlerPtr = handlerMethod.MethodHandle.GetFunctionPointer();
                 delegate* unmanaged<int, int> handler = (delegate* unmanaged<int, int>)handlerPtr;
 
-                handler(ctrlType);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    handler(ctrlType);
+                }
 
                 if (signal == SIGTERM)
                 {

@@ -32,7 +32,7 @@ internal static partial class Interop
         internal static string GetMessage(int errorCode) =>
             GetMessage(errorCode, IntPtr.Zero);
 
-        internal static unsafe string GetMessage(int errorCode, IntPtr moduleHandle)
+        internal static string GetMessage(int errorCode, IntPtr moduleHandle)
         {
             int flags = FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ARGUMENT_ARRAY;
             if (moduleHandle != IntPtr.Zero)
@@ -41,10 +41,20 @@ internal static partial class Interop
             }
 
             // First try to format the message into the stack based buffer.  Most error messages willl fit.
-            Span<char> stackBuffer = stackalloc char[256]; // arbitrary stack limit
+            scoped Span<char> stackBuffer;
+            // SAFETY: To be audited
+            unsafe
+            {
+                stackBuffer = stackalloc char[256]; // arbitrary stack limit
+            }
             fixed (char* bufferPtr = stackBuffer)
             {
-                int length = FormatMessage(flags, moduleHandle, unchecked((uint)errorCode), 0, bufferPtr, stackBuffer.Length, IntPtr.Zero);
+                int length;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    length = FormatMessage(flags, moduleHandle, unchecked((uint)errorCode), 0, bufferPtr, stackBuffer.Length, IntPtr.Zero);
+                }
                 if (length > 0)
                 {
                     return GetAndTrimString(stackBuffer.Slice(0, length));
@@ -59,15 +69,28 @@ internal static partial class Interop
                 IntPtr nativeMsgPtr = default;
                 try
                 {
-                    int length = FormatMessage(flags | FORMAT_MESSAGE_ALLOCATE_BUFFER, moduleHandle, unchecked((uint)errorCode), 0, &nativeMsgPtr, 0, IntPtr.Zero);
+                    int length;
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        length = FormatMessage(flags | FORMAT_MESSAGE_ALLOCATE_BUFFER, moduleHandle, unchecked((uint)errorCode), 0, &nativeMsgPtr, 0, IntPtr.Zero);
+                    }
                     if (length > 0)
                     {
-                        return GetAndTrimString(new ReadOnlySpan<char>((char*)nativeMsgPtr, length));
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            return GetAndTrimString(new ReadOnlySpan<char>((char*)nativeMsgPtr, length));
+                        }
                     }
                 }
                 finally
                 {
-                    Marshal.FreeHGlobal(nativeMsgPtr);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        Marshal.FreeHGlobal(nativeMsgPtr);
+                    }
                 }
             }
 
