@@ -89,7 +89,6 @@ namespace System
         }
 
         [ConditionalFact(typeof(ConsoleManualTests), nameof(ManualTestsEnabled))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40735", TestPlatforms.Windows)]
         public static void InPeek()
         {
             Console.WriteLine("Please type \"peek\" (without the quotes). You should see it as you type:");
