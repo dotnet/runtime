@@ -70,16 +70,13 @@ namespace System.Numerics.Tensors
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector512<T>.Count;
                 int i = 0;
-                do
+                for (; i <= oneVectorFromEnd; i += Vector512<T>.Count)
                 {
                     Update(
-                        Vector512.LoadUnsafe(ref xRef, (uint)i),
-                        Vector512.LoadUnsafe(ref yRef, (uint)i),
+                        Vector512.Create(x.Slice(i)),
+                        Vector512.Create(y.Slice(i)),
                         ref dotProductVector, ref xSumOfSquaresVector, ref ySumOfSquaresVector);
-
-                    i += Vector512<T>.Count;
                 }
-                while (i <= oneVectorFromEnd);
 
                 // Process the last vector in the span, masking off elements already processed.
                 if (i != x.Length)
@@ -107,16 +104,13 @@ namespace System.Numerics.Tensors
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector256<T>.Count;
                 int i = 0;
-                do
+                for (; i <= oneVectorFromEnd; i += Vector256<T>.Count)
                 {
                     Update(
-                        Vector256.LoadUnsafe(ref xRef, (uint)i),
-                        Vector256.LoadUnsafe(ref yRef, (uint)i),
+                        Vector256.Create(x.Slice(i)),
+                        Vector256.Create(y.Slice(i)),
                         ref dotProductVector, ref xSumOfSquaresVector, ref ySumOfSquaresVector);
-
-                    i += Vector256<T>.Count;
                 }
-                while (i <= oneVectorFromEnd);
 
                 // Process the last vector in the span, masking off elements already processed.
                 if (i != x.Length)
@@ -144,16 +138,13 @@ namespace System.Numerics.Tensors
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector128<T>.Count;
                 int i = 0;
-                do
+                for (; i <= oneVectorFromEnd; i += Vector128<T>.Count)
                 {
                     Update(
-                        Vector128.LoadUnsafe(ref xRef, (uint)i),
-                        Vector128.LoadUnsafe(ref yRef, (uint)i),
+                        Vector128.Create(x.Slice(i)),
+                        Vector128.Create(y.Slice(i)),
                         ref dotProductVector, ref xSumOfSquaresVector, ref ySumOfSquaresVector);
-
-                    i += Vector128<T>.Count;
                 }
-                while (i <= oneVectorFromEnd);
 
                 // Process the last vector in the span, masking off elements already processed.
                 if (i != x.Length)
@@ -211,17 +202,14 @@ namespace System.Numerics.Tensors
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector512<short>.Count;
                 int i = 0;
-                do
+                for (; i <= oneVectorFromEnd; i += Vector512<short>.Count)
                 {
-                    (Vector512<float> xVecLower, Vector512<float> xVecUpper) = WidenHalfAsInt16ToSingleOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i));
-                    (Vector512<float> yVecLower, Vector512<float> yVecUpper) = WidenHalfAsInt16ToSingleOperator.Invoke(Vector512.LoadUnsafe(ref yRef, (uint)i));
+                    (Vector512<float> xVecLower, Vector512<float> xVecUpper) = WidenHalfAsInt16ToSingleOperator.Invoke(Vector512.Create(MemoryMarshal.Cast<Half, short>(x).Slice(i)));
+                    (Vector512<float> yVecLower, Vector512<float> yVecUpper) = WidenHalfAsInt16ToSingleOperator.Invoke(Vector512.Create(MemoryMarshal.Cast<Half, short>(y).Slice(i)));
 
                     Update(xVecLower, yVecLower, ref dotProductVector, ref xSumOfSquaresVector, ref ySumOfSquaresVector);
                     Update(xVecUpper, yVecUpper, ref dotProductVector, ref xSumOfSquaresVector, ref ySumOfSquaresVector);
-
-                    i += Vector512<short>.Count;
                 }
-                while (i <= oneVectorFromEnd);
 
                 // Process the last vector in the span, masking off elements already processed.
                 if (i != x.Length)
@@ -253,17 +241,14 @@ namespace System.Numerics.Tensors
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector256<short>.Count;
                 int i = 0;
-                do
+                for (; i <= oneVectorFromEnd; i += Vector256<short>.Count)
                 {
-                    (Vector256<float> xVecLower, Vector256<float> xVecUpper) = WidenHalfAsInt16ToSingleOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i));
-                    (Vector256<float> yVecLower, Vector256<float> yVecUpper) = WidenHalfAsInt16ToSingleOperator.Invoke(Vector256.LoadUnsafe(ref yRef, (uint)i));
+                    (Vector256<float> xVecLower, Vector256<float> xVecUpper) = WidenHalfAsInt16ToSingleOperator.Invoke(Vector256.Create(MemoryMarshal.Cast<Half, short>(x).Slice(i)));
+                    (Vector256<float> yVecLower, Vector256<float> yVecUpper) = WidenHalfAsInt16ToSingleOperator.Invoke(Vector256.Create(MemoryMarshal.Cast<Half, short>(y).Slice(i)));
 
                     Update(xVecLower, yVecLower, ref dotProductVector, ref xSumOfSquaresVector, ref ySumOfSquaresVector);
                     Update(xVecUpper, yVecUpper, ref dotProductVector, ref xSumOfSquaresVector, ref ySumOfSquaresVector);
-
-                    i += Vector256<short>.Count;
                 }
-                while (i <= oneVectorFromEnd);
 
                 // Process the last vector in the span, masking off elements already processed.
                 if (i != x.Length)
@@ -295,17 +280,14 @@ namespace System.Numerics.Tensors
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector128<short>.Count;
                 int i = 0;
-                do
+                for (; i <= oneVectorFromEnd; i += Vector128<short>.Count)
                 {
-                    (Vector128<float> xVecLower, Vector128<float> xVecUpper) = WidenHalfAsInt16ToSingleOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i));
-                    (Vector128<float> yVecLower, Vector128<float> yVecUpper) = WidenHalfAsInt16ToSingleOperator.Invoke(Vector128.LoadUnsafe(ref yRef, (uint)i));
+                    (Vector128<float> xVecLower, Vector128<float> xVecUpper) = WidenHalfAsInt16ToSingleOperator.Invoke(Vector128.Create(MemoryMarshal.Cast<Half, short>(x).Slice(i)));
+                    (Vector128<float> yVecLower, Vector128<float> yVecUpper) = WidenHalfAsInt16ToSingleOperator.Invoke(Vector128.Create(MemoryMarshal.Cast<Half, short>(y).Slice(i)));
 
                     Update(xVecLower, yVecLower, ref dotProductVector, ref xSumOfSquaresVector, ref ySumOfSquaresVector);
                     Update(xVecUpper, yVecUpper, ref dotProductVector, ref xSumOfSquaresVector, ref ySumOfSquaresVector);
-
-                    i += Vector128<short>.Count;
                 }
-                while (i <= oneVectorFromEnd);
 
                 // Process the last vector in the span, masking off elements already processed.
                 if (i != x.Length)

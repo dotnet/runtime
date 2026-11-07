@@ -83,16 +83,13 @@ namespace System.Numerics.Tensors
 
                         int oneVectorFromEnd = x.Length - Vector512<T>.Count;
                         int i = 0;
-                        do
+                        for (; i <= oneVectorFromEnd; i += Vector512<T>.Count)
                         {
-                            Vector512<T> xVec = Vector512.LoadUnsafe(ref xRef, (uint)i);
-                            Vector512<T> yVec = Vector512.LoadUnsafe(ref yRef, (uint)i);
+                            Vector512<T> xVec = Vector512.Create(x.Slice(i));
+                            Vector512<T> yVec = Vector512.Create(y.Slice(i));
 
                             count += BitOperations.PopCount((~Vector512.Equals(xVec, yVec)).ExtractMostSignificantBits());
-
-                            i += Vector512<T>.Count;
                         }
-                        while (i <= oneVectorFromEnd);
 
                         // Process the last vector in the span, masking off elements already processed.
                         if (i != x.Length)
@@ -115,16 +112,13 @@ namespace System.Numerics.Tensors
                         // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                         int oneVectorFromEnd = x.Length - Vector256<T>.Count;
                         int i = 0;
-                        do
+                        for (; i <= oneVectorFromEnd; i += Vector256<T>.Count)
                         {
-                            Vector256<T> xVec = Vector256.LoadUnsafe(ref xRef, (uint)i);
-                            Vector256<T> yVec = Vector256.LoadUnsafe(ref yRef, (uint)i);
+                            Vector256<T> xVec = Vector256.Create(x.Slice(i));
+                            Vector256<T> yVec = Vector256.Create(y.Slice(i));
 
                             count += BitOperations.PopCount((~Vector256.Equals(xVec, yVec)).ExtractMostSignificantBits());
-
-                            i += Vector256<T>.Count;
                         }
-                        while (i <= oneVectorFromEnd);
 
                         // Process the last vector in the span, masking off elements already processed.
                         if (i != x.Length)
@@ -148,16 +142,13 @@ namespace System.Numerics.Tensors
                     // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                     int oneVectorFromEnd = x.Length - Vector128<T>.Count;
                     int i = 0;
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector128<T>.Count)
                     {
-                        Vector128<T> xVec = Vector128.LoadUnsafe(ref xRef, (uint)i);
-                        Vector128<T> yVec = Vector128.LoadUnsafe(ref yRef, (uint)i);
+                        Vector128<T> xVec = Vector128.Create(x.Slice(i));
+                        Vector128<T> yVec = Vector128.Create(y.Slice(i));
 
                         count += BitOperations.PopCount((~Vector128.Equals(xVec, yVec)).ExtractMostSignificantBits());
-
-                        i += Vector128<T>.Count;
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Process the last vector in the span, masking off elements already processed.
                     if (i != x.Length)
