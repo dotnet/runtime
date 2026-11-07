@@ -21,15 +21,12 @@ Abstract:
 SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do this first
 
 #include "pal/thread.hpp"
-#include "pal/file.hpp"
 #include "pal/palinternal.h"
 #include "pal/module.h"
 #include "pal/process.h"
-#include "pal/file.h"
 #include "pal/utils.h"
 #include "pal/init.h"
 #include "pal/environ.h"
-#include "pal/map.hpp"
 #include "pal/stackstring.hpp"
 
 #include <sys/param.h>
@@ -78,6 +75,9 @@ using namespace CorUnix;
 
 #define LIBC_NAME_WITHOUT_EXTENSION "libc"
 
+// Upper bound on ACP bytes produced per WCHAR by WideCharToMultiByte.
+static const int MaxWCharToAcpLengthFactor = 3;
+
 /* static variables ***********************************************************/
 
 /* critical section that regulates access to the module list */
@@ -89,8 +89,6 @@ MODSTRUCT *pal_module = nullptr;
 
 char * g_szCoreCLRPath = nullptr;
 bool g_running_in_exe = false;
-
-int MaxWCharToAcpLength = 3;
 
 /* static function declarations ***********************************************/
 
@@ -189,7 +187,7 @@ LoadLibraryExW(
         goto done;
     }
 
-    lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLength);
+    lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLengthFactor);
     if (nullptr == lpstr)
     {
         goto done;
@@ -559,7 +557,7 @@ PAL_LoadLibraryDirect(
         goto done;
     }
 
-    lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLength);
+    lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLengthFactor);
     if (nullptr == lpstr)
     {
         goto done;
@@ -1294,7 +1292,7 @@ static bool LOADConvertLibraryPathWideStringToMultibyteString(
     _ASSERTE(multibyteLibraryPathLengthRef != nullptr);
     _ASSERTE(wideLibraryPath != nullptr);
 
-    size_t length = (PAL_wcslen(wideLibraryPath)+1) * MaxWCharToAcpLength;
+    size_t length = (PAL_wcslen(wideLibraryPath)+1) * MaxWCharToAcpLengthFactor;
     *multibyteLibraryPathLengthRef = WideCharToMultiByte(CP_ACP, 0, wideLibraryPath, -1, multibyteLibraryPath,
                                                         length, nullptr, nullptr);
 

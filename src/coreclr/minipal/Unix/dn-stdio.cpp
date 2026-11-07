@@ -48,20 +48,20 @@ int64_t fgetsize(FILE* stream)
 {
     fpos_t current;
     fgetpos(stream, &current);
-    fseek(stream, 0, SEEK_END);
-    int64_t length = ftell(stream);
+    fseeko(stream, 0, SEEK_END);
+    int64_t length = ftello(stream);
     fsetpos(stream, &current);
     return length;
 }
 
 int64_t ftell_64(FILE* stream)
 {
-    return ftell(stream);
+    return ftello(stream);
 }
 
 int fsetpos_64(FILE* stream, int64_t pos)
 {
-    return fseek(stream, pos, SEEK_SET);
+    return fseeko(stream, (off_t)pos, SEEK_SET);
 }
 
 #define FACILITY_WIN32                   7
@@ -86,7 +86,6 @@ int fsetpos_64(FILE* stream, int64_t pos)
 HRESULT HRESULTFromErr(int err)
 {
     // maps the common I/O errors
-    // based on FILEGetLastErrorFromErrno
     
     int32_t win32Err;
 

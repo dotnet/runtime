@@ -421,39 +421,6 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define INVALID_SET_FILE_POINTER   ((DWORD)-1)
 
 
-PALIMPORT
-HANDLE
-PALAPI
-CreateFileW(
-        IN LPCWSTR lpFileName,
-        IN DWORD dwDesiredAccess,
-        IN DWORD dwShareMode,
-        IN LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-        IN DWORD dwCreationDisposition,
-        IN DWORD dwFlagsAndAttributes,
-        IN HANDLE hTemplateFile);
-
-#ifdef UNICODE
-#define CreateFile CreateFileW
-#else
-#define CreateFile CreateFileA
-#endif
-
-
-PALIMPORT
-DWORD
-PALAPI
-SearchPathW(
-    IN LPCWSTR lpPath,
-    IN LPCWSTR lpFileName,
-    IN LPCWSTR lpExtension,
-    IN DWORD nBufferLength,
-    OUT LPWSTR lpBuffer,
-    OUT LPWSTR *lpFilePart
-    );
-
-#define SearchPath  SearchPathW
-
 typedef struct _OVERLAPPED {
     ULONG_PTR Internal;
     ULONG_PTR InternalHigh;
@@ -462,99 +429,14 @@ typedef struct _OVERLAPPED {
     HANDLE  hEvent;
 } OVERLAPPED, *LPOVERLAPPED;
 
-PALIMPORT
-BOOL
-PALAPI
-WriteFile(
-      IN HANDLE hFile,
-      IN LPCVOID lpBuffer,
-      IN DWORD nNumberOfBytesToWrite,
-      OUT LPDWORD lpNumberOfBytesWritten,
-      IN LPOVERLAPPED lpOverlapped);
-
-PALIMPORT
-BOOL
-PALAPI
-ReadFile(
-     IN HANDLE hFile,
-     OUT LPVOID lpBuffer,
-     IN DWORD nNumberOfBytesToRead,
-     OUT LPDWORD lpNumberOfBytesRead,
-     IN LPOVERLAPPED lpOverlapped);
-
 #define STD_INPUT_HANDLE         ((DWORD)-10)
 #define STD_OUTPUT_HANDLE        ((DWORD)-11)
 #define STD_ERROR_HANDLE         ((DWORD)-12)
 
 PALIMPORT
-HANDLE
-PALAPI
-GetStdHandle(
-         IN DWORD nStdHandle);
-
-PALIMPORT
-DWORD
-PALAPI
-SetFilePointer(
-           IN HANDLE hFile,
-           IN LONG lDistanceToMove,
-           IN PLONG lpDistanceToMoveHigh,
-           IN DWORD dwMoveMethod);
-
-PALIMPORT
-BOOL
-PALAPI
-SetFilePointerEx(
-           IN HANDLE hFile,
-           IN LARGE_INTEGER liDistanceToMove,
-           OUT PLARGE_INTEGER lpNewFilePointer,
-           IN DWORD dwMoveMethod);
-
-PALIMPORT
-DWORD
-PALAPI
-GetFileSize(
-        IN HANDLE hFile,
-        OUT LPDWORD lpFileSizeHigh);
-
-PALIMPORT
-BOOL
-PALAPI GetFileSizeEx(
-        IN   HANDLE hFile,
-        OUT  PLARGE_INTEGER lpFileSize);
-
-PALIMPORT
-BOOL
-PALAPI
-FlushFileBuffers(
-         IN HANDLE hFile);
-
-PALIMPORT
 UINT
 PALAPI
 GetConsoleOutputCP();
-
-PALIMPORT
-DWORD
-PALAPI
-GetFullPathNameW(
-         IN LPCWSTR lpFileName,
-         IN DWORD nBufferLength,
-         OUT LPWSTR lpBuffer,
-         OUT LPWSTR *lpFilePart);
-
-#ifdef UNICODE
-#define GetFullPathName GetFullPathNameW
-#else
-#define GetFullPathName GetFullPathNameA
-#endif
-
-PALIMPORT
-DWORD
-PALAPI
-GetTempPathA(
-         IN DWORD nBufferLength,
-         OUT LPSTR lpBuffer);
 
 PALIMPORT
 DWORD
@@ -2006,19 +1888,6 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define MEM_RELEASE                     0x8000
 #define MEM_FREE                        0x10000
 
-PALIMPORT
-HANDLE
-PALAPI
-CreateFileMappingW(
-           IN HANDLE hFile,
-           IN LPSECURITY_ATTRIBUTES lpFileMappingAttributes,
-           IN DWORD flProtect,
-           IN DWORD dwMaxmimumSizeHigh,
-           IN DWORD dwMaximumSizeLow,
-           IN LPCWSTR lpName);
-
-#define CreateFileMapping CreateFileMappingW
-
 #define SECTION_QUERY       0x0001
 #define SECTION_MAP_WRITE   0x0002
 #define SECTION_MAP_READ    0x0004
@@ -2030,33 +1899,6 @@ CreateFileMappingW(
 #define FILE_MAP_COPY       SECTION_QUERY
 
 typedef INT_PTR (PALAPI_NOEXPORT *FARPROC)();
-
-PALIMPORT
-LPVOID
-PALAPI
-MapViewOfFile(
-          IN HANDLE hFileMappingObject,
-          IN DWORD dwDesiredAccess,
-          IN DWORD dwFileOffsetHigh,
-          IN DWORD dwFileOffsetLow,
-          IN SIZE_T dwNumberOfBytesToMap);
-
-PALIMPORT
-LPVOID
-PALAPI
-MapViewOfFileEx(
-          IN HANDLE hFileMappingObject,
-          IN DWORD dwDesiredAccess,
-          IN DWORD dwFileOffsetHigh,
-          IN DWORD dwFileOffsetLow,
-          IN SIZE_T dwNumberOfBytesToMap,
-          IN LPVOID lpBaseAddress);
-
-PALIMPORT
-BOOL
-PALAPI
-UnmapViewOfFile(
-        IN LPCVOID lpBaseAddress) noexcept;
 
 PALIMPORT
 HMODULE

@@ -158,7 +158,7 @@ namespace System.Net
         /// </summary>
         /// <param name="s">A <see cref="string"/> that defines an IP network in CIDR notation.</param>
         /// <param name="result">When the method returns, contains an <see cref="IPNetwork"/> instance if the conversion succeeds.</param>
-        /// <returns><see langword="true"/> if the conversion was succesful; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the conversion was successful; otherwise, <see langword="false"/>.</returns>
         public static bool TryParse(string? s, out IPNetwork result)
         {
             if (s == null)
@@ -288,7 +288,7 @@ namespace System.Net
         /// </summary>
         /// <param name="destination">The destination span of characters.</param>
         /// <param name="charsWritten">When this method returns, contains the number of characters that were written to <paramref name="destination"/>.</param>
-        /// <returns><see langword="true"/> if the formatting was succesful; otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise <see langword="false"/>.</returns>
         public bool TryFormat(Span<char> destination, out int charsWritten) =>
             destination.TryWrite(CultureInfo.InvariantCulture, $"{BaseAddress}/{(uint)PrefixLength}", out charsWritten);
 
@@ -297,7 +297,7 @@ namespace System.Net
         /// </summary>
         /// <param name="utf8Destination">The destination span of UTF-8 bytes.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written to <paramref name="utf8Destination"/>.</param>
-        /// <returns><see langword="true"/> if the formatting was succesful; otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise <see langword="false"/>.</returns>
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) =>
             Utf8.TryWrite(utf8Destination, CultureInfo.InvariantCulture, $"{BaseAddress}/{(uint)PrefixLength}", out bytesWritten);
 

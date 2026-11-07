@@ -17,7 +17,6 @@ Revision History:
 
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
-#include "pal/file.h"
 #include "pal/process.h"
 #include "pal/module.h"
 #include "pal/stackstring.hpp"

@@ -13,7 +13,6 @@ Implementation of all functions related to Unicode support
 
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
-#include "pal/file.h"
 #include <minipal/strings.h>
 #include <minipal/utf8.h>
 #include "pal/cruntime.h"

@@ -18,16 +18,14 @@ int verbStat::DoWork(const char* nameOfInput, const char* nameOfOutput, int inde
 
     int savedCount = 0;
 
-    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (hFileOut == INVALID_HANDLE_VALUE)
+    FILE* hFileOut = fopen(nameOfOutput, "wb");
+    if (hFileOut == nullptr)
     {
-        LogError("Failed to open input 1 '%s'. GetLastError()=%u", nameOfOutput, GetLastError());
+        LogError("Failed to open input 1 '%s'. errno=%d", nameOfOutput, errno);
         return -1;
     }
 
 #define bufflen 50000
-    DWORD bytesWritten;
     char  buff[bufflen];
     int   offset = 0;
     ZeroMemory(&buff[0], bufflen);
@@ -35,7 +33,7 @@ int verbStat::DoWork(const char* nameOfInput, const char* nameOfOutput, int inde
     offset += MethodContext::dumpStatTitleToBuffer(&buff[offset], bufflen - offset);
     buff[offset++] = 0x0d;
     buff[offset++] = 0x0a;
-    WriteFile(hFileOut, &buff[0], offset, &bytesWritten, nullptr);
+    fwrite(&buff[0], 1, offset, hFileOut);
 
     while (mci.MoveNext())
     {
@@ -54,13 +52,13 @@ int verbStat::DoWork(const char* nameOfInput, const char* nameOfOutput, int inde
         offset += mc->dumpStatToBuffer(&buff[offset], bufflen - offset);
         buff[offset++] = 0x0d;
         buff[offset++] = 0x0a;
-        WriteFile(hFileOut, &buff[0], offset, &bytesWritten, nullptr);
+        fwrite(&buff[0], 1, offset, hFileOut);
         savedCount++;
     }
 
-    if (!CloseHandle(hFileOut))
+    if (fclose(hFileOut) != 0)
     {
-        LogError("2nd CloseHandle failed. GetLastError()=%u", GetLastError());
+        LogError("2nd fclose failed. errno=%d", errno);
         return -1;
     }
 

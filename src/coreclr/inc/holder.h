@@ -958,6 +958,7 @@ struct HandleTraits final
 };
 using HandleHolder = LifetimeHolder<HandleTraits>;
 
+#ifdef HOST_WINDOWS
 struct MapViewTraits final
 {
     using Type = void*;
@@ -971,6 +972,7 @@ struct MapViewTraits final
 };
 
 using MapViewHolder = LifetimeHolder<MapViewTraits>;
+#endif // HOST_WINDOWS
 
 template<typename T>
 struct LocalAllocTraits final

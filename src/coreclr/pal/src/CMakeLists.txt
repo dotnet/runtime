@@ -149,16 +149,12 @@ set(SOURCES
   com/guid.cpp
   cruntime/wchar.cpp
   exception/seh.cpp
-  file/directory.cpp
-  file/file.cpp
-  file/path.cpp
   handlemgr/handleapi.cpp
   handlemgr/handlemgr.cpp
   init/pal.cpp
   init/sxs.cpp
   loader/module.cpp
   locale/unicode.cpp
-  map/map.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp
   misc/environ.cpp

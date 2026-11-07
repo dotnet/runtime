@@ -11,6 +11,10 @@
 #include "clrversion.h"
 
 #include "strsafe.h"
+#ifdef TARGET_UNIX
+#include <limits.h>
+#include <unistd.h>
+#endif
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
 WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
@@ -99,11 +103,22 @@ void MakeProperSourceFileName(_In_ __nullterminated WCHAR* wzOrigName,
 
 char* FullFileName(_In_ __nullterminated WCHAR* wzFileName, unsigned uCodePage)
 {
+#ifdef TARGET_UNIX
+    char szFileName[MAX_FILENAME_LENGTH*3];
+    WideCharToMultiByte(uCodePage,0,wzFileName,-1,szFileName,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
+    char szCwd[PATH_MAX];
+    char szFullPath[PATH_MAX + MAX_FILENAME_LENGTH*3];
+    if((szFileName[0] != '/') && (getcwd(szCwd, sizeof(szCwd)) != NULL))
+        sprintf_s(szFullPath, sizeof(szFullPath), "%s/%s", szCwd, szFileName);
+    else
+        strcpy_s(szFullPath, sizeof(szFullPath), szFileName);
+#else
     static WCHAR wzFullPath[MAX_FILENAME_LENGTH];
     WCHAR* pwz;
     GetFullPathName(wzFileName,MAX_FILENAME_LENGTH,wzFullPath,&pwz);
     char szFullPath[MAX_FILENAME_LENGTH*3];
     WideCharToMultiByte(uCodePage,0,wzFullPath,-1,szFullPath,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
+#endif
     char* sz = new char[strlen(szFullPath)+1];
     if(sz) strcpy_s(sz,strlen(szFullPath)+1,szFullPath);
     return sz;
