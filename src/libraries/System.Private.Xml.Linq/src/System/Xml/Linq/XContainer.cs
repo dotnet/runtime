@@ -540,6 +540,16 @@ namespace System.Xml.Linq
             AppendNodeSkipNotify(n);
         }
 
+        // The XML loader creates a new, unattached node for every call to this method.
+        // Consequently the general-purpose cycle check in AddNodeSkipNotify is unnecessary.
+        private void AddNodeSkipNotifyForLoad(XNode n)
+        {
+            Debug.Assert(n.parent == null);
+            ValidateNode(n, this);
+            ConvertTextToNode();
+            AppendNodeSkipNotify(n);
+        }
+
         internal void AddString(string s)
         {
             ValidateString(s);
@@ -985,7 +995,7 @@ namespace System.Xml.Linq
                             } while (r.MoveToNextAttribute());
                             r.MoveToElement();
                         }
-                        _currentContainer.AddNodeSkipNotify(e);
+                        _currentContainer.AddNodeSkipNotifyForLoad(e);
                         if (!r.IsEmptyElement)
                         {
                             _currentContainer = e;
@@ -997,16 +1007,16 @@ namespace System.Xml.Linq
                         _currentContainer = _currentContainer.parent!;
                         break;
                     case XmlNodeType.CDATA:
-                        _currentContainer.AddNodeSkipNotify(new XCData(r.Value));
+                        _currentContainer.AddNodeSkipNotifyForLoad(new XCData(r.Value));
                         break;
                     case XmlNodeType.Comment:
-                        _currentContainer.AddNodeSkipNotify(new XComment(r.Value));
+                        _currentContainer.AddNodeSkipNotifyForLoad(new XComment(r.Value));
                         break;
                     case XmlNodeType.ProcessingInstruction:
-                        _currentContainer.AddNodeSkipNotify(new XProcessingInstruction(r.Name, r.Value));
+                        _currentContainer.AddNodeSkipNotifyForLoad(new XProcessingInstruction(r.Name, r.Value));
                         break;
                     case XmlNodeType.DocumentType:
-                        _currentContainer.AddNodeSkipNotify(new XDocumentType(r.LocalName, r.GetAttribute("PUBLIC"), r.GetAttribute("SYSTEM"), r.Value));
+                        _currentContainer.AddNodeSkipNotifyForLoad(new XDocumentType(r.LocalName, r.GetAttribute("PUBLIC"), r.GetAttribute("SYSTEM"), r.Value));
                         break;
                     case XmlNodeType.EntityReference:
                         if (!r.CanResolveEntity) throw new InvalidOperationException(SR.InvalidOperation_UnresolvedEntityReference);
@@ -1046,7 +1056,7 @@ namespace System.Xml.Linq
                             } while (r.MoveToNextAttribute());
                             r.MoveToElement();
                         }
-                        _currentContainer.AddNodeSkipNotify(e);
+                        _currentContainer.AddNodeSkipNotifyForLoad(e);
                         if (!r.IsEmptyElement)
                         {
                             _currentContainer = e;
@@ -1058,16 +1068,16 @@ namespace System.Xml.Linq
                         _currentContainer = _currentContainer.parent!;
                         break;
                     case XmlNodeType.CDATA:
-                        _currentContainer.AddNodeSkipNotify(new XCData(await r.GetValueAsync().ConfigureAwait(false)));
+                        _currentContainer.AddNodeSkipNotifyForLoad(new XCData(await r.GetValueAsync().ConfigureAwait(false)));
                         break;
                     case XmlNodeType.Comment:
-                        _currentContainer.AddNodeSkipNotify(new XComment(await r.GetValueAsync().ConfigureAwait(false)));
+                        _currentContainer.AddNodeSkipNotifyForLoad(new XComment(await r.GetValueAsync().ConfigureAwait(false)));
                         break;
                     case XmlNodeType.ProcessingInstruction:
-                        _currentContainer.AddNodeSkipNotify(new XProcessingInstruction(r.Name, await r.GetValueAsync().ConfigureAwait(false)));
+                        _currentContainer.AddNodeSkipNotifyForLoad(new XProcessingInstruction(r.Name, await r.GetValueAsync().ConfigureAwait(false)));
                         break;
                     case XmlNodeType.DocumentType:
-                        _currentContainer.AddNodeSkipNotify(new XDocumentType(r.LocalName, r.GetAttribute("PUBLIC"), r.GetAttribute("SYSTEM"), await r.GetValueAsync().ConfigureAwait(false)));
+                        _currentContainer.AddNodeSkipNotifyForLoad(new XDocumentType(r.LocalName, r.GetAttribute("PUBLIC"), r.GetAttribute("SYSTEM"), await r.GetValueAsync().ConfigureAwait(false)));
                         break;
                     case XmlNodeType.EntityReference:
                         if (!r.CanResolveEntity) throw new InvalidOperationException(SR.InvalidOperation_UnresolvedEntityReference);
@@ -1126,7 +1136,7 @@ namespace System.Xml.Linq
                             } while (r.MoveToNextAttribute());
                             r.MoveToElement();
                         }
-                        _currentContainer.AddNodeSkipNotify(e);
+                        _currentContainer.AddNodeSkipNotifyForLoad(e);
                         if (!r.IsEmptyElement)
                         {
                             _currentContainer = e;
@@ -1197,7 +1207,7 @@ namespace System.Xml.Linq
                         newNode.SetLineInfo(_lineInfo.LineNumber, _lineInfo.LinePosition);
                     }
 
-                    _currentContainer.AddNodeSkipNotify(newNode);
+                    _currentContainer.AddNodeSkipNotifyForLoad(newNode);
                 }
 
                 return true;
@@ -1250,7 +1260,7 @@ namespace System.Xml.Linq
                                 } while (r.MoveToNextAttribute());
                                 r.MoveToElement();
                             }
-                            _currentContainer.AddNodeSkipNotify(e);
+                            _currentContainer.AddNodeSkipNotifyForLoad(e);
                             if (!r.IsEmptyElement)
                             {
                                 _currentContainer = e;
@@ -1321,7 +1331,7 @@ namespace System.Xml.Linq
                         newNode.SetLineInfo(_lineInfo.LineNumber, _lineInfo.LinePosition);
                     }
 
-                    _currentContainer.AddNodeSkipNotify(newNode);
+                    _currentContainer.AddNodeSkipNotifyForLoad(newNode);
                 }
 
                 return true;

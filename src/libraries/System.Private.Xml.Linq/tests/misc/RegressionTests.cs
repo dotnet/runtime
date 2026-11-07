@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Microsoft.Test.ModuleCore;
@@ -149,6 +150,80 @@ namespace System.Xml.Linq.Tests
             sb.Append("<A/>");
             for (long l = 0; l < 6600; l++) sb.Append("</A>");
             XElement e = XElement.Parse(sb.ToString());
+        }
+
+        [Fact]
+        public async Task LoadingDeeplyNestedElementsPreservesStructureAndMetadata()
+        {
+            const int depth = 4096;
+            const string baseUri = "https://example.test/input.xml";
+            string xml = CreateNestedXml(depth);
+            const LoadOptions options = LoadOptions.SetBaseUri | LoadOptions.SetLineInfo;
+
+            XDocument parsed = XDocument.Parse(xml);
+            AssertDeeplyNestedTree(parsed.Root!, depth);
+
+            using (XmlReader reader = XmlReader.Create(new StringReader(xml), new XmlReaderSettings(), baseUri))
+            {
+                XDocument document = XDocument.Load(reader, options);
+                AssertDeeplyNestedTree(document.Root!, depth);
+                Assert.Equal(baseUri, document.Root!.BaseUri);
+                Assert.True(((IXmlLineInfo)document.Root).HasLineInfo());
+            }
+
+            using (XmlReader reader = XmlReader.Create(new StringReader(xml)))
+            {
+                XElement element = XElement.Load(reader);
+                AssertDeeplyNestedTree(element, depth);
+            }
+
+            var asyncSettings = new XmlReaderSettings { Async = true };
+            using (XmlReader reader = XmlReader.Create(new StringReader(xml), asyncSettings, baseUri))
+            {
+                XDocument document = await XDocument.LoadAsync(reader, options, CancellationToken.None);
+                AssertDeeplyNestedTree(document.Root!, depth);
+                Assert.Equal(baseUri, document.Root!.BaseUri);
+                Assert.True(((IXmlLineInfo)document.Root).HasLineInfo());
+            }
+
+            using (XmlReader reader = XmlReader.Create(new StringReader(xml), asyncSettings))
+            {
+                XElement element = await XElement.LoadAsync(reader, LoadOptions.None, CancellationToken.None);
+                AssertDeeplyNestedTree(element, depth);
+            }
+        }
+
+        private static string CreateNestedXml(int depth)
+        {
+            var builder = new StringBuilder(depth * 7 + 32);
+            for (int i = 0; i < depth; i++)
+            {
+                builder.Append("<e>");
+            }
+
+            builder.Append("text");
+
+            for (int i = 0; i < depth; i++)
+            {
+                builder.Append("</e>");
+            }
+
+            return builder.ToString();
+        }
+
+        private static void AssertDeeplyNestedTree(XElement root, int depth)
+        {
+            XElement current = root;
+            for (int i = 1; i < depth; i++)
+            {
+                Assert.Equal("e", current.Name);
+                XElement child = Assert.IsType<XElement>(current.FirstNode);
+                Assert.Same(current, child.Parent);
+                current = child;
+            }
+
+            Assert.Equal("e", current.Name);
+            Assert.Equal("text", current.Value);
         }
 
         [Fact]
