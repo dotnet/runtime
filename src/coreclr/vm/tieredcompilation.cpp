@@ -148,13 +148,13 @@ void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMetho
             return;
         }
 
-        NewHolder<SArray<MethodDesc *>> methodsPendingCountingHolder = new SArray<MethodDesc *>();
+        NewHolder<SArray<MethodDesc *>> methodsPendingCountingHolder(new SArray<MethodDesc *>());
         methodsPendingCountingHolder->Preallocate(64);
 
         methodsPendingCountingHolder->Append(pMethodDesc);
         ++m_countOfNewMethodsCalledDuringDelay;
 
-        m_methodsPendingCountingForTier1 = methodsPendingCountingHolder.Extract();
+        m_methodsPendingCountingForTier1 = methodsPendingCountingHolder.Detach();
         _ASSERTE(!m_tier1CallCountingCandidateMethodRecentlyRecorded);
         _ASSERTE(IsTieringDelayActive());
 
