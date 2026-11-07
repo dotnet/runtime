@@ -30,8 +30,16 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Override only the incompatible SDK default: net11+ defaults ContainerFormat=pe (unloadable on wasm).
          An explicit unsupported value is left as-is and rejected by _WasmCoreClrValidateReadyToRun. -->
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
-    <!-- Keep the existing per-assembly behavior unless composite is explicitly requested. -->
-    <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">false</PublishReadyToRunComposite>
+    <PublishReadyToRunStripInliningInfo Condition="'$(PublishReadyToRunStripInliningInfo)' == '' and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">false</PublishReadyToRunStripInliningInfo>
+    <PublishReadyToRunStripDebugInfo Condition="'$(PublishReadyToRunStripDebugInfo)' == '' and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">false</PublishReadyToRunStripDebugInfo>
+    <PublishReadyToRunStripInliningInfo Condition="'$(PublishReadyToRunStripInliningInfo)' == '' and '$(DebuggerSupport)' != 'true' and '$(Configuration)' != 'Debug'">true</PublishReadyToRunStripInliningInfo>
+    <PublishReadyToRunStripDebugInfo Condition="'$(PublishReadyToRunStripDebugInfo)' == '' and '$(DebuggerSupport)' != 'true' and '$(Configuration)' != 'Debug'">true</PublishReadyToRunStripDebugInfo>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(Configuration)' == 'Debug'">$(PublishReadyToRunCrossgen2ExtraArgs);--wasm-debug-info=all</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(Configuration)' != 'Debug'">$(PublishReadyToRunCrossgen2ExtraArgs);--wasm-debug-info=none</PublishReadyToRunCrossgen2ExtraArgs>
+    <!-- This target is imported after Microsoft.NET.CrossGen.targets, so add strip arguments here when that SDK target
+         has not already added them from the strip properties above. -->
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripInliningInfo)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-inlining-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-inlining-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-debug-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
     <!-- Compile every assembly into one shared (large) version bubble. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--instruction-set:relaxed-simd</PublishReadyToRunCrossgen2ExtraArgs>
@@ -66,6 +74,8 @@ Copyright (c) .NET Foundation. All rights reserved.
                               '$(DeployOnBuild)' != 'true' and '$(_WasmEnableWebcil)' == 'true' and '$(WasmPerformanceInstrumentation)' == ''">
       <_WasmBuildPrebuiltR2RDirectory>$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
     </PropertyGroup>
+    <Warning Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(_WasmCoreClrUnderPublish)' != 'true'"
+             Text="WasmPerformanceInstrumentation during build provides incomplete sampling coverage because prebuilt framework ReadyToRun images are not instrumented. Publish the application for complete instrumentation coverage." />
   </Target>
 
   <!-- Fail comprehensibly instead of emitting PE images the runtime cannot load. The config checks
@@ -81,12 +91,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Error Condition="'@(_WasmMissingReadyToRunPgoFile)' != ''"
            Text="PublishReadyToRunPgoFiles item '@(_WasmMissingReadyToRunPgoFile)' does not exist. Specify an existing .mibc file generated for the assemblies being published." />
     <Error Condition="'$(PublishReadyToRunComposite)' == 'true' and '$(_WasmEnableWebcil)' != 'true'"
-           Text="PublishReadyToRunComposite for CoreCLR browser-wasm requires WebCIL-in-Wasm assemblies; enable WasmEnableWebcil." />
+           Text="PublishReadyToRunComposite for CoreCLR browser-wasm requires WebCIL-in-Wasm assemblies; enable WasmEnableWebcil. To opt out of composite mode, set PublishReadyToRunComposite=false." />
     <Error Condition="'$(PublishReadyToRunContainerFormat)' != 'wasm'"
            Text="PublishReadyToRunContainerFormat '$(PublishReadyToRunContainerFormat)' is not supported for CoreCLR browser-wasm; only 'wasm' is supported." />
-    <!-- CPU sampling observes only interpreted frames, so R2R (native wasm) methods are missing from traces until #130521. -->
-    <Error Condition="'$(WasmPerformanceInstrumentation)' != ''"
-           Text="WasmPerformanceInstrumentation is not supported together with PublishReadyToRun on CoreCLR browser-wasm. See https://github.com/dotnet/runtime/issues/130521." />
     <Error Condition="('$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true' or '$(WasmBuildOnlyAfterPublish)' == 'true') and ('$(Crossgen2InBuildDir)' == '' or !Exists('$(Crossgen2InBuildDir)')) and '@(ResolvedCrossgen2Pack)' == ''"
            Text="PublishReadyToRun=true for CoreCLR browser-wasm requires a wasm-capable crossgen2, but none was resolved. Set Crossgen2InBuildDir to an in-build crossgen2 directory (or provide a ResolvedCrossgen2Pack) until wasm crossgen2 support flows through the base SDK (dotnet/sdk#55785)." />
   </Target>
@@ -102,7 +109,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCompositeOwnerEntry Include="@(_ReadyToRunCompileList->WithMetadataValue('CreateCompositeImage', 'true'))" />
     </ItemGroup>
     <Error Condition="'@(_WasmCompositeOwnerEntry)' != '' and !$([System.String]::Copy('%(_WasmCompositeOwnerEntry.OutputR2RImage)').EndsWith('.r2r.wasm'))"
-           Text="PublishReadyToRunComposite for CoreCLR browser-wasm requires ReadyToRun SDK tasks that name the composite image '&lt;entry&gt;.r2r.wasm', but they planned '$([System.IO.Path]::GetFileName('%(_WasmCompositeOwnerEntry.OutputR2RImage)'))'. Use an SDK with wasm ReadyToRun output naming (dotnet/sdk#56395), or set Crossgen2SdkOverridePropsPath and Crossgen2SdkOverrideTargetsPath to the dotnet/runtime Crossgen2Tasks." />
+           Text="PublishReadyToRunComposite for CoreCLR browser-wasm requires ReadyToRun SDK tasks that name the composite image '&lt;entry&gt;.r2r.wasm', but they planned '$([System.IO.Path]::GetFileName('%(_WasmCompositeOwnerEntry.OutputR2RImage)'))'. Use an SDK with wasm ReadyToRun output naming (dotnet/sdk#56395), or set Crossgen2SdkOverridePropsPath and Crossgen2SdkOverrideTargetsPath to the dotnet/runtime Crossgen2Tasks. To opt out of composite mode, set PublishReadyToRunComposite=false." />
   </Target>
 
   <!-- PublishTrimmed selects the staged closure (untrimmed pack vs linker output) exactly like
@@ -121,7 +128,7 @@ Copyright (c) .NET Foundation. All rights reserved.
           BeforeTargets="_ComputeWasmBuildCandidates">
     <ItemGroup>
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
-        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and Exists('$(_WasmRuntimePackR2RDir)%(FileName).wasm')" />
+        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and '%(RootDir)%(Directory)' == '$(_WasmRuntimePackR2RDir)'" />
     </ItemGroup>
   </Target>
 
@@ -144,23 +151,28 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCoreClrHasFinalAssemblies Condition="'@(WasmAssembliesFinal)' != ''">true</_WasmCoreClrHasFinalAssemblies>
     </PropertyGroup>
     <ItemGroup Condition="'$(_WasmCoreClrUnderPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and Exists('$(_WasmTrimmedClosureDir)')">
+      <!-- Limit trimmed references to build asset selection; publishing must process the original assemblies. -->
+      <_WasmCoreClrOriginalBuildReferences Include="@(ReferenceCopyLocalPaths)" Condition="'%(Extension)' == '.dll'" />
+      <_WasmCoreClrOriginalFinalAssemblies Include="@(WasmAssembliesFinal)" />
       <!-- Tag every copy-local item with trimmed-closure membership (default false so the metadata is always
-           defined), then set true for managed assemblies the linker kept. -->
+           defined), then set true for managed assemblies and symbols the linker kept. -->
       <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)">
         <_WasmInTrimmedClosure>false</_WasmInTrimmedClosure>
       </ReferenceCopyLocalPaths>
       <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)"
-                               Condition="'%(Extension)' == '.dll' and Exists('$(_WasmTrimmedClosureDir)%(FileName).dll')">
+                               Condition="('%(Extension)' == '.dll' or '%(Extension)' == '.pdb') and
+                                          Exists('$(_WasmTrimmedClosureDir)%(FileName).dll') and
+                                          ('%(Extension)' == '.dll' or Exists('$(_WasmTrimmedClosureDir)%(FileName).pdb'))">
         <_WasmInTrimmedClosure>true</_WasmInTrimmedClosure>
       </ReferenceCopyLocalPaths>
-      <!-- Drop assemblies the linker trimmed out of the app closure. -->
+      <!-- Do not retain untrimmed symbols when an assembly or its PDB was removed by the linker. -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
-        Condition="'%(Extension)' == '.dll' and '%(_WasmInTrimmedClosure)' != 'true'" />
-      <!-- Repoint the kept closure assemblies at their trimmed IL so IL-only members share the trimmed MVIDs
-           the per-app R2R members were compiled against (the R2R members are still staged from obj/R2R). -->
+        Condition="('%(Extension)' == '.dll' or '%(Extension)' == '.pdb') and '%(_WasmInTrimmedClosure)' != 'true'" />
+      <!-- Repoint assemblies and their matching symbols together. IL-only members must share the trimmed
+           MVIDs the per-app R2R members were compiled against (R2R members are still staged from obj/R2R). -->
       <_WasmTrimmedClosureRedirect Include="@(ReferenceCopyLocalPaths)" Condition="'%(_WasmInTrimmedClosure)' == 'true'" />
       <ReferenceCopyLocalPaths Remove="@(_WasmTrimmedClosureRedirect)" />
-      <ReferenceCopyLocalPaths Include="@(_WasmTrimmedClosureRedirect->'$(_WasmTrimmedClosureDir)%(FileName).dll')"
+      <ReferenceCopyLocalPaths Include="@(_WasmTrimmedClosureRedirect->'$(_WasmTrimmedClosureDir)%(FileName)%(Extension)')"
                                RelativePath="%(FileName)%(Extension)" />
       <!-- The project's own assembly does not travel through ReferenceCopyLocalPaths: _ComputeWasmBuildCandidates
            serves it from @(IntermediateAssembly), i.e. the UNTRIMMED compile output, which then mismatches the
@@ -169,16 +181,30 @@ Copyright (c) .NET Foundation. All rights reserved.
       <WasmAssembliesFinal Include="@(IntermediateAssembly->'$(_WasmTrimmedClosureDir)%(FileName).dll')"
                            Condition="'$(_WasmCoreClrHasFinalAssemblies)' != 'true' and Exists('$(_WasmTrimmedClosureDir)%(IntermediateAssembly.FileName).dll')" />
     </ItemGroup>
+    <PropertyGroup Condition="'$(_WasmCoreClrUnderPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and Exists('$(_WasmTrimmedClosureDir)')">
+      <_WasmCoreClrRestoreBuildReferences>true</_WasmCoreClrRestoreBuildReferences>
+    </PropertyGroup>
   </Target>
 
-  <!-- Same prune for publish, before ProcessPublishFilesForWasm derives _WasmResolvedFilesToPublish. -->
+  <Target Name="_WasmCoreClrRestoreBuildReferences"
+          AfterTargets="_ComputeWasmBuildCandidates"
+          Condition="'$(_WasmCoreClrRestoreBuildReferences)' == 'true'">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Extension)' == '.dll'" />
+      <ReferenceCopyLocalPaths Include="@(_WasmCoreClrOriginalBuildReferences)" />
+      <WasmAssembliesFinal Remove="@(WasmAssembliesFinal)" />
+      <WasmAssembliesFinal Include="@(_WasmCoreClrOriginalFinalAssemblies)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Prune before the SDK checks duplicate publish paths, as well as before WebAssembly asset selection. -->
   <Target Name="_WasmCoreClrPruneR2RFromPublish"
           Condition="'$(_WasmEnableWebcil)' == 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
-          BeforeTargets="ProcessPublishFilesForWasm">
+          BeforeTargets="_HandleFileConflictsForPublish;ProcessPublishFilesForWasm">
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
-        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and Exists('$(_WasmRuntimePackR2RDir)%(FileName).wasm')" />
+        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and '%(RootDir)%(Directory)' == '$(_WasmRuntimePackR2RDir)'" />
     </ItemGroup>
   </Target>
 

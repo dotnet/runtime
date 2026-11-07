@@ -199,12 +199,12 @@ namespace System.Reflection
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            return Signature.GetCustomModifiers(0, true);
+            return Signature.GetCustomModifiers(0, isOptional: false);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            return Signature.GetCustomModifiers(0, false);
+            return Signature.GetCustomModifiers(0, isOptional: true);
         }
 
         public override Type GetModifiedPropertyType() => ModifiedType.Create(PropertyType, Signature);

@@ -162,6 +162,48 @@ internal struct ARMContext : IPlatformContext
         }
     }
 
+    // D0-D31 are the 64-bit views of the VFP/NEON register file, an 8-byte stride.
+    private const int DRegisterCount = 32;
+    private const int DRegisterStride = 8;
+
+    public readonly bool TryReadFloatingPointRegister(int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in this, 1)),
+            (int)Marshal.OffsetOf<ARMContext>(nameof(D)), DRegisterStride, DRegisterCount, index, out value);
+
+    public bool TryWriteFloatingPointRegister(int index, double value)
+        => SimdRegisterAccess.TryWriteRegister(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1)),
+            (int)Marshal.OffsetOf<ARMContext>(nameof(D)), DRegisterStride, DRegisterCount, index, value);
+
+    public void CopyContext(ReadOnlySpan<byte> source)
+    {
+        uint flags = RawContextFlags & MemoryMarshal.Read<ARMContext>(source).RawContextFlags;
+        Span<byte> destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_CONTROL) == (uint)ContextFlagsValues.CONTEXT_CONTROL)
+        {
+            int start = (int)Marshal.OffsetOf<ARMContext>(nameof(Sp));
+            int end = (int)Marshal.OffsetOf<ARMContext>(nameof(Fpscr));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_INTEGER) == (uint)ContextFlagsValues.CONTEXT_INTEGER)
+        {
+            int start = (int)Marshal.OffsetOf<ARMContext>(nameof(R0));
+            int end = (int)Marshal.OffsetOf<ARMContext>(nameof(Sp));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT) == (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT)
+        {
+            int start = (int)Marshal.OffsetOf<ARMContext>(nameof(Fpscr));
+            int end = (int)Marshal.OffsetOf<ARMContext>(nameof(Bvr));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS)
+        {
+            int start = (int)Marshal.OffsetOf<ARMContext>(nameof(Bvr));
+            int end = (int)Marshal.OffsetOf<ARMContext>(nameof(Wcr)) + sizeof(uint);
+            source[start..end].CopyTo(destination[start..end]);
+        }
+    }
+
     // Control flags
 
     [FieldOffset(0x0)]
@@ -237,7 +279,7 @@ internal struct ARMContext : IPlatformContext
     [FieldOffset(0x40)]
     public uint Pc;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x44)]
     public uint Cpsr;
 

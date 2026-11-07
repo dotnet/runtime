@@ -19,12 +19,20 @@ using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     internal sealed partial class GrammarActions
     {
         public (ImmutableArray<Diagnostic> Diagnostics, CompilationResult? Image) BuildImage()
         {
+            ResourceSectionBuilder? nativeResources = null;
+            if (_options.Win32ResourceFile is string resourceFile)
+            {
+                byte[] resourceBytes = _resourceLocator(resourceFile) ??
+                    throw new FileNotFoundException($"Win32 resource file not found: {resourceFile}", resourceFile);
+                nativeResources = Win32ResourceSectionBuilder.Create(resourceBytes);
+            }
+
             // Default module name to output filename if no .module directive was provided
             if (_entityRegistry.Module.Name is null && _options.OutputFileName is not null)
             {
@@ -164,6 +172,7 @@ namespace ILAssembler
                 ilStream,
                 _mappedFieldData,
                 _manifestResources,
+                nativeResources: nativeResources,
                 debugDirectoryBuilder: debugDirectoryBuilder,
                 entryPoint: entryPoint,
                 flags: corFlags,
@@ -581,7 +590,7 @@ namespace ILAssembler
             portablePdb = null;
 
             // Only /DEBUG (any mode) or /PDB produces a PDB. Without them, .line
-            // directives are still parsed and validated, and no sequence points are recorded.
+            // directives are still parsed, but their PDB coordinates are not validated or recorded.
             if (!GeneratesPdb)
             {
                 return null;
@@ -965,11 +974,11 @@ namespace ILAssembler
             };
 
             // Get reference to core library
-            var coreAsmRef = _entityRegistry.GetCoreLibAssemblyReference();
+            EntityRegistry.EntityBase coreScope = _entityRegistry.GetCoreLibraryResolutionScope();
 
             // Create reference to System.Diagnostics.DebuggableAttribute
             var debuggableAttrType = _entityRegistry.GetOrCreateTypeReference(
-                coreAsmRef,
+                coreScope,
                 new TypeName(null, "System.Diagnostics.DebuggableAttribute"));
 
             var debuggingModesType = _entityRegistry.GetOrCreateTypeReference(
@@ -995,7 +1004,7 @@ namespace ILAssembler
             // Netmodules carry assembly attributes on this TypeRef for the assembly linker.
             customAttr.Owner = (EntityRegistry.EntityBase?)_entityRegistry.Assembly
                 ?? _entityRegistry.GetOrCreateTypeReference(
-                    coreAsmRef,
+                    coreScope,
                     new TypeName(null, "System.Runtime.CompilerServices.AssemblyAttributesGoHere"));
         }
 

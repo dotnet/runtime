@@ -15,12 +15,57 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class TypeSignatureTests
     {
+        [Theory]
+        [InlineData("valuetype [mscorlib]System.IntPtr", true, SignatureTypeCode.IntPtr)]
+        [InlineData("valuetype [mscorlib]System.UIntPtr", true, SignatureTypeCode.UIntPtr)]
+        [InlineData("native int", false, SignatureTypeCode.IntPtr)]
+        [InlineData("native unsigned int", false, SignatureTypeCode.UIntPtr)]
+        public void NativeIntegerGenericMethod_PreservesReturnTypeEncoding(string returnType, bool explicitType, SignatureTypeCode shortCode)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public AddressHelper
+                {
+                    .method public hidebysig static {{returnType}} AddressOf<T>(!!0& t)
+                    {
+                        ldarg 0
+                        ldind.i
+                        ret
+                    }
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinition method = reader.GetMethodDefinition(reader.MethodDefinitions.Single());
+            BlobReader signature = reader.GetBlobReader(method.Signature);
+            Assert.Equal((byte)SignatureAttributes.Generic, signature.ReadByte());
+            Assert.Equal(1, signature.ReadCompressedInteger());
+            Assert.Equal(1, signature.ReadCompressedInteger());
+            if (explicitType)
+            {
+                Assert.Equal((byte)SignatureTypeKind.ValueType, signature.ReadByte());
+                TypeReference type = reader.GetTypeReference((TypeReferenceHandle)signature.ReadTypeHandle());
+                Assert.Equal("System", reader.GetString(type.Namespace));
+                Assert.Equal(shortCode == SignatureTypeCode.IntPtr ? "IntPtr" : "UIntPtr", reader.GetString(type.Name));
+                Assert.Equal("mscorlib", reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)type.ResolutionScope).Name));
+            }
+            else
+            {
+                Assert.Equal((byte)shortCode, signature.ReadByte());
+            }
+
+            Assert.Equal((byte)SignatureTypeCode.ByReference, signature.ReadByte());
+            Assert.Equal((byte)SignatureTypeCode.GenericMethodParameter, signature.ReadByte());
+            Assert.Equal(0, signature.ReadCompressedInteger());
+            Assert.Equal(0, signature.RemainingBytes);
+        }
 
         [Fact]
         public void MultiDimArrayBounds_ParsedCorrectly()

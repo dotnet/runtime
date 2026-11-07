@@ -1345,7 +1345,7 @@ namespace System.DirectoryServices.Protocols
         {
             var timeout = new LDAP_TIMEVAL()
             {
-                tv_sec = (int)(requestTimeOut.Ticks / TimeSpan.TicksPerSecond)
+                tv_sec = new CLong((int)(requestTimeOut.Ticks / TimeSpan.TicksPerSecond))
             };
             IntPtr ldapResult = IntPtr.Zero;
             DirectoryResponse response = null;
@@ -1361,8 +1361,7 @@ namespace System.DirectoryServices.Protocols
             if (resultType != ResultAll.LDAP_MSG_ALL)
             {
                 // we need to have 0 timeout as we are polling for the results and don't want to wait
-                timeout.tv_sec = 0;
-                timeout.tv_usec = 0;
+                timeout = default;
 
                 if (resultType == ResultAll.LDAP_MSG_POLLINGALL)
                 {
@@ -1380,8 +1379,7 @@ namespace System.DirectoryServices.Protocols
             }
             else
             {
-                timeout.tv_sec = 0;
-                timeout.tv_usec = 0;
+                timeout = default;
                 int iterationDelay = 1;
                 // Underlying native libraries don't support callback-based function, so we will instead use polling and
                 // use a Stopwatch to track the timeout manually.

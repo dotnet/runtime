@@ -29,7 +29,6 @@ if(NOT DEFINED ANDROID_BUILD)
     EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/aarch64-alpine-linux-musl OR
     EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/s390x-alpine-linux-musl OR
     EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/ppc64le-alpine-linux-musl OR
-    EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/i586-alpine-linux-musl OR
     EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/x86_64-alpine-linux-musl OR
     EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/riscv64-alpine-linux-musl)
 
@@ -64,7 +63,6 @@ if(DARWIN AND NOT DEFINED ANDROID_BUILD)
     set_cache_value(HAVE_PROCFS_STATM_EXITCODE 1)
     set_cache_value(HAVE_SCHED_GETCPU_EXITCODE 1)
     set_cache_value(HAVE_SCHED_GET_PRIORITY_EXITCODE 0)
-    set_cache_value(MMAP_ANON_IGNORES_PROTECTION_EXITCODE 1)
     set_cache_value(ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS_EXITCODE 1)
     set_cache_value(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1)
     set_cache_value(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP_EXITCODE 1)

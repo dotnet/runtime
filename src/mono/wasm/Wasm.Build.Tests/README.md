@@ -67,10 +67,101 @@ For this, the builds get cached using `ProjectInfo` as the key.
 - `SHOW_BUILD_OUTPUT` - will show the build output to the console
 - `SKIP_PROJECT_CLEANUP` - won't remove the temporary project directories generated for the tests
 
+## Appsettings coverage
+
+`AppSettingsTests` covers environment selection for build and publish, including
+MSBuild and JavaScript overrides. It also exercises the internal appsettings APIs
+on both CoreCLR and Mono:
+
+- `INTERNAL.getAppSettingsFiles()` returns the manifest-listed VFS filenames for
+  the resolved application environment, with base settings before
+  environment-specific settings and no duplicates.
+- On CoreCLR, `INTERNAL.getAppSettingsBytes(fileName)` returns the downloaded
+  `Uint8Array` retained in JavaScript memory, or `undefined` for an unloaded file.
+  The returned array must be treated as read-only. Managed interop copies it into
+  a managed byte array. Later VFS writes do not change the retained bytes.
+- On Mono, byte access continues to read the current VFS contents.
+
+For CoreCLR applications targeting .NET 12 or later, the manifest contains
+`resources.appsettings` assets with a `loadIntoVfs` flag.
+`_WasmFilesystemUsageDetected` defaults to `true`, preserving existing VFS
+placement, including Blazor versions that read configuration through managed file
+APIs. Explicitly setting it to `false` makes settings available only through the
+internal APIs, unless `WasmFilesToIncludeInFileSystem` items exist: those force the
+flag to `true`. The default can become `false` once IL trimming provides better
+filesystem usage detection. This does not disable filesystem support for other uses.
+
+Older target frameworks and Mono retain the top-level appsettings list.
+CoreCLR also accepts legacy manifests and continues installing those settings
+into VFS while retaining their downloaded bytes.
+
+`AppSettingsWithoutFilesystem` runs in the CoreCLR no-workload lane. Its .NET 12
+browser fixture consumes the generated asset schema and checks the
+filesystem-detection value reported by the real build/publish targets.
+It covers both placement modes, explicit overrides, custom resource loaders, and
+download-before-create. The legacy case converts the generated asset list to
+the old manifest representation before startup.
+
+Manifest-generation theories invoke the task directly to verify .NET 12+ assets,
+the .NET 11 compatibility boundary, and unchanged Mono output. CoreCLR browser
+tests additionally cover .NET 12 project-to-browser manifest generation and
+loading end to end.
+
+The flag-only incremental publish case disables trimming to isolate filesystem
+detection from incremental trimmed assembly staging; fresh-publish cases
+retain trimming. `Blazor.AppsettingsTests` checks that default settings remain
+available through managed VFS access on the template's target framework.
+`Blazor.CurrentRuntimeAppsettingsTests` checks the internal APIs against the
+locally built current runtime, not a released runtime from an older template.
+Managed JSON parsing remains the consumer's responsibility.
+
 ## How to add tests
 
 Blazor specific tests should be located in `Blazor` directory. New test classes are picked up automatically - the per-class Helix work item list is generated from the built test assembly, so there is no list to update. Annotate classes and test methods that only apply to one runtime with `[TestCategory("mono")]` or `[TestCategory("coreclr")]`, and they will be left out of the other flavor's runs. If you are adding a new test to an existing class, make sure it does not prolong the execution time significantly. Tests run on parallel on CI and having one class running much longer than the average prolongs the total execution time.
 
 Native relinking tests can run on both runtimes. For theories that also cover Mono AOT, use runtime-aware test data to keep the non-AOT cases on CoreCLR without removing the existing Mono cases. Incremental rebuild assertions must track the appropriate runtime's generated files: CoreCLR uses the portable call-helper sources and objects rather than Mono's P/Invoke tables and driver objects.
+
+`Blazor.AssetCachingTests` exercises the browser HTTP cache using the hosted
+`BlazorWebWasm` test asset. Its recovery cases seed cacheable invalid boot
+responses, verify the cache modes and bounded download attempts, and check that
+a repaired entry is reused on the next boot. These tests run against either
+runtime using the locally constructed workload SDK, and assert that the client
+uses the expected runtime pack rather than an SDK-default downloaded pack.
+The resolved-pack loader bytes are compared with the extracted SDK-installed
+pack when independently available, or with the local package if that runtime
+pack is absent or the application resolves the installed pack itself.
+The constructed SDK must be refreshed after rebuilding
+the runtime; comparison with an installed pack checks SDK agreement, not
+package freshness.
+The cache-seeding page is a static HTML file in the hosted test asset. Native Wasm
+recovery also runs with one download slot to exercise bootstrap dependencies.
+Cache-reuse assertions use the small client assembly; browser cache retention
+of large runtime binaries is discretionary.
+Assembly selection follows `UseWebcil`: run the cache tests with
+`-p:WasmEnableWebcil=false` to cover DLL resources as well as Webcil, and run
+the class with `-p:WasmFingerprintAssets=false` to cover conditional revalidation
+and bounded failed-download retries without cache reloads in the existing lane.
+The tests follow the lane's fingerprinting configuration rather than overriding
+it per theory row. Hosted builds and published apps share the Blazor server's
+ephemeral-loopback URL default, while explicit per-test URLs are preserved.
+The generated Mono client explicitly selects the current built runtime and
+WebAssembly SDK pack, even when Blazor targets the previous framework.
+It imports `WasmOverridePacks.targets` and sets `WBTMonoRuntimePackVersion`;
+the test does not inject an MSBuild target. This opt-in selects current packs
+before SDK resolution without enabling the legacy resolved-path overrides.
+Existing imports without the opt-in retain their previous behavior, and
+previous-runtime compatibility tests are not globally pinned to current packs.
+The shared client project remains unchanged. After a framework retargeting,
+rebuild the runtime packages and recreate the constructed workload SDK before
+validating: an older manifest can map the previous framework to the current
+package and hide a runtime-selection failure that a fresh CI SDK exposes.
+
+`ModuleConfigTests.NativeSymbolsDownloadDoesNotHang` covers emitted fingerprinted
+CoreCLR native symbols with HTTP and network failures, optional symbol loading,
+and successful startup. Native symbols retain their no-retry behavior because
+startup awaits them before queuing the other downloads; waiting for the retry
+barrier at that point would deadlock. Optional HTTP failures permit startup,
+while rejected fetches retain their existing fatal-error behavior. Native Wasm
+cache recovery remains covered by `Blazor.AssetCachingTests`.
 
 If you want to test templating mechanism, use `CreateWasmTemplateProject`. Otherwise, use `CopyTestAsset` with either `WasmBasicTestApp` or `BlazorBasicTestApp`, adding your custom `TestScenario` or using a generic `DotnetRun` scenario in case of WASM app and adding a page with test in case of Blazor app. Bigger snippets of code should be saved in `src/mono/wasm/testassets` and placed in the application using methods: `ReplaceFile` or `File.Move`. Replacing existing small parts of code with custom lines is done with `UpdateFile`.

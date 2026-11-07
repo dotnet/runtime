@@ -519,15 +519,6 @@ FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
 }
 FCIMPLEND
 
-FCIMPL0(UINT32, GCInterface::GetMemoryLoad)
-{
-    FCALL_CONTRACT;
-
-    int result = (INT32)GCHeapUtilities::GetGCHeap()->GetMemoryLoad();
-    return result;
-}
-FCIMPLEND
-
 FCIMPL0(int, GCInterface::GetGcLatencyMode)
 {
     FCALL_CONTRACT;
