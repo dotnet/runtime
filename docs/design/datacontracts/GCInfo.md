@@ -196,7 +196,7 @@ of highest pointer arguments without changing stack depth.
 For ordinary EBP frames, pushed roots instead use the encoded argument index
 relative to the stable frame base. Fully interruptible pops count all stack
 entries, including non-pointer arguments, and remove roots only from the slots
-actually popped. Interface19 currently reports zero stack delta for EBP
+actually popped. `GetX86Transitions` currently reports zero stack delta for EBP
 push/pop records; their argument information and pointer flag identify the
 encoded operations. Bulk `StackDepth` records report the byte depth change.
 Constant `sub ESP, N` and `add ESP, N` instructions in the method body are
@@ -206,13 +206,12 @@ the GC encoding does not distinguish these from push/pop instructions.
 For partially interruptible methods, call records supply register and argument
 roots at the call offset, represented by single-byte intervals `[offset, offset+1)`;
 no tracked call-root liveness is inferred between calls. Untracked locations retain
-flag `0x4` even when stack movement splits their intervals. The contract's call-site
-interruptible ranges remain available to stack walking; the Interface18 adapter
-reports those offsets only through its safe-point table.
+flag `0x4` even when stack movement splits their intervals. Call-site
+interruptible ranges remain available to stack walking, and `GetSafePoints`
+returns the call offsets.
 Fully interruptible ranges exclude the prolog, epilogs, and explicit no-GC regions.
 
 `GetX86Header`, `GetX86Epilogs`, and `GetX86Transitions` require a native X86 handle.
-The optional Interface19 bridge maps unsupported decoders to `E_NOTIMPL`.
 Header sizes and transition stack deltas are in bytes. Saved-register bits follow
 the X86 register order (EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI). Header flags are
 epilog-at-end `1`, EBP-frame `2`, interruptible `4`, double-aligned `8`, security
@@ -220,7 +219,7 @@ epilog-at-end `1`, EBP-frame `2`, interruptible `4`, double-aligned `8`, securit
 `512`, and explicit argument-table offset `1024`. Transition flags are interior
 `1`, pointer argument `2`, and receiver `4`. `ArgumentOffset` and `Count` retain
 decoded argument indices/counts; for a call they contain its pointer and interior
-argument masks. Explicit huge-call roots remain in Interface18's slot lifetimes.
+argument masks. Explicit huge-call roots are included in `GetSlotLifetimes`.
 Raw encoding bytes are not exposed.
 Dynamic localloc and funclet argument bases still require per-frame execution
 state and remain a limitation of this prototype's static lifetime projection.
