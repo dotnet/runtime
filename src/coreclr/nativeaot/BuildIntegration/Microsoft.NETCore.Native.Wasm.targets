@@ -13,6 +13,7 @@
       <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">$(WASI_SDK_PATH)/bin/clang$(_WasiToolExeSuffix)</CppCompilerAndLinker>
       <CppLinker>$(CppCompilerAndLinker)</CppLinker>
       <CppLibCreator>$(WASI_SDK_PATH)/bin/llvm-ar$(_WasiToolExeSuffix)</CppLibCreator>
+      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == ''">8388608</IlcDefaultStackSize>
       <EventPipeName>libeventpipe-disabled</EventPipeName>
       <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">libeventpipe-enabled</EventPipeName>
@@ -56,6 +57,7 @@
       <LinkerArg Include="-lwasi-emulated-process-clocks;-lwasi-emulated-signal;-lwasi-emulated-mman;-lwasi-emulated-getpid" />
       <LinkerArg Include="-lstdc++" Condition="'$(LinkStandardCPlusPlusLibrary)' == 'true'" />
       <LinkerArg Include="-g" Condition="'$(NativeDebugSymbols)' == 'true'" />
+      <LinkerArg Include="-Wl,-s" Condition="'$(WasmNativeStrip)' == 'true'" />
     </ItemGroup>
   </Target>
 
