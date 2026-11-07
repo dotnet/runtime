@@ -52,6 +52,11 @@ public:
 #else
     static const bool IsWasm = false;
 #endif
+#ifdef TARGET_INTERP
+    static const bool IsInterp = true;
+#else
+    static const bool IsInterp = false;
+#endif
 #ifdef TARGET_ARM
     static const bool IsX86 = false;
     static const bool IsX64 = false;
@@ -100,7 +105,7 @@ public:
     static const bool IsArmArch = false;
     static const bool IsLoongArch64 = false;
     static const bool IsRiscV64 = true;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASM) || defined(TARGET_INTERP)
     static const bool IsX86 = false;
     static const bool IsX64 = false;
     static const bool IsArm64 = false;

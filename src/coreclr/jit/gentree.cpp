@@ -5896,6 +5896,17 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         {
             addrModeCostSz += 1;
         }
+#elif defined(TARGET_INTERP)
+        if (base != nullptr)
+        {
+            addrModeCostEx += base->GetCostEx();
+            addrModeCostSz += base->GetCostSz();
+        }
+        if (idx != nullptr)
+        {
+            addrModeCostEx += idx->GetCostEx();
+            addrModeCostSz += idx->GetCostSz();
+        }
 #else
 #error "Unknown TARGET"
 #endif
@@ -6381,6 +6392,21 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costSz                   = 1 + (int)emitter::SizeOfSLEB128(imm);
                 goto COMMON_CNS;
             }
+#elif defined(TARGET_INTERP)
+            case GT_CNS_STR:
+                costEx = IND_COST_EX + 2;
+                costSz = 3;
+                goto COMMON_CNS;
+
+            case GT_CNS_LNG:
+            case GT_CNS_INT:
+            {
+                // ldc.i4 takes an opcode, a destination and a 32-bit immediate; ldc.i8 needs one more slot.
+                GenTreeIntConCommon* con = tree->AsIntConCommon();
+                costEx                   = 1;
+                costSz                   = FitsIn<int32_t>(con->IntegralValue()) ? 3 : 4;
+                goto COMMON_CNS;
+            }
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:
@@ -6460,6 +6486,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #elif defined(TARGET_WASM)
                 costEx = 2;
                 costSz = tree->TypeIs(TYP_FLOAT) ? 5 : 9;
+#elif defined(TARGET_INTERP)
+                // ldc.r4 carries a 32-bit immediate; ldc.r8 needs a 64-bit one.
+                costEx = 1;
+                costSz = tree->TypeIs(TYP_FLOAT) ? 3 : 4;
 #else
 #error "Unknown TARGET"
 #endif
@@ -7032,6 +7062,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // multiple wasm instructions.
                     costEx = 2;
                     costSz = varTypeIsFloating(op1) && !varTypeIsFloating(tree->TypeGet()) ? 2 : 1;
+#elif defined(TARGET_INTERP)
+                    // Every interpreter conversion is a single conv.* opcode.
+                    costEx = 1;
+                    costSz = 3;
 #else
 #error "Unknown TARGET"
 #endif

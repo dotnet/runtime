@@ -81,6 +81,10 @@ enum instruction : uint32_t
     #define INST2(id, nm, info, fmt, prefix, opcode) INS_##id,
     #include "instrs.h"
 
+#elif defined(TARGET_INTERP)
+    #define INST(id, nm, info, fmt) INS_##id,
+    #include "instrs.h"
+
 #else
 #error Unsupported target architecture
 #endif
@@ -333,7 +337,7 @@ enum insOpts: unsigned
 
 };
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM) || defined(TARGET_INTERP)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned
 {
@@ -601,7 +605,7 @@ enum insBarrier : unsigned
     INS_BARRIER_LOAD_ONLY  = 0x23, // fence r, rw
     INS_BARRIER_STORE_ONLY = 0x31, // fence rw, w
 };
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASM) || defined(TARGET_INTERP)
 enum insOpts : unsigned
 {
     INS_OPTS_NONE,

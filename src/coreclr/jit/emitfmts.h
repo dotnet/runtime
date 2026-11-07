@@ -14,6 +14,8 @@
 #include "emitfmtsriscv64.h"
 #elif defined(TARGET_WASM)
 #include "emitfmtswasm.h"
+#elif defined(TARGET_INTERP)
+#include "emitfmtsinterp.h"
 #else
 #error Unsupported or unset target architecture
 #endif // target type

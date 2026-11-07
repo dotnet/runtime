@@ -90,6 +90,10 @@ const char* CodeGen::genInsName(instruction ins)
         #define INST2(id, nm, info, fmt, prefix, opcode) nm,
         #include "instrs.h"
 
+#elif defined(TARGET_INTERP)
+        #define INST(id, nm, info, fmt) nm,
+        #include "instrs.h"
+
 #else
 #error "Unknown TARGET"
 #endif

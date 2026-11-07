@@ -270,6 +270,8 @@ public:
         REGNUM_PC,
 #elif defined(TARGET_WASM)
         REGNUM_PC, // wasm doesn't have registers
+#elif defined(TARGET_INTERP)
+        REGNUM_PC, // the interpreter doesn't have registers
 #else
         PORTABILITY_WARNING("Register numbers not defined on this platform")
 #endif

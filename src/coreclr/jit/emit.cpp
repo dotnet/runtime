@@ -3610,7 +3610,7 @@ void emitter::emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr secondRetSiz
 }
 #endif // MULTIREG_HAS_SECOND_GC_RET
 
-#ifndef TARGET_WASM
+#if !defined(TARGET_WASM) && !defined(TARGET_INTERP)
 //------------------------------------------------------------------------
 // emitIns_ShortJ: Emit a 'forced' short jump.
 //
@@ -3797,7 +3797,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
     }
 }
 
-#endif // TARGET_WASM
+#endif // !TARGET_WASM && !TARGET_INTERP
 
 /*****************************************************************************
  *
@@ -3897,6 +3897,9 @@ const size_t hexEncodingSize = 19;
 #elif defined(TARGET_WASM)
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 19; // 8 bytes (wasm-objdump default) + 1 space.
+#elif defined(TARGET_INTERP)
+const size_t basicIndent     = 12;
+const size_t hexEncodingSize = 19;
 #endif
 
 #ifdef DEBUG
@@ -5542,8 +5545,8 @@ AGAIN:
         assert((sizeDif == 4) || (sizeDif == 8));
 #elif defined(TARGET_RISCV64)
         assert((sizeDif == 0) || (sizeDif == 4) || (sizeDif == 8));
-#elif defined(TARGET_WASM)
-        // We should never call emitJumpDistBind() for wasm, as wasm has no variable-length jumps.
+#elif defined(TARGET_WASM) || defined(TARGET_INTERP)
+        // We should never call emitJumpDistBind() for wasm or the interpreter, as they have no variable-length jumps.
         unreached();
 #else
 #error Unsupported or unset target architecture
@@ -7690,7 +7693,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASM) || defined(TARGET_INTERP)
                     unreached();
 #else
 #error Unsupported or unset target architecture
@@ -7706,7 +7709,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASM) || defined(TARGET_INTERP)
                     unreached();
 #else
 #error Unsupported or unset target architecture
