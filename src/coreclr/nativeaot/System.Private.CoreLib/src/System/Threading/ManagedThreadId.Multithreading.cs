@@ -180,10 +180,6 @@ namespace System.Threading
         // We use this id to detect the main thread and report it as a foreground one.
         public const int IdMainThread = 1;
 
-        private int _managedThreadId;
-
-        public int Id => _managedThreadId;
-
         // We store ManagedThreadId both here and in the Thread.CurrentThread object. We store it here,
         // because we may need the id very early in the process lifetime (e.g., in ClassConstructorRunner),
         // when a Thread object cannot be created yet. We also store it in the Thread.CurrentThread object,
@@ -203,6 +199,10 @@ namespace System.Threading
         //      System::Environment.get_CurrentManagedThreadId
 
         private static ImmutableIdDispenser? s_idDispenser;
+
+        private int _managedThreadId;
+
+        public int Id => _managedThreadId;
 
         public static int AllocateId()
         {
