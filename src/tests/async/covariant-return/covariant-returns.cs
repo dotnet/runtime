@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -349,6 +350,73 @@ namespace AbstractCovariantReturn
             }
 
             public override Task<int> Task => System.Threading.Tasks.Task.FromResult(42);
+        }
+    }
+}
+
+namespace SynchronizedCovariantReturn
+{
+    public class Program
+    {
+        public class Base
+        {
+            public virtual Task M1() => Task.CompletedTask;
+        }
+
+        public class SynchronizedDerived : Base
+        {
+            public readonly Task<int> PendingTask = new Task<int>(() => 42);
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task<int> M1()
+            {
+                Assert.True(Monitor.IsEntered(this));
+                return PendingTask;
+            }
+        }
+
+        public class UnsynchronizedDerived : SynchronizedDerived
+        {
+            public override Task<int> M1()
+            {
+                Assert.False(Monitor.IsEntered(this));
+                return PendingTask;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task CallBase(Base b) => await b.M1();
+
+        [ConditionalTheory(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TestSynchronizedCovariantOverride(bool furtherOverride)
+        {
+            SynchronizedDerived d = furtherOverride ? new UnsynchronizedDerived() : new SynchronizedDerived();
+            Task result = CallBase(d);
+
+            try
+            {
+                Assert.False(result.IsCompleted);
+                bool monitorAvailable = false;
+                Thread probe = new Thread(() =>
+                {
+                    if (Monitor.TryEnter(d))
+                    {
+                        monitorAvailable = true;
+                        Monitor.Exit(d);
+                    }
+                });
+                probe.Start();
+                probe.Join();
+                Assert.True(monitorAvailable);
+            }
+            finally
+            {
+                d.PendingTask.RunSynchronously();
+            }
+
+            result.GetAwaiter().GetResult();
         }
     }
 }

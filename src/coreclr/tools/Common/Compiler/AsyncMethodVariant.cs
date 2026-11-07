@@ -92,6 +92,9 @@ namespace ILCompiler
 
         public AsyncMethodVariant AsyncVariantTarget => _asyncVariant;
 
+        // Only the target implementation should acquire the receiver's monitor.
+        public override bool IsSynchronized => false;
+
         public override MethodSignature Signature
         {
             get
