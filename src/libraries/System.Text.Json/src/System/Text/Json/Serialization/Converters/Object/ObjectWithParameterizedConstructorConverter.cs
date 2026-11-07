@@ -594,7 +594,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (jsonTypeInfo.ParameterCount != jsonTypeInfo.ParameterCache.Length)
             {
-                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(Type);
+                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(jsonTypeInfo);
             }
 
             state.Current.InitializePropertiesValidationState(jsonTypeInfo);
