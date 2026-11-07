@@ -939,6 +939,10 @@ namespace System.Text.RegularExpressions
                 {
                     u.M = min = ((int.MaxValue - 1) / u.M < min) ? int.MaxValue : u.M * min;
                 }
+                else
+                {
+                    min = 0;
+                }
 
                 if (u.N > 0)
                 {
