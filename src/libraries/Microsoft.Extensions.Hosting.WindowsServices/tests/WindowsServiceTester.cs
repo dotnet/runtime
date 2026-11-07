@@ -33,8 +33,7 @@ namespace Microsoft.Extensions.Hosting
         {
             base.Start(args);
 
-            // get the process
-            _remoteInvokeHandle.Process.Dispose();
+            _remoteInvokeHandle.Process?.Dispose();
             _remoteInvokeHandle.Process = null;
 
             var statusEx = QueryServiceStatusEx();
@@ -76,6 +75,10 @@ namespace Microsoft.Extensions.Hosting
             // create remote executor commandline arguments
             var startInfo = remoteInvokeHandle.Process.StartInfo;
             string commandLine = startInfo.FileName + " " + startInfo.Arguments;
+
+            // The SCM starts the service, so RemoteExecutor must not wait on this unstarted process.
+            remoteInvokeHandle.Process.Dispose();
+            remoteInvokeHandle.Process = null;
 
             // install the service
             using (var serviceManagerHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL)))
@@ -142,16 +145,23 @@ namespace Microsoft.Extensions.Hosting
 
         protected override void Dispose(bool disposing)
         {
-            if (_remoteInvokeHandle != null)
+            try
             {
-                _remoteInvokeHandle.Dispose();               
+                if (disposing)
+                {
+                    _remoteInvokeHandle.Dispose();
+                }
             }
-
-            if (!_serviceHandle.IsInvalid)
+            finally
             {
-                // delete the temporary test service
-                Interop.Advapi32.DeleteService(_serviceHandle);
-                _serviceHandle.Close();
+                if (!_serviceHandle.IsClosed && !_serviceHandle.IsInvalid)
+                {
+                    // delete the temporary test service
+                    Interop.Advapi32.DeleteService(_serviceHandle);
+                    _serviceHandle.Close();
+                }
+
+                base.Dispose(disposing);
             }
         }
     }
