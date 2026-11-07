@@ -169,7 +169,7 @@ Breaking Change Rules
 
 * Changing a `struct` type to a `ref struct` type and vice versa
 
-* Changing a `struct` to an `enum` or vice versa
+* Changing a `struct` type to an `enum` type or vice versa
 
 * Changing the underlying type of an enum
 
