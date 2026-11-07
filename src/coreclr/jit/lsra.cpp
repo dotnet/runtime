@@ -8880,6 +8880,13 @@ void LinearScan::resolveRegisters()
                         {
                             varDsc->lvOnFrame = false;
                         }
+#ifdef TARGET_AMD64
+                        // A rebuilt local is never stored, so its spills need no stack location.
+                        else if (m_compiler->lsraIsReconstructible(interval->varNum))
+                        {
+                            varDsc->lvOnFrame = false;
+                        }
+#endif
                         if (firstRefPosition->registerAssignment == RBM_NONE || firstRefPosition->spillAfter)
                         {
                             // Either this RefPosition is spilled, or regOptional or it is not a "real" def or use

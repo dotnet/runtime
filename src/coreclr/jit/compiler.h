@@ -8117,6 +8117,19 @@ protected:
     }
 #endif
 
+    // Whether a local may be neither in a register nor on the frame: one without references, or
+    // one rebuilt from its recipe, which is its only home.
+    bool lvaMayHaveNoHome(unsigned lclNum)
+    {
+#ifdef TARGET_AMD64
+        if (lsraIsReconstructible(lclNum))
+        {
+            return true;
+        }
+#endif
+        return lvaGetDesc(lclNum)->lvRefCnt() == 0;
+    }
+
     bool optIsCSEcandidate(GenTree* tree, bool isReturn = false);
 
     // lclNumIsTrueCSE returns true if the LclVar was introduced by the CSE phase of the compiler

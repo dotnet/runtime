@@ -287,9 +287,9 @@ void Compiler::raMarkStkVars()
 
         // Some basic checks
 
-        // It must be in a register, on frame, or have zero references.
+        // It must be in a register, on frame, or need no home.
 
-        noway_assert(varDsc->lvIsInReg() || varDsc->lvOnFrame || varDsc->lvRefCnt() == 0);
+        noway_assert(varDsc->lvIsInReg() || varDsc->lvOnFrame || lvaMayHaveNoHome(lclNum));
 
         // We can't have both lvRegister and lvOnFrame
         noway_assert(!varDsc->lvRegister || !varDsc->lvOnFrame);
