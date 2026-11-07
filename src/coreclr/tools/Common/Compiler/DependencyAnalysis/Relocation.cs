@@ -411,7 +411,7 @@ namespace ILCompiler.DependencyAnalysis
             return imm28;
         }
 
-        private static bool FitsInArm64Rel28(long imm28)
+        public static bool FitsInArm64Rel28(long imm28)
         {
             return (imm28 >= -0x08000000L) && (imm28 < 0x08000000L);
         }
@@ -419,7 +419,10 @@ namespace ILCompiler.DependencyAnalysis
         private static unsafe void PutArm64Rel28(uint* pCode, long imm28)
         {
             // Verify that we got a valid offset
-            Debug.Assert(FitsInArm64Rel28(imm28));
+            if (!FitsInArm64Rel28(imm28))
+            {
+                throw new ArgumentOutOfRangeException(nameof(imm28), imm28, "Branch displacement is outside the +/-128 MB range of an ARM64 B or BL instruction.");
+            }
 
             Debug.Assert((imm28 & 0x3) == 0);    // the low two bits must be zero
 
