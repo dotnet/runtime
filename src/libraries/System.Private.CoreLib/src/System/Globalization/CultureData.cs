@@ -148,266 +148,75 @@ namespace System.Globalization
         /// <remarks>
         /// Using a property so we avoid creating the dictionary until we need it
         /// </remarks>
-        private static Dictionary<string, string> RegionNames =>
-            s_regionNames ??=
-            new Dictionary<string, string>(255, StringComparer.OrdinalIgnoreCase)
+        private static Dictionary<string, string> RegionNames
+        {
+            get
             {
-                { "001", "en-001" },
-                { "029", "en-029" },
-                { "150", "en-150" },
-                { "419", "es-419" },
-                { "AD", "ca-AD" },
-                { "AE", "ar-AE" },
-                { "AF", "prs-AF" },
-                { "AG", "en-AG" },
-                { "AI", "en-AI" },
-                { "AL", "sq-AL" },
-                { "AM", "hy-AM" },
-                { "AO", "pt-AO" },
-                { "AQ", "en-AQ" },
-                { "AR", "es-AR" },
-                { "AS", "en-AS" },
-                { "AT", "de-AT" },
-                { "AU", "en-AU" },
-                { "AW", "nl-AW" },
-                { "AX", "sv-AX" },
-                { "AZ", "az-Cyrl-AZ" },
-                { "BA", "bs-Latn-BA" },
-                { "BB", "en-BB" },
-                { "BD", "bn-BD" },
-                { "BE", "nl-BE" },
-                { "BF", "fr-BF" },
-                { "BG", "bg-BG" },
-                { "BH", "ar-BH" },
-                { "BI", "rn-BI" },
-                { "BJ", "fr-BJ" },
-                { "BL", "fr-BL" },
-                { "BM", "en-BM" },
-                { "BN", "ms-BN" },
-                { "BO", "es-BO" },
-                { "BQ", "nl-BQ" },
-                { "BR", "pt-BR" },
-                { "BS", "en-BS" },
-                { "BT", "dz-BT" },
-                { "BV", "nb-BV" },
-                { "BW", "en-BW" },
-                { "BY", "be-BY" },
-                { "BZ", "en-BZ" },
-                { "CA", "en-CA" },
-                { "CC", "en-CC" },
-                { "CD", "fr-CD" },
-                { "CF", "sg-CF" },
-                { "CG", "fr-CG" },
-                { "CH", "it-CH" },
-                { "CI", "fr-CI" },
-                { "CK", "en-CK" },
-                { "CL", "es-CL" },
-                { "CM", "fr-CM" },
-                { "CN", "zh-CN" },
-                { "CO", "es-CO" },
-                { "CR", "es-CR" },
-                { "CS", "sr-Cyrl-CS" },
-                { "CU", "es-CU" },
-                { "CV", "pt-CV" },
-                { "CW", "nl-CW" },
-                { "CX", "en-CX" },
-                { "CY", "el-CY" },
-                { "CZ", "cs-CZ" },
-                { "DE", "de-DE" },
-                { "DJ", "fr-DJ" },
-                { "DK", "da-DK" },
-                { "DM", "en-DM" },
-                { "DO", "es-DO" },
-                { "DZ", "ar-DZ" },
-                { "EC", "es-EC" },
-                { "EE", "et-EE" },
-                { "EG", "ar-EG" },
-                { "ER", "tig-ER" },
-                { "ES", "es-ES" },
-                { "ET", "am-ET" },
-                { "FI", "fi-FI" },
-                { "FJ", "en-FJ" },
-                { "FK", "en-FK" },
-                { "FM", "en-FM" },
-                { "FO", "fo-FO" },
-                { "FR", "fr-FR" },
-                { "GA", "fr-GA" },
-                { "GB", "en-GB" },
-                { "GD", "en-GD" },
-                { "GE", "ka-GE" },
-                { "GF", "fr-GF" },
-                { "GG", "en-GG" },
-                { "GH", "en-GH" },
-                { "GI", "en-GI" },
-                { "GL", "kl-GL" },
-                { "GM", "en-GM" },
-                { "GN", "fr-GN" },
-                { "GP", "fr-GP" },
-                { "GQ", "es-GQ" },
-                { "GR", "el-GR" },
-                { "GS", "en-GS" },
-                { "GT", "es-GT" },
-                { "GU", "en-GU" },
-                { "GW", "pt-GW" },
-                { "GY", "en-GY" },
-                { "HK", "zh-HK" },
-                { "HM", "en-HM" },
-                { "HN", "es-HN" },
-                { "HR", "hr-HR" },
-                { "HT", "fr-HT" },
-                { "HU", "hu-HU" },
-                { "ID", "id-ID" },
-                { "IE", "en-IE" },
-                { "IL", "he-IL" },
-                { "IM", "gv-IM" },
-                { "IN", "hi-IN" },
-                { "IO", "en-IO" },
-                { "IQ", "ar-IQ" },
-                { "IR", "fa-IR" },
-                { "IS", "is-IS" },
-                { "IT", "it-IT" },
-                { "IV", "" },
-                { "JE", "en-JE" },
-                { "JM", "en-JM" },
-                { "JO", "ar-JO" },
-                { "JP", "ja-JP" },
-                { "KE", "sw-KE" },
-                { "KG", "ky-KG" },
-                { "KH", "km-KH" },
-                { "KI", "en-KI" },
-                { "KM", "ar-KM" },
-                { "KN", "en-KN" },
-                { "KP", "ko-KP" },
-                { "KR", "ko-KR" },
-                { "KW", "ar-KW" },
-                { "KY", "en-KY" },
-                { "KZ", "kk-KZ" },
-                { "LA", "lo-LA" },
-                { "LB", "ar-LB" },
-                { "LC", "en-LC" },
-                { "LI", "de-LI" },
-                { "LK", "si-LK" },
-                { "LR", "en-LR" },
-                { "LS", "st-LS" },
-                { "LT", "lt-LT" },
-                { "LU", "lb-LU" },
-                { "LV", "lv-LV" },
-                { "LY", "ar-LY" },
-                { "MA", "ar-MA" },
-                { "MC", "fr-MC" },
-                { "MD", "ro-MD" },
-                { "ME", "sr-Latn-ME" },
-                { "MF", "fr-MF" },
-                { "MG", "mg-MG" },
-                { "MH", "en-MH" },
-                { "MK", "mk-MK" },
-                { "ML", "fr-ML" },
-                { "MM", "my-MM" },
-                { "MN", "mn-MN" },
-                { "MO", "zh-MO" },
-                { "MP", "en-MP" },
-                { "MQ", "fr-MQ" },
-                { "MR", "ar-MR" },
-                { "MS", "en-MS" },
-                { "MT", "mt-MT" },
-                { "MU", "en-MU" },
-                { "MV", "dv-MV" },
-                { "MW", "en-MW" },
-                { "MX", "es-MX" },
-                { "MY", "ms-MY" },
-                { "MZ", "pt-MZ" },
-                { "NA", "en-NA" },
-                { "NC", "fr-NC" },
-                { "NE", "fr-NE" },
-                { "NF", "en-NF" },
-                { "NG", "ig-NG" },
-                { "NI", "es-NI" },
-                { "NL", "nl-NL" },
-                { "NO", "nn-NO" },
-                { "NP", "ne-NP" },
-                { "NR", "en-NR" },
-                { "NU", "en-NU" },
-                { "NZ", "en-NZ" },
-                { "OM", "ar-OM" },
-                { "PA", "es-PA" },
-                { "PE", "es-PE" },
-                { "PF", "fr-PF" },
-                { "PG", "en-PG" },
-                { "PH", "en-PH" },
-                { "PK", "ur-PK" },
-                { "PL", "pl-PL" },
-                { "PM", "fr-PM" },
-                { "PN", "en-PN" },
-                { "PR", "es-PR" },
-                { "PS", "ar-PS" },
-                { "PT", "pt-PT" },
-                { "PW", "en-PW" },
-                { "PY", "es-PY" },
-                { "QA", "ar-QA" },
-                { "RE", "fr-RE" },
-                { "RO", "ro-RO" },
-                { "RS", "sr-Latn-RS" },
-                { "RU", "ru-RU" },
-                { "RW", "rw-RW" },
-                { "SA", "ar-SA" },
-                { "SB", "en-SB" },
-                { "SC", "fr-SC" },
-                { "SD", "ar-SD" },
-                { "SE", "sv-SE" },
-                { "SG", "zh-SG" },
-                { "SH", "en-SH" },
-                { "SI", "sl-SI" },
-                { "SJ", "nb-SJ" },
-                { "SK", "sk-SK" },
-                { "SL", "en-SL" },
-                { "SM", "it-SM" },
-                { "SN", "wo-SN" },
-                { "SO", "so-SO" },
-                { "SR", "nl-SR" },
-                { "SS", "en-SS" },
-                { "ST", "pt-ST" },
-                { "SV", "es-SV" },
-                { "SX", "nl-SX" },
-                { "SY", "ar-SY" },
-                { "SZ", "ss-SZ" },
-                { "TC", "en-TC" },
-                { "TD", "fr-TD" },
-                { "TF", "fr-TF" },
-                { "TG", "fr-TG" },
-                { "TH", "th-TH" },
-                { "TJ", "tg-Cyrl-TJ" },
-                { "TK", "en-TK" },
-                { "TL", "pt-TL" },
-                { "TM", "tk-TM" },
-                { "TN", "ar-TN" },
-                { "TO", "to-TO" },
-                { "TR", "tr-TR" },
-                { "TT", "en-TT" },
-                { "TV", "en-TV" },
-                { "TW", "zh-TW" },
-                { "TZ", "sw-TZ" },
-                { "UA", "uk-UA" },
-                { "UG", "sw-UG" },
-                { "UM", "en-UM" },
-                { "US", "en-US" },
-                { "UY", "es-UY" },
-                { "UZ", "uz-Cyrl-UZ" },
-                { "VA", "it-VA" },
-                { "VC", "en-VC" },
-                { "VE", "es-VE" },
-                { "VG", "en-VG" },
-                { "VI", "en-VI" },
-                { "VN", "vi-VN" },
-                { "VU", "fr-VU" },
-                { "WF", "fr-WF" },
-                { "WS", "en-WS" },
-                { "XK", "sq-XK" },
-                { "YE", "ar-YE" },
-                { "YT", "fr-YT" },
-                { "ZA", "af-ZA" },
-                { "ZM", "en-ZM" },
-                { "ZW", "en-ZW" }
-            };
+                if (s_regionNames is not null)
+                {
+                    return s_regionNames;
+                }
+
+                ReadOnlySpan<byte> regionNamesData =
+                    "001=en-001;029=en-029;150=en-150;419=es-419;AD=ca-AD;AE=ar-AE;"u8 +
+                    "AF=prs-AF;AG=en-AG;AI=en-AI;AL=sq-AL;AM=hy-AM;AO=pt-AO;"u8 +
+                    "AQ=en-AQ;AR=es-AR;AS=en-AS;AT=de-AT;AU=en-AU;AW=nl-AW;"u8 +
+                    "AX=sv-AX;AZ=az-Cyrl-AZ;BA=bs-Latn-BA;BB=en-BB;BD=bn-BD;BE=nl-BE;"u8 +
+                    "BF=fr-BF;BG=bg-BG;BH=ar-BH;BI=rn-BI;BJ=fr-BJ;BL=fr-BL;"u8 +
+                    "BM=en-BM;BN=ms-BN;BO=es-BO;BQ=nl-BQ;BR=pt-BR;BS=en-BS;"u8 +
+                    "BT=dz-BT;BV=nb-BV;BW=en-BW;BY=be-BY;BZ=en-BZ;CA=en-CA;"u8 +
+                    "CC=en-CC;CD=fr-CD;CF=sg-CF;CG=fr-CG;CH=it-CH;CI=fr-CI;"u8 +
+                    "CK=en-CK;CL=es-CL;CM=fr-CM;CN=zh-CN;CO=es-CO;CR=es-CR;"u8 +
+                    "CS=sr-Cyrl-CS;CU=es-CU;CV=pt-CV;CW=nl-CW;CX=en-CX;CY=el-CY;"u8 +
+                    "CZ=cs-CZ;DE=de-DE;DJ=fr-DJ;DK=da-DK;DM=en-DM;DO=es-DO;"u8 +
+                    "DZ=ar-DZ;EC=es-EC;EE=et-EE;EG=ar-EG;ER=tig-ER;ES=es-ES;"u8 +
+                    "ET=am-ET;FI=fi-FI;FJ=en-FJ;FK=en-FK;FM=en-FM;FO=fo-FO;"u8 +
+                    "FR=fr-FR;GA=fr-GA;GB=en-GB;GD=en-GD;GE=ka-GE;GF=fr-GF;"u8 +
+                    "GG=en-GG;GH=en-GH;GI=en-GI;GL=kl-GL;GM=en-GM;GN=fr-GN;"u8 +
+                    "GP=fr-GP;GQ=es-GQ;GR=el-GR;GS=en-GS;GT=es-GT;GU=en-GU;"u8 +
+                    "GW=pt-GW;GY=en-GY;HK=zh-HK;HM=en-HM;HN=es-HN;HR=hr-HR;"u8 +
+                    "HT=fr-HT;HU=hu-HU;ID=id-ID;IE=en-IE;IL=he-IL;IM=gv-IM;"u8 +
+                    "IN=hi-IN;IO=en-IO;IQ=ar-IQ;IR=fa-IR;IS=is-IS;IT=it-IT;"u8 +
+                    "IV=;JE=en-JE;JM=en-JM;JO=ar-JO;JP=ja-JP;KE=sw-KE;"u8 +
+                    "KG=ky-KG;KH=km-KH;KI=en-KI;KM=ar-KM;KN=en-KN;KP=ko-KP;"u8 +
+                    "KR=ko-KR;KW=ar-KW;KY=en-KY;KZ=kk-KZ;LA=lo-LA;LB=ar-LB;"u8 +
+                    "LC=en-LC;LI=de-LI;LK=si-LK;LR=en-LR;LS=st-LS;LT=lt-LT;"u8 +
+                    "LU=lb-LU;LV=lv-LV;LY=ar-LY;MA=ar-MA;MC=fr-MC;MD=ro-MD;"u8 +
+                    "ME=sr-Latn-ME;MF=fr-MF;MG=mg-MG;MH=en-MH;MK=mk-MK;ML=fr-ML;"u8 +
+                    "MM=my-MM;MN=mn-MN;MO=zh-MO;MP=en-MP;MQ=fr-MQ;MR=ar-MR;"u8 +
+                    "MS=en-MS;MT=mt-MT;MU=en-MU;MV=dv-MV;MW=en-MW;MX=es-MX;"u8 +
+                    "MY=ms-MY;MZ=pt-MZ;NA=en-NA;NC=fr-NC;NE=fr-NE;NF=en-NF;"u8 +
+                    "NG=ig-NG;NI=es-NI;NL=nl-NL;NO=nn-NO;NP=ne-NP;NR=en-NR;"u8 +
+                    "NU=en-NU;NZ=en-NZ;OM=ar-OM;PA=es-PA;PE=es-PE;PF=fr-PF;"u8 +
+                    "PG=en-PG;PH=en-PH;PK=ur-PK;PL=pl-PL;PM=fr-PM;PN=en-PN;"u8 +
+                    "PR=es-PR;PS=ar-PS;PT=pt-PT;PW=en-PW;PY=es-PY;QA=ar-QA;"u8 +
+                    "RE=fr-RE;RO=ro-RO;RS=sr-Latn-RS;RU=ru-RU;RW=rw-RW;SA=ar-SA;"u8 +
+                    "SB=en-SB;SC=fr-SC;SD=ar-SD;SE=sv-SE;SG=zh-SG;SH=en-SH;"u8 +
+                    "SI=sl-SI;SJ=nb-SJ;SK=sk-SK;SL=en-SL;SM=it-SM;SN=wo-SN;"u8 +
+                    "SO=so-SO;SR=nl-SR;SS=en-SS;ST=pt-ST;SV=es-SV;SX=nl-SX;"u8 +
+                    "SY=ar-SY;SZ=ss-SZ;TC=en-TC;TD=fr-TD;TF=fr-TF;TG=fr-TG;"u8 +
+                    "TH=th-TH;TJ=tg-Cyrl-TJ;TK=en-TK;TL=pt-TL;TM=tk-TM;TN=ar-TN;"u8 +
+                    "TO=to-TO;TR=tr-TR;TT=en-TT;TV=en-TV;TW=zh-TW;TZ=sw-TZ;"u8 +
+                    "UA=uk-UA;UG=sw-UG;UM=en-UM;US=en-US;UY=es-UY;UZ=uz-Cyrl-UZ;"u8 +
+                    "VA=it-VA;VC=en-VC;VE=es-VE;VG=en-VG;VI=en-VI;VN=vi-VN;"u8 +
+                    "VU=fr-VU;WF=fr-WF;WS=en-WS;XK=sq-XK;YE=ar-YE;YT=fr-YT;"u8 +
+                    "ZA=af-ZA;ZM=en-ZM;ZW=en-ZW"u8;
+
+                Dictionary<string, string> regionNames = new(255, StringComparer.OrdinalIgnoreCase);
+                foreach (Range range in regionNamesData.Split((byte)';'))
+                {
+                    ReadOnlySpan<byte> entry = regionNamesData[range];
+                    int separator = entry.IndexOf((byte)'=');
+                    Debug.Assert(separator > 0);
+                    regionNames.Add(
+                        Encoding.UTF8.GetString(entry[..separator]),
+                        Encoding.UTF8.GetString(entry[(separator + 1)..]));
+                }
+
+                s_regionNames = regionNames;
+                return regionNames;
+            }
+        }
 
         // Cache of regions we've already looked up
         private static Dictionary<string, CultureData>? s_cachedRegions;
