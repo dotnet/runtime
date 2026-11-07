@@ -70,52 +70,41 @@ WCHAR* verbMerge::ConvertFromUtf8(LPCSTR str)
 // 'buffer' is memory that can be used to do reading/buffering.
 //
 // static
-int verbMerge::AppendFileRaw(HANDLE hFileOut, LPCWSTR fileFullPath, unsigned char* buffer, size_t bufferSize)
+int verbMerge::AppendFileRaw(FILE* hFileOut, LPCWSTR fileFullPath, unsigned char* buffer, size_t bufferSize)
 {
     int result = 0; // default to zero == success
 
     char* fileNameAsChar = ConvertToUtf8(fileFullPath);
     LogInfo("Appending file '%s'", fileNameAsChar);
 
-    HANDLE hFileIn = CreateFileW(fileFullPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                                 FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (hFileIn == INVALID_HANDLE_VALUE)
+    FILE* hFileIn;
+    if (u16_fopen_s(&hFileIn, fileFullPath, W("rb")) != 0)
     {
-        // If you use a relative path, you can get GetLastError()==3, if the absolute path is longer
-        // than MAX_PATH.
-        LogError("Failed to open input file '%s'. GetLastError()=%u", fileNameAsChar, GetLastError());
+        LogError("Failed to open input file '%s'. errno=%d", fileNameAsChar, errno);
         return -1;
     }
 
-    LARGE_INTEGER fileSize;
-    if (GetFileSizeEx(hFileIn, &fileSize) == 0)
+    int64_t fileSize = fgetsize(hFileIn);
+    if (fileSize < 0)
     {
-        LogError("GetFileSizeEx on '%s' failed. GetLastError()=%u", fileNameAsChar, GetLastError());
+        LogError("fgetsize on '%s' failed. errno=%d", fileNameAsChar, errno);
         result = -1;
         goto CLEAN_UP;
     }
 
-    for (LONGLONG offset = 0; offset < fileSize.QuadPart; offset += bufferSize)
+    for (LONGLONG offset = 0; offset < fileSize; offset += bufferSize)
     {
-        DWORD bytesRead = -1;
-        BOOL  res       = ReadFile(hFileIn, buffer, (DWORD)bufferSize, &bytesRead, nullptr);
-        if (!res)
+        size_t bytesRead = fread(buffer, 1, bufferSize, hFileIn);
+        if (ferror(hFileIn))
         {
-            LogError("Failed to read '%s' from offset %lld. GetLastError()=%u", fileNameAsChar, offset, GetLastError());
+            LogError("Failed to read '%s' from offset %lld. errno=%d", fileNameAsChar, offset, errno);
             result = -1;
             goto CLEAN_UP;
         }
-        DWORD bytesWritten = -1;
-        BOOL  res2         = WriteFile(hFileOut, buffer, bytesRead, &bytesWritten, nullptr);
-        if (!res2)
-        {
-            LogError("Failed to write output file at offset %lld. GetLastError()=%u", offset, GetLastError());
-            result = -1;
-            goto CLEAN_UP;
-        }
+        size_t bytesWritten = fwrite(buffer, 1, bytesRead, hFileOut);
         if (bytesRead != bytesWritten)
         {
-            LogError("Failed to read/write matching bytes %u!=%u", bytesRead, bytesWritten);
+            LogError("Failed to write output file at offset %lld. errno=%d", offset, errno);
             result = -1;
             goto CLEAN_UP;
         }
@@ -125,9 +114,9 @@ CLEAN_UP:
 
     delete[] fileNameAsChar;
 
-    if (CloseHandle(hFileIn) == 0)
+    if (fclose(hFileIn) != 0)
     {
-        LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+        LogError("fclose failed. errno=%d", errno);
         result = -1;
     }
 
@@ -140,7 +129,7 @@ CLEAN_UP:
 // 'buffer' is memory that can be used to do reading/buffering.
 //
 // static
-int verbMerge::AppendFile(HANDLE hFileOut, LPCWSTR fileFullPath, bool dedup, unsigned char* buffer, size_t bufferSize)
+int verbMerge::AppendFile(FILE* hFileOut, LPCWSTR fileFullPath, bool dedup, unsigned char* buffer, size_t bufferSize)
 {
     int result = 0; // default to zero == success
 
@@ -279,8 +268,8 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
     // NOTE: this function only works on Windows 7 and later.
 
 #ifdef TARGET_UNIX
-    std::string dirUtf8 = ConvertToUtf8(dir);
-    std::string searchPatternUtf8 = ConvertToUtf8(searchPattern);
+    std::string dirUtf8 = ::ConvertToUtf8(dir);
+    std::string searchPatternUtf8 = ::ConvertToUtf8(searchPattern);
 
     DIR* pDir = opendir(dirUtf8.c_str());
     if (pDir != nullptr)
@@ -354,7 +343,7 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
         }
         else
         {
-            std::string searchPatternUtf8 = ConvertToUtf8(searchPattern);
+            std::string searchPatternUtf8 = ::ConvertToUtf8(searchPattern);
             LogError("Failed to find pattern '%s'. errno=%d", searchPatternUtf8.c_str(), errno);
             result = -1;
         }
@@ -382,7 +371,7 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
         }
         else
         {
-            std::string searchPatternUtf8 = ConvertToUtf8(searchPattern);
+            std::string searchPatternUtf8 = ::ConvertToUtf8(searchPattern);
             LogError("Failed to find pattern '%s'. GetLastError()=%u", searchPatternUtf8.c_str(), GetLastError());
             result = -1;
         }
@@ -455,7 +444,7 @@ CLEAN_UP:
 // Append all files in the given directory matching the file pattern.
 //
 // static
-int verbMerge::AppendAllInDir(HANDLE              hFileOut,
+int verbMerge::AppendAllInDir(FILE*              hFileOut,
                               LPCWSTR             dir,
                               LPCWSTR             file,
                               unsigned char*      buffer,
@@ -627,11 +616,10 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
     LPWSTR nameOfOutputFileAsWchar = ConvertFromUtf8(nameOfOutputFile);
     LPWSTR patternAsWchar          = ConvertFromUtf8(pattern);
 
-    HANDLE hFileOut = CreateFileW(nameOfOutputFileAsWchar, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (hFileOut == INVALID_HANDLE_VALUE)
+    FILE* hFileOut = fopen(nameOfOutputFile, "wb");
+    if (hFileOut == nullptr)
     {
-        LogError("Failed to open output file '%s'. GetLastError()=%u", nameOfOutputFile, GetLastError());
+        LogError("Failed to open output file '%s'. errno=%d", nameOfOutputFile, errno);
         return -1;
     }
 
@@ -704,9 +692,9 @@ CLEAN_UP:
     delete[] patternAsWchar;
     delete[] buffer;
 
-    if (CloseHandle(hFileOut) == 0)
+    if (fclose(hFileOut) != 0)
     {
-        LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+        LogError("fclose failed. errno=%d", errno);
         result = -1;
     }
 
@@ -716,7 +704,7 @@ CLEAN_UP:
         int st = remove(nameOfOutputFile);
         if (st != 0)
         {
-            LogError("Failed to delete file after MCS /merge failed. GetLastError()=%u", GetLastError());
+            LogError("Failed to delete file after MCS /merge failed. errno=%d", errno);
         }
     }
     else

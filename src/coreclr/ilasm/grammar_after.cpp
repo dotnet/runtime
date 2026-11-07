@@ -1003,6 +1003,30 @@ Its_An_Id:
 #endif
                                 )
                                 {
+#ifdef TARGET_UNIX
+                                    for(const WCHAR* wzDir = parser->wzIncludePath; (wzDir != NULL) && (*wzDir != 0); )
+                                    {
+                                        const WCHAR* wzEnd = u16_strchr(wzDir, W(':'));
+                                        COUNT_T dirLen = (wzEnd != NULL) ? (COUNT_T)(wzEnd - wzDir) : (COUNT_T)u16_strlen(wzDir);
+                                        if(dirLen != 0)
+                                        {
+                                            PathString wzCandidate;
+                                            wzCandidate.Set(wzDir, dirLen);
+                                            wzCandidate.Append(W("/"));
+                                            wzCandidate.Append(wzFile);
+                                            MAKE_UTF8PTR_FROMWIDE(candidateUtf8, wzCandidate.GetUnicode());
+                                            FILE* pCandidate = fopen(candidateUtf8, "rb");
+                                            if(pCandidate != NULL)
+                                            {
+                                                fclose(pCandidate);
+                                                delete [] wzFile;
+                                                wzFile = wzCandidate.GetCopyOfUnicodeString();
+                                                break;
+                                            }
+                                        }
+                                        wzDir = (wzEnd != NULL) ? wzEnd + 1 : NULL;
+                                    }
+#else
                                     PathString wzFullName;
 
                                     WCHAR* pwz;
@@ -1014,7 +1038,7 @@ Its_An_Id:
 
                                         wzFile = wzFullName.GetCopyOfUnicodeString();
                                     }
-
+#endif
                                 }
                                 if(PASM->m_fReportProgress)
                                 {
@@ -1606,9 +1630,6 @@ AsmParse::AsmParse(ReadStream* aIn, Assembler *aAssem)
 
     wzIncludePath = NULL;
     penv = NULL;
-
-    hstdout = GetStdHandle(STD_OUTPUT_HANDLE);
-    hstderr = GetStdHandle(STD_ERROR_HANDLE);
 
     success = true;
     _ASSERTE(parser == 0);          // Should only be one parser instance at a time
