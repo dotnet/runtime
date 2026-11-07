@@ -47,7 +47,22 @@ namespace ILCompiler.ObjectWriter
     /// </remarks>
     internal partial class CoffObjectWriter : ObjectWriter
     {
-        protected sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, Utf8String ComdatName, Utf8String SymbolName);
+        protected sealed class SectionDefinition
+        {
+            public SectionDefinition(CoffSectionHeader header, Stream stream, Utf8String comdatName, Utf8String symbolName)
+            {
+                Header = header;
+                Stream = stream;
+                ComdatName = comdatName;
+                SymbolName = symbolName;
+            }
+
+            public CoffSectionHeader Header { get; }
+            public Stream Stream { get; }
+            public List<CoffRelocation> Relocations { get; set; }
+            public Utf8String ComdatName { get; }
+            public Utf8String SymbolName { get; }
+        }
 
         protected readonly Machine _machine;
         protected readonly List<SectionDefinition> _sections = new();
@@ -156,7 +171,7 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            _sections.Add(new SectionDefinition(sectionHeader, sectionStream, new List<CoffRelocation>(), comdatName, symbolName));
+            _sections.Add(new SectionDefinition(sectionHeader, sectionStream, comdatName, symbolName));
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -278,10 +293,17 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
-            CoffSectionHeader sectionHeader = _sections[sectionIndex].Header;
-            List<CoffRelocation> coffRelocations = _sections[sectionIndex].Relocations;
+            SectionDefinition section = _sections[sectionIndex];
+            CoffSectionHeader sectionHeader = section.Header;
             if (relocationList.Count > 0)
             {
+                List<CoffRelocation> coffRelocations = section.Relocations;
+                if (coffRelocations is null)
+                {
+                    coffRelocations = new List<CoffRelocation>();
+                    section.Relocations = coffRelocations;
+                }
+
                 if (relocationList.Count <= ushort.MaxValue)
                 {
                     sectionHeader.NumberOfRelocations = (ushort)relocationList.Count;
@@ -402,8 +424,9 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 // Section relocations
-                section.Header.PointerToRelocations = section.Relocations.Count > 0 ? dataOffset : 0;
-                dataOffset += (uint)(section.Relocations.Count * CoffRelocation.Size);
+                int relocationCount = section.Relocations?.Count ?? 0;
+                section.Header.PointerToRelocations = relocationCount > 0 ? dataOffset : 0;
+                dataOffset += (uint)(relocationCount * CoffRelocation.Size);
 
                 // Record the section layout
                 _outputSectionLayout.Add(new OutputSection(section.Header.Name, section.Header.PointerToRawData, section.Header.VirtualAddress, section.Header.SizeOfRawData));
@@ -449,9 +472,9 @@ namespace ILCompiler.ObjectWriter
                     section.Stream.CopyTo(outputFileStream);
                 }
 
-                if (section.Relocations.Count > 0)
+                if (section.Relocations is List<CoffRelocation> relocations)
                 {
-                    foreach (ref readonly CoffRelocation relocation in CollectionsMarshal.AsSpan(section.Relocations))
+                    foreach (ref readonly CoffRelocation relocation in CollectionsMarshal.AsSpan(relocations))
                     {
                         relocation.Write(outputFileStream);
                     }
