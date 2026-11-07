@@ -100,6 +100,13 @@ namespace
 
         return;
     }
+
+    void RemoveFailedDynamicAssembly(Assembly* pAssembly)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        AppDomain::GetCurrentDomain()->RemoveAssembly(pAssembly);
+    }
 }
 
 void Assembly::Initialize()
@@ -436,6 +443,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     AppDomain* pDomain = ::GetAppDomain();
 
     Assembly* pAssem;
+    Holder<Assembly*, DoNothing, RemoveFailedDynamicAssembly> removeOnFailure;
     BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
 
     {
@@ -481,12 +489,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         // Create the assembly
         pAssem = Assembly::Create(pPEAssembly, pamTracker, pLoaderAllocator);
         pAssem->m_isDynamic = true;
-        if (pAssem->IsCollectible())
-        {
-            // We add the assembly to the LoaderAllocator only when we are sure that it can be added
-            // and won't be deleted in case of a concurrent load from the same ALC
-            ((AssemblyLoaderAllocator *)(LoaderAllocator *)pLoaderAllocator)->AddAssembly(pAssem);
-        }
     }
 
     // Start loading process
@@ -505,6 +507,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         // Finish loading process
         // <TODO> would be REALLY nice to unify this with main loading loop </TODO>
         pAssem->Begin();
+        removeOnFailure.Assign(pAssem);
         pAssem->BeforeTypeLoad();
         pAssem->DeliverSyncEvents();
         pAssem->DeliverAsyncEvents();
@@ -520,6 +523,12 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
         pamTracker->SuppressRelease();
 
+        if (pAssem->IsCollectible())
+        {
+            // Do not leave a failed assembly in a reused allocator's assembly list.
+            ((AssemblyLoaderAllocator *)(LoaderAllocator *)pLoaderAllocator)->AddAssembly(pAssem);
+        }
+
         // Once we reach this point, the loader allocator lifetime is controlled by the Assembly object.
         if (createdNewAssemblyLoaderAllocator)
         {
@@ -530,6 +539,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
         // Set the assembly module to be tenured now that we know it won't be deleted
         pAssem->SetIsTenured();
+        removeOnFailure.SuppressRelease();
         pRetVal = pAssem;
     }
 

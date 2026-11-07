@@ -7062,8 +7062,8 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         PCODE callEnd = GetControlPC(&regDisp);
         DacEnumCodeForStackwalk(callEnd);
 
-        // To stackwalk through funceval frames, we need to be sure to preserve the
-        // DebuggerModule's m_pRuntimeAssembly.  This is the only case that doesn't use the current
+        // To stackwalk through funceval frames, preserve the assembly pointer in
+        // the DebuggerEval. This is the only case that doesn't use the current
         // vmAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
         // code mimics that function.
         // Allow failure, since we want to continue attempting to walk the stack regardless of the outcome.

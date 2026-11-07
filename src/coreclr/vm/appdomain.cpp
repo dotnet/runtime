@@ -3775,11 +3775,12 @@ AppDomain::AssemblyIterator::Next(
 
 //---------------------------------------------------------------------------------------
 //
-// Note: Does not lock the assembly list, but locks collectible assemblies for adding references.
+// The caller holds the assembly-list lock, including while using any borrowed assembly.
 //
 BOOL
 AppDomain::AssemblyIterator::Next_Unlocked(
-    CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
+    CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder,
+    bool borrowAssemblies)
 {
     CONTRACTL {
         NOTHROW;
@@ -3804,7 +3805,14 @@ AppDomain::AssemblyIterator::Next_Unlocked(
         {
             if (m_assemblyIterationFlags & kIncludeFailedToLoad)
             {
-                *pAssemblyHolder = pAssembly;
+                if (borrowAssemblies)
+                {
+                    pAssemblyHolder->Assign(pAssembly, FALSE);
+                }
+                else
+                {
+                    *pAssemblyHolder = pAssembly;
+                }
                 return TRUE;
             }
             continue; // reject
@@ -3858,9 +3866,20 @@ AppDomain::AssemblyIterator::Next_Unlocked(
                 continue; // reject
             }
 
-            // Un-tenured collectible assemblies should not be returned. (This can only happen in a brief
-            // window during collectible assembly creation. No thread should need to have a pointer
-            // to the just allocated Assembly at this stage.)
+            if (borrowAssemblies)
+            {
+                if (!pAssembly->GetModule()->IsTenured() ||
+                    pAssembly->GetLoaderAllocator()->IsAlive() ||
+                    (m_assemblyIterationFlags & kIncludeCollected))
+                {
+                    pAssemblyHolder->Assign(pAssembly, FALSE);
+                    return TRUE;
+                }
+
+                continue;
+            }
+
+            // A collectible assembly cannot be AddRef'd until managed tracking is active.
             if (!pAssembly->GetModule()->IsTenured())
             {
                 continue; // reject

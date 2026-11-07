@@ -796,8 +796,6 @@ Debugger::Debugger()
     m_jitAttachInProgress(FALSE),
     m_launchingDebugger(FALSE),
     m_LoggingEnabled(TRUE),
-    m_dClassLoadCallbackCount(0),
-    m_pModules(NULL),
     m_RSRequestedSync(FALSE),
     m_sendExceptionsOutsideOfJMC(TRUE),
     m_forceNonInterceptable(FALSE),
@@ -1018,35 +1016,6 @@ HRESULT Debugger::CheckInitMethodInfoTable()
     return S_OK;
 }
 
-// Checks if the m_pModules table has been allocated, and if not does so.
-HRESULT Debugger::CheckInitModuleTable()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (m_pModules == NULL)
-    {
-        DebuggerModuleTable *pModules = new (interopsafe, nothrow) DebuggerModuleTable();
-
-        if (pModules == NULL)
-        {
-            return E_OUTOFMEMORY;
-        }
-
-        if (InterlockedCompareExchangeT(&m_pModules, pModules, NULL) != NULL)
-        {
-            DeleteInteropSafe(pModules);
-        }
-    }
-
-    _ASSERTE(m_pModules != NULL);
-    return S_OK;
-}
-
 #ifndef DACCESS_COMPILE
 HRESULT DebuggerPendingFuncEvalTable::AddPendingEval(Thread *pThread, DebuggerEval *pDE)
 {
@@ -1208,11 +1177,6 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_methodToken = pEvalInfo->funcMetadataToken;
     m_classToken = pEvalInfo->funcClassMetadataToken;
 
-    // Note: we can't rely on just the DebuggerModule* or AppDomain* because the AppDomain
-    // could get unloaded between now and when the funceval actually starts.  So we stash an
-    // AppDomain ID which is safe to use after the AD is unloaded.  It's only safe to
-    // use the DebuggerModule* after we've verified the ADID is still valid (i.e. by entering that domain).
-    m_debuggerModule = g_pDebugger->LookupOrCreateModule(pEvalInfo->vmAssembly);
     m_pAssembly = pEvalInfo->vmAssembly.GetRawPtr();
     m_funcEvalKey = pEvalInfo->funcEvalKey;
     m_argCount = pEvalInfo->argCount;
@@ -4978,117 +4942,6 @@ void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
     }
 }
 
-// Wrapper around VMPTR_Assembly to LookupOrCreateModule(Module*).
-//
-// Arguments:
-//    vmAssembly - VMPTR cookie for an assembly. This can be NullPtr().
-//
-// Returns:
-//    Debugger Module instance for the given assembly. May be lazily created.
-//
-// Notes:
-//    VMPTR comes from IPC events
-DebuggerModule * Debugger::LookupOrCreateModule(VMPTR_Assembly vmAssembly)
-{
-    Assembly * pAssembly = vmAssembly.GetRawPtr();
-    if (pAssembly == NULL)
-    {
-        return NULL;
-    }
-    return LookupOrCreateModule(pAssembly->GetModule());
-}
-
-// Lookup or create a DebuggerModule for the given (Module, AppDomain) pair.
-//
-// Arguments:
-//    pModule - required runtime module. May be domain netural.
-//
-// Returns:
-//    Debugger Module isntance for the given assembly. May be lazily created.
-//
-DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE( pModule != NULL );
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p\n", pModule));
-
-    // This is called from all over. We just need to lock in order to lookup. We don't need
-    // the lock when actually using the DebuggerModule (since it won't be unloaded as long as there is a thread
-    // in that appdomain). Many of our callers already have this lock, many don't.
-    // We can take the lock anyways because it's reentrant.
-    DebuggerDataLockHolder ch(g_pDebugger); // need to traverse module list
-
-    DebuggerModule* dmod = NULL;
-
-    if (m_pModules != NULL)
-    {
-        dmod = m_pModules->GetModule(pModule);
-    }
-
-    // If it doesn't exist, create it.
-    if (dmod == NULL)
-    {
-        LOG((LF_CORDB, LL_INFO1000, "D::LOCM dmod for m=%p not found, creating.\n", pModule));
-        HRESULT hr = S_OK;
-        EX_TRY
-        {
-            Assembly * pAssembly = pModule->GetAssembly();
-            SIMPLIFYING_ASSUMPTION(pAssembly != NULL);
-            dmod = AddDebuggerModule(pAssembly); // throws
-        }
-        EX_CATCH_HRESULT(hr);
-        SIMPLIFYING_ASSUMPTION(dmod != NULL); // may not be true in OOM cases; but LS doesn't handle OOM.
-    }
-
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p -> dm=%p(Mod=%p, Asm=%p)\n",
-        pModule, dmod, dmod->GetRuntimeModule(), dmod->GetAssembly()));
-    return dmod;
-}
-
-// Create a new DebuggerModule object
-//
-// Arguments:
-//    pAssembly - runtime assembly to create debugger module object around
-//
-// Returns:
-//    New instance of a DebuggerModule. Throws on failure.
-//
-DebuggerModule* Debugger::AddDebuggerModule(Assembly * pAssembly)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB, LL_INFO1000, "D::ADM asm=0x%p\n", pAssembly));
-    DebuggerDataLockHolder chInfo(this);
-
-    Module *     pRuntimeModule = pAssembly->GetModule();
-
-    HRESULT hr = CheckInitModuleTable();
-    IfFailThrow(hr);
-
-    DebuggerModule* pModule = new (interopsafe) DebuggerModule(pRuntimeModule, pAssembly);
-    _ASSERTE(pModule != NULL); // throws on oom
-
-    TRACE_ALLOC(pModule);
-
-    m_pModules->AddModule(pModule); // throws
-    // @dbgtodo  inspection/exceptions - this may leak module in OOM case. LS is not OOM resilient; and we
-    // expect to get rid of DebuggerModule anyways.
-
-    LOG((LF_CORDB, LL_INFO1000, "D::ADM asm=0x%p -> dm=0x%p\n", pAssembly, pModule));
-    return pModule;
-}
-
 //
 // TrapAllRuntimeThreads causes every Runtime thread that is executing
 // in the EE to trap and send the at safe point event to the RC thread as
@@ -5491,6 +5344,30 @@ DWORD* Debugger::GetJMCFlagAddr(Module * pModule)
     return &(pModule->m_dwDebuggerJMCProbeCount);
 }
 
+template <typename Callback>
+static void ForEachRuntimeModule(Callback callback)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    AppDomain *pDomain = GetAppDomain();
+    CrstHolder assemblyListLock(pDomain->GetAssemblyListLock());
+    AppDomain::AssemblyIterator iterator = pDomain->IterateAssembliesEx(
+        (AssemblyIterationFlags)(kIncludeExecution | kIncludeLoaded | kIncludeLoading | kIncludeFailedToLoad | kIncludeCollected));
+    CollectibleAssemblyHolder<Assembly *> assembly;
+
+    // The list lock protects these assemblies without taking a temporary
+    // collectible-allocator reference that could become the last reference.
+    while (iterator.Next_Unlocked(assembly.This(), true))
+    {
+        callback(assembly->GetModule());
+    }
+}
+
 /******************************************************************************
  * Updates the JMC flag on all the EE modules.
  * We can do this as often as we'd like - though it's a perf hit.
@@ -5508,20 +5385,30 @@ void Debugger::UpdateAllModuleJMCFlag(bool fStatus)
 
     _ASSERTE(HasDebuggerDataLock());
 
-    // Loop through each module.
-    // The module table is lazily allocated. As soon as we set JMC status on any module, that will cause an
-    // allocation of the module table. So if the table isn't allocated no module has JMC set,
-    // and so there is nothing to update.
-    if (m_pModules != NULL)
+    ForEachRuntimeModule([this, fStatus](Module *pModule)
     {
-        for (DebuggerModuleTable::Iterator iterator = m_pModules->Begin(), end = m_pModules->End();
-             iterator != end; iterator++)
-        {
-            DebuggerModule *m = iterator->module;
-            // the primary module may get called multiple times, but that's ok.
-            UpdateModuleJMCFlag(m->GetRuntimeModule(), fStatus);
-        } // end for all modules.
+        UpdateModuleJMCFlag(pModule, fStatus);
+    });
+}
+
+void Debugger::ClearModuleDebuggerState()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
     }
+    CONTRACTL_END;
+
+    _ASSERTE(ThreadHoldsLock());
+    _ASSERTE(HasDebuggerDataLock());
+
+    ForEachRuntimeModule([this](Module *pModule)
+    {
+        pModule->EnableClassLoadCallbacks(false, m_debuggerSessionGeneration);
+        pModule->SetJMCStatus(false, m_debuggerSessionGeneration);
+        UpdateModuleJMCFlag(pModule, false);
+    });
 }
 
 /******************************************************************************
@@ -5546,7 +5433,7 @@ void Debugger::UpdateModuleJMCFlag(Module * pRuntimeModule, bool fStatus)
     DWORD * pFlag = &(pRuntimeModule->m_dwDebuggerJMCProbeCount);
     _ASSERTE(pFlag != NULL);
 
-    if (pRuntimeModule->HasAnyJMCFunctions())
+    if (pRuntimeModule->HasAnyJMCFunctions(GetDebuggerSessionGeneration()))
     {
         // If this is a user-code module, then update the JMC flag
         // the probes look at so that we get MethodEnter callbacks.
@@ -5558,7 +5445,7 @@ void Debugger::UpdateModuleJMCFlag(Module * pRuntimeModule, bool fStatus)
 
         // if non-user code, flag should be 0 so that we don't waste
         // cycles in the callbacks.
-        _ASSERTE(*pFlag == 0);
+        *pFlag = 0;
     }
 }
 
@@ -5579,11 +5466,12 @@ void Debugger::SetModuleDefaultJMCStatus(Module * pRuntimeModule, bool fStatus)
     // Ensure that all active DMIs have our status.
     // All new DMIs can lookup their status from us.
     // This should also update the module count of active JMC DMI's.
+    _ASSERTE(ThreadHoldsLock());
+    DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
     DebuggerMethodInfoTable * pTable = g_pDebugger->GetMethodInfoTable();
 
     if (pTable != NULL)
     {
-        Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
         for (DebuggerMethodInfoTable::Iterator iterator = pTable->Begin(), end = pTable->End();
              iterator != end; iterator++)
         {
@@ -5596,14 +5484,15 @@ void Debugger::SetModuleDefaultJMCStatus(Module * pRuntimeModule, bool fStatus)
         }
     }
 
-    pRuntimeModule->SetJMCStatus(fStatus);
+    pRuntimeModule->SetJMCStatus(fStatus, m_debuggerSessionGeneration);
+    UpdateModuleJMCFlag(pRuntimeModule, DebuggerController::GetTotalMethodEnter() != 0);
 
 #ifdef _DEBUG
     // If we're disabling JMC in this module, then we shouldn't
     // have any active JMC functions.
     if (!fStatus)
     {
-        _ASSERTE(!pRuntimeModule->HasAnyJMCFunctions());
+        _ASSERTE(!pRuntimeModule->HasAnyJMCFunctions(m_debuggerSessionGeneration));
     }
 #endif
 }
@@ -5996,12 +5885,10 @@ void Debugger::LockAndSendEnCRemapEvent(DebuggerJitInfo * dji, SIZE_T currentIP,
         static_cast<unsigned long long>(ipce->EnCRemap.resumeVersionNumber)));
 
     Module *pRuntimeModule = pMD->GetModule();
+    ipce->EnCRemap.vmAssembly.SetRawPtr(pRuntimeModule->GetAssembly());
 
-    DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule);
-    ipce->EnCRemap.vmAssembly.SetRawPtr((pDModule ? pDModule->GetAssembly() : NULL));
-
-    LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s dmod:%p\n",
-        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, pDModule));
+    LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s module:%p\n",
+        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, pRuntimeModule));
 
     // IPC event is now initialized, so we can send it over.
     SendSimpleIPCEventAndBlock();
@@ -6040,13 +5927,11 @@ void Debugger::LockAndSendEnCRemapCompleteEvent(MethodDesc *pMD)
     ipce->EnCRemapComplete.funcMetadataToken = pMD->GetMemberDef();
 
     Module *pRuntimeModule = pMD->GetModule();
+    ipce->EnCRemapComplete.vmAssembly.SetRawPtr(pRuntimeModule->GetAssembly());
 
-    DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule);
-    ipce->EnCRemapComplete.vmAssembly.SetRawPtr((pDModule ? pDModule->GetAssembly() : NULL));
-
-    LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s dmod:%p, methodDef:0x%08x \n",
+    LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s module:%p, methodDef:0x%08x \n",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName,
-        pDModule,
+        pRuntimeModule,
         static_cast<mdMethodDef>(ipce->EnCRemapComplete.funcMetadataToken)));
 
     // IPC event is now initialized, so we can send it over.
@@ -6103,8 +5988,7 @@ void Debugger::SendEnCUpdateEvent(DebuggerIPCEventType eventType,
 
     _ASSERTE(pModule);
 
-    DebuggerModule * pDModule = LookupOrCreateModule(pModule);
-    event->EnCUpdate.vmAssembly.SetRawPtr((pDModule ? pDModule->GetAssembly() : NULL));
+    event->EnCUpdate.vmAssembly.SetRawPtr(pModule->GetAssembly());
 
     m_pRCThread->SendIPCEvent();
 
@@ -9181,29 +9065,15 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     if (CORDBUnrecoverableError(this))
         return;
 
-    DebuggerModule * module = NULL;
-
     Thread *pThread = g_pEEInterface->GetThread();
     SENDIPCEVENT_BEGIN(this, pThread);
 
     DebuggerIPCEvent* ipce = NULL;
 
-    // Don't create new record if already loaded. We do still want to send the ModuleLoad event, however.
     // The RS has logic to ignore duplicate ModuleLoad events. We have to send what could possibly be a dup, though,
     // due to some really nasty issues with getting proper assembly and module load events from the loader when dealing
     // with shared assemblies.
-    module = LookupOrCreateModule(pAssembly->GetModule());
-    _ASSERTE(module != NULL);
-
-
-    // During a real LoadModule event, debugger can change jit flags.
-    // Can't do this during a fake event sent on attach.
-    // This is cleared after we send the LoadModule event.
-    module->SetCanChangeJitFlags(true);
-
-
-    _ASSERTE(module->GetAssembly()    == pAssembly);
-    _ASSERTE(module->GetRuntimeModule() == pAssembly->GetModule());
+    _ASSERTE(pRuntimeModule == pAssembly->GetModule());
 
     // Send a load module event to the Right Side.
     ipce = m_pRCThread->GetIPCEventSendBuffer();
@@ -9225,9 +9095,6 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     }
 
     SENDIPCEVENT_END;
-
-    // Now that we're done with the load module event, can no longer change Jit flags.
-    module->SetCanChangeJitFlags(false);
 }
 
 // Send the raw event for Updating symbols. Debugger must query for contents from out-of-process
@@ -9267,15 +9134,12 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule)
     if (pRuntimeModule->GetInMemorySymbolStream() == NULL)
         return; // Non-PDB symbols
 
-    DebuggerModule* module = LookupOrCreateModule(pRuntimeModule);
-    _ASSERTE(module != NULL);
-
     DebuggerIPCEvent* ipce = NULL;
     ipce = m_pRCThread->GetIPCEventSendBuffer();
     InitIPCEvent(ipce, DB_IPCE_UPDATE_MODULE_SYMS,
                  g_pEEInterface->GetThread());
 
-    ipce->UpdateModuleSymsData.vmAssembly.SetRawPtr((module ? module->GetAssembly() : NULL));
+    ipce->UpdateModuleSymsData.vmAssembly.SetRawPtr(pRuntimeModule->GetAssembly());
 
     m_pRCThread->SendIPCEvent();
 }
@@ -9350,32 +9214,21 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
     if (CORDBUnrecoverableError(this))
         return;
 
-    LOG((LF_CORDB, LL_INFO100, "D::UM: unload module Mod:%p runtimeMod:%p modName:%s\n",
-         LookupOrCreateModule(pRuntimeModule), pRuntimeModule, pRuntimeModule->GetDebugName()));
+    LOG((LF_CORDB, LL_INFO100, "D::UM: unload module runtimeMod:%p modName:%s\n",
+         pRuntimeModule, pRuntimeModule->GetDebugName()));
 
     Thread *thread = g_pEEInterface->GetThread();
     SENDIPCEVENT_BEGIN(this, thread);
 
     if (CORDebuggerAttached())
     {
-        DebuggerModule* module = LookupOrCreateModule(pRuntimeModule);
-        if (module == NULL)
-        {
-            LOG((LF_CORDB, LL_INFO100, "D::UM: module already unloaded runtimeMod:%p modName:%s\n",
-                 pRuntimeModule, pRuntimeModule->GetDebugName()));
-            goto LExit;
-        }
-        _ASSERTE(module != NULL);
-
-        STRESS_LOG6(LF_CORDB, LL_INFO10000,
-            "D::UM: Unloading RTMod:%p (DomFile: %p, IsISStream:%#08x); DMod:%p(RTMod:%p DomFile: %p)\n",
-            pRuntimeModule, pRuntimeModule->GetAssembly(), false,
-            module, module->GetRuntimeModule(), module->GetAssembly());
+        STRESS_LOG2(LF_CORDB, LL_INFO10000, "D::UM: Unloading module %p, assembly %p\n",
+            pRuntimeModule, pRuntimeModule->GetAssembly());
 
         // Send the unload module event to the Right Side.
         DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
         InitIPCEvent(ipce, DB_IPCE_UNLOAD_MODULE, thread);
-        ipce->UnloadModuleData.vmAssembly.SetRawPtr((module ? module->GetAssembly() : NULL));
+        ipce->UnloadModuleData.vmAssembly.SetRawPtr(pRuntimeModule->GetAssembly());
         ipce->UnloadModuleData.debuggerAssemblyToken.Set(pRuntimeModule->GetClassLoader()->GetAssembly());
         m_pRCThread->SendIPCEvent();
 
@@ -9394,28 +9247,23 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         // because JMC status is not maintained on a per-AppDomain basis and we don't
         // want to change the JMC behavior of the module in other domains.
         LOG((LF_CORDB, LL_EVERYTHING, "Setting all JMC methods to false:\n"));
-        DebuggerDataLockHolder debuggerDataLockHolder(this);
-        DebuggerMethodInfoTable * pTable = GetMethodInfoTable();
-        if (pTable != NULL)
         {
-            for (DebuggerMethodInfoTable::Iterator iterator = pTable->Begin(), end = pTable->End();
-                 iterator != end; iterator++)
+            DebuggerDataLockHolder debuggerDataLockHolder(this);
+            DebuggerMethodInfoTable * pTable = GetMethodInfoTable();
+            if (pTable != NULL)
             {
-                DebuggerMethodInfo *dmi = iterator->mi;
-                if (dmi != nullptr && dmi->m_module == pRuntimeModule)
+                for (DebuggerMethodInfoTable::Iterator iterator = pTable->Begin(), end = pTable->End();
+                     iterator != end; iterator++)
                 {
-                    dmi->SetJMCStatus(false);
+                    DebuggerMethodInfo *dmi = iterator->mi;
+                    if (dmi != nullptr && dmi->m_module == pRuntimeModule)
+                    {
+                        dmi->SetJMCStatus(false);
+                    }
                 }
             }
         }
         LOG((LF_CORDB, LL_EVERYTHING, "Done clearing JMC methods!\n"));
-
-        // Delete the Left Side representation of the module.
-        if (m_pModules != NULL)
-        {
-            DebuggerDataLockHolder chInfo(this);
-            m_pModules->RemoveModule(pRuntimeModule);
-        }
 
         // Stop all Runtime threads
         TrapAllRuntimeThreads();
@@ -9425,7 +9273,6 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         LOG((LF_CORDB,LL_INFO1000, "D::UM: Skipping SendIPCEvent because RS detached."));
     }
 
-LExit:
     SENDIPCEVENT_END;
 }
 
@@ -9502,14 +9349,14 @@ void Debugger::RemoveModuleReferences( Module* pModule )
 //
 // Arguments:
 //
-//    fAttaching - true if a debugger is in the process of attaching
+//    classModule - runtime module containing the class
 //
 // Return Value:
 //    None
 //
 //---------------------------------------------------------------------------------------
 void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
-                                         DebuggerModule * pClassDebuggerModule,
+                                         Module *classModule,
                                          Assembly *pAssembly,
                                          BOOL fIsLoadEvent)
 {
@@ -9522,11 +9369,11 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
 
 
     LOG((LF_CORDB,LL_INFO10000, "D::SCLUE: Tok:0x%08x isLoad:0x%x Mod:%p\n",
-        classMetadataToken, fIsLoadEvent, pClassDebuggerModule));
+        classMetadataToken, fIsLoadEvent, classModule));
 
     DebuggerIPCEvent * pEvent = m_pRCThread->GetIPCEventSendBuffer();
 
-    BOOL fIsReflection = pClassDebuggerModule->GetRuntimeModule()->IsReflectionEmit();
+    BOOL fIsReflection = classModule->IsReflectionEmit();
 
     if (fIsLoadEvent == TRUE)
     {
@@ -9538,7 +9385,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
         InitIPCEvent(pEvent, DB_IPCE_LOAD_CLASS, g_pEEInterface->GetThread());
 
         pEvent->LoadClass.classMetadataToken = classMetadataToken;
-        pEvent->LoadClass.vmAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetAssembly() : NULL));
+        pEvent->LoadClass.vmAssembly.SetRawPtr(classModule->GetAssembly());
         pEvent->LoadClass.classDebuggerAssemblyToken.Set(pAssembly);
 
 
@@ -9550,7 +9397,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
         InitIPCEvent(pEvent, DB_IPCE_UNLOAD_CLASS, g_pEEInterface->GetThread());
 
         pEvent->UnloadClass.classMetadataToken = classMetadataToken;
-        pEvent->UnloadClass.vmAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetAssembly() : NULL));
+        pEvent->UnloadClass.vmAssembly.SetRawPtr(classModule->GetAssembly());
         pEvent->UnloadClass.classDebuggerAssemblyToken.Set(pAssembly);
     }
 
@@ -9559,7 +9406,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
     if (fIsLoadEvent && fIsReflection)
     {
         // Send the raw event, but don't actually sync and block the runtime.
-        SendRawUpdateModuleSymsEvent(pClassDebuggerModule->GetRuntimeModule());
+        SendRawUpdateModuleSymsEvent(classModule);
     }
 
 }
@@ -9580,7 +9427,7 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
     }
     CONTRACTL_END;
 
-    if (!m_dClassLoadCallbackCount)
+    if (!classModule->ClassLoadCallbacksEnabled(GetDebuggerSessionGeneration()))
     {
         return FALSE;
     }
@@ -9593,21 +9440,10 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
     _ASSERTE(pAppDomain != NULL);
 
     // Only notify for app domains where the module has been fully loaded already.
-    if (classModule->GetAssembly() != NULL )
+    if (pAssembly != NULL)
     {
-        // Find the Left Side module that this class belongs in.
-        DebuggerModule* pModule = LookupOrCreateModule(classModule);
-        _ASSERTE(pModule != NULL);
-
-        // Only send a class load event if they're enabled for this module.
-        if (pModule && pModule->ClassLoadCallbacksEnabled())
-        {
-            SendClassLoadUnloadEvent(classMetadataToken,
-                                        pModule,
-                                        pAssembly,
-                                        fIsLoadEvent);
-            fRetVal = TRUE;
-        }
+        SendClassLoadUnloadEvent(classMetadataToken, classModule, pAssembly, fIsLoadEvent);
+        fRetVal = TRUE;
     }
 
     return fRetVal;
@@ -9638,9 +9474,8 @@ BOOL  Debugger::LoadClass(TypeHandle th,
     if (CORDBUnrecoverableError(this))
         return FALSE;
 
-    LOG((LF_CORDB, LL_INFO10000, "D::LC: load class Tok:%#08x Mod:%p classMod:%p modName:%s\n",
-         classMetadataToken, LookupOrCreateModule(classModule),
-         classModule, classModule->GetDebugName()));
+    LOG((LF_CORDB, LL_INFO10000, "D::LC: load class Tok:%#08x classMod:%p modName:%s\n",
+         classMetadataToken, classModule, classModule->GetDebugName()));
 
     //
     // If we're attaching, then we only need to send the event. We
@@ -9692,13 +9527,12 @@ void Debugger::UnloadClass(mdTypeDef classMetadataToken,
         return;
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "D::UC: unload class Tok:0x%08x Mod:%p runtimeMod:%p modName:%s\n",
-         classMetadataToken, LookupOrCreateModule(classModule), classModule, classModule->GetDebugName()));
+    LOG((LF_CORDB, LL_INFO10000, "D::UC: unload class Tok:0x%08x runtimeMod:%p modName:%s\n",
+         classMetadataToken, classModule, classModule->GetDebugName()));
 
     Assembly *pAssembly = classModule->GetClassLoader()->GetAssembly();
-    DebuggerModule *pModule = LookupOrCreateModule(classModule);
 
-    if ((pModule == NULL) || !pModule->ClassLoadCallbacksEnabled())
+    if (!classModule->MayHaveClassLoadCallbacks())
     {
         return;
     }
@@ -9707,12 +9541,15 @@ void Debugger::UnloadClass(mdTypeDef classMetadataToken,
 
     if (CORDebuggerAttached())
     {
-        _ASSERTE((pAssembly != NULL) && (pModule != NULL));
+        if (classModule->ClassLoadCallbacksEnabled(GetDebuggerSessionGeneration()))
+        {
+            _ASSERTE(pAssembly != NULL);
 
-        SendClassLoadUnloadEvent(classMetadataToken, pModule, pAssembly, FALSE);
+            SendClassLoadUnloadEvent(classMetadataToken, classModule, pAssembly, FALSE);
 
-        // Stop all Runtime threads
-        TrapAllRuntimeThreads();
+            // Stop all Runtime threads
+            TrapAllRuntimeThreads();
+        }
     }
     else
     {
@@ -10236,8 +10073,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             _ASSERTE(hr == S_OK);
             DebuggerBreakpoint * pDebuggerBP = NULL;
 
-            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->BreakpointData.vmAssembly);
-            Module * pModule = pDebuggerModule->GetRuntimeModule();
+            Module * pModule = pEvent->BreakpointData.vmAssembly.GetRawPtr()->GetModule();
             DebuggerMethodInfo * pDMI = GetOrCreateMethodInfo(pModule, pEvent->BreakpointData.funcMetadataToken);
             MethodDesc * pMethodDesc = pEvent->BreakpointData.nativeCodeMethodDescToken.UnWrap();
 
@@ -10279,12 +10115,11 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             }
 
             LOG((LF_CORDB,LL_INFO10000,"\tBP Add: BPTOK:"
-                "0x%p, tok=0x%08x, offset=0x%x, isIL=%d dm=0x%p m=0x%p\n",
+                "0x%p, tok=0x%08x, offset=0x%x, isIL=%d m=0x%p\n",
                  pDebuggerBP,
                  static_cast<mdMethodDef>(pEvent->BreakpointData.funcMetadataToken),
                  static_cast<UINT>(pEvent->BreakpointData.offset),
                  static_cast<bool>(pEvent->BreakpointData.isIL),
-                 pDebuggerModule,
                  pModule));
 
             //
@@ -10518,11 +10353,11 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         {
             LOG((LF_ENC, LL_INFO100, "D::HIPCE: DB_IPCE_APPLY_CHANGES 1\n"));
 
-            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->ApplyChanges.vmAssembly);
+            Module *pModule = pEvent->ApplyChanges.vmAssembly.GetRawPtr()->GetModule();
             //
             // @todo handle error.
             //
-            hr = ApplyChangesAndSendResult(pDebuggerModule,
+            hr = ApplyChangesAndSendResult(pModule,
                                            pEvent->ApplyChanges.cbDeltaMetadata,
                                            (BYTE*) CORDB_ADDRESS_TO_PTR(pEvent->ApplyChanges.pDeltaMetadata),
                                            pEvent->ApplyChanges.cbDeltaIL,
@@ -10535,16 +10370,17 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
     case DB_IPCE_SET_CLASS_LOAD_FLAG:
         {
-            DebuggerModule *pDebuggerModule = LookupOrCreateModule(pEvent->SetClassLoad.vmAssembly);
+            Module *pModule = pEvent->SetClassLoad.vmAssembly.GetRawPtr()->GetModule();
 
-            _ASSERTE(pDebuggerModule != NULL);
+            _ASSERTE(pModule != NULL);
 
             LOG((LF_CORDB, LL_INFO10000,
                  "D::HIPCE: class load flag is %s for module %p\n",
                  (pEvent->SetClassLoad.flag ? "true" : "false"),
-                 pDebuggerModule));
+                 pModule));
 
-            pDebuggerModule->EnableClassLoadCallbacks((BOOL)pEvent->SetClassLoad.flag);
+            DebuggerDataLockHolder debuggerDataLockHolder(this);
+            pModule->EnableClassLoadCallbacks(pEvent->SetClassLoad.flag, m_debuggerSessionGeneration);
         }
         break;
 
@@ -10639,20 +10475,18 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         m_pRCThread->RightSideDetach();
 
 
-        // Clear JMC status
+        // Clear debugger-session state before another debugger can attach.
         {
             LOG((LF_CORDB, LL_EVERYTHING, "Setting all JMC methods to false:\n"));
-            // On detach, set all DMI's JMC status to false.
-            // We have to do this b/c we clear the DebuggerModules and allocated
-            // new ones on re-attach; and the DMI & DM need to be in sync
-            // (in this case, agreeing that JMC-status = false).
-            // This also syncs the EE modules and disables all JMC probes.
+            DebuggerDataLockHolder debuggerDataLockHolder(this);
+            if (++m_debuggerSessionGeneration == 0)
+            {
+                ++m_debuggerSessionGeneration;
+            }
             DebuggerMethodInfoTable * pMethodInfoTable = g_pDebugger->GetMethodInfoTable();
 
             if (pMethodInfoTable != NULL)
             {
-                DebuggerDataLockHolder debuggerDataLockHolder(this);
-
                 for (DebuggerMethodInfoTable::Iterator iterator = pMethodInfoTable->Begin(), end = pMethodInfoTable->End();
                      iterator != end; iterator++)
                 {
@@ -10661,18 +10495,8 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                         pMethodInfo->SetJMCStatus(false);
                 }
             }
+            ClearModuleDebuggerState();
             LOG((LF_CORDB, LL_EVERYTHING, "Done clearing JMC methods!\n"));
-        }
-
-        // Clean up the hash of DebuggerModules
-        // This method is overridden to also free all DebuggerModule objects
-        if (m_pModules != NULL)
-        {
-
-            // Removes all DebuggerModules
-            DebuggerDataLockHolder ch(this);
-            m_pModules->Clear();
-
         }
 
         // Reply to the detach message before we release any Runtime threads. This ensures that the debugger will get
@@ -10902,8 +10726,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     case DB_IPCE_SET_METHOD_JMC_STATUS:
         {
             // Get the info out of the event
-            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->SetJMCFunctionStatus.vmAssembly);
-            Module * pModule = pDebuggerModule->GetRuntimeModule();
+            Module * pModule = pEvent->SetJMCFunctionStatus.vmAssembly.GetRawPtr()->GetModule();
 
             bool fStatus = (pEvent->SetJMCFunctionStatus.dwStatus != (DWORD)0);
 
@@ -10916,7 +10739,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             pEvent->hr = S_OK;
 
-            if (pDebuggerModule->HasAnyOptimizedCode() && fStatus)
+            if (!pModule->AreJITOptimizationsDisabled() && fStatus)
             {
                 // If there's optimized code, then we can't be set JMC status to true.
                 // That's because JMC probes are not injected in optimized code, and we
@@ -10950,9 +10773,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     case DB_IPCE_GET_METHOD_JMC_STATUS:
         {
             // Get the method
-            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->SetJMCFunctionStatus.vmAssembly);
-
-            Module * pModule = pDebuggerModule->GetRuntimeModule();
+            Module * pModule = pEvent->SetJMCFunctionStatus.vmAssembly.GetRawPtr()->GetModule();
 
             mdMethodDef token = pEvent->SetJMCFunctionStatus.funcMetadataToken;
 
@@ -10984,7 +10805,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     case DB_IPCE_SET_MODULE_JMC_STATUS:
         {
             // Get data out of event
-            DebuggerModule * pDebuggerModule = LookupOrCreateModule(pEvent->SetJMCFunctionStatus.vmAssembly);
+            Module * pModule = pEvent->SetJMCFunctionStatus.vmAssembly.GetRawPtr()->GetModule();
 
             bool fStatus = (pEvent->SetJMCFunctionStatus.dwStatus != (DWORD)0);
 
@@ -10995,7 +10816,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             pEvent->hr = S_OK;
 
-            if (pDebuggerModule->HasAnyOptimizedCode() && fStatus)
+            if (!pModule->AreJITOptimizationsDisabled() && fStatus)
             {
                 // If there's optimized code, then we can't be set JMC status to true.
                 // That's because JMC probes are not injected in optimized code, and we
@@ -11004,7 +10825,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             }
             else
             {
-                g_pDebugger->SetModuleDefaultJMCStatus(pDebuggerModule->GetRuntimeModule(), fStatus);
+                g_pDebugger->SetModuleDefaultJMCStatus(pModule, fStatus);
             }
 
 
@@ -11472,8 +11293,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
             res->vmTypeHandle = th.HasInstantiation() ? WrapTypeHandle(th) : VMPTR_TypeHandle::NullPtr();
                                                                              // only set if instantiated
             res->metadataToken = th.GetCl();
-            DebuggerModule * pDModule = LookupOrCreateModule(th.GetModule());
-            res->vmAssembly.SetRawPtr((pDModule ? pDModule->GetAssembly() : NULL));
+            res->vmAssembly.SetRawPtr(th.GetModule()->GetAssembly());
                         break;
         }
 
@@ -11551,8 +11371,7 @@ treatAllValuesAsBoxed:
             th = th.UpCastTypeIfNeeded();
             res->ClassTypeData.typeHandle = th.HasInstantiation() ? WrapTypeHandle(th) : VMPTR_TypeHandle::NullPtr(); // only set if instantiated
             res->ClassTypeData.metadataToken = th.GetCl();
-            DebuggerModule * pModule = LookupOrCreateModule(th.GetModule());
-            res->ClassTypeData.vmAssembly.SetRawPtr((pModule ? pModule->GetAssembly() : NULL));
+            res->ClassTypeData.vmAssembly.SetRawPtr(th.GetModule()->GetAssembly());
             _ASSERTE(!res->ClassTypeData.vmAssembly.IsNull());
             break;
         }
@@ -11614,9 +11433,8 @@ HRESULT Debugger::BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicTypeData *data, Ty
             }
             else
             {
-                DebuggerModule *pDebuggerModule = g_pDebugger->LookupOrCreateModule(data->vmAssembly);
-
-                th = g_pEEInterface->FindLoadedClass(pDebuggerModule->GetRuntimeModule(), data->metadataToken);
+                Module *pModule = data->vmAssembly.GetRawPtr()->GetModule();
+                th = g_pEEInterface->FindLoadedClass(pModule, data->metadataToken);
             if (th.IsNull())
             {
                 LOG((LF_CORDB, LL_INFO10000, "D::ETITTH: class isn't loaded.\n"));
@@ -11719,8 +11537,8 @@ TypeHandle Debugger::TypeDataWalk::ReadTypeHandle()
     case ELEMENT_TYPE_CLASS:
     case ELEMENT_TYPE_VALUETYPE:
         {
-            DebuggerModule *pDebuggerModule = g_pDebugger->LookupOrCreateModule(data->data.ClassTypeData.vmAssembly);
-            th = ReadInstantiation(pDebuggerModule->GetRuntimeModule(), data->data.ClassTypeData.metadataToken, data->numTypeArgs);
+            Module *pModule = data->data.ClassTypeData.vmAssembly.GetRawPtr()->GetModule();
+            th = ReadInstantiation(pModule, data->data.ClassTypeData.metadataToken, data->numTypeArgs);
             break;
         }
 
@@ -12358,7 +12176,7 @@ void Debugger::GetVarInfo(MethodDesc *       fd,   // [IN] method of interest
 // debugger right-side.
 //
 // Arguments:
-//    pDebuggerModule  - the module in which the edit should occur
+//    pModule          - the module in which the edit should occur
 //    cbMetadata       - the number of bytes in pMetadata
 //    pMetadata        - pointer to the delta metadata
 //    cbIL             - the number of bytes in pIL
@@ -12379,7 +12197,7 @@ void Debugger::GetVarInfo(MethodDesc *       fd,   // [IN] method of interest
 // chance to remap the execution to the new version of the method.
 //
 
-HRESULT Debugger::ApplyChangesAndSendResult(DebuggerModule * pDebuggerModule,
+HRESULT Debugger::ApplyChangesAndSendResult(Module *pModule,
                                             DWORD cbMetadata,
                                             BYTE *pMetadata,
                                             DWORD cbIL,
@@ -12399,7 +12217,6 @@ HRESULT Debugger::ApplyChangesAndSendResult(DebuggerModule * pDebuggerModule,
 
     LOG((LF_ENC, LL_INFO100, "Debugger::ApplyChangesAndSendResult\n"));
 
-    Module *pModule = pDebuggerModule->GetRuntimeModule();
     if (! pModule->IsEditAndContinueEnabled())
     {
         hr =  CORDBG_E_ENC_MODULE_NOT_ENC_ENABLED;
@@ -15603,9 +15420,6 @@ Debugger::EnumMemoryRegionsIfFuncEvalFrame(CLRDataEnumMemoryFlags flags, Frame *
         if (pDE != NULL)
         {
             DacEnumMemoryRegion(dac_cast<TADDR>(pDE), sizeof(DebuggerEval), true);
-
-            if (pDE->m_debuggerModule != NULL)
-                DacEnumMemoryRegion(dac_cast<TADDR>(pDE->m_debuggerModule), sizeof(DebuggerModule), true);
         }
     }
 }

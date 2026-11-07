@@ -2837,9 +2837,9 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
 // Return true if this module has any live (jitted) JMC functions.
 // If a module has no jitted JMC functions, then it's as if it's a
 // non-user module.
-bool Module::HasAnyJMCFunctions()
+bool Module::HasAnyJMCFunctions(uint64_t debuggerSession)
 {
-    LIMITED_METHOD_CONTRACT;
+    WRAPPER_NO_CONTRACT;
 
     // If we have any live JMC funcs in us, then we're a JMC module.
     // We count JMC functions when we either explicitly toggle their status
@@ -2847,7 +2847,7 @@ bool Module::HasAnyJMCFunctions()
     // Since we don't get the jit-completes for ngen modules, we also check the module's
     // "default" status. This means we may err on the side of believing we have
     // JMC methods.
-    return (m_debuggerSpecificData.m_cTotalJMCFuncs > 0) || m_debuggerSpecificData.m_fDefaultJMCStatus;
+    return (m_debuggerSpecificData.m_cTotalJMCFuncs > 0) || GetJMCStatus(debuggerSession);
 }
 
 // Alter our module's count of JMC functions.
@@ -2868,19 +2868,57 @@ void Module::DecJMCFuncCount()
 }
 
 // code:DebuggerMethodInfo are lazily created. Let them lookup what the default is.
-bool Module::GetJMCStatus()
+bool Module::GetJMCStatus(uint64_t debuggerSession)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return m_debuggerSpecificData.m_fDefaultJMCStatus;
+    return m_debuggerSessionGeneration == debuggerSession && m_debuggerSpecificData.m_fDefaultJMCStatus;
 }
 
 // Set the default JMC status of this module.
-void Module::SetJMCStatus(bool fStatus)
+void Module::SetJMCStatus(bool fStatus, uint64_t debuggerSession)
+{
+    WRAPPER_NO_CONTRACT;
+
+    PrepareDebuggerSession(debuggerSession);
+    m_debuggerSpecificData.m_fDefaultJMCStatus = fStatus;
+}
+
+bool Module::ClassLoadCallbacksEnabled(uint64_t debuggerSession) const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // Dynamic metadata changes are communicated through class-load events.
+    return IsReflectionEmit() ||
+        (m_debuggerSessionGeneration == debuggerSession && m_debuggerSpecificData.m_enableClassLoadCallbacks.Load());
+}
+
+bool Module::MayHaveClassLoadCallbacks() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return IsReflectionEmit() || m_debuggerSpecificData.m_enableClassLoadCallbacks.Load();
+}
+
+void Module::EnableClassLoadCallbacks(bool enabled, uint64_t debuggerSession)
+{
+    WRAPPER_NO_CONTRACT;
+
+    PrepareDebuggerSession(debuggerSession);
+    m_debuggerSpecificData.m_enableClassLoadCallbacks.Store(enabled);
+}
+
+void Module::PrepareDebuggerSession(uint64_t debuggerSession)
 {
     LIMITED_METHOD_CONTRACT;
 
-    m_debuggerSpecificData.m_fDefaultJMCStatus = fStatus;
+    _ASSERTE(debuggerSession != 0);
+    if (m_debuggerSessionGeneration != debuggerSession)
+    {
+        m_debuggerSpecificData.m_enableClassLoadCallbacks.Store(false);
+        m_debuggerSpecificData.m_fDefaultJMCStatus = false;
+        m_debuggerSessionGeneration = debuggerSession;
+    }
 }
 
 #ifdef FEATURE_METADATA_PERSISTENCE

@@ -957,8 +957,11 @@ public:
 
     public:
         BOOL Next(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
-        // Note: Does not lock the assembly list, but AddRefs collectible assemblies' loader allocator.
-        BOOL Next_Unlocked(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
+        // The caller must hold the assembly-list lock. With borrowAssemblies,
+        // assemblies are returned without a reference and may only be used
+        // while the lock is held; un-tenured assemblies are also included.
+        BOOL Next_Unlocked(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder,
+                           bool borrowAssemblies = false);
 
     private:
         inline DWORD GetIndex()

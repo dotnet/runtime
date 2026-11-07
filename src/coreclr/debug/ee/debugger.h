@@ -76,8 +76,6 @@ typedef CUnorderedArray<void*,11> UnorderedPtrArray;
  * ------------------------------------------------------------------------ */
 
 class DebuggerFrame;
-class DebuggerModule;
-class DebuggerModuleTable;
 class Debugger;
 class DebuggerBreakpoint;
 class DebuggerPendingFuncEvalTable;
@@ -403,55 +401,6 @@ CONTEXT * GetManagedStoppedCtx(Thread * pThread);
 CONTEXT * GetManagedLiveCtx(Thread * pThread);
 
 /* ------------------------------------------------------------------------ *
- * Module classes
- * ------------------------------------------------------------------------ */
-
-// Once a module / appdomain is unloaded, all Right-side objects (such as breakpoints)
-// in that appdomain will get neutered and will thus be prevented from accessing
-// the unloaded appdomain.
-//
-// @dbgtodo jmc - This is now purely relegated to the LS. Eventually completely get rid of this
-// by moving fields off to Module or getting rid of the fields completely.
-typedef DPTR(class DebuggerModule) PTR_DebuggerModule;
-class DebuggerModule
-{
-  public:
-    DebuggerModule(Module * pRuntimeModule, Assembly * pAssembly);
-
-    // Do we have any optimized code in the module?
-    // JMC-probes aren't emitted in optimized code,
-    bool HasAnyOptimizedCode();
-
-    // If the debugger updates things to allow/disallow optimized code, then we have to track that.
-    void MarkAllowedOptimizedCode();
-    void UnmarkAllowedOptimizedCode();
-
-
-    BOOL ClassLoadCallbacksEnabled(void);
-    void EnableClassLoadCallbacks(BOOL f);
-
-    Module * GetRuntimeModule();
-
-    Assembly * GetAssembly()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pRuntimeAssembly;
-    }
-
-    void SetCanChangeJitFlags(bool fCanChangeJitFlags);
-
-  private:
-    BOOL            m_enableClassLoadCallbacks;
-
-    PTR_Module     m_pRuntimeModule;
-    PTR_Assembly   m_pRuntimeAssembly;
-
-    // Can we change jit flags on the module?
-    // This is true during the Module creation
-    bool           m_fCanChangeJitFlags;
-};
-
-/* ------------------------------------------------------------------------ *
  * Hash to hold pending func evals by thread id
  * ------------------------------------------------------------------------ */
 
@@ -703,9 +652,9 @@ protected:
 
     DebuggerPendingFuncEvalTable *m_pPendingEvals;
 
-    // The "debugger data lock" is a very small leaf lock used to protect debugger internal data structures (such
-    // as DJIs, DMIs, module table). It is a GC-unsafe-anymode lock and so it can't trigger a GC while being held.
-    // It also can't issue any callbacks into the EE or anycode that it does not directly control.
+    // The "debugger data lock" is a very small lock used to protect debugger internal data structures (such
+    // as DJIs and DMIs). It is a GC-unsafe-anymode lock and so it can't trigger a GC while being held.
+    // Calls into the EE while holding it must not trigger GC or call back into the debugger, and must obey lock ordering.
     // This is a separate lock from the larger Debugger-lock / Controller lock, which allows regions under those
     // locks to access debugger datastructures w/o blocking each other.
     Crst                  m_DebuggerDataLock;
@@ -1052,12 +1001,6 @@ public:
     // TranslateToInstIL will take offOrig, and translate it to the
     // correct IL offset if this code happens to be instrumented
     ULONG32 TranslateToInstIL(const InstrumentedILOffsetMapping * pMapping, ULONG32 offOrig, bool fOrigToInst);
-
-private:
-    // We don't always have a debugger module. (Ex: we're tracking debug info,
-    // but no debugger's attached). So this may return NULL alot.
-    // If we can, we should use the RuntimeModule when ever possible.
-    DebuggerModule* GetModule();
 
 public:
     // We always have a runtime module.
@@ -1867,7 +1810,6 @@ public:
 
     // Checks if the JitInfos table has been allocated, and if not does so.
     HRESULT inline CheckInitMethodInfoTable();
-    HRESULT inline CheckInitModuleTable();
     HRESULT CheckInitPendingFuncEvalTable();
 
 #ifndef DACCESS_COMPILE
@@ -1926,8 +1868,6 @@ public:
                     DWORD dwModuleName,
                     Assembly *pAssembly,
                     BOOL fAttaching);
-    DebuggerModule * AddDebuggerModule(Assembly * pAssembly);
-
     void UnloadModule(Module* pRuntimeModule);
     void DestructModule(Module *pModule);
 
@@ -1944,7 +1884,7 @@ public:
                      Module* classModule);
 
     void SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
-                                   DebuggerModule *classModule,
+                                   Module *classModule,
                                    Assembly *pAssembly,
                                    BOOL fIsLoadEvent);
     BOOL SendSystemClassLoadUnloadEvent (mdTypeDef classMetadataToken,
@@ -2096,9 +2036,6 @@ public:
     void Continue();
 
     bool HandleIPCEvent(DebuggerIPCEvent* event);
-
-    DebuggerModule * LookupOrCreateModule(VMPTR_Assembly vmAssembly);
-    DebuggerModule * LookupOrCreateModule(Module * pModule);
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
 
@@ -2352,20 +2289,6 @@ public:
 
     void SendCreateProcess(DebuggerLockHolder * pDbgLockHolder);
 
-    void IncrementClassLoadCallbackCount(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedIncrement(&m_dClassLoadCallbackCount);
-    }
-
-    void DecrementClassLoadCallbackCount(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_dClassLoadCallbackCount > 0);
-        InterlockedDecrement(&m_dClassLoadCallbackCount);
-    }
-
-
 #ifdef _DEBUG_IMPL
     bool ThreadHoldsLock(void)
     {
@@ -2603,12 +2526,20 @@ public:
 #endif
 
 
+    uint64_t GetDebuggerSessionGeneration()
+    {
+        LIMITED_METHOD_CONTRACT;
+#ifdef _DEBUG_IMPL
+        _ASSERTE(ThreadHoldsLock() || HasDebuggerDataLock());
+#endif
+        return m_debuggerSessionGeneration;
+    }
+
     // For Just-My-Code (aka Just-User-Code).
     // The jit injects probes in debuggable managed methods that look like:
     // if (*pFlag != 0) call JIT_DbgIsJustMyCode.
     // pFlag is unique per-method constant determined by GetJMCFlagAddr.
     // JIT_DbgIsJustMyCode will get the ip & fp and call OnMethodEnter.
-
     // pIP is an ip within the method, right after the prolog.
 #ifndef DACCESS_COMPILE
     virtual void OnMethodEnter(void * pIP);
@@ -2620,6 +2551,7 @@ public:
     // will go through all modules with user-code and set their flag to fStatus.
     void UpdateAllModuleJMCFlag(bool fStatus);
     void UpdateModuleJMCFlag(Module * pRuntime, bool fStatus);
+    void ClearModuleDebuggerState();
 
     // Set the default JMC status of the specified module.  This function
     // also finds all the DMIs in the specified module and update their
@@ -2733,7 +2665,7 @@ public:
 private:
 #ifdef FEATURE_METADATA_UPDATER
     // Apply an EnC edit and send the result event to the RS
-    HRESULT ApplyChangesAndSendResult(DebuggerModule * pDebuggerModule,
+    HRESULT ApplyChangesAndSendResult(Module * pModule,
                                       DWORD cbMetadata,
                                       BYTE *pMetadata,
                                       DWORD cbIL,
@@ -2756,9 +2688,6 @@ public:
 
     bool HasLazyData();
     RCThreadLazyInit * GetRCThreadLazyData();
-
-    // The module table is lazy init, and may be NULL. Callers must check.
-    DebuggerModuleTable          * GetModuleTable();
 
     DebuggerHeap                 *GetInteropSafeHeap();
     DebuggerHeap                 *GetInteropSafeHeap_NoThrow();
@@ -2831,12 +2760,8 @@ private:
     BOOL                  m_launchingDebugger;
     BOOL                  m_LoggingEnabled;
 
-    LONG                  m_dClassLoadCallbackCount;
-
-    // Lazily initialized array of debugger modules
-    // @dbgtodo module - eventually, DebuggerModule should go away,
-    // and all such information should be stored in either the VM's module class or in the RS.
-    DebuggerModuleTable          *m_pModules;
+    // Written with both debugger locks; either lock protects reads.
+    uint64_t              m_debuggerSessionGeneration{1};
 
     // DacDbiInterfaceImpl needs to be able to write to private fields in the debugger class.
     friend class DacDbiInterfaceImpl;
@@ -3055,59 +2980,6 @@ public:
 
         return m_table.LookupPtr(dac_cast<PTR_Thread>(pThread));
     }
-};
-
-struct DebuggerModuleEntry : DebuggerHeapHashEntry
-{
-    PTR_DebuggerModule  module;
-};
-
-typedef DPTR(struct DebuggerModuleEntry) PTR_DebuggerModuleEntry;
-
-class EMPTY_BASES DebuggerModuleTraits : public DefaultSHashTraits<DebuggerModuleEntry>
-{
-public:
-    typedef PTR_Module key_t;
-    static key_t GetKey(const element_t &element) { return dac_cast<PTR_Module>(element.module->GetRuntimeModule()); }
-    static BOOL Equals(key_t left, key_t right) { return left == right; }
-    static count_t Hash(key_t key) { return DebuggerHashPointer(dac_cast<TADDR>(key)); }
-    static element_t Null() { return {}; }
-    static element_t Deleted()
-    {
-        element_t element = {};
-        element.module = dac_cast<PTR_DebuggerModule>(static_cast<TADDR>(-1));
-        return element;
-    }
-    static bool IsNull(const element_t &element) { return element.module == nullptr; }
-    static bool IsDeleted(const element_t &element) { return element.module == dac_cast<PTR_DebuggerModule>(static_cast<TADDR>(-1)); }
-};
-
-class DebuggerModuleTable
-{
-    SHash<DebuggerModuleTraits> m_table;
-#ifdef _DEBUG
-    bool ThreadHoldsLock();
-#endif
-
-public:
-    typedef SHash<DebuggerModuleTraits>::Iterator Iterator;
-
-#ifndef DACCESS_COMPILE
-
-    ~DebuggerModuleTable();
-
-    void AddModule(DebuggerModule *module);
-
-    void RemoveModule(Module* module);
-
-    void Clear();
-
-#endif // #ifndef DACCESS_COMPILE
-
-    DebuggerModule *GetModule(Module* module);
-
-    Iterator Begin();
-    Iterator End();
 };
 
 // struct DebuggerMethodInfoKey:   Key for each of the method info hash table entries.
@@ -3334,7 +3206,6 @@ public:
     DebuggerIPCE_FuncEvalType          m_evalType;
     mdMethodDef                        m_methodToken;
     mdTypeDef                          m_classToken;
-    PTR_DebuggerModule                 m_debuggerModule;     // Only valid if AD is still around
     PTR_Assembly                       m_pAssembly;
     RSPTR_CORDBEVAL                    m_funcEvalKey;
     bool                               m_successful;        // Did the eval complete successfully
