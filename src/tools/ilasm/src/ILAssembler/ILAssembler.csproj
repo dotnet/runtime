@@ -4,13 +4,14 @@
     <AssemblyName>Microsoft.DotNet.ILAssembler</AssemblyName>
     <RootNamespace>Microsoft.DotNet.ILAssembler</RootNamespace>
     <Description>Assembler for Common Intermediate Language (CIL).</Description>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <!-- Keep these targets compatible with Roslyn's test suites so they can use the ILAssembler library. -->
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetCoreAppMinimum);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
     <!-- SDK pack omits legacy nuspec reference groups even when ref assets are present. -->
     <NoWarn>$(NoWarn);CS3021;NU5131</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsAotCompatible>true</IsAotCompatible>
+    <IsAotCompatible Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</IsAotCompatible>
     <IsPackable>true</IsPackable>
     <IsShipping>false</IsShipping>
     <EnableDefaultPackageReadmeFile>true</EnableDefaultPackageReadmeFile>
@@ -18,8 +19,48 @@
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == '$(NetFrameworkToolCurrent)' and '$(TargetFramework)' != ''">
+    <!-- Match libraries/Directory.Build.targets: Framework references lack nullable flow annotations. -->
+    <NoWarn>$(NoWarn);nullable</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="$(Antlr4RuntimeStandardVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppMinimum)'">
+    <!-- Extended layout metadata values were introduced after .NET 10. -->
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\ReflectionPolyfills.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Index.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\BitConverterPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\CharPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\CollectionsPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\DictionaryPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\EncodingPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\ExceptionPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\HashCodePolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\IncrementalHashPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MathPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\MemoryExtensionsPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\ReflectionPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\StringPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\UInt32Polyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\Polyfills\UInt64Polyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Buffers\SpanAction.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\StringPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Common\UnreachableException.cs" />
+    <Compile Include="$(RepoTasksDir)Common\IsExternalInit.cs" />
+    <Using Include="System.Collections.Generic" />
+    <Using Include="Microsoft.Interop.UnreachableException" Alias="UnreachableException" />
   </ItemGroup>
 
   <Target Name="_AddReferenceAssemblyToPackage">
