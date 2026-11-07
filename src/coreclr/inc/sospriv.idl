@@ -701,6 +701,7 @@ typedef struct _SOSGCSlotLifetime
     int          IsRegister;
     unsigned int RegisterNumber;
     int          SpOffset;
+    // 0 = SP-relative; 1 = relative to SOSGCInfoHeader.StackBaseRegister. Ignored for register slots.
     unsigned int BaseRegister;
     unsigned int GcFlags;
 } SOSGCSlotLifetime;
@@ -735,4 +736,52 @@ interface ISOSDacInterface18 : IUnknown
         [in]  ULONG count,
         [out, size_is(count), length_is(*pNeeded)] SOSGCSlotLifetime* lifetimes,
         [out] ULONG* pNeeded);
+}
+
+// Optional X86 diagnostic data. Interface18 continues to describe normalized roots.
+typedef struct _SOSGCInfoX86Header
+{
+    ULONG SizeOf;
+    unsigned int EpilogSize;
+    unsigned int EpilogCount;
+    unsigned int SavedRegisters; // X86 register mask: EAX=1, ECX=2, ..., EDI=128.
+    unsigned int Flags; // EpilogAtEnd=1, EbpFrame=2, Interruptible=4, DoubleAlign=8,
+                        // Security=16, Handlers=32, Localloc=64, EnC=128,
+                        // ProfCallbacks=256, Async=512, HasArgTableOffset=1024.
+    unsigned int ArgumentSize; // Bytes.
+    unsigned int FrameSize; // Bytes, excluding saved registers.
+    unsigned int UntrackedCount;
+    unsigned int VarPtrTableSize;
+    unsigned int SyncStartOffset;
+    unsigned int SyncEndOffset;
+    unsigned int NoGCRegionCount;
+    unsigned int ArgumentTableOffset;
+    unsigned int ReturnKind;
+    unsigned int ReversePInvokeOffset;
+} SOSGCInfoX86Header;
+
+typedef struct _SOSGCInfoX86Transition
+{
+    unsigned int CodeOffset;
+    unsigned int Kind; // 0=live, 1=dead, 2=push, 3=pop, 4=kill, 5=stack delta,
+                       // 6=this register, 7=interior mask, 8=call.
+    int StackDepthChange; // Bytes pushed (positive) or popped (negative); kill does not pop.
+    unsigned int RegisterNumber; // ICorDebugInfo register number, or UINT_MAX if absent.
+    unsigned int ArgumentOffset; // Encoded push index, pop/kill count, or call argument mask.
+    unsigned int Count; // Encoded argument count, or call interior-argument mask.
+    unsigned int Flags; // 1=interior, 2=pointer argument, 4=this.
+} SOSGCInfoX86Transition;
+
+[
+    object,
+    local,
+    uuid(b53e2d4c-1b12-4d57-9959-ef05a873678a)
+]
+interface ISOSDacInterface19 : IUnknown
+{
+    HRESULT GetGCInfoX86Header([in] CLRDATA_ADDRESS ip, [in, out] SOSGCInfoX86Header* header);
+    HRESULT GetGCInfoX86Epilogs([in] CLRDATA_ADDRESS ip, [in] ULONG count,
+        [out, size_is(count), length_is(*pNeeded)] unsigned int* offsets, [out] ULONG* pNeeded);
+    HRESULT GetGCInfoX86Transitions([in] CLRDATA_ADDRESS ip, [in] ULONG count,
+        [out, size_is(count), length_is(*pNeeded)] SOSGCInfoX86Transition* transitions, [out] ULONG* pNeeded);
 }

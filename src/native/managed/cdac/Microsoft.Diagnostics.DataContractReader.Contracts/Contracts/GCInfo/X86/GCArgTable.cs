@@ -54,12 +54,16 @@ public class GCArgTable
 
             if (argOffs != 0)
             {
-                AddNewTransition(new GcTransitionPointer((int)curOffs, argOffs, argCnt - argOffs, Action.POP, _header.EbpFrame));
+                if (argOffs > argCnt)
+                    throw new BadImageFormatException($"X86 pop count {argOffs} exceeds stack depth {argCnt}.");
+                argCnt -= argOffs;
+                AddNewTransition(new GcTransitionPointer((int)curOffs, argOffs, argCnt, Action.POP, _header.EbpFrame));
             }
         }
         else
         {
-            AddNewTransition(new GcTransitionPointer((int)curOffs, argOffs, argOffs + 1, Action.PUSH, _header.EbpFrame, isThis, iptr));
+            argCnt = checked(argOffs + 1);
+            AddNewTransition(new GcTransitionPointer((int)curOffs, argOffs, argCnt, Action.PUSH, _header.EbpFrame, isThis, iptr));
             isThis = false;
             iptr = false;
         }
@@ -358,7 +362,10 @@ public class GCArgTable
             for (int i = 0; i < callPndTabCnt; i++)
             {
                 uint pndOffs = _target.GCDecodeUnsigned(ref offset);
-                transition.PtrArgs.Add(new GcTransitionCall.PtrArg(pndOffs, 0));
+                uint lowBits = pndOffs & 3u;
+                if (lowBits > 1)
+                    throw new BadImageFormatException($"Invalid X86 pending argument flags {lowBits}.");
+                transition.PtrArgs.Add(new GcTransitionCall.PtrArg(pndOffs & ~3u, lowBits));
             }
         }
         else

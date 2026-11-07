@@ -56,6 +56,11 @@ IReadOnlyList<uint> GetSafePoints(IGCInfoHandle handle);
 // and untracked slots (live for the whole method).
 IReadOnlyList<GCSlotLifetime> GetSlotLifetimes(IGCInfoHandle handle);
 
+// Optional native X86 diagnostic details; other decoders throw PlatformNotSupportedException.
+X86GCInfoHeader GetX86Header(IGCInfoHandle handle);
+IReadOnlyList<uint> GetX86Epilogs(IGCInfoHandle handle);
+IReadOnlyList<X86GCTransition> GetX86Transitions(IGCInfoHandle handle);
+
 // Returns all live GC slots at the given instruction offset.
 IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options);
 
@@ -112,6 +117,21 @@ public readonly record struct GCSlotLifetime(
     uint BeginOffset,      // Code offset where the slot becomes live
     uint EndOffset);       // Code offset where the slot becomes dead (exclusive)
 
+public readonly record struct X86GCInfoHeader(
+    uint EpilogSize, uint EpilogCount, uint SavedRegisters, uint Flags,
+    uint ArgumentSize, uint FrameSize, uint UntrackedCount, uint VarPtrTableSize,
+    uint SyncStartOffset, uint SyncEndOffset, uint NoGCRegionCount,
+    uint ArgumentTableOffset, uint ReturnKind, uint ReversePInvokeOffset);
+
+public enum X86GCTransitionKind : uint
+{
+    RegisterLive, RegisterDead, Push, Pop, Kill, StackDepth, ThisRegister, InteriorMask, Call,
+}
+
+public readonly record struct X86GCTransition(
+    uint CodeOffset, X86GCTransitionKind Kind, int StackDepthChange,
+    uint RegisterNumber, uint ArgumentOffset, uint Count, uint Flags);
+
 public enum GenericContextStorageKind
 {
     Register,                    // The register value is the context value
@@ -163,6 +183,46 @@ public record struct GcSlotEnumerationOptions
 ```
 
 ## Version 1
+
+### X86 diagnostic projection
+
+`GetSlotLifetimes` walks decoded transitions in code-offset order, retaining the
+interior qualifier from each register LIVE transition. Fully interruptible
+register and pushed-pointer states are coalesced only while their locations and
+flags remain identical. Pushed arguments use `(depth - 1 - pushIndex) * 4` as
+their current ESP-relative displacement. Pushes and pops split locations of
+existing pushed roots and ESP-relative locals. KILL removes the indicated number
+of highest pointer arguments without changing stack depth.
+For ordinary EBP frames, pushed roots instead use the encoded argument index
+relative to the stable frame base. Fully interruptible pops count all stack
+entries, including non-pointer arguments, and remove roots only from the slots
+actually popped. `GetX86Transitions` currently reports zero stack delta for EBP
+push/pop records; their argument information and pointer flag identify the
+encoded operations. Bulk `StackDepth` records report the byte depth change.
+Constant `sub ESP, N` and `add ESP, N` instructions in the method body are
+represented as non-pointer argument pushes and argument pops, respectively;
+the GC encoding does not distinguish these from push/pop instructions.
+
+For partially interruptible methods, call records supply register and argument
+roots at the call offset, represented by single-byte intervals `[offset, offset+1)`;
+no tracked call-root liveness is inferred between calls. Untracked locations retain
+flag `0x4` even when stack movement splits their intervals. Call-site
+interruptible ranges remain available to stack walking, and `GetSafePoints`
+returns the call offsets.
+Fully interruptible ranges exclude the prolog, epilogs, and explicit no-GC regions.
+
+`GetX86Header`, `GetX86Epilogs`, and `GetX86Transitions` require a native X86 handle.
+Header sizes and transition stack deltas are in bytes. Saved-register bits follow
+the X86 register order (EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI). Header flags are
+epilog-at-end `1`, EBP-frame `2`, interruptible `4`, double-aligned `8`, security
+`16`, handlers `32`, localloc `64`, EnC `128`, profiler callbacks `256`, async
+`512`, and explicit argument-table offset `1024`. Transition flags are interior
+`1`, pointer argument `2`, and receiver `4`. `ArgumentOffset` and `Count` retain
+decoded argument indices/counts; for a call they contain its pointer and interior
+argument masks. Explicit huge-call roots are included in `GetSlotLifetimes`.
+Raw encoding bytes are not exposed.
+Dynamic localloc and funclet argument bases still require per-frame execution
+state and remain a limitation of this prototype's static lifetime projection.
 
 <!-- BEGIN GENERATED: usage contract=GCInfo version=c1 -->
 ### Data descriptors used

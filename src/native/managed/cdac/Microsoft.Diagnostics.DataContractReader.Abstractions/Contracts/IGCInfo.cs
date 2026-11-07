@@ -54,6 +54,28 @@ public readonly record struct GCSlotLifetime(
     uint BeginOffset,
     uint EndOffset);
 
+/// <summary>Additional fields from the legacy X86 GCInfo header. Sizes are in bytes.</summary>
+public readonly record struct X86GCInfoHeader(
+    uint EpilogSize, uint EpilogCount, uint SavedRegisters, uint Flags,
+    uint ArgumentSize, uint FrameSize, uint UntrackedCount, uint VarPtrTableSize,
+    uint SyncStartOffset, uint SyncEndOffset, uint NoGCRegionCount,
+    uint ArgumentTableOffset, uint ReturnKind, uint ReversePInvokeOffset);
+
+/// <summary>Decoded X86 transition kinds, independent of the encoded byte values.</summary>
+public enum X86GCTransitionKind : uint
+{
+    RegisterLive, RegisterDead, Push, Pop, Kill, StackDepth, ThisRegister, InteriorMask, Call,
+}
+
+/// <summary>
+/// X86 diagnostic transition. StackDepthChange is in bytes; Count and ArgumentOffset are
+/// encoded slot counts/indices. Flags: 1 = interior, 2 = pointer, 4 = receiver.
+/// EBP pointer push/pop records have zero stack delta because non-pointer pushes are not encoded.
+/// </summary>
+public readonly record struct X86GCTransition(
+    uint CodeOffset, X86GCTransitionKind Kind, int StackDepthChange,
+    uint RegisterNumber, uint ArgumentOffset, uint Count, uint Flags);
+
 /// <summary>
 /// Describes a code region where the GC can safely interrupt execution.
 /// </summary>
@@ -140,6 +162,9 @@ public interface IGCInfo : IContract
     IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle) => throw new NotImplementedException();
     IReadOnlyList<uint> GetSafePoints(IGCInfoHandle handle) => throw new NotImplementedException();
     IReadOnlyList<GCSlotLifetime> GetSlotLifetimes(IGCInfoHandle handle) => throw new NotImplementedException();
+    X86GCInfoHeader GetX86Header(IGCInfoHandle handle) => throw new PlatformNotSupportedException("X86 GCInfo header is unavailable for this decoder.");
+    IReadOnlyList<uint> GetX86Epilogs(IGCInfoHandle handle) => throw new PlatformNotSupportedException("X86 GCInfo epilogs are unavailable for this decoder.");
+    IReadOnlyList<X86GCTransition> GetX86Transitions(IGCInfoHandle handle) => throw new PlatformNotSupportedException("X86 GCInfo transitions are unavailable for this decoder.");
 
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options) => throw new NotImplementedException();
     bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset) => throw new NotImplementedException();

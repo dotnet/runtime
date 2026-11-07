@@ -1312,6 +1312,7 @@ public struct SOSGCSlotLifetime
     public int IsRegister;
     public uint RegisterNumber;
     public int SpOffset;
+    // 0 = SP-relative; 1 = relative to SOSGCInfoHeader.StackBaseRegister. Ignored for register slots.
     public uint BaseRegister;
     public uint GcFlags;
 }
@@ -1343,4 +1344,52 @@ public unsafe partial interface ISOSDacInterface18
         uint count,
         [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSGCSlotLifetime[]? lifetimes,
         uint* pNeeded);
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct SOSGCInfoX86Header
+{
+    public uint SizeOf;
+    public uint EpilogSize;
+    public uint EpilogCount;
+    public uint SavedRegisters;
+    public uint Flags;
+    public uint ArgumentSize;
+    public uint FrameSize;
+    public uint UntrackedCount;
+    public uint VarPtrTableSize;
+    public uint SyncStartOffset;
+    public uint SyncEndOffset;
+    public uint NoGCRegionCount;
+    public uint ArgumentTableOffset;
+    public uint ReturnKind;
+    public uint ReversePInvokeOffset;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct SOSGCInfoX86Transition
+{
+    public uint CodeOffset;
+    public uint Kind;
+    public int StackDepthChange;
+    public uint RegisterNumber;
+    public uint ArgumentOffset;
+    public uint Count;
+    public uint Flags;
+}
+
+[GeneratedComInterface]
+[Guid("b53e2d4c-1b12-4d57-9959-ef05a873678a")]
+public unsafe partial interface ISOSDacInterface19
+{
+    [PreserveSig]
+    int GetGCInfoX86Header(ClrDataAddress ip, SOSGCInfoX86Header* header);
+
+    [PreserveSig]
+    int GetGCInfoX86Epilogs(ClrDataAddress ip, uint count,
+        [In, Out, MarshalUsing(CountElementName = nameof(count))] uint[]? offsets, uint* pNeeded);
+
+    [PreserveSig]
+    int GetGCInfoX86Transitions(ClrDataAddress ip, uint count,
+        [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSGCInfoX86Transition[]? transitions, uint* pNeeded);
 }
