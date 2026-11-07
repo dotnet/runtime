@@ -190,9 +190,6 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
     INDEBUG(call->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     call->gtControlExpr = nullptr;
     call->ClearInlineInfo();
-#ifdef UNIX_X86_ABI
-    call->gtFlags |= GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
 
 #if DEBUG
     // Helper calls are never candidates.
@@ -2691,6 +2688,11 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
     call->gtArgs.SetNeedsTemp(arg);
 
+    if (arg->AbiInfo.IsPassedByReference())
+    {
+        lvaSetVarAddrExposed(tmp DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+    }
+
     // Copy the valuetype to the temp
     GenTree* copyBlk = gtNewStoreLclVarNode(tmp, argx);
     copyBlk          = fgMorphCopyBlock(copyBlk);
@@ -2699,7 +2701,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     if (arg->AbiInfo.IsPassedByReference())
     {
         argNode = gtNewLclVarAddrNode(tmp);
-        lvaSetVarAddrExposed(tmp DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
     }
     else
     {
@@ -3222,11 +3223,7 @@ GenTree* Compiler::fgMorphLeafLocal(GenTreeLclVarCommon* lclNode)
     // on them until that point. However, we must still mark them with
     // GTF_GLOB_REF to avoid illegal reordering with the call passing their
     // address.
-    if (varDsc->IsAddressExposed()
-#if FEATURE_IMPLICIT_BYREFS
-        || varDsc->lvIsLastUseCopyOmissionCandidate
-#endif
-    )
+    if (varDsc->RequiresGlobRefFlag())
     {
         lclNode->gtFlags |= GTF_GLOB_REF;
     }
@@ -6012,8 +6009,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 
     // Transform recursive tail call into a loop.
 
-    Statement*       earlyArgInsertionPoint = lastStmt;
-    const DebugInfo& callDI                 = lastStmt->GetDebugInfo();
+    const DebugInfo& callDI = lastStmt->GetDebugInfo();
 
     // All arguments whose trees may involve caller parameter local variables need to be assigned to temps first;
     // then the temps need to be assigned to the method parameters. This is done so that the caller
@@ -6063,9 +6059,9 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         GenTree* earlyArg = arg.GetEarlyNode();
         if (arg.GetLateNode() != nullptr)
         {
-            // This is a setup node so we need to hoist it.
+            // Hoist setup nodes before any parameter assignments.
             Statement* earlyArgStmt = gtNewStmt(earlyArg, callDI);
-            fgInsertStmtBefore(block, earlyArgInsertionPoint, earlyArgStmt);
+            fgInsertStmtBefore(block, tmpAssignmentInsertionPoint, earlyArgStmt);
         }
         else
         {
@@ -6971,11 +6967,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
         case GT_STORE_LCL_FLD:
         {
             LclVarDsc* lclDsc = lvaGetDesc(tree->AsLclVarCommon());
-            if (lclDsc->IsAddressExposed()
-#if FEATURE_IMPLICIT_BYREFS
-                || lclDsc->lvIsLastUseCopyOmissionCandidate
-#endif
-            )
+            if (lclDsc->RequiresGlobRefFlag())
             {
                 tree->AddAllEffectsFlags(GTF_GLOB_REF);
             }
@@ -8473,6 +8465,10 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
             addr->AsLclFld()->SetLclOffs(offset);
             addr->SetVNsFromNode(indir);
             addr->AddAllEffectsFlags(indir->gtFlags & GTF_GLOB_REF);
+            if (lvaGetDesc(lclNum)->RequiresGlobRefFlag())
+            {
+                addr->AddAllEffectsFlags(GTF_GLOB_REF);
+            }
 
             if (addr->OperIs(GT_STORE_LCL_FLD) && addr->IsPartialLclFld(this))
             {
@@ -15633,8 +15629,8 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
 //
 bool Compiler::fgCanTailCallViaJitHelper(GenTreeCall* call)
 {
-#if !defined(TARGET_X86) || defined(UNIX_X86_ABI)
-    // On anything except windows X86 we have no faster mechanism available.
+#ifndef TARGET_X86
+    // On anything except X86 we have no faster mechanism available.
     return false;
 #else
     // For R2R make sure we go through portable mechanism that the 'EE' side

@@ -770,6 +770,16 @@ public:
         return m_addrExposed;
     }
 
+    bool RequiresGlobRefFlag() const
+    {
+#if FEATURE_IMPLICIT_BYREFS
+        // Copy-omission candidates must be ordered before their addresses escape.
+        return IsAddressExposed() || lvIsLastUseCopyOmissionCandidate;
+#else
+        return IsAddressExposed();
+#endif // FEATURE_IMPLICIT_BYREFS
+    }
+
 #ifdef DEBUG
     void SetDefinedViaAddress(char value)
     {
@@ -8045,6 +8055,9 @@ protected:
     void     optValnumCSE_Init();
     unsigned optValnumCSE_Index(GenTree* tree, Statement* stmt);
     bool optValnumCSE_Locate(CSE_HeuristicCommon* heuristic);
+#ifdef TARGET_XARCH
+    void optValnumCSE_ScreenMemoryUpdates();
+#endif
     void optValnumCSE_InitDataFlow();
     void optValnumCSE_SetUpAsyncByrefKills();
     void optValnumCSE_DataFlow();
@@ -10974,7 +10987,7 @@ private:
     //
     bool isSIMDTypeLocalAligned(unsigned varNum)
     {
-#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES && !defined(UNIX_X86_ABI)
+#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
         LclVarDsc* lcl = lvaGetDesc(varNum);
         if (varTypeIsSIMD(lcl))
         {

@@ -78,21 +78,28 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
 HRESULT JitInstance::StartUp(char* PathToJit, bool breakOnDebugBreakorAV, MethodContext* firstContext)
 {
     // startup jit
-    DWORD dwRetVal = 0;
     UINT  uRetVal  = 0;
     BOOL  bRetVal  = FALSE;
 
     SetBreakOnDebugBreakOrAV(breakOnDebugBreakorAV);
 
-    char pFullPathName[MAX_PATH];
-
     // find the full jit path
-    dwRetVal = ::GetFullPathNameA(PathToJit, MAX_PATH, pFullPathName, nullptr);
+#ifdef TARGET_UNIX
+    char pFullPathName[PATH_MAX];
+    if (realpath(PathToJit, pFullPathName) == nullptr)
+    {
+        LogError("realpath failed (errno=%d)", errno);
+        return E_FAIL;
+    }
+#else
+    char pFullPathName[MAX_PATH];
+    DWORD dwRetVal = ::GetFullPathNameA(PathToJit, MAX_PATH, pFullPathName, nullptr);
     if (dwRetVal == 0)
     {
         LogError("GetFullPathName failed (0x%08x)", ::GetLastError());
         return E_FAIL;
     }
+#endif
 
 #ifndef TARGET_UNIX // No file version APIs in the PAL
     // Do a quick version check
