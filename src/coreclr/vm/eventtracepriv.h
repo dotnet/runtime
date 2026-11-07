@@ -127,14 +127,14 @@ struct EventStaticEntry
 
         // The location in the structure to write to.  We won't actually write here unless we have sufficient buffer.
         WCHAR *name = (WCHAR *)(ptr + offsetof(EventStaticEntry, Name));
-        int len = 0;
+        size_t len = 0;
 
         LPCUTF8 utf8Name = 0;
         if (SUCCEEDED(fieldDesc->GetName_NoThrow(&utf8Name)))
         {
-            len = (int)minipal_convert_utf8_to_utf16(utf8Name, strlen(utf8Name) + 1, (CHAR16_T*)name,
+            len = minipal_convert_utf8_to_utf16(utf8Name, strlen(utf8Name) + 1, (CHAR16_T*)name,
                 (sizeRemaining - sizeof(EventStaticEntry)) / sizeof(WCHAR), 0);
-            if (len <= 0)
+            if (len == 0)
             {
                 // We will only emit names for fields which are up to 255 characters (and also don't fit in the buffer).
                 if (sizeRemaining < MaxEntrySize())
@@ -163,7 +163,7 @@ struct EventStaticEntry
         entry->TypeID = typeId;
         entry->Flags = flags;
 
-        return sizeof(EventStaticEntry) + len * sizeof(WCHAR);
+        return (int)(sizeof(EventStaticEntry) + len * sizeof(WCHAR));
     }
 };
 

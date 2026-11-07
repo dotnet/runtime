@@ -171,7 +171,7 @@ OutputDebugStringW(
         IN LPCWSTR lpOutputString)
 {
     CHAR *lpOutputStringA;
-    int strLen;
+    size_t strLen;
 
     PERF_ENTRY(OutputDebugStringW);
     ENTRY("OutputDebugStringW (lpOutputString=%p (%S))\n",
@@ -184,7 +184,7 @@ OutputDebugStringW(
         goto EXIT;
     }
 
-    if ((strLen = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpOutputString, PAL_wcslen(lpOutputString) + 1, 0))
+    if ((strLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpOutputString, PAL_wcslen(lpOutputString) + 1, 0))
         == 0)
     {
         ASSERT("failed to get wide chars length\n");

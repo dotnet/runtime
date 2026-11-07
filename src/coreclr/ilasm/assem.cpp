@@ -1363,7 +1363,7 @@ char* Assembler::ReflectionNotation(mdToken tk)
                 mdToken tkResScope;
                 if(SUCCEEDED(m_pImporter->GetTypeRefProps(tk,&tkResScope,wzUniBuf,cchUniBuf,&N)))
                 {
-                    int ret = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)wzUniBuf,u16_strlen(wzUniBuf)+1,sz,szSizeBytes,0);
+                    size_t ret = minipal_convert_utf16_to_utf8((const CHAR16_T*)wzUniBuf,u16_strlen(wzUniBuf)+1,sz,szSizeBytes,0);
                     if(TypeFromToken(tkResScope)==mdtAssemblyRef)
                     {
                         AsmManAssembly *pAsmRef = m_pManifest->m_AsmRefLst.PEEK(RidFromToken(tkResScope)-1);
@@ -1402,8 +1402,8 @@ char* Assembler::ReflectionNotation(mdToken tk)
                                 {
                                     memcpy(wzUniBuf,pAsmRef->pLocale->ptr(),L);
                                     wzUniBuf[L>>1] = 0;
-                                    ret = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)wzUniBuf,u16_strlen(wzUniBuf)+1,pc,szRemainingSizeBytes,0);
-                                    if (ret <= 0)
+                                    ret = minipal_convert_utf16_to_utf8((const CHAR16_T*)wzUniBuf,u16_strlen(wzUniBuf)+1,pc,szRemainingSizeBytes,0);
+                                    if (ret == 0)
                                     {
                                         report->error("Locale too long.\n");
                                         *sz=0;
@@ -1412,7 +1412,7 @@ char* Assembler::ReflectionNotation(mdToken tk)
                                     else
                                     {
                                         pc += ret;
-                                        szRemainingSizeBytes -= (size_t)ret;
+                                        szRemainingSizeBytes -= ret;
                                     }
                                 }
                             }

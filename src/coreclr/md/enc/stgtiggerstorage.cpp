@@ -358,11 +358,13 @@ TiggerStorage::GetStreamSaveSize(
     UINT32  cbDataSize,         // Size of data to go into stream.
     UINT32 *pcbSaveSize)        // Return data size plus stream overhead.
 {
+    size_t cbName;                 // Converted stream name length.
     UINT32 cbTotalSize;            // Add up each element.
 
     // Find out how large the name will be.
-    cbTotalSize = (UINT32)minipal_get_length_utf16_to_utf8((const CHAR16_T*)szStreamName, u16_strlen(szStreamName) + 1, 0);
-    _ASSERTE(cbTotalSize != 0);
+    cbName = minipal_get_length_utf16_to_utf8((const CHAR16_T*)szStreamName, u16_strlen(szStreamName) + 1, 0);
+    _ASSERTE(cbName != 0);
+    cbTotalSize = (UINT32)cbName;
 
     // Add the size of the stream header minus the static name array.
     cbTotalSize += sizeof(STORAGESTREAM) - MAXSTREAMNAME;

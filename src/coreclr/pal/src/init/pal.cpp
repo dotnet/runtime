@@ -692,7 +692,7 @@ Return:
 static LPWSTR INIT_GetCurrentEXEPath()
 {
     LPWSTR return_value;
-    INT return_size;
+    size_t return_size;
 
     char* path = minipal_getexepath();
     if (!path)
@@ -705,7 +705,7 @@ static LPWSTR INIT_GetCurrentEXEPath()
     real_path.Set(path, strlen(path));
     free(path);
 
-    return_size = (INT)minipal_get_length_utf8_to_utf16(real_path, strlen(real_path) + 1, 0);
+    return_size = minipal_get_length_utf8_to_utf16(real_path, strlen(real_path) + 1, 0);
     if (0 == return_size)
     {
         ASSERT("UTF-8 to UTF-16 conversion failure\n");

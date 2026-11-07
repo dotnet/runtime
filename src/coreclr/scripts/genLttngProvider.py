@@ -312,9 +312,9 @@ def generateMethodBody(template, providerName, eventName, runtimeFlavor):
         paramname   = fnparam.name
 
         if fnparam.winType == "win:UnicodeString":
-            result.append("    INT " + paramname + "_path_size = -1;\n")
+            result.append("    size_t " + paramname + "_path_size = 0;\n")
             result.append("    PathCharString " + paramname + "_PS;\n")
-            result.append("    INT " + paramname + "_full_name_path_size")
+            result.append("    size_t " + paramname + "_full_name_path_size")
             result.append(" = (lttng_strlen16(" + paramname + ") + 1)*sizeof(WCHAR);\n")
             result.append("    CHAR* " + paramname + "_full_name = ")
             result.append(paramname + "_PS.OpenStringBuffer(" + paramname + "_full_name_path_size );\n")
@@ -343,7 +343,7 @@ def generateMethodBody(template, providerName, eventName, runtimeFlavor):
             if ctf_type == "ctf_string" and wintypeName == "win:UnicodeString":
                 #emit code to convert unicode to ansi string
 
-                result.append("    " + paramname + "_path_size = (INT)minipal_convert_utf16_to_utf8((const CHAR16_T*)")
+                result.append("    " + paramname + "_path_size = minipal_convert_utf16_to_utf8((const CHAR16_T*)")
                 result.append(paramname + ", lttng_strlen16(" + paramname + ") + 1, ")
                 result.append(paramname + "_full_name, ")
                 result.append(paramname + "_full_name_path_size, 0);\n")

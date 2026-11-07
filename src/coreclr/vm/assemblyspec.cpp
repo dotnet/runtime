@@ -428,9 +428,10 @@ HRESULT AssemblySpec::EmitToken(
 
         if (m_context.szLocale) {
             size_t cchLocale = strlen(m_context.szLocale) + 1;
-            AMD.cbLocale = (ULONG)minipal_get_length_utf8_to_utf16(m_context.szLocale, cchLocale, 0);
-            AMD.szLocale = (LPWSTR) alloca(AMD.cbLocale * sizeof(WCHAR) );
-            if(minipal_convert_utf8_to_utf16(m_context.szLocale, cchLocale, (CHAR16_T*)AMD.szLocale, AMD.cbLocale, 0)==0)
+            size_t cchWideLocale = minipal_get_length_utf8_to_utf16(m_context.szLocale, cchLocale, 0);
+            AMD.cbLocale = (ULONG)cchWideLocale;
+            AMD.szLocale = (LPWSTR) alloca(cchWideLocale * sizeof(WCHAR) );
+            if(minipal_convert_utf8_to_utf16(m_context.szLocale, cchLocale, (CHAR16_T*)AMD.szLocale, cchWideLocale, 0)==0)
                 IfFailGo(HRESULT_FROM_WIN32(errno));
         }
         else {

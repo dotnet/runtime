@@ -105,11 +105,9 @@ static INT FMTMSG__watoi( LPWSTR str )
 {
     CONST UINT MAX_NUMBER_LENGTH = 3;
     CHAR buf[ MAX_NUMBER_LENGTH ];
-    INT nRetVal = 0;
+    size_t converted = minipal_convert_utf16_to_utf8((const CHAR16_T*)str, PAL_wcslen(str) + 1, buf, MAX_NUMBER_LENGTH, 0);
 
-    nRetVal = (INT)minipal_convert_utf16_to_utf8((const CHAR16_T*)str, PAL_wcslen(str) + 1, buf, MAX_NUMBER_LENGTH, 0);
-
-    if ( nRetVal != 0 )
+    if ( converted != 0 )
     {
         return atoi( buf );
     }

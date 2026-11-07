@@ -35,14 +35,14 @@ STDMETHODIMP RegMeta::GetCustomAttributeByName( // S_OK or error.
 
     LPUTF8      szName;                 // Name in UFT8.
     size_t      cchName;                // Length of the name, including the terminator.
-    int         iLen;                   // A length.
+    size_t      iLen;                   // A length.
     CMiniMdRW   *pMiniMd = NULL;
 
     LOCKREAD();
     pMiniMd = &(m_pStgdb->m_MiniMd);
 
     cchName = u16_strlen(wzName) + 1;
-    iLen = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)wzName, cchName, 0);
+    iLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)wzName, cchName, 0);
     szName = (LPUTF8)_alloca(iLen);
     VERIFY(minipal_convert_utf16_to_utf8((const CHAR16_T*)wzName, cchName, szName, iLen, 0));
 

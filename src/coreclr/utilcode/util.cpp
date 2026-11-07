@@ -1620,9 +1620,9 @@ HRESULT Utf2Quick(
     CONTRACTL_END;
 
     HRESULT     hr = S_OK;              // A result.
-    int         iReqLen;                // Required additional length.
-    int         iActLen;
-    int         bAlloc = 0;             // If non-zero, allocation was required.
+    size_t      cchReq;                 // Required additional length.
+    size_t      cchAct;
+    bool        bAlloc = false;         // If true, allocation was required.
 
     if (iCurLen < 0 )
     {
@@ -1632,7 +1632,7 @@ HRESULT Utf2Quick(
 
     // Calculate the space available
     S_SIZE_T cchAvail = S_SIZE_T(rStr.MaxSize()) - S_SIZE_T(iCurLen);
-    if (cchAvail.IsOverflow() || cchAvail.Value() > INT_MAX)
+    if (cchAvail.IsOverflow())
     {
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
@@ -1646,21 +1646,30 @@ HRESULT Utf2Quick(
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
     }
     size_t cchSrc = strlen(pStr) + 1;
-    iReqLen = (int)minipal_convert_utf8_to_utf16(pStr, cchSrc, (CHAR16_T*)rNewStr, cchAvail.Value(), 0);
+    cchReq = minipal_convert_utf8_to_utf16(pStr, cchSrc, (CHAR16_T*)rNewStr, cchAvail.Value(), 0);
 
     // If the buffer was too small, determine what is required.
-    if (iReqLen == 0)
-        bAlloc = iReqLen = (int)minipal_get_length_utf8_to_utf16(pStr, cchSrc, 0);
+    if (cchReq == 0)
+    {
+        cchReq = minipal_get_length_utf8_to_utf16(pStr, cchSrc, 0);
+        bAlloc = true;
+    }
     // Resize the buffer.  If the buffer was large enough, this just sets the internal
     //  counter, but if it was too small, this will attempt a reallocation.  Note that
     //  the length includes the terminating W('/0').
-    IfFailGo(rStr.ReSizeNoThrow(iCurLen+iReqLen));
+    S_SIZE_T newSize = S_SIZE_T(iCurLen) + S_SIZE_T(cchReq);
+    if (newSize.IsOverflow())
+    {
+        _ASSERTE_MSG(false, "Integer overflow/underflow");
+        return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+    }
+    IfFailGo(rStr.ReSizeNoThrow(newSize.Value()));
     // If we had to realloc, then do the conversion again, now that the buffer is
     //  large enough.
     if (bAlloc) {
         //recalculating cchAvail since MaxSize could have been changed.
         cchAvail = S_SIZE_T(rStr.MaxSize()) - S_SIZE_T(iCurLen);
-        if (cchAvail.IsOverflow() || cchAvail.Value() > INT_MAX)
+        if (cchAvail.IsOverflow())
         {
             _ASSERTE_MSG(false, "Integer overflow/underflow");
             return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
@@ -1673,8 +1682,8 @@ HRESULT Utf2Quick(
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
         }
-        iActLen = (int)minipal_convert_utf8_to_utf16(pStr, cchSrc, (CHAR16_T*)rNewStr, cchAvail.Value(), 0);
-        _ASSERTE(iReqLen == iActLen);
+        cchAct = minipal_convert_utf8_to_utf16(pStr, cchSrc, (CHAR16_T*)rNewStr, cchAvail.Value(), 0);
+        _ASSERTE(cchReq == cchAct);
     }
 ErrExit:
     return hr;

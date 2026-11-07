@@ -155,7 +155,7 @@ GetEnvironmentVariableW(
 {
     CHAR *inBuff = nullptr;
     CHAR *outBuff = nullptr;
-    INT inBuffSize;
+    size_t inBuffSize;
     DWORD size = 0;
 
     PERF_ENTRY(GetEnvironmentVariableW);
@@ -163,7 +163,7 @@ GetEnvironmentVariableW(
           lpName ? lpName : W16_NULLSTRING,
           lpName ? lpName : W16_NULLSTRING, lpBuffer, nSize);
 
-    inBuffSize = lpName != nullptr ? (INT)minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, PAL_wcslen(lpName) + 1, 0) : 0;
+    inBuffSize = lpName != nullptr ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, PAL_wcslen(lpName) + 1, 0) : 0;
     if (0 == inBuffSize)
     {
         ERROR("lpName has to be a valid parameter\n");
@@ -214,7 +214,8 @@ GetEnvironmentVariableW(
     }
     else
     {
-        size = (DWORD)minipal_convert_utf8_to_utf16(outBuff, strlen(outBuff) + 1, (CHAR16_T*)lpBuffer, nSize, 0);
+        size_t converted = minipal_convert_utf8_to_utf16(outBuff, strlen(outBuff) + 1, (CHAR16_T*)lpBuffer, nSize, 0);
+        size = (DWORD)converted;
         if (0 != size)
         {
             // -1 for the null.
@@ -280,8 +281,8 @@ SetEnvironmentVariableW(
 {
     PCHAR name = nullptr;
     PCHAR value = nullptr;
-    INT nameSize = 0;
-    INT valueSize = 0;
+    size_t nameSize = 0;
+    size_t valueSize = 0;
     BOOL bRet = FALSE;
 
     PERF_ENTRY(SetEnvironmentVariableW);
@@ -289,7 +290,7 @@ SetEnvironmentVariableW(
         lpName?lpName:W16_NULLSTRING,
         lpName?lpName:W16_NULLSTRING, lpValue?lpValue:W16_NULLSTRING, lpValue?lpValue:W16_NULLSTRING);
 
-    if ((nameSize = lpName != nullptr ? (INT)minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, PAL_wcslen(lpName) + 1, 0) : 0) == 0)
+    if ((nameSize = lpName != nullptr ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpName, PAL_wcslen(lpName) + 1, 0) : 0) == 0)
     {
         ERROR("UTF-16 to UTF-8 conversion failed\n");
         SetLastError(ERROR_INVALID_PARAMETER);
@@ -313,7 +314,7 @@ SetEnvironmentVariableW(
 
     if (lpValue != nullptr)
     {
-        if ((valueSize = (INT)minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpValue, PAL_wcslen(lpValue) + 1, 0)) == 0)
+        if ((valueSize = minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpValue, PAL_wcslen(lpValue) + 1, 0)) == 0)
         {
             ERROR("UTF-16 to UTF-8 conversion failed\n");
             SetLastError(ERROR_INVALID_PARAMETER);
@@ -379,7 +380,8 @@ GetEnvironmentStringsW(
                VOID)
 {
     WCHAR *wenviron = nullptr, *tempEnviron;
-    int i, len, envNum;
+    int i;
+    size_t len, envNum;
 
     PERF_ENTRY(GetEnvironmentStringsW);
     ENTRY("GetEnvironmentStringsW()\n");
@@ -393,7 +395,7 @@ GetEnvironmentStringsW(
     /* get total length of the bytes that we need to allocate */
     for (i = 0; palEnvironment[i] != 0; i++)
     {
-        len = (int)minipal_get_length_utf8_to_utf16(palEnvironment[i], strlen(palEnvironment[i]) + 1, 0);
+        len = minipal_get_length_utf8_to_utf16(palEnvironment[i], strlen(palEnvironment[i]) + 1, 0);
         envNum += len;
     }
 
@@ -409,7 +411,7 @@ GetEnvironmentStringsW(
     tempEnviron = wenviron;
     for (i = 0; palEnvironment[i] != 0; i++)
     {
-        len = (int)minipal_convert_utf8_to_utf16(palEnvironment[i], strlen(palEnvironment[i]) + 1, (CHAR16_T*)tempEnviron, envNum, 0);
+        len = minipal_convert_utf8_to_utf16(palEnvironment[i], strlen(palEnvironment[i]) + 1, (CHAR16_T*)tempEnviron, envNum, 0);
         tempEnviron += len;
         envNum      -= len;
     }

@@ -1998,7 +1998,8 @@ void Assembler::SetPropMethod(int MethodCode, mdToken tk)
 /**************************************************************************/
 void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL ConvertToUnicode, BOOL Swap /*=FALSE*/)
 {
-    DWORD   DataLen = literal->length(),L;
+    DWORD   DataLen = literal->length();
+    size_t  L;
     uint8_t *pb = literal->ptr();
     HRESULT hr = S_OK;
     mdToken tk;
@@ -2014,7 +2015,7 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
         literal->appendInt8(0);
         pb = literal->ptr();
         // convert string to Unicode
-        L = UnicodeString ? (DWORD)minipal_convert_utf8_to_utf16((char*)pb,strlen((char*)pb)+1,(CHAR16_T*)UnicodeString,DataLen+1,0) : 0;
+        L = UnicodeString ? minipal_convert_utf8_to_utf16((char*)pb,strlen((char*)pb)+1,(CHAR16_T*)UnicodeString,DataLen+1,0) : 0;
         if(L == 0)
         {
             const char* sz=NULL;
@@ -2051,7 +2052,7 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
     // Add the string data to the metadata, which will fold dupes.
     hr = m_pEmitter->DefineUserString(
         UnicodeString,
-        L,
+        (ULONG)L,
         &tk
     );
     if (FAILED(hr))

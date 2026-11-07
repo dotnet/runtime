@@ -99,7 +99,8 @@ ConvertUtf8(_In_ LPCUTF8 utf8,
 
     if (nameLen)
     {
-        *nameLen = (ULONG32)minipal_get_length_utf8_to_utf16(utf8, cchUtf8, 0);
+        size_t cchName = minipal_get_length_utf8_to_utf16(utf8, cchUtf8, 0);
+        *nameLen = (ULONG32)cchName;
     }
 
     if (buffer && bufLen)
@@ -124,15 +125,17 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
     }
 
     size_t cchSrc = srcChars == (ULONG32)-1 ? u16_strlen(wstr) + 1 : srcChars;
-    ULONG32 chars = (ULONG32)minipal_get_length_utf16_to_utf8((const CHAR16_T*)wstr, cchSrc, 0);
+    size_t chars = minipal_get_length_utf16_to_utf8((const CHAR16_T*)wstr, cchSrc, 0);
 
     // Make sure the converted string is always terminated.
     if (srcChars != (ULONG32)-1)
     {
-        if (!ClrSafeInt<ULONG32>::addition(chars, 1, chars))
+        S_SIZE_T charsWithNull = S_SIZE_T(chars) + S_SIZE_T(1);
+        if (charsWithNull.IsOverflow())
         {
             return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
         }
+        chars = charsWithNull.Value();
     }
 
     char* mem = new (nothrow) char[chars];

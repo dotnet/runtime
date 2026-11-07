@@ -1303,7 +1303,7 @@ SetThreadDescription(
 
     CPalThread *pTargetThread = NULL;
     IPalObject *pobjThread = NULL;
-    int nameSize;
+    size_t nameSize;
     char *nameBuf = NULL;
 
     PAL_ERROR palError = InternalGetThreadDataFromHandle(pThread, hThread, &pTargetThread, &pobjThread);
@@ -1313,11 +1313,11 @@ SetThreadDescription(
         // it causes the value returned by Process.ProcessName to change.
         if ((pid_t)pTargetThread->GetThreadId() != getpid())
         {
-            nameSize = lpThreadDescription != NULL ? (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, PAL_wcslen(lpThreadDescription) + 1, 0) : 0;
+            nameSize = lpThreadDescription != NULL ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, PAL_wcslen(lpThreadDescription) + 1, 0) : 0;
             if (nameSize > 0)
             {
                 nameBuf = (char *)malloc(nameSize);
-                if (nameBuf == NULL || (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, PAL_wcslen(lpThreadDescription) + 1, nameBuf, nameSize, 0) != nameSize)
+                if (nameBuf == NULL || minipal_convert_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, PAL_wcslen(lpThreadDescription) + 1, nameBuf, nameSize, 0) != nameSize)
                 {
                     pThread->SetLastError(ERROR_INSUFFICIENT_BUFFER);
                 }

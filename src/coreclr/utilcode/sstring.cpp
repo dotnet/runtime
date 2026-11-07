@@ -774,9 +774,9 @@ void SString::ConvertToUnicode(SString &s) const
         UNREACHABLE();
     }
 
-    COUNT_T length = (COUNT_T)minipal_get_length_utf8_to_utf16(GetRawUTF8(), GetRawCount() + 1, 0);
+    size_t length = minipal_get_length_utf8_to_utf16(GetRawUTF8(), GetRawCount() + 1, 0);
 
-    s.Resize(length - 1, REPRESENTATION_UNICODE);
+    s.Resize((COUNT_T)(length - 1), REPRESENTATION_UNICODE);
 
     if (minipal_convert_utf8_to_utf16(GetRawUTF8(), GetRawCount() + 1, (CHAR16_T*)s.GetRawUnicode(), length, 0) == 0)
         ThrowWin32(errno);
@@ -2264,7 +2264,8 @@ bool SString::DacGetUnicode(COUNT_T                                   cBufChars,
             size_t length = strlen(pString) + 1;
             if (pcNeedChars)
             {
-                *pcNeedChars = (COUNT_T)minipal_get_length_utf8_to_utf16(pString, length, 0);
+                size_t cchNeed = minipal_get_length_utf8_to_utf16(pString, length, 0);
+                *pcNeedChars = (COUNT_T)cchNeed;
             }
             if (pBuffer && cBufChars)
             {

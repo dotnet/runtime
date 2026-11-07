@@ -1423,7 +1423,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
     }
 
     size_t cchOut = u16_strlen(out) + 1;
-    int charCount = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)out, cchOut, 0);
+    size_t charCount = minipal_get_length_utf16_to_utf8((const CHAR16_T*)out, cchOut, 0);
     if (charCount == 0)
     {
         // this should only happen if the config subsystem gives us a string that's not valid

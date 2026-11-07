@@ -606,7 +606,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     LPCUTF8     pszName = NULL;         // Library name in UTF8.
     ULONG       cbName;                 // Length of name, UTF8 characters.
     LPWSTR      pName;                  // Pointer to library name.
-    ULONG       cchName;                // Length of name, wide chars.
+    size_t      cchName;                // Length of name, wide chars.
     LPWSTR      pch=0;                  // Pointer into lib name.
     const void  *pSN=NULL;              // Pointer to public key.
     DWORD       cbSN=0;                 // Size of public key.
@@ -625,7 +625,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     // The GUID is generated from the converted name, so the conversion must not change
     cchName = MultiByteToWideChar(CP_ACP,0, pszName,cbName+1, 0,0);
 #else
-    cchName = (ULONG)minipal_get_length_utf8_to_utf16(pszName, cbName+1, 0);
+    cchName = minipal_get_length_utf8_to_utf16(pszName, cbName+1, 0);
 #endif
 
     // See if there is a public key.
@@ -692,7 +692,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
 
     // Put it all together.  Name first.
 #ifdef TARGET_WINDOWS
-    MultiByteToWideChar(CP_ACP,0, pszName,cbName+1, (LPWSTR)(&rDef[cbCur]),cchName);
+    MultiByteToWideChar(CP_ACP,0, pszName,cbName+1, (LPWSTR)(&rDef[cbCur]), (int)cchName);
 #else
     minipal_convert_utf8_to_utf16(pszName, cbName+1, (CHAR16_T*)(&rDef[cbCur]), cchName, 0);
 #endif
@@ -703,7 +703,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     else
         if (iswupper(*pch))
             *pch = towlower(*pch);
-    cbCur += (cchName-1)*sizeof(WCHAR);
+    cbCur += (ULONG)((cchName - 1) * sizeof(WCHAR));
     memcpy(&rDef[cbCur], szTypeLibKeyName, sizeof(szTypeLibKeyName)-1);
     cbCur += sizeof(szTypeLibKeyName)-1;
 

@@ -2978,7 +2978,7 @@ HRESULT RegMeta::GetVersionString(    // S_OK or error.
 
     REGMETA_POSSIBLE_INTERNAL_POINTER_EXPOSED();
 
-    DWORD       cch;                    // Length of WideChar string.
+    size_t      cch;                    // Length of WideChar string.
     LPCSTR      pVer;                   // Pointer to version string.
 
     LOCKREAD();
@@ -2991,16 +2991,16 @@ HRESULT RegMeta::GetVersionString(    // S_OK or error.
         size_t cchVer = strlen(pVer) + 1;
         if (cchBufSize == 0)
         {   // Only the space required.
-            cch = (DWORD)minipal_get_length_utf8_to_utf16(pVer, cchVer, 0);
+            cch = minipal_get_length_utf8_to_utf16(pVer, cchVer, 0);
         }
         else
         {
             // Attempt to convert into caller's buffer.
-            cch = (DWORD)minipal_convert_utf8_to_utf16(pVer, cchVer, (CHAR16_T*)pwzBuf, cchBufSize, 0);
+            cch = minipal_convert_utf8_to_utf16(pVer, cchVer, (CHAR16_T*)pwzBuf, cchBufSize, 0);
             // Did the string fit?
             if (cch == 0)
             {   // No, didn't fit.  Find out space required.
-                cch = (DWORD)minipal_get_length_utf8_to_utf16(pVer, cchVer, 0);
+                cch = minipal_get_length_utf8_to_utf16(pVer, cchVer, 0);
                 // NUL terminate string.
                 pwzBuf[cchBufSize-1] = W('\0');
                 // Truncation return code.
@@ -3016,7 +3016,7 @@ HRESULT RegMeta::GetVersionString(    // S_OK or error.
     }
 
     if (pchBufSize)
-        *pchBufSize = cch;
+        *pchBufSize = (DWORD)cch;
 
 ErrExit:
     return hr;

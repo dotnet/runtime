@@ -37,14 +37,14 @@ __cdecl
 _wtoi(
     const wchar_16 *string)
 {
-    int len;
+    size_t len;
     int ret;
     char *tempStr;
 
     PERF_ENTRY(_wtoi);
     ENTRY("_wtoi (string=%p)\n", string);
 
-    len = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)string, PAL_wcslen(string) + 1, 0);
+    len = minipal_get_length_utf16_to_utf8((const CHAR16_T*)string, PAL_wcslen(string) + 1, 0);
     if (!len)
     {
         ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n",
@@ -58,7 +58,7 @@ _wtoi(
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return -1;
     }
-    len = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)string, PAL_wcslen(string) + 1, tempStr, len, 0);
+    len = minipal_convert_utf16_to_utf8((const CHAR16_T*)string, PAL_wcslen(string) + 1, tempStr, len, 0);
     if (!len)
     {
         ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n",
@@ -241,14 +241,14 @@ PAL_wcstoul(
     char *s_nptr = 0;
     char *s_endptr = 0;
     unsigned long res;
-    int size;
+    size_t size;
     DWORD dwLastError = 0;
 
     PERF_ENTRY(wcstoul);
     ENTRY("wcstoul (nptr=%p (%S), endptr=%p, base=%d)\n", nptr?nptr:W16_NULLSTRING, nptr?nptr:W16_NULLSTRING,
           endptr, base);
 
-    size = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)nptr, PAL_wcslen(nptr) + 1, 0);
+    size = minipal_get_length_utf16_to_utf8((const CHAR16_T*)nptr, PAL_wcslen(nptr) + 1, 0);
     if (!size)
     {
         dwLastError = GetLastError();
@@ -265,7 +265,7 @@ PAL_wcstoul(
         res = 0;
         goto PAL_wcstoulExit;
     }
-    size = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)nptr, PAL_wcslen(nptr) + 1, s_nptr, size, 0);
+    size = minipal_convert_utf16_to_utf8((const CHAR16_T*)nptr, PAL_wcslen(nptr) + 1, s_nptr, size, 0);
     if (!size)
     {
         dwLastError = GetLastError();
@@ -331,14 +331,14 @@ PAL__wcstoui64(
     char *s_nptr = 0;
     char *s_endptr = 0;
     unsigned long long res;
-    int size;
+    size_t size;
     DWORD dwLastError = 0;
 
     PERF_ENTRY(wcstoul);
     ENTRY("_wcstoui64 (nptr=%p (%S), endptr=%p, base=%d)\n", nptr?nptr:W16_NULLSTRING, nptr?nptr:W16_NULLSTRING,
           endptr, base);
 
-    size = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)nptr, PAL_wcslen(nptr) + 1, 0);
+    size = minipal_get_length_utf16_to_utf8((const CHAR16_T*)nptr, PAL_wcslen(nptr) + 1, 0);
     if (!size)
     {
         dwLastError = GetLastError();
@@ -355,7 +355,7 @@ PAL__wcstoui64(
         res = 0;
         goto PAL__wcstoui64Exit;
     }
-    size = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)nptr, PAL_wcslen(nptr) + 1, s_nptr, size, 0);
+    size = minipal_convert_utf16_to_utf8((const CHAR16_T*)nptr, PAL_wcslen(nptr) + 1, s_nptr, size, 0);
     if (!size)
     {
         dwLastError = GetLastError();
