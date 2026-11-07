@@ -678,11 +678,7 @@ void HndScanHandlesForGC(HHANDLETABLE hTable, HANDLESCANPROC scanProc, uintptr_t
 
     {
         // lock the table down for concurrent GC only
-#ifdef FEATURE_MULTITHREADING
         CrstHolderWithState ch(&pTable->Lock, (flags & HNDGCF_ASYNC) != 0);
-#else // FEATURE_MULTITHREADING
-        CrstHolderWithState ch(&pTable->Lock, false);
-#endif // FEATURE_MULTITHREADING
 
         // perform the scan
         pfnScanTable(pTable, types, typeCount, pfnSegment, pfnBlock, &info, &ch);
