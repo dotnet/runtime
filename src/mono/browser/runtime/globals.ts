@@ -38,6 +38,13 @@ export let _runtimeModuleLoaded = false; // please keep it in place also as roll
 export function passEmscriptenInternals (internals: EmscriptenInternals, emscriptenBuildOptions: EmscriptenBuildOptions): void {
     runtimeHelpers.emscriptenBuildOptions = emscriptenBuildOptions;
 
+    // For an application re-link, the build_id comes from the (re)linked native module via the
+    // WASM_BUILD_ID env var and overrides the default rollup constant baked into dotnet.runtime.js.
+    const buildId = emscriptenBuildOptions.buildId || loaderHelpers.config.buildId;
+    if (buildId) {
+        exportedRuntimeAPI.runtimeBuildInfo.buildId = buildId;
+    }
+
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
     runtimeHelpers.quit = internals.quit_;
     runtimeHelpers.ExitStatus = internals.ExitStatus;

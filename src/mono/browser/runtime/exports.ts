@@ -6,6 +6,7 @@ import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import WasmEnableSIMD from "consts:wasmEnableSIMD";
 import WasmEnableExceptionHandling from "consts:wasmEnableExceptionHandling";
+import BuildId from "consts:buildId";
 
 import { type RuntimeAPI } from "./types";
 
@@ -60,6 +61,7 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         runtimeBuildInfo: {
             productVersion: ProductVersion,
             gitHash: runtimeHelpers.gitHash,
+            buildId: BuildId,
             buildConfiguration: BuildConfiguration,
             wasmEnableThreads: WasmEnableThreads,
             wasmEnableSIMD: WasmEnableSIMD,

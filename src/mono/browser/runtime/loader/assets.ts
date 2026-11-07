@@ -113,7 +113,7 @@ function set_single_asset (asset: AssetEntryInternal) {
     }
 }
 
-export function try_resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal|undefined {
+export function try_resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal | undefined {
     mono_assert(singleAssetTypes[behavior], `Unknown single asset behavior ${behavior}`);
     const asset = singleAssets.get(behavior);
     if (asset && !asset.resolvedUrl) {

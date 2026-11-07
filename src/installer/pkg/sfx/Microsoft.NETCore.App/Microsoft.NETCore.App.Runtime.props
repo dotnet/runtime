@@ -11,6 +11,36 @@
     <MacOSPackageDescription>The .NET Shared Framework</MacOSPackageDescription>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))">
+    <ProjectReference Include="$(RepoRoot)src\tasks\WasmAppBuilder\WasmAppBuilder.csproj"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmEmitProducersSource"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))" />
+
+  <Target Name="GenerateBrowserWasmProducersSource"
+          BeforeTargets="AddRuntimeFilesToPackage"
+          DependsOnTargets="ResolveProjectReferences"
+          Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(NetCoreAppCurrentVersion)', '12.0'))">
+    <PropertyGroup>
+      <_BrowserWasmProducersSource>$(IntermediateOutputPath)dotnet-producers.s</_BrowserWasmProducersSource>
+    </PropertyGroup>
+    <WasmEmitProducersSource
+        OutputPath="$(_BrowserWasmProducersSource)"
+        RuntimeName="$(RuntimeFlavor)"
+        ProductVersion="$(Version)" />
+    <ItemGroup>
+      <RuntimeFiles Include="$(_BrowserWasmProducersSource)" IsNative="true" />
+      <FileWrites Include="$(_BrowserWasmProducersSource)" />
+    </ItemGroup>
+    <Copy SourceFiles="$(_BrowserWasmProducersSource)"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
+
   <!-- Include the .NET host components here. -->
   <ItemGroup Condition="'$(UsesMuxerHostModel)' == 'true'">
     <!--

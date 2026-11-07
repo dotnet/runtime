@@ -17,6 +17,10 @@ function libDotnetFactory() {
     const exports = {};
     libNativeBrowser(exports);
 
+    // build_id from the application re-link, read from the WASM_BUILD_ID env var at (emcc) link time.
+    // Empty for the default runtime-pack build, where runtimeBuildInfo.buildId comes from the rollup constant.
+    const buildId = (typeof process !== "undefined" && process.env && process.env.WASM_BUILD_ID) ? process.env.WASM_BUILD_ID : "";
+
     let commonDeps = [
         "$FS",
         "$BROWSER_UTILS",
@@ -38,6 +42,7 @@ function libDotnetFactory() {
             },
             dotnetInitializeModule: exports.dotnetInitializeModule,
             gitHash: exports.gitHash,
+            buildId,
         },
         $DOTNET__deps: commonDeps,
         $DOTNET__postset: "DOTNET.selfInitialize()",

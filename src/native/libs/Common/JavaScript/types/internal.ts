@@ -67,6 +67,7 @@ export interface AssetEntryInternal extends AssetEntry {
 }
 
 export type LoaderConfigInternal = LoaderConfig & {
+    buildId?: string,
     runtimeOptions?: string[], // array of runtime options as strings
     appendElementOnExit?: boolean
     logExitCode?: boolean

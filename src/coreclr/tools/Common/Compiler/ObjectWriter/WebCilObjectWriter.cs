@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Security.Cryptography;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
@@ -36,16 +37,19 @@ namespace ILCompiler.ObjectWriter
         // 1 for the payload size, and the second for the payload itself.
         const int NumDataSegments = 2;
 
+        private readonly byte[] _wasmNativeBuildId;
         private readonly bool _emitNameSection;
 
         public WebCilObjectWriter(
             NodeFactory factory,
             ObjectWritingOptions options,
             OutputInfoBuilder outputInfoBuilder,
-            bool emitNameSection)
+            bool emitNameSection,
+            string wasmNativeBuildId = null)
             : base(factory, options, outputInfoBuilder)
         {
             _emitNameSection = emitNameSection;
+            _wasmNativeBuildId = WasmCustomSectionWriter.ParseBuildId(wasmNativeBuildId);
         }
 
         private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
@@ -564,6 +568,17 @@ namespace ILCompiler.ObjectWriter
                 nameSection.EmitToStream(outputFileStream);
             }
 
+#if READYTORUN
+            byte[] webcilBuildId = _wasmNativeBuildId ?? ComputeModuleHash(outputFileStream);
+            WasmCustomSectionWriter.ProducerValue[] producers =
+            [
+                new(WasmCustomSectionWriter.ProducersFieldLanguage, "C#", string.Empty),
+                new(WasmCustomSectionWriter.ProducersFieldProcessedBy, "WebCIL", string.Empty),
+                new(WasmCustomSectionWriter.ProducersFieldSdk, ".NET", string.Empty),
+            ];
+            WasmCustomSectionWriter.AppendMetadataSections(outputFileStream, producers, webcilBuildId);
+#endif
+
             if (_outputInfoBuilder is not null)
             {
                 // Populate the output section layout so OutputInfoBuilder.EnumerateMethods can resolve each
@@ -583,6 +598,18 @@ namespace ILCompiler.ObjectWriter
                 }
             }
         }
+
+#if READYTORUN
+        private static byte[] ComputeModuleHash(Stream outputFileStream)
+        {
+            long end = outputFileStream.Position;
+            outputFileStream.Position = 0;
+            using var sha = SHA256.Create();
+            byte[] hash = sha.ComputeHash(outputFileStream);
+            outputFileStream.Position = end;
+            return hash;
+        }
+#endif
 
         public void EmitSymbolMap(string path)
         {
