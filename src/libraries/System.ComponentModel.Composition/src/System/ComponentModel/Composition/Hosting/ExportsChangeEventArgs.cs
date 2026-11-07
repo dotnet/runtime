@@ -104,7 +104,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Gets the atomicComposition, if any, that this change applies to.
         /// </summary>
         /// <value>
-        ///     A <see cref="AtomicComposition"/> that this set of changes applies too.
+        ///     A <see cref="AtomicComposition"/> that this set of changes applies to.
         ///
         ///     It can be <see langword="null"/> if the changes are being applied outside a
         ///     <see cref="AtomicComposition"/> or during a

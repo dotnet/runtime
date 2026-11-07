@@ -265,7 +265,7 @@ namespace System.Diagnostics
         /// <summary>
         /// If the parent for this activity comes from outside the process, the activity
         /// does not have a Parent Activity but MAY have a ParentId (which was deserialized from
-        /// from the parent).   This accessor fetches the parent ID if it exists at all.
+        /// the parent).   This accessor fetches the parent ID if it exists at all.
         /// Note this can be null if this is a root Activity (it has no parent)
         /// <para/>
         /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
@@ -301,7 +301,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Root Id is substring from Activity.Id (or ParentId) between '|' (or beginning) and first '.'.
-        /// Filtering by root Id allows to find all Activities involved in operation processing.
+        /// Filtering by root Id allows you to find all Activities involved in operation processing.
         /// RootId may be null if Activity has neither ParentId nor Id.
         /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
