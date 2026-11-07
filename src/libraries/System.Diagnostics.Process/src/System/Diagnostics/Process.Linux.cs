@@ -112,15 +112,89 @@ namespace System.Diagnostics
                     return;
                 }
                 string path = Interop.procfs.GetFileDescriptorDirectoryPathForProcess(procPid);
-                if (Directory.Exists(path))
+
+                // Count the entries directly from readdir. Directory.GetFiles would stat the target of every
+                // entry (each one is a symlink) just to filter out directories, which is by far the dominant cost.
+                // When the process is the current one, the directory stream opened here is itself listed in the result.
+                int count = CountDirectoryEntries(path, excludeOwnDescriptor: IsCurrentProcess);
+                if (count >= 0)
                 {
-                    try
+                    _processInfo.HandleCount = count;
+                }
+            }
+        }
+
+        /// <summary>Counts the entries in a directory, excluding "." and "..", without stat'ing them.</summary>
+        /// <returns>The number of entries, or -1 if the directory does not exist (for example, because the process exited).</returns>
+        private static unsafe int CountDirectoryEntries(string path, bool excludeOwnDescriptor)
+        {
+            IntPtr dir = Interop.Sys.OpenDir(path);
+            if (dir == IntPtr.Zero)
+            {
+                return HandleDirectoryError(Interop.Sys.GetLastErrorInfo());
+            }
+
+            try
+            {
+                int count = 0;
+                Interop.Sys.DirectoryEntry entry;
+                int result;
+                while ((result = Interop.Sys.ReadDir(dir, &entry)) == 0)
+                {
+                    byte* name = entry.Name;
+                    if (name[0] == (byte)'.' && (name[1] == 0 || (name[1] == (byte)'.' && name[2] == 0)))
                     {
-                        _processInfo.HandleCount = Directory.GetFiles(path, "*", SearchOption.TopDirectoryOnly).Length;
+                        continue;
                     }
-                    catch (DirectoryNotFoundException) // Occurs when the process is deleted between the Exists check and the GetFiles call.
+
+                    count++;
+                }
+
+                // ReadDir returns -1 at the end of the directory, and an errno value if the enumeration failed.
+                // Don't report a partial count in the latter case.
+                if (result != -1)
+                {
+                    return HandleDirectoryError(new Interop.ErrorInfo(result));
+                }
+
+                return excludeOwnDescriptor ? count - 1 : count;
+            }
+            finally
+            {
+                Interop.Sys.CloseDir(dir);
+            }
+
+            // Returns -1 if the directory no longer exists (for example, because the process exited), otherwise throws.
+            static int HandleDirectoryError(Interop.ErrorInfo error)
+            {
+                if (error.Error is Interop.Error.ENOENT or Interop.Error.ESRCH)
+                {
+                    return -1;
+                }
+
+                // Directory.GetFiles threw UnauthorizedAccessException when the directory could not be read.
+                if (error.Error is Interop.Error.EACCES or Interop.Error.EPERM)
+                {
+                    throw new UnauthorizedAccessException(error.GetErrorMessage(), new Win32Exception(error.RawErrno));
+                }
+
+                throw new Win32Exception(error.RawErrno);
+            }
+        }
+
+        partial void EnsureThreadsPopulated(ProcessInfo processInfo)
+        {
+            lock (processInfo)
+            {
+                if (!processInfo.ThreadsPopulated)
+                {
+                    // Don't get information for a PID that exited and has possibly been recycled.
+                    if (_haveProcessId && !GetHasExited(refresh: false))
                     {
+                        ProcessManager.PopulateThreads(processInfo.ProcPid, processInfo);
                     }
+
+                    processInfo.ThreadsPopulated = true;
                 }
             }
         }
