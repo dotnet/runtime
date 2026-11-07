@@ -3797,7 +3797,7 @@ void CodeGen::genCheckUseBlockInit()
 
         if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
         {
-            noway_assert(varDsc->lvRefCnt() == 0);
+            noway_assert(m_compiler->lvaMayHaveNoHome(varNum));
             varDsc->lvMustInit = 0;
             continue;
         }
@@ -5272,7 +5272,7 @@ void CodeGen::genFnProlog()
 
         if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
         {
-            noway_assert(varDsc->lvRefCnt() == 0);
+            noway_assert(m_compiler->lvaMayHaveNoHome(varNum));
             continue;
         }
 

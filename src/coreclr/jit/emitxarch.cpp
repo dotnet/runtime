@@ -5296,6 +5296,10 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 //
 inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code, int var, int dsp)
 {
+#ifdef TARGET_AMD64
+    // A rebuilt local keeps no stack copy, so nothing may read or write its stack home.
+    assert((var < 0) || !m_compiler->lsraIsReconstructible((unsigned)var));
+#endif
     instruction    ins  = id->idIns();
     UNATIVE_OFFSET size = emitInsSize(id, code, /* includeRexPrefixSize */ true);
 

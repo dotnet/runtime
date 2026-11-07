@@ -6699,6 +6699,23 @@ public:
     // Create VNP for NullPtrExc for something that null checks a base address
     ValueNumPair fgValueNumberIndirNullCheckExceptions(GenTree* baseAddr);
 
+    // The value numbers a null check of an address is keyed on, constant offsets peeled
+    void fgVNNullCheckBases(GenTree* baseAddr, ValueNum* baseLVN, ValueNum* baseCVN);
+
+    // During value numbering, for each exception item the blocks that survived it, none dominating
+    // another. Reaching a point one of them dominates means the item was not raised there, so it cannot
+    // be raised here either: the same null check, division or cast has been survived.
+    // The first surviving block is held inline, most items never see a second one.
+    struct SurvivedBlocks
+    {
+        BasicBlock*              first = nullptr;
+        ArrayStack<BasicBlock*>* more  = nullptr;
+    };
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, SurvivedBlocks> SurvivedExceptionsMap;
+    SurvivedExceptionsMap* vnSurvivedExceptions = nullptr;
+    bool fgVNSurvivedException(ValueNum excItemVN);
+    void fgVNDropSurvivedCastException(GenTreeCall* call);
+
     // Adds the exception sets for the current tree node which is performing a division or modulus operation
     void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
 
@@ -8074,6 +8091,56 @@ protected:
     unsigned optCSEunmarks = 0;        // Number of CSE trees unmarked
     weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
     CSE_HeuristicCommon* optCSEheuristic = nullptr; // CSE Heuristic to use for this method
+
+#ifdef TARGET_AMD64
+    // How to rebuild a CSE local whose definitions and uses all perform the same invariant load
+    // from one base local. LSRA decides whether the base is stable enough to rely on it.
+    struct CSERecipe
+    {
+        unsigned   baseLclNum;
+        int        offset;
+        genTreeOps oper;
+        var_types  type;
+    };
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CSERecipe> CSERecipeMap;
+    CSERecipeMap* optCSERecipes = nullptr;
+
+    bool optCSEGetLoadRecipe(GenTree* expr, CSERecipe* recipe);
+
+    // Set by LSRA: the CSE locals it rebuilds from their recipe instead of keeping a stack copy,
+    // and where the base is for each node that rebuilds one (a register, or REG_STK for its home).
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, regNumber> RematBaseLocationMap;
+    CSERecipeMap*         lsraReconstructible    = nullptr;
+    RematBaseLocationMap* lsraRematBaseLocations = nullptr;
+    // The base node that accompanies each use of a rebuilt local, holding the base's location there.
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, GenTree*> RematCompanionMap;
+    RematCompanionMap* lsraRematCompanions = nullptr;
+    // Companions that took no part in allocation, because their local kept its register.
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool> RematInertSet;
+    RematInertSet* lsraInertCompanions = nullptr;
+    // Definitions whose load is contained in the store: allocation decides whether the local is
+    // materialized. The use that follows each one may then read the load in its consumer.
+    RematInertSet* lsraOptionalDefs  = nullptr;
+    RematInertSet* lsraFoldableUses  = nullptr;
+
+    bool lsraIsReconstructible(unsigned lclNum, CSERecipe* recipe = nullptr)
+    {
+        return (lsraReconstructible != nullptr) && lsraReconstructible->Lookup(lclNum, recipe);
+    }
+#endif
+
+    // Whether a local may be neither in a register nor on the frame: one without references, or
+    // one rebuilt from its recipe, which is its only home.
+    bool lvaMayHaveNoHome(unsigned lclNum)
+    {
+#ifdef TARGET_AMD64
+        if (lsraIsReconstructible(lclNum))
+        {
+            return true;
+        }
+#endif
+        return lvaGetDesc(lclNum)->lvRefCnt() == 0;
+    }
 
     bool optIsCSEcandidate(GenTree* tree, bool isReturn = false);
 

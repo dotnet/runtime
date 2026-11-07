@@ -719,12 +719,12 @@ public:
                                     DEBUG_ARG(BasicBlock* toBlock));
 #endif
 
-    void addResolution(BasicBlock*     block,
-                       GenTree*        insertionPoint,
-                       Interval*       interval,
-                       regNumber       outReg,
-                       regNumber inReg DEBUG_ARG(BasicBlock* fromBlock) DEBUG_ARG(BasicBlock* toBlock)
-                           DEBUG_ARG(const char* reason));
+    GenTree* addResolution(BasicBlock*     block,
+                           GenTree*        insertionPoint,
+                           Interval*       interval,
+                           regNumber       outReg,
+                           regNumber inReg DEBUG_ARG(BasicBlock* fromBlock) DEBUG_ARG(BasicBlock* toBlock)
+                               DEBUG_ARG(const char* reason));
 
     void handleOutgoingCriticalEdges(BasicBlock* block);
 
@@ -1108,7 +1108,15 @@ private:
     void writeLocalReg(GenTreeLclVar* lclNode, unsigned varNum, regNumber reg);
     void resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, RefPosition* currentRefPosition);
 
-    void insertMove(BasicBlock* block, GenTree* insertionPoint, unsigned lclNum, regNumber inReg, regNumber outReg);
+    GenTree* insertMove(BasicBlock* block, GenTree* insertionPoint, unsigned lclNum, regNumber inReg, regNumber outReg);
+#ifdef TARGET_AMD64
+    void findReconstructibleLocals();
+    // The use of the rebuilt local that each companion reference accompanies.
+    typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> RematCompanionUseMap;
+    RematCompanionUseMap*                                                         rematCompanionUses = nullptr;
+    // Where the rebuilt local whose use was just allocated was referenced before that use.
+    LsraLocation rematLocalPreviousLocation = MinLocation;
+#endif
 
     void insertSwap(
         BasicBlock* block, GenTree* insertionPoint, unsigned lclNum1, regNumber reg1, unsigned lclNum2, regNumber reg2);
@@ -2569,6 +2577,12 @@ public:
 
     unsigned char copyReg : 1;
     unsigned char moveReg : 1; // true if this var is moved to a new register
+#ifdef TARGET_AMD64
+    // true if this is the base reference that accompanies a use of a rebuilt local
+    unsigned char isRematCompanion : 1;
+    // true if that local had its register at the use, so the companion takes no part in allocation
+    unsigned char isRematCompanionInert : 1;
+#endif
 
     unsigned char isPhysRegRef  : 1; // true if 'referent' points of a RegRecord, false if it points to an Interval
     unsigned char isFixedRegRef : 1;
@@ -2635,6 +2649,10 @@ public:
         , writeThru(false)
         , copyReg(false)
         , moveReg(false)
+#ifdef TARGET_AMD64
+        , isRematCompanion(false)
+        , isRematCompanionInert(false)
+#endif
         , isPhysRegRef(false)
         , isFixedRegRef(false)
         , isLocalDefUse(false)

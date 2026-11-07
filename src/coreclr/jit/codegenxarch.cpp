@@ -5121,9 +5121,16 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         }
         else if (targetReg == REG_NA)
         {
-            // stack store
-            emit->emitInsStoreLcl(ins_Store(targetType, m_compiler->isSIMDTypeLocalAligned(lclNum)),
-                                  emitTypeSize(targetType), lclNode);
+            // stack store, which a rebuilt local does not have
+            bool needsStore = true;
+#ifdef TARGET_AMD64
+            needsStore = !m_compiler->lsraIsReconstructible(lclNum);
+#endif
+            if (needsStore)
+            {
+                emit->emitInsStoreLcl(ins_Store(targetType, m_compiler->isSIMDTypeLocalAligned(lclNum)),
+                                      emitTypeSize(targetType), lclNode);
+            }
         }
         else
         {
@@ -5140,7 +5147,17 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 op1->SetContained();
             }
 
-            if (!op1->isUsedFromReg())
+            bool isOptionalDef = false;
+#ifdef TARGET_AMD64
+            isOptionalDef = (m_compiler->lsraOptionalDefs != nullptr) && m_compiler->lsraOptionalDefs->Lookup(lclNode);
+#endif
+            if (isOptionalDef)
+            {
+                // An optional definition given a register materializes the local with its load.
+                assert(op1->isContained() && op1->OperIs(GT_IND));
+                emit->emitInsLoadInd(ins_Load(targetType), emitTypeSize(targetType), targetReg, op1->AsIndir());
+            }
+            else if (!op1->isUsedFromReg())
             {
                 // Currently, we assume that the non-reg source of a GT_STORE_LCL_VAR writing to a register
                 // must be a constant. However, in the future we might want to support an operand used from

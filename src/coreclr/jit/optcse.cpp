@@ -567,11 +567,14 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         // If the value number for op2 and tree are different, then some new
         // exceptions were produced by op1. For that case we will NOT use the
         // normal value. This allows us to CSE commas with an op1 that is
-        // an BOUNDS_CHECK.
+        // an BOUNDS_CHECK. Only the exceptions op1 adds go into the key, without
+        // its null checks: those may differ between copies of the same load, and
+        // whether a def covers a use's exceptions is decided in availability.
         //
         if (vnOp2Lib != vnLib)
         {
-            key = vnLib; // include the exc set in the hash key
+            key = vnStore->VNWithExc(vnLibNorm, vnStore->VNExcSetWithoutNullChecks(
+                                                    vnStore->VNExceptionSet(tree->AsOp()->gtOp1->GetVN(VNK_Liberal))));
         }
         else
         {
@@ -686,6 +689,14 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdIsSharedConst = isSharedConst;
         }
 
+        // Availability only needs the exceptions that defs rule out when occurrences
+        // differ in their exception sets.
+        if (!hashDsc->csdMixedExcSets && (vnStore->VNExceptionSet(vnLib) !=
+                                          vnStore->VNExceptionSet(hashDsc->csdTreeList.tslTree->GetVN(VNK_Liberal))))
+        {
+            hashDsc->csdMixedExcSets = true;
+        }
+
         // Append this expression to the end of the list
 
         treeStmtLst* newElem = new (this, CMK_TreeStatementList) treeStmtLst;
@@ -757,6 +768,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
             hashDsc->csdIndex          = 0;
             hashDsc->csdIsSharedConst  = false;
+            hashDsc->csdMixedExcSets   = false;
             hashDsc->csdLiveAcrossCall = false;
             hashDsc->csdDefCount       = 0;
             hashDsc->csdUseCount       = 0;
@@ -1563,6 +1575,13 @@ void Compiler::optValnumCSE_DataFlow()
 //        e.g. m.a = p.a;
 //             e1 = (m.a + q.b)  :: e1 and e2 have different exception sets.
 //             e2 = (p.a + q.b)     but both compute the same normal value
+//     3. An earlier phase proved that an operation cannot fault in one place but not
+//        in another, e.g. local assertion prop marks only some indirections of the
+//        same address as non-faulting.
+//
+//     A def that is itself an indirection has established that its address is non-null,
+//     even when an earlier phase removed that null check from its exception set, so uses
+//     may rely on it. This handles case 3 for defs that load directly.
 //
 void Compiler::optValnumCSE_Availability()
 {
@@ -1661,13 +1680,24 @@ void Compiler::optValnumCSE_Availability()
                     {
                         // This is a CSE def
 
+                        // Besides the exceptions in its own VN, a def that loads through an address rules
+                        // out that address's null check, which an earlier phase may have dropped from it.
+                        //
+                        ValueNum defExcSet = theLiberalExcSet;
+                        if (desc->csdMixedExcSets && tree->OperIsIndirOrArrMetaData())
+                        {
+                            ValueNum const ownNullCheck =
+                                fgValueNumberIndirNullCheckExceptions(tree->GetIndirOrArrMetaDataAddr()).GetLiberal();
+                            defExcSet = vnStore->VNExcSetUnion(theLiberalExcSet, ownNullCheck);
+                        }
+
                         // Is defExcSetCurrent still set to the uninit marker value of VNForNull() ?
                         if (desc->defExcSetCurrent == vnStore->VNForNull())
                         {
                             // This is the first time visited, so record this defs exception set
-                            desc->defExcSetCurrent = theLiberalExcSet;
+                            desc->defExcSetCurrent = defExcSet;
                         }
-                        else if (desc->defExcSetCurrent != theLiberalExcSet)
+                        else if (desc->defExcSetCurrent != defExcSet)
                         {
                             // We will change the value of desc->defExcSetCurrent to be the intersection of
                             // these two sets.
@@ -1675,7 +1705,7 @@ void Compiler::optValnumCSE_Availability()
                             // far)
                             //
                             ValueNum intersectionExcSet =
-                                vnStore->VNExcSetIntersection(desc->defExcSetCurrent, theLiberalExcSet);
+                                vnStore->VNExcSetIntersection(desc->defExcSetCurrent, defExcSet);
 #ifdef DEBUG
                             if (this->verbose)
                             {
@@ -1683,8 +1713,8 @@ void Compiler::optValnumCSE_Availability()
                                 vnStore->vnDumpExc(this, desc->defExcSetCurrent);
                                 printf("\n");
 
-                                printf(">>> theLiberalExcSet is ");
-                                vnStore->vnDumpExc(this, theLiberalExcSet);
+                                printf(">>> defExcSet is ");
+                                vnStore->vnDumpExc(this, defExcSet);
                                 printf("\n");
 
                                 printf(">>> the intersectionExcSet is ");
@@ -1703,9 +1733,9 @@ void Compiler::optValnumCSE_Availability()
                         //
                         if (desc->defExcSetPromise != vnStore->VNForEmptyExcSet())
                         {
-                            // The exception set held in desc->defExcSetPromise must be a subset of theLiberalExcSet
+                            // The exception set held in desc->defExcSetPromise must be a subset of defExcSet
                             //
-                            if (vnStore->VNExcIsSubset(theLiberalExcSet, desc->defExcSetPromise))
+                            if (vnStore->VNExcIsSubset(defExcSet, desc->defExcSetPromise))
                             {
                                 // This new def still satisfies any promise made to all the CSE uses that we have
                                 // encountered
@@ -5142,6 +5172,50 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
     ArrayStack<UseDefLocation> defUses(m_compiler->getAllocator(CMK_CSE));
 
+#ifdef TARGET_AMD64
+    // Record how to rebuild the local when every occurrence is the same load from one base.
+    if (!isSharedConst && varTypeIsIntegral(cseLclVarTyp) && !varTypeIsGC(cseLclVarTyp))
+    {
+        Compiler::CSERecipe recipe    = {};
+        bool                hasRecipe = false;
+        bool                agree     = true;
+        for (lst = &dsc->csdTreeList; (lst != nullptr) && agree; lst = lst->tslNext)
+        {
+            if (!IS_CSE_INDEX(lst->tslTree->gtCSEnum))
+            {
+                continue;
+            }
+
+            Compiler::CSERecipe occurrence = {};
+            if (!m_compiler->optCSEGetLoadRecipe(lst->tslTree, &occurrence))
+            {
+                agree = false;
+            }
+            else if (!hasRecipe)
+            {
+                recipe    = occurrence;
+                hasRecipe = true;
+            }
+            else
+            {
+                agree = (occurrence.baseLclNum == recipe.baseLclNum) && (occurrence.offset == recipe.offset) &&
+                        (occurrence.oper == recipe.oper) && (occurrence.type == recipe.type);
+            }
+        }
+
+        if (hasRecipe && agree)
+        {
+            if (m_compiler->optCSERecipes == nullptr)
+            {
+                m_compiler->optCSERecipes =
+                    new (m_compiler, CMK_CSE) Compiler::CSERecipeMap(m_compiler->getAllocator(CMK_CSE));
+            }
+            m_compiler->optCSERecipes->Set(cseLclVarNum, recipe);
+            JITDUMP("V%02u can be rebuilt from V%02u + %d\n", cseLclVarNum, recipe.baseLclNum, recipe.offset);
+        }
+    }
+#endif
+
     // First process the defs.
     for (lst = &dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
     {
@@ -5357,6 +5431,56 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         }
     }
 }
+
+#ifdef TARGET_AMD64
+//------------------------------------------------------------------------
+// optCSEGetLoadRecipe: Get how to rebuild an invariant load from a local.
+//
+// Arguments:
+//   expr   - an expression
+//   recipe - [out] the base local, offset and kind of load
+//
+// Returns:
+//   True if the expression is an integer load at a small offset from a reference local that
+//   reads the same value wherever that local holds the same object.
+//
+bool Compiler::optCSEGetLoadRecipe(GenTree* expr, CSERecipe* recipe)
+{
+    if (!expr->TypeIs(TYP_INT, TYP_LONG))
+    {
+        return false;
+    }
+
+    GenTree*       addr   = nullptr;
+    target_ssize_t offset = 0;
+    if (expr->OperIs(GT_ARR_LENGTH))
+    {
+        addr   = expr->AsArrLen()->ArrRef();
+        offset = expr->AsArrLen()->ArrLenOffset();
+    }
+    else if (expr->OperIs(GT_IND) && !expr->AsIndir()->IsVolatile())
+    {
+        addr = expr->AsIndir()->Addr();
+        gtPeelOffsets(&addr, &offset);
+
+        // A pointer-sized load at offset zero of an object reads its method table, which never
+        // changes, even when the load is not marked invariant.
+        bool isMethodTable = (offset == 0) && expr->TypeIs(TYP_I_IMPL) && addr->TypeIs(TYP_REF);
+        if (!expr->AsIndir()->IsInvariantLoad() && !isMethodTable)
+        {
+            return false;
+        }
+    }
+
+    if ((addr == nullptr) || !addr->OperIs(GT_LCL_VAR) || !addr->TypeIs(TYP_REF) || (offset < 0) || (offset > 127))
+    {
+        return false;
+    }
+
+    *recipe = {addr->AsLclVar()->GetLclNum(), (int)offset, expr->OperGet(), expr->TypeGet()};
+    return true;
+}
+#endif
 
 //------------------------------------------------------------------------
 // ReplaceCSENode:

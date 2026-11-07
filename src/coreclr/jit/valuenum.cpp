@@ -1102,6 +1102,70 @@ ValueNum ValueNumStore::VNExcSetUnion(ValueNum xs0, ValueNum xs1)
 // Notes:   - This method is used to form a Value Number Pair when we
 //            want both the Liberal and Conservative Value Numbers
 //
+//--------------------------------------------------------------------------------
+// VNExcSetRemove: The exception set "xs" without the item "item".
+//
+// Arguments:
+//    xs   - the exception set
+//    item - the exception item to remove, which need not be in the set
+//
+// Return Value:
+//    The set without the item, "xs" itself when the item is not in it.
+//
+ValueNum ValueNumStore::VNExcSetRemove(ValueNum xs, ValueNum item)
+{
+    if (xs == VNForEmptyExcSet())
+    {
+        return xs;
+    }
+
+    VNFuncApp funcXs;
+    bool      b = GetVNFunc(xs, &funcXs);
+    assert(b && funcXs.FuncIs(VNF_ExcSetCons)); // Precondition: xs is an exception set.
+
+    ValueNum const head = funcXs.GetArg(0);
+    ValueNum const rest = funcXs.GetArg(1);
+    if (head == item)
+    {
+        return rest;
+    }
+
+    ValueNum const newRest = VNExcSetRemove(rest, item);
+    return (newRest == rest) ? xs : VNForFuncNoFolding(TYP_REF, VNF_ExcSetCons, head, newRest);
+}
+
+//--------------------------------------------------------------------------------
+// VNExcSetWithoutNullChecks: The exception set "xs" without its NullPtrExc items.
+//
+// Arguments:
+//    xs - the exception set
+//
+// Return Value:
+//    The set without null checks, "xs" itself when it has none.
+//
+ValueNum ValueNumStore::VNExcSetWithoutNullChecks(ValueNum xs)
+{
+    if (xs == VNForEmptyExcSet())
+    {
+        return xs;
+    }
+
+    VNFuncApp funcXs;
+    bool      b = GetVNFunc(xs, &funcXs);
+    assert(b && funcXs.FuncIs(VNF_ExcSetCons)); // Precondition: xs is an exception set.
+
+    ValueNum const head    = funcXs.GetArg(0);
+    ValueNum const newRest = VNExcSetWithoutNullChecks(funcXs.GetArg(1));
+
+    VNFuncApp funcHead;
+    if (GetVNFunc(head, &funcHead) && funcHead.FuncIs(VNF_NullPtrExc))
+    {
+        return newRest;
+    }
+
+    return (newRest == funcXs.GetArg(1)) ? xs : VNForFuncNoFolding(TYP_REF, VNF_ExcSetCons, head, newRest);
+}
+
 ValueNumPair ValueNumStore::VNPExcSetUnion(ValueNumPair xs0vnp, ValueNumPair xs1vnp)
 {
     return ValueNumPair(VNExcSetUnion(xs0vnp.GetLiberal(), xs1vnp.GetLiberal()),
@@ -11967,6 +12031,8 @@ PhaseStatus Compiler::fgValueNumber()
     // Compute the side effects of loops.
     optComputeLoopSideEffects();
 
+    vnSurvivedExceptions = new (getAllocator(CMK_ValueNumber)) SurvivedExceptionsMap(getAllocator(CMK_ValueNumber));
+
     // At the block level, we will use a modified worklist algorithm.  We will have two
     // "todo" sets of unvisited blocks.  Blocks (other than the entry block) are put in a
     // todo set only when some predecessor has been visited, so all blocks have at least one
@@ -12065,6 +12131,7 @@ PhaseStatus Compiler::fgValueNumber()
     fgDebugCheckExceptionSets();
 #endif // DEBUG
 
+    vnSurvivedExceptions = nullptr;
     fgVNPassesCompleted++;
     vnState = nullptr;
 
@@ -15748,6 +15815,11 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
             fgValueNumberHelperCallFunc(call, vnf, vnpExc);
 
+            if (vnf == VNF_CastClass)
+            {
+                fgVNDropSurvivedCastException(call);
+            }
+
             return modHeap;
         }
         else
@@ -15787,8 +15859,168 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
         return;
     }
 
-    // Add the NullPtrExc to "tree"'s value numbers.
-    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, fgValueNumberIndirNullCheckExceptions(baseAddr));
+    ValueNum baseLVN;
+    ValueNum baseCVN;
+    fgVNNullCheckBases(baseAddr, &baseLVN, &baseCVN);
+
+    // A base known non-null needs neither the check nor a record, it stays known non-null below.
+    // The two sides usually share a base, then the item is looked up and recorded once.
+    ValueNumPair excChkSet = vnStore->VNPForEmptyExcSet();
+    ValueNum     itemL     = ValueNumStore::NoVN;
+    bool         survivedL = false;
+    if (!vnStore->IsKnownNonNull(baseLVN))
+    {
+        itemL     = vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, baseLVN);
+        survivedL = fgVNSurvivedException(itemL);
+        if (!survivedL)
+        {
+            excChkSet.SetLiberal(vnStore->VNExcSetSingleton(itemL));
+        }
+    }
+    if (!vnStore->IsKnownNonNull(baseCVN))
+    {
+        // A conservative base that differs from the liberal one is unique to this load and never
+        // recurs, so it is neither looked up nor recorded.
+        if ((baseCVN == baseLVN) && (itemL != ValueNumStore::NoVN))
+        {
+            if (!survivedL)
+            {
+                excChkSet.SetConservative(vnStore->VNExcSetSingleton(itemL));
+            }
+        }
+        else
+        {
+            excChkSet.SetConservative(vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, baseCVN)));
+        }
+    }
+
+    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excChkSet);
+}
+
+//--------------------------------------------------------------------------------
+// fgVNSurvivedException: Whether this exception item is ruled out at the current point, and record
+//    that the current block survives it. A block one of the recorded blocks dominates adds nothing; a
+//    block dominating a recorded one takes its place; any other is a further way of reaching the item
+//    and is added. One hash lookup serves both.
+//
+// Arguments:
+//    excItemVN - the exception item
+//
+// Return Value:
+//    True if a block that survived the item dominates the current one, or every predecessor is
+//    dominated by one, the join of a diamond.
+//
+bool Compiler::fgVNSurvivedException(ValueNum excItemVN)
+{
+    if ((vnSurvivedExceptions == nullptr) || (compCurBB == nullptr) || (m_domTree == nullptr))
+    {
+        return false;
+    }
+
+    SurvivedBlocks* const blocks = vnSurvivedExceptions->LookupPointerOrAdd(excItemVN, SurvivedBlocks());
+    if (blocks->first == nullptr)
+    {
+        blocks->first = compCurBB;
+        return false;
+    }
+
+    const int count   = 1 + ((blocks->more == nullptr) ? 0 : blocks->more->Height());
+    auto      blockAt = [blocks](int i) -> BasicBlock*& {
+        return (i == 0) ? blocks->first : blocks->more->BottomRef(i - 1);
+    };
+
+    for (int i = 0; i < count; i++)
+    {
+        if (m_domTree->Dominates(blockAt(i), compCurBB))
+        {
+            return true;
+        }
+    }
+
+    // Not dominated by a survivor. A join reached only through survivors counts as one and is recorded
+    // as a survivor itself. Any other block is a further way of reaching the item. The join is judged on
+    // its dominance predecessors, so a handler counts every way the try can be left before completing.
+    FlowEdge* const domPreds    = BlockDominancePreds(compCurBB);
+    bool            joinCovered = domPreds != nullptr;
+    for (FlowEdge* edge = domPreds; edge != nullptr; edge = edge->getNextPredEdge())
+    {
+        BasicBlock* const pred = edge->getSourceBlock();
+        if (!m_dfsTree->Contains(pred))
+        {
+            continue;
+        }
+
+        bool predCovered = false;
+        for (int i = 0; i < count; i++)
+        {
+            if (m_domTree->Dominates(blockAt(i), pred))
+            {
+                predCovered = true;
+                break;
+            }
+        }
+        if (!predCovered)
+        {
+            joinCovered = false;
+            break;
+        }
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        if (m_domTree->Dominates(compCurBB, blockAt(i)))
+        {
+            blockAt(i) = compCurBB;
+            return joinCovered;
+        }
+    }
+    if (blocks->more == nullptr)
+    {
+        blocks->more = new (getAllocator(CMK_ValueNumber)) ArrayStack<BasicBlock*>(getAllocator(CMK_ValueNumber), 2);
+    }
+    blocks->more->Push(compCurBB);
+    return joinCovered;
+}
+
+//--------------------------------------------------------------------------------
+// fgVNDropSurvivedCastException: Drop a cast helper call's InvalidCastExc when a dominating cast of
+//    the same object to the same class has been survived, and record this one.
+//
+// Arguments:
+//    call - the CastClass helper call, already value numbered
+//
+// Notes:
+//    The cast's value number is memoized per object and class, so the exception is removed from the
+//    call's set here rather than left out when the value number is first built.
+//
+void Compiler::fgVNDropSurvivedCastException(GenTreeCall* call)
+{
+    GenTree* const castTo = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+    GenTree* const obj    = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+    ValueNum const itemL =
+        vnStore->VNForFuncNoFolding(TYP_REF, VNF_InvalidCastExc, vnStore->VNNormalValue(obj->gtVNPair.GetLiberal()),
+                                    vnStore->VNNormalValue(castTo->gtVNPair.GetLiberal()));
+    ValueNum const itemC     = vnStore->VNForFuncNoFolding(TYP_REF, VNF_InvalidCastExc,
+                                                           vnStore->VNNormalValue(obj->gtVNPair.GetConservative()),
+                                                           vnStore->VNNormalValue(castTo->gtVNPair.GetConservative()));
+    bool const     survivedL = fgVNSurvivedException(itemL);
+    bool const     survivedC = (itemC == itemL) && survivedL;
+
+    if (survivedL)
+    {
+        ValueNum norm;
+        ValueNum exc;
+        vnStore->VNUnpackExc(call->gtVNPair.GetLiberal(), &norm, &exc);
+        call->gtVNPair.SetLiberal(vnStore->VNWithExc(norm, vnStore->VNExcSetRemove(exc, itemL)));
+    }
+    if (survivedC)
+    {
+        ValueNum norm;
+        ValueNum exc;
+        vnStore->VNUnpackExc(call->gtVNPair.GetConservative(), &norm, &exc);
+        call->gtVNPair.SetConservative(vnStore->VNWithExc(norm, vnStore->VNExcSetRemove(exc, itemC)));
+    }
 }
 
 //--------------------------------------------------------------------------------
@@ -15801,43 +16033,11 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
 // Return Value:
 //   VNP representing exception set.
 //
-//
-// Notes:
-//   The calculation of the base address removes any constant offsets, so that
-//   obj.x and obj.y will both have obj as their base address. For arrays the
-//   base address currently includes the index calculations.
-//
 ValueNumPair Compiler::fgValueNumberIndirNullCheckExceptions(GenTree* baseAddr)
 {
-    // We evaluate the baseAddr ValueNumber further in order
-    // to obtain a better value to use for the null check exception.
-    //
-    ValueNumPair baseVNP = vnStore->VNPNormalPair(baseAddr->gtVNPair);
-    ValueNum     baseLVN = baseVNP.GetLiberal();
-    ValueNum     baseCVN = baseVNP.GetConservative();
-
-    assert(baseVNP.BothDefined());
-
-    target_ssize_t offsetL = 0;
-    target_ssize_t offsetC = 0;
-
-    // baseAddr could be a SIMD for certain implicit indirs, e.g. GatherVector API.
-    if (!varTypeIsSIMD(baseAddr))
-    {
-        vnStore->PeelOffsets(&baseLVN, &offsetL);
-        if (fgIsBigOffset(offsetL))
-        {
-            // Reset baseLVN back to the full address expression
-            baseLVN = baseVNP.GetLiberal();
-        }
-
-        vnStore->PeelOffsets(&baseCVN, &offsetC);
-        if (fgIsBigOffset(offsetC))
-        {
-            // Reset baseCVN back to the full address expression
-            baseCVN = baseVNP.GetConservative();
-        }
-    }
+    ValueNum baseLVN;
+    ValueNum baseCVN;
+    fgVNNullCheckBases(baseAddr, &baseLVN, &baseCVN);
 
     // The normal VNs for base address are used to create the NullPtrExcs
     ValueNumPair excChkSet = vnStore->VNPForEmptyExcSet();
@@ -15853,6 +16053,53 @@ ValueNumPair Compiler::fgValueNumberIndirNullCheckExceptions(GenTree* baseAddr)
     }
 
     return excChkSet;
+}
+
+//--------------------------------------------------------------------------------
+// fgVNNullCheckBases:
+//   The value numbers a null check of an address is keyed on.
+//
+// Arguments:
+//    baseAddr - The address that we are indirecting
+//    baseLVN  - [out] the liberal base
+//    baseCVN  - [out] the conservative base
+//
+// Notes:
+//   The calculation of the base address removes any constant offsets, so that
+//   obj.x and obj.y will both have obj as their base address. For arrays the
+//   base address currently includes the index calculations.
+//
+void Compiler::fgVNNullCheckBases(GenTree* baseAddr, ValueNum* baseLVN, ValueNum* baseCVN)
+{
+    // We evaluate the baseAddr ValueNumber further in order
+    // to obtain a better value to use for the null check exception.
+    //
+    ValueNumPair baseVNP = vnStore->VNPNormalPair(baseAddr->gtVNPair);
+    *baseLVN             = baseVNP.GetLiberal();
+    *baseCVN             = baseVNP.GetConservative();
+
+    assert(baseVNP.BothDefined());
+
+    target_ssize_t offsetL = 0;
+    target_ssize_t offsetC = 0;
+
+    // baseAddr could be a SIMD for certain implicit indirs, e.g. GatherVector API.
+    if (!varTypeIsSIMD(baseAddr))
+    {
+        vnStore->PeelOffsets(baseLVN, &offsetL);
+        if (fgIsBigOffset(offsetL))
+        {
+            // Reset baseLVN back to the full address expression
+            *baseLVN = baseVNP.GetLiberal();
+        }
+
+        vnStore->PeelOffsets(baseCVN, &offsetC);
+        if (fgIsBigOffset(offsetC))
+        {
+            // Reset baseCVN back to the full address expression
+            *baseCVN = baseVNP.GetConservative();
+        }
+    }
 }
 
 //--------------------------------------------------------------------------------
@@ -16071,25 +16318,53 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper,
     ValueNumPair vnpDivZeroExc = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair vnpArithmExc  = ValueNumStore::VNPForEmptyExcSet();
 
-    if (needDivideByZeroExcLib)
+    // A dominating division by the same divisor has been survived, so it is not zero here; the same
+    // for overflow with the same dividend. Both are recorded for the divisions this one dominates.
+    // A division that cannot raise needs no record, its operands are constants below as well.
+    auto survived = [this](ValueNum item) {
+        return fgVNSurvivedException(item);
+    };
+
+    if (needDivideByZeroExcLib || needDivideByZeroExcCon)
     {
-        vnpDivZeroExc.SetLiberal(
-            vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_DivideByZeroExc, vnDivisorNormLib)));
+        ValueNum const divZeroL         = vnStore->VNForFunc(TYP_REF, VNF_DivideByZeroExc, vnDivisorNormLib);
+        bool const     divZeroSurvivedL = survived(divZeroL);
+        if (needDivideByZeroExcLib && !divZeroSurvivedL)
+        {
+            vnpDivZeroExc.SetLiberal(vnStore->VNExcSetSingleton(divZeroL));
+        }
+        if (needDivideByZeroExcCon)
+        {
+            ValueNum const divZeroC = (vnDivisorNormCon == vnDivisorNormLib)
+                                          ? divZeroL
+                                          : vnStore->VNForFunc(TYP_REF, VNF_DivideByZeroExc, vnDivisorNormCon);
+            if ((divZeroC != divZeroL) || !divZeroSurvivedL)
+            {
+                vnpDivZeroExc.SetConservative(vnStore->VNExcSetSingleton(divZeroC));
+            }
+        }
     }
-    if (needDivideByZeroExcCon)
+
+    if (needArithmeticExcLib || needArithmeticExcCon)
     {
-        vnpDivZeroExc.SetConservative(
-            vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_DivideByZeroExc, vnDivisorNormCon)));
-    }
-    if (needArithmeticExcLib)
-    {
-        vnpArithmExc.SetLiberal(vnStore->VNExcSetSingleton(
-            vnStore->VNForFuncNoFolding(TYP_REF, VNF_ArithmeticExc, vnDividendNormLib, vnDivisorNormLib)));
-    }
-    if (needArithmeticExcCon)
-    {
-        vnpArithmExc.SetConservative(vnStore->VNExcSetSingleton(
-            vnStore->VNForFuncNoFolding(TYP_REF, VNF_ArithmeticExc, vnDividendNormLib, vnDivisorNormCon)));
+        ValueNum const arithL =
+            vnStore->VNForFuncNoFolding(TYP_REF, VNF_ArithmeticExc, vnDividendNormLib, vnDivisorNormLib);
+        bool const arithSurvivedL = survived(arithL);
+        if (needArithmeticExcLib && !arithSurvivedL)
+        {
+            vnpArithmExc.SetLiberal(vnStore->VNExcSetSingleton(arithL));
+        }
+        if (needArithmeticExcCon)
+        {
+            ValueNum const arithC =
+                (vnDivisorNormCon == vnDivisorNormLib)
+                    ? arithL
+                    : vnStore->VNForFuncNoFolding(TYP_REF, VNF_ArithmeticExc, vnDividendNormLib, vnDivisorNormCon);
+            if ((arithC != arithL) || !arithSurvivedL)
+            {
+                vnpArithmExc.SetConservative(vnStore->VNExcSetSingleton(arithC));
+            }
+        }
     }
 
     return vnStore->VNPExcSetUnion(vnpDivZeroExc, vnpArithmExc);
@@ -16259,7 +16534,27 @@ void Compiler::fgValueNumberAddExceptionSetForCkFinite(GenTree* tree)
 //
 void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
 {
-    if (tree->OperMayThrow(this))
+    if (!tree->OperMayThrow(this))
+    {
+        // A node proven unable to raise its exception still survives it, which the code it
+        // dominates may rely on
+        if (tree->OperIsIndir() || tree->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND))
+        {
+            GenTree* const baseAddr = tree->OperIsIndir() ? tree->AsIndir()->Addr() : tree->AsArrCommon()->ArrRef();
+            ValueNum       baseLVN;
+            ValueNum       baseCVN;
+            fgVNNullCheckBases(baseAddr, &baseLVN, &baseCVN);
+            if (!vnStore->IsKnownNonNull(baseLVN))
+            {
+                fgVNSurvivedException(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, baseLVN));
+            }
+        }
+        else if (tree->OperIs(GT_DIV, GT_UDIV, GT_MOD, GT_UMOD) && varTypeIsIntegral(tree))
+        {
+            fgValueNumberDivisionExceptions(tree->OperGet(), tree->gtGetOp1(), tree->gtGetOp2());
+        }
+    }
+    else
     {
         switch (tree->OperGet())
         {

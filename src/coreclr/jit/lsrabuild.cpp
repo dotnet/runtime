@@ -2148,6 +2148,13 @@ void LinearScan::buildIntervals()
         setBlockSequence();
     }
 
+#ifdef TARGET_AMD64
+    if (localVarsEnregistered)
+    {
+        findReconstructibleLocals();
+    }
+#endif
+
     // Next, create ParamDef RefPositions for all the tracked parameters, in order of their varIndex.
     // Assign these RefPositions to the (nonexistent) BB0.
     curBBNum = 0;
@@ -3466,6 +3473,25 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, SingleTypeRegSet candidates,
     }
     RefPosition* useRefPos = newRefPosition(interval, currentLoc, RefTypeUse, operand, candidates, multiRegIdx);
     useRefPos->setRegOptional(regOptional);
+
+#ifdef TARGET_AMD64
+    // A use of a rebuilt local carries a reference to its base at the same location, through the
+    // base node that accompanies it, so the base's register is protected where a reload reads it.
+    GenTree* companion = nullptr;
+    if ((operand != nullptr) && (m_compiler->lsraRematCompanions != nullptr) &&
+        m_compiler->lsraRematCompanions->Lookup(operand, &companion))
+    {
+        Interval*    baseInterval = getIntervalForLocalVarNode(companion->AsLclVarCommon());
+        RefPosition* baseRef      = newRefPosition(baseInterval, currentLoc, RefTypeUse, companion, allRegs(TYP_REF));
+        baseRef->setRegOptional(true);
+        baseRef->isRematCompanion = true;
+        if (rematCompanionUses == nullptr)
+        {
+            rematCompanionUses = new (m_compiler, CMK_LSRA) RematCompanionUseMap(m_compiler->getAllocator(CMK_LSRA));
+        }
+        rematCompanionUses->Set(baseRef, useRefPos);
+    }
+#endif
     return useRefPos;
 }
 
@@ -3987,6 +4013,13 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
         // get a register.
         def->regOptional = true;
     }
+#ifdef TARGET_AMD64
+    // Allocation decides whether an optional definition materializes the local.
+    if ((m_compiler->lsraOptionalDefs != nullptr) && m_compiler->lsraOptionalDefs->Lookup(storeLoc))
+    {
+        def->regOptional = true;
+    }
+#endif
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     if (Compiler::varTypeNeedsPartialCalleeSave(varDefInterval->registerType))
     {
@@ -4145,6 +4178,14 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         assert(srcCount == 2);
     }
 #endif // !TARGET_64BIT
+#ifdef TARGET_AMD64
+    else if ((m_compiler->lsraOptionalDefs != nullptr) && m_compiler->lsraOptionalDefs->Lookup(storeLoc))
+    {
+        // An optional definition's load is contained: its address is read at the store.
+        assert(op1->isContained() && op1->OperIs(GT_IND));
+        srcCount = BuildOperandUses(op1);
+    }
+#endif
     else if (op1->isContained())
     {
         srcCount = 0;
