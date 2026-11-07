@@ -82,29 +82,27 @@ void AssemblyBinder::DeclareDependencyOnMvid(LPCUTF8 simpleName, GUID mvid, bool
         addAllLoadedModules = true;
     }
 
-    SimpleNameToExpectedMVIDAndRequiringAssembly* foundElem = (SimpleNameToExpectedMVIDAndRequiringAssembly*)m_assemblySimpleNameMvidCheckHash.LookupPtr(simpleName);
-    if (foundElem == NULL)
+    if (!m_assemblySimpleNameMvidCheckHash.Update(simpleName, [&](SimpleNameToExpectedMVIDAndRequiringAssembly &entry)
+        {
+            // Elem already exists. Determine if the existing elem is another one with the same mvid, in which case just record that a dependency is in play.
+            // If the existing elem has a different mvid, fail.
+            if (IsEqualGUID(mvid, entry.Mvid))
+            {
+                // Mvid matches exactly.
+                if (entry.AssemblyRequirementName == NULL)
+                {
+                    entry.AssemblyRequirementName = imageName;
+                    entry.CompositeComponent = compositeComponent;
+                }
+            }
+            else
+            {
+                MvidMismatchFatalError(entry.Mvid, mvid, simpleName, compositeComponent, imageName);
+            }
+        }))
     {
         SimpleNameToExpectedMVIDAndRequiringAssembly newElem(simpleName, mvid, compositeComponent, imageName);
         m_assemblySimpleNameMvidCheckHash.Add(newElem);
-    }
-    else
-    {
-        // Elem already exists. Determine if the existing elem is another one with the same mvid, in which case just record that a dependency is in play.
-        // If the existing elem has a different mvid, fail.
-        if (IsEqualGUID(mvid, foundElem->Mvid))
-        {
-            // Mvid matches exactly.
-            if (foundElem->AssemblyRequirementName == NULL)
-            {
-                foundElem->AssemblyRequirementName = imageName;
-                foundElem->CompositeComponent = compositeComponent;
-            }
-        }
-        else
-        {
-            MvidMismatchFatalError(foundElem->Mvid, mvid, simpleName, compositeComponent, imageName);
-        }
     }
 
     if (addAllLoadedModules)
@@ -127,30 +125,28 @@ void AssemblyBinder::DeclareLoadedAssembly(Assembly* loadedAssembly)
 
     LPCUTF8 simpleName = loadedAssembly->GetSimpleName();
 
-    SimpleNameToExpectedMVIDAndRequiringAssembly* foundElem = (SimpleNameToExpectedMVIDAndRequiringAssembly*)m_assemblySimpleNameMvidCheckHash.LookupPtr(simpleName);
-    if (foundElem == NULL)
+    if (!m_assemblySimpleNameMvidCheckHash.Update(simpleName, [&](SimpleNameToExpectedMVIDAndRequiringAssembly &entry)
+        {
+            // Elem already exists. Determine if the existing elem is another one with the same mvid, in which case do nothing. Everything is fine here.
+            // If the existing elem has a different mvid, but isn't a dependency on exact mvid elem, then set the mvid to all 0.
+            // If the existing elem has a different mvid, and is a dependency on exact mvid elem, then we've hit a fatal error.
+            if (IsEqualGUID(mvid, entry.Mvid))
+            {
+                // Mvid matches exactly.
+            }
+            else if (entry.AssemblyRequirementName == NULL)
+            {
+                // Another loaded assembly, set the stored Mvid to all zeroes to indicate that it isn't a unique mvid
+                memset(&entry.Mvid, 0, sizeof(GUID));
+            }
+            else
+            {
+                MvidMismatchFatalError(mvid, entry.Mvid, simpleName, entry.CompositeComponent, entry.AssemblyRequirementName);
+            }
+        }))
     {
         SimpleNameToExpectedMVIDAndRequiringAssembly newElem(simpleName, mvid, false, NULL);
         m_assemblySimpleNameMvidCheckHash.Add(newElem);
-    }
-    else
-    {
-        // Elem already exists. Determine if the existing elem is another one with the same mvid, in which case do nothing. Everything is fine here.
-        // If the existing elem has a different mvid, but isn't a dependency on exact mvid elem, then set the mvid to all 0.
-        // If the existing elem has a different mvid, and is a dependency on exact mvid elem, then we've hit a fatal error.
-        if (IsEqualGUID(mvid, foundElem->Mvid))
-        {
-            // Mvid matches exactly.
-        }
-        else if (foundElem->AssemblyRequirementName == NULL)
-        {
-            // Another loaded assembly, set the stored Mvid to all zeroes to indicate that it isn't a unique mvid
-            memset(&foundElem->Mvid, 0, sizeof(GUID));
-        }
-        else
-        {
-            MvidMismatchFatalError(mvid, foundElem->Mvid, simpleName, foundElem->CompositeComponent, foundElem->AssemblyRequirementName);
-        }
     }
 }
 #endif // FEATURE_READYTORUN

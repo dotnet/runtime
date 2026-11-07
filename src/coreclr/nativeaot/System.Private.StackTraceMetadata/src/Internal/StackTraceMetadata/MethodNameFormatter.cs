@@ -65,13 +65,13 @@ namespace Internal.StackTraceMetadata
             {
                 var args = metadataReader.GetConstantStringArray(genericArguments);
                 bool first = true;
-                foreach (Handle handle in args.Value)
+                foreach (ConstantStringValueHandle handle in args.Value)
                 {
                     if (!first)
                         formatter._outputBuilder.Append(',');
                     else
                         first = false;
-                    formatter.EmitString(handle.ToConstantStringValueHandle(metadataReader));
+                    formatter.EmitString(handle);
                 }
                 genericArgs = formatter._outputBuilder.ToString();
                 formatter._outputBuilder.Clear();
@@ -258,28 +258,12 @@ namespace Internal.StackTraceMetadata
         private void EmitNamespaceReferenceName(NamespaceReferenceHandle namespaceRefHandle)
         {
             NamespaceReference namespaceRef = _metadataReader.GetNamespaceReference(namespaceRefHandle);
-            if (!namespaceRef.ParentScopeOrNamespace.IsNil &&
-                namespaceRef.ParentScopeOrNamespace.HandleType == HandleType.NamespaceReference)
-            {
-                int charsWritten = _outputBuilder.Length;
-                EmitNamespaceReferenceName(namespaceRef.ParentScopeOrNamespace.ToNamespaceReferenceHandle(_metadataReader));
-                if (_outputBuilder.Length - charsWritten > 0)
-                    _outputBuilder.Append('.');
-            }
             EmitString(namespaceRef.Name);
         }
 
         private void EmitNamespaceDefinitionName(NamespaceDefinitionHandle namespaceDefHandle)
         {
             NamespaceDefinition namespaceDef = _metadataReader.GetNamespaceDefinition(namespaceDefHandle);
-            if (!namespaceDef.ParentScopeOrNamespace.IsNil &&
-                namespaceDef.ParentScopeOrNamespace.HandleType == HandleType.NamespaceDefinition)
-            {
-                int charsWritten = _outputBuilder.Length;
-                EmitNamespaceDefinitionName(namespaceDef.ParentScopeOrNamespace.ToNamespaceDefinitionHandle(_metadataReader));
-                if (_outputBuilder.Length - charsWritten > 0)
-                    _outputBuilder.Append('.');
-            }
             EmitString(namespaceDef.Name);
         }
 
@@ -472,9 +456,21 @@ namespace Internal.StackTraceMetadata
 
             public Handle GetMethodVariable(int index)
             {
-                return _methodContext is GenericParameterHandleCollection ?
-                    GetHandleAt((GenericParameterHandleCollection)_methodContext, index) :
-                    GetHandleAt((HandleCollection)_methodContext, index);
+                if (_methodContext is ConstantStringValueHandleCollection strings)
+                {
+                    foreach (ConstantStringValueHandle handle in strings)
+                    {
+                        if (index-- == 0)
+                            return handle;
+                    }
+
+                    Debug.Assert(false);
+                    return default;
+                }
+
+                return _methodContext is GenericParameterHandleCollection parameters
+                    ? GetHandleAt(parameters, index)
+                    : GetHandleAt((HandleCollection)_methodContext, index);
             }
 
             private static object GetTypeContext(MetadataReader metadataReader, Handle handle)

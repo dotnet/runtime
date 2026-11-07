@@ -187,18 +187,38 @@ XHARNESS_COMMAND=test-browser ./build.sh libs.tests -test -os browser -c Release
 ```
 
 Omit `RunSmokeTestsOnly` to build and run all supported library suites. To isolate trimming
-from R2R, keep `EnableAggressiveTrimming=true` and pass `PublishReadyToRun=false`.
+from R2R, keep `EnableAggressiveTrimming=true` and pass `PublishReadyToRun=false`
+and `TestTrimming=true`, so trimming remains enabled without ReadyToRun.
 Use clean project-specific `bin` and `obj` browser-wasm outputs when switching modes;
 stale staged assets can otherwise cause assembly-loading failures before tests start.
 
 The `LibraryTestsCoreCLR_R2R` CI jobs use the same configuration and archive the published
 tests for execution on Helix. The existing interpreter jobs remain separate.
 
-For CoreCLR browser applications, set `PublishReadyToRun=true` and
-`PublishReadyToRunComposite=true` to publish a single composite ReadyToRun image and
-component WebCIL stubs instead of per-assembly images. Publishing requires a wasm-capable
-crossgen2 and WebCIL enabled; the composite is loaded before the runtime starts.
-`ReadyToRunTests.PublishRunAllPagesComposite` exercises trimmed, untrimmed, and
+CoreCLR browser ReadyToRun tests publish a single composite image
+(`<test assembly>.r2r.wasm`) by default. It is staged into `wwwroot/_framework` beside
+the component WebCIL stubs and listed in the boot config.
+
+To run a library suite with per-assembly ReadyToRun images instead, add
+`PublishReadyToRunComposite=false`:
+
+```bash
+XHARNESS_COMMAND=test-browser ./build.sh libs.tests -test -os browser -c Release \
+  --projects $PWD/src/libraries/System.Memory/tests/System.Memory.Tests.csproj \
+  /p:RuntimeFlavor=CoreCLR /p:TestWasmReadyToRun=true /p:PublishReadyToRunComposite=false \
+  /p:EnableAggressiveTrimming=true /p:Scenario=WasmTestOnChrome /p:InstallChromeForTests=true
+```
+
+As with other mode switches, clean the project-specific `bin` and `obj` outputs when
+switching between composite and per-assembly images.
+
+For CoreCLR browser applications, ReadyToRun remains opt-in: set
+`PublishReadyToRun=true` to publish a single composite ReadyToRun image and component
+WebCIL stubs. Set `PublishReadyToRunComposite=false` to retain per-assembly images.
+Publishing requires a wasm-capable crossgen2. Composite publishing additionally requires
+ReadyToRun SDK tasks that support wasm composite output naming and WebCIL enabled;
+the composite is loaded before the runtime starts.
+`ReadyToRunTests.PublishRunAllPagesComposite` exercises the default mode with trimmed, untrimmed, and
 native-relinked publishes in a browser, including asset fingerprinting when
 `USE_FINGERPRINTING_FOR_TESTS=true`.
 

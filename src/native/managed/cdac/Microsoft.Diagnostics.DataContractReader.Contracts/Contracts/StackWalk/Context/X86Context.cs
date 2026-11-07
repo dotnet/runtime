@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Buffers.Binary;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
@@ -38,6 +39,10 @@ public struct X86Context : IPlatformContext
     }
 
     public readonly uint Size => 0x2cc;
+
+    public readonly uint GetSize() => (ContextFlags & (uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS
+        ? Size
+        : (uint)Marshal.OffsetOf<X86Context>(nameof(ExtendedRegisters));
 
     public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
 
@@ -174,6 +179,103 @@ public struct X86Context : IPlatformContext
             case 6: value = new TargetNUInt(Esi); return true;
             case 7: value = new TargetNUInt(Edi); return true;
             default: value = default; return false;
+        }
+    }
+
+    // The x87 FP stack exposes 8 logical registers ST(0)-ST(7); each occupies a 10-byte
+    // 80-bit slot in the FloatSave register area.
+    private const int X87RegisterCount = 8;
+
+    private static int Float80Size
+        => (int)Marshal.OffsetOf<X86Context>(nameof(ST1)) - (int)Marshal.OffsetOf<X86Context>(nameof(ST0));
+
+    public readonly bool TryReadFloatingPointRegister(int index, out double value)
+    {
+        value = 0.0;
+        if ((uint)index >= X87RegisterCount)
+            return false;
+
+        ReadOnlySpan<byte> context = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in this, 1));
+        // The availability mask exposes all 8 slots even when the live stack is shallower;
+        // out-of-depth slots read as 0.
+        if (!TryGetX87SlotOffset(context, index, out int offset))
+            return true;
+
+        if (offset + Float80Size <= context.Length)
+            value = FloatConversion.X87ExtendedToDouble(context.Slice(offset, Float80Size));
+        return true;
+    }
+
+    public bool TryWriteFloatingPointRegister(int index, double value)
+    {
+        if ((uint)index >= X87RegisterCount)
+            return false;
+
+        Span<byte> context = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        // Writing an out-of-depth (or otherwise unresolvable) slot is not supported.
+        if (!TryGetX87SlotOffset(context, index, out int offset) || offset + Float80Size > context.Length)
+            return false;
+
+        FloatConversion.X87DoubleToExtended(value, context.Slice(offset, Float80Size));
+        return true;
+    }
+
+    // Resolves the byte offset of the 80-bit slot backing logical register ST(<paramref name="logicalIndex"/>).
+    // REGISTER_X86_FPSTACK_0 names the bottom of the logical stack: ST(i) with i = top - logicalIndex.
+    // Returns false when logicalIndex is beyond the live stack depth.
+    private static bool TryGetX87SlotOffset(ReadOnlySpan<byte> context, int logicalIndex, out int offset)
+    {
+        offset = 0;
+        uint statusWord = BinaryPrimitives.ReadUInt32LittleEndian(context.Slice((int)Marshal.OffsetOf<X86Context>(nameof(StatusWord))));
+        uint rawTop = (statusWord >> 11) & 0x7;
+        uint floatStackTop = 7 - rawTop;
+        if ((uint)logicalIndex > floatStackTop)
+            return false;
+        // FNSAVE stores logical ST(0), ST(1), ... rather than physical register numbers.
+        uint slotIndex = floatStackTop - (uint)logicalIndex;
+        offset = (int)Marshal.OffsetOf<X86Context>(nameof(ST0)) + ((int)slotIndex * Float80Size);
+        return true;
+    }
+
+    public void CopyContext(ReadOnlySpan<byte> source)
+    {
+        uint flags = RawContextFlags & MemoryMarshal.Read<X86Context>(source).RawContextFlags;
+        Span<byte> destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref this, 1));
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_CONTROL) == (uint)ContextFlagsValues.CONTEXT_CONTROL)
+        {
+            int start = (int)Marshal.OffsetOf<X86Context>(nameof(Ebp));
+            int end = (int)Marshal.OffsetOf<X86Context>(nameof(ExtendedRegisters));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_INTEGER) == (uint)ContextFlagsValues.CONTEXT_INTEGER)
+        {
+            int start = (int)Marshal.OffsetOf<X86Context>(nameof(Edi));
+            int end = (int)Marshal.OffsetOf<X86Context>(nameof(Ebp));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_SEGMENTS) == (uint)ContextFlagsValues.CONTEXT_SEGMENTS)
+        {
+            int start = (int)Marshal.OffsetOf<X86Context>(nameof(Gs));
+            int end = (int)Marshal.OffsetOf<X86Context>(nameof(Edi));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS)
+        {
+            int start = (int)Marshal.OffsetOf<X86Context>(nameof(Dr0));
+            int end = (int)Marshal.OffsetOf<X86Context>(nameof(ControlWord));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT) == (uint)ContextFlagsValues.CONTEXT_FLOATING_POINT)
+        {
+            int start = (int)Marshal.OffsetOf<X86Context>(nameof(ControlWord));
+            int end = (int)Marshal.OffsetOf<X86Context>(nameof(Gs));
+            source[start..end].CopyTo(destination[start..end]);
+        }
+        if ((flags & (uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS) == (uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS)
+        {
+            int start = (int)Marshal.OffsetOf<X86Context>(nameof(ExtendedRegisters));
+            int end = (int)Size;
+            source[start..end].CopyTo(destination[start..end]);
         }
     }
 
@@ -336,11 +438,11 @@ public struct X86Context : IPlatformContext
     [FieldOffset(0xb8)]
     public uint Eip;
 
-    [Register(RegisterType.Segments)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0xbc)]
     public uint Cs;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0xc0)]
     public uint EFlags;
 
@@ -348,12 +450,13 @@ public struct X86Context : IPlatformContext
     [FieldOffset(0xc4)]
     public uint Esp;
 
-    [Register(RegisterType.Segments)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0xc8)]
     public uint Ss;
 
     #endregion
 
+    [Register(RegisterType.Extended)]
     [FieldOffset(0xcc)]
     public unsafe fixed byte ExtendedRegisters[512];
 }

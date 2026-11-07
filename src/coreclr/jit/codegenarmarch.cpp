@@ -1079,7 +1079,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                     // Load from our address expression source
                     emit->emitIns_R_R_R_I(INS_ldp, emitTypeSize(type0), loReg, hiReg, addrReg, structOffset,
-                                          INS_OPTS_NONE, emitTypeSize(type0));
+                                          INS_OPTS_NONE, emitTypeSize(type1));
                 }
 
                 // Emit stp instruction to store the two registers into the outgoing argument area

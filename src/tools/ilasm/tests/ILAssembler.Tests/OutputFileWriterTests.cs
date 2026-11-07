@@ -8,7 +8,7 @@ using System.Linq;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
-namespace ILAssembler.Tests;
+namespace Microsoft.DotNet.ILAssembler.Tests;
 
 /// <summary>
 /// Tests of <see cref="OutputFileWriter"/> on real files: the PDB path, the temporary file and rename, deletion,

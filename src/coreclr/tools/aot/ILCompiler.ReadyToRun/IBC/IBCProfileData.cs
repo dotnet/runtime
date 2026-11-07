@@ -10,7 +10,8 @@ namespace ILCompiler.IBC
 {
     public class MibcConfig
     {
-        public string FormatVersion = "1.0";
+        // 1.1: ValueHistogram values are 32-bit
+        public string FormatVersion = "1.1";
         public string Os;
         public string Arch;
         public string Runtime;

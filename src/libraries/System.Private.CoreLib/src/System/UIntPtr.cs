@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -631,6 +632,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static nuint CreateChecked<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -650,6 +652,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static nuint CreateSaturating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -669,6 +672,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static nuint CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -754,9 +758,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<nuint>.TryConvertFromChecked<TOther>(TOther value, out nuint result) => TryConvertFromChecked(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFromChecked<TOther>(TOther value, out nuint result)
             where TOther : INumberBase<TOther>
         {
@@ -820,9 +826,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<nuint>.TryConvertFromSaturating<TOther>(TOther value, out nuint result) => TryConvertFromSaturating(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFromSaturating<TOther>(TOther value, out nuint result)
             where TOther : INumberBase<TOther>
         {
@@ -887,9 +895,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<nuint>.TryConvertFromTruncating<TOther>(TOther value, out nuint result) => TryConvertFromTruncating(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFromTruncating<TOther>(TOther value, out nuint result)
             where TOther : INumberBase<TOther>
         {
@@ -954,6 +964,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<nuint>.TryConvertToChecked<TOther>(nuint value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1028,6 +1039,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<nuint>.TryConvertToSaturating<TOther>(nuint value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1102,6 +1114,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<nuint>.TryConvertToTruncating<TOther>(nuint value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these

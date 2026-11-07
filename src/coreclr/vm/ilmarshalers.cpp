@@ -526,13 +526,16 @@ void ILUTF8BufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
     // Max number of bytes for UTF8 string in BMP plane is ( StringBuilder.Capacity + 1 ) * 3 + 1
     // first +1 if the high surrogate is '?' and second +1 for null byte.
 
+    // Use overflow-checked arithmetic: capacity can be up to 0x7ffffff0, so
+    // ( capacity + 1 ) * 3 + 1 does not fit in an int32.
+
     // stack: capacity_in_bytes
     pslILEmit->EmitLDC(1);
-    pslILEmit->EmitADD();
+    pslILEmit->EmitADD_OVF();
 
     // stack: capacity
     pslILEmit->EmitLDC(3);
-    pslILEmit->EmitMUL();
+    pslILEmit->EmitMUL_OVF();
 
     // stack: offset_of_null
     DWORD dwTmpOffsetOfSecretNull = pslILEmit->NewLocal(ELEMENT_TYPE_I4);
@@ -541,7 +544,7 @@ void ILUTF8BufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
 
     // make space for '\0'
     pslILEmit->EmitLDC(1);
-    pslILEmit->EmitADD();
+    pslILEmit->EmitADD_OVF();
 
     // stack: alloc_size_in_bytes
     ILCodeLabel *pAllocRejoin = pslILEmit->NewCodeLabel();
@@ -676,12 +679,12 @@ void ILWSTRBufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
     // stack: capacity
 
     pslILEmit->EmitLDC(2);
-    pslILEmit->EmitMUL();
+    pslILEmit->EmitMUL_OVF();
 
     // stack: capacity_in_bytes
 
     pslILEmit->EmitLDC(2);
-    pslILEmit->EmitADD();
+    pslILEmit->EmitADD_OVF();
 
     // stack: offset_of_secret_null
 
@@ -690,7 +693,7 @@ void ILWSTRBufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
     pslILEmit->EmitSTLOC(dwTmpOffsetOfSecretNull); // make sure the stack is empty for localloc
 
     pslILEmit->EmitLDC(2);
-    pslILEmit->EmitADD();
+    pslILEmit->EmitADD_OVF();
 
     // stack: alloc_size_in_bytes
     ILCodeLabel *pAllocRejoin = pslILEmit->NewCodeLabel();
@@ -1057,9 +1060,7 @@ namespace
     {
         CONTRACTL
         {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_PREEMPTIVE;
+            STANDARD_VM_CHECK;
             PRECONDITION(CheckPointer(pMT));
         }
         CONTRACTL_END;

@@ -71,7 +71,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 }
             }
 
-            info = new CodeBlock(startAddress, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
+            info = new CodeBlock(startAddress, methodDesc, relativeOffset, rangeSection);
             return true;
         }
 
@@ -196,7 +196,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         {
             Data.ReadyToRunHeader header = Target.ProcessedData.GetOrAdd<Data.ReadyToRunHeader>(r2rInfo.ReadyToRunHeader);
 
-            // see readytorun.h for the versioning details
+            // R2R 33, the runtime's minimum supported major version, still uses GCInfo version 5.
+            // Retain historical mappings for older target dumps; see readytorun.h for versioning details.
             return header.MajorVersion switch
             {
                 >= 21 => 5,

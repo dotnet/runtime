@@ -44,7 +44,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     A <see cref="ValidationContext" /> instance that provides context about the validation operation,
         ///     such as the object and member being validated.
         /// </param>
-        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+        /// <param name="cancellationToken">The token to observe during asynchronous validation and enumeration of the validation results.</param>
         /// <returns>
         ///     An <see cref="IAsyncEnumerable{T}" /> that yields <see cref="ValidationResult" /> instances
         ///     as each validation check completes.

@@ -18,6 +18,7 @@ typedef void (*FAVORCALLBACK)(void *);
 
 class DebuggerSteppingInfo;
 class COR_ILMETHOD_DECODER;
+class DebuggerEval;
 
 //
 // The purpose of this object is to serve as an entry point to the
@@ -39,12 +40,6 @@ public:
     virtual HRESULT Startup(void) = 0;
 
     virtual HRESULT StartupPhase2(Thread * pThread) = 0;
-
-    // Some callers into the debugger (e.g., ETW rundown) know they will need the lazy
-    // data initialized but cannot afford to have it initialized unpredictably or inside a
-    // lock.  They can use this function to force the data to be initialized at a
-    // controlled point in time
-    virtual void InitializeLazyDataIfNecessary() = 0;
 
     virtual void SetEEInterface(EEDebugInterface* i) = 0;
 
@@ -372,6 +367,17 @@ public:
     virtual void ProcessAnyPendingEvals(Thread* pThread) = 0;
 
     virtual void SendCreateThreadAtInterpreterEntry(Thread* pRuntimeThread) = 0;
+
+    virtual bool ReadFuncEvalTypeHandles(
+        DebuggerEval* pDE, TypeHandle* pTypes, uint32_t count) = 0;
+    virtual void* AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType) = 0;
+    virtual void ProtectFuncEvalByRefResult(DebuggerEval* pDE, TypeHandle resultType) = 0;
+    virtual TypeHandle GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index) = 0;
+    virtual BOOL ReadFuncEvalPrimitiveRegister(
+        DebuggerEval* pDE, UINT32 index, UINT64* pValue) = 0;
+    virtual void WriteFuncEvalRegister(
+        DebuggerEval* pDE, UINT32 index, const void* pValue, UINT32 size) = 0;
+    virtual void SetFuncEvalResultType(DebuggerEval* pDE, TypeHandle resultType) = 0;
 
 #endif //DACCESS_COMPILE
 };

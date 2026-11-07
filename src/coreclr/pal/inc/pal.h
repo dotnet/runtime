@@ -147,7 +147,6 @@ extern bool g_arm64_atomics_present;
 
 #define PAL_INITIALIZE_NONE                         0x00
 #define PAL_INITIALIZE_SYNC_THREAD                  0x01
-#define PAL_INITIALIZE_EXEC_ALLOCATOR               0x02
 #define PAL_INITIALIZE_STD_HANDLES                  0x04
 #define PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER     0x08
 #define PAL_INITIALIZE_DEBUGGER_EXCEPTIONS          0x10
@@ -165,7 +164,6 @@ extern bool g_arm64_atomics_present;
 
 // PAL_InitializeCoreCLR() flags
 #define PAL_INITIALIZE_CORECLR         (PAL_INITIALIZE | \
-                                        PAL_INITIALIZE_EXEC_ALLOCATOR | \
                                         PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER | \
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
@@ -672,141 +670,7 @@ PALAPI
 ResumeThread(
          IN HANDLE hThread);
 
-#ifdef HOST_X86
-
-//
-// ***********************************************************************************
-//
-// NOTE: These context definitions are replicated in ndp/clr/src/debug/inc/DbgTargetContext.h (for the
-// purposes manipulating contexts from different platforms during remote debugging). Be sure to keep those
-// definitions in sync if you make any changes here.
-//
-// ***********************************************************************************
-//
-
-#define SIZE_OF_80387_REGISTERS      80
-
-#define CONTEXT_i386            0x00010000
-#define CONTEXT_CONTROL         (CONTEXT_i386 | 0x00000001L) // SS:SP, CS:IP, FLAGS, BP
-#define CONTEXT_INTEGER         (CONTEXT_i386 | 0x00000002L) // AX, BX, CX, DX, SI, DI
-#define CONTEXT_SEGMENTS        (CONTEXT_i386 | 0x00000004L)
-#define CONTEXT_FLOATING_POINT  (CONTEXT_i386 | 0x00000008L) // 387 state
-#define CONTEXT_DEBUG_REGISTERS (CONTEXT_i386 | 0x00000010L)
-
-#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS)
-#define CONTEXT_EXTENDED_REGISTERS  (CONTEXT_i386 | 0x00000020L)
-#define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS)
-
-#define MAXIMUM_SUPPORTED_EXTENSION     512
-
-#define CONTEXT_XSTATE (CONTEXT_i386 | 0x40L)
-
-#define CONTEXT_EXCEPTION_ACTIVE 0x8000000L
-#define CONTEXT_SERVICE_ACTIVE 0x10000000L
-#define CONTEXT_EXCEPTION_REQUEST 0x40000000L
-#define CONTEXT_EXCEPTION_REPORTING 0x80000000L
-
-//
-// This flag is set by the unwinder if it has unwound to a call
-// site, and cleared whenever it unwinds through a trap frame.
-// It is used by language-specific exception handlers to help
-// differentiate exception scopes during dispatching.
-//
-
-#define CONTEXT_UNWOUND_TO_CALL 0x20000000
-
-typedef struct _FLOATING_SAVE_AREA {
-    DWORD   ControlWord;
-    DWORD   StatusWord;
-    DWORD   TagWord;
-    DWORD   ErrorOffset;
-    DWORD   ErrorSelector;
-    DWORD   DataOffset;
-    DWORD   DataSelector;
-    BYTE    RegisterArea[SIZE_OF_80387_REGISTERS];
-    DWORD   Cr0NpxState;
-} FLOATING_SAVE_AREA;
-
-typedef struct _CONTEXT {
-    ULONG ContextFlags;
-
-    ULONG   Dr0_PAL_Undefined;
-    ULONG   Dr1_PAL_Undefined;
-    ULONG   Dr2_PAL_Undefined;
-    ULONG   Dr3_PAL_Undefined;
-    ULONG   Dr6_PAL_Undefined;
-    ULONG   Dr7_PAL_Undefined;
-
-    FLOATING_SAVE_AREA FloatSave;
-
-    ULONG   SegGs_PAL_Undefined;
-    ULONG   SegFs_PAL_Undefined;
-    ULONG   SegEs_PAL_Undefined;
-    ULONG   SegDs_PAL_Undefined;
-
-    ULONG   Edi;
-    ULONG   Esi;
-    ULONG   Ebx;
-    ULONG   Edx;
-    ULONG   Ecx;
-    ULONG   Eax;
-
-    ULONG   Ebp;
-    ULONG   Eip;
-    ULONG   SegCs;
-    ULONG   EFlags;
-    ULONG   Esp;
-    ULONG   SegSs;
-
-    UCHAR   ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
-} CONTEXT, *PCONTEXT, *LPCONTEXT;
-
-typedef struct _KNONVOLATILE_CONTEXT {
-
-    DWORD Edi;
-    DWORD Esi;
-    DWORD Ebx;
-    DWORD Ebp;
-
-} KNONVOLATILE_CONTEXT, *PKNONVOLATILE_CONTEXT;
-
-typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
-
-    // The ordering of these fields should be aligned with that
-    // of corresponding fields in CONTEXT
-    //
-    // (See FillRegDisplay in inc/regdisp.h for details)
-    PDWORD Edi;
-    PDWORD Esi;
-    PDWORD Ebx;
-    PDWORD Edx;
-    PDWORD Ecx;
-    PDWORD Eax;
-
-    PDWORD Ebp;
-
-} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
-
-
-//
-// Context Frame
-//
-//
-// The flags field within this record controls the contents of a CONTEXT
-// record.
-//
-// If the context record is used as an input parameter, then for each
-// portion of the context record controlled by a flag whose value is
-// set, it is assumed that such portion of the context record contains
-// valid context. If the context record is being used to modify a threads
-// context, then only that portion of the threads context is modified.
-//
-// If the context record is used as an output parameter to capture the
-// context of a thread, then only those portions of the thread's context
-// corresponding to set flags will be returned.
-//
-
-#elif defined(HOST_AMD64)
+#if defined(HOST_AMD64)
 
 // copied from winnt.h
 
@@ -1424,18 +1288,37 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     /* +0x380 */ DWORD64 Wvr[ARM64_MAX_WATCHPOINTS];
 
     /* +0x390 */ DWORD64 XStateFeaturesMask;
-
-    //
-    // Sve Registers
-    //
-    // TODO-SVE: Support Vector register sizes >128bit
-    // For 128bit, Z and V registers fully overlap, so there is no need to load/store both.
-    /* +0x398 */ DWORD Vl;
-    /* +0x39c */ DWORD Ffr;
-    /* +0x3a0 */ DWORD P[16];
-    /* +0x3e0 */
+    /* +0x3a0 */
 
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+// The SVE header immediately follows CONTEXT, when CONTEXT_XSTATE is set and
+// XStateFeaturesMask contains XSTATE_MASK_ARM64_SVE.
+// If CONTEXT_SVE_STATE_HEADER.VectorLengthInBytes != 0, it is immediately
+// followed by the serialized state of the vector/predicate register files,
+// and the first-faulting register, padded to 16-byte alignment. The bottom
+// 128 bits of each Z register are duplicated in CONTEXT::V in this design.
+//
+//  +------------------------------------------+
+//  |                 CONTEXT                  |
+//  +------------------------------------------+
+//  | CONTEXT_SVE_STATE_HEADER (16 bytes)      |
+//  +------------------------------------------+
+//  | Z0..Z31 (32 * VL bytes)                  |
+//  +------------------------------------------+
+//  | P0..P15 (16 * VL/8 bytes)                |
+//  +------------------------------------------+
+//  | FFR (VL/8 bytes)                         |
+//  +------------------------------------------+
+//  | padding to 16-byte alignment             |
+//  +------------------------------------------+
+//
+// TODO-SVE: We should update this layout to conform with Windows XSTATE.
+typedef struct DECLSPEC_ALIGN(16) _CONTEXT_SVE_STATE_HEADER
+{
+    DWORD VectorLengthInBytes;
+    DWORD Reserved[3];
+} CONTEXT_SVE_STATE_HEADER, *PCONTEXT_SVE_STATE_HEADER;
 
 //
 // Nonvolatile context pointer record.
@@ -2122,12 +2005,6 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define MEM_DECOMMIT                    0x4000
 #define MEM_RELEASE                     0x8000
 #define MEM_FREE                        0x10000
-#define MEM_PRIVATE                     0x20000
-#define MEM_MAPPED                      0x40000
-#define MEM_TOP_DOWN                    0x100000
-#define MEM_WRITE_WATCH                 0x200000
-#define MEM_LARGE_PAGES                 0x20000000
-#define MEM_RESERVE_EXECUTABLE          0x40000000 // reserve memory using executable memory allocator
 
 PALIMPORT
 HANDLE
@@ -2213,60 +2090,6 @@ PAL_GetProcAddressDirect(
         IN NATIVE_LIBRARY_HANDLE dl_handle,
         IN LPCSTR lpProcName);
 
-/*++
-Function:
-  PAL_LOADLoadPEFile
-
-Abstract
-  Loads a PE file into memory.  Properly maps all of the sections in the PE file.  Returns a pointer to the
-  loaded base.
-
-Parameters:
-    IN hFile    - The file to load
-    IN offset - offset within hFile where the PE "file" is located
-
-Return value:
-    A valid base address if successful.
-    0 if failure
---*/
-PALIMPORT
-PVOID
-PALAPI
-PAL_LOADLoadPEFile(HANDLE hFile, size_t offset);
-
-/*++
-    PAL_LOADUnloadPEFile
-
-    Unload a PE file that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the file pointer returned by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-PALIMPORT
-BOOL
-PALAPI
-PAL_LOADUnloadPEFile(PVOID ptr);
-
-/*++
-    PAL_LOADMarkSectionAsNotNeeded
-
-    Mark a section as NotNeeded that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the section address mapped by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-BOOL
-PALAPI
-PAL_LOADMarkSectionAsNotNeeded(void * ptr);
-
 PALIMPORT
 FARPROC
 PALAPI
@@ -2315,82 +2138,6 @@ PALIMPORT
 LPCSTR
 PALAPI
 PAL_GetLoadLibraryError();
-
-PALIMPORT
-LPVOID
-PALAPI
-PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
-    IN LPCVOID lpBeginAddress,
-    IN LPCVOID lpEndAddress,
-    IN SIZE_T dwSize,
-    IN BOOL storeAllocationInfo);
-
-PALIMPORT
-void
-PALAPI
-PAL_GetExecutableMemoryAllocatorPreferredRange(
-    OUT PVOID *start,
-    OUT PVOID *end);
-
-PALIMPORT
-LPVOID
-PALAPI
-VirtualAlloc(
-         IN LPVOID lpAddress,
-         IN SIZE_T dwSize,
-         IN DWORD flAllocationType,
-         IN DWORD flProtect);
-
-PALIMPORT
-BOOL
-PALAPI
-VirtualFree(
-        IN LPVOID lpAddress,
-        IN SIZE_T dwSize,
-        IN DWORD dwFreeType);
-
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-
-PALIMPORT
-VOID
-PALAPI
-PAL_JitWriteProtect(bool writeEnable);
-
-#elif defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
-
-// Define empty macro for platforms that don't allow JIT write protection
-#define PAL_JitWriteProtect(writeEnable) do { } while(0)
-
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-
-PALIMPORT
-BOOL
-PALAPI
-VirtualProtect(
-           IN LPVOID lpAddress,
-           IN SIZE_T dwSize,
-           IN DWORD flNewProtect,
-           OUT PDWORD lpflOldProtect);
-
-typedef struct _MEMORY_BASIC_INFORMATION {
-    PVOID BaseAddress;
-    PVOID AllocationBase_PAL_Undefined;
-    DWORD AllocationProtect;
-    SIZE_T RegionSize;
-    DWORD State;
-    DWORD Protect;
-    DWORD Type;
-} MEMORY_BASIC_INFORMATION, *PMEMORY_BASIC_INFORMATION;
-
-PALIMPORT
-SIZE_T
-PALAPI
-VirtualQuery(
-         IN LPCVOID lpAddress,
-         OUT PMEMORY_BASIC_INFORMATION lpBuffer,
-         IN SIZE_T dwLength);
 
 #define MoveMemory memmove
 #define CopyMemory memcpy
@@ -2891,23 +2638,6 @@ Define_InterlockMethod(
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
 
-#if defined(HOST_X86)
-
-// 64-bit __atomic_exchange_n is not expanded as a compiler intrinsic on Linux x86.
-// Use inline implementation instead.
-
-inline LONGLONG InterlockedExchange64(LONGLONG volatile * Target, LONGLONG Value)
-{
-    LONGLONG Old;
-
-    do {
-        Old = *Target;
-    } while (__sync_val_compare_and_swap(Target, Old, Value) != Old);
-
-    return Old;
-}
-
-#else
 
 Define_InterlockMethod(
     LONGLONG,
@@ -2916,7 +2646,6 @@ Define_InterlockMethod(
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
 
-#endif
 
 
 /*++
@@ -3066,7 +2795,7 @@ VOID
 PALAPI
 YieldProcessor()
 {
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(HOST_AMD64)
     __asm__ __volatile__(
         "rep\n"
         "nop");
@@ -3141,6 +2870,12 @@ PALAPI
 PAL_SetActivationFunction(
     IN PAL_ActivationFunction pActivationFunction,
     IN PAL_SafeActivationCheckFunction pSafeActivationCheckFunction);
+
+// Unblock the runtime activation signal for the current thread.
+PALIMPORT
+VOID
+PALAPI
+PAL_UnmaskActivationSignal(VOID);
 
 PALIMPORT
 BOOL

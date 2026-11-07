@@ -217,7 +217,7 @@ namespace System.Globalization
 #if TARGET_BROWSER && !FEATURE_WASM_MANAGED_THREADS
             if (type == LocaleStringData.NativeDisplayName)
             {
-                return JSGetNativeDisplayName(_sWindowsName, uiCultureName ?? _sWindowsName);
+                return JSGetNativeDisplayName(uiCultureName ?? _sWindowsName, _sWindowsName);
             }
 #endif
             return IcuGetLocaleInfo(_sWindowsName, type, uiCultureName);
@@ -338,7 +338,7 @@ namespace System.Globalization
         private string IcuGetLanguageDisplayName(string cultureName)
         {
 #if TARGET_BROWSER
-            return JSGetNativeDisplayName(CultureInfo.CurrentUICulture.Name, cultureName);
+            return JSGetNativeDisplayName(cultureName, CultureInfo.CurrentUICulture.Name);
 #else
             return IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name);
 #endif

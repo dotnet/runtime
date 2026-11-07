@@ -41,6 +41,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly NodeFactory _codegenNodeFactory;
         private readonly bool _verifyTypeAndFieldLayout;
+        private readonly bool _compilesCoreLib;
 
         public bool VerifyTypeAndFieldLayout => _verifyTypeAndFieldLayout;
 
@@ -48,6 +49,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             _codegenNodeFactory = codegenNodeFactory;
             _verifyTypeAndFieldLayout = verifyTypeAndFieldLayout;
+            foreach (EcmaModule module in codegenNodeFactory.CompilationModuleGroup.CompilationModuleSet)
+            {
+                if (module == codegenNodeFactory.TypeSystemContext.SystemModule)
+                {
+                    _compilesCoreLib = true;
+                    break;
+                }
+            }
             CreateNodeCaches();
         }
 
@@ -408,9 +417,23 @@ namespace ILCompiler.DependencyAnalysis
 
         private Import CreateTypeHandleHelper(TypeDesc type)
         {
+            TypeDesc elementType = type;
+            // Other modules forbid type loading during eager fixups, and array types may not exist yet.
+            if (_compilesCoreLib && type is ArrayType { IsSzArray: true } arrayType)
+            {
+                elementType = arrayType.ElementType;
+            }
+
+            TypeFixupSignature signature = _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type);
+            if (elementType.IsPrimitive || elementType.IsString || elementType.IsObject ||
+                elementType.IsWellKnownType(WellKnownType.TypedReference))
+            {
+                return new Import(_codegenNodeFactory.EagerImports, signature);
+            }
+
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type));
+                signature);
         }
 
         private Import CreateDeclaringTypeHandleHelper(MethodWithToken method)

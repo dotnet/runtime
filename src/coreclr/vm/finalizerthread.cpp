@@ -44,7 +44,7 @@ bool FinalizerThread::IsCurrentThreadFinalizer()
     return GetThreadNULLOk() == g_pFinalizerThread;
 }
 
-#if defined(TARGET_BROWSER) || defined(TARGET_WASI)
+#if !defined(FEATURE_MULTITHREADING) && (defined(TARGET_BROWSER) || defined(TARGET_WASI))
 
 #ifdef TARGET_BROWSER
 // Browser provides this in its JS host (libSystem.Native.Browser scheduling.ts);
@@ -97,7 +97,7 @@ extern "C" void QCALLTYPE WasiFinalizer_RunWorker(QCallExceptionStatus* qcallErr
 }
 #endif
 
-#endif // TARGET_BROWSER || TARGET_WASI
+#endif // !FEATURE_MULTITHREADING && (TARGET_BROWSER || TARGET_WASI)
 
 #ifdef TARGET_WASI
 
@@ -152,7 +152,7 @@ void FinalizerThread::EnableFinalization()
 {
     WRAPPER_NO_CONTRACT;
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
     hEventFinalizer->Set();
 #elif defined(TARGET_BROWSER)
     // Defer finalization to the host's JS event loop. Running it inline from
@@ -167,7 +167,7 @@ void FinalizerThread::EnableFinalization()
     // Same constraints as browser; WASI sets a native flag observed by the
     // managed WasiEventLoop polling loop. See WasiFinalizer_Schedule above.
     WasiFinalizer_Schedule();
-#endif
+#endif // FEATURE_MULTITHREADING
 }
 
 namespace
@@ -230,10 +230,10 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef TARGET_WASM
+#ifndef FEATURE_MULTITHREADING
     return false;
 
-#else // !TARGET_WASM
+#else // FEATURE_MULTITHREADING
     Thread* finalizerThread = GetFinalizerThread();
     return finalizerThread->RequireSyncBlockCleanup()
         || SystemDomain::System()->RequireAppDomainCleanup()
@@ -244,7 +244,7 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
         || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads()
         || g_EbrCollector.CleanUpRequested();
 
-#endif // TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 }
 
 static void DoExtraWorkForFinalizer(Thread* finalizerThread)
@@ -396,7 +396,7 @@ void FinalizerThread::RaiseShutdownEvents()
 {
     WRAPPER_NO_CONTRACT;
     fQuitFinalizer = TRUE;
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
     EnableFinalization();
 
     // Do not wait for FinalizerThread if the current one is FinalizerThread.
@@ -406,11 +406,11 @@ void FinalizerThread::RaiseShutdownEvents()
         // thread's context is needed (i.e. RCW cleanup)
         hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE, false);
     }
-#else // TARGET_WASM
-    // No dedicated finalizer thread on WASM. Like every other CoreCLR
+#else // !FEATURE_MULTITHREADING
+    // No dedicated finalizer thread. Like every other CoreCLR
     // target, finalizers queued at process exit are not pumped and
     // leak by design.
-#endif // !TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 }
 
 void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
@@ -563,7 +563,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
     }
 #endif
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
 #if 0
     // Setting the event here, instead of at the bottom of the loop, could
     // cause us to skip draining the Q, if the request is made as soon as
@@ -574,7 +574,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
     // Wait for work to do...
     WaitForFinalizerEvent (hEventFinalizer);
 
-#endif // !TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 
     // Process pending finalizer work items from the GC first.
     FinalizerWorkItem* pWork = GCHeapUtilities::GetGCHeap()->GetExtraWorkForFinalization();
@@ -585,7 +585,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
         pWork = pNext;
     }
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
     if (g_TriggerHeapDump && (minipal_lowres_ticks() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
     {
@@ -636,7 +636,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
         s_InitializedFinalizerThreadForPlatform = true;
         Thread::InitializationForManagedThreadInNative(GetFinalizerThread());
     }
-#endif // !TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 
     JitHost::Reclaim();
 
@@ -654,15 +654,16 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
         GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
     FinalizeAllObjects();
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
     // Anyone waiting to drain the Q can now wake up.  Note that there is a
     // race in that another thread starting a drain, as we leave a drain, may
     // consider itself satisfied by the drain that just completed.
     // Thus we include the Full GC count that we have certaily observed.
     SignalFinalizationDone(observedFullGcCount);
-#endif // !TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 }
 
+#ifdef FEATURE_MULTITHREADING
 DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 {
     CONTRACTL
@@ -763,6 +764,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
     return 0;
 }
+#endif // FEATURE_MULTITHREADING
 
 void FinalizerThread::FinalizerThreadCreate()
 {
@@ -772,7 +774,7 @@ void FinalizerThread::FinalizerThreadCreate()
         MODE_ANY;
     } CONTRACTL_END;
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
 #ifndef TARGET_UNIX
     MHandles[kLowMemoryNotification] =
         CreateMemoryResourceNotification(LowMemoryResourceNotification);
@@ -810,10 +812,10 @@ void FinalizerThread::FinalizerThreadCreate()
         // and the moment we execute the test below.
         _ASSERTE(dwRet == 1 || dwRet == 2);
     }
-#else // !TARGET_WASM
+#else // FEATURE_MULTITHREADING
     // capture the current (single) thread as the finalizer thread
     g_pFinalizerThread = PTR_Thread(GetThread());
-#endif // !TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 }
 
 static int g_fullGcCountSeenByFinalization;
@@ -838,7 +840,7 @@ void FinalizerThread::WaitForFinalizerThreadStart()
 // Wait for the finalizer thread to complete one pass.
 void FinalizerThread::FinalizerThreadWait()
 {
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
     ASSERT(hEventFinalizerDone->IsValid());
     ASSERT(hEventFinalizer->IsValid());
     ASSERT(GetFinalizerThread());
@@ -892,11 +894,11 @@ void FinalizerThread::FinalizerThreadWait()
 
         _ASSERTE(status == WAIT_OBJECT_0);
     }
-#else // TARGET_WASM
-    // No separate finalizer thread on WASM. Drain synchronously on the
+#else // !FEATURE_MULTITHREADING
+    // No separate finalizer thread. Drain synchronously on the
     // calling thread so GC.WaitForPendingFinalizers() actually waits.
     // The re-entry guard covers a user finalizer that calls
-    // WaitForPendingFinalizers itself; the non-WASM branch above uses
+    // WaitForPendingFinalizers itself; the multithreaded branch above uses
     // IsCurrentThreadFinalizer() for the same purpose.
     static thread_local bool s_inDrain = false;
     if (s_inDrain)
@@ -913,5 +915,5 @@ void FinalizerThread::FinalizerThreadWait()
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 
     s_inDrain = false;
-#endif // !TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 }

@@ -37,7 +37,7 @@ internal static class Emitter
         sb.AppendLine("using Microsoft.Diagnostics.DataContractReader.Contracts;");
         if (needsGeneratedUsing)
         {
-            // LayoutSet and TypeNameResolver are emitted by the generator
+            // TypeLayout and TypeNameResolver are emitted by the generator
             // via RegisterPostInitializationOutput into this namespace.
             sb.AppendLine("using Microsoft.Diagnostics.DataContractReader.Generated;");
         }
@@ -49,15 +49,10 @@ internal static class Emitter
         }
 
         sb.AppendLine(BuildClassDoc(model));
-        // A partial class may add interfaces from any declaration. Lazily-read
-        // types implement IReadableData so callers can force a full read.
-        if (hasInstanceMembers)
-            sb.AppendLine($"partial class {model.ClassName} : global::Microsoft.Diagnostics.DataContractReader.Data.IReadableData");
-        else
-            sb.AppendLine($"partial class {model.ClassName}");
+        sb.AppendLine($"partial class {model.ClassName}");
         sb.AppendLine("{");
 
-        // Emit a static _typeNames array for LayoutSet.Resolve and ITypeHandle resolution.
+        // Emit a static _typeNames array for TypeLayout.Resolve and ITypeHandle resolution.
         if (model.Names.Count > 0)
         {
             string namesLiteral = NamesArrayLiteral(model.Names);
@@ -77,7 +72,7 @@ internal static class Emitter
         {
             sb.AppendLine("    [UsesDataDescriptorTypeSize]");
             sb.AppendLine($"    public static uint GetSize({Target} target)");
-            sb.AppendLine("        => checked((uint)LayoutSet.Resolve(target, _typeNames).InstanceSize);");
+            sb.AppendLine("        => checked((uint)TypeLayout.Resolve(target, _typeNames).InstanceSize);");
             sb.AppendLine();
         }
 
@@ -96,12 +91,12 @@ internal static class Emitter
 
         // The type layout is resolved once at construction. Resolution never
         // reads a field or fails for a missing one (it only looks up the type
-        // and wires an on-demand managed-metadata source), so resolving it
+        // or, if absent, wires an on-demand managed-metadata source), so resolving it
         // eagerly does not defeat the lazy per-field reads: the failure sites
         // (field lookup + read) still happen on first property access.
         if (needsDescriptor)
         {
-            sb.AppendLine("    private readonly LayoutSet _layouts;");
+            sb.AppendLine("    private readonly TypeLayout _layout;");
             sb.AppendLine();
         }
 
@@ -114,7 +109,7 @@ internal static class Emitter
             EmitMemberProperty(sb, member);
 
         if (hasInstanceMembers)
-            EmitEnsureAllFieldsRead(sb, model);
+            EmitTryReadAllFields(sb, model);
 
         foreach (MemberModel member in model.Members)
         {
@@ -153,8 +148,8 @@ internal static class Emitter
             else
             {
                 sb.AppendLine("    {");
-                sb.AppendLine("        LayoutSet layouts = LayoutSet.Resolve(target, _typeNames);");
-                sb.AppendLine($"        layouts.Select(default, out var type, out _, out var name, {NameArgs(member)});");
+                sb.AppendLine("        TypeLayout layout = TypeLayout.Resolve(target, _typeNames);");
+                sb.AppendLine($"        layout.Select(default, out var type, out _, out var name, {NameArgs(member)});");
                 sb.AppendLine("        return type.Fields[name].Offset;");
                 sb.AppendLine("    }");
             }
@@ -194,7 +189,7 @@ internal static class Emitter
         EmitDataDescriptorDependencyAttribute(sb, member);
         sb.AppendLine($"    public void Write{member.Name}({propType} value)");
         sb.AppendLine("    {");
-        sb.AppendLine($"        _layouts.Select(Address, out var t, out var b, out var n, {NameArgs(member)});");
+        sb.AppendLine($"        _layout.Select(Address, out var t, out var b, out var n, {NameArgs(member)});");
         if (member.ReadKind == FieldReadKind.Bool)
         {
             sb.AppendLine($"        _target.WriteField<byte>(b, t, n, (byte)(value ? 1 : 0));");
@@ -226,7 +221,7 @@ internal static class Emitter
 
         if (needsDescriptor)
         {
-            sb.AppendLine("        _layouts = LayoutSet.Resolve(target, _typeNames);");
+            sb.AppendLine("        _layout = TypeLayout.Resolve(target, _typeNames);");
         }
 
         sb.AppendLine("    }");
@@ -265,7 +260,7 @@ internal static class Emitter
                 EmitLazyProperty(sb, member, read, emitSetter: false);
                 break;
             case MemberKind.InstanceDataStart:
-                read.Add($"                {valueField} = Address + _layouts.InstanceSize;");
+                read.Add($"                {valueField} = Address + _layout.InstanceSize;");
                 EmitLazyProperty(sb, member, read, emitSetter: false);
                 break;
             case MemberKind.CustomInit:
@@ -285,7 +280,7 @@ internal static class Emitter
 
     /// <summary>
     /// Appends the descriptor lookup + assignment for a member that reads
-    /// through <c>_layouts</c>. Optional members use <c>TrySelect</c> (absent =>
+    /// through <c>_layout</c>. Optional members use <c>TrySelect</c> (absent =>
     /// <paramref name="optionalElse"/>); required members use <c>Select</c>,
     /// which throws when the field is missing.
     /// </summary>
@@ -293,14 +288,14 @@ internal static class Emitter
     {
         if (member.IsOptional)
         {
-            lines.Add($"                if (_layouts.TrySelect(Address, out var t, out var b, out var n, {NameArgs(member)}))");
+            lines.Add($"                if (_layout.TrySelect(Address, out var t, out var b, out var n, {NameArgs(member)}))");
             lines.Add($"                    {valueField} = {assignExpr};");
             lines.Add("                else");
             lines.Add($"                    {valueField} = {optionalElse};");
         }
         else
         {
-            lines.Add($"                _layouts.Select(Address, out var t, out var b, out var n, {NameArgs(member)});");
+            lines.Add($"                _layout.Select(Address, out var t, out var b, out var n, {NameArgs(member)});");
             lines.Add($"                {valueField} = {assignExpr};");
         }
     }
@@ -364,19 +359,20 @@ internal static class Emitter
     }
 
     /// <summary>
-    /// Emits the <see cref="Data.IReadableData.EnsureAllFieldsRead"/> implementation,
-    /// which touches every lazily-read member so a caller can eagerly force a full
-    /// read of the structure (used to validate that the whole struct is readable).
+    /// Emits <c>TryReadAllFields</c>, which touches every lazily-read member and
+    /// reports whether the entire structure was readable.
     /// </summary>
-    private static void EmitEnsureAllFieldsRead(StringBuilder sb, CdacTypeModel model)
+    private static void EmitTryReadAllFields(StringBuilder sb, CdacTypeModel model)
     {
         // Descriptor attributes short-circuit body analysis in CdacUsageGraph.
         // A custom initializer can also read globals, call helpers, and access
         // other Data properties, so let the analyzer walk this method's body.
         if (!model.Members.Any(member => member.Kind == MemberKind.CustomInit))
-            EmitEnsureAllFieldsReadDependencyAttributes(sb, model);
-        sb.AppendLine("    void global::Microsoft.Diagnostics.DataContractReader.Data.IReadableData.EnsureAllFieldsRead()");
+            EmitTryReadAllFieldsDependencyAttributes(sb, model);
+        sb.AppendLine("    internal bool TryReadAllFields()");
         sb.AppendLine("    {");
+        sb.AppendLine("        try");
+        sb.AppendLine("        {");
         foreach (MemberModel member in model.Members)
         {
             if (member.Kind == MemberKind.Field
@@ -384,14 +380,20 @@ internal static class Emitter
                 || member.Kind == MemberKind.InstanceDataStart
                 || member.Kind == MemberKind.CustomInit)
             {
-                sb.AppendLine($"        _ = {member.Name};");
+                sb.AppendLine($"            _ = {member.Name};");
             }
         }
+        sb.AppendLine("            return true;");
+        sb.AppendLine("        }");
+        sb.AppendLine("        catch (VirtualReadException)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            return false;");
+        sb.AppendLine("        }");
         sb.AppendLine("    }");
         sb.AppendLine();
     }
 
-    private static void EmitEnsureAllFieldsReadDependencyAttributes(StringBuilder sb, CdacTypeModel model)
+    private static void EmitTryReadAllFieldsDependencyAttributes(StringBuilder sb, CdacTypeModel model)
     {
         (string FieldName, string NativeType)[] fields = model.Members
             .Where(member =>

@@ -16,7 +16,7 @@ public class ReJITTests
 {
     private readonly record struct ReJITContractContext(IReJIT ReJIT, Target Target);
 
-    private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockReJITBuilder rejitBuilder)
+    internal static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockReJITBuilder rejitBuilder)
         => new()
         {
             [DataType.ProfControlBlock] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.ProfControlBlockLayout),
@@ -120,6 +120,29 @@ public class ReJITTests
             RejitState rejitState = context.ReJIT.GetRejitState(ilCodeVersionHandle);
             Assert.Equal(expectedRejitState, rejitState);
         }
+    }
+
+    public static IEnumerable<object[]> ArchWithUnrecognizedState()
+    {
+        foreach (object[] stdArch in new MockTarget.StdArch())
+        {
+            yield return [stdArch[0], (uint)MockReJITBuilder.RejitFlags.kStateGettingReJITParameters];
+            yield return [stdArch[0], 0x3u];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ArchWithUnrecognizedState))]
+    public void GetRejitState_UnrecognizedState_IsUnknown(MockTarget.Architecture arch, uint state)
+    {
+        ILCodeVersionHandle handle = ILCodeVersionHandle.Invalid;
+        ReJITContractContext context = CreateReJITContract(
+            arch,
+            rejitBuilder =>
+            {
+                handle = ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(1, (MockReJITBuilder.RejitFlags)state).Address);
+            });
+        Assert.Equal(RejitState.Unknown, context.ReJIT.GetRejitState(handle));
     }
 
     [Theory]
