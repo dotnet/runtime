@@ -3537,6 +3537,36 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void XmlMembersMapping_Soap_DocBare_ExtraReferencedUnregisteredMember()
+    {
+        // SOAP-encoded doc/bare members mapping (hasWrapperElement: false, writeAccessors: false).
+        // The object[] passed to Serialize has more entries than there are mapped members, so the
+        // extra entries go through the "doc/bare case
+
+        string ns = s_defaultNs;
+        string memberName = "DocBareMember";
+
+        XmlReflectionMember member = GetReflectionMember<string>(memberName, ns);
+        member.SoapAttributes.SoapElement = new SoapElementAttribute(memberName);
+        var members = new XmlReflectionMember[] { member };
+
+        var importer = new SoapReflectionImporter(null, ns);
+        var membersMapping = importer.ImportMembersMapping(elementName: null, ns, members,
+            hasWrapperElement: false, writeAccessors: false);
+        var serializer = XmlSerializer.FromMappings(new XmlMapping[] { membersMapping })[0];
+
+        var extra = new string[] { "extra" };
+        object[] value = new object[] { "hello", extra, extra };
+
+        string baseline = "<root><string xmlns=\"http://www.w3.org/2001/XMLSchema\" xmlns:q2=\"http://www.w3.org/2001/XMLSchema-instance\" q2:type=\"string\">hello</string><q3:Array xmlns:q3=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:q4=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:q5=\"http://www.w3.org/2001/XMLSchema\" id=\"id1\" q3:arrayType=\"q5:string[1]\"><Item>extra</Item></q3:Array><q6:Array xmlns:q6=\"http://schemas.xmlsoap.org/soap/encoding/\" href=\"#id1\"></q6:Array></root>";
+
+        object[] actual = SerializeAndDeserializeWithWrapper(value, serializer, baseline);
+        Assert.NotNull(actual);
+        Assert.Equal(1, actual.Length);
+        Assert.Equal("hello", (string)actual[0]);
+    }
+
+    [Fact]
     public static void Xml_XmlTextAttributeTest()
     {
         var myGroup1 = new Group1WithXmlTextAttr();
