@@ -20,23 +20,50 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>Immediate children sub-sections of section specified by key.</returns>
         internal static IEnumerable<IConfigurationSection> GetChildrenImplementation(this IConfigurationRoot root, string? path)
         {
+            ChildKeysAggregator? keys = GetChildKeysImplementation(root, path);
+            return keys is null || keys.Count == 0
+                ? Array.Empty<IConfigurationSection>()
+                : new ChildSections(root, path, keys.Items, keys.Count);
+        }
+
+        internal static ChildKeysAggregator? GetChildKeysImplementation(this IConfigurationRoot root, string? path)
+        {
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
 
-            IEnumerable<IConfigurationSection> children = providers
-                .Aggregate(Enumerable.Empty<string>(),
-                    (seed, source) => source.GetChildKeys(seed, path))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Select(key => root.GetSection(path == null ? key : path + ConfigurationPath.KeyDelimiter + key));
-
-            if (reference is null)
+            ChildKeysAggregator? accumulator;
+            if (providers is List<IConfigurationProvider> list)
             {
-                return children;
+                int count = list.Count;
+                if (count == 0)
+                {
+                    return null;
+                }
+
+                accumulator = new ChildKeysAggregator();
+                for (int i = 0; i < count; i++)
+                {
+                    ProcessProvider(list[i], accumulator, path);
+                }
             }
             else
             {
-                // Eagerly evaluate the IEnumerable before releasing the reference so we don't allow iteration over disposed providers.
-                return children.ToList();
+                accumulator = new ChildKeysAggregator();
+                foreach (IConfigurationProvider provider in providers)
+                {
+                    ProcessProvider(provider, accumulator, path);
+                }
+            }
+
+            return accumulator;
+        }
+
+        private static void ProcessProvider(IConfigurationProvider provider, ChildKeysAggregator accumulator, string? path)
+        {
+            IEnumerable<string> returned = provider.GetChildKeys(accumulator, path);
+            if (!ReferenceEquals(returned, accumulator))
+            {
+                accumulator.Overwrite(returned);
             }
         }
 
