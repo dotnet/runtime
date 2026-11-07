@@ -328,7 +328,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <remarks>
         ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
-        ///   the signature. To use a different signature format, use <see cref="SignHash(ReadOnlySpan{byte}, DSASignatureFormat)" />.
+        ///   signature. To use a different signature format, use <see cref="SignHash(ReadOnlySpan{byte}, DSASignatureFormat)" />.
         /// </remarks>
         /// <seealso cref="SignHash(ReadOnlySpan{byte}, DSASignatureFormat)" />.
         public byte[] SignHash(ReadOnlySpan<byte> hash)
@@ -394,7 +394,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <remarks>
         ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
-        ///   the signature. To use a different signature format, use <see cref="SignHash(ReadOnlySpan{byte}, Span{byte}, DSASignatureFormat)" />.
+        ///   signature. To use a different signature format, use <see cref="SignHash(ReadOnlySpan{byte}, Span{byte}, DSASignatureFormat)" />.
         /// </remarks>
         /// <seealso cref="SignHash(ReadOnlySpan{byte}, Span{byte}, DSASignatureFormat)" />.
         public int SignHash(ReadOnlySpan<byte> hash, Span<byte> destination)
@@ -572,7 +572,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <remarks>
         ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
-        ///   the signature. To use a different signature format, use
+        ///   signature. To use a different signature format, use
         ///   <see cref="SignData(ReadOnlySpan{byte}, HashAlgorithmName, DSASignatureFormat)" />.
         /// </remarks>
         /// <seealso cref="SignData(ReadOnlySpan{byte}, HashAlgorithmName, DSASignatureFormat)" />
@@ -700,7 +700,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <remarks>
         ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
-        ///   the signature. To use a different signature format, use
+        ///   signature. To use a different signature format, use
         ///   <see cref="SignData(ReadOnlySpan{byte}, Span{byte}, HashAlgorithmName, DSASignatureFormat)" />.
         /// </remarks>
         /// <seealso cref="SignData(ReadOnlySpan{byte}, Span{byte}, HashAlgorithmName, DSASignatureFormat)" />

@@ -19,7 +19,7 @@ namespace System.Net.Security
     /// property appropriately.
     ///
     /// Typical usage of the client-side authentication will also require specifying the
-    /// the <see cref="TargetName" /> property. While it may be omitted in some scenarios
+    /// <see cref="TargetName" /> property. While it may be omitted in some scenarios
     /// it is usually required to be set to a valid value like <c>HOST/contoso.com</c> or
     /// <c>HTTP/www.contoso.com</c>.
     ///

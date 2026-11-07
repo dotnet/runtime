@@ -25,7 +25,7 @@ namespace System.Diagnostics
         /// that gives the information to pass to the notification, which is arbitrary.
         ///
         /// The name should be short (so don't use fully qualified names unless you have to
-        /// to avoid ambiguity), but you want the name to be globally unique.  Typically your componentName.eventName
+        /// avoid ambiguity), but you want the name to be globally unique.  Typically your componentName.eventName
         /// where componentName and eventName are strings less than 10 characters are a good compromise.
         /// notification names should NOT have '.' in them because component names have dots and for them both
         /// to have dots would lead to ambiguity.   The suggestion is to use _ instead.  It is assumed
