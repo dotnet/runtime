@@ -129,7 +129,6 @@ namespace System.Threading
             }
         }
 
-#if FEATURE_MULTITHREADING
         private unsafe bool CreateThread(GCHandle<Thread> thisThreadHandle)
         {
             const int AllocationGranularity = 0x10000;  // 64 KiB
@@ -189,7 +188,6 @@ namespace System.Threading
             StartThread(parameter);
             return 0;
         }
-#endif
 
         public ApartmentState GetApartmentState()
         {
