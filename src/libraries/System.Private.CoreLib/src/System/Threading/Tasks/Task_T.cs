@@ -474,6 +474,30 @@ namespace System.Threading.Tasks
         public static new TaskFactory<TResult> Factory =>
             field ?? Interlocked.CompareExchange(ref field, new(), null) ?? field;
 
+        /// <summary>Gets a <see cref="Task{TResult}"/> that completes with the same outcome as a <see cref="Task{TDerived}"/>.</summary>
+        /// <typeparam name="TDerived">The type of the result of <paramref name="task"/>.</typeparam>
+        /// <param name="task">The task to cast.</param>
+        /// <returns>A <see cref="Task{TResult}"/> that completes when <paramref name="task"/> completes, with the same result, exceptions or cancellation. It may be the same instance as <paramref name="task"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="task"/> is <see langword="null"/>.</exception>
+        public static Task<TResult> CastUp<TDerived>(Task<TDerived> task) where TDerived : class?, TResult
+        {
+            ArgumentNullException.ThrowIfNull(task);
+
+            if (task is Task<TResult> result)
+            {
+                return result;
+            }
+
+            if (task.IsCompletedSuccessfully)
+            {
+                return new Task<TResult>(task.ResultOnSuccess);
+            }
+
+            var promise = new CastUpPromise<TDerived>();
+            task.AddCompletionAction(promise);
+            return promise;
+        }
+
         /// <summary>
         /// Evaluates the value selector of the Task which is passed in as an object and stores the result.
         /// </summary>
@@ -1408,6 +1432,26 @@ namespace System.Threading.Tasks
         #endregion
 
         #endregion
+
+        /// <summary>Task that completes with the outcome of a <see cref="Task{TDerived}"/>.</summary>
+        private sealed class CastUpPromise<TDerived> : Task<TResult>, ITaskCompletionAction where TDerived : class?, TResult
+        {
+            bool ITaskCompletionAction.InvokeMayRunArbitraryCode => true;
+
+            void ITaskCompletionAction.Invoke(Task completingTask)
+            {
+                Debug.Assert(completingTask.IsCompleted);
+
+                bool set = completingTask.Status switch
+                {
+                    TaskStatus.Canceled => TrySetCanceled(completingTask.CancellationToken, completingTask.GetCancellationExceptionDispatchInfo()),
+                    TaskStatus.Faulted => TrySetException(completingTask.GetExceptionDispatchInfos()),
+                    _ => TrySetResult(((Task<TDerived>)completingTask).Result),
+                };
+
+                Debug.Assert(set);
+            }
+        }
     }
 
     // Proxy class for better debugging experience

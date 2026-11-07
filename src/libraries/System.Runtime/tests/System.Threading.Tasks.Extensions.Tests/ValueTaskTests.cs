@@ -1413,6 +1413,39 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
+        [Fact]
+        public void Generic_CastUp_FromResult()
+        {
+            ValueTask<object> vt = ValueTask<object>.CastUp(new ValueTask<string>("hello"));
+            Assert.True(vt.IsCompletedSuccessfully);
+            Assert.Equal("hello", vt.Result);
+        }
+
+        [Fact]
+        public void Generic_CastUp_FromTask()
+        {
+            var tcs = new TaskCompletionSource<string>();
+            ValueTask<object> vt = ValueTask<object>.CastUp(new ValueTask<string>(tcs.Task));
+            Assert.False(vt.IsCompleted);
+
+            tcs.SetResult("hello");
+            Assert.Equal("hello", vt.AsTask().Result);
+        }
+
+        [Fact]
+        public void Generic_CastUp_FromValueTaskSource_KeepsSource()
+        {
+            var source = new DelegateValueTaskSource<string>
+            {
+                GetStatusFunc = _ => ValueTaskSourceStatus.Succeeded,
+                GetResultFunc = _ => "hello"
+            };
+            ValueTask<object> vt = ValueTask<object>.CastUp(new ValueTask<string>(source, 42));
+
+            Assert.Equal(new ValueTask<object>(source, 42), vt);
+            Assert.Equal("hello", vt.Result);
+        }
+
         private sealed class DelegateValueTaskSource<T> : IValueTaskSource, IValueTaskSource<T>
         {
             public Func<short, ValueTaskSourceStatus> GetStatusFunc = null;
