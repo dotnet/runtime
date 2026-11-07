@@ -56,7 +56,7 @@ namespace System.Net.Security
         /// <remarks>Maps to GSS_S_BAD_QOP status in GSSAPI.</remarks>
         QopNotSupported,
 
-        /// <summary>Authentication token was identfied as duplicate, old, or out of expected sequence.</summary>
+        /// <summary>Authentication token was identified as duplicate, old, or out of expected sequence.</summary>
         /// <remarks>Maps to GSS_S_DUPLICATE_TOKEN, GSS_S_OLD_TOKEN, GSS_S_UNSEQ_TOKEN, and GSS_S_GAP_TOKEN status bits in GSSAPI when failure was indicated.</remarks>
         OutOfSequence,
 

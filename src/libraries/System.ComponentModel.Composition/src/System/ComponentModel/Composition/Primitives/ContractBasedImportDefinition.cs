@@ -45,7 +45,7 @@ namespace System.ComponentModel.Composition.Primitives
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ContractBasedImportDefinition"/> class
-        ///     with the specified contract name, required metadataq, cardinality, value indicating
+        ///     with the specified contract name, required metadata, cardinality, value indicating
         ///     if the import definition is recomposable and a value indicating if the import definition
         ///     is a prerequisite.
         /// </summary>
@@ -106,7 +106,7 @@ namespace System.ComponentModel.Composition.Primitives
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ContractBasedImportDefinition"/> class
-        ///     with the specified contract name, required metadataq, cardinality, value indicating
+        ///     with the specified contract name, required metadata, cardinality, value indicating
         ///     if the import definition is recomposable and a value indicating if the import definition
         ///     is a prerequisite.
         /// </summary>

@@ -93,7 +93,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     <see cref="INotifyComposablePartCatalogChanged.Changed"/> event.
         ///
         ///     When the value is non-null it should be used to record temporary changed state
-        ///     and actions that will be executed when the atomicComposition is completeed.
+        ///     and actions that will be executed when the atomicComposition is completed.
         /// </value>
         public AtomicComposition? AtomicComposition { get; }
     }
