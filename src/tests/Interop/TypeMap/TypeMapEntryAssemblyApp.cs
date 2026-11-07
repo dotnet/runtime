@@ -3,15 +3,76 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
 
 // Note: This test does NOT define any TypeMap attributes.
-// The TypeMappingEntryAssembly is set to TypeMapLib5 via RuntimeHostConfigurationOption,
-// so the type maps should be resolved from TypeMapLib5 instead of this assembly.
+// Both the default entry assembly and an explicit TypeMapLib5 override use these tests.
 
 public class TypeMapEntryAssemblyTest
 {
+    [Fact]
+    public static void Validate_DefiningAssembly()
+    {
+        IReadOnlyDictionary<string, Type> externalMap = TypeMapping.GetOrCreateExternalTypeMapping<DefinedInLibrary>();
+        Assert.Equal(typeof(string), externalMap["local"]);
+        Assert.Equal(typeof(object), externalMap["second"]);
+        Assert.Equal(typeof(object), externalMap["third"]);
+
+        IReadOnlyDictionary<Type, Type> proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<DefinedInLibrary>();
+        Assert.Equal(typeof(string), proxyMap[new object().GetType()]);
+        Assert.Equal(typeof(object), proxyMap[new C1().GetType()]);
+        Assert.Equal(typeof(object), proxyMap[new S1().GetType()]);
+
+        Assert.Equal(typeof(string), TypeMapping.GetOrCreateExternalTypeMapping<DefinedInLibrary>()["local"]);
+        Assert.Equal(typeof(string), TypeMapping.GetOrCreateProxyTypeMapping<DefinedInLibrary>()[typeof(object)]);
+    }
+
+    [Fact]
+    public static void Validate_ConstructedDefiningAssembly()
+    {
+        Assert.Equal(typeof(object), TypeMapping.GetOrCreateExternalTypeMapping<DefinedGenericGroup<int>>()["generic"]);
+        Assert.Equal(typeof(object), TypeMapping.GetOrCreateExternalTypeMapping<DefinedInLibrary[]>()["array"]);
+        Assert.Equal(typeof(string), TypeMapping.GetOrCreateProxyTypeMapping<DefinedGenericGroup<int>>()[new object().GetType()]);
+        Assert.Equal(typeof(string), TypeMapping.GetOrCreateProxyTypeMapping<DefinedInLibrary[]>()[new object().GetType()]);
+    }
+
+    [Fact]
+    public static void Validate_ProxyFirst()
+    {
+        Assert.Equal(typeof(string), TypeMapping.GetOrCreateProxyTypeMapping<DefinedProxyFirst>()[new object().GetType()]);
+        Assert.Equal(typeof(string), TypeMapping.GetOrCreateExternalTypeMapping<DefinedProxyFirst>()["local"]);
+    }
+
+    [Fact]
+    public static void Validate_EmptyDefiningAssemblyGroup()
+    {
+        Assert.False(TypeMapping.GetOrCreateExternalTypeMapping<DefinedEmptyGroup>().TryGetValue("absent", out _));
+        Assert.False(TypeMapping.GetOrCreateProxyTypeMapping<DefinedEmptyGroup>().TryGetValue(typeof(object), out _));
+    }
+
+    [Fact]
+    public static void Validate_MissingDefiningAssemblyTarget()
+    {
+        Assert.Throws<FileNotFoundException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DefinedMissingTargetGroup>());
+        Assert.Throws<FileNotFoundException>(() => TypeMapping.GetOrCreateProxyTypeMapping<DefinedMissingTargetGroup>());
+    }
+
+    [Fact]
+    public static void Validate_EntryAssemblyContributions()
+    {
+        IReadOnlyDictionary<string, Type> externalMap = TypeMapping.GetOrCreateExternalTypeMapping<DefinedInLibrary>();
+        IReadOnlyDictionary<Type, Type> proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<DefinedInLibrary>();
+#if TYPEMAP_ENTRY_ASSEMBLY_OVERRIDE
+        Assert.Equal(typeof(Lib5Type1), externalMap["override"]);
+        Assert.Equal(typeof(Lib5Proxy1), proxyMap[new Lib5Type1().GetType()]);
+#else
+        Assert.False(externalMap.TryGetValue("override", out _));
+        Assert.False(proxyMap.TryGetValue(typeof(Lib5Type1), out _));
+#endif
+    }
+
     [Fact]
     public static void Validate_TypeMappingEntryAssembly_ExternalMap()
     {

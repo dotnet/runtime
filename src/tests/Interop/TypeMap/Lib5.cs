@@ -11,6 +11,8 @@ using System.Runtime.InteropServices;
 
 [assembly: TypeMapAssociation<AlternateEntryPoint>(typeof(Lib5Type1), typeof(Lib5Proxy1))]
 [assembly: TypeMapAssociation<AlternateEntryPoint>(typeof(Lib5Type2), typeof(Lib5Proxy2))]
+[assembly: TypeMap<DefinedInLibrary>("override", typeof(Lib5Type1))]
+[assembly: TypeMapAssociation<DefinedInLibrary>(typeof(Lib5Type1), typeof(Lib5Proxy1))]
 
 public class Lib5Type1 { }
 public class Lib5Type2 { }
