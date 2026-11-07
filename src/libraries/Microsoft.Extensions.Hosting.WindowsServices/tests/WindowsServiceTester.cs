@@ -40,9 +40,11 @@ namespace Microsoft.Extensions.Hosting
             var statusEx = QueryServiceStatusEx();
             try
             {
-                _remoteInvokeHandle.Process = Process.GetProcessById(statusEx.dwProcessId);
+                Process p = Process.GetProcessById(statusEx.dwProcessId);
                 // fetch the process handle so that we can get the exit code later.
-                var _ = _remoteInvokeHandle.Process.SafeHandle;
+                var _ = p.SafeHandle;
+
+                _remoteInvokeHandle.Process = p;
             }
             catch (ArgumentException)
             { }
