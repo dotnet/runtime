@@ -917,8 +917,7 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
 
     if (node->OperIs(GT_LCL_VAR) && m_compiler->lvaGetDesc(node->AsLclVar())->lvIsRegCandidate())
     {
-        // Will be allocated into its own register, no need for a temporary.
-        node->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+        // No temporary is needed, but codegen must know this IR use emits multiple reads.
         return;
     }
 
@@ -945,6 +944,11 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
 void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const char* reason))
 {
     if ((operand->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None)
+    {
+        return;
+    }
+
+    if (operand->OperIs(GT_LCL_VAR) && m_compiler->lvaGetDesc(operand->AsLclVar())->lvIsRegCandidate())
     {
         return;
     }
