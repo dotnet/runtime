@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
 using System.Xml;
 using XPathTests.Common;
 using Xunit;
@@ -1062,6 +1063,77 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
             var expected = @"TEST";
 
             Utils.XPathStringTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
+        }
+
+        /// <summary>
+        /// Verify result.
+        /// translate("abc", "xyz", "XYZ") = "abc"
+        /// </summary>
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTestTranslateNoMatch(Utils.NavigatorKind kind)
+        {
+            var xml = "dummy.xml";
+            var testExpression = @"translate(""abc"", ""xyz"", ""XYZ"")";
+            var expected = "abc";
+
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
+        }
+
+        /// <summary>
+        /// Verify result for strings longer than the stack buffer used internally.
+        /// translate(long string, "ab-", "AB") = long string with 'a' and 'b' mapped and '-' removed
+        /// </summary>
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTestTranslateLongString(Utils.NavigatorKind kind)
+        {
+            var xml = "dummy.xml";
+            var value = string.Concat(Enumerable.Repeat("xab-", 200));
+            var testExpression = @"translate(""" + value + @""", ""ab-"", ""AB"")";
+            var expected = string.Concat(Enumerable.Repeat("xAB", 200));
+
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
+        }
+
+        /// <summary>
+        /// Verify result for strings longer than the stack buffer used internally.
+        /// normalize-space(long string) = long string with whitespace normalized
+        /// </summary>
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTestNormalizeSpaceLongString(Utils.NavigatorKind kind)
+        {
+            var xml = "dummy.xml";
+            var value = "  " + string.Concat(Enumerable.Repeat("ab \t\n\r", 200)) + "  ";
+            var testExpression = @"normalize-space(""" + value + @""")";
+            var expected = string.Join(" ", Enumerable.Repeat("ab", 200));
+
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
+        }
+
+        /// <summary>
+        /// Verify result for already normalized strings longer than the stack buffer used internally.
+        /// normalize-space(long normalized string) = long normalized string
+        /// </summary>
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTestNormalizeSpaceLongNormalizedString(Utils.NavigatorKind kind)
+        {
+            var xml = "dummy.xml";
+            var value = string.Join(" ", Enumerable.Repeat("ab", 200));
+            var testExpression = @"normalize-space(""" + value + @""")";
+            var expected = value;
+
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
