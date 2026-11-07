@@ -743,41 +743,6 @@ class Wrapper : public BaseWrapper<TYPE, FunctionBase<TYPE, ACQUIREF, RELEASEF>,
 };  // Wrapper<>
 
 //-----------------------------------------------------------------------------
-// NewHolder : New'ed memory holder
-//
-//  {
-//      NewHolder<Foo> foo(new Foo());
-//  } // delete foo on out of scope
-//-----------------------------------------------------------------------------
-
-template <typename TYPE>
-FORCEINLINE void Delete(TYPE *value)
-{
-    STATIC_CONTRACT_LEAF;
-
-    static_assert(!std::is_same<typename std::remove_cv<TYPE>::type, WCHAR>::value,
-                  "Must use NewArrayHolder (not NewHolder) for strings.");
-    static_assert(!std::is_same<typename std::remove_cv<TYPE>::type, CHAR>::value,
-                  "Must use NewArrayHolder (not NewHolder) for strings.");
-
-    delete value;
-}
-
-//-----------------------------------------------------------------------------
-// NewArrayHolder : New []'ed pointer holder
-//  {
-//      NewArrayHolder<Foo> foo(new Foo[30]);
-//  } // delete [] foo on out of scope
-//-----------------------------------------------------------------------------
-
-template <typename TYPE>
-FORCEINLINE void DeleteArray(TYPE *value)
-{
-    STATIC_CONTRACT_WRAPPER;
-    delete [] value;
-}
-
-//-----------------------------------------------------------------------------
 // Holders
 //-----------------------------------------------------------------------------
 
@@ -864,8 +829,13 @@ struct NewHolderTraits final
     static constexpr Type Default() { return NULL; }
     static void Free(Type value) noexcept
     {
-        STATIC_CONTRACT_LEAF;
-        Delete(value);
+        STATIC_CONTRACT_WRAPPER;
+        static_assert(!std::is_same<typename std::remove_cv<TYPE>::type, WCHAR>::value,
+                    "Use WStringHolder (not NewHolder) for strings.");
+        static_assert(!std::is_same<typename std::remove_cv<TYPE>::type, CHAR>::value,
+                    "Use AStringHolder (not NewHolder) for strings.");
+
+        delete value;
     }
 };
 
@@ -880,7 +850,7 @@ struct NewArrayHolderTraits final
     static void Free(Type value) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
-        DeleteArray(value);
+        delete[] value;
     }
 };
 
@@ -920,7 +890,7 @@ class NewInterfaceArrayHolder final
                     if (array.values[i] != NULL)
                         array.values[i]->Release();
                 }
-                DeleteArray(array.values);
+                delete[] array.values;
             }
         }
     };

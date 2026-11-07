@@ -67,9 +67,9 @@ class ConstWStringArrayHolder final
             {
                 for (int i = 0; i < array.count; i++)
                 {
-                    DeleteArray(array.values[i]);
+                    delete[] array.values[i];
                 }
-                DeleteArray(array.values);
+                delete[] array.values;
             }
         }
     };
