@@ -100,8 +100,7 @@ internal static class UnwindDataSize
             }
             case RuntimeInfoArchitecture.Wasm:
             {
-                uint size = GetULEB128Size(target, unwindInfo);
-                size += GetULEB128Size(target, unwindInfo + size);
+                ReadWasmUnwindData(target, unwindInfo, out uint size);
                 return size;
             }
             default:
@@ -109,14 +108,22 @@ internal static class UnwindDataSize
         }
     }
 
-    private static uint GetULEB128Size(Target target, TargetPointer address)
+    internal static ulong ReadWasmUnwindData(Target target, TargetPointer address, out uint size)
     {
-        const int MaxBytes = 5;
+        const int MaxBytes = 10;
+        ulong result = 0;
 
         for (uint offset = 0; offset < MaxBytes; offset++)
         {
-            if ((target.Read<byte>(address + offset) & 0x80) == 0)
-                return offset + 1;
+            byte value = target.Read<byte>(address + offset);
+            if (offset == MaxBytes - 1 && value > 1)
+                break;
+            result |= (ulong)(value & 0x7F) << (int)(offset * 7);
+            if ((value & 0x80) == 0)
+            {
+                size = offset + 1;
+                return result;
+            }
         }
 
         throw new InvalidOperationException("Malformed ULEB128 value in WASM unwind data.");

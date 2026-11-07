@@ -5,13 +5,27 @@ This contract is for fetching information related to GCInfo associated with nati
 The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract.
 
 WebAssembly uses the common decoder with `Wasm32GcInfoEncoding` traits from
-`src/coreclr/inc/gcinfotypes.h`: code lengths/offsets and stack offsets are
-unscaled, the code-length encoding base is 6, and there is no fixed stack
+`src/coreclr/inc/gcinfotypes.h`: code lengths/offsets are unscaled, stack offsets
+are in four-byte pointer units, the code-length encoding base is 5, and there is no fixed stack
 parameter scratch area. The platform encoding has no interruptible-range
-count in its fat header (`HAS_INTERRUPTIBLE_RANGES` is false).
+count in its fat header (`HAS_INTERRUPTIBLE_RANGES` is false). Both header forms omit the
+frame-register presence bit and register value,
+implicitly using normalized register zero (physical register 2). The prolog-size-minus-one
+field is omitted and its normalized prolog size is implicitly one when needed for
+GS-cookie or generic-context validity. Slim headers imply zero safe points and omit the
+count; nonzero safe-point counts require fat headers and remain explicitly encoded.
+Wasm stack-slot flags are sorted and encoded after XOR with the pinned bit (`0x2`):
+interior, ordinary object, pinned interior, then pinned object. The first slot has two
+flag bits; later slots have two after an unpinned root, one after a pinned interior root,
+and none after a pinned object root. Decoding restores the semantic pinned bit with
+the same XOR. Tracked and untracked sections reset their flag and offset state independently.
 `DecodeInterpreterGCInfo` uses the separate interpreter traits even on
 WebAssembly, including its code-length encoding base of 8 and its
 interruptible-range count field.
+
+The runtime uses GCInfo v6 exclusively. This contract also retains non-Wasm GCInfo v5
+decoding to support older runtimes. WebAssembly has only the v6 platform encoding;
+there is no legacy WebAssembly decoding path.
 
 ## APIs of contract
 
@@ -197,6 +211,22 @@ Constants:
 ### GCInfo Format
 
 The GCInfo format consists of a header structure and following data types. The header is either 'slim' for simple methods that can use the compact encoding scheme or a 'fat' header containing more details.
+
+The tables and decoding pseudocode below describe the common layout. Wasm platform GCInfo
+version 6 omits `UsingStackBaseRegister`, `StackBaseRegister`, and `PrologSize` as described
+above, and omits `NumSafePoints` only for slim headers. Its fat `HeaderFlags` occupy nine
+bits: bit `0x40` is omitted from the stream, higher flag bits shift down one position, and
+the decoder restores `GC_INFO_HAS_STACK_BASE_REGISTER` implicitly. Interpreter headers
+retain the common layout on every architecture.
+
+Wasm uses the following tuned variable-length integer bases.
+
+| Constant | Wasm v6 ENCBASE |
+| --- | --- |
+| `CODE_LENGTH_ENCBASE` | 5 |
+| `NUM_UNTRACKED_SLOTS_ENCBASE` | 7 |
+| `NUM_SAFE_POINTS_ENCBASE` | 3 |
+| `REVERSE_PINVOKE_FRAME_ENCBASE` | 4 |
 
 #### GCInfo Header
 
@@ -573,15 +603,120 @@ for each range:
 
 The slot table describes all GC-tracked locations used by the method. It has three sections decoded in order: register slots, tracked stack slots, and untracked stack slots.
 
-**Slot counts** are encoded with presence bits:
+**Slot counts** are encoded with presence bits. GCInfo v6 omits the
+register-presence bit for the interpreter and Wasm platform encoding, which
+cannot contain register slots. Non-Wasm v5 retains that bit, including the
+always-zero bit in interpreter data.
 
 ```
-if ReadBits(1):  // has register slots
-    numRegisters = DecodeVarLengthUnsigned(NUM_REGISTERS_ENCBASE)
+numRegisters = 0
+numStackSlots = 0
+numUntrackedSlots = 0
+if gcVersion < 6 or HAS_REGISTER_SLOTS:
+    if ReadBits(1):  // has register slots
+        numRegisters = DecodeVarLengthUnsigned(NUM_REGISTERS_ENCBASE)
 if ReadBits(1):  // has stack/untracked slots
     numStackSlots = DecodeVarLengthUnsigned(NUM_STACK_SLOTS_ENCBASE)
     numUntrackedSlots = DecodeVarLengthUnsigned(NUM_UNTRACKED_SLOTS_ENCBASE)
 ```
+
+The semantic slot flags are:
+
+| Flag | Value | Meaning |
+| --- | --- | --- |
+| `GC_SLOT_BASE` | 0x0 | Normal object reference |
+| `GC_SLOT_INTERIOR` | 0x1 | Interior pointer (points inside an object) |
+| `GC_SLOT_PINNED` | 0x2 | Pinned object reference |
+
+###### GCInfo v6 slot descriptors
+
+Flags precede locations. Each section is ordered by descending encoded flags.
+For Wasm platform slots only, the encoded flags are the semantic flags XOR
+`GC_SLOT_PINNED`; decoding reverses that transformation. This makes pinned
+object roots the implicit-zero group on Wasm.
+
+The first descriptor in each section has two flag bits. Subsequent descriptors
+have two bits after encoded flags with the pinned bit set, one bit after encoded
+interior-only flags, and no bits after encoded flags zero. Sorting guarantees
+that a later descriptor cannot need a flag bit that has become implicit.
+
+```
+ReadSlotFlags(previousFlags, first):
+    flagsXor = USES_COMPACT_WASM_HEADER ? GC_SLOT_PINNED : 0
+    previousEncodedFlags = previousFlags XOR flagsXor
+    if first or previousEncodedFlags != 0:
+        numBits = (first or (previousEncodedFlags & GC_SLOT_PINNED) != 0) ? 2 : 1
+        encodedFlags = ReadBits(numBits)
+    else:
+        encodedFlags = 0
+    return encodedFlags XOR flagsXor
+```
+
+**Register slots** use an absolute register number at the start of each flag
+group, followed by gap-minus-one deltas within that group. Register integers
+use a bounded encoding rather than the ordinary variable-length encoding:
+read `base + 1` bits, then, if the high bit is set, read exactly
+`REGISTER_BITS - base` more bits. `REGISTER_BITS` is four on ARM and five on
+the other register-bearing platforms supported by this decoder.
+
+```
+ReadRegisterValue(base):
+    chunk = ReadBits(base + 1)
+    value = chunk & ((1 << base) - 1)
+    if (chunk & (1 << base)) != 0:
+        value |= ReadBits(REGISTER_BITS - base) << base
+    return value
+
+previousFlags = 0
+regNum = 0
+for i = 0; i < numRegisters; i++:
+    flags = ReadSlotFlags(previousFlags, i == 0)
+    absolute = i == 0 or flags != previousFlags
+    base = absolute ? REGISTER_ENCBASE : REGISTER_DELTA_ENCBASE
+    value = ReadRegisterValue(base)
+    regNum = absolute ? value : regNum + value + 1
+    emit register slot(regNum, flags)
+    previousFlags = flags
+```
+
+**Stack slots** are ordered by flags, then base (SP before frame register), then
+signed normalized offset. A single bit selects the base: zero for SP-relative
+and one for frame-register-relative. Caller-SP-relative slots are not encoded.
+Wasm platform slots omit this bit and are implicitly frame-relative.
+
+Offsets are signed absolute values at the first slot or any flag/base change;
+within a flag/base group, offsets use unsigned deltas without a bias.
+Decode the tracked and untracked sections separately, resetting flags, base,
+and offset state at the beginning of each section.
+
+```
+DecodeStackSlots(count, isUntracked):
+    previousFlags = 0
+    previousBase = SP_REL
+    normOffset = 0
+    for i = 0; i < count; i++:
+        flags = ReadSlotFlags(previousFlags, i == 0)
+        slotBase = (HAS_STACK_SLOT_BASE and ReadBits(1) == 0) ? SP_REL : FRAMEREG_REL
+        if i == 0 or flags != previousFlags or slotBase != previousBase:
+            normOffset = DecodeVarLengthSigned(STACK_SLOT_ENCBASE)
+        else:
+            normOffset += DecodeVarLengthUnsigned(STACK_SLOT_DELTA_ENCBASE)
+        emit stack slot(DenormalizeStackSlot(normOffset), slotBase, flags, isUntracked)
+        previousFlags = flags
+        previousBase = slotBase
+
+DecodeStackSlots(numStackSlots, false)
+DecodeStackSlots(numUntrackedSlots, true)
+```
+
+`HAS_STACK_SLOT_BASE` is false only for Wasm platform slots. Stack-slot
+denormalization converts Wasm offsets from four-byte pointer units to bytes;
+the interpreter retains byte offsets on every architecture.
+
+###### Legacy non-Wasm GCInfo v5 slot descriptors
+
+The following algorithms apply only to the retained non-Wasm v5 decoding path,
+not to current v6 data. Locations precede flags and stack bases occupy two bits.
 
 **Register slots** use delta encoding when consecutive slots share the same flags:
 
@@ -618,15 +753,7 @@ else:
     // flags inherited from previous
 ```
 
-Untracked slots use the same encoding as tracked stack slots.
-
-The 2-bit slot flags are:
-
-| Flag | Value | Meaning |
-| --- | --- | --- |
-| `GC_SLOT_BASE` | 0x0 | Normal object reference |
-| `GC_SLOT_INTERIOR` | 0x1 | Interior pointer (points inside an object) |
-| `GC_SLOT_PINNED` | 0x2 | Pinned object reference |
+Untracked slots use the same legacy encoding as tracked stack slots.
 
 ##### 4. Live State Data
 

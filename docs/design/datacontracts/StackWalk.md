@@ -510,7 +510,7 @@ Root-method frame identities have three forms:
 
 A funclet instead stores its establishing-frame pointer plus two, giving the identity low bits `10`. These tags are followed until the root-method frame is reached. The physical funclet frame supplies the function-local virtual IP, while the root frame supplies the identity used to find the controlling method's base virtual IP. cDAC requires each establishing-frame link to move toward the caller and bounds the traversal so corrupt target memory cannot create an unbounded walk.
 
-**WASM R2R unwinding.** The virtual IP is the identity-derived method base plus twice the physical frame's stored function-local value. `WasmContext.Unwind` resolves its current virtual IP through `IExecutionManager.GetCodeBlockHandle`, then uses `GetUnwindInfo` and `GetUnwindInfoBaseAddress` to locate the unwind data. It reads the fixed frame size as a uint32 ULEB128 value from `unwindInfoBaseAddress + RuntimeFunction.UnwindData` and adds that size to the physical frame base. A zero frame size terminates the R2R walk because it would make no progress; malformed uint32 ULEB128 data is invalid.
+**WASM R2R unwinding.** The virtual IP is the identity-derived method base plus twice the physical frame's stored function-local value. `WasmContext.Unwind` resolves its current virtual IP through `IExecutionManager.GetCodeBlockHandle`, then uses `GetUnwindInfo` and `GetUnwindInfoBaseAddress` to locate the unwind data. It reads one uint64 ULEB128 value from `unwindInfoBaseAddress + RuntimeFunction.UnwindData`. This value interleaves the frame size in 16-byte units and virtual IP count in 2-IP units, as specified in the [ReadyToRun format](../coreclr/botr/readytorun-format.md#unwindinfo-wasm). The decoded frame size is added to the physical frame base. A zero frame size terminates the R2R walk because it would make no progress; malformed uint64 ULEB128 data is invalid.
 
 For a managed caller, the resulting stack pointer identifies the caller's R2R frame record; its virtual IP and logical frame pointer are resolved as above. When the current frame has a positive odd reverse-P/Invoke identity, unwinding still preserves the advanced caller SP for the explicit `Frame` chain, but leaves IP and FP null because the caller is native. When the resulting stack pointer has no R2R frame record (a terminator, an interpreter transition or the stack top), the caller is not R2R code: the advanced SP is kept, IP and FP are null, and walking continues through the explicit `Frame` or interpreter frame chain. The R2R walk is cleared (SP, IP and FP all null) only when the current frame cannot be unwound at all: no R2R frame at SP, no unwind data, or a zero frame size.
 
@@ -520,7 +520,7 @@ void Unwind()
 {
     TargetPointer frameBase = /* frame base of the R2R frame at SP */;
     uint identity = target.Read<uint>(frameBase + FrameIdentityOffset);
-    uint frameSize = /* ULEB128 in the unwind data of the function containing IP */;
+    uint frameSize = /* frame-size field of the packed uint64 ULEB128, multiplied by 16 */;
     if (/* no frame at SP, no unwind data, or frameSize == 0 */)
     {
         SP = IP = FP = null;
@@ -935,7 +935,7 @@ The receiver interpretation can be overridden by the frame:
   the method's owning type is a value type and the method is not an unboxing stub.
 
 All supported ReadyToRun instance import maps use `THIS_REF` or `THIS_BYREF`: the runtime's minimum supported
-ReadyToRun major version is 33. No per-map receiver-format flag or receiver-token validation is needed.
+ReadyToRun major version is 34. No per-map receiver-format flag or receiver-token validation is needed.
 Signature-synthesized maps may continue to use concrete `REF` and `INTERIOR` tokens; synthetic
 maps for explicit-context shared bodies are not eligible for declaration-map borrowing.
 Signature-synthesized blobs retain the target's cookie encoding and are decoded accordingly.

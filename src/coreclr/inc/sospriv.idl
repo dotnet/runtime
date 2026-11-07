@@ -701,6 +701,7 @@ typedef struct _SOSGCSlotLifetime
     int          IsRegister;
     unsigned int RegisterNumber;
     int          SpOffset;
+    // 0 = SP-relative; 1 = relative to SOSGCInfoHeader.StackBaseRegister. Ignored for register slots.
     unsigned int BaseRegister;
     unsigned int GcFlags;
 } SOSGCSlotLifetime;

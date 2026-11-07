@@ -533,7 +533,15 @@ RtlVirtualUnwind (
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
 
-UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData);
+UINT64 DecodeULEB128AsU64(PTR_BYTE* ppData);
+
+inline void DecodeWasmUnwindInfo(UINT64 encoded, UINT32& frameSize, UINT32& virtualIPCount)
+{
+    frameSize = static_cast<UINT32>((encoded & 0xF) | (((encoded >> 8) & 0xF) << 4) |
+                                   (((encoded >> 16) & 0xFFFF) << 8)) * 16;
+    virtualIPCount = static_cast<UINT32>(((encoded >> 4) & 0xF) | (((encoded >> 12) & 0xF) << 4) |
+                                        (((encoded >> 32) & 0xFFFF) << 8)) * 2;
+}
 
 ULONG
 RtlpGetFunctionEndAddress (

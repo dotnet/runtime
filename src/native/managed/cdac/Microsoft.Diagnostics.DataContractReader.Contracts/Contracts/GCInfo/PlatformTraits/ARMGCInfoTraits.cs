@@ -36,6 +36,7 @@ internal class ARMGCInfoTraits : IGCInfoTraits
     public static int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE => 6;
     public static int REGISTER_ENCBASE => 2;
     public static int REGISTER_DELTA_ENCBASE => 1;
+    public static int REGISTER_BITS => 4;
     public static int STACK_SLOT_ENCBASE => 6;
     public static int STACK_SLOT_DELTA_ENCBASE => 4;
     public static int NUM_SAFE_POINTS_ENCBASE => 3;

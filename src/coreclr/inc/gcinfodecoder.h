@@ -479,7 +479,7 @@ public:
     GcSlotDecoder()
     {}
 
-    void DecodeSlotTable(BitStreamReader& reader);
+    void DecodeSlotTable(BitStreamReader& reader, UINT32 version);
 
     UINT32 GetNumSlots()
     {
@@ -493,22 +493,109 @@ public:
 
     UINT32 GetNumTracked()
     {
-        return m_NumSlots - m_NumUntracked;
+        return GcInfoEncoding::HAS_TRACKED_SLOTS ? m_NumSlots - m_NumUntracked : 0;
     }
 
     UINT32 GetNumRegisters()
     {
-        return m_NumRegisters;
+        return GcInfoEncoding::HAS_REGISTER_SLOTS ? m_NumRegisters : 0;
     }
 
     const GcSlotDesc* GetSlotDesc(UINT32 slotIndex);
 
 private:
+    static UINT32 ReadRegisterValue(BitStreamReader& reader, UINT32 base)
+    {
+        UINT32 chunk = static_cast<UINT32>(reader.Read(base + 1));
+        UINT32 value = chunk & ((1u << base) - 1);
+        if ((chunk & (1u << base)) != 0)
+        {
+            _ASSERTE(base < GcInfoEncoding::REGISTER_BITS);
+            if (base < GcInfoEncoding::REGISTER_BITS)
+            {
+                value |= static_cast<UINT32>(reader.Read(GcInfoEncoding::REGISTER_BITS - base)) << base;
+            }
+        }
+
+        return value;
+    }
+
+    static GcSlotFlags ReadSlotFlags(BitStreamReader& reader, GcSlotFlags previousFlags, bool first)
+    {
+        constexpr int flagsXor = GcInfoEncoding::USES_COMPACT_WASM_HEADER ? GC_SLOT_PINNED : GC_SLOT_BASE;
+        previousFlags = static_cast<GcSlotFlags>(previousFlags ^ flagsXor);
+        GcSlotFlags flags = first || previousFlags != GC_SLOT_BASE
+            ? static_cast<GcSlotFlags>(reader.Read(first || (previousFlags & GC_SLOT_PINNED) != 0 ? 2 : 1))
+            : GC_SLOT_BASE;
+        return static_cast<GcSlotFlags>(flags ^ flagsXor);
+    }
+
+    UINT32 ReadRegisterSlot(BitStreamReader& reader, GcSlotFlags& flags, UINT32 previousRegister, bool first)
+    {
+#ifdef DECODE_OLD_FORMATS
+        if (!m_UseCompactSlotEncoding)
+        {
+            bool absolute = first || flags != GC_SLOT_BASE;
+            UINT32 value = static_cast<UINT32>(reader.DecodeVarLengthUnsigned(absolute
+                ? GcInfoEncoding::REGISTER_ENCBASE : GcInfoEncoding::REGISTER_DELTA_ENCBASE));
+            if (absolute)
+            {
+                flags = static_cast<GcSlotFlags>(reader.Read(2));
+            }
+
+            return absolute ? value : previousRegister + value + 1;
+        }
+#endif // DECODE_OLD_FORMATS
+
+        GcSlotFlags previousFlags = flags;
+        flags = ReadSlotFlags(reader, previousFlags, first);
+        bool absolute = first || flags != previousFlags;
+        UINT32 value = ReadRegisterValue(reader, absolute
+            ? GcInfoEncoding::REGISTER_ENCBASE : GcInfoEncoding::REGISTER_DELTA_ENCBASE);
+
+        return absolute ? value : previousRegister + value + 1;
+    }
+
+    INT32 ReadStackSlot(BitStreamReader& reader, GcSlotFlags& flags, GcStackSlotBase& base,
+                       INT32 previousOffset, bool first)
+    {
+#ifdef DECODE_OLD_FORMATS
+        if (!m_UseCompactSlotEncoding)
+        {
+            bool absolute = first || flags != GC_SLOT_BASE;
+            base = GcInfoEncoding::HAS_STACK_SLOT_BASE ? (GcStackSlotBase)reader.Read(2) : GC_FRAMEREG_REL;
+            INT32 offset = absolute
+                ? static_cast<INT32>(reader.DecodeVarLengthSigned(GcInfoEncoding::STACK_SLOT_ENCBASE))
+                : previousOffset + static_cast<INT32>(reader.DecodeVarLengthUnsigned(GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE));
+            if (absolute)
+            {
+                flags = static_cast<GcSlotFlags>(reader.Read(2));
+            }
+
+            return offset;
+        }
+#endif // DECODE_OLD_FORMATS
+
+        GcSlotFlags previousFlags = flags;
+        GcStackSlotBase previousBase = first ? GC_SP_REL : base;
+        flags = ReadSlotFlags(reader, previousFlags, first);
+        base = GcInfoEncoding::HAS_STACK_SLOT_BASE && !reader.ReadOneFast() ? GC_SP_REL : GC_FRAMEREG_REL;
+        bool absolute = first || flags != previousFlags || base != previousBase;
+        INT32 offset = absolute
+            ? static_cast<INT32>(reader.DecodeVarLengthSigned(GcInfoEncoding::STACK_SLOT_ENCBASE))
+            : previousOffset + static_cast<INT32>(reader.DecodeVarLengthUnsigned(GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE));
+
+        return offset;
+    }
+
     GcSlotDesc m_SlotArray[MAX_PREDECODED_SLOTS];
     BitStreamReader m_SlotReader;
     UINT32 m_NumSlots;
     UINT32 m_NumRegisters;
     UINT32 m_NumUntracked;
+#ifdef DECODE_OLD_FORMATS
+    bool m_UseCompactSlotEncoding;
+#endif // DECODE_OLD_FORMATS
 
     UINT32 m_NumDecodedSlots;
     GcSlotDesc* m_pLastSlot;
@@ -604,7 +691,11 @@ public:
 
     inline UINT32 Version()
     {
+#ifdef DECODE_OLD_FORMATS
         return m_Version;
+#else
+        return GCINFO_VERSION;
+#endif // DECODE_OLD_FORMATS
     }
 
 private:
@@ -653,7 +744,9 @@ private:
     GcInfoDecoderFlags m_Flags;
     PTR_CBYTE m_GcInfoAddress;
 #endif
+#ifdef DECODE_OLD_FORMATS
     UINT32 m_Version;
+#endif // DECODE_OLD_FORMATS
 
     inline UINT32 NormalizeCodeOffset(UINT32 offset)
     {
@@ -744,7 +837,7 @@ private:
         const GcSlotDesc* pSlot = slotDecoder.GetSlotDesc(slotIndex);
         bool reportFpBasedSlotsOnly = (inputFlags & ReportFPBasedSlotsOnly);
 
-        if(slotIndex < slotDecoder.GetNumRegisters())
+        if(GcInfoEncoding::HAS_REGISTER_SLOTS && slotIndex < slotDecoder.GetNumRegisters())
         {
             UINT32 regNum = pSlot->Slot.RegisterNumber;
             if( ( reportScratchSlots || !IsScratchRegister( regNum, pRD ) ) && !reportFpBasedSlotsOnly )
@@ -798,4 +891,3 @@ typedef TGcInfoDecoder<InterpreterGcInfoEncoding> InterpreterGcInfoDecoder;
 
 
 #endif // _GC_INFO_DECODER_
-
