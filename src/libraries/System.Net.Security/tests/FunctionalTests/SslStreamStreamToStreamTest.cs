@@ -196,9 +196,14 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task Read_InvokedSynchronously()
         {
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                throw new SkipTestException("Reads from the inner stream happen on the Network.framework transport pump thread.");
+            }
+
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             var clientStream = new PreReadWriteActionDelegatingStream(stream1);
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
@@ -302,62 +307,93 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact]
-        public async Task SslStream_StreamToStream_EOFDuringFrameRead_ThrowsIOException()
+        [ConditionalTheory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SslStream_StreamToStream_TransportEof_HandlesTlsRecordBoundary(bool truncateRecord)
         {
-            if (PlatformDetection.IsNetworkFrameworkEnabled())
-            {
-                throw new SkipTestException("Transport reads happen on a separate task, so partial-frame data is consumed from NW's buffer before the EOF condition is observable to the SslStream caller.");
-            }
-
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
             using (serverStream)
             {
                 int readMode = 0;
+                byte[] tlsHeader = new byte[TlsFrameHelper.HeaderSize];
+                int tlsHeaderBytes = 0;
+                int bytesRemaining = -1;
+
+                int ReadFromTransport(byte[] buffer, int offset, int count)
+                {
+                    if (readMode == 0)
+                    {
+                        return serverStream.Read(buffer, offset, count);
+                    }
+
+                    if (bytesRemaining == 0)
+                    {
+                        return 0;
+                    }
+
+                    if (tlsHeaderBytes < tlsHeader.Length)
+                    {
+                        count = Math.Min(count, tlsHeader.Length - tlsHeaderBytes);
+                        int bytesRead = serverStream.Read(buffer, offset, count);
+                        Buffer.BlockCopy(buffer, offset, tlsHeader, tlsHeaderBytes, bytesRead);
+                        tlsHeaderBytes += bytesRead;
+                        if (tlsHeaderBytes == tlsHeader.Length)
+                        {
+                            int recordLength = tlsHeader.Length + (tlsHeader[3] << 8) + tlsHeader[4];
+                            bytesRemaining = (truncateRecord ? Math.Min(10, recordLength - 1) : recordLength) - tlsHeader.Length;
+                        }
+
+                        return bytesRead;
+                    }
+
+                    count = Math.Min(count, bytesRemaining);
+                    int read = serverStream.Read(buffer, offset, count);
+                    bytesRemaining -= read;
+                    return read;
+                }
+
+                async Task<int> ReadFromTransportAsync(byte[] buffer, int offset, int count)
+                {
+                    if (readMode == 0)
+                    {
+                        return await serverStream.ReadAsync(buffer, offset, count);
+                    }
+
+                    if (bytesRemaining == 0)
+                    {
+                        return 0;
+                    }
+
+                    if (tlsHeaderBytes < tlsHeader.Length)
+                    {
+                        count = Math.Min(count, tlsHeader.Length - tlsHeaderBytes);
+                        int bytesRead = await serverStream.ReadAsync(buffer, offset, count);
+                        Buffer.BlockCopy(buffer, offset, tlsHeader, tlsHeaderBytes, bytesRead);
+                        tlsHeaderBytes += bytesRead;
+                        if (tlsHeaderBytes == tlsHeader.Length)
+                        {
+                            int recordLength = tlsHeader.Length + (tlsHeader[3] << 8) + tlsHeader[4];
+                            bytesRemaining = (truncateRecord ? Math.Min(10, recordLength - 1) : recordLength) - tlsHeader.Length;
+                        }
+
+                        return bytesRead;
+                    }
+
+                    count = Math.Min(count, bytesRemaining);
+                    int read = await serverStream.ReadAsync(buffer, offset, count);
+                    bytesRemaining -= read;
+                    return read;
+                }
+
                 var serverWrappedNetworkStream = new DelegateStream(
                     canWriteFunc: () => true,
                     canReadFunc: () => true,
                     writeFunc: (buffer, offset, count) => serverStream.Write(buffer, offset, count),
                     writeAsyncFunc: (buffer, offset, count, token) => serverStream.WriteAsync(buffer, offset, count, token),
-                    readFunc: (buffer, offset, count) =>
-                    {
-                        // Do normal reads as requested until the read mode is set
-                        // to 1.  Then do a single read of only 10 bytes to read only
-                        // part of the message, and subsequently return EOF.
-                        if (readMode == 0)
-                        {
-                            return serverStream.Read(buffer, offset, count);
-                        }
-                        else if (readMode == 1)
-                        {
-                            readMode = 2;
-                            return serverStream.Read(buffer, offset, 10); // read at least header but less than full frame
-                        }
-                        else
-                        {
-                            return 0;
-                        }
-                    },
-                    readAsyncFunc: (buffer, offset, count, token) =>
-                    {
-                        // Do normal reads as requested until the read mode is set
-                        // to 1.  Then do a single read of only 10 bytes to read only
-                        // part of the message, and subsequently return EOF.
-                        if (readMode == 0)
-                        {
-                            return serverStream.ReadAsync(buffer, offset, count);
-                        }
-                        else if (readMode == 1)
-                        {
-                            readMode = 2;
-                            return serverStream.ReadAsync(buffer, offset, 10); // read at least header but less than full frame
-                        }
-                        else
-                        {
-                            return Task.FromResult(0);
-                        }
-                    });
+                    readFunc: ReadFromTransport,
+                    readAsyncFunc: (buffer, offset, count, token) => ReadFromTransportAsync(buffer, offset, count));
 
                 using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
                 using (var serverSslStream = new SslStream(serverWrappedNetworkStream))
@@ -365,7 +401,24 @@ namespace System.Net.Security.Tests
                     await DoHandshake(clientSslStream, serverSslStream);
                     await WriteAsync(clientSslStream, new byte[20], 0, 20);
                     readMode = 1;
-                    await Assert.ThrowsAsync<IOException>(() => ReadAsync(serverSslStream, new byte[1], 0, 1));
+
+                    if (truncateRecord)
+                    {
+                        await Assert.ThrowsAsync<IOException>(() => ReadAsync(serverSslStream, new byte[1], 0, 1));
+                    }
+                    else
+                    {
+                        byte[] plaintext = new byte[20];
+                        int plaintextBytes = 0;
+                        while (plaintextBytes < plaintext.Length)
+                        {
+                            int read = await ReadAsync(serverSslStream, plaintext, plaintextBytes, plaintext.Length - plaintextBytes);
+                            Assert.NotEqual(0, read);
+                            plaintextBytes += read;
+                        }
+
+                        Assert.Equal(0, await ReadAsync(serverSslStream, new byte[1], 0, 1));
+                    }
                 }
             }
         }
