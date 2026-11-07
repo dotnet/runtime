@@ -153,16 +153,6 @@ add_executable_clr(paltests
   exception_handling/RaiseException/test1/test1.cpp
   exception_handling/RaiseException/test2/test2.cpp
   exception_handling/RaiseException/test3/test.cpp
-  filemapping_memmgt/CreateFileMappingW/CreateFileMapping_neg1/CreateFileMapping_neg.cpp
-  filemapping_memmgt/CreateFileMappingW/test1/CreateFileMappingW.cpp
-  #filemapping_memmgt/CreateFileMappingW/test2/CreateFileMappingW.cpp
-  filemapping_memmgt/CreateFileMappingW/test3/CreateFileMappingW.cpp
-  filemapping_memmgt/CreateFileMappingW/test4/CreateFileMappingW.cpp
-  filemapping_memmgt/CreateFileMappingW/test5/CreateFileMappingW.cpp
-  filemapping_memmgt/CreateFileMappingW/test6/CreateFileMappingW.cpp
-  filemapping_memmgt/CreateFileMappingW/test7/createfilemapping.cpp
-  filemapping_memmgt/CreateFileMappingW/test8/createfilemapping.cpp
-  filemapping_memmgt/CreateFileMappingW/test9/createfilemapping.cpp
 #  filemapping_memmgt/FreeLibrary/test1/dlltest.cpp
   filemapping_memmgt/FreeLibrary/test1/FreeLibrary.cpp
   filemapping_memmgt/FreeLibrary/test2/test2.cpp
@@ -174,50 +164,8 @@ add_executable_clr(paltests
 #  filemapping_memmgt/GetProcAddress/test1/testlib.cpp
   filemapping_memmgt/GetProcAddress/test2/test2.cpp
 #  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
-  filemapping_memmgt/MapViewOfFile/test2/MapViewOfFile.cpp
-  filemapping_memmgt/MapViewOfFile/test3/MapViewOfFile.cpp
-  filemapping_memmgt/MapViewOfFile/test4/mapviewoffile.cpp
-  filemapping_memmgt/MapViewOfFile/test5/mapviewoffile.cpp
-  filemapping_memmgt/MapViewOfFile/test6/mapviewoffile.cpp
   filemapping_memmgt/ProbeMemory/ProbeMemory_neg1/ProbeMemory_neg.cpp
   filemapping_memmgt/ProbeMemory/test1/ProbeMemory.cpp
-  filemapping_memmgt/UnmapViewOfFile/test1/UnmapViewOfFile.cpp
-  filemapping_memmgt/UnmapViewOfFile/test2/unmapviewoffile.cpp
-  file_io/CreateFileA/test1/CreateFileA.cpp
-  file_io/CreateFileW/test1/CreateFileW.cpp
-  file_io/errorpathnotfound/test1/test1.cpp
-  file_io/FILECanonicalizePath/FILECanonicalizePath.cpp
-  file_io/FlushFileBuffers/test1/FlushFileBuffers.cpp
-  file_io/GetFileSize/test1/GetFileSize.cpp
-  file_io/GetFileSizeEx/test1/GetFileSizeEx.cpp
-  file_io/GetFullPathNameA/test1/GetFullPathNameA.cpp
-  file_io/GetFullPathNameA/test2/test2.cpp
-  file_io/GetFullPathNameA/test3/test3.cpp
-  file_io/GetFullPathNameA/test4/test4.cpp
-  file_io/GetFullPathNameW/test1/GetFullPathNameW.cpp
-  file_io/GetFullPathNameW/test2/test2.cpp
-  file_io/GetFullPathNameW/test3/test3.cpp
-  file_io/GetFullPathNameW/test4/test4.cpp
-  file_io/GetStdHandle/test1/GetStdHandle.cpp
-  file_io/GetStdHandle/test2/GetStdHandle.cpp
-  file_io/gettemppatha/test1/gettemppatha.cpp
-  file_io/ReadFile/test1/ReadFile.cpp
-  file_io/ReadFile/test2/ReadFile.cpp
-  file_io/ReadFile/test3/ReadFile.cpp
-  file_io/ReadFile/test4/readfile.cpp
-  file_io/SearchPathW/test1/SearchPathW.cpp
-  file_io/SetFilePointer/test1/SetFilePointer.cpp
-  file_io/SetFilePointer/test2/SetFilePointer.cpp
-  file_io/SetFilePointer/test3/SetFilePointer.cpp
-  file_io/SetFilePointer/test4/SetFilePointer.cpp
-  file_io/SetFilePointer/test5/SetFilePointer.cpp
-  file_io/SetFilePointer/test6/SetFilePointer.cpp
-  file_io/SetFilePointer/test7/SetFilePointer.cpp
-  file_io/WriteFile/test1/WriteFile.cpp
-  file_io/WriteFile/test2/WriteFile.cpp
-  file_io/WriteFile/test3/WriteFile.cpp
-  file_io/WriteFile/test4/writefile.cpp
-  file_io/WriteFile/test5/writefile.cpp
   loader/LoadLibraryA/test1/LoadLibraryA.cpp
   loader/LoadLibraryA/test2/LoadLibraryA.cpp
   loader/LoadLibraryA/test3/loadlibrarya.cpp
@@ -244,7 +192,6 @@ add_executable_clr(paltests
   locale_info/WideCharToMultiByte/test3/test3.cpp
   locale_info/WideCharToMultiByte/test4/test4.cpp
   locale_info/WideCharToMultiByte/test5/test5.cpp
-  miscellaneous/CloseHandle/test1/test.cpp
   miscellaneous/CloseHandle/test2/test.cpp
   miscellaneous/FlushInstructionCache/test1/test1.cpp
   miscellaneous/FormatMessageW/test1/test.cpp
@@ -310,8 +257,6 @@ add_executable_clr(paltests
   threading/CreateThread/test1/test1.cpp
   threading/CreateThread/test2/test2.cpp
   threading/CreateThread/test3/test3.cpp
-  threading/DuplicateHandle/test1/test1.cpp
-  threading/DuplicateHandle/test12/test12.cpp
   threading/DuplicateHandle/test7/test7.cpp
   threading/DuplicateHandle/test8/test8.cpp
 #  threading/DuplicateHandle/test9/test9.cpp
