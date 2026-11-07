@@ -1802,6 +1802,439 @@ namespace System.IO.Compression.Tests
             await DisposeZipArchive(async, readArchive);
         }
 
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public async Task Update_MetadataOnlyChange_PreservesLocalEntry(bool async, bool encrypted, bool changeTimestamp)
+        {
+            byte[] originalBytes = await File.ReadAllBytesAsync(zfile(encrypted ? "metadata-zipcrypto.zip" : "metadata-zip64.zip"));
+            int centralDirectoryOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(originalBytes.AsSpan(originalBytes.Length - 6)));
+            ushort originalFlags = BinaryPrimitives.ReadUInt16LittleEndian(originalBytes.AsSpan(6));
+            Assert.Equal(encrypted ? 1 : 0, originalFlags);
+            if (!encrypted)
+            {
+                Assert.Equal(uint.MaxValue, BinaryPrimitives.ReadUInt32LittleEndian(originalBytes.AsSpan(18)));
+                Assert.Equal(20, BinaryPrimitives.ReadUInt16LittleEndian(originalBytes.AsSpan(28)));
+            }
+
+            using MemoryStream ms = new MemoryStream();
+            ms.Write(originalBytes);
+            ms.Position = 0;
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entry = archive.GetEntry("a.txt");
+            Assert.NotNull(entry);
+            DateTimeOffset timestamp = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero);
+            if (changeTimestamp)
+            {
+                entry.LastWriteTime = timestamp;
+            }
+            else
+            {
+                entry.ExternalAttributes = 0x12340020;
+            }
+            await DisposeZipArchive(async, archive);
+
+            byte[] updatedBytes = ms.ToArray();
+            Assert.Equal(originalBytes.Length, updatedBytes.Length);
+            Assert.Equal(originalFlags, BinaryPrimitives.ReadUInt16LittleEndian(updatedBytes.AsSpan(centralDirectoryOffset + 8)));
+            byte[] originalLocalEntries = originalBytes.AsSpan(0, centralDirectoryOffset).ToArray();
+            byte[] updatedLocalEntries = updatedBytes.AsSpan(0, centralDirectoryOffset).ToArray();
+            if (changeTimestamp)
+            {
+                const uint ExpectedDosTimestamp = 0x5C218800; // 2026-01-01 17:00:00.
+                Assert.Equal(ExpectedDosTimestamp, BinaryPrimitives.ReadUInt32LittleEndian(updatedLocalEntries.AsSpan(10)));
+                originalLocalEntries.AsSpan(10, 4).Clear();
+                updatedLocalEntries.AsSpan(10, 4).Clear();
+            }
+            Assert.Equal(originalLocalEntries, updatedLocalEntries);
+
+            ms.Position = 0;
+            archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+            entry = archive.GetEntry("a.txt");
+            Assert.NotNull(entry);
+            Assert.Equal(encrypted ? ZipEncryptionMethod.ZipCrypto : ZipEncryptionMethod.None, entry.EncryptionMethod);
+            Assert.Equal("hello", await ReadEntryContents(async, entry, encrypted ? "PLACEHOLDER" : null));
+            if (changeTimestamp)
+            {
+                Assert.Equal(timestamp.DateTime, entry.LastWriteTime.DateTime);
+            }
+            else
+            {
+                Assert.Equal(0x12340020, entry.ExternalAttributes);
+            }
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_RelocatedZipCryptoEntry_PreservesEncryptionHeader(bool async)
+        {
+            byte[] originalBytes = await File.ReadAllBytesAsync(zfile("metadata-zipcrypto.zip"));
+            List<(int LocalHeaderOffset, uint CompressedSize)> originalEntries = ParseZipEntryHeaders(originalBytes, out _);
+            int originalOffset = originalEntries[1].LocalHeaderOffset;
+            int dataLength = 30 + "prefix.txt".Length + checked((int)originalEntries[1].CompressedSize);
+            byte[] originalLocalEntry = originalBytes.AsSpan(originalOffset, dataLength).ToArray();
+
+            using MemoryStream ms = new MemoryStream();
+            ms.Write(originalBytes);
+            ms.Position = 0;
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            archive.GetEntry("a.txt").Delete();
+            await DisposeZipArchive(async, archive);
+
+            byte[] updatedBytes = ms.ToArray();
+            Assert.Equal(originalLocalEntry, updatedBytes.AsSpan(0, dataLength).ToArray());
+            List<(int LocalHeaderOffset, uint CompressedSize)> updatedEntries = ParseZipEntryHeaders(updatedBytes, out int count);
+            Assert.Equal(1, count);
+            Assert.Equal(0, updatedEntries[0].LocalHeaderOffset);
+
+            ms.Position = 0;
+            archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+            ZipArchiveEntry entry = Assert.Single(archive.Entries);
+            Assert.Equal("prefix.txt", entry.FullName);
+            Assert.Equal("prefix", await ReadEntryContents(async, entry, "PLACEHOLDER"));
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Update_MetadataOnlyChange_PreservesZipCryptoDataDescriptor(bool async, bool empty)
+        {
+            using MemoryStream ms = new MemoryStream();
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry("a.txt", "PLACEHOLDER", ZipEncryptionMethod.ZipCrypto);
+            string contents = empty ? "" : "hello";
+            await WriteEntryContents(async, entry, contents);
+            await DisposeZipArchive(async, archive);
+            byte[] originalBytes = ms.ToArray();
+            int centralDirectoryOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(originalBytes.AsSpan(originalBytes.Length - 6)));
+            Assert.Equal(9, BinaryPrimitives.ReadUInt16LittleEndian(originalBytes.AsSpan(6)));
+
+            ms.Position = 0;
+            archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            entry = archive.GetEntry("a.txt");
+            Assert.NotNull(entry);
+            entry.ExternalAttributes = 0x20;
+            await DisposeZipArchive(async, archive);
+            Assert.Equal(originalBytes.AsSpan(0, centralDirectoryOffset).ToArray(), ms.ToArray().AsSpan(0, centralDirectoryOffset).ToArray());
+
+            ms.Position = 0;
+            archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+            entry = Assert.Single(archive.Entries);
+            Assert.Equal(contents, await ReadEntryContents(async, entry, "PLACEHOLDER"));
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Update_RelocatedZipCryptoEntry_PreservesDataDescriptor(bool async, bool empty)
+        {
+            using MemoryStream ms = new MemoryStream();
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+            await WriteEntryContents(async, archive.CreateEntry("prefix.txt"), "prefix");
+            ZipArchiveEntry entry = archive.CreateEntry("a.txt", "PLACEHOLDER", ZipEncryptionMethod.ZipCrypto);
+            string contents = empty ? "" : "hello";
+            await WriteEntryContents(async, entry, contents);
+            await DisposeZipArchive(async, archive);
+
+            byte[] originalBytes = ms.ToArray();
+            List<(int LocalHeaderOffset, uint CompressedSize)> originalEntries = ParseZipEntryHeaders(originalBytes, out _);
+            int originalOffset = originalEntries[1].LocalHeaderOffset;
+            int headerLength = 30 + "a.txt".Length;
+            int centralDirectoryOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(originalBytes.AsSpan(originalBytes.Length - 6)));
+            byte[] originalDataAndDescriptor = originalBytes.AsSpan(originalOffset + headerLength, centralDirectoryOffset - originalOffset - headerLength).ToArray();
+            Assert.Equal(9, BinaryPrimitives.ReadUInt16LittleEndian(originalBytes.AsSpan(originalOffset + 6)));
+
+            ms.Position = 0;
+            archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            archive.GetEntry("prefix.txt").Delete();
+            await DisposeZipArchive(async, archive);
+
+            byte[] updatedBytes = ms.ToArray();
+            Assert.Equal(9, BinaryPrimitives.ReadUInt16LittleEndian(updatedBytes.AsSpan(6)));
+            Assert.Equal(originalDataAndDescriptor, updatedBytes.AsSpan(headerLength, originalDataAndDescriptor.Length).ToArray());
+            ms.Position = 0;
+            archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+            entry = Assert.Single(archive.Entries);
+            Assert.Equal(ZipEncryptionMethod.ZipCrypto, entry.EncryptionMethod);
+            Assert.Equal(contents, await ReadEntryContents(async, entry, "PLACEHOLDER"));
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Update_RelocatedZipCryptoEntry_AtLargeOffset_PreservesDataDescriptor(bool async, bool empty)
+        {
+            using MemoryStream ms = new MemoryStream();
+            // Leave backed space before the archive for backward signature searches.
+            const int PaddingLength = 4096;
+            ms.Write(new byte[PaddingLength]);
+            using LargeOffsetStream largeOffsetStream = new LargeOffsetStream(ms);
+            long relocatedOffset = largeOffsetStream.Position;
+            ZipArchive archive = await CreateZipArchive(async, largeOffsetStream, ZipArchiveMode.Create, leaveOpen: true);
+            await WriteEntryContents(async, archive.CreateEntry("prefix.txt"), "prefix");
+            long originalOffset = largeOffsetStream.Position;
+            string contents = empty ? "" : "hello";
+            await WriteEntryContents(async, archive.CreateEntry("a.txt", "PLACEHOLDER", ZipEncryptionMethod.ZipCrypto), contents);
+            await DisposeZipArchive(async, archive);
+
+            archive = await CreateZipArchive(async, largeOffsetStream, ZipArchiveMode.Update, leaveOpen: true);
+            int headerLength = 30 + "a.txt".Length;
+            int originalDataOffset = checked((int)(originalOffset - LargeOffsetStream.Offset)) + headerLength;
+            int originalDataLength = checked((int)archive.GetEntry("a.txt").CompressedLength);
+            byte[] originalCompressedData = ms.ToArray().AsSpan(originalDataOffset, originalDataLength).ToArray();
+            archive.GetEntry("prefix.txt").Delete();
+            archive.GetEntry("a.txt").ExternalAttributes = 0x20;
+            await DisposeZipArchive(async, archive);
+
+            archive = await CreateZipArchive(async, largeOffsetStream, ZipArchiveMode.Read, leaveOpen: true);
+            ZipArchiveEntry entry = Assert.Single(archive.Entries);
+            Assert.Equal(0x20, entry.ExternalAttributes);
+            Assert.Equal(ZipEncryptionMethod.ZipCrypto, entry.EncryptionMethod);
+            Assert.Equal(contents, await ReadEntryContents(async, entry, "PLACEHOLDER"));
+
+            byte[] bytes = ms.ToArray().AsSpan(PaddingLength).ToArray();
+            Assert.True(originalOffset > relocatedOffset);
+            Assert.Equal(9, BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(6)));
+            Assert.Equal(0u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(18)));
+            Assert.Equal(0u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(22)));
+            Assert.Equal(0, BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(28)));
+            Assert.Equal(originalCompressedData, bytes.AsSpan(headerLength, originalDataLength).ToArray());
+
+            int descriptorOffset = checked(headerLength + (int)entry.CompressedLength);
+            Assert.Equal(0x08074B50u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(descriptorOffset))); // Descriptor signature.
+            Assert.Equal((uint)entry.CompressedLength, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(descriptorOffset + 8)));
+            Assert.Equal((uint)entry.Length, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(descriptorOffset + 12)));
+            int centralOffset = descriptorOffset + 16;
+            Assert.Equal(0x02014B50u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(centralOffset))); // Central header signature.
+            Assert.Equal(
+                BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(centralOffset + 16)),
+                BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(descriptorOffset + 4)));
+            Assert.Equal(uint.MaxValue, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(centralOffset + 42)));
+            int zip64Offset = centralOffset + 46 + "a.txt".Length;
+            Assert.Equal(1, BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(zip64Offset)));
+            Assert.Equal(8, BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(zip64Offset + 2)));
+            Assert.Equal(relocatedOffset, BinaryPrimitives.ReadInt64LittleEndian(bytes.AsSpan(zip64Offset + 4)));
+            await DisposeZipArchive(async, archive);
+        }
+
+        // Back only the archive records while reporting offsets beyond 4 GiB.
+        private sealed class LargeOffsetStream : WrappedStream
+        {
+            internal const long Offset = (long)uint.MaxValue + 1;
+
+            internal LargeOffsetStream(Stream stream) : base(stream, canRead: true, canWrite: true, canSeek: true)
+            {
+            }
+
+            public override long Length => base.Length + Offset;
+
+            public override long Position
+            {
+                get => base.Position + Offset;
+                set => base.Position = value - Offset;
+            }
+
+            public override long Seek(long offset, SeekOrigin origin) =>
+                base.Seek(origin is SeekOrigin.Begin ? offset - Offset : offset, origin) + Offset;
+
+            public override void SetLength(long value) => base.SetLength(value - Offset);
+        }
+
+        public static IEnumerable<object[]> Get_AesUpdate_Data()
+        {
+            foreach (bool async in _bools)
+            foreach (int vendorVersion in new[] { 1, 2 })
+            foreach (bool stored in _bools)
+            {
+                yield return new object[] { async, vendorVersion, stored };
+            }
+        }
+
+        public static IEnumerable<object[]> Get_AesMetadataUpdate_Data()
+        {
+            foreach (object[] parameters in Get_AesUpdate_Data())
+            foreach (bool changeTimestamp in _bools)
+            foreach (bool relocate in _bools)
+            {
+                yield return new object[] { parameters[0], parameters[1], parameters[2], changeTimestamp, relocate, false };
+            }
+            foreach (bool async in _bools)
+            foreach (bool changeTimestamp in _bools)
+            foreach (bool relocate in _bools)
+            {
+                yield return new object[] { async, 1, false, changeTimestamp, relocate, true };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_AesMetadataUpdate_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task Update_MetadataOnlyChange_PreservesAesEntry(
+            bool async, int vendorVersion, bool stored, bool changeTimestamp, bool relocate, bool descriptor)
+        {
+            byte[] originalBytes = descriptor
+                ? await File.ReadAllBytesAsync(zfile("metadata-aes1-descriptor.zip"))
+                : await ReadAesMetadataArchiveAsync(vendorVersion, stored);
+            List<(int LocalHeaderOffset, uint CompressedSize)> originalEntries = ParseZipEntryHeaders(originalBytes, out _);
+            using MemoryStream ms = new MemoryStream();
+            ms.Write(originalBytes);
+            ms.Position = 0;
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            if (relocate)
+            {
+                archive.GetEntry("prefix.txt").Delete();
+            }
+            DateTimeOffset timestamp = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero);
+            foreach (string name in new[] { "a.txt", "empty.txt" })
+            {
+                ZipArchiveEntry entry = archive.GetEntry(name);
+                Assert.NotNull(entry);
+                if (changeTimestamp)
+                {
+                    entry.LastWriteTime = timestamp;
+                }
+                else
+                {
+                    entry.ExternalAttributes = 0x12340020;
+                }
+            }
+            await DisposeZipArchive(async, archive);
+
+            byte[] updatedBytes = ms.ToArray();
+            List<(int LocalHeaderOffset, uint CompressedSize)> updatedEntries = ParseZipEntryHeaders(updatedBytes, out int count);
+            Assert.Equal(relocate ? 2 : 3, count);
+            int originalCentralOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(originalBytes.AsSpan(originalBytes.Length - 6))) + 46 + "prefix.txt".Length;
+            int centralOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(updatedBytes.AsSpan(updatedBytes.Length - 6)));
+            if (!relocate)
+            {
+                centralOffset += 46 + "prefix.txt".Length;
+            }
+            for (int i = 0; i < 2; i++)
+            {
+                int originalOffset = originalEntries[i + 1].LocalHeaderOffset;
+                int updatedOffset = updatedEntries[i + (relocate ? 0 : 1)].LocalHeaderOffset;
+                int nameLength = BinaryPrimitives.ReadUInt16LittleEndian(originalBytes.AsSpan(originalOffset + 26));
+                int extraLength = BinaryPrimitives.ReadUInt16LittleEndian(originalBytes.AsSpan(originalOffset + 28));
+                int headerLength = 30 + nameLength + extraLength;
+                Assert.Equal(originalEntries[i + 1].CompressedSize, updatedEntries[i + (relocate ? 0 : 1)].CompressedSize);
+                Assert.Equal(relocate ? originalOffset - originalEntries[1].LocalHeaderOffset : originalOffset, updatedOffset);
+                byte[] originalLocalEntry = originalBytes.AsSpan(originalOffset, headerLength + checked((int)originalEntries[i + 1].CompressedSize) + (descriptor ? 16 : 0)).ToArray();
+                byte[] updatedLocalEntry = updatedBytes.AsSpan(updatedOffset, originalLocalEntry.Length).ToArray();
+                if (changeTimestamp)
+                {
+                    const uint ExpectedDosTimestamp = 0x5C218800; // 2026-01-01 17:00:00.
+                    Assert.Equal(ExpectedDosTimestamp, BinaryPrimitives.ReadUInt32LittleEndian(updatedLocalEntry.AsSpan(10)));
+                    originalLocalEntry.AsSpan(10, 4).Clear();
+                    updatedLocalEntry.AsSpan(10, 4).Clear();
+                }
+                Assert.Equal(originalLocalEntry, updatedLocalEntry);
+
+                Assert.Equal(
+                    BinaryPrimitives.ReadUInt32LittleEndian(originalBytes.AsSpan(originalCentralOffset + 16)),
+                    BinaryPrimitives.ReadUInt32LittleEndian(updatedBytes.AsSpan(centralOffset + 16)));
+                Assert.Equal(
+                    originalBytes.AsSpan(originalOffset + 30 + nameLength, extraLength).ToArray(),
+                    updatedBytes.AsSpan(centralOffset + 46 + nameLength, extraLength).ToArray());
+                centralOffset += 46 + nameLength + extraLength;
+                originalCentralOffset += 46 + nameLength + extraLength;
+            }
+
+            ms.Position = 0;
+            archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+            foreach (string name in new[] { "a.txt", "empty.txt" })
+            {
+                ZipArchiveEntry entry = archive.GetEntry(name);
+                Assert.NotNull(entry);
+                Assert.Equal(ZipEncryptionMethod.Aes256, entry.EncryptionMethod);
+                Assert.Equal(stored ? ZipCompressionMethod.Stored : ZipCompressionMethod.Deflate, entry.CompressionMethod);
+                Assert.Equal(name == "a.txt" ? "WinZip AES metadata preservation payload." : "", await ReadEntryContents(async, entry, "PLACEHOLDER"));
+                if (changeTimestamp)
+                {
+                    Assert.Equal(timestamp.DateTime, entry.LastWriteTime.DateTime);
+                }
+                else
+                {
+                    Assert.Equal(0x12340020, entry.ExternalAttributes);
+                }
+            }
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [InlineData(false, 1, false, false)]
+        [InlineData(false, 1, true, false)]
+        [InlineData(false, 2, false, false)]
+        [InlineData(false, 2, true, false)]
+        [InlineData(true, 1, false, false)]
+        [InlineData(true, 1, true, false)]
+        [InlineData(true, 2, false, false)]
+        [InlineData(true, 2, true, false)]
+        [InlineData(false, 1, false, true)]
+        [InlineData(true, 1, false, true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task Update_AesEntry_ReencryptsAsAe2(bool async, int vendorVersion, bool stored, bool truncate)
+        {
+            using MemoryStream ms = new MemoryStream();
+            ms.Write(await ReadAesMetadataArchiveAsync(vendorVersion, stored));
+            ms.Position = 0;
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            string contents = truncate ? "" : "WinZip AES metadata preservation payload. Updated contents.";
+            if (truncate)
+            {
+                Stream stream = await OpenEntryStream(async, archive.GetEntry("a.txt"), "PLACEHOLDER");
+                stream.SetLength(0);
+                await DisposeStream(async, stream);
+            }
+            else
+            {
+                await WriteEntryContents(async, archive.GetEntry("a.txt"), contents, "PLACEHOLDER");
+            }
+            await DisposeZipArchive(async, archive);
+
+            byte[] updatedBytes = ms.ToArray();
+            List<(int LocalHeaderOffset, uint CompressedSize)> entries = ParseZipEntryHeaders(updatedBytes, out _);
+            int localOffset = entries[1].LocalHeaderOffset;
+            int centralOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(updatedBytes.AsSpan(updatedBytes.Length - 6))) + 46 + "prefix.txt".Length;
+            const int AesVendorVersionOffset = 4;
+            Assert.Equal(2, BinaryPrimitives.ReadUInt16LittleEndian(updatedBytes.AsSpan(localOffset + 30 + "a.txt".Length + AesVendorVersionOffset)));
+            Assert.Equal(2, BinaryPrimitives.ReadUInt16LittleEndian(updatedBytes.AsSpan(centralOffset + 46 + "a.txt".Length + AesVendorVersionOffset)));
+            Assert.Equal(0u, BinaryPrimitives.ReadUInt32LittleEndian(updatedBytes.AsSpan(localOffset + 14)));
+            Assert.Equal(0u, BinaryPrimitives.ReadUInt32LittleEndian(updatedBytes.AsSpan(centralOffset + 16)));
+
+            ms.Position = 0;
+            archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+            Assert.Equal(ZipEncryptionMethod.Aes256, archive.GetEntry("a.txt").EncryptionMethod);
+            Assert.Equal(contents, await ReadEntryContents(async, archive.GetEntry("a.txt"), "PLACEHOLDER"));
+            Assert.Equal("", await ReadEntryContents(async, archive.GetEntry("empty.txt"), "PLACEHOLDER"));
+            await DisposeZipArchive(async, archive);
+        }
+
+        private static Task<byte[]> ReadAesMetadataArchiveAsync(int vendorVersion, bool stored) =>
+            File.ReadAllBytesAsync(zfile((vendorVersion, stored) switch
+            {
+                (1, true) => "metadata-aes1-stored.zip",
+                (1, false) => "metadata-aes1-deflate.zip",
+                (2, true) => "metadata-aes2-stored.zip",
+                (2, false) => "metadata-aes2-deflate.zip",
+                _ => throw new ArgumentOutOfRangeException(nameof(vendorVersion))
+            }));
+
         private static async Task CreateZipCryptoArchive(bool async, Stream stream, string password)
         {
             ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Create, leaveOpen: true);
