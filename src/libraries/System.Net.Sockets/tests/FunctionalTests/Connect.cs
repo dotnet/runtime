@@ -495,7 +495,6 @@ namespace System.Net.Sockets.Tests
         public ConnectSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ConnectApm : Connect<SocketHelperApm>
     {
         public ConnectApm(ITestOutputHelper output) : base(output) {}
@@ -790,7 +789,6 @@ namespace System.Net.Sockets.Tests
         public ConnectSyncForceNonBlocking_NonParallel(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ConnectApm_NonParallel : Connect_NonParallel<SocketHelperApm>
     {
         public ConnectApm_NonParallel(ITestOutputHelper output) : base(output) { }

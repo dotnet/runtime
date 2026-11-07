@@ -148,9 +148,9 @@ namespace System.Net.Sockets.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task Accept_AcceptsPendingSocketOrClient(int mode)
         {
-            if (OperatingSystem.IsWasi() && (mode == 0 || mode == 3))
+            if (OperatingSystem.IsWasi() && mode == 0)
             {
-                // Sync and APM are not supported on WASI
+                // Sync is not supported on WASI
                 return;
             }
 

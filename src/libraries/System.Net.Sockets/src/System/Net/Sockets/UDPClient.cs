@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -289,8 +290,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSend(byte[] datagram, int bytes, IPEndPoint? endPoint, AsyncCallback? requestCallback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ValidateDatagram(datagram, bytes, endPoint);
 
             if (endPoint is null)
@@ -306,8 +305,6 @@ namespace System.Net.Sockets
 
         public int EndSend(IAsyncResult asyncResult)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
 
             return _active ?
@@ -363,8 +360,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginReceive(AsyncCallback? requestCallback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
 
             // Due to the nature of the ReceiveFrom() call and the ref parameter convention,
@@ -379,8 +374,6 @@ namespace System.Net.Sockets
 
         public byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint? remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
 
             EndPoint tempRemoteEP = _family == AddressFamily.InterNetwork ?
@@ -690,7 +683,7 @@ namespace System.Net.Sockets
 
         public void Connect(string hostname, int port)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 
@@ -805,7 +798,7 @@ namespace System.Net.Sockets
 
         public void Connect(IPAddress addr, int port)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 
@@ -822,7 +815,7 @@ namespace System.Net.Sockets
 
         public void Connect(IPEndPoint endPoint)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 
@@ -835,7 +828,7 @@ namespace System.Net.Sockets
 
         public byte[] Receive([NotNull] ref IPEndPoint? remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 
@@ -858,7 +851,7 @@ namespace System.Net.Sockets
         // Sends a UDP datagram to the host at the remote end point.
         public int Send(byte[] dgram, int bytes, IPEndPoint? endPoint)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 
@@ -894,7 +887,7 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
         public int Send(ReadOnlySpan<byte> datagram, IPEndPoint? endPoint)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 
@@ -938,7 +931,7 @@ namespace System.Net.Sockets
         // Sends a UDP datagram to a remote host.
         public int Send(byte[] dgram, int bytes)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 
@@ -964,7 +957,7 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
         public int Send(ReadOnlySpan<byte> datagram)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 

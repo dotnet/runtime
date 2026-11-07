@@ -465,7 +465,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
     public sealed class SendFile_Apm : SendFile<SocketHelperApm>
     {
         public SendFile_Apm(ITestOutputHelper output) : base(output) { }
@@ -559,7 +559,7 @@ namespace System.Net.Sockets.Tests
         public SendFile_NonParallel_Task(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
     public sealed class SendFile_NonParallel_Apm : SendFile_NonParallel<SocketHelperApm>
     {
         public SendFile_NonParallel_Apm(ITestOutputHelper output) : base(output) { }

@@ -168,7 +168,6 @@ namespace System.Net.Sockets.Tests
         public Disconnect_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class Disconnect_Apm : Disconnect<SocketHelperApm>
     {
         public Disconnect_Apm(ITestOutputHelper output) : base(output) { }

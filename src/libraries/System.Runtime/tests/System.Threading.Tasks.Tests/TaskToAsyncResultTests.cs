@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace System.Threading.Tasks.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134955", TestPlatforms.Wasi)]
     public class TaskToAsyncResultTests
     {
         [Fact]

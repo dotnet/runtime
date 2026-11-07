@@ -287,8 +287,6 @@ namespace System.Net.Sockets
 
         private TResult EndAcceptCore<TResult>(IAsyncResult asyncResult)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             try
             {
                 return TaskToAsyncResult.End<TResult>(asyncResult);

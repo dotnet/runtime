@@ -510,7 +510,6 @@ namespace System.Net.Sockets.Tests
         public ReceiveFrom_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveFrom_Apm : ReceiveFrom<SocketHelperApm>
     {
         public ReceiveFrom_Apm(ITestOutputHelper output) : base(output) { }

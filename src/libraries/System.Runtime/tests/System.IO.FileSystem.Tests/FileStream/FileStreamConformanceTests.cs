@@ -33,11 +33,12 @@ namespace System.IO.Tests
 
         protected override bool NopFlushCompletesSynchronously => OperatingSystem.IsWindows();
 
-        private static void SkipApmOnWasi(ReadWriteMode mode)
+        private static void SkipSyncApmOnWasi(ReadWriteMode mode)
         {
-            if (OperatingSystem.IsWasi() && mode is ReadWriteMode.SyncAPM or ReadWriteMode.AsyncAPM)
+            if (OperatingSystem.IsWasi() && mode is ReadWriteMode.SyncAPM)
             {
-                throw new SkipTestException("https://github.com/dotnet/runtime/issues/134955");
+                // EndRead/EndWrite would block on a pending operation, which needs multithreading.
+                throw new SkipTestException("SyncAPM is not supported on single-threaded WASI");
             }
         }
 
@@ -45,7 +46,7 @@ namespace System.IO.Tests
         [MemberData(nameof(AllReadWriteModes))]
         public async Task FileOffsetIsPreservedWhenFileStreamIsCreatedFromSafeFileHandle_Reads(ReadWriteMode mode)
         {
-            SkipApmOnWasi(mode);
+            SkipSyncApmOnWasi(mode);
 
             byte[] initialData = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             using FileStream stream = (FileStream)await CreateReadOnlyStreamCore(initialData);
@@ -64,7 +65,7 @@ namespace System.IO.Tests
         [MemberData(nameof(AllReadWriteModes))]
         public async Task FileOffsetIsPreservedWhenFileStreamIsCreatedFromSafeFileHandle_Writes(ReadWriteMode mode)
         {
-            SkipApmOnWasi(mode);
+            SkipSyncApmOnWasi(mode);
 
             using FileStream stream = (FileStream)await CreateWriteOnlyStreamCore(Array.Empty<byte>());
             byte[] buffer = new byte[] { 0, 1, 2, 3, 4 };
@@ -82,7 +83,7 @@ namespace System.IO.Tests
         [MemberData(nameof(AllReadWriteModes))]
         public async Task WriteAsyncStartsWherePreviousReadAsyncHasFinished(ReadWriteMode mode)
         {
-            SkipApmOnWasi(mode);
+            SkipSyncApmOnWasi(mode);
 
             if (mode == ReadWriteMode.SyncByte)
             {
@@ -119,7 +120,7 @@ namespace System.IO.Tests
         [MemberData(nameof(AllReadWriteModes))]
         public async Task NoDataIsLostWhenWritingToFile(ReadWriteMode mode)
         {
-            SkipApmOnWasi(mode);
+            SkipSyncApmOnWasi(mode);
 
             string filePath;
             List<byte> writtenBytes = new List<byte>();
