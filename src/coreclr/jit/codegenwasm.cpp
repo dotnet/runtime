@@ -192,7 +192,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         if (m_compiler->IsNativeAot() || m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
         {
-            GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
+            GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC,
+                                    reinterpret_cast<cnsval_ssize_t>(m_compiler->info.compMethodHnd));
         }
         else if (m_compiler->lvaWasmPortableEntryPointArg != BAD_VAR_NUM)
         {
@@ -2171,6 +2172,13 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         icon = treeNode->AsIntConCommon();
         if (icon->IsIconHandle())
         {
+            if (icon->IsIconHandle(GTF_ICON_WASM_FRAME_IDENTITY))
+            {
+                GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC, icon->IntegralValue());
+                WasmProduceReg(treeNode);
+                return;
+            }
+
             // Handles need linker relocations for NativeAOT or image-relative relocations for R2R.
             // A handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
             assert(icon->ImmedValNeedsReloc(m_compiler) || m_compiler->RunningSuperPmiReplay());
@@ -3328,6 +3336,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             assert(wvt < WasmValueType::Count);
             typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
         }
+    }
+
+    if ((call->gtDirectCallAddress != nullptr) &&
+        (m_compiler->eeGetRelocTypeHint(call->gtDirectCallAddress) == CorInfoReloc::WASM_DEFERRED_CALL))
+    {
+        assert(!call->IsHelperCall() && !call->IsUnmanaged());
+        assert(call->gtArgs.FindWellKnownArg(WellKnownArg::WasmPortableEntryPoint) == nullptr);
+        typeStack.Push(CORINFO_WASM_TYPE_I32);
     }
 
     // Report managed call signatures to the R2R compiler for thunk generation.

@@ -5932,6 +5932,20 @@ namespace
             return;
         }
 
+#ifdef TARGET_WASM
+        // CoreLib eager fixups run before CoreLib is active. Resolving a statically
+        // linked target does not load a library or execute its initialization code.
+        if (!g_fEEStarted && pMD->GetModule()->IsSystem())
+        {
+            void* pvTarget = const_cast<void*>(PInvokeOverride::GetMethodImpl(pMD->GetLibNameRaw(), pMD->GetEntrypointName()));
+            if (pvTarget != nullptr)
+            {
+                pMD->SetPInvokeTarget(pvTarget);
+                return;
+            }
+        }
+#endif // TARGET_WASM
+
         // Loading unmanaged dlls can trigger dllmains which certainly count as code execution!
         pMD->EnsureActive();
 
