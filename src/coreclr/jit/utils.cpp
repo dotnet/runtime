@@ -1541,6 +1541,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
             case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
+                // On NativeAOT, GenTreeCall::CallExceptions reports CORINFO_HELP_READYTORUN_GENERIC_HANDLE as throwing.
                 isPure        = true;
                 exceptions    = ExceptionSetFlags::None;
                 nonNullReturn = true;

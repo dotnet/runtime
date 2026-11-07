@@ -2285,7 +2285,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
     }
 
     // If we also care about exceptions then check if the helper can throw
-    if (!ignoreExceptions && !helperProperties.NoThrow(helper))
+    if (!ignoreExceptions && (CallExceptions(compiler) != ExceptionSetFlags::None))
     {
         return true;
     }
@@ -2495,10 +2495,16 @@ CorInfoHelpFunc GenTreeCall::GetHelperNum() const
 // Return Value:
 //     A bit set of exceptions this call may throw.
 //
-ExceptionSetFlags GenTreeCall::CallExceptions() const
+ExceptionSetFlags GenTreeCall::CallExceptions(Compiler* comp) const
 {
     CorInfoHelpFunc helper = GetHelperNum();
     if (helper == CORINFO_HELP_UNDEF)
+    {
+        return ExceptionSetFlags::UnknownException;
+    }
+
+    // NativeAOT compiles generic lookups it failed to build into helpers that throw when invoked.
+    if ((helper == CORINFO_HELP_READYTORUN_GENERIC_HANDLE) && comp->IsNativeAot())
     {
         return ExceptionSetFlags::UnknownException;
     }
@@ -7829,6 +7835,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             level += 5;
             costEx += 3 * IND_COST_EX;
+
+            // ReadyToRun runtime lookups call a helper that performs a generic dictionary lookup.
+            if (IsAot() && call->IsHelperCall() && (call->GetHelperNum() == CORINFO_HELP_READYTORUN_GENERIC_HANDLE))
+            {
+                costEx += 11 * IND_COST_EX;
+            }
             break;
 
 #if defined(FEATURE_HW_INTRINSICS)
@@ -8866,7 +8878,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
             return ExceptionSetFlags::None;
 
         case GT_CALL:
-            return AsCall()->CallExceptions();
+            return AsCall()->CallExceptions(comp);
 
         case GT_LOCKADD:
         case GT_XAND:
@@ -10257,7 +10269,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     }
     node->gtReturnType = type;
 
-    if (node->CallExceptions() != ExceptionSetFlags::None)
+    if (node->CallExceptions(this) != ExceptionSetFlags::None)
     {
         node->gtFlags |= GTF_EXCEPT;
     }
