@@ -706,6 +706,7 @@ extern "C" {
     int32_t QCall_EventPipeInternal_SignalSession (uint64_t, void *) __asm__("EventPipeInternal_SignalSession");
     int32_t QCall_EventPipeInternal_WasiRunJobs (void *) __asm__("EventPipeInternal_WasiRunJobs");
     void QCall_EventPipeInternal_WriteEventData (void *, void *, uint32_t, void *, void *, void *) __asm__("EventPipeInternal_WriteEventData");
+    uint32_t QCall_ExceptionHandling_TrySetFatalErrorHandler (void *) __asm__("ExceptionHandling_TrySetFatalErrorHandler");
     void QCall_ExceptionNative_GetFrozenStackTrace (void *, void *, void *) __asm__("ExceptionNative_GetFrozenStackTrace");
     void QCall_ExceptionNative_GetMessageFromNativeResources (int32_t, void *, void *) __asm__("ExceptionNative_GetMessageFromNativeResources");
     void QCall_ExceptionNative_GetMethodFromStackTrace (void *, void *, void *) __asm__("ExceptionNative_GetMethodFromStackTrace");
@@ -1008,6 +1009,7 @@ static const Entry s_QCall[] = {
     { "EventPipeInternal_SignalSession", (void*)&QCall_EventPipeInternal_SignalSession },
     { "EventPipeInternal_WasiRunJobs", (void*)&QCall_EventPipeInternal_WasiRunJobs },
     { "EventPipeInternal_WriteEventData", (void*)&QCall_EventPipeInternal_WriteEventData },
+    { "ExceptionHandling_TrySetFatalErrorHandler", (void*)&QCall_ExceptionHandling_TrySetFatalErrorHandler },
     { "ExceptionNative_GetFrozenStackTrace", (void*)&QCall_ExceptionNative_GetFrozenStackTrace },
     { "ExceptionNative_GetMessageFromNativeResources", (void*)&QCall_ExceptionNative_GetMessageFromNativeResources },
     { "ExceptionNative_GetMethodFromStackTrace", (void*)&QCall_ExceptionNative_GetMethodFromStackTrace },
