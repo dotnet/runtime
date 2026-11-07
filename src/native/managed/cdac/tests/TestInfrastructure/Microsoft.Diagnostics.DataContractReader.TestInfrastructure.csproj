@@ -17,7 +17,7 @@
       test projects that ProjectReference this assembly.
     -->
     <IsShipping>false</IsShipping>
-    <IsPackable>true</IsPackable>
+    <IsPackable>false</IsPackable>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
