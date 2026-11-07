@@ -100,13 +100,13 @@ namespace System
 
         private static UriKind GetUriKind(Uri uri) => uri.IsAbsoluteUri ? UriKind.Absolute : UriKind.Relative;
 
-        private Exception CreateConvertFromException(object? value)
+        private NotSupportedException CreateConvertFromException(object? value)
         {
             string? valueTypeName = value is null ? (SR.UsingResourceKeys() ? "(null)" : SR.Null) : value.GetType().FullName;
             return new NotSupportedException(SR.Format(SR.ConvertFromException, GetType().Name, valueTypeName));
         }
 
-        private Exception CreateConvertToException(object? value, Type destinationType)
+        private NotSupportedException CreateConvertToException(object? value, Type destinationType)
         {
             string? valueTypeName = value is null ? (SR.UsingResourceKeys() ? "(null)" : SR.Null) : value.GetType().FullName;
             return new NotSupportedException(SR.Format(SR.ConvertToException, GetType().Name, valueTypeName, destinationType.FullName));
