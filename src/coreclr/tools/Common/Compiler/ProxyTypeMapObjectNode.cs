@@ -24,6 +24,10 @@ namespace ILCompiler.DependencyAnalysis
             _externalReferences = externalReferences;
         }
 
+#if !READYTORUN
+        internal IEnumerable<IProxyTypeMapNode> GetTypeMaps() => _manager.GetProxyTypeMaps();
+#endif
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
