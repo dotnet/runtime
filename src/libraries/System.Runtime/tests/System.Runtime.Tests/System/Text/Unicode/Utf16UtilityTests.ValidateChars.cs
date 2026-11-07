@@ -116,6 +116,29 @@ namespace System.Text.Unicode.Tests
             GetIndexOfFirstInvalidUtf16Sequence_Test_Core(chars, 15, expectedRuneCount: 13, expectedUtf8ByteCount: 20);
         }
 
+        [Theory]
+        [InlineData(30, "<D800><DC00>", -1, 63, 190)]
+        [InlineData(31, "<DBFF><DFFF>", -1, 63, 190)]
+        [InlineData(32, "<D800><DC00>", -1, 63, 190)]
+        [InlineData(31, "<D800><DC00><DBFF><DFFF>", -1, 62, 188)]
+        [InlineData(31, "<D800>X", 31, 31, 93)]
+        [InlineData(31, "<D800><0800>", 31, 31, 93)]
+        [InlineData(31, "<D800><D800><DC00>", 31, 31, 93)]
+        [InlineData(31, "<DC00><D800>", 31, 31, 93)]
+        [InlineData(31, "<0800><DC00>", 32, 32, 96)]
+        [InlineData(30, "<D800><DC00><DC00>", 32, 31, 94)]
+        [InlineData(31, "<D800><DC00><DC00>", 33, 32, 97)]
+        [InlineData(31, "<D800><DC00><D800>", 33, 32, 97)]
+        public void GetIndexOfFirstInvalidUtf16Sequence_WithSurrogatesAtVector512Boundary(
+            int index, string unprocessedInput, int expectedIdxOfFirstInvalidChar, int expectedRuneCount, int expectedUtf8ByteCount)
+        {
+            // Avoid an ASCII prefix so all 64 chars reach the 512-bit dispatch.
+            char[] chars = Enumerable.Repeat('\u0800', 64).ToArray();
+            ProcessInput(unprocessedInput).AsSpan().CopyTo(chars.AsSpan(index));
+
+            GetIndexOfFirstInvalidUtf16Sequence_Test_Core(chars, expectedIdxOfFirstInvalidChar, expectedRuneCount, expectedUtf8ByteCount);
+        }
+
         [Fact]
         public void GetIndexOfFirstInvalidUtf16Sequence_WithStandaloneLowSurrogateCharAtStart()
         {
