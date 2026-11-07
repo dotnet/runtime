@@ -293,6 +293,14 @@
        native code need a corerun with that code linked in. -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.WasmCorerun.targets"
           Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'coreclr'" />
+
+  <!-- Matches WasiApp.CoreCLR.targets. -->
+  <PropertyGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr'">
+    <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">true</WasmEnableRelaxedSimd>
+  </PropertyGroup>
+  <PropertyGroup Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'coreclr' and '$(WasmEnableRelaxedSimd)' == 'true'">
+    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --instruction-set:relaxed-simd</CrossGen2TestExtraArguments>
+  </PropertyGroup>
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
           Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"

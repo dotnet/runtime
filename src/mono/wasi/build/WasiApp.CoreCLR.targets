@@ -72,12 +72,15 @@
          wasihost corehost (libWasiHost.a) per-app through its own targets below. -->
     <WasmBuildNative>false</WasmBuildNative>
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
+    <!-- Set to false for engines without relaxed SIMD. -->
+    <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">true</WasmEnableRelaxedSimd>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--instruction-set:relaxed-simd</PublishReadyToRunCrossgen2ExtraArgs>
     <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">true</WasiEnableCompositeR2R>
     <!-- Run wasm-opt over the composed module. Off by default so codegen problems surface in crossgen2's
          output instead of being optimized away. -->

@@ -10,7 +10,10 @@ pr:
     include:
     - eng/pipelines/coreclr/hardware-intrinsics-wasm.yml
     - eng/pipelines/coreclr/templates/jit-hardware-intrinsics-wasm.yml
+    - src/coreclr/crossgen-corelib.proj
     - src/coreclr/jit/*wasm*
+    - src/tests/Directory.Build.targets
+    - src/tests/build.proj
     - src/tests/JIT/HardwareIntrinsics/Wasm/**
 
 variables:
@@ -28,4 +31,11 @@ extends:
         parameters:
           platforms:
             - browser_wasm
+          extraBuildArgs: /p:WasmEnableRelaxedSimd=true
           testBuildArgs: '/p:WasmEnableRelaxedSimd=true -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_r.csproj -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_ro.csproj'
+      - template: /eng/pipelines/coreclr/templates/jit-hardware-intrinsics-wasm.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+          compositeBuildMode: true
+          testBuildArgs: '-test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_r.csproj -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_ro.csproj'

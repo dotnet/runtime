@@ -1,4 +1,9 @@
 <Project TreatAsLocalProperty="ArchiveTests">
+  <!-- The WasiApp.CoreCLR.targets default, needed before tests.wasm.targets picks the trimmer substitutions. -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">true</WasmEnableRelaxedSimd>
+  </PropertyGroup>
+
   <Import Project="tests.wasm.targets" />
 
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->

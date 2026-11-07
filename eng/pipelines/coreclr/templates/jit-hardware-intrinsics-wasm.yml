@@ -3,6 +3,12 @@ parameters:
     type: object
   - name: testBuildArgs
     type: string
+  - name: compositeBuildMode
+    type: boolean
+    default: false
+  - name: extraBuildArgs
+    type: string
+    default: ''
 
 jobs:
 # Build CoreCLR + libraries for wasm, build the wasm HardwareIntrinsics tests,
@@ -22,7 +28,7 @@ jobs:
     jobParameters:
       testGroup: outerloop
       nameSuffix: CoreCLR
-      buildArgs: -s clr+libs+packs -c $(_BuildConfig) /p:TestAssemblies=false
+      buildArgs: -s clr+libs+packs -c $(_BuildConfig) /p:TestAssemblies=false ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 180
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
@@ -32,6 +38,7 @@ jobs:
             testRunNamePrefixSuffix: CoreCLR_R2R
             # The CoreCLR interpreter does not implement Wasm SIMD; ReadyToRun code does.
             readyToRun: true
+            compositeBuildMode: ${{ parameters.compositeBuildMode }}
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
