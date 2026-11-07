@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Build.Framework;
-using Microsoft.NET.Build.Tasks;
 using Mono.Linker;
 using Mono.Linker.Steps;
 
@@ -18,6 +17,10 @@ namespace ILLink.Tasks.Tests
     {
 
         public List<(MessageImportance Importance, string Line)> Messages { get; } = new List<(MessageImportance Importance, string Line)>();
+        public List<string> WorkingDirectories { get; } = new();
+        public List<string> ResponseFiles { get; } = new();
+        public string WorkingDirectory => GetWorkingDirectory() ?? Environment.CurrentDirectory;
+        public (string WorkingDirectory, string CommandLine, string ResponseFile)? CacheInvocation { get; private set; }
 
         public string GetResponseFileCommands() => GenerateResponseFileCommands();
 
@@ -28,12 +31,29 @@ namespace ILLink.Tasks.Tests
             commandLine = string.IsNullOrEmpty(commandLine) ? string.Empty : " " + commandLine;
             object[] arguments = {
                 pathToTool,
+                AdjustCommandsForOperatingSystem(commandLine),
                 AdjustCommandsForOperatingSystem(GenerateResponseFileCommands()),
-                AdjustCommandsForOperatingSystem(commandLine)
+                null,
+                null
             };
-            var invocation = (InvocationDescription)typeof(ILLink).GetMethod("DescribeInvocation", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(this, arguments);
-            key = string.Empty;
-            return invocation is not null && InvocationCache.TryComputeKey(Log, "ILLink", invocation, out key);
+            MethodInfo method = typeof(ILLink).GetMethod("TryComputeCacheKey", BindingFlags.Instance | BindingFlags.NonPublic);
+            bool result = (bool)method.Invoke(this, arguments);
+            key = (string)arguments[3];
+            CacheInvocation = ((string, string, string)?)arguments[4];
+            return result;
+        }
+
+        protected override string GetWorkingDirectory()
+        {
+            string directory = base.GetWorkingDirectory();
+            WorkingDirectories.Add(directory ?? Environment.CurrentDirectory);
+            return directory;
+        }
+
+        protected override string GetResponseFileSwitch(string responseFilePath)
+        {
+            ResponseFiles.Add(File.ReadAllText(responseFilePath));
+            return base.GetResponseFileSwitch(responseFilePath);
         }
 
         public MockTask()

@@ -19,6 +19,12 @@ shared layer hashes declared files with SHA-256; it does not interpret arguments
 dependencies. Inputs must remain stable through discovery, hashing, and execution. Inherited
 environment settings and installed runtime trees are not automatically fingerprinted.
 
+Consumers with task-specific identity can instead use the `ExecuteCached` overload whose preparation
+callback returns an `InvocationCacheRequest` containing a prepared key and output declaration. Such
+consumers own input discovery, full-content hashing, and execution-context identity; the shared layer still owns
+validation, restoration, publication, and concurrency. ILLink uses this entry point for its
+conservative root-aware identity and execution model.
+
 ## Behavior and limitations
 
 Disabled caching skips discovery and cache I/O. Hits validate and restore outputs without running the
@@ -31,7 +37,8 @@ The cache owns reconciliation only on hits, including deleting declared files re
 Restoration is not transactional. Empty directories are not preserved, and symbolic links are not
 checked.
 
-Keys retain absolute input/output paths and execution context; cross-worktree reuse is not promised.
+Standard invocation descriptions retain absolute input/output paths and execution context;
+cross-worktree reuse requires a consumer-specific prepared key and execution contract.
 Hits do not replay diagnostics or non-file task outputs. Cache operations do not observe cancellation.
 Consumers must bypass invocations whose dependencies or required side effects cannot be modeled.
 
