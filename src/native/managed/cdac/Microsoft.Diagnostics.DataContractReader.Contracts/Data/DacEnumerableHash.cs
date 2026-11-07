@@ -16,6 +16,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class DacEnumerableHash
 {
     private const int SLOT_LENGTH = 0;
+    private const int SLOT_NEXT = 1;
     private const int SKIP_SPECIAL_SLOTS = 3;
     private const int END_SENTINEL = 0x1;
 
@@ -24,37 +25,51 @@ internal sealed class DacEnumerableHash
 
     public DacEnumerableHash(Target target, TargetPointer address, Target.TypeInfo type)
     {
-        // init fields
         _target = target;
         _type = type;
 
         Buckets = _target.ReadPointerField(address, _type, nameof(Buckets));
         Count = _target.ReadField<uint>(address, _type, nameof(Count));
-
-        // read items in the hash table
-        uint length = GetLength();
-
-        List<TargetPointer> entries = [];
-        for (int i = 0; i < length; i++)
-        {
-            // indexes 0, 1, 2 have special purposes. buckets start at SKIP_SPECIAL_SLOTS
-            int bucketOffset = i + SKIP_SPECIAL_SLOTS;
-            TargetPointer chainElement = _target.ReadPointer(Buckets + (ulong)(bucketOffset * _target.PointerSize));
-            List<TargetPointer> elements = ReadChain(chainElement);
-            entries.AddRange(elements);
-        }
-
-        // In STRESS testing, we may stop while this table is resizing, so we
-        // can't assert that Count equals the number of walked entries.
-        Entries = entries;
     }
 
     public TargetPointer Buckets { get; init; }
     public uint Count { get; init; }
 
-    public IReadOnlyList<TargetPointer> Entries { get; init; }
+    public IEnumerable<TargetPointer> Entries
+    {
+        get
+        {
+            uint length = GetLength(Buckets);
+            for (uint i = 0; i < length; i++)
+            {
+                TargetPointer chainElement = _target.ReadPointer(Buckets + ((ulong)i + SKIP_SPECIAL_SLOTS) * (ulong)_target.PointerSize);
+                foreach (TargetPointer entry in ReadChain(chainElement))
+                    yield return entry;
+            }
+        }
+    }
 
-    internal sealed class VolatileEntry
+    public IEnumerable<TargetPointer> Lookup(uint hash)
+    {
+        if (Count == 0)
+            yield break;
+
+        // A stopped target can retain both bucket arrays while a resize is in progress.
+        // See BaseFindFirstEntryByHashCore in src/coreclr/vm/dacenumerablehash.inl.
+        for (TargetPointer buckets = Buckets; buckets != TargetPointer.Null;
+            buckets = _target.ReadPointer(buckets + SLOT_NEXT * (ulong)_target.PointerSize))
+        {
+            uint length = GetLength(buckets);
+            if (length == 0)
+                continue;
+            ulong bucketOffset = ((ulong)(hash % length) + SKIP_SPECIAL_SLOTS) * (ulong)_target.PointerSize;
+            TargetPointer chainElement = _target.ReadPointer(buckets + bucketOffset);
+            foreach (TargetPointer entry in ReadChain(chainElement))
+                yield return entry;
+        }
+    }
+
+    internal readonly struct VolatileEntry
     {
         public VolatileEntry(Target target, TargetPointer address, Target.TypeInfo type)
         {
@@ -67,10 +82,10 @@ internal sealed class DacEnumerableHash
         public TargetPointer VolatileEntryNextEntry { get; init; }
     }
 
-    private uint GetLength()
+    private uint GetLength(TargetPointer buckets)
     {
         // First pointer is a size_t length
-        TargetPointer length = _target.ReadPointer(Buckets + (ulong)(SLOT_LENGTH * _target.PointerSize));
+        TargetPointer length = _target.ReadPointer(buckets + (ulong)(SLOT_LENGTH * _target.PointerSize));
         return (uint)length;
     }
 
@@ -80,18 +95,14 @@ internal sealed class DacEnumerableHash
         return ((ulong)value & END_SENTINEL) == END_SENTINEL;
     }
 
-    private List<TargetPointer> ReadChain(TargetPointer chainElement)
+    private IEnumerable<TargetPointer> ReadChain(TargetPointer chainElement)
     {
-        List<TargetPointer> elements = [];
-
         while (!IsEndSentinel(chainElement))
         {
             VolatileEntry volatileEntry = new(_target, chainElement, _type);
-            elements.Add(volatileEntry.VolatileEntryValue);
+            yield return volatileEntry.VolatileEntryValue;
 
             chainElement = volatileEntry.VolatileEntryNextEntry;
         }
-
-        return elements;
     }
 }
