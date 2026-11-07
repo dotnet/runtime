@@ -234,7 +234,7 @@
         ret
     }
 
-    .method public hidebysig instance void Casting.AssignThisToSameTypeWithOtherGenericArgs_Invalid_StackUnexpected() cil managed
+    .method public hidebysig instance void Casting.AssignThisToSameTypeWithOtherGenericArgs_Invalid_StackUnexpected_Validation_Valid() cil managed
     {
         .locals init (
             class GenericCastingTestsType`1<int32> V_0
@@ -257,7 +257,7 @@
         ret
     }
 
-    .method public hidebysig static void Casting.AssignToSameTypeWithOtherGenericArgs_Invalid_StackUnexpected() cil managed
+    .method public hidebysig static void Casting.AssignToSameTypeWithOtherGenericArgs_Invalid_StackUnexpected_Validation_Valid() cil managed
     {
         .locals init (
             class GenericCastingTestsType`1<int32> V_0,

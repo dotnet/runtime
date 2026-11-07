@@ -132,6 +132,17 @@ namespace Internal.IL
             {
                 ErrorCount++;
             }
+
+            // Errors that make the IL unverifiable but not invalid leave a valid stack for the successors.
+            public int UnverifiableErrorCount
+            {
+                get;
+                private set;
+            }
+            public void IncrementUnverifiableErrorCount()
+            {
+                UnverifiableErrorCount++;
+            }
         };
 
         void EmptyTheStack() => _stackTop = 0;
@@ -215,6 +226,9 @@ namespace Internal.IL
         public Action<ErrorArgument[], VerifierError> ReportVerificationError { set; private get; }
 
         public bool SanityChecks { set; private get; }
+
+        // Report the rules that valid IL must follow, and not most rules only for verifiable IL (ECMA-335 III.1.8).
+        public bool ValidationOnly { set; private get; }
 
         public void Verify()
         {
@@ -591,6 +605,55 @@ namespace Internal.IL
             return cond;
         }
 
+        // Reports a rule that only verifiable IL must follow; validation-only mode reports nothing.
+        void UnverifiableError(VerifierError error)
+        {
+            if (!ValidationOnly)
+            {
+                VerificationError(error);
+                _currentBasicBlock?.IncrementUnverifiableErrorCount();
+            }
+        }
+
+        void UnverifiableError(VerifierError error, object found)
+        {
+            if (!ValidationOnly)
+            {
+                VerificationError(error, found);
+                _currentBasicBlock?.IncrementUnverifiableErrorCount();
+            }
+        }
+
+        void UnverifiableError(VerifierError error, object found, object expected)
+        {
+            if (!ValidationOnly)
+            {
+                VerificationError(error, found, expected);
+                _currentBasicBlock?.IncrementUnverifiableErrorCount();
+            }
+        }
+
+        // Like Check, for a rule that only verifiable IL must follow; validation-only mode reports nothing.
+        bool CheckVerifiable(bool cond, VerifierError error)
+        {
+            if (!cond)
+                UnverifiableError(error);
+            return cond;
+        }
+
+        bool CheckVerifiable(bool cond, VerifierError error, StackValue found)
+        {
+            if (!cond)
+                UnverifiableError(error, found);
+            return cond;
+        }
+
+        // An unmanaged pointer (native int) is valid where verification requires a managed pointer (III.1.1.5.1).
+        bool AcceptsUnmanagedPointer(StackValue value)
+        {
+            return ValidationOnly && value.Kind == StackValueKind.NativeInt;
+        }
+
         void CheckIsNumeric(StackValue value)
         {
             if (!Check(StackValueKind.Int32 <= value.Kind && value.Kind <= StackValueKind.Float,
@@ -635,10 +698,42 @@ namespace Internal.IL
             }
         }
 
-        void CheckIsAssignable(StackValue src, StackValue dst, VerifierError error = VerifierError.StackUnexpected)
+        // Which type mismatches of a value and its destination validation-only mode reports.
+        enum ValidAssignment
         {
-            if (!IsAssignable(src, dst))
+            // Only a stack type mismatch (I.12.3.2.1); a native int is also valid for a managed pointer (III.1.6).
+            StackType,
+            // As StackType, and an argument can be a managed pointer where a native int is declared (Table III.8).
+            Argument,
+            // Every mismatch verification reports. Used by SanityChecks, whose rules are not verification rules.
+            Verifiable,
+        }
+
+        void CheckIsAssignable(StackValue src, StackValue dst, VerifierError error = VerifierError.StackUnexpected,
+            ValidAssignment valid = ValidAssignment.StackType)
+        {
+            if (!IsAssignable(src, dst) && !(ValidationOnly && IsValidAssignment(src, dst, valid)))
                 VerificationError(error, src, dst);
+        }
+
+        static bool IsValidAssignment(StackValue src, StackValue dst, ValidAssignment valid)
+        {
+            if (valid == ValidAssignment.Verifiable)
+                return false;
+
+            if (src.Kind == StackValueKind.NativeInt && dst.Kind == StackValueKind.ByRef)
+                return true;
+
+            // A controlled-mutability managed pointer cannot be used as an ordinary one (III.1.8.1.2.2).
+            if (valid == ValidAssignment.Argument && src.Kind == StackValueKind.ByRef && !src.IsReadOnly &&
+                dst.Kind == StackValueKind.NativeInt)
+                return true;
+
+            if (src.Kind != dst.Kind)
+                return false;
+
+            return src.Kind == StackValueKind.ObjRef ||
+                (src.Kind == StackValueKind.ByRef && (!src.IsReadOnly || dst.IsReadOnly));
         }
 
         private void CheckIsValidLeaveTarget(BasicBlock src, BasicBlock target)
@@ -1053,11 +1148,13 @@ namespace Internal.IL
             return StackValue.CreateFromType(type).ToString();
         }
 
+        // The TypeDesc checks below compare pointed-to and element types, which are not stack types (I.12.3.2.1).
+
         void CheckIsAssignable(TypeDesc src, TypeDesc dst)
         {
             if (!IsAssignable(src, dst))
             {
-                VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
+                UnverifiableError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
             }
         }
 
@@ -1066,7 +1163,7 @@ namespace Internal.IL
             if (!IsAssignable(src, dst, true))
             {
                 // TODO: Better error message
-                VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src));
+                UnverifiableError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src));
             }
         }
 
@@ -1076,17 +1173,21 @@ namespace Internal.IL
             {
                 // TODO: Better error message
                 // VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
-                VerificationError(VerifierError.StackUnexpectedArrayType, TypeToStringForIsAssignable(src));
+                UnverifiableError(VerifierError.StackUnexpectedArrayType, TypeToStringForIsAssignable(src));
             }
         }
 
-        void CheckIsObjRef(TypeDesc type)
+        bool CheckIsObjRef(TypeDesc type)
         {
             if (!IsAssignable(type, GetWellKnownType(WellKnownType.Object), false))
             {
                 // TODO: Better error message
-                VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(type));
+                // Not UnverifiableError: ldind.ref and ldelem.ref then push this type, so the block must not pass its stack on.
+                if (!ValidationOnly)
+                    VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(type));
+                return false;
             }
+            return true;
         }
 
         void CheckIsObjRef(StackValue value)
@@ -1098,7 +1199,7 @@ namespace Internal.IL
         private void CheckIsNotPointer(TypeDesc type)
         {
             if (type.IsPointer)
-                VerificationError(VerifierError.UnmanagedPointer);
+                UnverifiableError(VerifierError.UnmanagedPointer);
         }
 
         void CheckIsComparable(StackValue a, StackValue b, ILOpcode op)
@@ -1236,10 +1337,11 @@ namespace Internal.IL
 
             // For a closed delegate it is the target pushed on the stack, so compare against the stack value itself:
             // it keeps track of boxed value types, which are object references and assignable to anything they can be cast to
-            // (e.g. a boxed int32 target for ToString()).
+            // (e.g. a boxed int32 target for ToString()). Validation-only mode compares only its stack type.
             bool firstArgAssignable = isOpenDelegate
                 ? IsAssignable(invokeSignature[0], firstTargetArg)
-                : IsAssignable(firstArg, StackValue.CreateObjRef(firstTargetArg));
+                : IsAssignable(firstArg, StackValue.CreateObjRef(firstTargetArg)) ||
+                    (ValidationOnly && IsValidAssignment(firstArg, StackValue.CreateObjRef(firstTargetArg), ValidAssignment.StackType));
 
             if (!firstArgAssignable)
                 return false;
@@ -1268,7 +1370,7 @@ namespace Internal.IL
 
         void Unverifiable()
         {
-            VerificationError(VerifierError.Unverifiable);
+            UnverifiableError(VerifierError.Unverifiable);
         }
 
         TypeDesc GetWellKnownType(WellKnownType wellKnownType)
@@ -1400,7 +1502,7 @@ namespace Internal.IL
                         if (SanityChecks && basicBlock.EntryStack[0] != StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Object)))
                         {
                             CheckIsAssignable(basicBlock.EntryStack[0], StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Exception)),
-                                VerifierError.ThrowOrCatchOnlyExceptionType);
+                                VerifierError.ThrowOrCatchOnlyExceptionType, ValidAssignment.Verifiable);
                         }
                     }
                 }
@@ -1427,7 +1529,8 @@ namespace Internal.IL
                     // ECMA III 1.7.5 Backward Branch Constraints
                     // if stack is not empty at beginning of this block,
                     // there must exist a predecessor block with lower IL offset.
-                    Check(basicBlock.HasPredecessorWithLowerOffset, VerifierError.BackwardBranch);
+                    // The ECMA-335 augments delete this rule, so it is no longer a validity rule.
+                    CheckVerifiable(basicBlock.HasPredecessorWithLowerOffset, VerifierError.BackwardBranch);
                 }
 
                 // Copy stack state
@@ -1482,7 +1585,7 @@ namespace Internal.IL
             var varType = GetVarType(index, argument);
 
             if (!argument)
-                Check(_initLocals, VerifierError.InitLocals);
+                CheckVerifiable(_initLocals, VerifierError.InitLocals);
 
             CheckIsNotPointer(varType);
 
@@ -1513,7 +1616,7 @@ namespace Internal.IL
             var varType = GetVarType(index, argument);
 
             if (!argument)
-                Check(_initLocals, VerifierError.InitLocals);
+                CheckVerifiable(_initLocals, VerifierError.InitLocals);
 
             Check(!varType.IsByRef, VerifierError.ByrefOfByref);
 
@@ -1590,8 +1693,9 @@ namespace Internal.IL
                         constrained = _constrained;
 
                         // The constrained type must implement the interface declaring the static virtual method
+                        // (a Verifiability rule of the augmented III.2.1).
                         if (!constrained.CanCastTo(method.OwningType))
-                            VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, constrained, method.OwningType);
+                            UnverifiableError(VerifierError.ConstrainedTypeNoInterfaceImpl, constrained, method.OwningType);
                     }
                 }
 
@@ -1630,18 +1734,26 @@ namespace Internal.IL
 
                 Check(declaredFtn.Kind == StackValueKind.NativeInt, VerifierError.DelegateCtorSigI, declaredFtn);
 
+                // This mode does not compare the target's class, so it checks that the parameter is object (II.14.6).
+                if (ValidationOnly)
+                    Check(sig[0].IsObject, VerifierError.DelegateCtorSigO, declaredObj);
+
                 var actualFtn = Pop();
                 var actualObj = Pop();
 
-                Check(actualFtn.IsMethod, VerifierError.StackMethod);
+                // Only ldftn and dup; ldvirtftn are verifiable (III.4.21), but the pointer must still be a native int.
+                CheckVerifiable(actualFtn.IsMethod, VerifierError.StackMethod);
+                if (ValidationOnly)
+                    CheckIsAssignable(actualFtn, StackValue.CreatePrimitive(StackValueKind.NativeInt), valid: ValidAssignment.Argument);
 
                 CheckIsAssignable(actualObj, declaredObj);
                 Check(actualObj.Kind == StackValueKind.ObjRef, VerifierError.DelegateCtorSigO, actualObj);
 
-                CheckDelegateCreation(actualFtn, actualObj);
+                if (!ValidationOnly)
+                    CheckDelegateCreation(actualFtn, actualObj);
 
                 // A function pointer that did not come from ldftn/ldvirtftn carries no method;
-                // StackMethod has already been reported for it above.
+                // In verification mode, StackMethod has already been reported for it above.
                 if (actualFtn.IsMethod && !IsDelegateAssignable(actualFtn.Method, methodType, actualObj))
                     VerificationError(VerifierError.DelegateCtor);
             }
@@ -1652,11 +1764,11 @@ namespace Internal.IL
                     var actual = Pop(allowUninitThis: true);
                     var declared = StackValue.CreateFromType(sig[i]);
 
-                    CheckIsAssignable(actual, declared);
+                    CheckIsAssignable(actual, declared, valid: ValidAssignment.Argument);
 
                     // check that the argument is not a byref for tailcalls
                     if (tailCall)
-                        Check(!IsByRefLike(declared), VerifierError.TailByRef, declared);
+                        CheckTailCallArgument(actual, declared);
                 }
             }
 
@@ -1708,11 +1820,13 @@ namespace Internal.IL
 
                 if (constrained != null)
                 {
-                    Check(actualThis.Kind == StackValueKind.ByRef, VerifierError.ConstrainedCallWithNonByRefThis);
+                    // An unmanaged pointer is valid as 'this' (III.1.1.5.1), and the type it points to is not a stack type.
+                    if (!AcceptsUnmanagedPointer(actualThis))
+                        Check(actualThis.Kind == StackValueKind.ByRef, VerifierError.ConstrainedCallWithNonByRefThis);
 
                     // We just dereference this and test for equality
                     //todo: improve error - "this type mismatch with constrained type operand"
-                    Check(actualThis.Type == constrained, VerifierError.StackUnexpected);
+                    CheckVerifiable(actualThis.Type == constrained, VerifierError.StackUnexpected);
 
                     // Now pretend the this type is the boxed constrained type, for the sake of subsequent checks
                     actualThis = StackValue.CreateObjRef(constrained);
@@ -1723,6 +1837,7 @@ namespace Internal.IL
                 {
                     declaredThis.SetIsReadOnly();
                 }
+                // A native int is also valid as the 'this' of a value type method (III.1.6, III.1.1.5.1).
                 CheckIsAssignable(actualThis, declaredThis);
 
                 if (opcode == ILOpcode.call)
@@ -1749,7 +1864,7 @@ namespace Internal.IL
                     {
                         var methodTypeDef = methodType.GetTypeDefinition() as MetadataType; // Method is always considered final if owning type is sealed
                         if (methodTypeDef == null || !methodTypeDef.IsSealed)
-                            Check(actualThis.IsThisPtr && !_modifiesThisPtr, VerifierError.ThisMismatch);
+                            CheckVerifiable(actualThis.IsThisPtr && !_modifiesThisPtr, VerifierError.ThisMismatch);
                     }
                 }
 
@@ -1808,6 +1923,14 @@ namespace Internal.IL
             }
         }
 
+        // ILVerify cannot tell which frame a managed pointer points into (III.2.4), so a tail call may pass none.
+        // Validation-only mode also checks the value, as ValidAssignment.Argument accepts a & for a native int.
+        void CheckTailCallArgument(StackValue actual, StackValue declared)
+        {
+            if (Check(!IsByRefLike(declared), VerifierError.TailByRef, declared) && ValidationOnly)
+                Check(!IsByRefLike(actual), VerifierError.TailByRef, actual);
+        }
+
         void CheckTailCallReturn(TypeDesc returnType)
         {
             TypeDesc callerReturnType = _methodSignature.ReturnType;
@@ -1825,7 +1948,8 @@ namespace Internal.IL
             {
                 var retStackType = StackValue.CreateFromType(returnType);
                 var callerRetStackType = StackValue.CreateFromType(callerReturnType);
-                Check(IsAssignable(retStackType, callerRetStackType), VerifierError.TailRetType, retStackType, callerRetStackType);
+                // As for ret, validation-only mode compares only the stack types.
+                CheckIsAssignable(retStackType, callerRetStackType, VerifierError.TailRetType);
             }
 
             // for tailcall, stack must be empty
@@ -1862,10 +1986,10 @@ namespace Internal.IL
             for (int i = 0; i < sig.Length; i++)
             {
                 var declared = StackValue.CreateFromType(sig[i]);
-                CheckIsAssignable(args[firstParameter + i], declared);
+                CheckIsAssignable(args[firstParameter + i], declared, valid: ValidAssignment.Argument);
 
                 if (tailCall)
-                    Check(!IsByRefLike(declared), VerifierError.TailByRef, declared);
+                    CheckTailCallArgument(args[firstParameter + i], declared);
             }
 
             if (implicitThis && tailCall)
@@ -1908,7 +2032,7 @@ namespace Internal.IL
                 {
                     ClearPendingPrefix(Prefix.Constrained);
                     if (!_constrained.CanCastTo(method.OwningType))
-                        VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
+                        UnverifiableError(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
                 }
                 else
                 {
@@ -2012,7 +2136,8 @@ namespace Internal.IL
                     var actualReturnType = Pop();
                     CheckIsAssignable(actualReturnType, StackValue.CreateFromType(expectedReturnType));
 
-                    Check((!expectedReturnType.IsByRef && !expectedReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
+                    // Byref returns are checked for verification only (III.1.8.1.2.1).
+                    CheckVerifiable((!expectedReturnType.IsByRef && !expectedReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
                 }
             }
         }
@@ -2136,7 +2261,8 @@ namespace Internal.IL
 
         void PropagateControlFlow(BasicBlock next, bool isFallthrough)
         {
-            if (!IsValidBranchTarget(_currentBasicBlock, next, isFallthrough) || _currentBasicBlock.ErrorCount > 0)
+            if (!IsValidBranchTarget(_currentBasicBlock, next, isFallthrough) ||
+                _currentBasicBlock.ErrorCount > _currentBasicBlock.UnverifiableErrorCount)
                 return;
 
             PropagateThisState(_currentBasicBlock, next);
@@ -2151,6 +2277,18 @@ namespace Internal.IL
                 for (int i = 0; i < entryStack.Length; i++)
                 {
                     // TODO: Do we need to allow conversions?
+                    if (ValidationOnly && IsNativeIntAndByRef(entryStack[i], _stack[i]))
+                    {
+                        // A native int and a managed pointer merge to a native int (III.1.6).
+                        if (entryStack[i].Kind != StackValueKind.NativeInt)
+                        {
+                            entryStack[i] = StackValue.CreatePrimitive(StackValueKind.NativeInt);
+                            if (next.ErrorCount == 0 && next.State != BasicBlock.ImportState.IsPending)
+                                next.State = BasicBlock.ImportState.Unmarked; // Make sure block is reverified
+                        }
+                        continue;
+                    }
+
                     FatalCheck(entryStack[i].Kind == _stack[i].Kind, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
 
                     if (entryStack[i].Type != _stack[i].Type)
@@ -2159,7 +2297,22 @@ namespace Internal.IL
                         {
                             StackValue mergedValue;
                             if (!TryMergeStackValues(entryStack[i], _stack[i], out mergedValue))
+                            {
+                                // Merging the types managed pointers point to is verification only (III.1.8.1.3).
+                                // Keep the entry stack, controlled-mutability if either value is (III.1.8.1.2.2).
+                                if (ValidationOnly && entryStack[i].Kind == StackValueKind.ByRef)
+                                {
+                                    if (_stack[i].IsReadOnly && !entryStack[i].IsReadOnly)
+                                    {
+                                        entryStack[i].SetIsReadOnly();
+                                        if (next.ErrorCount == 0 && next.State != BasicBlock.ImportState.IsPending)
+                                            next.State = BasicBlock.ImportState.Unmarked; // Make sure block is reverified
+                                    }
+                                    continue;
+                                }
+
                                 FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+                            }
 
                             // If merge actually changed entry stack
                             if (mergedValue != entryStack[i])
@@ -2186,10 +2339,23 @@ namespace Internal.IL
             MarkBasicBlock(next);
         }
 
+        // A controlled-mutability managed pointer cannot become a native int (III.1.8.1.2.2).
+        static bool IsNativeIntAndByRef(StackValue a, StackValue b)
+        {
+            return (a.Kind == StackValueKind.NativeInt && b.Kind == StackValueKind.ByRef && !b.IsReadOnly) ||
+                (a.Kind == StackValueKind.ByRef && !a.IsReadOnly && b.Kind == StackValueKind.NativeInt);
+        }
+
         void ImportBinaryOperation(ILOpcode opcode)
         {
             var op1 = Pop();
             var op2 = Pop();
+
+            if (ValidationOnly && IsValidPointerArithmetic(opcode, op2, op1, out StackValue pointerResult))
+            {
+                Push(pointerResult);
+                return;
+            }
 
             switch (opcode)
             {
@@ -2235,6 +2401,45 @@ namespace Internal.IL
             Push(result);
         }
 
+        // Pointer arithmetic that is valid but not verifiable (Tables III.2, III.7): & +/- int, int + & and & - &.
+        // value1 is the operand pushed first.
+        static bool IsValidPointerArithmetic(ILOpcode opcode, StackValue value1, StackValue value2, out StackValue result)
+        {
+            result = default;
+
+            bool add = opcode is ILOpcode.add or ILOpcode.add_ovf_un;
+            bool sub = opcode is ILOpcode.sub or ILOpcode.sub_ovf_un;
+            if (!add && !sub)
+                return false;
+
+            // Arithmetic is not one of the uses of a controlled-mutability managed pointer (III.1.8.1.2.2).
+            if (value1.IsReadOnly || value2.IsReadOnly)
+                return false;
+
+            bool integer1 = value1.Kind is StackValueKind.Int32 or StackValueKind.NativeInt;
+            bool integer2 = value2.Kind is StackValueKind.Int32 or StackValueKind.NativeInt;
+
+            if (value1.Kind == StackValueKind.ByRef && integer2)
+            {
+                result = StackValue.CreateByRef(value1.Type, false, value1.IsPermanentHome);
+                return true;
+            }
+
+            if (add && integer1 && value2.Kind == StackValueKind.ByRef)
+            {
+                result = StackValue.CreateByRef(value2.Type, false, value2.IsPermanentHome);
+                return true;
+            }
+
+            if (sub && value1.Kind == StackValueKind.ByRef && value2.Kind == StackValueKind.ByRef)
+            {
+                result = StackValue.CreatePrimitive(StackValueKind.NativeInt);
+                return true;
+            }
+
+            return false;
+        }
+
         void ImportShiftOperation(ILOpcode opcode)
         {
             var shiftBy = Pop();
@@ -2259,6 +2464,15 @@ namespace Internal.IL
         void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
         {
             var value = Pop();
+
+            // Converting a & or an object reference to int64 or native int is valid but not verifiable (Table III.8).
+            if (ValidationOnly && !value.IsReadOnly &&
+                value.Kind is StackValueKind.ByRef or StackValueKind.ObjRef &&
+                wellKnownType is WellKnownType.Int64 or WellKnownType.UInt64 or WellKnownType.IntPtr or WellKnownType.UIntPtr)
+            {
+                Push(StackValue.CreateFromType(GetWellKnownType(wellKnownType)));
+                return;
+            }
 
             CheckIsNumeric(value);
 
@@ -2293,7 +2507,9 @@ namespace Internal.IL
                 var declaredThis = owningType.IsValueType ?
                     StackValue.CreateByRef(owningType, readOnly : true) : StackValue.CreateObjRef(owningType);
 
-                CheckIsAssignable(actualThis, declaredThis);
+                // obj can be an unmanaged pointer, which is valid but not verifiable (III.4.10).
+                if (!AcceptsUnmanagedPointer(actualThis))
+                    CheckIsAssignable(actualThis, declaredThis);
 
                 instance = actualThis.Type;
             }
@@ -2307,6 +2523,7 @@ namespace Internal.IL
         {
             var field = ResolveFieldToken(token);
             bool isPermanentHome = false;
+            bool throughUnmanagedPointer = false;
 
             TypeDesc instance;
             if (isStatic)
@@ -2332,7 +2549,10 @@ namespace Internal.IL
                 var declaredThis = owningType.IsValueType ?
                     StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
 
-                CheckIsAssignable(actualThis, declaredThis);
+                // obj can be an unmanaged pointer, which is valid but not verifiable; so is the result (III.4.11).
+                throughUnmanagedPointer = AcceptsUnmanagedPointer(actualThis);
+                if (!throughUnmanagedPointer)
+                    CheckIsAssignable(actualThis, declaredThis);
 
                 isPermanentHome = actualThis.Kind == StackValueKind.ObjRef || actualThis.IsPermanentHome;
                 instance = actualThis.Type;
@@ -2344,7 +2564,8 @@ namespace Internal.IL
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
-            Push(StackValue.CreateByRef(field.FieldType, false, isPermanentHome));
+            Push(throughUnmanagedPointer ? StackValue.CreatePrimitive(StackValueKind.NativeInt) :
+                StackValue.CreateByRef(field.FieldType, false, isPermanentHome));
         }
 
         void ImportStoreField(int token, bool isStatic)
@@ -2379,7 +2600,9 @@ namespace Internal.IL
                 var declaredThis = owningType.IsValueType ?
                     StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
 
-                CheckIsAssignable(actualThis, declaredThis);
+                // obj can be an unmanaged pointer, which is valid but not verifiable (III.4.28).
+                if (!AcceptsUnmanagedPointer(actualThis))
+                    CheckIsAssignable(actualThis, declaredThis);
 
                 instance = actualThis.Type;
 
@@ -2407,11 +2630,24 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Volatile);
 
             var address = Pop();
+
+            // addr can be an unmanaged pointer, which carries no type (III.4.13); ldind.ref then pushes the null type.
+            if (AcceptsUnmanagedPointer(address))
+            {
+                Push(type == null ? StackValue.CreateObjRef(null) : StackValue.CreateFromType(type));
+                return;
+            }
+
             CheckIsByRef(address);
 
             if (type == null)
             {
-                CheckIsObjRef(address.Type);
+                // Validation-only mode does not check the type pointed to, so the reference's class is unknown.
+                if (!CheckIsObjRef(address.Type) && ValidationOnly)
+                {
+                    Push(StackValue.CreateObjRef(null));
+                    return;
+                }
                 type = address.Type;
             }
             else
@@ -2436,15 +2672,35 @@ namespace Internal.IL
 
             Check(!address.IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
 
+            // addr can be an unmanaged pointer, which carries no type (III.4.29), so only the value is checked.
+            if (AcceptsUnmanagedPointer(address))
+            {
+                if (type == null)
+                    CheckIsObjRef(value);
+                else
+                    CheckIsAssignable(value, StackValue.CreateFromType(type));
+                return;
+            }
+
             CheckIsByRef(address);
 
             if (type == null)
+            {
+                // Validation-only mode does not check the type pointed to, so it checks only the value.
+                if (ValidationOnly)
+                {
+                    CheckIsObjRef(value);
+                    return;
+                }
                 type = address.Type;
+            }
 
             var typeVal = StackValue.CreateFromType(type);
             var addressVal = StackValue.CreateFromType(address.Type);
 
-            CheckIsAssignable(typeVal, addressVal);
+            // The type a pointer points to is not a stack type (I.12.3.2.1).
+            if (!ValidationOnly)
+                CheckIsAssignable(typeVal, addressVal);
             CheckIsAssignable(value, typeVal);
         }
 
@@ -2457,7 +2713,7 @@ namespace Internal.IL
             if (SanityChecks && value != StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Object)))
             {
                 CheckIsAssignable(value, StackValue.CreateFromType(GetWellKnownType(WellKnownType.Exception)),
-                    VerifierError.ThrowOrCatchOnlyExceptionType);
+                    VerifierError.ThrowOrCatchOnlyExceptionType, ValidAssignment.Verifiable);
             }
 
             EmptyTheStack();
@@ -2477,9 +2733,15 @@ namespace Internal.IL
 
             var value = Pop();
 
-            Check(value.Kind == StackValueKind.ByRef, VerifierError.StackByRef, value);
+            // dest can be an unmanaged pointer, which is valid but not verifiable (III.4.5).
+            if (AcceptsUnmanagedPointer(value))
+                return;
 
-            CheckIsAssignable(value, StackValue.CreateByRef(type));
+            bool isByRef = Check(value.Kind == StackValueKind.ByRef, VerifierError.StackByRef, value);
+
+            // Only verification checks the type pointed to (III.4.5); a controlled-mutability & is still rejected.
+            if (isByRef || !ValidationOnly)
+                CheckIsAssignable(value, StackValue.CreateByRef(type));
         }
 
         void ImportBox(int token)
@@ -2599,7 +2861,13 @@ namespace Internal.IL
                 else
                 {
                     elementType = actualElementType;
-                    CheckIsObjRef(elementType);
+
+                    // As for ldind.ref, validation-only mode leaves the class unknown for a non-reference element type.
+                    if (!CheckIsObjRef(elementType) && ValidationOnly)
+                    {
+                        Push(StackValue.CreateObjRef(null));
+                        return;
+                    }
                 }
             }
 
@@ -2632,7 +2900,13 @@ namespace Internal.IL
                 else
                 {
                     elementType = actualElementType;
-                    CheckIsObjRef(elementType);
+
+                    // As for stind.ref, validation-only mode checks only the value for a non-reference element type.
+                    if (!CheckIsObjRef(elementType) && ValidationOnly)
+                    {
+                        CheckIsObjRef(value);
+                        return;
+                    }
                 }
             }
 
@@ -2701,8 +2975,11 @@ namespace Internal.IL
             var src = Pop();
             var dst = Pop();
 
-            Check(src.Kind == StackValueKind.ByRef, VerifierError.StackByRef, src);
-            Check(dst.Kind == StackValueKind.ByRef, VerifierError.StackByRef, dst);
+            // Either address can be an unmanaged pointer, which is valid but not verifiable (III.4.4).
+            if (!AcceptsUnmanagedPointer(src))
+                Check(src.Kind == StackValueKind.ByRef, VerifierError.StackByRef, src);
+            if (!AcceptsUnmanagedPointer(dst))
+                Check(dst.Kind == StackValueKind.ByRef, VerifierError.StackByRef, dst);
 
             // TODO !!!
             // CheckIsAssignable(src.Type, type);
@@ -2787,7 +3064,8 @@ namespace Internal.IL
 
             var result = Pop(allowUninitThis: true);
             Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected, result);
-            Check(_stackTop == 0, VerifierError.EndfilterStack);
+            // Only the Verifiability paragraph of III.3.34 requires the value to be the only item.
+            CheckVerifiable(_stackTop == 0, VerifierError.EndfilterStack);
         }
 
         void ImportCpBlk()
@@ -2994,13 +3272,14 @@ namespace Internal.IL
 
             // ECMA-335 III.4.19: verification requires a managed pointer to an instance of the class.
             // The class may be byref-like: the ECMA-335 augments allow a managed pointer to a byref-like type.
-            if (Check(ptr.Kind == StackValueKind.ByRef, VerifierError.StackByRef, ptr))
+            // An unmanaged pointer is valid, and does not carry the type it points to.
+            if (!AcceptsUnmanagedPointer(ptr) && Check(ptr.Kind == StackValueKind.ByRef, VerifierError.StackByRef, ptr))
             {
                 // III.1.8.1.2.2: a controlled-mutability managed pointer cannot be used with mkrefany.
                 Check(!ptr.IsReadOnly, VerifierError.ReadOnlyInMkrefany);
 
                 if (ptr.Type != type)
-                    VerificationError(VerifierError.StackUnexpected, ptr, StackValue.CreateByRef(type));
+                    UnverifiableError(VerifierError.StackUnexpected, ptr, StackValue.CreateByRef(type));
             }
 
             Check(_method.OwningType.CanAccess(type), VerifierError.TypeAccess);

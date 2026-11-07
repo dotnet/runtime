@@ -38,7 +38,7 @@
 
     // assignment from Func<string, int> to Func<object, int> is invalid
     .method private hidebysig instance class [System.Runtime]System.Func`2<object,int32>
-          DelegateAssignmentParameter_Invalid_StackUnexpected(class [System.Runtime]System.Func`2<string,int32> input) cil managed
+          DelegateAssignmentParameter_Invalid_StackUnexpected_Validation_Valid(class [System.Runtime]System.Func`2<string,int32> input) cil managed
     {
         ldarg.1
         ret
@@ -46,7 +46,7 @@
 
     // assignment from Func<int, object> to Func<int, string> is invalid
     .method private hidebysig instance class [System.Runtime]System.Func`2<int32,string>
-          DelegateAssignment_Invalid_StackUnexpected(class [System.Runtime]System.Func`2<int32,object> input) cil managed
+          DelegateAssignment_Invalid_StackUnexpected_Validation_Valid(class [System.Runtime]System.Func`2<int32,object> input) cil managed
     {
         ldarg.1
         ret
@@ -54,7 +54,7 @@
 
     // assignment from Func<int> to Func<byte> is invalid
     .method private hidebysig instance class [System.Runtime]System.Func`1<uint8>
-          AssignIntFuncToByteFunc_Invalid_StackUnexpected(class [System.Runtime]System.Func`2<int32> input) cil managed
+          AssignIntFuncToByteFunc_Invalid_StackUnexpected_Validation_Valid(class [System.Runtime]System.Func`2<int32> input) cil managed
     {
         ldarg.1
         ret
@@ -62,7 +62,7 @@
 
     // assignment from Func<byte> to Func<int> is invalid
     .method private hidebysig instance class [System.Runtime]System.Func`1<int32>
-          AssignByteFuncToIntFunc_Invalid_StackUnexpected(class [System.Runtime]System.Func`1<uint8> input) cil managed
+          AssignByteFuncToIntFunc_Invalid_StackUnexpected_Validation_Valid(class [System.Runtime]System.Func`1<uint8> input) cil managed
     {
         ldarg.1
         ret
@@ -70,7 +70,7 @@
 
     // assignment from Func<ByteEnum> to Func<byte> is invalid
     .method private hidebysig instance class [System.Runtime]System.Func`1<uint8>
-          AssignByteActionToIntAction_Invalid_StackUnexpected(class [System.Runtime]System.Func`1<valuetype ByteEnum> input) cil managed
+          AssignByteActionToIntAction_Invalid_StackUnexpected_Validation_Valid(class [System.Runtime]System.Func`1<valuetype ByteEnum> input) cil managed
     {
         ldarg.1
         ret
@@ -78,7 +78,7 @@
 
     // assignment from Action<byte> to Action<int> is invalid
     .method private hidebysig instance class [System.Runtime]System.Action`1<int32>
-          AssignByteActionToIntAction_Invalid_StackUnexpected(class [System.Runtime]System.Action`1<uint8> input) cil managed
+          AssignByteActionToIntAction_Invalid_StackUnexpected_Validation_Valid(class [System.Runtime]System.Action`1<uint8> input) cil managed
     {
         ldarg.1
         ret
@@ -86,7 +86,7 @@
 
     // assignment from Action<ByteEnum> to Action<byte> is invalid
     .method private hidebysig instance class [System.Runtime]System.Action`1<uint8>
-          AssignByteActionToByteEnumAction_Invalid_StackUnexpected(class [System.Runtime]System.Action`1<valuetype ByteEnum> input) cil managed
+          AssignByteActionToByteEnumAction_Invalid_StackUnexpected_Validation_Valid(class [System.Runtime]System.Action`1<valuetype ByteEnum> input) cil managed
     {
         ldarg.1
         ret

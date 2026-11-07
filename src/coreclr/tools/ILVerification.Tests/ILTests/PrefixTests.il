@@ -64,14 +64,14 @@
         ret
     }
 
-    .method static public hidebysig void ConstrainedCall.UnconstrainedTypeParam_Invalid_ConstrainedTypeNoInterfaceImpl<T>() cil managed
+    .method static public hidebysig void ConstrainedCall.UnconstrainedTypeParam_Invalid_ConstrainedTypeNoInterfaceImpl_Validation_Valid<T>() cil managed
     {
         constrained. !!T
         call    void IStaticInterface::StaticAbstractMethod()
         ret
     }
 
-    .method static public hidebysig void ConstrainedCall.NonImplStruct_Invalid_ConstrainedTypeNoInterfaceImpl() cil managed
+    .method static public hidebysig void ConstrainedCall.NonImplStruct_Invalid_ConstrainedTypeNoInterfaceImpl_Validation_Valid() cil managed
     {
         constrained. NonImplStruct
         call    void IStaticInterface::StaticAbstractMethod()
@@ -101,7 +101,7 @@
         ret
     }
 
-    .method static public hidebysig void ConstrainedLdftn.UnconstrainedTypeParam_Invalid_ConstrainedTypeNoInterfaceImpl<T>() cil managed
+    .method static public hidebysig void ConstrainedLdftn.UnconstrainedTypeParam_Invalid_ConstrainedTypeNoInterfaceImpl_Validation_Valid<T>() cil managed
     {
         constrained. !!T
         ldftn  void IStaticInterface::StaticAbstractMethod()
@@ -109,7 +109,7 @@
         ret
     }
 
-    .method static public hidebysig void ConstrainedLdftn.NonImplStruct_Invalid_ConstrainedTypeNoInterfaceImpl() cil managed
+    .method static public hidebysig void ConstrainedLdftn.NonImplStruct_Invalid_ConstrainedTypeNoInterfaceImpl_Validation_Valid() cil managed
     {
         constrained. NonImplStruct
         ldftn  void IStaticInterface::StaticAbstractMethod()
