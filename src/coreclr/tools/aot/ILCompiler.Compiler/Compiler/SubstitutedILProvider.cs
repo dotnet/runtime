@@ -96,12 +96,18 @@ namespace ILCompiler
             // (Lets us avoid seeing lots of small basic blocks within eliminated chunks.)
             VisibleBasicBlockStart = 0x10,
 
-            // This is a potential SR.get_SomeResourceString call.
-            GetResourceStringCall = 0x20,
-
             // The instruction at this offset is reachable
             Mark = 0x80,
         }
+
+        private enum SubstitutionKind
+        {
+            TypeOperand,
+            TypeComparison,
+            ResourceString,
+        }
+
+        private readonly record struct ConstantSubstitution(int Offset, SubstitutionKind Kind, bool ComparisonResult = false);
 
         public MethodIL GetMethodILWithInlinedSubstitutions(MethodIL method)
         {
@@ -137,6 +143,7 @@ namespace ILCompiler
 
             ILExceptionRegion[] ehRegions = method.GetExceptionRegions();
             byte[] methodBytes = method.GetILBytes();
+            ArrayBuilder<ConstantSubstitution> substitutions = default;
             OpcodeFlags[] flags = new OpcodeFlags[methodBytes.Length];
 
             // Offset 0 is the first basic block
@@ -247,8 +254,6 @@ namespace ILCompiler
                 }
             }
 
-            bool hasGetResourceStringCall = false;
-
             // Mark all reachable basic blocks
             //
             // We also do another round of basic block marking to mark beginning of visible basic blocks
@@ -271,7 +276,14 @@ namespace ILCompiler
                 while (reader.HasNext)
                 {
                     offset = reader.Offset;
+                    bool alreadyMarked = (flags[offset] & OpcodeFlags.Mark) != 0;
                     flags[offset] |= OpcodeFlags.Mark;
+                    // Fallthrough can enter a block with other predecessors carrying different operands.
+                    if ((flags[offset] & OpcodeFlags.BasicBlockStart) != 0)
+                    {
+                        typeEqualityAnalyzer = default;
+                        isInstCheckAnalyzer = default;
+                    }
                     ILOpcode opcode = reader.ReadILOpcode();
 
                     typeEqualityAnalyzer.Advance(opcode, reader, method);
@@ -315,8 +327,19 @@ namespace ILCompiler
                         || opcode == ILOpcode.brtrue || opcode == ILOpcode.brtrue_s)
                     {
                         int destination = reader.ReadBranchDestination(opcode);
-                        if (!TryGetConstantArgument(method, methodBytes, flags, offset, 0, out int constant)
-                            && !TryExpandTypeEquality(typeEqualityAnalyzer, method, out constant)
+                        int constant = 0;
+                        bool knownTypeComparison = typeEqualityAnalyzer.IsTypeEqualityBranch
+                            && TryExpandTypeEquality(typeEqualityAnalyzer, method, out constant);
+                        if (knownTypeComparison && !alreadyMarked && typeEqualityAnalyzer.CanRemoveTypeOperands(method))
+                        {
+                            substitutions.Add(new ConstantSubstitution(typeEqualityAnalyzer.Token1Offset, SubstitutionKind.TypeOperand));
+                            if (typeEqualityAnalyzer.IsTwoTokens)
+                                substitutions.Add(new ConstantSubstitution(typeEqualityAnalyzer.Token2Offset, SubstitutionKind.TypeOperand));
+                            substitutions.Add(new ConstantSubstitution(typeEqualityAnalyzer.EqualityOffset,
+                                SubstitutionKind.TypeComparison, constant != 0));
+                        }
+                        if (!knownTypeComparison
+                            && !TryGetConstantArgument(method, methodBytes, flags, offset, 0, out constant)
                             && !TryExpandIsInst(isInstCheckAnalyzer, method, out constant))
                         {
                             // Can't get the constant - both branches are live.
@@ -419,8 +442,8 @@ namespace ILCompiler
                             && callee.Signature is { Length: 0, IsStatic: true }
                             && callee.Name.StartsWith("get_"u8))
                         {
-                            flags[offset] |= OpcodeFlags.GetResourceStringCall;
-                            hasGetResourceStringCall = true;
+                            if (!alreadyMarked)
+                                substitutions.Add(new ConstantSubstitution(offset, SubstitutionKind.ResourceString));
                         }
                     }
                     else
@@ -444,7 +467,7 @@ namespace ILCompiler
                 }
             }
 
-            if (!hasUnmarkedInstruction && !hasGetResourceStringCall)
+            if (!hasUnmarkedInstruction && substitutions.Count == 0)
                 return method;
 
             // Maps instruction offsets in original method body to offsets in rewritten method body.
@@ -629,45 +652,73 @@ namespace ILCompiler
                 debugInfo = new SubstitutedDebugInformation(debugInfo, sequencePoints.ToArray());
             }
 
-            // We only optimize IL backed by an ECMA module because we can find the highest string token RID
-            // in use.
+            // We only substitute resource strings in ECMA-backed IL because we can find the highest
+            // string token RID in use.
             ArrayBuilder<string> newStrings = default;
-            if (hasGetResourceStringCall && method.GetMethodILDefinition() is IEcmaMethodIL ecmaMethodIL)
+            int tokenRid = -1;
+            if (substitutions.Count != 0 && method.GetMethodILDefinition() is IEcmaMethodIL ecmaMethodIL)
             {
                 // We're going to inject new string tokens. Start where the last token of the module left off.
                 // We don't need this token to be globally unique because all token resolution happens in the context
                 // of a MethodIL and we're making a new one here. It just has to be unique to the MethodIL.
-                int tokenRid = ecmaMethodIL.Module.MetadataReader.GetHeapSize(HeapIndex.UserString);
+                tokenRid = ecmaMethodIL.Module.MetadataReader.GetHeapSize(HeapIndex.UserString);
+            }
 
-                for (int srcOffset = 0; srcOffset < flags.Length; srcOffset++)
+            // Apply constant substitutions without changing instruction offsets or removing operand effects.
+            foreach (ConstantSubstitution substitution in substitutions.AsSpan())
+            {
+                Debug.Assert((flags[substitution.Offset] & OpcodeFlags.Mark) != 0);
+                int offset = offsetMap[substitution.Offset];
+                switch (substitution.Kind)
                 {
-                    if ((flags[srcOffset] & OpcodeFlags.GetResourceStringCall) == 0)
-                        continue;
+                    case SubstitutionKind.TypeOperand:
+                    {
+                        // Replace ldtoken + GetTypeFromHandle with ldnull and pad with nops.
+                        Debug.Assert(newBody[offset] == (byte)ILOpcode.ldtoken);
+                        newBody.AsSpan(offset, 10).Clear();
+                        newBody[offset] = (byte)ILOpcode.ldnull;
+                        break;
+                    }
+                    case SubstitutionKind.TypeComparison:
+                    {
+                        // Replace the comparison call, preserving evaluation of both operands.
+                        Debug.Assert(newBody[offset] == (byte)ILOpcode.call);
+                        newBody.AsSpan(offset, 5).Clear();
+                        newBody[offset] = newBody[offset + 1] = (byte)ILOpcode.pop;
+                        newBody[offset + 2] = (byte)(substitution.ComparisonResult ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+                        break;
+                    }
+                    case SubstitutionKind.ResourceString:
+                    {
+                        if (tokenRid < 0)
+                            break;
 
-                    int offset = offsetMap[srcOffset];
+                        Debug.Assert(newBody[offset] == (byte)ILOpcode.call);
+                        var getter = (EcmaMethod)method.GetObject(new ILReader(newBody, offset + 1).ReadILToken());
 
-                    Debug.Assert(newBody[offset] == (byte)ILOpcode.call);
-                    var getter = (EcmaMethod)method.GetObject(new ILReader(newBody, offset + 1).ReadILToken());
+                        // If we can't get the string, this might be something else.
+                        string resourceString = _substitutionProvider.GetResourceStringForAccessor(getter);
+                        if (resourceString == null)
+                            break;
 
-                    // If we can't get the string, this might be something else.
-                    string resourceString = _substitutionProvider.GetResourceStringForAccessor(getter);
-                    if (resourceString == null)
-                        continue;
+                        // If we ran out of tokens, we can't optimize anymore.
+                        if (tokenRid > 0xFFFFFF)
+                            break;
 
-                    // If we ran out of tokens, we can't optimize anymore.
-                    if (tokenRid > 0xFFFFFF)
-                        continue;
+                        newStrings.Add(resourceString);
 
-                    newStrings.Add(resourceString);
+                        // call and ldstr are both 5-byte instructions: opcode followed by a token.
+                        newBody[offset] = (byte)ILOpcode.ldstr;
+                        newBody[offset + 1] = (byte)tokenRid;
+                        newBody[offset + 2] = (byte)(tokenRid >> 8);
+                        newBody[offset + 3] = (byte)(tokenRid >> 16);
+                        newBody[offset + 4] = TokenTypeString;
 
-                    // call and ldstr are both 5-byte instructions: opcode followed by a token.
-                    newBody[offset] = (byte)ILOpcode.ldstr;
-                    newBody[offset + 1] = (byte)tokenRid;
-                    newBody[offset + 2] = (byte)(tokenRid >> 8);
-                    newBody[offset + 3] = (byte)(tokenRid >> 16);
-                    newBody[offset + 4] = TokenTypeString;
-
-                    tokenRid++;
+                        tokenRid++;
+                        break;
+                    }
+                    default:
+                        throw new InvalidOperationException();
                 }
             }
 
@@ -1018,6 +1069,7 @@ namespace ILCompiler
             if (!analyzer.IsTypeEqualityBranch)
                 return false;
 
+            TypeDesc knownType = null;
             if (analyzer.IsTwoTokens)
             {
                 var type1 = (TypeDesc)methodIL.GetObject(analyzer.Token1);
@@ -1035,14 +1087,22 @@ namespace ILCompiler
 
                 bool? equality = TypeExtensions.CompareTypesForEquality(type1, type2);
                 if (!equality.HasValue)
-                    return false;
-
-                constant = equality.Value ? 1 : 0;
+                {
+                    // Shared generic comparisons can still be false if their literal type is unreachable.
+                    knownType = analyzer.GetConditionalType(methodIL);
+                    if (knownType == null)
+                        return false;
+                }
+                else
+                    constant = equality.Value ? 1 : 0;
             }
             else
             {
-                var knownType = (TypeDesc)methodIL.GetObject(analyzer.Token1);
+                knownType = (TypeDesc)methodIL.GetObject(analyzer.Token1);
+            }
 
+            if (knownType != null)
+            {
                 // No value in making this work for definitions
                 if (knownType.IsGenericDefinition)
                     return false;
@@ -1060,8 +1120,10 @@ namespace ILCompiler
                 if (!ConstructedEETypeNode.CreationAllowed(knownType))
                     return false;
 
-                // If a constructed MethodTable for this type exists, the comparison could succeed.
-                if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(knownType.NormalizeInstantiation()))
+                // A runtime type may exist even when reflection metadata is disabled.
+                TypeDesc normalizedType = knownType.NormalizeInstantiation();
+                if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(normalizedType)
+                    || _devirtualizationManager.CanReferenceMetadataMethodTable(normalizedType))
                     return false;
 
                 // If we can have metadata for the type the comparison could succeed even if no MethodTable present.
