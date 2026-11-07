@@ -20,16 +20,16 @@ namespace System.ComponentModel.Composition.Hosting
     /// The least obvious aspects of AtomicComposition deal with nesting.
     ///
     /// Firstly, no complete actions are actually performed until the outermost atomicComposition is
-    /// completed.  Completeting or rolling back nested atomicCompositions serves only to change which
+    /// completed.  Completing or rolling back nested atomicCompositions serves only to change which
     /// actions would be completed the outer atomicComposition.
     ///
     /// Secondly, state is added in the form of queries associated with an object key.  The
-    /// key represents a unique object the state is being held on behalf of.  The quieries are
+    /// key represents a unique object the state is being held on behalf of.  The queries are
     /// accessed through the Query methods which provide automatic chaining to execute queries
     /// across the target atomicComposition and its inner atomicComposition as appropriate.
     ///
     /// Lastly, when a nested atomicComposition is created for a given outer the outer atomicComposition is locked.
-    /// It remains locked until the inner atomicComposition is disposed or completeed preventing the addition of
+    /// It remains locked until the inner atomicComposition is disposed or completed preventing the addition of
     /// state, actions or other inner atomicCompositions.
     /// </summary>
     public class AtomicComposition : IDisposable

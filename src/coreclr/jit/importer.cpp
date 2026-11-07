@@ -4467,7 +4467,7 @@ void Compiler::impAnnotateFieldIndir(GenTreeIndir* indir)
     {
         GenTreeFieldAddr* addr = indir->Addr()->AsFieldAddr();
 
-        if (addr->IsInstance() && addr->GetFldObj()->OperIs(GT_LCL_ADDR))
+        if (!indir->IsVolatile() && addr->IsInstance() && addr->GetFldObj()->OperIs(GT_LCL_ADDR))
         {
             indir->gtFlags &= ~GTF_GLOB_REF;
             if (indir->OperIsStore())
