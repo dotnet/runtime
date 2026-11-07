@@ -26,7 +26,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Cache for the states that have been created. Each state is uniquely identified by its associated
         /// <see cref="SymbolicRegexNode{TSet}"/> and the kind of the previous character.
         /// </summary>
-        private readonly Dictionary<(SymbolicRegexNode<TSet> Node, uint PrevCharKind), MatchingState<TSet>> _stateCache = [];
+        private readonly Dictionary<(int NodeId, uint PrevCharKind), MatchingState<TSet>> _stateCache = [];
 
         /// <summary>
         /// Maps state ids to states, initial capacity is given by <see cref="InitialDfaStateCapacity"/>.
@@ -184,7 +184,8 @@ namespace System.Text.RegularExpressions.Symbolic
             int pos = 0;
             while (true)
             {
-                if (node._info.ContainsSomeAnchor)
+                SymbolicRegexNodeContext<TSet> nodeContext = _builder.GetNodeContext(node);
+                if (nodeContext._info.ContainsSomeAnchor)
                 {
                     // Bail if it contains any anchors as it invalidates the optimization.
                     // (This could potentially be a very good future optimization for anchors but there's too many edge cases to guarantee it works.
@@ -193,21 +194,21 @@ namespace System.Text.RegularExpressions.Symbolic
                     break;
                 }
 
-                if (node._kind is not SymbolicRegexNodeKind.Concat)
+                if (nodeContext._kind is not SymbolicRegexNodeKind.Concat)
                 {
-                    if (node._kind is SymbolicRegexNodeKind.CaptureStart)
+                    if (nodeContext._kind is SymbolicRegexNodeKind.CaptureStart)
                     {
                         node = _builder.Epsilon; // The entire match is fixed length.
                     }
                     break;
                 }
 
-                SymbolicRegexNode<TSet>? left = node._left;
-                Debug.Assert(left is not null);
+                SymbolicRegexNodeContext<TSet> left = nodeContext._left;
+                Debug.Assert(!left.IsNull);
 
                 if (left._kind is SymbolicRegexNodeKind.CaptureEnd or SymbolicRegexNodeKind.BoundaryAnchor or SymbolicRegexNodeKind.Singleton)
                 {
-                    node = node._right!;
+                    node = nodeContext._right;
                     if (left._kind is SymbolicRegexNodeKind.Singleton)
                     {
                         pos++;
@@ -215,16 +216,16 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
                 else if (left._kind is SymbolicRegexNodeKind.Loop)
                 {
-                    if (left._lower <= 0 || left._left!.Kind is not SymbolicRegexNodeKind.Singleton)
+                    if (left._lower <= 0 || left._left.Kind is not SymbolicRegexNodeKind.Singleton)
                     {
                         break;
                     }
 
                     node = left._lower == left._upper ?
-                        node._right! : // The entire loop is fixed
+                        nodeContext._right : // The entire loop is fixed
                         _builder.CreateConcat( // Subtract the fixed part of the loop.
                             _builder.CreateLoop(left._left, left.IsLazy, 0, left._upper - left._lower),
-                            node._right!);
+                            nodeContext._right);
                     pos += left._lower;
                 }
                 else
@@ -250,10 +251,10 @@ namespace System.Text.RegularExpressions.Symbolic
         private MatchingState<TSet> GetOrCreateState_NoLock(SymbolicRegexNode<TSet> node, uint prevCharKind, bool isInitialState = false)
         {
             SymbolicRegexNode<TSet> prunedNode = node.PruneAnchors(_builder, prevCharKind);
-            (SymbolicRegexNode<TSet> Node, uint PrevCharKind) key = (prunedNode, prevCharKind);
+            (int NodeId, uint PrevCharKind) key = (prunedNode.Id, prevCharKind);
             if (!_stateCache.TryGetValue(key, out MatchingState<TSet>? state))
             {
-                state = new MatchingState<TSet>(key.Node, key.PrevCharKind);
+                state = new MatchingState<TSet>(_builder, prunedNode, key.PrevCharKind);
                 _stateCache.Add(key, state); // Add to cache first to make 1 the first state ID
                 state.Id = _stateCache.Count;
 
@@ -293,14 +294,14 @@ namespace System.Text.RegularExpressions.Symbolic
         private int? CreateNfaState(SymbolicRegexNode<TSet> node, uint prevCharKind)
         {
             Debug.Assert(Monitor.IsEntered(this));
-            Debug.Assert(node.Kind != SymbolicRegexNodeKind.Alternate);
+            Debug.Assert(node.Kind(_builder) != SymbolicRegexNodeKind.Alternate);
 
             // First make the core state for the node, which is used for creating further transitions out of this state
             MatchingState<TSet> coreState = GetOrCreateState(node, prevCharKind);
 
             // If the state is a dead end then don't create an NFA state, as dead ends in NFA mode are represented
             // as empty lists of states.
-            if (coreState.IsDeadend(Solver))
+            if (coreState.IsDeadend)
             {
                 return null;
             }
@@ -402,7 +403,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     TSet minterm = GetMintermFromId(mintermId);
                     uint nextCharKind = GetPositionKind(mintermId);
                     SymbolicRegexNode<TSet> targetNode = coreTargetId > 0 ?
-                        GetState(coreTargetId).Node : coreState.Next(_builder, minterm, nextCharKind);
+                        GetState(coreTargetId).GetNode(_builder) : coreState.Next(_builder, minterm, nextCharKind);
 
                     List<int> targetsList = [];
                     ForEachNfaState(targetNode, nextCharKind, targetsList, static (int nfaId, List<int> targetsList) =>
