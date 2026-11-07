@@ -1450,7 +1450,7 @@ FCIMPLEND
 FCIMPL4(INT32, SignatureNative::GetTypeParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset, INT32 index)
 {
     FCALL_CONTRACT;
-    _ASSERTE(offset >= 0);
+    _ASSERTE(offset >= 0 && (DWORD)offset < csig);
 
     HRESULT hr;
     SigPointer sp(sig + offset, csig - offset);
@@ -1496,7 +1496,7 @@ FCIMPLEND
 FCIMPL3(INT32, SignatureNative::GetCallingConventionFromFunctionPointerAtOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset)
 {
     FCALL_CONTRACT;
-    _ASSERTE(offset >= 0);
+    _ASSERTE(offset >= 0 && (DWORD)offset < csig);
 
     HRESULT hr;
     uint32_t callConv = 0;
@@ -1533,10 +1533,13 @@ extern "C" void QCALLTYPE Signature_GetCustomModifiersAtOffset(
     gc.pSig = (SIGNATURENATIVEREF)sigObj.Get();
     gc.retVal = NULL;
     GCPROTECT_BEGIN(gc);
+    DWORD sigSize = gc.pSig->GetCorSigSize();
+    _ASSERTE(offset >= 0 && (DWORD)offset < sigSize);
+
     SigTypeContext typeContext;
     gc.pSig->GetTypeContext(&typeContext);
 
-    SigPointer argument(gc.pSig->GetCorSig() + offset, gc.pSig->GetCorSigSize() - offset);
+    SigPointer argument(gc.pSig->GetCorSig() + offset, sigSize - offset);
 
     SigPointer sp = argument;
     Module* pModule = gc.pSig->GetModule();
