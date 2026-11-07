@@ -122,6 +122,35 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+#if !MONO
+        /// <summary>
+        /// Same as <see cref="HandleNonSuccessAndDebuggerNotification"/> for a completed task, except that rather than
+        /// throwing the exception for a task that completed in a state other than RanToCompletion, it returns it,
+        /// with its dispatch state restored such that propagating it continues its original stack trace.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static Exception? GetExceptionForNonSuccessAndDebuggerNotification(Task task)
+        {
+            Debug.Assert(task.IsCompleted);
+
+            task.NotifyDebuggerOfWaitCompletionIfNecessary();
+
+            switch (task.Status)
+            {
+                case TaskStatus.Canceled:
+                    return task.GetCancellationExceptionDispatchInfo()?.PrepareForPropagation() ?? new TaskCanceledException(task);
+
+                case TaskStatus.Faulted:
+                    List<ExceptionDispatchInfo> edis = task.GetExceptionDispatchInfos();
+                    Debug.Assert(edis.Count > 0, "There should be exceptions if we're Faulted.");
+                    return edis.Count > 0 ? edis[0].PrepareForPropagation() : task.Exception!;
+
+                default:
+                    return null;
+            }
+        }
+#endif
+
         /// <summary>Throws an exception to handle a task that completed in a state other than RanToCompletion.</summary>
         [StackTraceHidden]
         private static void ThrowForNonSuccess(Task task)

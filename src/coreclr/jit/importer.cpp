@@ -9697,6 +9697,24 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             impInlineInfo->thisDereferencedFirst = true;
                         }
+
+                        // The context save/restore helpers that the async transformation inserts only read fields
+                        // of the current thread, which the runtime guarantees has been initialized for code
+                        // running in an async method. Treat those reads as non-faulting so that they can be
+                        // removed entirely when their values are unused. The address is formed directly rather than
+                        // through FIELD_ADDR, as morphing a FIELD_ADDR would otherwise reintroduce the null check.
+                        if (!isLoadAddress && compIsForInlining() &&
+                            (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE) && obj->TypeIs(TYP_REF) &&
+                            !op1->AsFieldAddr()->gtFldMayOverlap && (fieldInfo.offset != 0) &&
+                            !fgIsBigOffset(fieldInfo.offset) && impInlineRoot()->compIsAsync() &&
+                            ((info.compMethodHnd == eeGetAsyncInfo()->captureContextsMethHnd) ||
+                             (info.compMethodHnd == eeGetAsyncInfo()->restoreContextsMethHnd)))
+                        {
+                            FieldSeq* fieldSeq = GetFieldSeqStore()->Create(resolvedToken.hField, fieldInfo.offset,
+                                                                            FieldSeq::FieldKind::Instance);
+                            op1 = gtNewOperNode(GT_ADD, TYP_BYREF, obj, gtNewIconNode(fieldInfo.offset, fieldSeq));
+                            indirFlags |= GTF_IND_NONFAULTING;
+                        }
                     }
                     break;
 

@@ -6460,6 +6460,12 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
     {
         result |= CORINFO_FLG_FORCEINLINE;
     }
+    else if (pMD->IsAsyncThunkMethod() && !pMD->IsAsyncVariantMethod())
+    {
+        // Task-returning thunks for runtime async methods are small, and inlining them into
+        // non-async callers removes a frame and its EH setup from every call.
+        result |= CORINFO_FLG_FORCEINLINE;
+    }
 
     if (pMT->IsDelegate() && ((DelegateEEClass*)(pMT->GetClass()))->GetInvokeMethod() == pMD)
     {
@@ -7796,7 +7802,14 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         if (pRootModule->IsRuntimeWrapExceptions() != pCalleeModule->IsRuntimeWrapExceptions())
         {
             COR_ILMETHOD* pILHeader;
-            if (pCallee->MayHaveILHeader() && (pILHeader = pCallee->GetILHeader()) != NULL)
+            if (pCallee->IsAsyncThunkMethod())
+            {
+                // Thunk IL is generated and always has EH.
+                result = INLINE_FAIL;
+                szFailReason = "Inlinee and root method have different wrapped exception behavior";
+                goto exit;
+            }
+            else if (pCallee->MayHaveILHeader() && (pILHeader = pCallee->GetILHeader()) != NULL)
             {
                 COR_ILMETHOD_DECODER header(pILHeader, pCallee->GetMDImport(), NULL);
                 if (header.EHCount() > 0)
@@ -15072,6 +15085,10 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         ILCodeLabel* doneResult = pCode->NewCodeLabel();
         pCode->EmitLDLOC(newContinuationLoc);
         pCode->EmitBRTRUE(doneResult);
+
+        // The awaiting continuation has no result storage when the caller ignores the result.
+        pCode->EmitLDARG(1);
+        pCode->EmitBRFALSE(doneResult);
 
         pCode->EmitLDARG(1); // resultLoc
         pCode->EmitLDLOC(resultLoc);

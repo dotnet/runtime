@@ -350,7 +350,7 @@ namespace System.Threading.Tasks
 
         // Debugger support
         private string DebuggerDisplayMethodDescription =>
-            m_action?.Method.ToString() ?? "{null}";
+            (m_action as Delegate)?.Method.ToString() ?? "{null}";
 
 
         // internal helper function breaks out logic used by TaskCompletionSource
@@ -444,6 +444,24 @@ namespace System.Threading.Tasks
                 return m_result!;
             }
         }
+
+#if !MONO
+        internal override Exception? GetRuntimeAsyncAwaitResult(ref byte result)
+        {
+            if (IsWaitNotificationEnabledOrNotRanToCompletion &&
+                TaskAwaiter.GetExceptionForNonSuccessAndDebuggerNotification(this) is Exception e)
+            {
+                return e;
+            }
+
+            if (!Unsafe.IsNullRef(ref result))
+            {
+                Unsafe.As<byte, TResult>(ref result) = ResultOnSuccess;
+            }
+
+            return null;
+        }
+#endif
 
         // Implements Result.  Result delegates to this method if the result isn't already available.
         internal TResult GetResultCore(bool waitCompletionNotification)

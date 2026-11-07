@@ -1281,8 +1281,9 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(
 
     if (frames.interpreterFrame.GetContinuation() == NULL)
     {
-        // We had a normal return, so copy out the return value
-        if (returnValueSize > 0)
+        // We had a normal return, so copy out the return value. There is no result storage
+        // when the awaiting caller ignores the result.
+        if (returnValueSize > 0 && resultStorage != nullptr)
         {
             if (pSuspendData->asyncMethodReturnType != NULL && !pSuspendData->asyncMethodReturnType->IsValueType())
             {
@@ -4836,8 +4837,7 @@ do                                                                      \
                     // Copy locals that need to move to the continuation object
                     // The copied continuation data begins immediately after the
                     // continuation's result storage.
-                    size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
-                    uint8_t *pContinuationDataStart = continuation->GetResultStorage() + pAsyncSuspendData->returnValueContinuationDataSize;
+                    uint8_t *pContinuationDataStart = (uint8_t*)OBJECTREFToObject(continuation) + pAsyncSuspendData->continuationDataOffset + pAsyncSuspendData->returnValueContinuationDataSize;
                     uint8_t *pContinuationData = pContinuationDataStart;
                     size_t bytesTotal = 0;
                     InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
@@ -4903,7 +4903,7 @@ do                                                                      \
                     _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
 
                     // copy locals that need to move from the continuation object
-                    uint8_t *pContinuationData = continuation->GetResultStorage() + pAsyncSuspendData->returnValueContinuationDataSize;
+                    uint8_t *pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + pAsyncSuspendData->continuationDataOffset + pAsyncSuspendData->returnValueContinuationDataSize;
                     InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
                     while (pCopyEntry->countBytes != 0)
                     {
