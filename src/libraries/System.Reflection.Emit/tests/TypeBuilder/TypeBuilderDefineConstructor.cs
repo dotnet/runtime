@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -72,6 +73,20 @@ namespace System.Reflection.Emit.Tests
             constructor.GetILGenerator().Emit(OpCodes.Ret);
 
             Helpers.VerifyConstructor(constructor, type, attributes, callingConvention, parameterTypes);
+        }
+
+        [Fact]
+        [SkipOnMono("Mono's runtime Reflection.Emit does not support modified types.")]
+        public void DefineConstructor_ModifiedSignatureType_ModifiersRoundTrip()
+        {
+            Type parameterType = Type.MakeModifiedSignatureType(typeof(int), [typeof(IsConst), typeof(IsVolatile)], null);
+
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [parameterType]);
+            constructor.GetILGenerator().Emit(OpCodes.Ret);
+            ConstructorInfo created = type.CreateType().GetConstructors()[0];
+
+            Assert.Equal([typeof(IsConst), typeof(IsVolatile)], created.GetParameters()[0].GetModifiedParameterType().GetRequiredCustomModifiers());
         }
 
         [Fact]
