@@ -1329,8 +1329,8 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// <para>PEM-encoded items that have a different label are ignored.</para>
         /// <para>
-        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
-        ///   first certificate with a CERTIFICATE label is loaded. For the private key, the first private
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate,
+        ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
         ///   key with an acceptable label is loaded. More advanced scenarios for loading certificates and
         ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
         ///   PEM-encoded values and apply any custom loading behavior.
@@ -1395,8 +1395,8 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// <para>PEM-encoded items that have a different label are ignored.</para>
         /// <para>
-        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
-        ///   first certificate with a CERTIFICATE label is loaded. For the private key, the first private
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate,
+        ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
         ///   key with the label "ENCRYPTED PRIVATE KEY" is loaded. More advanced scenarios for loading certificates and
         ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
         ///   PEM-encoded values and apply any custom loading behavior.
@@ -1445,8 +1445,8 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <code>
         ///     CreateFromPem(combinedCertAndKey, combinedCertAndKey);
         ///   </code>
-        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
-        ///   first certificate with a CERTIFICATE label is loaded. For the private key, the first private
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate,
+        ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
         ///   key with an acceptable label is loaded. More advanced scenarios for loading certificates and
         ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
         ///   PEM-encoded values and apply any custom loading behavior.
@@ -1531,8 +1531,8 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <code>
         ///     CreateFromEncryptedPem(combinedCertAndKey, combinedCertAndKey, theKeyPassword);
         ///   </code>
-        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate, the
-        ///   first certificate with a CERTIFICATE label is loaded. For the private key, the first private
+        ///   Combined PEM-encoded certificates and keys do not require a specific order. For the certificate,
+        ///   the first certificate with a CERTIFICATE label is loaded. For the private key, the first private
         ///   key with the label "ENCRYPTED PRIVATE KEY" is loaded. More advanced scenarios for loading certificates and
         ///   private keys can leverage <see cref="System.Security.Cryptography.PemEncoding" /> to enumerate
         ///   PEM-encoded values and apply any custom loading behavior.

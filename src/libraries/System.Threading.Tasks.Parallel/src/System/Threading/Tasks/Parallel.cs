@@ -179,9 +179,9 @@ namespace System.Threading.Tasks
         /// <paramref name="parallelOptions"/> is set.</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown when any
         /// action in the <paramref name="actions"/> array throws an exception.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <remarks>
         /// This method can be used to execute a set of operations, potentially in parallel.
@@ -432,9 +432,9 @@ namespace System.Threading.Tasks
         /// argument is set.</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -469,9 +469,9 @@ namespace System.Threading.Tasks
         /// argument is set.</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -582,9 +582,9 @@ namespace System.Threading.Tasks
         /// argument is set.</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -621,9 +621,9 @@ namespace System.Threading.Tasks
         /// argument is set.</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -776,9 +776,9 @@ namespace System.Threading.Tasks
         /// argument is set.</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -841,9 +841,9 @@ namespace System.Threading.Tasks
         /// argument is set.</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -1203,9 +1203,9 @@ namespace System.Threading.Tasks
         /// argument is set</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -1273,9 +1273,9 @@ namespace System.Threading.Tasks
         /// argument is set</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -1345,9 +1345,9 @@ namespace System.Threading.Tasks
         /// argument is set</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -1449,9 +1449,9 @@ namespace System.Threading.Tasks
         /// argument is set</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -1568,9 +1568,9 @@ namespace System.Threading.Tasks
         /// argument is set</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -2143,9 +2143,9 @@ namespace System.Threading.Tasks
         /// IEnumerable whose GetEnumerator() method returns null.</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -2207,9 +2207,9 @@ namespace System.Threading.Tasks
         /// IEnumerable whose GetEnumerator() method returns null.</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -2276,9 +2276,9 @@ namespace System.Threading.Tasks
         /// OrderablePartitioner return an IEnumerable whose GetEnumerator() method returns null.</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -2356,9 +2356,9 @@ namespace System.Threading.Tasks
         /// IEnumerable whose GetEnumerator() method returns null.</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
@@ -2447,9 +2447,9 @@ namespace System.Threading.Tasks
         /// OrderablePartitioner return an IEnumerable whose GetEnumerator() method returns null.</exception>
         /// <exception cref="System.AggregateException">The exception that is thrown to contain an exception
         /// thrown from one of the specified delegates.</exception>
-        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when the
-        /// <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with the
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
+        /// <exception cref="System.ObjectDisposedException">The exception that is thrown when
+        /// the <see cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
+        /// the <see cref="System.Threading.CancellationToken">CancellationToken</see> in the
         /// <paramref name="parallelOptions"/> has been disposed.</exception>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult">ParallelLoopResult</see> structure
         /// that contains information on what portion of the loop completed.</returns>
