@@ -128,12 +128,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 MethodDesc method = mappingEntry.Entity;
 
-                // The current format requires us to have an MethodTable for the owning type. We might want to lift this.
-                if (!factory.MetadataManager.TypeGeneratesEEType(method.OwningType))
-                    continue;
-
-                // We have a method body, we have a metadata token, but we can't get an invoke stub. Bail.
-                if (!factory.MetadataManager.IsReflectionInvokable(method))
+                // The runtime reads this map only for methods that have an invoke map entry
+                if (!factory.MetadataManager.ShouldMethodBeInInvokeMap(method))
                     continue;
 
                 // Only virtual methods are interesting

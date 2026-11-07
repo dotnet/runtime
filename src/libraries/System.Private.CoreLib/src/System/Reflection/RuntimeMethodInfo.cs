@@ -22,6 +22,7 @@ namespace System.Reflection
                 || IsDisallowedByRefType(returnType) // Return type is an invalid by-ref (i.e., by-ref-like or void*)
                 || (CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs // Managed varargs
                 || IsDisallowedAsyncHelper
+                || IsStaticAbstract // Static abstract interface method has no body to call
                 )
             {
                 invocationFlags = InvocationFlags.NoInvoke;
@@ -79,10 +80,9 @@ namespace System.Reflection
             {
                 throw new InvalidOperationException(SR.Arg_UnboundGenParam);
             }
-            // method is abstract class
-            else if (IsAbstract)
+            else if (IsStaticAbstract)
             {
-                throw new MemberAccessException();
+                throw new MemberAccessException(SR.Format(SR.Acc_CallStaticAbstract, declaringType, Name));
             }
             else if (ReturnType.IsByRef)
             {
@@ -99,6 +99,9 @@ namespace System.Reflection
 
             throw new TargetException();
         }
+
+        private bool IsStaticAbstract =>
+            (Attributes & (MethodAttributes.Static | MethodAttributes.Abstract)) == (MethodAttributes.Static | MethodAttributes.Abstract);
 
         [DebuggerStepThrough]
         [DebuggerHidden]
