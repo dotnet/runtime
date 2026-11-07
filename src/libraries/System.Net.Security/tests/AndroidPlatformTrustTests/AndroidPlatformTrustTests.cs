@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Security.Authentication;
@@ -28,8 +29,23 @@ namespace System.Net.Security.Tests
     /// </summary>
     public class AndroidPlatformTrustTests
     {
-        [Fact]
-        public async Task SslStream_CustomRootTrust_NoChainErrors()
+        public static IEnumerable<object[]> ConnectionInfoProtocols()
+        {
+            foreach (SslProtocols protocol in new[] { SslProtocols.Tls12, SslProtocols.None, SslProtocols.Tls13 })
+            {
+                if (protocol != SslProtocols.Tls13 || PlatformDetection.SupportsTls13)
+                {
+                    foreach (bool mutualAuthentication in new[] { false, true })
+                    {
+                        yield return new object[] { protocol, mutualAuthentication };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ConnectionInfoProtocols))]
+        public async Task SslStream_CustomRootTrust_NoChainErrors(SslProtocols protocol, bool mutualAuthentication)
         {
             // The server uses testservereku.contoso.com.pfx signed by the NDX Test Root CA.
             // CustomRootTrust is configured with the NDX root so managed validation accepts.
@@ -37,8 +53,10 @@ namespace System.Net.Security.Tests
             // pre-seed RemoteCertificateChainErrors.
 
             using X509Certificate2 rootCertificate = GetRootCertificate();
+            using X509Certificate2 clientCertificate = Configuration.Certificates.GetSelfSignedClientCertificate();
             SslPolicyErrors? reportedErrors = null;
             int callbacks = 0;
+            int serverCallbacks = 0;
 
             (SslStream client, SslStream server) = GetConnectedSslStreams();
             using (client)
@@ -48,33 +66,25 @@ namespace System.Net.Security.Tests
                 var serverOptions = new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCertificate,
-                    EnabledSslProtocols = SslProtocols.Tls12,
+                    EnabledSslProtocols = protocol,
                 };
 
                 var clientOptions = new SslClientAuthenticationOptions
                 {
                     TargetHost = "testservereku.contoso.com",
-                    EnabledSslProtocols = SslProtocols.Tls12,
+                    EnabledSslProtocols = protocol,
                     RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
                     {
-                        callbacks++;
                         reportedErrors = sslPolicyErrors;
                         Assert.Same(client, sender);
                         Assert.NotNull(certificate);
                         Assert.Equal(serverCertificate.RawData, certificate.GetRawCertData());
                         Assert.NotNull(chain);
+                        Assert.Equal(SslPolicyErrors.None, sslPolicyErrors);
 
-                        if (OperatingSystem.IsAndroidVersionAtLeast(27) && !OperatingSystem.IsAndroidVersionAtLeast(28))
-                        {
-                            Assert.Throws<InvalidOperationException>(() => client.SslProtocol);
-                            Assert.Throws<InvalidOperationException>(() => client.NegotiatedCipherSuite);
-                        }
-                        else
-                        {
-                            Assert.Equal(SslProtocols.Tls12, client.SslProtocol);
-                            _ = client.NegotiatedCipherSuite;
-                        }
+                        AssertConnectionInfo(client);
 
+                        callbacks++;
                         return sslPolicyErrors == SslPolicyErrors.None;
                     },
                     CertificateChainPolicy = new X509ChainPolicy
@@ -85,21 +95,88 @@ namespace System.Net.Security.Tests
                     },
                 };
 
-                await Task.WhenAll(
-                    client.AuthenticateAsClientAsync(clientOptions),
-                    server.AuthenticateAsServerAsync(serverOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+                if (mutualAuthentication)
+                {
+                    clientOptions.RemoteCertificateValidationCallback = null;
+                    clientOptions.ClientCertificates = new X509CertificateCollection { clientCertificate };
+                    serverOptions.ClientCertificateRequired = true;
+                    serverOptions.CertificateChainPolicy = new X509ChainPolicy
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { clientCertificate },
+                    };
+                    serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
+                    {
+                        reportedErrors = errors;
+                        Assert.Same(server, sender);
+                        Assert.NotNull(certificate);
+                        Assert.Equal(clientCertificate.RawData, certificate.GetRawCertData());
+                        Assert.NotNull(chain);
+                        Assert.Equal(SslPolicyErrors.None, errors);
+                        AssertConnectionInfo(server);
+                        serverCallbacks++;
+                        return errors == SslPolicyErrors.None;
+                    };
+                }
 
-                Assert.Equal(1, callbacks);
+                Task clientAuthentication = client.AuthenticateAsClientAsync(clientOptions);
+                Task serverAuthentication = server.AuthenticateAsServerAsync(serverOptions);
+                await TaskTimeoutExtensions.WhenAllOrAnyFailed(
+                    clientAuthentication, serverAuthentication, millisecondsTimeout: 30_000);
+
                 Assert.True(client.IsAuthenticated);
                 Assert.True(server.IsAuthenticated);
-                Assert.Equal(SslProtocols.Tls12, client.SslProtocol);
+                Assert.NotEqual(SslProtocols.None, client.SslProtocol);
+                if (protocol != SslProtocols.None)
+                {
+                    Assert.Equal(protocol, client.SslProtocol);
+                }
+                Assert.Equal(client.SslProtocol, server.SslProtocol);
                 Assert.NotEqual(default, client.NegotiatedCipherSuite);
                 Assert.True(Enum.IsDefined(client.NegotiatedCipherSuite));
                 Assert.Equal(server.NegotiatedCipherSuite, client.NegotiatedCipherSuite);
+
+                await VerifyDataExchange(client, server);
+                await VerifyDataExchange(server, client);
+
+                Assert.Equal(mutualAuthentication ? 0 : 1, callbacks);
+                Assert.Equal(mutualAuthentication ? 1 : 0, serverCallbacks);
             }
 
             Assert.NotNull(reportedErrors);
             Assert.Equal(SslPolicyErrors.None, reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors);
+
+            void AssertConnectionInfo(SslStream stream)
+            {
+                if (!OperatingSystem.IsAndroidVersionAtLeast(26) ||
+                    (OperatingSystem.IsAndroidVersionAtLeast(27) && !OperatingSystem.IsAndroidVersionAtLeast(29)))
+                {
+                    Assert.Throws<InvalidOperationException>(() => stream.SslProtocol);
+                    Assert.Throws<InvalidOperationException>(() => stream.NegotiatedCipherSuite);
+                }
+                else
+                {
+                    Assert.NotEqual(SslProtocols.None, stream.SslProtocol);
+                    if (protocol != SslProtocols.None)
+                    {
+                        Assert.Equal(protocol, stream.SslProtocol);
+                    }
+                    Assert.NotEqual(default, stream.NegotiatedCipherSuite);
+                    Assert.True(Enum.IsDefined(stream.NegotiatedCipherSuite));
+                }
+            }
+
+            static async Task VerifyDataExchange(SslStream sender, SslStream receiver)
+            {
+                byte[] expected = { 1, 2, 3, 4 };
+                byte[] actual = new byte[expected.Length];
+                await TaskTimeoutExtensions.WhenAllOrAnyFailed(
+                    sender.WriteAsync(expected).AsTask(),
+                    receiver.ReadExactlyAsync(actual).AsTask(),
+                    millisecondsTimeout: 30_000);
+                Assert.Equal(expected, actual);
+            }
         }
 
         [Fact]
