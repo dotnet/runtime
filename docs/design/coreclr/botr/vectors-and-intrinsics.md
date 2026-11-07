@@ -172,6 +172,8 @@ When an intrinsic method calls itself, the non-virtual recursive call is marked 
 
 Indirect invocation through reflection, a delegate, or a function pointer executes the intrinsic method body. That body must select the same result as direct call-site expansion in the same process.
 
+Recursive native shuffles must guard the required ISA directly, rather than use `IsHardwareAccelerated`, which also reflects the preferred vector width. Under NativeAOT, the guard can be a runtime check for an optimistic ISA. Required recursive expansion therefore uses the explicit hardware-intrinsic ISA policy and expands immediately; deferring expansion could later reject that ISA and recreate a recursive managed call. Ordinary call sites retain the opportunistic ISA policy.
+
 ##### ReadyToRun ISA prerequisites
 
 Every ISA decision that can change the result of a non-deterministic intrinsic must be recorded on the ReadyToRun method body:
