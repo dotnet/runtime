@@ -24,13 +24,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         public LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> Lattice { get; init; }
 
-        public void Set(LocalKey key, TValue value)
+        public void Set(LocalKey key, LocalValue<TValue> value)
         {
             current.LocalState.Set(key, value);
             // TODO: optimize this to not meet the whole value, but just modify one value without copying.
             Exception?.Value = Lattice.Meet(Exception.Value, current);
         }
 
-        public TValue Get(LocalKey key) => current.LocalState.Get(key);
+        public LocalValue<TValue> Get(LocalKey key) => current.LocalState.Get(key);
     }
 }
