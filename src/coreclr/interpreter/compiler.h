@@ -878,9 +878,6 @@ private:
     InterpInst* PrevRealIns(InterpInst *pIns);
     void        ClearIns(InterpInst *pIns);
 
-    void        ForEachInsSVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int32_t*, void*));
-    void        ForEachInsVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int32_t*, void*));
-
     // Basic blocks
     int m_BBCount = 0;
     InterpBasicBlock**  m_ppOffsetToBB;
@@ -1065,9 +1062,7 @@ private:
 
     int32_t AllocGlobalVarOffset(int var);
     void    SetVarLiveRange(int32_t var, InterpInst* ins);
-    void    SetVarLiveRangeCB(int32_t *pVar, void *pData);
     void    InitializeGlobalVar(int32_t var, int bbIndex);
-    void    InitializeGlobalVarCB(int32_t *pVar, void *pData);
     void    InitializeGlobalVars();
     void    EndActiveCall(InterpInst *call);
     void    CompactActiveVars(int32_t *current_offset);
