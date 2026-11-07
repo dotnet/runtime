@@ -82,19 +82,33 @@ internal sealed partial class GrammarActions
     private (string Namespace, string Name) GetTypeDefinitionName(string fullName)
     {
         int lastDot = fullName.LastIndexOf('.');
-        if (lastDot == 0)
+        bool hasLeadingDot = lastDot == 0;
+        if (hasLeadingDot)
         {
             lastDot = -1;
         }
 
         string typeNamespace;
+        string typeName = lastDot == -1 ? fullName : fullName.Substring(lastDot + 1);
         if (_currentTypeDefinition.Count != 0)
         {
             typeNamespace = lastDot == -1 ? string.Empty : fullName.Substring(0, lastDot);
         }
         else if (lastDot == -1)
         {
-            typeNamespace = _currentNamespace.PeekOrDefault() ?? string.Empty;
+            string? currentNamespace = _currentNamespace.PeekOrDefault();
+            if (!hasLeadingDot &&
+                currentNamespace is not null &&
+                currentNamespace.EndsWith('.'))
+            {
+                // Preserve the final separator as a leading dot on the type name.
+                typeNamespace = currentNamespace.Substring(0, currentNamespace.Length - 1);
+                typeName = $".{fullName}";
+            }
+            else
+            {
+                typeNamespace = currentNamespace ?? string.Empty;
+            }
         }
         else
         {
@@ -107,7 +121,7 @@ internal sealed partial class GrammarActions
 
         return (
             typeNamespace,
-            lastDot == -1 ? fullName : fullName.Substring(lastDot + 1));
+            typeName);
     }
 
     private void InitializeTypeDefinition(
