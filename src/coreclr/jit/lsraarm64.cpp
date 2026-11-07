@@ -956,6 +956,8 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             FALLTHROUGH;
 
+        case GT_ADD_HI:
+        case GT_SUB_HI:
         case GT_AND:
         case GT_AND_NOT:
         case GT_OR:
