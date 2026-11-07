@@ -3972,8 +3972,8 @@ namespace Internal.JitInterface
             if (fromType.HasTypeEquivalence || toType.HasTypeEquivalence)
                 return false;
 
-            // A value type can gain interfaces (or become an enum), but its other cast targets are fixed.
-            if (fromType.IsValueType && !toType.IsInterface && !toType.IsWellKnownType(WellKnownType.Enum))
+            // A value type can gain interfaces, but its other cast targets are fixed.
+            if (fromType.IsValueType && !toType.IsInterface)
                 return true;
 
             // Otherwise every type that decides the cast must version with this code. Array and variant casts
