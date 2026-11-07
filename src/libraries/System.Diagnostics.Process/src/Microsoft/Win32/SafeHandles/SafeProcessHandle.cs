@@ -346,7 +346,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <para>
         /// When the cancellation token is canceled, this method stops waiting and throws <see cref="OperationCanceledException"/>.
         /// The process is NOT killed and continues running. If you want to kill the process on cancellation,
-        /// use <see cref="WaitForExitOrKillOnCancellationAsync"/> instead.
+        /// use <see cref="WaitForExitOrKillOnCancellationAsync(CancellationToken)"/> instead.
         /// </para>
         /// <para>On Unix, it's impossible to obtain the exit status of a non-child process.</para>
         /// </remarks>
@@ -419,7 +419,13 @@ namespace Microsoft.Win32.SafeHandles
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken)
+        public Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken)
+            => WaitForExitOrKillOnCancellationAsync(cancellationToken, kill: null);
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        internal async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken, Action? kill)
         {
             Validate();
 
@@ -448,18 +454,26 @@ namespace Microsoft.Win32.SafeHandles
                     ctr = cancellationToken.UnsafeRegister(
                         static state =>
                         {
-                            var (handle, tcs) = ((SafeProcessHandle, TaskCompletionSource<bool>))state!;
+                            (SafeProcessHandle handle, TaskCompletionSource<bool> tcs, Action? kill) =
+                                ((SafeProcessHandle, TaskCompletionSource<bool>, Action?))state!;
                             try
                             {
                                 handle.Canceled = true;
-                                handle.SignalCore(PosixSignal.SIGKILL);
+                                if (kill is null)
+                                {
+                                    handle.SignalCore(PosixSignal.SIGKILL);
+                                }
+                                else
+                                {
+                                    kill();
+                                }
                             }
                             catch (Exception ex)
                             {
                                 tcs.TrySetException(ex);
                             }
                         },
-                        (this, tcs));
+                        (this, tcs, kill));
                 }
 
                 await tcs.Task.ConfigureAwait(false);

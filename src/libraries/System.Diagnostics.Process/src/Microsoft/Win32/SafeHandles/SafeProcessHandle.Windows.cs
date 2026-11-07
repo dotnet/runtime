@@ -48,7 +48,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         /// Gets or sets a value indicating whether the process has been terminated due to timeout or cancellation.
         /// </summary>
-        private bool Canceled { get; set; }
+        internal bool Canceled { get; set; }
 
         protected override bool ReleaseHandle()
         {

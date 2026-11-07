@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -130,6 +132,82 @@ namespace System.Diagnostics.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
+        public async Task RunAsync_WithTimeoutOrCancellation_KillsEntireProcessTree(bool captureText)
+        {
+            const bool AsyncRead = true, AsyncWrite = false;
+            // Create a process tree, where each process (outer+inner) inherits the pipe handle.
+            // If all of the processes get killed, the pipe will be closed and we can read EOF from the pipe immediately.
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe, asyncRead: AsyncRead);
+
+            using (readPipe)
+            using (writePipe)
+            {
+                using Process outerTemplate = CreateProcess(pipeFd =>
+                {
+                    using Process innerTemplate = CreateProcess(childPipeFd =>
+                    {
+                        using FileStream pipe = new(new SafeFileHandle(nint.Parse(childPipeFd), ownsHandle: false),
+                            FileAccess.Write, bufferSize: 0, isAsync: AsyncWrite);
+                        pipe.WriteByte(1);
+
+                        Thread.Sleep(WaitInMS * 10);
+                        return RemoteExecutor.SuccessExitCode;
+                    }, pipeFd);
+                    innerTemplate.StartInfo.InheritedHandles = [new SafeFileHandle(nint.Parse(pipeFd), ownsHandle: false)];
+                    innerTemplate.Start();
+
+                    return innerTemplate.WaitForExitStatus().ExitCode;
+                }, writePipe.DangerousGetHandle().ToString());
+
+                if (captureText)
+                {
+                    outerTemplate.StartInfo.RedirectStandardOutput = true;
+                    outerTemplate.StartInfo.RedirectStandardError = true;
+                }
+                outerTemplate.StartInfo.InheritedHandles = [writePipe];
+
+                using CancellationTokenSource cts = new();
+
+                Task runTask = captureText
+                    ? Process.RunAndCaptureTextAsync(outerTemplate.StartInfo, cts.Token)
+                    : Process.RunAsync(outerTemplate.StartInfo, cts.Token);
+
+                writePipe.Close(); // close the write end of the pipe so that we can detect when the process tree is killed
+                using FileStream readStream = new(readPipe, FileAccess.Read, bufferSize: 0, isAsync: AsyncRead);
+
+                try
+                {
+                    Assert.Equal(1, await readStream.ReadAsync(new byte[1], 0, 1).WaitAsync(TimeSpan.FromMilliseconds(WaitInMS)));
+                }
+                finally
+                {
+                    // Cancel the operation, which should kill the entire process tree.
+                    cts.Cancel();
+                }
+
+                Task<int> readTask = readStream.ReadAsync(new byte[1], 0, 1);
+                Task finished = await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromMilliseconds(WaitInMS)));
+                Assert.Same(readTask, finished);
+                Assert.Equal(0, await readTask);
+
+                if (captureText)
+                {
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await runTask);
+                }
+                else
+                {
+                    ProcessExitStatus status = await (Task<ProcessExitStatus>)runTask;
+
+                    Assert.NotEqual(0, status.ExitCode);
+                    Assert.NotEqual(RemoteExecutor.SuccessExitCode, status.ExitCode);
+                    Assert.True(status.Canceled);
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
         public async Task RunAndCaptureText_CapturesOutput(bool useAsync)
         {
             using Process template = CreateProcess(static () =>
@@ -247,6 +325,32 @@ namespace System.Diagnostics.Tests
             {
                 Assert.ThrowsAny<TimeoutException>(() =>
                     Process.RunAndCaptureText(template.StartInfo, TimeSpan.FromMilliseconds(100)));
+            }
+        }
+
+        [Theory]
+        [InlineData(false, true, false, false)]
+        [InlineData(false, false, true, false)]
+        [InlineData(false, false, false, true)]
+        [InlineData(true, true, false, false)]
+        [InlineData(true, false, true, false)]
+        [InlineData(true, false, false, true)]
+        public async Task Run_Redirected_ThrowsInvalidOperationException(bool useAsync, bool redirectInput, bool redirectOutput, bool redirectError)
+        {
+            ProcessStartInfo startInfo = new("someprocess")
+            {
+                RedirectStandardInput = redirectInput,
+                RedirectStandardOutput = redirectOutput,
+                RedirectStandardError = redirectError
+            };
+
+            if (useAsync)
+            {
+                await Assert.ThrowsAsync<InvalidOperationException>(() => Process.RunAsync(startInfo));
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => Process.Run(startInfo));
             }
         }
 
