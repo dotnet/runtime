@@ -419,6 +419,25 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 }, TaskCreationOptions.LongRunning)).ToArray());
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void TestGeneratedRangeAttributeUsesErrorMessage()
+        {
+            OptionsWithRangeErrorMessage options = new OptionsWithRangeErrorMessage() { Temperature = 60, Level = 0, Size = 0, Count = 0 };
+            RangeErrorMessageValidator validator = new RangeErrorMessageValidator();
+
+            ValidateOptionsResult result = validator.Validate("MyOptions", options);
+
+            Assert.True(result.Failed);
+            Assert.Equal(new List<string>
+                        {
+                            "Temperature: Temperature must be between -20 and 55.",
+                            "Level: MyOptions.Level must be between 1 and 10, inclusive.",
+                            "Size: Size must be between 1 and 3.",
+                            "Count: The field MyOptions.Count must be between 1 and 5.",
+                        },
+                        result.Failures);
+        }
+
 #if NET
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public async Task TestAsyncValidationSucceeds()
@@ -1006,6 +1025,31 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
     [OptionsValidator]
     public partial class TimeSpanRangeAttributeValidator : IValidateOptions<OptionsWithTimeSpanRangeAttribute>
     {
+    }
+
+    public class OptionsWithRangeErrorMessage
+    {
+        [Range(-20, 55, ErrorMessage = "Temperature must be between -20 and 55.")]
+        public int Temperature { get; set; }
+
+        [Range(1, 10, ErrorMessage = "{0} must be between {1} and {2}, inclusive.")]
+        public int Level { get; set; }
+
+        [Range(1, 3, ErrorMessageResourceType = typeof(RangeErrorMessages), ErrorMessageResourceName = nameof(RangeErrorMessages.SizeOutOfRange))]
+        public int Size { get; set; }
+
+        [Range(1, 5)]
+        public int Count { get; set; }
+    }
+
+    [OptionsValidator]
+    public partial class RangeErrorMessageValidator : IValidateOptions<OptionsWithRangeErrorMessage>
+    {
+    }
+
+    public static class RangeErrorMessages
+    {
+        public static string SizeOutOfRange => "Size must be between {1} and {2}.";
     }
 
 #if NET
