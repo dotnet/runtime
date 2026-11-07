@@ -4,8 +4,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
-    <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);nullable</NoWarn>
+    
+    
   </PropertyGroup>
 
   <ItemGroup>
