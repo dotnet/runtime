@@ -528,7 +528,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // The search did not finish, so we either failed to transition (which should only happen if we were in DFA mode and
                 // need to switch over to NFA mode) or ran out of input in the inner loop. Check if the inner loop still had more
                 // input available.
-                if (pos < innerLoopLength)
+                if (pos <= innerLoopLength)
                 {
                     // Because there was still more input available, a failure to transition in DFA mode must be the cause
                     // of the early exit. Upgrade to NFA mode.
@@ -689,20 +689,23 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
 
                 // If there is more input available try to transition with the next character.
-                // Note: the order here is important so the transition itself gets taken
-                if (!DfaStateHandler.TryTakeTransition(this, ref currStateId, GetMintermId(mintermsLookup, c), timeoutOccursAt) ||
-                    pos >= lengthMinus1)
+                if (!DfaStateHandler.TryTakeTransition(this, ref currStateId, GetMintermId(mintermsLookup, c), timeoutOccursAt))
                 {
-                    if (pos + 1 < input.Length)
+                    result = false;
+                    break;
+                }
+
+                pos++;
+
+                if (pos > lengthMinus1)
+                {
+                    if (pos < input.Length)
                     {
                         result = false;
-                        break;
                     }
 
-                    pos++;
-
                     // One off check for the final position. This is just to move it out of the hot loop.
-                    if (_stateFlagsArray[currStateId].IsNullable() ||
+                    else if (_stateFlagsArray[currStateId].IsNullable() ||
                         _stateArray[currStateId]!.IsNullableFor(_positionKinds[0]))
                     {
                         // The end position (-1) was nullable.
@@ -711,9 +714,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     break;
                 }
-
-                // We successfully transitioned, so update our current input index to match.
-                pos++;
             }
 
             // Write back the local copies of the ref values.
