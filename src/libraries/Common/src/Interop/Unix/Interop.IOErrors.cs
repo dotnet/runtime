@@ -105,7 +105,7 @@ internal static partial class Interop
     }
 
     internal static Exception GetExceptionForIoErrno(ErrorInfo errorInfo) =>
-        GetExceptionForIoErrno<NoPathHandling>(errorInfo, path: null, isDirError: false);
+        GetExceptionForIoErrnoCore(errorInfo, path: null, isDirError: false);
 
     /// <summary>
     /// Gets an Exception to represent the supplied error info.
@@ -114,20 +114,29 @@ internal static partial class Interop
     /// <param name="path">The path with which this error is associated.  This may be null.</param>
     /// <param name="isDirError">true if error is caused by a directory issue.</param>
     /// <returns></returns>
-    internal static Exception GetExceptionForIoErrno(ErrorInfo errorInfo, string? path, bool isDirError = false) =>
-        GetExceptionForIoErrno<PathHandling>(errorInfo, path, isDirError);
+    internal static Exception GetExceptionForIoErrno(ErrorInfo errorInfo, string? path, bool isDirError = false)
+    {
+        // Keep path/directory operations separate from GetExceptionForIoErrnoCore to allow better trimming:
+        // pathless callers do not pull in Path and Directory APIs.
+        // For Windows compatibility, throw DirectoryNotFoundException instead of FileNotFoundException
+        // when the parent folder does not exist.
+        if (errorInfo.Error == Error.ENOENT && !isDirError && path is not null)
+        {
+            string? parentPath = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path));
+            isDirError = !Directory.Exists(parentPath);
+        }
 
-    private static Exception GetExceptionForIoErrno<TPathHandling>(ErrorInfo errorInfo, string? path, bool isDirError)
-        where TPathHandling : IPathHandling
+        return GetExceptionForIoErrnoCore(errorInfo, path, isDirError);
+    }
+
+    private static Exception GetExceptionForIoErrnoCore(ErrorInfo errorInfo, string? path, bool isDirError)
     {
         // Translate the errno into a known set of exception types.  For cases where multiple errnos map
         // to the same exception type, include an inner exception with the details.
         switch (errorInfo.Error)
         {
             case Error.ENOENT:
-                // For Windows compatibility, throw DirectoryNotFoundException instead of FileNotFoundException
-                // when the parent folder does not exist.
-                if (!isDirError && (path is null || TPathHandling.ParentDirectoryExists(path)))
+                if (!isDirError)
                 {
                     return !string.IsNullOrEmpty(path) ?
                         new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, path), path) :
@@ -177,26 +186,6 @@ internal static partial class Interop
 
             default:
                 return GetIOException(errorInfo, path);
-        }
-    }
-
-    private interface IPathHandling
-    {
-        static abstract bool ParentDirectoryExists(string fullPath);
-    }
-
-    private sealed class NoPathHandling : IPathHandling
-    {
-        public static bool ParentDirectoryExists(string fullPath) => true;
-    }
-
-    private sealed class PathHandling : IPathHandling
-    {
-        public static bool ParentDirectoryExists(string fullPath)
-        {
-            string? parentPath = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(fullPath));
-
-            return Directory.Exists(parentPath);
         }
     }
 
