@@ -105,7 +105,7 @@ namespace System.IO.Pipes
 
                 using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
                 {
-                    SecurityIdentifier identifier = currentIdentity.Owner!;
+                    SecurityIdentifier identifier = currentIdentity.User ?? currentIdentity.Owner!;
 
                     // Grant full control to the owner so multiple servers can be opened.
                     // Full control is the default per MSDN docs for CreateNamedPipe.

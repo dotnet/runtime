@@ -169,5 +169,32 @@ namespace System.IO.Pipes.Tests
                 }
             }
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void ServerCreatedWithCurrentUserOnly_HasUserSidAsOwner_Windows()
+        {
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+            using var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly);
+            using var currentIdentity = System.Security.Principal.WindowsIdentity.GetCurrent();
+
+            var expectedUserSid = currentIdentity.User ?? currentIdentity.Owner;
+            PipeSecurity accessControl = server.GetAccessControl();
+            var ownerSid = accessControl.GetOwner(typeof(System.Security.Principal.SecurityIdentifier));
+
+            Assert.Equal(expectedUserSid, ownerSid);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void ClientConnectingWithCurrentUserOnly_AcceptsServerOwnedByUserSid_Windows()
+        {
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+            using var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly);
+            using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.CurrentUserOnly);
+
+            client.Connect();
+            Assert.True(client.IsConnected);
+        }
     }
 }

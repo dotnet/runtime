@@ -208,8 +208,8 @@ namespace System.IO.Pipes
             IdentityReference? remoteOwnerSid = accessControl.GetOwner(typeof(SecurityIdentifier));
             using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
             {
-                SecurityIdentifier? currentUserSid = currentIdentity.Owner;
-                if (remoteOwnerSid != currentUserSid)
+                SecurityIdentifier? currentUserSid = currentIdentity.User ?? currentIdentity.Owner;
+                if (remoteOwnerSid != currentUserSid && remoteOwnerSid != currentIdentity.Owner)
                 {
                     State = PipeState.Closed;
                     throw new UnauthorizedAccessException(SR.UnauthorizedAccess_NotOwnedByCurrentUser);
