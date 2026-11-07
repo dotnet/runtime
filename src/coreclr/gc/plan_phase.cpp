@@ -5331,6 +5331,15 @@ void gc_heap::fix_generation_bounds (int condemned_gen_number,
 
             make_unused_array (saved_ephemeral_plan_start[gen_number],
                                saved_eph_start_size);
+            // The saved generation starts now belong to gen2 in the old ephemeral segment and they may
+            // be the only objects in their bricks (eg, when everything else was compacted out to the new
+            // ephemeral segment). Nothing else initializes the brick for them, so make sure it's not left
+            // zero, which is the value for a brick that has never been set.
+            if (brick_table [brick_of (saved_ephemeral_plan_start[gen_number])] == 0)
+            {
+                fix_brick_to_highest (saved_ephemeral_plan_start[gen_number],
+                                      saved_ephemeral_plan_start[gen_number] + saved_eph_start_size);
+            }
             generation_free_obj_space (generation_of (max_generation)) += saved_eph_start_size;
             dprintf (2, ("[h%d] EP %p(%zd)", heap_number, saved_ephemeral_plan_start[gen_number],
                 saved_ephemeral_plan_start_size[gen_number]));
