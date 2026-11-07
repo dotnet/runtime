@@ -25,6 +25,22 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     {
     }
 
+    [Fact]
+    public async Task ConfigLoadedCallbacks()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ModuleConfigTests_ConfigLoadedCallbacks");
+        PublishProject(info, config);
+
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "ConfigLoadedCallbacks"
+        ));
+
+        string[] expected = ["ConfigLoaded: first", "ConfigLoaded: second", "ConfigLoaded: ready"];
+        Assert.Equal(expected, result.TestOutput.Where(message => message.StartsWith("ConfigLoaded:", StringComparison.Ordinal)));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

@@ -7,7 +7,7 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
-        /// <summary>Computes the element-wise angle in radians whose tangent is the specifed number and divides the result by Pi.</summary>
+        /// <summary>Computes the element-wise angle in radians whose tangent is the specified number and divides the result by Pi.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
