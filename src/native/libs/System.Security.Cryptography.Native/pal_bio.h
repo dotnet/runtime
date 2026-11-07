@@ -100,26 +100,26 @@ not take ownership of it or close it in Destroy).
 PALEXPORT BIO* CryptoNative_BioNewSocketReplay(intptr_t fd, const void* prefix, int32_t prefixLen);
 
 /*
-Reads directly from a socket-replay BIO's bound fd into its internal peek
-buffer until a full TLS record (5-byte header + fragment) is present.
-Used by the deferred-server fast path to peek the ClientHello without a
-managed pre-fetch buffer + copy round-trip: the same BIO becomes the SSL's
-read BIO once SetServerContext/SetServerOptions resumes the handshake.
+Reads directly from a socket-replay BIO's bound fd until requiredLength bytes
+are buffered. The managed caller determines the required length from TLS
+framing. The same BIO replays the original bytes once OpenSSL starts the handshake.
 
 *outPtr / *outLen point into the BIO's internal buffer and are valid
-until the BIO is destroyed or SocketReplayBioRead begins consuming it.
+until the next call (which may grow the buffer) or the BIO is destroyed.
+Must not be called after SocketReplayBioRead begins consuming the prefix.
 
 Returns:
-   1  = full frame present.
+   1  = requested prefix present.
    0  = need more data (fd would block); caller polls SelectRead and retries.
-  -1  = error (invalid args, EOF, oversized record, or recv failure).
+  -1  = error (invalid args, prefix over 1 MiB, allocation failure, EOF, or recv failure).
 */
-PALEXPORT int32_t CryptoNative_BioPeekTlsFrame(BIO* bio, uint8_t** outPtr, int32_t* outLen);
+PALEXPORT int32_t CryptoNative_BioReadPrefix(BIO* bio, int32_t requiredLength, uint8_t** outPtr, int32_t* outLen);
 
 /*
 Returns a pointer + length to the socket-replay BIO's peek buffer (the ClientHello
-bytes captured by CryptoNative_BioPeekTlsFrame). The buffer remains valid until
-the BIO is destroyed, even after OpenSSL has consumed it during the handshake.
+bytes captured by CryptoNative_BioReadPrefix). After prefetch is complete, the
+buffer remains valid until the BIO is destroyed, even after OpenSSL has
+consumed it during the handshake.
 
 Returns:
    1  = prefix present; *outPtr / *outLen wrap the internal buffer.
