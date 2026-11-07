@@ -41,9 +41,36 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Exp2(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => ExpOperator<T>.Invoke(x * Vector128.Create(T.CreateTruncating(NaturalLog2)));
-            public static Vector256<T> Invoke(Vector256<T> x) => ExpOperator<T>.Invoke(x * Vector256.Create(T.CreateTruncating(NaturalLog2)));
-            public static Vector512<T> Invoke(Vector512<T> x) => ExpOperator<T>.Invoke(x * Vector512.Create(T.CreateTruncating(NaturalLog2)));
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(double))
+                {
+                    return ExpDoubleCore.Exp2(x.AsDouble()).As<double, T>();
+                }
+
+                return ExpOperator<T>.Invoke(x * Vector128.Create(T.CreateTruncating(NaturalLog2)));
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(double))
+                {
+                    return ExpDoubleCore.Exp2(x.AsDouble()).As<double, T>();
+                }
+
+                return ExpOperator<T>.Invoke(x * Vector256.Create(T.CreateTruncating(NaturalLog2)));
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(double))
+                {
+                    return ExpDoubleCore.Exp2(x.AsDouble()).As<double, T>();
+                }
+
+                return ExpOperator<T>.Invoke(x * Vector512.Create(T.CreateTruncating(NaturalLog2)));
+            }
         }
     }
 }
