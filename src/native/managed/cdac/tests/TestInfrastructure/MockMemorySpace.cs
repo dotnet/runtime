@@ -147,9 +147,6 @@ public static unsafe partial class MockMemorySpace
             if (address == 0)
                 return -1;
 
-            bool partialReadOcurred = false;
-            HeapFragment lastHeapFragment = default;
-            int availableLength = 0;
             while (true)
             {
                 bool tryAgain = false;
@@ -158,7 +155,7 @@ public static unsafe partial class MockMemorySpace
                     if (address >= fragment.Address && address < fragment.Address + (ulong)fragment.Data.Length)
                     {
                         int offset = (int)(address - fragment.Address);
-                        availableLength = fragment.Data.Length - offset;
+                        int availableLength = fragment.Data.Length - offset;
                         if (availableLength >= buffer.Length)
                         {
                             fragment.Data.AsSpan(offset, buffer.Length).CopyTo(buffer);
@@ -166,8 +163,6 @@ public static unsafe partial class MockMemorySpace
                         }
                         else
                         {
-                            lastHeapFragment = fragment;
-                            partialReadOcurred = true;
                             tryAgain = true;
                             fragment.Data.AsSpan(offset, availableLength).CopyTo(buffer);
                             buffer = buffer.Slice(availableLength);
@@ -180,8 +175,6 @@ public static unsafe partial class MockMemorySpace
                     break;
             }
 
-            if (partialReadOcurred)
-                throw new InvalidOperationException($"Not enough data in fragment at {lastHeapFragment.Address:X} ('{lastHeapFragment.Name}') to read {buffer.Length} bytes at {address:X} (only {availableLength} bytes available)");
             return -1;
         }
 
