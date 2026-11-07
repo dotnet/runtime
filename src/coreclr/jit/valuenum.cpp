@@ -7994,6 +7994,124 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn, bool isIndex)
     (isIndex ? m_checkedBoundIndexVNs : m_checkedBoundVNs).AddOrUpdate(vn, true);
 }
 
+//------------------------------------------------------------------------
+// FindVNPair: Find the entry for a number in a pair list.
+//
+// Arguments:
+//    list - the list
+//    from - the number
+//
+// Return Value:
+//    The index of the entry, or -1 when there is none.
+//
+int ValueNumStore::FindVNPair(VNPairList& list, ValueNum from)
+{
+    for (int i = 0; i < list.Height(); i++)
+    {
+        if (list.BottomRef(i).from == from)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+//------------------------------------------------------------------------
+// VNCanonical: Return the representative of a value number's equivalence class.
+//
+// Arguments:
+//    vn - the value number
+//
+// Return Value:
+//    The value number itself when no equivalence was recorded for it.
+//
+ValueNum ValueNumStore::VNCanonical(ValueNum vn)
+{
+    if ((m_vnEquivalences == nullptr) || (vn == NoVN))
+    {
+        return vn;
+    }
+
+    VNEquivalences& eq = *m_vnEquivalences;
+    if (!eq.members.Test(vn))
+    {
+        return vn;
+    }
+
+    ValueNum root = vn;
+    int      index;
+    while (eq.members.Test(root) && ((index = FindVNPair(eq.entries, root)) >= 0))
+    {
+        root = eq.entries.BottomRef(index).to;
+    }
+
+    // Compress the path so later lookups take one step.
+    while ((vn != root) && ((index = FindVNPair(eq.entries, vn)) >= 0))
+    {
+        VNPair& entry = eq.entries.BottomRef(index);
+        vn            = entry.to;
+        entry.to      = root;
+    }
+    return root;
+}
+
+//------------------------------------------------------------------------
+// RecordVNEquivalence: Record that two value numbers denote the same value.
+//
+// Arguments:
+//    fromVN - the value number a use carried before CSE rewrote it
+//    toVN   - the value number of the reaching definition it now uses
+//
+// Notes:
+//    The representative, available through VNCanonical, is the number that says the most
+//    about the value: a constant, else a phi definition or a function, else whichever
+//    number was recorded last. A constant never keys the map.
+//
+void ValueNumStore::RecordVNEquivalence(ValueNum fromVN, ValueNum toVN)
+{
+    if ((fromVN == NoVN) || (toVN == NoVN) || (TypeOfVN(fromVN) != TypeOfVN(toVN)))
+    {
+        return;
+    }
+
+    ValueNum fromRoot = VNCanonical(fromVN);
+    ValueNum toRoot   = VNCanonical(toVN);
+    if (fromRoot == toRoot)
+    {
+        return;
+    }
+
+    // Prefer the representative that says the most about the value: a constant needs no
+    // reasoning; a phi definition can be walked to its reaching values; a function can be
+    // decomposed. An opaque value number offers none of these, and the reaching
+    // definition's number can be one.
+    auto rank = [this](ValueNum vn) -> int {
+        if (IsVNConstant(vn))
+        {
+            return 2;
+        }
+        VNFuncApp funcApp;
+        return (IsPhiDef(vn) || (GetVNFunc(vn, &funcApp) && !funcApp.FuncIs(VNF_MemOpaque))) ? 1 : 0;
+    };
+    if (rank(fromRoot) > rank(toRoot))
+    {
+        std::swap(fromRoot, toRoot);
+    }
+    if (IsVNConstant(fromRoot))
+    {
+        // Two different constants: the path cannot be taken, and a constant never keys the map.
+        return;
+    }
+
+    if (m_vnEquivalences == nullptr)
+    {
+        m_vnEquivalences = new (m_alloc) VNEquivalences(m_alloc);
+    }
+    assert(FindVNPair(m_vnEquivalences->entries, fromRoot) < 0);
+    m_vnEquivalences->members.Set(fromRoot);
+    m_vnEquivalences->entries.Push({fromRoot, toRoot});
+}
+
 #ifdef FEATURE_HW_INTRINSICS
 simd8_t GetConstantSimd8(ValueNumStore* vns, var_types baseType, ValueNum argVN)
 {

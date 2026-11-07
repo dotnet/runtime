@@ -158,6 +158,7 @@
 // Defines the type SmallHashTable.
 #include "compiler.h"
 #include "smallhash.h"
+#include "bitvec.h"
 #include "simd.h"
 
 // A "ValueNumStore" represents the "universe" of value numbers used in a single
@@ -1169,6 +1170,21 @@ public:
     // to a GT_BOUNDS_CHECK node.
     void SetVNIsCheckedBound(ValueNum vn, bool isIndex = false);
 
+    // Record that two conservative value numbers denote the same value. CSE establishes
+    // this when it rewrites a use to its reaching definition, whose conservative value
+    // number can differ from the one the use carried before.
+    void RecordVNEquivalence(ValueNum fromVN, ValueNum toVN);
+
+    // Return the representative of the value's equivalence class: the number known to say
+    // the most about the value, a constant if one is known. Facts recorded after the
+    // equivalence are keyed by this representative, so producers and consumers agree.
+    ValueNum VNCanonical(ValueNum vn);
+
+    ValueNum VNCanonicalConservativeNormalValue(const ValueNumPair& vnp)
+    {
+        return VNCanonical(VNConservativeNormalValue(vnp));
+    }
+
     // Information about the individual components of a value number representing an unsigned
     // comparison of some value against a checked bound VN.
     struct UnsignedCompareCheckedBoundInfo
@@ -1751,6 +1767,35 @@ private:
     // These are the value numbers flagged as length and index arguments to bounds checks.
     CheckedBoundVNSet m_checkedBoundVNs;
     CheckedBoundVNSet m_checkedBoundIndexVNs;
+
+    // Union-find over conservative value numbers that CSE has proven equal. Allocated on the
+    // first rewrite: about one method in nine records one, and few record more than eight.
+    // A number paired with another, such as a rewritten number and its representative.
+    struct VNPair
+    {
+        ValueNum from;
+        ValueNum to;
+    };
+    typedef ArrayStack<VNPair> VNPairList;
+
+    static int FindVNPair(VNPairList& list, ValueNum from);
+
+    // Allocated on the first rewrite CSE records, so methods without one carry a pointer.
+    struct VNEquivalences
+    {
+        // The numbers that have an entry in "entries", so a lookup of any other number costs a bit test.
+        GrowableBitSet members;
+
+        // Union-find over rewritten numbers, pointing each toward its representative.
+        VNPairList entries;
+
+        VNEquivalences(CompAllocator alloc)
+            : members(alloc)
+            , entries(alloc)
+        {
+        }
+    };
+    VNEquivalences* m_vnEquivalences = nullptr;
 
     // This is a map from "chunk number" to the attributes of the chunk.
     JitExpandArrayStack<Chunk*> m_chunks;
