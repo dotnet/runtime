@@ -5040,6 +5040,11 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
                 res = !loop->ContainsLoop(otherLoop);
             }
         }
+        else if (funcApp.FuncIs(VNF_ByrefExposedStore))
+        {
+            // The opaque memory value identifies the loop where the store happens.
+            res = optVNIsLoopInvariant(funcApp.GetArg(3), loop, loopVnInvariantCache);
+        }
         else
         {
             for (unsigned i = 0; i < funcApp.GetArity(); i++)
