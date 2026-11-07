@@ -38,7 +38,6 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     : Phase(comp, PHASE_ALLOCATE_OBJECTS)
     , m_IsObjectStackAllocationEnabled(false)
     , m_AnalysisDone(false)
-    , m_isR2R(comp->IsReadyToRun())
     , m_bvCount(0)
     , m_bitVecTraits(BitVecTraits(comp->lvaCount, comp))
     , m_unknownSourceIndex(BAD_VAR_NUM)
@@ -1286,9 +1285,12 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
         bool const canBeOnStack = isValueClass || m_compiler->info.compCompHnd->canAllocateOnStack(clsHnd);
         allocType               = canBeOnStack ? OAT_NEWOBJ : OAT_NEWOBJ_HEAP;
     }
-    else if (!m_isR2R && tree->IsHelperCall())
+    else if (tree->IsHelperCall())
     {
         GenTreeCall* const call = tree->AsCall();
+
+        // CORINFO_HELP_READYTORUN_NEWARR_1 is not listed: it has no type argument for the
+        // stack allocation expansion to use.
         switch (call->GetHelperNum())
         {
             case CORINFO_HELP_NEWARR_1_VC:
@@ -1559,28 +1561,14 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
 {
     assert(candidate.m_block->HasFlag(BBF_HAS_NEWARR));
 
-    // R2R not yet supported
-    //
-    if (m_isR2R)
-    {
-        candidate.m_onHeapReason = "[R2R array not yet supported]";
-        return false;
-    }
-
     GenTree* const data = candidate.m_tree->AsLclVar()->Data();
 
     //------------------------------------------------------------------------
     // We expect the following expression tree at this point
-    // For non-ReadyToRun:
     //  STMTx (IL 0x... ???)
     //    * STORE_LCL_VAR   ref
     //    \--*  CALL help  ref
-    //       +--*  CNS_INT(h) long
-    //       \--*  CNS_INT long
-    // For ReadyToRun:
-    //  STMTx (IL 0x... ???)
-    //    * STORE_LCL_VAR   ref
-    //    \--*  CALL help  ref
+    //       +--*  (type handle)
     //       \--*  CNS_INT long
     //------------------------------------------------------------------------
 
