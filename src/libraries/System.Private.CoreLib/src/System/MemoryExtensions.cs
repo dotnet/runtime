@@ -955,6 +955,22 @@ namespace System
                         Unsafe.BitCast<T, short>(value1),
                         span.Length);
                 }
+                else if (sizeof(T) == sizeof(int))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, int>(value0),
+                        Unsafe.BitCast<T, int>(value1),
+                        span.Length);
+                }
+                else if (sizeof(T) == sizeof(long))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, long>(value0),
+                        Unsafe.BitCast<T, long>(value1),
+                        span.Length);
+                }
             }
 
             return SpanHelpers.IndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value0, value1, span.Length);
@@ -991,6 +1007,22 @@ namespace System
                             ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
                             Unsafe.BitCast<T, short>(value0),
                             Unsafe.BitCast<T, short>(value1),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(int))
+                    {
+                        return SpanHelpers.IndexOfAnyExceptValueType(
+                            ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, int>(value0),
+                            Unsafe.BitCast<T, int>(value1),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(long))
+                    {
+                        return SpanHelpers.IndexOfAnyExceptValueType(
+                            ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, long>(value0),
+                            Unsafe.BitCast<T, long>(value1),
                             span.Length);
                     }
                 }
@@ -1064,6 +1096,24 @@ namespace System
                         Unsafe.BitCast<T, short>(value2),
                         span.Length);
                 }
+                else if (sizeof(T) == sizeof(int))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, int>(value0),
+                        Unsafe.BitCast<T, int>(value1),
+                        Unsafe.BitCast<T, int>(value2),
+                        span.Length);
+                }
+                else if (sizeof(T) == sizeof(long))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, long>(value0),
+                        Unsafe.BitCast<T, long>(value1),
+                        Unsafe.BitCast<T, long>(value2),
+                        span.Length);
+                }
             }
 
             return SpanHelpers.IndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value0, value1, value2, span.Length);
@@ -1103,6 +1153,24 @@ namespace System
                             Unsafe.BitCast<T, short>(value0),
                             Unsafe.BitCast<T, short>(value1),
                             Unsafe.BitCast<T, short>(value2),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(int))
+                    {
+                        return SpanHelpers.IndexOfAnyExceptValueType(
+                            ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, int>(value0),
+                            Unsafe.BitCast<T, int>(value1),
+                            Unsafe.BitCast<T, int>(value2),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(long))
+                    {
+                        return SpanHelpers.IndexOfAnyExceptValueType(
+                            ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, long>(value0),
+                            Unsafe.BitCast<T, long>(value1),
+                            Unsafe.BitCast<T, long>(value2),
                             span.Length);
                     }
                 }
@@ -1533,6 +1601,22 @@ namespace System
                         Unsafe.BitCast<T, short>(value1),
                         span.Length);
                 }
+                else if (sizeof(T) == sizeof(int))
+                {
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, int>(value0),
+                        Unsafe.BitCast<T, int>(value1),
+                        span.Length);
+                }
+                else if (sizeof(T) == sizeof(long))
+                {
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, long>(value0),
+                        Unsafe.BitCast<T, long>(value1),
+                        span.Length);
+                }
             }
 
             return SpanHelpers.LastIndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value0, value1, span.Length);
@@ -1569,6 +1653,22 @@ namespace System
                             ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
                             Unsafe.BitCast<T, short>(value0),
                             Unsafe.BitCast<T, short>(value1),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(int))
+                    {
+                        return SpanHelpers.LastIndexOfAnyExceptValueType(
+                            ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, int>(value0),
+                            Unsafe.BitCast<T, int>(value1),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(long))
+                    {
+                        return SpanHelpers.LastIndexOfAnyExceptValueType(
+                            ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, long>(value0),
+                            Unsafe.BitCast<T, long>(value1),
                             span.Length);
                     }
                 }
@@ -1642,6 +1742,24 @@ namespace System
                         Unsafe.BitCast<T, short>(value2),
                         span.Length);
                 }
+                else if (sizeof(T) == sizeof(int))
+                {
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, int>(value0),
+                        Unsafe.BitCast<T, int>(value1),
+                        Unsafe.BitCast<T, int>(value2),
+                        span.Length);
+                }
+                else if (sizeof(T) == sizeof(long))
+                {
+                    return SpanHelpers.LastIndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, long>(value0),
+                        Unsafe.BitCast<T, long>(value1),
+                        Unsafe.BitCast<T, long>(value2),
+                        span.Length);
+                }
             }
 
             return SpanHelpers.LastIndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value0, value1, value2, span.Length);
@@ -1681,6 +1799,24 @@ namespace System
                             Unsafe.BitCast<T, short>(value0),
                             Unsafe.BitCast<T, short>(value1),
                             Unsafe.BitCast<T, short>(value2),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(int))
+                    {
+                        return SpanHelpers.LastIndexOfAnyExceptValueType(
+                            ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, int>(value0),
+                            Unsafe.BitCast<T, int>(value1),
+                            Unsafe.BitCast<T, int>(value2),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(long))
+                    {
+                        return SpanHelpers.LastIndexOfAnyExceptValueType(
+                            ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, long>(value0),
+                            Unsafe.BitCast<T, long>(value1),
+                            Unsafe.BitCast<T, long>(value2),
                             span.Length);
                     }
                 }
@@ -2685,6 +2821,22 @@ namespace System
                         Unsafe.BitCast<T, short>(value1),
                         span.Length);
                 }
+                else if (sizeof(T) == sizeof(int))
+                {
+                    return SpanHelpers.IndexOfAnyValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, int>(value0),
+                        Unsafe.BitCast<T, int>(value1),
+                        span.Length);
+                }
+                else if (sizeof(T) == sizeof(long))
+                {
+                    return SpanHelpers.IndexOfAnyValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, long>(value0),
+                        Unsafe.BitCast<T, long>(value1),
+                        span.Length);
+                }
             }
 
             return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, span.Length);
@@ -2718,6 +2870,22 @@ namespace System
                             ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
                             Unsafe.BitCast<T, short>(value0),
                             Unsafe.BitCast<T, short>(value1),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(int))
+                    {
+                        return SpanHelpers.IndexOfAnyValueType(
+                            ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, int>(value0),
+                            Unsafe.BitCast<T, int>(value1),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(long))
+                    {
+                        return SpanHelpers.IndexOfAnyValueType(
+                            ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, long>(value0),
+                            Unsafe.BitCast<T, long>(value1),
                             span.Length);
                     }
                 }
@@ -2787,6 +2955,24 @@ namespace System
                         Unsafe.BitCast<T, short>(value2),
                         span.Length);
                 }
+                else if (sizeof(T) == sizeof(int))
+                {
+                    return SpanHelpers.IndexOfAnyValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, int>(value0),
+                        Unsafe.BitCast<T, int>(value1),
+                        Unsafe.BitCast<T, int>(value2),
+                        span.Length);
+                }
+                else if (sizeof(T) == sizeof(long))
+                {
+                    return SpanHelpers.IndexOfAnyValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, long>(value0),
+                        Unsafe.BitCast<T, long>(value1),
+                        Unsafe.BitCast<T, long>(value2),
+                        span.Length);
+                }
             }
 
             return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, value2, span.Length);
@@ -2823,6 +3009,24 @@ namespace System
                             Unsafe.BitCast<T, short>(value0),
                             Unsafe.BitCast<T, short>(value1),
                             Unsafe.BitCast<T, short>(value2),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(int))
+                    {
+                        return SpanHelpers.IndexOfAnyValueType(
+                            ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, int>(value0),
+                            Unsafe.BitCast<T, int>(value1),
+                            Unsafe.BitCast<T, int>(value2),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(long))
+                    {
+                        return SpanHelpers.IndexOfAnyValueType(
+                            ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, long>(value0),
+                            Unsafe.BitCast<T, long>(value1),
+                            Unsafe.BitCast<T, long>(value2),
                             span.Length);
                     }
                 }
@@ -3105,6 +3309,22 @@ namespace System
                         Unsafe.BitCast<T, short>(value1),
                         span.Length);
                 }
+                else if (sizeof(T) == sizeof(int))
+                {
+                    return SpanHelpers.LastIndexOfAnyValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, int>(value0),
+                        Unsafe.BitCast<T, int>(value1),
+                        span.Length);
+                }
+                else if (sizeof(T) == sizeof(long))
+                {
+                    return SpanHelpers.LastIndexOfAnyValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, long>(value0),
+                        Unsafe.BitCast<T, long>(value1),
+                        span.Length);
+                }
             }
 
             return SpanHelpers.LastIndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, span.Length);
@@ -3138,6 +3358,22 @@ namespace System
                             ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
                             Unsafe.BitCast<T, short>(value0),
                             Unsafe.BitCast<T, short>(value1),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(int))
+                    {
+                        return SpanHelpers.LastIndexOfAnyValueType(
+                            ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, int>(value0),
+                            Unsafe.BitCast<T, int>(value1),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(long))
+                    {
+                        return SpanHelpers.LastIndexOfAnyValueType(
+                            ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, long>(value0),
+                            Unsafe.BitCast<T, long>(value1),
                             span.Length);
                     }
                 }
@@ -3208,6 +3444,24 @@ namespace System
                         Unsafe.BitCast<T, short>(value2),
                         span.Length);
                 }
+                else if (sizeof(T) == sizeof(int))
+                {
+                    return SpanHelpers.LastIndexOfAnyValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, int>(value0),
+                        Unsafe.BitCast<T, int>(value1),
+                        Unsafe.BitCast<T, int>(value2),
+                        span.Length);
+                }
+                else if (sizeof(T) == sizeof(long))
+                {
+                    return SpanHelpers.LastIndexOfAnyValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.BitCast<T, long>(value0),
+                        Unsafe.BitCast<T, long>(value1),
+                        Unsafe.BitCast<T, long>(value2),
+                        span.Length);
+                }
             }
 
             return SpanHelpers.LastIndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, value2, span.Length);
@@ -3244,6 +3498,24 @@ namespace System
                             Unsafe.BitCast<T, short>(value0),
                             Unsafe.BitCast<T, short>(value1),
                             Unsafe.BitCast<T, short>(value2),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(int))
+                    {
+                        return SpanHelpers.LastIndexOfAnyValueType(
+                            ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, int>(value0),
+                            Unsafe.BitCast<T, int>(value1),
+                            Unsafe.BitCast<T, int>(value2),
+                            span.Length);
+                    }
+                    else if (sizeof(T) == sizeof(long))
+                    {
+                        return SpanHelpers.LastIndexOfAnyValueType(
+                            ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                            Unsafe.BitCast<T, long>(value0),
+                            Unsafe.BitCast<T, long>(value1),
+                            Unsafe.BitCast<T, long>(value2),
                             span.Length);
                     }
                 }
