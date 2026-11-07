@@ -163,13 +163,13 @@ Breaking Change Rules
 
 * Removing one or more base classes for a type, including changing `struct` to `class` and vice versa
 
-* Changing a `struct` to an `enum` or vice versa
-
 * Changing the namespace or name of a type
 
 * Changing a `readonly struct` type to a `struct` type
 
 * Changing a `struct` type to a `ref struct` type and vice versa
+
+* Changing a `struct` to an `enum` or vice versa
 
 * Changing the underlying type of an enum
 
