@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using ILVerify;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -84,6 +86,48 @@ namespace ILVerification.Tests
             Assert.Single(results, result =>
                 result.MetadataHandle.Kind == kind &&
                 result.Message.Contains(messagePart, StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public static void AcceptsTypeSpecsWithCustomModifiersOnAClass()
+        {
+            (EcmaModule module, VerificationResult[] results) =
+                VerifyMetadataReferences("TypeSpecModifierTests.dll");
+            MetadataReader reader = module.MetadataReader;
+
+            // The 'unmanaged' constraint, modreq(UnmanagedType) class System.ValueType, is accepted.
+            TypeSpecificationHandle unmanagedConstraint = Assert.Single(GetTypeSpecifications(reader),
+                handle => DescribeTypeSpec(reader, handle) == "modifiers TypeHandle");
+            Assert.DoesNotContain(results, result => result.MetadataHandle == (EntityHandle)unmanagedConstraint);
+
+            // A class without custom modifiers is still reported (also through the MemberRef whose parent it is).
+            Assert.All(results, result => Assert.Equal(VerifierError.BadTypeSpec, result.Code));
+            VerificationResult reported = Assert.Single(results,
+                result => result.MetadataHandle.Kind == HandleKind.TypeSpecification);
+            Assert.Equal("TypeHandle", DescribeTypeSpec(reader, (TypeSpecificationHandle)reported.MetadataHandle));
+        }
+
+        private static IEnumerable<TypeSpecificationHandle> GetTypeSpecifications(MetadataReader reader)
+        {
+            for (int row = 1; row <= reader.GetTableRowCount(TableIndex.TypeSpec); row++)
+            {
+                yield return MetadataTokens.TypeSpecificationHandle(row);
+            }
+        }
+
+        // Returns "modifiers <type code>" for a TypeSpec that starts with custom modifiers, and "<type code>" otherwise.
+        private static string DescribeTypeSpec(MetadataReader reader, TypeSpecificationHandle handle)
+        {
+            BlobReader blob = reader.GetBlobReader(reader.GetTypeSpecification(handle).Signature);
+            bool hasCustomModifiers = false;
+            SignatureTypeCode typeCode;
+            while ((typeCode = blob.ReadSignatureTypeCode()) is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier)
+            {
+                blob.ReadTypeHandle();
+                hasCustomModifiers = true;
+            }
+
+            return hasCustomModifiers ? $"modifiers {typeCode}" : typeCode.ToString();
         }
     }
 }
