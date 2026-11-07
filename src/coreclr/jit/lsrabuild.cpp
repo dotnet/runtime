@@ -4013,6 +4013,13 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
         // get a register.
         def->regOptional = true;
     }
+#ifdef TARGET_AMD64
+    // Allocation decides whether an optional definition materializes the local.
+    if ((m_compiler->lsraOptionalDefs != nullptr) && m_compiler->lsraOptionalDefs->Lookup(storeLoc))
+    {
+        def->regOptional = true;
+    }
+#endif
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     if (Compiler::varTypeNeedsPartialCalleeSave(varDefInterval->registerType))
     {
@@ -4171,6 +4178,14 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         assert(srcCount == 2);
     }
 #endif // !TARGET_64BIT
+#ifdef TARGET_AMD64
+    else if ((m_compiler->lsraOptionalDefs != nullptr) && m_compiler->lsraOptionalDefs->Lookup(storeLoc))
+    {
+        // An optional definition's load is contained: its address is read at the store.
+        assert(op1->isContained() && op1->OperIs(GT_IND));
+        srcCount = BuildOperandUses(op1);
+    }
+#endif
     else if (op1->isContained())
     {
         srcCount = 0;

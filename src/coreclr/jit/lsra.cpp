@@ -5613,10 +5613,11 @@ void LinearScan::findReconstructibleLocals()
         return;
     }
 
-    // A definition whose value has a single use, in the node that follows it, by a consumer that
-    // accepts a memory operand there, is folded: the consumer reads the load itself, and the store
-    // and the use disappear, so the local is not defined there at all. Nothing between the load
-    // and the consumer may have an effect, so the load faults where it did.
+    // A definition whose next node reads the local for a consumer that accepts a memory operand
+    // there need not materialize the local. When that use is the value's only one, the consumer
+    // reads the load itself, and the store and the use disappear. When the value has later uses,
+    // the definition becomes optional: allocation decides whether to materialize it. Either way,
+    // nothing between the load and the consumer may have an effect, so the load faults where it did.
     for (BasicBlock* const block : m_compiler->Blocks())
     {
         LIR::Range& range = LIR::AsRange(block);
@@ -5659,25 +5660,29 @@ void LinearScan::findReconstructibleLocals()
                 continue;
             }
 
-            // The definition's only use follows the store, where memory is accepted.
+            // The definition's first use follows the store, where memory is accepted.
             GenTree* firstUse = store->gtNext;
             LIR::Use use;
             if ((firstUse == nullptr) || !firstUse->OperIs(GT_LCL_VAR) ||
-                (firstUse->AsLclVar()->GetLclNum() != store->GetLclNum()) || !firstUse->IsLastUse(0) ||
-                !firstUse->IsRegOptional() || !firstUse->TypeIs(load->TypeGet()) || !range.TryGetUse(firstUse, &use))
+                (firstUse->AsLclVar()->GetLclNum() != store->GetLclNum()) || !firstUse->IsRegOptional() ||
+                !firstUse->TypeIs(load->TypeGet()) || !range.TryGetUse(firstUse, &use))
             {
                 continue;
             }
+            const bool singleUse = firstUse->IsLastUse(0);
 
             GenTree* consumer = use.User();
             if (!consumer->OperIsBinary())
             {
                 continue;
             }
+            // A single-use definition is substituted, so its consumer reads a contained load. With
+            // later uses, the consumer may read the local's recipe, which codegen supports in compares.
             bool isOp2 = (consumer->gtGetOp2() == firstUse);
-            if (!(consumer->OperIsCompare() ||
-                  consumer->OperIs(GT_CMP, GT_BOUNDS_CHECK, GT_ADD, GT_AND, GT_OR, GT_XOR) ||
-                  (consumer->OperIs(GT_SUB) && isOp2)))
+            if (singleUse ? !(consumer->OperIsCompare() ||
+                              consumer->OperIs(GT_CMP, GT_BOUNDS_CHECK, GT_ADD, GT_AND, GT_OR, GT_XOR) ||
+                              (consumer->OperIs(GT_SUB) && isOp2))
+                          : !consumer->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_CMP, GT_BOUNDS_CHECK))
             {
                 continue;
             }
@@ -5698,6 +5703,26 @@ void LinearScan::findReconstructibleLocals()
             }
             if (hasEffect)
             {
+                continue;
+            }
+
+            if (!singleUse)
+            {
+                // The store keeps the load, contained, so the local is materialized only if
+                // allocation gives the definition a register; otherwise the use that follows
+                // reads the load in its consumer, or rebuilds the local there.
+                JITDUMP("The definition [%06u] of V%02u is optional; its first use is [%06u]\n",
+                        Compiler::dspTreeID(store), store->GetLclNum(), Compiler::dspTreeID(firstUse));
+                load->SetContained();
+                if (m_compiler->lsraOptionalDefs == nullptr)
+                {
+                    m_compiler->lsraOptionalDefs =
+                        new (m_compiler, CMK_LSRA) Compiler::RematInertSet(m_compiler->getAllocator(CMK_LSRA));
+                    m_compiler->lsraFoldableUses =
+                        new (m_compiler, CMK_LSRA) Compiler::RematInertSet(m_compiler->getAllocator(CMK_LSRA));
+                }
+                m_compiler->lsraOptionalDefs->Set(store, true);
+                m_compiler->lsraFoldableUses->Set(firstUse, true);
                 continue;
             }
 
@@ -5749,7 +5774,10 @@ void LinearScan::findReconstructibleLocals()
             GenTree* base = m_compiler->gtNewLclvNode(recipe.baseLclNum, TYP_REF);
             base->SetUnusedValue();
             base->SetRegOptional();
-            node->ClearRegOptional();
+            if ((m_compiler->lsraFoldableUses == nullptr) || !m_compiler->lsraFoldableUses->Lookup(node))
+            {
+                node->ClearRegOptional();
+            }
             range.InsertBefore(use.User(), base);
             m_compiler->lsraRematCompanions->Set(node, base);
         }
@@ -6159,7 +6187,9 @@ void LinearScan::allocateRegisters()
             assert((localUse != nullptr) && (localUse->nodeLocation == currentRefPosition.nodeLocation));
             // Resolution can still reload a local that last appeared before this block, when it
             // enters the block on the stack, so only a local kept since earlier in the block is final.
-            if (!localUse->reload && (rematLocalPreviousLocation >= curBBStartLocation))
+            // A use without a register reads the load in its consumer, through the base.
+            if (!localUse->reload && (localUse->registerAssignment != RBM_NONE) &&
+                (rematLocalPreviousLocation >= curBBStartLocation))
             {
                 currentRefPosition.isRematCompanionInert = true;
                 currentRefPosition.registerAssignment    = RBM_NONE;
@@ -6822,6 +6852,29 @@ void LinearScan::allocateRegisters()
             }
         }
 #endif // TARGET_ARM64
+
+#ifdef TARGET_AMD64
+        // The use after an optional definition that left the local unmaterialized reads the load in
+        // its consumer when the base is in a register, which the use's companion then holds there.
+        // Otherwise it rebuilds the local, which needs a register.
+        if ((assignedRegister == REG_NA) && (refType == RefTypeUse) && currentRefPosition.RegOptional() &&
+            (currentRefPosition.treeNode != nullptr) && (m_compiler->lsraFoldableUses != nullptr) &&
+            m_compiler->lsraFoldableUses->Lookup(currentRefPosition.treeNode))
+        {
+            GenTree* companion = nullptr;
+            m_compiler->lsraRematCompanions->Lookup(currentRefPosition.treeNode, &companion);
+            assert(companion != nullptr);
+            Interval* baseInterval = getIntervalForLocalVarNode(companion->AsLclVarCommon());
+            if (baseInterval->isActive && (baseInterval->physReg != REG_NA))
+            {
+                allocate = false;
+            }
+            else
+            {
+                currentRefPosition.setRegOptional(false);
+            }
+        }
+#endif
 
         if (assignedRegister == REG_NA)
         {
@@ -8532,6 +8585,51 @@ void LinearScan::resolveRegisters()
                            (!currentRefPosition->copyReg && !currentRefPosition->moveReg));
 #endif
                     resolveLocalRef(block, treeNode->AsLclVar(), currentRefPosition);
+
+#ifdef TARGET_AMD64
+                    // A use of a rebuilt local that took no register reads, in its consumer, the load its
+                    // definition left unmaterialized. The consumer's operand becomes that load, addressed
+                    // off the companion, which holds the base here and sits right before the consumer. The
+                    // use itself remains, unused, moved next to the consumer where allocation placed its
+                    // reference, so codegen ends the local's life there when this is its last use.
+                    if (currentRefPosition->isRematCompanion)
+                    {
+                        RefPosition* localUse = nullptr;
+                        rematCompanionUses->Lookup(currentRefPosition, &localUse);
+                        assert(localUse != nullptr);
+                        if (localUse->registerAssignment == RBM_NONE)
+                        {
+                            GenTreeLclVar*      lclUse = localUse->treeNode->AsLclVar();
+                            Compiler::CSERecipe recipe = {};
+                            noway_assert(m_compiler->lsraFoldableUses->Lookup(lclUse) &&
+                                         m_compiler->lsraIsReconstructible(lclUse->GetLclNum(), &recipe) &&
+                                         (treeNode->GetRegNum() != REG_NA));
+
+                            LIR::Range& range = LIR::AsRange(block);
+                            LIR::Use    use;
+                            bool        found = range.TryGetUse(lclUse, &use);
+                            assert(found);
+
+                            treeNode->ClearUnusedValue();
+                            treeNode->ClearRegOptional();
+                            GenTreeAddrMode* addr = new (m_compiler, GT_LEA)
+                                GenTreeAddrMode(TYP_BYREF, treeNode, nullptr, 1, recipe.offset);
+                            addr->SetContained();
+                            GenTreeIndir* load = m_compiler->gtNewIndir(recipe.type, addr);
+                            load->SetContained();
+                            range.InsertAfter(treeNode, addr, load);
+                            use.ReplaceWith(load);
+
+                            lclUse->ClearContained();
+                            lclUse->SetUnusedValue();
+                            range.Remove(lclUse);
+                            range.InsertAfter(load, lclUse);
+                            JITDUMP("Use [%06u] of V%02u reads its definition's load [%06u] off [%06u]\n",
+                                    Compiler::dspTreeID(lclUse), lclUse->GetLclNum(), Compiler::dspTreeID(load),
+                                    Compiler::dspTreeID(treeNode));
+                        }
+                    }
+#endif
                 }
 
                 // Mark spill locations on temps

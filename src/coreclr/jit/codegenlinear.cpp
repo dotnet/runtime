@@ -553,6 +553,15 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
         {
             genConsumeReg(node);
         }
+#ifdef TARGET_AMD64
+        else if ((m_compiler->lsraFoldableUses != nullptr) && node->OperIs(GT_LCL_VAR) && node->IsUnusedValue() &&
+                 m_compiler->lsraFoldableUses->Lookup(node))
+        {
+            // A use of a rebuilt local whose consumer reads the definition's load instead. It sits
+            // right before that consumer and may still be the local's last use.
+            genUpdateLife(node);
+        }
+#endif
     } // end for each node in block
 
 #ifdef DEBUG

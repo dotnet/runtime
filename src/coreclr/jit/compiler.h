@@ -8106,6 +8106,10 @@ protected:
     // Companions that took no part in allocation, because their local kept its register.
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool> RematInertSet;
     RematInertSet* lsraInertCompanions = nullptr;
+    // Definitions whose load is contained in the store: allocation decides whether the local is
+    // materialized. The use that follows each one may then read the load in its consumer.
+    RematInertSet* lsraOptionalDefs  = nullptr;
+    RematInertSet* lsraFoldableUses  = nullptr;
 
     bool lsraIsReconstructible(unsigned lclNum, CSERecipe* recipe = nullptr)
     {
