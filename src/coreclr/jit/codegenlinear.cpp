@@ -1101,8 +1101,13 @@ void CodeGen::genSpillVar(GenTree* tree)
         emitAttr  size    = emitTypeSize(lclType);
 
         // If this is a write-thru or a single-def variable, we don't actually spill at a use,
-        // but we will kill the var in the reg (below).
-        if (!varDsc->IsAlwaysAliveInMemory())
+        // but we will kill the var in the reg (below). Neither do rebuilt locals, which have no
+        // stack copy.
+        bool needsStore = !varDsc->IsAlwaysAliveInMemory();
+#ifdef TARGET_AMD64
+        needsStore = needsStore && !m_compiler->lsraIsReconstructible(varNum);
+#endif
+        if (needsStore)
         {
             assert(varDsc->GetRegNum() == tree->GetRegNum());
 #if defined(FEATURE_SIMD)
@@ -1208,7 +1213,41 @@ void CodeGen::genUnspillLocal(
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
     inst_set_SV_var(lclNode);
     instruction ins = ins_Load(type, m_compiler->isSIMDTypeLocalAligned(varNum));
-    GetEmitter()->emitIns_R_S(ins, emitTypeSize(type), regNum, varNum, 0);
+#ifdef TARGET_AMD64
+    Compiler::CSERecipe recipe = {};
+    if (m_compiler->lsraIsReconstructible(varNum, &recipe))
+    {
+        // Rebuild the local from its base. A base on the stack is loaded into the target first.
+        // A use reads the base where its companion has it. A reload on an edge has the location
+        // resolution recorded for it.
+        regNumber baseReg   = REG_NA;
+        GenTree*  companion = nullptr;
+        if ((m_compiler->lsraRematCompanions != nullptr) &&
+            m_compiler->lsraRematCompanions->Lookup(lclNode, &companion))
+        {
+            // A companion that took no part in allocation does not know where the base is.
+            noway_assert(!m_compiler->lsraInertCompanions->Lookup(companion));
+            baseReg = (companion->GetRegNum() == REG_NA) ? REG_STK : companion->GetRegNum();
+        }
+        else
+        {
+            bool found = m_compiler->lsraRematBaseLocations->Lookup(lclNode, &baseReg);
+            noway_assert(found);
+        }
+        assert(VarSetOps::IsMember(m_compiler, m_compiler->compCurLife,
+                                   m_compiler->lvaGetDesc(recipe.baseLclNum)->lvVarIndex));
+        if (baseReg == REG_STK)
+        {
+            GetEmitter()->emitIns_R_S(INS_mov, EA_GCREF, regNum, recipe.baseLclNum, 0);
+            baseReg = regNum;
+        }
+        GetEmitter()->emitIns_R_AR(ins_Load(recipe.type), emitTypeSize(recipe.type), regNum, baseReg, recipe.offset);
+    }
+    else
+#endif
+    {
+        GetEmitter()->emitIns_R_S(ins, emitTypeSize(type), regNum, varNum, 0);
+    }
 
     // TODO-Review: We would like to call:
     //      genUpdateRegLife(varDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(tree));
@@ -2059,7 +2098,12 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
     // spilled, i.e. write-thru. Likewise, single-def vars that are spilled at its definitions).
     // An EH or single-def var use is always valid on the stack (so we don't need to actually spill it),
     // but the GTF_SPILL flag records the fact that the register value is going dead.
-    if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || (!varDsc->IsAlwaysAliveInMemory()))
+    bool needsStore = ((lclNode->gtFlags & GTF_VAR_DEF) != 0) || !varDsc->IsAlwaysAliveInMemory();
+#ifdef TARGET_AMD64
+    // A rebuilt local has no stack copy to maintain.
+    needsStore = needsStore && !m_compiler->lsraIsReconstructible(varNum);
+#endif
+    if (needsStore)
     {
         // Store local variable to its home location.
         // Ensure that lclVar stores are typed correctly.

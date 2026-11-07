@@ -4989,6 +4989,15 @@ void LinearScan::allocateRegistersMinimal()
         {
             previousRefPosition                = currentReferent->recentRefPosition;
             currentReferent->recentRefPosition = &currentRefPosition;
+#ifdef TARGET_AMD64
+            if ((refType == RefTypeUse) && (m_compiler->lsraRematCompanions != nullptr) &&
+                (currentRefPosition.treeNode != nullptr) &&
+                m_compiler->lsraRematCompanions->Lookup(currentRefPosition.treeNode))
+            {
+                rematLocalPreviousLocation =
+                    (previousRefPosition != nullptr) ? previousRefPosition->nodeLocation : MinLocation;
+            }
+#endif
         }
         else
         {
@@ -5251,6 +5260,13 @@ void LinearScan::allocateRegistersMinimal()
                 {
                     allocate = false;
                 }
+#ifdef TARGET_AMD64
+                // A companion never reloads the base. Without a register it reads the base's home.
+                else if (currentRefPosition.isRematCompanion)
+                {
+                    allocate = false;
+                }
+#endif
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE && defined(TARGET_XARCH)
                 // We can also avoid allocating a register (in fact we don't want to) if we have
@@ -5457,6 +5473,188 @@ void LinearScan::allocateRegistersMinimal()
     }
 #endif // DEBUG
 }
+
+#ifdef TARGET_AMD64
+//------------------------------------------------------------------------
+// findReconstructibleLocals: Find the CSE locals that are rebuilt instead of kept on the stack.
+//
+// Notes:
+//    A local qualifies when CSE recorded one load from a base local for all of its definitions
+//    and uses, and that base holds one value for the whole method: a parameter that is never
+//    stored, or a local stored once outside any loop. The base must also be live after every
+//    use of the local and at every block boundary where the local is live, so rebuilding the
+//    local never extends the base.
+//
+void LinearScan::findReconstructibleLocals()
+{
+    Compiler::CSERecipeMap* recipes = m_compiler->optCSERecipes;
+    if ((recipes == nullptr) || m_compiler->opts.IsOSR() || m_compiler->doesMethodHavePatchpoints())
+    {
+        return;
+    }
+
+    unsigned*    storeCount = new (m_compiler, CMK_LSRA) unsigned[m_compiler->lvaCount]();
+    BasicBlock** storeBlock = new (m_compiler, CMK_LSRA) BasicBlock*[m_compiler->lvaCount]();
+    for (BasicBlock* const block : m_compiler->Blocks())
+    {
+        for (GenTree* node : LIR::AsRange(block))
+        {
+            if (node->OperIsLocalStore() || node->OperIs(GT_LCL_ADDR))
+            {
+                unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
+                storeCount[lclNum]++;
+                storeBlock[lclNum] = block;
+            }
+        }
+    }
+
+    FlowGraphNaturalLoops* loops  = m_compiler->m_loops;
+    auto                   inLoop = [loops](BasicBlock* block) {
+        if ((loops == nullptr) || (loops->ImproperLoopHeaders() > 0))
+        {
+            return true;
+        }
+        for (FlowGraphNaturalLoop* const loop : loops->InReversePostOrder())
+        {
+            if (loop->ContainsBlock(block))
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    Compiler::CSERecipeMap* eligible =
+        new (m_compiler, CMK_LSRA) Compiler::CSERecipeMap(m_compiler->getAllocator(CMK_LSRA));
+    for (unsigned lclNum : Compiler::CSERecipeMap::KeyIteration(recipes))
+    {
+        Compiler::CSERecipe recipe  = (*recipes)[lclNum];
+        LclVarDsc*          varDsc  = m_compiler->lvaGetDesc(lclNum);
+        LclVarDsc*          baseDsc = m_compiler->lvaGetDesc(recipe.baseLclNum);
+        if (!varDsc->lvTracked || !varDsc->lvLRACandidate || varDsc->IsLiveInOutOfHandler() ||
+            !baseDsc->TypeIs(TYP_REF) || !baseDsc->lvTracked || !baseDsc->lvLRACandidate ||
+            baseDsc->IsAddressExposed() || baseDsc->IsLiveInOutOfHandler())
+        {
+            continue;
+        }
+
+        // A rebuild may read the base's home, which holds the base only because its spills are
+        // stored. Rebuilt locals skip those stores, but they are integral and the base is a
+        // reference, so the base is never one of them.
+        assert(!recipes->Lookup(recipe.baseLclNum));
+
+        bool stable = baseDsc->lvIsParam
+                          ? (storeCount[recipe.baseLclNum] == 0)
+                          : ((storeCount[recipe.baseLclNum] == 1) && !inLoop(storeBlock[recipe.baseLclNum]));
+        if (stable)
+        {
+            eligible->Set(lclNum, recipe);
+        }
+    }
+
+    if (eligible->GetCount() == 0)
+    {
+        return;
+    }
+
+    // The base must be live wherever the local is read or live across a block boundary. A local
+    // that fails either is dropped right away, so later blocks and reads do not test it again.
+    ArrayStack<unsigned> rejected(m_compiler->getAllocator(CMK_LSRA));
+    for (BasicBlock* const block : m_compiler->Blocks())
+    {
+        if (eligible->GetCount() == 0)
+        {
+            break;
+        }
+
+        for (unsigned lclNum : Compiler::CSERecipeMap::KeyIteration(eligible))
+        {
+            unsigned varIndex  = m_compiler->lvaGetDesc(lclNum)->lvVarIndex;
+            unsigned baseIndex = m_compiler->lvaGetDesc((*eligible)[lclNum].baseLclNum)->lvVarIndex;
+            if ((VarSetOps::IsMember(m_compiler, block->bbLiveIn, varIndex) &&
+                 !VarSetOps::IsMember(m_compiler, block->bbLiveIn, baseIndex)) ||
+                (VarSetOps::IsMember(m_compiler, block->bbLiveOut, varIndex) &&
+                 !VarSetOps::IsMember(m_compiler, block->bbLiveOut, baseIndex)))
+            {
+                rejected.Push(lclNum);
+            }
+        }
+        while (!rejected.Empty())
+        {
+            eligible->Remove(rejected.Pop());
+        }
+
+        VARSET_TP live(VarSetOps::MakeCopy(m_compiler, block->bbLiveOut));
+        for (GenTree* node = LIR::AsRange(block).LastNode(); node != nullptr; node = node->gtPrev)
+        {
+            node->VisitOperands([&](GenTree* operand) {
+                Compiler::CSERecipe recipe = {};
+                if (operand->OperIs(GT_LCL_VAR) && eligible->Lookup(operand->AsLclVar()->GetLclNum(), &recipe) &&
+                    !VarSetOps::IsMember(m_compiler, live, m_compiler->lvaGetDesc(recipe.baseLclNum)->lvVarIndex))
+                {
+                    eligible->Remove(operand->AsLclVar()->GetLclNum());
+                }
+                return GenTree::VisitResult::Continue;
+            });
+
+            if (node->OperIs(GT_STORE_LCL_VAR) && m_compiler->lvaGetDesc(node->AsLclVar())->lvTracked)
+            {
+                VarSetOps::RemoveElemD(m_compiler, live, m_compiler->lvaGetDesc(node->AsLclVar())->lvVarIndex);
+            }
+            else if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD) && m_compiler->lvaGetDesc(node->AsLclVarCommon())->lvTracked)
+            {
+                VarSetOps::AddElemD(m_compiler, live, m_compiler->lvaGetDesc(node->AsLclVarCommon())->lvVarIndex);
+            }
+        }
+    }
+
+    if (eligible->GetCount() == 0)
+    {
+        return;
+    }
+
+    // Each use of a rebuilt local is accompanied by a read of its base, which build turns into a
+    // reference at the use's location. The read sits right before the use's consumer, where that
+    // reference is, so codegen handles it where allocation modeled it, even with a call between the
+    // local's read and its consumer. The base is already live at every use, so these reads do not
+    // change liveness. A use that is reloaded rebuilds into its own register.
+    m_compiler->lsraRematCompanions =
+        new (m_compiler, CMK_LSRA) Compiler::RematCompanionMap(m_compiler->getAllocator(CMK_LSRA));
+    m_compiler->lsraInertCompanions =
+        new (m_compiler, CMK_LSRA) Compiler::RematInertSet(m_compiler->getAllocator(CMK_LSRA));
+    for (BasicBlock* const block : m_compiler->Blocks())
+    {
+        LIR::Range& range = LIR::AsRange(block);
+        for (GenTree* node = range.FirstNode(); node != nullptr; node = node->gtNext)
+        {
+            Compiler::CSERecipe recipe = {};
+            LIR::Use            use;
+            if (!node->OperIs(GT_LCL_VAR) || !eligible->Lookup(node->AsLclVar()->GetLclNum(), &recipe) ||
+                !range.TryGetUse(node, &use))
+            {
+                continue;
+            }
+
+            GenTree* base = m_compiler->gtNewLclvNode(recipe.baseLclNum, TYP_REF);
+            base->SetUnusedValue();
+            base->SetRegOptional();
+            node->ClearRegOptional();
+            range.InsertBefore(use.User(), base);
+            m_compiler->lsraRematCompanions->Set(node, base);
+        }
+    }
+
+    m_compiler->lsraReconstructible = eligible;
+    m_compiler->lsraRematBaseLocations =
+        new (m_compiler, CMK_LSRA) Compiler::RematBaseLocationMap(m_compiler->getAllocator(CMK_LSRA));
+#ifdef DEBUG
+    for (unsigned lclNum : Compiler::CSERecipeMap::KeyIteration(eligible))
+    {
+        JITDUMP("V%02u is rebuilt from V%02u instead of kept on the stack\n", lclNum, (*eligible)[lclNum].baseLclNum);
+    }
+#endif
+}
+#endif // TARGET_AMD64
 
 //------------------------------------------------------------------------
 // LinearScan::allocateRegisters: Perform the actual register allocation by iterating over
@@ -5696,6 +5894,15 @@ void LinearScan::allocateRegisters()
         {
             previousRefPosition                = currentReferent->recentRefPosition;
             currentReferent->recentRefPosition = &currentRefPosition;
+#ifdef TARGET_AMD64
+            if ((refType == RefTypeUse) && (m_compiler->lsraRematCompanions != nullptr) &&
+                (currentRefPosition.treeNode != nullptr) &&
+                m_compiler->lsraRematCompanions->Lookup(currentRefPosition.treeNode))
+            {
+                rematLocalPreviousLocation =
+                    (previousRefPosition != nullptr) ? previousRefPosition->nodeLocation : MinLocation;
+            }
+#endif
         }
         else
         {
@@ -5828,6 +6035,65 @@ void LinearScan::allocateRegisters()
         currentInterval = currentRefPosition.getInterval();
         assert(currentInterval != nullptr);
         assignedRegister = currentInterval->physReg;
+
+#ifdef TARGET_AMD64
+        if (currentRefPosition.isRematCompanion)
+        {
+            // The local's use at this location was just allocated. When it kept its register, the
+            // companion is not needed there and takes no part in allocation: it leaves the base's
+            // register and spill state alone and is removed from the base's references, so a later
+            // spill of the base is attributed to its previous real reference.
+            RefPosition* localUse = nullptr;
+            rematCompanionUses->Lookup(&currentRefPosition, &localUse);
+            assert((localUse != nullptr) && (localUse->nodeLocation == currentRefPosition.nodeLocation));
+            // Resolution can still reload a local that last appeared before this block, when it
+            // enters the block on the stack, so only a local kept since earlier in the block is final.
+            if (!localUse->reload && (rematLocalPreviousLocation >= curBBStartLocation))
+            {
+                currentRefPosition.isRematCompanionInert = true;
+                currentRefPosition.registerAssignment    = RBM_NONE;
+                currentInterval->recentRefPosition       = previousRefPosition;
+                if (previousRefPosition != nullptr)
+                {
+                    previousRefPosition->nextRefPosition = currentRefPosition.nextRefPosition;
+                }
+                else
+                {
+                    currentInterval->firstRefPosition = currentRefPosition.nextRefPosition;
+                }
+                if (currentInterval->lastRefPosition == &currentRefPosition)
+                {
+                    currentInterval->lastRefPosition = previousRefPosition;
+                }
+                // A base that entered the block in another register than its previous reference
+                // had that marked on the companion; it now belongs to the base's next reference.
+                if (currentRefPosition.outOfOrder && (nextRefPosition != nullptr))
+                {
+                    nextRefPosition->outOfOrder = true;
+                }
+                if (currentInterval->isActive && (currentInterval->physReg != REG_NA))
+                {
+                    updateNextIntervalRef(currentInterval->physReg, currentInterval);
+                }
+                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
+                continue;
+            }
+
+            // Otherwise it reports where the base is. When the base is not active it stays where it
+            // is, even if the register it last had still holds it, so the companion never reloads it.
+            // When it is active, the companion takes its register as it is, whatever registers the
+            // reference would otherwise accept, so it never copies the base either.
+            if (!currentInterval->isActive)
+            {
+                assignedRegister = REG_NA;
+            }
+            else if (assignedRegister != REG_NA)
+            {
+                currentRefPosition.registerAssignment |=
+                    getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
+            }
+        }
+#endif
 
         // Identify the special cases where we decide up-front not to allocate
         bool allocate = true;
@@ -6455,6 +6721,13 @@ void LinearScan::allocateRegisters()
                 {
                     allocate = false;
                 }
+#ifdef TARGET_AMD64
+                // A companion never reloads the base. Without a register it reads the base's home.
+                else if (currentRefPosition.isRematCompanion)
+                {
+                    allocate = false;
+                }
+#endif
                 else if (currentInterval->isWriteThru)
                 {
                     // Don't allocate if the next reference is in a cold block.
@@ -7028,7 +7301,9 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
 
         // Set this as contained if it is not a multi-reg (we could potentially mark it s contained
         // if all uses are from spill, but that adds complexity.
-        if ((currentRefPosition->refType == RefTypeUse) && !treeNode->IsMultiReg())
+        // A companion is an unused value, which cannot be contained. Without a register it simply
+        // has none, and the reload it serves reads the base's home.
+        if ((currentRefPosition->refType == RefTypeUse) && !treeNode->IsMultiReg() && !treeNode->IsUnusedValue())
         {
             assert(treeNode != nullptr);
             treeNode->SetContained();
@@ -7109,7 +7384,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
                     interval->physReg = REG_NA;
                     writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
                     treeNode->gtFlags &= ~GTF_SPILLED;
-                    treeNode->SetContained();
+                    if (!treeNode->IsUnusedValue())
+                    {
+                        treeNode->SetContained();
+                    }
                     // We don't support RegOptional for multi-reg localvars.
                     assert(!treeNode->IsMultiReg());
                 }
@@ -8087,6 +8365,7 @@ void LinearScan::resolveRegisters()
             // In those cases, treeNode will be nullptr.
             if (treeNode == nullptr)
             {
+
                 if (localVarsEnregistered)
                 {
                     continue;
@@ -8123,11 +8402,24 @@ void LinearScan::resolveRegisters()
             }
             else
             {
+#ifdef TARGET_AMD64
+                if (currentRefPosition->isRematCompanionInert)
+                {
+                    treeNode->SetRegNum(REG_NA);
+                    m_compiler->lsraInertCompanions->Set(treeNode, true, Compiler::RematInertSet::Overwrite);
+                    continue;
+                }
+#endif
                 writeRegisters(currentRefPosition, treeNode);
 
                 if (localVarsEnregistered && treeNode->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) &&
                     currentRefPosition->getInterval()->isLocalVar)
                 {
+#ifdef TARGET_AMD64
+                    // A companion has no consumer, so nothing could take a copy or a move of the base.
+                    assert(!currentRefPosition->isRematCompanion ||
+                           (!currentRefPosition->copyReg && !currentRefPosition->moveReg));
+#endif
                     resolveLocalRef(block, treeNode->AsLclVar(), currentRefPosition);
                 }
 
@@ -8462,7 +8754,7 @@ void LinearScan::resolveRegisters()
 // Notes:
 //    If fromReg or toReg is REG_STK, then move from/to memory, respectively.
 //
-void LinearScan::insertMove(
+GenTree* LinearScan::insertMove(
     BasicBlock* block, GenTree* insertionPoint, unsigned lclNum, regNumber fromReg, regNumber toReg)
 {
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
@@ -8556,6 +8848,8 @@ void LinearScan::insertMove(
             blockRange.InsertAtEnd(std::move(treeRange));
         }
     }
+
+    return src;
 }
 
 void LinearScan::insertSwap(
@@ -8846,12 +9140,12 @@ void LinearScan::addResolutionForDouble(BasicBlock*             block,
 //    The next time, we want to move from the stack to the destination (toReg),
 //    in which case fromReg will be REG_STK, and we insert at the top.
 //
-void LinearScan::addResolution(BasicBlock*       block,
-                               GenTree*          insertionPoint,
-                               Interval*         interval,
-                               regNumber         toReg,
-                               regNumber fromReg DEBUG_ARG(BasicBlock* fromBlock) DEBUG_ARG(BasicBlock* toBlock)
-                                   DEBUG_ARG(const char* reason))
+GenTree* LinearScan::addResolution(BasicBlock*       block,
+                                   GenTree*          insertionPoint,
+                                   Interval*         interval,
+                                   regNumber         toReg,
+                                   regNumber fromReg DEBUG_ARG(BasicBlock* fromBlock) DEBUG_ARG(BasicBlock* toBlock)
+                                       DEBUG_ARG(const char* reason))
 {
 #ifdef DEBUG
     const char* insertionPointString;
@@ -8888,7 +9182,7 @@ void LinearScan::addResolution(BasicBlock*       block,
     // We should never add resolution move inside BBCallFinallyPairTail.
     noway_assert(!block->isBBCallFinallyPairTail());
 
-    insertMove(block, insertionPoint, interval->varNum, fromReg, toReg);
+    GenTree* move = insertMove(block, insertionPoint, interval->varNum, fromReg, toReg);
     if (fromReg == REG_STK || toReg == REG_STK)
     {
         assert(interval->isSpilled);
@@ -8900,6 +9194,7 @@ void LinearScan::addResolution(BasicBlock*       block,
     }
 
     INTRACK_STATS(updateLsraStat(STAT_RESOLUTION_MOV, block->bbNum));
+    return move;
 }
 
 //------------------------------------------------------------------------
@@ -9630,6 +9925,44 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     // TODO-Throughput: We should be looping over the liveIn and liveOut registers, since
     // that will scale better than the live variables
 
+#ifdef TARGET_AMD64
+    // Where each base ends up on this edge, before the moves below rewrite the maps. A local
+    // rebuilt on this edge reads its base there once every other move is done.
+    JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, regNumber> rebuildBases(
+        m_compiler->getAllocator(CMK_LSRA));
+    if (m_compiler->lsraReconstructible != nullptr)
+    {
+        for (unsigned lclNum : Compiler::CSERecipeMap::KeyIteration(m_compiler->lsraReconstructible))
+        {
+            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+            if (VarSetOps::IsMember(m_compiler, liveSet, varDsc->lvVarIndex))
+            {
+                unsigned baseIndex =
+                    m_compiler->lvaGetDesc((*m_compiler->lsraReconstructible)[lclNum].baseLclNum)->lvVarIndex;
+                // A base this resolution moves ends up at its target-side location. Any other base
+                // stays where it is on the source side, which the maps track only for split or
+                // spilled locals. Any other local keeps its one register throughout.
+                LclVarDsc* baseDsc = m_compiler->lvaGetDescByTrackedIndex(baseIndex);
+                regNumber  baseReg;
+                if (VarSetOps::IsMember(m_compiler, liveSet, baseIndex))
+                {
+                    baseReg = getVarReg(toVarToRegMap, baseIndex);
+                }
+                else if (VarSetOps::IsMember(m_compiler, resolutionCandidateVars, baseIndex))
+                {
+                    baseReg = getVarReg(fromVarToRegMap, baseIndex);
+                }
+                else
+                {
+                    baseReg = baseDsc->GetRegNum();
+                }
+                assert((baseReg == REG_STK) || genIsValidIntReg(baseReg));
+                rebuildBases.Set(lclNum, baseReg);
+            }
+        }
+    }
+#endif
+
     VarSetOps::Iter iter(m_compiler, liveSet);
     unsigned        varIndex = 0;
     while (iter.NextElem(&varIndex))
@@ -10018,6 +10351,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
     // Finally, perform stack to reg moves
     // All the target regs will be empty at this point
+    regMaskTP rebuildTargets = RBM_NONE;
     while (targetRegsFromStack.IsNonEmpty())
     {
         regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsFromStack);
@@ -10025,9 +10359,35 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         Interval* interval = stackToRegIntervals[targetReg];
         assert(interval != nullptr);
 
+#ifdef TARGET_AMD64
+        if (rebuildBases.Lookup(interval->varNum))
+        {
+            rebuildTargets |= genRegMask(targetReg);
+            continue;
+        }
+#endif
+
         addResolution(block, insertionPoint, interval, targetReg,
                       REG_STK DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock) DEBUG_ARG(resolveTypeName[resolveType]));
     }
+
+#ifdef TARGET_AMD64
+    // Rebuild locals last, when every base is in its final location and nothing else moves.
+    while (rebuildTargets.IsNonEmpty())
+    {
+        regNumber targetReg = genFirstRegNumFromMaskAndToggle(rebuildTargets);
+        Interval* interval  = stackToRegIntervals[targetReg];
+        regNumber baseReg   = rebuildBases[interval->varNum];
+        assert(baseReg != targetReg);
+
+        GenTree* rebuild =
+            addResolution(block, insertionPoint, interval, targetReg,
+                          REG_STK DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock) DEBUG_ARG(resolveTypeName[resolveType]));
+        m_compiler->lsraRematBaseLocations->Set(rebuild, baseReg);
+    }
+#else
+    assert(rebuildTargets.IsEmpty());
+#endif
 }
 
 #if TRACK_LSRA_STATS
@@ -11947,7 +12307,13 @@ void LinearScan::verifyFinalAllocation()
             }
             else if (currentRefPosition.isIntervalRef())
             {
-                interval                    = currentRefPosition.getInterval();
+                interval = currentRefPosition.getInterval();
+#ifdef TARGET_AMD64
+                if (currentRefPosition.isRematCompanionInert)
+                {
+                    continue;
+                }
+#endif
                 interval->recentRefPosition = &currentRefPosition;
                 if (currentRefPosition.registerAssignment != RBM_NONE)
                 {

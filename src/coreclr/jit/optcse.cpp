@@ -5038,6 +5038,50 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
     ArrayStack<UseDefLocation> defUses(m_compiler->getAllocator(CMK_CSE));
 
+#ifdef TARGET_AMD64
+    // Record how to rebuild the local when every occurrence is the same load from one base.
+    if (!isSharedConst && varTypeIsIntegral(cseLclVarTyp) && !varTypeIsGC(cseLclVarTyp))
+    {
+        Compiler::CSERecipe recipe    = {};
+        bool                hasRecipe = false;
+        bool                agree     = true;
+        for (lst = &dsc->csdTreeList; (lst != nullptr) && agree; lst = lst->tslNext)
+        {
+            if (!IS_CSE_INDEX(lst->tslTree->gtCSEnum))
+            {
+                continue;
+            }
+
+            Compiler::CSERecipe occurrence = {};
+            if (!m_compiler->optCSEGetLoadRecipe(lst->tslTree, &occurrence))
+            {
+                agree = false;
+            }
+            else if (!hasRecipe)
+            {
+                recipe    = occurrence;
+                hasRecipe = true;
+            }
+            else
+            {
+                agree = (occurrence.baseLclNum == recipe.baseLclNum) && (occurrence.offset == recipe.offset) &&
+                        (occurrence.oper == recipe.oper) && (occurrence.type == recipe.type);
+            }
+        }
+
+        if (hasRecipe && agree)
+        {
+            if (m_compiler->optCSERecipes == nullptr)
+            {
+                m_compiler->optCSERecipes =
+                    new (m_compiler, CMK_CSE) Compiler::CSERecipeMap(m_compiler->getAllocator(CMK_CSE));
+            }
+            m_compiler->optCSERecipes->Set(cseLclVarNum, recipe);
+            JITDUMP("V%02u can be rebuilt from V%02u + %d\n", cseLclVarNum, recipe.baseLclNum, recipe.offset);
+        }
+    }
+#endif
+
     // First process the defs.
     for (lst = &dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
     {
@@ -5253,6 +5297,56 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         }
     }
 }
+
+#ifdef TARGET_AMD64
+//------------------------------------------------------------------------
+// optCSEGetLoadRecipe: Get how to rebuild an invariant load from a local.
+//
+// Arguments:
+//   expr   - an expression
+//   recipe - [out] the base local, offset and kind of load
+//
+// Returns:
+//   True if the expression is an integer load at a small offset from a reference local that
+//   reads the same value wherever that local holds the same object.
+//
+bool Compiler::optCSEGetLoadRecipe(GenTree* expr, CSERecipe* recipe)
+{
+    if (!expr->TypeIs(TYP_INT, TYP_LONG))
+    {
+        return false;
+    }
+
+    GenTree*       addr   = nullptr;
+    target_ssize_t offset = 0;
+    if (expr->OperIs(GT_ARR_LENGTH))
+    {
+        addr   = expr->AsArrLen()->ArrRef();
+        offset = expr->AsArrLen()->ArrLenOffset();
+    }
+    else if (expr->OperIs(GT_IND) && !expr->AsIndir()->IsVolatile())
+    {
+        addr = expr->AsIndir()->Addr();
+        gtPeelOffsets(&addr, &offset);
+
+        // A pointer-sized load at offset zero of an object reads its method table, which never
+        // changes, even when the load is not marked invariant.
+        bool isMethodTable = (offset == 0) && expr->TypeIs(TYP_I_IMPL) && addr->TypeIs(TYP_REF);
+        if (!expr->AsIndir()->IsInvariantLoad() && !isMethodTable)
+        {
+            return false;
+        }
+    }
+
+    if ((addr == nullptr) || !addr->OperIs(GT_LCL_VAR) || !addr->TypeIs(TYP_REF) || (offset < 0) || (offset > 127))
+    {
+        return false;
+    }
+
+    *recipe = {addr->AsLclVar()->GetLclNum(), (int)offset, expr->OperGet(), expr->TypeGet()};
+    return true;
+}
+#endif
 
 //------------------------------------------------------------------------
 // ReplaceCSENode:

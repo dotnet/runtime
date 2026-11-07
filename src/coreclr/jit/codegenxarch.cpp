@@ -5127,9 +5127,16 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         }
         else if (targetReg == REG_NA)
         {
-            // stack store
-            emit->emitInsStoreLcl(ins_Store(targetType, m_compiler->isSIMDTypeLocalAligned(lclNum)),
-                                  emitTypeSize(targetType), lclNode);
+            // stack store, which a rebuilt local does not have
+            bool needsStore = true;
+#ifdef TARGET_AMD64
+            needsStore = !m_compiler->lsraIsReconstructible(lclNum);
+#endif
+            if (needsStore)
+            {
+                emit->emitInsStoreLcl(ins_Store(targetType, m_compiler->isSIMDTypeLocalAligned(lclNum)),
+                                      emitTypeSize(targetType), lclNode);
+            }
         }
         else
         {
