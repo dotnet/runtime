@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.CodeDom.Compiler
 {
@@ -12,27 +13,29 @@ namespace System.CodeDom.Compiler
 
         public CodeGeneratorOptions() { }
 
-        public object this[string index]
+        public object? this[string index]
         {
             get => _options[index];
             set => _options[index] = value;
         }
 
+        [AllowNull]
         public string IndentString
         {
             get
             {
-                object o = _options[nameof(IndentString)];
+                object? o = _options[nameof(IndentString)];
                 return o != null ? (string)o : "    ";
             }
             set => _options[nameof(IndentString)] = value;
         }
 
+        [AllowNull]
         public string BracingStyle
         {
             get
             {
-                object o = _options[nameof(BracingStyle)];
+                object? o = _options[nameof(BracingStyle)];
                 return o != null ? (string)o : "Block";
             }
             set => _options[nameof(BracingStyle)] = value;
@@ -42,7 +45,7 @@ namespace System.CodeDom.Compiler
         {
             get
             {
-                object o = _options[nameof(ElseOnClosing)];
+                object? o = _options[nameof(ElseOnClosing)];
                 return o != null ? (bool)o : false;
             }
             set => _options[nameof(ElseOnClosing)] = value;
@@ -52,7 +55,7 @@ namespace System.CodeDom.Compiler
         {
             get
             {
-                object o = _options[nameof(BlankLinesBetweenMembers)];
+                object? o = _options[nameof(BlankLinesBetweenMembers)];
                 return o != null ? (bool)o : true;
             }
             set => _options[nameof(BlankLinesBetweenMembers)] = value;
@@ -62,7 +65,7 @@ namespace System.CodeDom.Compiler
         {
             get
             {
-                object o = _options[nameof(VerbatimOrder)];
+                object? o = _options[nameof(VerbatimOrder)];
                 return o != null ? (bool)o : false;
             }
             set => _options[nameof(VerbatimOrder)] = value;

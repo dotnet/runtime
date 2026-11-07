@@ -10,13 +10,17 @@ namespace System.CodeDom.Compiler
     public sealed class CompilerInfo
     {
         internal readonly IDictionary<string, string> _providerOptions = new Dictionary<string, string>();
-        internal string _codeDomProviderTypeName; // This can never by null
-        internal CompilerParameters _compilerParams; // This can never by null
-        internal string[] _compilerLanguages; // This can never by null
-        internal string[] _compilerExtensions; // This can never by null
-        private Type _type;
+        internal string _codeDomProviderTypeName; // This can never be null
+        internal CompilerParameters _compilerParams; // This can never be null
+        internal string[] _compilerLanguages = [];
+        internal string[] _compilerExtensions = [];
+        private Type? _type;
 
-        private CompilerInfo() { } // Not createable
+        private CompilerInfo()
+        {
+            _codeDomProviderTypeName = string.Empty;
+            _compilerParams = new CompilerParameters();
+        }
 
         public string[] GetLanguages() => (string[])_compilerLanguages.Clone();
 
@@ -34,7 +38,7 @@ namespace System.CodeDom.Compiler
                     }
                 }
 
-                return _type;
+                return _type!;
             }
         }
 
@@ -50,21 +54,21 @@ namespace System.CodeDom.Compiler
 
             if (_providerOptions.Count > 0)
             {
-                ConstructorInfo ci = CodeDomProviderType.GetConstructor(new Type[] { typeof(IDictionary<string, string>) });
+                ConstructorInfo? ci = CodeDomProviderType.GetConstructor(new Type[] { typeof(IDictionary<string, string>) });
                 if (ci != null)
                 {
                     return (CodeDomProvider)ci.Invoke(new object[] { _providerOptions });
                 }
             }
 
-            return (CodeDomProvider)Activator.CreateInstance(CodeDomProviderType);
+            return (CodeDomProvider)Activator.CreateInstance(CodeDomProviderType)!;
         }
 
         public CodeDomProvider CreateProvider(IDictionary<string, string> providerOptions)
         {
             ArgumentNullException.ThrowIfNull(providerOptions);
 
-            ConstructorInfo constructor = CodeDomProviderType.GetConstructor(new Type[] { typeof(IDictionary<string, string>) });
+            ConstructorInfo? constructor = CodeDomProviderType.GetConstructor(new Type[] { typeof(IDictionary<string, string>) });
             if (constructor != null)
             {
                 return (CodeDomProvider)constructor.Invoke(new object[] { providerOptions });
@@ -85,7 +89,7 @@ namespace System.CodeDom.Compiler
 
         public override int GetHashCode() => _codeDomProviderTypeName.GetHashCode();
 
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
             return
                 o is CompilerInfo other &&

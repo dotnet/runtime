@@ -7,11 +7,11 @@ namespace System.CodeDom
     {
         public CodeExpressionStatement() { }
 
-        public CodeExpressionStatement(CodeExpression expression)
+        public CodeExpressionStatement(CodeExpression? expression)
         {
             Expression = expression;
         }
 
-        public CodeExpression Expression { get; set; }
+        public CodeExpression? Expression { get; set; }
     }
 }

@@ -21,7 +21,7 @@ namespace System.CodeDom
 
         public CodeStatement this[int index]
         {
-            get => (CodeStatement)List[index];
+            get => (CodeStatement)List[index]!;
             set => List[index] = value;
         }
 

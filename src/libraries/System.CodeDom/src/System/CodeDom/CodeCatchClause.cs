@@ -1,39 +1,43 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.CodeDom
 {
     public class CodeCatchClause
     {
-        private CodeTypeReference _catchExceptionType;
-        private string _localName;
+        private CodeTypeReference? _catchExceptionType;
+        private string? _localName;
 
         public CodeCatchClause() { }
 
-        public CodeCatchClause(string localName)
+        public CodeCatchClause(string? localName)
         {
             _localName = localName;
         }
 
-        public CodeCatchClause(string localName, CodeTypeReference catchExceptionType)
+        public CodeCatchClause(string? localName, CodeTypeReference? catchExceptionType)
         {
             _localName = localName;
             _catchExceptionType = catchExceptionType;
         }
 
-        public CodeCatchClause(string localName, CodeTypeReference catchExceptionType, params CodeStatement[] statements)
+        public CodeCatchClause(string? localName, CodeTypeReference? catchExceptionType, params CodeStatement[] statements)
         {
             _localName = localName;
             _catchExceptionType = catchExceptionType;
             Statements.AddRange(statements);
         }
 
+        [AllowNull]
         public string LocalName
         {
             get => _localName ?? string.Empty;
             set => _localName = value;
         }
 
+        [AllowNull]
         public CodeTypeReference CatchExceptionType
         {
             get => _catchExceptionType ??= new CodeTypeReference(typeof(Exception));

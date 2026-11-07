@@ -7,18 +7,18 @@ namespace System.CodeDom
     {
         public CodeDelegateInvokeExpression() { }
 
-        public CodeDelegateInvokeExpression(CodeExpression targetObject)
+        public CodeDelegateInvokeExpression(CodeExpression? targetObject)
         {
             TargetObject = targetObject;
         }
 
-        public CodeDelegateInvokeExpression(CodeExpression targetObject, params CodeExpression[] parameters)
+        public CodeDelegateInvokeExpression(CodeExpression? targetObject, params CodeExpression[] parameters)
         {
             TargetObject = targetObject;
             Parameters.AddRange(parameters);
         }
 
-        public CodeExpression TargetObject { get; set; }
+        public CodeExpression? TargetObject { get; set; }
 
         public CodeExpressionCollection Parameters { get; } = new CodeExpressionCollection();
     }

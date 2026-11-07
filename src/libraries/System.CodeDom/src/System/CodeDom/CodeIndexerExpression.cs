@@ -7,13 +7,13 @@ namespace System.CodeDom
     {
         public CodeIndexerExpression() { }
 
-        public CodeIndexerExpression(CodeExpression targetObject, params CodeExpression[] indices)
+        public CodeIndexerExpression(CodeExpression? targetObject, params CodeExpression[] indices)
         {
             TargetObject = targetObject;
             Indices.AddRange(indices);
         }
 
-        public CodeExpression TargetObject { get; set; }
+        public CodeExpression? TargetObject { get; set; }
 
         public CodeExpressionCollection Indices => field ??= new CodeExpressionCollection();
     }

@@ -17,12 +17,12 @@ namespace Microsoft.CSharp
     {
         private static readonly char[] s_periodArray = new char[] { '.' };
 
-        private ExposedTabStringIndentedTextWriter _output;
-        private CodeGeneratorOptions _options;
-        private CodeTypeDeclaration _currentClass;
-        private CodeTypeMember _currentMember;
+        private ExposedTabStringIndentedTextWriter? _output;
+        private CodeGeneratorOptions? _options;
+        private CodeTypeDeclaration? _currentClass;
+        private CodeTypeMember? _currentMember;
         private bool _inNestedBinary;
-        private readonly IDictionary<string, string> _provOptions;
+        private readonly IDictionary<string, string>? _provOptions;
 
         private const int ParameterMultilineThreshold = 15;
         private const int MaxLineLength = 80;
@@ -55,7 +55,7 @@ namespace Microsoft.CSharp
 
         internal CSharpCodeGenerator() { }
 
-        internal CSharpCodeGenerator(IDictionary<string, string> providerOptions)
+        internal CSharpCodeGenerator(IDictionary<string, string>? providerOptions)
         {
             _provOptions = providerOptions;
         }
@@ -70,8 +70,8 @@ namespace Microsoft.CSharp
 
         private int Indent
         {
-            get => _output.Indent;
-            set => _output.Indent = value;
+            get => _output!.Indent;
+            set => _output!.Indent = value;
         }
 
         private bool IsCurrentInterface => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsInterface : false;
@@ -86,13 +86,14 @@ namespace Microsoft.CSharp
 
         private static string NullToken => "null";
 
-        private ExposedTabStringIndentedTextWriter Output => _output;
+        private ExposedTabStringIndentedTextWriter Output => _output!;
+        private CodeGeneratorOptions Options => _options!;
 
         private string QuoteSnippetStringCStyle(string value)
         {
             var b = new StringBuilder(value.Length + 5);
 
-            var indentObj = new Indentation(_output, Indent + 1);
+            var indentObj = new Indentation(_output!, Indent + 1);
 
             b.Append('\"');
 
@@ -256,7 +257,7 @@ namespace Microsoft.CSharp
             bool indentedExpression = false;
             Output.Write('(');
 
-            GenerateExpression(e.Left);
+            GenerateExpression(e.Left!);
             Output.Write(' ');
 
             if (e.Left is CodeBinaryOperatorExpression || e.Right is CodeBinaryOperatorExpression)
@@ -276,7 +277,7 @@ namespace Microsoft.CSharp
             OutputOperator(e.Operator);
 
             Output.Write(' ');
-            GenerateExpression(e.Right);
+            GenerateExpression(e.Right!);
 
             Output.Write(')');
             if (indentedExpression)
@@ -291,7 +292,7 @@ namespace Microsoft.CSharp
             Output.Write("((");
             OutputType(e.TargetType);
             Output.Write(")(");
-            GenerateExpression(e.Expression);
+            GenerateExpression(e.Expression!);
             Output.Write("))");
         }
 
@@ -302,7 +303,7 @@ namespace Microsoft.CSharp
                 throw new InvalidOperationException(SR.CodeGenReentrance);
             }
             _options = options ?? new CodeGeneratorOptions();
-            _output = new ExposedTabStringIndentedTextWriter(writer, _options.IndentString);
+            _output = new ExposedTabStringIndentedTextWriter(writer, Options.IndentString);
 
             try
             {
@@ -330,7 +331,7 @@ namespace Microsoft.CSharp
             Output.Write("new ");
             OutputType(e.DelegateType);
             Output.Write('(');
-            GenerateExpression(e.TargetObject);
+            GenerateExpression(e.TargetObject!);
             Output.Write('.');
             OutputIdentifier(e.MethodName);
             Output.Write(')');
@@ -344,7 +345,7 @@ namespace Microsoft.CSharp
                 {
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -373,7 +374,7 @@ namespace Microsoft.CSharp
                 {
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -412,7 +413,7 @@ namespace Microsoft.CSharp
 
         private void GenerateIndexerExpression(CodeIndexerExpression e)
         {
-            GenerateExpression(e.TargetObject);
+            GenerateExpression(e.TargetObject!);
             Output.Write('[');
             bool first = true;
             foreach (CodeExpression exp in e.Indices)
@@ -432,7 +433,7 @@ namespace Microsoft.CSharp
 
         private void GenerateArrayIndexerExpression(CodeArrayIndexerExpression e)
         {
-            GenerateExpression(e.TargetObject);
+            GenerateExpression(e.TargetObject!);
             Output.Write('[');
             bool first = true;
             foreach (CodeExpression exp in e.Indices)
@@ -503,7 +504,7 @@ namespace Microsoft.CSharp
 
         private static bool GetUserData(CodeObject e, string property, bool defaultValue)
         {
-            object o = e.UserData[property];
+            object? o = e.UserData[property];
             if (o != null && o is bool)
             {
                 return (bool)o;
@@ -625,7 +626,7 @@ namespace Microsoft.CSharp
         {
             foreach (CodeStatement stmt in stmts)
             {
-                ((ICodeGenerator)this).GenerateCodeFromStatement(stmt, _output.InnerWriter, _options);
+                ((ICodeGenerator)this).GenerateCodeFromStatement(stmt, _output!.InnerWriter, Options);
             }
         }
 
@@ -796,7 +797,7 @@ namespace Microsoft.CSharp
             Output.Write('\'');
         }
 
-        private void AppendEscapedChar(StringBuilder b, char value)
+        private void AppendEscapedChar(StringBuilder? b, char value)
         {
             if (b == null)
             {
@@ -818,7 +819,7 @@ namespace Microsoft.CSharp
 
         private void GenerateExpressionStatement(CodeExpressionStatement e)
         {
-            GenerateExpression(e.Expression);
+            GenerateExpression(e.Expression!);
             if (!_generatingForLoop)
             {
                 Output.WriteLine(';');
@@ -829,11 +830,11 @@ namespace Microsoft.CSharp
         {
             _generatingForLoop = true;
             Output.Write("for (");
-            GenerateStatement(e.InitStatement);
+            GenerateStatement(e.InitStatement!);
             Output.Write("; ");
-            GenerateExpression(e.TestExpression);
+            GenerateExpression(e.TestExpression!);
             Output.Write("; ");
-            GenerateStatement(e.IncrementStatement);
+            GenerateStatement(e.IncrementStatement!);
             Output.Write(')');
             OutputStartingBrace();
             _generatingForLoop = false;
@@ -886,13 +887,13 @@ namespace Microsoft.CSharp
                         Output.Write('\n');
                         i++;
                     }
-                    _output.InternalOutputTabs();
+                    _output!.InternalOutputTabs();
                     Output.Write(commentLineStart);
                     isAfterCommentLineStart = true;
                 }
                 else if (value[i] == '\n')
                 {
-                    _output.InternalOutputTabs();
+                    _output!.InternalOutputTabs();
                     Output.Write(commentLineStart);
                     isAfterCommentLineStart = true;
                 }
@@ -936,7 +937,7 @@ namespace Microsoft.CSharp
         private void GenerateConditionStatement(CodeConditionStatement e)
         {
             Output.Write("if (");
-            GenerateExpression(e.Condition);
+            GenerateExpression(e.Condition!);
             Output.Write(')');
             OutputStartingBrace();
             Indent++;
@@ -947,7 +948,7 @@ namespace Microsoft.CSharp
             if (falseStatements.Count > 0)
             {
                 Output.Write('}');
-                if (_options.ElseOnClosing)
+                if (Options.ElseOnClosing)
                 {
                     Output.Write(' ');
                 }
@@ -977,7 +978,7 @@ namespace Microsoft.CSharp
                 foreach (CodeCatchClause current in catches)
                 {
                     Output.Write('}');
-                    if (_options.ElseOnClosing)
+                    if (Options.ElseOnClosing)
                     {
                         Output.Write(' ');
                     }
@@ -1001,7 +1002,7 @@ namespace Microsoft.CSharp
             if (finallyStatements.Count > 0)
             {
                 Output.Write('}');
-                if (_options.ElseOnClosing)
+                if (Options.ElseOnClosing)
                 {
                     Output.Write(' ');
                 }
@@ -1020,9 +1021,9 @@ namespace Microsoft.CSharp
 
         private void GenerateAssignStatement(CodeAssignStatement e)
         {
-            GenerateExpression(e.Left);
+            GenerateExpression(e.Left!);
             Output.Write(" = ");
-            GenerateExpression(e.Right);
+            GenerateExpression(e.Right!);
             if (!_generatingForLoop)
             {
                 Output.WriteLine(';');
@@ -1033,7 +1034,7 @@ namespace Microsoft.CSharp
         {
             GenerateEventReferenceExpression(e.Event);
             Output.Write(" += ");
-            GenerateExpression(e.Listener);
+            GenerateExpression(e.Listener!);
             Output.WriteLine(';');
         }
 
@@ -1041,7 +1042,7 @@ namespace Microsoft.CSharp
         {
             GenerateEventReferenceExpression(e.Event);
             Output.Write(" -= ");
-            GenerateExpression(e.Listener);
+            GenerateExpression(e.Listener!);
             Output.WriteLine(';');
         }
 
@@ -1312,7 +1313,7 @@ namespace Microsoft.CSharp
                 {
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -1409,7 +1410,7 @@ namespace Microsoft.CSharp
                 {
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -1721,7 +1722,7 @@ namespace Microsoft.CSharp
                 {
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -1834,7 +1835,7 @@ namespace Microsoft.CSharp
 
             GenerateTypeStart(e);
 
-            if (_options.VerbatimOrder)
+            if (Options.VerbatimOrder)
             {
                 foreach (CodeTypeMember member in e.Members)
                 {
@@ -1875,11 +1876,11 @@ namespace Microsoft.CSharp
         {
             foreach (CodeTypeDeclaration c in e.Types)
             {
-                if (_options.BlankLinesBetweenMembers)
+                if (Options.BlankLinesBetweenMembers)
                 {
                     Output.WriteLine();
                 }
-                ((ICodeGenerator)this).GenerateCodeFromType(c, _output.InnerWriter, _options);
+                ((ICodeGenerator)this).GenerateCodeFromType(c, _output!.InnerWriter, Options);
             }
         }
 
@@ -1942,14 +1943,14 @@ namespace Microsoft.CSharp
 
         private void GenerateTypeMember(CodeTypeMember member, CodeTypeDeclaration declaredType)
         {
-            if (_options.BlankLinesBetweenMembers)
+            if (Options.BlankLinesBetweenMembers)
             {
                 Output.WriteLine();
             }
 
             if (member is CodeTypeDeclaration)
             {
-                ((ICodeGenerator)this).GenerateCodeFromType((CodeTypeDeclaration)member, _output.InnerWriter, _options);
+                ((ICodeGenerator)this).GenerateCodeFromType((CodeTypeDeclaration)member, _output!.InnerWriter, Options);
 
                 // Nested types clobber the current class, so reset it.
                 _currentClass = declaredType;
@@ -2039,7 +2040,7 @@ namespace Microsoft.CSharp
                 {
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -2070,7 +2071,7 @@ namespace Microsoft.CSharp
                     hasSnippet = true;
                     _currentMember = current;
 
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
@@ -2115,12 +2116,12 @@ namespace Microsoft.CSharp
             {
                 if (current is CodeTypeDeclaration)
                 {
-                    if (_options.BlankLinesBetweenMembers)
+                    if (Options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
                     CodeTypeDeclaration currentClass = (CodeTypeDeclaration)current;
-                    ((ICodeGenerator)this).GenerateCodeFromType(currentClass, _output.InnerWriter, _options);
+                    ((ICodeGenerator)this).GenerateCodeFromType(currentClass, _output!.InnerWriter, Options);
                 }
             }
         }
@@ -2129,7 +2130,7 @@ namespace Microsoft.CSharp
         {
             foreach (CodeNamespace n in e.Namespaces)
             {
-                ((ICodeGenerator)this).GenerateCodeFromNamespace(n, _output.InnerWriter, _options);
+                ((ICodeGenerator)this).GenerateCodeFromNamespace(n, _output!.InnerWriter, Options);
             }
         }
 
@@ -2140,7 +2141,7 @@ namespace Microsoft.CSharp
                 OutputIdentifier(arg.Name);
                 Output.Write('=');
             }
-            ((ICodeGenerator)this).GenerateCodeFromExpression(arg.Value, _output.InnerWriter, _options);
+            ((ICodeGenerator)this).GenerateCodeFromExpression(arg.Value!, _output!.InnerWriter, Options);
         }
 
         private void OutputDirection(FieldDirection dir)
@@ -2180,7 +2181,7 @@ namespace Microsoft.CSharp
                     else
                         Output.Write(", ");
                 }
-                ((ICodeGenerator)this).GenerateCodeFromExpression(current, _output.InnerWriter, _options);
+                ((ICodeGenerator)this).GenerateCodeFromExpression(current, _output!.InnerWriter, Options);
             }
             Indent--;
         }
@@ -2486,7 +2487,7 @@ namespace Microsoft.CSharp
         private void GenerateDirectionExpression(CodeDirectionExpression e)
         {
             OutputDirection(e.Direction);
-            GenerateExpression(e.Expression);
+            GenerateExpression(e.Expression!);
         }
 
         private void GenerateDirectives(CodeDirectiveCollection directives)
@@ -2560,10 +2561,10 @@ namespace Microsoft.CSharp
         private void GenerateAttributes(CodeAttributeDeclarationCollection attributes) =>
             GenerateAttributes(attributes, null, inLine: false);
 
-        private void GenerateAttributes(CodeAttributeDeclarationCollection attributes, string prefix) =>
+        private void GenerateAttributes(CodeAttributeDeclarationCollection attributes, string? prefix) =>
             GenerateAttributes(attributes, prefix, inLine: false);
 
-        private void GenerateAttributes(CodeAttributeDeclarationCollection attributes, string prefix, bool inLine)
+        private void GenerateAttributes(CodeAttributeDeclarationCollection attributes, string? prefix, bool inLine)
         {
             if (attributes.Count == 0)
             {
@@ -2864,7 +2865,7 @@ namespace Microsoft.CSharp
                     results[i] = ',';
                 }
                 s += new string(results);
-                typeRef = typeRef.ArrayElementType;
+                typeRef = typeRef.ArrayElementType!;
             }
 
             return s;
@@ -2872,7 +2873,7 @@ namespace Microsoft.CSharp
 
         private void OutputStartingBrace()
         {
-            if (_options.BracingStyle == "C")
+            if (_options!.BracingStyle == "C")
             {
                 Output.WriteLine();
                 Output.WriteLine('{');
@@ -3021,7 +3022,7 @@ namespace Microsoft.CSharp
                 using (var fs = new FileStream(filenames[i], FileMode.Create, FileAccess.Write, FileShare.Read))
                 using (StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
                 {
-                    ((ICodeGenerator)this).GenerateCodeFromCompileUnit(ea[i], sw, _options);
+                    ((ICodeGenerator)this).GenerateCodeFromCompileUnit(ea[i], sw, Options);
                     sw.Flush();
                 }
             }
@@ -3033,9 +3034,9 @@ namespace Microsoft.CSharp
         {
             if (e.ReferencedAssemblies.Count > 0)
             {
-                foreach (string assemblyName in e.ReferencedAssemblies)
+                foreach (string? assemblyName in e.ReferencedAssemblies)
                 {
-                    if (!options.ReferencedAssemblies.Contains(assemblyName))
+                    if (assemblyName != null && !options.ReferencedAssemblies.Contains(assemblyName))
                     {
                         options.ReferencedAssemblies.Add(assemblyName);
                     }
@@ -3103,7 +3104,7 @@ namespace Microsoft.CSharp
             {
                 setLocal = true;
                 _options = o ?? new CodeGeneratorOptions();
-                _output = new ExposedTabStringIndentedTextWriter(w, _options.IndentString);
+                _output = new ExposedTabStringIndentedTextWriter(w, Options.IndentString);
             }
 
             try
@@ -3131,7 +3132,7 @@ namespace Microsoft.CSharp
             {
                 setLocal = true;
                 _options = o ?? new CodeGeneratorOptions();
-                _output = new ExposedTabStringIndentedTextWriter(w, _options.IndentString);
+                _output = new ExposedTabStringIndentedTextWriter(w, Options.IndentString);
             }
 
             try
@@ -3159,7 +3160,7 @@ namespace Microsoft.CSharp
             {
                 setLocal = true;
                 _options = o ?? new CodeGeneratorOptions();
-                _output = new ExposedTabStringIndentedTextWriter(w, _options.IndentString);
+                _output = new ExposedTabStringIndentedTextWriter(w, Options.IndentString);
             }
 
             try
@@ -3194,7 +3195,7 @@ namespace Microsoft.CSharp
             {
                 setLocal = true;
                 _options = o ?? new CodeGeneratorOptions();
-                _output = new ExposedTabStringIndentedTextWriter(w, _options.IndentString);
+                _output = new ExposedTabStringIndentedTextWriter(w, Options.IndentString);
             }
 
             try
@@ -3222,7 +3223,7 @@ namespace Microsoft.CSharp
             {
                 setLocal = true;
                 _options = o ?? new CodeGeneratorOptions();
-                _output = new ExposedTabStringIndentedTextWriter(w, _options.IndentString);
+                _output = new ExposedTabStringIndentedTextWriter(w, Options.IndentString);
             }
 
             try
