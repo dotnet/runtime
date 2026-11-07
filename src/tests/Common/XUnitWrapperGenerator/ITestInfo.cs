@@ -264,11 +264,11 @@ public sealed class ConditionalTest : ITestInfo
         }
         if (platform.HasFlag(Xunit.TestPlatforms.illumos))
         {
-            platformCheckConditions.Add(@"global::System.OperatingSystem.IsOSPlatform(""illumos"")");
+            platformCheckConditions.Add("global::System.OperatingSystem.IsIllumos()");
         }
         if (platform.HasFlag(Xunit.TestPlatforms.Solaris))
         {
-            platformCheckConditions.Add(@"global::System.OperatingSystem.IsOSPlatform(""Solaris"")");
+            platformCheckConditions.Add("global::System.OperatingSystem.IsSolaris()");
         }
         if (platform.HasFlag(Xunit.TestPlatforms.Android))
         {
