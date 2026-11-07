@@ -8771,7 +8771,18 @@ void emitter::emitIns_R_R_A_R(instruction   ins,
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
+    // The 4th register is encoded as an 8-bit ival, unless it is a mask register.
+    UNATIVE_OFFSET sz;
+
+    if (isMaskReg(op3Reg))
+    {
+        sz = emitInsSizeAM(id, insCodeRM(ins));
+    }
+    else
+    {
+        sz = emitInsSizeAM(id, insCodeRM(ins), ival);
+    }
+
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -8826,7 +8837,18 @@ void emitter::emitIns_R_R_C_R(instruction          ins,
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
 
-    UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins), ival);
+    // The 4th register is encoded as an 8-bit ival, unless it is a mask register.
+    UNATIVE_OFFSET sz;
+
+    if (isMaskReg(op3Reg))
+    {
+        sz = emitInsSizeCV(id, insCodeRM(ins));
+    }
+    else
+    {
+        sz = emitInsSizeCV(id, insCodeRM(ins), ival);
+    }
+
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -8875,7 +8897,18 @@ void emitter::emitIns_R_R_S_R(instruction ins,
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
 
-    UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
+    // The 4th register is encoded as an 8-bit ival, unless it is a mask register.
+    UNATIVE_OFFSET sz;
+
+    if (isMaskReg(op3Reg))
+    {
+        sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
+    }
+    else
+    {
+        sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
+    }
+
     id->idCodeSize(sz);
 
     dispIns(id);
