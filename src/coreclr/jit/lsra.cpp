@@ -5613,6 +5613,117 @@ void LinearScan::findReconstructibleLocals()
         return;
     }
 
+    // A definition whose value has a single use, in the node that follows it, by a consumer that
+    // accepts a memory operand there, is folded: the consumer reads the load itself, and the store
+    // and the use disappear, so the local is not defined there at all. Nothing between the load
+    // and the consumer may have an effect, so the load faults where it did.
+    for (BasicBlock* const block : m_compiler->Blocks())
+    {
+        LIR::Range& range = LIR::AsRange(block);
+        for (GenTree* node = range.FirstNode(); node != nullptr; node = node->gtNext)
+        {
+            Compiler::CSERecipe recipe = {};
+            if (!node->OperIs(GT_STORE_LCL_VAR) || !eligible->Lookup(node->AsLclVar()->GetLclNum(), &recipe))
+            {
+                continue;
+            }
+
+            GenTreeLclVar* store = node->AsLclVar();
+            GenTree*       load  = store->Data();
+            if (!load->OperIs(GT_IND) || load->AsIndir()->IsVolatile() || !load->TypeIs(recipe.type) ||
+                varTypeIsFloating(load) || (load->gtNext != store))
+            {
+                continue;
+            }
+
+            // The load reads the base directly, or through a contained address with the offset.
+            GenTree* addr = load->AsIndir()->Addr();
+            GenTree* base = addr;
+            if (addr->OperIs(GT_LEA))
+            {
+                GenTreeAddrMode* lea = addr->AsAddrMode();
+                if (!lea->isContained() || lea->HasIndex() || (lea->Offset() != recipe.offset) || (lea->gtNext != load))
+                {
+                    continue;
+                }
+                base = lea->Base();
+            }
+            else if (recipe.offset != 0)
+            {
+                continue;
+            }
+            if ((base == nullptr) || !base->OperIs(GT_LCL_VAR) ||
+                (base->AsLclVar()->GetLclNum() != recipe.baseLclNum) || base->IsLastUse(0) ||
+                (base->gtNext != ((addr == base) ? load : addr)))
+            {
+                continue;
+            }
+
+            // The definition's only use follows the store, where memory is accepted.
+            GenTree* firstUse = store->gtNext;
+            LIR::Use use;
+            if ((firstUse == nullptr) || !firstUse->OperIs(GT_LCL_VAR) ||
+                (firstUse->AsLclVar()->GetLclNum() != store->GetLclNum()) || !firstUse->IsLastUse(0) ||
+                !firstUse->IsRegOptional() || !firstUse->TypeIs(load->TypeGet()) || !range.TryGetUse(firstUse, &use))
+            {
+                continue;
+            }
+
+            GenTree* consumer = use.User();
+            if (!consumer->OperIsBinary())
+            {
+                continue;
+            }
+            bool isOp2 = (consumer->gtGetOp2() == firstUse);
+            if (!(consumer->OperIsCompare() ||
+                  consumer->OperIs(GT_CMP, GT_BOUNDS_CHECK, GT_ADD, GT_AND, GT_OR, GT_XOR) ||
+                  (consumer->OperIs(GT_SUB) && isOp2)))
+            {
+                continue;
+            }
+            GenTree* other = isOp2 ? consumer->gtGetOp1() : consumer->gtGetOp2();
+            if (other->isContained() && !other->IsCnsIntOrI())
+            {
+                continue;
+            }
+
+            bool hasEffect = false;
+            for (GenTree* between = firstUse->gtNext; between != consumer; between = between->gtNext)
+            {
+                if ((between->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+                {
+                    hasEffect = true;
+                    break;
+                }
+            }
+            if (hasEffect)
+            {
+                continue;
+            }
+
+            JITDUMP("Folded the definition [%06u] of V%02u into [%06u]\n", Compiler::dspTreeID(store),
+                    store->GetLclNum(), Compiler::dspTreeID(consumer));
+            // The store and the use no longer count towards the local's references, as counted for
+            // allocation's weights: once each at the block's weight, doubled for a temp.
+            LclVarDsc* const varDsc        = m_compiler->lvaGetDesc(store);
+            weight_t         removedWeight = 2 * block->getBBWeight(m_compiler);
+            if (varDsc->lvIsTemp)
+            {
+                removedWeight *= 2;
+            }
+            varDsc->setLvRefCnt((unsigned short)max(0, (int)varDsc->lvRefCnt() - 2));
+            varDsc->setLvRefCntWtd(max(0.0, varDsc->lvRefCntWtd() - removedWeight));
+
+            GenTree* next = store->gtPrev;
+            range.Remove(firstUse);
+            range.Remove(store);
+            use.ReplaceWith(load);
+            load->SetContained();
+            consumer->gtFlags |= (load->gtFlags & GTF_EXCEPT);
+            node = next;
+        }
+    }
+
     // Each use of a rebuilt local is accompanied by a read of its base, which build turns into a
     // reference at the use's location. The read sits right before the use's consumer, where that
     // reference is, so codegen handles it where allocation modeled it, even with a call between the
