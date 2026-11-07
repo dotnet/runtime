@@ -256,6 +256,10 @@ namespace Mono.Linker.Steps
             if (!_context.IsOptimizationEnabled(CodeOptimizations.IPConstantPropagation, method))
                 return null;
 
+            // A library build must not decide feature switch values on behalf of the app
+            if (_context.HasLibraryRootAssembly && _context.Annotations.MemberActions.IsFeatureSwitchWithoutSetting(method))
+                return null;
+
             var analyzer = new ConstantExpressionMethodAnalyzer(this);
             if (analyzer.Analyze(callee, callStack))
                 return new MethodResult(analyzer.Result, analyzer.SideEffectFreeResult);
