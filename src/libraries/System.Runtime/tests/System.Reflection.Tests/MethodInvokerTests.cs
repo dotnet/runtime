@@ -141,7 +141,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134903", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Constructor_AbstractDeclaringTypeWithExistingInstance()
         {
             ConstructorInfo constructor = typeof(AbstractRefConstructorTarget).GetConstructor(
@@ -166,7 +165,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134903", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Constructor_AbstractDeclaringTypeWithExistingInstance_RegularArguments()
         {
             ConstructorInfo constructor = typeof(AbstractRegularConstructorTarget).GetConstructor(
@@ -192,11 +190,12 @@ namespace System.Reflection.Tests
             Assert.Throws<MemberAccessException>(() => invoker.Invoke(null, 46));
             object?[] nullTargetArguments = { 47 };
             Assert.Throws<MemberAccessException>(() => invoker.Invoke(null, nullTargetArguments.AsSpan()));
+            Assert.Throws<MemberAccessException>(() => constructor.Invoke(new object?[] { 48 }));
+            Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke(49));
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134903", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Constructor_AbstractDeclaringTypeWithExistingInstance_ManyRegularArguments()
         {
             ConstructorInfo constructor = typeof(AbstractRegularConstructorTarget).GetConstructor(
@@ -220,6 +219,97 @@ namespace System.Reflection.Tests
             arguments[0] = 10;
             Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
             Assert.Equal(24, target.Value);
+        }
+
+        [Theory]
+        [InlineData(typeof(AbstractConstructorTarget<>), false)]
+        [InlineData(typeof(AbstractConstructorTarget<>), true)]
+        [InlineData(typeof(AbstractConstructorTarget<int>), false)]
+        [InlineData(typeof(AbstractConstructorTarget<int>), true)]
+        public void Constructor_AbstractGenericDeclaringTypeAllocation_Throws(Type type, bool useConstructorInvoker)
+        {
+            ConstructorInfo constructor = type.GetConstructor(
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                Type.EmptyTypes,
+                modifiers: null)!;
+
+            if (!type.ContainsGenericParameters)
+            {
+                Assert.Null(constructor.Invoke(new ConcreteConstructorTarget(), Array.Empty<object?>()));
+            }
+
+            if (useConstructorInvoker)
+            {
+                MemberAccessException exception = Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke());
+                Assert.Contains(type.ToString(), exception.Message);
+                exception = Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke(Span<object?>.Empty));
+                Assert.Contains(type.ToString(), exception.Message);
+            }
+            else
+            {
+                MemberAccessException exception = Assert.Throws<MemberAccessException>(() => constructor.Invoke(Array.Empty<object?>()));
+                Assert.Contains(type.ToString(), exception.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Constructor_OpenGenericDeclaringTypeWithExistingInstance_Throws(bool isAbstract)
+        {
+            Type type = isAbstract ? typeof(AbstractConstructorTarget<>) : typeof(GenericConstructorTarget<>);
+            ConstructorInfo constructor = type.GetConstructor(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                Type.EmptyTypes,
+                modifiers: null)!;
+            object target = isAbstract ? new ConcreteConstructorTarget() : new GenericConstructorTarget<int>();
+
+            MemberAccessException exception = Assert.Throws<MemberAccessException>(() => constructor.Invoke(target, Array.Empty<object?>()));
+            Assert.Contains(type.ToString(), exception.Message);
+            Assert.Contains("Type.ContainsGenericParameters", exception.Message);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Constructor_OpenGenericDeclaringTypeAllocation_Throws(bool useConstructorInvoker)
+        {
+            Type type = typeof(GenericConstructorTarget<>);
+            ConstructorInfo constructor = type.GetConstructor(Type.EmptyTypes)!;
+            MemberAccessException exception;
+            if (useConstructorInvoker)
+            {
+                exception = Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke());
+                MemberAccessException spanException = Assert.Throws<MemberAccessException>(() => ConstructorInvoker.Create(constructor).Invoke(Span<object?>.Empty));
+                Assert.Equal(exception.Message, spanException.Message);
+            }
+            else
+            {
+                exception = Assert.Throws<MemberAccessException>(() => constructor.Invoke(Array.Empty<object?>()));
+            }
+
+            Assert.Contains(type.ToString(), exception.Message);
+            Assert.Contains("Type.ContainsGenericParameters", exception.Message);
+        }
+
+        public sealed class GenericConstructorTarget<T>
+        {
+            public GenericConstructorTarget()
+            {
+            }
+        }
+
+        public abstract class AbstractConstructorTarget<T>
+        {
+            protected AbstractConstructorTarget()
+            {
+            }
+        }
+
+        public sealed class ConcreteConstructorTarget : AbstractConstructorTarget<int>
+        {
         }
 
         public abstract class AbstractRefConstructorTarget

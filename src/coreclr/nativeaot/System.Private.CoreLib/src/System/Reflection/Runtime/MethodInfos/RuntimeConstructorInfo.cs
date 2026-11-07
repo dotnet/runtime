@@ -109,6 +109,9 @@ namespace System.Reflection.Runtime.MethodInfos
         [DebuggerGuidedStepThrough]
         public sealed override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
+            if (ContainsGenericParameters)
+                throw new MemberAccessException(SR.Format(SR.Acc_CreateGenericEx, DeclaringType));
+
             parameters ??= Array.Empty<object>();
             MethodBaseInvoker methodInvoker;
             try
