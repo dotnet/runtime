@@ -11,7 +11,7 @@ import {
     bindJSImportST, dynamicImport, getDotnetInstance, getGlobalThis, getProperty, getTypeOfProperty, hasProperty,
     invokeJSFunction, invokeJSImportST, setModuleImports, setProperty
 } from "./invoke-js";
-import { bindCsFunction, getAssemblyExports } from "./invoke-cs";
+import { bindCsFunction, getAssemblyExports, registerLazyCsFunctions } from "./invoke-cs";
 import { initializeMarshalersToJs, resolveOrRejectPromise } from "./marshal-to-js";
 import { initializeMarshalersToCs } from "./marshal-to-cs";
 import { forceDisposeProxies, getProxyCounts, releaseCSOwnedObject } from "./gc-handles";
@@ -50,6 +50,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         getDotnetInstance,
         dynamicImport,
         bindCsFunction,
+        registerLazyCsFunctions,
         loadSatelliteAssemblies,
         loadLazyAssembly,
         getProxyCounts,

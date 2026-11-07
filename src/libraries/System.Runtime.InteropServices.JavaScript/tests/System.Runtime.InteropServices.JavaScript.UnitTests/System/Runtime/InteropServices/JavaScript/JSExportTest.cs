@@ -14,6 +14,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public class JSExportAsyncTest : JSInteropTestBase, IAsyncLifetime
     {
+        [Fact]
+        public async Task FirstAsyncExportBindsInsideInvocation()
+        {
+            Assert.Equal(42, await JavaScriptTestHelper.InvokeDeferredFirstTask());
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void SyncJsImportJsExportThrows()
         {
@@ -53,6 +59,46 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
     public class JSExportTest : JSInteropTestBase, IAsyncLifetime
     {
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void PublicTypeMapStillFollowsAssemblyTargets()
+        {
+            IReadOnlyDictionary<string, Type> map = TypeMapping.GetOrCreateExternalTypeMapping<JSExportProvider>();
+            Assert.True(map.TryGetValue("JavaScriptLibrary", out Type? libraryProvider));
+            Assert.True(typeof(JSExportProvider).IsAssignableFrom(libraryProvider));
+            Assert.True(map.TryGetValue("System.Runtime.InteropServices.JavaScript.Tests", out Type? applicationProvider));
+            Assert.True(typeof(JSExportProvider).IsAssignableFrom(applicationProvider));
+        }
+
+        [Theory]
+        [InlineData("Exports")]
+        [InlineData("Catalog.Namespace.Exports/Nested")]
+        public async Task RawExportCatalogPreservesAliases(string typeName)
+        {
+            string assemblyName = "RawCatalog" + Guid.NewGuid().ToString("N");
+            JavaScriptTestHelper.RegisterRawExportCatalog(assemblyName,
+                [
+                    $"[{assemblyName}]{typeName}:Echo#-17",
+                    $"[{assemblyName}]{typeName}:Echo#23",
+                    $"[{assemblyName}]{typeName}:Unused#-2147483648"
+                ]);
+
+            Assert.Equal("Unable to resolve the JavaScript export binding.|Unable to resolve the JavaScript export binding.|Unable to resolve the JavaScript export binding.",
+                await JavaScriptTestHelper.InspectRawExportCatalog(assemblyName, typeName));
+        }
+
+        [Theory]
+        [InlineData("[Other]Exports:Echo#1")]
+        [InlineData("[RawCatalogInvalid]Exports:Echo")]
+        [InlineData("[RawCatalogInvalid]Exports:Echo#")]
+        [InlineData("[RawCatalogInvalid]Exports:Echo#2147483648")]
+        [InlineData("[RawCatalogInvalid]Exports:#1")]
+        public void RawExportCatalogRejectsInvalidNames(string name)
+        {
+            JSException exception = Assert.Throws<JSException>(() =>
+                JavaScriptTestHelper.RegisterRawExportCatalog("RawCatalogInvalid", [name]));
+            Assert.Contains($"Invalid JSExport catalog key '{name}'", exception.Message);
+        }
+
         [Theory]
         [MemberData(nameof(MarshalBooleanCases))]
         public void JsExportBoolean(bool value)

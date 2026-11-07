@@ -10,7 +10,7 @@ import { mono_log_info, mono_log_warn } from "./logging";
 import { bound_cs_function_symbol, imported_js_function_symbol, proxy_debug_symbol } from "./marshal";
 import { GCHandle, GCHandleNull, JSHandle, WeakRefInternal } from "./types/internal";
 import { _use_weak_ref, create_strong_ref, create_weak_ref } from "./weak-ref";
-import { exportsByAssembly } from "./invoke-cs";
+import { deferredCsFunctions, exportsByAssembly } from "./invoke-cs";
 import { release_js_owned_object_by_gc_handle } from "./managed-exports";
 
 const _use_finalization_registry = typeof globalThis.FinalizationRegistry === "function";
@@ -364,6 +364,13 @@ export function forceDisposeProxies (disposeMethods: boolean, verbose: boolean):
             }
         }
         exportsByAssembly.clear();
+        for (const binding of deferredCsFunctions.values()) {
+            binding.isDisposed = true;
+            binding.signature = undefined;
+            binding.boundFn = undefined;
+            binding.wrapper = undefined;
+        }
+        deferredCsFunctions.clear();
     }
     mono_log_info(`forceDisposeProxies done: ${doneImports} imports, ${doneExports} exports, ${doneGCHandles} GCHandles, ${doneJSHandles} JSHandles.`);
 }

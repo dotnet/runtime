@@ -121,6 +121,32 @@ Blazor specific tests should be located in `Blazor` directory. New test classes 
 
 Native relinking tests can run on both runtimes. For theories that also cover Mono AOT, use runtime-aware test data to keep the non-AOT cases on CoreCLR without removing the existing Mono cases. Incremental rebuild assertions must track the appropriate runtime's generated files: CoreCLR uses the portable call-helper sources and objects rather than Mono's P/Invoke tables and driver objects.
 
+`LibraryInitializerTests.JSExportFromLegacyLibrary` checks binary compatibility with the released
+.NET 10 JSExport generator. It builds the `LegacyExports` library against the pinned 10.0.0
+targeting pack, without the in-tree pack overrides, then references its DLL from a trimmed
+current-framework browser app. The targeting pack (including its generator) is restored as needed;
+no legacy SDK or browser workload is required. It also tests `net11.0` with the pinned
+`11.0.0-rc.1.26425.128` targeting pack and generator. Both legacy libraries are built
+separately and referenced unchanged by the current app. The test runs in the `no-workload` CI lane for
+both runtime flavors.
+
+`LibraryInitializerTests.JSExportFromAssemblyProvider` checks a library reached only from
+JavaScript through one generated type-map provider per assembly. Both provider libraries
+are downloaded lazily, after the application's own exports have been discovered.
+It covers multiple exports,
+overloads, repeated assembly lookup, and trimmed and untrimmed publication without explicitly
+rooting the library. The provider's `ReadOnlySpan<string>` catalog supports discovery without enumerating
+the type map, and `Bind(string methodId)` dispatches on invariant decimal catalog indexes.
+On both runtimes, a counting provider verifies one activation at discovery, no binding at discovery or
+property read, exactly one binding on first invocation, stable aliases, and an
+unused method that must never be bound. Reentrant binding is rejected, and an
+async binding failure must reject its Promise and permit retry.
+Mono coverage includes trimmed and untrimmed apps using the internal
+assembly-local lookup required by JSExports. Signature metadata is
+published during discovery, while marshalers and managed callbacks remain lazy.
+Private and protected nested exports exercise generated unsafe accessors on both
+runtimes, including trimmed publication.
+
 `Blazor.AssetCachingTests` exercises the browser HTTP cache using the hosted
 `BlazorWebWasm` test asset. Its recovery cases seed cacheable invalid boot
 responses, verify the cache modes and bounded download attempts, and check that

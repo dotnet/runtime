@@ -520,6 +520,7 @@
     <_RollupInputs Include="$(BrowserProjectRoot)runtimetypes/*.d.ts"/>
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/*.json"/>
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/*.js"/>
+    <_RollupInputs Include="$(RepoRoot)src/native/libs/Common/JavaScript/export-names.ts"/>
   </ItemGroup>
 
   <Target Name="SetMonoRollupEnvironment">
