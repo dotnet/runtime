@@ -48,6 +48,13 @@ variables:
 - name: enableHelixJobMonitor
   value: false
 
+- name: helixUseEntraAuthentication
+  value: false
+- name: helixAzureSubscription
+  value: ''
+- name: helixBaseUri
+  value: https://helix.dot.net/
+
 - name: debugOnPrReleaseOnRolling
   ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
     value: Release
