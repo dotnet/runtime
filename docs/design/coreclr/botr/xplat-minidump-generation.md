@@ -8,6 +8,8 @@ Our goal is to generate core dumps that are on par with WER (Windows Error Repor
 
 Our solution at this time is to intercept any unhandled exception in the PAL layer of the runtime and have coreclr itself trigger and generate a "mini" core dump.
 
+For platforms and configurations where launching an external dump-generation process is unavailable or not enabled, CoreCLR can instead generate a compact report from the crashing process. See [In-process Crash Reporting](in-process-crash-reporting.md) for its design and limitations.
+
 # Design #
 
 We looked at the existing technologies like Breakpad and its derivatives (e.g.: an internal MS version called _msbreakpad_ from the SQL team....). Breakpad generates Windows minidumps but they are not compatible with existing tools like Windbg, etc. Msbreakpad even more so. There is a minidump to Linux core conversion utility but it seems like a wasted extra step. _Breakpad_ does allow the minidump to be generated in-process inside the signal handlers. It restricts the APIs to what was allowed in a "async" signal handler (like SIGSEGV) and has a small subset of the C++ runtime that was also similarly constrained. We also need to add the set of memory regions for the "managed" state which requires loading and using the _DAC_'s (*) enumerate memory interfaces. Loading modules is not allowed in an async signal handler but forking/execve is allowed so launching an utility that loads the _DAC_, enumerates the list of memory regions and writes the dump is the only reasonable option. It would also allow uploading the dump to a server too.
