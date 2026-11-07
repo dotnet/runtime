@@ -704,6 +704,38 @@ namespace System.Collections.Concurrent.Tests
                 "Test13_IsSynchronized_SyncRoot: > test failed - IsSynchronized should be false");
         }
 
+        /// <summary>
+        /// Validates that BlockingCollection.IsCompleted remains false after cancellation when items are still available.
+        /// </summary>
+        /// <returns>True if test succeeded, false otherwise.</returns>
+        [Fact]
+        public static void Test14_IsCompleted_RemainsFalse_AfterCancellation()
+        {
+            BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            blockingCollection.Add(10);
+            blockingCollection.CompleteAdding();
+
+            Assert.False(blockingCollection.IsCompleted);
+
+            Task consumer = Task.Run(() =>
+            {
+                Assert.Throws<OperationCanceledException>(() => blockingCollection.Take(cts.Token));
+            });
+
+            cts.Cancel();
+            consumer.Wait();
+
+            Assert.False(blockingCollection.IsCompleted);
+
+            int item;
+            Assert.True(blockingCollection.TryTake(out item));
+            Assert.Equal(10, item);
+
+            Assert.True(blockingCollection.IsCompleted);
+        }
+
         /// <summary>Initializes an array of blocking collections such that all are full except one in case of Adds and
         /// all are empty except one (the same blocking collection) in case of Takes.
         /// Adds "numOfAdds" elements to the BlockingCollection and then takes "numOfTakes" elements and checks
