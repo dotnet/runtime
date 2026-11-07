@@ -8,6 +8,7 @@
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
 #include "comdelegate.h"
+#include "gcrefmap.h"
 #include <dn-stdio.h>
 
 #include "perfmap.h"
@@ -2071,6 +2072,15 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 #ifdef TARGET_X86
                             MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
                             size_t stackArgumentsSize;
+                            // Prefer the stack pop size recorded in the GCRefMap: computing it from the
+                            // signature may need to load value type layouts, which is not allowed here.
+                            PTR_BYTE pGCRefMap = pMD->FindGCRefMap(objectType, true /* isDispatch */);
+                            if (pGCRefMap != NULL)
+                            {
+                                GCRefMapDecoder decoder(pGCRefMap);
+                                stackArgumentsSize = decoder.ReadStackPop() * sizeof(TADDR);
+                            }
+                            else
                             {
                                 ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
                                 stackArgumentsSize = pMD->SizeOfArgStack();
