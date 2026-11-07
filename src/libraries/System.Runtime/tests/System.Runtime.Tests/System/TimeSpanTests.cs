@@ -1443,6 +1443,165 @@ namespace System.Tests
             }
         }
 
+        [Fact]
+        public static void Parse_ViaInterface()
+        {
+            const string Input = "12:24:02";
+            ReadOnlySpan<byte> utf8Text = "12:24:02"u8;
+            TimeSpan expected = new TimeSpan(0, 12, 24, 2, 0);
+            TimeSpan result;
+
+            Assert.Equal(expected, ParsableHelper<TimeSpan>.Parse(Input, null));
+            Assert.True(ParsableHelper<TimeSpan>.TryParse(Input, null, out result));
+            Assert.Equal(expected, result);
+
+            Assert.Equal(expected, SpanParsableHelper<TimeSpan>.Parse(Input, null));
+            Assert.True(SpanParsableHelper<TimeSpan>.TryParse(Input, null, out result));
+            Assert.Equal(expected, result);
+
+            Assert.Equal(expected, Utf8SpanParsableHelper<TimeSpan>.Parse(utf8Text, null));
+            Assert.True(Utf8SpanParsableHelper<TimeSpan>.TryParse(utf8Text, null, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8(string inputString, int offset, int count, IFormatProvider provider, TimeSpan expected)
+        {
+            byte[] utf8Text = Encoding.UTF8.GetBytes(inputString.Substring(offset, count));
+            TimeSpan result;
+
+            Assert.Equal(expected, TimeSpan.Parse(utf8Text, provider));
+            Assert.True(TimeSpan.TryParse(utf8Text, provider, out result));
+            Assert.Equal(expected, result);
+
+            // Also negate
+            if (!char.IsWhiteSpace(inputString[offset]))
+            {
+                utf8Text = Encoding.UTF8.GetBytes("-" + inputString.Substring(offset, count));
+                expected = -expected;
+
+                Assert.Equal(expected, TimeSpan.Parse(utf8Text, provider));
+                Assert.True(TimeSpan.TryParse(utf8Text, provider, out result));
+                Assert.Equal(expected, result);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8_Invalid(string inputString, IFormatProvider provider, Type exceptionType)
+        {
+            if (inputString != null)
+            {
+                byte[] utf8Text = Encoding.UTF8.GetBytes(inputString);
+
+                Assert.Throws(exceptionType, () => TimeSpan.Parse(utf8Text, provider));
+                Assert.False(TimeSpan.TryParse(utf8Text, provider, out TimeSpan result));
+                Assert.Equal(TimeSpan.Zero, result);
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_Utf8_InvalidUtf8Bytes_TestData()
+        {
+            yield return new object[] { (byte[])[0xFF, .. "12:34"u8] };              // invalid lead byte
+            yield return new object[] { (byte[])[.. "12:34"u8, 0xFF] };              // invalid trailing byte
+            yield return new object[] { (byte[])[.. "12:34"u8, 0xC0, 0x80] };        // overlong encoding
+            yield return new object[] { (byte[])[.. "12:34"u8, 0xE2, 0x80] };        // truncated 3-byte sequence
+            yield return new object[] { (byte[])[.. "12:34"u8, 0xED, 0xA0, 0x80] };  // encoded surrogate
+            yield return new object[] { (byte[])[0xA0] };                            // lone continuation byte
+            yield return new object[] { (byte[])[0xC2] };                            // truncated 2-byte sequence
+            yield return new object[] { (byte[])[0xF5, .. "1"u8] };                  // lead byte above U+10FFFF
+            yield return new object[] { (byte[])[.. "1"u8, 0xC2, .. "2:34"u8] };     // truncated sequence between digits
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Utf8_InvalidUtf8Bytes_TestData))]
+        public static void Parse_Utf8_InvalidUtf8Bytes_ThrowsFormatException(byte[] utf8Text)
+        {
+            Assert.Throws<FormatException>(() => TimeSpan.Parse(utf8Text, null));
+            Assert.False(TimeSpan.TryParse(utf8Text, null, out TimeSpan result));
+            Assert.Equal(TimeSpan.Zero, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Utf8_InvalidUtf8Bytes_TestData))]
+        public static void Parse_Utf8_InvalidUtf8Bytes_MessageOmitsInput(byte[] utf8Text)
+        {
+            // Invalid UTF-8 must not be echoed back as a lossy string.
+            FormatException ex = Assert.Throws<FormatException>(() => TimeSpan.Parse(utf8Text, null));
+            Assert.DoesNotContain("12:34", ex.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("ReadOnlySpan", ex.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("\uFFFD", ex.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public static void Parse_Utf8_InvalidUtf8Bytes_OverflowMessageOmitsInput()
+        {
+            // The number overflows before the invalid byte is reached.
+            byte[] utf8Text = [.. "4294967296"u8, 0xFF];
+
+            OverflowException ex = Assert.Throws<OverflowException>(() => TimeSpan.Parse(utf8Text, null));
+            Assert.DoesNotContain("4294967296", ex.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("\uFFFD", ex.Message, StringComparison.Ordinal);
+
+            Assert.False(TimeSpan.TryParse(utf8Text, null, out TimeSpan result));
+            Assert.Equal(TimeSpan.Zero, result);
+        }
+
+        [Theory]
+        [InlineData("\u00A012:24:02\u00A0", false)] // NO-BREAK SPACE, 2 bytes in UTF-8
+        [InlineData("\u300012:24:02\u3000", false)] // IDEOGRAPHIC SPACE, 3 bytes in UTF-8
+        [InlineData("\u2028 12:24:02 \u2029", false)] // LINE SEPARATOR / PARAGRAPH SEPARATOR mixed with ASCII spaces
+        [InlineData("\t\u202F-12:24:02\u00A0\r\n", true)] // NARROW NO-BREAK SPACE around a negative value
+        public static void Parse_Utf8_NonAsciiWhiteSpace_MatchesChar(string input, bool negative)
+        {
+            TimeSpan expected = new TimeSpan(0, 12, 24, 2, 0);
+            if (negative)
+            {
+                expected = -expected;
+            }
+
+            // UTF-8 must trim the same Unicode white space as the char overloads.
+            Assert.Equal(expected, TimeSpan.Parse(input, null));
+
+            byte[] utf8Text = Encoding.UTF8.GetBytes(input);
+            Assert.Equal(expected, TimeSpan.Parse(utf8Text, null));
+            Assert.True(TimeSpan.TryParse(utf8Text, null, out TimeSpan result));
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public static void Parse_Utf8_Invalid_MessageContainsInput()
+        {
+            FormatException ex = Assert.Throws<FormatException>(() => TimeSpan.Parse("garbage"u8, null));
+            Assert.Contains("garbage", ex.Message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        public static void Parse_Utf8_NonAsciiDecimalSeparator()
+        {
+            // Under ICU, fa-IR uses U+066B as the decimal separator, which is multi-byte in UTF-8.
+            CultureInfo culture = new CultureInfo("fa-IR");
+            string separator = culture.NumberFormat.NumberDecimalSeparator;
+            if (Ascii.IsValid(separator))
+            {
+                return;
+            }
+
+            string input = "6:12:14:45" + separator + "348";
+            TimeSpan expected = new TimeSpan(6, 12, 14, 45, 348);
+            Assert.Equal(expected, TimeSpan.Parse(input, culture));
+
+            byte[] utf8Text = Encoding.UTF8.GetBytes(input);
+            Assert.Equal(expected, TimeSpan.Parse(utf8Text, culture));
+            Assert.True(TimeSpan.TryParse(utf8Text, culture, out TimeSpan result));
+            Assert.Equal(expected, result);
+
+            // '.' is not a valid separator for this culture.
+            Assert.False(TimeSpan.TryParse("6:12:14:45.348"u8, culture, out result));
+            Assert.Equal(TimeSpan.Zero, result);
+        }
+
         [Theory]
         [MemberData(nameof(ParseExact_Valid_TestData))]
         public static void ParseExact_Span_Valid(string inputString, string format, TimeSpan expected)
