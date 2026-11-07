@@ -52,10 +52,6 @@ internal sealed class JSEngineHost
         if (_args.CommonConfig.Debugging)
             throw new CommandLineException($"Debugging not supported with {_args.Host}");
 
-        var runArgsJson = new RunArgumentsJson(applicationArguments: Array.Empty<string>(),
-                                               runtimeArguments: _args.CommonConfig.RuntimeArguments);
-        runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
-
         var args = new List<string>();
 
         args.AddRange(_args.CommonConfig.HostArguments);
@@ -72,9 +68,18 @@ internal sealed class JSEngineHost
 
         ProcessStartInfo psi = new()
         {
-            FileName = engineBinary,
+            FileName = engineBinaryPath,
             WorkingDirectory = _args.CommonConfig.AppPath
         };
+
+        if (_args.CommonConfig.HostProperties.EnvironmentVariables is not null)
+        {
+            foreach ((string name, string value) in _args.CommonConfig.HostProperties.EnvironmentVariables)
+            {
+                if (!psi.Environment.ContainsKey(name))
+                    psi.Environment[name] = value;
+            }
+        }
 
         foreach (string? arg in args)
             psi.ArgumentList.Add(arg!);

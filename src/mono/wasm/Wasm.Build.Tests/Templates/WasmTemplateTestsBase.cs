@@ -520,6 +520,17 @@ public class WasmTemplateTestsBase : BuildTestBase
         return await BrowserRun(cmd, runArgs, runOptions);
     }
 
+    protected static string BuildBrowserUrl(string browserUrl, string browserPath, string queryString)
+    {
+        var baseUri = new Uri(browserUrl);
+        var url = new UriBuilder(new Uri(baseUri, browserPath));
+        int queryIndex = browserPath.IndexOf('?');
+        int fragmentIndex = browserPath.IndexOf('#');
+        string pathQuery = queryIndex >= 0 && (fragmentIndex < 0 || queryIndex < fragmentIndex) ? url.Query : "";
+        url.Query = string.Join("&", new[] { baseUri.Query.TrimStart('?'), pathQuery.TrimStart('?'), queryString.TrimStart('?') }.Where(value => value.Length > 0));
+        return url.ToString();
+    }
+
     protected async Task<RunResult> BrowserRun(ToolCommand cmd, string runArgs, RunOptions runOptions)
     {
         var query = runOptions.BrowserQueryString ?? new NameValueCollection();
@@ -545,7 +556,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             onConsoleMessage: OnConsoleMessage,
             onServerMessage: OnServerMessage,
             onError: OnErrorMessage,
-            modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + queryString).ToString());
+            modifyBrowserUrl: browserUrl => BuildBrowserUrl(browserUrl, runOptions.BrowserPath, queryString));
 
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new() { Timeout = 1 * 60 * 1000 });

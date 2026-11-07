@@ -173,6 +173,7 @@
       AppDir="$(WasmAppDir)"
       Assemblies="@(_WasmAssembliesInternal)"
       MainAssemblyName="$(WasmMainAssemblyFileName)"
+      RuntimeFlavor="$(WasmAppRuntimeFlavor)"
       IsSingleFileBundle="$(WasmSingleFileBundle)"
       HostConfigs="@(HostConfig)"
       RuntimeArgsForHost="@(WasmMonoRuntimeArgs)"

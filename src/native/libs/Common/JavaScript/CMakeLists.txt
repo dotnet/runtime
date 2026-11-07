@@ -40,6 +40,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/host-builder.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/icu.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/launch.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/lib-initializers.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/logging.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/per-module.ts"
