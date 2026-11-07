@@ -16715,3 +16715,61 @@ void ValueNumStore::PeelOffsetsI32(ValueNum* vn, int* offset)
         }
     }
 }
+
+//------------------------------------------------------------------------
+// fgRecordFactsOnLocals: Record facts the SSA based phases proved about locals on their descriptors.
+//
+// Returns:
+//    Suitable phase status.
+//
+// Notes:
+//    The value number store and the assertion table do not survive these phases, but the flags on a
+//    local's descriptor do, and that is what the later phases can ask. Today the one such flag is
+//    never-negative, set for a local whose every definition is never negative by value number, which
+//    GenTree::IsNeverNegative then answers for its uses.
+//
+PhaseStatus Compiler::fgRecordFactsOnLocals()
+{
+    bool marked = false;
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+        if (!varDsc->lvInSsa || varDsc->IsNeverNegative() || !varTypeIsIntegral(varDsc->TypeGet()) ||
+            (varDsc->lvPerSsaData.GetCount() == 0))
+        {
+            continue;
+        }
+
+        bool allNonNegative = true;
+        for (unsigned i = 0; i < varDsc->lvPerSsaData.GetCount(); i++)
+        {
+            LclSsaVarDsc* const def = varDsc->lvPerSsaData.GetSsaDefByIndex(i);
+            if ((def->GetDefNode() == nullptr) && !varDsc->lvIsParam)
+            {
+                // The implicit initial definition: zero when the method zero-initializes its locals,
+                // otherwise a value nothing is known about.
+                if (!info.compInitMem && !varDsc->lvMustInit)
+                {
+                    allNonNegative = false;
+                    break;
+                }
+                continue;
+            }
+
+            if (!vnStore->IsVNNeverNegative(def->m_vnPair.GetConservative()))
+            {
+                allNonNegative = false;
+                break;
+            }
+        }
+
+        if (allNonNegative)
+        {
+            JITDUMP("V%02u is never negative by value number\n", lclNum);
+            varDsc->SetIsNeverNegative(true);
+            marked = true;
+        }
+    }
+
+    return marked ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}

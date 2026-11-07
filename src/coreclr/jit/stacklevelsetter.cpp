@@ -303,26 +303,17 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         case GT_UMOD:
 #endif
         {
+            node->SetDivModExceptionFlags(m_compiler);
             ExceptionSetFlags exSetFlags = node->OperExceptions(m_compiler);
 
             if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
             {
                 SetThrowHelperBlock(SCK_DIV_BY_ZERO, block);
             }
-            else
-            {
-                // Even if we thought it might divide by zero during morph, now we know it never will.
-                node->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
-            }
 
             if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
             {
                 SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
-            }
-            else
-            {
-                // Even if we thought it might overflow during morph, now we know it never will.
-                node->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
             }
         }
         break;

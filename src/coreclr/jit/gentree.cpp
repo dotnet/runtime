@@ -8835,16 +8835,29 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
                 return ExceptionSetFlags::None;
             }
 
+            // Only the GTF_DIV_MOD_NO flags and constant operands decide, see SetDivModExceptionFlags
+            GenTree* op1 = this->gtGetOp1()->gtSkipReloadOrCopy();
+            GenTree* op2 = this->gtGetOp2()->gtSkipReloadOrCopy();
+
             ExceptionSetFlags exSetFlags = ExceptionSetFlags::None;
 
-            if (!(this->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) && !this->gtGetOp2()->gtSkipReloadOrCopy()->IsNeverZero())
+            if (!(this->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) && !op2->IsNeverZero())
             {
                 exSetFlags |= ExceptionSetFlags::DivideByZeroException;
             }
 
-            if (this->OperIs(GT_DIV, GT_MOD) && this->CanDivOrModPossiblyOverflow(comp))
+            if (this->OperIs(GT_DIV, GT_MOD) && !(this->gtFlags & GTF_DIV_MOD_NO_OVERFLOW))
             {
-                exSetFlags |= ExceptionSetFlags::ArithmeticException;
+                // Only the minimum value of the type divided by '-1' overflows
+                bool const divisorMayBeMinusOne = !op2->IsIntegralConst() || op2->IsIntegralConst(-1);
+                bool const dividendMayBeMin =
+                    !op1->IsIntegralConst() ||
+                    (op1->AsIntConCommon()->IntegralValue() == (this->TypeIs(TYP_INT) ? INT32_MIN : INT64_MIN));
+
+                if (divisorMayBeMinusOne && dividendMayBeMin)
+                {
+                    exSetFlags |= ExceptionSetFlags::ArithmeticException;
+                }
             }
 
             return exSetFlags;
@@ -35321,52 +35334,45 @@ bool GenTree::IsNeverZero() const
     return false;
 }
 
-//------------------------------------------------------------------------
-// CanDivOrModPossiblyOverflow: returns true if the given tree is known
-//                              to possibly overflow on a division.
-//                              Only valid for integral types.
-//                              Only valid for signed-div/signed-mod.
+//------------------------------------------------------------------------------
+// SetDivModExceptionFlags : Set GTF_EXCEPT and the GTF_DIV_MOD_NO_* flags as appropriate
+//                           on a division or remainder node from what its operands prove.
 //
 // Arguments:
-//    comp - Compiler object, needed for IsNeverNegativeOne
+//    comp  - compiler instance
 //
-// Return Value:
-//    true if the given tree is known to possibly overflow on a division
+// Notes:
+//    Everything consulted here is a property of the operand's value, so the flags hold wherever
+//    the node ends up. A fact that holds only below a dominating check needs the node pinned
+//    there as well, as assertion propagation does with SetHasOrderingSideEffect.
 //
-bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
+void GenTree::SetDivModExceptionFlags(Compiler* comp)
 {
-    assert(this->OperIs(GT_DIV, GT_MOD));
-    assert(varTypeIsIntegral(this));
+    assert(OperIs(GT_DIV, GT_MOD, GT_UDIV, GT_UMOD));
 
-    if (this->gtFlags & GTF_DIV_MOD_NO_OVERFLOW)
-        return false;
-
-    GenTree* op1 = this->gtGetOp1()->gtSkipReloadOrCopy();
-    GenTree* op2 = this->gtGetOp2()->gtSkipReloadOrCopy();
-
-    // If the divisor is known to never be '-1', we cannot overflow.
-    if (op2->IsNeverNegativeOne(comp))
-        return false;
-
-    // If the dividend is a constant with a minimum value with respect to the division's type, then we might overflow
-    // as we do not know if the divisor will be '-1' or not at this point.
-    if (op1->IsIntegralConst())
+    if (!varTypeIsFloating(this))
     {
-        if (this->TypeIs(TYP_INT) && op1->IsIntegralConst(INT32_MIN))
+        GenTree* divisor = gtGetOp2()->gtSkipReloadOrCopy();
+
+        if (divisor->IsNeverZero())
         {
-            return true;
-        }
-        else if (this->TypeIs(TYP_LONG) && (op1->AsIntConCommon()->IntegralValue() == INT64_MIN))
-        {
-            return true;
+            gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
         }
 
-        // Dividend is not a minimum value; therefore we cannot overflow.
-        return false;
+        if (OperIs(GT_DIV, GT_MOD) && divisor->IsNeverNegativeOne(comp))
+        {
+            gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+        }
     }
 
-    // Not enough known information; therefore we might overflow.
-    return true;
+    if (OperMayThrow(comp))
+    {
+        gtFlags |= GTF_EXCEPT;
+        return;
+    }
+
+    gtFlags &= ~GTF_EXCEPT;
+    gtFlags |= (gtGetOp1()->gtFlags | gtGetOp2()->gtFlags) & GTF_EXCEPT;
 }
 
 #if defined(FEATURE_HW_INTRINSICS)
