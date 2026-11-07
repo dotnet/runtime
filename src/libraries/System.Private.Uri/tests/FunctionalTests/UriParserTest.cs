@@ -661,6 +661,77 @@ namespace System.PrivateUri.Tests
             }
         }
 
+        [Theory]
+        [InlineData("%1", true, false)]
+        [InlineData("%1", false, false)]
+        [InlineData("", true, true)]
+        [InlineData("", false, true)]
+        public static void CustomParser_RegisteredAfterUriCreation_EqualsAndGetHashCode_AreStable(string scopeId, bool sameStringReference, bool expected)
+        {
+            string scheme = $"late-custom-ipv6-scope-{sameStringReference}-{expected}";
+            string uriString = $"{scheme}://[fe80::1{scopeId}]/";
+            var firstUri = new Uri(uriString);
+
+            UriParser.Register(new CustomParser_DelegatesToBase(), scheme, -1);
+
+            string secondString = sameStringReference ? uriString : new string(uriString.ToCharArray());
+            var secondUri = new Uri(secondString);
+            var thirdUri = new Uri($"{scheme}://[fe80::1%2]/");
+            if (sameStringReference)
+            {
+                Assert.Same(firstUri.OriginalString, secondUri.OriginalString);
+            }
+            else
+            {
+                Assert.NotSame(firstUri.OriginalString, secondUri.OriginalString);
+            }
+
+            AssertEquality();
+
+            int firstHashCode = firstUri.GetHashCode();
+            int secondHashCode = secondUri.GetHashCode();
+            int thirdHashCode = thirdUri.GetHashCode();
+            Assert.Equal(secondHashCode, thirdHashCode);
+            if (expected)
+            {
+                Assert.Equal(firstHashCode, secondHashCode);
+            }
+
+            AssertEquality();
+
+            _ = firstUri.IdnHost;
+            _ = secondUri.IdnHost;
+            _ = thirdUri.IdnHost;
+            Assert.Equal(firstHashCode, firstUri.GetHashCode());
+            Assert.Equal(secondHashCode, secondUri.GetHashCode());
+            Assert.Equal(thirdHashCode, thirdUri.GetHashCode());
+            AssertEquality();
+
+            var uris = new HashSet<Uri> { firstUri, secondUri, thirdUri };
+            Assert.Equal(expected ? 1 : 2, uris.Count);
+            Assert.Contains(firstUri, uris);
+            Assert.Contains(secondUri, uris);
+            Assert.Contains(thirdUri, uris);
+
+            void AssertEquality()
+            {
+                Assert.Equal(expected, firstUri.Equals(secondUri));
+                Assert.Equal(expected, secondUri.Equals(firstUri));
+                Assert.Equal(expected, firstUri.Equals((object)secondUri));
+                Assert.Equal(expected, secondUri.Equals((object)firstUri));
+                Assert.Equal(expected, firstUri == secondUri);
+                Assert.Equal(!expected, firstUri != secondUri);
+                Assert.Equal(expected, firstUri.Equals(thirdUri));
+                Assert.Equal(expected, thirdUri.Equals(firstUri));
+                Assert.True(secondUri.Equals(thirdUri));
+                Assert.True(thirdUri.Equals(secondUri));
+            }
+        }
+
+        private sealed class CustomParser_DelegatesToBase() : GenericUriParser(GenericUriParserOptions.Default)
+        {
+        }
+
         private sealed class CustomParser_FormatsRequestUrlWithoutParsingHost(string? hostOverride) : GenericUriParser(GenericUriParserOptions.Default)
         {
             public int HostRequests;

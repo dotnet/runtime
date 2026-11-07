@@ -1554,9 +1554,8 @@ namespace System
                     StringComparer.OrdinalIgnoreCase.GetHashCode(remoteUrl) :
                     remoteUrl.GetHashCode();
 
-                // Custom parsers define identity through HttpRequestUrl and may return it without
-                // initializing the host. ScopeId can remain null until Host or IdnHost is accessed,
-                // so including it could change the hash after those properties populate the cache.
+                // Non-simple parsers may return HttpRequestUrl without initializing the host.
+                // Exclude their cached scope IDs to keep the hash stable after Host or IdnHost is accessed.
                 return HostType == Flags.IPv6HostType && _syntax.IsSimple && info.ScopeId is string scopeId ?
                     HashCode.Combine(hashCode, scopeId) :
                     hashCode;
@@ -1748,7 +1747,10 @@ namespace System
             if (DisablePathAndQueryCanonicalization != other.DisablePathAndQueryCanonicalization)
                 return false;
 
-            if (ReferenceEquals(OriginalString, other.OriginalString))
+            // The same URI string can use different parsers before and after UriParser.Register.
+            // Only use string equality as a shortcut when both URIs share the same parser.
+            bool sameSyntax = _syntax == other._syntax;
+            if (sameSyntax && ReferenceEquals(OriginalString, other.OriginalString))
             {
                 return true;
             }
@@ -1759,7 +1761,7 @@ namespace System
             if (IsNotAbsoluteUri)
                 return OriginalString.Equals(other.OriginalString);
 
-            if (NotAny(Flags.AllUriInfoSet) || other.NotAny(Flags.AllUriInfoSet))
+            if (sameSyntax && (NotAny(Flags.AllUriInfoSet) || other.NotAny(Flags.AllUriInfoSet)))
             {
                 // Try raw compare for _strings as the last chance to keep the working set small
                 // Keep IPv6 scope IDs case-sensitive even when UNC/DOS paths ignore case.
@@ -1859,10 +1861,10 @@ namespace System
                 return false;
             }
 
-            // Scope IDs are omitted from HttpRequestUrl and must be compared separately.
+            // Simple parsers omit IPv6 scope IDs from HttpRequestUrl, so compare them separately.
             if (HostType == Flags.IPv6HostType || other.HostType == Flags.IPv6HostType)
             {
-                // Custom parsers define equality through HttpRequestUrl.
+                // Ignore cached scope IDs for non-simple parsers, which define their own request URL.
                 string? selfScopeId = HostType == Flags.IPv6HostType && _syntax.IsSimple ? selfInfo.ScopeId : null;
                 string? otherScopeId = other.HostType == Flags.IPv6HostType && other._syntax.IsSimple ? otherInfo.ScopeId : null;
                 if (selfScopeId != otherScopeId)
