@@ -538,6 +538,7 @@ endif()
 if(NOT FEATURE_PORTABLE_HELPERS)
   target_link_libraries(Runtime.WorkstationGC PRIVATE Runtime.AsmHelpers)
 endif()
+install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
 
 if(FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_library(Runtime.GC.Server OBJECT ${GC_WKS_SVR_SOURCES})
@@ -570,6 +571,7 @@ endif()
 if(FEATURE_EVENT_TRACE AND CLR_CMAKE_TARGET_WIN32)
   add_dependencies(standalonegc-disabled aot_etw_headers)
 endif()
+install_static_library(standalonegc-disabled aotsdk nativeaot)
 
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_library(standalonegc-enabled STATIC ${STANDALONEGC_ENABLED_SOURCES})
@@ -594,6 +596,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     COMPILE_PDB_NAME "aotminipal"
     COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
 endif()
+install_static_library(aotminipal aotsdk nativeaot)
 
 add_custom_command(
   # AsmOffsets.cs is consumed later by the managed build.
@@ -602,7 +605,3 @@ add_custom_command(
   COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS}
           -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.cs"
 )
-
-install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
-install_static_library(standalonegc-disabled aotsdk nativeaot)
-install_static_library(aotminipal aotsdk nativeaot)
