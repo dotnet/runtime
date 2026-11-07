@@ -30,6 +30,69 @@ namespace System.IO.Pipes.Tests
             RemoteExecutor.Invoke(new Action<string, string>(ServerConnectAsId), pipeName, pairID.ToString()).Dispose();
         }
 
+        [ConditionalTheory(typeof(NamedPipeTest_RunAsClient), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void RunAsClient_Nested_RestoresOuterIdentity(bool innerUsesServerIdentity, bool throwFromInner)
+        {
+            RemoteExecutor.Invoke(static async (innerUsesServerIdentityString, throwFromInnerString) =>
+            {
+                const uint ClientUserId = 65534;
+                uint serverUserId = geteuid();
+                Assert.NotEqual(serverUserId, ClientUserId);
+                uint innerUserId = bool.Parse(innerUsesServerIdentityString) ? serverUserId : ClientUserId;
+                bool throwFromInner = bool.Parse(throwFromInnerString);
+
+                string outerPipeName = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                string innerPipeName = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                using var outer = new NamedPipeServerStream(outerPipeName, PipeDirection.Out);
+                using var inner = new NamedPipeServerStream(innerPipeName, PipeDirection.Out);
+
+                // Allow the unprivileged clients to connect to sockets created by the server user.
+                const UnixFileMode SocketMode = UnixFileMode.UserRead | UnixFileMode.UserWrite |
+                    UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.OtherRead | UnixFileMode.OtherWrite;
+                File.SetUnixFileMode(outerPipeName, SocketMode);
+                File.SetUnixFileMode(innerPipeName, SocketMode);
+                using (RemoteExecutor.Invoke(new Action<string, string>(ClientConnectAsID), outerPipeName, ClientUserId.ToString()))
+                using (RemoteExecutor.Invoke(new Action<string, string>(ClientConnectAsID), innerPipeName, innerUserId.ToString()))
+                {
+                    await outer.WaitForConnectionAsync().WaitAsync(TimeSpan.FromSeconds(30));
+                    await inner.WaitForConnectionAsync().WaitAsync(TimeSpan.FromSeconds(30));
+                }
+
+                bool innerRan = false;
+                outer.RunAsClient(() =>
+                {
+                    Assert.Equal(ClientUserId, geteuid());
+                    PipeStreamImpersonationWorker innerWorker = () =>
+                    {
+                        innerRan = true;
+                        Assert.Equal(innerUserId, geteuid());
+                        if (throwFromInner)
+                        {
+                            throw new InvalidOperationException();
+                        }
+                    };
+
+                    if (throwFromInner)
+                    {
+                        Assert.Throws<InvalidOperationException>(() => inner.RunAsClient(innerWorker));
+                    }
+                    else
+                    {
+                        inner.RunAsClient(innerWorker);
+                    }
+
+                    Assert.Equal(ClientUserId, geteuid());
+                });
+
+                Assert.True(innerRan);
+                Assert.Equal(serverUserId, geteuid());
+            }, innerUsesServerIdentity.ToString(), throwFromInner.ToString()).Dispose();
+        }
+
         private static void ServerConnectAsId(string pipeName, string pairIDString)
         {
             uint pairID = uint.Parse(pairIDString);
