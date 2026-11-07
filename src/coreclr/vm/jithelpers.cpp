@@ -1677,7 +1677,7 @@ FCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* v
     PgoManager::VerifyAddress(valueProfile + 1);
 #endif
 
-    valueProfile->ValueTable[sampleIndex] = val;
+    valueProfile->ValueTable[sampleIndex] = (int32_t)val;
 }
 FCIMPLEND
 
@@ -1697,7 +1697,7 @@ FCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* v
     PgoManager::VerifyAddress(valueProfile + 1);
 #endif
 
-    valueProfile->ValueTable[sampleIndex] = val;
+    valueProfile->ValueTable[sampleIndex] = (int32_t)val;
 }
 FCIMPLEND
 

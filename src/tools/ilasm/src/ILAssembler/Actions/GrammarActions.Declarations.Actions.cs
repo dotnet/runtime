@@ -15,7 +15,7 @@ internal sealed partial class GrammarActions
     {
         if (!IsDeclarationSuppressed)
         {
-            _isCoreLibrary = true;
+            _entityRegistry.IsCoreLibrary = true;
         }
     }
 
