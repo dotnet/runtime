@@ -44,7 +44,12 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
             buffer.CopyTo(byteSpan);
         }
     }
-    public ReadOnlySpan<byte> GetBytes() => MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Context, 1));
+    public unsafe byte[] GetBytes()
+    {
+        Span<T> structSpan = MemoryMarshal.CreateSpan(ref Context, 1);
+        Span<byte> byteSpan = MemoryMarshal.AsBytes(structSpan);
+        return byteSpan.ToArray();
+    }
     public IPlatformAgnosticContext Clone() => new ContextHolder<T>() { Context = Context };
     public void Clear() => Context = default;
     public void Unwind(Target target) => Context.Unwind(target);
