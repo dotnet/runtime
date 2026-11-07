@@ -871,12 +871,9 @@ namespace System.Runtime.Serialization.DataContracts
                         Type ienumeratorInterface = typeof(IEnumerator);
                         if (Kind == CollectionKind.GenericDictionary || Kind == CollectionKind.GenericCollection || Kind == CollectionKind.GenericEnumerable)
                         {
-                            Type[] interfaceTypes = enumeratorType.GetInterfaces();
-                            foreach (Type interfaceType in interfaceTypes)
+                            foreach (Type interfaceType in enumeratorType.GetInterfacesWithSameMetadataDefinitionAs(typeof(System.Collections.Generic.IEnumerator<>)))
                             {
-                                if (interfaceType.IsGenericType
-                                    && interfaceType.GetGenericTypeDefinition() == typeof(System.Collections.Generic.IEnumerator<>)
-                                    && interfaceType.GetGenericArguments()[0] == ItemType)
+                                if (interfaceType.GetGenericArguments()[0] == ItemType)
                                 {
                                     ienumeratorInterface = interfaceType;
                                     break;
