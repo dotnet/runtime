@@ -404,6 +404,9 @@ struct CSEdsc
     // true if this CSE is a shared const
     bool csdIsSharedConst;
 
+    // true if some occurrences of this CSE have different exception sets
+    bool csdMixedExcSets;
+
     // true if this CSE is live across a call
     bool csdLiveAcrossCall;
 
