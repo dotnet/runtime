@@ -348,6 +348,57 @@ public unsafe class GCInfoTests
     }
 
     [Theory]
+    [InlineData(4u, false)]
+    [InlineData(5u, false)]
+    [InlineData(4u, true)]
+    [InlineData(5u, true)]
+    public void X86PoppingNonPointerArgumentPreservesPointerBelowIt(uint version, bool ebpFrame)
+    {
+        byte[] encoded = ebpFrame
+            ? [64, 0x81, 0xBE, 0xBF, 0x40, 0x81, 0xB1, 0xC9, 0xC9, 0xFF]
+            : [64, 0x81, 0x40, 0x81, 0xB1, 0xC9, 0xC9, 0xFF];
+        (IGCInfo contract, IGCInfoHandle handle, _) = CreateX86GCInfo(encoded, version);
+        IReadOnlyList<GCSlotLifetime> slots = contract.GetSlotLifetimes(handle);
+        Assert.Equal(ebpFrame
+            ? new GCSlotLifetime[] { new(false, 0, -4, 2, 0, 1, 4) }
+            : new GCSlotLifetime[]
+            {
+                new(false, 0, 0, 1, 0, 1, 2),
+                new(false, 0, 4, 1, 0, 2, 3),
+                new(false, 0, 0, 1, 0, 3, 4),
+            }, slots);
+        IReadOnlyList<X86GCTransition> transitions = contract.GetX86Transitions(handle);
+        Assert.Equal(2u, transitions[0].Flags);
+        Assert.Equal(0u, transitions[1].Flags);
+        Assert.Empty(contract.EnumerateLiveSlots(handle, 4, new() { IsActiveFrame = true }));
+    }
+
+    [Theory]
+    [InlineData(4u, false)]
+    [InlineData(5u, false)]
+    [InlineData(4u, true)]
+    [InlineData(5u, true)]
+    public void X86BulkNonPointerStackAdjustmentPreservesPointerBelowIt(uint version, bool ebpFrame)
+    {
+        byte[] encoded = ebpFrame
+            ? [64, 0x81, 0xBE, 0xBF, 0x40, 0x81, 0xF9, 3, 0xD9, 0xC9, 0xFF]
+            : [64, 0x81, 0x40, 0x81, 0xF9, 3, 0xD9, 0xC9, 0xFF];
+        (IGCInfo contract, IGCInfoHandle handle, _) = CreateX86GCInfo(encoded, version);
+        Assert.Equal(ebpFrame
+            ? new GCSlotLifetime[] { new(false, 0, -4, 2, 0, 1, 3) }
+            : new GCSlotLifetime[]
+            {
+                new(false, 0, 12, 1, 0, 1, 2),
+                new(false, 0, 0, 1, 0, 2, 3),
+            }, contract.GetSlotLifetimes(handle));
+        X86GCTransition adjustment = Assert.Single(contract.GetX86Transitions(handle),
+            transition => transition.Kind == X86GCTransitionKind.StackDepth);
+        Assert.Equal(1u, adjustment.CodeOffset);
+        Assert.Equal(12, adjustment.StackDepthChange);
+        Assert.Empty(contract.EnumerateLiveSlots(handle, 3, new() { IsActiveFrame = true }));
+    }
+
+    [Theory]
     [InlineData(4u)]
     [InlineData(5u)]
     public void X86CallSitesHaveRegisterAndArgumentRoots(uint version)

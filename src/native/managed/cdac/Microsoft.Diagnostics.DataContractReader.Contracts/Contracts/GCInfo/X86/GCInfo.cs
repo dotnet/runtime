@@ -993,16 +993,7 @@ public record X86GCInfo : IGCInfoDecoder
                 depthSlots = checked((int)ptrT.ArgCount);
                 break;
             case Action.POP:
-                if (Header.EbpFrame)
-                {
-                    // EBP frames encode only pointer pushes/pops; argument indices can have gaps.
-                    if (ptrT.ArgOffset > pushedPtrs.Count)
-                        throw new BadImageFormatException($"X86 pop count {ptrT.ArgOffset} exceeds live pointer count {pushedPtrs.Count}.");
-                    foreach (int index in pushedPtrs.Keys.Reverse().Take(checked((int)ptrT.ArgOffset)).ToArray())
-                        pushedPtrs.Remove(index);
-                    depthSlots = pushedPtrs.Count == 0 ? 0 : checked(pushedPtrs.Keys.Last() + 1);
-                    break;
-                }
+                // Fully interruptible pops count all stack entries, including non-pointers.
                 for (uint i = 0; i < ptrT.ArgOffset && depthSlots > 0; i++)
                 {
                     depthSlots--;

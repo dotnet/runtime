@@ -194,9 +194,14 @@ their current ESP-relative displacement. Pushes and pops split locations of
 existing pushed roots and ESP-relative locals. KILL removes the indicated number
 of highest pointer arguments without changing stack depth.
 For ordinary EBP frames, pushed roots instead use the encoded argument index
-relative to the stable frame base; a pop removes pointer entries, not physical
-stack slots. Non-pointer pushes are omitted from that encoding, so Interface19
-reports zero stack delta for those pointer push/pop records.
+relative to the stable frame base. Fully interruptible pops count all stack
+entries, including non-pointer arguments, and remove roots only from the slots
+actually popped. Interface19 currently reports zero stack delta for EBP
+push/pop records; their argument information and pointer flag identify the
+encoded operations. Bulk `StackDepth` records report the byte depth change.
+Constant `sub ESP, N` and `add ESP, N` instructions in the method body are
+represented as non-pointer argument pushes and argument pops, respectively;
+the GC encoding does not distinguish these from push/pop instructions.
 
 For partially interruptible methods, call records supply register and argument
 roots at the call offset, represented by single-byte intervals `[offset, offset+1)`;
