@@ -219,5 +219,34 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
         }
+
+        [Theory]
+        [InlineData("{}")]
+        [InlineData("")]
+        public async Task ReaderIsAdvancedWhenAdvanceToThrows(string json)
+        {
+            byte[] data = new byte[json.Length];
+            Encoding.UTF8.GetBytes(json, 0, json.Length, data, 0);
+            var reader = new AdvanceToThrowsPipeReader(new ReadOnlySequence<byte>(data));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper<SimpleTestClass>(reader));
+            Assert.Equal(1, reader.AdvanceToConsumedCount);
+        }
+
+        private sealed class AdvanceToThrowsPipeReader(ReadOnlySequence<byte> buffer) : PipeReader
+        {
+            public int AdvanceToConsumedCount { get; private set; }
+
+            public override void AdvanceTo(SequencePosition consumed) => AdvanceToConsumedCount++;
+            public override void AdvanceTo(SequencePosition consumed, SequencePosition examined) => throw new InvalidOperationException();
+            public override void CancelPendingRead() { }
+            public override void Complete(Exception? exception = null) { }
+            public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default) => new(new ReadResult(buffer, isCanceled: false, isCompleted: true));
+            public override bool TryRead(out ReadResult result)
+            {
+                result = new ReadResult(buffer, isCanceled: false, isCompleted: true);
+                return true;
+            }
+        }
     }
 }
