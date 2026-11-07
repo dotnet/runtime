@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
@@ -343,6 +344,18 @@ namespace System.Tests
 
         private static T Identity<T>(T value) => value;
 
+        [Fact]
+        public static void GenericRecordStructWithConstrainedFieldEqualsInSharedCodeTest()
+        {
+            Assert.True(SharedRecordEquality<RecordFieldLeaf>.ConstrainedFieldEquals("value"));
+        }
+
+        [Fact]
+        public static void GenericRecordStructWithTypeDependentLayoutFieldEqualsInSharedCodeTest()
+        {
+            Assert.True(SharedRecordEquality<RecordFieldLeaf>.TypeDependentLayoutFieldEquals(new RecordFieldLeaf()));
+        }
+
         public struct S
         {
             public int x;
@@ -465,6 +478,36 @@ namespace System.Tests
         private struct StructWithSelfReferencingGenericField
         {
             public GenericFieldBox<StructWithSelfReferencingGenericField> value;
+        }
+
+        private abstract class RecordFieldBase
+        {
+        }
+
+        private sealed class RecordFieldLeaf : RecordFieldBase
+        {
+        }
+
+        private readonly record struct ConstrainedObject<T>(object Value) where T : RecordFieldBase;
+
+        private readonly record struct RecordWithConstrainedObject<T>(ConstrainedObject<T> Field) where T : RecordFieldBase;
+
+        private readonly record struct ValueAndNumber<T>(T Value, int Number);
+
+        private readonly record struct RecordWithValueAndNumber<T>(ValueAndNumber<T> Field);
+
+        // Must run as shared code over a reference type; inlined into closed code the comparisons never reach the devirtualization under test.
+        private static class SharedRecordEquality<T> where T : RecordFieldBase
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static bool ConstrainedFieldEquals(object value) =>
+                new RecordWithConstrainedObject<T>(new ConstrainedObject<T>(value))
+                    .Equals(new RecordWithConstrainedObject<T>(new ConstrainedObject<T>(value)));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static bool TypeDependentLayoutFieldEquals(T value) =>
+                new RecordWithValueAndNumber<T>(new ValueAndNumber<T>(value, 1))
+                    .Equals(new RecordWithValueAndNumber<T>(new ValueAndNumber<T>(value, 1)));
         }
     }
 }
