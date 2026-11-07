@@ -146,7 +146,12 @@ namespace System.IO
                 ThrowIfReadingNotSupported();
 
                 byte b = 0;
-                int n = _buffer.Read(MemoryMarshal.CreateSpan(ref b, 1));
+                int n;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    n = _buffer.Read(MemoryMarshal.CreateSpan(ref b, 1));
+                }
                 return n != 0 ? b : -1;
             }
 
@@ -200,7 +205,11 @@ namespace System.IO
                 ThrowIfDisposed();
                 ThrowIfWritingNotSupported();
 
-                _buffer.Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+                // SAFETY: To be audited
+                unsafe
+                {
+                    _buffer.Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+                }
             }
 
             public override void Write(ReadOnlySpan<byte> buffer)
@@ -337,7 +346,12 @@ namespace System.IO
                 ThrowIfDisposed();
 
                 byte b = 0;
-                int n = _readBuffer.Read(MemoryMarshal.CreateSpan(ref b, 1));
+                int n;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    n = _readBuffer.Read(MemoryMarshal.CreateSpan(ref b, 1));
+                }
                 return n != 0 ? b : -1;
             }
 
@@ -379,7 +393,11 @@ namespace System.IO
             public override void WriteByte(byte value)
             {
                 ThrowIfDisposed();
-                _writeBuffer.Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+                // SAFETY: To be audited
+                unsafe
+                {
+                    _writeBuffer.Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+                }
             }
 
             public override void Write(ReadOnlySpan<byte> buffer)

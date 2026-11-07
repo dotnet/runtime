@@ -197,6 +197,7 @@ namespace System.IO.Compression
 
             ZLibNative.FlushCode flushCode = isFinalBlock ? ZLibNative.FlushCode.Finish : ZLibNative.FlushCode.NoFlush;
 
+            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* inputPtr = &MemoryMarshal.GetReference(source))
@@ -254,6 +255,7 @@ namespace System.IO.Compression
                 return OperationStatus.Done;
             }
 
+            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* outputPtr = &MemoryMarshal.GetReference(destination))
