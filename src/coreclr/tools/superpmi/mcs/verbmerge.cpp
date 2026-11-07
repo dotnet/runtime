@@ -45,15 +45,6 @@ LPWSTR verbMerge::MergePathStrings(LPCWSTR dir, LPCWSTR file)
     return newpath;
 }
 
-char* verbMerge::ConvertToUtf8(LPCWSTR wstr)
-{
-    size_t length     = u16_strlen(wstr) + 1;
-    size_t sizeNeeded = minipal_get_length_utf16_to_utf8((const CHAR16_T*)wstr, length, 0);
-    char*  encodedStr = new char[sizeNeeded];
-    minipal_convert_utf16_to_utf8((const CHAR16_T*)wstr, length, encodedStr, sizeNeeded, 0);
-    return encodedStr;
-}
-
 WCHAR* verbMerge::ConvertFromUtf8(LPCSTR str)
 {
     size_t length     = strlen(str) + 1;
@@ -74,20 +65,20 @@ int verbMerge::AppendFileRaw(FILE* hFileOut, LPCWSTR fileFullPath, unsigned char
 {
     int result = 0; // default to zero == success
 
-    char* fileNameAsChar = ConvertToUtf8(fileFullPath);
-    LogInfo("Appending file '%s'", fileNameAsChar);
+    std::string fileNameAsChar = ConvertToUtf8(fileFullPath);
+    LogInfo("Appending file '%s'", fileNameAsChar.c_str());
 
     FILE* hFileIn;
     if (u16_fopen_s(&hFileIn, fileFullPath, W("rb")) != 0)
     {
-        LogError("Failed to open input file '%s'. errno=%d", fileNameAsChar, errno);
+        LogError("Failed to open input file '%s'. errno=%d", fileNameAsChar.c_str(), errno);
         return -1;
     }
 
     int64_t fileSize = fgetsize(hFileIn);
     if (fileSize < 0)
     {
-        LogError("fgetsize on '%s' failed. errno=%d", fileNameAsChar, errno);
+        LogError("fgetsize on '%s' failed. errno=%d", fileNameAsChar.c_str(), errno);
         result = -1;
         goto CLEAN_UP;
     }
@@ -97,7 +88,7 @@ int verbMerge::AppendFileRaw(FILE* hFileOut, LPCWSTR fileFullPath, unsigned char
         size_t bytesRead = fread(buffer, 1, bufferSize, hFileIn);
         if (ferror(hFileIn))
         {
-            LogError("Failed to read '%s' from offset %lld. errno=%d", fileNameAsChar, offset, errno);
+            LogError("Failed to read '%s' from offset %lld. errno=%d", fileNameAsChar.c_str(), offset, errno);
             result = -1;
             goto CLEAN_UP;
         }
@@ -111,8 +102,6 @@ int verbMerge::AppendFileRaw(FILE* hFileOut, LPCWSTR fileFullPath, unsigned char
     }
 
 CLEAN_UP:
-
-    delete[] fileNameAsChar;
 
     if (fclose(hFileIn) != 0)
     {
@@ -135,11 +124,10 @@ int verbMerge::AppendFile(FILE* hFileOut, LPCWSTR fileFullPath, bool dedup, unsi
 
     if (dedup)
     {
-        // Need to conver the fileFullPath to non-Unicode.
-        char* fileFullPathAsChar = ConvertToUtf8(fileFullPath);
-        LogInfo("Appending file '%s'", fileFullPathAsChar);
-        bool ok = m_removeDups.CopyAndRemoveDups(fileFullPathAsChar, hFileOut);
-        delete[] fileFullPathAsChar;
+        // Need to convert the fileFullPath to non-Unicode.
+        std::string fileFullPathAsChar = ConvertToUtf8(fileFullPath);
+        LogInfo("Appending file '%s'", fileFullPathAsChar.c_str());
+        bool ok = m_removeDups.CopyAndRemoveDups(fileFullPathAsChar.c_str(), hFileOut);
         if (!ok)
         {
             LogError("Failed to remove dups");
@@ -268,8 +256,8 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
     // NOTE: this function only works on Windows 7 and later.
 
 #ifdef TARGET_UNIX
-    std::string dirUtf8 = ::ConvertToUtf8(dir);
-    std::string searchPatternUtf8 = ::ConvertToUtf8(searchPattern);
+    std::string dirUtf8 = ConvertToUtf8(dir);
+    std::string searchPatternUtf8 = ConvertToUtf8(searchPattern);
 
     DIR* pDir = opendir(dirUtf8.c_str());
     if (pDir != nullptr)
@@ -343,7 +331,7 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
         }
         else
         {
-            std::string searchPatternUtf8 = ::ConvertToUtf8(searchPattern);
+            std::string searchPatternUtf8 = ConvertToUtf8(searchPattern);
             LogError("Failed to find pattern '%s'. errno=%d", searchPatternUtf8.c_str(), errno);
             result = -1;
         }
@@ -371,7 +359,7 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
         }
         else
         {
-            std::string searchPatternUtf8 = ::ConvertToUtf8(searchPattern);
+            std::string searchPatternUtf8 = ConvertToUtf8(searchPattern);
             LogError("Failed to find pattern '%s'. GetLastError()=%u", searchPatternUtf8.c_str(), GetLastError());
             result = -1;
         }
@@ -503,26 +491,23 @@ int verbMerge::AppendAllInDir(FILE*              hFileOut,
 
 #else  // TARGET_WINDOWS
         struct stat fileStat;
-        char *fileFullPathUtf8 = ConvertToUtf8(fileFullPath);
-        int st = stat(fileFullPathUtf8, &fileStat);
+        std::string fileFullPathUtf8 = ConvertToUtf8(fileFullPath);
+        int st = stat(fileFullPathUtf8.c_str(), &fileStat);
         if (st != 0)
         {
-            LogError("Failed to stat file '%s'. errno=%d", fileFullPathUtf8, errno);
+            LogError("Failed to stat file '%s'. errno=%d", fileFullPathUtf8.c_str(), errno);
             result = -1;
             delete[] fileFullPath;
-            delete[] fileFullPathUtf8;
             goto CLEAN_UP;
         }
-        delete[] fileFullPathUtf8;
         uint64_t fileSize = fileStat.st_size;
 #endif // TARGET_WINDOWS
 
         // Is it zero length? If so, skip it.
         if (fileSize == 0)
         {
-            char* fileFullPathAsChar = ConvertToUtf8(fileFullPath);
-            LogInfo("Skipping zero-length file '%s'", fileFullPathAsChar);
-            delete[] fileFullPathAsChar;
+            std::string fileFullPathAsChar = ConvertToUtf8(fileFullPath);
+            LogInfo("Skipping zero-length file '%s'", fileFullPathAsChar.c_str());
         }
         else
         {
