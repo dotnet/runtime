@@ -525,9 +525,9 @@ enum GenTreeFlags : unsigned
     GTF_OVERFLOW                = 0x10000000, // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                               // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
 
-    GTF_DIV_MOD_NO_BY_ZERO      = 0x20000000, // GT_DIV, GT_MOD -- Div or mod definitely does not divide-by-zero.
+    GTF_DIV_MOD_NO_BY_ZERO      = 0x20000000, // GT_DIV, GT_UDIV, GT_MOD, GT_UMOD -- definitely does not divide by zero.
 
-    GTF_DIV_MOD_NO_OVERFLOW     = 0x40000000, // GT_DIV, GT_MOD -- Div or mod definitely does not overflow.
+    GTF_DIV_MOD_NO_OVERFLOW     = 0x40000000, // GT_DIV, GT_MOD -- definitely does not overflow.
 
     GTF_ALLOCOBJ_EMPTY_STATIC = 0x80000000, // GT_ALLOCOBJ -- allocation site is part of an empty static pattern
 
@@ -2501,7 +2501,7 @@ public:
     bool IsNeverNegative(Compiler* comp) const;
     bool IsNeverNegativeOne(Compiler* comp) const;
     bool IsNeverZero() const;
-    bool CanDivOrModPossiblyOverflow(Compiler* comp) const;
+    void SetDivModExceptionFlags(Compiler* comp);
 
     bool IsReuseRegVal() const
     {
