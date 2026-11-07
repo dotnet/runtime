@@ -105,10 +105,12 @@ namespace System.Runtime.Caching
     }
     public partial class MemoryCache : System.Runtime.Caching.ObjectCache, System.Collections.IEnumerable, System.IDisposable
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Configuration files are not compatible with trimming.")]
         public MemoryCache(string name, System.Collections.Specialized.NameValueCollection config = null) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Configuration files are not compatible with trimming. The warning can be suppressed when ignoreConfigSection is true.")]
         public MemoryCache(string name, System.Collections.Specialized.NameValueCollection config, bool ignoreConfigSection) { }
         public long CacheMemoryLimit { get { throw null; } }
-        public static System.Runtime.Caching.MemoryCache Default { get { throw null; } }
+        public static System.Runtime.Caching.MemoryCache Default { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Configuration files are not compatible with trimming.")] get { throw null; } }
         public override System.Runtime.Caching.DefaultCacheCapabilities DefaultCacheCapabilities { get { throw null; } }
         public override object this[string key] { get { throw null; } set { } }
         public override string Name { get { throw null; } }
