@@ -1096,7 +1096,8 @@ public record X86GCInfo : IGCInfoDecoder
         SortedSet<uint> boundaries = [0, MethodSize];
         foreach (int offset in SortedTransitionOffsets)
         {
-            if (offset < 0 || (uint)offset >= MethodSize)
+            // Fully interruptible epilogs can close register lifetimes at the method end.
+            if (offset < 0 || (uint)offset > MethodSize || ((uint)offset == MethodSize && !Header.Interruptible))
                 throw new BadImageFormatException($"X86 GC transition offset {offset} is outside code size {MethodSize}.");
             boundaries.Add((uint)offset);
             if (!Header.Interruptible)

@@ -312,6 +312,26 @@ public unsafe class GCInfoTests
     }
 
     [Theory]
+    [InlineData(4u, 64u)]
+    [InlineData(5u, 64u)]
+    [InlineData(4u, 65u)]
+    [InlineData(5u, 65u)]
+    public void X86RegisterDeathAtMethodEndClosesLifetime(uint version, uint endOffset)
+    {
+        (IGCInfo gcInfo, IGCInfoHandle handle, _) = CreateX86GCInfo(
+            [64, 0x81, 0x40, 0xBF, 0x49, 0xB8, (byte)(endOffset - 2), 0x09, 0xFF], version);
+        if (endOffset > 64)
+        {
+            Assert.Throws<BadImageFormatException>(() => gcInfo.GetSlotLifetimes(handle));
+        }
+        else
+        {
+            Assert.Equal(new GCSlotLifetime(true, 1, 0, 0, 1, 1, 64),
+                Assert.Single(gcInfo.GetSlotLifetimes(handle)));
+        }
+    }
+
+    [Theory]
     [InlineData(4u)]
     [InlineData(5u)]
     public void X86UntrackedLocationsAreSplitWithoutLosingFlags(uint version)
@@ -478,6 +498,31 @@ public unsafe class GCInfoTests
             contract.GetInterruptibleRanges(handle));
         Assert.False(contract.IsGcSafe(handle, 8));
         Assert.True(contract.IsGcSafe(handle, 12));
+    }
+
+    [Theory]
+    [InlineData(4u)]
+    [InlineData(5u)]
+    public void X86PinnedAndInteriorRootsScenarioProjectsLifetimes(uint version)
+    {
+        (IGCInfo gcInfo, IGCInfoHandle handle, SOSDacImpl impl) = CreateX86GCInfo(
+            [0x82, 0x25, 0xD2, 0x80, 0xDB, 0xC6, 0xC7, 0x93, 0xF7, 0x40, 0x09, 0x09,
+             0x04, 0x04, 0x04, 0x06, 0x05, 0x05, 0x04, 0x04, 0x04,
+             0xF5, 0x40, 0x4E, 0x06, 0x08, 0x43, 0xF6, 0x86, 0x4B, 0x06, 0x08,
+             0xC8, 0x43, 0xF2, 0x00, 0xF0, 0x43, 0xF0, 0x04, 0x40, 0x04, 0xBF,
+             0x40, 0x06, 0x47, 0xF0, 0x07, 0x40, 0x04, 0xBF, 0x40, 0xF0, 0x01,
+             0xBF, 0x44, 0x02, 0xF1, 0x4C, 0x0E, 0x4C, 0x0E, 0x4C, 0x0E, 0x44,
+             0xF0, 0x00, 0xFF], version);
+        IReadOnlyList<GCSlotLifetime> slots = gcInfo.GetSlotLifetimes(handle);
+        Assert.Contains(new GCSlotLifetime(false, 0, -20, 2, 6, 0, 0x125), slots);
+        Assert.Contains(new GCSlotLifetime(false, 0, -24, 2, 5, 0, 0x125), slots);
+        Assert.Contains(new GCSlotLifetime(false, 0, -48, 2, 0, 0x7D, 0x86), slots);
+        Assert.Contains(new GCSlotLifetime(true, 0, 0, 0, 1, 0xBC, 0xC2), slots);
+        uint needed;
+        ISOSDacInterface18 sos = impl;
+        Assert.Equal(HResults.S_FALSE, sos.GetGCInfoSlotLifetimes(MethodIP, 0, null, &needed));
+        SOSGCSlotLifetime[] output = new SOSGCSlotLifetime[needed];
+        Assert.Equal(HResults.S_OK, sos.GetGCInfoSlotLifetimes(MethodIP, needed, output, &needed));
     }
 
     private static (IGCInfo Contract, IGCInfoHandle Handle, SOSDacImpl Impl) CreateX86GCInfo(byte[] encoded, uint version)
