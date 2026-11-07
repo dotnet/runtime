@@ -24,6 +24,7 @@ function libBrowserUtilsFactory() {
         "_exit",
         "abort",
         "__trap",
+        "emscripten_stack_get_current",
         "__stack_pointer",
         "__coreclr_wasm_rtlrestorecontext_tag",
         "__async_continuation",

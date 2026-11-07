@@ -1150,8 +1150,12 @@ static int32_t ConvertMMapProtection(int32_t protection)
         ret |= PROT_READ;
     if (protection & PAL_PROT_WRITE)
         ret |= PROT_WRITE;
+#ifndef TARGET_WASM
     if (protection & PAL_PROT_EXEC)
         ret |= PROT_EXEC;
+#else
+    // WebAssembly linear memory is never executable, and WasmFS rejects PROT_EXEC.
+#endif
 
     assert(ret != -1);
     return ret;

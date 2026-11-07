@@ -60,16 +60,6 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     }
 
     function setupEmscripten() {
-        _ems_.Module.preInit = [() => {
-            if (_ems_.dotnetApi.getConfig) {
-                const virtualWorkingDirectory = _ems_.dotnetApi.getConfig().virtualWorkingDirectory;
-                _ems_.FS.createPath("/", virtualWorkingDirectory!, true, true);
-                _ems_.FS.chdir(virtualWorkingDirectory!);
-            }
-            // SpecialFolder.CommonApplicationData maps to /usr/share
-            _ems_.FS.createPath("/", "usr/share", true, true);
-        }, ...asCallbackArray(_ems_.Module.preInit)];
-
         // preInit runs before Emscripten assigns the native WASM exports.
         _ems_.Module.preRun = [() => {
             const orig_funcs_on_exit = _ems_.___funcs_on_exit;
