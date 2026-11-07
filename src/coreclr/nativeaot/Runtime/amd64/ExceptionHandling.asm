@@ -319,192 +319,49 @@ ALTERNATE_ENTRY RhpRethrow2
 
 NESTED_END RhpRethrow, _TEXT
 
-;;
-;; Prologue of all funclet calling helpers (RhpCallXXXXFunclet)
-;;
-FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
-
-    push_nonvol_reg r15     ;; save preserved regs for OS stackwalker
-    push_nonvol_reg r14     ;; ...
-    push_nonvol_reg r13     ;; ...
-    push_nonvol_reg r12     ;; ...
-    push_nonvol_reg rbx     ;; ...
-    push_nonvol_reg rsi     ;; ...
-    push_nonvol_reg rdi     ;; ...
-    push_nonvol_reg rbp     ;; ...
-
-    arguments_scratch_area_size = 20h
-    xmm_save_area_size = 10 * 10h ;; xmm6..xmm15 save area
-    stack_alloc_size = arguments_scratch_area_size + localsCount * 8 + alignStack * 8 + xmm_save_area_size
-    rsp_offsetof_arguments = stack_alloc_size + 8*8h + 8h
-    rsp_offsetof_locals = arguments_scratch_area_size + xmm_save_area_size
-
-    alloc_stack     stack_alloc_size
-
-    save_xmm128_postrsp xmm6,  (arguments_scratch_area_size + 0 * 10h)
-    save_xmm128_postrsp xmm7,  (arguments_scratch_area_size + 1 * 10h)
-    save_xmm128_postrsp xmm8,  (arguments_scratch_area_size + 2 * 10h)
-    save_xmm128_postrsp xmm9,  (arguments_scratch_area_size + 3 * 10h)
-    save_xmm128_postrsp xmm10, (arguments_scratch_area_size + 4 * 10h)
-    save_xmm128_postrsp xmm11, (arguments_scratch_area_size + 5 * 10h)
-    save_xmm128_postrsp xmm12, (arguments_scratch_area_size + 6 * 10h)
-    save_xmm128_postrsp xmm13, (arguments_scratch_area_size + 7 * 10h)
-    save_xmm128_postrsp xmm14, (arguments_scratch_area_size + 8 * 10h)
-    save_xmm128_postrsp xmm15, (arguments_scratch_area_size + 9 * 10h)
-
-    END_PROLOGUE
-endm
-
-;;
-;; Epilogue of all funclet calling helpers (RhpCallXXXXFunclet)
-;;
-FUNCLET_CALL_EPILOGUE macro
-    movdqa  xmm6,  [rsp + arguments_scratch_area_size + 0 * 10h]
-    movdqa  xmm7,  [rsp + arguments_scratch_area_size + 1 * 10h]
-    movdqa  xmm8,  [rsp + arguments_scratch_area_size + 2 * 10h]
-    movdqa  xmm9,  [rsp + arguments_scratch_area_size + 3 * 10h]
-    movdqa  xmm10, [rsp + arguments_scratch_area_size + 4 * 10h]
-    movdqa  xmm11, [rsp + arguments_scratch_area_size + 5 * 10h]
-    movdqa  xmm12, [rsp + arguments_scratch_area_size + 6 * 10h]
-    movdqa  xmm13, [rsp + arguments_scratch_area_size + 7 * 10h]
-    movdqa  xmm14, [rsp + arguments_scratch_area_size + 8 * 10h]
-    movdqa  xmm15, [rsp + arguments_scratch_area_size + 9 * 10h]
-
-    add     rsp, stack_alloc_size
-    pop     rbp
-    pop     rdi
-    pop     rsi
-    pop     rbx
-    pop     r12
-    pop     r13
-    pop     r14
-    pop     r15
-endm
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
-;;                                    ExInfo* pExInfo)
+;; void FASTCALL RhpResumeAfterCatch(REGDISPLAY* pRegDisplay, ExInfo* pExInfo, void* pResumeIP)
 ;;
-;; INPUT:  RCX:  exception object
-;;         RDX:  handler funclet address
-;;         R8:   REGDISPLAY*
-;;         R9:   ExInfo*
+;; Resumes execution after a catch funclet called by CallEHFunclet has returned. Does not return.
 ;;
-;; OUTPUT:
+;; INPUT:  RCX:  REGDISPLAY* of the frame that contains the catch
+;;         RDX:  ExInfo*
+;;         R8:   resume address returned by the catch funclet
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpCallCatchFunclet, _TEXT
+NESTED_ENTRY RhpResumeAfterCatch, _TEXT
 
-        FUNCLET_CALL_PROLOGUE 2, 1
+        LOCAL_STACK_USE equ 28h                                     ;; arguments scratch area and stack alignment
 
-        ;; locals
-        rsp_offsetof_thread = rsp_offsetof_locals
-        rsp_offsetof_resume_ip = rsp_offsetof_locals + 8;
+        alloc_stack     LOCAL_STACK_USE
+        END_PROLOGUE
 
-        mov     [rsp + rsp_offsetof_arguments + 0h], rcx            ;; save arguments for later
-        mov     [rsp + rsp_offsetof_arguments + 8h], rdx
-        mov     [rsp + rsp_offsetof_arguments + 10h], r8
-        mov     [rsp + rsp_offsetof_arguments + 18h], r9
+        ;; The preserved registers are reloaded from the REGDISPLAY before resuming, so they can be used here.
+        mov     rbx, rcx                                            ;; rbx <- REGDISPLAY*
+        mov     rsi, rdx                                            ;; rsi <- current ExInfo*
+        mov     rdi, r8                                             ;; rdi <- resume IP
 
-        INLINE_GETTHREAD    rax, rbx                                ;; rax <- Thread*, rbx is trashed
-        mov     [rsp + rsp_offsetof_thread], rax                    ;; save Thread* for later
+        INLINE_GETTHREAD    rax, r10                                ;; rax <- Thread*, r10 is trashed
+        mov     r12, rax                                            ;; r12 <- Thread*
 
-        ;; Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
-        lock and            dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
-
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbx]
-        mov     rbx, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbp]
-        mov     rbp, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRsi]
-        mov     rsi, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRdi]
-        mov     rdi, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR12]
-        mov     r12, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR13]
-        mov     r13, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR14]
-        mov     r14, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR15]
-        mov     r15, [rax]
-
-        movdqa  xmm6, [r8 + OFFSETOF__REGDISPLAY__Xmm + 0*10h]
-        movdqa  xmm7, [r8 + OFFSETOF__REGDISPLAY__Xmm + 1*10h]
-        movdqa  xmm8, [r8 + OFFSETOF__REGDISPLAY__Xmm + 2*10h]
-        movdqa  xmm9, [r8 + OFFSETOF__REGDISPLAY__Xmm + 3*10h]
-        movdqa  xmm10,[r8 + OFFSETOF__REGDISPLAY__Xmm + 4*10h]
-
-        movdqa  xmm11,[r8 + OFFSETOF__REGDISPLAY__Xmm + 5*10h]
-        movdqa  xmm12,[r8 + OFFSETOF__REGDISPLAY__Xmm + 6*10h]
-        movdqa  xmm13,[r8 + OFFSETOF__REGDISPLAY__Xmm + 7*10h]
-        movdqa  xmm14,[r8 + OFFSETOF__REGDISPLAY__Xmm + 8*10h]
-        movdqa  xmm15,[r8 + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
-
-        mov     rcx, [rsp + rsp_offsetof_arguments + 0h]            ;; rcx <- exception object
-        call    qword ptr [rsp + rsp_offsetof_arguments + 8h]       ;; call handler funclet
-
-ALTERNATE_ENTRY RhpCallCatchFunclet2
-
-        mov     r8, [rsp + rsp_offsetof_arguments + 10h]            ;; r8 <- dispatch context
+        ;; Clear the DoNotTriggerGc state before resuming in the managed code after the catch.
+        lock and            dword ptr [r12 + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
 
 ifdef _DEBUG
-        ;; Call into some C++ code to validate the pop of the ExInfo.  We only do this in debug because we
-        ;; have to spill all the preserved registers and then refill them after the call.
-        mov     [rsp + rsp_offsetof_resume_ip], rax                                    ;; save resume IP for later
-
-        mov     rcx, [r8 + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rcx]                           , rbx
-        mov     rcx, [r8 + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rcx]                           , rbp
-        mov     rcx, [r8 + OFFSETOF__REGDISPLAY__pRsi]
-        mov     [rcx]                           , rsi
-        mov     rcx, [r8 + OFFSETOF__REGDISPLAY__pRdi]
-        mov     [rcx]                           , rdi
-        mov     rcx, [r8 + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rcx]                           , r12
-        mov     rcx, [r8 + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rcx]                           , r13
-        mov     rcx, [r8 + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rcx]                           , r14
-        mov     rcx, [r8 + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rcx]                           , r15
-
-        mov     rcx, [rsp + rsp_offsetof_thread]                    ;; rcx <- Thread*
-        mov     rdx, [rsp + rsp_offsetof_arguments + 18h]           ;; rdx <- current ExInfo *
-        mov     r8, [r8 + OFFSETOF__REGDISPLAY__SP]                 ;; r8  <- resume SP value
+        ;; Call into some C++ code to validate the pop of the ExInfo.
+        mov     rcx, r12                                            ;; rcx <- Thread*
+        mov     rdx, rsi                                            ;; rdx <- current ExInfo*
+        mov     r8, [rbx + OFFSETOF__REGDISPLAY__SP]                ;; r8  <- resume SP value
         call    RhpValidateExInfoPop
-
-        mov     r8, [rsp + rsp_offsetof_arguments + 10h]            ;; r8 <- dispatch context
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbx]
-        mov     rbx, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbp]
-        mov     rbp, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRsi]
-        mov     rsi, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRdi]
-        mov     rdi, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR12]
-        mov     r12, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR13]
-        mov     r13, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR14]
-        mov     r14, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR15]
-        mov     r15, [rax]
-
-        mov     rax, [rsp + rsp_offsetof_resume_ip]                 ;; reload resume IP
 endif
-        mov     rdx, [rsp + rsp_offsetof_thread]                    ;; rdx <- Thread*
 
         ;; We must unhijack the thread at this point because the section of stack where the hijack is applied
         ;; may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
-        INLINE_THREAD_UNHIJACK rdx, rcx, r9                         ;; Thread in rdx, trashes rcx and r9
+        INLINE_THREAD_UNHIJACK r12, rcx, r9                         ;; Thread in r12, trashes rcx and r9
 
-        mov     rcx, [rsp + rsp_offsetof_arguments + 18h]           ;; rcx <- current ExInfo *
-        mov     r11, [r8 + OFFSETOF__REGDISPLAY__SSP]               ;; r11 <- resume SSP value
-        mov     r8, [r8 + OFFSETOF__REGDISPLAY__SP]                 ;; r8 <- resume SP value
+        mov     rcx, rsi                                            ;; rcx <- current ExInfo*
+        mov     r8, [rbx + OFFSETOF__REGDISPLAY__SP]                ;; r8 <- resume SP value
         xor     r9, r9                                              ;; r9 <- 0
 
    @@:  mov     rcx, [rcx + OFFSETOF__ExInfo__m_pPrevExInfo]        ;; rcx <- next ExInfo
@@ -513,10 +370,9 @@ endif
         cmp     rcx, r8
         jl      @B                                                  ;; keep looping if it's lower than the new SP
 
-   @@:  mov     [rdx + OFFSETOF__Thread__m_pExInfoStackHead], rcx   ;; store the new head on the Thread
+   @@:  mov     [r12 + OFFSETOF__Thread__m_pExInfoStackHead], rcx   ;; store the new head on the Thread
 
    ;; Sanity check: if we have shadow stack, it should agree with what we have in rsp
-   LOCAL_STACK_USE equ 118h
    ifdef _DEBUG
         rdsspq  r9                                                  ;; NB, r9 == 0 prior to this
         test    r9, r9
@@ -528,6 +384,38 @@ endif
    @@:
         xor     r9, r9                                              ;; r9 <- 0
    endif
+
+        mov     rax, rdi                                            ;; rax <- resume IP
+        mov     rdx, rbx                                            ;; rdx <- REGDISPLAY*
+        mov     r11, [rdx + OFFSETOF__REGDISPLAY__SSP]              ;; r11 <- resume SSP value
+
+        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pRbx]
+        mov     rbx, [rcx]
+        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pRbp]
+        mov     rbp, [rcx]
+        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pRsi]
+        mov     rsi, [rcx]
+        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pRdi]
+        mov     rdi, [rcx]
+        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pR12]
+        mov     r12, [rcx]
+        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pR13]
+        mov     r13, [rcx]
+        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pR14]
+        mov     r14, [rcx]
+        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__pR15]
+        mov     r15, [rcx]
+
+        movdqa  xmm6, [rdx + OFFSETOF__REGDISPLAY__Xmm + 0*10h]
+        movdqa  xmm7, [rdx + OFFSETOF__REGDISPLAY__Xmm + 1*10h]
+        movdqa  xmm8, [rdx + OFFSETOF__REGDISPLAY__Xmm + 2*10h]
+        movdqa  xmm9, [rdx + OFFSETOF__REGDISPLAY__Xmm + 3*10h]
+        movdqa  xmm10,[rdx + OFFSETOF__REGDISPLAY__Xmm + 4*10h]
+        movdqa  xmm11,[rdx + OFFSETOF__REGDISPLAY__Xmm + 5*10h]
+        movdqa  xmm12,[rdx + OFFSETOF__REGDISPLAY__Xmm + 6*10h]
+        movdqa  xmm13,[rdx + OFFSETOF__REGDISPLAY__Xmm + 7*10h]
+        movdqa  xmm14,[rdx + OFFSETOF__REGDISPLAY__Xmm + 8*10h]
+        movdqa  xmm15,[rdx + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
 
         ;; reset RSP and jump to RAX
         mov     rsp, r8                                             ;; reset the SP to resume SP value
@@ -550,131 +438,6 @@ endif
 
 No_Ssp_Update:  jmp     rax
 
-
-NESTED_END RhpCallCatchFunclet, _TEXT
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; void FASTCALL RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
-;;
-;; INPUT:  RCX:  handler funclet address
-;;         RDX:  REGDISPLAY*
-;;
-;; OUTPUT:
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpCallFinallyFunclet, _TEXT
-
-        FUNCLET_CALL_PROLOGUE 1, 0
-
-        mov     [rsp + rsp_offsetof_arguments + 0h], rcx            ;; save arguments for later
-        mov     [rsp + rsp_offsetof_arguments + 8h], rdx
-
-        rsp_offsetof_thread = rsp_offsetof_locals
-
-        INLINE_GETTHREAD    rax, rbx                                ;; rax <- Thread*, rbx is trashed
-        mov     [rsp + rsp_offsetof_thread], rax                    ;; save Thread* for later
-
-        ;;
-        ;; We want to suppress hijacking between invocations of subsequent finallys.  We do this because we
-        ;; cannot tolerate a GC after one finally has run (and possibly side-effected the GC state of the
-        ;; method) and then been popped off the stack, leaving behind no trace of its effect.
-        ;;
-        ;; So we clear the state before and set it after invocation of the handler.
-        ;;
-        lock and            dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
-
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
-        mov     rbx, [rax]
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
-        mov     rbp, [rax]
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRsi]
-        mov     rsi, [rax]
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRdi]
-        mov     rdi, [rax]
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR12]
-        mov     r12, [rax]
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR13]
-        mov     r13, [rax]
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR14]
-        mov     r14, [rax]
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
-        mov     r15, [rax]
-
-        movdqa  xmm6, [rdx + OFFSETOF__REGDISPLAY__Xmm + 0*10h]
-        movdqa  xmm7, [rdx + OFFSETOF__REGDISPLAY__Xmm + 1*10h]
-        movdqa  xmm8, [rdx + OFFSETOF__REGDISPLAY__Xmm + 2*10h]
-        movdqa  xmm9, [rdx + OFFSETOF__REGDISPLAY__Xmm + 3*10h]
-        movdqa  xmm10,[rdx + OFFSETOF__REGDISPLAY__Xmm + 4*10h]
-
-        movdqa  xmm11,[rdx + OFFSETOF__REGDISPLAY__Xmm + 5*10h]
-        movdqa  xmm12,[rdx + OFFSETOF__REGDISPLAY__Xmm + 6*10h]
-        movdqa  xmm13,[rdx + OFFSETOF__REGDISPLAY__Xmm + 7*10h]
-        movdqa  xmm14,[rdx + OFFSETOF__REGDISPLAY__Xmm + 8*10h]
-        movdqa  xmm15,[rdx + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
-
-        call    qword ptr [rsp + rsp_offsetof_arguments + 0h]       ;; handler funclet address
-
-ALTERNATE_ENTRY RhpCallFinallyFunclet2
-
-        mov     rdx, [rsp + rsp_offsetof_arguments + 8h]            ;; rdx <- regdisplay
-
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rax]                            , rbx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rax]                            , rbp
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRsi]
-        mov     [rax]                            , rsi
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRdi]
-        mov     [rax]                            , rdi
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rax]                            , r12
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rax]                            , r13
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rax]                            , r14
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rax]                            , r15
-
-        ;; XMM6-15 do not need copy-back into REGDISPLAY (no GC adjustment required).
-
-        mov     rax, [rsp + rsp_offsetof_thread]                                    ;; rax <- Thread*
-        lock or             dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
-
-        FUNCLET_CALL_EPILOGUE
-
-        ret
-
-NESTED_END RhpCallFinallyFunclet, _TEXT
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
-;;
-;; INPUT:  RCX:  exception object
-;;         RDX:  filter funclet address
-;;         R8:   REGDISPLAY*
-;;
-;; OUTPUT:
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpCallFilterFunclet, _TEXT
-
-        FUNCLET_CALL_PROLOGUE 0, 1
-
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbp]
-        mov     rbp, [rax]
-
-        call    rdx
-
-ALTERNATE_ENTRY RhpCallFilterFunclet2
-
-        ;; RAX contains the result of the filter execution
-
-        FUNCLET_CALL_EPILOGUE
-
-        ret
-
-NESTED_END RhpCallFilterFunclet, _TEXT
+NESTED_END RhpResumeAfterCatch, _TEXT
 
         end

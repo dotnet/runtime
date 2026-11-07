@@ -302,6 +302,12 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
 
+if (CLR_CMAKE_TARGET_ARCH_AMD64)
+  list(APPEND RUNTIME_SOURCES_ARCH_ASM
+    ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/EHHelpers.${ASM_SUFFIX}
+  )
+endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+
 # Add architecture specific folder for looking up headers.
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
 include_directories(${ARCH_SOURCES_DIR})
