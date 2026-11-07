@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -28,16 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             private static int NumberOfErrorTypes(TypeArray pTypeArgs)
             {
-                int nCount = 0;
-                for (int i = 0; i < pTypeArgs.Count; i++)
-                {
-                    if (pTypeArgs[i] == null)
-                    {
-                        nCount++;
-                    }
-                }
-
-                return nCount;
+                return new ReadOnlySpan<CType>(pTypeArgs.Items).Count((CType)null);
             }
 
             private static bool IsBetterThanCurrent(TypeArray pTypeArgs1, TypeArray pTypeArgs2)

@@ -162,10 +162,7 @@ namespace System.ComponentModel.Composition.Hosting
                 var exports = new List<Export>();
                 foreach (var provider in _providers)
                 {
-                    foreach (var export in provider.GetExports(definition, atomicComposition))
-                    {
-                        exports.Add(export);
-                    }
+                    exports.AddRange(provider.GetExports(definition, atomicComposition));
                 }
                 return exports;
             }

@@ -166,10 +166,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     else if (set.One.IsFull)
                     {
                         var ranges1 = new List<(uint, uint)>();
-                        for (int i = 0; i < rangesL.Length - 1; i++)
-                        {
-                            ranges1.Add(rangesL[i]);
-                        }
+                        ranges1.AddRange(rangesL.AsSpan(0, rangesL.Length - 1));
 
                         if (last.Item2 == (mask - 1))
                         {
@@ -193,10 +190,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         if (last.Item2 == (mask - 1) && first.Item1 == 0) //merge together the last and first ranges
                         {
                             ranges = new (uint, uint)[rangesL.Length + rangesR.Length - 1];
-                            for (int i = 0; i < rangesL.Length - 1; i++)
-                            {
-                                ranges[i] = rangesL[i];
-                            }
+                            rangesL.AsSpan(0, rangesL.Length - 1).CopyTo(ranges);
 
                             ranges[rangesL.Length - 1] = (last.Item1, first.Item2 | mask);
                             for (int i = 1; i < rangesR.Length; i++)
@@ -207,10 +201,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         else
                         {
                             ranges = new (uint, uint)[rangesL.Length + rangesR.Length];
-                            for (int i = 0; i < rangesL.Length; i++)
-                            {
-                                ranges[i] = rangesL[i];
-                            }
+                            rangesL.AsSpan().CopyTo(ranges);
 
                             for (int i = 0; i < rangesR.Length; i++)
                             {

@@ -147,8 +147,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void ResetSchedule()
         {
-            for (int i = 0; i < 672; i++)
-                _scheduleArray[i] = false;
+            Array.Clear(_scheduleArray);
         }
 
         private void ValidateRawArray(bool[,,] array)

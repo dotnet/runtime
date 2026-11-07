@@ -76,13 +76,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         internal bool HasMember(string name)
         {
-            for (int i = 0; i < _memberNames.Length; i++)
-            {
-                if (_memberNames[i] == name)
-                    return true;
-            }
-
-            return false;
+            return _memberNames.AsSpan().Contains(name);
         }
 
         public string[] GetMemberNames()

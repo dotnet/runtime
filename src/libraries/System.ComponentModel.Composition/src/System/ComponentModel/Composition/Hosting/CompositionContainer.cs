@@ -204,10 +204,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                 if (providers != null)
                 {
-                    for (int i = 0; i < providers.Length; i++)
-                    {
-                        rootProviders[customProviderStartIndex + i] = providers[i];
-                    }
+                    Array.Copy(providers, 0, rootProviders, customProviderStartIndex, providers.Length);
                 }
 
                 _rootProvider = new AggregateExportProvider(rootProviders);

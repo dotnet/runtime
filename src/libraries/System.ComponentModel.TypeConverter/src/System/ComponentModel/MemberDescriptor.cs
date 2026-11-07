@@ -104,10 +104,7 @@ namespace System.ComponentModel
 
             if (newAttributes != null)
             {
-                foreach (Attribute o in newAttributes)
-                {
-                    newList.Add(o);
-                }
+                newList.AddRange(newAttributes);
             }
 
             _attributes = new Attribute[newList.Count];
