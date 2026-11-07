@@ -466,6 +466,7 @@ RELEASE_CONFIG_INTEGER(EnableApxConditionalChaining, "EnableApxConditionalChaini
 RELEASE_CONFIG_INTEGER(EnableApxPPHint,                "EnableApxPPHint",              0) // Allows APX PPX Hint feature to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxPP2,                "EnableApxPP2",              0) // Allows APX PP2 feature to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxZU,                 "EnableApxZU",              0)  // Allows APX ZU feature to be disabled
+RELEASE_CONFIG_INTEGER(EnableApxCfcmov,             "EnableApxCfcmov",          0)  // Allows APX CFCMOV for if-converted guarded loads
 
 // clang-format on
 

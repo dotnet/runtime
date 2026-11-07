@@ -8460,6 +8460,30 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
 {
     assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 
+#ifdef TARGET_AMD64
+    if ((select->gtFlags & GTF_SELECT_COND_LOAD) != 0)
+    {
+        // op1 is a load that may only be performed when the condition is true. It
+        // must become the memory operand of the CFCMOV that codegen emits, which
+        // does not access memory otherwise, and op2 stays in the register that the
+        // CFCMOV selects when the condition is false. There is no branch left to
+        // fall back to, so the noway asserts fall back to MinOpts.
+        GenTree* load = select->gtOp1;
+
+        noway_assert(load->OperIs(GT_IND) && (genTypeSize(load) == genTypeSize(select)));
+        noway_assert(!select->OperIs(GT_SELECTCC) || !select->AsOpCC()->gtCondition.IsFloat());
+        noway_assert(IsContainableMemoryOp(load) && IsSafeToContainMem(select, load));
+
+        // The condition may be what kept a byref address valid, so it must not be
+        // computed into a register.
+        GenTree* addr = load->AsIndir()->Addr();
+        noway_assert(addr->isContained() || addr->OperIs(GT_LCL_VAR) || !addr->TypeIs(TYP_BYREF));
+
+        MakeSrcContained(select, load);
+        return;
+    }
+#endif // TARGET_AMD64
+
     if (select->OperIs(GT_SELECTCC))
     {
         GenCondition cc = select->AsOpCC()->gtCondition;
