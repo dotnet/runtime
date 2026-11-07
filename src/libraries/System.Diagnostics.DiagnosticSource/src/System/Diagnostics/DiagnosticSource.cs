@@ -21,7 +21,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Write is a generic way of logging complex payloads.  Each notification
-        /// is given a name, which identifies it as well as a object (typically an anonymous type)
+        /// is given a name, which identifies it as well as an object (typically an anonymous type)
         /// that gives the information to pass to the notification, which is arbitrary.
         ///
         /// The name should be short (so don't use fully qualified names unless you have to
@@ -33,7 +33,7 @@ namespace System.Diagnostics
         /// names is good.
         /// </summary>
         /// <param name="name">The name of the event being written.</param>
-        /// <param name="value">An object that represent the value being passed as a payload for the event.
+        /// <param name="value">An object that represents the value being passed as a payload for the event.
         /// This is often an anonymous type which contains several sub-values.</param>
         [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
         public abstract void Write(string name, object? value);
