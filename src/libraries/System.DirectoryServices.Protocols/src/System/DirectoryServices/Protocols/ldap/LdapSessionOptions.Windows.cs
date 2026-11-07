@@ -10,6 +10,13 @@ namespace System.DirectoryServices.Protocols
     {
         private static void PALCertFreeCRLContext(IntPtr certPtr) => Interop.Ldap.CertFreeCRLContext(certPtr);
 
+        public bool CanonicalizeHostName
+        {
+            get => true;
+            [UnsupportedOSPlatform("windows")]
+            set => throw new PlatformNotSupportedException();
+        }
+
         [UnsupportedOSPlatform("windows")]
         public string TrustedCertificatesDirectory
         {

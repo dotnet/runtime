@@ -151,7 +151,7 @@ internal static partial class Interop
             ref int messageNumber);
 
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", SetLastError = true)]
-        public static partial int ldap_set_option_bool(ConnectionHandle ld, LdapOption option, [MarshalAs(UnmanagedType.Bool)] bool value);
+        public static partial int ldap_set_option_bool(ConnectionHandle ld, LdapOption option, IntPtr value);
 
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_clientcert(ConnectionHandle ldapHandle, LdapOption option, QUERYCLIENTCERT outValue);
