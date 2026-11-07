@@ -10,24 +10,9 @@ namespace System.Linq
     {
         public static int Count<TSource>(this IEnumerable<TSource> source)
         {
-            if (source is null)
+            if (TryGetNonEnumeratedCount(source, out int nonEnumeratedCount))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            if (source is ICollection<TSource> collectionoft)
-            {
-                return collectionoft.Count;
-            }
-
-            if (source is Iterator<TSource> iterator)
-            {
-                return iterator.GetCount(onlyIfCheap: false);
-            }
-
-            if (source is ICollection collection)
-            {
-                return collection.Count;
+                return nonEnumeratedCount;
             }
 
             int count = 0;
@@ -102,11 +87,6 @@ namespace System.Linq
         /// </remarks>
         public static bool TryGetNonEnumeratedCount<TSource>(this IEnumerable<TSource> source, out int count)
         {
-            if (source is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
             if (source is ICollection<TSource> collectionoft)
             {
                 count = collectionoft.Count;
@@ -127,6 +107,11 @@ namespace System.Linq
             {
                 count = collection.Count;
                 return true;
+            }
+
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             count = 0;

@@ -53,12 +53,17 @@ namespace System.Linq
 
             public override int GetCount(bool onlyIfCheap)
             {
-                if (_source is Iterator<TElement> iterator)
+                if (!TryGetNonEnumeratedCount(_source, out int count))
                 {
-                    return iterator.GetCount(onlyIfCheap);
+                    if (onlyIfCheap)
+                    {
+                        return -1;
+                    }
+
+                    count = _source.Count();
                 }
 
-                return !onlyIfCheap || _source is ICollection<TElement> || _source is ICollection ? _source.Count() : -1;
+                return count;
             }
 
             internal TElement[] ToArray(int minIdx, int maxIdx)
