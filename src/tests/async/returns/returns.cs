@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
@@ -46,6 +47,9 @@ public class Async2Returns
 
             string str = await ReturnsString();
             AssertEqual("a string!", str);
+
+            Vector<int> vector = await ReturnsVector();
+            AssertEqual(new Vector<int>(42), vector);
         }
     }
 
@@ -81,6 +85,13 @@ public class Async2Returns
     {
         await Task.Yield();
         return "a string!";
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<Vector<int>> ReturnsVector()
+    {
+        await Task.Yield();
+        return new Vector<int>(42);
     }
 
     private struct S<T> { public T A, B, C, D; }

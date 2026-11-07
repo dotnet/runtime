@@ -372,6 +372,19 @@ bool CodeGen::genInstrWithConstant(instruction ins,
             immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
             break;
 
+        case INS_sve_ldr:
+        case INS_sve_str:
+            assert(size == EA_SCALABLE);
+            assert(tmpReg != REG_NA);
+            instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, tmpReg, reg2, imm);
+            regSet.verifyRegUsed(tmpReg);
+            if (inUnwindRegion)
+            {
+                m_compiler->unwindPadding();
+            }
+            GetEmitter()->emitIns_R_R(ins, attr, reg1, tmpReg);
+            return false;
+
         default:
             assert(!"Unexpected instruction in genInstrWithConstant");
             break;
@@ -2171,6 +2184,149 @@ void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
     }
 }
 
+//  move an immediate scaled by the vector or predicate length + base address into an integer register
+template <bool scaleByVl>
+void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm_MulVlOrPl(emitAttr  size,
+                                                         regNumber dstReg,
+                                                         regNumber baseReg,
+                                                         ssize_t   imm)
+{
+    instruction ins = scaleByVl ? INS_sve_addvl : INS_sve_addpl;
+
+    if (emitter::isValidSimm<6>(imm))
+    {
+        GetEmitter()->emitIns_R_R_I(ins, size, dstReg, baseReg, imm);
+    }
+    else if ((imm >= -64) && (imm <= 62))
+    {
+        ssize_t chunk = (imm < 0) ? -32 : 31;
+        GetEmitter()->emitIns_R_R_I(ins, size, dstReg, baseReg, chunk);
+        GetEmitter()->emitIns_R_R_I(ins, size, dstReg, dstReg, imm - chunk);
+    }
+    else if (dstReg != rsGetRsvdReg())
+    {
+        assert(dstReg != baseReg);
+        regNumber rsvd = rsGetRsvdReg();
+        assert(rsvd != baseReg);
+
+        instGen_Set_Reg_To_Imm(size, dstReg, imm);
+        if constexpr (scaleByVl)
+        {
+            GetEmitter()->emitIns_R_I(INS_sve_rdvl, size, rsvd, 1);
+        }
+        else
+        {
+            instGen_Set_Reg_To_Zero(size, rsvd);
+            GetEmitter()->emitIns_R_R_I(ins, size, rsvd, rsvd, 1);
+        }
+
+        GetEmitter()->emitIns_R_R_R_R(INS_madd, size, dstReg, dstReg, rsvd, baseReg);
+    }
+    else
+    {
+        assert(dstReg != baseReg);
+
+        // This case can occur when trying to load/store vectors from large stack frames, typically
+        // with offsets in the order 2^8 * VL (offsets outside [-256, 255]), when the offset
+        // spills over the immediate encoding range of INS_sve_ldr/INS_sve_str.
+        //
+        // Ideally, avoid this case in codegen by calling emitIns_R_S(INS_lea, ...), with a dedicated register
+        // to store the address, then use the register form of INS_sve_ldr/INS_sve_str. The lea should fall into
+        // the first case of this function (rsvd != dstReg).
+        //
+        // As a fallback, we can try to accumulate the offset MUL VL/PL in the single assigned register.
+        // To do this, consider imm as a nested polynomial base 32 (signed coefficients in this base can be encoded
+        // by RDVL/ADDVL/ADDPL).
+        //
+        // imm * VL = k_0*VL + 32(k_1*VL + 32(k_2*VL + ... + 32(k_n-1*VL + 32k_n*VL)))
+        //
+        // If we compute the set of k's, we can accumulate the value of this polynomial by repeatedly adding
+        // k_i * VL and multiplying by 32 (Horner's method).
+        //
+        // We can compute the k's by just repeatedly taking quotient/remainder of the immediate dividing by
+        // decrementing powers of 32, starting with the smallest possible power that produces a quotient that
+        // fits in the immediate range.
+        //
+        // Examples:
+        //
+        // -----
+        // imm * VL = 1000 * VL = 31*VL*32 + 8*VL
+        //
+        // rdvl  acc, #31
+        // lsl   acc, acc, #5
+        // addvl acc, acc, #8
+        //
+        // -----
+        // imm * VL = 2500 * VL = (2*VL*32 + 14*VL)*32 + 4*VL
+        //
+        // rdvl  acc, #2
+        // lsl   acc, acc, #5
+        // addvl acc, acc, #14
+        // lsl   acc, acc, #5
+        // addvl acc, acc, #4
+        //
+        // In the following function, VL has been used to represent VL/PL interchangeably.
+
+        // First find k_n, by finding the smallest power of 32 where imm / radixPower fits in the 6 bit
+        // immediate range of RDVL/ADDVL/ADDPL.
+        ssize_t radixPower = 32;
+        while (!emitter::isValidSimm<6>(imm / radixPower))
+        {
+            radixPower *= 32;
+        }
+        ssize_t k_n = imm / radixPower;
+
+        // Initialize k_n * VL in the accumulator.
+        if constexpr (scaleByVl)
+        {
+            GetEmitter()->emitIns_R_I(INS_sve_rdvl, size, dstReg, k_n);
+        }
+        else
+        {
+            instGen_Set_Reg_To_Zero(size, dstReg);
+            GetEmitter()->emitIns_R_R_I(ins, size, dstReg, dstReg, k_n);
+        }
+
+        ssize_t remainder = imm % radixPower;
+
+        // Repeatedly multiply the accumulator by 32, then take quotient/remainder of the previous
+        // remainder, divided by the next power of 32 down. The quotient is k_i. Add k_i * VL to
+        // the accumulator.
+        while (radixPower > 32)
+        {
+            radixPower /= 32;
+
+            GetEmitter()->emitIns_R_R_I(INS_lsl, size, dstReg, dstReg, 5);
+
+            ssize_t k_i = remainder / radixPower;
+            if (k_i != 0)
+            {
+                GetEmitter()->emitIns_R_R_I(ins, size, dstReg, dstReg, k_i);
+            }
+
+            remainder %= radixPower;
+        }
+
+        // Tail end multiplies by 32 once more and adds the base address in one with shifted add, then
+        // accumulates the final value k_0 * VL.
+        GetEmitter()->emitIns_R_R_R_I(INS_add, size, dstReg, baseReg, dstReg, 5, INS_OPTS_LSL);
+        if (remainder != 0)
+        {
+            GetEmitter()->emitIns_R_R_I(ins, size, dstReg, dstReg, remainder);
+        }
+    }
+}
+
+void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm_MulVl(emitAttr size, regNumber dstReg, regNumber baseReg, ssize_t imm)
+{
+    instGen_Set_Reg_To_Base_Plus_Imm_MulVlOrPl<true>(size, dstReg, baseReg, imm);
+}
+
+void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm_MulPl(emitAttr size, regNumber dstReg, regNumber baseReg, ssize_t imm)
+{
+    instGen_Set_Reg_To_Base_Plus_Imm_MulVlOrPl<false>(size, dstReg, baseReg, imm);
+}
+
 //  move an immediate value into an integer register
 void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
                                      regNumber      reg,
@@ -3229,7 +3385,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
         }
     }
     emitAttr attr = emitActualTypeSize(targetType);
-    GetEmitter()->emitIns_Mov(INS_mov, attr, retReg, op1->GetRegNum(), /* canSkip */ !movRequired);
+    inst_Mov(targetType, retReg, op1->GetRegNum(), !movRequired, attr);
 }
 
 /***********************************************************************************************
