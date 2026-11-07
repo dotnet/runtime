@@ -57,6 +57,7 @@
       <LinkerArg Include="-lstdc++" Condition="'$(LinkStandardCPlusPlusLibrary)' == 'true'" />
       <LinkerArg Include="-g" Condition="'$(NativeDebugSymbols)' == 'true'" />
       <LinkerArg Include="-Wl,-s" Condition="'$(WasmNativeStrip)' == 'true'" />
+      <LinkerArg Include="-Wl,--compress-relocations" Condition="'$(WasmNativeStrip)' == 'true'" />
     </ItemGroup>
   </Target>
 
