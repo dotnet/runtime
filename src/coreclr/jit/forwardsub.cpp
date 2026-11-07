@@ -69,6 +69,10 @@
 // Once we've substituted "tree" we know that lcl is dead (since the use
 // was a last use) and we can remove the store statement.
 //
+// For a compare feeding a conditional branch, the result may remain live
+// into just one successor. We can still forward the compare if we store
+// its known value on that edge.
+//
 // We also take pains not to create overly large trees as the recursion
 // done by morph incorporates a lot of state; deep trees may lead to
 // stack overflows.
@@ -277,6 +281,12 @@ PhaseStatus Compiler::fgForwardSub()
         changed |= fgForwardSubBlock(block);
     }
 
+    // fgForwardSubCond may call fgSplitEdge, invalidating the dfsTree
+    if (m_dfsTree == nullptr)
+    {
+        m_dfsTree = fgComputeDfs();
+    }
+
     return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
@@ -299,7 +309,12 @@ bool Compiler::fgForwardSubBlock(BasicBlock* block)
     {
         Statement* const prevStmt    = stmt->GetPrevStmt();
         Statement* const nextStmt    = stmt->GetNextStmt();
-        bool const       substituted = fgForwardSubStatement(stmt);
+        bool             substituted = fgForwardSubStatement(stmt);
+
+        if (!substituted && (nextStmt == lastStmt) && block->KindIs(BBJ_COND))
+        {
+            substituted = fgForwardSubCond(block, stmt);
+        }
 
         if (substituted)
         {
@@ -324,6 +339,119 @@ bool Compiler::fgForwardSubBlock(BasicBlock* block)
     }
 
     return changed;
+}
+
+//------------------------------------------------------------------------
+// fgForwardSubCond: forward a comparison into its conditional branch when the
+//   result local is live into only one successor. Sink the local's definition
+//   onto that edge as the constant implied by the branch outcome, avoiding
+//   materializing the comparison result in the head block.
+//
+// Example:
+//   BB01:
+//     V01 = (V00 != null);
+//     JTRUE(V01 == 0) -> BB08
+//   BB08:
+//     ... use V01 ...
+//
+// Becomes:
+//   BB01:
+//     JTRUE(V00 == null) -> BB09
+//   BB09:
+//     V01 = 0;
+//     JMP -> BB08
+//   BB08:
+//     ... use V01 ...
+//
+// Arguments:
+//   block - conditional block containing the store and branch
+//   stmt  - store immediately preceding the branch
+//
+// Returns:
+//   true if the caller should remove the original store.
+//
+bool Compiler::fgForwardSubCond(BasicBlock* block, Statement* stmt)
+{
+    GenTree* const def = stmt->GetRootNode();
+    if (!def->OperIs(GT_STORE_LCL_VAR))
+    {
+        return false;
+    }
+
+    GenTree* const compare = def->AsLclVar()->Data();
+    if (!compare->OperIsCompare() || ((compare->gtFlags & GTF_SIDE_EFFECT) != 0))
+    {
+        return false;
+    }
+
+    unsigned const   lclNum = def->AsLclVar()->GetLclNum();
+    LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+    if (!varDsc->lvTracked || varDsc->IsAddressExposed() || varDsc->lvPinned || varDsc->lvIsStructField ||
+        varDsc->IsLiveInOutOfHandler() || (genActualType(varDsc->TypeGet()) != TYP_INT))
+    {
+        return false;
+    }
+
+    Statement* const jumpStmt = stmt->GetNextStmt();
+    GenTree* const   jump     = jumpStmt->GetRootNode();
+    if (!jump->OperIs(GT_JTRUE))
+    {
+        return false;
+    }
+
+    GenTree* const cond = jump->AsOp()->gtOp1;
+    if (!cond->OperIs(GT_EQ, GT_NE) || !cond->gtGetOp1()->OperIs(GT_LCL_VAR) ||
+        (cond->gtGetOp1()->AsLclVar()->GetLclNum() != lclNum) || !cond->gtGetOp2()->IsIntegralConst(0))
+    {
+        return false;
+    }
+
+    BasicBlock* const trueTarget  = block->GetTrueTarget();
+    BasicBlock* const falseTarget = block->GetFalseTarget();
+    if (trueTarget == falseTarget)
+    {
+        return false;
+    }
+
+    bool const liveOnTrueEdge  = VarSetOps::IsMember(this, trueTarget->bbLiveIn, varDsc->lvVarIndex);
+    bool const liveOnFalseEdge = VarSetOps::IsMember(this, falseTarget->bbLiveIn, varDsc->lvVarIndex);
+    if (liveOnTrueEdge == liveOnFalseEdge)
+    {
+        return false;
+    }
+
+    BasicBlock* target = liveOnTrueEdge ? trueTarget : falseTarget;
+    if (target->GetUniquePred(this) != block)
+    {
+        target = fgSplitEdge(block, target);
+        fgInvalidateDfsTree();
+    }
+
+    int const      value = (cond->OperIs(GT_NE) == liveOnTrueEdge) ? 1 : 0;
+    GenTree* const store = gtNewStoreLclVarNode(lclNum, gtNewIconNode(value));
+    fgInsertStmtAtBeg(target, fgNewStmtFromTree(store, stmt->GetDebugInfo()));
+
+    // The edge store kills the incoming value. Other blocks' liveness remains
+    // conservative because no new uses were introduced.
+    VarSetOps::RemoveElemD(this, target->bbLiveIn, varDsc->lvVarIndex);
+    VarSetOps::RemoveElemD(this, block->bbLiveOut, varDsc->lvVarIndex);
+
+    if (cond->OperIs(GT_EQ))
+    {
+        bool const reversed = gtTryReverseCond(compare);
+        assert(reversed);
+    }
+
+    // Replace the branch's zero test with the original compare. Moving it is safe because the store
+    // immediately precedes the branch, whose condition only reads the stored local and tests it against zero.
+    compare->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
+    jump->AsOp()->gtOp1 = compare;
+    gtUpdateStmtSideEffects(jumpStmt);
+    fgSequenceLocals(jumpStmt);
+
+    JITDUMP("Forwarding compare [%06u] into branch in " FMT_BB "; V%02u = %d on edge to " FMT_BB "\n",
+            dspTreeID(compare), block->bbNum, lclNum, value, target->bbNum);
+    return true;
 }
 
 //------------------------------------------------------------------------
