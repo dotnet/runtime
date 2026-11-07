@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -84,6 +86,50 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
 
         BlazorPublish(info, config, new PublishOptions(UseCache: false));
         await RunForPublishWithWebServer(new BlazorRunOptions(config));
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(false, "", "diagnostics")]
+    [InlineData(true, "", "production")]
+    [InlineData(false, "<EnableDiagnostics>false</EnableDiagnostics>", "production")]
+    [InlineData(true, "<EnableDiagnostics>true</EnableDiagnostics>", "diagnostics")]
+    [TestCategory("no-workload")]
+    public async Task CoreClrPrelinkedNativeFlavorIsSelectedWithoutWorkload(bool publish, string extraProperties, string expectedFlavor)
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(
+            config,
+            aot: false,
+            TestAsset.BlazorBasicTestApp,
+            $"coreclr_native_flavor_{(publish ? "publish" : "build")}_{expectedFlavor}",
+            extraProperties: extraProperties);
+
+        (string _, string output) = publish
+            ? PublishProject(info, config, new PublishOptions(UseCache: false))
+            : BuildProject(info, config, new BuildOptions());
+
+        Assert.DoesNotContain("Linking CoreCLR WASM", output);
+
+        BuildPaths paths = GetBuildPaths(config, forPublish: publish);
+        string frameworkDir = publish
+            ? paths.BinFrameworkDir
+            : WasmSdkBasedProjectProvider.GetMaterializedFrameworkDir(paths.ObjDir);
+        string actualNativeWasm = Assert.Single(Directory.GetFiles(frameworkDir, "dotnet.native*.wasm", SearchOption.TopDirectoryOnly));
+        string runtimePackDir = ProjectProviderBase.TryGetRuntimePackDirFromBuildOutput(output)
+            ?? throw new InvalidOperationException($"Could not resolve runtime pack from build output:{Environment.NewLine}{output}");
+        string expectedNativeWasm = expectedFlavor == "production"
+            ? Path.Combine(runtimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native", "dotnet.native.wasm")
+            : Path.Combine(runtimePackDir, "data", "native-flavors", expectedFlavor, "dotnet.native.wasm");
+
+        Assert.True(File.Exists(expectedNativeWasm), $"Expected prelinked native flavor does not exist: {expectedNativeWasm}");
+        Assert.Equal(
+            SHA256.HashData(File.ReadAllBytes(expectedNativeWasm)),
+            SHA256.HashData(File.ReadAllBytes(actualNativeWasm)));
+
+        BlazorRunOptions runOptions = new(config);
+        _ = publish
+            ? await RunForPublishWithWebServer(runOptions)
+            : await RunForBuildWithDotnetRun(runOptions);
     }
 
     [Theory, TestCategory("no-workload")]

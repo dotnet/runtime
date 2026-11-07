@@ -829,6 +829,8 @@
 
       <!-- CoreCLR runtime engine -->
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclr_static.a" />
+      <_CoreCLRNativeLibs Condition="'$(EnableDiagnostics)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libeventpipe-enabled.a" />
+      <_CoreCLRNativeLibs Condition="'$(EnableDiagnostics)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libeventpipe-disabled.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libnativeresourcestring.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libgcinfo_unix_wasm.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclrminipal.a" />

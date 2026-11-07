@@ -48,6 +48,13 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     [InlineData(Configuration.Debug)]
     [InlineData(Configuration.Release)]
     [TestCategory("no-workload")]
+    public Task BlazorEventPipeTestWithCpuSamplesPrelinked(Configuration config)
+        => BlazorEventPipeTestWithCpuSamplesCore(config, aot: false, readyToRun: false);
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    [TestCategory("no-workload")]
     public Task BlazorEventPipeTestWithCpuSamplesReadyToRun(Configuration config)
         => BlazorEventPipeTestWithCpuSamplesCore(config, aot: false, readyToRun: true);
 

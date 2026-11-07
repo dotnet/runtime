@@ -145,7 +145,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         // Compare files with the runtime pack
         string objBuildDir = Path.Combine(ProjectDir!, "obj", assertOptions.Configuration.ToString(), assertOptions.BuildOptions.TargetFramework, "wasm", assertOptions.BuildOptions.IsPublish ? "for-publish" : "for-build");
 
-        string runtimeNativeDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType);
+        string runtimeNativeDir = GetPrelinkedNativeAssetDir(assertOptions.BuildOptions, assertOptions.RuntimePackDir);
 
         string srcDirForNativeFileToCompareAgainst = assertOptions.ExpectedFileType switch
         {
@@ -310,11 +310,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         // --- Native file comparison against runtime pack ---
         if (isUsingWorkloads)
         {
-            string runtimeNativeDir = Path.Combine(
-                runtimePackDir ?? BuildTestBase.s_buildEnv.GetRuntimePackDir(tfm, buildOptions.RuntimeType),
-                "runtimes",
-                BuildEnvironment.DefaultRuntimeIdentifier,
-                "native");
+            string runtimeNativeDir = GetPrelinkedNativeAssetDir(buildOptions, runtimePackDir);
             foreach (string nativeFilename in nativeFiles)
             {
                 string actualPath = Path.Combine(nativeDir, nativeFilename);
