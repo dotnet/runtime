@@ -1185,6 +1185,17 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         return (indirFlags & GTF_IND_COPYABLE_FLAGS) | (varTypeIsGC(type) ? GTF_EMPTY : GTF_IND_ALLOW_NON_ATOMIC);
     };
 
+    // A nonfaulting indirection may depend on a guarding check (e.g. non-null assertion prop);
+    // keep the ordering constraint so the access isn't speculated or moved above the guard.
+    auto copyOrderingFlag = [](GenTree* indir, GenTreeFlags srcFlags) {
+        if (((srcFlags & GTF_IND_NONFAULTING) != 0) && ((srcFlags & GTF_ORDER_SIDEEFF) != 0))
+        {
+            indir->SetHasOrderingSideEffect();
+        }
+
+        return indir;
+    };
+
     auto grabAddr = [=, &result](unsigned offs) {
         GenTree* addrClone = nullptr;
         // Need address of the source.
@@ -1247,7 +1258,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         else
         {
             JITDUMP("  ...but keeping a nullcheck\n");
-            return m_compiler->gtNewIndir(TYP_BYTE, grabAddr(0), getCopyIndirFlags(TYP_BYTE, m_src->gtFlags));
+            GenTree* nullCheck =
+                m_compiler->gtNewIndir(TYP_BYTE, grabAddr(0), getCopyIndirFlags(TYP_BYTE, m_src->gtFlags));
+            return copyOrderingFlag(nullCheck, m_src->gtFlags);
         }
     }
 
@@ -1329,7 +1342,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     else
                     {
                         GenTree* fldAddr = grabAddr(fldOffset);
-                        srcFld = m_compiler->gtNewIndir(destType, fldAddr, getCopyIndirFlags(destType, m_src->gtFlags));
+                        srcFld = copyOrderingFlag(m_compiler->gtNewIndir(destType, fldAddr,
+                                                                         getCopyIndirFlags(destType, m_src->gtFlags)),
+                                                  m_src->gtFlags);
                     }
                 }
             }
@@ -1388,7 +1403,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                             indirFlags |= GTF_IND_TGT_NOT_HEAP;
                         }
                     }
-                    dstFldStore = m_compiler->gtNewStoreIndNode(srcType, fldAddr, srcFld, indirFlags);
+                    dstFldStore = copyOrderingFlag(m_compiler->gtNewStoreIndNode(srcType, fldAddr, srcFld, indirFlags),
+                                                   m_store->gtFlags);
                 }
             }
         }
