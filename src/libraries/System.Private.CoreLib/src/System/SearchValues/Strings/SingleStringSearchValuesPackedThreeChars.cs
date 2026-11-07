@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using static System.Buffers.StringSearchValuesHelper;
 
@@ -36,20 +37,20 @@ namespace System.Buffers
         // With case-sensitive comparisons, we've therefore already confirmed the match, so we can skip doing so here.
         // With case-insensitive comparisons, we applied a mask to the input, so while the anchors likely matched, we can't be sure.
         // If the value is composed of only ASCII letters, masking the input can't produce false positives, so we can also skip the verification step.
-        // We only do this when running on X86 and not ARM64, as the latter uses UnzipEven when packing inputs, which may produce false positive anchor matches.
+        // We only do this when running on X86 or WASM and not ARM64, as the latter uses UnzipEven when packing inputs, which may produce false positive anchor matches.
         // We use that instead of ExtractNarrowingSaturate because it allows for higher searching throughput.
         private static bool CanSkipAnchorMatchVerification
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get =>
-                Sse2.IsSupported &&
+                (Sse2.IsSupported || PackedSimd.IsSupported) &&
                 typeof(TValueLength) == typeof(ValueLengthLessThan4) &&
                 (typeof(TCaseSensitivity) == typeof(CaseSensitive) || typeof(TCaseSensitivity) == typeof(CaseInsensitiveAsciiLetters));
         }
 
         public SingleStringSearchValuesPackedThreeChars(HashSet<string>? uniqueValues, string value, int ch2Offset, int ch3Offset) : base(uniqueValues)
         {
-            Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported);
+            Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported);
 
             // We could have more than one entry in 'uniqueValues' if this value is an exact prefix of all the others.
             Debug.Assert(value.Length > 1);
@@ -182,7 +183,7 @@ namespace System.Buffers
                     goto LoopFooter;
                 }
             }
-            else if ((Sse2.IsSupported || AdvSimd.Arm64.IsSupported) && searchSpaceMinusValueTailLength - Vector128<byte>.Count >= 0)
+            else if ((Sse2.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && searchSpaceMinusValueTailLength - Vector128<byte>.Count >= 0)
             {
                 Vector128<byte> ch1 = Vector128.Create(_ch1);
                 Vector128<byte> ch2 = Vector128.Create(_ch2);
@@ -250,6 +251,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> GetComparisonResult(ref char searchSpace, nuint ch2ByteOffset, nuint ch3ByteOffset, Vector128<byte> ch1, Vector128<byte> ch2, Vector128<byte> ch3)
         {
             // Load 3 vectors from the input.
@@ -390,14 +392,30 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> LoadPacked128(ref char searchSpace, nuint byteOffset)
         {
             Vector128<ushort> input0 = Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref searchSpace, byteOffset));
             Vector128<ushort> input1 = Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref searchSpace, byteOffset + (uint)Vector128<byte>.Count));
 
-            return Sse2.IsSupported
-                ? Sse2.PackUnsignedSaturate(input0.AsInt16(), input1.AsInt16())
-                : AdvSimd.Arm64.UnzipEven(input0.AsByte(), input1.AsByte());
+            if (Sse2.IsSupported)
+            {
+                return Sse2.PackUnsignedSaturate(input0.AsInt16(), input1.AsInt16());
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.UnzipEven(input0.AsByte(), input1.AsByte());
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.ConvertNarrowingSaturateUnsigned(input0.AsInt16(), input1.AsInt16());
+            }
+            else
+            {
+                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                ThrowHelper.ThrowUnreachableException();
+                return default;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
