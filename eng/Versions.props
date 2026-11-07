@@ -5,6 +5,8 @@
   <PropertyGroup>
     <!-- The .NET product branding version -->
     <ProductVersion>12.0.0</ProductVersion>
+    <!-- Unicode Character Database version consumed from System.Private.Runtime.UnicodeData -->
+    <UnicodeUcdVersion>18.0</UnicodeUcdVersion>
     <!-- File version numbers -->
     <MajorVersion>12</MajorVersion>
     <MinorVersion>0</MinorVersion>

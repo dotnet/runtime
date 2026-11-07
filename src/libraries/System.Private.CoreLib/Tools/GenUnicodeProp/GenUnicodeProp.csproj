@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <UnicodeUcdVersion>18.0</UnicodeUcdVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <EnableDefaultItems>true</EnableDefaultItems>

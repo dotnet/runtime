@@ -8,7 +8,7 @@ Before running this tool, ensure the following are all in sync:
  - The <SystemPrivateRuntimeUnicodeDataVersion> element in $(REPOROOT)/eng/Versions.props contains the correct version
    of the package mentioned above.
 
- - The <UnicodeUcdVersion> element in ./GenUnicodeProp.csproj contains the UCD version of the files you wish to process.
+ - The <UnicodeUcdVersion> property in eng/Versions.props contains the UCD version of the files you wish to process.
 
 Once this has been configured, from this directory, invoke:
 
