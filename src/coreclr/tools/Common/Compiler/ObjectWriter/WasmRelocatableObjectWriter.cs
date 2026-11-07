@@ -24,6 +24,7 @@ namespace ILCompiler.ObjectWriter
         private uint _nextVirtualIP = 1; // Zero marks an invalid stack frame.
         private readonly Dictionary<Utf8String, uint> _methodStartVirtualIPs = new();
         private static readonly Utf8String RestoreContextTagName = new("__nativeaot_wasm_restore_context_tag");
+        private static readonly ObjectNodeSection HydrationTargetSection = new(".bss.hydrated", SectionType.Uninitialized);
 
         // https://github.com/WebAssembly/tool-conventions/blob/main/Linking.md
         private enum SymbolKind : byte
@@ -73,6 +74,12 @@ namespace ILCompiler.ObjectWriter
 
         private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
         {
+            if (section == ObjectNodeSection.HydrationTargetSection)
+            {
+                // wasm-ld omits zero-initialized segments whose names start with ".bss".
+                return HydrationTargetSection;
+            }
+
             if (section == ObjectNodeSection.TextSection ||
                 section == ObjectNodeSection.ManagedCodeUnixContentSection ||
                 section == ObjectNodeSection.ManagedCodeWindowsContentSection)
