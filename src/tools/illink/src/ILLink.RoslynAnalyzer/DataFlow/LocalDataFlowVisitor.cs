@@ -80,11 +80,17 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             _semanticModel = cfg.OriginalOperation.SemanticModel ??
                 compilation.GetSemanticModel(cfg.OriginalOperation.Syntax.SyntaxTree);
             this.lValueFlowCaptures = lValueFlowCaptures;
-            _deconstructionLValueFlowCaptures = cfg
-                .DescendantOperations<IFlowCaptureReferenceOperation>(OperationKind.FlowCaptureReference)
-                .Where(reference => reference.IsInLeftOfDeconstructionAssignment(out _))
-                .Select(reference => reference.Id)
-                .ToImmutableHashSet();
+            var deconstructionLValueFlowCaptures = ImmutableHashSet.CreateBuilder<CaptureId>();
+            foreach (IOperation operation in cfg.DescendantOperations())
+            {
+                if (operation is IFlowCaptureReferenceOperation reference &&
+                    reference.IsInLeftOfDeconstructionAssignment(out _))
+                {
+                    deconstructionLValueFlowCaptures.Add(reference.Id);
+                }
+            }
+
+            _deconstructionLValueFlowCaptures = deconstructionLValueFlowCaptures.ToImmutable();
             InterproceduralState = interproceduralState;
         }
 
@@ -422,17 +428,17 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 // TODO: when setting a property in an attribute, target is an IPropertyReference.
                 case ILocalReferenceOperation localRef:
                 {
-                    TValue value = GetAssignmentValue();
+                    LocalValue<TValue> value = GetAssignmentLocalValue();
                     SetLocal(localRef.Local, value, state, merge);
-                    return value;
+                    return value.GetScalarValueOrTop(TopValue);
                 }
                 case IDeclarationPatternOperation declPattern:
                 {
                     if (declPattern.DeclaredSymbol is not ILocalSymbol declaredSymbol)
                         break;
-                    TValue value = GetAssignmentValue();
+                    LocalValue<TValue> value = GetAssignmentLocalValue();
                     SetLocal(declaredSymbol, value, state, merge);
-                    return value;
+                    return value.GetScalarValueOrTop(TopValue);
                 }
                 case IArrayElementReferenceOperation arrayElementRef:
                 {
@@ -490,6 +496,17 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
                 Debug.Assert(valueOperation is not null);
                 return valueOperation is null ? TopValue : Visit(valueOperation, state);
+            }
+
+            LocalValue<TValue> GetAssignmentLocalValue()
+            {
+                if (precomputedValue.HasValue)
+                    return new LocalValue<TValue>(precomputedValue.Value);
+
+                Debug.Assert(valueOperation is not null);
+                return valueOperation is null
+                    ? new LocalValue<TValue>(TopValue)
+                    : VisitLocalValue(valueOperation, state);
             }
         }
 
@@ -615,6 +632,50 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             return result;
         }
 
+        private LocalValue<TValue> VisitLocalValue(
+            IOperation operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            operation = UnwrapDeconstructionSource(operation);
+            switch (operation)
+            {
+                case ITupleOperation tuple:
+                {
+                    // Tuple syntax can lower to either locals or ValueTuple fields. Evaluate its
+                    // elements for side effects, but don't retain a structured local value.
+                    foreach (IOperation element in tuple.Elements)
+                        VisitLocalValue(element, state);
+                    return LocalValue<TValue>.Top;
+                }
+                case ILocalReferenceOperation localReference:
+                    return GetLocal(localReference.Local, state);
+                case IFlowCaptureReferenceOperation flowCaptureReference
+                    when IsRValueFlowCapture(flowCaptureReference.Id):
+                    return GetFlowCaptureLocalValue(flowCaptureReference, state);
+                case IThrowOperation:
+                    Visit(operation, state);
+                    return LocalValue<TValue>.Top;
+                default:
+                    return new LocalValue<TValue>(Visit(operation, state));
+            }
+        }
+
+        private LocalValue<TValue> VisitDeconstructionSourceValue(
+            IOperation operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            operation = UnwrapDeconstructionSource(operation);
+            if (operation is not ITupleOperation tuple)
+                return VisitLocalValue(operation, state);
+
+            // A tuple directly consumed by deconstruction can be evaluated structurally without
+            // making assumptions about how the compiler stores it.
+            var elements = ImmutableArray.CreateBuilder<LocalValue<TValue>>(tuple.Elements.Length);
+            foreach (IOperation element in tuple.Elements)
+                elements.Add(VisitDeconstructionSourceValue(element, state));
+            return new LocalValue<TValue>(elements.MoveToImmutable());
+        }
+
         public override TValue VisitDeconstructionAssignment(
             IDeconstructionAssignmentOperation operation,
             LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
@@ -642,24 +703,22 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
             ITypeSymbol? sourceType = operation.Value.Type;
             IOperation source = UnwrapDeconstructionSource(operation.Value);
-            bool sourceValueIsKnown = source is not ITupleOperation;
-            TValue sourceValue = sourceValueIsKnown ? Visit(source, state) : TopValue;
+            LocalValue<TValue> sourceValue = VisitDeconstructionSourceValue(source, state);
+            TValue scalarSourceValue = sourceValue.GetScalarValueOrTop(TopValue);
 
             // Deconstruction evaluates all source values before assigning any target. Keeping these
             // phases separate is required for assignments such as (first, second) = (second, first).
-            DeconstructionValue deconstructionValue = EvaluateDeconstruction(
+            if (!TryEvaluateDeconstruction(
                 operation.Target,
                 source,
                 sourceType,
                 sourceValue,
-                sourceValueIsKnown,
                 deconstructionInfo,
                 operation,
-                state);
-            if (deconstructionValue.DoesNotReturn)
+                state,
+                out LocalValue<TValue> deconstructionValue))
             {
-                state.Current = LocalStateAndContextLattice.Top;
-                return sourceValue;
+                return scalarSourceValue;
             }
 
             AssignDeconstruction(
@@ -669,57 +728,18 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 state,
                 savedTargetValues);
 
-            return sourceValue;
+            return scalarSourceValue;
         }
 
-        private readonly struct DeconstructionValue
-        {
-            public TValue Value { get; }
-
-            public ImmutableArray<DeconstructionValue> Nested { get; }
-
-            public bool IsInvalid { get; }
-
-            public bool DoesNotReturn { get; }
-
-            public DeconstructionValue(TValue value)
-            {
-                Value = value;
-                Nested = default;
-                IsInvalid = false;
-                DoesNotReturn = false;
-            }
-
-            public DeconstructionValue(ImmutableArray<DeconstructionValue> nested)
-            {
-                Value = default;
-                Nested = nested;
-                IsInvalid = false;
-                DoesNotReturn = false;
-            }
-
-            private DeconstructionValue(bool isInvalid, bool doesNotReturn)
-            {
-                Value = default;
-                Nested = default;
-                IsInvalid = isInvalid;
-                DoesNotReturn = doesNotReturn;
-            }
-
-            public static DeconstructionValue Invalid => new(isInvalid: true, doesNotReturn: false);
-
-            public static DeconstructionValue NonReturning => new(isInvalid: false, doesNotReturn: true);
-        }
-
-        private DeconstructionValue EvaluateDeconstruction(
+        private bool TryEvaluateDeconstruction(
             IOperation target,
             IOperation? source,
             ITypeSymbol? sourceType,
-            TValue sourceValue,
-            bool sourceValueIsKnown,
+            LocalValue<TValue> sourceValue,
             DeconstructionInfo deconstructionInfo,
             IDeconstructionAssignmentOperation operation,
-            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            out LocalValue<TValue> value)
         {
             target = UnwrapDeconstructionTarget(target);
 
@@ -728,26 +748,29 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 if (target is ITupleOperation)
                 {
                     UnexpectedOperationHandler.Handle(target);
-                    return DeconstructionValue.Invalid;
+                    value = LocalValue<TValue>.Top;
+                    return false;
                 }
 
-                sourceValue = GetDeconstructionSourceValue(source, sourceValue, sourceValueIsKnown, state);
-                return new DeconstructionValue(
+                TValue scalarSourceValue = sourceValue.GetScalarValueOrTop(TopValue);
+                value = new LocalValue<TValue>(
                     deconstructionInfo.Conversion is { MethodSymbol: IMethodSymbol conversionOperator }
-                        ? GetConversionValue(conversionOperator, sourceValue)
-                        : sourceValue);
+                        ? GetConversionValue(conversionOperator, scalarSourceValue)
+                        : scalarSourceValue);
+                return true;
             }
 
             if (target is not ITupleOperation targetTuple ||
                 targetTuple.Elements.Length != deconstructionInfo.Nested.Length)
             {
                 UnexpectedOperationHandler.Handle(target);
-                return DeconstructionValue.Invalid;
+                value = LocalValue<TValue>.Top;
+                return false;
             }
 
             if (deconstructionInfo.Method is IMethodSymbol deconstructMethod)
             {
-                sourceValue = GetDeconstructionSourceValue(source, sourceValue, sourceValueIsKnown, state);
+                TValue scalarSourceValue = sourceValue.GetScalarValueOrTop(TopValue);
                 bool isExtensionMethod = deconstructMethod.IsExtensionMethod;
                 bool hasReceiverArgument = isExtensionMethod || deconstructMethod.HasExtensionParameterOnType();
                 int outputParameterOffset = isExtensionMethod ? 1 : 0;
@@ -755,16 +778,17 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 if (metadataParameterCount != targetTuple.Elements.Length + (hasReceiverArgument ? 1 : 0))
                 {
                     UnexpectedOperationHandler.Handle(operation);
-                    return DeconstructionValue.Invalid;
+                    value = LocalValue<TValue>.Top;
+                    return false;
                 }
 
                 var arguments = ImmutableArray.CreateBuilder<TValue>(metadataParameterCount);
 
-                TValue instanceValue = sourceValue;
+                TValue instanceValue = scalarSourceValue;
                 if (hasReceiverArgument)
                 {
                     instanceValue = TopValue;
-                    arguments.Add(sourceValue);
+                    arguments.Add(scalarSourceValue);
                 }
 
                 while (arguments.Count < metadataParameterCount)
@@ -781,7 +805,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     state.Current.Context);
 
                 if (deconstructMethod.TryGetAttribute(nameof(DoesNotReturnAttribute), out _))
-                    return DeconstructionValue.NonReturning;
+                {
+                    state.Current = LocalStateAndContextLattice.Top;
+                    value = LocalValue<TValue>.Top;
+                    return false;
+                }
 
                 IParameterSymbol? receiverParameter = isExtensionMethod
                     ? deconstructMethod.Parameters[0]
@@ -789,118 +817,123 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 if (receiverParameter is not null && source is not null)
                     ApplyDoesNotReturnIfCondition(receiverParameter, source, state);
 
-                var nestedValues = ImmutableArray.CreateBuilder<DeconstructionValue>(targetTuple.Elements.Length);
+                var nestedValues = ImmutableArray.CreateBuilder<LocalValue<TValue>>(targetTuple.Elements.Length);
                 for (int i = 0; i < targetTuple.Elements.Length; i++)
                 {
                     IParameterSymbol outputParameter = deconstructMethod.Parameters[i + outputParameterOffset];
-                    DeconstructionValue nestedValue = EvaluateDeconstruction(
+                    if (!TryEvaluateDeconstruction(
                         targetTuple.Elements[i],
                         source: null,
                         outputParameter.Type,
-                        GetParameterTargetValue(outputParameter),
-                        sourceValueIsKnown: true,
+                        new LocalValue<TValue>(GetParameterTargetValue(outputParameter)),
                         deconstructionInfo.Nested[i],
                         operation,
-                        state);
-                    if (nestedValue.DoesNotReturn)
-                        return DeconstructionValue.NonReturning;
+                        state,
+                        out LocalValue<TValue> nestedValue))
+                    {
+                        value = LocalValue<TValue>.Top;
+                        return false;
+                    }
+
                     nestedValues.Add(nestedValue);
                 }
 
-                return new DeconstructionValue(nestedValues.MoveToImmutable());
+                value = new LocalValue<TValue>(nestedValues.MoveToImmutable());
+                return true;
             }
 
-            if (source is ITupleOperation sourceTuple &&
-                sourceTuple.Elements.Length == targetTuple.Elements.Length)
+            if (sourceValue.Kind == LocalValueKind.Tuple &&
+                sourceValue.Elements.Length == targetTuple.Elements.Length &&
+                sourceType is INamedTypeSymbol { IsTupleType: true } structuralTupleType &&
+                structuralTupleType.TupleElements.Length == targetTuple.Elements.Length)
             {
-                var nestedValues = ImmutableArray.CreateBuilder<DeconstructionValue>(targetTuple.Elements.Length);
+                var nestedValues = ImmutableArray.CreateBuilder<LocalValue<TValue>>(targetTuple.Elements.Length);
                 for (int i = 0; i < targetTuple.Elements.Length; i++)
                 {
-                    IOperation sourceElement = UnwrapDeconstructionSource(sourceTuple.Elements[i]);
-                    DeconstructionValue nestedValue = EvaluateDeconstruction(
+                    IOperation? sourceElement = source is ITupleOperation sourceTuple &&
+                        sourceTuple.Elements.Length == targetTuple.Elements.Length
+                            ? UnwrapDeconstructionSource(sourceTuple.Elements[i])
+                            : null;
+                    if (!TryEvaluateDeconstruction(
                         targetTuple.Elements[i],
                         sourceElement,
-                        sourceElement.Type,
-                        default,
-                        sourceValueIsKnown: false,
+                        structuralTupleType.TupleElements[i].Type,
+                        sourceValue.Elements[i],
                         deconstructionInfo.Nested[i],
                         operation,
-                        state);
-                    if (nestedValue.DoesNotReturn)
-                        return DeconstructionValue.NonReturning;
+                        state,
+                        out LocalValue<TValue> nestedValue))
+                    {
+                        value = LocalValue<TValue>.Top;
+                        return false;
+                    }
+
                     nestedValues.Add(nestedValue);
                 }
 
-                return new DeconstructionValue(nestedValues.MoveToImmutable());
+                value = new LocalValue<TValue>(nestedValues.MoveToImmutable());
+                return true;
             }
 
             if (sourceType is not INamedTypeSymbol { IsTupleType: true } tupleType ||
                 tupleType.TupleElements.Length != targetTuple.Elements.Length)
             {
                 UnexpectedOperationHandler.Handle(operation.Value);
-                return DeconstructionValue.Invalid;
+                value = LocalValue<TValue>.Top;
+                return false;
             }
 
-            var tupleValues = ImmutableArray.CreateBuilder<DeconstructionValue>(targetTuple.Elements.Length);
+            var tupleValues = ImmutableArray.CreateBuilder<LocalValue<TValue>>(targetTuple.Elements.Length);
             for (int i = 0; i < targetTuple.Elements.Length; i++)
             {
                 IFieldSymbol tupleElement = tupleType.TupleElements[i];
-                DeconstructionValue tupleValue = EvaluateDeconstruction(
+                if (!TryEvaluateDeconstruction(
                     targetTuple.Elements[i],
                     source: null,
                     tupleElement.Type,
-                    GetTupleElementValue(tupleElement),
-                    sourceValueIsKnown: true,
+                    sourceValue.Kind is LocalValueKind.Top or LocalValueKind.Unknown
+                        ? LocalValue<TValue>.Top
+                        : new LocalValue<TValue>(GetTupleElementValue(tupleElement)),
                     deconstructionInfo.Nested[i],
                     operation,
-                    state);
-                if (tupleValue.DoesNotReturn)
-                    return DeconstructionValue.NonReturning;
+                    state,
+                    out LocalValue<TValue> tupleValue))
+                {
+                    value = LocalValue<TValue>.Top;
+                    return false;
+                }
+
                 tupleValues.Add(tupleValue);
             }
 
-            return new DeconstructionValue(tupleValues.MoveToImmutable());
+            value = new LocalValue<TValue>(tupleValues.MoveToImmutable());
+            return true;
         }
 
         private void AssignDeconstruction(
             IOperation target,
-            DeconstructionValue value,
+            LocalValue<TValue> value,
             IDeconstructionAssignmentOperation operation,
             LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
             IReadOnlyDictionary<IOperation, TValue> savedTargetValues)
         {
-            if (value.IsInvalid)
-                return;
-
             target = UnwrapDeconstructionTarget(target);
-            if (value.Nested.IsDefaultOrEmpty)
+            if (target is not ITupleOperation targetTuple)
             {
-                ProcessAssignment(target, value.Value, target, state, savedTargetValues);
+                ProcessAssignment(target, value.GetScalarValueOrTop(TopValue), target, state, savedTargetValues);
                 return;
             }
 
-            if (target is not ITupleOperation targetTuple ||
-                targetTuple.Elements.Length != value.Nested.Length)
+            if (value.Kind != LocalValueKind.Tuple ||
+                targetTuple.Elements.Length != value.Elements.Length)
             {
-                UnexpectedOperationHandler.Handle(operation);
+                foreach (IOperation element in targetTuple.Elements)
+                    AssignDeconstruction(element, LocalValue<TValue>.Top, operation, state, savedTargetValues);
                 return;
             }
 
             for (int i = 0; i < targetTuple.Elements.Length; i++)
-                AssignDeconstruction(targetTuple.Elements[i], value.Nested[i], operation, state, savedTargetValues);
-        }
-
-        private TValue GetDeconstructionSourceValue(
-            IOperation? source,
-            TValue sourceValue,
-            bool sourceValueIsKnown,
-            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
-        {
-            if (sourceValueIsKnown)
-                return sourceValue;
-
-            Debug.Assert(source is not null);
-            return source is null ? TopValue : Visit(source, state);
+                AssignDeconstruction(targetTuple.Elements[i], value.Elements[i], operation, state, savedTargetValues);
         }
 
         // Evaluates a deconstruction target sub-expression and remembers its value, so that the
@@ -1066,15 +1099,22 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             }
         }
 
-        private TValue GetFlowCaptureValue(IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        private LocalValue<TValue> GetFlowCaptureLocalValue(
+            IFlowCaptureReferenceOperation operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
             Debug.Assert(!IsLValueFlowCapture(operation.Id),
                 $"{operation.Syntax.GetLocation().GetLineSpan()}");
             Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Read),
                 $"{operation.Syntax.GetLocation().GetLineSpan()}");
 
-            return state.Get(new LocalKey(operation.Id)).GetScalarValueOrTop(TopValue);
+            return state.Get(new LocalKey(operation.Id));
         }
+
+        private TValue GetFlowCaptureValue(
+            IFlowCaptureReferenceOperation operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state) =>
+            GetFlowCaptureLocalValue(operation, state).GetScalarValueOrTop(TopValue);
 
         // Similar to VisitLocalReference
         public override TValue VisitFlowCaptureReference(IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
@@ -1174,7 +1214,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         Debug.Assert(!capturedReferences.IsUnknown());
                         foreach (var capturedReference in capturedReferences.GetKnownValues())
                         {
-                            LocalValue<TValue> value = new(Visit(capturedReference.Reference, state));
+                            LocalValue<TValue> value = VisitLocalValue(capturedReference.Reference, state);
                             capturedValue = LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet(capturedValue, value);
                         }
                     }
@@ -1185,7 +1225,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 }
                 else
                 {
-                    capturedValue = new LocalValue<TValue>(Visit(operation.Value, state));
+                    capturedValue = VisitLocalValue(operation.Value, state);
                 }
 
                 state.Set(new LocalKey(operation.Id), capturedValue);
