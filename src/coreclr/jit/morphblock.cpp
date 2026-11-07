@@ -1342,9 +1342,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     else
                     {
                         GenTree* fldAddr = grabAddr(fldOffset);
-                        srcFld = copyOrderingFlag(m_compiler->gtNewIndir(destType, fldAddr,
-                                                                         getCopyIndirFlags(destType, m_src->gtFlags)),
-                                                  m_src->gtFlags);
+                        GenTree* fldLoad =
+                            m_compiler->gtNewIndir(destType, fldAddr, getCopyIndirFlags(destType, m_src->gtFlags));
+                        srcFld = copyOrderingFlag(fldLoad, m_src->gtFlags);
                     }
                 }
             }
