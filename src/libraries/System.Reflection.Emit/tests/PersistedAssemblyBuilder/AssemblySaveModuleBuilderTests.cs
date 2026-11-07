@@ -257,6 +257,13 @@ namespace System.Reflection.Emit.Tests
                 Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
                 Type checkType = assemblyFromDisk.GetType("CheckType");
 
+                CheckFieldAlignment(assemblyFromDisk.ManifestModule.GetField("Field4Bytes_1"), 4);
+                CheckFieldAlignment(assemblyFromDisk.GetType("MyType").GetField("Field4Bytes_1"), 4);
+                CheckFieldAlignment(assemblyFromDisk.ManifestModule.GetField("Field8Bytes_1"), 8);
+                CheckFieldAlignment(assemblyFromDisk.ManifestModule.GetField("Field4Bytes_2"), 4);
+                CheckFieldAlignment(assemblyFromDisk.ManifestModule.GetField("Field8Bytes_2"), 8);
+                CheckFieldAlignment(assemblyFromDisk.GetType("MyType").GetField("Field8Bytes_2"), 8);
+
                 CheckMethod("LoadAddress4_1", 4, field4Byte_1_data);
                 CheckMethod("LoadAddress4_3", 4, field4Byte_1_data);
                 CheckMethod("LoadAddress4_2", 4, field4Byte_2_data);
@@ -264,6 +271,13 @@ namespace System.Reflection.Emit.Tests
                 CheckMethod("LoadAddress8_2", 8, field8Byte_2_data);
                 CheckMethod("LoadAddress8_3", 8, field8Byte_2_data);
                 tlc.Unload();
+
+                void CheckFieldAlignment(FieldInfo field, int expectedAlignment)
+                {
+                    var layout = field.FieldType.StructLayoutAttribute;
+                    Assert.NotNull(layout);
+                    Assert.Equal(expectedAlignment, layout.Pack);
+                }
 
                 void CheckMethod(string name, int minAlignmentRequired, byte[] dataToVerify)
                 {
