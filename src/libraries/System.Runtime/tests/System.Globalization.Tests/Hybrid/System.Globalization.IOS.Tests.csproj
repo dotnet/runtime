@@ -5,7 +5,6 @@
     <HybridGlobalization>true</HybridGlobalization>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <UnicodeUcdVersion>16.0</UnicodeUcdVersion>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="..\default.rd.xml" />

@@ -149,7 +149,7 @@ namespace GenerateRegexCasingTable
             {
                 List<ushort> flattenedMap = FlattenMapDictionary();
 
-                writer.Write($"        private static ReadOnlySpan<ushort> EquivalenceCasingMap => // {flattenedMap.Count}]\n        [\n");
+                writer.Write($"        private static ReadOnlySpan<ushort> EquivalenceCasingMap => // {flattenedMap.Count}\n        [\n");
 
                 writer.Write("            0x{0:x4}", flattenedMap[0]);
                 for (var i = 1; i < flattenedMap.Count; i++)

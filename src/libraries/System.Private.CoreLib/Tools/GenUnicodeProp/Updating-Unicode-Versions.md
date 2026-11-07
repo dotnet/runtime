@@ -35,20 +35,15 @@ This should be done automatically by dependency-flow, so in theory there shouldn
 
 1. Follow the [instructions to run GenUnicodeProp](./Readme.md) which will generate a new `CharUnicodeInfoData.cs` file and will tell you where you need to copy the generated file. Make sure after compiling the GenUnicodeProp tool, that by inspecting the contents of the produced assembly, it contains all of the updated resources embedded into it, since those embedded resources are what is used to produce `CharUnicodeInfoData.cs`. You can inspect the embedded resources on the assembly using a tool like ILSpy.
 2. Follow the [instructions on how to update System.Text.Encodings.Web](../../../System.Text.Encodings.Web/tools/updating-encodings.md) projects. Those instructions will help you generate the files `UnicodeHelpers.generated.cs` and `UnicodeRangesTests.generated.cs`, which are consumed by both the test and the implementation projects for System.Text.Encodings.Web.
-3. Search across the repo for all of the .csproj files which have the property `<UnicodeUcdVersion>` and update it to use the new version. If a project defines this property, then it is very likely it is consuming the runtime-assets package in some form, so it needs to be updated to consume the new version. At the time of the writing of this doc, the project files which need to be updated are:
-   - GenUnicodeProp.csproj
-   - TestUtilities.Unicode.csproj
-   - System.Globalization.Tests.csproj
-   - System.Globalization.Nls.Tests.csproj
-   - System.Text.Encodings.Web.Tests.csproj
-4. If the new Unicode data contains casing changes/updates, then we will also need to update `src/native/minipal/unicodedata.c` file. This file is used by most of the reflection stack whenever you specify the `BindingFlags.IgnoreCase`. In order to regenerate the contents of the `unicdedata.c` file, you need to run the Program located at `src/native/minipal/UnicodeDataGenerator/unicodedata.cs` and give a full path to the new UnicodeData.txt as a parameter. e.g. in Unix shell:
+3. Update the `<UnicodeUcdVersion>` property in `eng/Versions.props` to the new UCD version. Projects that consume the runtime-assets Unicode package pick this up from there.
+4. If the new Unicode data contains casing changes/updates, then we will also need to update `src/native/minipal/unicodedata.c` file. This file is used by most of the reflection stack whenever you specify the `BindingFlags.IgnoreCase`. In order to regenerate the contents of the `unicodedata.c` file, you need to run the file-based app `src/native/minipal/UnicodeDataGenerator.cs` and give a full path to the new UnicodeData.txt as a parameter. e.g. in Unix shell:
     ```sh
     # download UnicodeData.txt
-    $ curl -sSLo /tmp/UnicodeData.txt https://www.unicode.org/Public/14.0.0/ucd/UnicodeData.txt
+    $ curl -sSLo /tmp/UnicodeData.txt https://www.unicode.org/Public/17.0.0/ucd/UnicodeData.txt
 
     # update unicodedata.c
     $ cd runtime
-    $ ./dotnet.sh run --project src/native/minipal/UnicodeDataGenerator /tmp/UnicodeData.txt > src/native/minipal/unicodedata.c
+    $ ./dotnet.sh run --file src/native/minipal/UnicodeDataGenerator.cs -- /tmp/UnicodeData.txt > src/native/minipal/unicodedata.c
     ```
 5. Update the Regex casing equivalence table using the UnicodeData.txt file from the new Unicode version. You can find the instructions on how to do this [here](../../../System.Text.RegularExpressions/tools/Readme.md).
 6. Update the Regex named blocks using the Blocks.txt file from the new Unicode version. Run the GenRegexNamedBlocks tool located at `src/libraries/System.Text.RegularExpressions/tools/GenRegexNamedBlocks` following the instructions in its [README.md](../../../System.Text.RegularExpressions/tools/GenRegexNamedBlocks/README.md).
