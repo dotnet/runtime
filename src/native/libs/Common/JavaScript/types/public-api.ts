@@ -68,7 +68,11 @@ export interface DotnetHostBuilder {
      */
     withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder;
     /**
-     * Sets a callback that is invoked after the runtime configuration is loaded.
+     * Adds a callback that is invoked after the runtime configuration is loaded.
+     * Callbacks run in registration order, awaiting each callback before invoking the next.
+     * If a callback throws or rejects, subsequent callbacks are not invoked and startup fails.
+     * Callbacks registered during invocation are not included in the current invocation.
+     * Passing undefined has no effect.
      */
     withConfigLoaded(callback?: (config: LoaderConfig) => void | Promise<void>): DotnetHostBuilder;
     /**
@@ -230,6 +234,7 @@ export interface Assets {
     modulesAfterRuntimeReady?: JsAsset[];
     extensions?: ResourceExtensions;
     vfs?: VfsAsset[];
+    appsettings?: AppSettings[];
 }
 export type Asset = {
     /**
@@ -300,6 +305,9 @@ export type VfsAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+};
+export type AppSettings = VfsAsset & {
+    loadIntoVfs: boolean;
 };
 export type IcuAsset = Asset & {
     virtualPath: string;
@@ -431,6 +439,10 @@ export type AssetBehaviors = SingleAssetBehaviors |
      * Load asset into the virtual filesystem (for fopen, File.Open, etc).
      */
     | "vfs"
+    /**
+     * Retain application settings in JavaScript memory and optionally install them into VFS.
+     */
+    | "appsettings"
     /**
      * The javascript module that came from nuget package .
      */

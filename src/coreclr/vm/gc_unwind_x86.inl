@@ -2902,18 +2902,6 @@ bool UnwindEbpDoubleAlignFrame(
             // Set baseSP as initial SP
             baseSP += GetPushedArgSize(info, table, curOffs);
 
-#ifdef UNIX_X86_ABI
-            // 16-byte stack alignment padding (allocated in genFuncletProlog)
-            // Current funclet frame layout (see CodeGen::genFuncletProlog() and genFuncletEpilog()):
-            //   prolog: sub esp, 12
-            //   epilog: add esp, 12
-            //           ret
-            // SP alignment padding should be added for all instructions except the first one and the last one.
-            // Epilog may not exist (unreachable), so we need to check the instruction code.
-            if (funcletStart != methodStart + curOffs && methodStart[curOffs] != X86_INSTR_RETN)
-                baseSP += 12;
-#endif
-
             SetRegdisplayPCTAddr(pContext, (TADDR)baseSP);
 
             pContext->SP = (DWORD)(baseSP + sizeof(TADDR));
@@ -3011,16 +2999,6 @@ bool UnwindStackFrameX86(PREGDISPLAY     pContext,
                                        updateAllRegs))
             return false;
     }
-
-    // TODO [DAVBR]: For the full fix for VsWhidbey 450273, all the below
-    // may be uncommented once isLegalManagedCodeCaller works properly
-    // with non-return address inputs, and with non-DEBUG builds
-    /*
-    // Ensure isLegalManagedCodeCaller succeeds for speculative stackwalks.
-    // (We just assert this below for non-speculative stackwalks.)
-    //
-    FAIL_IF_SPECULATIVE_WALK(isLegalManagedCodeCaller(GetControlPC(pContext)));
-    */
 
     return true;
 }
@@ -3219,18 +3197,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
                     TADDR baseSP = ESP;
                     // Set baseSP as initial SP
                     baseSP += GetPushedArgSize(&info, table, curOffs);
-
-#ifdef UNIX_X86_ABI
-                    // 16-byte stack alignment padding (allocated in genFuncletProlog)
-                    // Current funclet frame layout (see CodeGen::genFuncletProlog() and genFuncletEpilog()):
-                    //   prolog: sub esp, 12
-                    //   epilog: add esp, 12
-                    //           ret
-                    // SP alignment padding should be added for all instructions except the first one and the last one.
-                    // Epilog may not exist (unreachable), so we need to check the instruction code.
-                    if (funcletStart != methodStart + curOffs && methodStart[curOffs] != X86_INSTR_RETN)
-                        baseSP += 12;
-#endif
 
                     // -sizeof(void*) because we want to point *AT* first parameter
                     pPendingArgFirst = (DWORD *)(size_t)(baseSP - sizeof(void*));

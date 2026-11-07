@@ -670,141 +670,7 @@ PALAPI
 ResumeThread(
          IN HANDLE hThread);
 
-#ifdef HOST_X86
-
-//
-// ***********************************************************************************
-//
-// NOTE: These context definitions are replicated in ndp/clr/src/debug/inc/DbgTargetContext.h (for the
-// purposes manipulating contexts from different platforms during remote debugging). Be sure to keep those
-// definitions in sync if you make any changes here.
-//
-// ***********************************************************************************
-//
-
-#define SIZE_OF_80387_REGISTERS      80
-
-#define CONTEXT_i386            0x00010000
-#define CONTEXT_CONTROL         (CONTEXT_i386 | 0x00000001L) // SS:SP, CS:IP, FLAGS, BP
-#define CONTEXT_INTEGER         (CONTEXT_i386 | 0x00000002L) // AX, BX, CX, DX, SI, DI
-#define CONTEXT_SEGMENTS        (CONTEXT_i386 | 0x00000004L)
-#define CONTEXT_FLOATING_POINT  (CONTEXT_i386 | 0x00000008L) // 387 state
-#define CONTEXT_DEBUG_REGISTERS (CONTEXT_i386 | 0x00000010L)
-
-#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS)
-#define CONTEXT_EXTENDED_REGISTERS  (CONTEXT_i386 | 0x00000020L)
-#define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS)
-
-#define MAXIMUM_SUPPORTED_EXTENSION     512
-
-#define CONTEXT_XSTATE (CONTEXT_i386 | 0x40L)
-
-#define CONTEXT_EXCEPTION_ACTIVE 0x8000000L
-#define CONTEXT_SERVICE_ACTIVE 0x10000000L
-#define CONTEXT_EXCEPTION_REQUEST 0x40000000L
-#define CONTEXT_EXCEPTION_REPORTING 0x80000000L
-
-//
-// This flag is set by the unwinder if it has unwound to a call
-// site, and cleared whenever it unwinds through a trap frame.
-// It is used by language-specific exception handlers to help
-// differentiate exception scopes during dispatching.
-//
-
-#define CONTEXT_UNWOUND_TO_CALL 0x20000000
-
-typedef struct _FLOATING_SAVE_AREA {
-    DWORD   ControlWord;
-    DWORD   StatusWord;
-    DWORD   TagWord;
-    DWORD   ErrorOffset;
-    DWORD   ErrorSelector;
-    DWORD   DataOffset;
-    DWORD   DataSelector;
-    BYTE    RegisterArea[SIZE_OF_80387_REGISTERS];
-    DWORD   Cr0NpxState;
-} FLOATING_SAVE_AREA;
-
-typedef struct _CONTEXT {
-    ULONG ContextFlags;
-
-    ULONG   Dr0_PAL_Undefined;
-    ULONG   Dr1_PAL_Undefined;
-    ULONG   Dr2_PAL_Undefined;
-    ULONG   Dr3_PAL_Undefined;
-    ULONG   Dr6_PAL_Undefined;
-    ULONG   Dr7_PAL_Undefined;
-
-    FLOATING_SAVE_AREA FloatSave;
-
-    ULONG   SegGs_PAL_Undefined;
-    ULONG   SegFs_PAL_Undefined;
-    ULONG   SegEs_PAL_Undefined;
-    ULONG   SegDs_PAL_Undefined;
-
-    ULONG   Edi;
-    ULONG   Esi;
-    ULONG   Ebx;
-    ULONG   Edx;
-    ULONG   Ecx;
-    ULONG   Eax;
-
-    ULONG   Ebp;
-    ULONG   Eip;
-    ULONG   SegCs;
-    ULONG   EFlags;
-    ULONG   Esp;
-    ULONG   SegSs;
-
-    UCHAR   ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
-} CONTEXT, *PCONTEXT, *LPCONTEXT;
-
-typedef struct _KNONVOLATILE_CONTEXT {
-
-    DWORD Edi;
-    DWORD Esi;
-    DWORD Ebx;
-    DWORD Ebp;
-
-} KNONVOLATILE_CONTEXT, *PKNONVOLATILE_CONTEXT;
-
-typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
-
-    // The ordering of these fields should be aligned with that
-    // of corresponding fields in CONTEXT
-    //
-    // (See FillRegDisplay in inc/regdisp.h for details)
-    PDWORD Edi;
-    PDWORD Esi;
-    PDWORD Ebx;
-    PDWORD Edx;
-    PDWORD Ecx;
-    PDWORD Eax;
-
-    PDWORD Ebp;
-
-} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
-
-
-//
-// Context Frame
-//
-//
-// The flags field within this record controls the contents of a CONTEXT
-// record.
-//
-// If the context record is used as an input parameter, then for each
-// portion of the context record controlled by a flag whose value is
-// set, it is assumed that such portion of the context record contains
-// valid context. If the context record is being used to modify a threads
-// context, then only that portion of the threads context is modified.
-//
-// If the context record is used as an output parameter to capture the
-// context of a thread, then only those portions of the thread's context
-// corresponding to set flags will be returned.
-//
-
-#elif defined(HOST_AMD64)
+#if defined(HOST_AMD64)
 
 // copied from winnt.h
 
@@ -2772,23 +2638,6 @@ Define_InterlockMethod(
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
 
-#if defined(HOST_X86)
-
-// 64-bit __atomic_exchange_n is not expanded as a compiler intrinsic on Linux x86.
-// Use inline implementation instead.
-
-inline LONGLONG InterlockedExchange64(LONGLONG volatile * Target, LONGLONG Value)
-{
-    LONGLONG Old;
-
-    do {
-        Old = *Target;
-    } while (__sync_val_compare_and_swap(Target, Old, Value) != Old);
-
-    return Old;
-}
-
-#else
 
 Define_InterlockMethod(
     LONGLONG,
@@ -2797,7 +2646,6 @@ Define_InterlockMethod(
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
 
-#endif
 
 
 /*++
@@ -2947,7 +2795,7 @@ VOID
 PALAPI
 YieldProcessor()
 {
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(HOST_AMD64)
     __asm__ __volatile__(
         "rep\n"
         "nop");

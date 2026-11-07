@@ -697,11 +697,7 @@ enum class CorInfoCallConvExtension
 #ifdef TARGET_X86
 inline bool IsCallerPop(CorInfoCallConvExtension callConv)
 {
-#ifdef UNIX_X86_ABI
-    return callConv == CorInfoCallConvExtension::Managed || callConv == CorInfoCallConvExtension::C || callConv == CorInfoCallConvExtension::CMemberFunction;
-#else
     return callConv == CorInfoCallConvExtension::C || callConv == CorInfoCallConvExtension::CMemberFunction;
-#endif // UNIX_X86_ABI
 }
 #endif
 

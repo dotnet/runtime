@@ -701,7 +701,7 @@ static void GetLogicalProcessorCacheSizeFromSysFs(size_t* cacheLevel, size_t* ca
     assert (cacheLevel != nullptr);
     assert (cacheSize != nullptr);
 
-#if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
+#if defined(TARGET_LINUX) && !defined(HOST_ARM)
     //
     // Retrieve cachesize via sysfs by reading the file /sys/devices/system/cpu/cpu0/cache/index{LastLevelCache}/size
     // for the platform. Currently musl and arm64 should be only cases to use

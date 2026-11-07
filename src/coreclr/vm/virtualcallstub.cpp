@@ -2068,14 +2068,14 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                         PCODE addrOfResolver = (PCODE)(resolvers->Find(&probeR));
                         if (addrOfResolver == CALL_STUB_EMPTY_ENTRY)
                         {
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                             MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
                             size_t stackArgumentsSize;
                             {
                                 ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
                                 stackArgumentsSize = pMD->SizeOfArgStack();
                             }
-#endif // TARGET_X86 && !UNIX_X86_ABI
+#endif // TARGET_X86
 
                             bool reenteredCooperativeGCMode = PerfMap::IsEnabled();
                             {
@@ -2083,7 +2083,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                                 pResolveHolder = GenerateResolveStub(pResolverFcn,
                                                                 pBackPatchFcn,
                                                                 token.To_SIZE_T()
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                                                                  , stackArgumentsSize
 #endif
                                                              );
@@ -2985,7 +2985,7 @@ addrOfPatcher is who to call if the fail piece is being called too often by disp
 ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addrOfResolver,
                                                            PCODE            addrOfPatcher,
                                                            size_t           dispatchToken
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                                                            , size_t         stackArgumentsSize
 #endif
                                                            )
@@ -3053,7 +3053,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
                        addrOfResolver, addrOfPatcher,
                        dispatchToken, DispatchCache::HashToken(dispatchToken),
                        g_resolveCache->GetCacheBaseAddr(), counterAddr
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#ifdef TARGET_X86
                        , stackArgumentsSize
 #endif
                        );

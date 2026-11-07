@@ -19,6 +19,23 @@ namespace System.Collections.Tests
             Random rand = new Random(seed);
             return rand.Next();
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ExceptWith(bool useSelf)
+        {
+            var set = new SortedSet<int> { 1, 2, 3, 4 };
+            SortedSet<int> view = set.GetViewBetween(2, 3);
+
+            var other = useSelf ? view : new SortedSet<int> { 2, 3 };
+
+            view.ExceptWith(other);
+
+            Assert.Empty(view);
+            Assert.Equal(0, view.Count);
+            Assert.Equal(new[] { 1, 4 }, set);
+        }
     }
 
     public class SortedSet_TreeSubset_String_Tests : SortedSet_TreeSubset_Tests<string>

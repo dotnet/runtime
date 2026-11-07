@@ -570,7 +570,6 @@ static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
 #endif
 
 static const char *const TwoWayNamedPipePrefix = "clr-debug-pipe";
-static const char* IpcNameFormat = "%s-%d-%llu-%s";
 
 #ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
 static const char* RuntimeStartupPipeName = "st";
@@ -1154,10 +1153,10 @@ PAL_GetTransportName(
     *name = '\0';
     DWORD dwRetVal = 0;
     UINT64 disambiguationKey = 0;
-    PathCharString formatBufferString;
+    PathCharString directoryString;
     BOOL ret = GetProcessIdDisambiguationKey(id, &disambiguationKey);
-    char *formatBuffer = formatBufferString.OpenStringBuffer(MAX_TRANSPORT_NAME_LENGTH-1);
-    if (formatBuffer == nullptr)
+    char *directoryBuffer = directoryString.OpenStringBuffer(MAX_TRANSPORT_NAME_LENGTH-1);
+    if (directoryBuffer == nullptr)
     {
         ERROR("Out Of Memory");
         return;
@@ -1181,14 +1180,14 @@ PAL_GetTransportName(
         // In sandbox, all IPC files (locks, pipes) should be written to the application group
         // container. The path returned by GetTempPathA will be unique for each process and cannot
         // be used for IPC between two different processes
-        if (!GetApplicationContainerFolder(formatBufferString, applicationGroupId, applicationGroupIdLength))
+        if (!GetApplicationContainerFolder(directoryString, applicationGroupId, applicationGroupIdLength))
         {
             ERROR("Out Of Memory");
             return;
         }
 
         // Verify the size of the path won't exceed maximum allowed size
-        if (formatBufferString.GetCount() >= MAX_TRANSPORT_NAME_LENGTH)
+        if (directoryString.GetCount() >= MAX_TRANSPORT_NAME_LENGTH)
         {
             ERROR("GetApplicationContainerFolder returned a path that was larger than MAX_TRANSPORT_NAME_LENGTH");
             return;
@@ -1198,27 +1197,28 @@ PAL_GetTransportName(
 #endif // __APPLE__
     {
         // Get a temp file location
-        dwRetVal = ::GetTempPathA(MAX_TRANSPORT_NAME_LENGTH, formatBuffer);
+        dwRetVal = ::GetTempPathA(MAX_TRANSPORT_NAME_LENGTH, directoryBuffer);
         if (dwRetVal == 0)
         {
             ERROR("GetTempPath failed (0x%08x)", ::GetLastError());
             return;
         }
-        if (dwRetVal > MAX_TRANSPORT_NAME_LENGTH)
+        if (dwRetVal >= MAX_TRANSPORT_NAME_LENGTH)
         {
             ERROR("GetTempPath returned a path that was larger than MAX_TRANSPORT_NAME_LENGTH");
             return;
         }
+        directoryString.CloseBuffer(dwRetVal);
     }
 
-    if (strncat_s(formatBuffer, MAX_TRANSPORT_NAME_LENGTH, IpcNameFormat, strlen(IpcNameFormat)) == STRUNCATE)
+    int chars = snprintf(name, MAX_TRANSPORT_NAME_LENGTH, "%s%s-%d-%llu-%s",
+                         directoryString.GetString(), prefix, (int)id, (unsigned long long)disambiguationKey, suffix);
+    if (chars < 0 || (unsigned int)chars >= MAX_TRANSPORT_NAME_LENGTH)
     {
         ERROR("TransportPipeName was larger than MAX_TRANSPORT_NAME_LENGTH");
+        *name = '\0';
         return;
     }
-
-    int chars = snprintf(name, MAX_TRANSPORT_NAME_LENGTH, formatBuffer, prefix, id, disambiguationKey, suffix);
-    _ASSERTE(chars > 0 && (unsigned int)chars < MAX_TRANSPORT_NAME_LENGTH);
 }
 
 /*++

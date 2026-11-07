@@ -53,6 +53,24 @@ Implementation:
 
     - If you want to *dependsOn* on this, then use `DependsOnTargets="WasmTriggerPublishApp"`
 
+### Stack trace source locations
+
+Browser publishing defaults `StackTraceLineNumberSupport` to `false`, including
+Debug publishes. On CoreCLR, this removes managed portable-PDB lookup and its
+dependencies while preserving method names in stack traces. Development builds
+retain their existing defaults.
+
+To keep source file names and line numbers in a published application, opt in
+explicitly and publish its symbols:
+
+```xml
+<PropertyGroup>
+  <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
+  <DebugSymbols>true</DebugSymbols>
+  <CopyOutputSymbolsToPublishDirectory>true</CopyOutputSymbolsToPublishDirectory>
+</PropertyGroup>
+```
+
 ### Profile-guided CoreCLR ReadyToRun
 
 CoreCLR browser apps can restrict ReadyToRun compilation to methods selected by an external

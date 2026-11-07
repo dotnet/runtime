@@ -995,9 +995,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         fgMorphArgs(tlsRefCall);
 
         tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
-#ifdef UNIX_X86_ABI
-        tlsRefCall->gtFlags &= ~GTF_CALL_POP_ARGS;
-#endif // UNIX_X86_ABI
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Code sequence to access thread local variable on linux/arm64:
         //

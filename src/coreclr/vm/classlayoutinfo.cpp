@@ -56,27 +56,7 @@ namespace
         {
             // Safe cast - no primitive type is larger than 4gb!
             placementInfo.m_size = ((UINT32)CorTypeInfo::Size(corElemType));
-#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
-            switch (corElemType)
-            {
-                // The System V ABI for i386 defines different packing for these types.
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
-            case ELEMENT_TYPE_R8:
-            {
-                placementInfo.m_alignment = 4;
-                break;
-            }
-
-            default:
-            {
-                placementInfo.m_alignment = placementInfo.m_size;
-                break;
-            }
-            }
-#else // TARGET_X86 && UNIX_X86_ABI
             placementInfo.m_alignment = placementInfo.m_size;
-#endif
         }
         else if (corElemType == ELEMENT_TYPE_PTR || corElemType == ELEMENT_TYPE_FNPTR)
         {

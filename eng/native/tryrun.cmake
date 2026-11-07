@@ -29,7 +29,6 @@ if(NOT DEFINED ANDROID_BUILD)
     EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/aarch64-alpine-linux-musl OR
     EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/s390x-alpine-linux-musl OR
     EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/ppc64le-alpine-linux-musl OR
-    EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/i586-alpine-linux-musl OR
     EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/x86_64-alpine-linux-musl OR
     EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/riscv64-alpine-linux-musl)
 

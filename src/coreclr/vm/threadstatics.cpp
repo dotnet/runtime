@@ -1154,8 +1154,6 @@ bool CanJITOptimizeTLSAccess()
     bool optimizeThreadStaticAccess = false;
 #if defined(TARGET_ARM)
     // Optimization is disabled for linux/windows arm
-#elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
-    // Optimization is disabled for linux/x86
 #elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
     // Optimization is disabled for linux musl arm64
 #elif defined(TARGET_LINUX_MUSL) && defined(TARGET_RISCV64)

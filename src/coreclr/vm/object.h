@@ -1411,22 +1411,6 @@ inline OBJECTREF ArgSlotToObj(ARG_SLOT i)
     return ObjectToOBJECTREF ((Object*)v);
 }
 
-inline ARG_SLOT StringToArgSlot(STRINGREF sr)
-{
-    LIMITED_METHOD_CONTRACT;
-    LPVOID v;
-    v = OBJECTREFToObject(sr);
-    return (ARG_SLOT)(SIZE_T)v;
-}
-
-inline STRINGREF ArgSlotToString(ARG_SLOT s)
-{
-    LIMITED_METHOD_CONTRACT;
-    LPVOID v;
-    v = (LPVOID)(SIZE_T)s;
-    return ObjectToSTRINGREF ((StringObject*)v);
-}
-
 #else // USE_CHECKED_OBJECTREFS
 
 typedef PTR_ReflectModuleBaseObject REFLECTMODULEBASEREF;
@@ -1443,16 +1427,7 @@ typedef PTR_ContinuationObject CONTINUATIONREF;
 #define ObjToArgSlot(objref) ((ARG_SLOT)(SIZE_T)(objref))
 #define ArgSlotToObj(s) ((OBJECTREF)(SIZE_T)(s))
 
-#define StringToArgSlot(objref) ((ARG_SLOT)(SIZE_T)(objref))
-#define ArgSlotToString(s)    ((STRINGREF)(SIZE_T)(s))
-
 #endif //USE_CHECKED_OBJECTREFS
-
-#define PtrToArgSlot(ptr) ((ARG_SLOT)(SIZE_T)(ptr))
-#define ArgSlotToPtr(s)   ((LPVOID)(SIZE_T)(s))
-
-#define BoolToArgSlot(b)  ((ARG_SLOT)(CLR_BOOL)(!!(b)))
-#define ArgSlotToBool(s)  ((BOOL)(s))
 
 STRINGREF AllocateString(SString sstr);
 

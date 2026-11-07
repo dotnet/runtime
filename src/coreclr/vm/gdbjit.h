@@ -21,7 +21,7 @@
 #include "../inc/llvm/ELF.h"
 #include "../inc/llvm/Dwarf.h"
 
-#if defined(TARGET_X86) || defined(TARGET_ARM)
+#if defined(TARGET_ARM)
     typedef Elf32_Ehdr  Elf_Ehdr;
     typedef Elf32_Shdr  Elf_Shdr;
     typedef Elf32_Sym   Elf_Sym;
@@ -485,8 +485,6 @@ public:
         m_sub_loc[0] = 1;
 #if defined(TARGET_AMD64)
         m_sub_loc[1] = DW_OP_reg6;
-#elif defined(TARGET_X86)
-        m_sub_loc[1] = DW_OP_reg5;
 #elif defined(TARGET_ARM64)
         m_sub_loc[1] = DW_OP_reg29;
 #elif defined(TARGET_ARM)

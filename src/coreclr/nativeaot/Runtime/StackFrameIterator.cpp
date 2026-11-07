@@ -1973,8 +1973,7 @@ UnwindOutOfCurrentManagedFrame:
             // well-known assembly thunks.  Unwind through the thunk to find the next managed frame
             // that should be yielded from the stack frame iterator.
             // NOTE: It is generally possible for a sequence of multiple thunks to appear "on top of
-            // each other" on the stack (e.g., the CallDescrThunk can be used to invoke the
-            // UniversalTransitionThunk), but EH thunks can never appear in such sequences.
+            // each other" on the stack, but EH thunks can never appear in such sequences.
 
             if (IsNonEHThunk(category))
             {

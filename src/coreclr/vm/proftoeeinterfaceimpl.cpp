@@ -4916,18 +4916,22 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
             PCODE pCodeStart = (PCODE)NULL;
 #ifdef FEATURE_CODE_VERSIONING
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
-            ILCodeVersion ilCodeVersion = NULL;
-            {
-                pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
+            ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
+            // A null IL version would also enumerate the default native version.
+            if (!ilCodeVersion.IsNull())
+            {
                 NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMD);
                 for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
                 {
                     // Now that tiered compilation can create more than one jitted code version for the same rejit id
-                    // we are arbitrarily choosing the first one to return.  To address a specific version of native code
+                    // we are arbitrarily choosing the first one with code to return.  To address a specific version of native code
                     // use GetILToNativeMapping3.
                     pCodeStart = iter->GetNativeCode();
-                    break;
+                    if (pCodeStart != (PCODE)NULL)
+                    {
+                        break;
+                    }
                 }
             }
 #endif // FEATURE_CODE_VERSIONING

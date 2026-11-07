@@ -116,7 +116,7 @@ internal sealed partial class GrammarActions
             return typedef;
         }
 
-        if (typeName.ContainingTypeName is null)
+        if (!_entityRegistry.IsCoreLibrary && typeName.ContainingTypeName is null)
         {
             (string ns, string name) = NameHelpers.SplitDottedNameToNamespaceAndName(typeName.DottedName);
             if (ns == "System" && name is "String" or "Object" or "ValueType" or "Enum"

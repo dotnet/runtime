@@ -1014,11 +1014,13 @@ void Module::SetInstrumentedILOffsetMapping(mdMethodDef token, InstrumentedILOff
         m_debuggerSpecificData.m_pILOffsetMappingTable = PTR_ILOffsetMappingTable(new ILOffsetMappingTable);
     }
 
+    // Replace the entry before freeing the old array, so that a throw from AddOrReplace
+    // (it can grow the table) leaves the table holding a live array.
     ILOffsetMappingEntry currentEntry = m_debuggerSpecificData.m_pILOffsetMappingTable->Lookup(ILOffsetMappingTraits::GetKey(entry));
+    m_debuggerSpecificData.m_pILOffsetMappingTable->AddOrReplace(entry);
+
     if (!ILOffsetMappingTraits::IsNull(currentEntry))
         currentEntry.m_mapping.Clear();
-
-    m_debuggerSpecificData.m_pILOffsetMappingTable->AddOrReplace(entry);
 }
 #endif // DACCESS_COMPILE
 
@@ -1034,7 +1036,7 @@ void Module::SetInstrumentedILOffsetMapping(mdMethodDef token, InstrumentedILOff
 //    Check InstrumentedILOffsetMapping::IsNull() to see if any mapping is available.
 //
 // Notes:
-//    * Once added, the mapping stays valid until the Module containing the method is destructed.
+//    * Outside the DAC the result is a copy the caller owns.
 //    * The profiler may potentially update the mapping more than once.
 //
 
@@ -1068,7 +1070,31 @@ InstrumentedILOffsetMapping Module::GetInstrumentedILOffsetMapping(mdMethodDef t
     }
 
     ILOffsetMappingEntry entry = m_debuggerSpecificData.m_pILOffsetMappingTable->Lookup(token);
+
+#if !defined(DACCESS_COMPILE)
+    // Return a copy the caller owns: replacing a map frees the table's array, so a shallow
+    // copy used after the Crst is released could point at freed memory.
+    const InstrumentedILOffsetMapping & tableMapping = entry.m_mapping;
+    if (tableMapping.IsNull())
+        return InstrumentedILOffsetMapping();
+
+    UINT cMap = tableMapping.GetCount();
+    COR_IL_MAP * rgNewMap = new (nothrow) COR_IL_MAP[cMap];
+    if (rgNewMap == NULL)
+    {
+        // Leave offsets untranslated if allocation fails.
+        return InstrumentedILOffsetMapping();
+    }
+
+    memcpy(rgNewMap, tableMapping.GetOffsets(), cMap * sizeof(COR_IL_MAP));
+
+    InstrumentedILOffsetMapping ownedMapping;
+    ownedMapping.SetMappingInfo(cMap, rgNewMap);
+    return ownedMapping;
+#else
+    // The DAC reads a stopped target, so the shallow view is safe.
     return entry.m_mapping;
+#endif // !DACCESS_COMPILE
 }
 
 #undef DECODE_TYPEID

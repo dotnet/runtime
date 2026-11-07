@@ -110,6 +110,7 @@ public:
     StackString()
         : m_buffer(m_innerBuffer), m_size(STACKCOUNT+1), m_count(0)
     {
+        NullTerminate();
     }
 
 
