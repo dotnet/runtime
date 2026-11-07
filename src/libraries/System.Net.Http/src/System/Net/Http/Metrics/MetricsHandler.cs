@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -125,10 +126,75 @@ namespace System.Net.Http.Metrics
         }
     }
 
+    internal sealed class SharedHttpMetrics
+    {
+        private static readonly ConditionalWeakTable<Meter, SharedHttpMetrics> s_metricsByMeter = new();
+
+        private readonly object _lock = new();
+        private ActiveRequestsTracker? _activeRequestsTracker;
+        private ObservableUpDownCounter<long>? _activeRequests;
+        private OpenConnectionsTracker? _openConnectionsTracker;
+        private ObservableUpDownCounter<long>? _openConnections;
+
+        private SharedHttpMetrics()
+        {
+        }
+
+        public static (ActiveRequestsTracker Tracker, ObservableUpDownCounter<long> Instrument) GetActiveRequests(Meter meter)
+        {
+            // The ConditionalWeakTable factory is intentionally passive. GetValue may invoke it more than once,
+            // so observable instruments must only be created after obtaining the retained holder.
+            SharedHttpMetrics metrics = s_metricsByMeter.GetValue(meter, static _ => new SharedHttpMetrics());
+
+            lock (metrics._lock)
+            {
+                if (metrics._activeRequestsTracker is null)
+                {
+                    ActiveRequestsTracker tracker = new();
+                    ObservableUpDownCounter<long> instrument = meter.CreateObservableUpDownCounter<long>(
+                        "http.client.active_requests",
+                        observeValues: tracker.GetMeasurements,
+                        unit: "{request}",
+                        description: "Number of outbound HTTP requests that are currently active on the client.");
+
+                    metrics._activeRequestsTracker = tracker;
+                    metrics._activeRequests = instrument;
+                }
+
+                return (metrics._activeRequestsTracker, metrics._activeRequests!);
+            }
+        }
+
+        public static (OpenConnectionsTracker Tracker, ObservableUpDownCounter<long> Instrument) GetOpenConnections(Meter meter)
+        {
+            // See GetActiveRequests. Creating observable instruments inside the ConditionalWeakTable factory
+            // would allow discarded factory results to register extra callbacks with the meter.
+            SharedHttpMetrics metrics = s_metricsByMeter.GetValue(meter, static _ => new SharedHttpMetrics());
+
+            lock (metrics._lock)
+            {
+                if (metrics._openConnectionsTracker is null)
+                {
+                    OpenConnectionsTracker tracker = new();
+                    ObservableUpDownCounter<long> instrument = meter.CreateObservableUpDownCounter<long>(
+                        name: "http.client.open_connections",
+                        observeValues: tracker.GetMeasurements,
+                        unit: "{connection}",
+                        description: "Number of outbound HTTP connections that are currently active or idle on the client.");
+
+                    metrics._openConnectionsTracker = tracker;
+                    metrics._openConnections = instrument;
+                }
+
+                return (metrics._openConnectionsTracker, metrics._openConnections!);
+            }
+        }
+    }
+
     internal sealed class MetricsHandler : HttpMessageHandlerStage
     {
         private readonly HttpMessageHandler _innerHandler;
-        private readonly ActiveRequestsTracker _activeRequestsTracker = new();
+        private readonly ActiveRequestsTracker _activeRequestsTracker;
         private readonly ObservableUpDownCounter<long> _activeRequests;
         private readonly Histogram<double> _requestsDuration;
         private readonly IWebProxy? _proxy;
@@ -142,12 +208,7 @@ namespace System.Net.Http.Metrics
 
             meter = meterFactory?.Create("System.Net.Http") ?? SharedMeter.Instance;
 
-            // Meter has a cache for the instruments it owns
-            _activeRequests = meter.CreateObservableUpDownCounter<long>(
-                "http.client.active_requests",
-                observeValues: _activeRequestsTracker.GetMeasurements,
-                unit: "{request}",
-                description: "Number of outbound HTTP requests that are currently active on the client.");
+            (_activeRequestsTracker, _activeRequests) = SharedHttpMetrics.GetActiveRequests(meter);
             _requestsDuration = meter.CreateHistogram<double>(
                 "http.client.request.duration",
                 unit: "s",
