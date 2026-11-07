@@ -61,6 +61,8 @@ namespace ILCompiler.ObjectWriter
         // Exception handling
         private SectionWriter _pdataSectionWriter;
 
+        private protected override bool SplitsArm64CodeSections => true;
+
         // Debugging
         private SectionWriter _debugTypesSectionWriter;
         private SectionWriter _debugSymbolSectionWriter;

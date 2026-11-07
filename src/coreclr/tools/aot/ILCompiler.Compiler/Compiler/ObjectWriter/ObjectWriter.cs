@@ -31,6 +31,17 @@ namespace ILCompiler.ObjectWriter
 
         private readonly byte _insPaddingByte;
 
+        // Half the +/-128 MB reach of an ARM64 B/BL: a branch within one code section always
+        // fits, and every call site is within reach of a linker range-extension thunk placed
+        // at a section boundary.
+        private const long Arm64CodeSectionSplitSize = 64 * 1024 * 1024;
+
+        /// <summary>
+        /// Whether ARM64 code beyond <see cref="Arm64CodeSectionSplitSize"/> is emitted as several
+        /// sections of the same name, between which the linker can place range-extension thunks.
+        /// </summary>
+        private protected virtual bool SplitsArm64CodeSections => false;
+
         // Standard sections
         private readonly Dictionary<string, int> _sectionNameToSectionIndex = new(StringComparer.Ordinal);
         private readonly List<SectionData> _sectionIndexToData = new();
@@ -102,6 +113,16 @@ namespace ILCompiler.ObjectWriter
                 this,
                 sectionIndex,
                 sectionData);
+        }
+
+        /// <summary>
+        /// Creates a new non-COMDAT section with the name of <paramref name="section"/>.
+        /// Later requests for that name return the new section.
+        /// </summary>
+        private SectionWriter StartNewSection(ObjectNodeSection section)
+        {
+            _sectionNameToSectionIndex.Remove(section.Name);
+            return GetOrCreateSection(section);
         }
 
         private protected bool ShouldShareSymbol(ObjectNode node)
@@ -403,9 +424,20 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 ObjectNodeSection section = node.GetSection(_nodeFactory);
-                SectionWriter sectionWriter = ShouldShareSymbol(node, section) ?
+                bool shareSymbol = ShouldShareSymbol(node, section);
+                SectionWriter sectionWriter = shareSymbol ?
                     GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
                     GetOrCreateSection(section);
+
+                if (!shareSymbol &&
+                    SplitsArm64CodeSections &&
+                    _nodeFactory.Target.Architecture == TargetArchitecture.ARM64 &&
+                    section.Type == SectionType.Executable &&
+                    sectionWriter.Position > 0 &&
+                    sectionWriter.Position + nodeContents.Data.Length > Arm64CodeSectionSplitSize)
+                {
+                    sectionWriter = StartNewSection(section);
+                }
 
                 sectionWriter.EmitAlignment(nodeContents.Alignment);
 
