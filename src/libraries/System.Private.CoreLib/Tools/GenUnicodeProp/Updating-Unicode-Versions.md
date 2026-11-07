@@ -39,7 +39,7 @@ This should be done automatically by dependency-flow, so in theory there shouldn
 4. Update `src/native/minipal/unicodedata.c` file. This file is used by most of the reflection stack whenever you specify the `BindingFlags.IgnoreCase`. In order to regenerate the contents of the `unicodedata.c` file, you need to run the file-based app `src/native/minipal/UnicodeDataGenerator.cs` and give a full path to the new UnicodeData.txt as a parameter. e.g. in Unix shell:
     ```sh
     # download UnicodeData.txt
-    $ curl -sSLo /tmp/UnicodeData.txt https://www.unicode.org/Public/17.0.0/ucd/UnicodeData.txt
+    $ curl -sSLo /tmp/UnicodeData.txt https://www.unicode.org/Public/18.0.0/ucd/UnicodeData.txt
 
     # update unicodedata.c
     $ cd runtime

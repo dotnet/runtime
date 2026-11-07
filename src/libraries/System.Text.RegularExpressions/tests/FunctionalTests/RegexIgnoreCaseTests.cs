@@ -50,6 +50,8 @@ namespace System.Text.RegularExpressions.Tests
                     foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
                     {
                         yield return new object[] { engine, pattern, input, culture };
+                        // Also exercise lowercase-pattern/uppercase-input (and the reverse of each shared-lowercase pair).
+                        yield return new object[] { engine, input, pattern, culture };
                     }
                 }
             }
