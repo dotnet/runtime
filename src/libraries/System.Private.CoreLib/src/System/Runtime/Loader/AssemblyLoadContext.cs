@@ -665,7 +665,7 @@ namespace System.Runtime.Loader
                     TraceResolvingHandlerInvoked(
                         assemblyName.FullName,
                         handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
-                        this != Default ? ToString() : Name,
+                        this != Default ? GetNameForDiagnostics() : Name,
                         resolvedAssembly?.FullName,
                         resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null);
                 }

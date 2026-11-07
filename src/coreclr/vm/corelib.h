@@ -976,6 +976,7 @@ DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_RESOLVE,        OnAssemblyResolv
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  START_ASSEMBLY_LOAD,        StartAssemblyLoad,          SM_PtrGuid_PtrGuid_PtrException_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  STOP_ASSEMBLY_LOAD,         StopAssemblyLoad,           SM_PtrGuid_PtrException_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  INITIALIZE_DEFAULT_CONTEXT, InitializeDefaultContext,   SM_PtrException_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  GET_NAME_FOR_DIAGNOSTICS,   CallGetNameForDiagnostics,  SM_PtrObj_PtrStr_PtrException_RetVoid)
 
 DEFINE_CLASS(VALUE_TYPE,            System,                 ValueType)
 DEFINE_METHOD(VALUE_TYPE,           GET_HASH_CODE,          GetHashCode,            IM_RetInt)
