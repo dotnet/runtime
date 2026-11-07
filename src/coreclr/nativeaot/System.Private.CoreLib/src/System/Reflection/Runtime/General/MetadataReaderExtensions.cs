@@ -68,15 +68,6 @@ namespace System.Reflection.Runtime.General
                 handleType == HandleType.TypeSpecification;
         }
 
-        public static bool IsTypeDefRefSpecOrModifiedTypeHandle(this Handle handle, MetadataReader reader)
-        {
-            HandleType handleType = handle.HandleType;
-            return handleType == HandleType.TypeDefinition ||
-                handleType == HandleType.TypeReference ||
-                handleType == HandleType.TypeSpecification ||
-                handleType == HandleType.ModifiedType;
-        }
-
         public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeDefinitionHandle scopeDefinitionHandle, MetadataReader reader)
         {
             ScopeDefinition scopeDefinition = scopeDefinitionHandle.GetScopeDefinition(reader);

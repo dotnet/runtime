@@ -166,24 +166,6 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out ArraySignatureHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ArraySignatureHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ByReferenceSignatureHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ByReferenceSignatureHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
         public static uint Read(this NativeReader reader, uint offset, out ConstantHandle handle)
         {
             uint value;
@@ -247,15 +229,6 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out FunctionPointerSignatureHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new FunctionPointerSignatureHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
         public static uint Read(this NativeReader reader, uint offset, out GenericParameterHandle handle)
         {
             uint value;
@@ -310,24 +283,6 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out MethodTypeVariableSignatureHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new MethodTypeVariableSignatureHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ModifiedTypeHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ModifiedTypeHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
         public static uint Read(this NativeReader reader, uint offset, out NamespaceDefinitionHandle handle)
         {
             uint value;
@@ -351,15 +306,6 @@ namespace Internal.Metadata.NativeFormat
             uint value;
             offset = reader.DecodeUnsigned(offset, out value);
             handle = new ParameterHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out PointerSignatureHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new PointerSignatureHandle((int)value);
             handle._Validate();
             return offset;
         } // Read
@@ -400,15 +346,6 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out SZArraySignatureHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new SZArraySignatureHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
         public static uint Read(this NativeReader reader, uint offset, out ScopeDefinitionHandle handle)
         {
             uint value;
@@ -445,15 +382,6 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out TypeInstantiationSignatureHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new TypeInstantiationSignatureHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
         public static uint Read(this NativeReader reader, uint offset, out TypeReferenceHandle handle)
         {
             uint value;
@@ -468,15 +396,6 @@ namespace Internal.Metadata.NativeFormat
             uint value;
             offset = reader.DecodeUnsigned(offset, out value);
             handle = new TypeSpecificationHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out TypeVariableSignatureHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new TypeVariableSignatureHandle((int)value);
             handle._Validate();
             return offset;
         } // Read

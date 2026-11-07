@@ -33,7 +33,7 @@ using TypeReference = Internal.Metadata.NativeFormat.Writer.TypeReference;
 using Field = Internal.Metadata.NativeFormat.Writer.Field;
 using TypeSpecification = Internal.Metadata.NativeFormat.Writer.TypeSpecification;
 using ConstantStringValue = Internal.Metadata.NativeFormat.Writer.ConstantStringValue;
-using TypeInstantiationSignature = Internal.Metadata.NativeFormat.Writer.TypeInstantiationSignature;
+using SignatureTypeCode = Internal.Metadata.NativeFormat.SignatureTypeCode;
 using ConstantStringArray = Internal.Metadata.NativeFormat.Writer.ConstantStringArray;
 
 namespace ILCompiler
@@ -956,14 +956,18 @@ namespace ILCompiler
                     });
                 }
 
-                owningType = new TypeSpecification
+                TypeSpecification specification = new TypeSpecification();
+                specification.Blob.WriteByte((byte)SignatureTypeCode.GenericTypeInstance);
+                specification.Blob.WriteByte((byte)(owningTypeToGenerateMetadataFor.IsValueType
+                    ? SignatureTypeCode.ValueType : SignatureTypeCode.Class));
+                specification.Blob.WriteType(owningType);
+                specification.Blob.WriteCompressedInteger(genericArgs.Count);
+                foreach (MetadataRecord argument in genericArgs)
                 {
-                    Signature = new TypeInstantiationSignature
-                    {
-                        GenericType = owningType,
-                        GenericTypeArguments = genericArgs,
-                    }
-                };
+                    specification.Blob.WriteByte((byte)SignatureTypeCode.Class);
+                    specification.Blob.WriteType(argument);
+                }
+                owningType = specification;
             }
 
             // Generate metadata for the method instantiation arguments

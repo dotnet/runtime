@@ -60,11 +60,8 @@ namespace Internal.Runtime.CompilerServices
             get
             {
                 Method method = Reader.GetMethod(Handle);
-                Handle returnType = method.Signature.GetMethodSignature(Reader).ReturnType;
-                if (returnType.HandleType != HandleType.TypeSpecification)
-                    return false;
-                Handle inner = returnType.ToTypeSpecificationHandle(Reader).GetTypeSpecification(Reader).Signature;
-                return inner.HandleType == HandleType.TypeInstantiationSignature;
+                TypeSignature returnType = method.Signature.GetMethodSignature(Reader).ReturnType.SkipCustomModifiers();
+                return !returnType.IsHandle && returnType.GetReader().TypeCode == SignatureTypeCode.GenericTypeInstance;
             }
         }
 

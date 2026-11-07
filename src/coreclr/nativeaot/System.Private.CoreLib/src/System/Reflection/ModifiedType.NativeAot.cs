@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 
 using Internal.Metadata.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
+using NativeFormatTypeSignature = Internal.Metadata.NativeFormat.TypeSignature;
 
 namespace System.Reflection
 {
@@ -14,122 +14,94 @@ namespace System.Reflection
     {
         internal readonly struct TypeSignature
         {
-            internal readonly MetadataReader Reader;
-            internal readonly Handle Handle;
-            public TypeSignature(MetadataReader reader, Handle handle)
-                => (Reader, Handle) = (reader, handle);
+            internal readonly NativeFormatTypeSignature Signature;
+            public TypeSignature(NativeFormatTypeSignature signature)
+                => Signature = signature;
         }
 
         internal Type GetTypeParameter(Type unmodifiedType, int index)
         {
-            MetadataReader reader = _typeSignature.Reader;
-            if (reader is null)
+            NativeFormatTypeSignature signature = _typeSignature.Signature;
+            if (signature.Reader is null)
                 return Create(unmodifiedType);
 
-            Handle handle = _typeSignature.Handle;
-
-            while (handle.HandleType == HandleType.ModifiedType)
-                handle = reader.GetModifiedType(handle.ToModifiedTypeHandle(reader)).Type;
-
-            if (handle.HandleType == HandleType.TypeSpecification)
-                handle = reader.GetTypeSpecification(handle.ToTypeSpecificationHandle(reader)).Signature;
-
-            switch (handle.HandleType)
+            signature = signature.SkipCustomModifiers();
+            SignatureReader reader = signature.GetReader();
+            switch ((SignatureTypeCode)reader.ReadByte())
             {
-                case HandleType.SZArraySignature:
+                case SignatureTypeCode.SZArray:
+                case SignatureTypeCode.Array:
+                case SignatureTypeCode.Pointer:
+                case SignatureTypeCode.ByReference:
                     Debug.Assert(index == 0);
-                    return Create(unmodifiedType, new TypeSignature(reader, reader.GetSZArraySignature(handle.ToSZArraySignatureHandle(reader)).ElementType));
-                case HandleType.ArraySignature:
-                    Debug.Assert(index == 0);
-                    return Create(unmodifiedType, new TypeSignature(reader, reader.GetArraySignature(handle.ToArraySignatureHandle(reader)).ElementType));
-                case HandleType.PointerSignature:
-                    Debug.Assert(index == 0);
-                    return Create(unmodifiedType, new TypeSignature(reader, reader.GetPointerSignature(handle.ToPointerSignatureHandle(reader)).Type));
-                case HandleType.ByReferenceSignature:
-                    Debug.Assert(index == 0);
-                    return Create(unmodifiedType, new TypeSignature(reader, reader.GetByReferenceSignature(handle.ToByReferenceSignatureHandle(reader)).Type));
-                case HandleType.FunctionPointerSignature:
-                    {
-                        MethodSignature functionSig = reader.GetMethodSignature(
-                            reader.GetFunctionPointerSignature(handle.ToFunctionPointerSignatureHandle(reader)).Signature);
-                        if (index-- == 0)
-                            return Create(unmodifiedType, new TypeSignature(reader, functionSig.ReturnType));
+                    return Create(unmodifiedType, reader.Position);
+                case SignatureTypeCode.FunctionPointer:
+                {
+                    reader.ReadMethodHeader(out _, out int count);
+                    if (index-- == 0)
+                        return Create(unmodifiedType, reader.Position);
 
-                        Debug.Assert(index <= functionSig.Parameters.Count);
-                        foreach (Handle paramHandle in functionSig.Parameters)
-                            if (index-- == 0)
-                                return Create(unmodifiedType, new TypeSignature(reader, paramHandle));
-                    }
-                    break;
-                case HandleType.TypeInstantiationSignature:
+                    Debug.Assert(index < count);
+                    reader.SkipType();
+                    for (int i = 0; i < count; i++)
                     {
-                        TypeInstantiationSignature typeInst =
-                            reader.GetTypeInstantiationSignature(handle.ToTypeInstantiationSignatureHandle(reader));
-                        Debug.Assert(index < typeInst.GenericTypeArguments.Count);
-                        foreach (Handle paramHandle in typeInst.GenericTypeArguments)
-                            if (index-- == 0)
-                                return Create(unmodifiedType, new TypeSignature(reader, paramHandle));
+                        if (reader.TypeCode == SignatureTypeCode.Sentinel)
+                            reader.ReadByte();
+                        if (index-- == 0)
+                            return Create(unmodifiedType, reader.Position);
+                        reader.SkipType();
                     }
-                    break;
+                }
+                break;
+                case SignatureTypeCode.GenericTypeInstance:
+                {
+                    reader.SkipType();
+                    int count = reader.ReadCompressedInteger();
+                    Debug.Assert(index < count);
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (index-- == 0)
+                            return Create(unmodifiedType, reader.Position);
+                        reader.SkipType();
+                    }
+                }
+                break;
             }
 
-            Debug.Fail(handle.HandleType.ToString());
+            Debug.Fail(signature.GetReader().TypeCode.ToString());
             return null;
         }
 
         internal SignatureCallingConvention GetCallingConventionFromFunctionPointer()
         {
-            MetadataReader reader = _typeSignature.Reader;
-            if (reader is null)
+            NativeFormatTypeSignature signature = _typeSignature.Signature;
+            if (signature.Reader is null)
                 return default;
 
-            Handle fnPtrTypeSigHandle = reader.GetTypeSpecification(
-                _typeSignature.Handle.ToTypeSpecificationHandle(reader)).Signature;
-            MethodSignatureHandle methodSigHandle = reader.GetFunctionPointerSignature(
-                fnPtrTypeSigHandle.ToFunctionPointerSignatureHandle(reader)).Signature;
+            SignatureReader reader = signature.SkipCustomModifiers().GetReader();
+            Debug.Assert(reader.TypeCode == SignatureTypeCode.FunctionPointer);
+            reader.ReadByte();
+            var callingConvention = (Internal.Metadata.NativeFormat.SignatureCallingConvention)reader.ReadByte();
 
             Debug.Assert((int)Internal.Metadata.NativeFormat.SignatureCallingConvention.StdCall == (int)SignatureCallingConvention.StdCall);
             Debug.Assert((int)Internal.Metadata.NativeFormat.SignatureCallingConvention.Unmanaged == (int)SignatureCallingConvention.Unmanaged);
-            return (SignatureCallingConvention)(reader.GetMethodSignature(methodSigHandle).CallingConvention
+            return (SignatureCallingConvention)(callingConvention
                 & Internal.Metadata.NativeFormat.SignatureCallingConvention.UnmanagedCallingConventionMask);
         }
 
         private Type[] GetCustomModifiers(bool isOptional)
         {
-            ArrayBuilder<Type> builder = default;
-
-            MetadataReader reader = _typeSignature.Reader;
-            if (reader is null)
+            NativeFormatTypeSignature signature = _typeSignature.Signature;
+            if (signature.Reader is null)
                 return [];
 
-            Handle handle = _typeSignature.Handle;
-
-            while (handle.HandleType == HandleType.ModifiedType)
-            {
-                var modifiedType = reader.GetModifiedType(handle.ToModifiedTypeHandle(reader));
-
-                handle = modifiedType.Type;
-
-                if (modifiedType.IsOptional != isOptional)
-                    continue;
-
-                builder.Add(modifiedType.ModifierType.Resolve(reader, new TypeContext(null, null)).ToType());
-            }
-
-            Type[] result = builder.ToArray();
-
-            // We call Reverse for compat with CoreCLR that also reverses these.
-            // ILDasm also reverses these but don't be fooled: you can go to
-            // View -> MetaInfo -> Show to see the file format order in ILDasm.
-            Array.Reverse(result);
-
-            return result;
+            return signature.GetCustomModifiers(new TypeContext(null, null), isOptional);
         }
 
         internal static Type Create(Type unmodifiedType)
             => Create(unmodifiedType, default(TypeSignature));
 
-        public static Type Create(Type unmodifiedType, MetadataReader reader, Handle typeSignature)
-            => ModifiedType.Create(unmodifiedType, new TypeSignature(reader, typeSignature));
+        public static Type Create(Type unmodifiedType, NativeFormatTypeSignature typeSignature)
+            => ModifiedType.Create(unmodifiedType, new TypeSignature(typeSignature));
     }
 }

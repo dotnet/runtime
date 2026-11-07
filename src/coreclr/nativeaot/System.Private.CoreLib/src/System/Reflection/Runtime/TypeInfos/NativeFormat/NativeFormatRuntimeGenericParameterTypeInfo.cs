@@ -71,11 +71,9 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 ArrayBuilder<QTypeDefRefOrSpec> constraints = new ArrayBuilder<QTypeDefRefOrSpec>(_genericParameter.Constraints.Count);
                 foreach (Handle constraintHandle in _genericParameter.Constraints)
                 {
-                    // We're skipping custom modifiers here because Roslyn generates
-                    // a modifier for the "unmanaged" constraint. This doesn't conform to the
-                    // ECMA-335 spec, but we need to deal with it. The modifier is not visible
-                    // to reflection.
-                    constraints.Add(new QTypeDefRefOrSpec(reader, constraintHandle.SkipCustomModifiers(reader)));
+                    // Resolution skips custom modifiers in type specifications, including
+                    // the modifier used for the "unmanaged" constraint, which is not visible to reflection.
+                    constraints.Add(new QTypeDefRefOrSpec(reader, constraintHandle));
                 }
                 return constraints.ToArray();
             }

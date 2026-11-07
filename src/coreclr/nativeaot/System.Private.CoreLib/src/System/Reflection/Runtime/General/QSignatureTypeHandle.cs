@@ -21,7 +21,7 @@ namespace System.Reflection.Runtime.General
 #if ECMA_METADATA_SUPPORT
         private readonly global::System.Reflection.Metadata.BlobReader _blobReader;
 #endif
-        private global::Internal.Metadata.NativeFormat.Handle _handle;
+        private global::Internal.Metadata.NativeFormat.TypeSignature _signature;
 
         internal RuntimeTypeInfo Resolve(TypeContext typeContext)
         {
@@ -36,7 +36,7 @@ namespace System.Reflection.Runtime.General
         {
             if (Reader is global::Internal.Metadata.NativeFormat.MetadataReader)
             {
-                return _handle.TryResolve((global::Internal.Metadata.NativeFormat.MetadataReader)Reader, typeContext, ref exception);
+                return _signature.TryResolve(typeContext, ref exception);
             }
 
 #if ECMA_METADATA_SUPPORT
@@ -57,7 +57,7 @@ namespace System.Reflection.Runtime.General
 #if ECMA_METADATA_SUPPORT
             throw new NotImplementedException();
 #else
-            return _handle.GetCustomModifiers((global::Internal.Metadata.NativeFormat.MetadataReader)Reader, typeContext, optional);
+            return _signature.GetCustomModifiers(typeContext, optional);
 #endif
         }
 
@@ -65,7 +65,7 @@ namespace System.Reflection.Runtime.General
         {
             return Reader is null
                 ? ModifiedType.Create(unmodifiedType)
-                : ModifiedType.Create(unmodifiedType, (global::Internal.Metadata.NativeFormat.MetadataReader)Reader, _handle);
+                : ModifiedType.Create(unmodifiedType, _signature);
         }
     }
 }
