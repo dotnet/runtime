@@ -313,6 +313,9 @@ PCODE MethodDesc::PrepareInitialCode(CallerGCMode callerGCMode)
     STANDARD_VM_CONTRACT;
     PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
     config.SetCallerGCMode(callerGCMode);
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    config.SetAuxiliaryMethodLookup(AuxiliaryMethodLookupState::Pending(AuxiliaryMethodState::Uninitialized()));
+#endif
     return PrepareCode(&config);
 }
 
@@ -491,6 +494,11 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 
     PCODE pCode = (PCODE)NULL;
 #ifdef FEATURE_READYTORUN
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    AuxiliaryEntryPointsEra searchedEra = ReadyToRunInfo::GetCurrentAuxiliaryEntryPointsEra();
+    const AuxiliaryMethodLookupState& auxiliaryRequest = pConfig->GetAuxiliaryMethodLookup();
+#endif
+
     ReadyToRunInfo* pAlreadyExaminedInfos[2] = {NULL, NULL};
     Module * pModule = GetModule();
     if (pModule->IsReadyToRun())
@@ -498,6 +506,13 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
         pAlreadyExaminedInfos[0] = pModule->GetReadyToRunInfo();
         pCode = pAlreadyExaminedInfos[0]->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
     }
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    // A known code module owns this method, so do not search other images while it is unavailable.
+    if (auxiliaryRequest.IsResolved() && auxiliaryRequest.GetAuxMethodState().discriminator ==
+        AuxiliaryMethodStateDiscriminator::CheckAuxiliaryModuleActivationFlag)
+        return (PCODE)NULL;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
     //  Generics may be located in several places
     if (pCode == (PCODE)NULL && HasClassOrMethodInstantiation())
@@ -511,6 +526,12 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
             pCode = pAlreadyExaminedInfos[1]->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
         }
 
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        if (auxiliaryRequest.IsResolved() && auxiliaryRequest.GetAuxMethodState().discriminator ==
+            AuxiliaryMethodStateDiscriminator::CheckAuxiliaryModuleActivationFlag)
+            return (PCODE)NULL;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
         if (pCode == (PCODE)NULL)
         {
             // R2R also supports a concept of R2R code that has code for "Unrelated" generics embedded within it
@@ -523,10 +544,35 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
                 if (pUnrelatedInfo == pAlreadyExaminedInfos[1]) continue;
 
                 pCode = pUnrelatedInfo->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+                if (auxiliaryRequest.IsResolved() && auxiliaryRequest.GetAuxMethodState().discriminator ==
+                    AuxiliaryMethodStateDiscriminator::CheckAuxiliaryModuleActivationFlag)
+                    return (PCODE)NULL;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
             }
         }
     }
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    if (auxiliaryRequest.IsPending())
+    {
+        // When code is found, the finder should set the aux method request to resolved.
+        _ASSERTE(pCode == (PCODE)NULL);
+        if (pConfig->ReadyToRunRejectedPrecompiledCode() || pConfig->ProfilerRejectedPrecompiledCode())
+        {
+            // Code was rejected - don't try again later
+            pConfig->SetAuxiliaryMethodLookup(AuxiliaryMethodLookupState::Resolved(AuxiliaryMethodState::InterpretOnly()));
+        }
+        else
+        {
+            // A new EntryPoints module may make a lookup succeed next time.
+            AuxiliaryMethodState state = AuxiliaryMethodState::CheckAuxiliaryEntryPointsEra(searchedEra);
+            pConfig->SetAuxiliaryMethodLookup(AuxiliaryMethodLookupState::Resolved(state));
+        }
+    }
 #endif
+
+#endif // FEATURE_READYTORUN
 
     return pCode;
 }
@@ -552,6 +598,67 @@ bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
 #endif // FEATURE_READYTORUN
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+// Retry R2R lookup when the known code module is available or the lookup era has changed.
+void MethodDesc::TryActivateDelayedR2RCode(InterpMethod* interpreterMethod, CallerGCMode callerGCMode)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(interpreterMethod != nullptr && interpreterMethod->methodHnd == this);
+    AuxiliaryMethodState state = interpreterMethod->AuxiliaryState;
+    if (state.discriminator == AuxiliaryMethodStateDiscriminator::Activated || !state.ShouldResolveNativeCode())
+        return;
+
+    // Set state to avoid reentering activation in a cycle
+    interpreterMethod->AuxiliaryState = AuxiliaryMethodState::InterpretOnly();
+    EX_TRY
+    {
+        PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
+        config.SetCallerGCMode(callerGCMode);
+        config.SetAuxiliaryMethodLookup(AuxiliaryMethodLookupState::Pending(state));
+        PCODE code = GetPrecompiledCode(&config, false);
+        if (code != (PCODE)NULL)
+        {
+            interpreterMethod->AuxiliaryState = AuxiliaryMethodState::Activated();
+            PoisonInterpreterCode();
+            PerfMap::LogPreCompiledMethod(this, code);
+            DACNotifyCompilationFinished(this, code);
+        }
+        else
+        {
+            _ASSERTE(config.GetAuxiliaryMethodLookup().IsResolved());
+            interpreterMethod->AuxiliaryState = config.GetAuxiliaryMethodLookup().GetAuxMethodState();
+        }
+    }
+    EX_CATCH
+    {
+        // Nonterminal lookup or fixup failures leave the method interpreted without retry.
+        RethrowTerminalExceptions();
+        interpreterMethod->AuxiliaryState = AuxiliaryMethodState::InterpretOnly();
+    }
+    EX_END_CATCH
+}
+
+AuxiliaryMethodState MethodDesc::GetAuxiliaryMethodState()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    PTR_InterpByteCodeStart interpreterCode = GetInterpreterCode();
+    if (interpreterCode != nullptr)
+        return interpreterCode->Method->AuxiliaryState;
+
+    PCODE entryPoint = GetPortableEntryPointIfExists();
+    return entryPoint != (PCODE)NULL && PortableEntryPoint::HasNativeEntryPoint(entryPoint)
+        ? AuxiliaryMethodState::Activated()
+        : AuxiliaryMethodState::Uninitialized();
+}
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
 PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0)
 {
@@ -2210,12 +2317,36 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
     // The method to run; differs from pMethod when a MethodImpl in the same type redirects pMethod's slot.
     MethodDesc* pTargetMethod = pMethod;
     InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
-    if (targetIp != NULL)
+    bool runPrestub;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    bool tryActivateMethod;
+#endif
+    if (targetIp == NULL)
+    {
+        runPrestub = true;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        _ASSERTE(pMethod->GetAuxiliaryMethodState().discriminator == AuxiliaryMethodStateDiscriminator::Uninitialized ||
+            pMethod->GetAuxiliaryMethodState().discriminator == AuxiliaryMethodStateDiscriminator::Activated);
+        tryActivateMethod = false;
+#endif
+    }
+    else
     {
         // PrepareInterpreterCode may have stored the MethodImpl target's code on the declaration; run as that method.
         pTargetMethod = targetIp->Method->methodHnd;
+        runPrestub = false;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        // A declaration may still cache its implementation's interpreter code after R2R publication;
+        // check the implementation's state so the call reaches its published code.
+        tryActivateMethod = targetIp->Method->AuxiliaryState.ShouldResolveNativeCode();
+#endif // FEATURE_AUXILIARY_R2R_MODULES
     }
-    else
+
+    if (runPrestub
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+         || tryActivateMethod
+#endif
+        )
     {
         MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThread());
 
@@ -2234,11 +2365,22 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             {
                 GCX_PREEMP_REGION_BEGIN();
                 // Match the interpreter's PrepareInterpreterCode: run the method that pMethod's slot resolves to.
-                if (pMethod->IsVtableSlot())
+                if (runPrestub && pMethod->IsVtableSlot())
                 {
                     pTargetMethod = MethodTable::MapMethodDeclToMethodImpl(pMethod);
                 }
-                (void)pTargetMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+                if (runPrestub)
+                {
+                    (void)pTargetMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+                    _ASSERTE(!tryActivateMethod);
+                }
+                else
+                {
+                    if (targetIp->Method->AuxiliaryState.discriminator != AuxiliaryMethodStateDiscriminator::Activated)
+                        pTargetMethod->TryActivateDelayedR2RCode(targetIp->Method, CallerGCMode::Coop);
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+                }
                 targetIp = pTargetMethod->GetInterpreterCode();
                 GCX_PREEMP_REGION_END();
             }
@@ -2310,30 +2452,36 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
 
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff)
 {
-    PCODE targetIp;
+    InterpByteCodeStart* targetIp;
 
     if (!PortableEntryPoint::HasInterpreterData(portableEntrypoint))
     {
-        // In this case, we're using this entrypoint like the prestub.
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(portableEntrypoint, block, argsSize, retBuff);
-    }
-    else
-    {
-        targetIp = (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint);
-        int8_t* args = (int8_t*)(block + 1);
-
-        // Copy arguments to the stack
-        if (argsSize > 0)
-        {
-            _ASSERTE(args != NULL);
-            InterpThreadContext *threadContext = GetInterpThreadContext();
-            int8_t* sp = threadContext->pStackPointer;
-            memcpy(sp, args, argsSize);
-        }
-
-        (void)ExecuteInterpretedMethod(block, (TADDR)targetIp, retBuff);
         return;
     }
+
+    targetIp = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(portableEntrypoint);
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    if (targetIp->Method->AuxiliaryState.ShouldResolveNativeCode())
+    {
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(portableEntrypoint, block, argsSize, retBuff);
+        return;
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
+    int8_t* args = (int8_t*)(block + 1);
+
+    // Copy arguments to the stack
+    if (argsSize > 0)
+    {
+        _ASSERTE(args != NULL);
+        InterpThreadContext *threadContext = GetInterpThreadContext();
+        int8_t* sp = threadContext->pStackPointer;
+        memcpy(sp, args, argsSize);
+    }
+
+    (void)ExecuteInterpretedMethod(block, (TADDR)targetIp, retBuff);
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 

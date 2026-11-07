@@ -22,6 +22,8 @@
 #include <stddef.h>
 #include "eeconfig.h"
 #include "precode.h"
+#include "auxiliarymethods.h"
+#include "auxiliarymethodlookup.h"
 #ifdef FEATURE_INTERPRETER
 #include "callstubgenerator.h"
 #endif // FEATURE_INTERPRETER
@@ -2390,6 +2392,11 @@ public:
     bool TryPublishR2RCodeForUnmanagedCallersOnly();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    void TryActivateDelayedR2RCode(InterpMethod* interpreterMethod, CallerGCMode callerGCMode);
+    AuxiliaryMethodState GetAuxiliaryMethodState();
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
 private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
@@ -2475,6 +2482,20 @@ public:
     void SetReadyToRunRejectedPrecompiledCode();
     CallerGCMode GetCallerGCMode();
     void SetCallerGCMode(CallerGCMode mode);
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    const AuxiliaryMethodLookupState& GetAuxiliaryMethodLookup() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_auxiliaryMethodStateRequest;
+    }
+
+    void SetAuxiliaryMethodLookup(AuxiliaryMethodLookupState request)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_auxiliaryMethodStateRequest = request;
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
 public:
     bool IsForMulticoreJit() const
@@ -2607,6 +2628,10 @@ protected:
     BOOL m_ProfilerRejectedPrecompiledCode;
     BOOL m_ReadyToRunRejectedPrecompiledCode;
     CallerGCMode m_callerGCMode;
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    AuxiliaryMethodLookupState m_auxiliaryMethodStateRequest = AuxiliaryMethodLookupState::Pending(AuxiliaryMethodState::Uninitialized());
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
 #ifdef FEATURE_MULTICOREJIT
 private:

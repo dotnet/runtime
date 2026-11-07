@@ -13536,6 +13536,16 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
             _ASSERTE(portableEntryPoint != NULL);
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+            InterpByteCodeStart* interpreterCode = reinterpret_cast<InterpByteCodeStart*>(PCODEToPINSTR(ret));
+            const AuxiliaryMethodLookupState& auxiliaryRequest = config->GetAuxiliaryMethodLookup();
+            _ASSERTE(!auxiliaryRequest.IsResolved() ||
+                auxiliaryRequest.GetAuxMethodState().discriminator != AuxiliaryMethodStateDiscriminator::Activated);
+            // A pending request here means precompiled lookup was skipped; this body must not retry it.
+            interpreterCode->Method->AuxiliaryState = auxiliaryRequest.IsResolved()
+                ? auxiliaryRequest.GetAuxMethodState()
+                : AuxiliaryMethodState::InterpretOnly();
+#endif // FEATURE_AUXILIARY_R2R_MODULES
             // The deadlock-aware lock may allow multiple compilations of this method.
             // The first compilation to publish interpreter data must win.
             PortableEntryPoint::SetInterpreterDataInterlocked(portableEntryPoint, reinterpret_cast<void*>(PCODEToPINSTR(ret)));
@@ -14126,6 +14136,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
             PrepareCodeConfig config(NativeCodeVersion(pMD), FALSE, TRUE);
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+            config.SetAuxiliaryMethodLookup(AuxiliaryMethodLookupState::ForceLookup());
+#endif // FEATURE_AUXILIARY_R2R_MODULES
             PCODE pEntryPoint = pMD->GetModule()->GetReadyToRunInfo()->GetEntryPoint(pMD, &config, TRUE /* fFixups */);
             if (pEntryPoint == (PCODE)NULL)
             {
