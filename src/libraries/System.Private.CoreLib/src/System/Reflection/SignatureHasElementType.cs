@@ -15,6 +15,12 @@ namespace System.Reflection
 
         public sealed override bool IsTypeDefinition => false;
         public sealed override bool IsGenericTypeDefinition => false;
+        // Left unsealed because this implementation is correct for ByRefs and Pointers but not Arrays.
+        protected override TypeAttributes GetAttributeFlagsImpl()
+        {
+            Debug.Assert(IsByRef || IsPointer);
+            return TypeAttributes.Public;
+        }
         protected sealed override bool HasElementTypeImpl() => true;
         protected abstract override bool IsArrayImpl();
         protected abstract override bool IsByRefImpl();

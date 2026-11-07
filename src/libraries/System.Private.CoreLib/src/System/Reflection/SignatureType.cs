@@ -23,6 +23,7 @@ namespace System.Reflection
 
         // Type flavor predicates
         public abstract override bool IsTypeDefinition { get; }
+        protected abstract override TypeAttributes GetAttributeFlagsImpl();
         protected abstract override bool HasElementTypeImpl();
         protected abstract override bool IsArrayImpl();
         public abstract override bool IsSZArray { get; }
@@ -107,7 +108,6 @@ namespace System.Reflection
         public sealed override Array GetEnumValues() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Guid GUID => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override TypeCode GetTypeCodeImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        protected sealed override TypeAttributes GetAttributeFlagsImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public sealed override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
