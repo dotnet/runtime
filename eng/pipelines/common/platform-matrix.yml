@@ -263,27 +263,6 @@ jobs:
         cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux x86
-
-- ${{ if containsValue(parameters.platforms, 'linux_x86') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      variables: ${{ parameters.variables }}
-      osGroup: linux
-      archType: x86
-      targetRid: linux-x86
-      platform: linux_x86
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: linux_x86
-      jobParameters:
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        buildConfig: ${{ parameters.buildConfig }}
-        helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        crossBuild: true
-        ${{ insert }}: ${{ parameters.jobParameters }}
-
 # Runtime-dev-innerloop build
 
 - ${{ if containsValue(parameters.platforms, 'linux_x64_dev_innerloop') }}:

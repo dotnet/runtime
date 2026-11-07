@@ -5122,9 +5122,7 @@ ClrDataAccess::Initialize(void)
     // Determine our platform based on the pre-processor macros set when we were built
 
 #ifdef TARGET_UNIX
-    #if defined(TARGET_X86)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_X86;
-    #elif defined(TARGET_AMD64)
+    #if defined(TARGET_AMD64)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_AMD64;
     #elif defined(TARGET_ARM)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM;

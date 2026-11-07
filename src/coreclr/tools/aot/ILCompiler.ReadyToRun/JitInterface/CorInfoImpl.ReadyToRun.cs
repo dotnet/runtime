@@ -4125,6 +4125,16 @@ namespace Internal.JitInterface
             }
         }
 
+        private void recordWasmVirtualFunctionPointerLookup(CORINFO_METHOD_STRUCT_* method)
+        {
+            // The Wasm JIT calls CORINFO_HELP_VIRTUAL_FUNC_PTR instead of using the VirtualEntry dynamic helper cell,
+            // so add the dependencies of the cell's signature for each lookup that survives to lowering.
+            if (_compilation.NodeFactory.Target.IsWasm)
+            {
+                MethodFixupSignature.AddVirtualEntryDependencies(_additionalDependencies, _compilation.NodeFactory, HandleToObject(method));
+            }
+        }
+
         private void AddWasmClosedStaticRetBufThunkDependencies(WasmSignature signature)
         {
             AddAdditionalDependency(

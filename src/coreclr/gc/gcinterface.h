@@ -767,7 +767,7 @@ public:
                                uint64_t* pauseInfoRaw,
                                int kind) PURE_VIRTUAL;
 
-    // Get the last memory load in percentage observed by the last GC.
+    // Get the last memory load in percentage observed by the last GC. Currently unused.
     virtual uint32_t GetMemoryLoad() PURE_VIRTUAL
 
     // Gets the current GC latency mode.

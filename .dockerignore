@@ -321,8 +321,6 @@
 # Cross compilation
 **/cross/rootfs/*
 **/cross/android-rootfs/*
-# add x86 as it is ignored in 'Build results'
-!**/cross/x86
 
 #python import files
 **/*.pyc

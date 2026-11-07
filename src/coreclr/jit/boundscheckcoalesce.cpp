@@ -66,8 +66,7 @@ bool IsSideEffectBarrier(Compiler* comp, GenTree* node, bool blockHasEHSuccs)
 {
     // A node that lowers to a helper call requires the call flag but is not a
     // GT_CALL (for example, a variable-distance long shift on 32-bit targets).
-    // Treat such nodes as barriers up front: they are effectively calls, and
-    // OperEffects/OperRequiresGlobRefFlag do not expect to be queried for them.
+    // Treat such nodes as barriers up front: they are effectively calls.
     //
     if (node->OperRequiresCallFlag(comp))
     {
