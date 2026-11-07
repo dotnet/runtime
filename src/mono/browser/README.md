@@ -39,6 +39,150 @@ At this time no other build dependencies are necessary to start building for Web
 
 # Running tests
 
+## Experimental CoreCLR dedicated worker hosting
+
+The dedicated-worker prototype requires both build-time and runtime opt-in:
+
+```xml
+<PropertyGroup>
+  <UseMonoRuntime>false</UseMonoRuntime>
+  <WasmRunInWorker>true</WasmRunInWorker>
+</PropertyGroup>
+```
+
+The build emits `runInWorker: true` into the boot configuration. Start it with
+`dotnet.create()`; no separate JavaScript worker opt-in is needed. Serve with
+`Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp`.
+
+Shared native and ReadyToRun images are staged into the application's intermediate
+directory before asset fingerprinting and integrity computation. The runtime pack
+is not modified. Ordinary builds without this property retain non-shared memory
+and do not require these isolation headers. Changing the property restages the
+application assets; do not patch files in the NuGet cache or published output.
+`WasmRunInWorker` defaults to false. It controls both worker startup and shared
+asset staging for build and publish. `withConfig({ runInWorker: true })` can
+select worker startup only when the application already carries shared assets.
+`workerOptions.timeoutMs` optionally adjusts startup timeout but does not enable
+worker hosting. The former `withWorker()` API is removed.
+Browser ReadyToRun images must be produced by a compiler that includes a maximum
+in their memory imports. Older unbounded images fail shared staging explicitly.
+
+The bridge reuses the normal UI-side `dotnet.runtime.js` implementation and native
+interop signatures: Boolean, Byte, Char, Int16, Int32, Int52, BigInt64, Single, Double,
+String, IntPtr, DateTime/DateTimeOffset, nullable scalars, arrays, Span/ArraySegment,
+Action/Function, Task arguments, JSObject/Object and Exception values.
+Results use the same native-supported types or void, synchronously or through a
+Task. Native signature restrictions still apply; for example, asynchronous array
+values use Task<object>/JSType.Any, not unsupported direct Task<T[]> signatures.
+Void exports return undefined; Task-without-result completion resolves
+to undefined, while a null Task remains null. Void UI imports ignore their return
+values. Discard and DiscardNoWait use the existing ST void behavior. Floating-point
+transport preserves NaN, infinities and signed zero; Single follows native
+float32 rounding. Null and empty strings remain distinct.
+Byte, Char and Int16 use their exact native widths and ranges. Char values are
+numeric UTF-16 code units, not JavaScript strings. Int52 follows the existing
+`long`/`JSType.Number` converter and carries JavaScript safe integers through a
+double-valued marshaler slot. BigInt64 follows `long`/`JSType.BigInt`, uses a
+signed 64-bit slot and JavaScript `bigint` values, including Task completions;
+it never converts through a JavaScript Number.
+The worker owns native allocation and managed execution. The UI runs the original
+marshalers against shared WASM memory; only native operation identifiers, scalar
+ABI parameters and frame pointers cross the boundary. `dotnet.native.js` is loaded
+only by the worker. There is no separate value serializer or object-reference
+protocol, and no six-argument transport restriction.
+IntPtr preserves the native unsigned Wasm32 representation. Dates retain native
+millisecond precision. Arrays, objects, exceptions, callbacks and Tasks use the
+existing native marshalers and the owning realm's handle/Promise registries. Span lifetime
+ends with its import (also on failure); ArraySegment disposal uses the normal
+managed-proxy lifecycle. Memory views refresh after growth. UI scratch frames
+are allocated from shared heap memory, not the VM's native stack.
+Native Task completion is dispatched only after the worker leaves the initial
+import, so the managed callback is ready. UI thenables are assimilated through
+native Promises to prevent inline completion before that boundary.
+Synchronous calls block the UI and service interop requests, not arbitrary Promise
+continuations. Managed-entry calls have a 16-call budget, with reserved native
+capacity for allocation, release and exception handling. Async UI imports use native
+Promises/thenables under the normal marshaler contract. Shutdown disposes normal
+proxy state and rejects pending managed Task promises, but does not cancel
+arbitrary user Promises. Raw Emscripten Module/FS/Wasm-table access is unsupported;
+this prototype still requires API/design review.
+Managed proxies and exported functions use normal runtime-lifetime checks after
+the worker exits. UI JavaScript objects stay in their original realm.
+
+### Library tests in worker mode
+
+Application JavaScript always runs on the UI/main thread. `JSHost.ImportAsync`
+loads modules there, global imports bind there, and `JSHost.GlobalThis` and
+`JSHost.DotnetInstance` expose UI-owned objects. Unregistered application imports
+never fall back to worker-local lookup. HTTP/WebSocket clients execute in the
+worker with normal worker-owned marshalers, handles and Promise holders.
+Property helpers route to the target object's owning realm.
+
+This branch is a native-boundary architecture proof, not a complete hosting
+implementation. Configuration/ready callbacks and application library
+initializers execute on UI. Custom boot-resource and download-progress callbacks
+also execute on UI, including requests made before native memory is attached.
+The existing loader handles URL overrides, default loading and Response promises;
+response streams are transferred to the worker without buffering whole WASM
+images. Progress combines UI and worker assets. Native JS modules are imported
+only in the worker, even when their URLs are selected by a UI callback.
+Shutdown aborts loader-owned fetches and cancels late custom response bodies.
+`INTERNAL` selects native-host operations: HTTP/WebSocket services, lazy/satellite assembly loading,
+diagnostic collection/router operations and native contract/heap access. UI wrappers
+forward assembly and diagnostic requests to the native host; networking marshaling
+stays worker-local. Without a worker, operations run locally.
+Diagnostic trace data returns to UI for downloads, including native/startup
+collections. Existing public diagnostic methods remain UI wrappers. Native-host
+names retain their existing INTERNAL paths, so ASP.NET Core lazy/culture callers
+do not need a namespace update. UI-facing property/global/module helpers and
+proxy diagnostics are under `INTERNAL.TARGET`; property access follows object ownership.
+Managed imports and direct JS callers use that explicit target namespace.
+Diagnostics sessions and collection continue to execute in the native host;
+the DOM download is dispatched to UI without moving trace/GC processing there.
+
+The JS interop test project supports an explicit `WasmTestWithWorker` mode.
+It registers its UI imports before managed execution and checks UI-backed
+module loading, global binding, object access and nested calls from managed code.
+Run the dedicated-worker subset in Chrome:
+
+```powershell
+.\dotnet.cmd build -bl /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Debug /p:RuntimeFlavor=CoreCLR /t:Test /p:Scenario=WasmTestOnChrome /p:InstallChromeForTests=false /p:EnableHotReloadInRuntimeConfigDevFile=false /p:WasmTestWithWorker=true /p:XUnitClassName=System.Runtime.InteropServices.JavaScript.Tests.WorkerInteropTest .\src\libraries\System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj
+```
+
+Use `WasmTestWithWorker=false` for the same subset on the ordinary runtime.
+The subset includes scalar strings, Unicode and large payloads, native memory
+growth, nested calls, concurrent Tasks, dates/nullables, arrays, reference
+identity, callbacks, live memory views, errors and cleanup.
+Remove `XUnitClassName` to run the full default suite, including the original
+helper modules and global bindings. Normal OuterLoop/failing-trait exclusions
+and platform-specific skips still apply.
+
+The UI event loop runs independently from managed execution on the worker.
+`Task.Delay(0)` completes synchronously without yielding managed execution, but
+does not prevent UI timers or Promise continuations from running between calls.
+Within a single synchronous export, the UI spin loop still services only interop
+requests and does not pump arbitrary microtasks.
+Native Task completion first acknowledges worker readiness, then commits the
+normal UI PromiseHolder and frame. Cancellation can still win before that commit,
+without losing or reusing its handle.
+When using the shared browser cache, set `CHROME_PATH_FOR_TESTS` and put its
+matching ChromeDriver on `PATH`; a cached driver cannot drive an unrelated
+system Chrome major version.
+Hot-reload browser tools are disabled for this test run: they are unrelated to
+the interop assertions and recent SDKs otherwise inject conflicting assets into
+the two referenced HTTP test servers.
+
+The WBT `SharedMemoryIsAppOwnedAndOptIn` case covers prebuilt assets with
+`TestUsingWorkloads=false`. `SharedMemoryIsAppOwnedAndOptInNativeRelink` runs
+with `TestUsingWorkloads=true` and an installed wasm-tools workload, which
+provides Emscripten without `EMSDK_PATH`. Both cases verify worker/ordinary/worker
+mode transitions. Native relinking is not part of the no-workload test lane.
+
+V8 shell runs the ordinary non-DOM interop tests. Test-module paths are relative
+module specifiers, such as `./JavaScriptWorkerTest.mjs`; the shell does not
+provide browser APIs such as `URL` or `TextEncoder`.
+
 ## Installation of JavaScript engines
 
 The latest engines can be installed with jsvu (JavaScript engine Version Updater https://github.com/GoogleChromeLabs/jsvu)

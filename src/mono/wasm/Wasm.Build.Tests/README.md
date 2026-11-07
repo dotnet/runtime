@@ -80,6 +80,9 @@ on both CoreCLR and Mono:
   `Uint8Array` retained in JavaScript memory, or `undefined` for an unloaded file.
   The returned array must be treated as read-only. Managed interop copies it into
   a managed byte array. Later VFS writes do not change the retained bytes.
+- Dedicated-worker hosting retains the bytes in the worker and copies a snapshot
+  to UI before preload completion and ready callbacks, so the synchronous APIs
+  work in both realms. Appsettings buffer/Response providers stay on UI.
 - On Mono, byte access continues to read the current VFS contents.
 
 For CoreCLR applications targeting .NET 12 or later, the manifest contains

@@ -4,6 +4,7 @@
 import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource } from "./types";
 
 import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
+import { InternalExchangeIndex } from "../types";
 import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
@@ -21,8 +22,32 @@ type DownloadMode = "none" | "cacheOnly" | "intoMemory";
 let downloadMode: DownloadMode = "none";
 let downloadDeferred: PromiseCompletionSource<void> | undefined;
 let downloadedIntoMemory = false;
-let configInitialized = false;
+let configInitialization: Promise<[JsAsset, Promise<any>][]> | undefined;
 let modulesAfterConfigLoadedCache: [JsAsset, Promise<any>][] = [];
+
+export function initializeLoaderConfig(): Promise<[JsAsset, Promise<any>][]> {
+    return configInitialization ??= (async () => {
+        await validateEngineFeatures();
+        await loaderCallbacks.configLoaded?.(loaderConfig);
+        validateLoaderConfig();
+        const modules: [JsAsset, Promise<any>][] = normalizeCollection(loaderConfig.resources!.modulesAfterConfigLoaded)
+            .map(asset => [asset, callLibraryInitializerOnRuntimeConfigLoaded(asset)]);
+        await Promise.all(modules.map(([, promise]) => promise));
+        if (!Module.out) {
+            // eslint-disable-next-line no-console
+            Module.out = loaderConfig.forwardConsole ? text => console.log(text) : console.log.bind(console);
+        }
+        if (!Module.err) {
+            // eslint-disable-next-line no-console
+            Module.err = loaderConfig.forwardConsole ? text => console.error(text) : console.error.bind(console);
+        }
+        if (!Module.print) Module.print = Module.out;
+        if (!Module.printErr) Module.printErr = Module.err;
+        await initPolyfillsLoader();
+        modulesAfterConfigLoadedCache = modules;
+        return modules;
+    })();
+}
 
 // many things happen in parallel here, but order matters for performance!
 // ideally we want to utilize network and CPU at the same time
@@ -57,43 +82,8 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             return;
         }
 
-        const resources = loaderConfig.resources;
-
-        // Run config initialization once: callbacks, modulesAfterConfigLoaded, polyfills.
-        // This must happen before any asset fetches so that URL overrides take effect.
-        let modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = [];
-        if (!configInitialized) {
-            await validateEngineFeatures();
-
-            await loaderCallbacks.configLoaded?.(loaderConfig);
-            validateLoaderConfig();
-
-            modulesAfterConfigLoadedPromises = normalizeCollection(resources.modulesAfterConfigLoaded).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);
-            await Promise.all(modulesAfterConfigLoadedPromises.map(([, p]) => p));
-
-            // Wire user-provided out/err overrides to Emscripten's print/printErr.
-            // This must happen before the native module loads so Emscripten picks them up.
-            if (!Module.out) {
-                // eslint-disable-next-line no-console
-                Module.out = console.log.bind(console);
-            }
-            if (!Module.err) {
-                // eslint-disable-next-line no-console
-                Module.err = console.error.bind(console);
-            }
-            if (!Module.print) {
-                Module.print = Module.out;
-            }
-            if (!Module.printErr) {
-                Module.printErr = Module.err;
-            }
-
-            // after config-loaded callbacks that could install polyfills, our polyfills can be initialized
-            await initPolyfillsLoader();
-
-            configInitialized = true;
-            modulesAfterConfigLoadedCache = modulesAfterConfigLoadedPromises;
-        }
+        const modulesAfterConfigLoadedPromises = await initializeLoaderConfig();
+        const resources = loaderConfig.resources!;
 
         const appsettings = getAppSettingsAssets(loaderConfig);
 
@@ -156,6 +146,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
 
         await nativeModulePromiseController.promise;
         runtimeState.nativeReady = true;
+        await dotnetInternals[InternalExchangeIndex.WorkerRuntimeContext]?.beforeRuntimeStart?.();
         await coreAssembliesPromise;
         await vfsPromise;
         await appsettingsPromise;

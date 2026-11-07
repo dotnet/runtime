@@ -49,10 +49,6 @@ interface DotnetHostBuilder {
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
     /**
-     * @deprecated This method is no longer supported and will be removed in a future version.
-     */
-    withConfigSrc(configSrc: string): DotnetHostBuilder;
-    /**
      * "command line" arguments for the Main() method.
      * @param args
      */
@@ -118,6 +114,7 @@ interface DotnetHostBuilder {
      *   and discarded. A subsequent create() call will re-fetch from cache and do full init.
      *   If false (default), resources are downloaded and loaded into WASM memory, so that
      *   a subsequent create() call only needs to initialize the managed runtime.
+     * Worker hosting preloads memory in the same worker later used by create().
      */
     download(httpCacheOnly?: boolean): Promise<void>;
     /**
@@ -242,6 +239,27 @@ type LoaderConfig = {
      * Note: RuntimeAPI.runMain() and RuntimeAPI.runMainAndExit() will replace this value, if they provide it.
      */
     applicationArguments?: string[];
+    /**
+     * Configures the runtime to start on a dedicated web worker.
+     * Emitted by WasmRunInWorker=true together with app-owned shared native/R2R assets.
+     * Application interop and its handles remain on UI; native execution and HTTP/WebSocket
+     * clients, including their interop handles and Promises, run in the worker.
+     * JavaScript object references cannot be passed to another realm.
+     * Requires COOP/COEP headers and SharedArrayBuffer support.
+     */
+    runInWorker?: boolean;
+    /**
+     * Optional worker startup settings. These do not enable worker hosting.
+     */
+    workerOptions?: WorkerOptions;
+};
+type WorkerOptions = {
+    /**
+     * Timeout in milliseconds for the worker to initialize and respond.
+     * If the worker doesn't post a "ready" message within this time, create() rejects and the worker is terminated.
+     * Default is 30000 (30 seconds).
+     */
+    timeoutMs?: number;
 };
 type ResourceExtensions = {
     [extensionName: string]: ResourceList;
@@ -306,6 +324,8 @@ type JsAsset = Asset & {
     /**
      * If provided, runtime doesn't have to import it's JavaScript modules.
      * This will not work for multi-threaded runtime.
+     * Module namespaces are realm-local: worker runtime/native modules must also have
+     * an importable URL; a namespace supplied on UI is not copied into the worker.
      */
     moduleExports?: any | Promise<any>;
     name?: string;
@@ -479,6 +499,7 @@ type RunAPIType = {
     setModuleImports(moduleName: string, moduleImports: any): void;
     /**
      * Returns the configuration object used to start the runtime.
+     * In worker mode this is the UI configuration; changes after startup are not synchronized to the native host.
      */
     getConfig: () => LoaderConfig;
     /**
