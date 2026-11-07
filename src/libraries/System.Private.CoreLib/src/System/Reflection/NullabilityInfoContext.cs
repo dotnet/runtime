@@ -39,6 +39,23 @@ namespace System.Reflection
                     return state;
                 }
 
+                if (memberInfo is PropertyInfo prop)
+                {
+                    MethodInfo? method = prop.GetGetMethod(true);
+                    if (method != null && GetNullableContext(method) is { } getterState)
+                    {
+                        _context.Add(memberInfo, getterState);
+                        return getterState;
+                    }
+
+                    method = prop.GetSetMethod(true);
+                    if (method != null && GetNullableContext(method) is { } setterState)
+                    {
+                        _context.Add(memberInfo, setterState);
+                        return setterState;
+                    }
+                }
+
                 foreach (CustomAttributeData attribute in memberInfo.GetCustomAttributesData())
                 {
                     if (attribute.AttributeType.Name == "NullableContextAttribute" &&
@@ -70,7 +87,8 @@ namespace System.Reflection
             ArgumentNullException.ThrowIfNull(parameterInfo);
 
             IList<CustomAttributeData> attributes = parameterInfo.GetCustomAttributesData();
-            NullableAttributeStateParser parser = parameterInfo.Member is MethodBase method && IsPrivateOrInternalMethodAndAnnotationDisabled(method)
+            NullableAttributeStateParser parser = (parameterInfo.Member is MethodBase method && IsPrivateOrInternalMethodAndAnnotationDisabled(method))
+                || (parameterInfo.Member is PropertyInfo prop && IsPrivateOrInternalPropertyAndAnnotationDisabled(prop))
                 ? NullableAttributeStateParser.Unknown
                 : CreateParser(attributes);
             NullabilityInfo nullability = GetNullabilityInfo(parameterInfo.Member, parameterInfo.ParameterType, parser);
@@ -103,6 +121,12 @@ namespace System.Reflection
                     metaParameter = string.IsNullOrEmpty(parameter.Name) ? metaMethod.ReturnParameter : GetMetaParameter(metaMethod, parameter);
                     break;
 
+                case PropertyInfo prop:
+                    var metaProp = (PropertyInfo)GetMemberMetadataDefinition(prop);
+                    metaMember = metaProp;
+                    metaParameter = GetMetaParameter(metaProp, parameter);
+                    break;
+
                 default:
                     return;
             }
@@ -116,6 +140,21 @@ namespace System.Reflection
         private static ParameterInfo? GetMetaParameter(MethodBase metaMethod, ParameterInfo parameter)
         {
             ReadOnlySpan<ParameterInfo> parameters = metaMethod.GetParametersAsSpan();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameter.Position == i &&
+                    parameter.Name == parameters[i].Name)
+                {
+                    return parameters[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static ParameterInfo? GetMetaParameter(PropertyInfo metaProperty, ParameterInfo parameter)
+        {
+            ReadOnlySpan<ParameterInfo> parameters = metaProperty.GetIndexParameters();
             for (int i = 0; i < parameters.Length; i++)
             {
                 if (parameter.Position == i &&
@@ -194,10 +233,14 @@ namespace System.Reflection
 
             MethodInfo? getter = propertyInfo.GetGetMethod(true);
             MethodInfo? setter = propertyInfo.GetSetMethod(true);
-            bool annotationsDisabled = (getter == null || IsPrivateOrInternalMethodAndAnnotationDisabled(getter))
-                && (setter == null || IsPrivateOrInternalMethodAndAnnotationDisabled(setter));
+            bool annotationsDisabled = IsPrivateOrInternalPropertyAndAnnotationDisabled(propertyInfo);
             NullableAttributeStateParser parser = annotationsDisabled ? NullableAttributeStateParser.Unknown : CreateParser(propertyInfo.GetCustomAttributesData());
             NullabilityInfo nullability = GetNullabilityInfo(propertyInfo, propertyInfo.PropertyType, parser);
+
+            if (nullability.ReadState != NullabilityState.Unknown)
+            {
+                TryLoadGenericMetaTypeNullability(propertyInfo, nullability);
+            }
 
             if (getter != null)
             {
@@ -233,6 +276,14 @@ namespace System.Reflection
             return false;
         }
 
+        private bool IsPrivateOrInternalPropertyAndAnnotationDisabled(PropertyInfo propertyInfo)
+        {
+            MethodInfo? getter = propertyInfo.GetGetMethod(true);
+            MethodInfo? setter = propertyInfo.GetSetMethod(true);
+            return (getter == null || IsPrivateOrInternalMethodAndAnnotationDisabled(getter))
+                && (setter == null || IsPrivateOrInternalMethodAndAnnotationDisabled(setter));
+        }
+
         /// <summary>
         /// Populates <see cref="NullabilityInfo" /> for the given <see cref="EventInfo" />.
         /// If the nullablePublicOnly feature is set for an assembly, like it does in .NET SDK, the private and/or internal member's
@@ -263,6 +314,12 @@ namespace System.Reflection
             IList<CustomAttributeData> attributes = fieldInfo.GetCustomAttributesData();
             NullableAttributeStateParser parser = IsPrivateOrInternalFieldAndAnnotationDisabled(fieldInfo) ? NullableAttributeStateParser.Unknown : CreateParser(attributes);
             NullabilityInfo nullability = GetNullabilityInfo(fieldInfo, fieldInfo.FieldType, parser);
+
+            if (nullability.ReadState != NullabilityState.Unknown)
+            {
+                TryLoadGenericMetaTypeNullability(fieldInfo, nullability);
+            }
+
             CheckNullabilityAttributes(nullability, attributes);
             return nullability;
         }
@@ -325,14 +382,7 @@ namespace System.Reflection
         private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, NullableAttributeStateParser parser)
         {
             int index = 0;
-            NullabilityInfo nullability = GetNullabilityInfo(memberInfo, type, parser, ref index);
-
-            if (nullability.ReadState != NullabilityState.Unknown)
-            {
-                TryLoadGenericMetaTypeNullability(memberInfo, nullability);
-            }
-
-            return nullability;
+            return GetNullabilityInfo(memberInfo, type, parser, ref index);
         }
 
         private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, NullableAttributeStateParser parser, ref int index)
