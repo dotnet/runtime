@@ -39,7 +39,9 @@ A successful baseline build of the affected component is required for incrementa
 
 ### Step 1: Build the Baseline (from repo root)
 
-Pick the row matching the files you will modify:
+Pick the most specific row matching the files you will modify. In particular,
+`src/tools/ilasm/**` uses the Managed ILAssembler row rather than the generic
+Tools row, even when it links shared source from another area.
 
 | Files Changed | Component | Baseline Build |
 |---------------|-----------|----------------|
@@ -48,9 +50,15 @@ Pick the row matching the files you will modify:
 | `src/libraries/` (no Browser/WASM or WASI targets) | Libraries | `./build.sh clr+libs -rc release` |
 | `src/libraries/` with Browser/WASM or WASI targets in the affected `.csproj` | WASM/WASI Libraries | `./build.sh mono+libs -os browser` |
 | `src/native/corehost/`, `src/installer/` | Host | `./build.sh clr+libs+host -rc release -lc release` |
-| `src/tools`, `src/native/managed` | Tools | `./build.sh clr+libs -rc release` |
+| `src/tools/ilasm/**` | Managed ILAssembler | `./build.sh tools.ilasm` |
+| `src/tools/**` (excluding `src/tools/ilasm/**`), `src/native/managed/` | Tools | `./build.sh clr+libs -rc release` |
 | `src/tasks` | Build Tasks | None — `./build.sh tasks` is self-contained |
 | `src/tests` | Runtime Tests | `./build.sh clr+libs -lc release -rc checked` |
+
+Use the Managed ILAssembler row for its library, CLI, tests, and related targeting or
+polyfill changes. Linking shared source does not by itself require the owning
+component's baseline; build that component only when the changed code's validation
+actually depends on its outputs.
 
 **WASM/WASI Library Detection:** A change under `src/libraries/` is WASM/WASI-relevant if the library's `.csproj` has explicit Browser/WASM or WASI targets (`TargetFrameworks`, `TARGET_BROWSER`, `TARGET_WASI` constants, or `Condition` attributes referencing `browser`/`wasi`), **and** the changed file is not excluded from those targets via `Condition` on `<ItemGroup>` or `<Compile>`.
 
@@ -71,7 +79,8 @@ Then check `artifacts/build.status`, `tail -20 artifacts/build.log`, or grep the
 
 ### Baseline sentinels
 
-A path under `artifacts/` whose absence means the baseline is missing.
+A path under `artifacts/` whose absence means the baseline is missing, or the
+successful build evidence required for components without a single sentinel.
 
 | Component | Sentinel |
 |-----------|----------|
@@ -80,6 +89,7 @@ A path under `artifacts/` whose absence means the baseline is missing.
 | Mono | `artifacts/bin/mono/<OS>.<arch>.<config>/`, plus `artifacts/tests/coreclr/<OS>.<arch>.<config>/Tests/Core_Root/` to run tests (Mono reuses the Core_Root layout) |
 | WASM Libraries | `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/<config>/` |
 | Host | `artifacts/bin/coreclr/<OS>.<arch>.<config>/` and `artifacts/bin/testhost/` |
+| Managed ILAssembler | Successful completion of `./build.sh tools.ilasm` for the configuration and target framework being validated. Check the build output for the expected outputs; directory existence alone is not evidence. CoreCLR `Core_Root` and the general Tools `testhost` sentinel do not apply by default. |
 | Tools | `artifacts/bin/coreclr/<OS>.<arch>.<config>/` and `artifacts/bin/testhost/` |
 | Build Tasks | None — `./build.sh tasks` is self-contained |
 | Runtime Tests | `artifacts/tests/coreclr/<OS>.<arch>.<config>/Tests/Core_Root/`, produced by the baseline build plus `src/tests/build.sh -GenerateLayoutOnly` |
@@ -123,10 +133,10 @@ Do not mark a regression test task as complete until both conditions are confirm
 
 | Error | Solution |
 |-------|----------|
-| "shared framework must be built" | Run baseline build: `./build.sh clr+libs -rc release` |
-| "testhost" missing / FileNotFoundException | Run baseline build first (Step 1 above) |
+| "shared framework must be built" | Run the baseline for the component that actually needs it. For a `src/tools/ilasm/**` change, do not run `clr+libs` unless validation evidence shows those outputs are required. |
+| "testhost" missing / FileNotFoundException | Run the applicable component baseline from Step 1. For `src/tools/ilasm/**`, first use `./build.sh tools.ilasm`; run `clr+libs` only if the failure shows that runtime/library outputs are also required. |
 | Build timeout | Wait up to 40 min; only fail if no output for 5 min |
-| "Target does not exist" | Avoid specifying a target framework; the build will auto-select `$(NetCoreAppCurrent)` |
+| "Target does not exist" | Avoid specifying a target framework; let the project select its default (for example, `$(NetCoreAppCurrent)` or `$(NetCoreAppToolCurrent)` for Managed ILAssembler). |
 | "0 test projects" after `build.sh -Test` | The test has `<CLRTestPriority>` > 0; add `-priority1` to the build command |
 
 **When reporting failures:** Include logs from `artifacts/log/` and console output for diagnostics.
