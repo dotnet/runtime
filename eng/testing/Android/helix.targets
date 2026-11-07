@@ -1,0 +1,9 @@
+<Project>
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and
+                        $(HelixTargetQueue.Contains('@')) and
+                        !$(HelixTargetQueue.ToLowerInvariant().Contains('windows'))">
+    <HelixCorrelationPayload Include="$(MSBuildThisFileDirectory)" Destination="android-emulator" />
+    <HelixPreCommand Include="bash &quot;$HELIX_CORRELATION_PAYLOAD/android-emulator/start-emulator.sh&quot;" />
+    <HelixPostCommand Include="bash &quot;$HELIX_CORRELATION_PAYLOAD/android-emulator/stop-emulator.sh&quot;" />
+  </ItemGroup>
+</Project>
