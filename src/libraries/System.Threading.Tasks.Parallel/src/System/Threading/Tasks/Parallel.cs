@@ -186,7 +186,7 @@ namespace System.Threading.Tasks
         /// <remarks>
         /// This method can be used to execute a set of operations, potentially in parallel.
         /// No guarantees are made about the order in which the operations execute or whether
-        /// the they execute in parallel.  This method does not return until each of the
+        /// they execute in parallel.  This method does not return until each of the
         /// provided operations has completed, regardless of whether completion
         /// occurs due to normal or exceptional termination.
         /// </remarks>
