@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using System.Security.Cryptography.Rsa.Tests;
 using System.Security.Cryptography.Tests;
 using Microsoft.DotNet.XUnitExtensions;
@@ -12,6 +13,36 @@ namespace System.Security.Cryptography.Csp.Tests
     {
         const int PROV_RSA_FULL = 1;
         const int PROV_RSA_AES = 24;
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(1)]
+        public static void ImportRSAPrivateKey_InvalidVersion(int version)
+        {
+            using (RSA rsa = new RSACryptoServiceProvider())
+            {
+                rsa.ImportParameters(TestData.RSA2048Params);
+                AsnReader reader = new AsnReader(rsa.ExportRSAPrivateKey(), AsnEncodingRules.DER).ReadSequence();
+                Assert.Equal(0, reader.ReadInteger());
+
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                writer.PushSequence();
+                writer.WriteInteger(version);
+
+                while (reader.HasData)
+                {
+                    writer.WriteEncodedValue(reader.ReadEncodedValue().Span);
+                }
+
+                writer.PopSequence();
+                byte[] pkcs1 = writer.Encode();
+                int bytesRead = -1;
+
+                Assert.Throws<CryptographicException>(() => rsa.ImportRSAPrivateKey(pkcs1, out bytesRead));
+                Assert.Equal(-1, bytesRead);
+                Assert.Throws<CryptographicException>(() => rsa.ImportFromPem(PemEncoding.WriteString("RSA PRIVATE KEY", pkcs1)));
+            }
+        }
 
         [Fact]
         public static void DefaultKeySize()
