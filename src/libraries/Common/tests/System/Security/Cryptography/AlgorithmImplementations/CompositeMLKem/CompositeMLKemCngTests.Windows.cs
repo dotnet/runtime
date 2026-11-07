@@ -3,6 +3,9 @@
 
 using System.Collections.Generic;
 using System.Linq;
+#if NET
+using System.Runtime.CompilerServices;
+#endif
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -136,6 +139,66 @@ namespace System.Security.Cryptography.Tests
                 key.Delete();
             }
         }
+
+#if NET
+        private const string Pkcs8CanaryCategory = "CompositeMLKemPkcs8Canary";
+
+        // These strict canaries track whether Windows servicing images provide native NCrypt PKCS#8 export.
+        [Fact]
+        [Trait("Category", Pkcs8CanaryCategory)]
+        public static void ExportPkcs8PrivateBlob_NativePlaintextExport()
+        {
+            using (CngKey key = CompositeMLKemTestHelpers.GenerateCngKey(
+                CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256,
+                PlaintextExport))
+            {
+                byte[] exported = key.Export(CngKeyBlobFormat.Pkcs8PrivateBlob);
+
+                try
+                {
+                    Assert.NotEmpty(exported);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(exported);
+                }
+            }
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ExportPkcs8KeyBlob")]
+        private static extern byte[] CngKey_ExportPkcs8KeyBlob(
+            CngKey key,
+            ReadOnlySpan<char> password,
+            int kdfCount);
+
+        [Fact]
+        [Trait("Category", Pkcs8CanaryCategory)]
+        public static void ExportPkcs8PrivateBlob_NativeEncryptedOnlyExport()
+        {
+            const string Password = "DotnetExportPhrase";
+
+            using (CngKey key = CompositeMLKemTestHelpers.GenerateCngKey(
+                CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256,
+                CngExportPolicies.AllowExport))
+            {
+                Assert.ThrowsAny<CryptographicException>(() => key.Export(CngKeyBlobFormat.Pkcs8PrivateBlob));
+
+                byte[] exported = CngKey_ExportPkcs8KeyBlob(
+                    key,
+                    Password,
+                    kdfCount: 1);
+
+                try
+                {
+                    Assert.NotEmpty(exported);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(exported);
+                }
+            }
+        }
+#endif
 
         [Theory]
         [InlineData(default(string))]
