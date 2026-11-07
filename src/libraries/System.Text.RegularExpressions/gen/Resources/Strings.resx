@@ -134,6 +134,10 @@
   <data name="RegexMemberMustHaveValidSignatureMessage" xml:space="preserve">
     <value>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</value>
   </data>
+  <data name="RegexMemberMustNotBeInFileLocalTypeMessage" xml:space="preserve">
+    <value>GeneratedRegexAttribute cannot be used within a file-local type. Move the member outside any file-local types.</value>
+    <comment>{Locked="GeneratedRegexAttribute"}</comment>
+  </data>
   <data name="LimitedSourceGenerationTitle" xml:space="preserve">
     <value>Regex generator limitation reached.</value>
   </data>

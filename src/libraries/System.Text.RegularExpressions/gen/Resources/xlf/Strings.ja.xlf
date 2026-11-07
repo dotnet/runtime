@@ -197,6 +197,11 @@
         <target state="translated">GeneratedRegexAttribute メソッドまたはプロパティは、部分、パラメーターなし、非ジェネリック、非抽象、および正規表現を返す必要があります。プロパティの場合は、取得専用にする必要もあります。</target>
         <note />
       </trans-unit>
+      <trans-unit id="RegexMemberMustNotBeInFileLocalTypeMessage">
+        <source>GeneratedRegexAttribute cannot be used within a file-local type. Move the member outside any file-local types.</source>
+        <target state="new">GeneratedRegexAttribute cannot be used within a file-local type. Move the member outside any file-local types.</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
+      </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
         <target state="translated">[x-y] 範囲の順序が逆です。</target>
