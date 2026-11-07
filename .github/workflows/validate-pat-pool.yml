@@ -17,7 +17,7 @@ jobs:
     env:
       VALIDATE_PAT: |
         if [ -z "$COPILOT_GITHUB_TOKEN" ]; then echo "status=empty" >> "$GITHUB_OUTPUT"; exit 0; fi
-        set +e; timeout 30 copilot --prompt "Say OK" --available-tools="" --silent --effort=low; rc=$?; set -e
+        set +e; timeout 30 copilot --model gpt-5.6-luna --prompt "Say OK" --available-tools="" --silent; rc=$?; set -e
         if [ $rc -eq 0 ]; then echo "status=valid" >> "$GITHUB_OUTPUT"
         elif [ $rc -eq 124 ]; then echo "status=unknown" >> "$GITHUB_OUTPUT"
         else echo "status=invalid" >> "$GITHUB_OUTPUT"; fi
