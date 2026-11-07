@@ -34,24 +34,10 @@ namespace System.Threading
         [DataContract]
         private string? _name;
 
-#if FEATURE_MULTITHREADING
-        // Protects starting the thread and setting its priority
-        private Lock _lock = new Lock(useTrivialWaits: true);
-#endif
-
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
         // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
         // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
         private bool _mayNeedResetForThreadPool;
-
-#if FEATURE_MULTITHREADING
-        // so far the only place we initialize it is `WaitForForegroundThreads`
-        // and only in the case when there are running foreground threads
-        // by the moment of `StartupCodeHelpers.Shutdown()` invocation
-        private static ManualResetEvent s_allDone;
-
-        private static int s_foregroundRunningCount;
-#endif
 
         private Thread()
         {
@@ -70,12 +56,7 @@ namespace System.Threading
             RegisterThreadExitCallback();
         }
 
-        private static unsafe void RegisterThreadExitCallback()
-        {
-#if FEATURE_MULTITHREADING
-            RuntimeImports.RhSetThreadExitCallback(&OnThreadExit);
-#endif
-        }
+        static unsafe partial void RegisterThreadExitCallback();
 
         // Slow path executed once per thread
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -317,60 +298,5 @@ namespace System.Threading
         }
 
         partial void StartCore();
-
-#if FEATURE_MULTITHREADING
-        private static void StopThread(Thread thread)
-        {
-            if ((thread._threadState & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
-            {
-                thread.SetThreadStateBit(ThreadState.Stopped);
-            }
-
-            int state = thread.ClearThreadStateBit(ThreadState.Background);
-            if ((state & (int)ThreadState.Background) == 0)
-            {
-                DecrementRunningForeground();
-            }
-        }
-
-        internal static void IncrementRunningForeground()
-        {
-            Interlocked.Increment(ref s_foregroundRunningCount);
-        }
-
-        internal static void DecrementRunningForeground()
-        {
-            if (Interlocked.Decrement(ref s_foregroundRunningCount) == 0)
-            {
-                // Interlocked.Decrement issues full memory barrier
-                // so most recent write to s_allDone should be visible here
-                s_allDone?.Set();
-            }
-        }
-#endif
-
-        internal static void WaitForForegroundThreads()
-        {
-            // ProcessExit handlers observe this state even on single-threaded targets.
-            Thread.CurrentThread.IsBackground = true;
-#if FEATURE_MULTITHREADING
-            // last read/write inside `IsBackground` issues full barrier no matter of logic flow
-            // so we can just read `s_foregroundRunningCount`
-            if (s_foregroundRunningCount == 0)
-            {
-                // current thread is the last foreground thread, so let the runtime finish
-                return;
-            }
-            Volatile.Write(ref s_allDone, new ManualResetEvent(false));
-            // other foreground threads could have their job finished meanwhile
-            // Volatile.Write above issues release barrier
-            // but we need acquire barrier to observe most recent write to s_foregroundRunningCount
-            if (Volatile.Read(ref s_foregroundRunningCount) == 0)
-            {
-                return;
-            }
-            s_allDone.WaitOne();
-#endif
-        }
     }
 }

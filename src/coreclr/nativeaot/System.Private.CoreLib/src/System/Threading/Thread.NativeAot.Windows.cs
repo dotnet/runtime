@@ -119,7 +119,6 @@ namespace System.Threading
             return Interop.Kernel32.SetThreadPriority(_osHandle, (int)MapToOSPriority(priority));
         }
 
-#if FEATURE_MULTITHREADING
         [UnmanagedCallersOnly]
         private static void OnThreadExit()
         {
@@ -189,7 +188,6 @@ namespace System.Threading
             StartThread(parameter);
             return 0;
         }
-#endif
 
         public ApartmentState GetApartmentState()
         {
@@ -218,9 +216,7 @@ namespace System.Threading
 
             if (this != CurrentThread)
             {
-#if FEATURE_MULTITHREADING
                 using (_lock.EnterScope())
-#endif
                 {
                     if (HasStarted())
                         throw new ThreadStateException();
@@ -368,9 +364,7 @@ namespace System.Threading
 
         public void Interrupt()
         {
-#if FEATURE_MULTITHREADING
             using (_lock.EnterScope())
-#endif
             {
                 // Thread.Interrupt for dead thread should do nothing
                 if (IsDead())
