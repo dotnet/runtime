@@ -5211,6 +5211,29 @@ struct LowerFieldListRegisterInfo
     }
 };
 
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+static bool IsFloatPairFieldListRegister(GenTreeFieldList::Use* use,
+                                         unsigned               regStart,
+                                         unsigned               regEnd,
+                                         var_types              regType)
+{
+    if ((regType != TYP_DOUBLE) || (use->GetType() != TYP_FLOAT) || (use->GetOffset() != regStart))
+    {
+        return false;
+    }
+
+    GenTreeFieldList::Use* secondUse = use->GetNext();
+    if ((secondUse == nullptr) || (secondUse->GetType() != TYP_FLOAT) ||
+        (secondUse->GetOffset() != regStart + genTypeSize(TYP_FLOAT)))
+    {
+        return false;
+    }
+
+    GenTreeFieldList::Use* nextUse = secondUse->GetNext();
+    return (nextUse == nullptr) || (nextUse->GetOffset() >= regEnd);
+}
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+
 //----------------------------------------------------------------------------------------------
 // LowerRetFieldList:
 //   Lower a returned FIELD_LIST node.
@@ -5384,6 +5407,14 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
             return false;
         }
 
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+        if (IsFloatPairFieldListRegister(use, regStart, regEnd, regType))
+        {
+            use = use->GetNext()->GetNext();
+            continue;
+        }
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+
         do
         {
             unsigned fieldStart = use->GetOffset();
@@ -5476,6 +5507,28 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
 
         GenTree* fieldListPrev = fieldList->gtPrev;
 
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+        if (IsFloatPairFieldListRegister(use, regStart, regEnd, regType))
+        {
+            GenTreeFieldList::Use* secondUse = use->GetNext();
+            GenTree* firstVector = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, use->GetNode(), TYP_FLOAT, 16);
+            GenTree* secondVector =
+                InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, secondUse->GetNode(), TYP_FLOAT, 16);
+
+            GenTree* value = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, firstVector, secondVector,
+                                                                  NI_X86Base_UnpackLow, TYP_FLOAT, 16);
+            BlockRange().InsertBefore(fieldList, value);
+
+            regEntry->SetNode(value);
+            regEntry->SetType(TYP_SIMD16);
+            regEntry->SetNext(secondUse->GetNext());
+            use = regEntry->GetNext();
+
+            LowerNode(value);
+
+            continue;
+        }
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
         do
         {
             unsigned fieldStart = use->GetOffset();
