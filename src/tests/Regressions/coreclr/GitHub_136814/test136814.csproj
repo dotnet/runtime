@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+    <Optimize>true</Optimize>
+    <!-- R2R code in the helper assembly calls a JIT-compiled delegate target. -->
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test136814.cs" />
+    <ProjectReference Include="delegatecaller.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Keep the delegate target JIT-compiled so it has no precompiled GC ref map. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_ReadyToRunExcludeList" Value="$(MSBuildProjectName)" />
+  </ItemGroup>
+</Project>

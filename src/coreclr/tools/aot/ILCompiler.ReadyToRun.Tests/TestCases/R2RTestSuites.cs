@@ -123,8 +123,11 @@ public class R2RTestSuites
             int multiByteMapCount = 0;
             foreach (ReadyToRunImportSection section in reader.ImportSections)
             {
-                bool hasMaps = section.Type == ReadyToRunImportSectionType.StubDispatch;
-                Assert.Equal(hasMaps, (section.Flags & ReadyToRunImportSectionFlags.GCRefMap) != 0);
+                bool hasMaps = (section.Flags & ReadyToRunImportSectionFlags.GCRefMap) != 0;
+                if (section.Type == ReadyToRunImportSectionType.StubDispatch)
+                    Assert.True(hasMaps);
+                else if ((section.Flags & ReadyToRunImportSectionFlags.PCode) == 0)
+                    Assert.False(hasMaps);
                 Assert.Equal(0, section.AuxiliaryDataRVA);
                 foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
                 {

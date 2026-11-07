@@ -9090,7 +9090,15 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     MethodDesc * pMD = GetMethod(ftn);
 
     if (isUnsafeFunctionPointer)
+    {
         pMD->PrepareForUseAsAFunctionPointer();
+    }
+    else
+    {
+        // Delegate targets can be called from precompiled code without a call-site signature
+        // load, so the target must be ready for prestub stack walks before it is published.
+        pMD->PrepareForUseAsACallTargetOfANativeImage();
+    }
 
     pResult->accessType = IAT_VALUE;
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
