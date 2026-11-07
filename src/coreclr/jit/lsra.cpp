@@ -10143,15 +10143,22 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
 #ifdef TARGET_AMD64
     // Where each base ends up on this edge, before the moves below rewrite the maps. A local
-    // rebuilt on this edge reads its base there once every other move is done.
+    // rebuilt on this edge reads its base there once every other move is done. Only a local that
+    // moves into a register here can be rebuilt: from the stack, or from another register through
+    // the stack when a cycle cannot be broken otherwise. Only those need their base's location.
     JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, regNumber> rebuildBases(
         m_compiler->getAllocator(CMK_LSRA));
     if (m_compiler->lsraReconstructible != nullptr)
     {
         for (unsigned lclNum : Compiler::CSERecipeMap::KeyIteration(m_compiler->lsraReconstructible))
         {
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-            if (VarSetOps::IsMember(m_compiler, liveSet, varDsc->lvVarIndex))
+            unsigned const varIndex = m_compiler->lvaGetDesc(lclNum)->lvVarIndex;
+            if (!VarSetOps::IsMember(m_compiler, liveSet, varIndex))
+            {
+                continue;
+            }
+            regNumber const toReg = getVarReg(toVarToRegMap, varIndex);
+            if ((toReg != REG_STK) && (getVarReg(fromVarToRegMap, varIndex) != toReg))
             {
                 unsigned baseIndex =
                     m_compiler->lvaGetDesc((*m_compiler->lsraReconstructible)[lclNum].baseLclNum)->lvVarIndex;
