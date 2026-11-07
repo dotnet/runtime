@@ -194,7 +194,8 @@ namespace ILCompiler.ObjectWriter
                     adjustedAddend += Relocation.ReadValue(relocType, (void*)pData);
                     adjustedAddend -= offset;
 
-                    if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && !Relocation.FitsInThumb2BlRel24((int)adjustedAddend))
+                    if ((relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && !Relocation.FitsInThumb2BlRel24((int)adjustedAddend)) ||
+                        (relocType is IMAGE_REL_BASED_ARM64_BRANCH26 && !Relocation.FitsInArm64Rel28(adjustedAddend)))
                     {
                         EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
                     }
