@@ -1133,26 +1133,13 @@ internal static class TestRunner
 
     private static int RunProcess(string fileName, IEnumerable<string> arguments)
     {
-        ProcessStartInfo startInfo = new(fileName)
-        {
-            InheritedHandles = [],
-        };
-
         if (OperatingSystem.IsWindows() && fileName.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase))
         {
-            startInfo.FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe";
-            startInfo.ArgumentList.Add("/d");
-            startInfo.ArgumentList.Add("/c");
-            startInfo.ArgumentList.Add("call");
-            startInfo.ArgumentList.Add(fileName);
+            arguments = ["/d", "/c", "call", fileName, .. arguments];
+            fileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe";
         }
 
-        foreach (string argument in arguments)
-        {
-            startInfo.ArgumentList.Add(argument);
-        }
-
-        return Process.Run(startInfo).ExitCode;
+        return Process.Run(fileName, arguments).ExitCode;
     }
 
     private static ProcessResult RunProcessForOutput(string fileName, IEnumerable<string> arguments, int timeoutMilliseconds = Timeout.Infinite)

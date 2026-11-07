@@ -26,21 +26,13 @@ public class Program
         }
 
         Console.WriteLine("Running llvm-dwarfdump");
-        ProcessExitStatus status = Process.Run(new ProcessStartInfo(llvmDwarfDumpPath, ["--version"])
-        {
-            InheritedHandles = [],
-        });
+        ProcessExitStatus status = Process.Run(llvmDwarfDumpPath, ["--version"]);
         if (status.ExitCode != 0)
         {
             return 3;
         }
 
-        ProcessTextOutput result = Process.RunAndCaptureText(new ProcessStartInfo(llvmDwarfDumpPath, ["--verify", Environment.ProcessPath])
-        {
-            InheritedHandles = [],
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        });
+        ProcessTextOutput result = Process.RunAndCaptureText(llvmDwarfDumpPath, ["--verify", Environment.ProcessPath]);
 
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
         const int MinWarnings = 15;

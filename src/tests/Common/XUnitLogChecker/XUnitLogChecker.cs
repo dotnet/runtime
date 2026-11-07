@@ -541,19 +541,12 @@ public class XUnitLogChecker
 
     static bool RunProcess(string fileName, string[] arguments, TextWriter outputWriter)
     {
-        ProcessStartInfo startInfo = new ProcessStartInfo(fileName, arguments)
-        {
-            InheritedHandles = [],
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-
         string commandLine = $"{fileName} {string.Join(" ", arguments)}";
         outputWriter.WriteLine($"Invoking: {commandLine}");
         ProcessTextOutput result;
         try
         {
-            result = Process.RunAndCaptureText(startInfo, TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_MS));
+            result = Process.RunAndCaptureText(fileName, arguments, TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_MS));
         }
         catch (TimeoutException)
         {
