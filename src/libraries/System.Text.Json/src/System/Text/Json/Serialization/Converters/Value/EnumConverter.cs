@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
+using System.Threading;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -43,11 +44,13 @@ namespace System.Text.Json.Serialization.Converters
         /// show private memory savings when a single type is used https://github.com/dotnet/runtime/pull/36726#discussion_r428868336.
         /// </summary>
         private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCacheForWriting;
+        private int _nameCacheForWritingCount;
 
         /// <summary>
         /// Holds a mapping from input text to enum values including flag combinations and alternative casings.
         /// </summary>
         private readonly ConcurrentDictionary<string, ulong> _nameCacheForReading;
+        private int _nameCacheForReadingCount;
 
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
@@ -74,6 +77,9 @@ namespace System.Text.Json.Serialization.Converters
                 _nameCacheForWriting.TryAdd(fieldInfo.Key, encodedName);
                 _nameCacheForReading.TryAdd(fieldInfo.JsonName, fieldInfo.Key);
             }
+
+            _nameCacheForWritingCount = _nameCacheForWriting.Count;
+            _nameCacheForReadingCount = _nameCacheForReading.Count;
 
             if (namingPolicy is not null)
             {
@@ -146,11 +152,14 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     Debug.Assert(s_isFlagsEnum, "Should only be entered by flags enums.");
                     string stringValue = FormatEnumAsString(key, value, dictionaryKeyPolicy: null);
-                    if (_nameCacheForWriting.Count < NameCacheSizeSoftLimit)
+                    if (Volatile.Read(ref _nameCacheForWritingCount) < NameCacheSizeSoftLimit)
                     {
                         formatted = JsonEncodedText.Encode(stringValue, options.Encoder);
                         writer.WriteStringValue(formatted);
-                        _nameCacheForWriting.TryAdd(key, formatted);
+                        if (_nameCacheForWriting.TryAdd(key, formatted))
+                        {
+                            Interlocked.Increment(ref _nameCacheForWritingCount);
+                        }
                     }
                     else
                     {
@@ -206,12 +215,15 @@ namespace System.Text.Json.Serialization.Converters
             {
                 Debug.Assert(s_isFlagsEnum || dictionaryKeyPolicy is not null, "Should only be entered by flags enums or dictionary key policy.");
                 string stringValue = FormatEnumAsString(key, value, dictionaryKeyPolicy);
-                if (dictionaryKeyPolicy is null && _nameCacheForWriting.Count < NameCacheSizeSoftLimit)
+                if (dictionaryKeyPolicy is null && Volatile.Read(ref _nameCacheForWritingCount) < NameCacheSizeSoftLimit)
                 {
                     // Only attempt to cache if there is no dictionary key policy.
                     formatted = JsonEncodedText.Encode(stringValue, options.Encoder);
                     writer.WritePropertyName(formatted);
-                    _nameCacheForWriting.TryAdd(key, formatted);
+                    if (_nameCacheForWriting.TryAdd(key, formatted))
+                    {
+                        Interlocked.Increment(ref _nameCacheForWritingCount);
+                    }
                 }
                 else
                 {
@@ -279,9 +291,11 @@ namespace System.Text.Json.Serialization.Converters
                 success = TryParseNamedEnum(source, out result);
             }
 
-            if (success && _nameCacheForReading.Count < NameCacheSizeSoftLimit)
+            if (success &&
+                Volatile.Read(ref _nameCacheForReadingCount) < NameCacheSizeSoftLimit &&
+                lookup.TryAdd(source, ConvertToUInt64(result)))
             {
-                lookup.TryAdd(source, ConvertToUInt64(result));
+                Interlocked.Increment(ref _nameCacheForReadingCount);
             }
 
         End:
