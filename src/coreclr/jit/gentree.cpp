@@ -8819,10 +8819,8 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         case GT_SUB:
         case GT_MUL:
         case GT_CAST:
-#ifndef TARGET_64BIT
         case GT_ADD_HI:
         case GT_SUB_HI:
-#endif // !TARGET_64BIT
             return gtOverflow() ? ExceptionSetFlags::OverflowException : ExceptionSetFlags::None;
 
         case GT_MOD:

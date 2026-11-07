@@ -4538,6 +4538,75 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
     return NO_ASSERTION_INDEX;
 }
 
+//------------------------------------------------------------------------------
+// optAssertionProp_ZeroOneCompare: Fold "x != 0" to "x" and "x == 0" to "x ^ 1" when
+//    "x" is known to be 0 or 1 and the compare is used as a value. Runs after the
+//    assertion based relop folding, which cannot fold "x ^ 1".
+//
+GenTree* Compiler::optAssertionProp_ZeroOneCompare(GenTreeOp* cmp, Statement* stmt)
+{
+    assert(cmp->OperIs(GT_EQ, GT_NE));
+
+#ifdef TARGET_WASM
+    // "i32.eqz" is smaller than "i32.const 1; i32.xor".
+    if (cmp->OperIs(GT_EQ))
+    {
+        return nullptr;
+    }
+#endif
+
+    GenTree* op1 = cmp->gtGetOp1();
+    GenTree* op2 = cmp->gtGetOp2();
+    if (op1->IsIntegralConst(0))
+    {
+        std::swap(op1, op2);
+    }
+
+    if (!cmp->TypeIs(TYP_INT) || !op2->IsIntegralConst(0) || (genActualType(op1) != TYP_INT) ||
+        !vnStore->IsVNZeroOrOne(op1->GetVN(VNK_Conservative)))
+    {
+        return nullptr;
+    }
+
+#ifdef TARGET_XARCH
+    // Lowering already handles "(y & 1) != 0" and "(y & 1) == 0".
+    if (op1->OperIs(GT_AND) && op1->gtGetOp2()->IsIntegralConst(1))
+    {
+        return nullptr;
+    }
+#endif
+
+    GenTree* const parent = gtFindLink(stmt, cmp).parent;
+    if ((parent == nullptr) || parent->OperIs(GT_JTRUE))
+    {
+        return nullptr;
+    }
+
+#ifdef TARGET_ARM64
+    // AND/OR of two compares is lowered to a ccmp chain.
+    if (parent->OperIs(GT_AND, GT_OR))
+    {
+        GenTree* const sibling = (parent->gtGetOp1() == cmp) ? parent->gtGetOp2() : parent->gtGetOp1();
+        if (sibling->OperIsCompare())
+        {
+            return nullptr;
+        }
+    }
+#endif
+
+    GenTree* result = op1;
+    if (cmp->OperIs(GT_EQ))
+    {
+        GenTree* one = gtNewIconNode(1);
+        one->gtVNPair.SetBoth(vnStore->VNForIntCon(1));
+
+        result           = gtNewOperNode(GT_XOR, TYP_INT, op1, one);
+        result->gtVNPair = cmp->gtVNPair;
+    }
+
+    return optAssertionProp_Update(result, cmp, stmt);
+}
+
 /*****************************************************************************
  *
  *  Given a tree consisting of a RelOp and a set of available assertions
@@ -5949,7 +6018,14 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_LE:
         case GT_GT:
         case GT_GE:
-            return optAssertionProp_RelOp(assertions, tree, stmt, block);
+        {
+            GenTree* newTree = optAssertionProp_RelOp(assertions, tree, stmt, block);
+            if ((newTree == nullptr) && !optLocalAssertionProp && tree->OperIs(GT_EQ, GT_NE))
+            {
+                newTree = optAssertionProp_ZeroOneCompare(tree->AsOp(), stmt);
+            }
+            return newTree;
+        }
 
         case GT_JTRUE:
             if (block != nullptr)

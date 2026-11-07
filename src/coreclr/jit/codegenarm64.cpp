@@ -2692,13 +2692,26 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     emitter*         emit       = GetEmitter();
 
     assert(tree->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_OR_NOT, GT_XOR,
-                        GT_XOR_NOT));
+                        GT_XOR_NOT, GT_ADD_HI, GT_SUB_HI));
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(targetReg != REG_NA);
+
+    if (tree->OperIs(GT_ADD_HI, GT_SUB_HI))
+    {
+        // adc/sbc have no immediate form, a contained zero is encoded as the zero register.
+        assert(!op1->isContained());
+        assert(!op2->isContained() || op2->IsIntegralConst(0));
+
+        regNumber op2Reg = op2->isContained() ? REG_ZR : op2->GetRegNum();
+        emit->emitIns_R_R_R(genGetInsForOper(oper, targetType), emitActualTypeSize(tree), targetReg, op1->GetRegNum(),
+                            op2Reg);
+        genProduceReg(tree);
+        return;
+    }
 
     // Handles combined operations: 'madd', 'msub'
     if (op2->OperIs(GT_MUL) && op2->isContained())
@@ -4147,6 +4160,12 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         {
             case GT_ADD:
                 ins = INS_add;
+                break;
+            case GT_ADD_HI:
+                ins = INS_adc;
+                break;
+            case GT_SUB_HI:
+                ins = INS_sbc;
                 break;
             case GT_AND:
                 ins = INS_and;
