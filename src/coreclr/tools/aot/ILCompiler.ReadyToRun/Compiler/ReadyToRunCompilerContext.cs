@@ -55,6 +55,26 @@ namespace ILCompiler
         private TypeWithRepeatedFieldsFieldLayoutAlgorithm _typeWithRepeatedFieldsFieldLayoutAlgorithm;
         private RuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
 
+        internal MethodDesc GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(MethodDesc declMethod, TypeDesc typeParam)
+        {
+            Debug.Assert(declMethod.OwningType.IsInterface && declMethod.OwningType.HasInstantiation);
+
+            MethodDesc genericImplementor = SystemModule.GetType("System"u8, "SZArrayHelper"u8, throwIfNotFound: false)?.GetMethod(declMethod.Name, null);
+            if (genericImplementor == null)
+            {
+                return null;
+            }
+
+            // OPTIMIZATION: For any method other than GetEnumerator(), we can safely substitute
+            // "Object" for reference-type theT's. This causes fewer methods to be instantiated.
+            if (genericImplementor.Name != "GetEnumerator"u8 && !typeParam.IsValueType)
+            {
+                typeParam = GetWellKnownType(WellKnownType.Object);
+            }
+
+            return genericImplementor.MakeInstantiatedMethod(new Instantiation(typeParam));
+        }
+
         public ReadyToRunCompilerContext(
             TargetDetails details,
             SharedGenericsMode genericsMode,
