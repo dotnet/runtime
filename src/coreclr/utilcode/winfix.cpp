@@ -29,7 +29,7 @@ WszCreateProcess(
     DWORD err;
     {
         size_t commandLineLength = u16_strlen(lpCommandLine) + 1;
-        NewArrayHolder<WCHAR> nonConstCommandLine(new (nothrow) WCHAR[commandLineLength]);
+        WStringHolder nonConstCommandLine{ new (nothrow) WCHAR[commandLineLength] };
         if (nonConstCommandLine == NULL)
         {
             SetLastError(ERROR_OUTOFMEMORY);
@@ -50,7 +50,7 @@ WszCreateProcess(
                                    lpProcessInformation);
 
         // At the end of the current scope, the last error code will be overwritten by the destructor of
-        // NewArrayHolder. So we save the error code here, and restore it after the end of the current scope.
+        // the array holder. So we save the error code here, and restore it after the end of the current scope.
         err = GetLastError();
     }
 

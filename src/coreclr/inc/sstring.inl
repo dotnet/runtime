@@ -1542,12 +1542,12 @@ inline WCHAR *SString::GetCopyOfUnicodeString()
         THROWS;
     }
     SS_CONTRACT_END;
-    NewArrayHolder<WCHAR> buffer = NULL;
+    WStringHolder buffer;
 
     buffer = new WCHAR[GetCount() +1];
     wcscpy_s(buffer, GetCount() + 1, GetUnicode());
 
-    return buffer.Extract();
+    return buffer.Detach();
 }
 
 //----------------------------------------------------------------------------
@@ -1563,12 +1563,12 @@ inline UTF8 *SString::GetCopyOfUTF8String()
         THROWS;
     }
     SS_CONTRACT_END;
-    NewArrayHolder<UTF8> buffer = NULL;
+    NewArrayHolder<UTF8> buffer;
 
     buffer = new UTF8[GetSize()];
     strncpy(buffer, GetUTF8(), GetSize());
 
-    return buffer.Extract();
+    return buffer.Detach();
 }
 
 //----------------------------------------------------------------------------
