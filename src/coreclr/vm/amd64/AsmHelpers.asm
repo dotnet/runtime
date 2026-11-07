@@ -632,12 +632,11 @@ LEAF_ENTRY Store_Stack, _TEXT
 LEAF_END Store_Stack, _TEXT
 
 LEAF_ENTRY Load_Stack_Ref, _TEXT
-        mov esi, dword ptr [r11 + 8]  ; SP offset
-        mov edi, dword ptr [r11 + 12] ; size of the value type
-        add rsi, 8; return address
-        add rsi, rsp
-        mov qword ptr [rsi], r10
-        add r10, rdi
+        mov eax, dword ptr [r11 + 8]  ; SP offset
+        lea rax, [rsp + rax + 8] ; return address
+        mov qword ptr [rax], r10
+        mov eax, dword ptr [r11 + 12] ; size of the value type
+        add r10, rax
         lea r10, [r10 + 7]
         and r10, 0fffffffffffffff8h
         add r11, 16
