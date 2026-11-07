@@ -5530,7 +5530,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
 {
     SUPPORTS_DAC;
     COUNT_T countNativeVarInfo;
-    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars;
     TADDR nativeCodeStartAddr;
     if (address != (TADDR)NULL)
     {
@@ -5567,8 +5567,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     }
 
     *numVarInfo = countNativeVarInfo;
-    *varInfo = nativeVars;
-    nativeVars.SuppressRelease(); // To prevent NewHolder from releasing the memory
+    *varInfo = nativeVars.Detach();
 
     if (codeOffset)
     {
@@ -5610,7 +5609,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 
     // Bounds info.
     ULONG32 countMapCopy;
-    NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
+    NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy;
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
@@ -6705,7 +6704,7 @@ STDAPI OutOfProcessExceptionEventGetWatsonBucket(_In_ PDWORD pContext,
     }
 
     CLRDATA_ADDRESS baseAddressOfRuntime = (CLRDATA_ADDRESS)pContext;
-    NewHolder<LiveProcDataTarget> dataTarget(NULL);
+    NewHolder<LiveProcDataTarget> dataTarget;
 
     dataTarget = new (nothrow) LiveProcDataTarget(hProcess, PId, baseAddressOfRuntime);
     if (dataTarget == NULL)
@@ -6713,7 +6712,7 @@ STDAPI OutOfProcessExceptionEventGetWatsonBucket(_In_ PDWORD pContext,
         return E_OUTOFMEMORY;
     }
 
-    NewHolder<ClrDataAccess> pClrDataAccess(NULL);
+    NewHolder<ClrDataAccess> pClrDataAccess;
 
     HRESULT hr = CLRDataAccessCreateInstance(dataTarget, &pClrDataAccess);
     if (hr != S_OK)

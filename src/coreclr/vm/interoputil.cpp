@@ -2918,7 +2918,7 @@ void IUInvokeDispMethod(
     ReleaseHolderAnyMode<IDispatch> pDisp;
     ReleaseHolderAnyMode<IDispatchEx> pDispEx;
     VariantPtrHolder    pVarResult;
-    NewArrayHolder<DispParamHolder> params  = NULL;
+    NewArrayHolder<DispParamHolder> params;
 
     //
     // Function initialization.
@@ -3149,7 +3149,7 @@ void IUInvokeDispMethod(
 
                 if (!fGotIt)
                 {
-                    NewArrayHolder<PinningHandleHolder> ahndPinnedObjs = new PinningHandleHolder[cNamesToConvert];
+                    NewArrayHolder<PinningHandleHolder> ahndPinnedObjs{ new PinningHandleHolder[cNamesToConvert] };
                     ahndPinnedObjs[0] = GetAppDomain()->CreatePinningHandle((OBJECTREF)*pStrName);
 
                     // Copy the named arguments into the array of names to convert.
@@ -3437,10 +3437,10 @@ static void GetComClassHelper(
         // represent it.
         //
 
-        NewHolder<ComClassFactory> pComClsFac = new ComClassFactory(pClassFactInfo->m_clsid);
+        NewHolder<ComClassFactory> pComClsFac{ new ComClassFactory(pClassFactInfo->m_clsid) };
         pComClsFac->SetManagedVersion();
 
-        NewArrayHolder<WCHAR> wszRefServer = NULL;
+        WStringHolder wszRefServer;
         if (pClassFactInfo->m_strServerName)
         {
             size_t len = u16_strlen(pClassFactInfo->m_strServerName)+1;
@@ -3458,8 +3458,8 @@ static void GetComClassHelper(
         // Make sure the hash code is working.
         _ASSERTE (pClassFactHash->GetValue(pClassFactInfo, (HashDatum *)&hRef));
 
-        wszRefServer.SuppressRelease();
-        pComClsFac.SuppressRelease();
+        wszRefServer.Detach();
+        pComClsFac.Detach();
     }
 }
 
@@ -3551,7 +3551,7 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
             pNewFactory = pClassMT->GetComClassFactory();
         }
 
-        pClsFac = pNewFactory.Extract();
+        pClsFac = pNewFactory.Detach();
     }
 
     return pClsFac;

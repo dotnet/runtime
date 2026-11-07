@@ -59,9 +59,9 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
     pCode->EmitRET();
 
     // Generate all IL associated data for JIT.
-    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+    NewHolder<ILStubResolver> ilResolver(new ILStubResolver());
     ilResolver->SetStubMethodDesc(this);
 
     *methodILDecoder = ilResolver->FinalizeILStub(&sl);
-    *resolver = ilResolver.Extract();
+    *resolver = ilResolver.Detach();
 }

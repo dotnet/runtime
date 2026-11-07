@@ -68,7 +68,7 @@ const char* JitHost::getStringConfigValue(const char* name)
         return nullptr;
     }
 
-    NewArrayHolder<char> utf8Result = new char[length + 1];
+    AStringHolder utf8Result(new char[length + 1]);
     hr = FString::Unicode_Utf8(allocatedStr, allAscii, utf8Result, length);
     utf8Result[length] = '\0';
 
@@ -79,7 +79,7 @@ const char* JitHost::getStringConfigValue(const char* name)
         return nullptr;
     }
 
-    return utf8Result.Extract();
+    return utf8Result.Detach();
 }
 
 void JitHost::freeStringConfigValue(const char* value)

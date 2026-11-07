@@ -279,18 +279,7 @@ public:
     XplatEventLoggerConfiguration() = default;
 
     XplatEventLoggerConfiguration(XplatEventLoggerConfiguration const & other) = delete;
-    XplatEventLoggerConfiguration(XplatEventLoggerConfiguration && other)
-    {
-        _provider = std::move(other._provider);
-        _isValid = other._isValid;
-        _enabledKeywords = other._enabledKeywords;
-        _level = other._level;
-    }
-
-    ~XplatEventLoggerConfiguration()
-    {
-        _provider = nullptr;
-    }
+    XplatEventLoggerConfiguration(XplatEventLoggerConfiguration && other) = default;
 
     void Parse(LPWSTR configString)
     {
@@ -364,9 +353,9 @@ private:
         return ComponentSpan(start, end);
     }
 
-    NewArrayHolder<WCHAR> ParseProviderName(ComponentSpan const & component) const
+    WStringHolder ParseProviderName(ComponentSpan const & component) const
     {
-        NewArrayHolder<WCHAR> providerName = nullptr;
+        WStringHolder providerName;
         if ((component.End - component.Start) != 0)
         {
             auto const length = component.End - component.Start;
@@ -397,9 +386,9 @@ private:
         return level;
     }
 
-    NewArrayHolder<WCHAR> ParseArgument(ComponentSpan const & component) const
+    WStringHolder ParseArgument(ComponentSpan const & component) const
     {
-        NewArrayHolder<WCHAR> argument = nullptr;
+        WStringHolder argument;
         if ((component.End - component.Start) != 0)
         {
             auto const length = component.End - component.Start;
@@ -410,10 +399,10 @@ private:
         return argument;
     }
 
-    NewArrayHolder<WCHAR> _provider;
+    WStringHolder _provider;
     uint64_t _enabledKeywords;
     uint32_t _level;
-    NewArrayHolder<WCHAR> _argument;
+    WStringHolder _argument;
     bool _isValid;
 };
 #endif // defined(FEATURE_PERFTRACING) || defined(FEATURE_EVENTSOURCE_XPLAT)

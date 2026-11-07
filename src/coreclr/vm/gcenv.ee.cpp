@@ -1434,7 +1434,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
     }
 
     // not allocated on the stack since it escapes this function
-    AStringHolder configResult = new (nothrow) char[charCount];
+    AStringHolder configResult(new (nothrow) char[charCount]);
     if (!configResult)
     {
         if (fromClrConfig)
@@ -1445,7 +1445,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
     }
 
     if (WideCharToMultiByte(CP_ACP, 0, out, -1 /* out is null-terminated */,
-          configResult.GetValue(), charCount, nullptr, nullptr) == 0)
+          configResult, charCount, nullptr, nullptr) == 0)
     {
         // this should never happen, the previous call to WideCharToMultiByte that computed the charCount should
         // have caught all issues.
@@ -1457,7 +1457,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
         return false;
     }
 
-    *value = configResult.Extract();
+    *value = configResult.Detach();
     if (fromClrConfig)
     {
         CLRConfig::FreeConfigString(fromClrConfig);

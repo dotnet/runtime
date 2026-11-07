@@ -5291,7 +5291,7 @@ CMiniMdRW::GenericBuildHashTable(
         if (ridEnd > INDEX_ROW_COUNT_THRESHOLD - 1)
         {
             // Create a new hash.
-            NewHolder<CLookUpHash> pHashTable = new (nothrow) CLookUpHash;
+            NewHolder<CLookUpHash> pHashTable(new (nothrow) CLookUpHash);
             IfNullGo(pHashTable);
             IfFailGo(pHashTable->NewInit(
                 g_HashSize[GetMetaDataSizeIndex(&m_OptionValue)]));
@@ -5318,7 +5318,7 @@ CMiniMdRW::GenericBuildHashTable(
                 pHashTable,
                 NULL) == NULL)
             {   // We won the initializaion race
-                pHashTable.SuppressRelease();
+                pHashTable.Detach();
             }
         }
     }
@@ -5723,7 +5723,7 @@ CMiniMdRW::CreateMemberRefHash()
         if (ridEnd + 1 > INDEX_ROW_COUNT_THRESHOLD)
         {
             // Create a new hash.
-            NewHolder<CMemberRefHash> pMemberRefHash = new (nothrow) CMemberRefHash();
+            NewHolder<CMemberRefHash> pMemberRefHash(new (nothrow) CMemberRefHash());
             IfNullGo(pMemberRefHash);
             IfFailGo(pMemberRefHash->NewInit(
                 g_HashSize[GetMetaDataSizeIndex(&m_OptionValue)]));
@@ -5747,7 +5747,7 @@ CMiniMdRW::CreateMemberRefHash()
 
             if (InterlockedCompareExchangeT<CMemberRefHash *>(&m_pMemberRefHash, pMemberRefHash, NULL) == NULL)
             {   // We won the initialization race
-                pMemberRefHash.SuppressRelease();
+                pMemberRefHash.Detach();
             }
         }
     }
@@ -5967,7 +5967,7 @@ CMiniMdRW::CreateMemberDefHash()
         if ((ridMethod + ridField + 1) > INDEX_ROW_COUNT_THRESHOLD)
         {
             // Create a new hash.
-            NewHolder<CMemberDefHash> pMemberDefHash = new (nothrow) CMemberDefHash();
+            NewHolder<CMemberDefHash> pMemberDefHash(new (nothrow) CMemberDefHash());
             IfNullGo(pMemberDefHash);
             IfFailGo(pMemberDefHash->NewInit(
                 g_HashSize[GetMetaDataSizeIndex(&m_OptionValue)]));
@@ -6018,7 +6018,7 @@ CMiniMdRW::CreateMemberDefHash()
 
             if (InterlockedCompareExchangeT<CMemberDefHash *>(&m_pMemberDefHash, pMemberDefHash, NULL) == NULL)
             {   // We won the initialization race
-                pMemberDefHash.SuppressRelease();
+                pMemberDefHash.Detach();
             }
         }
     }
@@ -6379,7 +6379,7 @@ CMiniMdRW::FindParentOfMethodHelper(
             MethodPtrRec * pMethodPtrRec;
 
             // build the MethodMap table
-            NewHolder<TOKENMAP> pMethodMap = new (nothrow) TOKENMAP;
+            NewHolder<TOKENMAP> pMethodMap(new (nothrow) TOKENMAP);
             IfNullGo(pMethodMap);
             ULONG nAllocateSize;
             if (!ClrSafeInt<ULONG>::addition(m_Schema.m_cRecs[TBL_Method], 1, nAllocateSize))
@@ -6406,7 +6406,7 @@ CMiniMdRW::FindParentOfMethodHelper(
                 pMethodMap,
                 NULL) == NULL)
             {   // We won the initializaion race
-                pMethodMap.SuppressRelease();
+                pMethodMap.Detach();
             }
         }
         *ptd = *(m_pMethodMap->Get(RidFromToken(md)));
@@ -6442,7 +6442,7 @@ CMiniMdRW::FindParentOfFieldHelper(
             FieldPtrRec *pFieldPtrRec;
 
             // build the FieldMap table
-            NewHolder<TOKENMAP> pFieldMap = new (nothrow) TOKENMAP;
+            NewHolder<TOKENMAP> pFieldMap(new (nothrow) TOKENMAP);
             IfNullGo(pFieldMap);
             ULONG nAllocateSize;
             if (!ClrSafeInt<ULONG>::addition(m_Schema.m_cRecs[TBL_Field], 1, nAllocateSize))
@@ -6469,7 +6469,7 @@ CMiniMdRW::FindParentOfFieldHelper(
                 pFieldMap,
                 NULL) == NULL)
             {   // We won the initializaion race
-                pFieldMap.SuppressRelease();
+                pFieldMap.Detach();
             }
         }
         *ptd = *(m_pFieldMap->Get(RidFromToken(fd)));
@@ -6505,7 +6505,7 @@ CMiniMdRW::FindParentOfPropertyHelper(
             PropertyPtrRec  *pPropertyPtrRec;
 
             // build the PropertyMap table
-            NewHolder<TOKENMAP> pPropertyMap = new (nothrow) TOKENMAP;
+            NewHolder<TOKENMAP> pPropertyMap(new (nothrow) TOKENMAP);
             IfNullGo(pPropertyMap);
             ULONG nAllocateSize;
             if (!ClrSafeInt<ULONG>::addition(m_Schema.m_cRecs[TBL_Property], 1, nAllocateSize))
@@ -6533,7 +6533,7 @@ CMiniMdRW::FindParentOfPropertyHelper(
                 pPropertyMap,
                 NULL) == NULL)
             {   // We won the initializaion race
-                pPropertyMap.SuppressRelease();
+                pPropertyMap.Detach();
             }
         }
         *ptd = *(m_pPropertyMap->Get(RidFromToken(pr)));
@@ -6574,7 +6574,7 @@ CMiniMdRW::FindParentOfEventHelper(
             EventPtrRec  *pEventPtrRec;
 
             // build the EventMap table
-            NewHolder<TOKENMAP> pEventMap = new (nothrow) TOKENMAP;
+            NewHolder<TOKENMAP> pEventMap(new (nothrow) TOKENMAP);
             IfNullGo(pEventMap);
             ULONG nAllocateSize;
             if (!ClrSafeInt<ULONG>::addition(m_Schema.m_cRecs[TBL_Event], 1, nAllocateSize))
@@ -6602,7 +6602,7 @@ CMiniMdRW::FindParentOfEventHelper(
                 pEventMap,
                 NULL) == NULL)
             {   // We won the initializaion race
-                pEventMap.SuppressRelease();
+                pEventMap.Detach();
             }
         }
         *ptd = *(m_pEventMap->Get(RidFromToken(ev)));
@@ -6643,7 +6643,7 @@ CMiniMdRW::FindParentOfParamHelper(
             ParamPtrRec *pParamPtrRec;
 
             // build the ParamMap table
-            NewHolder<TOKENMAP> pParamMap = new (nothrow) TOKENMAP;
+            NewHolder<TOKENMAP> pParamMap(new (nothrow) TOKENMAP);
             IfNullGo(pParamMap);
             uint32_t nAllocateSize;
             if (!ClrSafeInt<uint32_t>::addition(m_Schema.m_cRecs[TBL_Param], 1, nAllocateSize))
@@ -6670,7 +6670,7 @@ CMiniMdRW::FindParentOfParamHelper(
                 pParamMap,
                 NULL) == NULL)
             {   // We won the initializaion race
-                pParamMap.SuppressRelease();
+                pParamMap.Detach();
             }
         }
         *pmd = *(m_pParamMap->Get(RidFromToken(pd)));

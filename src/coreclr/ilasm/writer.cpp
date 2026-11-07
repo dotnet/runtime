@@ -496,7 +496,7 @@ HRESULT Assembler::CreateExportDirectory()
     // get the DLL name from output file name
     char*                   pszDllName;
     Ldllname = (unsigned)u16_strlen(m_wzOutputFileName)*3+3;
-    NewArrayHolder<char>    szOutputFileName(new char[Ldllname]);
+    AStringHolder    szOutputFileName(new char[Ldllname]);
     memset(szOutputFileName,0,u16_strlen(m_wzOutputFileName)*3+3);
     WideCharToMultiByte(CP_ACP,0,m_wzOutputFileName,-1,szOutputFileName,Ldllname,NULL,NULL);
     pszDllName = strrchr(szOutputFileName,DIRECTORY_SEPARATOR_CHAR_A);
