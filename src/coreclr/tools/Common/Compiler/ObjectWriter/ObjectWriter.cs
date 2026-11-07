@@ -39,11 +39,6 @@ namespace ILCompiler.ObjectWriter
 
         private readonly byte _insPaddingByte;
 
-        // Half the +/-128 MB reach of an ARM64 B/BL: a branch within one code section always
-        // fits, and every call site is within reach of a linker range-extension thunk placed
-        // at a section boundary.
-        private const long Arm64CodeSectionSplitSize = 64 * 1024 * 1024;
-
         // Standard sections
         private readonly Dictionary<string, int> _sectionNameToSectionIndex = new(StringComparer.Ordinal);
         private readonly List<SectionData> _sectionIndexToData = new();
@@ -71,10 +66,31 @@ namespace ILCompiler.ObjectWriter
         private protected virtual bool UsesSubsectionsViaSymbols => false;
 
         /// <summary>
-        /// Whether ARM64 code beyond <see cref="Arm64CodeSectionSplitSize"/> is emitted as several
-        /// sections of the same name, between which the linker can place range-extension thunks.
+        /// Whether the linker for this format places range-extension thunks between sections, so that
+        /// code larger than <see cref="GetCodeSectionSplitSize"/> can be emitted as several sections of
+        /// the same name.
         /// </summary>
-        private protected virtual bool SplitsArm64CodeSections => false;
+        private protected virtual bool LinkerPlacesRangeExtensionThunks => false;
+
+        /// <summary>
+        /// The size beyond which a code section is split, or 0 when it is not. Half the reach of the
+        /// target's direct call: a call within one section always fits, and every call site is within
+        /// reach of a thunk the linker places at a section boundary.
+        /// </summary>
+        private long GetCodeSectionSplitSize()
+        {
+            if (!LinkerPlacesRangeExtensionThunks)
+                return 0;
+
+            long directCallReach = _nodeFactory.Target.Architecture switch
+            {
+                TargetArchitecture.ARM64 => 128 * 1024 * 1024,
+                TargetArchitecture.LoongArch64 => 128 * 1024 * 1024,
+                TargetArchitecture.ARM => 16 * 1024 * 1024,
+                _ => 0,
+            };
+            return directCallReach / 2;
+        }
 
         private protected abstract void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream);
 
@@ -378,6 +394,7 @@ namespace ILCompiler.ObjectWriter
                 progressReporter = new ProgressReporter(logger, count);
             }
 
+            long codeSectionSplitSize = GetCodeSectionSplitSize();
             List<ISymbolRangeNode> symbolRangeNodes = [];
             List<BlockToRelocate> blocksToRelocate = [];
             List<ChecksumsToCalculate> checksumRelocations = [];
@@ -452,11 +469,10 @@ namespace ILCompiler.ObjectWriter
                     GetOrCreateSection(section);
 
                 if (!shareSymbol &&
-                    SplitsArm64CodeSections &&
-                    _nodeFactory.Target.Architecture == TargetArchitecture.ARM64 &&
+                    codeSectionSplitSize > 0 &&
                     section.Type == SectionType.Executable &&
                     sectionWriter.Position > 0 &&
-                    sectionWriter.Position + nodeContents.Data.Length > Arm64CodeSectionSplitSize)
+                    sectionWriter.Position + nodeContents.Data.Length > codeSectionSplitSize)
                 {
                     sectionWriter = StartNewSection(section);
                 }

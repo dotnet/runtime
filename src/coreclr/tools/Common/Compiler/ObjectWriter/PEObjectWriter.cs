@@ -99,7 +99,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         // A PE image is laid out without a linker, so nothing could place thunks between sections.
-        private protected override bool SplitsArm64CodeSections => false;
+        private protected override bool LinkerPlacesRangeExtensionThunks => false;
 
         private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
         {
