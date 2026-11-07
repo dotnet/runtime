@@ -682,7 +682,7 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // On entry:
     //   t0 = functionIDOrClientID
     //   t1 = profiledSp
-    //   t6 = throwable
+    //   (t6 is scratch: it is overwritten below before any read, so a jump stub may use it)
     //
     // On exit:
     //   Values of a0-a7, fa0-fa7, fp are preserved.

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ForceRelocsJumpStubs.cs" />
+
+    <!-- Read by Checked and Debug runtimes only. On RISC-V, where W^X is off by default, it also scatters
+         executable memory, which can put helper and cross-heap targets out of range so that those calls go
+         through jump stubs; elsewhere this is an ordinary ForceRelocs run. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_ForceRelocs" Value="1" />
+    <!-- Optimized code from the start, so that the call shapes under test are the optimized ones. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+  </ItemGroup>
+</Project>
