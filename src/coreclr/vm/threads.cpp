@@ -3175,50 +3175,51 @@ OBJECTREF Thread::GetExposedObject()
         THREADBASEREF attempt = (THREADBASEREF) AllocateObject(g_pThreadClass);
         GCPROTECT_BEGIN(attempt);
 
-        // The exposed object keeps us alive until it is GC'ed.  This
-        // doesn't mean the physical thread continues to run, of course.
-        // We have to set this outside of the ThreadStore lock, because this might trigger a GC.
-        attempt->SetInternal(this);
-
-        BOOL fNeedThreadStore = (! ThreadStore::HoldingThreadStore(pCurThread));
-        // Take a lock to make sure that only one thread creates the object.
-        ThreadStoreLockHolder tsHolder(fNeedThreadStore);
-
-        // Check to see if another thread has not already created the exposed object.
-        if (ObjectFromHandle(m_ExposedObject) == NULL)
         {
-            // Keep a weak reference to the exposed object.
-            StoreObjectInHandle(m_ExposedObject, (OBJECTREF) attempt);
+            BOOL fNeedThreadStore = (! ThreadStore::HoldingThreadStore(pCurThread));
+            // Take a lock to make sure that only one thread creates the object.
+            ThreadStoreLockHolder tsHolder(fNeedThreadStore);
 
-            ObjectInHandleHolder exposedHolder(m_ExposedObject);
+            // Check to see if another thread has not already created the exposed object.
+            if (ObjectFromHandle(m_ExposedObject) == NULL)
+            {
+                // The exposed object keeps us alive until it is GC'ed.  This
+                // doesn't mean the physical thread continues to run.
+                attempt->SetInternal(this);
 
-            // Increase the external ref count. We can't call IncExternalCount because we
-            // already hold the thread lock and IncExternalCount won't be able to take it.
-            ULONG retVal = InterlockedIncrement ((LONG*)&m_ExternalRefCount);
+                // Keep a weak reference to the exposed object.
+                StoreObjectInHandle(m_ExposedObject, (OBJECTREF) attempt);
 
-            // Check to see if we need to store a strong pointer to the object.
-            if (retVal > 1)
-                StoreObjectInHandle(m_StrongHndToExposedObject, (OBJECTREF) attempt);
+                ObjectInHandleHolder exposedHolder(m_ExposedObject);
 
-            ObjectInHandleHolder strongHolder(m_StrongHndToExposedObject);
+                // Increase the external ref count. We can't call IncExternalCount because we
+                // already hold the thread lock and IncExternalCount won't be able to take it.
+                ULONG retVal = InterlockedIncrement ((LONG*)&m_ExternalRefCount);
+
+                // Check to see if we need to store a strong pointer to the object.
+                if (retVal > 1)
+                    StoreObjectInHandle(m_StrongHndToExposedObject, (OBJECTREF) attempt);
+
+                ObjectInHandleHolder strongHolder(m_StrongHndToExposedObject);
 
 
-            attempt->SetManagedThreadId(GetThreadId());
+                attempt->SetManagedThreadId(GetThreadId());
 
 
-            // Note that we are NOT calling the constructor on the Thread.  That's
-            // because this is an internal create where we don't want a Start
-            // address.  And we don't want to expose such a constructor for our
-            // customers to accidentally call.  The following is in lieu of a true
-            // constructor:
-            attempt->InitExisting();
+                // Initialize the native-backed properties of the runtime-created wrapper.
+                attempt->InitExisting();
 
-            exposedHolder.SuppressRelease();
-            strongHolder.SuppressRelease();
+                exposedHolder.SuppressRelease();
+                strongHolder.SuppressRelease();
+            }
         }
-        else
+
+        if (attempt->GetInternal() != nullptr)
         {
-            attempt->ClearInternal();
+            // Only the attached wrapper adds memory pressure. The constructor
+            // can trigger a GC, so run it after releasing our ThreadStore lock.
+            _ASSERTE(!ThreadStore::HoldingThreadStore(pCurThread));
+            CallDefaultConstructor(attempt);
         }
 
         GCPROTECT_END();
@@ -4201,8 +4202,8 @@ void ThreadStore::IncrementDeadThreadCountForGCTrigger()
         return;
     }
 
-    SIZE_T gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcHeap->GetMaxGeneration());
-    SIZE_T gcNowMilliseconds = gcHeap->GetNow();
+    int64_t gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcHeap->GetMaxGeneration());
+    int64_t gcNowMilliseconds = gcHeap->GetNow();
     if (gcNowMilliseconds - gcLastMilliseconds < s_DeadThreadGCTriggerPeriodMilliseconds)
     {
         return;
@@ -4332,8 +4333,8 @@ void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
         // Make sure that enough time has elapsed since the last GC of the desired generation. We don't want to trigger GCs
         // based on this heuristic too often. Give it some time to let the memory pressure trigger GCs automatically, and only
         // if it doesn't in the given time, this heuristic may kick in to trigger a GC.
-        SIZE_T gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcGenerationToTrigger);
-        SIZE_T gcNowMilliseconds = gcHeap->GetNow();
+        int64_t gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcGenerationToTrigger);
+        int64_t gcNowMilliseconds = gcHeap->GetNow();
         if (gcNowMilliseconds - gcLastMilliseconds < s_DeadThreadGCTriggerPeriodMilliseconds)
         {
             return;
