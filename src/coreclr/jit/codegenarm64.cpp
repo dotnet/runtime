@@ -2842,12 +2842,25 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         genProduceReg(tree);
         return;
     }
-    else if (op2->OperIs(GT_CAST) && op2->isContained())
+    else if (op2->OperIs(GT_CAST, GT_BFIZ) && op2->isContained())
     {
         assert(varTypeIsIntegral(tree) || tree->TypeIs(TYP_BYREF));
 
+        GenTreeCast* cast;
+        unsigned     shift = 0;
+        if (op2->OperIs(GT_BFIZ))
+        {
+            cast  = op2->gtGetOp1()->AsCast();
+            shift = static_cast<unsigned>(op2->gtGetOp2()->AsIntCon()->IconValue());
+            assert(cast->isContained() && (shift <= 4));
+        }
+        else
+        {
+            cast = op2->AsCast();
+        }
+
         GenTree* a = op1;
-        GenTree* b = op2->AsCast()->CastOp();
+        GenTree* b = cast->CastOp();
 
         instruction ins = genGetInsForOper(tree->OperGet(), targetType);
         insOpts     opt = INS_OPTS_NONE;
@@ -2877,23 +2890,23 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
             }
         }
 
-        bool isZeroExtending = op2->AsCast()->IsZeroExtending();
+        bool isZeroExtending = cast->IsZeroExtending();
 
-        if (varTypeIsByte(op2->CastToType()))
+        if (varTypeIsByte(cast->CastToType()))
         {
             opt = isZeroExtending ? INS_OPTS_UXTB : INS_OPTS_SXTB;
         }
-        else if (varTypeIsShort(op2->CastToType()))
+        else if (varTypeIsShort(cast->CastToType()))
         {
             opt = isZeroExtending ? INS_OPTS_UXTH : INS_OPTS_SXTH;
         }
         else
         {
-            assert(op2->TypeIs(TYP_LONG) && genActualTypeIsInt(b));
+            assert(cast->TypeIs(TYP_LONG) && genActualTypeIsInt(b));
             opt = isZeroExtending ? INS_OPTS_UXTW : INS_OPTS_SXTW;
         }
 
-        emit->emitIns_R_R_R(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(), opt);
+        emit->emitIns_R_R_R_I(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(), shift, opt);
 
         genProduceReg(tree);
         return;
@@ -4739,14 +4752,27 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                     break;
 
                 case GT_CAST:
+                case GT_BFIZ:
                 {
                     assert(ins == INS_cmp);
-                    assert(cmpSize >= genTypeSize(op2->CastToType()));
+
+                    GenTreeCast* cast;
+                    unsigned     shift = 0;
+                    if (op2->OperIs(GT_BFIZ))
+                    {
+                        cast  = op2->gtGetOp1()->AsCast();
+                        shift = static_cast<unsigned>(op2->gtGetOp2()->AsIntCon()->IconValue());
+                        assert(cast->isContained() && (shift <= 4));
+                    }
+                    else
+                    {
+                        cast = op2->AsCast();
+                    }
+
+                    assert(cmpSize >= genTypeSize(cast->CastToType()));
                     assert(cmpSize == EA_4BYTE || cmpSize == EA_8BYTE);
                     assert(op1->gtHasReg(m_compiler));
-                    assert(op2->gtGetOp1()->gtHasReg(m_compiler));
-
-                    GenTreeCast* cast = op2->AsCast();
+                    assert(cast->CastOp()->gtHasReg(m_compiler));
 
                     GenIntCastDesc desc(cast);
 
@@ -4774,7 +4800,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                             unreached();
                     }
 
-                    emit->emitIns_R_R(INS_cmp, cmpSize, op1->GetRegNum(), cast->gtGetOp1()->GetRegNum(), extOpts);
+                    emit->emitIns_R_R_I(INS_cmp, cmpSize, op1->GetRegNum(), cast->CastOp()->GetRegNum(), shift,
+                                        extOpts);
                     break;
                 }
                 default:

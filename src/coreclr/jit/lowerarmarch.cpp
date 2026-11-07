@@ -417,14 +417,35 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
         return false;
     }
 
-    if (childNode->OperIs(GT_CAST))
+    if (childNode->OperIs(GT_CAST, GT_BFIZ))
     {
-        // Find "a op cast(b)"
-        GenTree* castOp = childNode->AsCast()->CastOp();
+        // Find "a op cast(b)" or "a op (cast(b) << shift)" for an extended-register instruction.
+        GenTreeCast* cast;
+        if (childNode->OperIs(GT_BFIZ))
+        {
+            assert(childNode->gtGetOp1()->OperIs(GT_CAST));
+            assert(childNode->gtGetOp1()->isContained());
+            assert(childNode->gtGetOp2()->IsCnsIntOrI());
+
+            ssize_t shift = childNode->gtGetOp2()->AsIntCon()->IconValue();
+            if ((shift < 0) || (shift > 4))
+            {
+                return false;
+            }
+
+            cast = childNode->gtGetOp1()->AsCast();
+        }
+        else
+        {
+            cast = childNode->AsCast();
+        }
+
+        assert(!cast->gtOverflow());
+        GenTree* castOp = cast->CastOp();
 
         bool isSupportedCast = false;
 
-        if (varTypeIsSmall(childNode->CastToType()))
+        if (varTypeIsSmall(cast->CastToType()))
         {
             // The JIT doesn't track upcasts from small types, instead most types
             // are tracked as TYP_INT and then we get explicit downcasts to the
@@ -433,7 +454,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             assert(!varTypeIsFloating(castOp));
             isSupportedCast = true;
         }
-        else if (childNode->TypeIs(TYP_LONG) && genActualTypeIsInt(castOp))
+        else if (cast->TypeIs(TYP_LONG) && genActualTypeIsInt(castOp))
         {
             // We can handle "INT -> LONG", "INT -> ULONG", "UINT -> LONG", and "UINT -> ULONG"
             isSupportedCast = true;
@@ -3296,6 +3317,11 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             {
                 // cmp (extended-register): GT_EQ -> GT_CAST -> ...
                 cast = op;
+            }
+            else if (op->OperIs(GT_BFIZ))
+            {
+                // cmp (extended-register) with a shifted index.
+                cast = op->gtGetOp1();
             }
             else if (op->OperIs(GT_NEG) && op->gtGetOp1()->OperIs(GT_CAST))
             {
