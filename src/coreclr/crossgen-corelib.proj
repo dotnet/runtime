@@ -5,20 +5,25 @@
 
   <ItemGroup>
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_inbuild.csproj" OutputItemType="Crossgen2Files" />
-    <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
+    <ProjectReference Include="$(CoreClrProjectRoot)merge-mibc.proj"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier;TargetFramework"
+                      OutputItemType="MergedMibcFile"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(CoreCLRConfiguration)"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build;GetMibcFile" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))" OutputItemType="CoreLib" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'tasks', 'Crossgen2Tasks', 'Crossgen2Tasks.csproj'))"
                       SetConfiguration="Configuration=$(TasksConfiguration)" />
   </ItemGroup>
 
   <PropertyGroup>
+    <CustomAfterNoTargets>$(MSBuildThisFileDirectory)crossgen-corelib.targets</CustomAfterNoTargets>
     <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
     <RootBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</RootBinDir>
     <LogsDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'log'))</LogsDir>
     <BinDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'bin', 'coreclr', $(OSPlatformConfig)))</BinDir>
     <IntermediatesDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'obj', 'coreclr', $(OSPlatformConfig)))</IntermediatesDir>
-    <DotNetCli>$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.sh'))</DotNetCli>
-    <DotNetCli Condition="'$(OS)' == 'Windows_NT'">$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.cmd'))</DotNetCli>
     <Crossgen2TasksAssembly>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', 'Crossgen2Tasks.dll'))</Crossgen2TasksAssembly>
   </PropertyGroup>
 
@@ -38,8 +43,6 @@
 
     <BuildPerfMap>false</BuildPerfMap>
     <BuildPerfMap Condition="'$(TargetOS)' == 'linux'">true</BuildPerfMap>
-
-    <_MergeMibcFilesCacheFile>$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/merge_mibc_files.cache</_MergeMibcFilesCacheFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and $(PublishReadyToRun)">
@@ -57,10 +60,6 @@
     <CrossgenTargetName>$(CrossgenTargetName);CopyR2RComponentCoreLib</CrossgenTargetName>
   </PropertyGroup>
 
-  <ItemGroup>
-    <OptimizationMibcFiles Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc" />
-  </ItemGroup>
-
   <PropertyGroup>
     <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
     <CoreLibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dll'))</CoreLibOutputPath>
@@ -70,7 +69,6 @@
     <CoreLibPerfMapPath></CoreLibPerfMapPath>
     <CoreLibNiPdbPath Condition="$(BuildPdb)">$([MSBuild]::NormalizePath('$(BinDir)', 'PDB', '$(CoreLibAssemblyName).ni.pdb'))</CoreLibNiPdbPath>
     <CoreLibPerfMapPath Condition="$(BuildPerfMap)">$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).ni.r2rmap'))</CoreLibPerfMapPath>
-    <MergedMibcPath>$([MSBuild]::NormalizePath('$(BinDir)', 'StandardOptimizationData.mibc'))</MergedMibcPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishReadyToRunContainerFormat)' == 'macho'">
@@ -87,55 +85,10 @@
     <CrossgenCoreLibComponentOutputPath>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', '$(CoreLibAssemblyName).dll'))</CrossgenCoreLibComponentOutputPath>
   </PropertyGroup>
 
-  <!-- Creates a hash file that changes whenever the input mibc file modification times change.
-       This will trigger a re-merge when updating to a new version of the optimization data,
-       even if the new timestamps are still days in the past. -->
-  <Target Name="GenerateMergeMibcFilesInputCache">
-    <ItemGroup>
-      <_MergeMibcFilesInputCache Include="@(OptimizationMibcFiles)" />
-      <_MergeMibcFilesInputCache Include="@(DotNetPgo)" />
-      <_MergeMibcFilesInputCache Include="@(OptimizationMibcFiles->'%(ModifiedTime)')" />
-    </ItemGroup>
-
-    <Hash ItemsToHash="@(_MergeMibcFilesInputCache)">
-      <Output TaskParameter="HashResult" PropertyName="_MergeMibcFilesInputCacheHash" />
-    </Hash>
-
-    <WriteLinesToFile
-      Lines="$(_MergeMibcFilesInputCacheHash)"
-      File="$(_MergeMibcFilesCacheFile)"
-      Overwrite="true"
-      WriteOnlyWhenDifferent="true" />
-
-    <ItemGroup>
-      <FileWrites Include="$(_MergeMibcFilesCacheFile)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="MergeMibcFiles"
-          DependsOnTargets="GenerateMergeMibcFilesInputCache"
-          Inputs="$(_MergeMibcFilesCacheFile);@(OptimizationMibcFiles);@(DotNetPgo)"
-          Condition="'@(DotNetPgo)' != ''"
-          Outputs="$(MergedMibcPath)">
-
-    <PropertyGroup>
-      <DotNetPgoCmd>$(DotNetCli) @(DotNetPgo) merge</DotNetPgoCmd>
-      <DotNetPgoCmd>$(DotNetPgoCmd) -o:$(MergedMibcPath)</DotNetPgoCmd>
-      <DotNetPgoCmd>$(DotNetPgoCmd) @(OptimizationMibcFiles->'-i:%(Identity)', ' ')</DotNetPgoCmd>
-      <DotNetPgoCmd>$(DotNetPgoCmd) --compressed false</DotNetPgoCmd> <!-- Signing service doesn't handle compressed mibc signing correctly. -->
-    </PropertyGroup>
-
-    <Message Importance="High" Text="$(DotNetPgoCmd)"/>
-    <Exec Command="$(DotNetPgoCmd)" />
-  </Target>
-
-  <Target Name="CreateMergedMibcFile"
-          DependsOnTargets="ResolveProjectReferences;MergeMibcFiles" />
-
-  <Target Name="PrepareInvokeCrossgen2" DependsOnTargets="ResolveProjectReferences;CreateMergedMibcFile">
+  <Target Name="PrepareInvokeCrossgen2" DependsOnTargets="ResolveProjectReferences">
     <ItemGroup>
       <Crossgen2Inputs Include="@(CoreLib)" />
-      <Crossgen2Inputs Include="$(MergedMibcPath)" />
+      <Crossgen2Inputs Include="@(MergedMibcFile)" />
       <Crossgen2Inputs Include="@(Crossgen2Files->Metadata('OutputPath'))" />
       <Crossgen2Inputs Include="$(WasmCoreClrFrameworkPInvokeModuleListFile)"
                        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
@@ -155,7 +108,7 @@
   </Target>
 
   <Target Name="InvokeCrossgen2"
-          DependsOnTargets="PrepareInvokeCrossgen2;CreateMergedMibcFile"
+          DependsOnTargets="PrepareInvokeCrossgen2"
           Inputs="@(Crossgen2Inputs)"
           Outputs="$(CoreLibOutputPath);$(CoreLibNiPdbPath);$(CoreLibPerfMapPath);$(CrossgenCoreLibOutputPath);$(CrossgenCoreLibComponentOutputPath)">
 
@@ -178,7 +131,7 @@
         <OutputPDBImage Condition="$(BuildPerfMap)">$(CoreLibPerfMapPath)</OutputPDBImage>
       </_CoreLibCompilationEntry>
 
-      <_CoreLibCrossgen2PgoFiles Include="$(MergedMibcPath)"
+      <_CoreLibCrossgen2PgoFiles Include="@(MergedMibcFile)"
         Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
 
       <_CoreLibCrossgen2ExtraArgs Include="--target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)"
@@ -337,4 +290,18 @@
   </Target>
 
   <Target Name="CrossgenCoreLib" DependsOnTargets="$(CrossgenTargetName)" AfterTargets="CoreBuild" />
+
+  <Target Name="_GetRuntimePackCoreLibFiles">
+    <ItemGroup>
+      <_RuntimePackCoreLibPortablePdb Include="$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '$(CoreLibAssemblyName).pdb'))" />
+      <RuntimePackCoreLibFile Include="$(CoreLibOutputPath)" />
+      <RuntimePackCoreLibFile Include="@(_RuntimePackCoreLibPortablePdb)" />
+      <RuntimePackCoreLibFile Include="$(CoreLibNiPdbPath)"
+                              Condition="'$(CoreLibNiPdbPath)' != ''" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetRuntimePackCoreLib"
+          DependsOnTargets="CrossgenCoreLib;_GetRuntimePackCoreLibFiles"
+          Returns="@(RuntimePackCoreLibFile)" />
 </Project>
