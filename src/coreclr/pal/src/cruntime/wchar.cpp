@@ -22,6 +22,7 @@ Abstract:
 
 #include <errno.h>
 #include <algorithm>
+#include <minipal/utf8.h>
 
 SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
@@ -43,10 +44,10 @@ _wtoi(
     PERF_ENTRY(_wtoi);
     ENTRY("_wtoi (string=%p)\n", string);
 
-    len = WideCharToMultiByte(CP_ACP, 0, string, -1, 0, 0, 0, 0);
+    len = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)string, PAL_wcslen(string) + 1, 0);
     if (!len)
     {
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n",
+        ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n",
               GetLastError());
         return -1;
     }
@@ -57,10 +58,10 @@ _wtoi(
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return -1;
     }
-    len = WideCharToMultiByte(CP_ACP, 0, string, -1, tempStr, len, 0, 0);
+    len = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)string, PAL_wcslen(string) + 1, tempStr, len, 0);
     if (!len)
     {
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n",
+        ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n",
               GetLastError());
         free(tempStr);
         return -1;
@@ -247,11 +248,11 @@ PAL_wcstoul(
     ENTRY("wcstoul (nptr=%p (%S), endptr=%p, base=%d)\n", nptr?nptr:W16_NULLSTRING, nptr?nptr:W16_NULLSTRING,
           endptr, base);
 
-    size = WideCharToMultiByte(CP_ACP, 0, nptr, -1, NULL, 0, NULL, NULL);
+    size = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)nptr, PAL_wcslen(nptr) + 1, 0);
     if (!size)
     {
         dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n", dwLastError);
         SetLastError(ERROR_INVALID_PARAMETER);
         res = 0;
         goto PAL_wcstoulExit;
@@ -264,11 +265,11 @@ PAL_wcstoul(
         res = 0;
         goto PAL_wcstoulExit;
     }
-    size = WideCharToMultiByte(CP_ACP, 0, nptr, -1, s_nptr, size, NULL, NULL);
+    size = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)nptr, PAL_wcslen(nptr) + 1, s_nptr, size, 0);
     if (!size)
     {
         dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n", dwLastError);
         SetLastError(ERROR_INVALID_PARAMETER);
         res = 0;
         goto PAL_wcstoulExit;
@@ -337,11 +338,11 @@ PAL__wcstoui64(
     ENTRY("_wcstoui64 (nptr=%p (%S), endptr=%p, base=%d)\n", nptr?nptr:W16_NULLSTRING, nptr?nptr:W16_NULLSTRING,
           endptr, base);
 
-    size = WideCharToMultiByte(CP_ACP, 0, nptr, -1, NULL, 0, NULL, NULL);
+    size = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)nptr, PAL_wcslen(nptr) + 1, 0);
     if (!size)
     {
         dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n", dwLastError);
         SetLastError(ERROR_INVALID_PARAMETER);
         res = 0;
         goto PAL__wcstoui64Exit;
@@ -354,11 +355,11 @@ PAL__wcstoui64(
         res = 0;
         goto PAL__wcstoui64Exit;
     }
-    size = WideCharToMultiByte(CP_ACP, 0, nptr, -1, s_nptr, size, NULL, NULL);
+    size = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)nptr, PAL_wcslen(nptr) + 1, s_nptr, size, 0);
     if (!size)
     {
         dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failed.  Error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failed.  Error is %d\n", dwLastError);
         SetLastError(ERROR_INVALID_PARAMETER);
         res = 0;
         goto PAL__wcstoui64Exit;
@@ -860,9 +861,8 @@ PAL_wcstod( const wchar_16 * nptr, wchar_16 **endptr )
 
         if ( lpStringRep )
         {
-            if ( WideCharToMultiByte( CP_ACP, 0, lpStartOfExpression, Length,
-                                      lpStringRep, Length + 1 ,
-                                      NULL, 0 ) != 0 )
+            if ( minipal_convert_utf16_to_utf8( (const CHAR16_T*)lpStartOfExpression, Length,
+                                                lpStringRep, Length + 1, 0 ) != 0 )
             {
                 LPSTR ScanStop = NULL;
                 lpStringRep[Length]= 0;

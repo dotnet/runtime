@@ -25,6 +25,7 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include "pal/stackstring.hpp"
 #include "pal/utils.h"
 #include <minipal/ospagesize.h>
+#include <minipal/utf8.h>
 
 #include <signal.h>
 #include <unistd.h>
@@ -184,8 +185,7 @@ OutputDebugStringW(
         goto EXIT;
     }
 
-    if ((strLen = WideCharToMultiByte(CP_ACP, 0, lpOutputString, -1, NULL, 0,
-                                      NULL, NULL))
+    if ((strLen = (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpOutputString, PAL_wcslen(lpOutputString) + 1, 0))
         == 0)
     {
         ASSERT("failed to get wide chars length\n");
@@ -201,8 +201,8 @@ OutputDebugStringW(
         goto EXIT;
     }
 
-    if(! WideCharToMultiByte(CP_ACP, 0, lpOutputString, -1,
-                             lpOutputStringA, strLen, NULL, NULL))
+    if(! minipal_convert_utf16_to_utf8((const CHAR16_T*)lpOutputString, PAL_wcslen(lpOutputString) + 1,
+                                       lpOutputStringA, strLen, 0))
     {
         ASSERT("failed to convert wide chars to multibytes\n");
         SetLastError(ERROR_INTERNAL_ERROR);

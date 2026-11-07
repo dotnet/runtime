@@ -23,6 +23,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
 #include "pal/environ.h"
+#include <minipal/utf8.h>
 #include "pal/utils.h"
 #include "pal/debug.h"
 #include "pal/init.h"
@@ -729,10 +730,10 @@ static LPWSTR INIT_GetCurrentEXEPath()
     real_path.Set(path, strlen(path));
     free(path);
 
-    return_size = MultiByteToWideChar(CP_ACP, 0, real_path, -1, nullptr, 0);
+    return_size = (INT)minipal_get_length_utf8_to_utf16(real_path, strlen(real_path) + 1, 0);
     if (0 == return_size)
     {
-        ASSERT("MultiByteToWideChar failure\n");
+        ASSERT("UTF-8 to UTF-16 conversion failure\n");
         return nullptr;
     }
 
@@ -744,10 +745,9 @@ static LPWSTR INIT_GetCurrentEXEPath()
     }
     else
     {
-        if (!MultiByteToWideChar(CP_ACP, 0, real_path, -1,
-                                return_value, return_size))
+        if (!minipal_convert_utf8_to_utf16(real_path, strlen(real_path) + 1, (CHAR16_T*)return_value, return_size, 0))
         {
-            ASSERT("MultiByteToWideChar failure\n");
+            ASSERT("UTF-8 to UTF-16 conversion failure\n");
             free(return_value);
             return_value = nullptr;
         }

@@ -8,6 +8,7 @@
 #include "spmiutil.h"
 #include "config.h"
 #include <stdio.h>
+#include <minipal/utf8.h>
 #ifdef TARGET_UNIX
 #include <sys/types.h>
 #include <dirent.h>
@@ -44,21 +45,21 @@ LPWSTR verbMerge::MergePathStrings(LPCWSTR dir, LPCWSTR file)
     return newpath;
 }
 
-char* verbMerge::ConvertWideCharToMultiByte(LPCWSTR wstr)
+char* verbMerge::ConvertToUtf8(LPCWSTR wstr)
 {
-    unsigned int codePage   = CP_UTF8;
-    int          sizeNeeded = WideCharToMultiByte(codePage, 0, wstr, -1, NULL, 0, NULL, NULL);
-    char*        encodedStr = new char[sizeNeeded];
-    WideCharToMultiByte(codePage, 0, wstr, -1, encodedStr, sizeNeeded, NULL, NULL);
+    size_t length     = u16_strlen(wstr) + 1;
+    size_t sizeNeeded = minipal_get_length_utf16_to_utf8((const CHAR16_T*)wstr, length, 0);
+    char*  encodedStr = new char[sizeNeeded];
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)wstr, length, encodedStr, sizeNeeded, 0);
     return encodedStr;
 }
 
-WCHAR* verbMerge::ConvertMultiByteToWideChar(LPCSTR str)
+WCHAR* verbMerge::ConvertFromUtf8(LPCSTR str)
 {
-    unsigned int codePage   = CP_UTF8;
-    int          sizeNeeded = MultiByteToWideChar(codePage, 0, str, -1, NULL, 0);
-    WCHAR*       encodedStr = new WCHAR[sizeNeeded];
-    MultiByteToWideChar(codePage, 0, str, -1, encodedStr, sizeNeeded);
+    size_t length     = strlen(str) + 1;
+    size_t sizeNeeded = minipal_get_length_utf8_to_utf16(str, length, 0);
+    WCHAR* encodedStr = new WCHAR[sizeNeeded];
+    minipal_convert_utf8_to_utf16(str, length, (CHAR16_T*)encodedStr, sizeNeeded, 0);
     return encodedStr;
 }
 
@@ -73,7 +74,7 @@ int verbMerge::AppendFileRaw(HANDLE hFileOut, LPCWSTR fileFullPath, unsigned cha
 {
     int result = 0; // default to zero == success
 
-    char* fileNameAsChar = ConvertWideCharToMultiByte(fileFullPath);
+    char* fileNameAsChar = ConvertToUtf8(fileFullPath);
     LogInfo("Appending file '%s'", fileNameAsChar);
 
     HANDLE hFileIn = CreateFileW(fileFullPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
@@ -146,7 +147,7 @@ int verbMerge::AppendFile(HANDLE hFileOut, LPCWSTR fileFullPath, bool dedup, uns
     if (dedup)
     {
         // Need to conver the fileFullPath to non-Unicode.
-        char* fileFullPathAsChar = ConvertWideCharToMultiByte(fileFullPath);
+        char* fileFullPathAsChar = ConvertToUtf8(fileFullPath);
         LogInfo("Appending file '%s'", fileFullPathAsChar);
         bool ok = m_removeDups.CopyAndRemoveDups(fileFullPathAsChar, hFileOut);
         delete[] fileFullPathAsChar;
@@ -329,7 +330,7 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
                 continue;
 
             // Call the filter with &FindData like the Windows code below.
-            FindData findData(dirEntryType, ConvertMultiByteToWideChar(pEntry->d_name));
+            FindData findData(dirEntryType, ConvertFromUtf8(pEntry->d_name));
             if (filter(&findData))
             {
                 // Prepend it to the list.
@@ -513,7 +514,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
 
 #else  // TARGET_WINDOWS
         struct stat fileStat;
-        char *fileFullPathUtf8 = ConvertWideCharToMultiByte(fileFullPath);
+        char *fileFullPathUtf8 = ConvertToUtf8(fileFullPath);
         int st = stat(fileFullPathUtf8, &fileStat);
         if (st != 0)
         {
@@ -530,7 +531,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
         // Is it zero length? If so, skip it.
         if (fileSize == 0)
         {
-            char* fileFullPathAsChar = ConvertWideCharToMultiByte(fileFullPath);
+            char* fileFullPathAsChar = ConvertToUtf8(fileFullPath);
             LogInfo("Skipping zero-length file '%s'", fileFullPathAsChar);
             delete[] fileFullPathAsChar;
         }
@@ -623,13 +624,8 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
         }
     }
 
-    int    nameLength              = (int)strlen(nameOfOutputFile) + 1;
-    LPWSTR nameOfOutputFileAsWchar = new WCHAR[nameLength];
-    MultiByteToWideChar(CP_ACP, 0, nameOfOutputFile, -1, nameOfOutputFileAsWchar, nameLength);
-
-    int    patternLength  = (int)strlen(pattern) + 1;
-    LPWSTR patternAsWchar = new WCHAR[patternLength];
-    MultiByteToWideChar(CP_ACP, 0, pattern, -1, patternAsWchar, patternLength);
+    LPWSTR nameOfOutputFileAsWchar = ConvertFromUtf8(nameOfOutputFile);
+    LPWSTR patternAsWchar          = ConvertFromUtf8(pattern);
 
     HANDLE hFileOut = CreateFileW(nameOfOutputFileAsWchar, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
                                   FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);

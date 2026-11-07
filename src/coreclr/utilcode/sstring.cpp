@@ -750,8 +750,6 @@ void SString::ConvertToUnicode(SString &s) const
     }
     CONTRACTL_END;
 
-    int page = 0;
-
     switch (GetRepresentation())
     {
     case REPRESENTATION_EMPTY:
@@ -765,7 +763,6 @@ void SString::ConvertToUnicode(SString &s) const
         return;
 
     case REPRESENTATION_UTF8:
-        page = CP_UTF8;
         break;
 
     case REPRESENTATION_ASCII:
@@ -777,15 +774,12 @@ void SString::ConvertToUnicode(SString &s) const
         UNREACHABLE();
     }
 
-    COUNT_T length = MultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, 0, 0);
-    if (length == 0)
-        ThrowLastError();
+    COUNT_T length = (COUNT_T)minipal_get_length_utf8_to_utf16(GetRawUTF8(), GetRawCount() + 1, 0);
 
-    s.Resize(length-1, REPRESENTATION_UNICODE);
+    s.Resize(length - 1, REPRESENTATION_UNICODE);
 
-    length = MultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, s.GetRawUnicode(), length);
-    if (length == 0)
-        ThrowLastError();
+    if (minipal_convert_utf8_to_utf16(GetRawUTF8(), GetRawCount() + 1, (CHAR16_T*)s.GetRawUnicode(), length, 0) == 0)
+        ThrowWin32(errno);
 
     _ASSERTE(s.IsRepresentation(REPRESENTATION_UNICODE));
 }
@@ -2218,7 +2212,6 @@ bool SString::DacGetUnicode(COUNT_T                                   cBufChars,
     SUPPORTS_DAC;
 
     PVOID pContent = NULL;
-    int iPage = CP_ACP;
 
     if (IsEmpty() || (GetRepresentation() == REPRESENTATION_EMPTY))
     {
@@ -2265,22 +2258,23 @@ bool SString::DacGetUnicode(COUNT_T                                   cBufChars,
             return true;
 
         case REPRESENTATION_UTF8:
-            iPage = CP_UTF8;
-            FALLTHROUGH;
         case REPRESENTATION_ASCII:
-            // iPage defaults to CP_ACP.
+        {
+            PSTR pString = reinterpret_cast<PSTR>(pContent);
+            size_t length = strlen(pString) + 1;
             if (pcNeedChars)
             {
-                *pcNeedChars = MultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, NULL, 0);
+                *pcNeedChars = (COUNT_T)minipal_get_length_utf8_to_utf16(pString, length, 0);
             }
             if (pBuffer && cBufChars)
             {
-                if (!MultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, pBuffer, cBufChars))
+                if (minipal_convert_utf8_to_utf16(pString, length, (CHAR16_T*)pBuffer, cBufChars, 0) == 0)
                 {
                     return false;
                 }
             }
             return true;
+        }
 
         default:
             DacNotImpl();

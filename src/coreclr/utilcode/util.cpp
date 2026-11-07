@@ -1645,11 +1645,12 @@ HRESULT Utf2Quick(
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
     }
-    iReqLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, rNewStr, (int)(cchAvail.Value()));
+    size_t cchSrc = strlen(pStr) + 1;
+    iReqLen = (int)minipal_convert_utf8_to_utf16(pStr, cchSrc, (CHAR16_T*)rNewStr, cchAvail.Value(), 0);
 
     // If the buffer was too small, determine what is required.
     if (iReqLen == 0)
-        bAlloc = iReqLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, 0, 0);
+        bAlloc = iReqLen = (int)minipal_get_length_utf8_to_utf16(pStr, cchSrc, 0);
     // Resize the buffer.  If the buffer was large enough, this just sets the internal
     //  counter, but if it was too small, this will attempt a reallocation.  Note that
     //  the length includes the terminating W('/0').
@@ -1672,7 +1673,7 @@ HRESULT Utf2Quick(
         _ASSERTE_MSG(false, "Integer overflow/underflow");
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
         }
-        iActLen = MultiByteToWideChar(CP_UTF8, 0, pStr, -1, rNewStr, (int)(cchAvail.Value()));
+        iActLen = (int)minipal_convert_utf8_to_utf16(pStr, cchSrc, (CHAR16_T*)rNewStr, cchAvail.Value(), 0);
         _ASSERTE(iReqLen == iActLen);
     }
 ErrExit:

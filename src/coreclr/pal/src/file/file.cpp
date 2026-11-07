@@ -19,6 +19,7 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 #include "pal/palinternal.h"
 #include "pal/file.h"
 #include "pal/utils.h"
+#include <minipal/utf8.h>
 
 #include <time.h>
 #include <stdio.h>
@@ -827,10 +828,14 @@ CreateFileW(
 
     pThread = InternalGetCurrentThread();
 
-    if (lpFileName != NULL)
+    if (lpFileName == NULL)
     {
-        length = (PAL_wcslen(lpFileName)+1) * MaxWCharToAcpLengthFactor;
+        ERROR("CreateFileW called with NULL filename\n");
+        palError = ERROR_PATH_NOT_FOUND;
+        goto done;
     }
+
+    length = (PAL_wcslen(lpFileName)+1) * MaxWCharToAcpLengthFactor;
 
     name = namePathString.OpenStringBuffer(length);
     if (NULL == name)
@@ -839,14 +844,13 @@ CreateFileW(
         goto done;
     }
 
-    size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
-                                NULL, NULL );
+    size = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)lpFileName, PAL_wcslen(lpFileName) + 1, name, length, 0);
 
     if( size == 0 )
     {
         namePathString.CloseBuffer(0);
         DWORD dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failure! error is %d\n", dwLastError);
         palError = ERROR_INTERNAL_ERROR;
         goto done;
     }

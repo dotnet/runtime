@@ -63,22 +63,16 @@ HRESULT Unicode_Utf8_Length(_In_z_ LPCWSTR pString, _Out_ bool * pAllAscii, _Out
 
         * pLength = (DWORD) (p - pString);
     }
-    else // use WideCharToMultiByte to calculate result length
+    else
     {
-        * pLength = WideCharToMultiByte(CP_UTF8, 0, pString, -1, NULL, 0, NULL, NULL);
+        size_t length = minipal_get_length_utf16_to_utf8((const CHAR16_T*)pString, u16_strlen(pString), 0);
 
-        if (*pLength == 0)
-        {
-            return HRESULT_FROM_GetLastError();
-        }
-
-        // Remove the count of null terminator, to be consistent with the all-ASCII case.
-        --*pLength;
-
-        if (*pLength > MAX_LENGTH)
+        if (length > MAX_LENGTH)
         {
             return COR_E_OVERFLOW;
         }
+
+        * pLength = (DWORD)length;
     }
 
     return S_OK;
@@ -131,11 +125,9 @@ HRESULT Unicode_Utf8(_In_z_ LPCWSTR pString, bool allAscii, _Out_writes_bytes_(l
     }
     else
     {
-        length = WideCharToMultiByte(CP_UTF8, 0, pString, -1, pBuffer, (int) length + 1, NULL, NULL);
-
-        if (length == 0)
+        if (minipal_convert_utf16_to_utf8((const CHAR16_T*)pString, u16_strlen(pString), pBuffer, length, 0) == 0)
         {
-            return HRESULT_FROM_GetLastError();
+            return HRESULT_FROM_WIN32(errno);
         }
     }
 
@@ -185,20 +177,14 @@ HRESULT Utf8_Unicode_Length(_In_z_ LPCSTR pString, _Out_ bool * pAllAscii, _Out_
     }
     else
     {
-        * pLength = MultiByteToWideChar(CP_UTF8, 0, pString, -1, NULL, 0);
+        size_t length = minipal_get_length_utf8_to_utf16(pString, strlen(pString), 0);
 
-        if (* pLength == 0)
-        {
-            return HRESULT_FROM_GetLastError();
-        }
-
-        // Remove the count of null terminator, to be consistent with the all-ASCII case.
-        --*pLength;
-
-        if (* pLength > MAX_LENGTH)
+        if (length > MAX_LENGTH)
         {
             return COR_E_OVERFLOW;
         }
+
+        * pLength = (DWORD)length;
     }
 
     return S_OK;
@@ -252,11 +238,9 @@ HRESULT Utf8_Unicode(_In_z_ LPCSTR pString, bool allAscii, _Out_writes_bytes_(le
     }
     else
     {
-        length = MultiByteToWideChar(CP_UTF8, 0, pString, -1, pBuffer, (int) length + 1);
-
-        if (length == 0)
+        if (minipal_convert_utf8_to_utf16(pString, strlen(pString), (CHAR16_T*)pBuffer, length, 0) == 0)
         {
-            return HRESULT_FROM_GetLastError();
+            return HRESULT_FROM_WIN32(errno);
         }
     }
 

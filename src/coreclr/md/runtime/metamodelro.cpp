@@ -102,6 +102,7 @@ CMiniMd::Impl_GetStringW(
     ULONG *pcchBuffer)
 {
     LPCSTR  szString;       // Single byte version.
+    size_t  cchString;      // Length of the single byte version, including the terminator.
     int     iSize;          // Size of resulting string, in wide chars.
     HRESULT hr = NOERROR;
 
@@ -116,19 +117,16 @@ CMiniMd::Impl_GetStringW(
             *pcchBuffer = 0;
         goto ErrExit;
     }
-    iSize = ::MultiByteToWideChar(CP_UTF8, 0, szString, -1, szOut, cchBuffer);
+    cchString = strlen(szString) + 1;
+    if (cchBuffer == 0)
+        iSize = (int)minipal_get_length_utf8_to_utf16(szString, cchString, 0);
+    else
+        iSize = szOut != NULL ? (int)minipal_convert_utf8_to_utf16(szString, cchString, (CHAR16_T*)szOut, cchBuffer, 0) : 0;
     if (iSize == 0)
     {
-        // What was the problem?
-        DWORD dwNT = GetLastError();
-
-        // Not truncation?
-        if (dwNT != ERROR_INSUFFICIENT_BUFFER)
-            IfFailGo(HRESULT_FROM_NT(dwNT));
-
         // Truncation error; get the size required.
         if (pcchBuffer != NULL)
-            *pcchBuffer = ::MultiByteToWideChar(CP_UTF8, 0, szString, -1, NULL, 0);
+            *pcchBuffer = (ULONG)minipal_get_length_utf8_to_utf16(szString, cchString, 0);
 
         if ((szOut != NULL) && (cchBuffer > 0))
         {   // null-terminate the truncated output string

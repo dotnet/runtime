@@ -105,9 +105,10 @@ public:
 
         if (IsValid())
         {
-            int len = WideCharToMultiByte(CP_UTF8,0,wFileName,-1,NULL,0,NULL,NULL);
+            size_t cch = u16_strlen(wFileName)+1;
+            size_t len = minipal_get_length_utf16_to_utf8((const CHAR16_T*)wFileName,cch,0);
             m_fileNameUtf8 = new char[len+1];
-            WideCharToMultiByte(CP_UTF8,0,wFileName,-1,m_fileNameUtf8,len+1,NULL,NULL);
+            minipal_convert_utf16_to_utf8((const CHAR16_T*)wFileName,cch,m_fileNameUtf8,len+1,0);
         }
     }
     ~MappedFileStream()

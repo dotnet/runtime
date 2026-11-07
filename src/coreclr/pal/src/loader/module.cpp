@@ -31,6 +31,7 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include "pal/environ.h"
 #include "pal/map.hpp"
 #include "pal/stackstring.hpp"
+#include <minipal/utf8.h>
 
 #include <sys/param.h>
 #include <errno.h>
@@ -406,8 +407,7 @@ GetModuleFileNameA(
 
     /* Convert module name to Ascii, place it in the supplied buffer */
 
-    name_length = WideCharToMultiByte(CP_ACP, 0, wide_name, -1, lpFileName,
-                                      nSize, nullptr, nullptr);
+    name_length = (INT)minipal_convert_utf16_to_utf8((const CHAR16_T*)wide_name, PAL_wcslen(wide_name) + 1, lpFileName, nSize, 0);
     if (name_length == 0)
     {
         TRACE("Buffer too small to copy module's file name.\n");
@@ -1295,14 +1295,13 @@ static bool LOADConvertLibraryPathWideStringToMultibyteString(
     _ASSERTE(wideLibraryPath != nullptr);
 
     size_t length = (PAL_wcslen(wideLibraryPath)+1) * MaxWCharToAcpLength;
-    *multibyteLibraryPathLengthRef = WideCharToMultiByte(CP_ACP, 0, wideLibraryPath, -1, multibyteLibraryPath,
-                                                        length, nullptr, nullptr);
+    *multibyteLibraryPathLengthRef = (INT)minipal_convert_utf16_to_utf8((const CHAR16_T*)wideLibraryPath, PAL_wcslen(wideLibraryPath) + 1, multibyteLibraryPath, length, 0);
 
     if (*multibyteLibraryPathLengthRef == 0)
     {
         DWORD dwLastError = GetLastError();
 
-        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failure! error is %d\n", dwLastError);
 
         SetLastError(ERROR_INVALID_PARAMETER);
         return false;

@@ -14,6 +14,7 @@ Abstract:
 #include "pal/dbgmsg.h"
 #include "pal/file.h"
 #include "pal/stackstring.hpp"
+#include <minipal/utf8.h>
 
 #include <errno.h>
 
@@ -178,8 +179,7 @@ GetFullPathNameW(
           lpBuffer, lpFilePart);
 
 
-    fileNameLength = WideCharToMultiByte(CP_ACP, 0, lpFileName,
-                                         -1, NULL, 0, NULL, NULL);
+    fileNameLength = lpFileName != NULL ? (int)minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpFileName, PAL_wcslen(lpFileName) + 1, 0) : 0;
     if (fileNameLength == 0)
     {
         /* Couldn't convert to ANSI. That's odd. */
@@ -192,13 +192,11 @@ GetFullPathNameW(
     }
 
     /* Now convert lpFileName to ANSI. */
-    srcSize = WideCharToMultiByte (CP_ACP, 0, lpFileName,
-                                   -1, fileNameA, fileNameLength,
-                                   NULL, NULL );
+    srcSize = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)lpFileName, PAL_wcslen(lpFileName) + 1, fileNameA, fileNameLength, 0);
     if( srcSize == 0 )
     {
         DWORD dwLastError = GetLastError();
-        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        ASSERT("UTF-16 to UTF-8 conversion failure! error is %d\n", dwLastError);
         SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
@@ -221,23 +219,21 @@ GetFullPathNameW(
     }
 
     /* Convert back to Unicode the result */
-    nRet = MultiByteToWideChar( CP_ACP, 0, bufferA, -1,
-                                lpBuffer, nBufferLength );
+    nRet = (DWORD)minipal_convert_utf8_to_utf16(bufferA, strlen(bufferA) + 1, (CHAR16_T*)lpBuffer, nBufferLength, 0);
 
     if (nRet == 0)
     {
         if ( GetLastError() == ERROR_INSUFFICIENT_BUFFER )
         {
             /* get the required length */
-            nRet = MultiByteToWideChar( CP_ACP, 0, bufferA, -1,
-                                        NULL, 0 );
+            nRet = (DWORD)minipal_get_length_utf8_to_utf16(bufferA, strlen(bufferA) + 1, 0);
             SetLastError(ERROR_BUFFER_OVERFLOW);
         }
 
         goto done;
     }
 
-    /* MultiByteToWideChar counts the trailing NULL, but
+    /* The converted length counts the trailing NULL, but
        GetFullPathName does not. */
     nRet--;
 
@@ -245,8 +241,7 @@ GetFullPathNameW(
     if (lpFilePart != NULL)
     {
         *lpFilePart = lpBuffer;
-        *lpFilePart += MultiByteToWideChar( CP_ACP, 0, bufferA,
-                                            lpFilePartA - bufferA, NULL, 0);
+        *lpFilePart += minipal_get_length_utf8_to_utf16(bufferA, lpFilePartA - bufferA, 0);
     }
 
 done:
@@ -602,8 +597,7 @@ SearchPathW(
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
             goto done;
         }
-	    canonical_size = WideCharToMultiByte(CP_ACP, 0, CanonicalPath, -1,
-			    AnsiPath, CanonicalPathLength, NULL, NULL);
+	    canonical_size = minipal_convert_utf16_to_utf8((const CHAR16_T*)CanonicalPath, PAL_wcslen(CanonicalPath) + 1, AnsiPath, CanonicalPathLength, 0);
 	    AnsiPathPS.CloseBuffer(canonical_size);
 
         if(0 == access(AnsiPath, F_OK))
@@ -702,8 +696,7 @@ SearchPathW(
                 SetLastError(ERROR_NOT_ENOUGH_MEMORY);
                 goto done;
             }
-            canonical_size = WideCharToMultiByte(CP_ACP, 0, CanonicalPath, -1,
-                                AnsiPath, CanonicalPathLength, NULL, NULL);
+            canonical_size = minipal_convert_utf16_to_utf8((const CHAR16_T*)CanonicalPath, PAL_wcslen(CanonicalPath) + 1, AnsiPath, CanonicalPathLength, 0);
             AnsiPathPS.CloseBuffer(canonical_size);
 
             if(0 == access(AnsiPath, F_OK))

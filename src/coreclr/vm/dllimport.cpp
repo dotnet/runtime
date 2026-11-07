@@ -5960,7 +5960,8 @@ namespace
             StackSString ssLibName(SString::Utf8, pMD->GetLibName());
 
             WCHAR wszEPName[50];
-            if (MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)pMD->GetEntrypointName(), -1, wszEPName, sizeof(wszEPName)/sizeof(WCHAR)) == 0)
+            LPCSTR szEPName = (LPCSTR)pMD->GetEntrypointName();
+            if (minipal_convert_utf8_to_utf16(szEPName, strlen(szEPName) + 1, (CHAR16_T*)wszEPName, ARRAY_SIZE(wszEPName), 0) == 0)
             {
                 wszEPName[0] = W('?');
                 wszEPName[1] = W('\0');

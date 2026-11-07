@@ -530,11 +530,6 @@ FlushFileBuffers(
          IN HANDLE hFile);
 
 PALIMPORT
-UINT
-PALAPI
-GetConsoleOutputCP();
-
-PALIMPORT
 DWORD
 PALAPI
 GetFullPathNameW(
@@ -2151,44 +2146,6 @@ FlushInstructionCache(
               IN HANDLE hProcess,
               IN LPCVOID lpBaseAddress,
               IN SIZE_T dwSize);
-
-#define MAX_LEADBYTES         12
-#define MAX_DEFAULTCHAR       2
-
-typedef struct _cpinfo {
-    UINT MaxCharSize;
-    BYTE DefaultChar[MAX_DEFAULTCHAR];
-    BYTE LeadByte[MAX_LEADBYTES];
-} CPINFO, *LPCPINFO;
-
-#define MB_PRECOMPOSED            0x00000001
-#define MB_ERR_INVALID_CHARS      0x00000008
-
-PALIMPORT
-int
-PALAPI
-MultiByteToWideChar(
-            IN UINT CodePage,
-            IN DWORD dwFlags,
-            IN LPCSTR lpMultiByteStr,
-            IN int cbMultiByte,
-            OUT LPWSTR lpWideCharStr,
-            IN int cchWideChar);
-
-#define WC_NO_BEST_FIT_CHARS      0x00000400
-
-PALIMPORT
-int
-PALAPI
-WideCharToMultiByte(
-            IN UINT CodePage,
-            IN DWORD dwFlags,
-            IN LPCWSTR lpWideCharStr,
-            IN int cchWideChar,
-            OUT LPSTR lpMultiByteStr,
-            IN int cbMultyByte,
-            IN LPCSTR lpDefaultChar,
-            OUT LPBOOL lpUsedDefaultChar);
 
 #define EXCEPTION_NONCONTINUABLE 0x1
 #define EXCEPTION_UNWINDING 0x2

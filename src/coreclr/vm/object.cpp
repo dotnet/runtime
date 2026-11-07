@@ -682,7 +682,7 @@ STRINGREF StringObject::NewString(LPCUTF8 psz)
     }
     CQuickBytes qb;
     WCHAR* pwsz = (WCHAR*) qb.AllocThrows((length) * sizeof(WCHAR));
-    length = MultiByteToWideChar(CP_UTF8, 0, psz, length, pwsz, length);
+    length = (int)minipal_convert_utf8_to_utf16(psz, length, (CHAR16_T*)pwsz, length, 0);
     if (length == 0) {
         COMPlusThrow(kArgumentException, W("Arg_InvalidUTF8String"));
     }
@@ -711,7 +711,7 @@ STRINGREF StringObject::NewString(LPCUTF8 psz, int cBytes)
         COMPlusThrowOM();
     CQuickBytes qb;
     WCHAR* pwsz = (WCHAR*) qb.AllocThrows(cWszBytes);
-    int length = MultiByteToWideChar(CP_UTF8, 0, psz, cBytes, pwsz, cBytes);
+    int length = (int)minipal_convert_utf8_to_utf16(psz, cBytes, (CHAR16_T*)pwsz, cBytes, 0);
     if (length == 0) {
         COMPlusThrow(kArgumentException, W("Arg_InvalidUTF8String"));
     }

@@ -520,11 +520,12 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
 
     for (int i = 0; i < locals.size; i++)
     {
-        size_t sizeRequired = WideCharToMultiByte(CP_UTF8, 0, methodDebugInfo.locals[i].name, -1, NULL, 0, NULL, NULL);
+        const CHAR16_T* localName = (const CHAR16_T*)methodDebugInfo.locals[i].name;
+        size_t cchLocalName = u16_strlen(methodDebugInfo.locals[i].name) + 1;
+        size_t sizeRequired = minipal_get_length_utf16_to_utf8(localName, cchLocalName, 0);
         locals.localsName[i] = new char[sizeRequired];
 
-        int len = WideCharToMultiByte(
-            CP_UTF8, 0, methodDebugInfo.locals[i].name, -1, locals.localsName[i], sizeRequired, NULL, NULL);
+        minipal_convert_utf16_to_utf8(localName, cchLocalName, locals.localsName[i], sizeRequired, 0);
         locals.localsScope[i].ilStartOffset = methodDebugInfo.locals[i].startOffset;
         locals.localsScope[i].ilEndOffset = methodDebugInfo.locals[i].endOffset;
     }
@@ -552,7 +553,7 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
             if ((ULONG)(methodDebugInfo.points[i].ilOffset) == map[j].ilOffset)
             {
                 s.fileIndex = 0;
-                int len = WideCharToMultiByte(CP_UTF8, 0, sp.fileName, -1, s.fileName, sizeof(s.fileName), NULL, NULL);
+                size_t len = minipal_convert_utf16_to_utf8((const CHAR16_T*)sp.fileName, u16_strlen(sp.fileName), s.fileName, sizeof(s.fileName) - 1, 0);
                 s.fileName[len] = 0;
                 s.lineNumber = sp.lineNumber;
                 break;
@@ -2503,11 +2504,10 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr, PCODE pCode, const C
     const char* szModName = modName.GetUTF8();
     const char* szModuleFile = SplitFilename(szModName);
 
-    int length = MultiByteToWideChar(CP_UTF8, 0, szModuleFile, -1, NULL, 0);
-    if (length == 0)
-        return;
+    size_t cchModuleFile = strlen(szModuleFile) + 1;
+    size_t length = minipal_get_length_utf8_to_utf16(szModuleFile, cchModuleFile, 0);
     NewArrayHolder<WCHAR> wszModuleFile = new WCHAR[length+1];
-    length = MultiByteToWideChar(CP_UTF8, 0, szModuleFile, -1, wszModuleFile, length);
+    length = minipal_convert_utf8_to_utf16(szModuleFile, cchModuleFile, (CHAR16_T*)wszModuleFile.GetValue(), length, 0);
 
     if (length == 0)
         return;

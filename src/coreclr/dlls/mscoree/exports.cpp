@@ -120,13 +120,14 @@ struct HostPropertyArraysTraits final
 // Convert 8 bit string to unicode
 static LPCWSTR StringToUnicode(LPCSTR str)
 {
-    int length = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+    size_t cch = strlen(str) + 1;
+    size_t length = minipal_get_length_utf8_to_utf16(str, cch, 0);
     ASSERTE_ALL_BUILDS(length != 0);
 
     LPWSTR result = new (nothrow) WCHAR[length];
     ASSERTE_ALL_BUILDS(result != NULL);
 
-    length = MultiByteToWideChar(CP_UTF8, 0, str, -1, result, length);
+    length = minipal_convert_utf8_to_utf16(str, cch, (CHAR16_T*)result, length, 0);
     ASSERTE_ALL_BUILDS(length != 0);
 
     return result;
