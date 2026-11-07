@@ -5,7 +5,7 @@
 //
 // This file contains the implementation of thread suspension. The implementation of thread suspension
 // used to be spread through multiple places. That is why, many methods still live in their own homes
-// (class Thread, class ThreadStore, etc.). They should be eventually refactored into class ThreadSuspend.
+// (class Thread, class ThreadStore, etc.). They should be eventually refactored into class ThreadSuspend
 
 #include "common.h"
 #include "CLREventBase.h"
