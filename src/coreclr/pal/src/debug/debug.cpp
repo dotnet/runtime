@@ -14,7 +14,6 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 
 #include "pal/thread.hpp"
 #include "pal/procobj.hpp"
-#include "pal/file.hpp"
 
 #include "pal/palinternal.h"
 #include "pal/process.h"

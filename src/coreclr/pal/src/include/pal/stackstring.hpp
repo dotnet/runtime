@@ -252,8 +252,3 @@ typedef StackString<MAX_PATH, CHAR> PathCharString;
 typedef StackString<MAX_PATH, WCHAR> PathWCharString;
 #endif
 #endif
-
-// Some Helper Definitions
-DWORD
-GetCurrentDirectoryA(
-         PathCharString& lpBuffer);

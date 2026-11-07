@@ -197,19 +197,3 @@ mkAbsoluteFilenameA (
     return (sizeAPN);
 
 }
-
-BOOL
-DeleteFileW(
-        IN LPCWSTR lpFileName)
-{
-    _ASSERTE(lpFileName != NULL);
-
-    CHAR mbFileName[ MAX_PATH ];
-
-    if (minipal_convert_utf16_to_utf8((const CHAR16_T*)lpFileName, wcslen(lpFileName) + 1, mbFileName, sizeof(mbFileName), 0) != 0)
-    {
-        return remove(mbFileName) == 0;
-    }
-
-    return FALSE;
-}

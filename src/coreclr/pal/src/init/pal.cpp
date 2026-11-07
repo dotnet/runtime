@@ -14,8 +14,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 
 #include "pal/thread.hpp"
 #include "pal/procobj.hpp"
-#include "pal/file.hpp"
-#include "pal/map.hpp"
 #include "../objmgr/listedobjectmanager.hpp"
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
@@ -457,14 +455,6 @@ Initialize(
 
         palError = ERROR_GEN_FAILURE;
 
-        /* Initialize the File mapping critical section. */
-        if (FALSE == MAPInitialize())
-        {
-            ERROR("Unable to initialize file mapping support\n");
-            palError = ERROR_PALINIT_MAP;
-            goto CLEANUP6;
-        }
-
         if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
         {
             // Initialize before first thread is created for faster load on Linux
@@ -482,17 +472,6 @@ Initialize(
             ERROR("Unable to initialize SEH support\n");
             palError = ERROR_PALINIT_SEH;
             goto CLEANUP10;
-        }
-
-        if (flags & PAL_INITIALIZE_STD_HANDLES)
-        {
-            /* create file objects for standard handles */
-            if (!FILEInitStdHandles())
-            {
-                ERROR("Unable to initialize standard file handles\n");
-                palError = ERROR_PALINIT_STD_HANDLES;
-                goto CLEANUP14;
-            }
         }
 
         TRACE("First-time PAL initialization complete.\n");
@@ -516,11 +495,7 @@ Initialize(
     }
     goto done;
 
-CLEANUP14:
-    SEHCleanup();
 CLEANUP10:
-    MAPCleanup();
-CLEANUP6:
     // Cleanup initial process data
 CLEANUP2:
     free(exe_path);
