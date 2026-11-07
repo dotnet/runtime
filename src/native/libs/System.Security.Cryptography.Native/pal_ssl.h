@@ -306,6 +306,11 @@ Returns 1 when negotiation is requested; 0 once a handshake has finished.
 PALEXPORT int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl);
 
 /*
+Returns the number of application-data bytes already decrypted by SSL_peek.
+*/
+PALEXPORT int32_t CryptoNative_SslPending(SSL* ssl);
+
+/*
 Shims the SSL_shutdown method.
 
 Returns:

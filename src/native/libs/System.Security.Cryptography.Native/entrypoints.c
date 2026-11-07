@@ -405,6 +405,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslGetSession)
     DllImportEntry(CryptoNative_SslGetVersion)
     DllImportEntry(CryptoNative_SslRead)
+    DllImportEntry(CryptoNative_SslPending)
     DllImportEntry(CryptoNative_SslSessionFree)
     DllImportEntry(CryptoNative_SslSessionGetHostname)
     DllImportEntry(CryptoNative_SslSessionSetHostname)
