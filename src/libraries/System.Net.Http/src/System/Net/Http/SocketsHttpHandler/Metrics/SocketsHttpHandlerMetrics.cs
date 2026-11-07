@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Runtime.CompilerServices;
 
 namespace System.Net.Http.Metrics
 {
@@ -65,10 +66,40 @@ namespace System.Net.Http.Metrics
 
     /// <summary>
     /// Thread-safe tracker for open connection counts by tag combination.
+    /// Shared per meter together with its http.client.open_connections instrument, like <see cref="ActiveRequestsTracker"/>.
     /// </summary>
     internal sealed class OpenConnectionsTracker
     {
+        private static readonly ConditionalWeakTable<Meter, OpenConnectionsTracker> s_trackers = new();
+
         private readonly ConcurrentDictionary<OpenConnectionsTagKey, long> _counts = new();
+        private ObservableUpDownCounter<long>? _instrument;
+
+        private OpenConnectionsTracker()
+        {
+        }
+
+        public bool Enabled => _instrument?.Enabled ?? false;
+
+        public static OpenConnectionsTracker GetOrCreate(Meter meter)
+        {
+            if (!s_trackers.TryGetValue(meter, out OpenConnectionsTracker? tracker))
+            {
+                // See ActiveRequestsTracker.GetOrCreate.
+                OpenConnectionsTracker created = new();
+                tracker = s_trackers.GetOrAdd(meter, created);
+                if (tracker == created)
+                {
+                    created._instrument = meter.CreateObservableUpDownCounter<long>(
+                        name: "http.client.open_connections",
+                        observeValues: created.GetMeasurements,
+                        unit: "{connection}",
+                        description: "Number of outbound HTTP connections that are currently active or idle on the client.");
+                }
+            }
+
+            return tracker;
+        }
 
         /// <summary>
         /// Increments the count for the specified tag combination.
@@ -132,9 +163,7 @@ namespace System.Net.Http.Metrics
 
     internal sealed class SocketsHttpHandlerMetrics
     {
-        public readonly OpenConnectionsTracker OpenConnectionsTracker = new();
-
-        public readonly ObservableUpDownCounter<long> OpenConnections;
+        public readonly OpenConnectionsTracker OpenConnectionsTracker;
 
         public readonly Histogram<double> ConnectionDuration;
 
@@ -142,11 +171,7 @@ namespace System.Net.Http.Metrics
 
         public SocketsHttpHandlerMetrics(Meter meter)
         {
-            OpenConnections = meter.CreateObservableUpDownCounter<long>(
-                name: "http.client.open_connections",
-                observeValues: OpenConnectionsTracker.GetMeasurements,
-                unit: "{connection}",
-                description: "Number of outbound HTTP connections that are currently active or idle on the client.");
+            OpenConnectionsTracker = OpenConnectionsTracker.GetOrCreate(meter);
 
             ConnectionDuration = meter.CreateHistogram<double>(
                 name: "http.client.connection.duration",
