@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using Microsoft.DotNet.RemoteExecutor;
+using System.ComponentModel;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.MemoryMappedFiles.Tests
@@ -11,7 +15,7 @@ namespace System.IO.MemoryMappedFiles.Tests
     /// <summary>
     /// Tests for MemoryMappedFile.CreateNew.
     /// </summary>
-    public class MemoryMappedFileTests_CreateNew : MemoryMappedFilesTestBase
+    public partial class MemoryMappedFileTests_CreateNew : MemoryMappedFilesTestBase
     {
         /// <summary>
         /// Tests invalid arguments to the CreateNew mapName parameter.
@@ -99,6 +103,98 @@ namespace System.IO.MemoryMappedFiles.Tests
                 Assert.Throws<IOException>(() => MemoryMappedFile.CreateNew(null, long.MaxValue));
             }
         }
+
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void FailedViewCommit_DoesNotCreateAccessor()
+        {
+            if (IntPtr.Size != 8)
+            {
+                return;
+            }
+
+            RemoteExecutor.Invoke(new Action(FailedViewCommit_OtherProcess)).Dispose();
+        }
+
+        private static void FailedViewCommit_OtherProcess()
+        {
+            using SafeFileHandle job = CreateJobObjectW(IntPtr.Zero, IntPtr.Zero);
+            if (job.IsInvalid)
+            {
+                throw new Win32Exception(Marshal.GetLastPInvokeError());
+            }
+
+            JobObjectExtendedLimitInformation limits = default;
+            limits.BasicLimitInformation.LimitFlags = 0x100; // JOB_OBJECT_LIMIT_PROCESS_MEMORY
+            limits.ProcessMemoryLimit = 512 * 1024 * 1024;
+            if (!SetInformationJobObject(job, 9, ref limits, (uint)Marshal.SizeOf<JobObjectExtendedLimitInformation>()))
+            {
+                throw new Win32Exception(Marshal.GetLastPInvokeError());
+            }
+
+            using Process process = Process.GetCurrentProcess();
+            if (!AssignProcessToJobObject(job, process.Handle))
+            {
+                throw new Win32Exception(Marshal.GetLastPInvokeError());
+            }
+
+            // The mapping reserves address space; committing the view exceeds this process's job limit.
+            using MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 1L << 30,
+                MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.DelayAllocatePages, HandleInheritability.None);
+
+            AssertExtensions.ThrowsAny<IOException, OutOfMemoryException>(() =>
+            {
+                using MemoryMappedViewAccessor accessor = mmf.CreateViewAccessor(0, 1L << 30);
+            });
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JobObjectBasicLimitInformation
+        {
+            public long PerProcessUserTimeLimit;
+            public long PerJobUserTimeLimit;
+            public uint LimitFlags;
+            public nuint MinimumWorkingSetSize;
+            public nuint MaximumWorkingSetSize;
+            public uint ActiveProcessLimit;
+            public nuint Affinity;
+            public uint PriorityClass;
+            public uint SchedulingClass;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct IoCounters
+        {
+            public ulong ReadOperationCount;
+            public ulong WriteOperationCount;
+            public ulong OtherOperationCount;
+            public ulong ReadTransferCount;
+            public ulong WriteTransferCount;
+            public ulong OtherTransferCount;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JobObjectExtendedLimitInformation
+        {
+            public JobObjectBasicLimitInformation BasicLimitInformation;
+            public IoCounters IoInfo;
+            public nuint ProcessMemoryLimit;
+            public nuint JobMemoryLimit;
+            public nuint PeakProcessMemoryUsed;
+            public nuint PeakJobMemoryUsed;
+        }
+
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        private static partial SafeFileHandle CreateJobObjectW(IntPtr jobAttributes, IntPtr name);
+
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool SetInformationJobObject(SafeFileHandle job, int informationClass,
+            ref JobObjectExtendedLimitInformation information, uint informationLength);
+
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool AssignProcessToJobObject(SafeFileHandle job, IntPtr process);
 
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
