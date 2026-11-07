@@ -40,6 +40,7 @@ public static class Entrypoints
         delegate* unmanaged<uint, uint, byte*, void*, int> writeThreadContext,
         delegate* unmanaged<uint, ulong*, void*, int> allocVirtual,
         void* delegateContext,
+        IntPtr dataTarget,
         IntPtr* handle)
     {
         try
@@ -101,6 +102,10 @@ public static class Entrypoints
                 };
             }
 
+            object? debuggerTarget = dataTarget != IntPtr.Zero
+                ? ComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged((void*)dataTarget)
+                : null;
+
             ContractDescriptorTarget target = ContractDescriptorTarget.Create(
                 descriptor,
                 (address, buffer) =>
@@ -145,7 +150,8 @@ public static class Entrypoints
                 },
                 setThreadContextDelegate,
                 allocDelegate,
-                [Contracts.CoreCLRContracts.Register]);
+                [Contracts.CoreCLRContracts.Register],
+                getMetadata: debuggerTarget is null ? null : EntrypointHelpers.CreateMetadataCallback(debuggerTarget));
 
             GCHandle gcHandle = GCHandle.Alloc(new CdacHandle(target, new Lock()));
             *handle = GCHandle.ToIntPtr(gcHandle);
@@ -468,6 +474,7 @@ public static class Entrypoints
                 return HResults.E_NOTIMPL;
             },
             [Contracts.CoreCLRContracts.Register],
-            runtimeBase);
+            runtimeBase,
+            EntrypointHelpers.CreateMetadataCallback(targetObject));
     }
 }

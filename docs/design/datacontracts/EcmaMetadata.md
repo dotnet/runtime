@@ -113,6 +113,8 @@ MetadataReader? GetMetadata(ModuleHandle handle)
             return null;
         case AvailableMetadataType.ReadOnly:
         {
+            // If reading the metadata bytes fails, it asks the host through
+            // Target.TryGetMetadata. The host chooses how to locate metadata.
             TargetSpan address = GetReadOnlyMetadataAddress(handle);
             byte[] data = new byte[address.Size];
             _target.ReadBuffer(address.Address, data);

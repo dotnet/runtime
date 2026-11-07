@@ -471,7 +471,7 @@ void CdacStressPolicy::Initialize()
     uint64_t descriptorAddr = reinterpret_cast<uint64_t>(&DotNetRuntimeContractDescriptor);
 
     // Initialize the cDAC reader with in-process callbacks (no write_thread_context or alloc_virtual for in-process stress)
-    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContextCallback, nullptr, nullptr, nullptr, &s_cdacHandle) != 0)
+    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContextCallback, nullptr, nullptr, nullptr, nullptr, &s_cdacHandle) != 0)
     {
         CDAC_ERR("cdac_reader_init failed (descriptorAddr=0x%llx).\n",
                  (unsigned long long)descriptorAddr);
