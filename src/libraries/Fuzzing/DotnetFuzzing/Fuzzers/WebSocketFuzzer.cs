@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Unicode;
 
 namespace DotnetFuzzing.Fuzzers;
 
@@ -18,6 +20,7 @@ internal sealed class WebSocketFuzzer : IFuzzer
     private readonly ReadOnlyMemory<byte>[] _segments = new ReadOnlyMemory<byte>[4096];
     private readonly byte[] _receiveBuffer = new byte[ushort.MaxValue + 1];
     private readonly byte[] _clientOperationsBuffer = new byte[ushort.MaxValue + 1];
+    private readonly ArrayBufferWriter<byte> _textPayload = new();
 
     [Flags]
     private enum Options : byte
@@ -74,12 +77,23 @@ internal sealed class WebSocketFuzzer : IFuzzer
     {
         using CancellationTokenSource cts = new();
         cts.CancelAfter(TimeSpan.FromSeconds(30));
+        _textPayload.ResetWrittenCount();
 
         try
         {
             while (true) // We should always exit from reading EOF
             {
                 ValueWebSocketReceiveResult result = await webSocket.ReceiveAsync(ReadBool() ? Memory<byte>.Empty : receiveBuffer, cts.Token);
+
+                if (result.MessageType == WebSocketMessageType.Text)
+                {
+                    _textPayload.Write(receiveBuffer.Span.Slice(0, result.Count));
+                    if (result.EndOfMessage)
+                    {
+                        Assert.True(Utf8.IsValid(_textPayload.WrittenSpan));
+                        _textPayload.ResetWrittenCount();
+                    }
+                }
 
                 if (ReadBool())
                 {

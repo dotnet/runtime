@@ -564,18 +564,21 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
 #if READYTORUN
-            MethodDesc[] inlineeArray;
-            if (_inlinedMethods != null)
+            if (!_compilation.NodeFactory.OptimizationFlags.StripInliningInfo)
             {
-                inlineeArray = new MethodDesc[_inlinedMethods.Count];
-                _inlinedMethods.CopyTo(inlineeArray);
-                Array.Sort(inlineeArray, TypeSystemComparer.Instance.Compare);
+                MethodDesc[] inlineeArray;
+                if (_inlinedMethods != null)
+                {
+                    inlineeArray = new MethodDesc[_inlinedMethods.Count];
+                    _inlinedMethods.CopyTo(inlineeArray);
+                    Array.Sort(inlineeArray, TypeSystemComparer.Instance.Compare);
+                }
+                else
+                {
+                    inlineeArray = Array.Empty<MethodDesc>();
+                }
+                _methodCodeNode.InitializeInliningInfo(inlineeArray, _compilation.NodeFactory);
             }
-            else
-            {
-                inlineeArray = Array.Empty<MethodDesc>();
-            }
-            _methodCodeNode.InitializeInliningInfo(inlineeArray, _compilation.NodeFactory);
 
             if (RequiresInstructionSetSupportFixup())
             {

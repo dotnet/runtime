@@ -249,36 +249,35 @@ void ReadMCLToArray(char* mclFilename, int** arr, int* count)
     *arr       = nullptr;
     char* buff = nullptr;
 
-    HANDLE hFile = CreateFileA(mclFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                               FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    FILE* hFile = fopen(mclFilename, "rb");
 
-    if (hFile == INVALID_HANDLE_VALUE)
+    if (hFile == nullptr)
     {
-        LogError("Unable to open '%s'. GetLastError()=%u", mclFilename, GetLastError());
+        LogError("Unable to open '%s'. errno=%d", mclFilename, errno);
         goto Cleanup;
     }
 
-    LARGE_INTEGER DataTemp;
-    if (GetFileSizeEx(hFile, &DataTemp) == 0)
+    int64_t fileSize;
+    fileSize = fgetsize(hFile);
+    if (fileSize < 0)
     {
-        LogError("GetFileSizeEx failed. GetLastError()=%u", GetLastError());
+        LogError("fgetsize failed. errno=%d", errno);
         goto Cleanup;
     }
 
-    if (DataTemp.QuadPart > MAXMCLFILESIZE)
+    if (fileSize > MAXMCLFILESIZE)
     {
-        LogError("Size %d exceeds max size of %d", DataTemp.QuadPart, MAXMCLFILESIZE);
+        LogError("Size %lld exceeds max size of %d", (long long)fileSize, MAXMCLFILESIZE);
         goto Cleanup;
     }
 
     int sz;
-    sz = (int)(DataTemp.QuadPart);
+    sz = (int)fileSize;
 
     buff = new char[sz];
-    DWORD bytesRead;
-    if (ReadFile(hFile, buff, sz, &bytesRead, nullptr) == 0)
+    if (fread(buff, 1, sz, hFile) != (size_t)sz)
     {
-        LogError("ReadFile failed. GetLastError()=%u", GetLastError());
+        LogError("fread failed. errno=%d", errno);
         goto Cleanup;
     }
 
@@ -309,19 +308,18 @@ Cleanup:
     if (buff != nullptr)
         delete[] buff;
 
-    if (hFile != INVALID_HANDLE_VALUE)
-        CloseHandle(hFile);
+    if (hFile != nullptr)
+        fclose(hFile);
 }
 
 bool WriteArrayToMCL(char* mclFilename, int* arr, int count)
 {
-    HANDLE hMCLFile =
-        CreateFileA(mclFilename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    FILE* hMCLFile = fopen(mclFilename, "wb");
     bool result = true;
 
-    if (hMCLFile == INVALID_HANDLE_VALUE)
+    if (hMCLFile == nullptr)
     {
-        LogError("Failed to open output file '%s'. GetLastError()=%u", mclFilename, GetLastError());
+        LogError("Failed to open output file '%s'. errno=%d", mclFilename, errno);
         result = false;
         goto Cleanup;
     }
@@ -330,21 +328,23 @@ bool WriteArrayToMCL(char* mclFilename, int* arr, int count)
     {
         char  strMethodIndex[12];
         DWORD charCount    = 0;
-        DWORD bytesWritten = 0;
 
         charCount = sprintf_s(strMethodIndex, sizeof(strMethodIndex), "%d\r\n", arr[i]);
 
-        if (!WriteFile(hMCLFile, strMethodIndex, charCount, &bytesWritten, nullptr) || (bytesWritten != charCount))
+        if (fwrite(strMethodIndex, 1, charCount, hMCLFile) != charCount)
         {
-            LogError("Failed to write method index '%d'. GetLastError()=%u", strMethodIndex, GetLastError());
+            LogError("Failed to write method index '%d'. errno=%d", arr[i], errno);
             result = false;
             goto Cleanup;
         }
     }
 
 Cleanup:
-    if (hMCLFile != INVALID_HANDLE_VALUE)
-        CloseHandle(hMCLFile);
+    if (hMCLFile != nullptr && fclose(hMCLFile) != 0)
+    {
+        LogError("Failed to close output file '%s'. errno=%d", mclFilename, errno);
+        result = false;
+    }
 
     return result;
 }

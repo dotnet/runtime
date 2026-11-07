@@ -138,6 +138,8 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 * [Windows x64](https://learn.microsoft.com/en-us/cpp/build/exception-handling-x64)
 * [Windows ARM64](https://learn.microsoft.com/en-us/cpp/build/arm64-exception-handling)
 
+On ARM64, the `pac` unwind opcode strips pointer authentication bits from `Lr` using the target's [PlatformMetadata](./PlatformMetadata.md) pointer-authentication mask before `Lr` is copied to `Pc`. The same mask is applied to return addresses recovered from explicit Frames, both when reporting the return address and when updating the context's instruction pointer.  Since pointer authentication keys are not available via the data contract, return addresses cannot be authenticated.
+
 <!-- BEGIN GENERATED: usage contract=StackWalk version=c1 -->
 ### Data descriptors used
 
@@ -205,8 +207,9 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
 | `PortableEntryPoint` | `ActualCode` | `pointer` | Native code for the entrypoint; on WebAssembly R2R code this is a function-table index (only defined if `FeaturePortableEntrypoints` is enabled) |
+| `ReadyToRunInfo` | `CompositeInfo` | `pointer` | Pointer to composite R2R info - or itself for non-composite |
 | `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
-| `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
+| `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image; unset for component assemblies of a composite image, so it is read from the `CompositeInfo` |
 | `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
 | `ReadyToRunInfo` | `NumImportSections` | `uint32` | Number of ReadyToRun import sections |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
@@ -871,7 +874,7 @@ GCRefMap resolution from a frame's `Indirection` pointer proceeds as follows:
 
 1. Call `FindReadyToRunModule(indirection)` (see [ExecutionManager contract](./ExecutionManager.md)) to find the ReadyToRun module containing the import slot.
 2. Load the module's `ReadyToRunInfo` to access the import section array.
-3. Compute the RVA of the indirection address: `rva = indirection - imageBase`.
+3. Compute the RVA of the indirection address: `rva = indirection - imageBase`, where `imageBase` is the `LoadedImageBase` of the `ReadyToRunInfo`'s `CompositeInfo`.
 4. Search through `READYTORUN_IMPORT_SECTION` entries to find the section containing the RVA.
 5. Compute the slot index within the section: `index = (rva - sectionVA) / entrySize`.
 6. If the section has the `GCRefMap` flag (`0x0008`), read the DWORD at `imageBase + Signatures + index * 4`. This RVA points directly to the GCRefMap prefix of the import signature.

@@ -269,6 +269,15 @@ logical frame address from a hardcoded `$varN`, and the producer does not advert
 local indices. A future producer that changes stack records away from base `2` requires a
 coordinated, fail-loud reader update.
 
+### WebAssembly Variable Locations
+
+`GetMethodVarInfo` reports WASM variable locations with the same kinds and register numbers as
+the Vars stream; a consumer that needs a WASM local index subtracts `WASM_LOCAL_REGNUM_BASE`.
+WASM local index spaces are per function, and a method's funclets are separate WASM functions from
+its root (`WasmRegAlloc` in `src/coreclr/jit/regallocwasm.cpp`), so a consumer must establish which
+WASM function a frame is in before using a local index. The JIT never emits `VLT_REG_FP` or
+`VLT_FPSTK` on WASM; `f32` and `f64` locals are reported as `VLT_REG`.
+
 ### Async Suspension Point APIs
 
 We also support decoding async suspension points (and their captured continuation-object locals) from the `AsyncInfo` chunk of the debug info blob. The chunk is present only for methods that the JIT compiled with runtime-async suspension points; for all other methods, `AsyncInfoSize` is `0` in the FAT header and the API returns an empty list.
