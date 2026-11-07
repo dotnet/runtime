@@ -73,11 +73,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    if (!string.IsNullOrEmpty(value))
+                    if (value is not null)
                     {
                         return ParseInt(value, section.Path);
                     }
                 }
+                return null;
             }
             else if (type == typeof(string))
             {
@@ -89,6 +90,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     return value;
                 }
+                return null;
             }
             else if (type == typeof(float))
             {
@@ -98,11 +100,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    if (!string.IsNullOrEmpty(value))
+                    if (value is not null)
                     {
                         return ParseFloat(value, section.Path);
                     }
                 }
+                return null;
             }
             else if (type == typeof(double))
             {
@@ -112,11 +115,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    if (!string.IsNullOrEmpty(value))
+                    if (value is not null)
                     {
                         return ParseDouble(value, section.Path);
                     }
                 }
+                return null;
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
