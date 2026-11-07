@@ -6,6 +6,10 @@ project(CoreCLR)
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
+if(CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_TARGET_WIN32)
+  message(FATAL_ERROR "CoreCLR does not support x86 on non-Windows platforms.")
+endif()
+
 include_directories("${CLR_SRC_NATIVE_DIR}")
 include_directories("${CLR_SRC_NATIVE_DIR}/inc")
 
@@ -39,20 +43,18 @@ if(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions(_WASI_EMULATED_PROCESS_CLOCKS)
   add_compile_definitions(_WASI_EMULATED_MMAN)
   add_compile_definitions(_WASI_EMULATED_GETPID)
-  # EventPipe / diag-server PAL require sockets we have not validated
-  # for the WASI bring-up; revisit once corerun.wasm runs.
-  set(FEATURE_EVENT_TRACE 0)
-  set(FEATURE_PERFTRACING 0)
   include_directories(BEFORE SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/pal/src/include/pal/wasi)
-  # Cross-compile try_run() answers — wasm32 binaries cannot execute on
-  # the build host, so pre-seed the cache.
-  set(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1 CACHE STRING "" FORCE)
-  set(HAVE_WORKING_GETTIMEOFDAY_EXITCODE 0 CACHE STRING "" FORCE)
-  set(HAVE_WORKING_CLOCK_GETTIME_EXITCODE 0 CACHE STRING "" FORCE)
-  set(HAVE_PROCFS_STATM_EXITCODE 1 CACHE STRING "" FORCE)
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
+
+# WebAssembly targets are single-threaded unless threads are explicitly enabled.
+if(NOT DEFINED FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  set(FEATURE_MULTITHREADING 1)
+endif()
+if(FEATURE_MULTITHREADING)
+  add_compile_definitions(FEATURE_MULTITHREADING)
+endif()
 
 #----------------------------------------------------
 # Cross target Component build specific configuration
@@ -128,7 +130,7 @@ if(CLR_CMAKE_HOST_UNIX)
         endif()
     endif()
 
-    if(CLR_CMAKE_TARGET_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_RISCV64))
+    if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_RISCV64)
       add_linker_flag(-Wl,-z,notext)
     endif()
 
@@ -290,9 +292,9 @@ endif(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
 add_subdirectory(debug/dbgutil)
 
 if(CLR_CMAKE_HOST_UNIX)
-  if(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
+  if(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_ANDROID))
     add_subdirectory(debug/createdump)
-  endif(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
+  endif(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_ANDROID))
 
   # The CoreCLR PAL used to redefine NULL, which caused a number of null conversion and arithmetic
   # warnings and errors to be suppressed.

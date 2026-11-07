@@ -16,6 +16,7 @@
 #include "gcprofiler/gcprofiler.h"
 #include "handlesprofiler/handlesprofiler.h"
 #include "ijw/ijwprofiler.h"
+#include "instrumentedilmap/instrumentedilmap.h"
 #include "metadatagetdispenser/metadatagetdispenser.h"
 #include "nullprofiler/nullprofiler.h"
 #include "rejitprofiler/rejitprofiler.h"
@@ -128,6 +129,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == ReleaseOnDetach::GetClsid())
     {
         profiler = new ReleaseOnDetach();
+    }
+    else if (clsid == InstrumentedILMapProfiler::GetClsid())
+    {
+        profiler = new InstrumentedILMapProfiler();
     }
     else if (clsid == RuntimeAsyncApisProfiler::GetClsid())
     {

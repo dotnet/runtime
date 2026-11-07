@@ -519,15 +519,6 @@ FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
 }
 FCIMPLEND
 
-FCIMPL0(UINT32, GCInterface::GetMemoryLoad)
-{
-    FCALL_CONTRACT;
-
-    int result = (INT32)GCHeapUtilities::GetGCHeap()->GetMemoryLoad();
-    return result;
-}
-FCIMPLEND
-
 FCIMPL0(int, GCInterface::GetGcLatencyMode)
 {
     FCALL_CONTRACT;
@@ -1087,9 +1078,7 @@ void GCInterface::EnumerateConfigurationValues(void* configurationContext, Enume
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(configurationContext != nullptr);
         PRECONDITION(callback != nullptr);
     }
@@ -1120,13 +1109,7 @@ extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heap
 
 int GCInterface::RefreshMemoryLimit()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     return GCHeapUtilities::GetGCHeap()->RefreshMemoryLimit();
 }
@@ -1144,13 +1127,7 @@ extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCR
 
 enable_no_gc_region_callback_status GCInterface::EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     return GCHeapUtilities::GetGCHeap()->EnableNoGCRegionCallback(callback, totalSize);
 }
@@ -1169,13 +1146,7 @@ extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation, QC
 
 uint64_t GCInterface::GetGenerationBudget(int generation)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     return GCHeapUtilities::GetGCHeap()->GetGenerationBudget(generation);
 }
@@ -1847,12 +1818,7 @@ enum ValueTypeHashCodeStrategy
 
 static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMTOut)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     // Should be handled by caller
     _ASSERTE(!mt->CanCompareBitsOrUseFastGetHashCode());

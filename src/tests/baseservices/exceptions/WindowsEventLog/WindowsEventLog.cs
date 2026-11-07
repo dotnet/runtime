@@ -55,19 +55,16 @@ class Program
         EventLog logBefore = new EventLog("Application");
         int logBeforeCount = logBefore.Entries.Count;
 
-        Process testProcess = new Process();
         string currentPath = Directory.GetCurrentDirectory();
         string corerunPath = Environment.GetEnvironmentVariable("CORE_ROOT") + "\\corerun.exe";
 
-        testProcess.StartInfo.FileName = corerunPath;
-        testProcess.StartInfo.Arguments = currentPath + "\\WindowsEventLog.exe " + testName + " " + randomCookie;
-        testProcess.StartInfo.EnvironmentVariables["CORE_ROOT"] = Environment.GetEnvironmentVariable("CORE_ROOT");
-        testProcess.StartInfo.EnvironmentVariables["DOTNET_Corhost_Swallow_Uncaught_Exceptions"] = swallowExcep ? "1" : "0";
-        testProcess.StartInfo.EnvironmentVariables["DOTNET_UseEntryPointFilter"] = useEntryPointFilter ? "1" : "0";
-        testProcess.StartInfo.UseShellExecute = false;
+        ProcessStartInfo startInfo = new ProcessStartInfo(corerunPath, [Path.Combine(currentPath, "WindowsEventLog.exe"), testName, randomCookie]);
+        startInfo.EnvironmentVariables["CORE_ROOT"] = Environment.GetEnvironmentVariable("CORE_ROOT");
+        startInfo.EnvironmentVariables["DOTNET_Corhost_Swallow_Uncaught_Exceptions"] = swallowExcep ? "1" : "0";
+        startInfo.EnvironmentVariables["DOTNET_UseEntryPointFilter"] = useEntryPointFilter ? "1" : "0";
+        startInfo.InheritedHandles = [];
 
-        testProcess.Start();
-        testProcess.WaitForExit();
+        Process.Run(startInfo);
 
         Thread.Sleep(2000);
 

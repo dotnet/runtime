@@ -1,9 +1,112 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+
+#include "executableallocator.h"
+
+ExecutableAllocator* ExecutableAllocator::g_instance = nullptr;
+ExecutableAllocator::FatalErrorHandler ExecutableAllocator::g_fatalErrorHandler = nullptr;
+
+ExecutableAllocator* ExecutableAllocator::Instance() noexcept
+{
+    LIMITED_METHOD_CONTRACT;
+    return g_instance;
+}
+
+HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandler)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    g_fatalErrorHandler = fatalErrorHandler;
+    g_instance = new (nothrow) ExecutableAllocator();
+    return g_instance != nullptr ? S_OK : E_OUTOFMEMORY;
+}
+
+ExecutableAllocator::~ExecutableAllocator() = default;
+
+bool ExecutableAllocator::IsWXORXEnabled()
+{
+    LIMITED_METHOD_CONTRACT;
+    return false;
+}
+
+void ExecutableAllocator::InitLazyPreferredRange(size_t, size_t, int)
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+void ExecutableAllocator::ResetLazyPreferredRangeHint()
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+void ExecutableAllocator::InitPreferredRange()
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+bool ExecutableAllocator::IsPreferredExecutableRange(void*)
+{
+    LIMITED_METHOD_CONTRACT;
+    return false;
+}
+
+void* ExecutableAllocator::Reserve(size_t size)
+{
+    LIMITED_METHOD_CONTRACT;
+    return VMToOSInterface::AllocateMemory(nullptr, size, VMToOSInterface::MemoryProtection::ReadWrite);
+}
+
+void* ExecutableAllocator::ReserveWithinRange(size_t size, const void*, const void*)
+{
+    LIMITED_METHOD_CONTRACT;
+    return Reserve(size);
+}
+
+void* ExecutableAllocator::Commit(void* pStart, size_t, bool)
+{
+    LIMITED_METHOD_CONTRACT;
+    return pStart;
+}
+
+void ExecutableAllocator::Release(void* address, size_t size) noexcept
+{
+    LIMITED_METHOD_CONTRACT;
+    if (!VMToOSInterface::ReleaseMemoryReservation(address, size))
+    {
+        g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the memory reservation failed"));
+    }
+}
+
+void* ExecutableAllocator::MapRW(void* address, size_t, CacheableMapping)
+{
+    LIMITED_METHOD_CONTRACT;
+    return address;
+}
+
+void ExecutableAllocator::UnmapRW(void*) noexcept
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+#else // FEATURE_PORTABLE_ENTRYPOINTS
+
 #include "pedecoder.h"
 #include "executableallocator.h"
 #include <configuration.h>
+
+#if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
+// On Unix-like platforms, memory that may written to
+// and later marked with executable protections at the same address
+// at some point may need to be mapped with specific flags like MAP_JIT
+// when initially mapped per OS security rules.
+// On platforms where we don't generate new code (only map existing executable pages as executable),
+// there's no requirement as the memory has always been RX-only.
+static constexpr bool ExecutableBackingRequired = true;
+#else
+static constexpr bool ExecutableBackingRequired = false;
+#endif
 
 #if USE_LAZY_PREFERRED_RANGE
 // Preferred region to allocate the code in.
@@ -124,7 +227,7 @@ bool ExecutableAllocator::IsDoubleMappingEnabled()
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(HOST_APPLE) && defined(HOST_ARM64) || defined(HOST_WASM)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
     return false;
 #else
     return g_isWXorXEnabled;
@@ -201,7 +304,7 @@ void ExecutableAllocator::InitPreferredRange()
 {
 #ifdef TARGET_UNIX
     void *start, *end;
-    PAL_GetExecutableMemoryAllocatorPreferredRange(&start, &end);
+    VMToOSInterface::GetExecutableMemoryAllocatorPreferredRange(&start, &end);
     g_preferredRangeMin = (BYTE *)start;
     g_preferredRangeMax = (BYTE *)end;
 #endif
@@ -495,20 +598,22 @@ void* ExecutableAllocator::Commit(void* pStart, size_t size, bool isExecutable)
     }
     else
     {
+        VMToOSInterface::MemoryProtection protection;
 #if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
-        return ClrVirtualAlloc(pStart, size, MEM_COMMIT, PAGE_READWRITE);
+        protection = VMToOSInterface::MemoryProtection::ReadWrite;
 #else
-        return ClrVirtualAlloc(pStart, size, MEM_COMMIT, isExecutable ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+        protection = isExecutable ? VMToOSInterface::MemoryProtection::ExecuteReadWrite : VMToOSInterface::MemoryProtection::ReadWrite;
 #endif
+        return VMToOSInterface::CommitReservedMemory(pStart, size, protection);
     }
 }
 
-void ExecutableAllocator::Release(void* pRX) noexcept
+void ExecutableAllocator::Release(void* pRX, size_t size) noexcept
 {
-    ReleaseWorker(pRX, false /* this is the standard Release of normally allocated memory */);
+    ReleaseWorker(pRX, size, false /* this is the standard Release of normally allocated memory */);
 }
 
-void ExecutableAllocator::ReleaseWorker(void* pRX, bool releaseTemplate) noexcept
+void ExecutableAllocator::ReleaseWorker(void* pRX, size_t size, bool releaseTemplate) noexcept
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -583,7 +688,7 @@ void ExecutableAllocator::ReleaseWorker(void* pRX, bool releaseTemplate) noexcep
     }
     else
     {
-        ClrVirtualFree(pRX, 0, MEM_RELEASE);
+        VMToOSInterface::ReleaseMemoryReservation(pRX, size);
     }
 }
 
@@ -710,14 +815,7 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
     }
     else
     {
-        DWORD allocationType = MEM_RESERVE;
-#if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
-        // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
-        // This will allow us to place JIT'ed code close to the coreclr library
-        // and thus improve performance by avoiding jump stubs in managed code.
-        allocationType |= MEM_RESERVE_EXECUTABLE;
-#endif
-        return ClrVirtualAllocWithinRange((const BYTE*)loAddress, (const BYTE*)hiAddress, size, allocationType, PAGE_NOACCESS);
+        return VMToOSInterface::ReserveMemoryWithinRange(loAddress, hiAddress, size, ExecutableBackingRequired);
     }
 }
 
@@ -800,14 +898,7 @@ void* ExecutableAllocator::Reserve(size_t size)
         }
         else
         {
-            DWORD allocationType = MEM_RESERVE;
-#if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
-            // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
-            // This will allow us to place JIT'ed code close to the coreclr library
-            // and thus improve performance by avoiding jump stubs in managed code.
-            allocationType |= MEM_RESERVE_EXECUTABLE;
-#endif
-            result = (BYTE*)ClrVirtualAlloc(NULL, size, allocationType, PAGE_NOACCESS);
+            result = static_cast<BYTE*>(VMToOSInterface::ReserveMemory(size, ExecutableBackingRequired));
         }
     }
 
@@ -966,7 +1057,7 @@ void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t te
 
         if (pTemplateAddressAllocated == NULL)
         {
-            ReleaseWorker(block->baseRX, false);
+            ReleaseWorker(block->baseRX, 0, false);
         }
 
         return pTemplateAddressAllocated;
@@ -981,7 +1072,7 @@ void ExecutableAllocator::FreeThunksFromTemplate(void *pThunks, size_t templateS
 {
     if (IsDoubleMappingEnabled() && VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress())
     {
-        ReleaseWorker(pThunks, true /* This is a release of template allocated memory */);
+        ReleaseWorker(pThunks, 0, true /* This is a release of template allocated memory */);
     }
     else
     {
@@ -993,3 +1084,5 @@ void* ExecutableAllocator::CreateTemplate(void* templateInImage, size_t template
 {
     return VMToOSInterface::CreateTemplate(templateInImage, templateSize, codePageGenerator);
 }
+
+#endif // FEATURE_PORTABLE_ENTRYPOINTS

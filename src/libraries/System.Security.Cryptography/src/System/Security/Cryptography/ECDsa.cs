@@ -327,7 +327,7 @@ namespace System.Security.Cryptography
         ///   An error occurred in the signing operation.
         /// </exception>
         /// <remarks>
-        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
+        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode
         ///   the signature. To use a different signature format, use <see cref="SignHash(ReadOnlySpan{byte}, DSASignatureFormat)" />.
         /// </remarks>
         /// <seealso cref="SignHash(ReadOnlySpan{byte}, DSASignatureFormat)" />.
@@ -393,7 +393,7 @@ namespace System.Security.Cryptography
         ///   The buffer in <paramref name="destination"/> is too small to hold the signature.
         /// </exception>
         /// <remarks>
-        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
+        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode
         ///   the signature. To use a different signature format, use <see cref="SignHash(ReadOnlySpan{byte}, Span{byte}, DSASignatureFormat)" />.
         /// </remarks>
         /// <seealso cref="SignHash(ReadOnlySpan{byte}, Span{byte}, DSASignatureFormat)" />.
@@ -571,7 +571,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is <see langword="null" />.
         /// </exception>
         /// <remarks>
-        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
+        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode
         ///   the signature. To use a different signature format, use
         ///   <see cref="SignData(ReadOnlySpan{byte}, HashAlgorithmName, DSASignatureFormat)" />.
         /// </remarks>
@@ -699,7 +699,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is <see langword="null" />.
         /// </exception>
         /// <remarks>
-        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
+        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode
         ///   the signature. To use a different signature format, use
         ///   <see cref="SignData(ReadOnlySpan{byte}, Span{byte}, HashAlgorithmName, DSASignatureFormat)" />.
         /// </remarks>

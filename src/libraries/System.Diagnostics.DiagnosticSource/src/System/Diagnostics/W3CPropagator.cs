@@ -329,7 +329,7 @@ namespace System.Diagnostics
 
             // If every character is already in the allowed (unescaped) baggage-value set, which
             // excludes both '%' and non-ASCII, the value decodes to itself.
-            if (valueSpan.IndexOfAnyExcept(s_validBaggageValueChars) < 0)
+            if (!valueSpan.ContainsAnyExcept(s_validBaggageValueChars))
             {
                 value = valueSpan.ToString();
                 return true;

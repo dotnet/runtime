@@ -193,7 +193,7 @@ namespace System.Net.Mime
         {
             if (MimeBasePart.IsFullyEncoded(value)) // Manually encoded elsewhere, pass through
             {
-                builder.Append('\"').Append(value).Append('"');
+                builder.Append('"').Append(value).Append('"');
             }
             else if ((allowUnicode && !MailBnfHelper.HasCROrLF(value)) // Unicode without CL or LF's
                 || MimeBasePart.IsAscii(value, false)) // Ascii

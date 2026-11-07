@@ -125,9 +125,9 @@ namespace System.IO.Compression
             int[] sampleLengths = [1, 1, 1, 1, fifthSampleLength, 1, 100];
             byte[] samples = new byte[sampleLengths.Sum()];
 
-            using ZstandardDictionary dictionary = ZstandardDictionary.Train(samples, sampleLengths, 256);
+            byte[] dictionaryData = ZstandardDictionary.Train(samples, sampleLengths, 256);
 
-            Assert.InRange(dictionary.Data.Length, 1, 256);
+            Assert.InRange(dictionaryData.Length, 1, 256);
         }
 
         [Fact]
@@ -156,12 +156,9 @@ namespace System.IO.Compression
             int[] sampleLengths = Enumerable.Repeat(sampleSize, sampleCount).ToArray();
             int maxDictionarySize = 256;
 
-            // Act
-            using ZstandardDictionary dictionary = ZstandardDictionary.Train(samples, sampleLengths, maxDictionarySize);
+            byte[] dictionaryData = ZstandardDictionary.Train(samples, sampleLengths, maxDictionarySize);
 
-            // Assert
-            Assert.NotNull(dictionary);
-            Assert.True(dictionary.Data.Length > 0 && dictionary.Data.Length <= maxDictionarySize);
+            Assert.InRange(dictionaryData.Length, 1, maxDictionarySize);
         }
     }
 }

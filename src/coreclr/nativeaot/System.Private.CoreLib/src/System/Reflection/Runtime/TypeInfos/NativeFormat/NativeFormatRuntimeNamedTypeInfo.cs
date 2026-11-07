@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // not be the canonical scope representing the assembly. We need to look up the assembly
                 // by name to ensure we get the right one.
 
-                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceChain.DefiningScope;
+                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceDefinition.Scope;
                 RuntimeAssemblyName runtimeAssemblyName = scopeDefinitionHandle.ToRuntimeAssemblyName(_reader);
 
                 return RuntimeAssemblyInfo.GetRuntimeAssembly(runtimeAssemblyName);
@@ -49,7 +49,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // Otherwise fall back to attributes
                 foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
                 {
-                    if (cah.IsCustomAttributeOfType(_reader, ["System", "Runtime", "CompilerServices"], "IsByRefLikeAttribute"))
+                    if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.CompilerServices", "IsByRefLikeAttribute"))
                         return true;
                 }
                 return false;
@@ -67,19 +67,26 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // Following age-old CLR tradition, we search for the custom attribute using a name-based search. Since this makes it harder
                 // to be sure we won't run into custom attribute constructors that comply with the GuidAttribute(String) signature,
                 // we'll check that it does and silently skip the CA if it doesn't match the expected pattern.
-                if (cah.IsCustomAttributeOfType(_reader, ["System", "Runtime", "InteropServices"], "GuidAttribute"))
+                if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.InteropServices", "GuidAttribute"))
                 {
                     CustomAttribute ca = cah.GetCustomAttribute(_reader);
-                    HandleCollection.Enumerator fahEnumerator = ca.FixedArguments.GetEnumerator();
-                    if (!fahEnumerator.MoveNext())
-                        continue;
-                    Handle guidStringArgumentHandle = fahEnumerator.Current;
-                    if (fahEnumerator.MoveNext())
-                        continue;
-                    if (guidStringArgumentHandle.HandleType != HandleType.ConstantStringValue)
+                    MethodSignature signature = ca.Constructor.HandleType == HandleType.QualifiedMethod
+                        ? ca.Constructor.ToQualifiedMethodHandle(_reader).GetQualifiedMethod(_reader)
+                            .Method.GetMethod(_reader).Signature.GetMethodSignature(_reader)
+                        : ca.Constructor.ToMemberReferenceHandle(_reader).GetMemberReference(_reader)
+                            .Signature.ParseMethodSignature(_reader);
+                    if (signature.Parameters.Count != 1)
                         continue;
 
-                    ConstantStringValueHandle constantStringValueHandle = guidStringArgumentHandle.ToConstantStringValueHandle(_reader);
+                    HandleCollection.Enumerator parameters = signature.Parameters.GetEnumerator();
+                    parameters.MoveNext();
+                    if (parameters.Current.Resolve(_reader, default).ToType() != typeof(string))
+                        continue;
+
+                    BlobReader blob = new BlobReader(ca.Blob.AsSpan());
+                    ConstantStringValueHandle constantStringValueHandle = blob.ReadStringHandle();
+                    if (constantStringValueHandle.IsNil)
+                        continue;
 
                     // Parse a 'Guid' directly from the encoded UTF8 buffer, instead of round-tripping through a 'string'
                     return Guid.Parse(_reader.ReadStringAsBytes(constantStringValueHandle));
@@ -106,7 +113,13 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                return NamespaceChain.NameSpace.EscapeTypeNameIdentifier();
+                string ns = _lazyNamespace;
+                if (ns is null)
+                {
+                    ns = NamespaceDefinition.Name.GetStringOrNull(_reader).EscapeTypeNameIdentifier() ?? string.Empty;
+                    _lazyNamespace = ns;
+                }
+                return ns.Length == 0 ? null : ns;
             }
         }
 
@@ -179,8 +192,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                NamespaceChain namespaceChain = NamespaceChain;
-                ScopeDefinitionHandle scopeDefinitionHandle = namespaceChain.DefiningScope;
+                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceDefinition.Scope;
                 return scopeDefinitionHandle.ToRuntimeAssemblyName(_reader).FullName;
             }
         }
@@ -229,18 +241,15 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 if (0 != (field.Flags & FieldAttributes.Static))
                 {
                     unsortedNames[i] = field.Name.GetString(_reader);
-                    Handle handle = field.DefaultValue;
-                    unsortedValues[i] = handle.HandleType switch
+                    Constant constant = field.DefaultValue.GetConstant(_reader);
+                    BlobReader blob = new BlobReader(constant.Blob.AsSpan());
+                    unsortedValues[i] = constant.TypeCode switch
                     {
-                        HandleType.ConstantSByteValue => (object)(byte)handle.ToConstantSByteValueHandle(_reader).GetConstantSByteValue(_reader).Value,
-                        HandleType.ConstantByteValue => handle.ToConstantByteValueHandle(_reader).GetConstantByteValue(_reader).Value,
-                        HandleType.ConstantInt16Value => (ushort)handle.ToConstantInt16ValueHandle(_reader).GetConstantInt16Value(_reader).Value,
-                        HandleType.ConstantUInt16Value => handle.ToConstantUInt16ValueHandle(_reader).GetConstantUInt16Value(_reader).Value,
-                        HandleType.ConstantInt32Value => (uint)handle.ToConstantInt32ValueHandle(_reader).GetConstantInt32Value(_reader).Value,
-                        HandleType.ConstantUInt32Value => handle.ToConstantUInt32ValueHandle(_reader).GetConstantUInt32Value(_reader).Value,
-                        HandleType.ConstantInt64Value => (ulong)handle.ToConstantInt64ValueHandle(_reader).GetConstantInt64Value(_reader).Value,
-                        HandleType.ConstantUInt64Value => handle.ToConstantUInt64ValueHandle(_reader).GetConstantUInt64Value(_reader).Value,
-                        _ => throw new InvalidOperationException(),
+                        ConstantTypeCode.SByte or ConstantTypeCode.Byte => (object)blob.ReadByte(),
+                        ConstantTypeCode.Int16 or ConstantTypeCode.UInt16 => blob.ReadUInt16(),
+                        ConstantTypeCode.Int32 or ConstantTypeCode.UInt32 => blob.ReadUInt32(),
+                        ConstantTypeCode.Int64 or ConstantTypeCode.UInt64 => blob.ReadUInt64(),
+                        _ => throw new BadImageFormatException(),
                     };
                     i++;
                 }
@@ -249,7 +258,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             isFlags = false;
             foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
             {
-                if (cah.IsCustomAttributeOfType(_reader, ["System"], "FlagsAttribute"))
+                if (cah.IsCustomAttributeOfType(_reader, "System", "FlagsAttribute"))
                 {
                     isFlags = true;
                     break;
@@ -369,27 +378,21 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         private readonly TypeDefinitionHandle _typeDefinitionHandle;
         private readonly TypeDefinition _typeDefinition;
 
-        private NamespaceChain NamespaceChain
+        private NamespaceDefinition NamespaceDefinition
         {
             get
             {
-                NamespaceChain? namespaceChain = _lazyNamespaceChain;
-                if (namespaceChain is null)
+                Handle namespaceOrEnclosingType = _typeDefinition.NamespaceOrEnclosingType;
+                while (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
                 {
-                    Handle namespaceOrEnclosingType = _typeDefinition.NamespaceOrEnclosingType;
-                    while (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
-                    {
-                        TypeDefinition typeDefinition = namespaceOrEnclosingType.ToTypeDefinitionHandle(_reader).GetTypeDefinition(_reader);
-                        namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
-                    }
-
-                    namespaceChain = _lazyNamespaceChain ??= new NamespaceChain(_reader, namespaceOrEnclosingType.ToNamespaceDefinitionHandle(_reader));
+                    TypeDefinition typeDefinition = namespaceOrEnclosingType.ToTypeDefinitionHandle(_reader).GetTypeDefinition(_reader);
+                    namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
                 }
 
-                return namespaceChain;
+                return namespaceOrEnclosingType.ToNamespaceDefinitionHandle(_reader).GetNamespaceDefinition(_reader);
             }
         }
 
-        private volatile NamespaceChain _lazyNamespaceChain;
+        private volatile string _lazyNamespace;
     }
 }

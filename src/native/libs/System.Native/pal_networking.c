@@ -1570,7 +1570,10 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
 #if !defined(CMSG_SPACE)
     // we will only use 0th buffer
     struct iovec* msg_iov = (struct iovec*)messageHeader->IOVectors;
-    while ((res = recvfrom(fd, msg_iov[0].iov_base, msg_iov[0].iov_len, socketFlags, (sockaddr *)messageHeader->SocketAddress, (socklen_t*) &(messageHeader->SocketAddressLen))) < 0 && errno == EINTR);
+    // The address and its length must be both NULL or both non-NULL (wasi-libc rejects a mix with EINVAL).
+    sockaddr* socketAddress = (sockaddr*)messageHeader->SocketAddress;
+    socklen_t* socketAddressLen = socketAddress != NULL ? (socklen_t*)&(messageHeader->SocketAddressLen) : NULL;
+    while ((res = recvfrom(fd, msg_iov[0].iov_base, msg_iov[0].iov_len, socketFlags, socketAddress, socketAddressLen)) < 0 && errno == EINTR);
 #else // CMSG_SPACE
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);

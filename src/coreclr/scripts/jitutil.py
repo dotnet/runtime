@@ -458,6 +458,73 @@ def get_files_from_path(path, match_func=lambda path: True):
     return files
 
 
+def get_assembly_simple_name(filename):
+    """ Get the assembly simple name crossgen2 will key a module by, i.e. the file name
+        without its directory or extension, lowercased for comparison.
+
+    Args:
+        filename (str) : path to the assembly
+
+    Returns:
+        The lowercased simple name.
+    """
+
+    return os.path.splitext(os.path.basename(filename))[0].lower()
+
+
+def is_managed_assembly(filename):
+    """ Determine if a file is a managed assembly by looking for a non-empty CLI header
+        in its PE data directory. Used to keep native binaries out of the crossgen2
+        composite input set, which crossgen2 refuses to load.
+
+    Args:
+        filename (str) : path to the file to check
+
+    Returns:
+        True if the file is a managed assembly, False otherwise (including if it
+        can't be read or isn't a PE file at all).
+    """
+
+    try:
+        with open(filename, "rb") as file_handle:
+            if file_handle.read(2) != b"MZ":
+                return False
+
+            file_handle.seek(0x3C)
+            pe_header_offset_bytes = file_handle.read(4)
+            if len(pe_header_offset_bytes) != 4:
+                return False
+            pe_header_offset = int.from_bytes(pe_header_offset_bytes, "little")
+
+            file_handle.seek(pe_header_offset)
+            if file_handle.read(4) != b"PE\0\0":
+                return False
+
+            # Skip the COFF header (20 bytes) to reach the optional header.
+            optional_header_offset = pe_header_offset + 4 + 20
+            file_handle.seek(optional_header_offset)
+            magic_bytes = file_handle.read(2)
+            if len(magic_bytes) != 2:
+                return False
+            magic = int.from_bytes(magic_bytes, "little")
+            if magic == 0x10B:      # PE32
+                data_directory_offset = optional_header_offset + 96
+            elif magic == 0x20B:    # PE32+
+                data_directory_offset = optional_header_offset + 112
+            else:
+                return False
+
+            # The CLI header is data directory entry 14; each entry is 8 bytes.
+            file_handle.seek(data_directory_offset + 14 * 8)
+            cli_header_entry = file_handle.read(8)
+            # Require a complete entry with a nonzero CLI header RVA (first 4 bytes) and size (last 4 bytes).
+            return len(cli_header_entry) == 8 and \
+                int.from_bytes(cli_header_entry[:4], "little") != 0 and \
+                int.from_bytes(cli_header_entry[4:], "little") != 0
+    except OSError:
+        return False
+
+
 def is_url(path):
     """ Return True if this looks like a URL
 

@@ -649,6 +649,8 @@ namespace Internal.Runtime.TypeLoader
                     IntPtr methodEntryPoint = hasEntryPoint
                         ? externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned())
                         : IntPtr.Zero;
+                    if ((flags & InvokeTableFlags.HasVirtualIP) != 0)
+                        entryParser.SkipInteger();
                     uint dynamicInvokeCookie = (flags & InvokeTableFlags.NeedsParameterInterpretation) == 0
                         ? entryParser.GetUnsigned()
                         : uint.MaxValue;

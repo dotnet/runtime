@@ -14,12 +14,59 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class PropertyTests
     {
+        [Theory]
+        [InlineData("", new byte[] { 0x08, 0x00, 0x08 })]
+        [InlineData("...", new byte[] { 0x08, 0x00, 0x08, 0x41 })]
+        [InlineData("..., int32", new byte[] { 0x08, 0x01, 0x08, 0x41, 0x08 })]
+        [InlineData("int32, ...", new byte[] { 0x08, 0x01, 0x08, 0x08, 0x41 })]
+        [InlineData("int32, ..., string", new byte[] { 0x08, 0x02, 0x08, 0x08, 0x41, 0x0e })]
+        [InlineData("..., ..., int32, ...", new byte[] { 0x08, 0x01, 0x08, 0x41, 0x41, 0x08, 0x41 })]
+        public void PropertySignature_SentinelsDoNotCountAsParameters(string parameters, byte[] expectedSignature)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public A
+                {
+                    .method public static int32 get_Goo() { ldnull throw }
+                    .property int32 Goo({{parameters}}) { .get int32 A::get_Goo() }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            PropertyDefinition property = reader.GetPropertyDefinition(Assert.Single(reader.PropertyDefinitions));
+
+            Assert.Equal(expectedSignature, reader.GetBlobBytes(property.Signature));
+            Assert.Equal("get_Goo", reader.GetString(reader.GetMethodDefinition(property.GetAccessors().Getter).Name));
+        }
+
+        [Theory]
+        [InlineData("", "", new byte[] { 0x28, 0x01, 0x12, 0x0c, 0x12, 0x0c })]
+        [InlineData("..., ", "", new byte[] { 0x28, 0x01, 0x12, 0x0c, 0x41, 0x12, 0x0c })]
+        [InlineData("", ", ...", new byte[] { 0x28, 0x01, 0x12, 0x0c, 0x12, 0x0c, 0x41 })]
+        public void PropertySignature_SentinelPreservedWhenRewritingLocalTypes(string prefix, string suffix, byte[] expectedSignature)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public Test
+                {
+                    .property instance class A Goo({{prefix}}class A{{suffix}}) { }
+                }
+                .class public A { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            PropertyDefinition property = reader.GetPropertyDefinition(Assert.Single(reader.PropertyDefinitions));
+
+            Assert.Equal(expectedSignature, reader.GetBlobBytes(property.Signature));
+        }
+
         [Fact]
         public void Property_BasicProperty_IsEmitted()
         {
@@ -45,8 +92,8 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var sourceText = new ILAssembler.SourceText(source, "test.il");
-            var compiler = new ILAssembler.DocumentCompiler();
+            var sourceText = new Microsoft.DotNet.ILAssembler.SourceText(source, "test.il");
+            var compiler = new Microsoft.DotNet.ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
 
             // Check for diagnostics
@@ -131,8 +178,8 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var sourceText = new ILAssembler.SourceText(source, "test.il");
-            var compiler = new ILAssembler.DocumentCompiler();
+            var sourceText = new Microsoft.DotNet.ILAssembler.SourceText(source, "test.il");
+            var compiler = new Microsoft.DotNet.ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
 
             foreach (var d in diagnostics)
@@ -187,8 +234,8 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var sourceText = new ILAssembler.SourceText(source, "test.il");
-            var compiler = new ILAssembler.DocumentCompiler();
+            var sourceText = new Microsoft.DotNet.ILAssembler.SourceText(source, "test.il");
+            var compiler = new Microsoft.DotNet.ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
 
             foreach (var d in diagnostics)

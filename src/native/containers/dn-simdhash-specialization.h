@@ -337,10 +337,13 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
 	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
 	dn_simdhash_search_vector search_vector = build_search_vector(suffix);
+	bucket_t *insertion_bucket = NULL;
+	uint32_t insertion_bucket_index = 0;
+	uint8_t check_duplicates = mode != DN_SIMDHASH_INSERT_MODE_REHASHING;
 
 	BEGIN_SCAN_BUCKETS(hash->buffers, first_bucket_index, bucket_index, bucket_address)
 		// If necessary, check the current bucket for the key
-		if (mode != DN_SIMDHASH_INSERT_MODE_REHASHING) {
+		if (check_duplicates) {
 			int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(hash, bucket_address, key, search_vector);
 			if (index_in_bucket >= 0) {
 				if (
@@ -355,36 +358,35 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 				} else
 					return DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT;
 			}
+			if (index_in_bucket == DN_SIMDHASH_SCAN_BUCKET_NO_OVERFLOW)
+				check_duplicates = 0;
 		}
 
-		// The current bucket doesn't contain the key, or duplicate checks are disabled (for rehashing),
-		//  so attempt to insert into the bucket
-		uint8_t new_index = dn_simdhash_bucket_count(bucket_address->suffixes);
-		if (new_index < DN_SIMDHASH_BUCKET_CAPACITY) {
-			// Calculate key address early to reduce odds of a stall
-			DN_SIMDHASH_KEY_T *restrict key_slot_address = &bucket_address->keys[new_index];
-			// We found a bucket with space, so claim the first free slot
-			dn_simdhash_bucket_set_count(bucket_address->suffixes, new_index + 1);
-			dn_simdhash_bucket_set_suffix(bucket_address->suffixes, new_index, suffix);
-			// Now store the key, it's probably in the same cache line as the count/suffix
-			*key_slot_address = key;
-			// Now store the value, it's in a different cache line
-			uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + new_index;
-			DN_SIMDHASH_VALUE_T *restrict value_slot_address = address_of_value(hash->buffers, value_slot_index);
-			*value_slot_address = value;
-			// printf("Inserted [%zd, %zd] in bucket %d at index %d\n", key, value, bucket_index, new_index);
-			// If we cascaded out of our original target bucket, scan through our probe path
-			//  and increase the cascade counters. We have to wait until now to do that, because
-			//  during the process of getting here we may end up finding a duplicate, which would
-			//  leave the cascade counters in a corrupted state
-			adjust_cascaded_counts(hash->buffers, first_bucket_index, bucket_index, 1);
-			return DN_SIMDHASH_INSERT_OK_ADDED_NEW;
+		if (!insertion_bucket &&
+			(dn_simdhash_bucket_count(bucket_address->suffixes) < DN_SIMDHASH_BUCKET_CAPACITY)) {
+			insertion_bucket = bucket_address;
+			insertion_bucket_index = bucket_index;
 		}
 
-		// The current bucket is full, so try the next bucket.
+		// A vacancy does not rule out an existing key in a later bucket.
+		if (insertion_bucket && !check_duplicates)
+			break;
+
 	END_SCAN_BUCKETS(hash->buffers, first_bucket_index, bucket_index, bucket_address)
 
-	return DN_SIMDHASH_INSERT_NEED_TO_GROW;
+	if (!insertion_bucket)
+		return DN_SIMDHASH_INSERT_NEED_TO_GROW;
+
+	uint8_t new_index = dn_simdhash_bucket_count(insertion_bucket->suffixes);
+	DN_SIMDHASH_KEY_T *restrict key_slot_address = &insertion_bucket->keys[new_index];
+	dn_simdhash_bucket_set_count(insertion_bucket->suffixes, new_index + 1);
+	dn_simdhash_bucket_set_suffix(insertion_bucket->suffixes, new_index, suffix);
+	*key_slot_address = key;
+	uint32_t value_slot_index = (insertion_bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + new_index;
+	DN_SIMDHASH_VALUE_T *restrict value_slot_address = address_of_value(hash->buffers, value_slot_index);
+	*value_slot_address = value;
+	adjust_cascaded_counts(hash->buffers, first_bucket_index, insertion_bucket_index, 1);
+	return DN_SIMDHASH_INSERT_OK_ADDED_NEW;
 }
 
 static void

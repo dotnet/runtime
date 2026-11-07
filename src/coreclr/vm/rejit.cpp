@@ -986,6 +986,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
         HRESULT hr = S_OK;
         ReleaseHolder<ProfilerFunctionControl> pFuncControl;
 
+#ifdef PROFILING_SUPPORTED
         if (ilCodeVersion.GetEnableReJITCallback())
         {
             // Here's where we give a chance for the rejit requestor to
@@ -1011,6 +1012,9 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 END_PROFILER_CALLBACK();
             }
         }
+#else
+        _ASSERTE(!ilCodeVersion.GetEnableReJITCallback());
+#endif // PROFILING_SUPPORTED
 
         if (!ilCodeVersion.GetEnableReJITCallback() || FAILED(hr))
         {

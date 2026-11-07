@@ -7,7 +7,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class ExternalMemoryHandle : IData<ExternalMemoryHandle>
 {
     [Field] public partial TargetPointer Next { get; }
-    [Field] public partial TargetPointer MethodTable { get; }
+    [Field] public partial TargetPointer TypeHandle { get; }
     [Field] public partial TargetPointer Memory { get; }
-    [Field] public partial uint GCFlags { get; }
 }

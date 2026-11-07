@@ -9,7 +9,7 @@ WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and
 Copyright (c) .NET Foundation. All rights reserved.
 ***********************************************************************************************
 -->
-<Project ToolsVersion="14.0">
+<Project ToolsVersion="14.0" TreatAsLocalProperty="_WasmFilesystemUsageDetected">
 
   <PropertyGroup>
     <_UseBlazorDevServer>$(RunArguments.Contains('blazor-devserver.dll').ToString().ToLower())</_UseBlazorDevServer>    
@@ -240,7 +240,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Trim support for line number in stack traces by default -->
     <PropertyGroup>
-      <StackTraceLineNumberSupport Condition="'$(StackTraceLineNumberSupport)' == '' and ('$(StackTraceSupport)' == 'false' or '$(DebugSymbols)' != 'true')">false</StackTraceLineNumberSupport>
+      <StackTraceLineNumberSupport Condition="'$(StackTraceLineNumberSupport)' == '' and ('$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true' or '$(StackTraceSupport)' == 'false' or '$(DebugSymbols)' != 'true')">false</StackTraceLineNumberSupport>
     </PropertyGroup>
     <ItemGroup Condition="'$(StackTraceLineNumberSupport)' == 'false'">
       <RuntimeHostConfigurationOption Include="System.Diagnostics.StackTrace.IsLineNumberSupported" Value="false" Trim="true" />
@@ -257,6 +257,11 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="ResolveWasmOutputs" DependsOnTargets="$(ResolveWasmOutputsDependsOn);_ResolveWasmOutputs" />
 
   <Target Name="ComputeWasmVfs">
+    <PropertyGroup>
+      <_WasmFilesystemUsageDetected Condition="'@(WasmFilesToIncludeInFileSystem)' != ''">true</_WasmFilesystemUsageDetected>
+      <!-- TODO-WASM: Default to false once IL trimming provides better filesystem usage detection. -->
+      <_WasmFilesystemUsageDetected Condition="'$(_WasmFilesystemUsageDetected)' == ''">true</_WasmFilesystemUsageDetected>
+    </PropertyGroup>
     <ItemGroup>
       <WasmFilesToIncludeInFileSystem Condition="'%(WasmFilesToIncludeInFileSystem.TargetPath)' == ''">
         <TargetPath>%(WasmFilesToIncludeInFileSystem.Identity)</TargetPath>
@@ -312,6 +317,10 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- If we have @(WasmAssembliesFinal), prefer them over @(ReferenceCopyLocalPaths). They come from AOT during build. In that case @(ReferenceCopyLocalPaths) is already empty  -->
       <_WasmProjectAssemblyBuild Include="@(WasmAssembliesFinal)" Condition="$(_WasmIntermediateAssemblyFileNames.Contains(';%(FileName)%(Extension);'))" />
+      <!-- A final CoreCLR project assembly needs its own symbols, not the untrimmed compiler PDB. -->
+      <_WasmProjectDebugSymbolsBuild Include="@(_DebugSymbolsIntermediatePath)" Condition="'$(UseMonoRuntime)' != 'false' or '@(_WasmProjectAssemblyBuild)' == ''" />
+      <_WasmProjectDebugSymbolsBuild Include="@(_WasmProjectAssemblyBuild->'%(RootDir)%(Directory)%(FileName).pdb')"
+                                    Condition="'$(UseMonoRuntime)' == 'false' and '@(_DebugSymbolsIntermediatePath)' != '' and Exists('%(_WasmProjectAssemblyBuild.RootDir)%(_WasmProjectAssemblyBuild.Directory)%(_WasmProjectAssemblyBuild.FileName).pdb')" />
       <_WasmProjectAssemblyBuild Include="@(IntermediateAssembly)" Condition="@(_WasmProjectAssemblyBuild->Count()) == 0" />
       <_WasmBuildAssetCandidates Include="@(ReferenceCopyLocalPaths)" />
       <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" WasmNativeBuildOutput="true" />
@@ -333,7 +342,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       Candidates="@(_WasmBuildAssetCandidates->Distinct())"
       CustomIcuCandidate="$(_BlazorIcuDataFileName)"
       ProjectAssembly="@(_WasmProjectAssemblyBuild)"
-      ProjectDebugSymbols="@(_DebugSymbolsIntermediatePath)"
+      ProjectDebugSymbols="@(_WasmProjectDebugSymbolsBuild)"
       SatelliteAssemblies="@(ReferenceSatellitePaths)"
       ProjectSatelliteAssemblies="@(IntermediateSatelliteAssembliesWithTargetPath)"
       TimeZoneSupport="$(_BlazorEnableTimeZoneSupport)"
@@ -585,6 +594,33 @@ Copyright (c) .NET Foundation. All rights reserved.
       <WasmStaticWebAsset Include="@(_WasmMaterializedFrameworkAssets)" />
     </ItemGroup>
 
+    <!-- A nested publish that ran during this build (e.g. library tests) returns its composite ReadyToRun image.
+         It is not an assembly, so define it directly; the readyToRunComposite trait routes it to coreAssembly
+         with isCompositeImage set in the boot config. A regular publish defines it in ProcessPublishFilesForWasm. -->
+    <ItemGroup Condition="'@(_WasmNestedPublishCompositeR2RImage)' != ''">
+      <_WasmCompositeBuildCandidate Include="@(_WasmNestedPublishCompositeR2RImage)" KeepMetadata="OutputR2RImage" />
+      <_WasmCompositeBuildCandidate Update="@(_WasmCompositeBuildCandidate)"
+                                    ContentRoot="%(RootDir)%(Directory)"
+                                    RelativePath="_framework/%(FileName)%(Extension)" />
+    </ItemGroup>
+    <DefineStaticWebAssets Condition="'@(_WasmCompositeBuildCandidate)' != ''"
+      CandidateAssets="@(_WasmCompositeBuildCandidate)"
+      SourceId="$(PackageId)"
+      SourceType="Computed"
+      AssetKind="Build"
+      AssetMode="All"
+      AssetRole="Primary"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="readyToRunComposite"
+      CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)"
+      CopyToPublishDirectory="Never"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
+      FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
+      BasePath="$(StaticWebAssetBasePath)"
+    >
+      <Output TaskParameter="Assets" ItemName="WasmStaticWebAsset" />
+    </DefineStaticWebAssets>
+
     <DefineStaticWebAssets
       CandidateAssets="@(_WasmDiscoveredFileCandidates)"
       AssetTraitName="WasmResource"
@@ -623,39 +659,31 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable" Condition="'$(EnableDiagnostics)' == 'true'">
-    <PropertyGroup>
-      <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
-      <_WasmPerfInstInterval></_WasmPerfInstInterval>
-      <_WasmPerfInstDescriptor></_WasmPerfInstDescriptor>
-      <_WasmPerfInstInterval Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring($([MSBuild]::Add($(WasmPerformanceInstrumentation.IndexOf(',interval=')), 10))))</_WasmPerfInstInterval>
-      <_WasmPerfInstFilter Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring(0, $(WasmPerformanceInstrumentation.IndexOf(',interval='))))</_WasmPerfInstFilter>
-      <_WasmPerfInstInterval Condition="'$(_WasmPerfInstInterval)' != '' and $(_WasmPerfInstInterval.Contains(','))">$(_WasmPerfInstInterval.Substring(0, $(_WasmPerfInstInterval.IndexOf(','))))</_WasmPerfInstInterval>
-      <_WasmPerfInstDescriptor Condition="'$(_WasmPerfInstFilter)' != '' and '$(UseMonoRuntime)' != 'false'">eventpipe,callspec=$(_WasmPerfInstFilter)</_WasmPerfInstDescriptor>
-      <_WasmPerfInstFilter Condition="'$(_WasmPerfInstFilter)' == 'all' and '$(UseMonoRuntime)' == 'false'">*</_WasmPerfInstFilter>
-      <_WasmPerfInstDescriptor Condition="'$(_WasmPerfInstFilter)' != '' and '$(UseMonoRuntime)' == 'false'">$(_WasmPerfInstFilter)</_WasmPerfInstDescriptor>
-    </PropertyGroup>
+  <Target Name="_ValidateWasmPerformanceInstrumentation" BeforeTargets="PrepareForBuild">
+    <Error Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))"
+           Text="The interval option is no longer supported in WasmPerformanceInstrumentation. Set DOTNET_EventPipeThreadSamplingRate using a WasmEnvironmentVariable item instead." />
+  </Target>
+
+  <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable"
+          Condition="'$(EnableDiagnostics)' == 'true'"
+          DependsOnTargets="_ValidateWasmPerformanceInstrumentation">
     <ItemGroup>
       <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != '' and '$(EnableDiagnostics)' == 'true'"/>
     </ItemGroup>
   </Target>
 
-  <!-- CoreCLR: transform WasmPerformanceInstrumentation into separate env vars for MethodSet filter + interval.
+  <!-- CoreCLR: transform WasmPerformanceInstrumentation into a MethodSet filter.
        Mono handles this in WasmApp.Common.targets with "eventpipe,callspec=" prefix, so skip for Mono.
        UseMonoRuntime=false indicates CoreCLR; when true or unset, Mono workload targets handle it. -->
   <Target Name="_AddWasmPerformanceInstrumentationEnvironmentVariables"
-          Condition="'$(UseMonoRuntime)' == 'false' and '$(WasmPerformanceInstrumentation)' != ''">
+          Condition="'$(UseMonoRuntime)' == 'false' and '$(WasmPerformanceInstrumentation)' != ''"
+          DependsOnTargets="_ValidateWasmPerformanceInstrumentation">
     <PropertyGroup>
       <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
-      <_WasmPerfInstInterval></_WasmPerfInstInterval>
-      <_WasmPerfInstInterval Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring($([MSBuild]::Add($(WasmPerformanceInstrumentation.IndexOf(',interval=')), 10))))</_WasmPerfInstInterval>
-      <_WasmPerfInstFilter Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring(0, $(WasmPerformanceInstrumentation.IndexOf(',interval='))))</_WasmPerfInstFilter>
-      <_WasmPerfInstInterval Condition="'$(_WasmPerfInstInterval)' != '' and $(_WasmPerfInstInterval.Contains(','))">$(_WasmPerfInstInterval.Substring(0, $(_WasmPerfInstInterval.IndexOf(','))))</_WasmPerfInstInterval>
       <_WasmPerfInstFilter Condition="'$(_WasmPerfInstFilter)' == 'all'">*</_WasmPerfInstFilter>
     </PropertyGroup>
     <ItemGroup>
       <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstFilter)" />
-      <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
     </ItemGroup>
   </Target>
 
@@ -740,7 +768,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-build.stamp"
-      Lines="$(_WasmBootJsonBuildStampContent)"
+      Lines="$(_WasmBootJsonBuildStampContent)|$(_WasmFilesystemUsageDetected)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -772,6 +800,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       MergeWith="@(_WasmDotnetJsForBuild)"
       OutputPath="$(_WasmBuildBootJsonPath)"
       ConfigurationFiles="@(_WasmJsConfigStaticWebAsset)"
+      FilesystemUsageDetected="$(_WasmFilesystemUsageDetected)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
@@ -968,10 +997,24 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Publish targets and output directory messages start here -->
 
-  <!-- Make sure that ResolveAssemblyReferences runs early enough to ensure satellite assemblies are populated in the ResolvedFilesToPublish -->
+  <!-- Resolve satellite assemblies and runtime feature switches before trimming, including publishing without a build. -->
   <Target Name="_WasmPrepareForPublish"
-    DependsOnTargets="PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;ResolveAssemblyReferences"
+    DependsOnTargets="PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;ResolveAssemblyReferences;_ResolveWasmPublishConfiguration"
     BeforeTargets="PrepareForPublish" />
+
+  <!-- Native-only nested publishes must not initialize boot configuration or its shared incremental outputs. -->
+  <Target Name="_ResolveWasmPublishConfiguration"
+    DependsOnTargets="_ResolveWasmConfiguration"
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+    <!-- Direct MSBuild publish does not set _IsPublishing, and build may have already resolved configuration. -->
+    <PropertyGroup>
+      <StackTraceLineNumberSupport Condition="'$(StackTraceLineNumberSupport)' == ''">false</StackTraceLineNumberSupport>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(StackTraceLineNumberSupport)' == 'false'">
+      <RuntimeHostConfigurationOption Remove="System.Diagnostics.StackTrace.IsLineNumberSupported" />
+      <RuntimeHostConfigurationOption Include="System.Diagnostics.StackTrace.IsLineNumberSupported" Value="false" Trim="true" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="_PrintWasmBrowserPublishOutputDirectory" AfterTargets="Publish" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <Message Importance="High" Text="$(MSBuildProjectName) (wwwroot) -&gt; $([MSBuild]::NormalizeDirectory('$(PublishDir)', 'wwwroot'))" />
@@ -1316,11 +1359,14 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmPublishBootJsonPropertyStamp"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
     <PropertyGroup>
+      <_WasmFilesystemUsageDetected Condition="'@(WasmFilesToIncludeInFileSystem)' != ''">true</_WasmFilesystemUsageDetected>
+      <!-- TODO-WASM: Default to false once IL trimming provides better filesystem usage detection. -->
+      <_WasmFilesystemUsageDetected Condition="'$(_WasmFilesystemUsageDetected)' == ''">true</_WasmFilesystemUsageDetected>
       <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(PublishReadyToRunComposite)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonPublishStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
-      Lines="$(_WasmBootJsonPublishStampContent)"
+      Lines="$(_WasmBootJsonPublishStampContent)|$(_WasmFilesystemUsageDetected)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -1347,6 +1393,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       MergeWith="@(_WasmDotnetJsForPublish)"
       OutputPath="$([MSBuild]::NormalizePath($(IntermediateOutputPath), $(_WasmPublishBootConfigFileName)))"
       ConfigurationFiles="@(_WasmPublishConfigFile)"
+      FilesystemUsageDetected="$(_WasmFilesystemUsageDetected)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"

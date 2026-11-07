@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 namespace Microsoft.Extensions.Http.Logging
 {
     /// <summary>
-    /// An abstraction for asyncronous custom HTTP request logging for a named <see cref="HttpClient"/> instances returned by <see cref="IHttpClientFactory"/>.
+    /// An abstraction for asynchronous custom HTTP request logging for a named <see cref="HttpClient"/> instances returned by <see cref="IHttpClientFactory"/>.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Asyncronous methods (such as <see cref="LogRequestStartAsync"/>) would be called from async code paths (such as
+    /// Asynchronous methods (such as <see cref="LogRequestStartAsync"/>) would be called from async code paths (such as
     /// <see cref="HttpClient.SendAsync(HttpRequestMessage, CancellationToken)"/>), and their
-    /// syncronous counterparts inherited from <see cref="IHttpClientLogger"/> (such as <see cref="IHttpClientLogger.LogRequestStart"/>)
+    /// synchronous counterparts inherited from <see cref="IHttpClientLogger"/> (such as <see cref="IHttpClientLogger.LogRequestStart"/>)
     /// would be called from the corresponding sync code paths.
     /// </para>
     /// <para>

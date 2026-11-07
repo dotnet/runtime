@@ -14,7 +14,6 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 
 #include "pal/thread.hpp"
 #include "pal/procobj.hpp"
-#include "pal/file.hpp"
 
 #include "pal/palinternal.h"
 #include "pal/process.h"
@@ -23,8 +22,8 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include "pal/environ.h"
 #include "pal/module.h"
 #include "pal/stackstring.hpp"
-#include "pal/virtual.h"
 #include "pal/utils.h"
+#include <minipal/ospagesize.h>
 
 #include <signal.h>
 #include <unistd.h>
@@ -617,7 +616,7 @@ PAL_ProbeMemory(
         }
 
         // Round to the beginning of the next page
-        pBuffer = PVOID(ALIGN_DOWN((SIZE_T)pBuffer, GetVirtualPageSize()) + GetVirtualPageSize());
+        pBuffer = PVOID(ALIGN_DOWN((SIZE_T)pBuffer, minipal_getpagesize()) + minipal_getpagesize());
     }
 
     close(fds[0]);

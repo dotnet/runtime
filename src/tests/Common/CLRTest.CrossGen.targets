@@ -51,6 +51,10 @@ WARNING:   When setting properties based on their current state (for example:
         <![CDATA[
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   echo SKIPPING EXECUTION BECAUSE the test is incompatible with ReadyToRun
+  # Report the skip to a merged runner that launched this test out of process.
+  if [ -n "${__TestOutOfProcessStatusFile:-}" ]%3B then
+    echo "The test is incompatible with ReadyToRun." > "$__TestOutOfProcessStatusFile"
+  fi
   exit 0
 fi
         ]]>
@@ -243,8 +247,16 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
       if [ "$(TargetOS)" == "wasi" ] && [ $__cg2ExitCode -eq 0 ] && [ $__r2rDumpExitCode -eq 0 ]; then
         (
+          # Like crossgen2, the composer must not run under the test's runtime configuration.
+          unset DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_GCHeapAffinitizeRanges
+          unset DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
           mkdir -p IL-CG2/wasi-r2r/comp || exit 1
-          "$__DotNet" msbuild "$CORE_ROOT/wasi-r2r/WasiR2RComposer.proj" -nologo -t:Compose "/p:CompositePath=$PWD/composite-r2r.wasm" "/p:ComponentPath=$CORE_ROOT/corerun" "/p:OutputDirectory=$PWD/IL-CG2/wasi-r2r/work" "/p:OutputPath=$PWD/IL-CG2/wasi-r2r/corerun-composite.wasm" "/p:WasmToolsPath=%24(command -v wasm-tools)" "/p:WasmMergePath=%24(command -v wasm-merge)" "/p:WasmOptPath=%24(command -v wasm-opt)" "/p:StubOutputDirectory=$PWD/IL-CG2/wasi-r2r/comp" "/p:ComponentStubsDirectory=$PWD"
+          # A test that links its own native code composes into its own host.
+          __WasiR2RComponent="$CORE_ROOT/corerun"
+          if [ -f "$PWD/corerun.wasm" ]; then
+            __WasiR2RComponent="$PWD/corerun.wasm"
+          fi
+          "$__DotNet" msbuild "$CORE_ROOT/wasi-r2r/WasiR2RComposer.proj" -nologo -t:Compose "/p:CompositePath=$PWD/composite-r2r.wasm" "/p:ComponentPath=$__WasiR2RComponent" "/p:OutputDirectory=$PWD/IL-CG2/wasi-r2r/work" "/p:OutputPath=$PWD/IL-CG2/wasi-r2r/corerun-composite.wasm" "/p:WasmToolsPath=%24(command -v wasm-tools)" "/p:WasmMergePath=%24(command -v wasm-merge)" "/p:WasmOptPath=%24(command -v wasm-opt)" "/p:StubOutputDirectory=$PWD/IL-CG2/wasi-r2r/comp" "/p:ComponentStubsDirectory=$PWD"
         )
         __linkExitCode=$?
         if [ $__linkExitCode -ne 0 ]; then

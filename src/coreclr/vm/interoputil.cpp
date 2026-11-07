@@ -2163,7 +2163,7 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
 
 //--------------------------------------------------------------------------------
 // Helper to get the GUID of a class interface.
-void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
+GUID GenerateClassItfGuid(TypeHandle InterfaceType)
 {
     CONTRACTL
     {
@@ -2171,7 +2171,6 @@ void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(!InterfaceType.IsNull());
-        PRECONDITION(CheckPointer(pGuid));
     }
     CONTRACTL_END;
 
@@ -2197,8 +2196,8 @@ void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
     szName = reinterpret_cast<LPWSTR>(rName.Ptr());
 
     // Generate guid from name.
-    CorGuidFromNameW(pGuid, szName, cchName);
-} // void GenerateClassItfGuid()
+    return CorGuidFromNameW(szName, cchName);
+} // GUID GenerateClassItfGuid()
 
 HRESULT TryGenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
 {
@@ -2221,7 +2220,7 @@ HRESULT TryGenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
     {
         EX_TRY
         {
-            GenerateClassItfGuid(InterfaceType, pGuid);
+            *pGuid = GenerateClassItfGuid(InterfaceType);
         }
         EX_CATCH
         {
@@ -2272,7 +2271,7 @@ HRESULT GetTypeLibGuidForAssembly(Assembly *pAssembly, GUID *pGuid)
         }
 
         // Turn into guid
-        CorGuidFromNameW(pGuid, (LPWSTR)rName.Ptr(), cbData/sizeof(WCHAR));
+        *pGuid = CorGuidFromNameW((LPWSTR)rName.Ptr(), cbData/sizeof(WCHAR));
 }
 
 ErrExit:

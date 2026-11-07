@@ -18,7 +18,7 @@
 
 bool             Logger::s_initialized = false;
 UINT32           Logger::s_logLevel    = LOGMASK_DEFAULT;
-HANDLE           Logger::s_logFile     = INVALID_HANDLE_VALUE;
+FILE*            Logger::s_logFile     = nullptr;
 char*            Logger::s_logFilePath = nullptr;
 minipal_mutex Logger::s_critSec;
 
@@ -55,12 +55,11 @@ void Logger::Shutdown()
 /* static */
 void Logger::OpenLogFile(const char* logFilePath)
 {
-    if (s_logFile == INVALID_HANDLE_VALUE && logFilePath != nullptr)
+    if (s_logFile == nullptr && logFilePath != nullptr)
     {
-        s_logFile = CreateFileA(logFilePath, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, CREATE_ALWAYS,
-                                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+        s_logFile = fopen(logFilePath, "wb");
 
-        if (s_logFile != INVALID_HANDLE_VALUE)
+        if (s_logFile != nullptr)
         {
             // We may need the file path later in order to delete the log file
             s_logFilePath = _strdup(logFilePath);
@@ -79,22 +78,18 @@ void Logger::OpenLogFile(const char* logFilePath)
 /* static */
 void Logger::CloseLogFile()
 {
-    if (s_logFile != INVALID_HANDLE_VALUE)
+    if (s_logFile != nullptr)
     {
         // Avoid polluting the file system with empty log files
-        if (GetFileSize(s_logFile, nullptr) == 0 && s_logFilePath != nullptr)
-        {
-            // We can call this before closing the handle because remove just marks the file
-            // for deletion, i.e. it does not actually get deleted until its last handle is closed.
-            if (remove(s_logFilePath) == -1)
-                fprintf(stderr, "WARNING: [Logger::CloseLogFile] remove failed. GetLastError()=%u\n",
-                        GetLastError());
-        }
+        bool isEmpty = fgetsize(s_logFile) == 0;
 
-        if (!CloseHandle(s_logFile))
-            fprintf(stderr, "WARNING: [Logger::CloseLogFile] CloseHandle failed. GetLastError()=%u\n", GetLastError());
+        if (fclose(s_logFile) != 0)
+            fprintf(stderr, "WARNING: [Logger::CloseLogFile] fclose failed. errno=%d\n", errno);
 
-        s_logFile = INVALID_HANDLE_VALUE;
+        s_logFile = nullptr;
+
+        if (isEmpty && s_logFilePath != nullptr && remove(s_logFilePath) == -1)
+            fprintf(stderr, "WARNING: [Logger::CloseLogFile] remove failed. errno=%d\n", errno);
 
         free(s_logFilePath);
         s_logFilePath = nullptr;
@@ -251,7 +246,7 @@ void Logger::LogVprintf(
 
     fprintf(dest, "%s\n", fullMsg);
 
-    if (s_logFile != INVALID_HANDLE_VALUE)
+    if (s_logFile != nullptr)
     {
 #ifndef TARGET_UNIX // TODO: no localtime_s() or strftime() in PAL
         tm      timeInfo;
@@ -284,15 +279,11 @@ void Logger::LogVprintf(
         sprintf_s(logEntry, logEntryBuffSize, logEntryFmtStr, timeStr, function, file, line, logLevelStr, fullMsg);
         size_t logEntryLen = strlen(logEntry);
 
-        DWORD bytesWritten;
+        if (fwrite(logEntry, 1, logEntryLen, s_logFile) != logEntryLen)
+            fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to write to log file. errno=%d\n", errno);
 
-        if (!WriteFile(s_logFile, logEntry, (DWORD)logEntryLen, &bytesWritten, nullptr))
-            fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to write to log file. GetLastError()=%u\n",
-                    GetLastError());
-
-        if (!FlushFileBuffers(s_logFile))
-            fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to flush log file. GetLastError()=%u\n",
-                    GetLastError());
+        if (fflush(s_logFile) != 0)
+            fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to flush log file. errno=%d\n", errno);
 
         delete[] logEntry;
 

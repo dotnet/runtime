@@ -816,18 +816,6 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define PTREG_Lr(ptreg)        ((ptreg).uregs[14])
 #define PTREG_Pc(ptreg)        ((ptreg).uregs[15])
 #define PTREG_Cpsr(ptreg)      ((ptreg).uregs[16])
-#elif defined(HOST_X86)
-#define PTREG_Ebx(ptreg)    ((ptreg).ebx)
-#define PTREG_Ecx(ptreg)    ((ptreg).ecx)
-#define PTREG_Edx(ptreg)    ((ptreg).edx)
-#define PTREG_Esi(ptreg)    ((ptreg).esi)
-#define PTREG_Edi(ptreg)    ((ptreg).edi)
-#define PTREG_Ebp(ptreg)    ((ptreg).ebp)
-#define PTREG_Eax(ptreg)    ((ptreg).eax)
-#define PTREG_Eip(ptreg)    ((ptreg).eip)
-#define PTREG_SegCs(ptreg)  ((ptreg).xcs)
-#define PTREG_SegSs(ptreg)  ((ptreg).xss)
-#define PTREG_Esp(ptreg)    ((ptreg).esp)
 #else
 #error "Unsupported arch"
 #endif
@@ -983,8 +971,6 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
 {
 #if defined(HOST_AMD64)
     return pContext->Rip;
-#elif defined(HOST_X86)
-    return pContext->Eip;
 #elif defined(HOST_S390X)
     return pContext->PSWAddr;
 #elif defined(HOST_POWERPC64)
@@ -1000,8 +986,6 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
 {
 #if defined(HOST_AMD64)
     pContext->Rip = pc;
-#elif defined(HOST_X86)
-    pContext->Eip = pc;
 #elif defined(HOST_S390X)
     pContext->PSWAddr = pc;
 #elif defined(HOST_POWERPC64)
@@ -1017,8 +1001,6 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
 {
 #if defined(HOST_AMD64)
     return pContext->Rbp;
-#elif defined(HOST_X86)
-    return pContext->Ebp;
 #elif defined(HOST_ARM)
     return pContext->R7;
 #elif defined(HOST_S390X)
