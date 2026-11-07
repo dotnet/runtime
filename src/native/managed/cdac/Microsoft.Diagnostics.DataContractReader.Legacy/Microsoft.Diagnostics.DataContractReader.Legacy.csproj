@@ -21,5 +21,6 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
     <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.DumpTests" />
+    <InternalsVisibleTo Include="$(LibPrefix)mscordaccore_universal" />
   </ItemGroup>
 </Project>
