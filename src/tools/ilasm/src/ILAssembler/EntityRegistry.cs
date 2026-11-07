@@ -1007,7 +1007,7 @@ namespace Microsoft.DotNet.ILAssembler
                             asmRef.Name,
                             asmRef.Version,
                             string.IsNullOrEmpty(asmRef.Culture) ? null : asmRef.Culture,
-                            asmRef.PublicKeyOrToken is null ? AssemblyNameFlags.None : AssemblyNameFlags.PublicKey,
+                            (asmRef.Flags & AssemblyFlags.PublicKey) != 0 ? AssemblyNameFlags.PublicKey : AssemblyNameFlags.None,
                             asmRef.PublicKeyOrToken?.ToImmutableArray() ?? []);
                         builder.Append(", ");
                         builder.Append(assemblyNameInfo.FullName);
@@ -1520,16 +1520,24 @@ namespace Microsoft.DotNet.ILAssembler
                 fixed (byte* ptr = bytes)
                 {
                     var reader = new BlobReader(ptr, bytes.Length);
-                    var sig = decoder.DecodeMethodSignature(ref reader);
-
                     var newBlob = new BlobBuilder();
-                    var encoder = new BlobEncoder(newBlob);
-                    encoder.PropertySignature(sig.Header.Attributes.HasFlag(SignatureAttributes.Instance))
-                        .Parameters(sig.ParameterTypes.Length, out var retBuilder, out var paramsBuilder);
-                    sig.ReturnType.WriteBlobTo(retBuilder.Builder);
-                    for (int i = 0; i < sig.ParameterTypes.Length; i++)
+                    newBlob.WriteByte(reader.ReadByte());
+                    newBlob.WriteCompressedInteger(reader.ReadCompressedInteger());
+                    decoder.DecodeType(ref reader).WriteBlobTo(newBlob);
+                    // COMPAT: Preserve sentinel bytes, even though ECMA-335 II.23.2.5
+                    // does not include them in property signatures. This retains malformed
+                    // signatures rather than normalizing them.
+                    while (reader.RemainingBytes > 0)
                     {
-                        sig.ParameterTypes[i].WriteBlobTo(paramsBuilder.AddParameter().Builder);
+                        if (reader.ReadByte() == (byte)SignatureTypeCode.Sentinel)
+                        {
+                            newBlob.WriteByte((byte)SignatureTypeCode.Sentinel);
+                        }
+                        else
+                        {
+                            reader.Offset--;
+                            decoder.DecodeType(ref reader).WriteBlobTo(newBlob);
+                        }
                     }
                     return newBlob;
                 }

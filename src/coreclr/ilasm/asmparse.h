@@ -7,6 +7,7 @@
 #define asmparse_h
 
 #include <stdio.h>		// for FILE
+#include "minipal.h"
 
 #include "assembler.h"	// for ErrorReporter Labels
 //class Assembler;
@@ -95,9 +96,9 @@ class MappedFileStream : public ReadStream {
 public:
     MappedFileStream(_In_ __nullterminated WCHAR* wFileName)
         : m_fileNameUtf8(NULL)
-        , m_hFile(INVALID_HANDLE_VALUE)
+        , m_hFile(VMToOSInterface::InvalidFileHandle)
         , m_FileSize(0)
-        , m_hMapFile(NULL)
+        , m_hMapFile(VMToOSInterface::InvalidMemoryMapHandle)
     {
         m_pStart = open(wFileName);
         m_pCurr = m_pStart;
@@ -112,17 +113,17 @@ public:
     }
     ~MappedFileStream()
     {
-        if (m_hFile != INVALID_HANDLE_VALUE)
+        if (m_hFile != VMToOSInterface::InvalidFileHandle)
         {
             if (m_pStart)
-                UnmapViewOfFile((void*)m_pStart);
-            if (m_hMapFile)
-                CloseHandle(m_hMapFile);
-            CloseHandle(m_hFile);
+                VMToOSInterface::UnmapMemory((void*)m_pStart, m_FileSize);
+            if (m_hMapFile != VMToOSInterface::InvalidMemoryMapHandle)
+                VMToOSInterface::CloseMemoryMapping(m_hMapFile);
+            VMToOSInterface::CloseFile(m_hFile);
 
             m_pStart = NULL;
-            m_hMapFile = NULL;
-            m_hFile = INVALID_HANDLE_VALUE;
+            m_hMapFile = VMToOSInterface::InvalidMemoryMapHandle;
+            m_hFile = VMToOSInterface::InvalidFileHandle;
             m_FileSize = 0;
         }
 
@@ -173,19 +174,17 @@ public:
 private:
     char* map_file()
     {
-        DWORD dwFileSizeLow;
+        uint64_t fileSize;
 
-        dwFileSizeLow = GetFileSize( m_hFile, NULL);
-        if (dwFileSizeLow == INVALID_FILE_SIZE)
+        if (!VMToOSInterface::GetFileSize(m_hFile, &fileSize) || fileSize == 0 || fileSize > UINT32_MAX)
             return NULL;
-        m_FileSize = dwFileSizeLow;
+        m_FileSize = (DWORD)fileSize;
 
-        // No difference between A and W in this case: last param (LPCTSTR) is NULL
-        m_hMapFile = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-        if (m_hMapFile == NULL)
+        m_hMapFile = VMToOSInterface::CreateMemoryMapping(m_hFile, 0, VMToOSInterface::MemoryProtection::ReadOnly);
+        if (m_hMapFile == VMToOSInterface::InvalidMemoryMapHandle)
             return NULL;
 
-        return (char*)(HMODULE) MapViewOfFile(m_hMapFile, FILE_MAP_READ, 0, 0, 0);
+        return (char*)VMToOSInterface::MapMemory(m_hMapFile, 0, nullptr, m_FileSize, VMToOSInterface::MemoryProtection::ReadOnly, true);
     }
     char* open(const WCHAR* moduleName)
     {
@@ -193,15 +192,14 @@ private:
         if (!moduleName)
             return NULL;
 
-        m_hFile = WszCreateFile(moduleName, GENERIC_READ, FILE_SHARE_READ,
-                             0, OPEN_EXISTING, 0, 0);
-        return (m_hFile == INVALID_HANDLE_VALUE) ? NULL : map_file();
+        m_hFile = VMToOSInterface::OpenFile(reinterpret_cast<const char16_t*>(moduleName), /* executable */ false);
+        return (m_hFile == VMToOSInterface::InvalidFileHandle) ? NULL : map_file();
     }
 
     char*	m_fileNameUtf8; // FileName (for error reporting)
-    HANDLE  m_hFile;                 // File we are reading from
+    VMToOSInterface::MemoryMapHandle m_hFile;   // File we are reading from
     DWORD   m_FileSize;
-    HANDLE  m_hMapFile;
+    VMToOSInterface::MemoryMapHandle m_hMapFile;
     char*   m_pStart;
     char*   m_pEnd;
     char*   m_pCurr;
@@ -299,8 +297,6 @@ private:
     BinStr* MakeTypeArray(CorElementType kind, BinStr* elemType, BinStr* bounds);
 
     char* fillBuff(_In_opt_z_ char* curPos);   // refill the input buffer
-    HANDLE hstdout;
-    HANDLE hstderr;
 
 private:
     friend void yyerror(_In_ __nullterminated const char* str);
