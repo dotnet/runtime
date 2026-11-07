@@ -99,6 +99,7 @@ extern "C" {
     int32_t SystemNative_FcntlSetIsNonBlocking (void *, int32_t);
     int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     void SystemNative_Free (void *);
+    void SystemNative_FreeEnviron (void *);
     void SystemNative_FreeHostEntry (void *);
     void SystemNative_FreeLibrary (void *);
     int32_t SystemNative_GetAddressFamily (void *, int32_t, void *);
@@ -109,6 +110,8 @@ extern "C" {
     int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
+    void * SystemNative_GetEnv (void *);
+    void * SystemNative_GetEnviron ();
     int32_t SystemNative_GetErrNo ();
     int32_t SystemNative_GetHostEntryForName (void *, int32_t, void *);
     int32_t SystemNative_GetHostName (void *, int32_t);
@@ -413,6 +416,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_FcntlSetIsNonBlocking) // System.Net.Sockets
     DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
+    DllImportEntry(SystemNative_FreeEnviron) // System.Private.CoreLib
     DllImportEntry(SystemNative_FreeHostEntry) // System.Net.NameResolution
     DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetAddressFamily) // System.Net.Primitives, System.Net.Sockets
@@ -423,6 +427,8 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression, System.Security.Cryptography
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
+    DllImportEntry(SystemNative_GetEnv) // System.Private.CoreLib
+    DllImportEntry(SystemNative_GetEnviron) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetHostEntryForName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetHostName) // System.Net.NameResolution
@@ -593,7 +599,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 52},
-    {"libSystem.Native", s_libSystem_Native, 141},
+    {"libSystem.Native", s_libSystem_Native, 144},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},
@@ -715,7 +721,6 @@ extern "C" {
     void QCall_ExceptionNative_ThrowFieldAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowFieldAccessException");
     void QCall_ExceptionNative_ThrowMethodAccessException (void *, void *, void *) __asm__("ExceptionNative_ThrowMethodAccessException");
     void QCall_FileLoadException_GetMessageForHR (int32_t, void *, void *) __asm__("FileLoadException_GetMessageForHR");
-    int32_t QCall_FreeEnvironmentStringsW (void *) __asm__("FreeEnvironmentStringsW");
     void * QCall_GCHandle_InternalAllocWithGCTransition (void *, int32_t, void *) __asm__("GCHandle_InternalAllocWithGCTransition");
     void QCall_GCHandle_InternalFreeWithGCTransition (void *, void *) __asm__("GCHandle_InternalFreeWithGCTransition");
     void QCall_GCInterface_AddMemoryPressure (uint64_t, void *) __asm__("GCInterface_AddMemoryPressure");
@@ -739,8 +744,6 @@ extern "C" {
     void QCall_GCInterface_WaitForPendingFinalizers (void *) __asm__("GCInterface_WaitForPendingFinalizers");
     void * QCall_GenericHandleWorker (void *, void *, void *, uint32_t, void *, void *) __asm__("GenericHandleWorker");
     void * QCall_GetCurrentExInfo () __asm__("GetCurrentExInfo");
-    void * QCall_GetEnvironmentStringsW () __asm__("GetEnvironmentStringsW");
-    uint32_t QCall_GetEnvironmentVariableW (void *, void *, uint32_t) __asm__("GetEnvironmentVariableW");
     void QCall_GetFileLoadExceptionMessage (int32_t, void *, void *) __asm__("GetFileLoadExceptionMessage");
     void QCall_GetTypeLoadExceptionMessage (int32_t, void *, void *) __asm__("GetTypeLoadExceptionMessage");
     void QCall_InitClassHelper (void *, void *) __asm__("InitClassHelper");
@@ -861,7 +864,6 @@ extern "C" {
     void QCall_RuntimeTypeHandle_RegisterCollectibleTypeDependency (void *, void *, void *) __asm__("RuntimeTypeHandle_RegisterCollectibleTypeDependency");
     int32_t QCall_RuntimeTypeHandle_SatisfiesConstraints (void *, void *, void *, void *, void *) __asm__("RuntimeTypeHandle_SatisfiesConstraints");
     void QCall_RuntimeTypeHandle_VerifyInterfaceIsImplemented (void *, void *, void *) __asm__("RuntimeTypeHandle_VerifyInterfaceIsImplemented");
-    int32_t QCall_SetEnvironmentVariableW (void *, void *) __asm__("SetEnvironmentVariableW");
     uint32_t QCall_SfiInit (void *, void *, uint32_t, void *, void *) __asm__("SfiInit");
     uint32_t QCall_SfiNext (void *, void *, void *, void *, void *) __asm__("SfiNext");
     int32_t QCall_Signature_AreEqual (void *, int32_t, void *, void *, int32_t, void *, void *) __asm__("Signature_AreEqual");
@@ -1017,7 +1019,6 @@ static const Entry s_QCall[] = {
     { "ExceptionNative_ThrowFieldAccessException", (void*)&QCall_ExceptionNative_ThrowFieldAccessException },
     { "ExceptionNative_ThrowMethodAccessException", (void*)&QCall_ExceptionNative_ThrowMethodAccessException },
     { "FileLoadException_GetMessageForHR", (void*)&QCall_FileLoadException_GetMessageForHR },
-    { "FreeEnvironmentStringsW", (void*)&QCall_FreeEnvironmentStringsW },
     { "GCHandle_InternalAllocWithGCTransition", (void*)&QCall_GCHandle_InternalAllocWithGCTransition },
     { "GCHandle_InternalFreeWithGCTransition", (void*)&QCall_GCHandle_InternalFreeWithGCTransition },
     { "GCInterface_AddMemoryPressure", (void*)&QCall_GCInterface_AddMemoryPressure },
@@ -1041,8 +1042,6 @@ static const Entry s_QCall[] = {
     { "GCInterface_WaitForPendingFinalizers", (void*)&QCall_GCInterface_WaitForPendingFinalizers },
     { "GenericHandleWorker", (void*)&QCall_GenericHandleWorker },
     { "GetCurrentExInfo", (void*)&QCall_GetCurrentExInfo },
-    { "GetEnvironmentStringsW", (void*)&QCall_GetEnvironmentStringsW },
-    { "GetEnvironmentVariableW", (void*)&QCall_GetEnvironmentVariableW },
     { "GetFileLoadExceptionMessage", (void*)&QCall_GetFileLoadExceptionMessage },
     { "GetTypeLoadExceptionMessage", (void*)&QCall_GetTypeLoadExceptionMessage },
     { "InitClassHelper", (void*)&QCall_InitClassHelper },
@@ -1163,7 +1162,6 @@ static const Entry s_QCall[] = {
     { "RuntimeTypeHandle_RegisterCollectibleTypeDependency", (void*)&QCall_RuntimeTypeHandle_RegisterCollectibleTypeDependency },
     { "RuntimeTypeHandle_SatisfiesConstraints", (void*)&QCall_RuntimeTypeHandle_SatisfiesConstraints },
     { "RuntimeTypeHandle_VerifyInterfaceIsImplemented", (void*)&QCall_RuntimeTypeHandle_VerifyInterfaceIsImplemented },
-    { "SetEnvironmentVariableW", (void*)&QCall_SetEnvironmentVariableW },
     { "SfiInit", (void*)&QCall_SfiInit },
     { "SfiNext", (void*)&QCall_SfiNext },
     { "Signature_AreEqual", (void*)&QCall_Signature_AreEqual },
