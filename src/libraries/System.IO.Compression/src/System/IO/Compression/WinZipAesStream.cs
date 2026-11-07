@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.Versioning;
@@ -15,6 +16,8 @@ namespace System.IO.Compression
     {
         private const int BlockSize = 16; // AES block size in bytes
         private const int KeystreamBufferSize = 4096; // Pre-generate 4KB of keystream (256 blocks)
+        private const int AuthenticationCodeSize = 10;
+        private const int PasswordVerifierSize = 2;
 
         private readonly Stream _baseStream;
         private readonly bool _encrypting;
@@ -101,6 +104,12 @@ namespace System.IO.Compression
             return new WinZipAesStream(baseStream, keyMaterial, totalStreamSize, encrypting, leaveOpen);
         }
 
+        internal static Stream CreateAuthenticatedStream(Stream payloadStream, Stream aesStream)
+        {
+            Debug.Assert(aesStream is WinZipAesStream);
+            return new AuthenticatedReadStream(payloadStream, (WinZipAesStream)aesStream);
+        }
+
         /// <summary>
         /// Reads and validates the WinZip AES header (salt + password verifier) from the stream.
         /// </summary>
@@ -124,7 +133,7 @@ namespace System.IO.Compression
             }
 
             // Read the 2-byte password verifier from stream
-            byte[] verifier = new byte[2];
+            byte[] verifier = new byte[PasswordVerifierSize];
             if (isAsync)
             {
                 await baseStream.ReadExactlyAsync(verifier, cancellationToken).ConfigureAwait(false);
@@ -180,10 +189,9 @@ namespace System.IO.Compression
             }
             else
             {
-                int headerSize = checked(keyMaterial.SaltSize + 2); // Salt + Password Verifier
-                const int hmacSize = 10; // 10-byte HMAC
+                int headerSize = checked(keyMaterial.SaltSize + PasswordVerifierSize);
 
-                _encryptedDataSize = _totalStreamSize - headerSize - hmacSize;
+                _encryptedDataSize = _totalStreamSize - headerSize - AuthenticationCodeSize;
                 _encryptedDataRemaining = _encryptedDataSize;
 
                 if (_encryptedDataSize < 0)
@@ -198,56 +206,85 @@ namespace System.IO.Compression
 
         // Compute and check the HMAC for the entire stream. This is called at the end of the stream, after all data has been read/written,
         // similarly to how CRC is computed for non-encrypted ZIP entries. The HMAC is stored in the last 10 bytes of the stream.
-        private unsafe void FinalizeAndCompareHMAC(byte[] storedAuth)
+        private void ValidateHMAC(byte[] storedAuth)
         {
-
             Debug.Assert(_hmac is not null, "HMAC should have been initialized");
 
-            // Finalize HMAC computation after reading, so we can use stackalloc
             Span<byte> expectedAuth = stackalloc byte[SHA1.HashSizeInBytes];
-            if (!_hmac.TryGetHashAndReset(expectedAuth, out int bytesWritten) || bytesWritten < 10)
+            if (!_hmac.TryGetCurrentHash(expectedAuth, out int bytesWritten) || bytesWritten < AuthenticationCodeSize)
             {
                 throw new InvalidDataException(SR.WinZipAuthCodeMismatch);
             }
 
             // Compare the 10 bytes of the expected hash
-            Debug.Assert(storedAuth.Length == 10);
+            Debug.Assert(storedAuth.Length == AuthenticationCodeSize);
             if (!CryptographicOperations.FixedTimeEquals(storedAuth, expectedAuth.Slice(0, storedAuth.Length)))
             {
                 throw new InvalidDataException(SR.WinZipAuthCodeMismatch);
             }
         }
 
-        private void ValidateAuthCode()
+        private async Task CompleteAuthenticationCoreAsync(bool isAsync, CancellationToken cancellationToken)
         {
-            Debug.Assert(!_encrypting, "ValidateAuthCode should only be called during decryption.");
+            ThrowIfNotReadable();
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (_authCodeFinalized)
             {
                 return;
             }
 
-            // Read the 10-byte stored authentication code from the stream
-            byte[] storedAuth = new byte[10];
-            _baseStream.ReadExactly(storedAuth);
-            FinalizeAndCompareHMAC(storedAuth);
-            _authCodeFinalized = true;
-        }
-
-        private async Task ValidateAuthCodeAsync(CancellationToken cancellationToken)
-        {
-            Debug.Assert(!_encrypting, "ValidateAuthCode should only be called during decryption.");
-
-            if (_authCodeFinalized)
+            const int AuthenticationBufferSize = 4096;
+            byte[]? buffer = null;
+            try
             {
-                return;
-            }
+                if (_encryptedDataRemaining > 0)
+                {
+                    // Discarded ciphertext needs hashing, but not decryption.
+                    Debug.Assert(_hmac is not null);
+                    buffer = ArrayPool<byte>.Shared.Rent(AuthenticationBufferSize);
+                    while (_encryptedDataRemaining > 0)
+                    {
+                        int count = (int)Math.Min(_encryptedDataRemaining, AuthenticationBufferSize);
+                        int bytesRead = isAsync
+                            ? await _baseStream.ReadAsync(buffer.AsMemory(0, count), cancellationToken).ConfigureAwait(false)
+                            : _baseStream.Read(buffer, 0, count);
+                        if (bytesRead == 0)
+                        {
+                            throw new InvalidDataException(SR.UnexpectedEndOfStream);
+                        }
 
-            // Read the 10-byte stored authentication code from the stream
-            byte[] storedAuth = new byte[10];
-            await _baseStream.ReadExactlyAsync(storedAuth, cancellationToken).ConfigureAwait(false);
-            FinalizeAndCompareHMAC(storedAuth);
-            _authCodeFinalized = true;
+                        _hmac.AppendData(buffer.AsSpan(0, bytesRead));
+                        _encryptedDataRemaining -= bytesRead;
+                    }
+                }
+
+                byte[] storedAuthenticationCode = new byte[AuthenticationCodeSize];
+                int authenticationCodeBytesRead = 0;
+                while (authenticationCodeBytesRead < AuthenticationCodeSize)
+                {
+                    int count = AuthenticationCodeSize - authenticationCodeBytesRead;
+                    int bytesRead = isAsync
+                        ? await _baseStream.ReadAsync(storedAuthenticationCode.AsMemory(authenticationCodeBytesRead, count), cancellationToken).ConfigureAwait(false)
+                        : _baseStream.Read(storedAuthenticationCode, authenticationCodeBytesRead, count);
+                    if (bytesRead == 0)
+                    {
+                        throw new InvalidDataException(SR.UnexpectedEndOfStream);
+                    }
+
+                    authenticationCodeBytesRead += bytesRead;
+                }
+
+                ValidateHMAC(storedAuthenticationCode);
+                _authCodeFinalized = true;
+            }
+            finally
+            {
+                if (buffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
         }
 
         private async Task WriteHeaderAsync(CancellationToken cancellationToken)
@@ -393,37 +430,29 @@ namespace System.IO.Compression
         public override int Read(Span<byte> buffer)
         {
             ThrowIfNotReadable();
-
-            int bytesToRead = GetBytesToRead(buffer.Length);
-            if (bytesToRead == 0)
+            if (buffer.IsEmpty)
             {
-                // Only validate auth code when we've actually reached end of encrypted data,
-                // not when caller simply requested 0 bytes
-                if (_encryptedDataRemaining <= 0)
-                {
-                    ValidateAuthCode();
-                }
                 return 0;
             }
 
-            Span<byte> readBuffer = buffer.Slice(0, bytesToRead);
-            int bytesRead = _baseStream.Read(readBuffer);
-
-            if (bytesRead > 0)
+            int bytesToRead = GetBytesToRead(buffer.Length);
+            int bytesRead = 0;
+            if (bytesToRead > 0)
             {
+                Span<byte> readBuffer = buffer.Slice(0, bytesToRead);
+                bytesRead = _baseStream.Read(readBuffer);
+                if (bytesRead == 0)
+                {
+                    throw new InvalidDataException(SR.UnexpectedEndOfStream);
+                }
+
                 _encryptedDataRemaining -= bytesRead;
                 ProcessBlock(readBuffer.Slice(0, bytesRead));
-
-                // Validate auth code immediately when we've read all encrypted data
-                if (_encryptedDataRemaining <= 0)
-                {
-                    ValidateAuthCode();
-                }
             }
-            else if (_encryptedDataRemaining > 0)
+
+            if (_encryptedDataRemaining == 0)
             {
-                // Base stream returned 0 bytes but we expected more encrypted data - stream is truncated
-                throw new InvalidDataException(SR.UnexpectedEndOfStream);
+                CompleteAuthenticationCoreAsync(isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
             }
 
             return bytesRead;
@@ -439,36 +468,28 @@ namespace System.IO.Compression
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfNotReadable();
-
-            int bytesToRead = GetBytesToRead(buffer.Length);
-            if (bytesToRead == 0)
+            if (buffer.IsEmpty)
             {
-                // Only validate auth code when we've actually reached end of encrypted data,
-                // not when caller simply requested 0 bytes
-                if (_encryptedDataRemaining <= 0)
-                {
-                    await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
-                }
                 return 0;
             }
 
-            int bytesRead = await _baseStream.ReadAsync(buffer.Slice(0, bytesToRead), cancellationToken).ConfigureAwait(false);
-
-            if (bytesRead > 0)
+            int bytesToRead = GetBytesToRead(buffer.Length);
+            int bytesRead = 0;
+            if (bytesToRead > 0)
             {
+                bytesRead = await _baseStream.ReadAsync(buffer.Slice(0, bytesToRead), cancellationToken).ConfigureAwait(false);
+                if (bytesRead == 0)
+                {
+                    throw new InvalidDataException(SR.UnexpectedEndOfStream);
+                }
+
                 _encryptedDataRemaining -= bytesRead;
                 ProcessBlock(buffer.Span.Slice(0, bytesRead));
-
-                // Validate auth code immediately when we've read all encrypted data
-                if (_encryptedDataRemaining <= 0)
-                {
-                    await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
-                }
             }
-            else if (_encryptedDataRemaining > 0)
+
+            if (_encryptedDataRemaining == 0)
             {
-                // Base stream returned 0 bytes but we expected more encrypted data - stream is truncated
-                throw new InvalidDataException(SR.UnexpectedEndOfStream);
+                await CompleteAuthenticationCoreAsync(isAsync: true, cancellationToken).ConfigureAwait(false);
             }
 
             return bytesRead;
@@ -670,5 +691,134 @@ namespace System.IO.Compression
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         public override void SetLength(long value) => throw new NotSupportedException();
+
+        // Decompression can finish without consuming all ciphertext. Best effort: when the plaintext stream above
+        // decompression reports EOF, drain the remaining ciphertext and validate the HMAC.
+        private sealed class AuthenticatedReadStream : Stream
+        {
+            private readonly Stream _payloadStream;
+            private readonly WinZipAesStream _aesStream;
+            private bool _disposed;
+            private bool _completed;
+
+            internal AuthenticatedReadStream(Stream payloadStream, WinZipAesStream aesStream)
+            {
+                ArgumentNullException.ThrowIfNull(payloadStream);
+
+                _payloadStream = payloadStream;
+                _aesStream = aesStream;
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                ValidateBufferArguments(buffer, offset, count);
+                return Read(buffer.AsSpan(offset, count));
+            }
+
+            public override int Read(Span<byte> buffer)
+            {
+                ThrowIfDisposed();
+
+                int bytesRead = _payloadStream.Read(buffer);
+                if (bytesRead == 0 && !buffer.IsEmpty)
+                {
+                    CompleteAuthenticationAtPayloadEndAsync(isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
+                }
+
+                return bytesRead;
+            }
+
+            public override int ReadByte()
+            {
+                byte value = default;
+                return Read(new Span<byte>(ref value)) == 0 ? -1 : value;
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                ValidateBufferArguments(buffer, offset, count);
+                return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            }
+
+            public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+                TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+
+            public override int EndRead(IAsyncResult asyncResult) => TaskToAsyncResult.End<int>(asyncResult);
+
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                ThrowIfDisposed();
+
+                int bytesRead = await _payloadStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                if (bytesRead == 0 && !buffer.IsEmpty)
+                {
+                    await CompleteAuthenticationAtPayloadEndAsync(isAsync: true, cancellationToken).ConfigureAwait(false);
+                }
+
+                return bytesRead;
+            }
+
+            private async Task CompleteAuthenticationAtPayloadEndAsync(bool isAsync, CancellationToken cancellationToken)
+            {
+                if (!_completed)
+                {
+                    await _aesStream.CompleteAuthenticationCoreAsync(isAsync, cancellationToken).ConfigureAwait(false);
+                    _completed = true;
+                }
+            }
+
+            private void ThrowIfDisposed()
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing && !_disposed)
+                {
+                    _payloadStream.Dispose();
+                    _disposed = true;
+                }
+
+                base.Dispose(disposing);
+            }
+
+            public override async ValueTask DisposeAsync()
+            {
+                if (!_disposed)
+                {
+                    await _payloadStream.DisposeAsync().ConfigureAwait(false);
+                    _disposed = true;
+                }
+            }
+
+            public override bool CanRead => !_disposed && _payloadStream.CanRead;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => throw new NotSupportedException();
+
+            public override long Position
+            {
+                get => throw new NotSupportedException();
+                set => throw new NotSupportedException();
+            }
+
+            public override void Flush()
+            {
+                ThrowIfDisposed();
+                _payloadStream.Flush();
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                ThrowIfDisposed();
+                return _payloadStream.FlushAsync(cancellationToken);
+            }
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException(SR.SeekingNotSupported);
+            public override void SetLength(long value) => throw new NotSupportedException(SR.SetLengthRequiresSeekingAndWriting);
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.WritingNotSupported);
+        }
     }
 }
