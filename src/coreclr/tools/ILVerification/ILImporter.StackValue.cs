@@ -24,6 +24,30 @@ namespace Internal.IL
         public readonly StackValueKind Kind;
         public readonly TypeDesc Type;
         public readonly MethodDesc Method;
+        internal LifetimeScope EscapeScope;
+        internal LifetimeScope ContentsScope;
+        internal LifetimeScope LifetimeCapacity;
+        // Packs the write floor and whole-target bit so the stack value keeps its original size.
+        private byte _lifetimeBits;
+        internal int LifetimeTarget;
+        // On byrefs, a singleton identifies an exact field of LifetimeTarget;
+        // all bits set means no field identity. Value cells use definite-assignment bits.
+        internal ulong InitializedLifetimeFields;
+
+        private const byte WholeLifetimeTargetBit = 0x80;
+
+        // Losing a target must not allow writes to narrow another alias's contents snapshot.
+        internal LifetimeScope LifetimeWriteFloor
+        {
+            readonly get => (LifetimeScope)(_lifetimeBits & ~WholeLifetimeTargetBit);
+            set => _lifetimeBits = (byte)((_lifetimeBits & WholeLifetimeTargetBit) | (byte)value);
+        }
+
+        internal bool IsWholeLifetimeTarget
+        {
+            readonly get => (_lifetimeBits & WholeLifetimeTargetBit) != 0;
+            set => _lifetimeBits = (byte)(value ? _lifetimeBits | WholeLifetimeTargetBit : _lifetimeBits & ~WholeLifetimeTargetBit);
+        }
 
         private StackValue(StackValueKind kind, TypeDesc type = null, MethodDesc method = null, StackValueFlags flags = StackValueFlags.None)
         {
@@ -31,18 +55,69 @@ namespace Internal.IL
             this.Type = type;
             this.Method = method;
             this.Flags = flags;
+            EscapeScope = (flags & StackValueFlags.PermanentHome) != 0 ? LifetimeScope.Global : LifetimeScope.Unknown;
+            ContentsScope = LifetimeScope.Unknown;
+            LifetimeCapacity = (flags & StackValueFlags.PermanentHome) != 0 ? LifetimeScope.Global : LifetimeScope.Caller;
+            _lifetimeBits = 0;
+            LifetimeTarget = 0;
+            InitializedLifetimeFields = ulong.MaxValue;
+        }
+
+        internal StackValue WithLifetime(LifetimeScope scope, LifetimeScope contents = LifetimeScope.Unknown,
+            int target = 0, bool whole = false, LifetimeScope capacity = LifetimeScope.Caller,
+            LifetimeScope writeFloor = LifetimeScope.Unknown)
+        {
+            StackValue value = this;
+            value.EscapeScope = scope;
+            value.ContentsScope = contents;
+            value.LifetimeTarget = target;
+            value.IsWholeLifetimeTarget = whole;
+            value.LifetimeCapacity = capacity;
+            value.LifetimeWriteFloor = writeFloor;
+            return value;
+        }
+
+        internal StackValue CopyLifetime(StackValue value)
+        {
+            StackValue result = WithLifetime(value.EscapeScope, value.ContentsScope, value.LifetimeTarget,
+                value.IsWholeLifetimeTarget, value.LifetimeCapacity, value.LifetimeWriteFloor);
+            result.InitializedLifetimeFields = value.InitializedLifetimeFields;
+            result.Flags |= value.Flags & StackValueFlags.ReadOnly;
+            return result;
+        }
+
+        internal bool HasSameLifetime(StackValue other)
+        {
+            return EscapeScope == other.EscapeScope && ContentsScope == other.ContentsScope &&
+                LifetimeTarget == other.LifetimeTarget && IsWholeLifetimeTarget == other.IsWholeLifetimeTarget &&
+                LifetimeCapacity == other.LifetimeCapacity && LifetimeWriteFloor == other.LifetimeWriteFloor &&
+                InitializedLifetimeFields == other.InitializedLifetimeFields && IsReadOnly == other.IsReadOnly;
+        }
+
+        internal StackValue MergeLifetime(StackValue other)
+        {
+            StackValue value = this;
+            value.EscapeScope = EscapeScope < other.EscapeScope ? EscapeScope : other.EscapeScope;
+            value.ContentsScope = ContentsScope < other.ContentsScope ? ContentsScope : other.ContentsScope;
+            value.LifetimeCapacity = LifetimeCapacity > other.LifetimeCapacity ? LifetimeCapacity : other.LifetimeCapacity;
+            value.LifetimeWriteFloor = LifetimeWriteFloor > other.LifetimeWriteFloor ? LifetimeWriteFloor : other.LifetimeWriteFloor;
+            value.InitializedLifetimeFields = Kind == StackValueKind.ByRef ?
+                LifetimeTarget == other.LifetimeTarget && IsWholeLifetimeTarget == other.IsWholeLifetimeTarget &&
+                    InitializedLifetimeFields == other.InitializedLifetimeFields ? InitializedLifetimeFields : ulong.MaxValue :
+                InitializedLifetimeFields & other.InitializedLifetimeFields;
+            value.Flags |= other.Flags & StackValueFlags.ReadOnly;
+            value.IsWholeLifetimeTarget &= other.IsWholeLifetimeTarget && LifetimeTarget == other.LifetimeTarget;
+            if (LifetimeTarget != other.LifetimeTarget)
+                value.LifetimeTarget = 0;
+            if (!other.IsPermanentHome)
+                value.Flags &= ~StackValueFlags.PermanentHome;
+            return value;
         }
 
         public void SetIsReadOnly()
         {
             Debug.Assert(Kind == StackValueKind.ByRef);
             Flags |= StackValueFlags.ReadOnly;
-        }
-
-        public void SetIsPermanentHome()
-        {
-            Debug.Assert(Kind == StackValueKind.ByRef);
-            Flags |= StackValueFlags.PermanentHome;
         }
 
         public void SetIsThisPtr()
@@ -692,7 +767,7 @@ namespace Internal.IL
             if (value.Kind == StackValueKind.ByRef)
                 return true;
 
-            return value.Type?.IsByRefLike == true;
+            return HasLifetimeContents(value.Type);
         }
     }
 }
