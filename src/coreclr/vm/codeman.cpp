@@ -7251,7 +7251,12 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
     MethodDesc *pMethodDesc;
     while ((pMethodDesc = pInfo->GetMethodDescForEntryPoint(ImageBase + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + MethodIndex))) == NULL)
-        MethodIndex--;
+    {
+        // No preceding entry has been registered yet (for example, GC stress is inspecting
+        // a call to a method whose entry point has not been published).
+        if (--MethodIndex < 0)
+            return FALSE;
+    }
 
     PTR_RUNTIME_FUNCTION FunctionEntry = pRuntimeFunctions + MethodIndex;
 
