@@ -219,7 +219,7 @@ namespace System.IO.Compression
             lastResult = _decoder.Decompress(new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount), destination, out int bytesConsumed, out bytesWritten);
             if (lastResult == OperationStatus.InvalidData)
             {
-                throw new InvalidOperationException(SR.BrotliStream_Decompress_InvalidData);
+                throw new InvalidDataException(SR.BrotliStream_Decompress_InvalidData);
             }
 
             if (bytesConsumed != 0)
