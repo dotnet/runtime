@@ -259,6 +259,7 @@
       <GroupBuildCmd Condition="'$(BuildTestsOnHelix)' == 'true'">$(GroupBuildCmd) "/p:BuildTestsOnHelix=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(MonoForceInterpreter)' == 'true'">$(GroupBuildCmd) "/p:MonoForceInterpreter=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(PublishReadyToRunInstructionSet)' != ''">$(GroupBuildCmd) "/p:PublishReadyToRunInstructionSet=$(PublishReadyToRunInstructionSet)"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(IlcInstructionSet)' != ''">$(GroupBuildCmd) "/p:IlcInstructionSet=$(IlcInstructionSet)"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(RunAOTCompilation)' == 'true'">$(GroupBuildCmd) "/p:RunAOTCompilation=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(DevTeamProvisioning)' != ''">$(GroupBuildCmd) "/p:DevTeamProvisioning=$(DevTeamProvisioning)"</GroupBuildCmd>
     </PropertyGroup>
