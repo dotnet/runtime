@@ -2570,7 +2570,7 @@ DISPID ExtractStandardDispId(_In_z_ LPWSTR strStdDispIdMemberName)
         COMPlusThrow(kArgumentException, IDS_EE_INVALID_STD_DISPID_NAME);
 
     // Extract the number from the standard DISPID member name.
-    return _wtoi(strDispId);
+    return (int)u16_strtoul(strDispId, NULL, 10);
 }
 
 // Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions

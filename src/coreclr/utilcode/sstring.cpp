@@ -817,28 +817,24 @@ COUNT_T SString::ConvertToUTF8(SString &s) const
         UNREACHABLE();
     }
 
-    // <TODO> @todo: use WC_NO_BEST_FIT_CHARS </TODO>
-    bool  allAscii;
-    DWORD length;
+    size_t length = minipal_get_length_utf16_to_utf8((const CHAR16_T*)GetRawUnicode(), GetRawCount() + 1, 0);
+    if (length == 0)
+        ThrowWin32(errno);
 
-    HRESULT hr = FString::Unicode_Utf8_Length(GetRawUnicode(), & allAscii, & length);
+    if (!FitsIn<COUNT_T>(length))
+        ThrowHR(COR_E_OVERFLOW);
 
-    if (SUCCEEDED(hr))
+    s.Resize((COUNT_T)(length - 1), REPRESENTATION_UTF8);
+
+    // Resizing to zero switches to the shared empty buffer, which must not be written to
+    if (length > 1)
     {
-        s.Resize(length, REPRESENTATION_UTF8);
-
-	//FString::Unicode_Utf8 expects an array all the time
-        //we optimize the empty string by replacing it with null for SString above in Resize
-        if (length > 0)
-        {
-            hr = FString::Unicode_Utf8(GetRawUnicode(), allAscii, (LPSTR) s.GetRawUTF8(), length);
-        }
+        if (minipal_convert_utf16_to_utf8((const CHAR16_T*)GetRawUnicode(), GetRawCount() + 1, (LPSTR)s.GetRawUTF8(), length, 0) == 0)
+            ThrowWin32(errno);
     }
 
-    IfFailThrow(hr);
-
     _ASSERTE(s.IsRepresentation(REPRESENTATION_UTF8));
-    return length + 1;
+    return (COUNT_T)length;
 }
 
 //-----------------------------------------------------------------------------

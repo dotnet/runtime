@@ -53,7 +53,12 @@ bool WriteToBuffer(const BYTE *src, size_t len, char *&buffer, size_t& offset, s
 bool WriteToBuffer(PCWSTR str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
     if(!str) return true;
-    size_t byteCount = (PAL_wcslen(str) + 1) * sizeof(*str);
+    size_t length = 0;
+    while (str[length] != '\0')
+    {
+        length++;
+    }
+    size_t byteCount = (length + 1) * sizeof(*str);
 
     if (offset + byteCount > size)
     {
