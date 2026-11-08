@@ -942,8 +942,14 @@ namespace System.Runtime
 #if FEATURE_OBJCMARSHAL
             if (pReversePInvokePropagationCallback != IntPtr.Zero)
             {
+#if TARGET_AMD64
+                InternalCalls.RhpPopExInfo(ref exInfo, frameIter.SP);
+                InternalCalls.RhpCallPropagateExceptionCallback(
+                    pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, frameIter.PreviousTransitionFrame);
+#else
                 InternalCalls.RhpCallPropagateExceptionCallback(
                     pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo, frameIter.PreviousTransitionFrame);
+#endif
                 // the helper should jump to propagation handler and not return
                 Debug.Fail("unreachable");
                 FallbackFailFast(RhFailFastReason.InternalError, null);
