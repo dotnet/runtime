@@ -831,7 +831,7 @@ void ETW::TypeSystemLog::PostRegistrationInit()
         // Config value intentionally typed as string, b/c DWORD interpretation is hard-coded
         // to hex, which is not what the user would expect.  This way I can force the
         // conversion to use decimal.
-        NewArrayHolder<WCHAR> wszCustomObjectAllocationEventsPerTypePerSec(NULL);
+        WStringHolder wszCustomObjectAllocationEventsPerTypePerSec;
         if (FAILED(CLRConfig::GetConfigValue(
             CLRConfig::UNSUPPORTED_ETW_ObjectAllocationEventsPerTypePerSec,
             &wszCustomObjectAllocationEventsPerTypePerSec)) ||
@@ -2242,9 +2242,9 @@ void InitializeEventTracing()
     // Register CLR providers with the OS
     if (g_pEtwTracer == NULL)
     {
-        NewHolder <ETW::CEtwTracer> tempEtwTracer (new (nothrow) ETW::CEtwTracer());
+        NewHolder<ETW::CEtwTracer> tempEtwTracer (new (nothrow) ETW::CEtwTracer());
         if (tempEtwTracer != NULL && tempEtwTracer->Register () == ERROR_SUCCESS)
-            g_pEtwTracer = tempEtwTracer.Extract ();
+            g_pEtwTracer = tempEtwTracer.Detach();
     }
 #endif
 

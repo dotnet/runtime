@@ -426,7 +426,7 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 
     UnRegister();
 
-    pTable = newPTable.Extract();
+    pTable = newPTable.Detach();
     cTableCurCount = toIdx;
     cTableMaxCount = desiredSpace;
     cDeletedEntries = 0;
@@ -570,9 +570,9 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
         // OS registration is deferred to the first flush in FlushPendingEntriesUnderGate.
         NewHolder<UnwindInfoTable> newTable(new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen()));
 
-        if (InterlockedCompareExchangeT(&pRS->_pUnwindInfoTable, newTable.GetValue(), (UnwindInfoTable*)NULL) == NULL)
+        if (InterlockedCompareExchangeT(&pRS->_pUnwindInfoTable, static_cast<UnwindInfoTable*>(newTable), (UnwindInfoTable*)NULL) == NULL)
         {
-            newTable.SuppressRelease();
+            newTable.Detach();
         }
         // else another thread won. NewHolder frees our unregistered table (no OS call).
 
@@ -2665,7 +2665,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
          DBG_ADDR(pHp->startAddress), DBG_ADDR(pHp->startAddress+pHp->maxCodeHeapSize)
          ));
 
-    pCodeHeap.SuppressRelease();
+    pCodeHeap.Detach();
     _ASSERTE((pHp != NULL) || pInfo->IsSpecificMemoryRangeRequested());
     return pHp;
 }
@@ -3400,7 +3400,7 @@ EEJitManager::DomainCodeHeapList* EECodeGenManager::CreateCodeHeapList(CodeHeapR
         : m_DomainCodeHeaps.AppendThrowing();
     *ppList = pNewList;
 
-    return pNewList.Extract();
+    return pNewList.Detach();
 }
 
 LoaderHeap *EECodeGenManager::GetJitMetaHeap(MethodDesc *pMD)

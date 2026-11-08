@@ -536,7 +536,7 @@ CordbGenericValue::CordbGenericValue(CordbAppDomain *              pAppdomain,
     m_size = size;
 
     // now instantiate the value home
-    NewHolder<ValueHome> pHome(NULL);
+    NewHolder<ValueHome> pHome;
     if (remoteValue.IsEmpty())
     {
         pHome = (new RegisterValueHome(pAppdomain->GetProcess(), ppRemoteRegAddr));
@@ -545,8 +545,7 @@ CordbGenericValue::CordbGenericValue(CordbAppDomain *              pAppdomain,
     {
         pHome = (new RemoteValueHome(pAppdomain->GetProcess(), remoteValue));
     }
-    m_pValueHome = pHome.GetValue(); // throws
-    pHome.SuppressRelease();
+    m_pValueHome = pHome.Detach();
 } // CordbGenericValue::CordbGenericValue
 
 //
@@ -758,7 +757,7 @@ CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomai
     m_size = sizeof(void *);
 
     // now instantiate the value home
-    NewHolder<ValueHome> pHome(NULL);
+    NewHolder<ValueHome> pHome;
 
     if (!vmObjectHandle.IsNull())
     {
@@ -776,8 +775,7 @@ CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomai
     {
         pHome = (new RefRemoteValueHome(pAppdomain->GetProcess(), remoteValue));
 }
-    m_valueHome.m_pHome = pHome.GetValue();  // throws
-    pHome.SuppressRelease();
+    m_valueHome.m_pHome = pHome.Detach();
 } // CordbReferenceValue::CordbReferenceValue
 
 // CordbReferenceValue constructor that builds an empty reference value
@@ -2942,7 +2940,7 @@ CordbVCObjectValue::CordbVCObjectValue(CordbAppDomain *               pAppdomain
       m_isExternalMemory(false)
 {
     // instantiate the value home
-    NewHolder<ValueHome> pHome(NULL);
+    NewHolder<ValueHome> pHome;
 
     if (remoteValue.IsEmpty())
     {
@@ -2952,8 +2950,7 @@ CordbVCObjectValue::CordbVCObjectValue(CordbAppDomain *               pAppdomain
     {
         pHome = (new VCRemoteValueHome(pAppdomain->GetProcess(), remoteValue));
     }
-    m_pValueHome = pHome.GetValue();  // throws
-    pHome.SuppressRelease();
+    m_pValueHome = pHome.Detach();
 } // CordbVCObjectValue::CordbVCObjectValue
 
 // destructor

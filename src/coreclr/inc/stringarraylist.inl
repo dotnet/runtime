@@ -31,10 +31,10 @@ inline void StringArrayList::Append(const SString& string)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    NewHolder<SString> pAdd=new SString(string);
+    NewHolder<SString> pAdd{ new SString(string) };
     pAdd->Normalize();
     IfFailThrow(m_Elements.Append(pAdd));
-    pAdd.SuppressRelease();
+    pAdd.Detach();
 }
 
 inline void StringArrayList::AppendIfNotThere(const SString& string)

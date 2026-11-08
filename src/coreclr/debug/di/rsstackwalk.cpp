@@ -82,7 +82,7 @@ void CordbStackWalk::CheckForLegacyHijackCase()
                 {
                     ThrowHR(E_FAIL);
                 }
-                T_CONTEXT * pContext = reinterpret_cast<T_CONTEXT *>(m_pContextBuffer.GetValue());
+                T_CONTEXT * pContext = reinterpret_cast<T_CONTEXT *>(static_cast<BYTE*>(m_pContextBuffer));
                 pContext->ContextFlags = CONTEXT_FULL;
                 pUT->GetThreadContext(pContext);
                 IfFailThrow(pDAC->SetStackWalkCurrentContext(m_pCordbThread->m_vmThreadToken,

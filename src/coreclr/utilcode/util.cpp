@@ -908,6 +908,7 @@ AssemblyNamesList::AssemblyNamesList(_In_ LPWSTR list)
 {
     CONTRACTL {
         THROWS;
+        GC_NOTRIGGER;
     } CONTRACTL_END;
 
     WCHAR prevChar = '?'; // dummy
@@ -961,6 +962,7 @@ AssemblyNamesList::~AssemblyNamesList()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -2222,7 +2224,7 @@ namespace Util
         if (err != ERROR_INSUFFICIENT_BUFFER || dwSize == 0)
             return s_Result.RecordAndReturnError((err == ERROR_SUCCESS) ? E_FAIL : HRESULT_FROM_WIN32(err));
 
-        NewArrayHolder<BYTE> pLabel = new (nothrow) BYTE[dwSize];
+        NewArrayHolder<BYTE> pLabel{ new (nothrow) BYTE[dwSize] };
         if (pLabel == NULL)
             return s_Result.RecordAndReturnError(E_OUTOFMEMORY);
 
