@@ -7,6 +7,8 @@
 #ifndef _NATIVE_CONTEXT_REGS_H_
 #define _NATIVE_CONTEXT_REGS_H_
 
+// On most platforms the registers live in the uc_mcontext sub-structure. On OpenBSD
+// native_context_t is an alias for struct sigcontext and holds the registers directly.
 #ifdef TARGET_OPENBSD
 #define MCONTEXT_FROM_NATIVE(ucontextPtr)  (*(ucontextPtr))
 #else
@@ -501,6 +503,7 @@
 #define MCREG_EFlags(mc)    ((mc).sc_rflags)
 #define MCREG_SegCs(mc)     ((mc).sc_cs)
 #else //__APPLE__
+// For FreeBSD, as found in x86/ucontext.h
 #define MCREG_Rbp(mc)	    ((mc).mc_rbp)
 #define MCREG_Rip(mc)	    ((mc).mc_rip)
 #define MCREG_Rsp(mc)	    ((mc).mc_rsp)

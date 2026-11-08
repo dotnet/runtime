@@ -153,27 +153,11 @@ struct sve_context {
 #endif // SVE_MAGIC
 #endif // HOST_64BIT && HOST_ARM64 && !TARGET_FREEBSD && !__APPLE__
 
-#ifdef HOST_S390X
-
-#elif HOST_POWERPC64
-
-#if defined(TARGET_FREEBSD)
-
-#else // !TARGET_FREEBSD
-
-#endif // TARGET_FREEBSD
-
-#elif defined(HOST_WASM)
+#if defined(HOST_S390X) || defined(HOST_POWERPC64) || defined(HOST_WASM)
 
 #elif HAVE___GREGSET_T
 
-#ifdef HOST_64BIT
-
-#if defined(HOST_LOONGARCH64)
-
-#elif defined(HOST_RISCV64)
-
-#else // !HOST_LOONGARCH64 && !HOST_RISCV64
+#if defined(HOST_64BIT) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
 
 #define FPREG_Xmm(uc, index) *(M128A*)&(((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_xmm[index])
 
@@ -189,23 +173,11 @@ struct sve_context {
 #define FPREG_MxCsr(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr)
 #define FPREG_MxCsr_Mask(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr_mask)
 
-#endif // !HOST_LOONGARCH64 && !HOST_RISCV64
-
-#else // HOST_64BIT
-
-#endif // HOST_64BIT
+#endif // HOST_64BIT && !HOST_LOONGARCH64 && !HOST_RISCV64
 
 #elif HAVE_GREGSET_T
 
 #ifdef HOST_64BIT
-
-#if defined(HOST_LOONGARCH64)
-
-#endif // HOST_LOONGARCH64
-
-#ifdef REG_CSGSFS
-#else
-#endif
 
 #if HAVE_FPREGS_WITH_CW
 #define FPREG_Fpstate(uc) (&((uc)->uc_mcontext.fpregs.fp_reg_set.fpchip_state))
@@ -464,13 +436,7 @@ inline void *FPREG_Xstate_Egpr(const ucontext_t *uc, uint32_t *featureSize)
 
 /////////////////////
 
-#else // HOST_64BIT
-
 #endif // HOST_64BIT
-
-#ifdef REG_EFL
-#else
-#endif
 
 #else // HAVE_GREGSET_T
 
@@ -612,9 +578,6 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
 #define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc).fp_fxsave.fp[index].value)
 #elif defined(TARGET_OPENBSD)
 
-    // On OpenBSD, ucontext_t is an alias for struct sigcontext and the registers
-    // are stored directly in it (accessed here via MCONTEXT_FROM_NATIVE).
-
   // from machine/fpu.h: struct fxsave64, referenced via sigcontext::sc_fpstate
 #define FPSTATE(uc)             ((struct fxsave64*)((uc)->sc_fpstate))
 #define FPREG_ControlWord(uc)   FPSTATE(uc)->fx_fcw
@@ -630,8 +593,6 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
 #define FPREG_Xmm(uc, index)    *(M128A*) &(FPSTATE(uc)->fx_xmm[index])
 #define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc)->fx_st[index])
 #else //__APPLE__
-
-    // For FreeBSD, as found in x86/ucontext.h
 
   // from x86/fpu.h: struct __envxmm64
 #define FPSTATE(uc)             ((savefpu*)((uc)->uc_mcontext.mc_fpstate))
