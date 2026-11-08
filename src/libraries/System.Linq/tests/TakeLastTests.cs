@@ -135,12 +135,14 @@ namespace System.Linq.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void SingleElement_UnknownCount_ChangesBeforeMoveNextAreObserved(bool useRange)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void SingleElement_ChangesBeforeMoveNextAreObserved(bool useRange, bool knownCount)
         {
             var values = new List<int> { 1 };
-            IEnumerable<int> result = SingleElement(ForceNotCollection(values), useRange);
+            IEnumerable<int> result = SingleElement(knownCount ? values : ForceNotCollection(values), useRange);
             using IEnumerator<int> iterator = result.GetEnumerator();
             values.Add(2);
             Assert.True(iterator.MoveNext());
