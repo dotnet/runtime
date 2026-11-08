@@ -994,15 +994,41 @@ struct CoTaskMemTraits final
 template<typename T>
 using CoTaskMemHolder = LifetimeHolder<CoTaskMemTraits<T>>;
 
-//
-// We need the following methods to have volatile arguments, so that they can accept
-// raw pointers in addition to the results of the & operator on Volatile<T>.
-//
+class CounterHolder final
+{
+    // Accept both raw counter pointers and the result of Volatile<T>::operator&.
+    struct Traits final
+    {
+        using Type = RAW_KEYWORD(volatile) LONG*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type value) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+            if (value != NULL)
+                InterlockedDecrement(value);
+        }
+    };
 
-FORCEINLINE void CounterIncrease(RAW_KEYWORD(volatile) LONG* p) {InterlockedIncrement(p);};
-FORCEINLINE void CounterDecrease(RAW_KEYWORD(volatile) LONG* p) {InterlockedDecrement(p);};
+    LifetimeHolder<Traits> m_counter;
 
-typedef Wrapper<RAW_KEYWORD(volatile) LONG*, CounterIncrease, CounterDecrease, (UINT_PTR)0, CompareDefault<RAW_KEYWORD(volatile) LONG*>> CounterHolder;
+public:
+    explicit CounterHolder(RAW_KEYWORD(volatile) LONG* counter)
+        : m_counter(counter)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        _ASSERTE(counter != NULL);
+        InterlockedIncrement(counter);
+    }
+
+    CounterHolder(const CounterHolder&) = delete;
+    CounterHolder& operator=(const CounterHolder&) = delete;
+
+    void Release()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        m_counter.Free();
+    }
+};
 
 class ErrorModeHolder final
 {
