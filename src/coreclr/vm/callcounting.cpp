@@ -556,9 +556,9 @@ bool CallCountingManager::SetCodeEntryPoint(
                 callCountThreshold = max<CallCount>(1, (CallCount)(callCountThreshold / 2));
             }
 
-            NewHolder<CallCountingInfo> callCountingInfoHolder = new CallCountingInfo(activeCodeVersion, callCountThreshold);
+            NewHolder<CallCountingInfo> callCountingInfoHolder{ new CallCountingInfo(activeCodeVersion, callCountThreshold) };
             callCountingInfoByCodeVersionHash.Add(callCountingInfoHolder);
-            callCountingInfo = callCountingInfoHolder.Extract();
+            callCountingInfo = callCountingInfoHolder.Detach();
         }
 
         if (!g_pConfig->TieredCompilation_UseCallCountingStubs())

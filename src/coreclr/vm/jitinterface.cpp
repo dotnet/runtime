@@ -12690,14 +12690,13 @@ HRESULT CEECodeGenInfo::getPgoInstrumentationResults(
     if (pDataCur == nullptr)
     {
         // If not found in previous list, gather it here, and add to linked list
-        NewHolder<ComputedPgoData> newPgoData = new ComputedPgoData(pMD);
+        NewHolder<ComputedPgoData> newPgoData(new ComputedPgoData(pMD));
         newPgoData->m_next = m_foundPgoData;
-        m_foundPgoData = newPgoData;
-        newPgoData.SuppressRelease();
+        pDataCur = newPgoData.Detach();
+        m_foundPgoData = pDataCur;
 
-        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, m_ILHeader, &newPgoData->m_allocatedData, &newPgoData->m_schema,
-            &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData, &newPgoData->m_pgoSource);
-        pDataCur = m_foundPgoData;
+        pDataCur->m_hr = PgoManager::getPgoInstrumentationResults(pMD, m_ILHeader, &pDataCur->m_allocatedData, &pDataCur->m_schema,
+            &pDataCur->m_cSchemaElems, &pDataCur->m_pInstrumentationData, &pDataCur->m_pgoSource);
     }
 
     *pSchema = pDataCur->m_schema;

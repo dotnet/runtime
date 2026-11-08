@@ -604,7 +604,7 @@ void ShimProcess::AddDuplicateCreationEvent(void * pKey)
 {
     NewHolder<DuplicateCreationEventEntry> pEntry(new DuplicateCreationEventEntry(pKey));
     m_pDupeEventsHashTable->Add(pEntry);
-    pEntry.SuppressRelease();
+    pEntry.Detach();
 }
 
 
@@ -1465,10 +1465,8 @@ ShimStackWalk * ShimProcess::LookupOrCreateShimStackWalk(ICorDebugThread * pThre
             if (pSW == NULL)
             {
                 m_pShimStackWalkHashTable->Add(pNewSW);
-                pSW = pNewSW;
-
                 // don't release the memory if all goes well
-                pNewSW.SuppressRelease();
+                pSW = pNewSW.Detach();
             }
             else
             {
