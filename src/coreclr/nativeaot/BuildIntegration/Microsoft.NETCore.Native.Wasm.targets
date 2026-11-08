@@ -17,10 +17,6 @@
       <EventPipeName>libeventpipe-disabled</EventPipeName>
       <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">libeventpipe-enabled</EventPipeName>
       <LinkStandardCPlusPlusLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' == '' and '$(InvariantGlobalization)' != 'true'">true</LinkStandardCPlusPlusLibrary>
-      <!-- Requires an engine with relaxed SIMD; set to false otherwise. -->
-      <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">true</WasmEnableRelaxedSimd>
-      <IlcInstructionSet Condition="'$(WasmEnableRelaxedSimd)' == 'true' and '$(IlcInstructionSet)' == ''">relaxed-simd</IlcInstructionSet>
-      <IlcInstructionSet Condition="'$(WasmEnableRelaxedSimd)' == 'true' and !$(IlcInstructionSet.Contains('relaxed-simd'))">$(IlcInstructionSet),relaxed-simd</IlcInstructionSet>
     </PropertyGroup>
 
     <Error Condition="!Exists('$(CppLinker)')" Text="The WASI compiler was not found at '$(CppLinker)'." />
