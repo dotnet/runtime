@@ -524,4 +524,18 @@
 #endif // HOST_64BIT
 #endif // HAVE_GREGSET_T
 
+#if defined(HOST_AMD64)
+#define MCREG_InstructionPointer(mc) MCREG_Rip(mc)
+#define MCREG_StackPointer(mc)       MCREG_Rsp(mc)
+#elif defined(HOST_S390X)
+#define MCREG_InstructionPointer(mc) MCREG_PSWAddr(mc)
+#define MCREG_StackPointer(mc)       MCREG_R15(mc)
+#elif defined(HOST_POWERPC64)
+#define MCREG_InstructionPointer(mc) MCREG_Nip(mc)
+#define MCREG_StackPointer(mc)       MCREG_R31(mc)
+#else
+#define MCREG_InstructionPointer(mc) MCREG_Pc(mc)
+#define MCREG_StackPointer(mc)       MCREG_Sp(mc)
+#endif
+
 #endif // _NATIVE_CONTEXT_REGS_H_

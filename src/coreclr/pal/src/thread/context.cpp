@@ -23,6 +23,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/thread.hpp"
 #include "pal/utils.h"
 #include <minipal/ospagesize.h>
+#include <unix/ExceptionCodeForSignal.h>
 
 #if HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
@@ -1340,15 +1341,7 @@ Return value :
 --*/
 LPVOID GetNativeContextPC(const native_context_t *context)
 {
-#ifdef HOST_AMD64
-    return (LPVOID)MCREG_Rip(MCONTEXT_FROM_NATIVE(context));
-#elif defined(HOST_S390X)
-    return (LPVOID) MCREG_PSWAddr(context->uc_mcontext);
-#elif defined(HOST_POWERPC64)
-    return (LPVOID) MCREG_Nip(context->uc_mcontext);
-#else
-    return (LPVOID) MCREG_Pc(context->uc_mcontext);
-#endif
+    return (LPVOID)MCREG_InstructionPointer(MCONTEXT_FROM_NATIVE(context));
 }
 
 /*++
@@ -1366,15 +1359,7 @@ Return value :
 --*/
 LPVOID GetNativeContextSP(const native_context_t *context)
 {
-#ifdef HOST_AMD64
-    return (LPVOID)MCREG_Rsp(MCONTEXT_FROM_NATIVE(context));
-#elif defined(HOST_S390X)
-    return (LPVOID) MCREG_R15(context->uc_mcontext);
-#elif defined(HOST_POWERPC64)
-    return (LPVOID) MCREG_R31(context->uc_mcontext);
-#else
-    return (LPVOID) MCREG_Sp(context->uc_mcontext);
-#endif
+    return (LPVOID)MCREG_StackPointer(MCONTEXT_FROM_NATIVE(context));
 }
 
 
@@ -1393,212 +1378,20 @@ Return value :
     information.
 
 --*/
-#ifdef ILL_ILLOPC
-// If si_code values are available for all signals, use those.
+static uint32_t GetGcMarkerExceptionCodeForSignal(const void *context)
+{
+    if (g_getGcMarkerExceptionCode == nullptr)
+    {
+        return 0;
+    }
+    return g_getGcMarkerExceptionCode(GetNativeContextPC((const native_context_t *)context));
+}
+
 DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                                        const native_context_t *context)
 {
-    // IMPORTANT NOTE: This function must not call any signal unsafe functions
-    // since it is called from signal handlers.
-    // That includes ASSERT and TRACE macros.
-
-    switch (siginfo->si_signo)
-    {
-        case SIGILL:
-            switch (siginfo->si_code)
-            {
-                case ILL_ILLOPC:    // Illegal opcode
-                case ILL_ILLOPN:    // Illegal operand
-                case ILL_ILLADR:    // Illegal addressing mode
-                case ILL_ILLTRP:    // Illegal trap
-                case ILL_COPROC:    // Co-processor error
-                    return EXCEPTION_ILLEGAL_INSTRUCTION;
-                case ILL_PRVOPC:    // Privileged opcode
-                case ILL_PRVREG:    // Privileged register
-                    return EXCEPTION_PRIV_INSTRUCTION;
-                case ILL_BADSTK:    // Internal stack error
-                    return EXCEPTION_STACK_OVERFLOW;
-                default:
-                    break;
-            }
-            break;
-        case SIGFPE:
-            switch (siginfo->si_code)
-            {
-                case FPE_INTDIV:
-                    return EXCEPTION_INT_DIVIDE_BY_ZERO;
-                case FPE_INTOVF:
-                    return EXCEPTION_INT_OVERFLOW;
-                case FPE_FLTDIV:
-                    return EXCEPTION_FLT_DIVIDE_BY_ZERO;
-                case FPE_FLTOVF:
-                    return EXCEPTION_FLT_OVERFLOW;
-                case FPE_FLTUND:
-                    return EXCEPTION_FLT_UNDERFLOW;
-                case FPE_FLTRES:
-                    return EXCEPTION_FLT_INEXACT_RESULT;
-                case FPE_FLTINV:
-                    return EXCEPTION_FLT_INVALID_OPERATION;
-                case FPE_FLTSUB:
-                    return EXCEPTION_FLT_INVALID_OPERATION;
-                default:
-                    break;
-            }
-            break;
-        case SIGSEGV:
-            switch (siginfo->si_code)
-            {
-                case SI_USER:       // User-generated signal, sometimes sent
-                                    // for SIGSEGV under normal circumstances
-                case SEGV_MAPERR:   // Address not mapped to object
-                case SEGV_ACCERR:   // Invalid permissions for mapped object
-                    return EXCEPTION_ACCESS_VIOLATION;
-
-#ifdef SI_KERNEL
-                case SI_KERNEL:
-                {
-                    // Identify privileged instructions that are not identified as such by the system
-                    if (g_getGcMarkerExceptionCode != nullptr)
-                    {
-                        DWORD exceptionCode = g_getGcMarkerExceptionCode(GetNativeContextPC(context));
-                        if (exceptionCode != 0)
-                        {
-                            return exceptionCode;
-                        }
-                    }
-                    return EXCEPTION_ACCESS_VIOLATION;
-                }
-#endif
-                default:
-                    break;
-            }
-            break;
-        case SIGBUS:
-            switch (siginfo->si_code)
-            {
-                case BUS_ADRALN:    // Invalid address alignment
-                    return EXCEPTION_DATATYPE_MISALIGNMENT;
-                case BUS_ADRERR:    // Non-existent physical address
-                    return EXCEPTION_ACCESS_VIOLATION;
-                case BUS_OBJERR:    // Object-specific hardware error
-                default:
-                    break;
-            }
-            break;
-        case SIGTRAP:
-            switch (siginfo->si_code)
-            {
-#ifdef SI_KERNEL
-                case SI_KERNEL:
-#endif
-                case SI_USER:
-                case TRAP_BRKPT:    // Process breakpoint
-                    return EXCEPTION_BREAKPOINT;
-                case TRAP_TRACE:    // Process trace trap
-                    return EXCEPTION_SINGLE_STEP;
-                default:
-                    // Got unknown SIGTRAP signal with code siginfo->si_code;
-                    return EXCEPTION_ILLEGAL_INSTRUCTION;
-            }
-        default:
-            break;
-    }
-
-    // Got unknown signal number siginfo->si_signo with code siginfo->si_code;
-    return EXCEPTION_ILLEGAL_INSTRUCTION;
+    return GetExceptionCodeForSignal(siginfo, context, GetGcMarkerExceptionCodeForSignal);
 }
-#else   // ILL_ILLOPC
-DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
-                                       const native_context_t *context)
-{
-    // IMPORTANT NOTE: This function must not call any signal unsafe functions
-    // since it is called from signal handlers.
-    // That includes ASSERT and TRACE macros.
-
-    int trap;
-
-    if (siginfo->si_signo == SIGFPE)
-    {
-        // Floating point exceptions are mapped by their si_code.
-        switch (siginfo->si_code)
-        {
-            case FPE_INTDIV :
-                return EXCEPTION_INT_DIVIDE_BY_ZERO;
-            case FPE_INTOVF :
-                return EXCEPTION_INT_OVERFLOW;
-            case FPE_FLTDIV :
-                return EXCEPTION_FLT_DIVIDE_BY_ZERO;
-            case FPE_FLTOVF :
-                return EXCEPTION_FLT_OVERFLOW;
-            case FPE_FLTUND :
-                return EXCEPTION_FLT_UNDERFLOW;
-            case FPE_FLTRES :
-                return EXCEPTION_FLT_INEXACT_RESULT;
-            case FPE_FLTINV :
-                return EXCEPTION_FLT_INVALID_OPERATION;
-            case FPE_FLTSUB :/* subscript out of range */
-                return EXCEPTION_FLT_INVALID_OPERATION;
-            default:
-                // Got unknown signal code siginfo->si_code;
-                return 0;
-        }
-    }
-
-    trap = context->uc_mcontext.mc_trapno;
-    switch (trap)
-    {
-        case T_PRIVINFLT : /* privileged instruction */
-            return EXCEPTION_PRIV_INSTRUCTION;
-        case T_BPTFLT :    /* breakpoint instruction */
-            return EXCEPTION_BREAKPOINT;
-        case T_ARITHTRAP : /* arithmetic trap */
-            return 0;      /* let the caller pick an exception code */
-#ifdef T_ASTFLT
-        case T_ASTFLT :    /* system forced exception : ^C, ^\. SIGINT signal
-                              handler shouldn't be calling this function, since
-                              it doesn't need an exception code */
-            // Trap code T_ASTFLT received, shouldn't get here;
-            return 0;
-#endif  // T_ASTFLT
-        case T_PROTFLT :   /* protection fault */
-            return EXCEPTION_ACCESS_VIOLATION;
-        case T_TRCTRAP :   /* debug exception (sic) */
-            return EXCEPTION_SINGLE_STEP;
-        case T_PAGEFLT :   /* page fault */
-            return EXCEPTION_ACCESS_VIOLATION;
-        case T_ALIGNFLT :  /* alignment fault */
-            return EXCEPTION_DATATYPE_MISALIGNMENT;
-        case T_DIVIDE :
-            return EXCEPTION_INT_DIVIDE_BY_ZERO;
-        case T_NMI :       /* non-maskable trap */
-            return EXCEPTION_ILLEGAL_INSTRUCTION;
-        case T_OFLOW :
-            return EXCEPTION_INT_OVERFLOW;
-        case T_BOUND :     /* bound instruction fault */
-            return EXCEPTION_ARRAY_BOUNDS_EXCEEDED;
-        case T_DNA :       /* device not available fault */
-            return EXCEPTION_ILLEGAL_INSTRUCTION;
-        case T_DOUBLEFLT : /* double fault */
-            return EXCEPTION_ILLEGAL_INSTRUCTION;
-        case T_FPOPFLT :   /* fp coprocessor operand fetch fault */
-            return EXCEPTION_FLT_INVALID_OPERATION;
-        case T_TSSFLT :    /* invalid tss fault */
-            return EXCEPTION_ILLEGAL_INSTRUCTION;
-        case T_SEGNPFLT :  /* segment not present fault */
-            return EXCEPTION_ACCESS_VIOLATION;
-        case T_STKFLT :    /* stack fault */
-            return EXCEPTION_STACK_OVERFLOW;
-        case T_MCHK :      /* machine check trap */
-            return EXCEPTION_ILLEGAL_INSTRUCTION;
-        case T_RESERVED :  /* reserved (unknown) */
-            return EXCEPTION_ILLEGAL_INSTRUCTION;
-        default:
-            // Got unknown trap code trap;
-            break;
-    }
-    return EXCEPTION_ILLEGAL_INSTRUCTION;
-}
-#endif  // ILL_ILLOPC
 
 #else // !HAVE_MACH_EXCEPTIONS
 

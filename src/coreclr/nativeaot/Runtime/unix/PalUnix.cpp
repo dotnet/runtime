@@ -816,24 +816,11 @@ static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 bool InitializeSignalHandling()
 {
 #ifdef __APPLE__
-    void *libSystem = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY);
-    if (libSystem != NULL)
+    int status;
+    if (AllowActivationSignalOnDispatchQueueThreads(&status))
     {
-        int (*dispatch_allow_send_signals_ptr)(int) = (int (*)(int))dlsym(libSystem, "dispatch_allow_send_signals");
-        if (dispatch_allow_send_signals_ptr != NULL)
-        {
-            int status = dispatch_allow_send_signals_ptr(INJECT_ACTIVATION_SIGNAL);
-            _ASSERTE(status == 0);
-        }
+        _ASSERTE(status == 0);
     }
-
-    // TODO: Once our CI tools can get upgraded to xcode >= 15.3, replace the code above by this:
-    // if (__builtin_available(macOS 14.4, iOS 17.4, tvOS 17.4, *))
-    // {
-    //    // Allow sending the activation signal to dispatch queue threads
-    //    int status = dispatch_allow_send_signals(INJECT_ACTIVATION_SIGNAL);
-    //    _ASSERTE(status == 0);
-    // }
 #endif // __APPLE__
 
     return AddSignalHandler(INJECT_ACTIVATION_SIGNAL, ActivationHandler, &g_previousActivationHandler);

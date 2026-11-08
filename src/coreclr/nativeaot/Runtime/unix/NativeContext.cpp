@@ -210,7 +210,7 @@ uint64_t GetRegisterValueByIndex(void* context, uint32_t index)
 uint64_t GetPC(void* context)
 {
     ucontext_t *nativeContext = (ucontext_t*)context;
-    return MCREG_Rip(MCONTEXT_FROM_NATIVE(nativeContext));
+    return MCREG_InstructionPointer(MCONTEXT_FROM_NATIVE(nativeContext));
 }
 
 #endif // HOST_AMD64
