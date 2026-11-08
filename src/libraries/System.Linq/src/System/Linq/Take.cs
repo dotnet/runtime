@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -104,26 +105,12 @@ namespace System.Linq
                 yield break;
             }
 
-            if (isStartIndexFromEnd && startIndex == 1 && isEndIndexFromEnd && endIndex == 0)
+            if (startIndex == 1 && isStartIndexFromEnd && endIndex == 0 && isEndIndexFromEnd)
             {
-                TSource result;
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                if (TryGetLastWithCheckedCount(source, out TSource? result))
                 {
-                    if (!e.MoveNext())
-                    {
-                        yield break;
-                    }
-
-                    result = e.Current;
-                    count = 1;
-                    while (e.MoveNext())
-                    {
-                        result = e.Current;
-                        checked { ++count; }
-                    }
+                    yield return result;
                 }
-
-                yield return result;
                 yield break;
             }
 
@@ -215,6 +202,26 @@ namespace System.Linq
 
             static int CalculateEndIndex(bool isEndIndexFromEnd, int endIndex, int count) =>
                 Math.Min(count, isEndIndexFromEnd ? count - endIndex : endIndex);
+        }
+
+        private static bool TryGetLastWithCheckedCount<TSource>(IEnumerable<TSource> source, [MaybeNullWhen(false)] out TSource result)
+        {
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            if (!e.MoveNext())
+            {
+                result = default;
+                return false;
+            }
+
+            result = e.Current;
+            int count = 1;
+            while (e.MoveNext())
+            {
+                result = e.Current;
+                checked { ++count; }
+            }
+
+            return true;
         }
 
         public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
