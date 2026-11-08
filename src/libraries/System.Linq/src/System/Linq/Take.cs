@@ -104,6 +104,29 @@ namespace System.Linq
                 yield break;
             }
 
+            if (isStartIndexFromEnd && startIndex == 1 && isEndIndexFromEnd && endIndex == 0)
+            {
+                TSource result;
+                using (IEnumerator<TSource> e = source.GetEnumerator())
+                {
+                    if (!e.MoveNext())
+                    {
+                        yield break;
+                    }
+
+                    result = e.Current;
+                    count = 1;
+                    while (e.MoveNext())
+                    {
+                        result = e.Current;
+                        checked { ++count; }
+                    }
+                }
+
+                yield return result;
+                yield break;
+            }
+
             Queue<TSource> queue;
 
             if (isStartIndexFromEnd)
