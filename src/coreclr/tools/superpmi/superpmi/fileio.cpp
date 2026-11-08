@@ -46,11 +46,7 @@ bool FileWriter::Print(const char* value, size_t numChars)
 
         if (numChars > m_buffer.size())
         {
-            DWORD numWritten;
-            bool result =
-                WriteFile(m_file.Get(), value, static_cast<DWORD>(numChars), &numWritten, nullptr) &&
-                (numWritten == static_cast<DWORD>(numChars));
-            return result;
+            return fwrite(value, 1, numChars, m_file.Get()) == numChars;
         }
     }
 
@@ -124,17 +120,14 @@ bool FileWriter::Flush()
     if (m_bufferIndex <= 0)
         return true;
 
-    DWORD numWritten;
-    bool result =
-        WriteFile(m_file.Get(), m_buffer.data(), static_cast<DWORD>(m_bufferIndex), &numWritten, nullptr) &&
-        (numWritten == static_cast<DWORD>(m_bufferIndex));
+    bool result = fwrite(m_buffer.data(), 1, m_bufferIndex, m_file.Get()) == m_bufferIndex;
     m_bufferIndex = 0;
     return result;
 }
 
 bool FileWriter::CreateNew(const char* path, FileWriter* fw)
 {
-    FileHandle handle(CreateFile(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr));
+    FileHandle handle(fopen(path, "wb"));
     if (!handle.IsValid())
     {
         return false;
@@ -146,36 +139,25 @@ bool FileWriter::CreateNew(const char* path, FileWriter* fw)
 
 bool FileLineReader::Open(const char* path, FileLineReader* fr)
 {
-    FileHandle file(CreateFile(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr));
+    FileHandle file(fopen(path, "rb"));
     if (!file.IsValid())
     {
         return false;
     }
 
-    LARGE_INTEGER size;
-    if (!GetFileSizeEx(file.Get(), &size))
+    int64_t size = fgetsize(file.Get());
+    if (size < 0 || static_cast<uint64_t>(size) > SIZE_MAX)
     {
         return false;
     }
 
-    if (static_cast<ULONGLONG>(size.QuadPart) > SIZE_MAX)
+    std::vector<char> data(static_cast<size_t>(size));
+    if (fread(data.data(), 1, data.size(), file.Get()) != data.size())
     {
         return false;
     }
 
-    FileMappingHandle mapping(CreateFileMapping(file.Get(), nullptr, PAGE_READONLY, size.u.HighPart, size.u.LowPart, nullptr));
-    if (!mapping.IsValid())
-    {
-        return false;
-    }
-
-    FileViewHandle view(MapViewOfFile(mapping.Get(), FILE_MAP_READ, 0, 0, 0));
-    if (!view.IsValid())
-    {
-        return false;
-    }
-
-    *fr = FileLineReader(std::move(file), std::move(mapping), std::move(view), static_cast<size_t>(size.QuadPart));
+    *fr = FileLineReader(std::move(data));
     return true;
 }
 

@@ -902,8 +902,8 @@ namespace System.Net.WebSockets
                         // The message should now be a binary or text message.  Handle it by reading the payload and returning the contents.
                         Debug.Assert(header.Opcode == MessageOpcode.Binary || header.Opcode == MessageOpcode.Text, $"Unexpected opcode {header.Opcode}");
 
-                        // If there's no data to read, return an appropriate result.
-                        if (header.Processed || payloadBuffer.Length == 0)
+                        // A completed message must still pass UTF8 validation, even if its final frame is empty.
+                        if ((header.Processed || payloadBuffer.Length == 0) && !header.EndOfMessage)
                         {
                             _lastReceiveHeader = header;
                             return GetReceiveResult<TResult>(

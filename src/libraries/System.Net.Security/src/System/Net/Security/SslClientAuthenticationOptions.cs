@@ -100,7 +100,7 @@ namespace System.Net.Security
 
         private bool _allowRsaPssPadding = true;
         /// <summary>
-        /// Gets or sets a value that indicates whether the the rsa_pss_* family of TLS signature algorithms is enabled for use in the TLS handshake.
+        /// Gets or sets a value that indicates whether the rsa_pss_* family of TLS signature algorithms is enabled for use in the TLS handshake.
         /// </summary>
         public bool AllowRsaPssPadding
         {
@@ -113,7 +113,7 @@ namespace System.Net.Security
 
         private bool _allowRsaPkcs1Padding = true;
         /// <summary>
-        /// Gets or sets a value that indicates whether the the rsa_pkcs1_* family of TLS signature algorithms is enabled for use in the TLS handshake.
+        /// Gets or sets a value that indicates whether the rsa_pkcs1_* family of TLS signature algorithms is enabled for use in the TLS handshake.
         /// </summary>
         public bool AllowRsaPkcs1Padding
         {

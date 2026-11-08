@@ -19,7 +19,7 @@ namespace System.Net.Sockets
         public static readonly int MaximumAddressSize = Interop.Sys.GetMaximumAddressSize();
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
 
-        private static readonly bool SelectOverPollIsBroken = OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() ||  OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst();
+        private static bool SelectOverPollIsBroken => OperatingSystem.IsApplePlatform();
 
         // IovStackThreshold matches Linux's UIO_FASTIOV, which is the number of 'struct iovec'
         // that get stackalloced in the Linux kernel.

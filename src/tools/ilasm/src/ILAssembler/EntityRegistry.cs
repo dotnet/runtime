@@ -1007,7 +1007,7 @@ namespace Microsoft.DotNet.ILAssembler
                             asmRef.Name,
                             asmRef.Version,
                             string.IsNullOrEmpty(asmRef.Culture) ? null : asmRef.Culture,
-                            asmRef.PublicKeyOrToken is null ? AssemblyNameFlags.None : AssemblyNameFlags.PublicKey,
+                            (asmRef.Flags & AssemblyFlags.PublicKey) != 0 ? AssemblyNameFlags.PublicKey : AssemblyNameFlags.None,
                             asmRef.PublicKeyOrToken?.ToImmutableArray() ?? []);
                         builder.Append(", ");
                         builder.Append(assemblyNameInfo.FullName);
@@ -1520,16 +1520,24 @@ namespace Microsoft.DotNet.ILAssembler
                 fixed (byte* ptr = bytes)
                 {
                     var reader = new BlobReader(ptr, bytes.Length);
-                    var sig = decoder.DecodeMethodSignature(ref reader);
-
                     var newBlob = new BlobBuilder();
-                    var encoder = new BlobEncoder(newBlob);
-                    encoder.PropertySignature(sig.Header.Attributes.HasFlag(SignatureAttributes.Instance))
-                        .Parameters(sig.ParameterTypes.Length, out var retBuilder, out var paramsBuilder);
-                    sig.ReturnType.WriteBlobTo(retBuilder.Builder);
-                    for (int i = 0; i < sig.ParameterTypes.Length; i++)
+                    newBlob.WriteByte(reader.ReadByte());
+                    newBlob.WriteCompressedInteger(reader.ReadCompressedInteger());
+                    decoder.DecodeType(ref reader).WriteBlobTo(newBlob);
+                    // COMPAT: Preserve sentinel bytes, even though ECMA-335 II.23.2.5
+                    // does not include them in property signatures. This retains malformed
+                    // signatures rather than normalizing them.
+                    while (reader.RemainingBytes > 0)
                     {
-                        sig.ParameterTypes[i].WriteBlobTo(paramsBuilder.AddParameter().Builder);
+                        if (reader.ReadByte() == (byte)SignatureTypeCode.Sentinel)
+                        {
+                            newBlob.WriteByte((byte)SignatureTypeCode.Sentinel);
+                        }
+                        else
+                        {
+                            reader.Offset--;
+                            decoder.DecodeType(ref reader).WriteBlobTo(newBlob);
+                        }
                     }
                     return newBlob;
                 }
@@ -1787,10 +1795,22 @@ namespace Microsoft.DotNet.ILAssembler
 
         public ExportedTypeEntity GetOrCreateExportedType(EntityBase? implementation, string @namespace, string name, Action<ExportedTypeEntity> onCreateType)
         {
-            // We only key on the implementation if the type is nested (ExportedTypeEntity).
-            // For forwarders, implementation is AssemblyReferenceEntity which is not used in the key.
-            // However, we need to pass the actual implementation to the entity constructor.
-            return GetOrCreateEntity((implementation as ExportedTypeEntity, @namespace, name), TableIndex.ExportedType, _seenExportedTypes, (key) => new(key.Item3, key.Item2, implementation), onCreateType);
+            var key = (implementation as ExportedTypeEntity, @namespace, name);
+            if (implementation is ExportedTypeEntity)
+            {
+                // We only key on the implementation if the type is nested (ExportedTypeEntity).
+                // For forwarders, implementation is AssemblyReferenceEntity which is not used in the key.
+                // However, we need to pass the actual implementation to the entity constructor.
+                return GetOrCreateEntity(key, TableIndex.ExportedType, _seenExportedTypes, key => new(key.Item3, key.Item2, implementation), onCreateType);
+            }
+
+            // Error-tolerant mode preserves top-level duplicates after the caller diagnoses them.
+            // Keep the first declaration for nested exported-type name resolution.
+            var entity = new ExportedTypeEntity(name, @namespace, implementation);
+            RecordEntityInTable(TableIndex.ExportedType, entity);
+            _seenExportedTypes.TryAdd(key, entity);
+            onCreateType(entity);
+            return entity;
         }
 
         public ExportedTypeEntity? FindExportedType(ExportedTypeEntity? containingType, string @namespace, string @name)

@@ -2902,11 +2902,11 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     ULONG32 cMap = min((ULONG32)cMapMax, pDJI->GetSequenceMapCount());
     DebuggerILToNativeMap * rgMapInt = pDJI->GetSequenceMap();
 
-    NewArrayHolder<UINT> rguiILOffsetTemp = new (nothrow) UINT[cMap];
+    NewArrayHolder<UINT> rguiILOffsetTemp(new (nothrow) UINT[cMap]);
     if (rguiILOffsetTemp == NULL)
         return E_OUTOFMEMORY;
 
-    NewArrayHolder<UINT> rguiNativeOffsetTemp = new (nothrow) UINT[cMap];
+    NewArrayHolder<UINT> rguiNativeOffsetTemp(new (nothrow) UINT[cMap]);
     if (rguiNativeOffsetTemp == NULL)
         return E_OUTOFMEMORY;
 
@@ -2920,8 +2920,8 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     // then cMap must fit in a USHORT as well
     _ASSERTE(FitsIn<USHORT>(cMap));
     *pcMap = (USHORT) cMap;
-    *prguiILOffset = rguiILOffsetTemp.Extract();
-    *prguiNativeOffset = rguiNativeOffsetTemp.Extract();
+    *prguiILOffset = rguiILOffsetTemp.Detach();
+    *prguiNativeOffset = rguiNativeOffsetTemp.Detach();
 
     return S_OK;
 }
@@ -3060,15 +3060,15 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
                     // instrumented IL map if one exists.
                     if (dmi->HasInstrumentedILMap())
                     {
-                        InstrumentedILOffsetMapping mapping =
-                            dmi->GetRuntimeModule()->GetInstrumentedILOffsetMapping(dmi->m_token);
+                        InstrumentedILOffsetMappingHolder mapping(
+                            dmi->GetRuntimeModule()->GetInstrumentedILOffsetMapping(dmi->m_token));
 
                         for (SIZE_T i = 0; i < n; i++)
                         {
                             int origOffset = *p;
 
                             *p = dmi->TranslateToInstIL(
-                                                  &mapping,
+                                                  &mapping.Get(),
                                                   origOffset,
                                                   bOriginalToInstrumented);
 

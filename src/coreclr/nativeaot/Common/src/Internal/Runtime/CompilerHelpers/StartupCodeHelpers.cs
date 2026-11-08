@@ -246,8 +246,8 @@ namespace Internal.Runtime.CompilerHelpers
 
         private static unsafe void RehydrateData(IntPtr dehydratedData)
         {
-            // Destination for the hydrated data is in the first 32-bit relative pointer
-            byte* pDest = (byte*)ReadRelPtr32((void*)dehydratedData);
+            // Destination for the hydrated data is in the first fixup.
+            byte* pDest = (byte*)ReadFixup((void*)dehydratedData);
 
             // Next is length of the dehydrated data
             int length = *(int*)(dehydratedData + sizeof(int));
@@ -303,17 +303,17 @@ namespace Internal.Runtime.CompilerHelpers
                         pDest += payload;
                         break;
                     case DehydratedDataCommand.PtrReloc:
-                        *(void**)pDest = ReadRelPtr32(pFixups + payload);
+                        *(void**)pDest = ReadFixup(pFixups + payload);
                         pDest += sizeof(void*);
                         break;
                     case DehydratedDataCommand.RelPtr32Reloc:
-                        WriteRelPtr32(pDest, ReadRelPtr32(pFixups + payload));
+                        WriteRelPtr32(pDest, ReadFixup(pFixups + payload));
                         pDest += sizeof(int);
                         break;
                     case DehydratedDataCommand.InlinePtrReloc:
                         while (payload-- > 0)
                         {
-                            *(void**)pDest = ReadRelPtr32(pCurrent);
+                            *(void**)pDest = ReadFixup(pCurrent);
                             pDest += sizeof(void*);
                             pCurrent += sizeof(int);
                         }
@@ -321,7 +321,7 @@ namespace Internal.Runtime.CompilerHelpers
                     case DehydratedDataCommand.InlineRelPtr32Reloc:
                         while (payload-- > 0)
                         {
-                            WriteRelPtr32(pDest, ReadRelPtr32(pCurrent));
+                            WriteRelPtr32(pDest, ReadFixup(pCurrent));
                             pDest += sizeof(int);
                             pCurrent += sizeof(int);
                         }
@@ -329,8 +329,12 @@ namespace Internal.Runtime.CompilerHelpers
                 }
             }
 
-            static void* ReadRelPtr32(void* address)
+            static void* ReadFixup(void* address)
+#if TARGET_WASM
+                => *(void**)address;
+#else
                 => (byte*)address + *(int*)address;
+#endif
 
             static void WriteRelPtr32(void* dest, void* value)
                 => *(int*)dest = (int)((byte*)value - (byte*)dest);
