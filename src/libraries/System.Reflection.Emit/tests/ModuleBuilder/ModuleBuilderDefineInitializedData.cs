@@ -62,7 +62,9 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(fields[i].MetadataToken, field.MetadataToken);
                 Assert.True((field.Attributes & FieldAttributes.HasFieldRVA) != 0);
                 Assert.Equal(addresses[i], (IntPtr)createdType.GetMethod($"GetAddress{i}").Invoke(null, null));
-                Assert.Equal(0L, addresses[i].ToInt64() % (sizes[i] % 8 == 0 ? 8 : 4));
+                int expectedAlignment = sizes[i] % 8 == 0 ? 8 : 4;
+                Assert.Equal(0L, addresses[i].ToInt64() % expectedAlignment);
+                Assert.Equal(expectedAlignment, field.FieldType.StructLayoutAttribute.Pack);
                 Assert.Equal(expected[i], Helpers.GetFieldValueBytes(field, sizes[i]));
 
                 byte[] initialized = new byte[sizes[i]];

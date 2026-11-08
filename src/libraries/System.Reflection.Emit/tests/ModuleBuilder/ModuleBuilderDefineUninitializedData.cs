@@ -46,6 +46,8 @@ namespace System.Reflection.Emit.Tests
             {
                 FieldInfo field = global ? module.GetField(fields[i].Name) : createdType.GetField(fields[i].Name);
                 FieldInfo source = global ? module.GetField(sources[i].Name) : createdType.GetField(sources[i].Name);
+                int expectedAlignment = sizes[i] % 8 == 0 ? 8 : 4;
+                Assert.Equal(expectedAlignment, field.FieldType.StructLayoutAttribute.Pack);
                 Assert.Equal(new byte[sizes[i]], Helpers.GetFieldValueBytes(field, sizes[i]));
 
                 byte[] initialized = new byte[sizes[i]];
