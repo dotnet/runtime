@@ -23,6 +23,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/process.h"
 #include "pal/module.h"
 #include "pal/init.h"
+#include <minipal/utf8.h>
 #include "pal/utils.h"
 
 #include <minipal/thread.h>
@@ -1301,7 +1302,7 @@ SetThreadDescription(
 
     CPalThread *pTargetThread = NULL;
     IPalObject *pobjThread = NULL;
-    int nameSize;
+    size_t nameSize;
     char *nameBuf = NULL;
 
     PAL_ERROR palError = InternalGetThreadDataFromHandle(pThread, hThread, &pTargetThread, &pobjThread);
@@ -1311,11 +1312,11 @@ SetThreadDescription(
         // it causes the value returned by Process.ProcessName to change.
         if ((pid_t)pTargetThread->GetThreadId() != getpid())
         {
-            nameSize = WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, NULL, 0, NULL, NULL);
+            nameSize = lpThreadDescription != NULL ? minipal_get_length_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, PAL_wcslen(lpThreadDescription) + 1, 0) : 0;
             if (nameSize > 0)
             {
                 nameBuf = (char *)malloc(nameSize);
-                if (nameBuf == NULL || WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, nameBuf, nameSize, NULL, NULL) != nameSize)
+                if (nameBuf == NULL || minipal_convert_utf16_to_utf8((const CHAR16_T*)lpThreadDescription, PAL_wcslen(lpThreadDescription) + 1, nameBuf, nameSize, 0) != nameSize)
                 {
                     pThread->SetLastError(ERROR_INSUFFICIENT_BUFFER);
                 }

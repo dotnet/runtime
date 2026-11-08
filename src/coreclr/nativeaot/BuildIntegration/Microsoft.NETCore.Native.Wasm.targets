@@ -36,7 +36,7 @@
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'$(IlcFrameworkNativePath)lib%(Identity).a')" />
       <NativeLibrary Include="$(IlcSdkPath)libbootstrapper.o" Condition="'$(NativeLib)' == '' and '$(CustomNativeMain)' != 'true'" />
       <NativeLibrary Include="$(IlcSdkPath)libbootstrapperdll.o" Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" />
-      <NativeLibrary Include="$(IlcSdkPath)libPortableRuntime.a" />
+      <NativeLibrary Include="$(IlcSdkPath)libRuntime.WorkstationGC.a" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName).a" />
       <NativeLibrary Include="$(IlcSdkPath)libstandalonegc-disabled.a" />
       <NativeLibrary Include="$(IlcSdkPath)libaotminipal.a" />
