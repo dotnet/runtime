@@ -6,8 +6,10 @@ typedef char16_t WCHAR;
 #include <dn-u16.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wctype.h>
 #include <minipal/strings.h>
 
 size_t u16_strlen(const WCHAR* str)
@@ -36,23 +38,17 @@ int u16_strncmp(const WCHAR* str1, const WCHAR* str2, size_t count)
     return diff;
 }
 
-static WCHAR ascii_tolower(WCHAR ch)
-{
-    return (ch >= (WCHAR)'A' && ch <= (WCHAR)'Z') ? (WCHAR)(ch - 'A' + 'a') : ch;
-}
-
 int u16_stricmp(const WCHAR* str1, const WCHAR* str2)
 {
-    return u16_strnicmp(str1, str2, SIZE_MAX);
+    return u16_strnicmp(str1, str2, 0x7fffffff);
 }
 
-// Folds only ASCII letters, like the Windows CRT _wcsnicmp does in the default "C" locale.
 int u16_strnicmp(const WCHAR* str1, const WCHAR* str2, size_t count)
 {
     int diff = 0;
     for (size_t i = 0; i < count; i++)
     {
-        diff = ascii_tolower(str1[i]) - ascii_tolower(str2[i]);
+        diff = (int)towlower(str1[i]) - (int)towlower(str2[i]);
         if (diff != 0)
             break;
 
@@ -243,20 +239,24 @@ uint32_t u16_strtoul(const WCHAR* nptr, WCHAR** endptr, int base)
     }
 
     char* end;
-    unsigned long long value = strtoull(buffer, &end, base);
+    unsigned long value = strtoul(buffer, &end, base);
 
-    // Windows' unsigned long is 32-bit. Negative inputs wrap around like they do there,
-    // unless their magnitude doesn't fit.
-    const char* p = buffer;
-    while (isspace((unsigned char)*p))
-        p++;
-
-    unsigned long long magnitude = (*p == '-') ? (0 - value) : value;
-    if (magnitude > UINT32_MAX)
+#if ULONG_MAX > UINT32_MAX
+    // Windows' unsigned long is 32-bit, so positive values that don't fit in it saturate.
+    // Negative values are truncated instead, regardless of their magnitude.
+    if (value > UINT32_MAX)
     {
-        value = UINT32_MAX;
-        errno = ERANGE;
+        const char* p = buffer;
+        while (isspace((unsigned char)*p))
+            p++;
+
+        if (*p != '-')
+        {
+            value = UINT32_MAX;
+            errno = ERANGE;
+        }
     }
+#endif
 
     if (endptr != nullptr)
         *endptr = (WCHAR*)nptr + (end - buffer);
@@ -285,26 +285,32 @@ uint64_t u16_strtoui64(const WCHAR* nptr, WCHAR** endptr, int base)
     return value;
 }
 
+// Only decimal notation is accepted; the C runtime strtod would also accept hex, "inf" and "nan".
+// The end pointer is set past all the characters that can be part of a decimal number, even
+// the ones strtod didn't consume, e.g. past the "e" of "1.5e".
 double u16_strtod(const WCHAR* nptr, WCHAR** endptr)
 {
-    // Restrict the input to decimal notation; the C runtime strtod would also accept hex, "inf" and "nan".
+    if (nptr == nullptr)
+        return 0.0;
+
     const WCHAR* start = nptr;
-    while (is_ascii(*start) && isspace((unsigned char)*start))
+    while (iswspace(*start))
         start++;
 
+    double value = 0.0;
+    const WCHAR* stop = nptr;
+
     char* buffer = narrow_prefix(start, is_floating_point_char);
-    if (buffer == nullptr)
+    if (buffer != nullptr && buffer[0] != '\0')
     {
-        if (endptr != nullptr)
-            *endptr = (WCHAR*)nptr;
-        return 0.0;
+        char* end;
+        value = strtod(buffer, &end);
+        if (value != 0.0 || end != buffer)
+            stop = start + strlen(buffer);
     }
 
-    char* end;
-    double value = strtod(buffer, &end);
-
     if (endptr != nullptr)
-        *endptr = (end == buffer) ? (WCHAR*)nptr : (WCHAR*)start + (end - buffer);
+        *endptr = (WCHAR*)stop;
 
     free(buffer);
     return value;
