@@ -208,19 +208,6 @@
 #define MCREG_R15(mc)       ((mc).__gregs[_REG_R15])
 #define MCREG_EFlags(mc)    ((mc).__gregs[_REG_RFLAGS])
 #endif // !HOST_LOONGARCH64 && !HOST_RISCV64
-#else // HOST_64BIT
-#define MCREG_Ebx(mc)       ((mc).__gregs[_REG_EBX])
-#define MCREG_Ecx(mc)       ((mc).__gregs[_REG_ECX])
-#define MCREG_Edx(mc)       ((mc).__gregs[_REG_EDX])
-#define MCREG_Esi(mc)       ((mc).__gregs[_REG_ESI])
-#define MCREG_Edi(mc)       ((mc).__gregs[_REG_EDI])
-#define MCREG_Ebp(mc)       ((mc).__gregs[_REG_EBP])
-#define MCREG_Eax(mc)       ((mc).__gregs[_REG_EAX])
-#define MCREG_Eip(mc)       ((mc).__gregs[_REG_EIP])
-#define MCREG_Esp(mc)       ((mc).__gregs[_REG_ESP])
-#define MCREG_SegCs(mc)     ((mc).__gregs[_REG_CS])
-#define MCREG_SegSs(mc)     ((mc).__gregs[_REG_SS])
-#define MCREG_EFlags(mc)    ((mc).__gregs[_REG_RFLAGS])
 #endif // HOST_64BIT
 #elif HAVE_GREGSET_T
 #ifdef HOST_64BIT
@@ -281,18 +268,6 @@
 #define MCREG_R13(mc)       ((mc).gregs[REG_R13])
 #define MCREG_R14(mc)       ((mc).gregs[REG_R14])
 #define MCREG_R15(mc)       ((mc).gregs[REG_R15])
-#else // HOST_64BIT
-#define MCREG_Ebx(mc)       ((mc).gregs[REG_EBX])
-#define MCREG_Ecx(mc)       ((mc).gregs[REG_ECX])
-#define MCREG_Edx(mc)       ((mc).gregs[REG_EDX])
-#define MCREG_Esi(mc)       ((mc).gregs[REG_ESI])
-#define MCREG_Edi(mc)       ((mc).gregs[REG_EDI])
-#define MCREG_Ebp(mc)       ((mc).gregs[REG_EBP])
-#define MCREG_Eax(mc)       ((mc).gregs[REG_EAX])
-#define MCREG_Eip(mc)       ((mc).gregs[REG_EIP])
-#define MCREG_Esp(mc)       ((mc).gregs[REG_ESP])
-#define MCREG_SegCs(mc)     ((mc).gregs[REG_CS])
-#define MCREG_SegSs(mc)     ((mc).gregs[REG_SS])
 #endif // HOST_64BIT
 #ifdef REG_EFL
 #define MCREG_EFlags(mc)    ((mc).gregs[REG_EFL])
@@ -503,7 +478,6 @@
 #define MCREG_EFlags(mc)    ((mc).sc_rflags)
 #define MCREG_SegCs(mc)     ((mc).sc_cs)
 #else //__APPLE__
-// For FreeBSD, as found in x86/ucontext.h
 #define MCREG_Rbp(mc)	    ((mc).mc_rbp)
 #define MCREG_Rip(mc)	    ((mc).mc_rip)
 #define MCREG_Rsp(mc)	    ((mc).mc_rsp)
