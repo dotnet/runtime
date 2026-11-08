@@ -12,7 +12,6 @@ public sealed class RelaxedSimdTests
     public static bool IsNotSupported => !RelaxedSimd.IsSupported;
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134949", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasi), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
     public static void RelaxedSimdIsSupportedReflects()
     {
         MethodInfo? methodInfo = typeof(RelaxedSimd).GetMethod("get_IsSupported");

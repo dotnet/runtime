@@ -14639,9 +14639,11 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 bool mustInstructionSetBeSupported = !!(instructionSetEncoded & 1);
                 ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
 #ifdef TARGET_WASM
-                // The wasm engine validated the instructions when it compiled the module.
-                if (mustInstructionSetBeSupported)
+                // Other images must match the instruction sets CoreLib was compiled for.
+                if (mustInstructionSetBeSupported && currentModule->IsSystem())
                 {
+                    ExecutionManager::GetEEJitManager()->SetInstructionSetFromCoreLib(InstructionSetFromR2RInstructionSet(instructionSet));
+                    corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
                     continue;
                 }
 #endif // TARGET_WASM

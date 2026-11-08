@@ -40,8 +40,8 @@ of the number of function definitions; table slots may contain duplicate or non-
 references.
 Non-composite R2R and `WasmSingleFileBundle` are not supported by this path.
 
-`WasmEnableRelaxedSimd` (default `true`) compiles the composite with relaxed SIMD. Hosts without relaxed SIMD
-fail to load it; publish with `-p:WasmEnableRelaxedSimd=false` for them.
+Relaxed SIMD is a default WASI instruction set. Hosts without relaxed SIMD fail to load the composite; publish with
+`-p:PublishReadyToRunInstructionSet=-relaxed-simd` for them.
 
 ## Runtime tests
 

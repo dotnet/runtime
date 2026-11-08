@@ -93,6 +93,11 @@ namespace System.CommandLine
             {
                 instructionSetSupportBuilder.AddSupportedInstructionSet("base");
                 instructionSetSupportBuilder.AddSupportedInstructionSet("simd128");
+
+                if (targetOS == TargetOS.Wasi)
+                {
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("relaxed-simd");
+                }
             }
 
             bool throttleAvx512 = false;

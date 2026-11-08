@@ -1,7 +1,7 @@
 <Project TreatAsLocalProperty="ArchiveTests">
-  <!-- The WasiApp.CoreCLR.targets default, needed before tests.wasm.targets picks the trimmer substitutions. -->
+  <!-- Relaxed SIMD is a default WASI instruction set; tests.wasm.targets picks the trimmer substitutions from this. -->
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
-    <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">true</WasmEnableRelaxedSimd>
+    <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == '' and !$(PublishReadyToRunInstructionSet.Contains('-relaxed-simd'))">true</WasmEnableRelaxedSimd>
   </PropertyGroup>
 
   <Import Project="tests.wasm.targets" />

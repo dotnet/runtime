@@ -294,12 +294,13 @@
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.WasmCorerun.targets"
           Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'coreclr'" />
 
-  <!-- Matches WasiApp.CoreCLR.targets. -->
+  <!-- WASI ReadyToRun tests run with an interpreted CoreLib (https://github.com/dotnet/runtime/issues/134949), so they can
+       only use the runtime's baseline instruction sets. -->
   <PropertyGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr'">
-    <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">true</WasmEnableRelaxedSimd>
+    <PublishReadyToRunInstructionSet Condition="'$(PublishReadyToRunInstructionSet)' == ''">-relaxed-simd</PublishReadyToRunInstructionSet>
   </PropertyGroup>
-  <PropertyGroup Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'coreclr' and '$(WasmEnableRelaxedSimd)' == 'true'">
-    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --instruction-set:relaxed-simd</CrossGen2TestExtraArguments>
+  <PropertyGroup Condition="'$(PublishReadyToRunInstructionSet)' != ''">
+    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --instruction-set:$(PublishReadyToRunInstructionSet)</CrossGen2TestExtraArguments>
   </PropertyGroup>
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
