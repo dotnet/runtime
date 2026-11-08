@@ -17,9 +17,9 @@
 /*************************************************************************************/
 PELoader::PELoader()
 {
-    m_hFile = NULL;
+    m_hFile = VMToOSInterface::InvalidFileHandle;
     m_hMod = NULL;
-    m_hMapFile = NULL;
+    m_hMapFile = VMToOSInterface::InvalidMemoryMapHandle;
     m_pNT64 = NULL;
     m_bIsPE32 = FALSE;
     m_FileSize = m_FileSizeAligned = 0;
@@ -33,7 +33,7 @@ PELoader::~PELoader()
     // If we have an hFile then we opened this file ourselves!
     // If we do not then this file was loaded by the OS and the OS will
     // close it for us.
-    if (m_hFile)
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
         this->close();
 }
 
@@ -41,81 +41,46 @@ PELoader::~PELoader()
 /*************************************************************************************/
 void PELoader::close()
 {
-
-    // _ASSERTE(m_hFile != NULL);
-    if (m_hFile)
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
     {
         if (m_hMod)
-            UnmapViewOfFile((void*)m_hMod);
-        if (m_hMapFile)
-            CloseHandle(m_hMapFile);
-        CloseHandle(m_hFile);
+            VMToOSInterface::UnmapMemory((void*)m_hMod, m_FileSize);
+        if (m_hMapFile != VMToOSInterface::InvalidMemoryMapHandle)
+            VMToOSInterface::CloseMemoryMapping(m_hMapFile);
+        VMToOSInterface::CloseFile(m_hFile);
 
         m_hMod = NULL;
-        m_hMapFile = NULL;
-        m_hFile = NULL;
+        m_hMapFile = VMToOSInterface::InvalidMemoryMapHandle;
+        m_hFile = VMToOSInterface::InvalidFileHandle;
         m_FileSize = m_FileSizeAligned = 0;
     }
 }
 
-
-BOOL PELoader::open(LPCSTR moduleName)
-{
-    HMODULE newhMod = NULL;
-    DWORD dwFileSizeLow;
-
-    _ASSERTE(moduleName);
-    if (!moduleName)
-        return FALSE;
-
-
-    m_hFile = CreateFileA(moduleName, GENERIC_READ, FILE_SHARE_READ,
-                         0, OPEN_EXISTING, 0, 0);
-    if (m_hFile == INVALID_HANDLE_VALUE)
-        return FALSE;
-
-    dwFileSizeLow = GetFileSize( m_hFile, NULL);
-    if (dwFileSizeLow == INVALID_FILE_SIZE)
-        return FALSE;
-    m_FileSize = dwFileSizeLow;
-
-    m_hMapFile = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    if (m_hMapFile == NULL)
-        return FALSE;
-
-    newhMod = (HMODULE) MapViewOfFile(m_hMapFile, FILE_MAP_READ, 0, 0, 0);
-    if (newhMod == NULL)
-        return FALSE;
-   return open(newhMod);
-}
-
 BOOL PELoader::open(const WCHAR* moduleName)
 {
-    HMODULE newhMod = NULL;
-    DWORD dwFileSizeLow;
+    uint64_t fileSize;
+    void* view;
 
     _ASSERTE(moduleName);
     if (!moduleName)
         return FALSE;
 
-    m_hFile = WszCreateFile(moduleName, GENERIC_READ, FILE_SHARE_READ,
-                         0, OPEN_EXISTING, 0, 0);
-    if (m_hFile == INVALID_HANDLE_VALUE)
+    m_hFile = VMToOSInterface::OpenFile(reinterpret_cast<const char16_t*>(moduleName), /* executable */ false);
+    if (m_hFile == VMToOSInterface::InvalidFileHandle)
         return FALSE;
 
-    dwFileSizeLow = GetFileSize( m_hFile, NULL);
-    if (dwFileSizeLow == INVALID_FILE_SIZE)
+    if (!VMToOSInterface::GetFileSize(m_hFile, &fileSize) || fileSize == 0 || fileSize > UINT32_MAX)
         return FALSE;
-    m_FileSize = dwFileSizeLow;
+    m_FileSize = (size_t)fileSize;
 
-    m_hMapFile = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    if (m_hMapFile == NULL)
+    m_hMapFile = VMToOSInterface::CreateMemoryMapping(m_hFile, 0, VMToOSInterface::MemoryProtection::ReadOnly);
+    if (m_hMapFile == VMToOSInterface::InvalidMemoryMapHandle)
         return FALSE;
 
-    newhMod = (HMODULE) MapViewOfFile(m_hMapFile, FILE_MAP_READ, 0, 0, 0);
-    if (newhMod == NULL)
+    view = VMToOSInterface::MapMemory(m_hMapFile, 0, nullptr, m_FileSize, VMToOSInterface::MemoryProtection::ReadOnly, true);
+    if (view == nullptr)
         return FALSE;
-   return open(newhMod);
+   return open((HMODULE)view);
 }
 
 

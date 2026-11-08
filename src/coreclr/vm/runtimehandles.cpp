@@ -2496,7 +2496,7 @@ extern "C" void QCALLTYPE ModuleHandle_ResolveField(QCall::ModuleHandle pModule,
     return;
 }
 
-extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pModule, const char* name, byte* sig, INT32 sigLen, QCall::ObjectHandleOnStack resolver, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError)
+extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pModule, const char* name, byte* sig, INT32 sigLen, QCall::ObjectHandleOnStack resolver, BOOL isDiagnosticsHidden, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -2510,7 +2510,7 @@ extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pMod
 
     // Make a copy of the name
     size_t nameLen = strlen(name) + 1;
-    NewArrayHolder<char> pName(new char[nameLen]);
+    AStringHolder pName(new char[nameLen]);
     memcpy(pName, name, nameLen * sizeof(char));
 
     // Make a copy of the signature
@@ -2521,8 +2521,13 @@ extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pMod
     DynamicMethodDesc* pNewMD = pMTForDynamicMethods->GetDynamicMethod(pSig, sigLen, pName);
     _ASSERTE(pNewMD != NULL);
     // pNewMD now owns pSig and pName.
-    pSig.SuppressRelease();
-    pName.SuppressRelease();
+    pSig.Detach();
+    pName.Detach();
+
+    if (isDiagnosticsHidden)
+    {
+        pNewMD->SetFlags(DynamicMethodDesc::FlagIsDiagnosticsHidden);
+    }
 
     {
         GCX_COOP();

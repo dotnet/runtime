@@ -742,175 +742,6 @@ class Wrapper : public BaseWrapper<TYPE, FunctionBase<TYPE, ACQUIREF, RELEASEF>,
     HIDE_GENERATED_METHODS(Wrapper)
 };  // Wrapper<>
 
-//---------------------------------------------------------------------------------------
-// - Cannot use the standard INDEBUG macro: holder.h is used in places where INDEBUG is defined in the nonstandard way
-#if defined(_DEBUG)
-#define INDEBUG_AND_WINDOWS_FOR_HOLDERS(x) x
-#else
-#define INDEBUG_AND_WINDOWS_FOR_HOLDERS(x)
-#endif
-
-template <typename _TYPE, void (*_RELEASEF)(_TYPE*)>
-class SpecializedWrapper : public Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, 0>
-{
-    using BaseT = Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, 0>;
-public:
-    FORCEINLINE SpecializedWrapper() : BaseT(NULL, FALSE)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        INDEBUG_AND_WINDOWS_FOR_HOLDERS(m_pvalue = &this->m_value;)
-    }
-    FORCEINLINE SpecializedWrapper(_TYPE* value) : BaseT(value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        INDEBUG_AND_WINDOWS_FOR_HOLDERS(m_pvalue = &this->m_value;)
-    }
-    FORCEINLINE SpecializedWrapper(_TYPE* value, BOOL takeOwnership) : BaseT(value, takeOwnership)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        INDEBUG_AND_WINDOWS_FOR_HOLDERS(m_pvalue = &this->m_value;)
-    }
-    FORCEINLINE ~SpecializedWrapper()
-    {
-    }
-
-    SpecializedWrapper(SpecializedWrapper const &) = delete;
-    SpecializedWrapper & operator=(SpecializedWrapper const &) = delete;
-
-    FORCEINLINE SpecializedWrapper& operator=(_TYPE * value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        BaseT::operator=(value);
-        return *this;
-    }
-
-    FORCEINLINE SpecializedWrapper(SpecializedWrapper && other)
-    : BaseT(NULL, FALSE)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        INDEBUG_AND_WINDOWS_FOR_HOLDERS(m_pvalue = &this->m_value;)
-        *this = std::move(other);
-    }
-
-    FORCEINLINE SpecializedWrapper& operator=(SpecializedWrapper && other)
-    {
-        BaseT::m_value = std::move(other.BaseT::m_value);
-        BaseT::m_acquired = std::move(other.BaseT::m_acquired);
-        other.BaseT::m_value = nullptr;
-        other.BaseT::m_acquired = FALSE;
-        return *this;
-    }
-
-    /* Since operator& is overloaded we need a way to get a type safe this pointer. */
-    FORCEINLINE SpecializedWrapper* GetAddr()
-    {
-        STATIC_CONTRACT_LEAF;
-        return this;
-    }
-    private:
-    /* m_ppValue: Do not use from source code: Only for convenient use from debugger */
-    /*     watch windows - saves five mouseclicks when inspecting holders. */
-    INDEBUG_AND_WINDOWS_FOR_HOLDERS(_TYPE ** m_pvalue;)
-};
-
-//-----------------------------------------------------------------------------
-// NewHolder : New'ed memory holder
-//
-//  {
-//      NewHolder<Foo> foo = new Foo ();
-//  } // delete foo on out of scope
-//-----------------------------------------------------------------------------
-
-template <typename TYPE>
-FORCEINLINE void Delete(TYPE *value)
-{
-    STATIC_CONTRACT_LEAF;
-
-    static_assert(!std::is_same<typename std::remove_cv<TYPE>::type, WCHAR>::value,
-                  "Must use NewArrayHolder (not NewHolder) for strings.");
-    static_assert(!std::is_same<typename std::remove_cv<TYPE>::type, CHAR>::value,
-                  "Must use NewArrayHolder (not NewHolder) for strings.");
-
-    delete value;
-}
-
-template<typename _TYPE>
-using NewHolder = SpecializedWrapper<_TYPE, Delete<_TYPE>>;
-
-//-----------------------------------------------------------------------------
-// NewArrayHolder : New []'ed pointer holder
-//  {
-//      NewArrayHolder<Foo> foo = new Foo [30];
-//  } // delete [] foo on out of scope
-//-----------------------------------------------------------------------------
-
-template <typename TYPE>
-FORCEINLINE void DeleteArray(TYPE *value)
-{
-    STATIC_CONTRACT_WRAPPER;
-    delete [] value;
-}
-
-template<typename _TYPE>
-using NewArrayHolder = SpecializedWrapper<_TYPE, DeleteArray<_TYPE>>;
-typedef NewArrayHolder<CHAR>  AStringHolder;
-typedef NewArrayHolder<WCHAR> WStringHolder;
-
-//-----------------------------------------------------------------------------
-// A special array holder that expects its contents are interface pointers,
-// and will call Release() on them.
-//
-// NOTE: You may ONLY use this if you've determined that it is SAFE to call
-// Release() on the contained interface pointers (e.g., as opposed to SafeRelease)
-//
-template <typename INTERFACE>
-class NewInterfaceArrayHolder : public NewArrayHolder<INTERFACE *>
-{
-public:
-    NewInterfaceArrayHolder() :
-        NewArrayHolder<INTERFACE *>(),
-        m_cElements(0)
-    {
-        STATIC_CONTRACT_WRAPPER;
-    }
-
-    NewInterfaceArrayHolder(INTERFACE ** value, ULONG32 cElements) :
-        NewArrayHolder<INTERFACE *>(value),
-        m_cElements(cElements)
-    {
-        STATIC_CONTRACT_WRAPPER;
-    }
-
-    NewInterfaceArrayHolder& operator=(INTERFACE ** value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        NewArrayHolder<INTERFACE *>::operator=(value);
-        return *this;
-    }
-
-    void SetElementCount(ULONG32 cElements)
-    {
-        STATIC_CONTRACT_LEAF;
-        m_cElements = cElements;
-    }
-
-    ~NewInterfaceArrayHolder()
-    {
-        STATIC_CONTRACT_LEAF;
-        if (this->m_acquired)
-        {
-            for (ULONG32 i=0; i < m_cElements; i++)
-            {
-                if (this->m_value[i] != NULL)
-                    this->m_value[i]->Release();
-            }
-        }
-    }
-
-protected:
-    ULONG32 m_cElements;
-};
-
 //-----------------------------------------------------------------------------
 // Holders
 //-----------------------------------------------------------------------------
@@ -992,6 +823,103 @@ public:
 };
 
 template <typename TYPE>
+struct NewHolderTraits final
+{
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+        static_assert(!std::is_same<typename std::remove_cv<TYPE>::type, WCHAR>::value,
+                    "Use WStringHolder (not NewHolder) for strings.");
+        static_assert(!std::is_same<typename std::remove_cv<TYPE>::type, CHAR>::value,
+                    "Use AStringHolder (not NewHolder) for strings.");
+
+        delete value;
+    }
+};
+
+template <typename TYPE>
+using NewHolder = LifetimeHolder<NewHolderTraits<TYPE>>;
+
+template <typename TYPE>
+struct NewArrayHolderTraits final
+{
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+        delete[] value;
+    }
+};
+
+template <typename TYPE>
+using NewArrayHolder = LifetimeHolder<NewArrayHolderTraits<TYPE>>;
+
+using AStringHolder = NewArrayHolder<CHAR>;
+using WStringHolder = NewArrayHolder<WCHAR>;
+
+//-----------------------------------------------------------------------------
+// A special array holder that expects its contents are interface pointers,
+// and will call Release() on them.
+//
+// NOTE: You may ONLY use this if you've determined that it is SAFE to call
+// Release() on the contained interface pointers (e.g., as opposed to SafeRelease)
+//
+template <typename INTERFACE>
+class NewInterfaceArrayHolder final
+{
+    struct Traits
+    {
+        struct Type
+        {
+            INTERFACE ** values;
+            ULONG32 count;
+        };
+
+        static Type Default() { return {}; }
+
+        static void Free(Type array) noexcept
+        {
+            STATIC_CONTRACT_LEAF;
+            if (array.values != NULL)
+            {
+                for (ULONG32 i = 0; i < array.count; i++)
+                {
+                    if (array.values[i] != NULL)
+                        array.values[i]->Release();
+                }
+                delete[] array.values;
+            }
+        }
+    };
+
+    LifetimeHolder<Traits> m_array;
+
+public:
+    NewInterfaceArrayHolder() = default;
+
+    NewInterfaceArrayHolder(INTERFACE ** value, ULONG32 cElements) :
+        m_array(typename Traits::Type{ value, cElements })
+    {
+        STATIC_CONTRACT_WRAPPER;
+    }
+
+    operator INTERFACE **() const
+    {
+        STATIC_CONTRACT_LEAF;
+        return static_cast<typename Traits::Type>(m_array).values;
+    }
+
+    INTERFACE ** Detach()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        return m_array.Detach().values;
+    }
+};
+
+template <typename TYPE>
 struct ReleaseHolderTraits final
 {
     using Type = TYPE*;
@@ -1030,6 +958,7 @@ struct HandleTraits final
 };
 using HandleHolder = LifetimeHolder<HandleTraits>;
 
+#ifdef HOST_WINDOWS
 struct MapViewTraits final
 {
     using Type = void*;
@@ -1043,6 +972,7 @@ struct MapViewTraits final
 };
 
 using MapViewHolder = LifetimeHolder<MapViewTraits>;
+#endif // HOST_WINDOWS
 
 template<typename T>
 struct LocalAllocTraits final

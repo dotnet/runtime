@@ -684,7 +684,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/AllocSlow.asm
             ${ARCH_SOURCES_DIR}/AsmHelpers.asm
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
-            ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
             ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
             ${ARCH_SOURCES_DIR}/getstate.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
@@ -731,7 +730,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/AllocSlow.asm
             ${ARCH_SOURCES_DIR}/AsmHelpers.asm
-            ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
             ${ARCH_SOURCES_DIR}/patchedcode.asm
             ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
@@ -756,7 +754,6 @@ else()
             ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
-            ${ARCH_SOURCES_DIR}/calldescrworkeramd64.S
             ${ARCH_SOURCES_DIR}/externalmethodfixupthunk.S
             ${ARCH_SOURCES_DIR}/getstate.S
             ${ARCH_SOURCES_DIR}/jithelpers_fast.S
@@ -778,19 +775,6 @@ else()
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
         )
-    elseif(CLR_CMAKE_TARGET_ARCH_I386)
-        set(VM_SOURCES_WKS_ARCH_ASM
-            ${ARCH_SOURCES_DIR}/AllocSlow.S
-            ${ARCH_SOURCES_DIR}/ehhelpers.S
-            ${ARCH_SOURCES_DIR}/asmhelpers.S
-            ${ARCH_SOURCES_DIR}/jithelp.S
-            ${ARCH_SOURCES_DIR}/pinvokestubs.S
-            ${ARCH_SOURCES_DIR}/umthunkstub.S
-            ${ARCH_SOURCES_DIR}/thunktemplates.S
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
-            )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/AllocSlow.S
@@ -808,7 +792,6 @@ else()
             ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
-            ${ARCH_SOURCES_DIR}/calldescrworkerarm64.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
@@ -822,7 +805,6 @@ else()
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
-            ${ARCH_SOURCES_DIR}/calldescrworkerloongarch64.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
@@ -833,7 +815,6 @@ else()
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
-            ${ARCH_SOURCES_DIR}/calldescrworkerriscv64.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
@@ -978,7 +959,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
     )
     set(VM_SOURCES_WKS_ARCH
         ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/writebarriers.cpp
-        ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         ${ARCH_SOURCES_DIR}/helpers.cpp
         ${ARCH_SOURCES_DIR}/dynamichelpers.cpp
@@ -1073,11 +1053,9 @@ list(APPEND VM_SOURCES_DAC
 # gcdecode.cpp is included by both JIT and VM. to avoid duplicate definitions we need to
 # treat it in a special way when statically linking with both VM and JIT
 if(CLR_CMAKE_TARGET_ARCH_I386)
-    if(CLR_CMAKE_TARGET_WIN32)
-        list(APPEND VM_SOURCES_DAC
-            gcdecode.cpp
-        )
-    endif()
+    list(APPEND VM_SOURCES_DAC
+        gcdecode.cpp
+    )
     list(APPEND VM_SOURCES_WKS_SPECIAL
         gcdecode.cpp
     )

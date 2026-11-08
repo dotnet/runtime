@@ -284,4 +284,32 @@ public class Test
         // String.Empty tests
         UTF8StringTests.EmptyStringTest();
     }
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.Is64BitProcess))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123529", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [SkipOnMono("Mono sizes the native buffer from Capacity + 1 bytes, which cannot overflow")]
+    [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static void StringBuilderNativeBufferSizeOverflow()
+    {
+        // The native buffer for a UTF-8 StringBuilder is (Capacity + 1) * 3 + 1 bytes.
+        // This is the smallest capacity for which that does not fit in an int32;
+        // the marshaler must throw instead of allocating a truncated buffer.
+        const int Capacity = 715_827_883;
+
+        StringBuilder sb;
+        try
+        {
+            sb = new StringBuilder(Capacity);
+        }
+        catch (OutOfMemoryException)
+        {
+            Console.WriteLine($"Skipping {nameof(StringBuilderNativeBufferSizeOverflow)}: unable to allocate a StringBuilder with capacity {Capacity}.");
+            return;
+        }
+
+        Assert.Equal(Capacity, sb.Capacity);
+        Assert.Throws<OverflowException>(() => UTF8StringBuilderTests.StringBuilderParameterInOut(sb, 0));
+        GC.KeepAlive(sb);
+    }
 }

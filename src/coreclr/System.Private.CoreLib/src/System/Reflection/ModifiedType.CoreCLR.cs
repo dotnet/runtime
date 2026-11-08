@@ -28,8 +28,8 @@ namespace System.Reflection
                 _offset = signature?.GetParameterOffset(parameterIndex) ?? 0
             });
 
-        private Type[] GetCustomModifiers(bool required) =>
+        private Type[] GetCustomModifiers(bool isOptional) =>
              (_typeSignature._signature != null) ?
-                _typeSignature._signature.GetCustomModifiersAtOffset(_typeSignature._offset, required) : [];
+                _typeSignature._signature.GetCustomModifiersAtOffset(_typeSignature._offset, isOptional) : [];
     }
 }
