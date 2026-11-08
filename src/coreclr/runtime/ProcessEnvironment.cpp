@@ -9,6 +9,20 @@
 
 #include <windows.h>
 
+bool ProcessEnvironment_TryGetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize, uint32_t* length)
+{
+    // A variable with an empty value also returns 0, without setting the last error.
+    SetLastError(ERROR_SUCCESS);
+    DWORD result = GetEnvironmentVariableW((LPCWSTR)name, (LPWSTR)buffer, bufferSize);
+    if (result == 0 && GetLastError() != ERROR_SUCCESS)
+    {
+        return false;
+    }
+
+    *length = (uint32_t)result;
+    return true;
+}
+
 uint32_t ProcessEnvironment_GetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize)
 {
     return (uint32_t)GetEnvironmentVariableW((LPCWSTR)name, (LPWSTR)buffer, bufferSize);
@@ -211,46 +225,57 @@ static char* Utf16ToUtf8(const CHAR16_T* source)
     return result;
 }
 
-uint32_t ProcessEnvironment_GetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize)
+bool ProcessEnvironment_TryGetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize, uint32_t* length)
 {
     if (name == nullptr || name[0] == 0)
     {
-        return 0;
+        return false;
     }
 
     char* nameUtf8 = Utf16ToUtf8(name);
     if (nameUtf8 == nullptr)
     {
-        return 0;
+        return false;
     }
 
     char* value = GetValueCopy(nameUtf8);
     free(nameUtf8);
     if (value == nullptr)
     {
-        return 0;
+        return false;
     }
 
     size_t valueLength = strlen(value);
     size_t needed = minipal_get_length_utf8_to_utf16(value, valueLength, 0);
-    uint32_t result;
+    bool found = true;
     if (needed > UINT32_MAX - 1)
     {
-        result = 0;
+        found = false;
     }
     else if (buffer != nullptr && needed < bufferSize)
     {
         size_t written = minipal_convert_utf8_to_utf16(value, valueLength, buffer, bufferSize, 0);
         buffer[written] = 0;
-        result = (uint32_t)written;
+        *length = (uint32_t)written;
     }
     else
     {
-        result = (uint32_t)(needed + 1);
+        *length = (uint32_t)(needed + 1);
     }
 
     free(value);
-    return result;
+    return found;
+}
+
+uint32_t ProcessEnvironment_GetVariable(const CHAR16_T* name, CHAR16_T* buffer, uint32_t bufferSize)
+{
+    uint32_t length;
+    return ProcessEnvironment_TryGetVariable(name, buffer, bufferSize, &length) ? length : 0;
+}
+
+char* ProcessEnvironment_GetVariableCopyUtf8(const char* name)
+{
+    return name != nullptr ? GetValueCopy(name) : nullptr;
 }
 
 uint32_t ProcessEnvironment_GetVariableUtf8(const char* name, char* buffer, uint32_t bufferSize)

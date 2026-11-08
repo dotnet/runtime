@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 /**
- * Get an environment variable (UTF-8).
+ * Get an environment variable (narrow string; ANSI code page on Windows).
  * Same return-value contract as Win32 GetEnvironmentVariableA:
  * - not found: 0
  * - fits in buffer: length excluding null
@@ -27,7 +27,7 @@ uint32_t minipal_environ_get_variable(const char* name, char* buffer, uint32_t b
 uint32_t minipal_environ_get_variable_u16(const CHAR16_T* name, CHAR16_T* buffer, uint32_t buffer_size);
 
 /**
- * Get a malloc'd copy of the variable value (UTF-8). Caller frees with free().
+ * Get a malloc'd copy of the variable value (narrow string; ANSI code page on Windows). Caller frees with free().
  * Returns NULL if the variable is not set.
  */
 char* minipal_environ_getenv(const char* name);

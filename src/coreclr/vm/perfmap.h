@@ -103,8 +103,8 @@ private:
     // Write a line to the map file.
     void WriteLine(SString & line);
 
-    // Default to /tmp or use DOTNET_PerfMapJitDumpPath if set
-    static const char* InternalConstructPath();
+    // Returns DOTNET_PerfMapJitDumpPath if set, or null to use the default. Free it with free().
+    static char* InternalConstructPath();
 
     static void InitializeConfiguration();
 

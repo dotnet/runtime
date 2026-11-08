@@ -247,6 +247,9 @@ EXIT:
        'set -x; ddd $PAL_EXE_NAME $PAL_EXE_PID'
 */
 
+#define PID_TEXT "PAL_EXE_PID="
+#define EXE_TEXT "PAL_EXE_NAME="
+
 static
 int
 run_debug_command (const char *command, char *pid_entry, char *exe_entry)
@@ -264,15 +267,21 @@ run_debug_command (const char *command, char *pid_entry, char *exe_entry)
         count++;
     }
 
-    // The added entries go first so that they take precedence over inherited ones.
     char **child_environment = (char **)malloc((count + 3) * sizeof(char *));
     if (child_environment == NULL) {
         return -1;
     }
 
-    child_environment[0] = pid_entry;
-    child_environment[1] = exe_entry;
-    memcpy(&child_environment[2], environment, (count + 1) * sizeof(char *));
+    size_t child_count = 0;
+    child_environment[child_count++] = pid_entry;
+    child_environment[child_count++] = exe_entry;
+    for (size_t i = 0; i < count; i++) {
+        if (strncmp(environment[i], PID_TEXT, strlen(PID_TEXT)) != 0 &&
+            strncmp(environment[i], EXE_TEXT, strlen(EXE_TEXT)) != 0) {
+            child_environment[child_count++] = environment[i];
+        }
+    }
+    child_environment[child_count] = NULL;
 
     printf("Spawning command: %s\n", command);
 
@@ -318,9 +327,6 @@ run_debug_command (const char *command, char *pid_entry, char *exe_entry)
     return 0;
 }
 #endif // ENABLE_RUN_ON_DEBUG_BREAK
-
-#define PID_TEXT "PAL_EXE_PID="
-#define EXE_TEXT "PAL_EXE_NAME="
 
 static
 int

@@ -126,9 +126,10 @@ char* minipal_environ_getenv(const char* name)
         return NULL;
     }
 
+    // Empty values return 0 without setting the last error. Treat removal or growth since the probe as failure.
+    SetLastError(ERROR_SUCCESS);
     DWORD written = GetEnvironmentVariableA(name, value, needed);
-    // Empty values return 0 on success; treat truncation/growth as failure.
-    if (written >= needed)
+    if (written >= needed || (written == 0 && GetLastError() != ERROR_SUCCESS))
     {
         free(value);
         return NULL;

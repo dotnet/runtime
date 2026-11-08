@@ -9,6 +9,7 @@
 #if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
 #include <clrconfignocache.h>
 #include "perfmap.h"
+#include "ProcessEnvironment.h"
 #include "pal.h"
 #include <dn-stdio.h>
 
@@ -61,14 +62,15 @@ void PerfMap::Initialize()
     PerfMap::Enable(perfMapType, false);
 }
 
-const char * PerfMap::InternalConstructPath()
+char * PerfMap::InternalConstructPath()
 {
-    CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
-    if (value.IsSet())
+    // Read the runtime's copy of the environment so that a path set through the diagnostic server is used.
+    char* path = ProcessEnvironment_GetVariableCopyUtf8(DOTNET_PREFIX_A "PerfMapJitDumpPath");
+    if (path == nullptr)
     {
-        return value.AsString();
+        path = ProcessEnvironment_GetVariableCopyUtf8(COMPLUS_PREFIX_A "PerfMapJitDumpPath");
     }
-    return TEMP_DIRECTORY_PATH;
+    return path;
 }
 
 void PerfMap::InitializeConfiguration()
@@ -96,7 +98,8 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
     {
         CrstHolder ch(&(s_csPerfMap));
 
-        const char* basePath = InternalConstructPath();
+        char* configuredPath = InternalConstructPath();
+        const char* basePath = configuredPath != nullptr ? configuredPath : TEMP_DIRECTORY_PATH;
 
         if (s_Current == nullptr && (type == PerfMapType::ALL || type == PerfMapType::PERFMAP))
         {
@@ -123,6 +126,8 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
             s_enabled = true;
         }
+
+        free(configuredPath);
     }
 
     if (sendExisting)

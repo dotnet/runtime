@@ -46,16 +46,13 @@ extern "C" int32_t QCALLTYPE Thread_GetOptimalMaxSpinWaitsPerSpinIteration()
 // or the required buffer size including the null terminator otherwise.
 extern "C" int32_t QCALLTYPE Environment_GetEnvironmentVariable(const CHAR16_T* name, CHAR16_T* buffer, int32_t bufferSize)
 {
-    uint32_t result = ProcessEnvironment_GetVariable(name, buffer, (uint32_t)bufferSize);
-
-    // 0 is also returned for a variable with an empty value; probing without a buffer
-    // returns the required size, which is non-zero for any variable that is set.
-    if (result == 0 && ProcessEnvironment_GetVariable(name, nullptr, 0) == 0)
+    uint32_t length;
+    if (!ProcessEnvironment_TryGetVariable(name, buffer, (uint32_t)bufferSize, &length))
     {
         return -1;
     }
 
-    return (int32_t)result;
+    return (int32_t)length;
 }
 
 extern "C" int32_t QCALLTYPE Environment_SetEnvironmentVariable(const CHAR16_T* name, const CHAR16_T* value)
