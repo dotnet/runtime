@@ -80,8 +80,7 @@ private:
 
     static LPWSTR MergePathStrings(LPCWSTR dir, LPCWSTR file);
 
-    static char* ConvertWideCharToMultiByte(LPCWSTR wstr);
-    static WCHAR* ConvertMultiByteToWideChar(LPCSTR str);
+    static WCHAR* ConvertFromUtf8(LPCSTR str);
 
     static int AppendFileRaw(FILE* hFileOut, LPCWSTR fileFullPath, unsigned char* buffer, size_t bufferSize);
     static int AppendFile(FILE* hFileOut, LPCWSTR fileFullPath, bool dedup, unsigned char* buffer, size_t bufferSize);

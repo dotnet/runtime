@@ -970,7 +970,7 @@ StgStringPool::AddStringW(
     CONTRACTL_END
 
     STRINGHASH  *pHash;                 // Hash item for add.
-    ULONG       iLen;                   // Correct length after conversion.
+    size_t      iLen;                   // Correct length after conversion.
     LPSTR       pData;                  // Pointer to location for new string.
 
     _ASSERTE(!m_bReadOnly);
@@ -986,38 +986,22 @@ StgStringPool::AddStringW(
         return (S_OK);
     }
 
-    // How many bytes will be required in the heap?
-    iLen = ::WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        szString,
-        -1,     // null-terminated string
-        NULL,
-        0,
-        NULL,
-        NULL);
-    // WCTMB includes trailing 0 if (when passing parameter #4 (length) -1.
+    // How many bytes will be required in the heap, including the trailing 0?
+    size_t cchString = u16_strlen(szString) + 1;
+    iLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)szString, cchString, 0);
 
     // Check for room.
     if (iLen > GetCbSegAvailable())
     {
-        if (!Grow(iLen))
+        if (!Grow((ULONG)iLen))
             return (PostError(OutOfMemory()));
     }
     pData = reinterpret_cast<LPSTR>(GetNextLocation());
 
     // Convert the data in place to the correct location.
-    iLen = ::WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        szString,
-        -1,
-        pData,
-        GetCbSegAvailable(),
-        NULL,
-        NULL);
+    iLen = minipal_convert_utf16_to_utf8((const CHAR16_T*)szString, cchString, pData, GetCbSegAvailable(), 0);
     if (iLen == 0)
-        return (BadError(HRESULT_FROM_NT(GetLastError())));
+        return (BadError(HRESULT_FROM_NT(errno)));
 
     // If the hash table is to be kept built (default).
     if (m_bHash)
@@ -1031,7 +1015,7 @@ StgStringPool::AddStringW(
         if (pHash->iOffset == 0xffffffff)
         {
             *pnOffset = pHash->iOffset = GetNextOffset();
-            SegAllocate(iLen);
+            SegAllocate((ULONG)iLen);
         }
         // Else use the old one.
         else
@@ -1043,7 +1027,7 @@ StgStringPool::AddStringW(
     else
     {
         *pnOffset = GetNextOffset();
-        SegAllocate(iLen);
+        SegAllocate((ULONG)iLen);
     }
     return (S_OK);
 } // StgStringPool::AddStringW

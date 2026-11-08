@@ -154,7 +154,6 @@ set(SOURCES
   init/pal.cpp
   init/sxs.cpp
   loader/module.cpp
-  locale/unicode.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp
   misc/environ.cpp

@@ -13,6 +13,7 @@
 
 #include "palsuite.h"
 #include "minipal/time.h"
+#include "minipal/utf8.h"
 
 const char* szTextFile = "text.txt";
 
@@ -24,13 +25,14 @@ WCHAR* convert(const char * aString)
 
     if (aString != nullptr)
     {
-        int size = MultiByteToWideChar(CP_ACP,0,aString,-1,NULL,0);
+        size_t length = strlen(aString) + 1;
+        size_t size = minipal_get_length_utf8_to_utf16(aString, length, 0);
         wideBuffer = (WCHAR*) malloc(size*sizeof(WCHAR));
         if (wideBuffer == NULL)
         {
             Fail("ERROR: Unable to allocate memory!\n");
         }
-        MultiByteToWideChar(CP_ACP,0,aString,-1,wideBuffer,size);
+        minipal_convert_utf8_to_utf16(aString, length, (CHAR16_T*)wideBuffer, size, 0);
     }
 
     return wideBuffer;
@@ -38,16 +40,14 @@ WCHAR* convert(const char * aString)
 
 char* convertC(const WCHAR * wString)
 {
-    int size;
-    char * MultiBuffer = NULL;
-
-    size = WideCharToMultiByte(CP_ACP,0,wString,-1,MultiBuffer,0,NULL,NULL);
-    MultiBuffer = (char*) malloc(size);
+    size_t length = wcslen(wString) + 1;
+    size_t size = minipal_get_length_utf16_to_utf8((const CHAR16_T*)wString, length, 0);
+    char * MultiBuffer = (char*) malloc(size);
     if (MultiBuffer == NULL)
     {
         Fail("ERROR: Unable to allocate memory!\n");
     }
-    WideCharToMultiByte(CP_ACP,0,wString,-1,MultiBuffer,size,NULL,NULL);
+    minipal_convert_utf16_to_utf8((const CHAR16_T*)wString, length, MultiBuffer, size, 0);
     return MultiBuffer;
 }
 

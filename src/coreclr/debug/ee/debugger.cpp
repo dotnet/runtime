@@ -920,8 +920,10 @@ void Debugger::InitDebugEventCounting()
     if (wstrValue != NULL)
     {
         LPSTR   strValue;
-        int     cbReq;
-        cbReq = WideCharToMultiByte(CP_UTF8, 0, wstrValue,-1, 0,0, 0,0);
+        size_t  cbReq;
+        const CHAR16_T* wszValue = (const CHAR16_T*)(LPWSTR)wstrValue;
+        size_t  cchValue = u16_strlen(wstrValue) + 1;
+        cbReq = minipal_get_length_utf16_to_utf8(wszValue, cchValue, 0);
 
         strValue = new (nothrow) char[cbReq+1];
         // This is a debug only thingy, if it fails, not worth taking
@@ -931,7 +933,7 @@ void Debugger::InitDebugEventCounting()
 
 
         // now translate the unicode to ansi string
-        WideCharToMultiByte(CP_UTF8, 0, wstrValue, -1, strValue, cbReq+1, 0,0);
+        minipal_convert_utf16_to_utf8(wszValue, cchValue, strValue, cbReq+1, 0);
         char *szEnd = (char *)strchr(strValue, ';');
         char *szStart = strValue;
         while (szEnd != NULL)
