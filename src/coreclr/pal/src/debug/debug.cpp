@@ -266,7 +266,7 @@ run_debug_command (const char *command)
     }
     if (pid == 0) {
         const char *argv[4] = { "sh", "-c", command, 0 };
-        execv("/bin/sh", (char **)argv);
+        execve("/bin/sh", (char **)argv, minipal_environ_get());
         exit(127);
     }
 

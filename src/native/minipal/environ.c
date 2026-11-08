@@ -11,8 +11,11 @@
 
 #ifdef HOST_WINDOWS
 #include <windows.h>
-#elif defined(HOST_APPLE)
+#else
+#include <pthread.h>
+#ifdef HOST_APPLE
 #include <crt_externs.h>
+#endif
 #endif
 
 static uint32_t copy_to_buffer(const char* value, char* buffer, uint32_t buffer_size)
@@ -32,6 +35,95 @@ static uint32_t copy_to_buffer(const char* value, char* buffer, uint32_t buffer_
     return (uint32_t)(value_len + 1);
 }
 
+#ifndef HOST_WINDOWS
+// setenv/unsetenv are not safe while other threads read the environment, so on Unix
+// the process environment is cloned on first use and all access goes through this
+// lock-protected copy. Changes are not visible to libc getenv in this process; child
+// processes see them only when launched with minipal_environ_get() as their environment.
+static pthread_mutex_t s_env_lock = PTHREAD_MUTEX_INITIALIZER;
+static char** s_env;
+static size_t s_env_count;
+static size_t s_env_capacity;
+
+static char** os_environ(void)
+{
+#ifdef HOST_APPLE
+    return *(_NSGetEnviron());
+#else
+    extern char** environ;
+    return environ;
+#endif
+}
+
+static bool ensure_env_locked(void)
+{
+    if (s_env != NULL)
+    {
+        return true;
+    }
+
+    char** source = os_environ();
+    size_t count = 0;
+    while (source != NULL && source[count] != NULL)
+    {
+        count++;
+    }
+
+    size_t capacity = count < 16 ? 16 : count + 1;
+    char** env = (char**)malloc(capacity * sizeof(char*));
+    if (env == NULL)
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < count; i++)
+    {
+        env[i] = strdup(source[i]);
+        if (env[i] == NULL)
+        {
+            while (i > 0)
+            {
+                free(env[--i]);
+            }
+            free(env);
+            return false;
+        }
+    }
+
+    env[count] = NULL;
+    s_env = env;
+    s_env_count = count;
+    s_env_capacity = capacity;
+    return true;
+}
+
+// Returns the index of name in s_env, or s_env_count if not present.
+static size_t find_env_locked(const char* name)
+{
+    size_t name_len = strlen(name);
+    for (size_t i = 0; i < s_env_count; i++)
+    {
+        if (strncmp(s_env[i], name, name_len) == 0 && s_env[i][name_len] == '=')
+        {
+            return i;
+        }
+    }
+
+    return s_env_count;
+}
+
+static const char* get_value_locked(const char* name)
+{
+    if (!ensure_env_locked())
+    {
+        return NULL;
+    }
+
+    size_t index = find_env_locked(name);
+    return index < s_env_count ? s_env[index] + strlen(name) + 1 : NULL;
+}
+#endif // !HOST_WINDOWS
+
 uint32_t minipal_environ_get_variable(const char* name, char* buffer, uint32_t buffer_size)
 {
     if (name == NULL || name[0] == '\0' || strchr(name, '=') != NULL)
@@ -42,13 +134,15 @@ uint32_t minipal_environ_get_variable(const char* name, char* buffer, uint32_t b
 #ifdef HOST_WINDOWS
     return (uint32_t)GetEnvironmentVariableA(name, buffer, buffer_size);
 #else
-    const char* value = getenv(name);
-    if (value == NULL)
+    uint32_t result = 0;
+    pthread_mutex_lock(&s_env_lock);
+    const char* value = get_value_locked(name);
+    if (value != NULL)
     {
-        return 0;
+        result = copy_to_buffer(value, buffer, buffer_size);
     }
-
-    return copy_to_buffer(value, buffer, buffer_size);
+    pthread_mutex_unlock(&s_env_lock);
+    return result;
 #endif
 }
 
@@ -134,17 +228,70 @@ bool minipal_environ_set_variable(const char* name, const char* value)
 
     return SetEnvironmentVariableA(name, value) != 0;
 #else
-    if (value == NULL)
+    char* entry = NULL;
+    if (value != NULL)
     {
-        if (getenv(name) == NULL)
+        size_t name_len = strlen(name);
+        size_t value_len = strlen(value);
+        entry = (char*)malloc(name_len + value_len + 2);
+        if (entry == NULL)
         {
             return false;
         }
 
-        return unsetenv(name) == 0;
+        memcpy(entry, name, name_len);
+        entry[name_len] = '=';
+        memcpy(entry + name_len + 1, value, value_len + 1);
     }
 
-    return setenv(name, value, 1) == 0;
+    bool result = false;
+    pthread_mutex_lock(&s_env_lock);
+    if (ensure_env_locked())
+    {
+        size_t index = find_env_locked(name);
+        if (entry == NULL)
+        {
+            if (index < s_env_count)
+            {
+                free(s_env[index]);
+                memmove(&s_env[index], &s_env[index + 1], (s_env_count - index) * sizeof(char*));
+                s_env_count--;
+                result = true;
+            }
+        }
+        else if (index < s_env_count)
+        {
+            free(s_env[index]);
+            s_env[index] = entry;
+            entry = NULL;
+            result = true;
+        }
+        else
+        {
+            if (s_env_count + 1 >= s_env_capacity)
+            {
+                size_t new_capacity = s_env_capacity * 2;
+                char** new_env = (char**)realloc(s_env, new_capacity * sizeof(char*));
+                if (new_env != NULL)
+                {
+                    s_env = new_env;
+                    s_env_capacity = new_capacity;
+                }
+            }
+
+            if (s_env_count + 1 < s_env_capacity)
+            {
+                s_env[s_env_count++] = entry;
+                s_env[s_env_count] = NULL;
+                entry = NULL;
+                result = true;
+            }
+        }
+    }
+    pthread_mutex_unlock(&s_env_lock);
+
+    free(entry);
+    return result;
 #endif
 }
 
@@ -221,13 +368,20 @@ char* minipal_environ_getenv(const char* name)
 
     return value;
 #else
-    const char* value = getenv(name);
-    if (value == NULL)
+    if (strchr(name, '=') != NULL)
     {
         return NULL;
     }
 
-    return strdup(value);
+    char* result = NULL;
+    pthread_mutex_lock(&s_env_lock);
+    const char* value = get_value_locked(name);
+    if (value != NULL)
+    {
+        result = strdup(value);
+    }
+    pthread_mutex_unlock(&s_env_lock);
+    return result;
 #endif
 }
 
@@ -263,37 +417,35 @@ CHAR16_T* minipal_environ_get_strings_u16(void)
     FreeEnvironmentStringsW(strings);
     return copy;
 #else
-    char** env = minipal_environ_get();
-    if (env == NULL)
+    CHAR16_T* block = NULL;
+    pthread_mutex_lock(&s_env_lock);
+    if (ensure_env_locked())
     {
-        return NULL;
-    }
+        size_t total_chars = 1; // final extra null
+        for (size_t i = 0; i < s_env_count; i++)
+        {
+            size_t len = strlen(s_env[i]);
+            total_chars += minipal_get_length_utf8_to_utf16(s_env[i], len, 0) + 1;
+        }
 
-    size_t total_chars = 1; // final extra null
-    for (int i = 0; env[i] != NULL; i++)
-    {
-        size_t len = strlen(env[i]);
-        total_chars += minipal_get_length_utf8_to_utf16(env[i], len, 0) + 1;
-    }
+        block = (CHAR16_T*)malloc(total_chars * sizeof(CHAR16_T));
+        if (block != NULL)
+        {
+            CHAR16_T* dest = block;
+            size_t remaining = total_chars;
+            for (size_t i = 0; i < s_env_count; i++)
+            {
+                size_t len = strlen(s_env[i]);
+                size_t written = minipal_convert_utf8_to_utf16(s_env[i], len, dest, remaining, 0);
+                dest[written] = 0;
+                dest += written + 1;
+                remaining -= written + 1;
+            }
 
-    CHAR16_T* block = (CHAR16_T*)malloc(total_chars * sizeof(CHAR16_T));
-    if (block == NULL)
-    {
-        return NULL;
+            *dest = 0;
+        }
     }
-
-    CHAR16_T* dest = block;
-    size_t remaining = total_chars;
-    for (int i = 0; env[i] != NULL; i++)
-    {
-        size_t len = strlen(env[i]);
-        size_t written = minipal_convert_utf8_to_utf16(env[i], len, dest, remaining, 0);
-        dest[written] = 0;
-        dest += written + 1;
-        remaining -= written + 1;
-    }
-
-    *dest = 0;
+    pthread_mutex_unlock(&s_env_lock);
     return block;
 #endif
 }
@@ -308,10 +460,8 @@ char** minipal_environ_get(void)
 #ifdef HOST_WINDOWS
     // Windows callers should use minipal_environ_get_strings_u16.
     return NULL;
-#elif defined(HOST_APPLE)
-    return *(_NSGetEnviron());
 #else
-    extern char** environ;
-    return environ;
+    // No locking or allocation: this is called between fork and exec.
+    return s_env != NULL ? s_env : os_environ();
 #endif
 }

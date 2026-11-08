@@ -56,8 +56,9 @@ CHAR16_T* minipal_environ_get_strings_u16(void);
 void minipal_environ_free_strings_u16(void* strings);
 
 /**
- * Pointer to the process environment array ("NAME=VALUE" strings, NULL-terminated),
- * suitable for execve. Do not free. May return NULL if unavailable.
+ * Pointer to the environment array ("NAME=VALUE" strings, NULL-terminated) for execve
+ * of a child process. Do not free. Only safe to use where no other thread can modify
+ * the environment, such as between fork and exec. Returns NULL on Windows.
  */
 char** minipal_environ_get(void);
 

@@ -452,12 +452,10 @@ namespace pal
     inline bool is_cli_option(const char_t option_maybe) { return option_maybe == W('-'); }
     inline string_t getenv(const char_t* var)
     {
-        char* val = minipal_environ_getenv(var);
+        const char_t* val = ::getenv(var);
         if (val == nullptr)
             return {};
-        string_t result{ val };
-        ::free(val);
-        return result;
+        return { val };
     }
     inline string_utf8_t getenvA(const char* var)
     {
@@ -465,8 +463,8 @@ namespace pal
     }
     inline void setenv(const char_t* var, string_t value)
     {
-        bool success = minipal_environ_set_variable(var, value.c_str());
-        assert(success);
+        int error = ::setenv(var, value.c_str(), /* overwrite */ 1);
+        assert(error == 0);
     }
     inline void setenvA(const char* var, string_utf8_t value)
     {
