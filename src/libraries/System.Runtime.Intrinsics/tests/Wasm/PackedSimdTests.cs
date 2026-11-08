@@ -13,7 +13,7 @@ using Xunit;
 
 namespace System.Runtime.Intrinsics.Wasm.Tests
 {
-    [PlatformSpecific(TestPlatforms.Browser)]
+    [PlatformSpecific(TestPlatforms.Browser | TestPlatforms.Wasi)]
     [ConditionalClass(typeof(PackedSimdTests), nameof(IsSupported))]
     public sealed class PackedSimdTests
     {
