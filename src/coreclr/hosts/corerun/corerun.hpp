@@ -97,12 +97,12 @@ namespace pal
     }
     inline void setenv(const char_t* var, string_t value)
     {
-        bool success = minipal_environ_set_variable_u16((const CHAR16_T*)var, (const CHAR16_T*)value.c_str());
+        BOOL success = ::SetEnvironmentVariableW(var, value.c_str());
         assert(success);
     }
     inline void setenvA(const char* var, string_utf8_t value)
     {
-        bool success = minipal_environ_set_variable(var, value.c_str());
+        BOOL success = ::SetEnvironmentVariableA(var, value.c_str());
         assert(success);
     }
     inline string_t get_exe_path()

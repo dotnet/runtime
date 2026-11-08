@@ -27,17 +27,6 @@ uint32_t minipal_environ_get_variable(const char* name, char* buffer, uint32_t b
 uint32_t minipal_environ_get_variable_u16(const CHAR16_T* name, CHAR16_T* buffer, uint32_t buffer_size);
 
 /**
- * Set or unset an environment variable (UTF-8).
- * @param value NULL to unset. Unsetting a missing variable returns false.
- */
-bool minipal_environ_set_variable(const char* name, const char* value);
-
-/**
- * Set or unset an environment variable (UTF-16).
- */
-bool minipal_environ_set_variable_u16(const CHAR16_T* name, const CHAR16_T* value);
-
-/**
  * Get a malloc'd copy of the variable value (UTF-8). Caller frees with free().
  * Returns NULL if the variable is not set.
  */
@@ -56,9 +45,8 @@ CHAR16_T* minipal_environ_get_strings_u16(void);
 void minipal_environ_free_strings_u16(void* strings);
 
 /**
- * Pointer to the environment array ("NAME=VALUE" strings, NULL-terminated) for execve
- * of a child process. Do not free. Only safe to use where no other thread can modify
- * the environment, such as between fork and exec. Returns NULL on Windows.
+ * The process environment array ("NAME=VALUE" strings, NULL-terminated), for example
+ * to pass to execve. Do not modify or free. Returns NULL on Windows.
  */
 char** minipal_environ_get(void);
 

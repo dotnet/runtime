@@ -249,7 +249,7 @@ EXIT:
 
 static
 int
-run_debug_command (const char *command)
+run_debug_command (const char *command, char *pid_entry, char *exe_entry)
 {
     int pid;
     Volatile<int> spin = 1;
@@ -258,17 +258,36 @@ run_debug_command (const char *command)
         return 1;
     }
 
+    char **environment = minipal_environ_get();
+    size_t count = 0;
+    while (environment[count] != NULL) {
+        count++;
+    }
+
+    // The added entries go first so that they take precedence over inherited ones.
+    char **child_environment = (char **)malloc((count + 3) * sizeof(char *));
+    if (child_environment == NULL) {
+        return -1;
+    }
+
+    child_environment[0] = pid_entry;
+    child_environment[1] = exe_entry;
+    memcpy(&child_environment[2], environment, (count + 1) * sizeof(char *));
+
     printf("Spawning command: %s\n", command);
 
     pid = fork();
     if (pid == -1) {
+        free(child_environment);
         return -1;
     }
     if (pid == 0) {
         const char *argv[4] = { "sh", "-c", command, 0 };
-        execve("/bin/sh", (char **)argv, minipal_environ_get());
+        execve("/bin/sh", (char **)argv, child_environment);
         exit(127);
     }
+
+    free(child_environment);
 
     /* We continue either when the spawned process has stopped, or when
        an attached debugger sets spin to 0 */
@@ -302,28 +321,6 @@ run_debug_command (const char *command)
 
 #define PID_TEXT "PAL_EXE_PID="
 #define EXE_TEXT "PAL_EXE_NAME="
-
-static bool PutenvEntry(const char* entry)
-{
-    const char* equals = strchr(entry, '=');
-    if (equals == NULL || equals == entry)
-    {
-        return false;
-    }
-
-    size_t nameLength = (size_t)(equals - entry);
-    char* name = (char*)malloc(nameLength + 1);
-    if (name == NULL)
-    {
-        return false;
-    }
-
-    memcpy(name, entry, nameLength);
-    name[nameLength] = '\0';
-    bool result = minipal_environ_set_variable(name, equals + 1);
-    free(name);
-    return result;
-}
 
 static
 int
@@ -363,16 +360,8 @@ DebugBreakCommand()
         }
 
         exe_bufString.CloseBuffer(dwexe_buf);
-        /* strictly speaking, we might want to only set these environment
-           variables in the child process, but if we do that we can't check
-           for errors. putenv/setenv can fail when out of memory */
 
-        if (!PutenvEntry(pid_buf) || !PutenvEntry(exe_buf))
-        {
-            goto FAILED;
-        }
-
-        if (run_debug_command (command_string))
+        if (run_debug_command (command_string, pid_buf, exe_buf))
         {
             goto FAILED;
         }

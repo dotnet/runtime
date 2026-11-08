@@ -11,7 +11,7 @@
 #include "ep-rt-coreclr.h"
 #include <clrconfignocache.h>
 #include <generatedumpflags.h>
-#include <minipal/environ.h>
+#include "ProcessEnvironment.h"
 #include <minipal/log.h>
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
@@ -228,7 +228,7 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-	return minipal_environ_set_variable_u16((const CHAR16_T*)name, (const CHAR16_T*)value) ? S_OK : E_FAIL;
+	return ProcessEnvironment_SetVariable((const CHAR16_T*)name, (const CHAR16_T*)value) ? S_OK : E_FAIL;
 }
 
 static
