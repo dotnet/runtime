@@ -8,6 +8,7 @@
 #include "pal_error.h"
 #include <new>
 #include <memory.h>
+#include <minipal/strings.h>
 
 bool ResizeBuffer(char *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer)
 {
@@ -53,12 +54,7 @@ bool WriteToBuffer(const BYTE *src, size_t len, char *&buffer, size_t& offset, s
 bool WriteToBuffer(PCWSTR str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
     if(!str) return true;
-    size_t length = 0;
-    while (str[length] != '\0')
-    {
-        length++;
-    }
-    size_t byteCount = (length + 1) * sizeof(*str);
+    size_t byteCount = (minipal_u16_strlen((const CHAR16_T*)str) + 1) * sizeof(*str);
 
     if (offset + byteCount > size)
     {

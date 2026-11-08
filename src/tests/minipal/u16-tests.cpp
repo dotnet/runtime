@@ -362,17 +362,10 @@ static const StrToDCase strtod_cases[] =
     { W("  -1b  "), -1, 4 },
     { W(""), 0, 0 },
     { W("12\x00E9"), 12, 2 },
-#ifdef _WIN32
     { W("1.5e"), 1.5, 3 },
     { W("1.5e+"), 1.5, 3 },
-#else
-    // The PAL wcstod skipped past everything that may be part of a number, even an incomplete exponent
-    { W("1.5e"), 1.5, 4 },
-    { W("1.5e+"), 1.5, 5 },
-    // and only accepted decimal notation
-    { W("inf"), 0, 0 },
-    { W("0x10"), 0, 1 },
-#endif
+    { W("inf"), HUGE_VAL, 3 },
+    { W("0x10"), 16, 4 },
 };
 
 static RESULT test_u16_strtod(void)
