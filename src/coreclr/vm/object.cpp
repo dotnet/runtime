@@ -681,7 +681,10 @@ STRINGREF StringObject::NewString(LPCUTF8 psz)
         return GetEmptyString();
     }
     CQuickBytes qb;
-    WCHAR* pwsz = (WCHAR*) qb.AllocThrows(length * sizeof(WCHAR));
+    S_SIZE_T cWszBytes = S_SIZE_T(length) * S_SIZE_T(sizeof(WCHAR));
+    if (cWszBytes.IsOverflow())
+        COMPlusThrowOM();
+    WCHAR* pwsz = (WCHAR*) qb.AllocThrows(cWszBytes.Value());
     length = minipal_convert_utf8_to_utf16(psz, length, (CHAR16_T*)pwsz, length, 0);
     if (length == 0) {
         COMPlusThrow(kArgumentException, W("Arg_InvalidUTF8String"));
