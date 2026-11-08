@@ -6,7 +6,7 @@ This folder contains tools which allow updating the Unicode data within the __Sy
 
 ### Updating the implementation
 
-Updating the implementation consists of three steps: checking in a new version of the Unicode data files (into the [runtime-assets](https://github.com/dotnet/runtime-assets) repo), generating the shared files used by the runtime and the unit tests, and pointing the unit test files to the correct version of the data files.
+Updating the implementation consists of two steps: checking in a new version of the Unicode data files (into the [runtime-assets](https://github.com/dotnet/runtime-assets) repo), and generating the shared files used by the runtime and the unit tests.
 
 As a prerequisite for updating the tools, you will need the _dotnet_ tool (version 3.1 or above) available from your local command prompt.
 
@@ -27,7 +27,3 @@ dotnet run -- "path_to_Blocks.txt" ../../src/System/Text/Unicode/UnicodeRanges.g
 ```
 
 5. Update the __ref__ APIs to reflect any new `UnicodeRanges` static properties which were added in the previous step, otherwise the unit test project will not be able to reference them. See https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/updating-ref-source.md for instructions on how to update the reference assemblies.
-
-6. Update the `<UnicodeUcdVersion>` property in `eng/Versions.props` to reference the new UCD version being consumed (the same version whose `UnicodeData.txt` was added to the [runtime-assets](https://github.com/dotnet/runtime-assets) repo in step (1)).
-
-7. Commit to Git the __*.cs__, __*.csproj__, and __*.md__ files that were modified as part of the above process.
