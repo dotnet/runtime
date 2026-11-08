@@ -345,16 +345,10 @@ uint32_t UnixNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID 
     return codeOffset;
 }
 
-bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
+bool UnixNativeCodeManager::IsSafePoint(MethodInfo * pMethodInfo, PTR_VOID pvAddress)
 {
-    MethodInfo pMethodInfo;
-    if (!FindMethodInfo(pvAddress, &pMethodInfo))
-    {
-        return false;
-    }
-
     PTR_uint8_t gcInfo;
-    uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, pvAddress, &gcInfo);
 
     GcInfoDecoder decoder(
         GCInfoToken(gcInfo),

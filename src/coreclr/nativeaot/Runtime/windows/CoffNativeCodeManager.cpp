@@ -446,16 +446,10 @@ uint32_t CoffNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID 
     return (uint32_t)(dac_cast<TADDR>(address) - methodStartAddress);
 }
 
-bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
+bool CoffNativeCodeManager::IsSafePoint(MethodInfo * pMethodInfo, PTR_VOID pvAddress)
 {
-    MethodInfo pMethodInfo;
-    if (!FindMethodInfo(pvAddress, &pMethodInfo))
-    {
-        return false;
-    }
-
     PTR_uint8_t gcInfo;
-    uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, pvAddress, &gcInfo);
 
 #ifdef USE_GC_INFO_DECODER
     GcInfoDecoder decoder(
