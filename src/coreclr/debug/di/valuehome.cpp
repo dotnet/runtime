@@ -503,20 +503,10 @@ RegisterValueHome::RegisterValueHome(CordbProcess *                pProcess,
                                      EnregisteredValueHomeHolder * ppRemoteRegAddr):
     ValueHome(pProcess)
 {
-    EnregisteredValueHome * pRemoteRegAddr = ppRemoteRegAddr == NULL ? NULL : ppRemoteRegAddr->GetValue();
     // in the general case, we should have either a remote address or a register address, but FuncEval makes
     // empty GenericValues for literals, so it's possible that we have neither address
 
-    if (pRemoteRegAddr != NULL)
-    {
-        m_pRemoteRegAddr = pRemoteRegAddr;
-        // be sure not to delete the remote register information on exit
-        ppRemoteRegAddr->SuppressRelease();
-    }
-    else
-    {
-        m_pRemoteRegAddr = NULL;
-    }
+    m_pRemoteRegAddr = ppRemoteRegAddr == NULL ? NULL : ppRemoteRegAddr->Detach();
  } // RegisterValueHome::RegisterValueHome
 
 // clean up resources as necessary
@@ -584,9 +574,9 @@ void RegisterValueHome::CreateInternalValue(CordbType *       pType,
      * is a separate, pre-existing limitation and is not handled.)
      * </TODO>
      */
-    pRemoteReg.Assign(m_pRemoteRegAddr->Clone());
+    pRemoteReg = m_pRemoteRegAddr->Clone();
 
-    EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();
+    EnregisteredValueHomeHolder * pRegHolder = std::addressof(pRemoteReg);
 
     // create a value for the member field.
     CordbValue::CreateValueByType(pType->GetAppDomain(),

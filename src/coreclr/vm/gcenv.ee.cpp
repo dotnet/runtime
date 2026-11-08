@@ -1436,7 +1436,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
     }
 
     // not allocated on the stack since it escapes this function
-    AStringHolder configResult = new (nothrow) char[charCount];
+    AStringHolder configResult(new (nothrow) char[charCount]);
     if (!configResult)
     {
         if (fromClrConfig)
@@ -1446,7 +1446,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
         return false;
     }
 
-    if (minipal_convert_utf16_to_utf8((const CHAR16_T*)out, cchOut, configResult.GetValue(), charCount, 0) == 0)
+    if (minipal_convert_utf16_to_utf8((const CHAR16_T*)out, cchOut, configResult, charCount, 0) == 0)
     {
         // this should never happen, the previous call that computed the charCount should
         // have caught all issues.
@@ -1458,7 +1458,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
         return false;
     }
 
-    *value = configResult.Extract();
+    *value = configResult.Detach();
     if (fromClrConfig)
     {
         CLRConfig::FreeConfigString(fromClrConfig);

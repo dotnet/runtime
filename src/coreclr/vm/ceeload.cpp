@@ -3973,7 +3973,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     IfFailThrow(hr);
 
     // Operate on local data, and then persist it into the module once we know it's valid.
-    NewArrayHolder<uint8_t> pBuffer(new uint8_t[numBytes + sizeof(DynamicMetadata)]);
+    NewArrayHolder<uint8_t> pBuffer{ new uint8_t[numBytes + sizeof(DynamicMetadata)] };
     _ASSERTE(pBuffer != NULL); // allocation would throw first
 
     DynamicMetadata *pDynamicMetadata = (DynamicMetadata*)(uint8_t*)pBuffer;
@@ -3995,7 +3995,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
 
         delete[] (uint8_t*)m_pDynamicMetadata;
 
-        m_pDynamicMetadata = (TADDR)pBuffer.Extract();
+        m_pDynamicMetadata = (TADDR)pBuffer.Detach();
         m_dwMetadataGeneration++;
     }
 
