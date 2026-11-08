@@ -9,9 +9,6 @@
 
 #include <stdint.h>
 
-namespace DivInstructionDecoder
-{
-
 // Get value of an instruction operand represented by the ModR/M field
 // Parameters:
 //  uint8_t rex :           REX prefix, 0 if there was none. Bits 4 and 5 carry the APX B4 and X4 extensions.
@@ -233,19 +230,18 @@ inline uint8_t SkipPrefixes(uint8_t **ip, bool* hasOpSizePrefix)
     }
 }
 
-// Check if a division by zero exception is in fact a division overflow. The
-// x64 processor generate the same exception in both cases for the IDIV / DIV
-// instruction. So we need to decode the instruction argument and check
-// whether it was zero or not.
+// Check if the divisor of the DIV / IDIV instruction at ip is non-zero. The x64
+// processor generates the same exception for division by zero and division
+// overflow, so a division by zero exception with a non-zero divisor is an overflow.
 // Parameters:
 //  DecodeApx :             true to decode the APX REX2 and EVEX prefixes; getRegister must then
 //                          accept indices 16..31 for R16..R31
 //  uint8_t* ip :           address of the faulting instruction
 //  getRegister :           callable returning the value of the register with the given index
 // Return value :
-//  true if the division error was an overflow
+//  true if the divisor is non-zero, i.e. the division error was an overflow
 template <bool DecodeApx, typename TGetRegister>
-bool IsDivByZeroAnIntegerOverflow(uint8_t* ip, TGetRegister getRegister)
+bool DivInstructionHasNonZeroDivisor(uint8_t* ip, TGetRegister getRegister)
 {
     uint8_t rex = 0;
     bool hasOpSizePrefix = false;
@@ -348,7 +344,5 @@ bool IsDivByZeroAnIntegerOverflow(uint8_t* ip, TGetRegister getRegister)
     // must have been an overflow.
     return divisor != 0;
 }
-
-} // namespace DivInstructionDecoder
 
 #endif // _DIV_INSTRUCTION_DECODER_H_

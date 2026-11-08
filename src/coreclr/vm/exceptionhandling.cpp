@@ -18,7 +18,7 @@
 #include "exinfo.h"
 #include "configuration.h"
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_UNIX) && defined(TARGET_AMD64)
 #include <amd64/DivInstructionDecoder.h>
 #endif
 
@@ -901,7 +901,7 @@ Return value :
 --*/
 bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 {
-    return DivInstructionDecoder::IsDivByZeroAnIntegerOverflow</* DecodeApx */ true>(
+    return DivInstructionHasNonZeroDivisor</* DecodeApx */ true>(
         (uint8_t*)GetIP(pContext),
         [pContext](uint32_t index) { return (uint64_t)GetRegisterValueByIndex(pContext, index); });
 }

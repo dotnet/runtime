@@ -68,7 +68,7 @@ static PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
 bool IsDivByZeroAnIntegerOverflow(void* context)
 {
     // The APX extended registers R16..R31 are not read from the signal context.
-    return DivInstructionDecoder::IsDivByZeroAnIntegerOverflow</* DecodeApx */ false>(
+    return DivInstructionHasNonZeroDivisor</* DecodeApx */ false>(
         (uint8_t*)GetPC(context),
         [context](uint32_t index) { return GetRegisterValueByIndex(context, index); });
 }
