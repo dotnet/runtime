@@ -47,7 +47,6 @@ typedef struct { int _placeholder; } native_context_t;
 #error Native context type is not known on this platform!
 #endif  // HAVE_UCONTEXT_T
 
-// Shared MCREG_* / MCONTEXT_FROM_NATIVE register accessors (also used by NativeAOT).
 #include <unix/NativeContextRegs.h>
 
 #if !HAVE_MACH_EXCEPTIONS
@@ -122,7 +121,6 @@ struct sve_context {
 #define __SVE_FFR_OFFSET(vq) \
     (__SVE_PREGS_OFFSET(vq) + __SVE_PREGS_SIZE(vq))
 
-
 #define SVE_SIG_ZREG_SIZE(vq)   __SVE_ZREG_SIZE(vq)
 #define SVE_SIG_PREG_SIZE(vq)   __SVE_PREG_SIZE(vq)
 #define SVE_SIG_FFR_SIZE(vq)    __SVE_FFR_SIZE(vq)
@@ -155,13 +153,27 @@ struct sve_context {
 #endif // SVE_MAGIC
 #endif // HOST_64BIT && HOST_ARM64 && !TARGET_FREEBSD && !__APPLE__
 
-#if HAVE___GREGSET_T
+#ifdef HOST_S390X
+
+#elif HOST_POWERPC64
+
+#if defined(TARGET_FREEBSD)
+
+#else // !TARGET_FREEBSD
+
+#endif // TARGET_FREEBSD
+
+#elif defined(HOST_WASM)
+
+#elif HAVE___GREGSET_T
 
 #ifdef HOST_64BIT
 
-#if !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
+#if defined(HOST_LOONGARCH64)
 
-// FPREG_* for HAVE___GREGSET_T amd64 (MCREG_* live in NativeContextRegs.h).
+#elif defined(HOST_RISCV64)
+
+#else // !HOST_LOONGARCH64 && !HOST_RISCV64
 
 #define FPREG_Xmm(uc, index) *(M128A*)&(((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_xmm[index])
 
@@ -179,12 +191,21 @@ struct sve_context {
 
 #endif // !HOST_LOONGARCH64 && !HOST_RISCV64
 
+#else // HOST_64BIT
+
 #endif // HOST_64BIT
 
 #elif HAVE_GREGSET_T
 
 #ifdef HOST_64BIT
 
+#if defined(HOST_LOONGARCH64)
+
+#endif // HOST_LOONGARCH64
+
+#ifdef REG_CSGSFS
+#else
+#endif
 
 #if HAVE_FPREGS_WITH_CW
 #define FPREG_Fpstate(uc) (&((uc)->uc_mcontext.fpregs.fp_reg_set.fpchip_state))
@@ -443,8 +464,13 @@ inline void *FPREG_Xstate_Egpr(const ucontext_t *uc, uint32_t *featureSize)
 
 /////////////////////
 
+#else // HOST_64BIT
+
 #endif // HOST_64BIT
 
+#ifdef REG_EFL
+#else
+#endif
 
 #else // HAVE_GREGSET_T
 
@@ -453,7 +479,6 @@ inline void *FPREG_Xstate_Egpr(const ucontext_t *uc, uint32_t *featureSize)
 #if defined(HOST_ARM64)
 
 #if defined(TARGET_FREEBSD)
-
 
 inline
 struct fpregs* GetNativeSigSimdContext(native_context_t *mc)
@@ -468,7 +493,6 @@ const struct fpregs* GetConstNativeSigSimdContext(const native_context_t *mc)
 }
 
 #elif !defined(__APPLE__) // TARGET_FREEBSD
-
 
 void _GetNativeSigSimdContext(uint8_t *data, uint32_t size, fpsimd_context **fp_ptr, sve_context **sve_ptr);
 
@@ -486,7 +510,6 @@ void GetConstNativeSigSimdContext(const native_context_t *mc, fpsimd_context con
 
 #else // __APPLE__
 
-
 inline
 _STRUCT_ARM_NEON_STATE64* GetNativeSigSimdContext(native_context_t *mc)
 {
@@ -501,10 +524,11 @@ const _STRUCT_ARM_NEON_STATE64* GetConstNativeSigSimdContext(const native_contex
 
 #endif // __APPLE__
 
+#elif defined(HOST_LOONGARCH64)
+
 #else // HOST_ARM64
 
 #ifdef __APPLE__
-
 
 #define FPSTATE(uc)             ((uc)->uc_mcontext->__fs)
 #define FPREG_ControlWord(uc)   *((WORD*)&FPSTATE(uc).__fpu_fcw)
@@ -630,7 +654,6 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
 
 #if defined(HOST_ARM)
 
-
 // Flatterned layout of the arm kernel struct vfp_sigframe
 struct VfpSigFrame
 {
@@ -690,7 +713,6 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #endif // HOST_64BIT
 
 #endif // HAVE_GREGSET_T
-
 
 #if HAVE_PT_REGS
 
@@ -822,11 +844,9 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 
 #endif // HOST_64BIT
 
-
 #define PTREG_EFlags(ptreg) ((ptreg).eflags)
 
 #endif // HAVE_PT_REGS
-
 
 #if HAVE_BSD_REGS_T
 
@@ -1198,7 +1218,6 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                                        const native_context_t *context);
 
 #endif  // HAVE_MACH_EXCEPTIONS else
-
 
 #ifdef __cplusplus
 }

@@ -1,25 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Shared Unix native-context register accessors (MCREG_*, MCONTEXT_FROM_NATIVE).
-// Included by CoreCLR PAL (pal/context.h) and NativeAOT (NativeContext.cpp).
-// Platform feature macros (HAVE_GREGSET_T, HAVE___GREGSET_T, TARGET_*, HOST_*)
-// must already be defined by the including translation unit / config.h.
+// Unix machine-context register accessors shared by the CoreCLR PAL and NativeAOT.
+// The including file must provide the platform config (HAVE_GREGSET_T, HAVE___GREGSET_T, ...).
 
 #ifndef _NATIVE_CONTEXT_REGS_H_
 #define _NATIVE_CONTEXT_REGS_H_
 
-// Helper to obtain the machine-register container from a native_context_t pointer.
-// On most platforms the registers live in the uc_mcontext sub-structure. On OpenBSD
-// native_context_t is an alias for struct sigcontext and holds the registers directly.
 #ifdef TARGET_OPENBSD
 #define MCONTEXT_FROM_NATIVE(ucontextPtr)  (*(ucontextPtr))
 #else
 #define MCONTEXT_FROM_NATIVE(ucontextPtr)  ((ucontextPtr)->uc_mcontext)
 #endif
-
 #ifdef HOST_S390X
-
 #define MCREG_PSWMask(mc)   ((mc).psw.mask)
 #define MCREG_PSWAddr(mc)   ((mc).psw.addr)
 #define MCREG_R0(mc)        ((mc).gregs[0])
@@ -38,9 +31,7 @@
 #define MCREG_R13(mc)       ((mc).gregs[13])
 #define MCREG_R14(mc)       ((mc).gregs[14])
 #define MCREG_R15(mc)       ((mc).gregs[15])
-
 #elif HOST_POWERPC64
-
 #if defined(TARGET_FREEBSD)
 #define MCREG_R0(mc)        ((mc).mc_gpr[0])
 #define MCREG_R1(mc)        ((mc).mc_gpr[1])
@@ -80,9 +71,7 @@
 #define MCREG_Link(mc)      ((mc).mc_lr)
 #define MCREG_Xer(mc)       ((mc).mc_xer)
 #define MCREG_Ccr(mc)       ((mc).mc_cr)
-
 #else // !TARGET_FREEBSD
-
 #define MCREG_R0(mc)        ((mc).gp_regs[0])
 #define MCREG_R1(mc)        ((mc).gp_regs[1])
 #define MCREG_R2(mc)        ((mc).gp_regs[2])
@@ -121,20 +110,13 @@
 #define MCREG_Link(mc)      ((mc).gp_regs[36])
 #define MCREG_Xer(mc)       ((mc).gp_regs[37])
 #define MCREG_Ccr(mc)       ((mc).gp_regs[38])
-
 #endif // TARGET_FREEBSD
-
 #elif defined(HOST_WASM)
-
 #define MCREG_Sp(mc)      0
 #define MCREG_Pc(mc)      0
-
 #elif HAVE___GREGSET_T
-
 #ifdef HOST_64BIT
-
 #if defined(HOST_LOONGARCH64)
-
 #define MCREG_R0(mc)      ((mc).__gregs[0])
 #define MCREG_Ra(mc)      ((mc).__gregs[1])
 #define MCREG_Tp(mc)      ((mc).__gregs[2])
@@ -168,9 +150,8 @@
 #define MCREG_S7(mc)      ((mc).__gregs[30])
 #define MCREG_S8(mc)      ((mc).__gregs[31])
 #define MCREG_Pc(mc)      ((mc).__pc)
-
 #elif defined(HOST_RISCV64)
-
+#define MCREG_R0(mc)      ((mc).__gregs[0])
 #define MCREG_Ra(mc)      ((mc).__gregs[1])
 #define MCREG_Sp(mc)      ((mc).__gregs[2])
 #define MCREG_Gp(mc)      ((mc).__gregs[3])
@@ -203,9 +184,7 @@
 #define MCREG_T5(mc)      ((mc).__gregs[30])
 #define MCREG_T6(mc)      ((mc).__gregs[31])
 #define MCREG_Pc(mc)      ((mc).__gregs[0])
-
 #else // !HOST_LOONGARCH64 && !HOST_RISCV64
-
 #define MCREG_Rbx(mc)       ((mc).__gregs[_REG_RBX])
 #define MCREG_Rcx(mc)       ((mc).__gregs[_REG_RCX])
 #define MCREG_Rdx(mc)       ((mc).__gregs[_REG_RDX])
@@ -226,11 +205,8 @@
 #define MCREG_R14(mc)       ((mc).__gregs[_REG_R14])
 #define MCREG_R15(mc)       ((mc).__gregs[_REG_R15])
 #define MCREG_EFlags(mc)    ((mc).__gregs[_REG_RFLAGS])
-
 #endif // !HOST_LOONGARCH64 && !HOST_RISCV64
-
 #else // HOST_64BIT
-
 #define MCREG_Ebx(mc)       ((mc).__gregs[_REG_EBX])
 #define MCREG_Ecx(mc)       ((mc).__gregs[_REG_ECX])
 #define MCREG_Edx(mc)       ((mc).__gregs[_REG_EDX])
@@ -243,15 +219,10 @@
 #define MCREG_SegCs(mc)     ((mc).__gregs[_REG_CS])
 #define MCREG_SegSs(mc)     ((mc).__gregs[_REG_SS])
 #define MCREG_EFlags(mc)    ((mc).__gregs[_REG_RFLAGS])
-
 #endif // HOST_64BIT
-
 #elif HAVE_GREGSET_T
-
 #ifdef HOST_64BIT
-
 #if defined(HOST_LOONGARCH64)
-
 #define MCREG_R0(mc)      ((mc).gregs[0])
 #define MCREG_Ra(mc)      ((mc).gregs[1])
 #define MCREG_Tp(mc)      ((mc).gregs[2])
@@ -285,9 +256,7 @@
 #define MCREG_S7(mc)      ((mc).gregs[30])
 #define MCREG_S8(mc)      ((mc).gregs[31])
 #define MCREG_Pc(mc)      ((mc).pc)
-
 #endif // HOST_LOONGARCH64
-
 #define MCREG_Rbx(mc)       ((mc).gregs[REG_RBX])
 #define MCREG_Rcx(mc)       ((mc).gregs[REG_RCX])
 #define MCREG_Rdx(mc)       ((mc).gregs[REG_RDX])
@@ -310,14 +279,7 @@
 #define MCREG_R13(mc)       ((mc).gregs[REG_R13])
 #define MCREG_R14(mc)       ((mc).gregs[REG_R14])
 #define MCREG_R15(mc)       ((mc).gregs[REG_R15])
-
-/////////////////////
-// Extended state
-
-/////////////////////
-
 #else // HOST_64BIT
-
 #define MCREG_Ebx(mc)       ((mc).gregs[REG_EBX])
 #define MCREG_Ecx(mc)       ((mc).gregs[REG_ECX])
 #define MCREG_Edx(mc)       ((mc).gregs[REG_EDX])
@@ -329,23 +291,16 @@
 #define MCREG_Esp(mc)       ((mc).gregs[REG_ESP])
 #define MCREG_SegCs(mc)     ((mc).gregs[REG_CS])
 #define MCREG_SegSs(mc)     ((mc).gregs[REG_SS])
-
 #endif // HOST_64BIT
-
 #ifdef REG_EFL
 #define MCREG_EFlags(mc)    ((mc).gregs[REG_EFL])
 #else
 #define MCREG_EFlags(mc)    ((mc).gregs[EFL])
 #endif
-
 #else // HAVE_GREGSET_T
-
 #ifdef HOST_64BIT
-
 #if defined(HOST_ARM64)
-
 #if defined(TARGET_FREEBSD)
-
 #define MCREG_X0(mc)  (mc.mc_gpregs.gp_x[0])
 #define MCREG_X1(mc)  (mc.mc_gpregs.gp_x[1])
 #define MCREG_X2(mc)  (mc.mc_gpregs.gp_x[2])
@@ -375,15 +330,12 @@
 #define MCREG_X26(mc) (mc.mc_gpregs.gp_x[26])
 #define MCREG_X27(mc) (mc.mc_gpregs.gp_x[27])
 #define MCREG_X28(mc) (mc.mc_gpregs.gp_x[28])
-
 #define MCREG_Cpsr(mc) (mc.mc_gpregs.gp_spsr)
 #define MCREG_Lr(mc)   (mc.mc_gpregs.gp_lr)
 #define MCREG_Sp(mc)   (mc.mc_gpregs.gp_sp)
 #define MCREG_Pc(mc)   (mc.mc_gpregs.gp_elr)
 #define MCREG_Fp(mc)   (mc.mc_gpregs.gp_x[29])
-
 #elif !defined(__APPLE__) // TARGET_FREEBSD
-
 #define MCREG_X0(mc)      ((mc).regs[0])
 #define MCREG_X1(mc)      ((mc).regs[1])
 #define MCREG_X2(mc)      ((mc).regs[2])
@@ -415,13 +367,10 @@
 #define MCREG_X28(mc)     ((mc).regs[28])
 #define MCREG_Fp(mc)      ((mc).regs[29])
 #define MCREG_Lr(mc)      ((mc).regs[30])
-
 #define MCREG_Sp(mc)      ((mc).sp)
 #define MCREG_Pc(mc)      ((mc).pc)
 #define MCREG_Cpsr(mc)    ((mc).pstate)
-
 #else // __APPLE__
-
 #define MCREG_X0(mc)      ((mc)->__ss.__x[0])
 #define MCREG_X1(mc)      ((mc)->__ss.__x[1])
 #define MCREG_X2(mc)      ((mc)->__ss.__x[2])
@@ -453,15 +402,11 @@
 #define MCREG_X28(mc)     ((mc)->__ss.__x[28])
 #define MCREG_Fp(mc)      ((mc)->__ss.__fp)
 #define MCREG_Lr(mc)      ((mc)->__ss.__lr)
-
 #define MCREG_Sp(mc)      ((mc)->__ss.__sp)
 #define MCREG_Pc(mc)      ((mc)->__ss.__pc)
 #define MCREG_Cpsr(mc)    ((mc)->__ss.__cpsr)
-
 #endif // __APPLE__
-
 #elif defined(HOST_LOONGARCH64)
-
 #define MCREG_R0(mc)      ((mc).regs[0])
 #define MCREG_Ra(mc)      ((mc).regs[1])
 #define MCREG_Tp(mc)      ((mc).regs[2])
@@ -495,11 +440,8 @@
 #define MCREG_S7(mc)      ((mc).regs[30])
 #define MCREG_S8(mc)      ((mc).regs[31])
 #define MCREG_Pc(mc)      ((mc).pc)
-
 #else // HOST_ARM64
-
 #ifdef __APPLE__
-
 #define MCREG_Rbp(mc)      ((mc)->__ss.__rbp)
 #define MCREG_Rip(mc)      ((mc)->__ss.__rip)
 #define MCREG_Rsp(mc)      ((mc)->__ss.__rsp)
@@ -519,10 +461,7 @@
 #define MCREG_R15(mc)      ((mc)->__ss.__r15)
 #define MCREG_EFlags(mc)   ((mc)->__ss.__rflags)
 #define MCREG_SegCs(mc)    ((mc)->__ss.__cs)
-
-    *featureSize = sizeof(_STRUCT_ZMM_REG) * 16;
 #elif defined(TARGET_HAIKU)
-
 #define MCREG_Rbp(mc)	    ((mc).rbp)
 #define MCREG_Rip(mc)	    ((mc).rip)
 #define MCREG_Rsp(mc)	    ((mc).rsp)
@@ -541,12 +480,7 @@
 #define MCREG_R14(mc)	    ((mc).r14)
 #define MCREG_R15(mc)	    ((mc).r15)
 #define MCREG_EFlags(mc)    ((mc).rflags)
-// Haiku: missing SegCs
-
 #elif defined(TARGET_OPENBSD)
-
-    // On OpenBSD, ucontext_t is an alias for struct sigcontext and the registers
-    // are stored directly in it (accessed here via MCONTEXT_FROM_NATIVE).
 #define MCREG_Rbp(mc)       ((mc).sc_rbp)
 #define MCREG_Rip(mc)       ((mc).sc_rip)
 #define MCREG_Rsp(mc)       ((mc).sc_rsp)
@@ -566,12 +500,7 @@
 #define MCREG_R15(mc)       ((mc).sc_r15)
 #define MCREG_EFlags(mc)    ((mc).sc_rflags)
 #define MCREG_SegCs(mc)     ((mc).sc_cs)
-
-  // from machine/fpu.h: struct fxsave64, referenced via sigcontext::sc_fpstate
-
 #else //__APPLE__
-
-    // For FreeBSD, as found in x86/ucontext.h
 #define MCREG_Rbp(mc)	    ((mc).mc_rbp)
 #define MCREG_Rip(mc)	    ((mc).mc_rip)
 #define MCREG_Rsp(mc)	    ((mc).mc_rsp)
@@ -591,16 +520,10 @@
 #define MCREG_R15(mc)	    ((mc).mc_r15)
 #define MCREG_EFlags(mc)    ((mc).mc_rflags)
 #define MCREG_SegCs(mc)     ((mc).mc_cs)
-
-  // from x86/fpu.h: struct __envxmm64
-
 #endif // __APPLE__
 #endif // HOST_ARM64
-
 #else // HOST_64BIT
-
 #if defined(HOST_ARM)
-
 #define MCREG_R0(mc)        ((mc).arm_r0)
 #define MCREG_R1(mc)        ((mc).arm_r1)
 #define MCREG_R2(mc)        ((mc).arm_r2)
@@ -618,33 +541,10 @@
 #define MCREG_Lr(mc)        ((mc).arm_lr)
 #define MCREG_Pc(mc)        ((mc).arm_pc)
 #define MCREG_Cpsr(mc)      ((mc).arm_cpsr)
-
-// Flatterned layout of the arm kernel struct vfp_sigframe
-
-    // VFP is not required on all armv7 processors, this structure may not be present
-
-#elif defined(HOST_X86)
-
-#define MCREG_Ebx(mc)       ((mc).mc_ebx)
-#define MCREG_Ecx(mc)       ((mc).mc_ecx)
-#define MCREG_Edx(mc)       ((mc).mc_edx)
-#define MCREG_Esi(mc)       ((mc).mc_esi)
-#define MCREG_Edi(mc)       ((mc).mc_edi)
-#define MCREG_Ebp(mc)       ((mc).mc_ebp)
-#define MCREG_Eax(mc)       ((mc).mc_eax)
-#define MCREG_Eip(mc)       ((mc).mc_eip)
-#define MCREG_SegCs(mc)     ((mc).mc_cs)
-#define MCREG_EFlags(mc)    ((mc).mc_eflags)
-#define MCREG_Esp(mc)       ((mc).mc_esp)
-#define MCREG_SegSs(mc)     ((mc).mc_ss)
-
 #else
 #error "Unsupported arch"
 #endif
-
 #endif // HOST_64BIT
-
 #endif // HAVE_GREGSET_T
-
 
 #endif // _NATIVE_CONTEXT_REGS_H_

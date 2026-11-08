@@ -12,7 +12,6 @@
 
 #include "NativeContext.h"
 
-// Shared MCREG_* / MCONTEXT_FROM_NATIVE (also used by CoreCLR PAL).
 #include <unix/NativeContextRegs.h>
 
 #if defined(HOST_AMD64)
