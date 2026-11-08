@@ -1289,11 +1289,9 @@ NamedIntrinsic HWIntrinsicInfo::resolveId(Compiler*              comp,
         {
 #ifdef TARGET_WASM
             // Wasm has no runtime ISA detection, so the compile-time ISA support is exact.
-            constexpr bool isaSupportIsExact = true;
+            return NI_IsSupported_True;
 #else
-            constexpr bool isaSupportIsExact = false;
-#endif
-            if (!comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || isaSupportIsExact || comp->compExactlyDependsOn(isa))
+            if (!comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || comp->compExactlyDependsOn(isa))
             {
                 return NI_IsSupported_True;
             }
@@ -1302,6 +1300,7 @@ NamedIntrinsic HWIntrinsicInfo::resolveId(Compiler*              comp,
                 assert(comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                 return NI_IsSupported_Dynamic;
             }
+#endif
         }
 
         return NI_IsSupported_False;
