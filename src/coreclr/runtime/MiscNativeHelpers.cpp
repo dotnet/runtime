@@ -5,6 +5,7 @@
 #include "MiscNativeHelpers.h"
 #include "yieldprocessornormalized.h"
 #include <minipal/cpuid.h>
+#include <minipal/environ.h>
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/time.h>
 
@@ -39,3 +40,36 @@ extern "C" int32_t QCALLTYPE Thread_GetOptimalMaxSpinWaitsPerSpinIteration()
 {
     return (int32_t)YieldProcessorNormalization::GetOptimalMaxNormalizedYieldsPerSpinIteration();
 }
+
+#ifdef TARGET_UNIX
+// Returns -1 if the variable is not set, the length of the value if it fits in the buffer,
+// or the required buffer size including the null terminator otherwise.
+extern "C" int32_t QCALLTYPE Environment_GetEnvironmentVariable(const CHAR16_T* name, CHAR16_T* buffer, int32_t bufferSize)
+{
+    uint32_t result = minipal_environ_get_variable_u16(name, buffer, (uint32_t)bufferSize);
+
+    // 0 is also returned for a variable with an empty value; probing without a buffer
+    // returns the required size, which is non-zero for any variable that is set.
+    if (result == 0 && minipal_environ_get_variable_u16(name, nullptr, 0) == 0)
+    {
+        return -1;
+    }
+
+    return (int32_t)result;
+}
+
+extern "C" int32_t QCALLTYPE Environment_SetEnvironmentVariable(const CHAR16_T* name, const CHAR16_T* value)
+{
+    return minipal_environ_set_variable_u16(name, value) ? 1 : 0;
+}
+
+extern "C" CHAR16_T* QCALLTYPE Environment_GetEnvironmentStrings()
+{
+    return minipal_environ_get_strings_u16();
+}
+
+extern "C" void QCALLTYPE Environment_FreeEnvironmentStrings(CHAR16_T* strings)
+{
+    minipal_environ_free_strings_u16(strings);
+}
+#endif // TARGET_UNIX

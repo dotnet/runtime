@@ -99,7 +99,6 @@ extern "C" {
     int32_t SystemNative_FcntlSetIsNonBlocking (void *, int32_t);
     int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     void SystemNative_Free (void *);
-    void SystemNative_FreeEnviron (void *);
     void SystemNative_FreeHostEntry (void *);
     void SystemNative_FreeLibrary (void *);
     int32_t SystemNative_GetAddressFamily (void *, int32_t, void *);
@@ -110,8 +109,6 @@ extern "C" {
     int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
-    void * SystemNative_GetEnv (void *);
-    void * SystemNative_GetEnviron ();
     int32_t SystemNative_GetErrNo ();
     int32_t SystemNative_GetHostEntryForName (void *, int32_t, void *);
     int32_t SystemNative_GetHostName (void *, int32_t);
@@ -416,7 +413,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_FcntlSetIsNonBlocking) // System.Net.Sockets
     DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FreeEnviron) // System.Private.CoreLib
     DllImportEntry(SystemNative_FreeHostEntry) // System.Net.NameResolution
     DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetAddressFamily) // System.Net.Primitives, System.Net.Sockets
@@ -427,8 +423,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression, System.Security.Cryptography
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetEnv) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetEnviron) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetHostEntryForName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetHostName) // System.Net.NameResolution
@@ -599,7 +593,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 52},
-    {"libSystem.Native", s_libSystem_Native, 144},
+    {"libSystem.Native", s_libSystem_Native, 141},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},
@@ -700,6 +694,10 @@ extern "C" {
     void QCall_Enum_GetValuesAndNames (void *, void *, void *, int32_t, void *) __asm__("Enum_GetValuesAndNames");
     void QCall_Environment_Exit (int32_t, void *) __asm__("Environment_Exit");
     void QCall_Environment_FailFast (void *, void *, void *, void *, void *) __asm__("Environment_FailFast");
+    void QCall_Environment_FreeEnvironmentStrings (void *) __asm__("Environment_FreeEnvironmentStrings");
+    void * QCall_Environment_GetEnvironmentStrings () __asm__("Environment_GetEnvironmentStrings");
+    int32_t QCall_Environment_GetEnvironmentVariable (void *, void *, int32_t) __asm__("Environment_GetEnvironmentVariable");
+    int32_t QCall_Environment_SetEnvironmentVariable (void *, void *) __asm__("Environment_SetEnvironmentVariable");
     void * QCall_EventPipeInternal_CreateProvider (void *, void *, void *, void *) __asm__("EventPipeInternal_CreateProvider");
     void * QCall_EventPipeInternal_DefineEvent (void *, uint32_t, int64_t, uint32_t, uint32_t, void *, uint32_t, void *) __asm__("EventPipeInternal_DefineEvent");
     void QCall_EventPipeInternal_DeleteProvider (void *, void *) __asm__("EventPipeInternal_DeleteProvider");
@@ -998,6 +996,10 @@ static const Entry s_QCall[] = {
     { "Enum_GetValuesAndNames", (void*)&QCall_Enum_GetValuesAndNames },
     { "Environment_Exit", (void*)&QCall_Environment_Exit },
     { "Environment_FailFast", (void*)&QCall_Environment_FailFast },
+    { "Environment_FreeEnvironmentStrings", (void*)&QCall_Environment_FreeEnvironmentStrings },
+    { "Environment_GetEnvironmentStrings", (void*)&QCall_Environment_GetEnvironmentStrings },
+    { "Environment_GetEnvironmentVariable", (void*)&QCall_Environment_GetEnvironmentVariable },
+    { "Environment_SetEnvironmentVariable", (void*)&QCall_Environment_SetEnvironmentVariable },
     { "EventPipeInternal_CreateProvider", (void*)&QCall_EventPipeInternal_CreateProvider },
     { "EventPipeInternal_DefineEvent", (void*)&QCall_EventPipeInternal_DefineEvent },
     { "EventPipeInternal_DeleteProvider", (void*)&QCall_EventPipeInternal_DeleteProvider },

@@ -14,6 +14,15 @@ extern "C" void QCALLTYPE Thread_SpinWait(int32_t iterations);
 extern "C" int32_t QCALLTYPE Thread_Yield();
 extern "C" int32_t QCALLTYPE Thread_GetOptimalMaxSpinWaitsPerSpinIteration();
 
+#ifdef TARGET_UNIX
+#include <minipal/types.h>
+
+extern "C" int32_t QCALLTYPE Environment_GetEnvironmentVariable(const CHAR16_T* name, CHAR16_T* buffer, int32_t bufferSize);
+extern "C" int32_t QCALLTYPE Environment_SetEnvironmentVariable(const CHAR16_T* name, const CHAR16_T* value);
+extern "C" CHAR16_T* QCALLTYPE Environment_GetEnvironmentStrings();
+extern "C" void QCALLTYPE Environment_FreeEnvironmentStrings(CHAR16_T* strings);
+#endif // TARGET_UNIX
+
 // WASM-TODO: once we have R2R stack walking working we should be able to set pTransitionBlock to &transitionBlock unconditionally
 
 #if defined(TARGET_WASM) && !defined(TARGET_NATIVEAOT)

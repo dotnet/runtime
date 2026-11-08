@@ -526,6 +526,10 @@ static const Entry s_QCall[] =
 #endif // FEATURE_PERFTRACING
 #if defined(TARGET_UNIX)
     DllImportEntry(OutputDebugStringW)
+    DllImportEntry(Environment_GetEnvironmentVariable)
+    DllImportEntry(Environment_SetEnvironmentVariable)
+    DllImportEntry(Environment_GetEnvironmentStrings)
+    DllImportEntry(Environment_FreeEnvironmentStrings)
 #endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     DllImportEntry(X86Base_CpuId)
