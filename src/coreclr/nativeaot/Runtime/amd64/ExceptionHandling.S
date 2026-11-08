@@ -290,13 +290,13 @@ NESTED_END RhpRethrow, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void FASTCALL RhpResumeAfterCatch(REGDISPLAY* pRegDisplay, ExInfo* pExInfo, void* pResumeIP)
+// void FASTCALL RhpResumeAfterCatch(REGDISPLAY* pRegDisplay, void* pResumeIP)
 //
-// Resumes execution after a catch funclet called by CallEHFunclet has returned. Does not return.
+// Resumes execution after a catch funclet called by CallEHFunclet has returned and the dispatcher has popped
+// the ExInfos below the resume SP. Does not return.
 //
 // INPUT:  RDI:  REGDISPLAY* of the frame that contains the catch
-//         RSI:  ExInfo*
-//         RDX:  resume address returned by the catch funclet
+//         RSI:  resume address returned by the catch funclet
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 NESTED_ENTRY RhpResumeAfterCatch, _TEXT, NoHandler
@@ -306,8 +306,7 @@ NESTED_ENTRY RhpResumeAfterCatch, _TEXT, NoHandler
 
         // The preserved registers are reloaded from the REGDISPLAY before resuming, so they can be used here.
         mov     rbx, rdi                                            // rbx <- REGDISPLAY*
-        mov     r12, rsi                                            // r12 <- current ExInfo*
-        mov     r13, rdx                                            // r13 <- resume IP
+        mov     r13, rsi                                            // r13 <- resume IP
 
         INLINE_GETTHREAD
         mov     r14, rax                                            // r14 <- Thread*
@@ -315,32 +314,11 @@ NESTED_ENTRY RhpResumeAfterCatch, _TEXT, NoHandler
         // Clear the DoNotTriggerGc state before resuming in the managed code after the catch.
    lock and     dword ptr [r14 + OFFSETOF__Thread__m_ThreadStateFlags], ~TSF_DoNotTriggerGc
 
-#ifdef _DEBUG
-        // Call into some C++ code to validate the pop of the ExInfo.
-        mov     rdi, r14                                            // rdi <- Thread*
-        mov     rsi, r12                                            // rsi <- current ExInfo*
-        mov     rdx, [rbx + OFFSETOF__REGDISPLAY__SP]               // rdx <- resume SP value
-        call    C_FUNC(RhpValidateExInfoPop)
-#endif
-
         // We must unhijack the thread at this point because the section of stack where the hijack is applied
         // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
         INLINE_THREAD_UNHIJACK r14, rdi, rcx                        // Thread in r14, trashes rdi and rcx
 
-        mov     rdi, r12                                            // rdi <- current ExInfo*
         mov     rdx, [rbx + OFFSETOF__REGDISPLAY__SP]               // rdx <- resume SP value
-        xor     ecx, ecx                                            // rcx <- 0
-
-LOCAL_LABEL(ExInfoLoop):
-        mov     rdi, [rdi + OFFSETOF__ExInfo__m_pPrevExInfo]        // rdi <- next ExInfo
-        cmp     rdi, rcx
-        je      LOCAL_LABEL(ExInfoLoopDone)                         // we're done if it's null
-        cmp     rdi, rdx
-        jl      LOCAL_LABEL(ExInfoLoop)                             // keep looping if it's lower than the new SP
-
-LOCAL_LABEL(ExInfoLoopDone):
-        mov     [r14 + OFFSETOF__Thread__m_pExInfoStackHead], rdi   // store the new head on the Thread
-
         mov     rax, r13                                            // rax <- resume IP
         mov     rcx, rbx                                            // rcx <- REGDISPLAY*
 

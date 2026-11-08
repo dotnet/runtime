@@ -150,14 +150,18 @@ namespace System.Runtime
         internal static extern unsafe byte* CallEHFunclet(
             object? exceptionObj, byte* pHandlerIP, void* pvRegDisplay, UIntPtr* pFuncletCallerSP);
 
+        [RuntimeImport(RuntimeLibrary, "RhpPopExInfo")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe void RhpPopExInfo(ref EH.ExInfo exInfo, UIntPtr resumeSP);
+
         [RuntimeImport(RuntimeLibrary, "RhpResumeAfterCatch")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpResumeAfterCatch(void* pvRegDisplay, ref EH.ExInfo exInfo, byte* pResumeIP);
+        internal static extern unsafe void RhpResumeAfterCatch(void* pvRegDisplay, byte* pResumeIP);
 
         [RuntimeImport(RuntimeLibrary, "CallEHFilterFunclet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe int CallEHFilterFunclet(
-            object exceptionObj, UIntPtr parentFP, byte* pFilterIP, UIntPtr* pFuncletCallerSP);
+            object exceptionObj, void* pvRegDisplay, byte* pFilterIP, UIntPtr* pFuncletCallerSP);
 #else
         [RuntimeImport(RuntimeLibrary, "RhpCallCatchFunclet")]
         [MethodImpl(MethodImplOptions.InternalCall)]

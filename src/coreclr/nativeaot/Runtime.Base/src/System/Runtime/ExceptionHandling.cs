@@ -960,7 +960,8 @@ namespace System.Runtime
             UIntPtr funcletCallerSP;
             byte* pResumeIP = InternalCalls.CallEHFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, &funcletCallerSP);
-            InternalCalls.RhpResumeAfterCatch(frameIter.RegisterSet, ref exInfo, pResumeIP);
+            InternalCalls.RhpPopExInfo(ref exInfo, frameIter.SP);
+            InternalCalls.RhpResumeAfterCatch(frameIter.RegisterSet, pResumeIP);
 #else
             InternalCalls.RhpCallCatchFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
@@ -1102,7 +1103,7 @@ namespace System.Runtime
 #if TARGET_AMD64
                         UIntPtr funcletCallerSP;
                         shouldInvokeHandler =
-                            InternalCalls.CallEHFilterFunclet(exception, frameIter.FramePointerRegister, pFilterFunclet, &funcletCallerSP) != 0;
+                            InternalCalls.CallEHFilterFunclet(exception, frameIter.RegisterSet, pFilterFunclet, &funcletCallerSP) != 0;
 #else
                         shouldInvokeHandler =
                             InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);

@@ -113,10 +113,13 @@ NESTED_END CallEHFunclet, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// UINT_PTR CallEHFilterFunclet(Object* pThrowable, TADDR parentFP, PCODE pFilter, UINT_PTR* pFuncletCallerSP)
+// UINT_PTR CallEHFilterFunclet(Object* pThrowable, void* pRegs, PCODE pFilter, UINT_PTR* pFuncletCallerSP)
+//
+// Calls a filter funclet with the frame pointer of the parent frame loaded from pRegs (the CONTEXT on CoreCLR,
+// the REGDISPLAY on NativeAOT) by LOAD_FUNCLET_REGISTER.
 //
 // INPUT:  RDI:  exception object
-//         RSI:  RBP of the parent method
+//         RSI:  CONTEXT* on CoreCLR, REGDISPLAY* on NativeAOT
 //         RDX:  filter funclet address
 //         RCX:  address where the SP of this helper (the funclet's caller) is saved
 //
@@ -127,7 +130,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
         FUNCLET_CALL_PROLOGUE 0, 1
 
-        mov     rbp, rsi
+        LOAD_FUNCLET_REGISTER(rsi, Rbp, rax)
         mov     [rcx], rsp
 
         call    rdx
