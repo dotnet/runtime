@@ -429,7 +429,7 @@ HRESULT EEConfig::sync()
     fStressLog        =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
 
     {
-        NewArrayHolder<WCHAR> wszModifiableAssemblies;
+        WStringHolder wszModifiableAssemblies;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, &wszModifiableAssemblies));
         if (wszModifiableAssemblies)
         {
@@ -488,7 +488,7 @@ HRESULT EEConfig::sync()
 
     if (fReadyToRun)
     {
-        NewArrayHolder<WCHAR> wszReadyToRunExcludeList;
+        WStringHolder wszReadyToRunExcludeList;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunExcludeList, &wszReadyToRunExcludeList));
         if (wszReadyToRunExcludeList)
             pReadyToRunExcludeList = new AssemblyNamesList(wszReadyToRunExcludeList);
@@ -946,14 +946,12 @@ HRESULT EEConfig::ParseTypeList(_In_z_ LPWSTR str, TypeNamesList** out)
     if (str == NULL)
         return S_OK;
 
+    WStringHolder typeNames(str);
     NewHolder<TypeNamesList> newTypeNameList(new (nothrow) TypeNamesList());
     if (newTypeNameList != NULL)
         IfFailRet(newTypeNameList->Init(str));
 
-    delete [] str;
-
-    newTypeNameList.SuppressRelease();
-    *out = newTypeNameList;
+    *out = newTypeNameList.Detach();
 
     return (*out != NULL)?S_OK:E_OUTOFMEMORY;
 }
@@ -1084,7 +1082,6 @@ HRESULT TypeNamesList::Init(_In_z_ LPCWSTR str)
                 if (tn->typeName == NULL)
                     return E_OUTOFMEMORY;
 
-                tn.SuppressRelease();
                 MAKE_UTF8PTR_FROMWIDE_NOTHROW(temp, currentType);
                 if (temp == NULL)
                     return E_OUTOFMEMORY;
@@ -1093,7 +1090,7 @@ HRESULT TypeNamesList::Init(_In_z_ LPCWSTR str)
                 tn->typeName[length] = '\0';
 
                 tn->next = pNames;
-                pNames = tn;
+                pNames = tn.Detach();
 
                 typeFound = false;
                 length = 0;
@@ -1122,7 +1119,6 @@ HRESULT TypeNamesList::Init(_In_z_ LPCWSTR str)
         if (tn->typeName == NULL)
             return E_OUTOFMEMORY;
 
-        tn.SuppressRelease();
         MAKE_UTF8PTR_FROMWIDE_NOTHROW(temp, currentType);
         if (temp == NULL)
             return E_OUTOFMEMORY;
@@ -1131,7 +1127,7 @@ HRESULT TypeNamesList::Init(_In_z_ LPCWSTR str)
         tn->typeName[length] = '\0';
 
         tn->next = pNames;
-        pNames = tn;
+        pNames = tn.Detach();
     }
     return S_OK;
 }
@@ -1147,8 +1143,6 @@ TypeNamesList::~TypeNamesList()
 
     while (pNames)
     {
-        delete [] pNames->typeName;
-
         TypeName *tmp = pNames;
         pNames = pNames->next;
 
