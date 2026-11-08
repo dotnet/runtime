@@ -133,7 +133,7 @@ namespace System.Globalization
                     // .000001  normalize to 10 ticks
                     // .1       normalize to 1,000,000 ticks
 
-                    _num *= Pow10UpToMaxFractionDigits(MaxFractionDigits - totalDigitsCount);
+                    _num *= Pow10(MaxFractionDigits - totalDigitsCount);
                     return true;
                 }
 
@@ -152,8 +152,7 @@ namespace System.Globalization
                     return true;
                 }
 
-                Debug.Assert(totalDigitsCount - MaxFractionDigits <= MaxFractionDigits);
-                uint power = (uint)Pow10UpToMaxFractionDigits(totalDigitsCount - MaxFractionDigits);
+                uint power = (uint)Pow10(totalDigitsCount - MaxFractionDigits);
                 // Unsigned integer division, rounding away from zero
                 _num = (int)(((uint)_num + power / 2) / power);
                 Debug.Assert(_num < MaxFraction);
@@ -575,7 +574,7 @@ namespace System.Globalization
             }
         }
 
-        internal static int Pow10UpToMaxFractionDigits(int pow)
+        internal static int Pow10(int pow)
         {
             ReadOnlySpan<int> powersOfTen =
             [
@@ -587,8 +586,9 @@ namespace System.Globalization
                 100000,
                 1000000,
                 10000000,
+                100000000,
+                1000000000,
             ];
-            Debug.Assert(powersOfTen.Length == MaxFractionDigits + 1);
             return powersOfTen[pow];
         }
 

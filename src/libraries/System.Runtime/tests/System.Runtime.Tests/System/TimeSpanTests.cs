@@ -1151,6 +1151,9 @@ namespace System.Tests
 
             // OverflowExceptions
             yield return new object[] { "1:1:1.99999999", null, typeof(OverflowException) }; // overflowing fraction
+            yield return new object[] { "0:0:0.000000268435456", CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "0:0:0.0000000268435456", CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "0:0:0.00000000268435456", CultureInfo.InvariantCulture, typeof(OverflowException) };
 
             yield return new object[] { "2147483647", null, typeof(OverflowException) }; // overflowing value == int.MaxValue
             yield return new object[] { "2147483648", null, typeof(OverflowException) }; // overflowing value == int.MaxValue + 1
@@ -1768,6 +1771,22 @@ namespace System.Tests
             yield return new object[] {"0:00:00.00123456",    new TimeSpan(12346)};
             yield return new object[] {"0:00:00.00000098",    new TimeSpan(10)};
             yield return new object[] {"0:00:00.00000099",    new TimeSpan(10)};
+            yield return new object[] {"0:0:0.0000000123456789", new TimeSpan(0)};
+            yield return new object[] {"00:00:00.00000268435455", new TimeSpan(27)};
+            yield return new object[] {"00:00:00.000000268435455", new TimeSpan(3)};
+            yield return new object[] {"00:00:00.0000000268435455", new TimeSpan(0)};
+            yield return new object[] {"00:00:00.00000000268435455", new TimeSpan(0)};
+            yield return new object[] {"00:00:00.00000009999999", new TimeSpan(1)};
+            yield return new object[] {"00:00:00.000000049999999", new TimeSpan(0)};
+            yield return new object[] {"00:00:00.000000050000000", new TimeSpan(1)};
+            yield return new object[] {"00:00:00.000000099999999", new TimeSpan(1)};
+            yield return new object[] {"00:00:00.00000049999999", new TimeSpan(5)};
+            yield return new object[] {"00:00:00.00000050000000", new TimeSpan(5)};
+            yield return new object[] {"00:00:00.0000000000000000", new TimeSpan(0)};
+            yield return new object[] {"00:00:00.9999999", new TimeSpan(9_999_999)};
+            yield return new object[] {"-00:00:00.000000049999999", new TimeSpan(0)};
+            yield return new object[] {"-00:00:00.000000050000000", new TimeSpan(-1)};
+            yield return new object[] {"-00:00:00.000000268435455", new TimeSpan(-3)};
         }
 
         [Theory, MemberData(nameof(ParseDifferentLengthFractionWithLeadingZerosData))]
@@ -1775,6 +1794,17 @@ namespace System.Tests
         {
             Assert.Equal(expected, TimeSpan.Parse(input, CultureInfo.InvariantCulture));
             Assert.Equal(expected, TimeSpan.ParseExact(input, "g", CultureInfo.InvariantCulture));
+            Assert.True(TimeSpan.TryParse(input, CultureInfo.InvariantCulture, out TimeSpan result));
+            Assert.Equal(expected, result);
+            Assert.True(TimeSpan.TryParseExact(input, "g", CultureInfo.InvariantCulture, out result));
+            Assert.Equal(expected, result);
+
+            Assert.Equal(expected, TimeSpan.Parse(input.AsSpan(), CultureInfo.InvariantCulture));
+            Assert.Equal(expected, TimeSpan.ParseExact(input.AsSpan(), "g", CultureInfo.InvariantCulture));
+            Assert.True(TimeSpan.TryParse(input.AsSpan(), CultureInfo.InvariantCulture, out result));
+            Assert.Equal(expected, result);
+            Assert.True(TimeSpan.TryParseExact(input.AsSpan(), "g", CultureInfo.InvariantCulture, out result));
+            Assert.Equal(expected, result);
         }
 
         [Theory, MemberData(nameof(MultiplicationTestData))]
