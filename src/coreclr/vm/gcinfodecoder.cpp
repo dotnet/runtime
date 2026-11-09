@@ -2211,7 +2211,11 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
         // Wasm is a bit strange and when we do SetStackBaseRegister(REG_FPBASE)
         //  what that actually does is set it to REG_NA, which currently has the value 2.
         _ASSERTE( 2 == m_StackBaseRegister );
+#ifdef FEATURE_NATIVEAOT
+        TADDR pFrameReg = pRD->GetFP();
+#else
         TADDR pFrameReg = (TADDR)pRD->pCurrentContext->InterpreterFP;
+#endif
 
         pObjRef = (OBJECTREF*)(pFrameReg + spOffset);
 

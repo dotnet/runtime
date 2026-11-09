@@ -56,6 +56,11 @@ struct UnixNativeMethodInfo
 // Ensure that UnixNativeMethodInfo fits into the space reserved by MethodInfo
 static_assert(sizeof(UnixNativeMethodInfo) <= sizeof(MethodInfo), "UnixNativeMethodInfo too big");
 
+struct UnwindSectionsLookupArgs
+{
+    typedef uintptr_t link_hardened_reg_arg_t;
+};
+
 UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
                                              PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
                                              PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions)
@@ -64,7 +69,7 @@ UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
       m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
     // Cache the location of unwind sections
-    libunwind::LocalAddressSpace::sThisAddressSpace.findUnwindSections(
+    libunwind::LocalAddressSpace::sThisAddressSpace.findUnwindSections<UnwindSectionsLookupArgs>(
         (uintptr_t)pvManagedCodeStartRange, m_UnwindInfoSections);
 }
 
@@ -462,7 +467,7 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
         // All common ABIs have outgoing arguments under caller SP (minus slot reserved for return address).
         // There are ABI-specific optimizations that could applied here, but they are not worth the complexity
         // given that this path is used rarely.
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
         upperBound = dac_cast<TADDR>(localRegisterSet.GetSP() - sizeof(TADDR));
 #else
         upperBound = dac_cast<TADDR>(localRegisterSet.GetSP());
@@ -969,7 +974,7 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
             bool result = UnwindHelpers::GetUnwindProcInfo(PINSTRToPCODE((TADDR)pvAddress), m_UnwindInfoSections, &procInfo);
             ASSERT(result);
 
-            if (branchTarget < procInfo.start_ip || branchTarget >= procInfo.end_ip)
+            if (branchTarget <= procInfo.start_ip || branchTarget >= procInfo.end_ip)
             {
                 return trailingEpilogueInstructions;
             }

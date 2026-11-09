@@ -8,7 +8,9 @@
 #include "hostinformation.h"
 
 #include "../gc/env/gcenv.ee.h"
+#ifdef FEATURE_STANDALONE_GC
 #include "../gc/env/gctoeeinterface.standalone.inl"
+#endif // FEATURE_STANDALONE_GC
 
 // These globals are variables used within the GC and maintained
 // by the EE for use in write barriers. It is the responsibility

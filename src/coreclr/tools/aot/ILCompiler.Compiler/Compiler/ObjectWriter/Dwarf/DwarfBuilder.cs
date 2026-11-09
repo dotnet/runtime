@@ -93,6 +93,12 @@ namespace ILCompiler.ObjectWriter
                     _codeRelocType = RelocType.IMAGE_REL_BASED_DIR64;
                     break;
 
+                case TargetArchitecture.Wasm32:
+                    _targetPointerSize = 4;
+                    _frameRegister = -1; // Wasm frame-base expressions are not emitted yet.
+                    _codeRelocType = RelocType.IMAGE_REL_BASED_HIGHLOW;
+                    break;
+
                 default:
                     throw new NotSupportedException("Unsupported architecture");
             }
@@ -458,7 +464,8 @@ namespace ILCompiler.ObjectWriter
             int sectionIndex,
             Utf8String sectionSymbolName,
             long methodAddress,
-            IEnumerable<NativeSequencePoint> sequencePoints)
+            IEnumerable<NativeSequencePoint> sequencePoints,
+            long? endAddress = null)
         {
             DwarfLineSequenceWriter lineSequence;
 
@@ -466,7 +473,7 @@ namespace ILCompiler.ObjectWriter
             // base address relocated properly.
             if (!_lineSequences.TryGetValue(sectionIndex, out lineSequence))
             {
-                lineSequence = new DwarfLineSequenceWriter(sectionSymbolName, _minimumInstructionLength);
+                lineSequence = new DwarfLineSequenceWriter(sectionSymbolName, _minimumInstructionLength, endAddress);
                 _lineSequences.Add(sectionIndex, lineSequence);
             }
 

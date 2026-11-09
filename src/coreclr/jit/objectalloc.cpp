@@ -1729,6 +1729,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     if (helperHasSideEffects)
     {
         helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
+        helperCall->gtFlags |= GTF_GLOB_REF;
     }
 
 #ifdef FEATURE_READYTORUN
@@ -2339,7 +2340,8 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 }
                 else if (call->IsDelegateInvoke())
                 {
-                    if (tree == call->gtArgs.GetThisArg()->GetNode())
+                    // Explicit tail calls may use helpers that need the delegate after this frame returns.
+                    if (!call->IsTailPrefixedCall() && (tree == call->gtArgs.GetThisArg()->GetNode()))
                     {
                         JITDUMP("Delegate invoke this...\n");
                         canLclVarEscapeViaParentStack = false;

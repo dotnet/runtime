@@ -15,14 +15,14 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest), nameof(QuicTestBase.IsNotOSXMono))]
     public sealed class QuicStreamConformanceTests : ConnectedStreamConformanceTests
     {
         protected override bool UsableAfterCanceledReads => false;
         protected override bool BlocksOnZeroByteReads => true;
         protected override bool CanTimeout => true;
 
-        public readonly X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+        public readonly X509Certificate2 ServerCertificate = QuicTestCollection.GetServerCertificate();
         public ITestOutputHelper _output;
 
         protected override void Dispose(bool disposing)
@@ -45,7 +45,7 @@ namespace System.Net.Quic.Tests
             return new SslServerAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
-                ServerCertificate = ServerCertificate
+                ServerCertificateContext = QuicTestCollection.ServerCertificateContext
             };
         }
 

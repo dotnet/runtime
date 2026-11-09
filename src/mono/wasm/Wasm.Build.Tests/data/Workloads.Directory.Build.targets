@@ -1,4 +1,14 @@
 <Project>
+  <PropertyGroup>
+    <NETCoreAppMaximumVersion Condition="'$(WBT_NETCOREAPP_MAXIMUM_VERSION)' != ''">$(WBT_NETCOREAPP_MAXIMUM_VERSION)</NETCoreAppMaximumVersion>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(WORKLOAD_PACKS_VER)' != '' and '$(WBT_NETCOREAPP_MAXIMUM_VERSION)' != ''">
+    <KnownFrameworkReference Update="Microsoft.NETCore.App">
+      <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == 'net$(WBT_NETCOREAPP_MAXIMUM_VERSION)'">$(WORKLOAD_PACKS_VER)</TargetingPackVersion>
+    </KnownFrameworkReference>
+  </ItemGroup>
+
   <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
     <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
   </Target>

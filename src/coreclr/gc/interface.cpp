@@ -113,76 +113,6 @@ void GCHeap::ValidateObjectMember (Object* obj)
 #endif // VERIFY_HEAP
 }
 
-HRESULT GCHeap::StaticShutdown()
-{
-    deleteGCShadow();
-
-    GCScan::GcRuntimeStructuresValid (FALSE);
-
-    // Cannot assert this, since we use SuspendEE as the mechanism to quiesce all
-    // threads except the one performing the shutdown.
-    // ASSERT( !GcInProgress );
-
-    // Guard against any more GC occurring and against any threads blocking
-    // for GC to complete when the GC heap is gone.  This fixes a race condition
-    // where a thread in GC is destroyed as part of process destruction and
-    // the remaining threads block for GC complete.
-
-    //GCTODO
-    //EnterAllocLock();
-    //Enter();
-    //EnterFinalizeLock();
-    //SetGCDone();
-
-    // during shutdown lot of threads are suspended
-    // on this even, we don't want to wake them up just yet
-    //CloseHandle (WaitForGCEvent);
-
-    //find out if the global card table hasn't been used yet
-    uint32_t* ct = &g_gc_card_table[card_word (gcard_of (g_gc_lowest_address))];
-    if (card_table_refcount (ct) == 0)
-    {
-        destroy_card_table (ct);
-        g_gc_card_table = nullptr;
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        g_gc_card_bundle_table = nullptr;
-#endif
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        SoftwareWriteWatch::StaticClose();
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    }
-
-#ifndef USE_REGIONS
-    //destroy all segments on the standby list
-    while(gc_heap::segment_standby_list != 0)
-    {
-        heap_segment* next_seg = heap_segment_next (gc_heap::segment_standby_list);
-#ifdef MULTIPLE_HEAPS
-        (gc_heap::g_heaps[0])->delete_heap_segment (gc_heap::segment_standby_list, FALSE);
-#else //MULTIPLE_HEAPS
-        pGenGCHeap->delete_heap_segment (gc_heap::segment_standby_list, FALSE);
-#endif //MULTIPLE_HEAPS
-        gc_heap::segment_standby_list = next_seg;
-    }
-#endif // USE_REGIONS
-
-#ifdef MULTIPLE_HEAPS
-
-    for (int i = 0; i < gc_heap::n_heaps; i ++)
-    {
-        //destroy pure GC stuff
-        gc_heap::destroy_gc_heap (gc_heap::g_heaps[i]);
-    }
-#else
-    gc_heap::destroy_gc_heap (pGenGCHeap);
-
-#endif //MULTIPLE_HEAPS
-    gc_heap::shutdown_gc();
-
-    return S_OK;
-}
-
 // init the instance heap
 HRESULT GCHeap::Init(size_t hn)
 {
@@ -668,10 +598,15 @@ HRESULT GCHeap::Initialize()
 #endif //USE_REGIONS
     if (hr == S_OK)
     {
+#ifdef BACKGROUND_GC
+        bool concurrent_p = gc_heap::gc_can_use_concurrent;
+#else //BACKGROUND_GC
+        bool concurrent_p = false;
+#endif //BACKGROUND_GC
 #ifdef MULTIPLE_HEAPS
-        dprintf (6666, ("conserve mem %d, concurent %d, max heap %d", gc_heap::conserve_mem_setting, gc_heap::gc_can_use_concurrent, gc_heap::n_heaps));
+        dprintf (6666, ("conserve mem %d, concurent %d, max heap %d", gc_heap::conserve_mem_setting, concurrent_p, gc_heap::n_heaps));
 #else
-        dprintf (6666, ("conserve mem %d, concurent %d, WKS", gc_heap::conserve_mem_setting, gc_heap::gc_can_use_concurrent));
+        dprintf (6666, ("conserve mem %d, concurent %d, WKS", gc_heap::conserve_mem_setting, concurrent_p));
 #endif
 
 #ifdef DYNAMIC_HEAP_COUNT

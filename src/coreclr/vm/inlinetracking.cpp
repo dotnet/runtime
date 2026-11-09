@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // =============================================================================================
 // Code for tracking method inlinings in NGen and R2R images.
 // The only information stored is "who" got inlined "where", no offsets or inlining depth tracking.
@@ -7,6 +8,7 @@
 // This information is later exposed to profilers and can be useful for ReJIT.
 // Runtime inlining is not being tracked because profilers can deduce it via callbacks anyway.
 // =============================================================================================
+
 #include "common.h"
 #include "inlinetracking.h"
 #include "ceeload.h"
@@ -82,38 +84,6 @@ bool MethodInModule::operator !=(const MethodInModule& other) const
            m_module != other.m_module;
 }
 
-
-void InlineTrackingEntry::SortAndDeduplicate()
-{
-    STANDARD_VM_CONTRACT;
-
-    //Sort
-    MethodInModule *begin = &m_inliners[0];
-    MethodInModule *end = begin + m_inliners.GetCount();
-    util::sort(begin, end);
-
-    //Deduplicate
-    MethodInModule *left = begin;
-    MethodInModule *right = left + 1;
-    while (right < end)
-    {
-        auto rvalue = *right;
-        if (*left != rvalue)
-        {
-            left++;
-            if (left != right)
-            {
-                *left = rvalue;
-            }
-        }
-        right++;
-    }
-
-    //Shrink
-    int newCount = (int)(left - begin + 1);
-    m_inliners.SetCount(newCount);
-}
-
 InlineTrackingEntry::InlineTrackingEntry(const InlineTrackingEntry& other)
     :m_inlinee(other.m_inlinee)
 {
@@ -174,13 +144,7 @@ void InlineTrackingMap::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
     }
 
     CrstHolder lock(&m_mapCrst);
-    InlineTrackingEntry *existingEntry = const_cast<InlineTrackingEntry *>(LookupPtr(inlineeMnM));
-    if (existingEntry)
-    {
-        // We saw this inlinee before, just add one more inliner
-        existingEntry->Add(inliner);
-    }
-    else
+    if (!Update(inlineeMnM, [&](InlineTrackingEntry &entry) { entry.Add(inliner); }))
     {
         // We haven't seen this inlinee before, create a new record in the hashtable
         // and add a first inliner to it.

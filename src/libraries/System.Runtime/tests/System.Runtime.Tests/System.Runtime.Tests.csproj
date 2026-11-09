@@ -340,6 +340,7 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeatureTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedExceptionTests.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfoTests.cs" />
+    <Compile Include="System\Runtime\ExceptionServices\ExceptionHandlingTests.cs" />
     <Compile Include="System\Text\EncodingTests.cs" />
     <Compile Include="System\Text\RuneTests.cs" />
     <Compile Include="System\Text\RuneTests.TestData.cs" />

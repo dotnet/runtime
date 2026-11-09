@@ -265,8 +265,7 @@ namespace System.Formats.Tar.Tests
         [MemberData(nameof(GetContentSizeAndBooleanData))]
         public async Task Extract_UnseekableStream_BlockAlignmentPadding_DoesNotAffectNextEntries(int contentSize, bool async)
         {
-            byte[] fileContents = new byte[contentSize];
-            Array.Fill<byte>(fileContents, 0x1);
+            byte[] fileContents = Array.CreateFilled<byte>(contentSize, 0x1);
 
             using MemoryStream archive = new MemoryStream();
             using (GZipStream compressor = new GZipStream(archive, CompressionMode.Compress, leaveOpen: true))
@@ -612,9 +611,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(100, 25)] // EA smaller than header
         public void PaxExtraction_EntryLengthMatchesExtractedFileSize(int dataSize, long eaSize)
         {
-            byte[] actualData = new byte[dataSize];
-            Array.Fill<byte>(actualData, (byte)'X');
-
+            byte[] actualData = Array.CreateFilled(dataSize, (byte)'X');
+            
             byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, dataSize, eaSize);
 
             long apiLength;

@@ -18,6 +18,6 @@ public class MetadataUpdateOriginalTypeAttribute : Attribute
     ///
     /// <param name="originalType">The original type that was updated</param>
     public MetadataUpdateOriginalTypeAttribute(Type originalType) => OriginalType = originalType;
-    /// Gets the original version of the type that this attribtue is attached to.
+    /// Gets the original version of the type that this attribute is attached to.
     public Type OriginalType { get; }
 }

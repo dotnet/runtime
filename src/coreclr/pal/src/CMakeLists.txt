@@ -53,8 +53,6 @@ elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
   set(PAL_ARCH_SOURCES_DIR loongarch64)
 elseif(CLR_CMAKE_HOST_ARCH_RISCV64)
   set(PAL_ARCH_SOURCES_DIR riscv64)
-elseif(CLR_CMAKE_HOST_ARCH_I386)
-  set(PAL_ARCH_SOURCES_DIR i386)
 elseif(CLR_CMAKE_HOST_ARCH_S390X)
   set(PAL_ARCH_SOURCES_DIR s390x)
 elseif(CLR_CMAKE_HOST_ARCH_POWERPC64)
@@ -149,20 +147,12 @@ endif()
 
 set(SOURCES
   com/guid.cpp
-  cruntime/wchar.cpp
   exception/seh.cpp
-  file/directory.cpp
-  file/file.cpp
-  file/path.cpp
   handlemgr/handleapi.cpp
   handlemgr/handlemgr.cpp
   init/pal.cpp
   init/sxs.cpp
   loader/module.cpp
-  locale/unicode.cpp
-  map/common.cpp
-  map/map.cpp
-  map/virtual.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp
   misc/environ.cpp
@@ -311,8 +301,8 @@ if(CLR_CMAKE_TARGET_HAIKU)
 endif(CLR_CMAKE_TARGET_HAIKU)
 
 if(CLR_CMAKE_TARGET_LINUX)
-  # On Android, we don't need to link with gcc_s, pthread and rt
-  if(NOT CLR_CMAKE_TARGET_ANDROID)
+  # On Android and OpenHarmony, we don't need to link with gcc_s, pthread and rt
+  if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_OPENHARMONY)
     target_link_libraries(coreclrpal
       PUBLIC
       gcc_s
@@ -334,10 +324,10 @@ if(CLR_CMAKE_TARGET_LINUX)
     target_link_libraries(coreclrpal PUBLIC ${UNWIND_LIBS})
   endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
-  # bundled libunwind requires using libucontext on alpine and x86 and ppc64le
-  if(CLR_CMAKE_TARGET_LINUX_MUSL AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
+  # bundled libunwind requires using libucontext on alpine and ppc64le
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND CLR_CMAKE_TARGET_ARCH_POWERPC64)
     target_link_libraries(coreclrpal PUBLIC ucontext)
-  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND CLR_CMAKE_TARGET_ARCH_POWERPC64)
 
 endif(CLR_CMAKE_TARGET_LINUX)
 

@@ -134,7 +134,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public abstract class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
@@ -208,7 +207,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.False(seenUnobservedExceptions);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ExecutionContext_Suppressed_Success()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -291,7 +290,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_HttpProtocolTests : HttpProtocolTests
     {
         public SocketsHttpHandler_HttpProtocolTests(ITestOutputHelper output) : base(output) { }
@@ -319,19 +317,16 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_HttpProtocolTests_Dribble : HttpProtocolTests_Dribble
     {
         public SocketsHttpHandler_HttpProtocolTests_Dribble(ITestOutputHelper output) : base(output) { }
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_DiagnosticsTest_Http11 : DiagnosticsTest
     {
         public SocketsHttpHandler_DiagnosticsTest_Http11(ITestOutputHelper output) : base(output) { }
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_DiagnosticsTest_Http2 : DiagnosticsTest
     {
         public SocketsHttpHandler_DiagnosticsTest_Http2(ITestOutputHelper output) : base(output) { }
@@ -345,14 +340,13 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_HttpClient_SelectedSites_Test : HttpClient_SelectedSites_Test
     {
         public SocketsHttpHandler_HttpClient_SelectedSites_Test(ITestOutputHelper output) : base(output) { }
     }
 
 #if !TARGETS_BROWSER
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
     public sealed class SocketsHttpHandler_HttpClientEKUTest : HttpClientEKUTest
     {
         public SocketsHttpHandler_HttpClientEKUTest(ITestOutputHelper output) : base(output) { }
@@ -360,7 +354,6 @@ namespace System.Net.Http.Functional.Tests
 #endif
 
     [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
-    [SkipOnPlatform(TestPlatforms.Wasi, "AutomaticDecompression not supported on Wasi")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Decompression_Tests : HttpClientHandler_Decompression_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Decompression_Tests(ITestOutputHelper output) : base(output) { }
@@ -387,13 +380,11 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_HttpClientHandler_DefaultProxyCredentials_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http11_Test : HttpClientHandler_Finalization_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http11_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http2_Test : HttpClientHandler_Finalization_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http2_Test(ITestOutputHelper output) : base(output) { }
@@ -470,10 +461,102 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
     {
         public SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
+        public void CreateHttpClientHandler_AllowTlsResume_ConfiguresSslOptions(bool allowTlsResume)
+        {
+            using HttpClientHandler defaultHandler = CreateHttpClientHandler();
+            Assert.True(GetUnderlyingSocketsHttpHandler(defaultHandler).SslOptions.AllowTlsResume);
+
+            using HttpClientHandler instanceHandler = CreateHttpClientHandler(allowTlsResume: allowTlsResume);
+            Assert.Equal(allowTlsResume, GetUnderlyingSocketsHttpHandler(instanceHandler).SslOptions.AllowTlsResume);
+            Assert.Null(instanceHandler.ServerCertificateCustomValidationCallback);
+
+            using HttpClientHandler versionHandler = CreateHttpClientHandler(UseVersion, allowAllCertificates: false, allowTlsResume: allowTlsResume);
+            Assert.Equal(allowTlsResume, GetUnderlyingSocketsHttpHandler(versionHandler).SslOptions.AllowTlsResume);
+            Assert.Null(versionHandler.ServerCertificateCustomValidationCallback);
+
+            using HttpClientHandler stringHandler = CreateHttpClientHandler(UseVersion.ToString(), allowTlsResume: allowTlsResume);
+            Assert.Equal(allowTlsResume, GetUnderlyingSocketsHttpHandler(stringHandler).SslOptions.AllowTlsResume);
+            Assert.NotNull(stringHandler.ServerCertificateCustomValidationCallback);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
+        public async Task NoCallback_RevokedCertificate_RevocationChecking_MatchesExpected(bool checkRevocation)
+        {
+            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(
+                "localhost", forceRsaCertificate: true);
+            pkiHolder.Intermediates[^1].Revoke(pkiHolder.EndEntity, pkiHolder.EndEntity.NotBefore);
+
+            using HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false);
+            handler.CheckCertificateRevocationList = checkRevocation;
+            SocketsHttpHandler socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
+
+            var policy = new X509ChainPolicy
+            {
+                TrustMode = X509ChainTrustMode.CustomRootTrust,
+                RevocationMode = socketsHandler.SslOptions.CertificateRevocationCheckMode,
+                RevocationFlag = X509RevocationFlag.EndCertificateOnly,
+                DisableCertificateDownloads = true,
+                CustomTrustStore = { pkiHolder.IssuerChain[^1] },
+            };
+            policy.ExtraStore.AddRange(pkiHolder.IssuerChain);
+            socketsHandler.SslOptions.CertificateChainPolicy = policy;
+
+            using HttpClient client = CreateHttpClient(handler);
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                if (checkRevocation)
+                {
+                    HttpRequestException exception = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    Assert.Equal(HttpRequestError.SecureConnectionError, exception.HttpRequestError);
+                    Assert.IsType<AuthenticationException>(exception.InnerException);
+                }
+                else
+                {
+                    using HttpResponseMessage response = await client.GetAsync(uri);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            }, async server =>
+            {
+                try
+                {
+                    if (checkRevocation)
+                    {
+                        await server.AcceptConnectionAsync(_ => Task.CompletedTask);
+                    }
+                    else
+                    {
+                        await server.HandleRequestAsync();
+                    }
+                }
+                catch (Exception e) when (checkRevocation && (e is AuthenticationException or IOException))
+                {
+                    _output.WriteLine($"Expected certificate validation failure: {e}");
+                }
+            },
+            options: new GenericLoopbackOptions
+            {
+                UseSsl = true,
+                Certificate = pkiHolder.EndEntity,
+                SslProtocols = SslProtocols.None,
+            });
+
+            using X509Chain chain = new X509Chain();
+            chain.ChainPolicy = policy;
+            Assert.Equal(!checkRevocation, chain.Build(pkiHolder.EndEntity));
+            Assert.Equal(checkRevocation ? X509ChainStatusFlags.Revoked : X509ChainStatusFlags.NoError,
+                chain.ChainStatus.Aggregate(X509ChainStatusFlags.NoError, (flags, status) => flags | status.Status));
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "ResponseDrainTimeout is not supported on Browser")]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_ResponseDrain_Test : HttpClientHandler_ResponseDrain_Test
     {
         protected override void SetResponseDrainTimeout(HttpClientHandler handler, TimeSpan time)
@@ -718,7 +801,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_PostScenarioTest : PostScenarioTest
     {
         public SocketsHttpHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }
@@ -776,26 +858,24 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_ResponseStreamTest : ResponseStreamTest
     {
         public SocketsHttpHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) { }
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test
     {
         public SocketsHttpHandler_HttpClientHandler_SslProtocols_Test(ITestOutputHelper output) : base(output) { }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Proxy_Test : HttpClientHandler_Proxy_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Proxy_Https_Succeeds(bool secureUri)
@@ -846,6 +926,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("2.0", HttpVersionPolicy.RequestVersionOrLower, true)]
         public async Task ProxiedRequest_UsesConnectTunnelForHttpsAndCleartextHttp2(string version, HttpVersionPolicy versionPolicy, bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             Version requestVersion = Version.Parse(version);
 
             if (useSsl && requestVersion.Major == 2 && !PlatformDetection.SupportsAlpn)
@@ -892,7 +978,6 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public abstract class SocketsHttpHandler_TrailingHeaders_Test : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
@@ -1014,7 +1099,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "HTTP/1 trailers are not supported by most major browsers")]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_Http1_TrailingHeaders_Test : SocketsHttpHandler_TrailingHeaders_Test
     {
         public SocketsHttpHandler_Http1_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
@@ -1430,7 +1514,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "SocketsHttpHandler is not supported on Browser/WASI")]
+    [SkipOnPlatform(TestPlatforms.Browser, "SocketsHttpHandler is not supported on Browser")]
     public sealed class SocketsHttpHandler_ChunkedEncodingParsing_Test : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_ChunkedEncodingParsing_Test(ITestOutputHelper output) : base(output) { }
@@ -1493,10 +1577,40 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData("", HttpStatusCode.OK)]
+        [InlineData(" ", HttpStatusCode.OK)]
+        [InlineData("\t", HttpStatusCode.OK)]
+        [InlineData(",", HttpStatusCode.OK)]
+        [InlineData(" , , \t", HttpStatusCode.OK)]
+        [InlineData("invalid", HttpStatusCode.OK)]
+        [InlineData("", HttpStatusCode.Found)]
+        [InlineData(",", HttpStatusCode.Found)]
+        [SkipOnPlatform(TestPlatforms.Browser, "SocketsHttpHandler is not supported on Browser")]
+        public async Task SendAsync_EmptyOrInvalidAltSvcHeader_Success(string altSvc, HttpStatusCode statusCode)
+        {
+            if (!PlatformDetection.IsTlsSupported)
+            {
+                return;
+            }
+
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = false;
+            using HttpClient client = CreateHttpClient(handler);
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpResponseMessage response = await client.GetAsync(uri);
+                Assert.Equal(statusCode, response.StatusCode);
+                Assert.Equal(HttpVersion.Version11, response.Version);
+            },
+            server => server.AcceptConnectionSendResponseAndCloseAsync(statusCode, $"Alt-Svc: {altSvc}\r\n"),
+            new LoopbackServer.Options { UseSsl = true });
+        }
 
         [Fact]
         public async Task SendAsync_UriWithNonDnsNonAsciiHost_Throws()
@@ -1510,14 +1624,12 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
     {
         public SocketsHttpHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
@@ -1549,28 +1661,24 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_IdnaProtocolTests : IdnaProtocolTests
     {
         public SocketsHttpHandler_IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandlerTest_RequestRetry : HttpClientHandlerTest_RequestRetry
     {
         public SocketsHttpHandlerTest_RequestRetry(ITestOutputHelper output) : base(output) { }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "UseCookies is not supported on Browser")]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandlerTest_Cookies : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies(ITestOutputHelper output) : base(output) { }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "UseCookies is not supported on Browser")]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandlerTest_Cookies_Http11 : HttpClientHandlerTest_Cookies_Http11
     {
         public SocketsHttpHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
@@ -1867,6 +1975,11 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(TripleBoolValues))]
         public async Task LargeHeaders_TrickledOverTime_ProcessedEfficiently(bool trailingHeaders, bool async, bool lineFolds)
         {
+            if (!async && !PlatformDetection.IsMultithreadingSupported)
+            {
+                throw new SkipTestException("Synchronous Send requires multithreading.");
+            }
+
             if (PlatformDetection.IsAndroid && PlatformDetection.Is32BitProcess)
             {
                 // https://github.com/dotnet/runtime/issues/77474
@@ -1989,19 +2102,17 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Authentication_Test : HttpClientHandler_Authentication_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_ConnectionUpgrade_Test : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_ConnectionUpgrade_Test(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Uses synchronous I/O on the upgraded stream.
         public async Task UpgradeConnection_ReturnsReadableAndWritableStream()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -2117,14 +2228,12 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_Connect_Test : HttpClientHandler_Connect_Test
     {
         public SocketsHttpHandler_Connect_Test(ITestOutputHelper output) : base(output) { }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test(ITestOutputHelper output) : base(output) { }
@@ -2641,7 +2750,6 @@ namespace System.Net.Http.Functional.Tests
     // Exercises the SocketsHttpHandler.ShouldEvictConnection eviction context across HTTP versions. The reported
     // properties (version, endpoints, connection id) must reflect the actual connection, independent of protocol.
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public abstract class SocketsHttpHandler_ConnectionEviction_Test : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_ConnectionEviction_Test(ITestOutputHelper output) : base(output) { }
@@ -2717,6 +2825,11 @@ namespace System.Net.Http.Functional.Tests
             if (UseVersion == HttpVersion.Version30)
             {
                 return; // HTTP/3 (QUIC) cannot be tunneled through an HTTP CONNECT proxy.
+            }
+
+            if (!PlatformDetection.IsTlsSupported)
+            {
+                return;
             }
 
             if (UseVersion == HttpVersion.Version20 && !PlatformDetection.SupportsAlpn)
@@ -3017,7 +3130,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_ConnectionEviction_Test_Http1 : SocketsHttpHandler_ConnectionEviction_Test
     {
         public SocketsHttpHandler_ConnectionEviction_Test_Http1(ITestOutputHelper output) : base(output) { }
@@ -3054,7 +3166,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_ConnectionEviction_Test_Http2 : SocketsHttpHandler_ConnectionEviction_Test
     {
         public SocketsHttpHandler_ConnectionEviction_Test_Http2(ITestOutputHelper output) : base(output) { }
@@ -3100,7 +3211,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_ConnectionEviction_Test_Http3 : SocketsHttpHandler_ConnectionEviction_Test
     {
         public SocketsHttpHandler_ConnectionEviction_Test_Http3(ITestOutputHelper output) : base(output) { }
@@ -3143,7 +3253,6 @@ namespace System.Net.Http.Functional.Tests
 
     // System.Net.Sockets is not supported on this platform
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_PublicAPIBehavior_Test
     {
         [Fact]
@@ -3502,7 +3611,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         public async Task ConnectionId_HttpsProxyTunnel_RequestReportsTunneledConnectionNotProxyTransport()
         {
             long connectCallbackId = -1;
@@ -3581,7 +3690,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         public void SslOptions_GetSet_Roundtrips()
         {
             using (var handler = new SocketsHttpHandler())
@@ -3723,7 +3832,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(100, handler.InitialHttp2MaxConcurrentStreams);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task AfterDisposeSendAsync_GettersUsable_SettersThrow(bool dispose)
@@ -3795,7 +3904,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Headers.Location are not supported on Browser")]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandlerTest_LocationHeader
     {
         private static readonly byte[] s_redirectResponseBefore = Encoding.ASCII.GetBytes(
@@ -3851,7 +3959,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandlerTest_Http2 : HttpClientHandlerTest_Http2
     {
         public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
@@ -4616,7 +4723,6 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public abstract class SocketsHttpHandlerTest_ConnectCallback : HttpClientHandlerTestBase
     {
         public SocketsHttpHandlerTest_ConnectCallback(ITestOutputHelper output) : base(output) { }
@@ -4637,6 +4743,12 @@ namespace System.Net.Http.Functional.Tests
             if (syncRequest && PlatformDetection.IsMobile)
             {
                 // Sync requests are not supported on mobile platforms
+                return;
+            }
+
+            if (syncCallback && PlatformDetection.IsWasi)
+            {
+                // Synchronous socket operations are not supported on WASI
                 return;
             }
 
@@ -4686,6 +4798,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task ConnectCallback_BindLocalAddress_Success(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -4719,6 +4837,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task ConnectCallback_UseMemoryBuffer_Success(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             (Stream clientStream, Stream serverStream) = ConnectedStreams.CreateBidirectional();
 
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
@@ -4750,15 +4874,27 @@ namespace System.Net.Http.Functional.Tests
             await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
         }
 
-        [ConditionalTheory(typeof(SocketsHttpHandlerTest_ConnectCallback), nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsUnixDomainSocketBinding))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectCallback_UseUnixDomainSocket_Success(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
             string guid = $"{Guid.NewGuid():N}";
-            string socketPath = Path.Combine(Path.GetTempPath(), guid);
+            string socketDirectory = PlatformDetection.UnixDomainSocketDirectory;
+            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
+            {
+                // Keep the name short for app container paths, and avoid an all-numeric URI host.
+                guid = "s" + guid.Substring(0, 7);
+            }
+            string socketPath = Path.Combine(socketDirectory, guid);
             UnixDomainSocketEndPoint serverEP = new UnixDomainSocketEndPoint(socketPath);
             using Socket listenSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
             listenSocket.Bind(serverEP);
@@ -4771,7 +4907,7 @@ namespace System.Net.Http.Functional.Tests
                 socketsHandler.ConnectCallback = async (context, token) =>
                 {
                     string hostname = context.DnsEndPoint.Host;
-                    UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(Path.GetTempPath(), hostname));
+                    UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(socketDirectory, hostname));
 
                     Socket clientSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
                     await clientSocket.ConnectAsync(clientEP);
@@ -4815,6 +4951,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task ConnectCallback_ConnectionPrefix_Success(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
             byte[] RequestPrefix = "request prefix\r\n"u8.ToArray();
@@ -4870,6 +5012,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task ConnectCallback_StreamThrowsOnWrite_ExceptionAndStreamDisposed(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             const string ExceptionMessage = "THROWONWRITE";
 
             bool disposeCalled = false;
@@ -4898,6 +5046,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task ConnectCallback_ExceptionDuringCallback_ThrowsHttpRequestExceptionWithInnerException(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             Exception e = new Exception("hello!");
 
             using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: useSsl);
@@ -4919,6 +5073,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task ConnectCallback_ReturnsNull_ThrowsHttpRequestException(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: useSsl);
             var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
             socketsHandler.ConnectCallback = (context, token) =>
@@ -4932,7 +5092,7 @@ namespace System.Net.Http.Functional.Tests
             HttpRequestException hre = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.GetAsync($"{(useSsl ? "https" : "http")}://nowhere.invalid/foo"));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectCallback_SslStream_OK(bool useSslStream)
@@ -4981,7 +5141,7 @@ namespace System.Net.Http.Functional.Tests
                 }, options: new GenericLoopbackOptions { UseSsl = true });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         public async Task ConnectCallback_DerivedSslStream_OK()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -5025,7 +5185,7 @@ namespace System.Net.Http.Functional.Tests
                 }, options: new GenericLoopbackOptions { UseSsl = true });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         public async Task ConnectCallback_NoAlpn_OK()
         {
             // Create HTTP 1.1 loopback. Http2 should downgrade
@@ -5076,7 +5236,8 @@ namespace System.Net.Http.Functional.Tests
             TaskCompletionSource connectCallback1Gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource connectCallback2Gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            var uri = new Uri("https://example.com");
+            // Without TLS support the requests would fail before the ConnectCallback runs.
+            var uri = new Uri(PlatformDetection.IsTlsSupported ? "https://example.com" : "http://example.com");
             HttpRequestMessage request1 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
             HttpRequestMessage request2 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
             HttpRequestMessage request3 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
@@ -5162,8 +5323,15 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "System.IO.Pipes is not supported on WASI")]
         public async Task ConnectCallback_UseNamedPipe_Success(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             string guid = $"{Guid.NewGuid():N}";
 
             Task clientTask = Task.Run(async () =>
@@ -5204,8 +5372,6 @@ namespace System.Net.Http.Functional.Tests
 
             await TestHelper.WhenAllCompletedOrAnyFailedWithTimeout(GenericLoopbackServer.LoopbackServerTimeoutMilliseconds, clientTask, serverTask);
         }
-
-        private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
 
         private sealed class ReadAheadStream : DelegatingStream
         {
@@ -5253,7 +5419,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandlerTest_ConnectCallback_Http11 : SocketsHttpHandlerTest_ConnectCallback
     {
         public SocketsHttpHandlerTest_ConnectCallback_Http11(ITestOutputHelper output) : base(output) { }
@@ -5504,7 +5669,8 @@ namespace System.Net.Http.Functional.Tests
         private static extern void ExperimentalDangerousDoNotPartitionConnectionPoolBySni(HttpRequestMessage request);
     }
 
-    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+    // These tests partition by SNI, so they need TLS (which also implies SocketsHttpHandler is supported).
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
     public sealed class SocketsHttpHandler_ConnectionPoolPartitioning_Http11_Test : SocketsHttpHandler_ConnectionPoolPartitioning_Test
     {
         public SocketsHttpHandler_ConnectionPoolPartitioning_Http11_Test(ITestOutputHelper output) : base(output) { }
@@ -5525,7 +5691,6 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public abstract class SocketsHttpHandlerTest_PlaintextStreamFilter : HttpClientHandlerTestBase
     {
         public SocketsHttpHandlerTest_PlaintextStreamFilter(ITestOutputHelper output) : base(output) { }
@@ -5539,8 +5704,15 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(PlaintextStreamFilter_ContextHasCorrectProperties_Success_MemberData))]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous socket operations are not supported on WASI")]
         public async Task PlaintextStreamFilter_ContextHasCorrectProperties_Success(bool useSsl, bool syncRequest, bool syncCallback)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             if (syncRequest && UseVersion > HttpVersion.Version11)
             {
                 // Sync requests are only supported on 1.x
@@ -5600,6 +5772,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task PlaintextStreamFilter_SimpleDelegatingStream_Success(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
@@ -5637,7 +5815,7 @@ namespace System.Net.Http.Functional.Tests
                 }, options: options);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         public async Task PlaintextStreamFilter_HttpsProxyTunnel_RunsPerHopWithDistinctConnectionIds()
         {
             if (UseVersion == HttpVersion.Version30)
@@ -5690,6 +5868,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task PlaintextStreamFilter_ConnectionPrefix_Success(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             byte[] RequestPrefix = "request prefix\r\n"u8.ToArray();
             byte[] ResponsePrefix = "response prefix\r\n"u8.ToArray();
 
@@ -5769,6 +5953,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task PlaintextStreamFilter_ExceptionDuringCallback_ThrowsHttpRequestExceptionWithInnerException(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             Exception e = new Exception("hello!");
 
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
@@ -5802,6 +5992,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task PlaintextStreamFilter_ReturnsNull_ThrowsHttpRequestException(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
@@ -5829,7 +6025,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandlerTest_PlaintextStreamFilter_Http11 : SocketsHttpHandlerTest_PlaintextStreamFilter
     {
         public SocketsHttpHandlerTest_PlaintextStreamFilter_Http11(ITestOutputHelper output) : base(output) { }
@@ -5839,6 +6034,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task PlaintextStreamFilter_CustomStream_Success(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
@@ -5885,6 +6086,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task PlaintextStreamFilter_Logging_Success(bool useSsl)
         {
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
+                // TLS is not supported on this platform
+                return;
+            }
+
             bool log = int.TryParse(Environment.GetEnvironmentVariable("DOTNET_TEST_SOCKETSHTTPHANDLERLOG"), out int value) && value == 1;
 
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
@@ -5950,7 +6157,6 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11 : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11(ITestOutputHelper output) : base(output) { }
@@ -6040,7 +6246,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public abstract class SocketsHttpHandler_RequestValidationTest
     {
         protected abstract bool TestAsync { get; }
@@ -6063,35 +6268,30 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
         public void Send_NullRequestUri_ThrowsInvalidOperationException()
         {
             Throws<InvalidOperationException>(new HttpRequestMessage());
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
         public void Send_RelativeRequestUri_ThrowsInvalidOperationException()
         {
             Throws<InvalidOperationException>(new HttpRequestMessage(HttpMethod.Get, new Uri("/relative", UriKind.Relative)));
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
         public void Send_UnsupportedRequestUriScheme_ThrowsNotSupportedException()
         {
             Throws<NotSupportedException>(new HttpRequestMessage(HttpMethod.Get, "foo://foo.bar"));
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
         public void Send_MajorVersionZero_ThrowsNotSupportedException()
         {
             Throws<NotSupportedException>(new HttpRequestMessage { Version = new Version(0, 42) });
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
         public void Send_TransferEncodingChunkedWithNoContent_ThrowsHttpRequestException()
         {
             var request = new HttpRequestMessage();
@@ -6102,7 +6302,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
         public void Send_Http10WithTransferEncodingChunked_ThrowsNotSupportedException()
         {
             var request = new HttpRequestMessage
@@ -6143,7 +6342,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public abstract class SocketsHttpHandler_RequestContentLengthMismatchTest : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_RequestContentLengthMismatchTest(ITestOutputHelper output) : base(output) { }
@@ -6204,8 +6402,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsTlsSupported))]
     public abstract class SocketsHttpHandler_SecurityTest : HttpClientHandlerTestBase
     {
         private readonly CertificateSetup _certificateSetup;
@@ -6233,7 +6430,7 @@ namespace System.Net.Http.Functional.Tests
 
                     policy.ExtraStore.AddRange(_certificateSetup.ServerChain);
                     policy.CustomTrustStore.Add(_certificateSetup.ServerChain[^1]);
-                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
+                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy, AllowTlsResume = false };
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
@@ -6266,7 +6463,7 @@ namespace System.Net.Http.Functional.Tests
 
                     policy.ExtraStore.AddRange(_certificateSetup.ServerChain);
                     policy.CustomTrustStore.Add(_certificateSetup.ServerChain[^1]);
-                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
+                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy, AllowTlsResume = false };
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
@@ -6305,7 +6502,7 @@ namespace System.Net.Http.Functional.Tests
 
                     policy.ExtraStore.AddRange(_certificateSetup.ServerChain);
                     policy.CustomTrustStore.Add(_certificateSetup.ServerChain[^1]);
-                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
+                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy, AllowTlsResume = false };
 
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
@@ -6390,7 +6587,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public abstract class SocketsHttpHandler_HttpRequestErrorTest : HttpClientHandlerTestBase
     {
         protected SocketsHttpHandler_HttpRequestErrorTest(ITestOutputHelper output) : base(output)
@@ -6402,7 +6598,8 @@ namespace System.Net.Http.Functional.Tests
         public async Task NameResolutionError()
         {
             using HttpClient client = CreateHttpClient();
-            using HttpRequestMessage message = new(HttpMethod.Get, new Uri("https://BadHost"))
+            // Without TLS support the request would fail before name resolution.
+            using HttpRequestMessage message = new(HttpMethod.Get, new Uri(PlatformDetection.IsTlsSupported ? "https://BadHost" : "http://BadHost"))
             {
                 Version = UseVersion,
                 VersionPolicy = HttpVersionPolicy.RequestVersionExact
@@ -6436,7 +6633,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(HttpRequestError.ConnectionError, ex.HttpRequestError);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         public async Task SecureConnectionError()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>

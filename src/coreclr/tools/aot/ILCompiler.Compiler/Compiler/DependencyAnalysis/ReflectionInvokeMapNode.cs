@@ -9,6 +9,7 @@ using Internal.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
 using InvokeTableFlags = Internal.Runtime.InvokeTableFlags;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -37,12 +38,11 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public static void AddDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddDependenciesDueToReflectability(IDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
             Debug.Assert(factory.MetadataManager.IsReflectionInvokable(method));
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
 
-            dependencies ??= new DependencyList();
 
             dependencies.Add(factory.MaximallyConstructableType(method.OwningType), "Reflection invoke");
 
@@ -52,9 +52,9 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
 
                 var signature = method.Signature;
-                AddSignatureDependency(ref dependencies, factory, method, signature.ReturnType, "Reflection invoke", isOut: true);
+                AddSignatureDependency(dependencies, factory, method, signature.ReturnType, "Reflection invoke", isOut: true);
                 foreach (var parameterType in signature)
-                    AddSignatureDependency(ref dependencies, factory, method, parameterType, "Reflection invoke", isOut: false);
+                    AddSignatureDependency(dependencies, factory, method, parameterType, "Reflection invoke", isOut: false);
             }
 
             if (method.OwningType.IsValueType && !method.Signature.IsStatic)
@@ -77,10 +77,10 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(ref dependencies, factory, method);
+            ReflectionVirtualInvokeMapNode.AddVirtualInvokeMapDependencies(dependencies, factory, method);
         }
 
-        internal static void AddSignatureDependency(ref DependencyList dependencies, NodeFactory factory, TypeSystemEntity referent, TypeDesc type, string reason, bool isOut)
+        internal static void AddSignatureDependency(IDependencySink dependencies, NodeFactory factory, TypeSystemEntity referent, TypeDesc type, string reason, bool isOut)
         {
             if (type.IsByRef)
             {
@@ -104,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Non-valuetypes are only needed for the purposes of casting/type checks.
                 // If this is a non-exact type, we need the type loader template to get the type handle.
                 if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, type.NormalizeInstantiation());
+                    GenericTypesTemplateMap.AddTemplateTypeDependencies(dependencies, factory, type.NormalizeInstantiation());
                 else if (isOut && !type.IsGCPointer)
                     dependencies.Add(factory.MaximallyConstructableType(type.NormalizeInstantiation()), reason);
                 else
@@ -162,7 +162,17 @@ namespace ILCompiler.DependencyAnalysis
                     flags |= InvokeTableFlags.HasVirtualInvoke;
 
                 if (!method.IsAbstract)
+                {
                     flags |= InvokeTableFlags.HasEntrypoint;
+                    // The WASM object writer assigns virtual IPs only to nodes with nonempty frame information.
+                    // RuntimeImport methods, for example, have callable entrypoints but no virtual IPs.
+                    if (factory.Target.IsWasm &&
+                        factory.MethodEntrypoint(method) is INodeWithCodeInfo { FrameInfos: { Length: > 0 } } &&
+                        (factory.MetadataManager.StackTracePolicy.GetMethodVisibility(method) & MethodStackTraceVisibilityFlags.HasMetadata) != 0)
+                    {
+                        flags |= InvokeTableFlags.HasVirtualIP;
+                    }
+                }
 
                 if (!factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method))
                     flags |= InvokeTableFlags.NeedsParameterInterpretation;
@@ -172,7 +182,7 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 // Grammar of an entry in the hash table:
-                // Flags + DeclaringType + MetadataHandle/NameAndSig + Entrypoint + DynamicInvokeMethod + [NumGenericArgs + GenericArgs]
+                // Flags + MetadataHandle/NameAndSig + DeclaringType + Entrypoint + VirtualIP + DynamicInvokeMethod + [NumGenericArgs + GenericArgs]
 
                 Vertex vertex = writer.GetUnsignedConstant((uint)flags);
 
@@ -191,6 +201,13 @@ namespace ILCompiler.DependencyAnalysis
                         writer.GetUnsignedConstant(_externalReferences.GetIndex(
                             factory.AddressTakenMethodEntrypoint(method,
                             unboxingStub: method.OwningType.IsValueType && !method.Signature.IsStatic))));
+                }
+
+                if ((flags & InvokeTableFlags.HasVirtualIP) != 0)
+                {
+                    vertex = writer.GetTuple(vertex,
+                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(method),
+                            relocType: RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32)));
                 }
 
                 if ((flags & InvokeTableFlags.NeedsParameterInterpretation) == 0)

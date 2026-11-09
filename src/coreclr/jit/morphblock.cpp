@@ -1269,7 +1269,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             noway_assert((m_srcLclNum != BAD_VAR_NUM) && (m_srcLclNode != nullptr));
             unsigned srcFieldLclNum = m_compiler->lvaGetDesc(m_srcLclNum)->lvFieldLclStart + i;
 
-            srcFld = m_compiler->gtNewLclvNode(srcFieldLclNum, m_compiler->lvaGetDesc(srcFieldLclNum)->TypeGet());
+            srcFld = m_compiler->gtNewLclVarNode(srcFieldLclNum, m_compiler->lvaGetDesc(srcFieldLclNum)->TypeGet());
         }
         else
         {
@@ -1283,7 +1283,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 noway_assert(m_srcLclNum != BAD_VAR_NUM);
                 noway_assert(addrSpill == nullptr);
 
-                srcFld = m_compiler->gtNewLclvNode(m_srcLclNum, m_compiler->lvaGetDesc(m_srcLclNum)->TypeGet());
+                srcFld = m_compiler->gtNewLclVarNode(m_srcLclNum, m_compiler->lvaGetDesc(m_srcLclNum)->TypeGet());
             }
             else
             {

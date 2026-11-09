@@ -227,7 +227,6 @@ typedef DPTR(class ParamTypeDesc) PTR_ParamTypeDesc;
 
 class ParamTypeDesc : public TypeDesc {
     friend class TypeDesc;
-    friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 
 public:

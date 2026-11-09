@@ -71,29 +71,6 @@ void gc_heap::switch_one_quantum()
     disable_preemptive (true);
 }
 
-void gc_heap::reset_ww_by_chunk (uint8_t* start_address, size_t total_reset_size)
-{
-    size_t reset_size = 0;
-    size_t remaining_reset_size = 0;
-    size_t next_reset_size = 0;
-
-    while (reset_size != total_reset_size)
-    {
-        remaining_reset_size = total_reset_size - reset_size;
-        next_reset_size = ((remaining_reset_size >= ww_reset_quantum) ?
-            ww_reset_quantum : remaining_reset_size);
-        if (next_reset_size)
-        {
-            reset_write_watch_for_gc_heap(start_address, next_reset_size);
-            reset_size += next_reset_size;
-
-            switch_one_quantum();
-        }
-    }
-
-    assert (reset_size == total_reset_size);
-}
-
 // This does a Sleep(1) for every reset ww_reset_quantum bytes of reset
 // we do concurrently.
 void gc_heap::switch_on_reset (BOOL concurrent_p, size_t* current_total_reset_size, size_t last_reset_size)

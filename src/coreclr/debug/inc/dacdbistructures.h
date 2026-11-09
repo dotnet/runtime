@@ -160,6 +160,18 @@ struct MSLAYOUT TargetBuffer
     ULONG         cbSize;
 };
 
+// A variable sized host memory context buffer in target architecture specific layout.
+// The currently supported layout matches the CONTEXT structure for the
+// target architecture and OS.
+// Buffers may include trailing XSTATE/SVE data, but only the DT_CONTEXT portion is read or written.
+// Not (yet) supported:
+// - Add an architecture enum field to make the struct self-describing
+struct MSLAYOUT ContextBuffer
+{
+    BYTE *  pContextBytes;
+    ULONG32 contextSize;
+};
+
 // Module properties, retrieved by DAC.
 struct MSLAYOUT ModuleInfo
 {
@@ -539,11 +551,14 @@ struct MSLAYOUT Debugger_JITFuncData
 #endif                          // ARM context structures have a 16-byte alignment requirement
 struct MSLAYOUT Debugger_STRData
 {
-    // fp is a CORDB_ADDRESS (fixed 64-bit) rather than a host-sized FramePointer; the RS
-    // converts to/from FramePointer at the boundary. ctx is deliberately a host-sized
-    // pointer to a dbi-allocated DT_CONTEXT buffer that the DAC writes through.
+    // fp is fixed-width across target architectures. ctx wraps a DBI-owned buffer
+    // (pointer plus size) holding the target's opaque CONTEXT byte image.
     CORDB_ADDRESS           fp;
-    DT_CONTEXT *            ctx;
+    union MSLAYOUT
+    {
+        ContextBuffer       ctx;
+        UINT64              ctxPadding[2]; // Keep subsequent field offsets identical on 32- and 64-bit hosts.
+    };
     VMPTR_AppDomain         vmCurrentAppDomainToken;
 
 
@@ -586,6 +601,9 @@ struct MSLAYOUT Debugger_STRData
 
     };
 };
+static_assert(offsetof(Debugger_STRData, ctx) == 8);
+static_assert(offsetof(Debugger_STRData, vmCurrentAppDomainToken) == 24);
+static_assert(offsetof(Debugger_STRData, v) == 40);
 #if defined(_MSC_VER)
 #pragma warning( pop )
 #endif
@@ -653,17 +671,17 @@ public:
     // initialize various fields of an instance of FieldData from information in a FieldDesc
     void Initialize(BOOL fIsStatic, BOOL fIsPrimitive, mdFieldDef mdToken);
 #else
-    HRESULT GetFieldSignature(class CordbModule * pModule, /*OUT*/ SigParser * pSigParser);
+    HRESULT GetFieldSignature(class CordbModule * pModule, /*OUT*/ SigParser * pSigParser) const;
 #endif
 
     // clear various fields for a new instance of FieldData
     void ClearFields();
 
     // Make sure it's okay to get or set an instance field offset.
-    BOOL OkToGetOrSetInstanceOffset();
+    BOOL OkToGetOrSetInstanceOffset() const;
 
     // Make sure it's okay to get or set a static field address.
-    BOOL OkToGetOrSetStaticAddress();
+    BOOL OkToGetOrSetStaticAddress() const;
 
     // If this is an instance field, store its offset
     void SetInstanceOffset( ULONG64 offset );
@@ -674,11 +692,11 @@ public:
     // If this is an instance field, return its offset
     // Note that this offset is always a real offset (possibly larger than 22 bits), which isn't
     // necessarily the same as the overloaded FieldDesc.dwOffset field.
-    CORDB_ADDRESS  GetInstanceOffset();
+    CORDB_ADDRESS  GetInstanceOffset() const;
 
     // If this is a "normal" static, get its absolute address
     // TLS and context-specific statics are "special".
-    CORDB_ADDRESS GetStaticAddress();
+    CORDB_ADDRESS GetStaticAddress() const;
 
 //
 // Data members
@@ -704,10 +722,10 @@ private:
                                               // the object.
     CORDB_ADDRESS   m_pFldStaticAddress;      // The absolute target address of a static field
 
-    PCCOR_SIGNATURE m_fldSignatureCache;      // This is passed across as null. It is a RS-only cache, and SHOULD
-                                              // NEVER BE ACCESSED DIRECTLY!
-    ULONG           m_fldSignatureCacheSize;  // This is passed across as 0. It is a RS-only cache, and SHOULD
-                                              // NEVER BE ACCESSED DIRECTLY!
+    mutable PCCOR_SIGNATURE m_fldSignatureCache;     // This is passed across as null. It is a RS-only cache, and SHOULD
+                                                    // NEVER BE ACCESSED DIRECTLY!
+    mutable ULONG           m_fldSignatureCacheSize; // This is passed across as 0. It is a RS-only cache, and SHOULD
+                                                    // NEVER BE ACCESSED DIRECTLY!
 public:
     VMPTR_FieldDesc m_vmFieldDesc;
 

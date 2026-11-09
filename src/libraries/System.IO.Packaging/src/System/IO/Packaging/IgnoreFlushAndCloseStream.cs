@@ -19,7 +19,8 @@ namespace System.IO.Packaging
         /// <param name="stream"></param>
         internal IgnoreFlushAndCloseStream(Stream stream)
         {
-            _stream = stream ?? throw new ArgumentNullException(nameof(stream));
+            ArgumentNullException.ThrowIfNull(stream);
+            _stream = stream;
         }
 
         #endregion Constructor

@@ -44,7 +44,10 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Default constructor.
         /// </summary>
-        /// <remarks>The long form of this constructor is preferred because it gives better error reporting.</remarks>
+        /// <remarks>
+        ///     To include the failing validation attribute and invalid value in the exception, use
+        ///     <see cref="ValidationException(string, ValidationAttribute, object)" />.
+        /// </remarks>
         public ValidationException()
         {
         }
@@ -52,7 +55,12 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Constructor that accepts only a localized message
         /// </summary>
-        /// <remarks>The long form of this constructor is preferred because it gives better error reporting.</remarks>
+        /// <remarks>
+        ///     To include the failing validation attribute and invalid value in the exception, use the
+        ///     <see cref="ValidationException(string, ValidationAttribute, object)" /> overload.
+        ///     That overload preserves the attribute in <see cref="ValidationAttribute" />
+        ///     and the value in <see cref="Value" />.
+        /// </remarks>
         /// <param name="message">The localized message</param>
         public ValidationException(string? message)
             : base(message)
@@ -62,7 +70,11 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Constructor that accepts a localized message and an inner exception
         /// </summary>
-        /// <remarks>The long form of this constructor is preferred because it gives better error reporting</remarks>
+        /// <remarks>
+        ///     Use this overload to preserve an exception that caused the validation failure.
+        ///     To include the failing validation attribute and invalid value instead, use
+        ///     <see cref="ValidationException(string, ValidationAttribute, object)" />.
+        /// </remarks>
         /// <param name="message">The localized error message</param>
         /// <param name="innerException">inner exception</param>
         public ValidationException(string? message, Exception? innerException)

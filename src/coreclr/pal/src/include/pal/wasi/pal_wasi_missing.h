@@ -55,11 +55,4 @@ static inline int dladdr(const void *addr, Dl_info *info)
     return 0;
 }
 
-// WASI has no user/group concept; PAL uses these only for st_uid/st_gid
-// permission checks. Always-zero makes the owner-equals-process branches behave.
-static inline uid_t getuid(void)  { return 0; }
-static inline uid_t geteuid(void) { return 0; }
-static inline gid_t getgid(void)  { return 0; }
-static inline gid_t getegid(void) { return 0; }
-
 #endif // _PAL_WASI_MISSING_H_

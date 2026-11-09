@@ -1,19 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-
-//
 
 /*============================================================
-**
 ** Header:  COMUtilNative
-**
 **
 ** Purpose: A dumping ground for classes which aren't large
 ** enough to get their own file in the VM.
-**
-**
 ===========================================================*/
+
 #ifndef _COMUTILNATIVE_H_
 #define _COMUTILNATIVE_H_
 
@@ -112,9 +106,7 @@ public:
     UINT32 pauseTimePercent;
     UINT8 isCompaction;
     UINT8 isConcurrent;
-#ifndef UNIX_X86_ABI
     UINT8 padding[6];
-#endif
     GCGenerationInfo generationInfo[5];
     UINT64 pauseDurations[2];
 };
@@ -152,11 +144,9 @@ private:
 
 public:
     static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
-    static FORCEINLINE UINT64 InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend);
 
     FCDECL0(static INT64,   GetTotalPauseDuration);
     FCDECL2(static void,    GetMemoryInfo, Object* objUNSAFE, int kind);
-    FCDECL0(static UINT32,  GetMemoryLoad);
     FCDECL0(static int,     GetGcLatencyMode);
     FCDECL1(static int,     SetGcLatencyMode, int newLatencyMode);
     FCDECL0(static int,     GetLOHCompactionMode);

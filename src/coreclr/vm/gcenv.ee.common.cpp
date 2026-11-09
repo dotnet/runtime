@@ -59,14 +59,24 @@ bool FindFirstInterruptiblePointStateCB(
 unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
 {
     GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
-    GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
 
     FindFirstInterruptiblePointState state;
     state.offs = offs;
     state.endOffs = endOffs;
     state.returnOffs = -1;
 
-    gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
+#ifdef FEATURE_INTERPRETER
+    if (pCF->GetCodeManager() == ExecutionManager::GetInterpreterCodeManager())
+    {
+        InterpreterGcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
+        gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
+    }
+    else
+#endif // FEATURE_INTERPRETER
+    {
+        GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
+        gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
+    }
 
     return state.returnOffs;
 }
@@ -132,9 +142,19 @@ bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 
 #else  // USE_GC_INFO_DECODER
 
-    GcInfoDecoder gcInfoDecoder(pCF->GetGCInfoToken(),
-            DECODE_PROLOG_LENGTH);
-    UINT32 prologLength = gcInfoDecoder.GetPrologSize();
+    UINT32 prologLength;
+#ifdef FEATURE_INTERPRETER
+    if (pCF->GetCodeManager() == ExecutionManager::GetInterpreterCodeManager())
+    {
+        InterpreterGcInfoDecoder gcInfoDecoder(pCF->GetGCInfoToken(), DECODE_PROLOG_LENGTH);
+        prologLength = gcInfoDecoder.GetPrologSize();
+    }
+    else
+#endif // FEATURE_INTERPRETER
+    {
+        GcInfoDecoder gcInfoDecoder(pCF->GetGCInfoToken(), DECODE_PROLOG_LENGTH);
+        prologLength = gcInfoDecoder.GetPrologSize();
+    }
     if (pCF->GetRelOffset() < prologLength)
     {
         return false;

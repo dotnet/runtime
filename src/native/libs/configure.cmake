@@ -233,11 +233,6 @@ check_symbol_exists(
     HAVE_STRLCPY)
 
 check_symbol_exists(
-    strlcat
-    string.h
-    HAVE_STRLCAT)
-
-check_symbol_exists(
     posix_fadvise
     fcntl.h
     HAVE_POSIX_ADVISE)
@@ -366,16 +361,12 @@ check_struct_has_member(
     "sys/statvfs.h"
     HAVE_STATVFS_BASETYPE)
 
-set(CMAKE_EXTRA_INCLUDE_FILES dirent.h)
-
 # statfs: Find whether this struct exists
 if (HAVE_STATFS_FSTYPENAME OR HAVE_STATVFS_FSTYPENAME)
     set (STATFS_INCLUDES sys/mount.h)
 else ()
     set (STATFS_INCLUDES sys/statfs.h)
 endif ()
-
-set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h ${STATFS_INCLUDES})
 
 check_symbol_exists(
     "statfs"
@@ -386,17 +377,6 @@ check_symbol_exists(
     "getrlimit"
     "sys/resource.h"
     HAVE_GETRLIMIT)
-
-check_symbol_exists(
-    "setrlimit"
-    "sys/resource.h"
-    HAVE_SETRLIMIT)
-
-check_type_size(
-    "struct statfs"
-    STATFS_SIZE
-    BUILTIN_TYPES_ONLY)
-set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 # /statfs
 
 check_c_source_compiles(
@@ -1101,6 +1081,35 @@ else ()
         GSS_SPNEGO_MECHANISM
         "gssapi/gssapi.h"
         HAVE_GSS_SPNEGO_MECHANISM)
+endif ()
+
+# gss_get_name_attribute (RFC 6680 naming extensions) is optional. It is used to
+# retrieve the Kerberos PAC of the peer and is absent in some GSSAPI implementations.
+# The check must not link, because on Linux libgssapi_krb5 is loaded on demand rather
+# than linked, so only the declaration is required at build time.
+if (HAVE_GSSFW_HEADERS)
+    set (GSS_GET_NAME_ATTRIBUTE_HEADER "GSS/GSS.h")
+elseif (HAVE_HEIMDAL_HEADERS)
+    set (GSS_GET_NAME_ATTRIBUTE_HEADER "gssapi/gssapi.h")
+else ()
+    set (GSS_GET_NAME_ATTRIBUTE_HEADER "gssapi/gssapi_ext.h")
+endif ()
+
+if (DEFINED CMAKE_TRY_COMPILE_TARGET_TYPE)
+    set (SAVED_CMAKE_TRY_COMPILE_TARGET_TYPE "${CMAKE_TRY_COMPILE_TARGET_TYPE}")
+endif ()
+set (CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+check_c_source_compiles(
+    "
+    #include <${GSS_GET_NAME_ATTRIBUTE_HEADER}>
+    int main(void) { __typeof__(gss_get_name_attribute)* p = 0; (void)p; return 0; }
+    "
+    HAVE_GSS_GET_NAME_ATTRIBUTE)
+if (DEFINED SAVED_CMAKE_TRY_COMPILE_TARGET_TYPE)
+    set (CMAKE_TRY_COMPILE_TARGET_TYPE "${SAVED_CMAKE_TRY_COMPILE_TARGET_TYPE}")
+    unset (SAVED_CMAKE_TRY_COMPILE_TARGET_TYPE)
+else ()
+    unset (CMAKE_TRY_COMPILE_TARGET_TYPE)
 endif ()
 
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)

@@ -28,6 +28,10 @@ namespace Microsoft.Extensions.Options
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
         /// <remarks>
+        /// The built-in asynchronous options path invokes this method instead of
+        /// <see cref="Validate(string, TOptions)"/>. This method performs complete DataAnnotations validation,
+        /// including synchronous and asynchronous attributes, and recursively validates members marked with
+        /// <see cref="ValidateObjectMembersAttribute"/> or <see cref="ValidateEnumeratedItemsAttribute"/>.
         /// The <paramref name="cancellationToken"/> is propagated from
         /// <c>Host.StartAsync(CancellationToken)</c>. By default, no startup timeout
         /// is applied. Configure <c>HostOptions.StartupTimeout</c> or pass
@@ -37,6 +41,9 @@ namespace Microsoft.Extensions.Options
         /// builder.Services.Configure&lt;HostOptions&gt;(opts =&gt;
         ///     opts.StartupTimeout = TimeSpan.FromSeconds(30));
         /// </code>
+        /// Cancellation is cooperative. Validation cleanup awaits started work, so a validator that ignores the token
+        /// can delay completion. A timeout-linked token requests cancellation; it does not enforce a hard completion
+        /// deadline.
         /// </remarks>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Suppressing the warnings on this method since the constructor of the type is annotated as RequiresUnreferencedCode.")]

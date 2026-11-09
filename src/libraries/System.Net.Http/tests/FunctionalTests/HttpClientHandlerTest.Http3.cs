@@ -391,11 +391,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 await using (Http3LoopbackConnection connection1 = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync())
                 {
-                    await using Http3LoopbackStream stream = await connection1.AcceptRequestStreamAsync();
-                    stream.Abort(Http3LoopbackConnection.H3_REQUEST_REJECTED);
-                    await stream.DisposeAsync();
                     // shutdown the connection gracefully via GOAWAY frame for good measure
-                    await connection1.ShutdownAsync(true);
+                    await connection1.ShutdownAsync();
                 }
 
                 // expect second connection to be established by the client
@@ -667,7 +664,7 @@ namespace System.Net.Http.Functional.Tests
             HttpRequestMessage? callbackRequest = null;
             int invocationCount = 0;
 
-            var httpClientHandler = CreateHttpClientHandler();
+            var httpClientHandler = CreateHttpClientHandler(allowTlsResume: false);
             httpClientHandler.ServerCertificateCustomValidationCallback = (request, _, _, _) =>
             {
                 callbackRequest = request;

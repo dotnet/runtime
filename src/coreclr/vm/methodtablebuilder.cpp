@@ -2588,6 +2588,386 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
 
 //---------------------------------------------------------------------------------------
 //
+// Given the type arguments of a generic instantiation (a sequence of "cInstArgs" types), returns
+// the signature of the type argument at the given index.
+//
+static bool TryGetInstantiationArg(
+    SigParser        instArgs,
+    DWORD            cInstArgs,
+    DWORD            index,
+    PCCOR_SIGNATURE* ppArg,
+    DWORD*           pcbArg)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (index >= cInstArgs)
+        return false;
+
+    for (DWORD i = 0; i < index; i++)
+    {
+        if (FAILED(instArgs.SkipExactlyOne()))
+            return false;
+    }
+
+    PCCOR_SIGNATURE pArgStart = instArgs.GetPtr();
+    if (FAILED(instArgs.SkipExactlyOne()))
+        return false;
+
+    *ppArg = pArgStart;
+    *pcbArg = (DWORD)(instArgs.GetPtr() - pArgStart);
+    return true;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Copies one type signature from pSrc to pDst, replacing references to type variables
+// (ELEMENT_TYPE_VAR) with the corresponding type arguments from the given instantiation.
+// The instantiation is expected to be in the scope where the resulting signature will be used,
+// thus the type arguments are copied verbatim.
+//
+// Returns false if the signature contains constructs that are not supported here.
+//
+static bool CopyTypeSigWithSubstitution(
+    SigParser*  pSrc,
+    SigBuilder* pDst,
+    SigParser   instArgs,
+    DWORD       cInstArgs)
+{
+    STANDARD_VM_CONTRACT;
+
+    BYTE type;
+    if (FAILED(pSrc->GetByte(&type)))
+        return false;
+
+    switch (type)
+    {
+    case ELEMENT_TYPE_VOID:
+    case ELEMENT_TYPE_BOOLEAN:
+    case ELEMENT_TYPE_CHAR:
+    case ELEMENT_TYPE_I1:
+    case ELEMENT_TYPE_U1:
+    case ELEMENT_TYPE_I2:
+    case ELEMENT_TYPE_U2:
+    case ELEMENT_TYPE_I4:
+    case ELEMENT_TYPE_U4:
+    case ELEMENT_TYPE_I8:
+    case ELEMENT_TYPE_U8:
+    case ELEMENT_TYPE_R4:
+    case ELEMENT_TYPE_R8:
+    case ELEMENT_TYPE_STRING:
+    case ELEMENT_TYPE_OBJECT:
+    case ELEMENT_TYPE_TYPEDBYREF:
+    case ELEMENT_TYPE_I:
+    case ELEMENT_TYPE_U:
+        pDst->AppendElementType((CorElementType)type);
+        return true;
+
+    case ELEMENT_TYPE_CLASS:
+    case ELEMENT_TYPE_VALUETYPE:
+    {
+        mdToken token;
+        if (FAILED(pSrc->GetToken(&token)))
+            return false;
+
+        pDst->AppendElementType((CorElementType)type);
+        pDst->AppendToken(token);
+        return true;
+    }
+
+    case ELEMENT_TYPE_VAR:
+    {
+        // A type variable of the type that declares the overridden method.
+        // Replace it with the corresponding type argument.
+        uint32_t index;
+        if (FAILED(pSrc->GetData(&index)))
+            return false;
+
+        PCCOR_SIGNATURE pArg;
+        DWORD cbArg;
+        if (!TryGetInstantiationArg(instArgs, cInstArgs, index, &pArg, &cbArg))
+            return false;
+
+        pDst->AppendBlob((PVOID)pArg, cbArg);
+        return true;
+    }
+
+    case ELEMENT_TYPE_MVAR:
+    {
+        // A type variable of the method itself. The overriding method has the same
+        // type parameters, so such references can be copied as-is.
+        uint32_t index;
+        if (FAILED(pSrc->GetData(&index)))
+            return false;
+
+        pDst->AppendElementType((CorElementType)type);
+        pDst->AppendData(index);
+        return true;
+    }
+
+    case ELEMENT_TYPE_SZARRAY:
+    case ELEMENT_TYPE_PTR:
+    case ELEMENT_TYPE_BYREF:
+        pDst->AppendElementType((CorElementType)type);
+        return CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs);
+
+    case ELEMENT_TYPE_CMOD_REQD:
+    case ELEMENT_TYPE_CMOD_OPT:
+    {
+        mdToken token;
+        if (FAILED(pSrc->GetToken(&token)))
+            return false;
+
+        pDst->AppendElementType((CorElementType)type);
+        pDst->AppendToken(token);
+        return CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs);
+    }
+
+    case ELEMENT_TYPE_ARRAY:
+    {
+        pDst->AppendElementType((CorElementType)type);
+        if (!CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs))
+            return false;
+
+        uint32_t rank;
+        if (FAILED(pSrc->GetData(&rank)))
+            return false;
+        pDst->AppendData(rank);
+
+        if (rank != 0)
+        {
+            uint32_t nsizes;
+            if (FAILED(pSrc->GetData(&nsizes)))
+                return false;
+            pDst->AppendData(nsizes);
+
+            while (nsizes--)
+            {
+                uint32_t size;
+                if (FAILED(pSrc->GetData(&size)))
+                    return false;
+                pDst->AppendData(size);
+            }
+
+            uint32_t nlbounds;
+            if (FAILED(pSrc->GetData(&nlbounds)))
+                return false;
+            pDst->AppendData(nlbounds);
+
+            while (nlbounds--)
+            {
+                PCCOR_SIGNATURE pLowerBound = pSrc->GetPtr();
+                if (FAILED(pSrc->GetData(NULL)))
+                    return false;
+                pDst->AppendBlob((PVOID)pLowerBound, pSrc->GetPtr() - pLowerBound);
+            }
+        }
+
+        return true;
+    }
+
+    case ELEMENT_TYPE_GENERICINST:
+    {
+        BYTE classOrValueType;
+        if (FAILED(pSrc->GetByte(&classOrValueType)))
+            return false;
+
+        if ((classOrValueType != ELEMENT_TYPE_CLASS) && (classOrValueType != ELEMENT_TYPE_VALUETYPE))
+            return false;
+
+        mdToken token;
+        if (FAILED(pSrc->GetToken(&token)))
+            return false;
+
+        uint32_t argCnt;
+        if (FAILED(pSrc->GetData(&argCnt)))
+            return false;
+
+        pDst->AppendElementType((CorElementType)type);
+        pDst->AppendElementType((CorElementType)classOrValueType);
+        pDst->AppendToken(token);
+        pDst->AppendData(argCnt);
+
+        while (argCnt--)
+        {
+            if (!CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs))
+                return false;
+        }
+
+        return true;
+    }
+
+    case ELEMENT_TYPE_FNPTR:
+    {
+        // ECMA-335 II.23.2.12: FNPTR is followed by a MethodDefSig or MethodRefSig.
+        BYTE callConv;
+        if (FAILED(pSrc->GetByte(&callConv)))
+            return false;
+
+        pDst->AppendElementType((CorElementType)type);
+        pDst->AppendByte(callConv);
+
+        if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+        {
+            uint32_t typeArgCnt;
+            if (FAILED(pSrc->GetData(&typeArgCnt)))
+                return false;
+            pDst->AppendData(typeArgCnt);
+        }
+
+        uint32_t argCnt;
+        if (FAILED(pSrc->GetData(&argCnt)))
+            return false;
+        pDst->AppendData(argCnt);
+
+        if (!CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs))
+            return false;
+
+        while (argCnt--)
+        {
+            if (pSrc->AtSentinel())
+            {
+                if (FAILED(pSrc->GetByte(nullptr)))
+                    return false;
+                pDst->AppendElementType(ELEMENT_TYPE_SENTINEL);
+            }
+
+            if (!CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs))
+                return false;
+        }
+
+        return true;
+    }
+
+    default:
+        return false;
+    }
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Task and Task<T> are not sealed, thus a covariant override may return a type that derives from
+// Task/Task<T>, while not being Task/Task<T> itself. Such a method is not Task-returning on its own,
+// but the method that it overrides may well be. Since the overridden method has an Async variant,
+// the override must have one as well, or it would not be able to override it.
+//
+// This helper checks whether the given MethodImpl declaration is a Task-returning method and,
+// if so, produces the signature of the "element" type of its return type - the type that the
+// Async variant of the overriding method must return.
+// A NULL element signature means that the Async variant returns void (the declaration returns Task).
+// The element signature, when not NULL, is built in the provided SigBuilder and thus is only valid
+// for as long as the SigBuilder is alive.
+//
+// Returns false if the declaration is not Task-returning or if the case is not supported.
+//
+static bool TryGetCovariantOverrideAsyncVariantReturnType(
+    IMDInternalImport* pMDInternalImport,
+    Module*            pModule,
+    mdToken            tkDecl,
+    SigBuilder*        pElementSigBuilder,
+    PCCOR_SIGNATURE*   ppElementSig,
+    ULONG*             pcbElementSig)
+{
+    STANDARD_VM_CONTRACT;
+
+    *ppElementSig = NULL;
+    *pcbElementSig = 0;
+
+    PCCOR_SIGNATURE pSigDecl = NULL;
+    ULONG cbSigDecl = 0;
+
+    // Type arguments of the type that declares the overridden method, if that type is generic.
+    // The type arguments are expressed in the scope of the overriding type and thus can be used
+    // in its signatures as-is.
+    SigParser declInstArgs;
+    DWORD cDeclInstArgs = 0;
+
+    if (TypeFromToken(tkDecl) == mdtMethodDef)
+    {
+        if (FAILED(pMDInternalImport->GetSigOfMethodDef(tkDecl, &cbSigDecl, &pSigDecl)))
+            return false;
+    }
+    else if (TypeFromToken(tkDecl) == mdtMemberRef)
+    {
+        mdToken tkParent;
+        if (FAILED(pMDInternalImport->GetParentToken(tkDecl, &tkParent)))
+            return false;
+
+        if (TypeFromToken(tkParent) == mdtTypeSpec)
+        {
+            // The overridden method is declared by an instantiated generic type. Its signature may
+            // refer to the type parameters of that type, so we will need to substitute the type
+            // arguments from the instantiation.
+            PCCOR_SIGNATURE pTypeSpecSig;
+            ULONG cbTypeSpecSig;
+            if (FAILED(pMDInternalImport->GetTypeSpecFromToken(tkParent, &pTypeSpecSig, &cbTypeSpecSig)))
+                return false;
+
+            // GENERICINST (CLASS | VALUETYPE) <token> <argCnt> <args>
+            SigParser typeSpecSig(pTypeSpecSig, cbTypeSpecSig);
+            BYTE elemType;
+            if (FAILED(typeSpecSig.GetByte(&elemType)) || (elemType != ELEMENT_TYPE_GENERICINST))
+                return false;
+
+            if (FAILED(typeSpecSig.SkipExactlyOne()))   // the generic type
+                return false;
+
+            uint32_t argCnt;
+            if (FAILED(typeSpecSig.GetData(&argCnt)))
+                return false;
+
+            declInstArgs = typeSpecSig;
+            cDeclInstArgs = argCnt;
+        }
+
+        LPCSTR szDeclName;
+        if (FAILED(pMDInternalImport->GetNameAndSigOfMemberRef(tkDecl, &pSigDecl, &cbSigDecl, &szDeclName)))
+            return false;
+    }
+    else
+    {
+        return false;
+    }
+
+    ULONG declOffsetOfAsyncDetails = 0;
+    ULONG declElementTypeLength = 0;
+    bool declReturnsValueTask = false;
+    MethodReturnKind declReturnKind = ClassifyMethodReturnKind(
+        SigPointer(pSigDecl, cbSigDecl), pModule, &declOffsetOfAsyncDetails, &declElementTypeLength, &declReturnsValueTask);
+
+    // ValueTask and ValueTask<T> are structs, so they cannot be base types of a covariant return type.
+    if (declReturnsValueTask)
+        return false;
+
+    if (declReturnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+    {
+        // "Task"-returning declaration. The Async variant returns void.
+        return true;
+    }
+
+    if (declReturnKind == MethodReturnKind::GenericTaskReturningMethod)
+    {
+        // "Task<T>"-returning declaration. The Async variant returns T.
+        // E_T_GENERICINST E_T_CLASS <TokenOfTask> 1 <elementType>
+        ULONG taskTokenLen = CorSigUncompressedDataSize(&pSigDecl[declOffsetOfAsyncDetails + 2]);
+        SigParser elementSig(pSigDecl + declOffsetOfAsyncDetails + 2 + taskTokenLen + 1, declElementTypeLength);
+
+        // T may refer to the type parameters of the declaring type, in which case we need to
+        // substitute the corresponding type arguments to make the signature usable in the scope
+        // of the overriding method.
+        if (!CopyTypeSigWithSubstitution(&elementSig, pElementSigBuilder, declInstArgs, cDeclInstArgs))
+            return false;
+
+        DWORD cbElementSig;
+        *ppElementSig = (PCCOR_SIGNATURE)pElementSigBuilder->GetSignature(&cbElementSig);
+        *pcbElementSig = cbElementSig;
+        return true;
+    }
+
+    return false;
+}
+
+//---------------------------------------------------------------------------------------
+//
 // Used by BuildMethodTable
 //
 // Enumerate this class's members
@@ -3263,6 +3643,39 @@ MethodTableBuilder::EnumerateClassMethods()
             }
         }
 
+        // A covariant override of a Task-returning method may return a type derived from
+        // Task/Task<T> and thus not be Task-returning itself. A forwarding thunk gives only
+        // such covariant overrides an Async variant; other overrides of the same slot remain
+        // ordinary, non-task-returning methods.
+        // The return type of the Async variant is the "element" type of the overridden method -
+        // void when the overridden method returns Task and T when it returns Task<T>.
+        bool isCovariantTaskOverride = false;
+        SigBuilder covariantElementSigBuilder;
+        PCCOR_SIGNATURE pCovariantElementSig = NULL;
+        ULONG cbCovariantElementSig = 0;
+        if (bmtMetaData.fHasCovariantOverride &&
+            (implType == METHOD_IMPL) &&
+            !IsTaskReturning(returnKind) &&
+            !IsMiAsync(dwImplFlags) &&
+            IsMdVirtual(dwMemberAttrs))
+        {
+            for (DWORD impls = 0; impls < bmtMethod.dwNumberMethodImpls; impls++)
+            {
+                if ((bmtMetaData.rgMethodImplTokens[impls].methodBody == tok) &&
+                    bmtMetaData.rgMethodImplTokens[impls].fRequiresCovariantReturnTypeChecking)
+                {
+                    isCovariantTaskOverride = TryGetCovariantOverrideAsyncVariantReturnType(
+                        pMDInternalImport,
+                        GetModule(),
+                        bmtMetaData.rgMethodImplTokens[impls].methodDecl,
+                        &covariantElementSigBuilder,
+                        &pCovariantElementSig,
+                        &cbCovariantElementSig);
+                    break;
+                }
+            }
+        }
+
         // For delegates we don't allow any non-runtime implemented bodies
         // for any of the four special methods
         if (IsDelegate() && !IsMiRuntime(dwImplFlags))
@@ -3299,7 +3712,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     type,
                     implType);
 
-                if (IsTaskReturning(returnKind))
+                if (IsTaskReturning(returnKind) || isCovariantTaskOverride)
                 {
                     // Declare a TaskReturning variant method.
                     // In the next pass we will also add an AsyncCall variant that can be called by async
@@ -3342,8 +3755,10 @@ MethodTableBuilder::EnumerateClassMethods()
                 ULONG taskTypePrefixSize;
                 ULONG taskTypePrefixReplacementSize;
 
+                DWORD asyncMemberAttrs = dwMemberAttrs;
+                DWORD asyncImplFlags = dwImplFlags;
                 AsyncMethodFlags asyncFlags = (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
-                if (returnsValueTask)
+                if (returnsValueTask && !isCovariantTaskOverride)
                 {
                     asyncFlags |= AsyncMethodFlags::IsAsyncVariantForValueTask;
                 }
@@ -3355,13 +3770,47 @@ MethodTableBuilder::EnumerateClassMethods()
                 if (insertCount == 2)
                     asyncFlags |= (AsyncMethodFlags::Thunk | AsyncMethodFlags::ReturnDroppingThunk);
 
+                if (isCovariantTaskOverride)
+                {
+                    // The method itself does not return the well-known Task/Task<T>, so its IL cannot be
+                    // compiled as an async version. The async variant is a thunk that calls the ordinary
+                    // variant and awaits the returned Task.
+                    _ASSERTE(hasAsyncFlags(asyncFlags, AsyncMethodFlags::Thunk));
+                    asyncFlags |= AsyncMethodFlags::CovariantForwardingThunk;
+                    // The forwarding thunk is concrete even when the ordinary variant is abstract.
+                    asyncMemberAttrs &= ~mdAbstract;
+                    // Only the ordinary variant should acquire the receiver's monitor.
+                    asyncImplFlags &= ~miSynchronized;
+                }
+
                 // Here we construct the signature of async call variant given its task-returning counterpart.
                 // It is basically just removing the Task/ValueTask part of the return type and keeping
                 // the token for T or inserting void instead.
                 // The rest of the signature stays exactly the same.
                 ULONG taskTokenLen = 0;
 
-                if (insertCount == 2)
+                if (isCovariantTaskOverride)
+                {
+                    // The method returns a type derived from Task/Task<T> and overrides a
+                    // Task-returning method. The async variant returns the "element" type of
+                    // the overridden method.
+
+                    // from ". . . MyTask<tk> . . . Method(args);"    we construct
+                    //      ". . .         tk . . . Method(args);"
+                    // (or "void" instead of "tk" when the overridden method returns Task)
+
+                    // Compute the size of the return type that we are replacing.
+                    SigParser ownReturnType(pMemberSignature + offsetOfAsyncDetails, cMemberSignature - offsetOfAsyncDetails);
+                    IfFailThrow(ownReturnType.SkipExactlyOne());
+                    taskTypePrefixSize = (ULONG)(ownReturnType.GetPtr() - (pMemberSignature + offsetOfAsyncDetails));
+
+                    taskTypePrefixReplacementSize = (cbCovariantElementSig == 0) ?
+                        1 :                       // ELEMENT_TYPE_VOID
+                        cbCovariantElementSig;
+
+                    cAsyncThunkMemberSignature = cMemberSignature - taskTypePrefixSize + taskTypePrefixReplacementSize;
+                }
+                else if (insertCount == 2)
                 {
                     // This is a rare case when we need two async variants and this is the second one.
                     // The need arises when a Task-returning method has a Task<T> returning virtual override.
@@ -3422,7 +3871,18 @@ MethodTableBuilder::EnumerateClassMethods()
                 _ASSERTE((cMemberSignature - originalRemainingSigOffset) == (cAsyncThunkMemberSignature - newRemainingSigOffset));
                 memcpy(pNewMemberSignature + newRemainingSigOffset, pMemberSignature + originalRemainingSigOffset, cMemberSignature - originalRemainingSigOffset);
 
-                if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod || insertCount == 2)
+                if (isCovariantTaskOverride)
+                {
+                    if (cbCovariantElementSig == 0)
+                    {
+                        pNewMemberSignature[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
+                    }
+                    else
+                    {
+                        memcpy(pNewMemberSignature + offsetOfAsyncDetails, pCovariantElementSig, cbCovariantElementSig);
+                    }
+                }
+                else if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod || insertCount == 2)
                 {
                     pNewMemberSignature[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
                 }
@@ -3440,8 +3900,8 @@ MethodTableBuilder::EnumerateClassMethods()
                 pNewMethod = new (GetStackingAllocator()) bmtMDMethod(
                     bmtInternal.pType,
                     tok,
-                    dwMemberAttrs,
-                    dwImplFlags,
+                    asyncMemberAttrs,
+                    asyncImplFlags,
                     dwMethodRVA,
                     newMemberSig,
                     asyncFlags,
@@ -3470,13 +3930,20 @@ MethodTableBuilder::EnumerateClassMethods()
             bmtVT.dwMaxVtableSize++;
 
             // Increment the number of non-abstract declared methods
-            if (!IsMdAbstract(dwMemberAttrs))
+            if (!IsMdAbstract(pNewMethod->GetDeclAttrs()))
             {
                 bmtMethod.dwNumDeclaredNonAbstractMethods++;
             }
 
             // Normal methods only insert a single method
-            if (!IsTaskReturning(returnKind))
+            if (!IsTaskReturning(returnKind) && !isCovariantTaskOverride)
+            {
+                break;
+            }
+
+            // The forwarding thunk is the only Async variant needed. It matches the Async variant
+            // of the overridden method without making other overrides of the slot Task-returning.
+            if (isCovariantTaskOverride && (insertCount == 1))
             {
                 break;
             }
@@ -3645,17 +4112,22 @@ MethodTableBuilder::EnumerateClassFields()
 
                 bmtEnumFields.dwNumStaticFields++;
 
-                // If this static field is thread static, then we need
-                // to increment bmtEnumFields.dwNumThreadStaticFields
-                hr = GetCustomAttribute(tok,
-                                        WellKnownAttribute::ThreadStatic,
-                                        NULL, NULL);
-                IfFailThrow(hr);
-                if (hr == S_OK)
+#ifdef FEATURE_MULTITHREADING
+                if (!IsFdHasFieldRVA(dwMemberAttrs))
                 {
-                    // It's a thread static, so increment the count
-                    bmtEnumFields.dwNumThreadStaticFields++;
+                    // If this static field is thread static, then we need
+                    // to increment bmtEnumFields.dwNumThreadStaticFields
+                    hr = GetCustomAttribute(tok,
+                                            WellKnownAttribute::ThreadStatic,
+                                            NULL, NULL);
+                    IfFailThrow(hr);
+                    if (hr == S_OK)
+                    {
+                        // It's a thread static, so increment the count
+                        bmtEnumFields.dwNumThreadStaticFields++;
+                    }
                 }
+#endif // FEATURE_MULTITHREADING
             }
         }
         else
@@ -4114,16 +4586,16 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
             HRESULT hr;
 
-            hr = GetCustomAttribute(bmtMetaData.pFields[i],
-                                    WellKnownAttribute::ThreadStatic,
-                                    NULL, NULL);
-            IfFailThrow(hr);
-            if (hr == S_OK)
+#ifdef FEATURE_MULTITHREADING
+            if (!fHasRVA)
             {
-                fIsThreadStatic = TRUE;
+                hr = GetCustomAttribute(bmtMetaData.pFields[i],
+                                        WellKnownAttribute::ThreadStatic,
+                                        NULL, NULL);
+                IfFailThrow(hr);
+                fIsThreadStatic = (hr == S_OK);
             }
-
-
+#endif // FEATURE_MULTITHREADING
             if (ElementType == ELEMENT_TYPE_VALUETYPE)
             {
                 hr = GetCustomAttribute(bmtMetaData.pFields[i],
@@ -4134,14 +4606,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 {
                     bmtFP.fHasFixedAddressValueTypes = true;
                 }
-            }
-
-
-            // Do some sanity checks that we are not mixing context and thread
-            // relative statics.
-            if (fHasRVA && fIsThreadStatic)
-            {
-                IfFailThrow(COR_E_TYPELOAD);
             }
         }
 
@@ -6081,15 +6545,22 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
 
                         if (variantLookup != AsyncVariantLookup::Ordinary)
                         {
-                            if (pCurMD->ReturnsTaskOrValueTask())
+                            // NOTE: we cannot use GetAsyncVariant() here. Fetching an associated MethodDesc
+                            //       of a generic method may create one and that may load types, which is not
+                            //       allowed while building a method table. We only need the slot of the
+                            //       variant, so the MethodDesc introduced by the declaring type will do.
+                            MethodDesc* pVariantMD = pCurMD->ReturnsTaskOrValueTask() ?
+                                pCurMD->GetMethodTable()->GetParallelMethodDesc(pCurMD, variantLookup) :
+                                NULL;
+
+                            if (pVariantMD == NULL)
                             {
-                                pCurMD = pCurMD->GetAsyncVariant();
-                            }
-                            else
-                            {
+                                // Other variant may not exist. For example we return Task and the base is generic and returns T.
                                 declMethod = {};
                                 break;
                             }
+
+                            pCurMD = pVariantMD;
                         }
 
                         declMethod = (*bmtParent.pSlotTable)[pCurMD->GetSlot()].Decl();
@@ -8537,11 +9008,7 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
                 continue;
 
             // Align instance fields if we aren't already
-#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
-            DWORD dwDataAlignment = min(1 << i, DATA_ALIGNMENT);
-#else
             DWORD dwDataAlignment = 1 << i;
-#endif
             dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, dwDataAlignment);
 
             // Fields of this size start at the next available location
@@ -8683,7 +9150,8 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
 
 #ifdef FEATURE_64BIT_ALIGNMENT
             if (GetHalfBakedClass()->IsAlign8Candidate()) {
-                minAlign = 8;
+                // Align8 is a minimum; keep any larger field alignment requirement.
+                minAlign = containsGCPointers ? 8 : max(8u, (unsigned)largestAlignmentRequirement);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -10733,25 +11201,6 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             pMT->SetInternalCorElementType(type, true);
 
-#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
-            switch (type)
-            {
-                // The System V ABI for i386 defines different packing for these types.
-
-                case ELEMENT_TYPE_I8:
-                case ELEMENT_TYPE_U8:
-                case ELEMENT_TYPE_R8:
-                {
-                    EEClassLayoutInfo * pLayout = pClass->GetLayoutInfo();
-                    pLayout->SetAlignmentRequirement(4);
-                    break;
-                }
-
-                default:
-                    break;
-            }
-#endif // TARGET_X86 && UNIX_X86_ABI
-
 #ifdef _DEBUG
             if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &name, &nameSpace)))
             {
@@ -11907,6 +12356,7 @@ INT32 __stdcall IsDefined(Module *pModule, mdToken token, TypeHandle attributeCl
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

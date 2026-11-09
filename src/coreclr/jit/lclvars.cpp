@@ -554,16 +554,17 @@ void Compiler::lvaAllocWasmStackPtr()
 //
 // Notes:
 //   The managed calling convention for Wasm passes a pointer to the portable entry point as the last arg.
-//   This arg is currently unused in the JIT, and we may not need to model it.
+//   Ordinary managed methods store this argument as their unwindable frame identity.
 //
 void Compiler::lvaInitWasmPortableEntryPtr(unsigned* curVarNum)
 {
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
     {
-        LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
-        varDsc->lvType    = TYP_I_IMPL;
-        varDsc->lvIsParam = 1;
-        varDsc->lvOnFrame = true;
+        lvaWasmPortableEntryPointArg = *curVarNum;
+        LclVarDsc* varDsc            = lvaGetDesc(*curVarNum);
+        varDsc->lvType               = TYP_I_IMPL;
+        varDsc->lvIsParam            = 1;
+        varDsc->lvOnFrame            = true;
         (*curVarNum)++;
     }
 }
@@ -1280,7 +1281,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 
 #if defined(TARGET_WASM)
-    if (varNum == lvaWasmSpArg)
+    if ((varNum == lvaWasmSpArg) || (varNum == lvaWasmPortableEntryPointArg))
     {
         return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
     }
@@ -1315,6 +1316,11 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
 
 #if defined(TARGET_WASM)
     if (lvaWasmSpArg != BAD_VAR_NUM && originalVarNum > lvaWasmSpArg && lvaGetDesc(lvaWasmSpArg)->lvIsParam)
+    {
+        varNum--;
+    }
+
+    if ((lvaWasmPortableEntryPointArg != BAD_VAR_NUM) && (originalVarNum > lvaWasmPortableEntryPointArg))
     {
         varNum--;
     }
@@ -6119,15 +6125,6 @@ void Compiler::lvaAlignFrame()
 
         // Align the stack with STACK_ALIGN value.
         int adjustFrameSize = compLclFrameSize;
-#if defined(UNIX_X86_ABI)
-        bool isEbpPushed = codeGen->isFramePointerUsed();
-#if DOUBLE_ALIGN
-        isEbpPushed |= genDoubleAlign();
-#endif
-        // we need to consider spilled register(s) plus return address and/or EBP
-        int adjustCount = compCalleeRegsPushed + 1 + (isEbpPushed ? 1 : 0);
-        adjustFrameSize += (adjustCount * REGSIZE_BYTES) % STACK_ALIGN;
-#endif
         if ((adjustFrameSize % STACK_ALIGN) != 0)
         {
             lvaIncrementFrameSize(STACK_ALIGN - (adjustFrameSize % STACK_ALIGN));

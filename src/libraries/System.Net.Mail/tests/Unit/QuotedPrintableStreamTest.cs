@@ -92,5 +92,27 @@ namespace System.Net.Mime.Tests
             string results = Encoding.ASCII.GetString(bytesRead, 0, bytesReadCount);
             Assert.Equal(ExpectedOutput, results);
         }
+
+        [Theory]
+        [InlineData(false, "foo", "foo")]
+        [InlineData(false, "fo=o", "\"fo=o\"")]
+        [InlineData(false, "fo\"o", "\"fo\\\"o\"")]
+        [InlineData(false, "=", "\"=\"")]
+        [InlineData(false, "", "\"\"")]
+        [InlineData(false, " ", "\" \"")]
+        public void GetTokenOrQuotedString(bool allowUnicode, string input, string expected)
+        {
+            StringBuilder sb = new();
+            MailBnfHelper.GetTokenOrQuotedString(input, sb, allowUnicode);
+            Assert.Equal(expected, sb.ToString());
+        }
+
+        [Theory]
+        [InlineData(false, "ň")]
+        public void GetTokenOrQuotedString_Throws(bool allowUnicode, string input)
+        {
+            StringBuilder sb = new();
+            Assert.Throws<FormatException>(() => MailBnfHelper.GetTokenOrQuotedString(input, sb, allowUnicode));
+        }
     }
 }
