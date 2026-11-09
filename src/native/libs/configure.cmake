@@ -252,9 +252,9 @@ check_symbol_exists(
     sys/uio.h
     HAVE_PWRITEV)
 
-check_symbol_exists(
+# Not check_symbol_exists: bionic overloads ioctl, so taking its address doesn't compile.
+check_function_exists(
     ioctl
-    sys/ioctl.h
     HAVE_IOCTL)
 
 check_symbol_exists(
