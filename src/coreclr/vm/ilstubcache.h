@@ -32,6 +32,7 @@ public:
 };
 
 class LoaderAllocator;
+class ILStubResolver;
 
 //
 // This class caches MethodDesc's for dynamically generated IL stubs, it is not
@@ -64,6 +65,10 @@ public:
     void DeleteEntry(ILStubHashBlob* pHashBlob);
 
     void AddMethodDescChunkWithLockTaken(MethodDesc *pMD);
+
+    // Frees the compile-time state of IL stubs created in a collectible LoaderAllocator. Stubs that
+    // were never compiled still hold it on the native heap. Called when the LoaderAllocator terminates.
+    void FreeCollectibleStubsCompileTimeState();
 
     static MethodDesc* CreateAndLinkNewILStubMethodDesc(
         LoaderAllocator* pAllocator,
@@ -139,6 +144,9 @@ private:
     LoaderAllocator*m_pAllocator;
     MethodTable*    m_pStubMT;
     SHash<ILStubCacheTraits> m_hashMap;
+
+    // Resolvers of the stubs created by CreateAndLinkNewILStubMethodDesc in a collectible LoaderAllocator
+    SArray<ILStubResolver*> m_collectibleStubResolvers;
 };
 
 #endif //_ILSTUBCACHE_H

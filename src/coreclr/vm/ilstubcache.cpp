@@ -97,6 +97,15 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     pResolver->SetStubMethodDesc(pStubMD);
 
+    if (pAllocator->IsCollectible())
+    {
+        // The stub may never be compiled, so its compile-time state has to be freed when the
+        // LoaderAllocator terminates.
+        ILStubCache* pCache = pAllocator->GetILStubCache();
+        CrstHolder ch(&pCache->m_crst);
+        pCache->m_collectibleStubResolvers.Append(pResolver);
+    }
+
     pResolver->FinalizeILStub(pStubLinker);
 
     return pStubMD;
@@ -699,6 +708,27 @@ void ILStubCache::AddMethodDescChunkWithLockTaken(MethodDesc *pMD)
     CrstHolder ch(&m_crst);
 
     pMD->GetMethodTable()->GetClass()->AddChunkIfItHasNotBeenAdded(pMD->GetMethodDescChunk());
+#endif // DACCESS_COMPILE
+}
+
+void ILStubCache::FreeCollectibleStubsCompileTimeState()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+#ifndef DACCESS_COMPILE
+    CrstHolder ch(&m_crst);
+
+    // Stubs that were compiled have already freed their state, FreeCompileTimeState is a no-op for them.
+    for (COUNT_T i = 0; i < m_collectibleStubResolvers.GetCount(); i++)
+    {
+        m_collectibleStubResolvers[i]->FreeCompileTimeState();
+    }
 #endif // DACCESS_COMPILE
 }
 

@@ -1368,6 +1368,9 @@ void LoaderAllocator::Terminate()
 
     DeleteMarshalingData();
 
+    // Must run before the heaps are destroyed, the stub resolvers live on the high frequency heap.
+    m_ILStubCache.FreeCollectibleStubsCompileTimeState();
+
     if (m_fGCPressure)
     {
         GCX_PREEMP();
